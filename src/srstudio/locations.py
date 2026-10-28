@@ -7,6 +7,7 @@ knowing the stacking. Slots receive the set's group and return nothing.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 
 from . import props, signature
@@ -222,4 +223,174 @@ def park(cv: Canvas, parent, on_bench: Slot = None, beside_bench: Slot = None, i
     signature.cactus(cv, g, 905, 1300, 0.75)  # on the grass beside the bench
     _call(on_bench, g)
     _call(beside_bench, g)
+    return g
+
+
+# -- polished rooms (ADR 0011) ------------------------------------------------------------------------------------
+
+CONFERENCE_SEAT = (540, 735, 1.45)  # x, y, scale of an office actor in the conference chair, as ``perform`` takes
+CONFERENCE_TABLE_Y = 1130  # the table's far edge: everything of the seated actor below it is hidden
+RECEPTION_CLERK = (600, 790, 1.3)  # an office actor behind the counter
+RECEPTION_VISITOR = (250, 1080, 1.5)  # a standing café actor in front of it
+COUNTER_Y = 1060  # the counter's top
+COUNTER_FLOOR = 1440  # where the counter meets the floor
+
+
+@register(
+    "location",
+    "conference-room",
+    summary="Conference room: blinds with light shafts, a whiteboard with a chart and sticky notes, a high-back "
+    "chair, a walnut table with a speakerphone, notes and a mug",
+)
+def conference_room(
+    cv: Canvas,
+    parent,
+    behind_table: Slot = None,
+    on_table: Slot = None,
+    id="location-conference-room",
+    shots=None,
+    rising=True,
+):
+    """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend."""
+    ink = cv.ink
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    wall = cv.grad("conference-wall", [(0, "#C3CED2"), (0.5, "#E6EBE9"), (1, "#CCD5D7")], (0, 0, 1, 0.15))
+    carpet = cv.grad("conference-carpet", [(0, "#56636A"), (1, "#3F4A50")], (0, 0, 0, 1))
+    cv.rect(g, 0, 0, 1080, 1260, wall)
+    cv.rect(g, 0, 1260, 1080, 660, carpet)
+    cv.rect(g, 0, 1236, 1080, 24, "#F2F2EE", ink, 3)  # the baseboard
+    cv.rect(g, 0, 0, 1080, 118, "#EEF1EF")
+    cv.line(g, 0, 118, 1080, 118, ink, 3)
+    cv.rect(g, 250, 44, 580, 28, "#FFFDF4", ink, 3, radius=14)  # a linear ceiling light
+    props.blinds_window(cv, g, 40, 210, 330, 880, id=f"{id}-window")
+    props.whiteboard(cv, g, 620, 300, 420, 420, rising=rising, id=f"{id}-whiteboard")
+    light = cv.group(g, f"{id}-light")
+    cv.path(light, "M56 762 L356 762 L820 1236 L520 1236Z", "#FFE7B0", cv.clear, 0, opacity=0.34)
+    cv.path(light, "M56 762 L356 762 L1000 1460 L700 1460Z", "#FFE7B0", cv.clear, 0, opacity=0.14)
+    cv.rect(light, 250, 72, 580, 90, props.GLOW, opacity=0.18)
+    chair = cv.group(g, f"{id}-chair")
+    mesh = cv.grad("chair-mesh", [(0, "#4A4F52"), (0.5, "#2F3437"), (1, "#3D4245")], (0, 0, 1, 0))
+    cv.path(chair, "M378 1150 L372 700 Q376 618 460 610 L620 610 Q704 618 708 700 L702 1150Z", mesh, ink, 5)
+    cv.path(chair, "M402 1140 L398 712 Q402 640 466 636 L614 636 Q678 640 682 712 L678 1140Z", cv.clear, "#5D6366", 2)
+    cv.path(chair, "M396 660 Q420 628 470 626", stroke="#8D9497", sw=4, opacity=0.7)
+    _call(behind_table, g)
+    table = cv.group(g, f"{id}-table")
+    top = cv.grad("walnut-top", [(0, "#6E4A31"), (0.45, "#946740"), (1, "#5F3F2A")], (0, 0, 0.3, 1))
+    cv.rect(table, -10, CONFERENCE_TABLE_Y, 1100, 590, top, ink, 4)
+    for k, yy in enumerate((1190, 1290, 1420, 1580)):
+        cv.path(
+            table, f"M0 {yy} Q300 {yy - 14 + 6 * k} 560 {yy + 4} T1080 {yy - 6}", stroke="#4E3322", sw=2.5, opacity=0.4
+        )
+    cv.path(table, "M90 1134 L330 1134 L560 1716 L320 1716Z", "#FFFFFF", cv.clear, 0, opacity=0.13)  # the window
+    cv.rect(table, 0, 1762, 1080, 158, "#262D31", opacity=0.45)  # the table's shadow on the carpet
+    for xx in (90, 930):
+        cv.rect(table, xx, 1740, 60, 200, "#3E2819", ink, 4)  # the legs
+        cv.rect(table, xx + 8, 1760, 10, 160, "#6B4A33", opacity=0.7)
+    cv.rect(table, -10, 1716, 1100, 46, "#4A3020", ink, 4)
+    cv.rect(table, -10, 1716, 1100, 8, "#B48660", opacity=0.6)
+    signature.code(cv, props.papers(cv, table, 70, 1290, 0.82, -7), 20, 10, 11, color="#5C625D")
+    cv.path(table, "M300 1330 L392 1268", stroke="#1F2B4A", sw=9)  # a pen across the notes
+    cv.path(table, "M300 1330 L312 1322", stroke="#C9A24E", sw=9)
+    props.speakerphone(cv, table, 560, 1330, id=f"{id}-speakerphone")
+    mug = cv.group(table, f"{id}-mug", x=850, y=1250)
+    cv.ellipse(mug, -54, 92, 120, 22, "#2B1C12", opacity=0.25)
+    cv.path(mug, "M44 22 Q86 24 82 56 Q78 82 42 80", stroke=ink, sw=12)
+    cv.path(mug, "M44 22 Q86 24 82 56 Q78 82 42 80", stroke="#F4F1EA", sw=6)
+    cv.path(
+        mug,
+        "M-48 0 L48 0 L44 92 Q0 104 -44 92Z",
+        cv.grad("mug", [(0, "#FFFFFF"), (1, "#DCD8CF")], (0, 0, 1, 0)),
+        ink,
+        4,
+    )
+    cv.ellipse(mug, -48, -10, 96, 22, "#5A3824", ink, 3.5)
+    cv.ellipse(mug, -36, -6, 40, 9, "#8C5E3E", opacity=0.6)
+    for k, dx in enumerate((-18, 10)):
+        steam = cv.path(mug, f"M{dx} -24 q-14 -26 0 -50 t0 -50", stroke="#FFFFFF", sw=5, opacity=0.5)
+        cv.expression(steam, "opacity", f".35+.2*Math.sin(time*2.2+{k * 1.7})")
+    signature.cactus(cv, table, 1000, 1236, 0.55)
+    _call(on_table, table)
+    return g
+
+
+@register(
+    "location",
+    "reception",
+    summary="Reception: a lit walnut slat wall with a backlit logo, opal globe pendants, a plant, a stone-topped "
+    "fluted counter with a monitor and flowers, and a polished floor that reflects them",
+)
+def reception(
+    cv: Canvas,
+    parent,
+    behind_desk: Slot = None,
+    on_desk: Slot = None,
+    at_desk: Slot = None,
+    id="location-reception",
+    shots=None,
+):
+    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`."""
+    ink = cv.ink
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    wall = cv.grad("reception-wall", [(0, "#EDE5D8"), (1, "#D8CCBB")], (0, 0, 0, 1))
+    floor = cv.grad("reception-floor", [(0, "#BFB4A3"), (0.3, "#DDD5C8"), (1, "#EAE4DA")], (0, 0, 0, 1))
+    cv.rect(g, 0, 0, 1080, COUNTER_FLOOR, wall)
+    cv.rect(g, 0, 0, 1080, 112, "#F4F0E9")
+    cv.line(g, 0, 112, 1080, 112, ink, 3)
+    for xx in (120, 960):
+        cv.ellipse(g, xx - 26, 100, 52, 14, "#FFF6DE", ink, 2.5)  # recessed downlights
+    cv.rect(g, 0, COUNTER_FLOOR, 1080, 480, floor)
+    for k, yy in enumerate((1478, 1540, 1626, 1744, 1900)):
+        cv.line(g, 0, yy, 1080, yy, "#B0A694", 2, opacity=0.6 - 0.06 * k)
+    for xx in range(-1200, 2400, 240):
+        cv.line(g, 540 + (xx - 540) * 0.18, COUNTER_FLOOR, xx, 1920, "#B0A694", 2, opacity=0.45)
+    light = cv.group(g, f"{id}-light")
+    props.slat_wall(cv, g, 160, 160, 760, 920, light=light, id=f"{id}-slat-wall")
+    logo = cv.group(g, f"{id}-logo")
+    cv.ellipse(logo, 430, 330, 220, 220, "#2A1F18", ink, 5)
+    cv.ellipse(logo, 458, 358, 164, 164, cv.clear, "#FFE6B0", 12)
+    cv.path(logo, "M540 382 Q600 440 540 518 Q480 440 540 382Z", "#FFE6B0", cv.clear, 0)
+    cv.path(logo, "M540 400 L540 500", stroke="#2A1F18", sw=4)
+    props.glow(cv, light, 540, 440, 230, peak=0.3)
+    plant = cv.group(g, f"{id}-plant")
+    leaf = cv.grad("reception-leaf", [(0, "#4F7A45"), (0.5, "#7FA45F"), (1, "#A9C27F")], (0, 0, 1, 1))
+    for d in (
+        "M92 1260 Q40 1000 -20 860 Q60 900 104 1250Z",
+        "M98 1260 Q90 900 150 700 Q170 900 116 1260Z",
+        "M106 1262 Q200 1020 250 900 Q236 1080 122 1266Z",
+        "M96 1262 Q10 1100 -30 1060 Q70 1080 110 1262Z",
+    ):
+        cv.path(plant, d, leaf, ink, 3)
+    cv.path(plant, "M108 1250 Q132 960 150 760", stroke="#C9DA9F", sw=3, opacity=0.7)
+    planter = cv.grad("planter", [(0, "#F4F0E8"), (0.6, "#D9D2C4"), (1, "#BDB4A4")], (0, 0, 1, 0))
+    cv.path(plant, "M26 1250 L190 1250 L176 1440 L40 1440Z", planter, ink, 4)
+    for xx in (290, 790):
+        props.globe_pendant(cv, g, xx, 300, light=light, id=f"{id}-pendant-{xx}")
+        cv.ellipse(light, xx - 90, 1470, 180, 34, props.GLOW, opacity=0.3)  # its reflection on the floor
+    _call(behind_desk, g)
+    props.reception_counter(cv, g, 230, 1010, COUNTER_Y, COUNTER_FLOOR, id=f"{id}-counter")
+    shine = cv.grad("floor-reflection", [(0, "#8C7F6E80"), (1, "#8C7F6E00")], (0, 0, 0, 1))
+    cv.rect(g, 246, COUNTER_FLOOR + 2, 780, 120, shine, opacity=0.5)  # the counter mirrored in the floor
+    desk = cv.group(g, f"{id}-desk")
+    cv.path(desk, "M790 1060 L776 1040 L864 1040 L850 1060Z", "#3A3F42", ink, 3)
+    cv.rect(desk, 812, 990, 16, 52, "#4A5054", ink, 2.5)
+    cv.rect(desk, 730, 880, 180, 118, "#33383B", ink, 4, radius=10)  # the monitor, seen from behind
+    cv.ellipse(desk, 806, 928, 28, 22, "#4A5054", ink, 2)
+    cv.path(desk, "M742 892 L800 892", stroke="#7B8387", sw=3, opacity=0.7)
+    vase = cv.grad("vase", [(0, "#BFE1DC"), (0.5, "#8CC3BC"), (1, "#5E9C95")], (0, 0, 1, 0))
+    for (fx, fy), col in (((296, 930), "#F2A3A0"), ((326, 912), "#F7D27A"), ((352, 936), "#F2A3A0")):
+        cv.path(desk, f"M324 1040 Q{(fx + 324) / 2} {fy + 60} {fx} {fy}", stroke="#5E8A4E", sw=3.5)
+        for a in range(5):
+            ang = a * 2 * math.pi / 5
+            cv.ellipse(desk, fx + 9 * math.cos(ang) - 8, fy + 9 * math.sin(ang) - 8, 16, 16, col, ink, 1.5)
+        cv.ellipse(desk, fx - 5, fy - 5, 10, 10, "#E8A94B", ink, 1.5)
+    cv.path(desk, "M300 1060 L298 1004 Q324 990 350 1004 L348 1060Z", vase, ink, 3)
+    cv.ellipse(desk, 304, 996, 42, 14, "#D7EEEA", ink, 2.5)
+    signature.cactus(cv, desk, 450, COUNTER_Y + 6, 0.5)
+    signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
+    _call(on_desk, desk)
+    _call(at_desk, g)
     return g

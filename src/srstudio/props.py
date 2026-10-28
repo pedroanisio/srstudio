@@ -499,3 +499,194 @@ def bench(cv: Canvas, parent):
         cv.path(parent, f"M{xx} 1045 L{xx - 18} 1555 L{xx + 13} 1555 L{xx + 38} 1045Z", "#4A5C54", cv.ink, 3)
     cv.rect(parent, 187, 1268, 681, 48, p["wood"], cv.ink, 4, radius=8)
     cv.rect(parent, 187, 1317, 681, 22, "#8B5F3D", cv.ink, 3, radius=5)
+
+
+# ---------------------------------------------------------------- polished office rooms (ADR 0011)
+
+GLOW = "#FFF3D6"  # the warm light every glaze in the polished rooms shares
+
+
+def glow(cv: Canvas, parent, x, y, r, rings=4, color=GLOW, peak=0.2):
+    """A soft halo: ``rings`` translucent discs around ``x, y``, faintest at radius ``r``."""
+    for k in range(rings):
+        rr = r * (k + 1) / rings
+        cv.ellipse(parent, x - rr, y - rr, 2 * rr, 2 * rr, color, opacity=round(peak / (k + 1.5), 3))
+
+
+@register(
+    "prop",
+    "whiteboard",
+    summary="A framed whiteboard with a marker chart, three sticky notes, a gloss and a marker tray",
+)
+def whiteboard(cv: Canvas, parent, x, y, w, h, rising=True, id="whiteboard"):
+    """``rising`` draws the chart's trend line going up (blue) or down (red)."""
+    if w < 160 or h < 160:
+        raise ValueError(f"a whiteboard needs at least 160×160 units for its chart and notes, got {w}×{h}")
+    ink = cv.ink
+    g = cv.group(parent, id)
+    frame = cv.grad("aluminium", [(0, "#EEF2F1"), (0.5, "#AEB8BA"), (1, "#DCE2E1")], (0, 0, 1, 1))
+    board = cv.grad("board", [(0, "#FFFFFF"), (1, "#E9EEED")], (0, 0, 0.3, 1))
+    cv.rect(g, x + 9, y + 14, w, h, "#33403F", radius=8, opacity=0.18)
+    cv.rect(g, x, y, w, h, frame, ink, 4, radius=8)
+    bx, by, bw, bh = x + 14, y + 14, w - 28, h - 28
+    cv.rect(g, bx, by, bw, bh, board, "#8F9A9B", 2, radius=3)
+    marker = "#3E4A52"
+    cv.path(g, f"M{bx + 26} {by + 40} q30 -14 60 0 t60 0 t50 -4", stroke=marker, sw=5)
+    cv.path(g, f"M{bx + 26} {by + 70} q24 -10 48 0 t44 0", stroke=marker, sw=4, opacity=0.7)
+    cw, ch = bw * 0.62, bh * 0.52  # the chart's axes
+    ox, oy = bx + 34, by + 100 + ch
+    cv.path(g, f"M{ox} {oy - ch} L{ox} {oy} L{ox + cw} {oy}", stroke=marker, sw=4)
+    for k, frac in enumerate((0.35, 0.55, 0.45, 0.8)):
+        bh_k = ch * frac * (1 if rising else 1 - 0.18 * k)
+        cv.rect(g, ox + 18 + k * cw / 4.4, oy - bh_k, cw / 7, bh_k, "#A7D3A1", "#5E8F5A", 2.5, opacity=0.85)
+    trend = "#2F7FC1" if rising else "#D2553F"
+    y0, y1 = (oy - ch * 0.25, oy - ch * 0.95) if rising else (oy - ch * 0.9, oy - ch * 0.2)
+    xs = [ox + cw * f for f in (0.05, 0.3, 0.55, 0.8, 0.98)]
+    ys = [y0 + (y1 - y0) * f for f in (0, 0.35, 0.25, 0.7, 1)]
+    cv.path(g, "M" + " L".join(f"{a:.1f} {b:.1f}" for a, b in zip(xs, ys, strict=True)), stroke=trend, sw=6)
+    sgn = -1 if rising else 1
+    tx, ty = xs[-1], ys[-1]
+    cv.path(g, f"M{tx - 22:.1f} {ty + 4:.1f} L{tx:.1f} {ty:.1f} L{tx - 8:.1f} {ty - sgn * 20:.1f}", stroke=trend, sw=6)
+    nx = bx + bw * 0.74
+    for k, (col, rot) in enumerate((("#FFE27A", -6), ("#FFB3C1", 5), ("#A9D8F2", -3))):
+        note = cv.group(g, cv.uid("sticky"), x=nx, y=by + 34 + k * bh * 0.27, rotation=rot)
+        side = min(bw * 0.2, 70)
+        cv.rect(note, 4, 6, side, side, "#4A4030", opacity=0.16)
+        cv.path(note, f"M0 0 L{side} 0 L{side} {side * 0.8} L{side * 0.8} {side} L0 {side}Z", col, ink, 2.5)
+        cv.path(note, f"M{side} {side * 0.8} L{side * 0.82} {side * 0.82} L{side * 0.8} {side}Z", "#FFFFFF", ink, 2)
+        for j in (1, 2):
+            cv.line(note, side * 0.16, side * 0.26 * j, side * (0.82 - 0.2 * j), side * 0.26 * j, marker, 2.5)
+    cv.path(
+        g,
+        f"M{bx + bw * 0.52:.1f} {by} L{bx + bw * 0.64:.1f} {by} L{bx + bw * 0.42:.1f} {by + bh} "
+        f"L{bx + bw * 0.3:.1f} {by + bh}Z",
+        "#FFFFFF",
+        cv.clear,
+        0,
+        opacity=0.38,
+    )  # the gloss of the laminate
+    tray_x, tray_w = x + w * 0.15, w * 0.7
+    cv.rect(g, tray_x, y + h - 2, tray_w, 16, frame, ink, 3, radius=4)
+    for k, col in enumerate(("#D2553F", "#2F7FC1", "#2A2F33")):
+        cv.rect(g, tray_x + 24 + k * 64, y + h - 12, 52, 12, col, ink, 2, radius=5)
+    return g
+
+
+@register(
+    "prop",
+    "blinds-window",
+    summary="A tall window with a sky, a city skyline and venetian blinds lowered two thirds, with a sill",
+)
+def blinds_window(cv: Canvas, parent, x, y, w, h, id="blinds-window"):
+    ink = cv.ink
+    g = cv.group(parent, id)
+    sky = cv.grad("window-sky", [(0, "#8FC0DB"), (0.7, "#D4E6EA"), (1, "#EDEFE2")], (0, 0, 0, 1))
+    slat = cv.grad("blind-slat", [(0, "#FDFCF8"), (0.55, "#E8E4DA"), (1, "#C9C2B4")], (0, 0, 0, 1))
+    cv.rect(g, x - 6, y - 6, w + 12, h + 12, "#F5F3EE", ink, 4, radius=4)
+    gx, gy, gw, gh = x + 16, y + 16, w - 32, h - 32
+    cv.rect(g, gx, gy, gw, gh, sky, ink, 3)
+    for k, (fx, fh) in enumerate(((0.0, 0.3), (0.16, 0.42), (0.38, 0.24), (0.56, 0.5), (0.8, 0.34))):
+        bw = gw * 0.2
+        cv.rect(g, gx + gw * fx, gy + gh * (1 - fh), bw, gh * fh, "#A9C3CC" if k % 2 else "#B9D0D6", opacity=0.9)
+        for wy in range(int(gy + gh * (1 - fh) + 18), int(gy + gh) - 10, 34):
+            cv.line(g, gx + gw * fx + 10, wy, gx + gw * fx + bw - 10, wy, "#E9F1F2", 3, opacity=0.6)
+    cv.line(g, gx + gw / 2, gy, gx + gw / 2, gy + gh, "#F5F3EE", 10)
+    cv.line(g, gx + gw / 2, gy, gx + gw / 2, gy + gh, ink, 2.5, opacity=0.5)
+    lowered = gy + gh * 0.62
+    yy = gy
+    while yy < lowered:
+        cv.rect(g, gx - 4, yy, gw + 8, 24, slat, "#8E877A", 1.5, radius=4)
+        yy += 32
+    cv.rect(g, gx - 8, yy, gw + 16, 18, "#E2DDD2", ink, 3, radius=5)  # the bottom rail
+    cv.line(g, gx + gw - 30, gy, gx + gw - 30, yy + 120, "#9C9585", 2.5)
+    cv.ellipse(g, gx + gw - 38, yy + 116, 16, 22, "#E2DDD2", ink, 2)
+    cv.rect(g, x - 22, y + h, w + 44, 26, "#F8F6F1", ink, 4, radius=4)
+    cv.rect(g, x - 14, y + h + 26, w + 28, 14, "#7A8285", opacity=0.18)
+    return g
+
+
+@register("prop", "speakerphone", summary="A three-lobed conference speakerphone with a live green ring")
+def speakerphone(cv: Canvas, parent, x, y, id="speakerphone"):
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y)
+    body = cv.grad("speaker-body", [(0, "#4B5257"), (0.5, "#2E3336"), (1, "#1E2224")], (0, 0, 0, 1))
+    cv.ellipse(g, -150, 18, 300, 46, "#1E1A16", opacity=0.22)
+    cv.path(g, "M-140 22 Q-150 -4 -98 -22 Q0 -54 98 -22 Q150 -4 140 22 Q0 52 -140 22Z", body, ink, 4)
+    cv.path(g, "M-128 10 Q0 34 128 10 L140 22 Q0 52 -140 22Z", "#16191B", ink, 2.5)
+    for k in range(-5, 6):
+        for j in (-1, 0, 1):
+            cv.ellipse(g, k * 18 - 2.5, j * 9 - 6, 5, 4, "#6E777C")
+    cv.ellipse(g, -26, -16, 52, 18, "#1B1F21", ink, 2.5)
+    cv.ellipse(g, -22, -14, 44, 14, cv.clear, "#5FD1A0", 3.5)
+    cv.ellipse(g, -38, -24, 76, 34, "#5FD1A0", opacity=0.16)
+    cv.path(g, "M-96 -16 Q-40 -38 30 -34", stroke="#FFFFFF", sw=3, opacity=0.35)
+    return g
+
+
+@register("prop", "globe-pendant", summary="An opal globe pendant on a cord, with a brass cap")
+def globe_pendant(cv: Canvas, parent, x, y, r=46, light=None, id=None):
+    """``light``: a group that receives the globe's halo (a location's glaze group)."""
+    ink = cv.ink
+    g = cv.group(parent, id or cv.uid("globe-pendant"))
+    opal = cv.grad("opal", [(0, "#FFFDF5"), (0.6, "#FCEBC2"), (1, "#EFC77F")], (0.2, 0.1, 0.8, 1))
+    brass = cv.grad("brass", [(0, "#F0D18E"), (0.5, "#B98A3F"), (1, "#E2BD75")], (0, 0, 1, 0))
+    cv.line(g, x, -10, x, y - r - 14, "#2C2A27", 3)
+    cv.path(
+        g, f"M{x - 16} {y - r + 4} L{x - 12} {y - r - 18} L{x + 12} {y - r - 18} L{x + 16} {y - r + 4}Z", brass, ink, 3
+    )
+    if light is not None:
+        glow(cv, light, x, y, r * 3.4)
+    cv.ellipse(g, x - r, y - r, 2 * r, 2 * r, opal, ink, 3.5)
+    cv.path(
+        g,
+        f"M{x - r * 0.62:.1f} {y - r * 0.2:.1f} Q{x - r * 0.55:.1f} {y - r * 0.66:.1f} {x - r * 0.12:.1f} "
+        f"{y - r * 0.72:.1f}",
+        stroke="#FFFFFF",
+        sw=5,
+        opacity=0.85,
+    )
+    return g
+
+
+@register("prop", "slat-wall", summary="A walnut slat feature wall with a warm LED strip along its top")
+def slat_wall(cv: Canvas, parent, x, y, w, h, light=None, id="slat-wall"):
+    """``light``: a group that receives the LED's wash down the slats."""
+    ink = cv.ink
+    g = cv.group(parent, id)
+    slat = cv.grad("walnut-slat", [(0, "#8A5D3D"), (0.45, "#B7845B"), (1, "#7E5436")], (0, 0, 1, 0))
+    cv.rect(g, x, y, w, h, "#3B2A20", ink, 4)
+    n = int(w // 36)
+    pitch = w / n
+    for k in range(n):
+        cv.rect(g, x + k * pitch + 6, y + 4, pitch - 12, h - 8, slat)
+        cv.line(g, x + k * pitch + 8, y + 10, x + k * pitch + 8, y + h - 10, "#D9A877", 2, opacity=0.5)
+    cv.rect(g, x - 10, y - 18, w + 20, 18, "#EDE7DC", ink, 3)  # the soffit hiding the LED
+    cv.rect(g, x, y, w, 6, "#FFE9B8")
+    if light is not None:
+        wash = cv.grad("led-wash", [(0, GLOW + "FF"), (1, GLOW + "00")], (0, 0, 0, 1))
+        cv.rect(light, x, y, w, h * 0.45, wash, opacity=0.42)
+    return g
+
+
+@register(
+    "prop",
+    "reception-counter",
+    summary="A reception counter: a veined stone top over a fluted lacquer front, lit along its kick",
+)
+def reception_counter(cv: Canvas, parent, x0, x1, top, bottom, id="reception-counter"):
+    ink = cv.ink
+    g = cv.group(parent, id)
+    stone = cv.grad("stone-top", [(0, "#F6F3EC"), (0.5, "#E1DBCF"), (1, "#F2EEE6")], (0, 0, 1, 0))
+    front = cv.grad("fluted-front", [(0, "#EDE8DE"), (1, "#CFC7B8")], (0, 0, 0, 1))
+    cv.rect(g, x0 + 14, top + 14, x1 - x0, bottom - top, "#2E2620", opacity=0.16)
+    cv.rect(g, x0, top + 34, x1 - x0, bottom - top - 64, front, ink, 4)
+    for xx in range(int(x0) + 30, int(x1) - 10, 38):
+        cv.line(g, xx, top + 48, xx, bottom - 44, "#B4AB9B", 3)
+        cv.line(g, xx + 6, top + 48, xx + 6, bottom - 44, "#FBF8F2", 3, opacity=0.8)
+    cv.rect(g, x0 + 16, bottom - 30, x1 - x0 - 32, 30, "#2D2925", ink, 3)  # the recessed kick
+    cv.rect(g, x0 + 16, bottom - 30, x1 - x0 - 32, 5, "#FFE2A8")
+    cv.rect(g, x0 - 24, top, x1 - x0 + 48, 36, stone, ink, 4, radius=6)
+    for vx, vy, vw in ((x0 + 60, top + 12, 140), (x0 + (x1 - x0) * 0.55, top + 20, 180), (x1 - 160, top + 9, 90)):
+        cv.path(g, f"M{vx:.0f} {vy:.0f} q{vw / 3:.0f} -6 {vw / 2:.0f} 2 t{vw / 2:.0f} 0", stroke="#B9B1A3", sw=2)
+    cv.line(g, x0 - 18, top + 6, x1 + 18, top + 6, "#FFFFFF", 3, opacity=0.8)
+    return g

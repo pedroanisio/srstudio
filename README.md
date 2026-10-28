@@ -141,7 +141,11 @@ style.
   malformed (`cel.CelDataError`).
 - **Locations** (`srstudio.locations`): `office_wide(at_desk=)`, `office_reverse(in_chair=)`,
   `cafe(behind_counter=, at_counter=, on_counter=)`, `park(on_bench=, beside_bench=)`. Each takes `shots=` and gates its
-  root group before drawing, so new locations should do the same (see `examples/new_episode.py`).
+  root group before drawing, so new locations should do the same (see `examples/new_episode.py`). Two polished rooms
+  add window and lamp light as a `-light` glaze group: `conference_room(behind_table=, on_table=, rising=)` (blinds,
+  whiteboard, speakerphone, walnut table) and `reception(behind_desk=, on_desk=, at_desk=)` (lit slat wall, backlit
+  logo, globe pendants, fluted counter, reflective floor); `CONFERENCE_SEAT`, `RECEPTION_CLERK` and `RECEPTION_VISITOR`
+  are the tested placements ([ADR 0011](docs/decisions/0011-polished-cutout-rooms.md)).
   (`srstudio.ink`): the shots `desk_shot`, `closeup`, `printer_shot`, `wide_shot`, `router_shot` (the router on its
   wall shelf, `close=True` fills the frame, `hand_action="reach"|"press"|"leave"` brings in the `ink-hand` prop) and
   `router_wide`, each drawn into a take's group; `router_scene(cv, g, take, **beats)` picks the shot a take names.
