@@ -130,7 +130,11 @@ style.
   `shadow=True` keys a contact shadow under the feet. Eyes `EYES` (ring eyes with pupils, look, wide, happy, squint, closed) and mouths `MOUTHS` follow the head;
   `sing` follows the soundtrack (`blob.mouth_track`). The rig is `blob.blob(..., look=)`: a `Look` names the body
   fill, blush, topper, hair and features, so `pip` is the rig in `PIP` (white, blush, sprout) and `bo`, the boss,
-  the same rig and pose sheet in `BO` (pale blue, side-parted hair, square glasses, no blush). A seated `lounge`
+  the same rig and pose sheet in `BO` (pale blue, side-parted hair, square glasses, no blush). Two more looks
+  are polished: `juno` in `JUNO` (apricot, auburn bun and scrunchie, scalloped bangs, freckles, lashes) and `remy`
+  in `REMY` (lavender, curling tuft, headset with mic boom, gloss). A look may turn on `shade` (a crescent away
+  from an upper-left light), `gloss`, `catchlights` and `lashes`; all are off by default, so Pip and Bo draw as
+  before ([ADR 0007](docs/decisions/0007-polished-looks.md)). A seated `lounge`
   pose rests both hands on the near thigh, for the sofa.
   (`srstudio.cel`): `traced` (`cel-traced`): a traced character as a sheet of filled drawings, one held per run of
   the pose timeline; drawings and runs are data (`cel.load_drawings`, `cel.load_runs`), parsed and refused when
@@ -426,8 +430,9 @@ error is `InstagramPostError`, with every problem listed.
   the pose sheet, the two-pass silhouette, in-between drawings, rotation-preserving turns, arcs, planted feet,
   overshoot and settle, the cheer, wave and seated-nod poses, that no front arm covers the face in any pose or in-between, every refused cue, the sung
   mouth track, the keyed rig and contact shadow and, on the engine, that exactly one eyes and one mouth of Pip are
-  visible at each frame, the seated legs reading as two, the looks (Bo's ids, fills and hairline, Pip and Bo in one
-  scene without an id clash) and the soft home (the hip on the cushion, the soles and the sofa's front on one floor,
+  visible at each frame, the seated legs reading as two, the looks (Bo's ids, fills and hairline, Juno's and
+  Remy's shade, the shade crescent's geometry, lashes on every eye and catch-lights only on pupils, Pip and Bo
+  drawing no polish, the whole cast in one scene without an id clash) and the soft home (the hip on the cushion, the soles and the sofa's front on one floor,
   the lounging hands on the lap, a seated character between the seat and the near arm);
   `tests/test_audio.py` asserts `ep.audio()` builds each source's mix exactly as the explicit calls do, the style's
   master levels, verified narration cues (a tampered clip is refused) and the refused options;
