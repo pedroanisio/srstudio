@@ -171,7 +171,7 @@ ep.captions(
         "password-payoff": [("No spaces.", True)],
     },
 )
-ep.audio_mix(track_id="voice-and-effects")
+ep.audio(track_id="voice-and-effects")
 ep.markers(name="{name}-marker", extra=[("park-location-marker", PARK, "LOCATION TWO: public park bench")])
 ep.instagram(POSTS["wifi-password"])
 ep.finish()

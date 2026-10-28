@@ -32,7 +32,7 @@ ep = Episode(
         safe_area=layout.VERTICAL,  # the top captions stay inside x 80–920, y 220–1420
     )
 )
-ep.generated_audio(extra=[("groove", "assets/groove.wav", {"role": "music"})])
+ep.audio(extra=[("groove", "assets/groove.wav", {"role": "music"})])
 t, cv, at = ep.t, ep.cv, GROOVE.at
 SING = "sing"
 BEAT, EIGHTH = 0.3, 0.125  # in-between time before a pose lands on the beat (four drawings) or the eighth (two)

@@ -29,7 +29,7 @@ from .canvas import CAFE, LINEN, MONO, OFFICE, WARM, Palette, flat_counter, shar
 from .fonts import GoogleFont
 from .soundtrack import CAFE_MOUTH, INK_MOUTH, OFFICE_MOUTH, SOFT_MOUTH, MouthStyle, PhonemeStyle
 
-__all__ = ["Style", "StyleError", "Font", "CUTOUT", "INK", "SOFT", "CEL", "STYLES", "style_of_module"]
+__all__ = ["Style", "StyleError", "Font", "Mix", "CUTOUT", "INK", "SOFT", "CEL", "STYLES", "style_of_module"]
 
 Timing = Literal["clock", "sequence"]
 
@@ -54,6 +54,15 @@ class Font:
 
 
 @dataclass(frozen=True)
+class Mix:
+    """How a style masters its mix: the integrated loudness and true peak of the master, the mix's bit depth."""
+
+    loudness: str = "-16"
+    true_peak: str = "-1.5"
+    bit_depth: str | None = "24"
+
+
+@dataclass(frozen=True)
 class Style:
     slug: str
     name: str
@@ -71,6 +80,7 @@ class Style:
     namer: Callable[[], Callable[[str], str]] | None = None  # factory of the id namer, one per episode
     accessibility: Mapping[str, Any] = field(default_factory=dict)  # metadata/accessibility defaults
     silent: bool = False  # no speech: no mouth model is required, and EpisodeSpec.mouth_style resolves to None
+    mix: Mix = Mix()  # the master Episode.audio builds unless the episode passes its own levels
 
     def __post_init__(self) -> None:
         if not self.palettes:
@@ -126,6 +136,7 @@ class Style:
                 for p in self.palettes
             ],
             "parts": list(self.parts),
+            "mix": {"loudness": self.mix.loudness, "true_peak": self.mix.true_peak, "bit_depth": self.mix.bit_depth},
         }
 
 
@@ -179,6 +190,7 @@ INK = Style(
     parts=("ink", "subtitles"),
     namer=shared_counter,
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn", minTextSize="2%"),
+    mix=Mix(loudness="-14", bit_depth=None),
 )
 
 SOFT = Style(

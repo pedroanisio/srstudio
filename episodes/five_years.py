@@ -34,7 +34,7 @@ ep = Episode(
     )
 )
 # Dialogue and effects as the engine resolved them (dialogue.json "clips"); mouths follow these clips.
-ep.generated_audio(extra=[("room-tone", "assets/room-tone.wav", {"role": "ambience"})])
+ep.audio(extra=[("room-tone", "assets/room-tone.wav", {"role": "ambience"})])
 t, cv, P = ep.t, ep.cv, ep.P
 REACTION, ENDING, DURATION = t.reaction, t.ending, t.duration
 SQUEAK_SOFT, SQUEAK_LOUD, SPIN = t.squeak_soft_start, t.squeak_loud_start, t.spin_start

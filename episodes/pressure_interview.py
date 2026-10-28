@@ -65,7 +65,7 @@ phone = props.silent_phone(cv, close)
 cv.gate(phone, [(P(1).end - 0.08, DURATION)])
 
 ep.captions()
-ep.audio_mix()
+ep.audio()
 ep.markers()
 ep.instagram(POSTS["pressure-interview"])
 ep.finish()

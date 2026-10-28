@@ -80,7 +80,7 @@ for i, p in enumerate(ep.phrases):
     end = C[i + 1] if i < 3 else REACTION if i == 3 else C[i + 1] if i < 6 else DURATION
     specs.append((max(0, p.start - 0.04), end, p.caption, f"dialogue-{i + 1}"))
 ep.captions(specs)
-ep.audio_mix(track_id="elevenlabs-dialogue")
+ep.audio(track_id="elevenlabs-dialogue")
 ep.markers()
 ep.instagram(POSTS["honesty-interview"])
 ep.finish()

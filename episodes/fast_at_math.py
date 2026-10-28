@@ -122,7 +122,7 @@ graphics.scorecard(
     show=(ENDING + 0.06, DURATION),
 )
 ep.captions(highlights={"dialogue-6": [("But it was ", False), ("fast.", True)]})
-ep.audio_mix()
+ep.audio()
 ep.markers()
 ep.instagram(POSTS["fast-at-math"])
 ep.finish()

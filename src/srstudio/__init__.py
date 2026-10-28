@@ -40,7 +40,7 @@ from .soundtrack import (
     mouth_states,
     phoneme_states,
 )
-from .styles import CEL, CUTOUT, INK, SOFT, STYLES, Font, Style, StyleError
+from .styles import CEL, CUTOUT, INK, SOFT, STYLES, Font, Mix, Style, StyleError
 from .timeline import Take, Timeline
 
 __version__ = "0.1.0"
@@ -48,6 +48,7 @@ __all__ = [
     "Episode",
     "EpisodeSpec",
     "Style",
+    "Mix",
     "StyleError",
     "Font",
     "CUTOUT",

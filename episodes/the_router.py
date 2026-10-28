@@ -48,7 +48,6 @@ ep = Episode(
 )
 cv, t = ep.cv, ep.t
 shots = ep.sequence("shots")
-ep.mix(loudness="-14", true_peak="-1.5", bit_depth=None)
 
 # What each router take does with its power and the hand (take ids from the script in the_router_audio.py).
 ROUTER_BEATS = {
@@ -75,8 +74,8 @@ for take in t.takes:
         size = 66 if take.id == "16" else 40 if take.is_effect else 48
         ink.caption(cv, g, text, start=start, end=end, y=84, size=size)
         srt.append((take.start + start, take.start + end, text))
-    ep.take_audio(take, pan=-0.08 if take.actor == "human" else 0.08, fadeIn=".003", fadeOut=".008")
 
+ep.audio(take=lambda take: dict(pan=-0.08 if take.actor == "human" else 0.08, fadeIn=".003", fadeOut=".008"))
 subtitles.write_srt(ROOT / "the-router.srt", srt)
 ep.instagram(POSTS["the-router"])
 ep.finish(ROOT / "the-router.scene.xml", ROOT / "qa" / "sdk-validation.json")

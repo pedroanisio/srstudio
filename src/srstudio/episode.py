@@ -15,6 +15,7 @@ from .canvas import Canvas, Palette, Signature
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
 from .layout import SafeArea
+from .narration import narration_cues
 from .rig import Actor, Performance
 from .social import InstagramPost
 from .soundtrack import MouthStyle, PhonemeStyle, Soundtrack, mouth_states
@@ -318,9 +319,9 @@ class Episode:
     def add_track(self, id: str, asset: str, **kw):
         return self.mix().add_audioTrack(id=id, asset=asset, **kw)
 
-    def audio_mix(self, track_id="synthetic-dialogue", loudness="-16", true_peak="-1.5"):
+    def audio_mix(self, track_id="synthetic-dialogue", loudness="-16", true_peak="-1.5", bit_depth: str | None = "24"):
         """The interview family's mix: one dialogue track over the whole episode."""
-        mix = self.mix(loudness, true_peak, master_first=False)
+        mix = self.mix(loudness, true_peak, bit_depth=bit_depth, master_first=False)
         mix.add_audioTrack(id=track_id, asset="dialogue", role="dialogue", language=self.spec.language)
         self.master()
         return mix
@@ -332,6 +333,7 @@ class Episode:
         loudness="-16",
         true_peak="-1.5",
         extra: Sequence[tuple[str, str, dict]] = (),
+        bit_depth: str | None = "24",
     ):
         """The mix from resolved, pinned generated clips, one ``<audioTrack>`` each.
 
@@ -347,7 +349,7 @@ class Episode:
         for clip in clips:
             path = verify(self.root, clip.generated, clip.sha256)
             placed.append((path, clip.placement))
-        mix = self.mix(loudness, true_peak, master_first=False)
+        mix = self.mix(loudness, true_peak, bit_depth=bit_depth, master_first=False)
         for clip in clips:
             clip.generated.declare(self.cv.assets, clip.sha256)
             clip.placement.track(mix, f"track-{clip.generated.id}", clip.generated.id)
@@ -381,6 +383,71 @@ class Episode:
             kw["language"] = lang
         kw.update(track_kw)
         return self.add_track(track_id or f"track-{take.id}", aid, **kw)
+
+    @property
+    def audio_source(self) -> str:
+        """What the project brings to play: ``"clips"`` (pinned generated clips listed in the input's ``clips``),
+        ``"takes"`` (one audio file per take), ``"mixed"`` (one mixed file, ``EpisodeSpec.audio``) or ``"silent"``."""
+        if self.t.meta.get("clips"):
+            return "clips"
+        if self.t.takes:
+            return "takes"
+        if self.spec.audio:
+            return "mixed"
+        return "silent"
+
+    def audio(
+        self,
+        *,
+        narration: Path | None = None,
+        extra: Sequence[tuple[str, str, dict]] = (),
+        take: Callable[[Any], dict] | None = None,
+        track_id: str | None = None,
+        loudness: str | None = None,
+        true_peak: str | None = None,
+    ) -> AudioMix | None:
+        """The mix of whatever the project plays (:attr:`audio_source`), mastered as the style says (``Style.mix``)
+        unless ``loudness``/``true_peak`` are given. Returns ``None`` for a silent episode.
+
+        * ``narration``: a verified ``narration.json`` (:func:`srstudio.narration.narration_cues`), one
+          ``vo-NN`` asset and ``vo-track-NN`` track per cue; used when given, whatever else the project holds.
+        * clips: :meth:`generated_audio`; ``extra`` adds plain files as ``(asset id, path, track attributes)``.
+        * takes: :meth:`take_audio` for every take, with ``take(take)`` as its track attributes, then ``extra``.
+        * mixed: :meth:`audio_mix` on ``track_id``.
+
+        An option the source does not take is a ``TypeError``, so a misplaced argument is never ignored."""
+        source = "narration" if narration is not None else self.audio_source
+        allowed = {
+            "narration": set(),
+            "clips": {"extra"},
+            "takes": {"extra", "take"},
+            "mixed": {"track_id"},
+            "silent": set(),
+        }[source]
+        given = {name for name, value in (("extra", extra), ("take", take), ("track_id", track_id)) if value}
+        if given - allowed:
+            raise TypeError(f"a {source} project takes no {', '.join(f'{k}=' for k in sorted(given - allowed))}")
+        style = self.spec.style.mix
+        loud, peak = loudness or style.loudness, true_peak or style.true_peak
+        if source == "silent":
+            return None
+        if source == "mixed":
+            return self.audio_mix(track_id or "synthetic-dialogue", loud, peak, bit_depth=style.bit_depth)
+        if source == "clips":
+            return self.generated_audio(loudness=loud, true_peak=peak, extra=extra, bit_depth=style.bit_depth)
+        mix = self.mix(loud, peak, bit_depth=style.bit_depth)
+        if source == "narration":
+            lang = self.spec.language
+            for cue in narration_cues(Path(narration), self.root):  # type: ignore[arg-type]
+                self.cv.assets.add_audio(id=f"vo-{cue.id}", src=cue.audio, sha256=cue.sha256, language=lang)
+                self.add_track(f"vo-track-{cue.id}", f"vo-{cue.id}", start=cue.start, role="dialogue", language=lang)
+            return mix
+        for t in self.takes:
+            self.take_audio(t, **(take(t) if take else {}))
+        for asset_id, src, track_kw in extra:
+            self.cv.assets.add_audio(id=asset_id, src=src, sha256=sha256(self.root / src))
+            self.add_track(f"track-{asset_id}", asset_id, **track_kw)
+        return mix
 
     def markers(self, specs=None, name="marker-{name}", extra: Sequence[tuple[str, float, str]] = ()):
         markers = self.scene.add_markers()

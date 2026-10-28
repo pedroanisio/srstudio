@@ -104,6 +104,6 @@ graphics.episode_slate(
 )
 graphics.connected_card(ep.cv, ep.comp, "VERDICT", "hired (for the coffee)", show=(t.ending, t.duration))
 ep.captions(x=40, y=1488, width=1000, weight=None, line_height="1.12", stroke=ep.cv.ink, shadow="#00000055")
-ep.audio_mix(track_id="sample-dialogue")
+ep.audio(track_id="sample-dialogue")
 ep.markers()
 ep.finish()

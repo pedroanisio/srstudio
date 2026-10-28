@@ -120,7 +120,7 @@ specs[3:4] = [
     (REVEAL, specs[3][1], "several people at once.", "punchline-finish"),
 ]
 ep.captions(specs, highlights={"punchline-finish": [("several people ", False), ("at once.", True)]})
-ep.audio_mix()
+ep.audio()
 ep.markers()
 ep.instagram(POSTS["multitasking"])
 ep.finish()
