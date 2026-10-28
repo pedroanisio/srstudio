@@ -77,3 +77,10 @@ def test_every_shipped_post_is_valid_and_maps_to_a_video(tmp_path):
     written = posts.write_all(tmp_path / "ig")
     assert sorted(p.parent.name for p in written) == sorted(posts.VIDEOS.values())
     assert all(p.name == "ig.txt" and p.read_text(encoding="utf-8").endswith("\n") for p in written)
+
+
+def test_every_episode_script_ships_its_post():
+    scripts = [p for p in sorted(EPISODES.glob("*.py")) if "ep.finish()" in p.read_text(encoding="utf-8")]
+    assert scripts
+    missing = [p.name for p in scripts if "ep.instagram(POSTS[" not in p.read_text(encoding="utf-8")]
+    assert missing == []

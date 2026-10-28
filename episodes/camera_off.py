@@ -19,6 +19,7 @@ from dataclasses import replace
 
 from _common import project_root
 from camera_off_audio import GROOVE
+from instagram_posts import POSTS
 from srstudio import SOFT, Episode, EpisodeSpec, blob, layout
 from srstudio.blob import FLOOR, SCALE, SEAT, Cue
 from srstudio.soundtrack import SOFT_MOUTH, Soundtrack, mouth_states
@@ -195,4 +196,5 @@ ep.captions(boss, color="#2F5D8C", **caption_style)
 ep.markers(
     extra=[("marker-click", t.click_start, "Camera off"), ("marker-chime", t.chime_start, "Screen-share request")]
 )
+ep.instagram(POSTS["camera-off"])
 ep.finish()

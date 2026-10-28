@@ -138,6 +138,46 @@ POSTS: dict[str, InstagramPost] = {
             "#vectoranimation",
         ),
     ),
+    "focus-mode": InstagramPost(
+        title="Focus. The deadline is today.",
+        description=(
+            "Pip sits down to work, types for one bar, and the groove wins. A record scratch: the deadline. Focus. "
+            "The groove creeps back anyway.\n"
+            "Episode 07, the first in the Soft style: every pose lands on the beat."
+        ),
+        credit="Voice: ElevenLabs premade voice Will. Music synthesised in code.",
+        hashtags=(
+            "#focusmode",
+            "#deadline",
+            "#procrastination",
+            "#officehumor",
+            "#workcomedy",
+            "#animatedshorts",
+            "#vectoranimation",
+        ),
+    ),
+    "camera-off": InstagramPost(
+        title="Camera off. Pajamas on the beat.",
+        description=(
+            "Pip is very professional on the call. Then the boss announces forty slides, the camera goes off and "
+            "the dancing starts, until someone asks him to share his screen.\n"
+            "Episode 08, the second in the Soft style: every pose lands on the beat."
+        ),
+        credit=(
+            "Song composed and sung with the ElevenLabs Music API. Boss: ElevenLabs premade voice Eric. "
+            "Sound effects generated with ElevenLabs."
+        ),
+        hashtags=(
+            "#cameraoff",
+            "#zoommeeting",
+            "#workfromhome",
+            "#remotework",
+            "#officehumor",
+            "#workcomedy",
+            "#animatedshorts",
+            "#vectoranimation",
+        ),
+    ),
 }
 
 # project slug -> the file name of its rendered video, without extension
@@ -151,6 +191,8 @@ VIDEOS = {
     "five-years": "five-years",
     "the-router": "the-router",
     "mushroom-training": "mushroom-training",
+    "focus-mode": "focus-mode",
+    "camera-off": "camera-off",
 }
 
 

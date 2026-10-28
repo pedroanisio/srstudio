@@ -14,6 +14,7 @@ from dataclasses import replace
 
 from _common import project_root
 from focus_mode_audio import GROOVE
+from instagram_posts import POSTS
 from srstudio import SOFT, Episode, EpisodeSpec, blob, layout
 from srstudio.blob import FLOOR, SCALE, SEAT, Cue
 
@@ -130,4 +131,5 @@ ep.captions(
     specs, x=80, y=250, width=840, height=180, size=58, color="#1A1714", stroke="#FFFFFF", stroke_width=7, shadow=None
 )
 ep.markers(extra=[("marker-scratch", t.scratch_start, "Record scratch"), ("marker-return", at(8), "Groove returns")])
+ep.instagram(POSTS["focus-mode"])
 ep.finish()
