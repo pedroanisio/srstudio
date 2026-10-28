@@ -294,15 +294,16 @@ def _forearm(shoulder: Point, hand: Point) -> Stroke:
 
 def _sitting(hand_l: Point, hand_r: Point, head: Point = (-40, -322), face: Point = (-26, 6)) -> Pose:
     """Seated facing left: the hip on the origin, thighs level along the seat, knees bent, shins down to the floor,
-    forearms forward onto the keyboard. The near leg is outlined over the far one."""
+    forearms forward onto the keyboard. The near leg is outlined over the far one, its shin a sole's width ahead
+    of the far shin so the two legs read apart."""
     return _pose(
         "sit",
         head,
         front=("arm_l", "leg_l"),  # 3/4 view: the near arm and leg in front, the far arm behind the body
         face=face,
         torso=seg((5, -92), (-22, -212), 190, 150),
-        leg_l=Stroke((-10, -40), (-75, -48), (-108, -22), (-102, 62), *LEG),
-        leg_r=Stroke((22, -32), (-40, -38), (-72, -14), (-64, 64), *LEG),
+        leg_l=Stroke((-10, -40), (-82, -50), (-122, -24), (-114, 62), *LEG),
+        leg_r=Stroke((22, -32), (-28, -40), (-50, -16), (-42, 60), *LEG),
         arm_l=_forearm((-62, -205), hand_l),
         arm_r=_forearm((-42, -198), hand_r),
     )

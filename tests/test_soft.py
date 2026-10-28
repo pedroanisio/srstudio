@@ -195,6 +195,15 @@ def test_seated_at_the_soft_office_the_hands_reach_the_keyboard_and_the_feet_the
         assert pose.front == {"arm_l", "leg_l"}
 
 
+def test_seated_the_two_shins_stand_apart_so_the_legs_read_as_two():
+    """The near shin is in front of (left of) the far one and the soles do not overlap: a gap shows between them."""
+    for name in ("sit", "type-a", "type-b", "nod"):
+        near, far = POSES[name].limbs["leg_l"], POSES[name].limbs["leg_r"]
+        assert near.p3[0] < far.p3[0], name
+        gap = (far.p3[0] - far.w1 / 2) - (near.p3[0] + near.w1 / 2)
+        assert gap >= 6, (name, round(gap, 1))
+
+
 def test_cheering_raises_both_hands_above_the_head_and_waving_only_the_right():
     for name in ("cheer-a", "cheer-b"):
         pose = POSES[name]
