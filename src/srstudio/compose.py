@@ -9,7 +9,7 @@ The music model is a generative model, so its output gets the same treatment as 
 1. Typed request: a :class:`Plan` of :class:`Chunk` values is checked against the API's limits before any paid
    request; the response is audio bytes, decoded by ffmpeg or refused.
 2. Semantic validation: the song is audible, lasts as long as the plan, and keeps the requested tempo with a
-   steady beat (:func:`measure_tempo`); every sung line is heard as written inside its chunk
+   steady beat well above chance (:func:`measure_tempo`); every sung line is heard as written inside its chunk
    (:func:`locate_lyrics`, on a speech-to-text transcript).
 3. Failure path: every violation raises :class:`MusicOutputError`; nothing is cached on failure.
 4. Tests: ``tests/test_compose.py`` feeds empty, undecodable, silent, short, off-tempo and beatless songs.
@@ -49,7 +49,7 @@ MAX_LINES, MAX_CHARS, MAX_NAME = 30, 200, 100
 CONTEXTS = ("low", "medium", "high")
 LENGTH_SLACK = 0.5  # the song may differ from the plan's total by this much (v2 enforces chunk durations)
 TEMPO_TOLERANCE = 0.03  # measured tempo within ±3 % of the requested one
-MIN_BEAT = 0.3  # normalised autocorrelation at the beat period below this is no steady beat
+BEAT_SIGMA = 5.0  # the beat must stand this many noise-floor units (1/sqrt(frames)) above chance
 ENVELOPE_RATE = 200  # onset envelope frames a second
 LYRIC_SLACK = 0.35  # a sung line may start / end this much outside its chunk
 
@@ -169,13 +169,20 @@ def measure_tempo(samples: Sequence[float], rate: int, expected: float, toleranc
         raise MusicOutputError("no steady beat: the song has no onsets")
     lags = range(round(ENVELOPE_RATE * 60 / 250), round(ENVELOPE_RATE * 60 / 50) + 1)
     r = {lag: _autocorrelation(env, lag) / power for lag in lags}
+    # A real arrangement spreads onsets everywhere, so the beat's autocorrelation is low in absolute terms; what
+    # marks a steady beat is a peak far above chance (whose spread is about 1/sqrt(frames)).
+    floor = BEAT_SIGMA / math.sqrt(len(env))
     best = max(r.values())
-    if best < MIN_BEAT:
-        raise MusicOutputError(f"no steady beat: periodicity {best:.2f} is below {MIN_BEAT}")
+    if best < floor:
+        raise MusicOutputError(f"no steady beat: periodicity {best:.3f} is below the noise floor {floor:.3f}")
     period = ENVELOPE_RATE * 60 / expected
-    near = [lag for lag in lags if abs(lag - period) <= period * tolerance + 1]
-    lag = max(near, key=lambda k: r[k])
-    if r[lag] < MIN_BEAT or r[lag] < 0.5 * best:
+
+    def on_grid(k: int) -> bool:  # the beat itself, double time, or the half bar
+        return any(abs(k - h) <= h * tolerance + 1 for h in (period / 2, period, 2 * period))
+
+    lag = max((k for k in lags if abs(k - period) <= period * tolerance + 1), key=lambda k: r[k])
+    rival = max((r[k] for k in lags if not on_grid(k)), default=0.0)
+    if r[lag] < floor or r[lag] < rival:
         found = ENVELOPE_RATE * 60 / max(r, key=lambda k: r[k])
         raise MusicOutputError(f"tempo: the beat runs at about {found:.1f} bpm, not {expected:g} bpm")
     # Sub-frame period from a parabola through the peak, then the phase that collects the most onsets.

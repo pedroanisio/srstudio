@@ -37,6 +37,18 @@ def clicks(bpm=120.0, seconds=8.0, offset=0.0, rate=RATE, accent_every=4):
     return out
 
 
+def scatter(seconds=12.0, per_second=12, seed=3, rate=RATE):
+    """Hits at random times, like the busy off-beat texture of a real arrangement."""
+    rnd = random.Random(seed)
+    n = round(seconds * rate)
+    out = [0.0] * n
+    for _ in range(round(seconds * per_second)):
+        at, level, f = rnd.randrange(n), rnd.uniform(0.3, 0.8), rnd.choice((300, 2000, 5000))
+        for k in range(min(round(0.03 * rate), n - at)):
+            out[at + k] += level * math.exp(-k / (0.006 * rate)) * math.sin(2 * math.pi * f * k / rate)
+    return out
+
+
 def noise(seconds=8.0, rate=RATE, seed=7):
     rnd = random.Random(seed)
     return [rnd.uniform(-0.3, 0.3) for _ in range(round(seconds * rate))]
@@ -346,3 +358,17 @@ def test_a_direction_goes_before_the_lyrics_and_is_not_a_sung_line():
 def test_a_malformed_direction_is_refused(direction):
     with pytest.raises(ValueError, match="direction"):
         Chunk("Verse", 4.0, STYLES, direction=direction)
+
+
+def test_a_dense_mix_with_a_weak_but_clear_beat_passes():
+    """Real songs spread onsets everywhere: the beat's autocorrelation is low in absolute terms, yet it is the
+    strongest non-harmonic peak and far above the noise floor."""
+    dense = [a + b for a, b in zip(clicks(120, seconds=12.0), scatter(), strict=True)]
+    tempo = measure_tempo(dense, RATE, expected=120)
+    assert abs(tempo.bpm - 120) < 0.6 and tempo.phase < 0.015 and tempo.strength < 0.3
+
+
+@pytest.mark.parametrize("seed", [5, 6])
+def test_dense_hits_without_a_beat_are_rejected(seed):
+    with pytest.raises(MusicOutputError, match="steady beat"):
+        measure_tempo(scatter(seed=seed), RATE, expected=120)
