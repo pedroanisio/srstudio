@@ -8,6 +8,7 @@ always 100, so ``scale`` is the on-screen head radius divided by 100.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
@@ -27,7 +28,7 @@ class Performance:
     extras: dict = field(default_factory=dict)  # rig-specific gestures, read by subclasses
 
 
-class Actor:
+class Actor(ABC):
     """Base rig: group → body, head → eyes, blink overlay, mouths."""
 
     role: str = "actor"
@@ -79,20 +80,25 @@ class Actor:
     def blink_id(self) -> str:
         return f"{self.tag_base}-closed-eyes"
 
+    @abstractmethod
     def draw_body(self, g, perf: Performance):
-        raise NotImplementedError
+        """Required: every rig draws this part."""
 
+    @abstractmethod
     def draw_head(self, head, perf: Performance):
-        raise NotImplementedError
+        """Required: every rig draws this part."""
 
+    @abstractmethod
     def draw_eyes(self, eyes, perf: Performance):
-        raise NotImplementedError
+        """Required: every rig draws this part."""
 
+    @abstractmethod
     def draw_blink(self, closed, perf: Performance):
-        raise NotImplementedError
+        """Required: every rig draws this part."""
 
     def draw_face_front(self, head, perf: Performance):
         """Details drawn after the eyes (stubble, freckles); nothing by default."""
+        return None
 
     def draw_mouths(self, head) -> dict:
         """The five poses; override the geometry, keep the names in :data:`MOUTHS`."""
@@ -108,3 +114,4 @@ class Actor:
 
     def after_head(self, g, perf: Performance):
         """Anything drawn over the head and body (the manager's facepalm)."""
+        return None
