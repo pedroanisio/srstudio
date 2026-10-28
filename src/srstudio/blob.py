@@ -735,8 +735,9 @@ def _show(cv: Canvas, node, keys: list[tuple[float, int]]) -> None:
 @register(
     "character",
     "pip",
-    summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, lean, "
-    "groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows the soundtrack",
+    summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
+    "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
+    "the soundtrack",
     episodes=("focus-mode", "camera-off"),
 )
 def pip(

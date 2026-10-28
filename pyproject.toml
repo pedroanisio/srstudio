@@ -55,5 +55,7 @@ source = ["srstudio"]
 fail_under = 80
 
 [tool.ruff.format]
+# Markdown examples are hand-aligned for reading; the formatter owns Python sources only.
+exclude = ["*.md"]
 quote-style = "preserve"
 skip-magic-trailing-comma = true
