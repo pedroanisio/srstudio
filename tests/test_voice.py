@@ -568,3 +568,140 @@ def test_multipart_transport_rejects_a_body_that_is_not_json(monkeypatch, body):
     serve(monkeypatch, body)
     with pytest.raises(VoiceOutputError, match="not JSON"):
         voice.urllib_multipart_transport("https://api/stt", {}, {}, {})
+
+
+# -- remaining rejection paths ---------------------------------------------------------------------------
+def wav_of(samples, rate=48000):
+    import array
+    import wave
+
+    out = io.BytesIO()
+    with wave.open(out, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(array.array("h", samples).tobytes())
+    return out.getvalue()
+
+
+@pytest.mark.parametrize(
+    "data,match",
+    [
+        ("chars", "must be an object"),
+        ({"characters": list("Hi"), "character_start_times_seconds": [0, 1]}, "character_end_times_seconds"),
+        ({**alignment(), "characters": "In your chair."}, "characters is missing or not a list"),
+    ],
+)
+def test_alignment_that_is_not_three_lists_is_rejected(data, match):
+    with pytest.raises(VoiceOutputError, match=match):
+        Alignment.parse(data)
+
+
+def test_audio_that_is_not_a_base64_string_is_rejected():
+    with pytest.raises(VoiceOutputError, match="audio_base64 is not a string"):
+        parse_response(response(audio_base64=["SUQz"]), TEXT)
+
+
+@pytest.mark.parametrize(
+    "body,match",
+    [
+        ({**transcript(), "text": ["No."]}, "must be strings"),
+        (transcript(language_code=None), "must be strings"),
+        (transcript(words="No. Just the chair."), "words must be a list"),
+        (transcript(words=["No."]), "word 0 is not an object"),
+        (transcript(words=[{"start": 0, "end": 0.2, "type": "word"}]), "word 0 lacks text or type"),
+        (transcript(words=[{"text": "No", "start": 0, "end": 0.2, "type": 1}]), "word 0 lacks text or type"),
+        (transcript(words=[{"text": "No", "start": True, "end": 0.2, "type": "word"}]), "word 0 start"),
+    ],
+)
+def test_transcripts_with_wrongly_typed_fields_are_rejected(body, match):
+    with pytest.raises(VoiceOutputError, match=match):
+        parse_transcript(body)
+
+
+@pytest.mark.parametrize(
+    "heard,script",
+    [
+        ("I'm 25.", "I'm twenty five."),
+        ("Room 40.", "Room forty."),
+        ("Since 1999!", "since 1999"),  # beyond the scripts' range: compared digit by digit
+        ("Rock '' roll", "rock roll"),  # a bare apostrophe is no word
+    ],
+)
+def test_number_and_apostrophe_normalisation(heard, script):
+    check_transcript(parse_transcript(transcript(heard)), script)
+
+
+def test_numbers_beyond_ninety_nine_are_not_spelled_as_words():
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript("Since 1999!")), "Since nineteen ninety-nine!")
+
+
+def test_silent_sound_effect_is_rejected():
+    with pytest.raises(VoiceOutputError, match="sound effect is silent"):
+        voice.verify_effect(wav_of([0] * 48000), 1.0)
+
+
+def test_empty_clip_counts_as_silent():
+    with pytest.raises(VoiceOutputError, match="silent"):
+        voice.verify_effect(wav_of([]), 1.0)
+
+
+@pytest.mark.parametrize("influence", [-0.1, 1.5])
+def test_prompt_influence_outside_unit_range_is_refused(tmp_path, influence):
+    binary = Binary(b"ID3")
+    with pytest.raises(ValueError, match="prompt_influence"):
+        ElevenLabsClient(tmp_path, key="k", binary_transport=binary).sound_effect("thud", 1.0, influence)
+    assert binary.calls == []
+
+
+def test_uncached_sound_effect_without_key_is_a_clear_error(tmp_path):
+    binary = Binary(b"ID3")
+    with pytest.raises(RuntimeError, match="ELEVENLABS_API_KEY"):
+        ElevenLabsClient(tmp_path, key="", binary_transport=binary).sound_effect("thud", 1.0)
+    assert binary.calls == []
+
+
+@ffmpeg
+def test_cached_sound_effect_is_reverified_and_its_samples_read(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k", binary_transport=Binary(mp3))
+    clip = client.sound_effect("a squeaky office chair", 1.0)
+    assert len(clip.samples()) == round(clip.duration * 48000)
+    clip.wav.unlink()  # cache hit without the wav: decoded again from the mp3 and re-verified
+    again = ElevenLabsClient(tmp_path, key="").sound_effect("a squeaky office chair", 1.0)
+    assert again.duration == clip.duration
+    clip.wav.write_bytes(wav_of([0] * 48000))  # a tampered cached wav is re-verified, not trusted
+    with pytest.raises(VoiceOutputError, match="silent"):
+        ElevenLabsClient(tmp_path, key="").sound_effect("a squeaky office chair", 1.0)
+
+
+@ffmpeg
+def test_cached_line_rebuilds_a_missing_wav_from_the_mp3(tmp_path, mp3):
+    client = ElevenLabsClient(tmp_path, key="k", transport=Transport(response(audio=mp3)))
+    line = client.synthesize(TEXT, VOICE, SETTINGS)
+    original = line.wav.read_bytes()
+    line.wav.unlink()
+    again = ElevenLabsClient(tmp_path, key="").synthesize(TEXT, VOICE, SETTINGS)
+    assert again.wav.read_bytes() == original and again.duration == line.duration
+
+
+@pytest.mark.parametrize("stored", [[], {"request": {}}])
+def test_a_corrupt_transcript_record_is_rejected(tmp_path, stored):
+    wav = tmp_path / "line.wav"
+    wav.write_bytes(b"RIFF....WAVE")
+    ElevenLabsClient(tmp_path / "c", key="k", multipart_transport=Multipart(transcript("In your chair."))).transcribe(
+        wav
+    )
+    (record,) = (tmp_path / "c").glob("stt-*.json")
+    record.write_text(json.dumps(stored))
+    with pytest.raises(VoiceOutputError, match="not a transcript record"):
+        ElevenLabsClient(tmp_path / "c", key="").transcribe(wav)
+
+
+def test_uncached_transcript_without_key_is_a_clear_error(tmp_path):
+    wav = tmp_path / "line.wav"
+    wav.write_bytes(b"RIFF....WAVE")
+    multipart = Multipart(transcript())
+    with pytest.raises(RuntimeError, match="ELEVENLABS_API_KEY"):
+        ElevenLabsClient(tmp_path, key="", multipart_transport=multipart).transcribe(wav)
+    assert multipart.calls == []
