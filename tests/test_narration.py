@@ -227,6 +227,7 @@ def manifest(root: Path, **changes):
         "speed": 1.08,
         "lead": 0.0,
         "tempo": 1.0,
+        "lag": 0.0,
         "cut": False,
         "audio": "audio/vo-01.wav",
         "sha256": digest,
@@ -236,12 +237,98 @@ def manifest(root: Path, **changes):
     return root / "narration.json"
 
 
+def test_plan_relaxed_keeps_the_natural_pace_and_lets_full_lines_spill(narration):
+    plan = [
+        narration.Slot("01", "a", False, start=0.0, end=2.0),
+        narration.Slot("02", "b", False, start=2.02, end=3.0),
+        narration.Slot("03", "c...", True, start=3.02, end=3.5),
+        narration.Slot("04", "d", False, start=3.52, end=4.0),
+    ]
+    at, needed = narration.plan_relaxed(plan, [2.4, 1.0, 0.9, 1.1], lag_max=0.9, guard=0.04, tail=0.3)
+    # 01 spills 0.4 s past its caption and is not cut; 02 starts when it ends plus the guard, 0.42 s late
+    assert (at[0].start, at[0].kept, at[0].tempo, at[0].cut, at[0].lag) == (0.0, 2.4, 1.0, False, 0.0)
+    assert (round(at[1].start, 3), round(at[1].lag, 3)) == (2.44, 0.42)
+    # 03 is a montage fragment: on its caption, cut where the caption ends; the spilling line before it is cut
+    # a guard before it (02 would have ended at 3.44)
+    assert (at[2].start, round(at[2].kept, 3), at[2].cut, at[2].lag) == (3.02, 0.48, True, 0.0)
+    assert (round(at[1].start + at[1].kept, 3), round(at[1].kept, 3), at[1].cut) == (2.98, 0.54, True)
+    # 04 runs past the project: the project needs the tail after it
+    assert (at[3].start, at[3].kept, at[3].cut) == (3.52, 1.1, False) and round(needed, 3) == 4.92
+    # a lag beyond the bound cuts the spilling line instead of delaying the next one further
+    at, needed = narration.plan_relaxed(plan[:2], [3.5, 0.5], lag_max=0.5, guard=0.04, tail=0.3)
+    assert (round(at[1].start, 3), round(at[1].lag, 3)) == (2.52, 0.5)
+    assert (round(at[0].kept, 3), at[0].cut) == (2.48, True) and round(needed, 3) == 3.32
+    assert all(a.lead == 0.0 and a.tempo == 1.0 for a in at)
+    with pytest.raises(narration.NarrationError, match="one speech"):
+        narration.plan_relaxed(plan, [1.0])
+    with pytest.raises(narration.NarrationError, match="positive"):
+        narration.plan_relaxed(plan[:1], [0.0])
+    with pytest.raises(narration.NarrationError, match="lag_max"):
+        narration.plan_relaxed(plan[:1], [1.0], lag_max=-1)
+    assert narration.plan_relaxed([], []) == ([], 0.0)
+
+
 def test_conform_plays_faster_within_its_bound(narration, tmp_path):
     wav(tmp_path / "in.wav", seconds=1.0)
     got = narration.conform(tmp_path / "in.wav", tmp_path / "out.wav", 0.0, 1.0, 0.8, 0.0, tempo=1.25)
     assert abs(got - 0.8) < 1.5 / RATE
     with pytest.raises(ValueError, match="tempo"):
         narration.conform(tmp_path / "in.wav", tmp_path / "out.wav", 0.0, 1.0, 0.8, 0.0, tempo=1.6)
+
+
+def test_the_manifest_lag_is_optional_and_effects_and_duration_are_checked(narration, tmp_path):
+    import json
+
+    path = manifest(tmp_path)
+    data = json.loads(path.read_text())
+    del data["items"][0]["lag"]  # a manifest from the fitted policy has no lag
+    path.write_text(json.dumps(data))
+    assert len(narration.narration_cues(path, tmp_path)) == 1
+    assert narration.effect_cues(path, tmp_path) == []  # no effects key: none
+    with pytest.raises(narration.NarrationError, match="lag"):
+        narration.narration_cues(manifest(tmp_path, lag="late"), tmp_path)
+    with pytest.raises(narration.NarrationError, match="duration"):
+        narration.manifest_duration(path)
+    digest = wav(tmp_path / "audio" / "typing.wav")
+    fx = {"id": "typing", "start": 0.0, "gain_db": -14, "audio": "audio/typing.wav", "sha256": digest}
+    data = json.loads(manifest(tmp_path).read_text())
+    data["duration"] = 44.5
+    data["effects"] = [fx]
+    path.write_text(json.dumps(data))
+    assert narration.manifest_duration(path) == 44.5
+    assert narration.effect_cues(path, tmp_path) == [narration.Effect("typing", 0.0, -14.0, "audio/typing.wav", digest)]
+    data["effects"] = [dict(fx, taps=[0.5, 0.52, 1.0])]
+    path.write_text(json.dumps(data))
+    assert narration.effect_cues(path, tmp_path)[0].taps == (0.5, 0.52, 1.0)
+    for bad, match in (
+        (dict(fx, taps=[0.5, 0.4]), "order"),
+        (dict(fx, taps=[0.5, "soon"]), "taps"),
+        (dict(fx, taps=[-1]), "taps"),
+        (dict(fx, taps=0.5), "taps"),
+        (dict(fx, sha256="0" * 64), "sha256"),
+        (dict(fx, audio="audio/none.wav"), "missing"),
+        (dict(fx, gain_db=3), "gain_db"),
+        (dict(fx, start=-1), "start"),
+        (dict(fx, loop=True), "unknown"),
+        ({k: v for k, v in fx.items() if k != "id"}, "missing"),
+        ("typing", "object"),
+    ):
+        data["effects"] = [bad]
+        path.write_text(json.dumps(data))
+        with pytest.raises(narration.NarrationError, match=match):
+            narration.effect_cues(path, tmp_path)
+    data["effects"] = {"id": "typing"}
+    path.write_text(json.dumps(data))
+    with pytest.raises(narration.NarrationError, match="list"):
+        narration.effect_cues(path, tmp_path)
+    for value in (0, -1, True, "44", None):
+        data["duration"] = value
+        path.write_text(json.dumps(data))
+        with pytest.raises(narration.NarrationError, match="duration"):
+            narration.manifest_duration(path)
+    path.write_text("[]")
+    with pytest.raises(narration.NarrationError, match="object"):
+        narration.manifest_duration(path)
 
 
 def test_narration_cues_verify_the_manifest_and_the_files(narration, tmp_path):

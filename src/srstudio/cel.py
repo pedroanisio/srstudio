@@ -24,6 +24,7 @@ The measured files are data the episode reads; the parsers here reject what they
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -34,6 +35,12 @@ from .canvas import Canvas
 from .registry import register
 
 __all__ = [
+    "load_features",
+    "parse_features",
+    "Pressed",
+    "subpaths",
+    "pressed_parts",
+    "Feature",
     "CelDataError",
     "CameraKey",
     "Run",
@@ -86,6 +93,46 @@ class Run:
     name: str
     start: float
     end: float
+
+
+@dataclass(frozen=True)
+class Feature:
+    """Where the tracked point (the typing hand) is at one sample of the reference."""
+
+    time: float
+    x: float
+    y: float
+
+
+@dataclass(frozen=True)
+class Pressed:
+    """What sinks under the typing: the subpaths of every drawing that lie inside ``box`` (drawing pixels), pressed
+    ``press`` px down for ``press_seconds`` at each of ``taps`` (project seconds).
+
+    A traced drawing's ink is one compound path whose holes are the coloured areas, so a part can only move when
+    its own holes move with it: a subpath inside the box moves when it is a filled region (even nesting depth) or
+    a hole of a subpath that moves; a hole of the surrounding ink stays, and the pressed part sinks inside it."""
+
+    box: tuple[float, float, float, float]
+    taps: Sequence[float]
+    press: float = 4.0
+    press_seconds: float = 0.125
+
+    def __post_init__(self) -> None:
+        x0, y0, x1, y1 = self.box
+        if not all(math.isfinite(v) for v in self.box) or x1 <= x0 or y1 <= y0:
+            raise CelDataError(f"box {self.box} must be x0 y0 x1 y1 with x0 < x1 and y0 < y1")
+        if not (
+            math.isfinite(self.press)
+            and self.press > 0
+            and math.isfinite(self.press_seconds)
+            and self.press_seconds > 0
+        ):
+            raise CelDataError(f"press {self.press} px over {self.press_seconds} s must both be positive")
+        if any(
+            isinstance(t, bool) or not isinstance(t, Number) or not (math.isfinite(t) and t >= 0) for t in self.taps
+        ):
+            raise CelDataError("taps must be non-negative seconds")
 
 
 @dataclass(frozen=True)
@@ -190,6 +237,38 @@ def parse_runs(data: Any, where: str = "poses") -> list[Run]:
     return out
 
 
+def _point(value: Any, where: str) -> tuple[float, float]:
+    if not (isinstance(value, list) and len(value) == 3) or any(
+        isinstance(v, bool) or not isinstance(v, Number) for v in value
+    ):
+        raise CelDataError(f"{where}: a feature is three numbers [x, y, angle], got {value!r}")
+    return float(value[0]), float(value[1])
+
+
+def parse_features(
+    data: Any, step: float = 0.25, where: str = "poses"
+) -> tuple[dict[str, tuple[float, float]], list[Feature], frozenset[str]]:
+    """The tracked point of a pose timeline: its place in each pose, its track sampled every ``step`` s, and the
+    poses in which the hand is raised off the keyboard."""
+    if isinstance(step, bool) or not isinstance(step, Number) or step <= 0:
+        raise CelDataError(f"{where}: step must be a positive number of seconds, got {step!r}")
+    top = _record(data, where, dict(poses=list, features=list), optional=("runs",))
+    base: dict[str, tuple[float, float]] = {}
+    raised = set()
+    for i, item in enumerate(_items(top["poses"], f"{where}.poses")):
+        q = _record(item, f"{where}.poses[{i}]", dict(name=str, time=Number, feature=list), optional=("raised",))
+        if not isinstance(q.get("raised", False), bool):
+            raise CelDataError(f"{where}.poses[{i}]: raised must be true or false, got {q['raised']!r}")
+        base[q["name"]] = _point(q["feature"], f"{where}.poses[{i}].feature")
+        if q.get("raised", False):
+            raised.add(q["name"])
+    samples = []
+    for i, item in enumerate(_items(top["features"], f"{where}.features")):
+        x, y = _point(item, f"{where}.features[{i}]")
+        samples.append(Feature(round(i * step, 6), x, y))
+    return base, samples, frozenset(raised)
+
+
 def parse_drawing(items: Any, where: str = "drawing") -> tuple[Fill, ...]:
     """A traced drawing: filled contours, back to front."""
     out = []
@@ -247,6 +326,12 @@ def load_camera(path: Path) -> list[CameraKey]:
 
 def load_runs(path: Path) -> list[Run]:
     return parse_runs(_read(path), str(path))
+
+
+def load_features(
+    path: Path, step: float = 0.25
+) -> tuple[dict[str, tuple[float, float]], list[Feature], frozenset[str]]:
+    return parse_features(_read(path), step, where=path.name)
 
 
 def load_captions(path: Path) -> list[Caption]:
@@ -396,14 +481,78 @@ def room(
     return g
 
 
+SUBPATH = re.compile(r"(?=M)")
+NUMBER = re.compile(r"-?\d+\.?\d*(?:[eE]-?\d+)?")
+
+
+def subpaths(d: str, where: str = "path") -> list[str]:
+    """The ``M``-started pieces of an absolute path (the traced drawings use only ``M``, ``Q`` and ``Z``)."""
+    if re.search(r"[a-z]", d):
+        raise CelDataError(f"{where}: only absolute path commands can be split into subpaths")
+    return [piece.strip() for piece in SUBPATH.split(d) if piece.strip()]
+
+
+def _bbox(d: str) -> tuple[float, float, float, float]:
+    n = [float(v) for v in NUMBER.findall(d)]
+    xs, ys = n[0::2], n[1::2]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _contains(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> bool:
+    return a != b and a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3]
+
+
+def pressed_parts(d: str, box: tuple[float, float, float, float], where: str = "path") -> tuple[str, str]:
+    """``d`` split into what stays and what sinks: the subpaths inside ``box`` that are filled regions, with the
+    holes they carry (see :class:`Pressed`); either part may be empty."""
+    pieces = subpaths(d, where)
+    boxes = [_bbox(piece) for piece in pieces]
+    parents = [[j for j in range(len(pieces)) if _contains(boxes[j], boxes[i])] for i in range(len(pieces))]
+    depth = [len(ps) for ps in parents]
+    x0, y0, x1, y1 = box
+    taken: set[int] = set()
+    for i in sorted(range(len(pieces)), key=lambda i: depth[i]):
+        bx0, by0, bx1, by1 = boxes[i]
+        if not (bx0 >= x0 and by0 >= y0 and bx1 <= x1 and by1 <= y1):
+            continue
+        if depth[i] % 2 == 0 or max(parents[i], key=lambda j: depth[j]) in taken:
+            taken.add(i)
+    stay = " ".join(piece for i, piece in enumerate(pieces) if i not in taken)
+    sink = " ".join(piece for i, piece in enumerate(pieces) if i in taken)
+    return stay, sink
+
+
+def _press_keys(run: Run, pressed: Pressed) -> list[tuple[float, float]]:
+    """The press depth over the run, on the composition clock (a group without its own ``start`` has no clock of
+    its own): a triangle per keystroke, keys at every corner, held to the run's end."""
+    taps = [t for t in pressed.taps if run.start - EPSILON <= t < run.end - EPSILON]
+    if not taps:
+        return []
+    half = pressed.press_seconds / 2
+    times = {run.start, run.end}
+    for tap in taps:
+        times.update(min(run.end, tap + k * half) for k in (0, 1, 2))
+
+    def depth(t: float) -> float:
+        return sum(pressed.press * max(0.0, 1 - abs(t - tap - half) / half) for tap in taps)
+
+    return [(round(t, 6), depth(t)) for t in sorted(times)]
+
+
 @register(
     "character",
     "cel-traced",
     summary="A traced character: a sheet of filled drawings, one held per run of the pose timeline",
     episodes=("mushroom-training",),
 )
-def traced(cv: Canvas, parent, runs: Sequence[Run], drawings: Mapping[str, Sequence[Fill]]) -> list:
-    """One group per run, alive from its start to its end, holding that run's drawing back to front."""
+def traced(
+    cv: Canvas, parent, runs: Sequence[Run], drawings: Mapping[str, Sequence[Fill]], pressed: Pressed | None = None
+) -> list:
+    """One group per run, alive from its start to its end, holding that run's drawing back to front.
+
+    With ``pressed``, every fill's part inside its box is drawn in a nested group at the fill's place in the stack
+    that sinks on each keystroke of the run (the keyboard under the typing hand); a run with no keystroke, and
+    a build without ``pressed``, is drawn plain and unchanged."""
     missing = [r.name for r in runs if r.name not in drawings]
     if missing:
         raise CelDataError(f"no drawing for runs {missing}")
@@ -413,8 +562,22 @@ def traced(cv: Canvas, parent, runs: Sequence[Run], drawings: Mapping[str, Seque
     groups = []
     for run in runs:
         g = cv.group(parent, cv.uid("g"), start=run.start, end=run.end)
-        for contour in drawings[run.name]:
-            shape(cv, g, contour.path, contour.fill)
+        keys = _press_keys(run, pressed) if pressed is not None else []
+        sunk = False
+        for i, contour in enumerate(drawings[run.name]):
+            if not keys or pressed is None:
+                shape(cv, g, contour.path, contour.fill)
+                continue
+            stay, sink = pressed_parts(contour.path, pressed.box, f"{run.name} fill {i}")
+            if stay:
+                shape(cv, g, stay, contour.fill)
+            if sink:
+                sunk = True
+                k = cv.group(g, cv.uid("g"))
+                cv.keys(k, "y", [(t, round(v, 5)) for t, v in keys], hold=False, local=False)
+                shape(cv, k, sink, contour.fill)
+        if keys and not sunk:
+            raise CelDataError(f"pose '{run.name}': nothing inside the pressed box {pressed.box}")  # type: ignore[union-attr]
         groups.append(g)
     return groups
 

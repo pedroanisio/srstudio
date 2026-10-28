@@ -2,20 +2,26 @@
 """Work Training Be Like — the portrait Cel style (traced drawings, measured camera, lettering) in srstudio.
 
 python3 mushroom_training.py PROJECT            # the silent master, element for element the shipped scene
-python3 mushroom_training.py PROJECT --voice    # plus the narration of narration.json (mushroom_training_audio.py)
+python3 mushroom_training.py PROJECT --voice    # the narrated master: narration.json (mushroom_training_audio.py),
+                                                # the keyboard sinking and heard on every keystroke, the project
+                                                # held past the last caption so the last line is heard whole
 """
 
 import sys
+from dataclasses import replace
 
 from _common import project_root
 from instagram_posts import POSTS
 from srstudio import CEL, Episode, EpisodeSpec, cel, subtitles
-from srstudio.narration import narration_cues
+from srstudio.narration import effect_cues, manifest_duration
 
 ROOT = project_root(__file__)
 ASSETS = ROOT / "assets"
 VOICED = "--voice" in sys.argv[2:]
-NARRATION = "Narrated with ElevenLabs premade voice Alice."
+NARRATION = "Narrated with ElevenLabs premade voice Alice; synthesised keyboard foley."
+# the laptop keyboard in drawing pixels: the ink is one compound path, so the keyboard face (and the key rows it
+# carries) is what sinks on each keystroke, inside the ink frame that stays (srstudio.cel.Pressed)
+KEYBOARD = (505.0, 988.0, 648.0, 1056.0)
 ep = Episode(
     EpisodeSpec(
         slug="scene",
@@ -49,20 +55,30 @@ ep = Episode(
     )
 )
 cv, t = ep.cv, ep.t
-
 camera = cel.load_camera(ASSETS / "camera.json")
 runs = cel.load_runs(ASSETS / "poses.json")
-world = cel.world(cv, ep.comp, camera, t.duration)
-cel.room(cv, world, camera, cel.load_camera(ASSETS / "room-camera.json"), t.duration)
-cel.traced(cv, world, runs, cel.load_drawings(ASSETS, runs))
-for caption in cel.load_captions(ROOT / "script.json"):
-    cel.lettering(cv, ep.comp, caption)
-
+captions = cel.load_captions(ROOT / "script.json")
+duration = t.duration
+pressed = None
 if VOICED:
-    ep.mix(loudness="-16", true_peak="-1.5")
-    for cue in narration_cues(ROOT / "narration.json", ROOT):
-        cv.assets.add_audio(id=f"vo-{cue.id}", src=cue.audio, sha256=cue.sha256, language="en-US")
-        ep.add_track(f"vo-track-{cue.id}", f"vo-{cue.id}", start=cue.start, role="dialogue", language="en-US")
+    # the narration at its own pace outlasts the last caption: hold the last drawing and caption until it ends
+    duration = max(duration, manifest_duration(ROOT / "narration.json"))
+    runs[-1] = replace(runs[-1], end=duration)
+    captions[-1] = replace(captions[-1], end=duration)
+    effects = effect_cues(ROOT / "narration.json", ROOT)
+    taps = tuple(t for fx in effects if fx.id == "typing" for t in fx.taps)  # the keyboard sinks on the keystrokes
+    pressed = cel.Pressed(KEYBOARD, taps)
+    ep.scene.find("project").duration = duration
+world = cel.world(cv, ep.comp, camera, duration)
+cel.room(cv, world, camera, cel.load_camera(ASSETS / "room-camera.json"), duration)
+cel.traced(cv, world, runs, cel.load_drawings(ASSETS, runs), pressed=pressed)
+for caption in captions:
+    cel.lettering(cv, ep.comp, caption)
+if VOICED:
+    ep.audio(narration=ROOT / "narration.json")
+    for fx in effects:
+        cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
+        ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
 
 subtitles.write_srt(ROOT / "Mushroom_Training_Captions.srt", [(p.start, p.end, p.caption) for p in t.phrases])
 ep.instagram(POSTS["mushroom-training"])

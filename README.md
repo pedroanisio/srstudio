@@ -323,17 +323,26 @@ scene-render encode scene.xml -o /abs/path/mushroom-training.mp4                
 ### Narrated master
 
 The silent build is the fidelity reference; a narrated master is the same scene with an ElevenLabs voice-over
-(premade voice *Alice*) on the mix. [episodes/mushroom_training_audio.py](episodes/mushroom_training_audio.py)
-reads the caption script, speaks each caption through `srstudio.voice` (typed parse, alignment check,
-speech-to-text that must hear the scripted words, voice id confirmed by name) and fits every clip to its caption
-window, which the reference fixes: a line that overflows is asked once more up to the provider's speed bound, a
-montage fragment ("He...", "Lunch...") is cut where its caption ends, which is the joke, and a long line may start
-up to 0.5 s early and play up to 15 % faster (`atempo`, pitch kept) before anything is cut; the plan looks one line
-ahead so a line hurries when the next could not fit otherwise. Three one-word fragments and the spelt-out score
-are spoken in a form the recogniser can confirm (`SPOKEN`). The clips are conformed to 48 kHz mono under `audio/`
-and listed in `narration.json` with their placement and SHA-256; `mushroom_training.py --voice` checks the
-manifest and the hashes, adds one `<audio>` asset and one dialogue track per clip, and encodes with AAC at
-−16 LUFS. The cloud step needs `SRSTUDIO_ALLOW_CLOUD=1` and `ELEVENLABS_API_KEY`; cached takes cost nothing.
+(premade voice *Alice*) and keyboard foley on the mix. [episodes/mushroom_training_audio.py](episodes/mushroom_training_audio.py)
+reads the caption script and speaks each caption through `srstudio.voice` (typed parse, alignment check,
+speech-to-text that must hear the scripted words, voice id confirmed by name) at the narrator's own pace: nothing
+is asked again faster and nothing is time-stretched. `srstudio.narration.plan_relaxed` places the clips: a line
+that outlasts its caption spills into the next, which waits for it (a 40 ms guard, at most 0.9 s after its own
+caption, then the spilling line is cut instead); a montage fragment ("He...", "Lunch...") starts on its caption
+and is cut where the caption ends, which is the joke; and the project is extended past the last caption so the
+last line is heard whole. Three one-word fragments and the spelt-out score are spoken in a form the recogniser
+can confirm (`SPOKEN`). Under the voice, `srstudio.foley` synthesises two to four keystrokes wherever the
+package's tracked hand (`assets/poses.json`, sampled every 0.25 s) moves more than 8 px while on the keyboard
+(poses flagged `raised` are skipped), seeded so the bed is reproducible; the keystroke onsets are written to the
+manifest (`effects[].taps`) and the drawn keyboard sinks 4 px on the same beats.
+The clips are conformed to 48 kHz mono under `audio/` and listed in `narration.json` with their placement, the
+typing bed (`effects`), the extended `duration` and SHA-256s; `mushroom_training.py --voice` checks the manifest
+and the hashes, holds the last drawing and caption to the extended end, and presses the keyboard: a traced
+drawing's ink is one compound path whose holes are the coloured areas, so no limb can move on its own, but
+`cel.Pressed` splits every fill's subpaths inside the keyboard box into what sinks (filled regions with the
+holes they carry) and what stays (the ink frame), so the keyboard face and its key rows dip inside the frame on
+each keystroke. It adds one dialogue track per clip and one effects track at −8 dB, and encodes with AAC
+mastered by the Cel style's mix. The cloud step needs `SRSTUDIO_ALLOW_CLOUD=1` and `ELEVENLABS_API_KEY`; cached takes cost nothing.
 
 ```bash
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/mushroom_training_audio.py PROJECT   # audio/vo-NN.wav, narration.json
@@ -399,9 +408,15 @@ error is `InstagramPostError`, with every problem listed.
 - `tests/test_cel.py` covers the Cel style (silent, font-less, one id counter), the caption-script timeline, every
   loader with malformed camera, run, drawing and caption files, the room camera compensation, the drawing
   conventions (even-odd paths, radius-less rects, five-decimal keys held to the end) and a silent build with no
-  `<assets>` that the SDK and the engine validate; `tests/test_mushroom_training_audio.py` covers the narration
-  step's slots, bounded speed-up, placement rules (lead, tempo, cut), look-ahead plan, tempo conform and the
-  manifest check with malformed, tampered and missing inputs.
+  `<assets>` that the SDK and the engine validate, the tracked-point loader with bad samples and the pressed
+  keyboard (subpath split by nesting depth so holes travel with their shape, press keys on the composition clock, a
+  plain drawing when nothing is struck, errors for relative paths, bad boxes and an empty box).
+  `tests/test_narration.py` covers the narration step's slots, bounded speed-up, placement rules (lead, tempo,
+  cut), look-ahead plan, the relaxed plan (natural pace, spill, bounded lag, montage cut, extended duration),
+  tempo conform and the manifest check (items, optional `lag`, `effects`, `duration`) with malformed, tampered
+  and missing inputs; `tests/test_mushroom_training_audio.py` pins the script to the library steps, the natural
+  speed and the respellings; `tests/test_foley.py` covers the keystroke bed (bursts from motion, determinism,
+  peak, bounds, the written file).
 - `tests/test_signature.py` asserts the two [Signature](#signature) marks are in every location of a signed office
   episode, absent from an unsigned one, typed on a code without glyphs, and gradient-free in the `MONO` palette.
 - `tests/test_layout.py` covers safe-area validation, exact path bounds for every SVG command, the overlay check

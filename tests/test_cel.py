@@ -253,6 +253,100 @@ def test_world_room_traced_and_lettering_draw_the_cel_conventions():
     ]
 
 
+FEATURES = {
+    "poses": [
+        {"name": "a", "time": 0, "feature": [100.0, 200.0, 0.0], "raised": True},
+        {"name": "b", "time": 0.5, "feature": [110.0, 205.0, 0.0], "raised": False},
+    ],
+    "runs": [{"name": "a", "start": 0.0, "end": 0.5}, {"name": "b", "start": 0.5, "end": D}],
+    # every 0.25 s: still, still, the hand reaches 30 px left and 4 px down at 0.75 s, back at 1.0, a bad sample
+    "features": [
+        [100.0, 200.0, 0.0],
+        [100.0, 200.0, 0.0],
+        [110.0, 205.0, 0.0],
+        [80.0, 209.0, -0.05],
+        [110.0, 205.0, 0.0],
+        [900.0, 205.0, 0.0],
+    ],
+}
+
+
+def test_features_are_the_tracked_point_per_sample_and_per_pose(tmp_path):
+    base, samples, raised = cel.parse_features(FEATURES, step=0.25)
+    assert base == {"a": (100.0, 200.0), "b": (110.0, 205.0)} and raised == {"a"}
+    assert [(f.time, f.x, f.y) for f in samples[:4]] == [
+        (0.0, 100.0, 200.0),
+        (0.25, 100.0, 200.0),
+        (0.5, 110.0, 205.0),
+        (0.75, 80.0, 209.0),
+    ]
+    (tmp_path / "poses.json").write_text(json.dumps(FEATURES))
+    assert cel.load_features(tmp_path / "poses.json") == (base, samples, raised)
+    bad = dict(FEATURES, features=[[1.0, 2.0]])
+    with pytest.raises(cel.CelDataError, match="three numbers"):
+        cel.parse_features(bad)
+    with pytest.raises(cel.CelDataError, match="step"):
+        cel.parse_features(FEATURES, step=0)
+    with pytest.raises(cel.CelDataError, match="feature"):
+        cel.parse_features(dict(FEATURES, poses=[{"name": "a", "time": 0, "feature": "no", "raised": True}]))
+
+
+# an ink-like fill: a square with a hole, and a filled island inside the hole (nesting depths 0, 1, 2)
+INK = "M0 0 L100 0 L100 100 L0 100 Z M40 40 L60 40 L60 60 L40 60 Z M45 45 L55 45 L55 55 L45 55 Z"
+# a keyboard-like fill: a square inside the box with its own hole (depths 0 and 1)
+KEYS = "M40 40 L60 40 L60 60 L40 60 Z M45 45 L55 45 L55 55 L45 55 Z"
+BOX = (40.0, 40.0, 60.0, 60.0)
+
+
+def test_pressed_parts_move_filled_regions_with_their_holes_and_leave_the_ink_frame():
+    stay, sink = cel.pressed_parts(INK, BOX)
+    assert stay == "M0 0 L100 0 L100 100 L0 100 Z M40 40 L60 40 L60 60 L40 60 Z"  # the frame and its hole stay
+    assert sink == "M45 45 L55 45 L55 55 L45 55 Z"  # the island inside the hole sinks
+    assert cel.pressed_parts(KEYS, BOX) == ("", KEYS)  # the square sinks and carries its hole
+    assert cel.pressed_parts(INK, (0.0, 0.0, 10.0, 10.0)) == (INK, "")
+    with pytest.raises(cel.CelDataError, match="absolute"):
+        cel.pressed_parts("M0 0 l10 0 l0 10 z", BOX)
+    for box in ((10, 10, 5, 20), (0, 0, 10, 0), (0, 0, float("nan"), 1)):
+        with pytest.raises(cel.CelDataError, match="box"):
+            cel.Pressed(box, ())
+    with pytest.raises(cel.CelDataError, match="positive"):
+        cel.Pressed(BOX, (), press=0)
+    with pytest.raises(cel.CelDataError, match="taps"):
+        cel.Pressed(BOX, (0.5, -1))
+
+
+def test_traced_sinks_the_pressed_parts_on_each_keystroke_of_the_run():
+    cv = canvas()
+    runs = [cel.Run("a", 0.0, 0.5), cel.Run("b", 0.5, D)]
+    drawing = cel.parse_drawing([{"fill": "#240102", "path": INK}, {"fill": "#fffaf5", "path": KEYS}])
+    drawings = {"a": drawing, "b": drawing}
+    cel.traced(cv, cv.comp, runs, drawings, pressed=cel.Pressed(BOX, taps=(0.6, 1.4), press=4.0, press_seconds=0.125))
+    root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    run_a, run_b = [g for g in root.find("composition").iter("group") if g.get("start") is not None]
+    assert [e.tag for e in run_a] == ["shape", "shape"]  # no keystroke in run a: drawn plain
+    # run b: the ink frame, then its island in a sinking group, then the keys (whole) in a sinking group
+    assert [e.tag for e in run_b] == ["shape", "group", "group"]
+    island, keys = run_b.findall("group")
+    assert [e.tag for e in island] == ["animate", "shape"] and [e.tag for e in keys] == ["animate", "shape"]
+    assert (
+        island.find("shape").get("path") == "M45 45 L55 45 L55 55 L45 55 Z" and keys.find("shape").get("path") == KEYS
+    )
+    for grp in (island, keys):
+        a = grp.find("animate")
+        # on the composition clock (the nested group has no start of its own): down 4 px by 0.6625, back at 0.725;
+        # the 1.4 s press is still releasing when the run ends at 1.5
+        assert (a.get("property"), a.get("timeBase")) == ("y", None)
+        y = [(float(k.get("time")), float(k.get("value"))) for k in a.iter("key")]
+        assert y == [(0.5, 0), (0.6, 0), (0.6625, 4), (0.725, 0), (1.4, 0), (1.4625, 4), (1.5, 1.6)]
+    with pytest.raises(cel.CelDataError, match="nothing inside"):
+        cel.traced(canvas(), cv.comp, runs, drawings, pressed=cel.Pressed((0.0, 0.0, 5.0, 5.0), taps=(0.6,)))
+    # without keystrokes the output is the plain one
+    plain, still = canvas(), canvas()
+    cel.traced(plain, plain.comp, runs, drawings)
+    cel.traced(still, still.comp, runs, drawings, pressed=cel.Pressed(BOX, taps=()))
+    assert plain.scene.to_bytes(layout="pretty") == still.scene.to_bytes(layout="pretty")
+
+
 def test_traced_refuses_a_run_without_a_drawing_or_a_drawing_without_a_run():
     cv = canvas()
     with pytest.raises(cel.CelDataError, match="no drawing"):

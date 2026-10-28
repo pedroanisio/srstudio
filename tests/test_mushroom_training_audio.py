@@ -22,7 +22,7 @@ def script():
 
 
 def test_the_script_uses_the_library_steps_not_a_copy(script):
-    for name in ("slots", "plan_narration", "conform", "confirm_voice", "require_consent"):
+    for name in ("slots", "plan_relaxed", "conform", "confirm_voice", "require_consent"):
         assert getattr(script, name) is getattr(library, name), name
 
 
@@ -32,4 +32,8 @@ def test_a_respelling_keeps_the_caption_words_it_can_confirm(script):
             assert said.startswith(caption[:-3]) and said.endswith("."), caption
         else:  # a spelt-out number is written as the recogniser writes it back
             assert said.replace("100%", "one hundred percent") == caption
-    assert 1.0 <= script.SETTINGS.speed <= library.MAX_SPEED
+    assert script.SETTINGS.speed == 1.0  # the narrator's natural pace; nothing is quickened (user: it sounded rushed)
+
+
+def test_the_typing_bed_sits_under_the_voice(script):
+    assert script.TYPING_GAIN_DB <= -6 and 0 < script.TYPING_PEAK <= script.VOICE_PEAK

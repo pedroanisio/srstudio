@@ -32,7 +32,7 @@ import subprocess
 import urllib.request
 import wave
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -40,6 +40,15 @@ from .provider import CONSENT_ENV, KEY_ENV
 from .voice import RATE, Alignment, Voice, VoiceOutputError
 
 __all__ = [
+    "EFFECT_FIELDS",
+    "OPTIONAL_EFFECT_FIELDS",
+    "OPTIONAL_ITEM_FIELDS",
+    "manifest_duration",
+    "effect_cues",
+    "plan_relaxed",
+    "Effect",
+    "TAIL",
+    "LAG_MAX",
     "VOICES_API",
     "MAX_SPEED",
     "ATEMPO_MAX",
@@ -74,6 +83,8 @@ ATEMPO_MAX = 1.15  # the most a long line is quickened after that (ffmpeg atempo
 MARGIN = 0.02  # a slot ends this long before the next caption appears
 LEAD_MAX = 0.50  # the most a long line may start before its caption
 GAP_GUARD = 0.04  # silence kept between a led line and the line before it
+LAG_MAX = 0.90  # relaxed policy: the most a line may start after its caption while the line before finishes
+TAIL = 0.30  # relaxed policy: silence kept after the last line before the project ends
 
 Fetch = Callable[[str, Mapping[str, str]], object]
 
@@ -236,6 +247,7 @@ class Placement:
     lead: float  # how early it starts before its caption
     tempo: float  # how much faster than spoken it plays (1.0: as spoken)
     cut: bool  # whether the tail was cut
+    lag: float = 0.0  # how late it starts after its caption (relaxed policy: the line before was still speaking)
 
     @property
     def end(self) -> float:
@@ -265,6 +277,18 @@ class Cue:
     duration: float
     audio: str
     sha256: str
+
+
+@dataclass(frozen=True)
+class Effect:
+    """One sound-effect clip the episode plays under the narration (``effects`` of ``narration.json``, verified)."""
+
+    id: str
+    start: float
+    gain_db: float
+    audio: str
+    sha256: str
+    taps: tuple[float, ...] = ()  # keystroke onsets the picture follows (typing)
 
 
 def slots(captions: Sequence[_Caption], duration: float, margin: float = MARGIN) -> list[Slot]:
@@ -361,6 +385,50 @@ def plan_narration(
     return out
 
 
+def plan_relaxed(
+    plan: Sequence[Slot],
+    speeches: Sequence[float],
+    lag_max: float = LAG_MAX,
+    guard: float = GAP_GUARD,
+    tail: float = TAIL,
+) -> tuple[list[Placement], float]:
+    """Every line at the narrator's own pace, and the project duration that needs.
+
+    Nothing is asked again faster and nothing is quickened: a line that outlasts its caption spills into the
+    next, and the next line waits for it (``guard`` of silence between them) up to ``lag_max`` after its own
+    caption; past that, the spilling line is cut instead. A montage fragment always starts on its caption and is
+    cut where the caption ends (the joke of the reference), cutting whatever was still speaking. The last line
+    may run past the last caption: the returned duration is where the project must end, ``tail`` after it (or
+    where the last slot ends, if that is later). ``speeches`` are the trimmed lengths of the lines, in order."""
+    if len(speeches) != len(plan):
+        raise NarrationError(f"plan_relaxed needs one speech per line: {len(plan)} lines, {len(speeches)} speeches")
+    if not (math.isfinite(lag_max) and lag_max >= 0):
+        raise NarrationError(f"lag_max {lag_max} must be a non-negative number of seconds")
+    if not (math.isfinite(guard) and guard >= 0 and math.isfinite(tail) and tail >= 0):
+        raise NarrationError(f"guard {guard} and tail {tail} must be non-negative numbers of seconds")
+    out: list[Placement] = []
+    for slot, speech in zip(plan, speeches, strict=True):
+        if not (math.isfinite(speech) and speech > 0):
+            raise NarrationError(f"caption {slot.id}: speech length must be positive, got {speech}")
+        if slot.room <= 0:
+            raise NarrationError(f"caption {slot.id}: no room to speak in ({slot.start}..{slot.end})")
+        start = slot.start
+        if out and not slot.montage and out[-1].end > slot.start:
+            start = min(out[-1].end + guard, slot.start + lag_max)
+        if out and out[-1].end > start + 1e-9:  # the line before is still speaking: cut it off a guard early
+            prev = out[-1]
+            kept = start - guard - prev.start
+            if kept <= 0:
+                raise NarrationError(f"caption {slot.id}: no time left for the line before it ({prev.start} s)")
+            out[-1] = replace(prev, kept=kept, cut=True)
+        kept, cut = speech, False
+        if slot.montage and speech > slot.room + 1e-9:
+            kept, cut = slot.room, True
+        out.append(Placement(start, kept, 0.0, 1.0, cut, start - slot.start))
+    needed = max(plan[-1].end, out[-1].end + tail) if out else 0.0
+    return out, needed
+
+
 # -- the manifest the episode plays from ------------------------------------------------------------------------
 _Number = (int, float)
 ITEM_FIELDS: dict[str, object] = dict(
@@ -378,35 +446,84 @@ ITEM_FIELDS: dict[str, object] = dict(
     audio=str,
     sha256=str,
 )
+OPTIONAL_ITEM_FIELDS: dict[str, object] = dict(lag=_Number)  # written by the relaxed policy only
+EFFECT_FIELDS: dict[str, object] = dict(id=str, start=_Number, gain_db=_Number, audio=str, sha256=str)
+OPTIONAL_EFFECT_FIELDS: dict[str, object] = dict(taps=list)
+
+
+def _checked(q: object, where: str, fields: Mapping[str, object], optional: Mapping[str, object]) -> dict:
+    if not isinstance(q, dict):
+        raise NarrationError(f"{where}: expected an object")
+    missing = [k for k in fields if k not in q]
+    if missing:
+        raise NarrationError(f"{where}: missing {missing}")
+    unknown = sorted(set(q) - set(fields) - set(optional))
+    if unknown:
+        raise NarrationError(f"{where}: unknown fields {unknown}")
+    for key, kind in {**fields, **optional}.items():
+        if key not in q:
+            continue
+        value = q[key]
+        if (kind is not bool and isinstance(value, bool)) or not isinstance(value, kind):  # type: ignore[arg-type]
+            raise NarrationError(f"{where}: {key} has the wrong type ({value!r})")
+    return q
+
+
+def _clip(root: Path, q: Mapping[str, object], where: str) -> None:
+    clip = Path(root) / str(q["audio"])
+    if not clip.is_file():
+        raise NarrationError(f"{where}: {q['audio']} is missing")
+    if sha256_of(clip) != q["sha256"]:
+        raise NarrationError(f"{where}: sha256 of {q['audio']} does not match the manifest")
+
+
+def _manifest(path: Path) -> dict:
+    data = json.loads(Path(path).read_text())
+    if not isinstance(data, dict):
+        raise NarrationError(f"{path}: expected an object")
+    return data
 
 
 def narration_cues(path: Path, root: Path) -> list[Cue]:
     """The cues of ``narration.json``, after checking every field and the SHA-256 of every clip under ``root``."""
-    data = json.loads(Path(path).read_text())
-    items = data.get("items") if isinstance(data, dict) else None
+    items = _manifest(path).get("items")
     if not isinstance(items, list) or not items:
         raise NarrationError(f"{path}: items must be a non-empty list")
     cues = []
-    for i, q in enumerate(items):
+    for i, item in enumerate(items):
         where = f"{path} item {i}"
-        if not isinstance(q, dict):
-            raise NarrationError(f"{where}: expected an object")
-        missing = [k for k in ITEM_FIELDS if k not in q]
-        if missing:
-            raise NarrationError(f"{where}: missing {missing}")
-        unknown = sorted(set(q) - set(ITEM_FIELDS))
-        if unknown:
-            raise NarrationError(f"{where}: unknown fields {unknown}")
-        for key, kind in ITEM_FIELDS.items():
-            value = q[key]
-            if (kind is not bool and isinstance(value, bool)) or not isinstance(value, kind):  # type: ignore[arg-type]
-                raise NarrationError(f"{where}: {key} has the wrong type ({value!r})")
+        q = _checked(item, where, ITEM_FIELDS, OPTIONAL_ITEM_FIELDS)
         if not (math.isfinite(q["duration"]) and q["duration"] > 0 and math.isfinite(q["start"]) and q["start"] >= 0):
             raise NarrationError(f"{where}: duration must be positive and start non-negative")
-        clip = Path(root) / q["audio"]
-        if not clip.is_file():
-            raise NarrationError(f"{where}: {q['audio']} is missing")
-        if sha256_of(clip) != q["sha256"]:
-            raise NarrationError(f"{where}: sha256 of {q['audio']} does not match the manifest")
+        _clip(root, q, where)
         cues.append(Cue(q["id"], q["text"], float(q["start"]), float(q["duration"]), q["audio"], q["sha256"]))
     return cues
+
+
+def effect_cues(path: Path, root: Path) -> list[Effect]:
+    """The ``effects`` of ``narration.json`` (none when the key is absent), each checked like a cue."""
+    effects = _manifest(path).get("effects", [])
+    if not isinstance(effects, list):
+        raise NarrationError(f"{path}: effects must be a list")
+    out = []
+    for i, item in enumerate(effects):
+        where = f"{path} effect {i}"
+        q = _checked(item, where, EFFECT_FIELDS, OPTIONAL_EFFECT_FIELDS)
+        if not (math.isfinite(q["start"]) and q["start"] >= 0 and math.isfinite(q["gain_db"]) and q["gain_db"] <= 0):
+            raise NarrationError(f"{where}: start must be non-negative and gain_db at most 0")
+        taps = q.get("taps", [])
+        if any(isinstance(t, bool) or not isinstance(t, _Number) or not (math.isfinite(t) and t >= 0) for t in taps):
+            raise NarrationError(f"{where}: taps must be non-negative numbers of seconds")
+        if any(b < a for a, b in zip(taps, taps[1:], strict=False)):
+            raise NarrationError(f"{where}: taps must be in order")
+        _clip(root, q, where)
+        out.append(Effect(q["id"], float(q["start"]), float(q["gain_db"]), q["audio"], q["sha256"], tuple(taps)))
+    return out
+
+
+def manifest_duration(path: Path) -> float:
+    """The project duration ``narration.json`` was planned for: a positive number of seconds."""
+    value = _manifest(path).get("duration")
+    if isinstance(value, bool) or not isinstance(value, _Number) or not (math.isfinite(value) and value > 0):
+        raise NarrationError(f"{path}: duration must be a positive number of seconds, got {value!r}")
+    return float(value)
