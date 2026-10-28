@@ -18,39 +18,42 @@ lists the takes in order with their words and character timings relative to the 
 only with ``SRSTUDIO_ALLOW_CLOUD=1`` because the lines leave the machine. The script is fixed (twenty
 takes), one request per uncached item, no retries.
 
-``tests/test_the_router.py`` feeds mismatched alignments, cut words, wrong voice names and a failing
-encoder through each check.
+The shared steps (voice check, word timings, schedule, conform) are :mod:`srstudio.narration`;
+``tests/test_narration.py`` feeds them mismatched alignments, cut words, wrong voice names and a failing
+encoder, and ``tests/test_the_router.py`` checks this script.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
 import re
 import shutil
-import subprocess
 import sys
-import urllib.request
-import wave
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from srstudio.generated import gain_to_peak, trim_effect, trim_speech
-from srstudio.provider import CONSENT_ENV, KEY_ENV
+from srstudio.narration import (
+    confirm_voice,
+    conform,
+    phones_from_alignment,
+    require_consent,
+    schedule,
+    sha256_of,
+    words_from_alignment,
+)
+from srstudio.provider import KEY_ENV
 from srstudio.voice import (
     MODEL,
-    RATE,
     SFX_SECONDS,
     STT_MODEL,
-    Alignment,
     ElevenLabsClient,
     TranscriptMismatch,
     Voice,
-    VoiceOutputError,
     VoiceSettings,
     check_transcript,
 )
@@ -58,7 +61,6 @@ from srstudio.voice import (
 FPS = 24
 SEED = 1028
 TITLE = "The Router — Ink 02"
-VOICES_API = "https://api.elevenlabs.io/v1/voices/{voice}"
 VOICES = {
     "human": Voice(role="human", id="iP95p4xoKVk53GoZ742B", name="Chris"),
     "router": Voice(role="router", id="onwK4e9ZLuTAKqWW03F9", name="Daniel"),
@@ -162,14 +164,6 @@ SCRIPT: tuple[Line, ...] = (
     ),
 )
 
-Fetch = Callable[[str, Mapping[str, str]], object]
-
-
-def require_consent(env: Mapping[str, str]) -> None:
-    """The lines leave the machine, so the operator must say so."""
-    if env.get(CONSENT_ENV) != "1":
-        raise SystemExit(f"this script sends the script to ElevenLabs; set {CONSENT_ENV}=1 to allow it")
-
 
 def check_script(script: tuple[Line, ...] = SCRIPT) -> None:
     """The script is well formed before anything is requested."""
@@ -194,123 +188,6 @@ def check_script(script: tuple[Line, ...] = SCRIPT) -> None:
                 raise ValueError(f"take {line.id}: an effect's text is its bracketed caption, got {line.text!r}")
         elif not line.text.strip() or line.actor not in VOICES:
             raise ValueError(f"take {line.id}: a spoken line needs text and a voiced actor")
-
-
-def _urllib_fetch(url: str, headers: Mapping[str, str]) -> object:
-    request = urllib.request.Request(url, headers=dict(headers), method="GET")
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def confirm_voice(cache: Path, key: str, voice: Voice, fetch: Fetch = _urllib_fetch) -> dict:
-    """The voice id resolves to the premade voice of that name; the answer (name and category only) is cached."""
-    record = cache / f"voice-{voice.id}.json"
-    if record.exists():
-        body = json.loads(record.read_text())
-    else:
-        if not key:
-            raise RuntimeError(f"{KEY_ENV} is required to confirm an unchecked voice")
-        body = fetch(VOICES_API.format(voice=voice.id), {"xi-api-key": key, "Accept": "application/json"})
-    if not isinstance(body, dict) or not isinstance(body.get("name"), str):
-        raise VoiceOutputError(f"voice {voice.id}: the voice record has no name")
-    if body["name"].split(" - ")[0].strip() != voice.name:  # premade names carry a descriptor: "Chris - Charming, ..."
-        raise VoiceOutputError(f"voice {voice.id} is {body['name']!r}, the script wants {voice.name!r}")
-    kept = {"voice_id": voice.id, "name": body["name"], "category": body.get("category")}
-    cache.mkdir(parents=True, exist_ok=True)
-    record.write_text(json.dumps(kept, indent=2) + "\n")
-    return kept
-
-
-def words_from_alignment(alignment: Alignment, text: str, trim_start: float, speech_duration: float) -> list[dict]:
-    """``{text, start, end}`` per word, relative to the conformed clip; a word the trim cut is an error."""
-    if alignment.text != text:
-        raise VoiceOutputError(f"alignment spells {alignment.text!r}, the line is {text!r}")
-    words = []
-    for m in re.finditer(r"\S+", alignment.text):
-        start = max(0.0, alignment.starts[m.start()] - trim_start)
-        end = min(speech_duration, alignment.ends[m.end() - 1] - trim_start)
-        if not end > start:
-            raise VoiceOutputError(f"word {m.group()!r} falls outside the trimmed clip ({start:.3f}..{end:.3f})")
-        words.append({"text": m.group(), "start": round(start, 4), "end": round(end, 4)})
-    return words
-
-
-def phones_from_alignment(alignment: Alignment, trim_start: float, speech_duration: float) -> list[dict]:
-    """``{c, start, end}`` per aligned character inside the conformed clip."""
-    out = []
-    for c, s, e in zip(alignment.characters, alignment.starts, alignment.ends, strict=True):
-        start, end = max(0.0, s - trim_start), min(speech_duration, e - trim_start)
-        if end > start:
-            out.append({"c": c, "start": round(start, 4), "end": round(end, 4)})
-    return out
-
-
-def schedule(items: list[dict], fps: int = FPS) -> float:
-    """Sets each item's ``start`` from the previous one's end; returns the duration, rounded up to the frame."""
-    cursor = 0.0
-    for q in items:
-        if not (math.isfinite(q["duration"]) and q["duration"] > 0):
-            raise ValueError(f"take {q['id']}: duration must be positive, got {q['duration']}")
-        q["start"] = round(cursor, 6)
-        cursor += q["duration"]
-    return math.ceil(cursor * fps - 1e-9) / fps
-
-
-def wav_seconds(path: Path) -> float:
-    with wave.open(str(path), "rb") as w:
-        if (w.getframerate(), w.getnchannels(), w.getsampwidth()) != (RATE, 1, 2):
-            raise VoiceOutputError(f"{path.name}: expected {RATE} Hz mono 16-bit")
-        return w.getnframes() / w.getframerate()
-
-
-def conform(
-    src: Path,
-    dst: Path,
-    clip_in: float,
-    clip_out: float,
-    length: float,
-    gain_db: float,
-    ffmpeg: str = "ffmpeg",
-    tempo: float = 1.0,
-) -> float:
-    """Cuts ``clip_in..clip_out`` of ``src``, levels it, plays it ``tempo`` times faster (pitch kept, 1..1.5), pads
-    or trims it to ``length`` seconds with short fades, writes 48 kHz mono 16-bit PCM and returns the length
-    actually written (checked to the sample)."""
-    if not 1.0 <= tempo <= 1.5:
-        raise ValueError(f"tempo must be within 1..1.5, got {tempo}")
-    faster = f"atempo={tempo:.6f}," if tempo > 1.0 else ""
-    filters = (
-        f"atrim=start={clip_in:.6f}:end={clip_out:.6f},asetpts=PTS-STARTPTS,volume={gain_db:.4f}dB,{faster}"
-        f"apad,atrim=duration={length:.6f},afade=t=in:d=0.006,afade=t=out:st={max(0.0, length - 0.012):.6f}:d=0.012"
-    )
-    subprocess.run(
-        [
-            ffmpeg,
-            "-y",
-            "-v",
-            "error",
-            "-i",
-            str(src),
-            "-af",
-            filters,
-            "-ar",
-            str(RATE),
-            "-ac",
-            "1",
-            "-c:a",
-            "pcm_s16le",
-            str(dst),
-        ],
-        check=True,
-    )
-    got = wav_seconds(dst)
-    if abs(got - length) > 1.5 / RATE:
-        raise VoiceOutputError(f"{dst.name}: conformed to {got:.6f} s, wanted {length:.6f} s")
-    return got
-
-
-def sha256_of(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
@@ -389,7 +266,7 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
     )
     if failures:
         raise SystemExit("speech check failed:\n" + "\n".join(failures))
-    duration = schedule(items)
+    duration = schedule(items, FPS)
     timeline = {
         "title": TITLE,
         "language": "en-US",

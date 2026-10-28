@@ -9,8 +9,8 @@ import sys
 
 from _common import project_root
 from instagram_posts import POSTS
-from mushroom_training_audio import narration_cues
 from srstudio import CEL, Episode, EpisodeSpec, cel, subtitles
+from srstudio.narration import narration_cues
 
 ROOT = project_root(__file__)
 ASSETS = ROOT / "assets"
