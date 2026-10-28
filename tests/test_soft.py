@@ -569,6 +569,99 @@ def test_bos_hairline_climbs_from_above_the_ear_on_the_parted_side():
     assert parted and max(y for _, y in parted) < -0.15 * blob.HEAD  # no edge dropping down the cheek
 
 
+# -- polished looks: Juno and Remy ---------------------------------------------------------------------
+NEW_LOOKS = {"juno": (blob.juno, blob.JUNO), "remy": (blob.remy, blob.REMY)}
+PUPILS = ("open", "look", "wide")
+
+
+def shapes(element) -> list[ET.Element]:
+    return [s for s in element.iter() if local(s.tag) == "shape"]
+
+
+def by_id(root, id) -> ET.Element:
+    return next(e for e in root.iter() if e.get("id") == id)
+
+
+def test_a_look_checks_its_shade_colour():
+    with pytest.raises(BlobError, match="shade"):
+        blob.Look("x", shade="grey")
+
+
+@pytest.mark.parametrize("name", sorted(NEW_LOOKS))
+def test_juno_and_remy_are_registered_soft_characters_on_the_rig(name):
+    builder, look = NEW_LOOKS[name]
+    entry = registry.get("character", name)
+    assert entry.style == "soft" and entry.builder is builder
+    assert look.shade and look.catchlights and look.fill not in (None, blob.BO.fill)
+    scene, cv = canvas()
+    cues = [Cue(0, "stand"), Cue(1, "sit", ease=0.2, x=40), Cue(2, "cheer-a", eyes="happy", mouth="sing")]
+    builder(cv, cv.comp, cues, end=3, x=540, y=1500, mouth_states=[(0, "rest"), (2.1, "open")], shadow=True)
+    root = tree(scene)
+    ids = [e.get("id") for e in root.iter() if e.get("id")]
+    assert len(ids) == len(set(ids)) and not any(i.startswith(("pip", "bo")) for i in ids)
+    assert {name, f"{name}-outline", f"{name}-fill", f"{name}-hair", f"{name}-face", f"{name}-{look.topper_id}"} <= set(
+        ids
+    )
+    fills = {s.get("fill") for s in shapes(by_id(root, f"{name}-fill"))}
+    assert look.fill in fills and look.shade in fills, "the head is shaded in the character's own shade"
+    assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_the_shade_is_a_crescent_inside_the_head_on_the_side_away_from_the_light():
+    r, dx, dy = blob.HEAD, -0.16 * blob.HEAD, -0.2 * blob.HEAD
+    d = blob._crescent(r, dx, dy)
+    assert d.startswith("M ") and d.endswith(" Z")
+    points = [tuple(map(float, p.split())) for p in re.findall(r"-?[\d.]+ -?[\d.]+", d)]
+    assert len(points) > 20
+    for x, y in points:
+        assert math.hypot(x, y) <= r + 0.05, (x, y)  # inside the head
+        assert math.hypot(x - dx, y - dy) >= r - 0.05, (x, y)  # outside the lit disc
+    cx, cy = sum(x for x, _ in points) / len(points), sum(y for _, y in points) / len(points)
+    assert cx > 0 and cy > 0, "light from the upper left: the shade sits lower right"
+
+
+@pytest.mark.parametrize("bad", [(0.0, 0.0), (2.0 * blob.HEAD, 0.0), (math.nan, 0.0)])
+def test_a_crescent_needs_the_lit_disc_moved_by_less_than_its_diameter(bad):
+    with pytest.raises(BlobError, match="crescent"):
+        blob._crescent(blob.HEAD, *bad)
+
+
+def eye_shapes(look, kind) -> list[ET.Element]:
+    scene, cv = canvas()
+    blob.blob(cv, cv.comp, [Cue(0, "stand", eyes=kind)], end=1, id="c", look=look)
+    return shapes(by_id(tree(scene), f"c-eyes-{kind}"))
+
+
+@pytest.mark.parametrize("kind", sorted(EYES))
+def test_lashes_follow_every_eye_and_catchlights_only_eyes_with_pupils(kind):
+    plain, polished = eye_shapes(blob.PIP, kind), eye_shapes(blob.JUNO, kind)
+    lashes = [s for s in polished if s.get("shape") == "path"][-4:]
+    assert len(polished) > len(plain)
+    assert all(s.get("stroke") == WARM.ink for s in lashes)
+    lights = [
+        s
+        for s in polished
+        if s.get("fill") == WARM.white and s.get("shape") == "ellipse" and s.get("strokeWidth") == "0"
+    ]
+    assert len(lights) == (4 if kind in PUPILS else 0)
+
+
+def test_pip_and_bo_draw_no_polish_so_their_episodes_stay_as_they_were():
+    for look in (blob.PIP, blob.BO):
+        assert look.shade is None and not look.gloss and not look.catchlights and not look.lashes
+        for kind in EYES:
+            assert all(s.get("strokeWidth") != "0" or s.get("fill") == WARM.ink for s in eye_shapes(look, kind))
+
+
+def test_the_whole_cast_shares_one_scene_without_an_id_clash():
+    scene, cv = canvas()
+    for i, builder in enumerate((blob.pip, blob.bo, blob.juno, blob.remy)):
+        builder(cv, cv.comp, [Cue(0, "wave-a", eyes="look", mouth="grin")], end=3, x=150 + 260 * i, y=1500, scale=0.6)
+    ids = [e.get("id") for e in tree(scene).iter() if e.get("id")]
+    assert len(ids) == len(set(ids))
+    assert [f for f in scene.check() if f.severity == "error"] == []
+
+
 # -- the soft home: a sofa to lounge on ------------------------------------------------------------
 def sofa_world(p) -> tuple[float, float]:
     return blob.SOFA_SEAT[0] + p[0] * blob.SCALE, blob.SOFA_SEAT[1] + p[1] * blob.SCALE

@@ -12,8 +12,9 @@ outline (hands clasped over the chest, arms on the desk). Eyes and mouth are gat
 the head; a ``sing`` mouth follows the soundtrack's mouth states.
 
 A :class:`Look` is what makes the rig a particular character: body fill, blush, what grows from the head
-(Pip's sprout), what sits on it (Bo's hair) and what the face wears (Bo's glasses). :func:`pip` and
-:func:`bo` are the same rig in two looks, so every pose and cue works for both.
+(Pip's sprout), what sits on it (Bo's hair) and what the face wears (Bo's glasses), and optional polish: a
+shaded head, a gloss, catch-lights and lashes. :func:`pip`, :func:`bo`, :func:`juno` and :func:`remy` are the
+same rig in four looks, so every pose and cue works for all of them.
 """
 
 from __future__ import annotations
@@ -47,6 +48,8 @@ __all__ = [
     "Look",
     "PIP",
     "BO",
+    "JUNO",
+    "REMY",
     "FEET",
     "FRONTABLE",
     "SEATED_FLOOR",
@@ -61,6 +64,8 @@ __all__ = [
     "blob",
     "pip",
     "bo",
+    "juno",
+    "remy",
     "office",
     "sofa",
     "home",
@@ -511,27 +516,48 @@ def _stroke(cv: Canvas, g, d: str, sw: float = 6) -> None:
     cv.path(g, d, stroke=cv.ink, sw=sw)
 
 
-def _eye(cv: Canvas, g, x: float, y: float, w: float, h: float, pupil: float, dx: float = 0.0) -> None:
+def _eye(
+    cv: Canvas, g, x: float, y: float, w: float, h: float, pupil: float, dx: float = 0.0, shine: bool = False
+) -> None:
     cv.ellipse(g, x - w / 2, y - h / 2, w, h, cv.white, cv.ink, 4.5)
     cv.ellipse(g, x - pupil / 2 + dx, y - pupil * 0.55 + h * 0.12, pupil, pupil * 1.1, cv.ink)
+    if shine:  # a catch-light up and left on the pupil, from the same light as the head's gloss, and a fleck below
+        px, py = x + dx, y + h * 0.12
+        big, small = pupil * 0.46, pupil * 0.2
+        cv.ellipse(g, px - pupil * 0.3 - big / 2, py - pupil * 0.28 - big / 2, big, big, cv.white)
+        cv.ellipse(g, px + pupil * 0.22 - small / 2, py + pupil * 0.24 - small / 2, small, small, cv.white)
 
 
-def _eyes(cv: Canvas, g, kind: str, x: float, y: float) -> None:
+def _lash(cv: Canvas, g, x: float, y: float, side: int, rise: float) -> None:
+    """Two flicks from the outer corner at ``x, y``, swept outward and up by ``rise``."""
+    for k, (dx, dy) in enumerate(((11, -rise), (14, -rise * 0.35))):
+        x0, y0 = x - side * 3 * k, y + 5 * k
+        cv.path(
+            g, f"M {x0:g} {y0:g} Q {x0 + side * dx * 0.5:g} {y0:g} {x0 + side * dx:g} {y0 + dy:g}", stroke=cv.ink, sw=4
+        )
+
+
+def _eyes(cv: Canvas, g, kind: str, x: float, y: float, shine: bool = False, lashes: bool = False) -> None:
     for side in (-1, 1):
         ex = x + side * 30
-        if kind == "open":
-            _eye(cv, g, ex, y, 40, 46, 17)
-        elif kind == "look":
-            _eye(cv, g, ex, y, 40, 46, 17, dx=-8)
-        elif kind == "wide":
-            _eye(cv, g, ex, y - 3, 48, 56, 13)
+        if kind in ("open", "look", "wide"):
+            w, h, cy = (48, 56, y - 3) if kind == "wide" else (40, 46, y)
+            _eye(cv, g, ex, cy, w, h, 13 if kind == "wide" else 17, dx=-8 if kind == "look" else 0.0, shine=shine)
+            if lashes:  # where the lid's outer curve turns down
+                _lash(cv, g, ex + side * w * 0.36, cy - h * 0.34, side, 10)
         elif kind == "happy":
             _stroke(cv, g, f"M {ex - 15:g} {y + 6:g} Q {ex:g} {y - 14:g} {ex + 15:g} {y + 6:g}")
+            if lashes:
+                _lash(cv, g, ex + side * 13, y + 2, side, 8)
         elif kind == "squint":
             tip, back = ex - 11 * side, ex + 13 * side  # pointing inward: ">" on the left, "<" on the right
             _stroke(cv, g, f"M {back:g} {y - 12:g} L {tip:g} {y:g} L {back:g} {y + 12:g}")
+            if lashes:
+                _lash(cv, g, back, y - 11, side, 8)
         else:  # closed
             _stroke(cv, g, f"M {ex - 15:g} {y - 2:g} Q {ex:g} {y + 11:g} {ex + 15:g} {y - 2:g}")
+            if lashes:
+                _lash(cv, g, ex + side * 14, y, side, 6)
 
 
 def _mouth(cv: Canvas, g, kind: str, x: float, y: float) -> None:
@@ -562,7 +588,8 @@ def _mouth(cv: Canvas, g, kind: str, x: float, y: float) -> None:
 
 
 EYES: dict[str, Callable[..., None]] = {
-    k: (lambda cv, g, x, y, k=k: _eyes(cv, g, k, x, y)) for k in ("open", "look", "wide", "happy", "squint", "closed")
+    k: (lambda cv, g, x, y, k=k, **polish: _eyes(cv, g, k, x, y, **polish))
+    for k in ("open", "look", "wide", "happy", "squint", "closed")
 }
 # "sing" follows the soundtrack: the amplitude mouth states map onto drawn mouths.
 SING = {"rest": "smile", "smile": "smile", "small": "small", "open": "grin", "round": "o"}
@@ -595,7 +622,11 @@ class Look:
     ``topper`` draws what grows from the head, between the outline and fill passes so the fill hides its base;
     ``hair`` draws on top of the head after the fill; ``features`` draws on the face after the mouth. Each
     drawer gets a group that follows the head (``features``: the face) and the head radius; its group is
-    ``<id>-<topper_id>``, ``<id>-hair`` and ``<id>-<features_id>``."""
+    ``<id>-<topper_id>``, ``<id>-hair`` and ``<id>-<features_id>``.
+
+    The polish is off by default, so a look without it draws exactly as before: ``shade`` colours a crescent
+    on the head away from the light (upper left), ``gloss`` puts a highlight on the lit side, ``catchlights``
+    puts the same light in the pupils and ``lashes`` adds two flicks at the outer corner of every eye."""
 
     name: str
     fill: str | None = None
@@ -605,11 +636,15 @@ class Look:
     hair: Drawer | None = None
     features: Drawer | None = None
     features_id: str = "features"
+    shade: str | None = None
+    gloss: bool = False
+    catchlights: bool = False
+    lashes: bool = False
 
     def __post_init__(self) -> None:
         if not _NAME.fullmatch(self.name):
             raise BlobError(f"a look's name is a lower-case id, got {self.name!r}")
-        for label, colour in (("fill", self.fill), ("blush", self.blush)):
+        for label, colour in (("fill", self.fill), ("blush", self.blush), ("shade", self.shade)):
             if colour is not None and not _COLOUR.fullmatch(colour):
                 raise BlobError(f"look {self.name!r}: {label} must be a #RRGGBB colour, got {colour!r}")
 
@@ -649,6 +684,189 @@ def _glasses(cv: Canvas, g, r: float) -> None:
 
 PIP = Look("pip", topper=_sprout_look, topper_id="sprout")
 BO = Look("bo", fill=BO_FILL, blush=None, hair=_side_part, features=_glasses, features_id="glasses")
+
+
+# -- polish: light from the upper left ----------------------------------------------------------------------
+LIGHT = (-0.16, -0.2)  # where the lit disc sits, as a fraction of the head radius; the shade is what it misses
+GLOSS = "#FFFFFF"
+
+
+def _arc(cx: float, cy: float, r: float, a0: float, a1: float, steps: int) -> list[Point]:
+    return [
+        (cx + r * math.cos(a0 + (a1 - a0) * i / steps), cy + r * math.sin(a0 + (a1 - a0) * i / steps))
+        for i in range(steps + 1)
+    ]
+
+
+def _crescent(r: float, dx: float, dy: float, steps: int = 24) -> str:
+    """The part of a disc of radius ``r`` at the origin that the same disc moved by ``dx, dy`` leaves uncovered:
+    an outer arc on the side away from the move, closed by an arc of the moved disc."""
+    gap = math.hypot(dx, dy)
+    if not (math.isfinite(gap) and 0 < gap < 2 * r):
+        raise BlobError(f"a crescent needs the lit disc moved by more than 0 and less than {2 * r:g}, got {gap!r}")
+    toward, half = math.atan2(dy, dx), math.acos(gap / (2 * r))
+    outer = _arc(0, 0, r, toward + half, toward + 2 * math.pi - half, steps)
+    # the moved circle from where the outer arc ends back to where it starts, through its side inside the head
+    (ex, ey), (sx, sy) = outer[-1], outer[0]
+    a_end, a_start = math.atan2(ey - dy, ex - dx), math.atan2(sy - dy, sx - dx)
+    if a_start > a_end:
+        a_start -= 2 * math.pi
+    inner = _arc(dx, dy, r, a_end, a_start, steps)[1:-1]
+    return "M " + " L ".join(f"{x:.2f} {y:.2f}" for x, y in [*outer, *inner]) + " Z"
+
+
+def _polish(cv: Canvas, g, r: float, look: Look) -> None:
+    """The head's shade and gloss, drawn over its fill in a group that follows the head."""
+    if look.shade is not None:
+        cv.path(g, _crescent(r, LIGHT[0] * r, LIGHT[1] * r), look.shade, cv.clear, 0)
+    if look.gloss:  # a highlight following the head's curve on the lit side, and a dot after it
+        band = _arc(0, 0, 0.74 * r, math.radians(196), math.radians(236), 8)
+        cv.path(g, "M " + " L ".join(f"{x:.2f} {y:.2f}" for x, y in band), stroke=GLOSS, sw=0.11 * r, opacity=0.85)
+        (dot_x, dot_y), size = _arc(0, 0, 0.74 * r, math.radians(252), math.radians(252), 1)[0], 0.1 * r
+        cv.ellipse(g, dot_x - size / 2, dot_y - size / 2, size, size, GLOSS, opacity=0.85)
+
+
+def _points(points: Sequence[Point]) -> str:
+    return " L ".join(f"{x:.1f} {y:.1f}" for x, y in points)
+
+
+JUNO_FILL = "#FAD5BE"
+JUNO_SHADE = "#EFBA9D"
+JUNO_HAIR = "#6E3A2C"
+JUNO_STRAND = "#4F271D"
+JUNO_SHEEN = "#A0604C"
+JUNO_TIE = "#E8695A"
+JUNO_FRECKLE = "#C7876A"
+BUN = (0.04, -1.2, 0.36)  # the bun's centre and radius, in head radii: a third of it hidden by the head
+
+
+def _bun(cv: Canvas, g, r: float) -> None:
+    """Juno's bun, planted on the crown (the head's fill hides its base), wound in two strands with a sheen."""
+    bx, by, br = (v * r for v in BUN)
+    cv.ellipse(g, bx - br, by - br, 2 * br, 2 * br, JUNO_HAIR, cv.ink, 4)
+    for d in (
+        f"M {bx - 0.7 * br:.1f} {by + 0.1 * br:.1f} Q {bx - 0.2 * br:.1f} {by - 0.75 * br:.1f} "
+        f"{bx + 0.65 * br:.1f} {by - 0.35 * br:.1f}",
+        f"M {bx - 0.35 * br:.1f} {by + 0.55 * br:.1f} Q {bx + 0.45 * br:.1f} {by + 0.35 * br:.1f} "
+        f"{bx + 0.7 * br:.1f} {by - 0.15 * br:.1f}",
+    ):
+        cv.path(g, d, stroke=JUNO_STRAND, sw=3.5)
+    sheen = _arc(bx, by, 0.72 * br, math.radians(200), math.radians(245), 6)
+    cv.path(g, "M " + _points(sheen), stroke=JUNO_SHEEN, sw=5)
+
+
+def _bangs(cv: Canvas, g, r: float) -> None:
+    """Juno's hair: a cap from ear to ear with three scalloped bangs, a parting sheen and the scrunchie that
+    ties the bun on, drawn over the cap."""
+    rim = _arc(0, 0, r, math.radians(170), math.radians(370), 40)  # y down: 170° is the left cheek, 370° the right
+    lx, ly = rim[0]
+    hairline = (
+        f"Q {0.9 * r:.1f} {-0.2 * r:.1f} {0.72 * r:.1f} {-0.38 * r:.1f} "
+        f"Q {0.5 * r:.1f} {-0.26 * r:.1f} {0.26 * r:.1f} {-0.46 * r:.1f} "
+        f"Q {0.0:.1f} {-0.3 * r:.1f} {-0.26 * r:.1f} {-0.48 * r:.1f} "
+        f"Q {-0.52 * r:.1f} {-0.28 * r:.1f} {-0.74 * r:.1f} {-0.38 * r:.1f} "
+        f"Q {-0.92 * r:.1f} {-0.2 * r:.1f} {lx:.1f} {ly:.1f}"
+    )
+    cv.path(g, f"M {_points(rim)} {hairline} Z", JUNO_HAIR, cv.ink, 4)
+    for d in (
+        f"M {0.02 * r:.1f} {-0.96 * r:.1f} Q {-0.28 * r:.1f} {-0.72 * r:.1f} {-0.5 * r:.1f} {-0.5 * r:.1f}",
+        f"M {0.02 * r:.1f} {-0.96 * r:.1f} Q {0.3 * r:.1f} {-0.74 * r:.1f} {0.46 * r:.1f} {-0.52 * r:.1f}",
+    ):
+        cv.path(g, d, stroke=JUNO_STRAND, sw=3.5)
+    sheen = _arc(0, 0, 0.8 * r, math.radians(205), math.radians(240), 6)
+    cv.path(g, "M " + _points(sheen), stroke=JUNO_SHEEN, sw=7, opacity=0.9)
+    bx, by, br = (v * r for v in BUN)
+    tie = -0.98 * r  # round the bun where it meets the crown
+    half = math.sqrt(br * br - (by - tie) ** 2) + 0.05 * r
+    cv.rect(g, bx - half, tie - 0.08 * r, 2 * half, 0.16 * r, JUNO_TIE, cv.ink, 4, radius=0.08 * r)
+    for k in (-1, 0, 1):
+        x = bx + k * 0.45 * half
+        cv.path(g, f"M {x:.1f} {tie - 0.04 * r:.1f} L {x:.1f} {tie + 0.04 * r:.1f}", stroke=cv.ink, sw=2.5)
+
+
+def _freckles(cv: Canvas, g, r: float) -> None:
+    """Three freckles over each cheek, over the blush."""
+    for side in (-1, 1):
+        for fx, fy, size in ((50, 18, 5.5), (61, 26, 5), (68, 16, 4.5)):
+            cv.ellipse(g, side * fx - size / 2, fy - size / 2, size, size, JUNO_FRECKLE)
+
+
+REMY_FILL = "#DDD5F4"
+REMY_SHADE = "#C4B7E9"
+REMY_HAIR = "#4A4372"
+REMY_SHEEN = "#7C74A8"
+REMY_GEAR = "#3D4250"
+REMY_CUSHION = "#272A33"
+REMY_TRIM = "#6D7488"
+REMY_LED = "#F2A93B"
+REMY_BLUSH = "#EFB3C4"
+
+
+def _tuft(cv: Canvas, g, r: float) -> None:
+    """Remy's tuft: three locks sprung from the crown (the head's fill hides their roots), swept up and curling
+    over at the tip by ``curl``, the middle one tallest, each with a sheen along its lit edge."""
+    root_y = -0.82
+    locks = ((-0.5, -0.12, -0.36, -1.5, 0.22), (-0.2, 0.2, 0.12, -1.68, 0.26), (0.12, 0.48, 0.58, -1.46, 0.2))
+    for left, right, tip_x, tip_y, curl in locks:
+        d = (
+            f"M {left * r:.1f} {root_y * r:.1f} "
+            f"C {(left - 0.06) * r:.1f} {(tip_y + 0.3) * r:.1f} {(tip_x - curl) * r:.1f} {tip_y * r:.1f} "
+            f"{tip_x * r:.1f} {tip_y * r:.1f} "
+            f"C {(tip_x - 0.02) * r:.1f} {(tip_y + 0.22) * r:.1f} {(right + 0.04) * r:.1f} {(root_y - 0.3) * r:.1f} "
+            f"{right * r:.1f} {root_y * r:.1f} Z"
+        )
+        cv.path(g, d, REMY_HAIR, cv.ink, 4)
+        sheen = (
+            f"M {(left + 0.1) * r:.1f} {(root_y - 0.12) * r:.1f} Q {(left + 0.04) * r:.1f} {(tip_y + 0.36) * r:.1f} "
+            f"{(tip_x - 0.06) * r:.1f} {(tip_y + 0.12) * r:.1f}"
+        )
+        cv.path(g, sheen, stroke=REMY_SHEEN, sw=4)
+
+
+def _headset(cv: Canvas, g, r: float) -> None:
+    """Remy's headset: a padded band over the crown, an ear cup each side with a status light, and a mic boom
+    from the left cup to beside the mouth."""
+    outer = _arc(0, 0, 1.12 * r, math.radians(194), math.radians(346), 24)
+    inner = _arc(0, 0, 1.0 * r, math.radians(346), math.radians(194), 24)
+    cv.path(g, f"M {_points([*outer, *inner])} Z", REMY_GEAR, cv.ink, 4)
+    trim = _arc(0, 0, 1.06 * r, math.radians(214), math.radians(326), 16)
+    cv.path(g, "M " + _points(trim), stroke=REMY_TRIM, sw=3)
+    boom = f"M {-0.98 * r:.1f} {0.12 * r:.1f} Q {-0.9 * r:.1f} {0.46 * r:.1f} {-0.44 * r:.1f} {0.44 * r:.1f}"
+    cv.path(g, boom, stroke=cv.ink, sw=11)
+    cv.path(g, boom, stroke=REMY_GEAR, sw=5)
+    cv.rect(g, -0.5 * r, 0.36 * r, 0.2 * r, 0.16 * r, REMY_CUSHION, cv.ink, 4, radius=0.08 * r)
+    for side in (-1, 1):
+        x = side * 1.02 * r
+        cv.rect(g, x - 0.17 * r, -0.3 * r, 0.34 * r, 0.56 * r, REMY_GEAR, cv.ink, 4, radius=0.15 * r)
+        cv.rect(
+            g, x - 0.17 * r + (0.2 * r if side < 0 else 0), -0.22 * r, 0.14 * r, 0.4 * r, REMY_CUSHION, radius=0.07 * r
+        )
+        cv.ellipse(g, x - 0.04 * r, -0.2 * r, 0.08 * r, 0.08 * r, REMY_LED)
+
+
+JUNO = Look(
+    "juno",
+    fill=JUNO_FILL,
+    topper=_bun,
+    topper_id="bun",
+    hair=_bangs,
+    features=_freckles,
+    features_id="freckles",
+    shade=JUNO_SHADE,
+    catchlights=True,
+    lashes=True,
+)
+REMY = Look(
+    "remy",
+    fill=REMY_FILL,
+    blush=REMY_BLUSH,
+    topper=_tuft,
+    topper_id="tuft",
+    hair=_headset,
+    shade=REMY_SHADE,
+    gloss=True,
+    catchlights=True,
+)
 
 
 # -- the static silhouette ------------------------------------------------------------------------------------
@@ -894,6 +1112,8 @@ def blob(
         head = head_at(cv.group(g, f"{id}-head-{pass_name}"))
         r = radius + (o if pass_name == "outline" else 0)
         cv.ellipse(head, -r, -r, 2 * r, 2 * r, fill)
+        if pass_name == "fill":
+            _polish(cv, head, radius, look)
         if pass_name == "outline" and look.topper is not None:
             look.topper(cv, head_at(cv.group(root, f"{id}-{look.topper_id}")), radius)
     if look.hair is not None:
@@ -920,7 +1140,7 @@ def blob(
     for kind in dict.fromkeys(e for _, e in eyes_track):
         g = cv.group(face, f"{id}-eyes-{kind}")
         _show(cv, g, _changes(eyes_track, kind))
-        EYES[kind](cv, g, 0, -8)
+        EYES[kind](cv, g, 0, -8, shine=look.catchlights, lashes=look.lashes)
     mouths = mouth_track(frames, mouth_states or ())
     for shape in dict.fromkeys(m for _, m in mouths):
         g = cv.group(face, f"{id}-mouth-{shape}")
@@ -1009,6 +1229,85 @@ def bo(
         radius=radius,
         shadow=shadow,
         look=BO,
+    )
+
+
+@register(
+    "character",
+    "juno",
+    summary="Juno, the colleague who already did the reading: Pip's rig and pose sheet in an apricot body with "
+    "an auburn bun, scalloped bangs, a coral scrunchie and freckles; shaded, with catch-lights and lashes on every "
+    "eye",
+)
+def juno(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "juno",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """Juno performing ``cues``: the same rig, poses and options as :func:`pip`, in :data:`JUNO`."""
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=JUNO,
+    )
+
+
+@register(
+    "character",
+    "remy",
+    summary="Remy from IT support: Pip's rig and pose sheet in a lavender body with a spiky tuft and a headset "
+    "(padded band, ear cups with a status light, mic boom); shaded, with a gloss on the head and catch-lights",
+)
+def remy(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "remy",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """Remy performing ``cues``: the same rig, poses and options as :func:`pip`, in :data:`REMY`."""
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=REMY,
     )
 
 
