@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {"model": "claude-opus-5-5", "tool": "Claude Code"},
+  "created": "2026-10-28",
+  "order": "each script is meant to be funnier than the one before it",
+  "scripts": [
+    {
+      "rank": 1,
+      "slug": "day-off",
+      "title": "Day Off",
+      "style": "soft",
+      "frame": "1080x1920, 30 fps",
+      "duration_seconds": 18.0,
+      "logline": "Pip finally has a Saturday on the sofa, but his body is still at work: it types on nothing and agrees with the lamp. He can only relax once relaxing is a meeting.",
+      "comic_engine": "Inversion of Focus Mode: there the groove beats the work, here the work beats the rest. One premise, one twist, a button on the end.",
+      "cast": ["pip (sung, ElevenLabs voice Will)"],
+      "locations": ["soft-home"],
+      "audio": "Pip's sung lines over a lazy groove; effects: calendar ping, meeting-ended chime.",
+      "beats": [
+        {"start": 0.0, "end": 2.5, "visual": "soft-home wide. Pip in the lounge pose, eyes closed, smiling.", "line": "Saturday. No work. Just me.", "sfx": null},
+        {"start": 2.5, "end": 5.0, "visual": "On the beat, his hands lift off his lap and type on the air (type-a/type-b). Eyes 'look' down at them.", "line": "My hands are typing... on nothing.", "sfx": "faint keyboard clicks from no keyboard"},
+        {"start": 5.0, "end": 7.5, "visual": "He nods on the beat, turned toward the floor lamp.", "line": "Yes, totally. Great point, lamp.", "sfx": null},
+        {"start": 7.5, "end": 10.0, "visual": "He stands (step), hands clasped, very calm. Sits back into lounge; the hands drift up and start typing again.", "line": "I can stop. I can stop any time.", "sfx": null},
+        {"start": 10.0, "end": 13.5, "visual": "A calendar badge pops over the sofa: 'Relax · 15 min', then 'Accepted'. Pip lounges, eyes closed; the groove melts and, for the first time, nothing moves.", "line": "Booked a meeting... with the sofa.", "sfx": "calendar ping"},
+        {"start": 13.5, "end": 16.0, "visual": "Chime. Badge: 'Meeting ended'. Pip snaps upright, eyes wide, typing on the air again.", "line": "Running over! Sorry, sofa!", "sfx": "meeting-ended chime"},
+        {"start": 16.0, "end": 18.0, "visual": "Badge: 'Extend 15 min?' He taps it. Back to lounge, eyes closed. Hard out.", "line": null, "sfx": "calendar ping"}
+      ],
+      "punchline": "He can only rest when rest is on his calendar, and he extends the meeting.",
+      "why_funnier": "Baseline: one relatable idea told cleanly.",
+      "avoids": ["office set", "interview Q&A", "scorecard end card", "dancing instead of working (it is the reverse)"],
+      "parts": {
+        "existing": ["blob.home(on_sofa=)", "pose lounge", "poses type-a/type-b, nod, step, clasp", "SOFT_MOUTH sing mouth", "srstudio.song pipeline"],
+        "new": ["calendar badge graphic for Soft (Camera Off's call badge is the pattern)"]
+      }
+    },
+    {
+      "rank": 2,
+      "slug": "not-a-robot",
+      "title": "Not a Robot",
+      "style": "ink",
+      "frame": "1080x1080, 24 fps, shot sequence",
+      "duration_seconds": 32.0,
+      "logline": "One form before lunch. The captcha's questions get more personal until it decides the human is a robot, and the router from Ink 02 welcomes him home.",
+      "comic_engine": "Rule of three that turns existential, then a callback reveal from another episode.",
+      "cast": ["human (Ink doodle)", "talking-router (cameo from The Router)"],
+      "locations": ["desk_shot", "closeup", "router_shot", "screen close-up (new)"],
+      "audio": "ElevenLabs dialogue for the human and the router; effects: mouse clicks, error buzz, router LED chirp.",
+      "beats": [
+        {"start": 0.0, "end": 3.0, "visual": "desk_shot. The human at the laptop.", "line": "HUMAN: One form. Then lunch.", "sfx": "click"},
+        {"start": 3.0, "end": 6.0, "visual": "Screen: '☐ I'm not a robot'. Tick. Then: 'Select all images with traffic lights.'", "line": null, "sfx": "click"},
+        {"start": 6.0, "end": 8.5, "visual": "closeup. Smug.", "line": "HUMAN: Easy.", "sfx": "three quick clicks"},
+        {"start": 8.5, "end": 11.5, "visual": "Screen: 'Select all traffic lights that are sad.'", "line": null, "sfx": null},
+        {"start": 11.5, "end": 14.0, "visual": "closeup. He squints, clicks one square slowly.", "line": "HUMAN: ...That one's having a day.", "sfx": "click"},
+        {"start": 14.0, "end": 17.0, "visual": "Screen: 'Select every moment you felt truly alive.' The grid is nine identical pictures of the laptop.", "line": null, "sfx": null},
+        {"start": 17.0, "end": 20.0, "visual": "closeup. Long silence. He doesn't click.", "line": "HUMAN: ...Skip?", "sfx": null},
+        {"start": 20.0, "end": 23.5, "visual": "Screen: 'Verification failed. You hesitated like a human, but you clicked like a robot.'", "line": null, "sfx": "error buzz"},
+        {"start": 23.5, "end": 26.5, "visual": "router_shot. The LEDs chase gently, the antennas bob.", "line": "ROUTER: Welcome, brother.", "sfx": "LED chirp"},
+        {"start": 26.5, "end": 29.0, "visual": "closeup.", "line": "HUMAN: I'm not a... Do robots get lunch?", "sfx": null},
+        {"start": 29.0, "end": 32.0, "visual": "router_shot, close=True.", "line": "ROUTER: Only after a reboot.", "sfx": null}
+      ],
+      "punchline": "The router, who spent Ink 02 begging to be rebooted, offers the human the same deal.",
+      "why_funnier": "Three escalating beats instead of one idea, a turn from mundane to existential, and a callback viewers of The Router get twice.",
+      "avoids": ["work as the subject (lunch is the stake)", "the appliance as the main character (it's a cameo)", "interview Q&A"],
+      "parts": {
+        "existing": ["ink human with moods", "router_shot / talking-router", "desk_shot, closeup", "Ink takes pipeline, take-based ep.audio(take=)"],
+        "new": ["ink-captcha: a laptop-screen shot with a 3x3 grid, checkbox and prompt line in Patrick Hand"]
+      }
+    },
+    {
+      "rank": 3,
+      "slug": "the-cactus",
+      "title": "The Cactus",
+      "style": "cutout",
+      "frame": "1080x1920, 30 fps",
+      "duration_seconds": 42.0,
+      "logline": "The cast finally notices the potted cactus that has been in every original video since Five Years. It follows them from the office to the café to the park, and in the end it is in the executive chair.",
+      "comic_engine": "A crossover that pays off a running gag the audience has seen in every original video since Five Years without knowing it was one; escalation by proximity, then a role reversal with two callbacks to Five Years (the chair, the squeak).",
+      "cast": ["interviewer", "candidate", "Ava (barista)", "beanie guy", "the cactus (signature, now performing)", "the park pigeon"],
+      "locations": ["office_wide", "office_reverse", "cafe", "park"],
+      "audio": "ElevenLabs dialogue and effects: the squeaky chair (from Five Years), coffee cup set down, pigeon flutter, a single 'pop' for the bloom.",
+      "beats": [
+        {"start": 0.0, "end": 6.0, "visual": "office_wide. The interviewer stops reading a CV and stares at the cactus on his desk.", "line": "INTERVIEWER: Has this always been here? / CANDIDATE: It came with the chair.", "sfx": null},
+        {"start": 6.0, "end": 14.0, "visual": "cafe. Ava sets down a coffee; the cactus sits next to the tip jar. Both stare at it. Its flower turns toward them a few degrees.", "line": "BEANIE: Is that yours? / AVA: I thought it was yours.", "sfx": "cup set down"},
+        {"start": 14.0, "end": 22.0, "visual": "park. The beanie guy flees to the bench. The cactus is already on the bench beside him. The pigeon looks at it and leaves.", "line": "BEANIE: I bought a coffee! I did everything right!", "sfx": "pigeon flutter"},
+        {"start": 22.0, "end": 30.0, "visual": "office_reverse. The interviewer comes back, shuts the door, exhales, turns: the cactus is in the executive chair, turning slowly.", "line": "INTERVIEWER: ...No.", "sfx": "the squeaky chair"},
+        {"start": 30.0, "end": 36.0, "visual": "Slow push-in on the pot until the code SR-1028 fills the frame. The candidate leans into shot.", "line": "INTERVIEWER: S-R... one-oh-two-eight? / CANDIDATE: That's its employee number.", "sfx": null},
+        {"start": 36.0, "end": 42.0, "visual": "office_reverse. The interviewer sits in the applicant's chair, facing the cactus.", "line": "INTERVIEWER: So... where do you see yourself in five years? (The flower blooms. Hard cut.)", "sfx": "pop"}
+      ],
+      "punchline": "The interviewer interviews the cactus, and it answers by blooming. The audience realises it has been in every original video since Five Years.",
+      "why_funnier": "It rewards the whole back catalogue: the payoff lands on five videos of setup nobody noticed (Five Years, The Router, Focus Mode, Camera Off, Screen Share), it inverts our most repeated format (the interviewer is now the applicant), and it stacks two callbacks (the chair, the squeak) without repeating either joke.",
+      "avoids": ["Q&A as the joke (the one question is the button, not the format)", "scorecard end card", "a single location"],
+      "parts": {
+        "existing": ["cutout cast, office_wide/office_reverse/cafe/park and their slots", "signature.cactus and signature.code, drawn by every location of a signed episode", "the executive chair, its spin and the squeak effect from Five Years", "Episode.generated_audio / ep.audio(extra=)"],
+        "new": ["a performing cactus: the signature cactus as a keyed prop (flower turn, bloom pop, seat position in the exec chair and on the bench)"],
+        "constraint": "The push-in on the pot must use the inline drawing, not instanced symbols: engines 0.8.0 and 0.9.0 both soften magnified instances (checked 2026-10-28)."
+      }
+    }
+  ]
+}
