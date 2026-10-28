@@ -272,25 +272,31 @@ def urllib_transport(url: str, payload: dict, headers: dict) -> tuple[object, st
     request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
-            body = json.load(response)
-            return body, response.headers.get("request-id", response.headers.get("x-request-id"))
+            return _json_body(response, "response"), _request_id(response)
     except urllib.error.HTTPError as exc:
-        try:
-            detail = json.loads(exc.read()).get("detail", {})
-            message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
-        except Exception:
-            message = "request failed"
-        raise RuntimeError(f"ElevenLabs HTTP {exc.code}: {message}") from None
-    except json.JSONDecodeError:
-        raise VoiceOutputError("response is not JSON") from None
+        raise _http_error(exc) from None
+
+
+def _json_body(response, what: str) -> object:
+    """The decoded JSON document; undecodable bytes or invalid JSON are invalid output."""
+    try:
+        return json.load(response)
+    except ValueError:  # JSONDecodeError and UnicodeDecodeError
+        raise VoiceOutputError(f"{what} is not JSON") from None
+
+
+def _request_id(response) -> str | None:
+    return response.headers.get("request-id", response.headers.get("x-request-id"))
 
 
 def _http_error(exc: urllib.error.HTTPError) -> RuntimeError:
+    """Only the provider's ``detail`` message travels on; an unreadable error document says so."""
     try:
-        detail = json.loads(exc.read()).get("detail", {})
-        message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
-    except Exception:
-        message = "request failed"
+        doc = json.loads(exc.read())
+    except (OSError, ValueError):
+        doc = None
+    detail = doc.get("detail", {}) if isinstance(doc, dict) else {}
+    message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
     return RuntimeError(f"ElevenLabs HTTP {exc.code}: {message}")
 
 
@@ -299,7 +305,7 @@ def urllib_binary_transport(url: str, payload: dict, headers: dict) -> tuple[byt
     request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
-            return response.read(), response.headers.get("request-id", response.headers.get("x-request-id"))
+            return response.read(), _request_id(response)
     except urllib.error.HTTPError as exc:
         raise _http_error(exc) from None
 
@@ -326,11 +332,9 @@ def urllib_multipart_transport(url: str, fields: dict, files: dict, headers: dic
     )
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
-            return json.load(response), response.headers.get("request-id", response.headers.get("x-request-id"))
+            return _json_body(response, "speech-to-text response"), _request_id(response)
     except urllib.error.HTTPError as exc:
         raise _http_error(exc) from None
-    except json.JSONDecodeError:
-        raise VoiceOutputError("speech-to-text response is not JSON") from None
 
 
 # -- speech-to-text: typed transcript and the script check --------------------------------------------

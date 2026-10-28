@@ -468,3 +468,103 @@ def test_an_invalid_transcript_is_not_cached(tmp_path):
     with pytest.raises(VoiceOutputError):
         client.transcribe(wav)
     assert not list((tmp_path / "c").glob("stt-*.json")) if (tmp_path / "c").exists() else True
+
+
+# -- HTTP transports: urlopen replaced by an in-memory response ---------------------------------------
+import io  # noqa: E402
+import urllib.error  # noqa: E402
+
+from srstudio import voice  # noqa: E402
+
+
+class Reply:
+    def __init__(self, body: bytes, headers=None):
+        self.body, self.headers = body, headers or {}
+
+    def read(self, *_):
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+
+def serve(monkeypatch, body=b"", headers=None, status=None):
+    """``urlopen`` answers ``body``, or raises HTTP ``status`` with ``body`` as the error document."""
+    seen = []
+
+    def urlopen(request, timeout):
+        seen.append((request, timeout))
+        if status:
+            raise urllib.error.HTTPError(request.full_url, status, "error", {}, io.BytesIO(body))
+        return Reply(body, headers)
+
+    monkeypatch.setattr(voice.urllib.request, "urlopen", urlopen)
+    return seen
+
+
+def test_json_transport_posts_once_and_returns_the_request_id(monkeypatch):
+    seen = serve(monkeypatch, b'{"ok": 1}', {"request-id": "r-9"})
+    assert voice.urllib_transport("https://api/x", {"text": "hi"}, {"xi-api-key": "k"}) == ({"ok": 1}, "r-9")
+    ((request, timeout),) = seen
+    assert request.method == "POST" and json.loads(request.data) == {"text": "hi"} and timeout == 90
+
+
+@pytest.mark.parametrize("body", [b"<html>502</html>", b"\x80\x81 not utf-8", b""])
+def test_json_transport_rejects_a_body_that_is_not_json(monkeypatch, body):
+    serve(monkeypatch, body)
+    with pytest.raises(VoiceOutputError, match="not JSON"):
+        voice.urllib_transport("https://api/x", {}, {})
+
+
+@pytest.mark.parametrize(
+    "body,message",
+    [
+        (b'{"detail": {"message": "quota exceeded"}}', "quota exceeded"),
+        (b'{"detail": "voice not found"}', "voice not found"),
+        (b'{"detail": {}}', "request failed"),
+        (b"[1, 2]", "request failed"),
+        (b"<html>gateway</html>", "request failed"),
+        (b"\x80 not utf-8", "request failed"),
+    ],
+)
+@pytest.mark.parametrize("kind", ["json", "binary", "multipart"])
+def test_http_errors_carry_only_the_provider_message(monkeypatch, body, message, kind):
+    serve(monkeypatch, body, status=429)
+    call = {
+        "json": lambda: voice.urllib_transport("https://api/x", {}, {}),
+        "binary": lambda: voice.urllib_binary_transport("https://api/x", {}, {}),
+        "multipart": lambda: voice.urllib_multipart_transport("https://api/x", {}, {}, {}),
+    }[kind]
+    with pytest.raises(RuntimeError, match=f"^ElevenLabs HTTP 429: {message}$") as err:
+        call()
+    assert not isinstance(err.value, VoiceOutputError)
+
+
+def test_binary_transport_returns_the_audio_bytes(monkeypatch):
+    seen = serve(monkeypatch, b"ID3audio", {"x-request-id": "x-1"})
+    assert voice.urllib_binary_transport("https://api/sfx", {"text": "thud"}, {}) == (b"ID3audio", "x-1")
+    assert seen[0][1] == 120
+
+
+def test_multipart_transport_encodes_fields_and_files(monkeypatch):
+    seen = serve(monkeypatch, b'{"text": "hi"}')
+    body, request_id = voice.urllib_multipart_transport(
+        "https://api/stt", {"model_id": "scribe_v1"}, {"file": ("a.wav", b"RIFFdata", "audio/wav")}, {"xi-api-key": "k"}
+    )
+    assert body == {"text": "hi"} and request_id is None
+    request = seen[0][0]
+    boundary = request.get_header("Content-type").split("boundary=")[1]
+    data = request.data
+    assert data.startswith(f"--{boundary}\r\n".encode()) and data.endswith(f"--{boundary}--\r\n".encode())
+    assert b'name="model_id"\r\n\r\nscribe_v1\r\n' in data
+    assert b'name="file"; filename="a.wav"\r\nContent-Type: audio/wav\r\n\r\nRIFFdata\r\n' in data
+
+
+@pytest.mark.parametrize("body", [b"oops", b"\x80\x81"])
+def test_multipart_transport_rejects_a_body_that_is_not_json(monkeypatch, body):
+    serve(monkeypatch, body)
+    with pytest.raises(VoiceOutputError, match="not JSON"):
+        voice.urllib_multipart_transport("https://api/stt", {}, {}, {})
