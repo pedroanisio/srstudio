@@ -5,7 +5,8 @@
     python3 publish_drive.py --stage-only    # stage, push nothing
 
 Ready means the publish gate (``instagram_posts.py check``) finds no drift for the video: its render, post,
-caption and cover all match the last delivery. A drifted video is held back and listed, and the command exits 1.
+caption and cover all match the last delivery. A drifted video is held back and listed, and the command exits 1;
+a staging or upload failure exits 2. ``tools/systemd/srstudio-drive.{path,service}`` run it on every delivery.
 The upload is ``rclone copy``, which never deletes on Drive; a video that is held back stays wherever an earlier
 push put it. Needs an rclone remote (``rclone config``; the default is ``gdrive:``).
 """
@@ -49,17 +50,21 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     items = posts.items(args.renders)
-    bundles, drift = outbox.ready(
-        items, args.deliveries, font=posts.font_file(args.fonts), packages=packages_for(items, args.packages)
-    )
-    for d in drift:
-        print(f"held back: {d}")
-    manifest = outbox.stage(bundles, args.outbox)
-    held = len({d.name for d in drift} & set(items)) if not any(d.name == "*" for d in drift) else len(items)
-    print(f"{len(bundles)} ready, {held} held back; staged in {manifest.parent}")
-    if not args.stage_only:
-        outbox.push(manifest.parent, args.remote, rclone=args.rclone, dry_run=args.dry_run)
-        print(f"{'previewed' if args.dry_run else 'copied and checked'}: {args.remote}")
+    try:
+        bundles, drift = outbox.ready(
+            items, args.deliveries, font=posts.font_file(args.fonts), packages=packages_for(items, args.packages)
+        )
+        for d in drift:
+            print(f"held back: {d}")
+        manifest = outbox.stage(bundles, args.outbox)
+        held = len({d.name for d in drift} & set(items)) if not any(d.name == "*" for d in drift) else len(items)
+        print(f"{len(bundles)} ready, {held} held back; staged in {manifest.parent}")
+        if not args.stage_only:
+            outbox.push(manifest.parent, args.remote, rclone=args.rclone, dry_run=args.dry_run)
+            print(f"{'previewed' if args.dry_run else 'copied and checked'}: {args.remote}")
+    except outbox.OutboxError as e:
+        print(f"publish_drive: {e}", file=sys.stderr)
+        return 2
     return 1 if drift else 0
 
 

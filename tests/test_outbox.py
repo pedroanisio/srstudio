@@ -199,6 +199,21 @@ def test_the_command_stages_what_is_ready_and_pushes_it(delivered, tmp_path, mon
     assert len(run.calls) == 2  # --stage-only pushes nothing
 
 
+def test_the_command_reports_a_failed_upload_as_exit_2_not_a_traceback(delivered, tmp_path, monkeypatch, capsys):
+    items, out, _ = delivered
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import publish_drive
+    finally:
+        sys.path.remove(str(EPISODES))
+    monkeypatch.setattr(publish_drive.posts, "items", lambda renders: items)
+    monkeypatch.setattr(publish_drive.posts, "font_file", lambda folder: FONT)
+    monkeypatch.setattr(publish_drive.outbox, "_run", Runner(1))
+    args = ["--deliveries", str(out), "--renders", str(tmp_path), "--fonts", str(tmp_path)]
+    assert publish_drive.main([*args, "--packages", str(tmp_path), "--outbox", str(tmp_path / "outbox")]) == 2
+    assert "rclone copy failed (1): rclone: quota exceeded" in capsys.readouterr().err
+
+
 def test_a_failed_stage_keeps_the_previous_outbox_and_leaves_no_scratch(delivered, tmp_path, monkeypatch):
     items, out, _ = delivered
     folder = tmp_path / "outbox"
