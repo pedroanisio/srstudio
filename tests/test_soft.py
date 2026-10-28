@@ -567,3 +567,64 @@ def test_bos_hairline_climbs_from_above_the_ear_on_the_parted_side():
     points = [tuple(map(float, p.split())) for p in re.findall(r"-?[\d.]+ -?[\d.]+", d)]
     parted = [(x, y) for x, y in points if x > 0]
     assert parted and max(y for _, y in parted) < -0.15 * blob.HEAD  # no edge dropping down the cheek
+
+
+# -- the soft home: a sofa to lounge on ------------------------------------------------------------
+def sofa_world(p) -> tuple[float, float]:
+    return blob.SOFA_SEAT[0] + p[0] * blob.SCALE, blob.SOFA_SEAT[1] + p[1] * blob.SCALE
+
+
+def test_the_home_parts_are_registered_soft_and_lounge_is_a_seated_pose():
+    styles = {e.name: e.style for e in registry.entries()}
+    assert styles["soft-home"] == styles["soft-sofa"] == "soft"
+    assert POSES["lounge"].front == POSES["sit"].front == {"arm_l", "leg_l"}
+
+
+def test_lounging_on_the_sofa_the_hip_is_on_the_cushion_the_soles_on_the_floor_the_hands_on_the_lap():
+    for name in ("sit", "lounge"):
+        pose = POSES[name]
+        assert point_in(blob.sofa_seat(), *blob.SOFA_SEAT)
+        for leg in blob.FEET:
+            s = pose.limbs[leg]
+            sole = sofa_world((s.p3[0], s.p3[1] + s.w1 / 2))[1]
+            assert sole == pytest.approx(blob.SOFA_FLOOR, abs=12), (name, leg, sole)
+    thigh = POSES["lounge"].limbs["leg_l"]
+    for arm in ARMS:
+        hand = POSES["lounge"].limbs[arm].p3
+        gap = min(math.dist(hand, thigh.point(i / 40)) for i in range(41))
+        assert gap < thigh.w0 / 2 + 6, (arm, hand, gap)  # resting on the near thigh, not hovering over a keyboard
+
+
+def test_the_soft_home_seats_a_character_between_the_sofas_seat_and_its_near_arm():
+    from srstudio import Signature
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="10", duration=2, background=WARM.background)
+    cv = Canvas(scene, WARM, signature=Signature())
+    blob.home(cv, cv.comp, shots=[(0, 1)], on_sofa=lambda g: blob.pip(cv, g, [Cue(0, "lounge")], end=2))
+    root = tree(scene)
+    order = [e.get("id") for e in root.iter() if e.get("id")]
+    assert {"soft-home", "soft-sofa", "sig-cactus", "sig-code"} <= set(order)
+    assert order.index("soft-sofa-seat") < order.index("pip") < order.index("soft-sofa-arm-near")
+    home = next(e for e in root.iter() if e.get("id") == "soft-home")
+    assert [k.get("value") for k in home.iter() if local(k.tag) == "key"][:2] == ["1", "0"]
+    assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_the_sofa_alone_has_no_slot_and_still_draws_its_near_arm_last():
+    scene, cv = canvas()
+    blob.sofa(cv, cv.comp)
+    order = [e.get("id") for e in tree(scene).iter() if e.get("id")]
+    assert order.index("soft-sofa-seat") < order.index("soft-sofa-arm-near")
+
+
+def test_the_sofas_front_stands_on_the_floor_the_seated_soles_meet():
+    """The seat's front face drops to the line under the soles, so a seated character's feet are on the floor."""
+    scene, cv = canvas()
+    blob.sofa(cv, cv.comp)
+    seat = next(e for e in tree(scene).iter() if e.get("id") == "soft-sofa-seat")
+    (front,) = [e.get("path") for e in seat.iter() if e.get("shape") == "path" and e.get("fill") == blob.FABRIC_SIDE]
+    _, _, near, far = [tuple(map(float, p.split())) for p in re.findall(r"-?[\d.]+ -?[\d.]+", front)][:4]
+    x = blob.SOFA_SEAT[0] - 110  # the front edge on the hip's line along the sofa
+    bottom = far[1] + (near[1] - far[1]) * (x - far[0]) / (near[0] - far[0])
+    assert bottom + 18 == pytest.approx(blob.SOFA_FLOOR, abs=12)  # 18: the sofa's feet

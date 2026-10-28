@@ -51,7 +51,10 @@ __all__ = [
     "FRONTABLE",
     "SEATED_FLOOR",
     "LAPTOP",
+    "SOFA_SEAT",
+    "SOFA_FLOOR",
     "keyboard",
+    "sofa_seat",
     "silhouette",
     "drawings",
     "mouth_track",
@@ -59,6 +62,8 @@ __all__ = [
     "pip",
     "bo",
     "office",
+    "sofa",
+    "home",
 ]
 
 Point = tuple[float, float]
@@ -85,6 +90,14 @@ FLOOR = 1600.0  # standing poses put their origin (between the feet) on this lin
 SEAT = (790.0, 1340.0)  # a sitting pose's origin (the hip) on the soft office chair
 SEATED_FLOOR = 1476.0  # where a seated pose's soles meet the floor, beside the chair's front legs
 LAPTOP = (277.5, 416.0, 0.75)  # the laptop's x, y and scale on the desk, within reach of a seated pose's hands
+SOFA_SEAT = (600.0, 1340.0)  # a sitting pose's origin (the hip) on the soft home's sofa
+SOFA_FLOOR = SOFA_SEAT[1] + SEATED_FLOOR - SEAT[1]  # the sofa's seat stands as high over the floor as the chair's
+FABRIC_LINE = "#2E4A41"
+FABRIC_TOP = "#8FB3A5"
+FABRIC_FRONT = "#769C8E"
+FABRIC_SIDE = "#5F8577"
+RUG = "#E9C9A8"
+RUG_LINE = "#C99D74"
 
 
 class BlobError(ValueError):
@@ -319,6 +332,16 @@ def _sitting(hand_l: Point, hand_r: Point, head: Point = (-40, -322), face: Poin
     )
 
 
+def _lounging() -> Pose:
+    """Seated back against a sofa: the sit pose with the head tipped back and both hands resting on the near thigh."""
+    sit = _sitting((-170, -112), (-150, -108), head=(-30, -322), face=(-20, 2))
+    arms = {
+        "arm_l": Stroke((-62, -205), (-72, -160), (-72, -112), (-84, -70), *ARM),
+        "arm_r": Stroke((-42, -198), (-52, -152), (-50, -110), (-60, -74), *ARM),
+    }
+    return Pose("lounge", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
+
+
 def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
@@ -361,6 +384,7 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-178, -118), (-150, -106), head=(-44, -318)), "type-a"),
         _named(_sitting((-166, -106), (-158, -118), head=(-36, -326)), "type-b"),
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
+        _lounging(),
         _pose(
             "clasp",
             (0, -432),
@@ -1076,4 +1100,142 @@ def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = 
     signature.cactus(cv, g, 170, 1040, 0.62)
     laptop(cv, g)
     signature.code(cv, g, 40, 1327, 14, color=WOOD_LINE, angle=-9)
+    return g
+
+
+# -- the soft home: a sofa in the same 3/4 view, facing left -------------------------------------------------
+# A point on the sofa is ``a`` along the seat's depth (positive toward the backrest, on the right) and ``c`` along
+# its length (positive toward the viewer), ``up`` above the seat, from the hip at SOFA_SEAT; the axes are the
+# office chair's, so a seated pose fits both.
+_BACK = -45 / 215  # rise per pixel toward the backrest
+_NEAR = 70 / 95  # drop per pixel toward the viewer
+_DROP = SOFA_FLOOR - SOFA_SEAT[1] + 115 * _BACK  # seat top to floor where the soles land, 115 ahead of the hip
+_FEET = 18.0
+_SEAT_A, _SEAT_C = (-110.0, 120.0), (-300.0, 170.0)
+_ARM_W, _ARM_UP, _BACK_A, _BACK_UP = 60.0, 70.0, 200.0, 240.0
+
+
+def _sofa_pt(a: float, c: float, up: float = 0.0) -> Point:
+    return (SOFA_SEAT[0] + a + c, SOFA_SEAT[1] + a * _BACK + c * _NEAR - up)
+
+
+def _box(cv: Canvas, g, a: tuple[float, float], c: tuple[float, float], up: tuple[float, float], faces=None) -> None:
+    """A fabric block over ``a`` x ``c`` from ``up[0]`` to ``up[1]`` above the seat: its left, near and top faces."""
+    (a0, a1), (c0, c1), (lo, hi) = a, c, up
+    left = [_sofa_pt(a0, c0, hi), _sofa_pt(a0, c1, hi), _sofa_pt(a0, c1, lo), _sofa_pt(a0, c0, lo)]
+    near = [_sofa_pt(a0, c1, hi), _sofa_pt(a1, c1, hi), _sofa_pt(a1, c1, lo), _sofa_pt(a0, c1, lo)]
+    top = [_sofa_pt(a0, c0, hi), _sofa_pt(a1, c0, hi), _sofa_pt(a1, c1, hi), _sofa_pt(a0, c1, hi)]
+    for name, pts, fill in (("near", near, FABRIC_FRONT), ("left", left, FABRIC_SIDE), ("top", top, FABRIC_TOP)):
+        if faces is None or name in faces:
+            _poly(cv, g, pts, fill, FABRIC_LINE)
+
+
+def _foot(cv: Canvas, g, a: float, c: float) -> None:
+    x, y = _sofa_pt(a, c, -_DROP + _FEET)
+    _leg(cv, g, x, y, y + _FEET, w=22, side=8)
+
+
+def sofa_seat() -> list[Point]:
+    """The sofa's seat cushion top in output pixels, where a seated pose's hip lands."""
+    (a0, a1), (c0, c1) = _SEAT_A, _SEAT_C
+    return [_sofa_pt(a0, c0), _sofa_pt(a1, c0), _sofa_pt(a1, c1), _sofa_pt(a0, c1)]
+
+
+@register(
+    "prop",
+    "soft-sofa",
+    summary="A two-seat fabric sofa in a 3/4 view, facing left: backrest on the right, an arm at each end; "
+    "on_sofa draws who sits on it before the near arm",
+)
+def sofa(cv: Canvas, parent, *, on_sofa: Callable[[object], object] | None = None, id: str = "soft-sofa"):
+    g = cv.group(parent, id)
+    (a0, a1), (c0, c1) = _SEAT_A, _SEAT_C
+    far, near = (c0 - _ARM_W, c0), (c1, c1 + _ARM_W)
+    for a, c in ((a0, far[0]), (_BACK_A, far[0])):
+        _foot(cv, g, a, c)
+    _box(cv, g, (a1, _BACK_A), (far[0], near[1]), (-_DROP + _FEET, _BACK_UP))  # backrest
+    _box(cv, g, (a0 - 10, a1), far, (-_DROP + _FEET, _ARM_UP))  # far arm
+    seat = cv.group(g, f"{id}-seat")
+    _box(cv, seat, (a0, a1), (c0, c1), (-_DROP + _FEET, 0), faces=("left", "top"))
+    mid = (c0 + c1) / 2  # the seam between the two seat cushions, and the two back cushions above it
+    cv.path(
+        seat, "M {:.1f} {:.1f} L {:.1f} {:.1f}".format(*_sofa_pt(a0, mid), *_sofa_pt(a1, mid)), stroke=FABRIC_LINE, sw=3
+    )
+    cv.path(
+        seat,
+        "M {:.1f} {:.1f} L {:.1f} {:.1f}".format(*_sofa_pt(a1, mid), *_sofa_pt(a1, mid, _BACK_UP - 30)),
+        stroke=FABRIC_LINE,
+        sw=3,
+        opacity=0.6,
+    )
+    if on_sofa is not None:
+        on_sofa(g)
+    arm = cv.group(g, f"{id}-arm-near")
+    _foot(cv, arm, a0 - 10, near[1])
+    _foot(cv, arm, _BACK_A, near[1])
+    _box(cv, arm, (a0 - 10, _BACK_A), near, (-_DROP + _FEET, _ARM_UP))
+    return g
+
+
+def _floor_at(a: float, c: float) -> Point:
+    """The floor under the sofa point ``a, c``."""
+    return _sofa_pt(a, c, -_DROP)
+
+
+def _lamp(cv: Canvas, g, x: float, floor: float) -> None:
+    """A floor lamp: a round base, a thin pole and a drum shade."""
+    cv.ellipse(g, x, floor, 90, 22, WOOD_FRONT, WOOD_LINE, 4)
+    cv.path(g, f"M {x:g} {floor:g} L {x:g} {floor - 520:g}", stroke=WOOD_LINE, sw=8)
+    _poly(
+        cv, g, [(x - 62, floor - 500), (x + 62, floor - 500), (x + 44, floor - 610), (x - 44, floor - 610)], "#F6E3B4"
+    )
+
+
+def _side_table(cv: Canvas, g, x: float, floor: float) -> Point:
+    """A small wooden side table; returns the middle of its top, where the cactus stands."""
+    h, w, d = 150.0, 120.0, 40.0
+    _leg(cv, g, x + 6, floor - h + 26, floor, w=18, side=8)
+    _leg(cv, g, x + w - 24, floor - h + 26, floor, w=18, side=8)
+    _poly(
+        cv,
+        g,
+        [(x + w, floor - h), (x + w + d, floor - h - 22), (x + w + d, floor - h - 4), (x + w, floor - h + 18)],
+        WOOD_SIDE,
+    )
+    _poly(cv, g, [(x, floor - h), (x + w, floor - h), (x + w, floor - h + 18), (x, floor - h + 18)], WOOD_FRONT)
+    _poly(cv, g, [(x, floor - h), (x + d, floor - h - 22), (x + w + d, floor - h - 22), (x + w, floor - h)], WOOD_TOP)
+    return (x + w / 2 + d / 2, floor - h - 8)
+
+
+@register(
+    "location",
+    "soft-home",
+    summary="The warm living room in the office's 3/4 view: a fabric sofa facing left on a rug, a floor lamp "
+    "behind it, a side table with the signature cactus; on_sofa seats a character between the seat and the near arm",
+)
+def home(
+    cv: Canvas,
+    parent,
+    *,
+    shots: Sequence[tuple[float, float]] | None = None,
+    on_sofa: Callable[[object], object] | None = None,
+    id: str = "soft-home",
+):
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    _poly(
+        cv,
+        g,
+        [_floor_at(-380, -180), _floor_at(-60, -180), _floor_at(-60, 260), _floor_at(-380, 260)],
+        RUG,
+        RUG_LINE,
+        4,
+    )
+    lx, ly = _floor_at(260, -400)
+    _lamp(cv, g, lx, ly)
+    sofa(cv, g, on_sofa=on_sofa)
+    top = _side_table(cv, g, 24, _floor_at(-330, -250)[1])
+    signature.cactus(cv, g, top[0], top[1], 0.55)
+    signature.code(cv, g, *_floor_at(-330, 120), 14, color=RUG_LINE, angle=36)
     return g
