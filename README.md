@@ -12,7 +12,7 @@ in a new episode, and every new part you register shows up in `srstudio catalog`
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e ".[validate,test]"      # sr-core (the SDK), lxml for XSD + Schematron checks, pytest
-srstudio catalog                       # 10 characters, 13 locations, 29 props, 13 graphics; --style cutout|ink|soft|cel
+srstudio catalog                       # 11 characters, 14 locations, 30 props, 13 graphics; --style cutout|ink|soft|cel
 srstudio styles                        # Cutout 1080×1920 @ 30 fps clock · Ink 1080×1080 @ 24 fps sequence · Soft 1080×1920 @ 30 fps clock · Cel 1080×1920 @ 24 fps clock
 python3 examples/new_episode.py        # writes examples/out/coffee-review/coffee-review.scene.xml
 python3 -m pytest tests                # unit/integration tests; fidelity with SRSTUDIO_PACKAGES, engine tests with SRSTUDIO_ENGINE
@@ -41,7 +41,7 @@ close = ep.setup(locations.office_reverse, t.shots(lambda a: a not in {"wide", "
 graphics.quiz_card(ep.cv, ep.comp, "QUICK MATH", "17 × 19 = ?", show=(P(2).start - .08, P(4).end + .12),
                    verdict="NOPE.", verdict_span=(P(4).start - .21, P(4).end + .12))
 ep.captions(highlights={"dialogue-6": [("But it was ", False), ("fast.", True)]})
-ep.audio_mix()
+ep.audio()
 ep.markers()
 ep.finish()                                         # check (SDK + XSD + Schematron) → <slug>.scene.xml
 ```
@@ -59,9 +59,17 @@ font. `Episode` reads both and gives you:
 | `ep.perform(actor, parent, x, y, scale, ...)` | An actor with mouth sync, `smile`, `blinks`, `nods` and actor-specific extras |
 | `ep.mouth(role, smile, style, speaking)` | Per-frame mouth states, reusable across two instances of one character |
 | `ep.captions(specs, **style)` | Caption text assets and layers; `highlights` colour a span of a caption |
-| `ep.audio_mix()`, `ep.markers()`, `ep.finish()` | Mix, section markers, check and write |
+| `ep.audio(...)`, `ep.markers()`, `ep.finish()` | Mix, section markers, check and write |
 
 `finish()` refuses to write a document with findings (`strict=True`) and always writes `sdk-validation.json`.
+
+`ep.audio()` plays whatever the project brings (`ep.audio_source`): pinned generated clips (`extra=` adds the
+groove), one audio file per take (`take=` maps a take to its track options), one mixed `assets/dialogue.wav`
+(`track_id=`), a verified `narration.json` (`narration=`, through `srstudio.narration.narration_cues`), or nothing
+for a silent style. The master comes from the style's `Mix` (`Style.mix`: −16 LUFS, −1.5 dBTP, 24-bit; Ink −14 LUFS
+without a bit depth); `loudness=` and `true_peak=` override it, and an option the source cannot take is a
+`TypeError`. The explicit `audio_mix`, `mix` + `take_audio`, `generated_audio` and `add_track` stay for mixes the
+one call does not cover.
 
 ## Styles
 
@@ -83,7 +91,7 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 | Input | `dialogue.json` + one mixed `assets/dialogue.wav` | `timeline.json` with takes (words, character timestamps, one audio file per take) | `dialogue.json` with pinned generated clips + `assets/groove.wav` from `music.render` | `script.json`, a list of timed captions; the measured camera, pose runs and drawings are read from `assets/` (`cel.load_*`) |
 | Mouths | five shapes from RMS amplitude windows (`OFFICE_MOUTH`, `CAFE_MOUTH`, chosen by palette) | five poses from character timestamps (`INK_MOUTH`, `phoneme_states`) | `SOFT_MOUTH` amplitude states drive the `sing` mouth of a cue | none: the style is silent and `mouth_style` resolves to `None` |
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT |
-| Audio | `ep.audio_mix()` | `ep.mix()` + `ep.take_audio(take)` per take, `ep.add_track()` for extras | `ep.generated_audio(extra=[("groove", …, {"role": "music"})])` | none (no `<assets>`, no `<audioMix>`) |
+| Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node |
 | Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `subtitles` | `blob` | `cel` |
 
@@ -120,7 +128,10 @@ style.
   travels behind the body. Every arm and leg keeps its length in every pose (tested
   within -20 %..+25 %), so limbs bend at elbows and knees instead of stretching.
   `shadow=True` keys a contact shadow under the feet. Eyes `EYES` (ring eyes with pupils, look, wide, happy, squint, closed) and mouths `MOUTHS` follow the head;
-  `sing` follows the soundtrack (`blob.mouth_track`).
+  `sing` follows the soundtrack (`blob.mouth_track`). The rig is `blob.blob(..., look=)`: a `Look` names the body
+  fill, blush, topper, hair and features, so `pip` is the rig in `PIP` (white, blush, sprout) and `bo`, the boss,
+  the same rig and pose sheet in `BO` (pale blue, side-parted hair, square glasses, no blush). A seated `lounge`
+  pose rests both hands on the near thigh, for the sofa.
   (`srstudio.cel`): `traced` (`cel-traced`): a traced character as a sheet of filled drawings, one held per run of
   the pose timeline; drawings and runs are data (`cel.load_drawings`, `cel.load_runs`), parsed and refused when
   malformed (`cel.CelDataError`).
@@ -133,7 +144,10 @@ style.
   (`srstudio.blob`): `office` (`soft-office`: desk, laptop and slatted chair in a 3/4 view from above, wood outlined
   in `WOOD_LINE`; drawn in output pixels for Pip at `SCALE` and sized to him: a seated pose's hands land on
   `blob.keyboard()` and its soles on `SEATED_FLOOR`, which a test asserts; `SEAT` and `FLOOR` place a sitting or
-  standing pose).
+  standing pose). `home` (`soft-home`): the living room in the same 3/4 view, a fabric `sofa` (`soft-sofa`) facing
+  left on a rug, a floor lamp and a side table with the cactus; the sofa shares the chair's axes and seat height, so
+  a seated pose at `SOFA_SEAT` has its hip on `blob.sofa_seat()` and its soles on `SOFA_FLOOR` (tested), and
+  `on_sofa=` seats a character between the seat and the near arm.
   (`srstudio.cel`): `room` (`cel-room`: wall, plank floor fanning from a vanishing point and a wooden desk under the
   room's own measured camera re-expressed inside the world's, `cel.compensate`); `cel.world` places the measured
   camera on the group everything else is drawn in.
@@ -268,7 +282,7 @@ python3 episodes/focus_mode.py PROJECT && scene-render encode PROJECT/focus-mode
 
 ## Soft style episode: *Camera Off* (08)
 
-Both sung Soft episodes share one audio pipeline, [episodes/_song.py](episodes/_song.py). A `Song` lists its voices
+Both sung Soft episodes share one audio pipeline, `srstudio.song` ([src/srstudio/song.py](src/srstudio/song.py)). A `Song` lists its voices
 by role, its `Line`s on (bar, beat), its `Effect`s, the groove `Section`s and where the last line must end. `main`
 resolves and pins the items, checks each line with speech-to-text, places the lines and effects on the grid, renders
 the groove, pins the caption font and writes `dialogue.json`. The refactor leaves episode 07's `dialogue.json`
@@ -397,7 +411,11 @@ error is `InstagramPostError`, with every problem listed.
   the pose sheet, the two-pass silhouette, in-between drawings, rotation-preserving turns, arcs, planted feet,
   overshoot and settle, the cheer, wave and seated-nod poses, that no front arm covers the face in any pose or in-between, every refused cue, the sung
   mouth track, the keyed rig and contact shadow and, on the engine, that exactly one eyes and one mouth of Pip are
-  visible at each frame;
+  visible at each frame, the seated legs reading as two, the looks (Bo's ids, fills and hairline, Pip and Bo in one
+  scene without an id clash) and the soft home (the hip on the cushion, the soles and the sofa's front on one floor,
+  the lounging hands on the lap, a seated character between the seat and the near arm);
+  `tests/test_audio.py` asserts `ep.audio()` builds each source's mix exactly as the explicit calls do, the style's
+  master levels, verified narration cues (a tampered clip is refused) and the refused options;
   `tests/test_music.py` covers the beat grid, deterministic and peak-levelled rendering, silent rests, beat-exact
   kicks and every refused setting; `tests/test_fonts.py` covers the request, every refused stylesheet, the font-file
   reader on damaged files, install with offline reuse, a tampered pin, wrong family or weight (nothing written),
