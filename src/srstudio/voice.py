@@ -1,0 +1,617 @@
+"""Synthetic dialogue from ElevenLabs, verified before any of it reaches an episode.
+
+ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error.
+Absence of output verification is a design defect, not a runtime bug.
+All LLM output must be treated as untrusted and validated explicitly.
+
+The text-to-speech model is a generative model, so its output gets the same treatment:
+
+1. Typed parse: :func:`parse_response` builds a :class:`Speech` and rejects unknown fields.
+2. Semantic validation: the aligned characters must spell the requested text exactly; timings are
+   finite, non-negative and ordered; the decoded audio is not silent and lasts about as long as the
+   alignment says.
+3. Failure path: every violation raises :class:`VoiceOutputError`; nothing is cached on failure.
+4. Tests: ``tests/test_voice.py`` feeds malformed, truncated and adversarial responses.
+5. Bounds: one request per uncached line, no retries; the caller owns any loop.
+
+Only audio, timings and non-secret settings are stored. The API key stays in memory.
+"""
+
+from __future__ import annotations
+
+import base64
+import binascii
+import hashlib
+import io
+import json
+import math
+import subprocess
+import urllib.error
+import urllib.parse
+import urllib.request
+import wave
+from array import array
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+MODEL = "eleven_multilingual_v2"
+API = "https://api.elevenlabs.io/v1/text-to-speech/{voice}/with-timestamps?output_format=mp3_44100_128"
+RATE = 48000  # decoded sample rate, the rate of the episode mix
+SILENT_RMS = 1e-3  # below this the clip carries no speech
+DURATION_SLACK = (0.08, 0.60)  # audio may end this much before / after the last aligned character
+
+Transport = Callable[[str, dict, dict], tuple[object, str | None]]
+BinaryTransport = Callable[[str, dict, dict], tuple[bytes, str | None]]
+MultipartTransport = Callable[[str, dict, dict, dict], tuple[object, str | None]]
+SFX_API = "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44100_128"
+STT_API = "https://api.elevenlabs.io/v1/speech-to-text"
+STT_MODEL = "scribe_v1"
+SFX_SECONDS = (0.5, 22.0)  # the sound-generation API's duration range
+SFX_SLACK = 0.30  # generated effect may differ from the requested length by this much
+
+
+class VoiceOutputError(ValueError):
+    """The provider's output failed verification; it must not be used."""
+
+
+# -- typed values ----------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Voice:
+    role: str
+    id: str
+    name: str
+
+
+@dataclass(frozen=True)
+class VoiceSettings:
+    stability: float
+    similarity_boost: float
+    style: float
+    speed: float = 1.0
+    use_speaker_boost: bool = True
+
+    def __post_init__(self):
+        for name in ("stability", "similarity_boost", "style"):
+            value = getattr(self, name)
+            if not 0 <= value <= 1:
+                raise ValueError(f"{name} must be within 0..1, got {value}")
+        if not 0.7 <= self.speed <= 1.2:
+            raise ValueError(f"speed must be within 0.7..1.2, got {self.speed}")
+
+
+@dataclass(frozen=True)
+class Alignment:
+    characters: tuple[str, ...]
+    starts: tuple[float, ...]
+    ends: tuple[float, ...]
+
+    FIELDS = ("characters", "character_start_times_seconds", "character_end_times_seconds")
+
+    @property
+    def text(self) -> str:
+        return "".join(self.characters)
+
+    @property
+    def end(self) -> float:
+        return self.ends[-1] if self.ends else 0.0
+
+    @classmethod
+    def parse(cls, data: object, where: str = "alignment") -> Alignment:
+        if not isinstance(data, dict):
+            raise VoiceOutputError(f"{where} must be an object")
+        unknown = set(data) - set(cls.FIELDS)
+        if unknown:
+            raise VoiceOutputError(f"{where}: unknown field(s) {sorted(unknown)}")
+        for name in cls.FIELDS:
+            if not isinstance(data.get(name), list):
+                raise VoiceOutputError(f"{where}.{name} is missing or not a list")
+        chars, starts, ends = (data[n] for n in cls.FIELDS)
+        if not len(chars) == len(starts) == len(ends):
+            raise VoiceOutputError(f"{where}: arrays differ in length ({len(chars)}, {len(starts)}, {len(ends)})")
+        for i, c in enumerate(chars):
+            if not isinstance(c, str) or len(c) != 1:
+                raise VoiceOutputError(f"{where}: character {i} is not a single character: {c!r}")
+        previous = 0.0
+        for i, (a, b) in enumerate(zip(starts, ends, strict=True)):
+            for v in (a, b):
+                if isinstance(v, bool) or not isinstance(v, (int, float)):
+                    raise VoiceOutputError(f"{where}: time {i} is not a number: {v!r}")
+                if not math.isfinite(v):
+                    raise VoiceOutputError(f"{where}: time {i} is not finite")
+                if v < 0:
+                    raise VoiceOutputError(f"{where}: time {i} is negative")
+            if a < previous - 1e-9:
+                raise VoiceOutputError(f"{where}: character {i} starts out of order ({a} < {previous})")
+            if b < a - 1e-9:
+                raise VoiceOutputError(f"{where}: character {i} ends before its start ({b} < {a})")
+            previous = a
+        return cls(tuple(chars), tuple(float(a) for a in starts), tuple(float(b) for b in ends))
+
+    def to_json(self) -> dict:
+        return {
+            "characters": list(self.characters),
+            "character_start_times_seconds": list(self.starts),
+            "character_end_times_seconds": list(self.ends),
+        }
+
+
+@dataclass(frozen=True)
+class Speech:
+    """A parsed provider response: MP3 bytes and the alignment of the requested text."""
+
+    audio: bytes
+    alignment: Alignment
+    normalized_alignment: Alignment | None
+
+
+@dataclass(frozen=True)
+class SpokenLine:
+    """A verified, cached line: decoded 48 kHz mono WAV plus its provider timings."""
+
+    text: str
+    voice: Voice
+    settings: VoiceSettings
+    alignment: Alignment
+    wav: Path
+    timing_file: Path
+    duration: float
+
+    def samples(self) -> array:
+        with wave.open(str(self.wav), "rb") as w:
+            pcm = array("h")
+            pcm.frombytes(w.readframes(w.getnframes()))
+        return pcm
+
+
+# -- parse and verify -------------------------------------------------------------------------------
+RESPONSE_FIELDS = {"audio_base64", "alignment", "normalized_alignment", "quality_check"}
+
+
+def parse_response(body: object, requested_text: str) -> Speech:
+    """Typed parse of a ``with-timestamps`` response, checked against the text that was requested."""
+    if not isinstance(body, dict):
+        raise VoiceOutputError("response must be a JSON object")
+    unknown = set(body) - RESPONSE_FIELDS
+    if unknown:
+        raise VoiceOutputError(f"response: unknown field(s) {sorted(unknown)}")
+    for name in ("audio_base64", "alignment"):
+        if name not in body:
+            raise VoiceOutputError(f"response: {name} is missing")
+    # The provider reports null when it has nothing to flag; anything else is a flag we do not accept.
+    if body.get("quality_check") is not None:
+        raise VoiceOutputError(f"response: provider raised quality_check {body['quality_check']!r}")
+    raw = body["audio_base64"]
+    if not isinstance(raw, str):
+        raise VoiceOutputError("response: audio_base64 is not a string")
+    try:
+        audio = base64.b64decode(raw, validate=True)
+    except (binascii.Error, ValueError):
+        raise VoiceOutputError("response: audio_base64 is not valid base64") from None
+    if not audio:
+        raise VoiceOutputError("response: audio is empty")
+    alignment = Alignment.parse(body["alignment"])
+    _check_text(alignment, requested_text)
+    normalized = body.get("normalized_alignment")
+    return Speech(
+        audio, alignment, Alignment.parse(normalized, "normalized_alignment") if normalized is not None else None
+    )
+
+
+def _check_text(alignment: Alignment, requested_text: str) -> None:
+    if alignment.text != requested_text:
+        raise VoiceOutputError(f"aligned text {alignment.text!r} does not match the requested {requested_text!r}")
+
+
+def decode(mp3: bytes) -> bytes:
+    """MP3 → 16-bit mono WAV at :data:`RATE`, in memory."""
+    run = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "mp3",
+            "-i",
+            "pipe:0",
+            "-ar",
+            str(RATE),
+            "-ac",
+            "1",
+            "-c:a",
+            "pcm_s16le",
+            "-f",
+            "wav",
+            "pipe:1",
+        ],
+        input=mp3,
+        capture_output=True,
+    )
+    if run.returncode != 0 or not run.stdout:
+        raise VoiceOutputError(f"audio does not decode: {run.stderr.decode(errors='replace').strip()[:200]}")
+    # A piped WAV carries placeholder sizes (0xFFFFFFFF); rewrite it with a correct header.
+    with wave.open(io.BytesIO(run.stdout), "rb") as w:
+        frames = w.readframes(w.getnframes())
+    out = io.BytesIO()
+    with wave.open(out, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(frames)
+    return out.getvalue()
+
+
+def _wav_stats(wav_bytes: bytes) -> tuple[float, float]:
+    with wave.open(io.BytesIO(wav_bytes), "rb") as w:
+        frames = w.readframes(w.getnframes())
+        rate = w.getframerate()
+    pcm = array("h")
+    pcm.frombytes(frames)
+    if not pcm:
+        return 0.0, 0.0
+    rms = math.sqrt(sum(s * s for s in pcm) / len(pcm)) / 32768
+    return len(pcm) / rate, rms
+
+
+def verify_audio(wav_bytes: bytes, alignment: Alignment) -> float:
+    """The decoded clip is speech-loud and about as long as the alignment; returns its duration."""
+    duration, rms = _wav_stats(wav_bytes)
+    if rms < SILENT_RMS:
+        raise VoiceOutputError(f"audio is silent (RMS {rms:.5f})")
+    early, late = DURATION_SLACK
+    if not alignment.end - early <= duration <= alignment.end + late:
+        raise VoiceOutputError(
+            f"audio duration {duration:.3f}s is inconsistent with the alignment ({alignment.end:.3f}s)"
+        )
+    return duration
+
+
+# -- client -------------------------------------------------------------------------------------------
+def urllib_transport(url: str, payload: dict, headers: dict) -> tuple[object, str | None]:
+    """One POST, no retries. HTTP errors become ``RuntimeError`` with the provider's message only."""
+    request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            body = json.load(response)
+            return body, response.headers.get("request-id", response.headers.get("x-request-id"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read()).get("detail", {})
+            message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
+        except Exception:
+            message = "request failed"
+        raise RuntimeError(f"ElevenLabs HTTP {exc.code}: {message}") from None
+    except json.JSONDecodeError:
+        raise VoiceOutputError("response is not JSON") from None
+
+
+def _http_error(exc: urllib.error.HTTPError) -> RuntimeError:
+    try:
+        detail = json.loads(exc.read()).get("detail", {})
+        message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
+    except Exception:
+        message = "request failed"
+    return RuntimeError(f"ElevenLabs HTTP {exc.code}: {message}")
+
+
+def urllib_binary_transport(url: str, payload: dict, headers: dict) -> tuple[bytes, str | None]:
+    """One JSON POST answered with audio bytes; no retries."""
+    request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return response.read(), response.headers.get("request-id", response.headers.get("x-request-id"))
+    except urllib.error.HTTPError as exc:
+        raise _http_error(exc) from None
+
+
+def urllib_multipart_transport(url: str, fields: dict, files: dict, headers: dict) -> tuple[object, str | None]:
+    """One multipart POST answered with JSON; no retries. ``files[name] = (filename, bytes, mime)``."""
+    boundary = "srstudio" + hashlib.sha256(repr(sorted(fields.items())).encode()).hexdigest()[:24]
+    parts = []
+    for name, value in fields.items():
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
+    for name, (filename, data, mime) in files.items():
+        parts.append(
+            f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'
+            f"Content-Type: {mime}\r\n\r\n".encode()
+            + data
+            + b"\r\n"
+        )
+    parts.append(f"--{boundary}--\r\n".encode())
+    request = urllib.request.Request(
+        url,
+        data=b"".join(parts),
+        method="POST",
+        headers={**headers, "Content-Type": f"multipart/form-data; boundary={boundary}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return json.load(response), response.headers.get("request-id", response.headers.get("x-request-id"))
+    except urllib.error.HTTPError as exc:
+        raise _http_error(exc) from None
+    except json.JSONDecodeError:
+        raise VoiceOutputError("speech-to-text response is not JSON") from None
+
+
+# -- speech-to-text: typed transcript and the script check --------------------------------------------
+class TranscriptMismatch(VoiceOutputError):
+    """What the recogniser heard is not the scripted line."""
+
+
+@dataclass(frozen=True)
+class Word:
+    text: str
+    start: float
+    end: float
+    type: str
+
+
+@dataclass(frozen=True)
+class Transcript:
+    language_code: str
+    language_probability: float
+    text: str
+    words: tuple[Word, ...]
+
+
+TRANSCRIPT_FIELDS = {
+    "language_code",
+    "language_probability",
+    "text",
+    "words",
+    "transcription_id",
+    "additional_formats",
+    "audio_duration_secs",
+}
+WORD_FIELDS = {"text", "start", "end", "type", "speaker_id", "logprob", "characters"}
+
+
+def _number(v, where):
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        raise VoiceOutputError(f"{where} is not a finite number: {v!r}")
+    return float(v)
+
+
+def parse_transcript(body: object) -> Transcript:
+    """Typed parse of a speech-to-text response; unknown fields are rejected."""
+    if not isinstance(body, dict):
+        raise VoiceOutputError("transcript must be a JSON object")
+    unknown = set(body) - TRANSCRIPT_FIELDS
+    if unknown:
+        raise VoiceOutputError(f"transcript: unknown field(s) {sorted(unknown)}")
+    for name in ("language_code", "language_probability", "text", "words"):
+        if name not in body:
+            raise VoiceOutputError(f"transcript: {name} is missing")
+    if not isinstance(body["text"], str) or not isinstance(body["language_code"], str):
+        raise VoiceOutputError("transcript: text and language_code must be strings")
+    prob = _number(body["language_probability"], "transcript: language_probability")
+    if not 0 <= prob <= 1:
+        raise VoiceOutputError(f"transcript: language_probability {prob} is outside 0..1")
+    if "audio_duration_secs" in body:
+        seconds = _number(body["audio_duration_secs"], "transcript: audio_duration_secs")
+        if seconds < 0:
+            raise VoiceOutputError("transcript: audio_duration_secs is negative")
+    if not isinstance(body["words"], list):
+        raise VoiceOutputError("transcript: words must be a list")
+    words = []
+    for i, w in enumerate(body["words"]):
+        if not isinstance(w, dict):
+            raise VoiceOutputError(f"transcript: word {i} is not an object")
+        extra = set(w) - WORD_FIELDS
+        if extra:
+            raise VoiceOutputError(f"transcript: word {i} has unknown field(s) {sorted(extra)}")
+        if not isinstance(w.get("text"), str) or not isinstance(w.get("type"), str):
+            raise VoiceOutputError(f"transcript: word {i} lacks text or type")
+        a, b = _number(w.get("start"), f"word {i} start"), _number(w.get("end"), f"word {i} end")
+        if b < a:
+            raise VoiceOutputError(f"transcript: word {i} ends before it starts")
+        words.append(Word(w["text"], a, b, w["type"]))
+    return Transcript(body["language_code"], prob, body["text"], tuple(words))
+
+
+_ONES = (
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
+    "seventeen eighteen nineteen".split()
+)
+_TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def _spell(n: int) -> list[str]:
+    if n < 20:
+        return [_ONES[n]]
+    if n < 100:
+        return [_TENS[n // 10]] + ([_ONES[n % 10]] if n % 10 else [])
+    return list(str(n))  # outside the scripts' range: compared digit by digit
+
+
+def normalize_words(text: str) -> list[str]:
+    """Lowercase words without punctuation; digits spelled out; curly apostrophes made straight."""
+    text = text.lower().replace("\u2019", "'").replace("-", " ")
+    cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
+    out: list[str] = []
+    for token in cleaned.split():
+        token = token.strip("'")
+        if token.isdigit():
+            out.extend(_spell(int(token)))
+        elif token:
+            out.append(token)
+    return out
+
+
+def check_transcript(transcript: Transcript, expected: str) -> None:
+    """The heard words equal the scripted words, ignoring case, punctuation and number spelling."""
+    heard, want = normalize_words(transcript.text), normalize_words(expected)
+    if heard != want:
+        raise TranscriptMismatch(f"heard {transcript.text!r}, expected {expected!r}")
+
+
+@dataclass(frozen=True)
+class EffectClip:
+    """A verified generated sound effect: decoded 48 kHz mono WAV plus its request record."""
+
+    text: str
+    seconds: float
+    wav: Path
+    file: Path
+    duration: float
+
+    def samples(self) -> array:
+        with wave.open(str(self.wav), "rb") as w:
+            pcm = array("h")
+            pcm.frombytes(w.readframes(w.getnframes()))
+        return pcm
+
+
+def verify_effect(wav_bytes: bytes, seconds: float) -> float:
+    duration, rms = _wav_stats(wav_bytes)
+    if rms < SILENT_RMS:
+        raise VoiceOutputError(f"sound effect is silent (RMS {rms:.5f})")
+    if abs(duration - seconds) > SFX_SLACK:
+        raise VoiceOutputError(f"sound effect duration {duration:.3f}s differs from the requested {seconds:.3f}s")
+    return duration
+
+
+class ElevenLabsClient:
+    """Speech with timings, cached by request fingerprint under ``cache``.
+
+    A cached line is re-verified when read. An uncached line costs one paid request."""
+
+    def __init__(
+        self,
+        cache: str | Path,
+        key: str,
+        *,
+        model: str = MODEL,
+        seed: int = 52026,
+        transport: Transport | None = None,
+        binary_transport: BinaryTransport | None = None,
+        multipart_transport: MultipartTransport | None = None,
+    ):
+        self.cache = Path(cache)
+        self.key = key
+        self.model = model
+        self.seed = seed
+        self.transport = transport or urllib_transport
+        self.binary_transport = binary_transport or urllib_binary_transport
+        self.multipart_transport = multipart_transport or urllib_multipart_transport
+
+    def payload(self, text: str, settings: VoiceSettings) -> dict:
+        return {
+            "text": text,
+            "model_id": self.model,
+            "voice_settings": asdict(settings),
+            "seed": self.seed,
+            "apply_text_normalization": "auto",
+        }
+
+    def fingerprint(self, text: str, voice: Voice, settings: VoiceSettings) -> str:
+        blob = json.dumps({"voice": voice.id, "request": self.payload(text, settings)}, sort_keys=True)
+        return hashlib.sha256(blob.encode()).hexdigest()[:20]
+
+    def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> SpokenLine:
+        prefix = self.cache / self.fingerprint(text, voice, settings)
+        timing, mp3, wav = (prefix.with_suffix(s) for s in (".json", ".mp3", ".wav"))
+        if timing.exists() and mp3.exists():
+            return self._from_cache(text, voice, settings, timing, mp3, wav)
+        if not self.key:
+            raise RuntimeError("ELEVENLABS_API_KEY is required to generate an uncached line")
+        payload = self.payload(text, settings)
+        body, request_id = self.transport(
+            API.format(voice=urllib.parse.quote(voice.id, safe="")),
+            payload,
+            {"xi-api-key": self.key, "Content-Type": "application/json", "Accept": "application/json"},
+        )
+        speech = parse_response(body, text)
+        wav_bytes = decode(speech.audio)
+        duration = verify_audio(wav_bytes, speech.alignment)
+        # Verified: only now does anything reach the cache.
+        self.cache.mkdir(parents=True, exist_ok=True)
+        mp3.write_bytes(speech.audio)
+        wav.write_bytes(wav_bytes)
+        meta = {
+            "alignment": speech.alignment.to_json(),
+            "normalized_alignment": speech.normalized_alignment.to_json() if speech.normalized_alignment else None,
+            "quality_check": None,
+            "voice_id": voice.id,
+            "voice_name": voice.name,
+            "model": self.model,
+            "request": payload,
+            "request_id": request_id,
+        }
+        timing.write_text(json.dumps(meta, indent=2) + "\n")
+        return SpokenLine(text, voice, settings, speech.alignment, wav, timing, duration)
+
+    def _from_cache(self, text, voice, settings, timing: Path, mp3: Path, wav: Path) -> SpokenLine:
+        meta = json.loads(timing.read_text())
+        alignment = Alignment.parse(meta.get("alignment"))
+        _check_text(alignment, text)
+        wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
+        duration = verify_audio(wav_bytes, alignment)
+        if not wav.exists():
+            wav.write_bytes(wav_bytes)
+        return SpokenLine(text, voice, settings, alignment, wav, timing, duration)
+
+    # -- sound effects ----------------------------------------------------------------------------------
+    def sound_effect(self, text: str, seconds: float, prompt_influence: float = 0.6) -> EffectClip:
+        """A generated effect of ``seconds`` length, verified (decodes, audible, right length) and cached."""
+        if not (
+            isinstance(seconds, (int, float)) and math.isfinite(seconds) and SFX_SECONDS[0] <= seconds <= SFX_SECONDS[1]
+        ):
+            raise ValueError(f"seconds must be within {SFX_SECONDS[0]}..{SFX_SECONDS[1]}, got {seconds}")
+        if not 0 <= prompt_influence <= 1:
+            raise ValueError(f"prompt_influence must be within 0..1, got {prompt_influence}")
+        payload = {"text": text, "duration_seconds": float(seconds), "prompt_influence": prompt_influence}
+        digest = hashlib.sha256(json.dumps({"sfx": payload}, sort_keys=True).encode()).hexdigest()[:20]
+        prefix = self.cache / f"sfx-{digest}"
+        record, mp3, wav = (prefix.with_suffix(s) for s in (".json", ".mp3", ".wav"))
+        if record.exists() and mp3.exists():
+            wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
+            return EffectClip(text, float(seconds), wav, record, verify_effect(wav_bytes, seconds))
+        if not self.key:
+            raise RuntimeError("ELEVENLABS_API_KEY is required to generate an uncached sound effect")
+        audio, request_id = self.binary_transport(
+            SFX_API, payload, {"xi-api-key": self.key, "Content-Type": "application/json", "Accept": "audio/mpeg"}
+        )
+        if not isinstance(audio, (bytes, bytearray)) or not audio:
+            raise VoiceOutputError("sound effect audio is empty")
+        wav_bytes = decode(bytes(audio))
+        duration = verify_effect(wav_bytes, seconds)
+        self.cache.mkdir(parents=True, exist_ok=True)
+        mp3.write_bytes(bytes(audio))
+        wav.write_bytes(wav_bytes)
+        record.write_text(
+            json.dumps({"request": payload, "request_id": request_id, "duration": duration}, indent=2) + "\n"
+        )
+        return EffectClip(text, float(seconds), wav, record, duration)
+
+    # -- speech-to-text ---------------------------------------------------------------------------------
+    def transcribe(self, audio: str | Path, language: str = "en") -> Transcript:
+        """The transcript of ``audio``: one recognition request, or the cached response re-parsed.
+
+        The cache key is the audio's SHA-256, the language and the recogniser model; only a
+        response that parses is stored, and a stored one is parsed again when read."""
+        path = Path(audio)
+        data = path.read_bytes()
+        fields = {"model_id": STT_MODEL, "language_code": language}
+        digest = hashlib.sha256(
+            json.dumps({"stt": fields, "audio": hashlib.sha256(data).hexdigest()}, sort_keys=True).encode()
+        ).hexdigest()[:20]
+        record = self.cache / f"stt-{digest}.json"
+        if record.exists():
+            stored = json.loads(record.read_text())
+            if not isinstance(stored, dict) or "response" not in stored:
+                raise VoiceOutputError(f"{record.name}: not a transcript record")
+            return parse_transcript(stored["response"])
+        if not self.key:
+            raise RuntimeError("ELEVENLABS_API_KEY is required for speech-to-text")
+        body, request_id = self.multipart_transport(
+            STT_API,
+            fields,
+            {"file": (path.name, data, "audio/wav")},
+            {"xi-api-key": self.key, "Accept": "application/json"},
+        )
+        transcript = parse_transcript(body)
+        # Parsed: only now does it reach the cache.
+        self.cache.mkdir(parents=True, exist_ok=True)
+        record.write_text(json.dumps({"request": fields, "request_id": request_id, "response": body}, indent=2) + "\n")
+        return transcript

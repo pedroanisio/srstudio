@@ -1,0 +1,342 @@
+"""The cast: two office rigs, two café rigs and a pigeon.
+
+Each actor reads its gestures from ``Performance.extras``; the keys are documented on the
+class. Register a new character with ``@register("character", "name")`` on an ``Actor``
+subclass or on a plain ``fn(cv, parent, ...)``.
+"""
+
+from __future__ import annotations
+
+from .canvas import Canvas
+from .registry import register
+from .rig import Actor, Performance
+
+
+class OfficeActor(Actor):
+    """Shared body of the interview series: white shirt, dark tie, head radius 100.
+
+    extras: ``arms`` = ``"static"`` (one stroke for both arms) or ``"articulated"`` (a
+    right-arm group with a forearm that can rotate at the elbow).
+    """
+
+    bottom = 312
+    eye_xs = (-37, 31)
+
+    def draw_body(self, g, perf: Performance):
+        cv, ink, white, clear = self.cv, self.cv.ink, self.cv.white, self.cv.clear
+        bottom = self.bottom
+        cv.rect(g, -10, 92, 20, 34, white, ink, 4)
+        cv.path(
+            g, f"M-64 {bottom} L-68 154 Q-69 124 -39 120 Q-4 113 38 120 Q68 126 68 154 L64 {bottom}Z", white, ink, 4.5
+        )
+        if perf.extras.get("arms", "static") == "articulated":
+            cv.path(g, f"M-66 148 L-87 235 L-79 {bottom}", stroke=ink, sw=5)
+            self.right_arm = cv.group(g, f"{self.tag_base}-right-arm")
+            cv.path(self.right_arm, "M67 148 L86 233", stroke=ink, sw=5)
+            self.forearm = cv.group(self.right_arm, f"{self.tag_base}-forearm", x=86, y=233)
+            cv.path(self.forearm, f"M0 0 L-9 {bottom - 233}", stroke=ink, sw=5)
+            self.draw_arm_gestures(perf)
+        else:
+            cv.path(g, f"M-66 148 L-87 235 L-79 {bottom} M67 148 L86 233 L77 {bottom}", stroke=ink, sw=5)
+        cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
+        cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
+
+    def draw_arm_gestures(self, perf: Performance):
+        """Hook for the articulated arm; see the subclasses."""
+
+    def draw_head(self, head, perf: Performance):
+        self.cv.ellipse(head, -100, -100, 200, 200, self.cv.white, self.cv.ink, 5.5)
+
+    def draw_blink(self, closed, perf: Performance):
+        for x in self.eye_xs:
+            self.cv.path(closed, f"M{x - 12} -20 Q{x} -9 {x + 12} -20", stroke=self.cv.ink, sw=3.8)
+
+
+@register(
+    "character",
+    "manager",
+    summary="The interviewer: glasses-free, receding hairline, raised brows, facepalm",
+    episodes=("01", "02", "03", "04"),
+)
+class Manager(OfficeActor):
+    """extras: ``brows`` = (left_keys, right_keys) rotation; ``pupils`` = y keys;
+    ``hide_right_arm_at`` = time; ``facepalm`` = (start, end)."""
+
+    role = "manager"
+    bottom = 312
+    eye_xs = (-37, 31)
+
+    def draw_arm_gestures(self, perf):
+        t = perf.extras.get("hide_right_arm_at")
+        if t is not None:
+            self.cv.keys(self.right_arm, "opacity", [(0, 1), (t, 0)])
+
+    def draw_head(self, head, perf):
+        super().draw_head(head, perf)
+        cv, ink, clear = self.cv, self.cv.ink, self.cv.clear
+        cv.path(head, "M-94 -31 Q-77 -94 -19 -101 Q18 -109 45 -86 Q9 -98 -40 -72 Q-74 -58 -94 -31Z", ink, clear, 0)
+        brows = perf.extras.get("brows")
+        if brows:
+            left = cv.path(head, "M-62 -43 Q-43 -53 -26 -46", stroke=ink, sw=4.7)
+            right = cv.path(head, "M11 -46 Q30 -55 48 -44", stroke=ink, sw=4.7)
+            cv.keys(left, "rotation", brows[0], hold=False)
+            cv.keys(right, "rotation", brows[1], hold=False)
+        else:
+            cv.path(head, "M-62 -43 Q-43 -53 -26 -46 M11 -46 Q30 -55 48 -44", stroke=ink, sw=4.7)
+
+    def draw_eyes(self, eyes, perf):
+        cv, ink, white = self.cv, self.cv.ink, self.cv.white
+        for x in self.eye_xs:
+            cv.ellipse(eyes, x - 26, -45, 52, 55, white, ink, 3.7)
+            pupil = cv.ellipse(eyes, x - 11, -31, 20, 26, ink)
+            if perf.extras.get("pupils"):
+                cv.keys(pupil, "y", perf.extras["pupils"], hold=False)
+        cv.path(eyes, "M-11 -24 Q-2 -32 6 -24", stroke=ink, sw=3.3)
+
+    def draw_blink(self, closed, perf):
+        cv = self.cv
+        for x in self.eye_xs:
+            cv.ellipse(closed, x - 26, -45, 52, 55, cv.white, cv.ink, 3.7)
+            cv.path(closed, f"M{x - 12} -20 Q{x} -9 {x + 12} -20", stroke=cv.ink, sw=3.8)
+
+    def after_head(self, g, perf):
+        span = perf.extras.get("facepalm")
+        if not span:
+            return
+        start, end = span
+        cv = self.cv
+        palm = cv.group(g, f"{self.tag_base}-facepalm")
+        palm.start = start
+        palm.end = end
+        cv.keys(palm, "opacity", [(0, 0), (start, 0), (start + 0.10, 1)], hold=False)
+        cv.keys(palm, "y", [(0, 40), (start, 40), (start + 0.20, 0)], hold=False)
+        cv.path(palm, "M67 148 Q112 171 117 110 Q110 42 51 -18", stroke=cv.ink, sw=5)
+        cv.path(
+            palm,
+            "M39 0 Q33 -9 37 -26 L39 -43 Q40 -49 44 -46 L45 -28 L47 -48 Q50 -55 54 -48 L54 -29 L59 "
+            "-45 Q64 -50 67 -43 L64 -24 Q73 -32 76 -25 Q78 -20 69 -9 L62 3 Q53 10 39 0Z",
+            cv.white,
+            cv.ink,
+            2.5,
+        )
+        self.facepalm = palm
+
+
+@register(
+    "character",
+    "candidate",
+    summary="The applicant: quiff, dot eyes, a forearm that raises one finger",
+    episodes=("01", "02", "03", "04"),
+)
+class Candidate(OfficeActor):
+    """extras: ``forearm`` = rotation keys at the elbow; ``pointing`` = spans the raised finger shows."""
+
+    role = "candidate"
+    bottom = 330
+    eye_xs = (-32, 37)
+
+    def draw_arm_gestures(self, perf):
+        cv = self.cv
+        if perf.extras.get("forearm"):
+            cv.keys(self.forearm, "rotation", perf.extras["forearm"], hold=False)
+        if perf.extras.get("pointing"):
+            pointing = cv.group(self.forearm, f"{self.tag_base}-pointing-hand")
+            cv.gate(pointing, perf.extras["pointing"])
+            cv.path(
+                pointing,
+                "M-18 91 Q-19 84 -13 83 Q-7 82 -5 89 L-3 100 L-4 121 Q-9 128 -14 122 L-14 106 Q-26 "
+                "106 -27 99 Q-27 93 -18 91Z",
+                cv.white,
+                cv.ink,
+                2.5,
+            )
+            self.pointing = pointing
+
+    def draw_head(self, head, perf):
+        super().draw_head(head, perf)
+        cv, ink = self.cv, self.cv.ink
+        cv.path(
+            head,
+            "M-50 -91 Q-25 -139 17 -121 Q35 -116 42 -109 Q7 -111 -37 -95 M-29 -91 Q3 -104 29 -103",
+            stroke=ink,
+            sw=3.7,
+        )
+        cv.path(head, "M-49 -47 Q-30 -57 -11 -48 M17 -48 Q37 -58 55 -47", stroke=ink, sw=4)
+
+    def draw_eyes(self, eyes, perf):
+        for x in self.eye_xs:
+            self.cv.ellipse(eyes, x - 6, -26, 12, 15, self.cv.ink)
+
+
+# ---------------------------------------------------------------- café cast
+
+
+class CafeActor(Actor):
+    """The café family: skin tone, wardrobe, round blink arcs; tag ``role-cafe`` or ``role-park``.
+
+    extras: ``seated`` (park bench), ``skin`` colour override.
+    """
+
+    mouth_stroke = 3.5
+    skin = "#F1D0AA"
+
+    def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
+        role = role or self.role
+        super().__init__(canvas, role, tag or f"{role}-{'park' if seated else 'cafe'}")
+        self.seated = seated
+
+    @property
+    def blink_id(self) -> str:
+        return f"{self.tag_base}-blink"
+
+    def draw_blink(self, closed, perf):
+        for xx in (-38, 38):
+            self.cv.path(closed, f"M{xx - 9} 5 q9 8 18 0", stroke=self.cv.ink, sw=3.5)
+
+    def draw_mouths(self, head):
+        cv, ink, clear = self.cv, self.cv.ink, self.cv.clear
+        return {
+            "rest": cv.path(head, "M-8 47 L9 47", stroke=ink, sw=3.5),
+            "round": cv.ellipse(head, -6, 38, 12, 18, ink),
+            "open": cv.path(head, "M-15 38 Q0 32 15 38 Q13 58 0 58 Q-13 56 -15 38Z", ink, clear, 0),
+            "small": cv.ellipse(head, -11, 41, 22, 9, ink),
+            "smile": cv.path(head, "M-21 37 Q0 61 24 35", stroke=ink, sw=3.5),
+        }
+
+
+@register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings", episodes=("05",))
+class Barista(CafeActor):
+    """extras: ``name`` on the badge (default AVA)."""
+
+    role = "barista"
+    skin = "#C28A65"
+
+    def draw_body(self, g, perf):
+        cv, ink = self.cv, self.cv.ink
+        skin = perf.extras.get("skin", self.skin)
+        cv.rect(g, -10, 91, 20, 39, skin, ink, 3)
+        cv.path(g, "M-68 322 L-73 150 Q-74 121 -44 116 L43 116 Q74 121 75 150 L68 322Z", "#F5EAD4", ink, 4)
+        cv.path(g, "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z", "#366761", ink, 3)
+        cv.path(g, "M-66 140 L-104 212 L-119 229 M68 141 L101 205 L117 208", stroke=ink, sw=5)
+        cv.ellipse(g, -128, 217, 20, 23, skin, ink, 2.5)
+        cv.ellipse(g, 108, 197, 21, 22, skin, ink, 2.5)
+        cv.rect(g, -28, 237, 57, 45, "#2C5853", ink, 2, radius=8)
+        name = perf.extras.get("name", "AVA")
+        cv.text(g, f"{name.lower()}-name", name, -24, 173, 48, 23, 13, "#F3E3BE")
+
+    def draw_head(self, head, perf):
+        cv, ink, clear = self.cv, self.cv.ink, self.cv.clear
+        skin = perf.extras.get("skin", self.skin)
+        cv.path(head, "M-97 -64 Q-134 -12 -111 73 Q-76 123 0 109 Q78 120 112 71 Q133 -11 97 -64Z", "#51382F", ink, 4)
+        cv.ellipse(head, -48, -151, 101, 96, "#51382F", ink, 4)
+        for xx, yy in [(-38, -130), (-10, -145), (21, -137), (39, -112)]:
+            cv.path(head, f"M{xx} {yy} q-13 7 0 17", stroke="#73503E", sw=3)
+        cv.ellipse(head, -109, -6, 24, 34, skin, ink, 3)
+        cv.ellipse(head, 86, -6, 24, 34, skin, ink, 3)
+        cv.ellipse(head, -105, 21, 19, 22, clear, "#E1BD66", 4)
+        cv.ellipse(head, 88, 21, 19, 22, clear, "#E1BD66", 4)
+        cv.ellipse(head, -98, -99, 196, 204, skin, ink, 5)
+        cv.path(
+            head,
+            "M-98 -26 Q-109 -105 -28 -111 Q51 -128 99 -35 Q68 -28 45 -66 Q4 -18 -52 -36 Q-71 -41 -98 -26Z",
+            "#51382F",
+            ink,
+            4,
+        )
+        cv.line(head, 41, -85, 60, -70, "#E1BD66", 4)
+        cv.path(head, "M-56 -38 Q-39 -48 -23 -39 M22 -39 Q41 -49 58 -38", stroke=ink, sw=3.5)
+
+    def draw_eyes(self, eyes, perf):
+        cv, ink = self.cv, self.cv.ink
+        for xx in (-38, 38):
+            cv.ellipse(eyes, xx - 7, -22, 14, 18, ink)
+            cv.path(eyes, f"M{xx - 8} -20 l-6 -5 M{xx + 7} -20 l5 -5", stroke=ink, sw=2)
+
+
+@register(
+    "character",
+    "customer",
+    summary="Milo the customer: beanie, stubble, phone in hand, standing or seated",
+    episodes=("05",),
+)
+class Customer(CafeActor):
+    """extras: ``held_cup`` = spans the takeaway cup is in hand (standing only; seated always holds it)."""
+
+    role = "customer"
+    skin = "#F1D0AA"
+
+    def draw_body(self, g, perf):
+        from .props import coffee_cup
+
+        cv, ink = self.cv, self.cv.ink
+        skin = perf.extras.get("skin", self.skin)
+        if self.seated:
+            cv.path(g, "M-53 293 L-78 335 L-80 492 L-37 492 L-38 357 L-7 315Z", "#385063", ink, 4)
+            cv.path(g, "M53 293 L100 336 L133 488 L89 494 L64 361 L8 315Z", "#385063", ink, 4)
+            cv.path(g, "M-83 487 Q-46 482 -29 498 L-20 514 L-92 514Z", "#A7784D", ink, 4)
+            cv.path(g, "M88 487 Q125 483 148 500 L155 513 L83 513Z", "#A7784D", ink, 4)
+        else:
+            cv.path(g, "M-53 326 L-51 467 L-9 467 L4 344 L15 468 L57 468 L55 327Z", "#385063", ink, 4)
+            cv.path(g, "M-54 462 Q-21 457 -6 475 L-4 489 L-66 489Z", "#A7784D", ink, 4)
+            cv.path(g, "M15 462 Q49 456 70 475 L72 489 L11 489Z", "#A7784D", ink, 4)
+        cv.rect(g, -10, 91, 20, 39, skin, ink, 3)
+        bottom = 300 if self.seated else 345
+        cv.path(g, f"M-72 {bottom} L-76 145 Q-74 117 -46 113 L44 113 Q74 117 76 145 L71 {bottom}Z", "#527B90", ink, 4.5)
+        cv.path(g, "M-62 111 Q-27 155 0 152 Q31 152 64 111 L78 137 Q39 186 0 173 Q-42 183 -78 138Z", "#3D6178", ink, 3)
+        cv.line(g, -12, 145, -17, 195, "#E9E2CC", 2.5)
+        cv.line(g, 14, 145, 18, 192, "#E9E2CC", 2.5)
+        cv.rect(g, -43, 236, 86, 47, "#426C82", ink, 2.5, radius=12)
+        cv.path(g, "M-72 143 L-103 213 L-122 212 M73 144 L100 204 L125 181", stroke=ink, sw=5)
+        cv.ellipse(g, -131, 204, 20, 24, skin, ink, 2.5)
+        cv.ellipse(g, 116, 171, 22, 25, skin, ink, 2.5)
+        phone = cv.group(g, f"{self.tag}-phone", x=-133, y=179, rotation=-12)
+        cv.rect(phone, 0, 0, 33, 58, "#293F49", ink, 2.5, radius=6)
+        cv.rect(phone, 5, 7, 23, 41, "#B7D5CD", radius=2)
+        cv.line(phone, 11, 52, 23, 52, "#A3B8B3", 1.5)
+        held = coffee_cup(cv, g, 130, 163, 0.62, 8)
+        if not self.seated and perf.extras.get("held_cup") is not None:
+            cv.gate(held, perf.extras["held_cup"])
+        self.phone, self.cup = phone, held
+
+    def draw_head(self, head, perf):
+        cv, ink = self.cv, self.cv.ink
+        skin = perf.extras.get("skin", self.skin)
+        cv.ellipse(head, -101, -101, 202, 207, skin, ink, 5.5)
+        cv.path(head, "M-100 -48 Q-105 -139 0 -139 Q107 -140 102 -48Z", "#C99043", ink, 5)
+        for xx in [-70, -45, -20, 5, 30, 55, 78]:
+            cv.line(head, xx, -105, xx, -68, "#B37B35", 2.5)
+        cv.rect(head, -102, -62, 204, 37, "#D9A34F", ink, 4, radius=9)
+        cv.line(head, -88, -43, 88, -43, "#E9BE72", 3)
+        cv.path(head, "M-58 -12 Q-40 -22 -23 -13 M23 -18 Q42 -36 60 -22", stroke=ink, sw=4)
+
+    def draw_eyes(self, eyes, perf):
+        for xx in (-38, 39):
+            self.cv.ellipse(eyes, xx - 6, 1, 12, 17, self.cv.ink)
+
+    def draw_face_front(self, head, perf):
+        for xx, yy in [(-43, 65), (-29, 77), (-12, 83), (8, 84), (29, 77), (43, 65)]:
+            self.cv.line(head, xx, yy, xx + 2, yy + 7, "#8F6B4D", 1.7, opacity=0.6)
+
+
+@register(
+    "character",
+    "pigeon",
+    summary="A park pigeon; mirrored with a negative scaleX, nods by rotation keys",
+    episodes=("05",),
+)
+def pigeon(cv: Canvas, parent, x=1000, y=1556, scale=0.83, flip=True, nods=(), id="pigeon"):
+    ink = cv.ink
+    bird = cv.group(parent, id, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    if nods:
+        cv.keys(bird, "rotation", nods, hold=False)
+    cv.path(bird, "M0 -10 L-40 -32 L-28 4 L25 36Z", "#6B858D", ink, 3)
+    cv.ellipse(bird, 0, -55, 105, 99, "#8DA3A7", ink, 3)
+    cv.path(bird, "M15 -15 Q36 -64 80 -32 Q98 -8 66 26 Q44 35 15 -15Z", "#68878F", ink, 2)
+    cv.ellipse(bird, 54, -99, 59, 61, "#789498", ink, 3)
+    cv.path(bird, "M109 -73 L129 -64 L109 -57Z", "#D9A657", ink, 2)
+    cv.ellipse(bird, 85, -83, 11, 12, "#FAF4D9", ink, 1.4)
+    cv.ellipse(bird, 91, -80, 5, 6, ink)
+    cv.line(bird, 39, 38, 36, 62, "#A87F47", 4)
+    cv.line(bird, 76, 39, 81, 61, "#A87F47", 4)
+    cv.path(bird, "M24 65 L38 60 L49 65 M69 65 L81 60 L96 65", stroke="#A87F47", sw=3)
+    return bird

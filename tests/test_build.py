@@ -1,0 +1,136 @@
+"""End-to-end: synthetic projects through the office and café kits, checked by the SDK."""
+
+import xml.etree.ElementTree as ET
+
+import pytest
+
+from srstudio import CAFE, CAFE_MOUTH, Episode, EpisodeSpec, camera, cast, graphics, locations, props
+
+
+def office_episode(project, out):
+    ep = Episode(EpisodeSpec(slug="t-office", title="t", description="t", root=project, seed=1, background="#D5DFDF"))
+    t, P = ep.t, ep.P
+    wide = ep.setup(
+        locations.office_wide,
+        t.shots({"wide"}),
+        at_desk=lambda g: ep.perform(
+            cast.Manager(ep.cv),
+            g,
+            560,
+            724,
+            1.45,
+            blinks=[(1, 1.15)],
+            arms="articulated",
+            hide_right_arm_at=t.reaction,
+            facepalm=(t.reaction, t.ending),
+            brows=([(0, 0), (1, 8)], [(0, 0), (1, -8)]),
+            pupils=[(0, -31)],
+        ),
+    )
+    camera.anchor(wide, 560, 724)
+    camera.push_in(ep.cv, wide, x=[(0, 560), (t.reaction, 540)], scale=[(0, 1), (t.reaction, 1.6)])
+    close = ep.setup(
+        locations.office_reverse,
+        t.shots({"close"}),
+        in_chair=lambda g: ep.perform(
+            cast.Candidate(ep.cv),
+            g,
+            540,
+            737,
+            2.07,
+            smile=[(P(1).end, P(2).start)],
+            arms="articulated",
+            forearm=[(0, 0), (P(3).start, 180)],
+            pointing=[(P(3).start, t.reaction)],
+        ),
+    )
+    phone = props.silent_phone(ep.cv, close)
+    ep.cv.gate(phone, [(P(1).end, t.duration)])
+    graphics.episode_slate(ep.cv, ep.comp, "T1", "TEST")
+    graphics.quiz_card(
+        ep.cv,
+        ep.comp,
+        "QUICK MATH",
+        "17 × 19 = ?",
+        show=(P(2).start, P(3).end),
+        verdict="NOPE.",
+        verdict_span=(P(3).start, P(3).end),
+    )
+    graphics.scorecard(ep.cv, ep.comp, "SCORE", [("SPEED", "10 / 10", "#AAD6BD")], show=(t.ending, t.duration))
+    ep.captions(highlights={"dialogue-4": [("Forty-", False), ("two.", True)]})
+    ep.audio_mix()
+    ep.markers()
+    return ep, ep.finish(out / "t-office.scene.xml")
+
+
+def test_office_episode_builds_and_validates(project, tmp_path):
+    ep, path = office_episode(project, tmp_path)
+    assert ep.check() == []
+    root = ET.parse(path).getroot()
+    ids = {el.get("id") for el in root.iter() if el.get("id")}
+    assert {
+        "wide-office-angle",
+        "candidate-reverse-angle",
+        "manager-character",
+        "candidate-character",
+        "manager-facepalm",
+        "candidate-pointing-hand",
+        "silent-work-phone",
+        "dialogue-1",
+    } <= ids
+    assert (tmp_path / "sdk-validation.json").read_text().strip() == "[]"
+    # Five mouth shapes per head, each switched by hold keys.
+    head = next(el for el in root.iter("group") if el.get("id") == "manager-head")
+    mouths = [c for c in head if c.tag == "shape" and any(a.get("property") == "opacity" for a in c.findall("animate"))]
+    assert len(mouths) == 5
+
+
+def test_cafe_episode_builds_and_validates(project, tmp_path):
+    ep = Episode(
+        EpisodeSpec(
+            slug="t-cafe",
+            title="t",
+            description="t",
+            root=project,
+            seed=2,
+            background="#F0DDC0",
+            palette=CAFE,
+            mouth_style=CAFE_MOUTH,
+            font_id="font",
+        )
+    )
+    t, P = ep.t, ep.P
+    mouth = ep.mouth("candidate", smile=[(0, P(0).start)])
+    cafe = ep.setup(
+        locations.cafe,
+        [(0, t.reaction)],
+        behind_counter=lambda g: ep.perform(cast.Barista(ep.cv), g, 750, 800, 1.35, nods=[(0, 0), (1, -3)]),
+        at_counter=lambda g: ep.perform(
+            cast.Customer(ep.cv), g, 270, 1035, 1.53, mouth=mouth, held_cup=[(P(1).end, t.reaction)]
+        ),
+    )
+    camera.reframe(ep.cv, cafe, [(0, 1, 0, 0), (P(1).start, 1.4, 540 - 270 * 1.4, 775 - 1035 * 1.4)])
+    ep.setup(
+        locations.park,
+        [(t.reaction, t.duration)],
+        on_bench=lambda g: ep.perform(cast.Customer(ep.cv, seated=True), g, 510, 770, 1.62, mouth=mouth),
+        beside_bench=lambda g: cast.pigeon(ep.cv, g, nods=[(0, 0), (t.ending, -7)]),
+    )
+    graphics.password_card(ep.cv, ep.comp, "WI-FI", "secret", "NO SPACES", show=(P(1).start, t.reaction))
+    graphics.location_slate(ep.cv, ep.comp, "LATER", show=(t.reaction, t.reaction + 1))
+    ep.captions(x=40, y=1488, width=1000, weight=None, line_height="1.12", stroke=ep.cv.ink)
+    ep.audio_mix(track_id="voice")
+    ep.markers(name="{name}-marker", extra=[("park-marker", t.reaction, "park")])
+    path = ep.finish(tmp_path / "t-cafe.scene.xml")
+    assert ep.check() == []
+    ids = {el.get("id") for el in ET.parse(path).getroot().iter() if el.get("id")}
+    assert {"location-cafe", "location-park", "pigeon", "ava-name", "park-marker"} <= ids
+
+
+def test_finish_refuses_a_document_with_findings(project, tmp_path):
+    ep = Episode(EpisodeSpec(slug="t-bad", title="t", description="t", root=project, seed=3, background="#D5DFDF"))
+    ep.comp.add_group(id="dup")
+    ep.comp.add_group(id="dup")
+    with pytest.raises(SystemExit):
+        ep.finish(tmp_path / "t-bad.scene.xml")
+    assert not (tmp_path / "t-bad.scene.xml").exists()

@@ -1,0 +1,296 @@
+"""Drawing primitives on top of ``sr_core.scene``.
+
+A :class:`Canvas` owns the scene, its ``<assets>``, ``<paints>`` and ``<composition>``,
+and hands out ids, gradients, shapes, text layers and keyframes. Every builder in the
+library (cast, locations, props, graphics) only ever talks to a canvas, so a new item
+needs nothing but these few calls.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass
+from typing import Any, Literal
+
+from sr_core.scene import Scene
+
+CLEAR = "#00000000"
+Align = Literal["start", "center", "end", "justify"]
+
+
+@dataclass(frozen=True)
+class Palette:
+    """The ink, paper and clear colours a family of drawings shares."""
+
+    ink: str
+    white: str
+    clear: str = CLEAR
+    shade: str = "#BEBEBE"  # the one mid tone of a monochrome family
+    name: str = ""  # how a Style and EpisodeSpec refer to it
+    background: str = ""  # the stage colour an episode in this palette starts from
+
+
+OFFICE = Palette(ink="#111314", white="#FEFEFC", name="office", background="#D5DFDF")
+CAFE = Palette(ink="#243234", white="#FFF9EB", name="cafe", background="#F0DDC0")
+MONO = Palette(ink="#282828", white="#FFFFFF", shade="#BEBEBE", name="mono", background="#FFFFFF")
+WARM = Palette(ink="#231E19", white="#FFFFFF", shade="#E9D3C3", name="warm", background="#F3DFCF")
+# Cel: traced fills on a greige wall; the one mid tone is the teal of the lettering boxes, white is the lettering
+LINEN = Palette(ink="#240102", white="#fffaf5", shade="#2b87ab", name="linen", background="#c5bbb0")
+
+
+@dataclass(frozen=True)
+class Signature:
+    """What signs an episode (ADR 0001): the recurring code; the cactus needs no parameter."""
+
+    code: str = "SR-1028"
+
+
+def shared_counter(start: int = 0) -> Callable[[str], str]:
+    """An id namer with one counter for every prefix: ``g1, p2, e3, txt4``..."""
+    count = [start]
+
+    def name(prefix: str) -> str:
+        count[0] += 1
+        return f"{prefix}{count[0]}"
+
+    return name
+
+
+def flat_counter(prefix: str = "v", start: int = 0) -> Callable[[str], str]:
+    """An id namer with one counter and one prefix for every node, whatever the caller asks: ``v1, v2, v3``..."""
+    count = [start]
+
+    def name(_asked: str) -> str:
+        count[0] += 1
+        return f"{prefix}{count[0]}"
+
+    return name
+
+
+Keys = Sequence[tuple[float, float | int | str]]
+Spans = Iterable[tuple[float, float]]
+
+
+class Canvas:
+    """The scene plus the helpers every builder needs."""
+
+    def __init__(
+        self,
+        scene: Scene,
+        palette: Palette = OFFICE,
+        font_asset: str | None = "caption-font",
+        width: int = 1080,
+        height: int = 1920,
+        namer: Callable[[str], str] | None = None,
+        local_time: bool = False,
+        signature: Signature | None = None,
+    ):
+        self.scene = scene
+        self.palette = palette
+        self.font_asset = font_asset
+        self.width = width
+        self.height = height
+        self.namer = namer
+        self.local_time = local_time  # animations default to timeBase="local" (shot sequences)
+        self.signature = signature  # None: an unsigned build (srstudio.signature draws nothing)
+        self._sig_ids: dict[str, int] = {}
+        self._assets = None
+        self._paints = None
+        self.comp = scene.add_composition()
+        self._serial = 0
+        self._gradients: dict[str, str] = {}
+        self._symbols: dict[str, Any] = {}
+        self._symbol_root: Any = None
+
+    @property
+    def assets(self):
+        """``<assets>``, created on first use so a silent, font-less scene has none."""
+        if self._assets is None:
+            self._assets = self.scene.add_assets()
+        return self._assets
+
+    @property
+    def paints(self):
+        """``<paints>``, created on the first gradient so a flat drawing has none."""
+        if self._paints is None:
+            self._paints = self.scene.add_paints()
+        return self._paints
+
+    # -- colours -----------------------------------------------------------------------
+    @property
+    def ink(self) -> str:
+        return self.palette.ink
+
+    @property
+    def white(self) -> str:
+        return self.palette.white
+
+    @property
+    def clear(self) -> str:
+        return self.palette.clear
+
+    @property
+    def shade(self) -> str:
+        return self.palette.shade
+
+    # -- ids and paints ------------------------------------------------------------------
+    def uid(self, prefix: str) -> str:
+        """``prefix-0001``, ``prefix-0002``...: stable ids for anonymous shapes (or the ``namer``'s own)."""
+        if self.namer is not None:
+            return self.namer(prefix)
+        self._serial += 1
+        return f"{prefix}-{self._serial:04d}"
+
+    def grad(self, name: str, stops: Sequence[tuple[float, str]], xy=(0, 0, 1, 1)) -> str:
+        """A named linear gradient; returns the ``url(#name)`` paint. Created once per name."""
+        if name not in self._gradients:
+            g = self.paints.add_linearGradient(
+                id=name, x1=xy[0], y1=xy[1], x2=xy[2], y2=xy[3], interpolationSpace="srgb"
+            )
+            for offset, color in stops:
+                g.add_stop(offset=offset, color=color)
+            self._gradients[name] = f"url(#{name})"
+        return self._gradients[name]
+
+    # -- shapes -------------------------------------------------------------------------
+    def path(self, parent, d: str, fill: str | None = None, stroke: str | None = None, sw: float = 3, **kw):
+        fill = self.clear if fill is None else fill
+        stroke = self.ink if stroke is None else stroke
+        if sw and stroke != self.clear:
+            kw.update(strokeCap="round", strokeJoin="round")
+        return parent.add_shape(
+            id=self.uid("path"),
+            shape="path",
+            path=d,
+            width=str(self.width),
+            height=str(self.height),
+            fill=fill,
+            stroke=stroke,
+            strokeWidth=sw,
+            **kw,
+        )
+
+    def rect(self, parent, x, y, w, h, fill, stroke: str | None = None, sw: float = 0, radius: float | None = 0, **kw):
+        """A rectangle; ``radius=None`` leaves the attribute out (the Cel convention)."""
+        stroke = self.clear if stroke is None else stroke
+        if radius is not None:
+            kw["radius"] = radius
+        return parent.add_shape(
+            id=self.uid("rect"),
+            shape="rect",
+            x=x,
+            y=y,
+            width=w,
+            height=h,
+            fill=fill,
+            stroke=stroke,
+            strokeWidth=sw,
+            **kw,
+        )
+
+    def ellipse(self, parent, x, y, w, h, fill, stroke: str | None = None, sw: float = 0, **kw):
+        stroke = self.clear if stroke is None else stroke
+        return parent.add_shape(
+            id=self.uid("ellipse"),
+            shape="ellipse",
+            x=x,
+            y=y,
+            width=w,
+            height=h,
+            fill=fill,
+            stroke=stroke,
+            strokeWidth=sw,
+            **kw,
+        )
+
+    def line(self, parent, x1, y1, x2, y2, color: str | None = None, width: float = 3, **kw):
+        return self.path(
+            parent, f"M{x1:g} {y1:g} L{x2:g} {y2:g}", stroke=self.ink if color is None else color, sw=width, **kw
+        )
+
+    def group(self, parent, id: str, **kw):
+        return parent.add_group(id=id, **kw)
+
+    # -- symbols --------------------------------------------------------------------------
+    def symbol(self, id: str, draw: Callable[[Any], object]) -> str:
+        """Define the symbol ``id`` the first time, drawn by ``draw(symbol)``; later calls reuse it.
+
+        A symbol without size or duration takes the document's, so static scenery needs neither. The engine
+        draws each instance into an offscreen at the symbol's frame size and transforms that texture: an
+        instance magnified by a camera move is sampled, not redrawn, and its edges soften."""
+        if id not in self._symbols:
+            if self._symbol_root is None:
+                self._symbol_root = self.scene.add_symbols()
+            self._symbols[id] = element = self._symbol_root.add_symbol(id=id)
+            draw(element)
+        return id
+
+    def instance(self, parent, id: str, symbol: str, **kw):
+        """Place ``symbol``; the engine scopes the ids inside it as ``id/inner``."""
+        if symbol not in self._symbols:
+            raise ValueError(f"no symbol {symbol!r}: define it with Canvas.symbol first")
+        return parent.add_instance(id=id, symbol=symbol, **kw)
+
+    # -- text ---------------------------------------------------------------------------
+    def text(
+        self, parent, name: str, value: str, x, y, w, h, size, color: str = "#FFFFFF", align: Align = "center", **kw
+    ):
+        """A text asset plus the layer that shows it; ``name`` is the asset id, ``name-layer`` the layer."""
+        if self.font_asset is None:
+            raise ValueError("this canvas has no caption font (a silent style); set EpisodeSpec.font to draw text")
+        self.assets.add_text(
+            id=name,
+            text=value,
+            width=w,
+            height=h,
+            size=str(size),
+            fontAsset=self.font_asset,
+            color=color,
+            align=align,
+            verticalAlign="middle",
+            lineHeight="1.12",
+            **kw,
+        )
+        return parent.add_layer(id=name + "-layer", asset=name, x=x, y=y)
+
+    # -- animation ------------------------------------------------------------------------
+    def keys(
+        self, node, prop: str, values: Keys, hold: bool = True, *, kind: str | None = None, local: bool | None = None
+    ):
+        """Keyframes on ``prop``; ``hold`` steps between values, otherwise they interpolate linearly.
+
+        ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
+        ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas."""
+        kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
+        if self.local_time if local is None else local:
+            kw["timeBase"] = "local"
+        a = node.add_animate(**kw)
+        for t, value in sorted(values, key=lambda kv: kv[0]):
+            a.add_key(time=round(float(t), 6), value=str(value))
+        return a
+
+    def gate(self, node, spans: Spans):
+        """Visible only inside ``spans``: opacity 0 → 1 → 0 with hold keys, which keeps seeking exact."""
+        events = {0.0: 0}
+        for start, end in spans:
+            events[float(start)] = 1
+            events[float(end)] = 0
+        return self.keys(node, "opacity", sorted(events.items()))
+
+    def pop_in(
+        self,
+        node,
+        at: float,
+        rest: float = 1.0,
+        from_: float = 0.92,
+        over: float = 1.03,
+        rise: float = 0.10,
+        settle: float = 0.22,
+    ):
+        """The overshoot used by every card: scale ``from_`` → ``over`` → ``rest`` starting at ``at``."""
+        values = [(0, from_), (at, from_), (at + rise, over), (at + settle, rest)]
+        self.keys(node, "scaleX", values, hold=False)
+        self.keys(node, "scaleY", values, hold=False)
+
+    def expression(self, node, prop: str, js: str):
+        node.add_expression(property=prop).content = js
