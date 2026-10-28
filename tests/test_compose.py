@@ -334,3 +334,15 @@ def test_a_missing_mix_wav_is_rebuilt_from_the_cached_mp3(tmp_path, song_mp3):
 def test_a_transport_answer_that_is_not_bytes_is_rejected(tmp_path):
     with pytest.raises(MusicOutputError, match="not bytes"):
         MusicClient(tmp_path, key="k", binary_transport=Binary({"detail": "x"})).compose(plan(), seed=1, bpm=120)
+
+
+def test_a_direction_goes_before_the_lyrics_and_is_not_a_sung_line():
+    chunk = Chunk("Forty Slides", 4.0, STYLES, ("Camera off.",), direction="instrumental for two bars")
+    assert chunk.to_dict()["text"] == "[Forty Slides]\n{instrumental for two bars}\nCamera off."
+    assert Plan((chunk,)).sung() == [("Camera off.", (0.0, 4.0))]
+
+
+@pytest.mark.parametrize("direction", ["{nested}", "two\nlines", "x" * 201])
+def test_a_malformed_direction_is_refused(direction):
+    with pytest.raises(ValueError, match="direction"):
+        Chunk("Verse", 4.0, STYLES, direction=direction)

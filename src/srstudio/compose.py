@@ -73,6 +73,7 @@ class Chunk:
     lines: tuple[str, ...] = ()  # none: an instrumental chunk
     negative: tuple[str, ...] = ()
     context: str = "high"
+    direction: str = ""  # an inline direction sung before the lyrics, such as "instrumental for two bars"
 
     def __post_init__(self):
         if not 1 <= len(self.name) <= MAX_NAME or any(c in self.name for c in "[]\n"):
@@ -89,12 +90,16 @@ class Chunk:
                 raise ValueError(f"chunk {self.name!r}: a lyric is one line: {line!r}")
             if not 1 <= len(line) <= MAX_CHARS:
                 raise ValueError(f"chunk {self.name!r}: a lyric line is 1..{MAX_CHARS} characters")
+        if any(c in self.direction for c in "{}\n") or len(self.direction) > MAX_CHARS:
+            raise ValueError(
+                f"chunk {self.name!r}: a direction is one line of at most {MAX_CHARS} characters, no braces"
+            )
         if self.context not in CONTEXTS:
             raise ValueError(f"chunk {self.name!r}: context must be one of {', '.join(CONTEXTS)}")
 
     def to_dict(self) -> dict:
         return {
-            "text": "\n".join([f"[{self.name}]", *self.lines]),
+            "text": "\n".join([f"[{self.name}]", *([f"{{{self.direction}}}"] if self.direction else []), *self.lines]),
             "duration_ms": round(self.seconds * 1000),
             "positive_styles": list(self.styles),
             "negative_styles": list(self.negative),
