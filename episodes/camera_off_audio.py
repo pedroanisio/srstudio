@@ -8,13 +8,13 @@ Absence of output verification is a design defect, not a runtime bug.
 All LLM output must be treated as untrusted and validated explicitly.
 
 The pipeline (engine-resolved lines and effects, speech-to-text check, placement on the beat, synthesised
-groove) is :mod:`_song`; this file is the song. Two voices: Pip sings, the boss talks from the laptop.
+groove) is :mod:`srstudio.song`; this file is the song. Two voices: Pip sings, the boss talks from the laptop.
 """
 
 from __future__ import annotations
 
-from _song import Effect, Line, Song, Voice, main
 from srstudio.music import Groove, Section
+from srstudio.song import Effect, Line, Singer, Song, main
 
 GROOVE = Groove(bpm=120)  # one bar = 2 s
 MUZAK = frozenset({"hat", "keys"})
@@ -24,8 +24,8 @@ SONG = Song(
     seed=82026,
     groove=GROOVE,
     voices={
-        "pip": Voice("bIHbv24MWmeRgasZH58o", "Will", dict(stability=0.30, similarity_boost=0.75, style=0.45)),
-        "boss": Voice("cjVigY5qzO86Huf0OWal", "Eric", dict(stability=0.55, similarity_boost=0.75, style=0.15)),
+        "pip": Singer("bIHbv24MWmeRgasZH58o", "Will", dict(stability=0.30, similarity_boost=0.75, style=0.45)),
+        "boss": Singer("cjVigY5qzO86Huf0OWal", "Eric", dict(stability=0.55, similarity_boost=0.75, style=0.15)),
     },
     lines=[
         Line("pip", "Camera on. Nod, nod, nod.", "Camera ON.\nNod, nod, NOD.", (0, 0.5)),
