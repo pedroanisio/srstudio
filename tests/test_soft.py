@@ -516,3 +516,43 @@ def test_the_soft_office_holds_chair_desk_laptop_and_the_signature():
     for part in ("soft-chair", "soft-desk"):
         group = next(e for e in root.iter() if e.get("id") == part)
         assert all(s.get("stroke") == blob.WOOD_LINE for s in group.iter() if local(s.tag) == "shape")
+
+
+# -- looks: one rig, several characters ------------------------------------------------------------
+def test_pip_is_the_default_look_and_a_look_checks_its_colours():
+    assert blob.PIP.name == "pip" and blob.PIP.fill is None and blob.PIP.topper is not None
+    with pytest.raises(BlobError, match="colour"):
+        blob.Look("x", fill="blue")
+    with pytest.raises(BlobError, match="colour"):
+        blob.Look("x", blush="#12")
+    with pytest.raises(BlobError, match="name"):
+        blob.Look("Two Words")
+
+
+def test_bo_is_a_registered_soft_character_on_the_same_rig_with_his_own_look():
+    entry = registry.get("character", "bo")
+    assert entry.style == "soft" and entry.builder is blob.bo
+    scene, cv = canvas()
+    cues = [Cue(0, "stand"), Cue(1, "sit", ease=0.2, x=40), Cue(2, "wave-a", eyes="happy", mouth="grin")]
+    blob.bo(cv, cv.comp, cues, end=3, x=540, y=1500)
+    root = tree(scene)
+    ids = {e.get("id") for e in root.iter() if e.get("id")}
+    assert {"bo", "bo-outline", "bo-fill", "bo-hair", "bo-glasses", "bo-face"} <= ids
+    assert not any(i.startswith("pip") for i in ids)
+    fill_pass = next(e for e in root.iter() if e.get("id") == "bo-fill")
+    fills = {s.get("fill") for s in fill_pass.iter() if local(s.tag) == "shape"}
+    assert fills == {blob.BO.fill}, "every limb and the head are filled in Bo's body colour"
+    face = next(e for e in root.iter() if e.get("id") == "bo-face")
+    assert not [s for s in face if local(s.tag) == "shape" and s.get("fill") == blob.BLUSH], "Bo does not blush"
+    keyed = [a for a in root.iter() if local(a.tag) == "animate" and a.get("property") == "path"]
+    times = [round(d.time, 6) for d in blob.drawings(cues, end=3)]
+    assert keyed and all([float(k.get("time")) for k in a] == pytest.approx(times) for a in keyed)
+
+
+def test_pip_and_bo_share_a_scene_without_an_id_clash_and_it_validates():
+    scene, cv = canvas()
+    blob.pip(cv, cv.comp, [Cue(0, "stand")], end=3, x=300, y=1500, scale=0.8)
+    blob.bo(cv, cv.comp, [Cue(0, "clasp", eyes="look", flip=True)], end=3, x=780, y=1500, scale=0.8, shadow=True)
+    ids = [e.get("id") for e in tree(scene).iter() if e.get("id")]
+    assert len(ids) == len(set(ids))
+    assert [f for f in scene.check() if f.severity == "error"] == []

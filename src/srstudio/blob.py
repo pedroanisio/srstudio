@@ -10,11 +10,16 @@ every fill in white) so head, body and limbs merge under one outline, and each l
 hold-keyed on every drawing. Arms switch between the merged back pass and a front pass with their own
 outline (hands clasped over the chest, arms on the desk). Eyes and mouth are gated groups that follow
 the head; a ``sing`` mouth follows the soundtrack's mouth states.
+
+A :class:`Look` is what makes the rig a particular character: body fill, blush, what grows from the head
+(Pip's sprout), what sits on it (Bo's hair) and what the face wears (Bo's glasses). :func:`pip` and
+:func:`bo` are the same rig in two looks, so every pose and cue works for both.
 """
 
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
@@ -39,6 +44,9 @@ __all__ = [
     "Pose",
     "Cue",
     "Drawing",
+    "Look",
+    "PIP",
+    "BO",
     "FEET",
     "FRONTABLE",
     "SEATED_FLOOR",
@@ -47,7 +55,9 @@ __all__ = [
     "silhouette",
     "drawings",
     "mouth_track",
+    "blob",
     "pip",
+    "bo",
     "office",
 ]
 
@@ -548,6 +558,75 @@ def _sprout(cv: Canvas, g, x: float, y: float, r: float) -> None:
         cv.path(g, d, LEAF, cv.ink, 4)
 
 
+Drawer = Callable[[Canvas, object, float], None]  # (canvas, a group centred on the head, head radius)
+_COLOUR = re.compile(r"#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?")
+_NAME = re.compile(r"[a-z][a-z0-9-]*")
+
+
+@dataclass(frozen=True)
+class Look:
+    """What makes the blob rig a particular character.
+
+    ``fill`` colours the body and head (``None``: the palette's white); ``blush`` the cheeks (``None``: none).
+    ``topper`` draws what grows from the head, between the outline and fill passes so the fill hides its base;
+    ``hair`` draws on top of the head after the fill; ``features`` draws on the face after the mouth. Each
+    drawer gets a group that follows the head (``features``: the face) and the head radius; its group is
+    ``<id>-<topper_id>``, ``<id>-hair`` and ``<id>-<features_id>``."""
+
+    name: str
+    fill: str | None = None
+    blush: str | None = BLUSH
+    topper: Drawer | None = None
+    topper_id: str = "topper"
+    hair: Drawer | None = None
+    features: Drawer | None = None
+    features_id: str = "features"
+
+    def __post_init__(self) -> None:
+        if not _NAME.fullmatch(self.name):
+            raise BlobError(f"a look's name is a lower-case id, got {self.name!r}")
+        for label, colour in (("fill", self.fill), ("blush", self.blush)):
+            if colour is not None and not _COLOUR.fullmatch(colour):
+                raise BlobError(f"look {self.name!r}: {label} must be a #RRGGBB colour, got {colour!r}")
+
+
+def _sprout_look(cv: Canvas, g, r: float) -> None:
+    _sprout(cv, g, 0, 0, r)
+
+
+BO_FILL = "#DCE8F4"
+BO_HAIR = "#3B3F4A"
+
+
+def _side_part(cv: Canvas, g, r: float) -> None:
+    """Bo's hair: a cap over the crown, parted on his right, the fringe swept to his left."""
+    rim = [(r * math.cos(math.radians(a)), -r * math.sin(math.radians(a))) for a in range(196, -17, -8)]
+    fringe = [
+        (0.97 * r, -0.10 * r),
+        (0.80 * r, -0.36 * r),
+        (0.42 * r, -0.50 * r),
+        (0.30 * r, -0.62 * r),  # the parting
+        (0.10 * r, -0.50 * r),
+        (-0.45 * r, -0.42 * r),
+        (-0.86 * r, -0.12 * r),
+    ]
+    d = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in [*rim, *fringe]) + " Z"
+    cv.path(g, d, BO_HAIR, cv.ink, 4)
+
+
+def _glasses(cv: Canvas, g, r: float) -> None:
+    """Square-rimmed glasses over the eyes (which sit 30 either side of the face centre, 8 above it)."""
+    for side in (-1, 1):
+        cv.rect(g, side * 30 - 26, -34, 52, 50, cv.clear, cv.ink, 5, radius=12)
+    cv.path(g, "M -4 -14 Q 0 -19 4 -14", stroke=cv.ink, sw=5)
+    for side in (-1, 1):
+        cv.path(g, f"M {side * 56:g} -16 L {side * 0.9 * r:g} -20", stroke=cv.ink, sw=5)
+
+
+PIP = Look("pip", topper=_sprout_look, topper_id="sprout")
+BO = Look("bo", fill=BO_FILL, blush=None, hair=_side_part, features=_glasses, features_id="glasses")
+
+
 # -- the static silhouette ------------------------------------------------------------------------------------
 def silhouette(
     cv: Canvas,
@@ -733,15 +812,7 @@ def _show(cv: Canvas, node, keys: list[tuple[float, int]]) -> None:
         cv.keys(node, "opacity", keys)
 
 
-@register(
-    "character",
-    "pip",
-    summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
-    "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
-    "the soundtrack",
-    episodes=("focus-mode", "camera-off"),
-)
-def pip(
+def blob(
     cv: Canvas,
     parent,
     cues: Sequence[Cue],
@@ -751,13 +822,16 @@ def pip(
     y: float = 0,
     scale: float = 1,
     mouth_states: Sequence[tuple[float, str]] | None = None,
-    id: str = "pip",
+    id: str,
     fps: float = 15,
     radius: float = HEAD,
     shadow: bool = False,
+    look: Look,
 ):
-    """Pip performing ``cues`` until ``end``; ``mouth_states`` (``Episode.mouth``) drive every ``sing`` mouth;
-    ``shadow`` puts a contact shadow under the feet on every drawing."""
+    """The blob rig in ``look`` performing ``cues`` until ``end``; ``mouth_states`` (``Episode.mouth``) drive every
+    ``sing`` mouth; ``shadow`` puts a contact shadow under the feet on every drawing."""
+    body_fill = look.fill or cv.white
+
     frames = drawings(cues, end=end, fps=fps)
     if any(c.mouth == "sing" for c in cues):
         if not mouth_states:
@@ -787,7 +861,7 @@ def pip(
         return g
 
     fronts = {limb: [(d.time, limb in d.pose.front) for d in frames] for limb in FRONTABLE}
-    for pass_name, fill, stroke, sw in (("outline", cv.ink, cv.ink, 2 * o), ("fill", cv.white, cv.clear, 0)):
+    for pass_name, fill, stroke, sw in (("outline", cv.ink, cv.ink, 2 * o), ("fill", body_fill, cv.clear, 0)):
         g = cv.group(root, f"{id}-{pass_name}")
         for limb in LIMBS:
             shape = limb_shape(g, limb, fill, stroke, sw)
@@ -796,8 +870,10 @@ def pip(
         head = head_at(cv.group(g, f"{id}-head-{pass_name}"))
         r = radius + (o if pass_name == "outline" else 0)
         cv.ellipse(head, -r, -r, 2 * r, 2 * r, fill)
-        if pass_name == "outline":
-            _sprout(cv, head_at(cv.group(root, f"{id}-sprout")), 0, 0, radius)
+        if pass_name == "outline" and look.topper is not None:
+            look.topper(cv, head_at(cv.group(root, f"{id}-{look.topper_id}")), radius)
+    if look.hair is not None:
+        look.hair(cv, head_at(cv.group(root, f"{id}-hair")), radius)
     # A front limb is filled, then traced along its sides and tip only: the root stays open inside the body, so
     # the limb grows out of it instead of sitting on it. Widened by the outline so it matches the silhouette's edge.
     for limb in FRONTABLE:
@@ -806,15 +882,16 @@ def pip(
             _show(cv, g, _changes(fronts[limb], True))
             fills = [d.pose.limbs[limb].widened(o).outline() for d in frames]
             traces = [d.pose.limbs[limb].widened(o).contour() for d in frames]
-            fill = cv.path(g, fills[0], cv.white, cv.clear, 0)
+            fill = cv.path(g, fills[0], body_fill, cv.clear, 0)
             cv.keys(fill, "path", list(zip(times, fills, strict=True)))
             trace = cv.path(g, traces[0], cv.clear, cv.ink, o)
             cv.keys(trace, "path", list(zip(times, traces, strict=True)))
     face = cv.group(root, f"{id}-face")
     cv.keys(face, "x", [(d.time, round(d.pose.head[0] + d.pose.face[0], 3)) for d in frames])
     cv.keys(face, "y", [(d.time, round(d.pose.head[1] + d.pose.face[1], 3)) for d in frames])
-    for side in (-1, 1):
-        cv.ellipse(face, side * 58 - 15, 16, 30, 17, BLUSH, opacity=0.85)
+    if look.blush is not None:
+        for side in (-1, 1):
+            cv.ellipse(face, side * 58 - 15, 16, 30, 17, look.blush, opacity=0.85)
     eyes_track = [(d.time, d.face.eyes) for d in frames]
     for kind in dict.fromkeys(e for _, e in eyes_track):
         g = cv.group(face, f"{id}-eyes-{kind}")
@@ -825,7 +902,90 @@ def pip(
         g = cv.group(face, f"{id}-mouth-{shape}")
         _show(cv, g, _changes(mouths, shape))
         _mouth(cv, g, shape, 0, 32)
+    if look.features is not None:
+        look.features(cv, cv.group(face, f"{id}-{look.features_id}"), radius)
     return root
+
+
+@register(
+    "character",
+    "pip",
+    summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
+    "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
+    "the soundtrack",
+    episodes=("focus-mode", "camera-off"),
+)
+def pip(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "pip",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """Pip performing ``cues`` until ``end``; ``mouth_states`` (``Episode.mouth``) drive every ``sing`` mouth;
+    ``shadow`` puts a contact shadow under the feet on every drawing."""
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=PIP,
+    )
+
+
+@register(
+    "character",
+    "bo",
+    summary="Bo, the boss: Pip's rig and pose sheet in a pale blue body with side-parted hair and square glasses, "
+    "no blush; any cue Pip can perform, Bo can",
+)
+def bo(
+    cv: Canvas,
+    parent,
+    cues: Sequence[Cue],
+    *,
+    end: float,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    mouth_states: Sequence[tuple[float, str]] | None = None,
+    id: str = "bo",
+    fps: float = 15,
+    radius: float = HEAD,
+    shadow: bool = False,
+):
+    """Bo performing ``cues``: the same rig, poses and options as :func:`pip`, in :data:`BO`."""
+    return blob(
+        cv,
+        parent,
+        cues,
+        end=end,
+        x=x,
+        y=y,
+        scale=scale,
+        mouth_states=mouth_states,
+        id=id,
+        fps=fps,
+        radius=radius,
+        shadow=shadow,
+        look=BO,
+    )
 
 
 # -- props and the stage: a 3/4 view from above and to the right ---------------------------------------------
