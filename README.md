@@ -151,7 +151,12 @@ style.
   standing pose). `home` (`soft-home`): the living room in the same 3/4 view, a fabric `sofa` (`soft-sofa`) facing
   left on a rug, a floor lamp and a side table with the cactus; the sofa shares the chair's axes and seat height, so
   a seated pose at `SOFA_SEAT` has its hip on `blob.sofa_seat()` and its soles on `SOFA_FLOOR` (tested), and
-  `on_sofa=` seats a character between the seat and the near arm.
+  `on_sofa=` seats a character between the seat and the near arm. `meeting_room` (`soft-meeting-room`) and
+  `break_room` (`soft-break-room`) are polished rooms on a shared shell (`room_point`, walls, plank or tile floor,
+  baseboards, a `-light` glaze group): a walnut table with a swivel chair (`soft-swivel-chair`), a wall screen and a
+  clock; mint cabinets, a coffee machine (`soft-coffee-machine`), a fridge (`soft-fridge`), a pendant lamp and a stool
+  (`soft-stool`). Both seats hold `SEAT`, and wall decor stays below `CAPTION_FLOOR` (tested;
+  [ADR 0008](docs/decisions/0008-polished-rooms.md)).
   (`srstudio.cel`): `room` (`cel-room`: wall, plank floor fanning from a vanishing point and a wooden desk under the
   room's own measured camera re-expressed inside the world's, `cel.compensate`); `cel.world` places the measured
   camera on the group everything else is drawn in.

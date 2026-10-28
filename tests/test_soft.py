@@ -721,3 +721,99 @@ def test_the_sofas_front_stands_on_the_floor_the_seated_soles_meet():
     x = blob.SOFA_SEAT[0] - 110  # the front edge on the hip's line along the sofa
     bottom = far[1] + (near[1] - far[1]) * (x - far[0]) / (near[0] - far[0])
     assert bottom + 18 == pytest.approx(blob.SOFA_FLOOR, abs=12)  # 18: the sofa's feet
+
+
+# -- polished rooms: the meeting room and the break room ---------------------------------------------------
+ROOMS = {"soft-meeting-room": "meeting_room", "soft-break-room": "break_room"}
+
+
+def signed_canvas() -> tuple[Scene, Canvas]:
+    from srstudio import Signature
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="10", duration=2, background=WARM.background)
+    return scene, Canvas(scene, WARM, signature=Signature())
+
+
+def test_the_rooms_and_their_furniture_are_registered_soft_parts():
+    entries = {(e.kind, e.name): e for e in registry.entries()}
+    for name, fn in ROOMS.items():
+        assert entries[("location", name)].style == "soft" and entries[("location", name)].builder is getattr(blob, fn)
+    for prop in ("soft-swivel-chair", "soft-stool", "soft-coffee-machine", "soft-fridge"):
+        assert entries[("prop", prop)].style == "soft", prop
+
+
+def test_a_room_point_on_either_wall_meets_the_floor_on_the_wall_base():
+    for a in range(-330, int(blob.CORNER) + 1, 50):
+        x, y = blob.room_point(a)
+        assert blob.wall_base(x) == pytest.approx(y)
+    for c in range(0, 300, 50):
+        x, y = blob.room_point(blob.CORNER, c)
+        assert blob.wall_base(x) == pytest.approx(y)
+    corner = blob.room_point(blob.CORNER)
+    assert blob.wall_base(corner[0] - 1) < corner[1] + 1 and blob.wall_base(corner[0] + 1) > corner[1]
+
+
+def test_every_place_a_character_stands_or_sits_is_on_the_floor_in_front_of_the_walls():
+    for x in range(0, 1081, 40):
+        assert blob.wall_base(x) < blob.SEATED_FLOOR < blob.FLOOR
+    assert blob.wall_base(blob.BREAK_STAND[0]) < blob.BREAK_STAND[1] == blob.FLOOR
+
+
+@pytest.mark.parametrize("name", sorted(ROOMS))
+def test_a_room_is_walls_floor_light_and_furniture_gated_to_its_shots_and_signed(name):
+    scene, cv = signed_canvas()
+    getattr(blob, ROOMS[name])(cv, cv.comp, shots=[(0, 1)])
+    root = tree(scene)
+    ids = [e.get("id") for e in root.iter() if e.get("id")]
+    assert len(ids) == len(set(ids))
+    assert {name, f"{name}-walls", f"{name}-floor", f"{name}-light", "sig-cactus", "sig-code"} <= set(ids)
+    assert ids.index(f"{name}-walls") < ids.index(f"{name}-floor") < ids.index(f"{name}-light")
+    room = by_id(root, name)
+    assert [k.get("value") for k in room.iter() if local(k.tag) == "key"][:2] == ["1", "0"]
+    light = shapes(by_id(root, f"{name}-light"))
+    assert light and all(0 < float(s.get("opacity")) < 0.5 for s in light), "light is a glaze, not paint"
+    assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_wall_decor_stays_below_the_captions_and_on_its_wall():
+    for name, (wall, a0, a1, u0, u1) in blob.WALL_DECOR.items():
+        corners = blob.wall_quad(wall, a0, a1, u0, u1)
+        assert all(y >= blob.CAPTION_FLOOR for _, y in corners), name
+        assert all(0 <= x <= 1080 for x, _ in corners), name
+        span = (-blob.ROOM[0], blob.CORNER) if wall == "back" else (0, 1080 - blob.ROOM[0] - blob.CORNER)
+        assert span[0] <= a0 < a1 <= span[1], name
+
+
+def test_the_fridge_top_stays_below_the_captions_and_in_frame():
+    a0, a1, c0, c1, height = blob.FRIDGE_BOX
+    top = [blob.room_point(a, c, height) for a in (a0, a1) for c in (c0, c1)]
+    assert all(y >= blob.CAPTION_FLOOR for _, y in top)
+    assert all(0 <= x <= 1080 for x, _ in top)
+
+
+def test_the_meeting_table_takes_the_laptop_and_the_swivel_chair_the_seated_hip():
+    top = blob.meeting_table_top()
+    assert all(point_in(top, x, y) for x, y in blob.keyboard()), "a seated pose types on the table"
+    assert point_in(blob.swivel_seat(), *blob.SEAT)
+
+
+def test_the_stool_seats_the_hip_at_the_chairs_height_and_its_base_on_the_floor_the_soles_meet():
+    cx, cy, rx, ry = blob.STOOL_TOP
+    hx, hy = blob.SEAT
+    assert ((hx - cx) / rx) ** 2 + ((hy - cy) / ry) ** 2 < 1
+    assert blob.STOOL_FLOOR == pytest.approx(blob.SEATED_FLOOR, abs=25)
+
+
+def test_the_meeting_room_seats_a_character_on_the_swivel_chair_and_validates():
+    scene, cv = signed_canvas()
+    blob.meeting_room(cv, cv.comp)
+    blob.juno(
+        cv,
+        cv.comp,
+        [Cue(0, "type-a", x=blob.SEAT[0] / blob.SCALE, y=blob.SEAT[1] / blob.SCALE)],
+        end=2,
+        scale=blob.SCALE,
+    )
+    blob.break_room(cv, cv.comp, id="other-room")
+    assert [f for f in scene.check() if f.severity == "error"] == []

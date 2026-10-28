@@ -69,6 +69,26 @@ __all__ = [
     "office",
     "sofa",
     "home",
+    "ROOM",
+    "CORNER",
+    "CAPTION_FLOOR",
+    "BREAK_STAND",
+    "WALL_DECOR",
+    "STOOL_TOP",
+    "STOOL_FLOOR",
+    "RoomPalette",
+    "room_point",
+    "wall_base",
+    "wall_quad",
+    "floor_quad",
+    "meeting_table_top",
+    "swivel_seat",
+    "swivel_chair",
+    "coffee_machine",
+    "fridge",
+    "stool",
+    "meeting_room",
+    "break_room",
 ]
 
 Point = tuple[float, float]
@@ -1537,4 +1557,648 @@ def home(
     top = _side_table(cv, g, 24, _floor_at(-330, -250)[1])
     signature.cactus(cv, g, top[0], top[1], 0.55)
     signature.code(cv, g, *_floor_at(-330, 120), 14, color=RUG_LINE, angle=36)
+    return g
+
+
+# -- polished rooms: walls, floor and light in the same 3/4 view ----------------------------------------------
+# A room point is ``a`` along the back wall (positive to the right, toward the corner), ``c`` out from it toward
+# the viewer and ``up`` above the floor, from ROOM, where the back wall meets the floor. The axes are the sofa's,
+# so a seated pose fits a room's seats as it fits the chair. The side wall stands at ``a = CORNER``.
+ROOM = (330.0, 1180.0)
+CORNER = 530.0
+CAPTION_FLOOR = 440.0  # wall decor stays below this line, under the Soft captions (y 250-430)
+BASEBOARD = 22.0
+BREAK_STAND = (400.0, FLOOR)  # where a standing character waits in front of the break-room counter
+LIGHT_GLAZE = "#FFF8E8"
+
+
+def room_point(a: float, c: float = 0.0, up: float = 0.0) -> Point:
+    """A room point in output pixels."""
+    return (ROOM[0] + a + c, ROOM[1] + a * _BACK + c * _NEAR - up)
+
+
+def wall_base(x: float) -> float:
+    """The y at output ``x`` where the back wall (left of the corner) or the side wall (right of it) meets the
+    floor."""
+    corner_x, corner_y = room_point(CORNER)
+    if x <= corner_x:
+        return ROOM[1] + (x - ROOM[0]) * _BACK
+    return corner_y + (x - corner_x) * _NEAR
+
+
+def wall_quad(wall: str, a0: float, a1: float, u0: float, u1: float) -> list[Point]:
+    """A rectangle on a wall from ``a0`` to ``a1`` along it (on the side wall: ``c``) and ``u0`` to ``u1`` up."""
+    if wall == "back":
+        return [room_point(a0, 0, u0), room_point(a1, 0, u0), room_point(a1, 0, u1), room_point(a0, 0, u1)]
+    if wall == "side":
+        return [
+            room_point(CORNER, a0, u0),
+            room_point(CORNER, a1, u0),
+            room_point(CORNER, a1, u1),
+            room_point(CORNER, a0, u1),
+        ]
+    raise BlobError(f"a wall is 'back' or 'side', got {wall!r}")
+
+
+def floor_quad(a0: float, a1: float, c0: float, c1: float, up: float = 0.0) -> list[Point]:
+    """A rectangle parallel to the floor, ``up`` above it."""
+    return [room_point(a0, c0, up), room_point(a1, c0, up), room_point(a1, c1, up), room_point(a0, c1, up)]
+
+
+def _quad(cv: Canvas, g, pts: Sequence[Point], fill: str, line: str | None = None, sw: float = 4, **kw):
+    d = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in pts) + " Z"
+    return cv.path(g, d, fill, line if line is not None else cv.clear, sw if line is not None else 0, **kw)
+
+
+def _line(cv: Canvas, g, a: Point, b: Point, colour: str, sw: float = 3, **kw):
+    return cv.path(g, f"M {a[0]:.1f} {a[1]:.1f} L {b[0]:.1f} {b[1]:.1f}", stroke=colour, sw=sw, **kw)
+
+
+def _block(
+    cv: Canvas,
+    g,
+    a: tuple[float, float],
+    c: tuple[float, float],
+    up: tuple[float, float],
+    faces: tuple[str, str, str],
+    line: str,
+    *,
+    end: str = "right",
+    sw: float = 4,
+) -> None:
+    """A box standing in the room: its near face (toward the viewer), one end and its top, in ``faces`` colours
+    (top, near, end). ``end`` is the end the viewer sees: ``right`` (``a1``) or ``left`` (``a0``)."""
+    (a0, a1), (c0, c1), (lo, hi) = a, c, up
+    top, near, side = faces
+    ax = a1 if end == "right" else a0
+    _quad(
+        cv,
+        g,
+        [room_point(ax, c0, hi), room_point(ax, c1, hi), room_point(ax, c1, lo), room_point(ax, c0, lo)],
+        side,
+        line,
+        sw,
+    )
+    _quad(
+        cv,
+        g,
+        [room_point(a0, c1, hi), room_point(a1, c1, hi), room_point(a1, c1, lo), room_point(a0, c1, lo)],
+        near,
+        line,
+        sw,
+    )
+    _quad(cv, g, floor_quad(a0, a1, c0, c1, hi), top, line, sw)
+
+
+@dataclass(frozen=True)
+class RoomPalette:
+    """The shell of a polished room: back and side wall, floor and its lines, baseboard, and the outline."""
+
+    wall: str
+    side: str
+    floor: str
+    grain: str
+    baseboard: str
+    line: str
+
+
+def _shell(cv: Canvas, g, id: str, p: RoomPalette, *, tiles: bool) -> None:
+    """Walls to the top of the frame, the floor to the bottom, planks (or tiles) on it, the baseboard and the
+    soft shadow where the floor meets the walls."""
+    w, h = cv.width, cv.height
+    cx, cy = room_point(CORNER)
+    left, right = (0.0, wall_base(0)), (float(w), wall_base(w))
+    walls = cv.group(g, f"{id}-walls")
+    _quad(cv, walls, [(0, 0), (cx, 0), (cx, cy), left], p.wall)
+    _quad(cv, walls, [(cx, 0), (w, 0), right, (cx, cy)], p.side)
+    _line(cv, walls, (cx, 0), (cx, cy), p.line, 3, opacity=0.35)
+    floor = cv.group(g, f"{id}-floor")
+    _quad(cv, floor, [left, (cx, cy), right, (w, h), (0, h)], p.floor)
+    far_c = (h - ROOM[1]) / _NEAR + 400  # far enough toward the viewer to leave the frame
+    if tiles:  # a grid on both axes
+        for a in range(-1800, int(CORNER), 90):
+            _line(cv, floor, room_point(a), room_point(a, far_c), p.grain, 3, opacity=0.55)
+    for k, c in enumerate(range(45 if tiles else 38, int(far_c), 90 if tiles else 76)):
+        _line(cv, floor, room_point(-1800, c), room_point(CORNER, c), p.grain, 3, opacity=0.55)
+        if not tiles:  # plank joints, staggered row by row
+            for a in range(-1800 + (k % 3) * 120, int(CORNER) - 40, 360):
+                _line(cv, floor, room_point(a, c), room_point(a, c - 76), p.grain, 2.5, opacity=0.45)
+    # the floor darkens toward the walls, then the baseboards
+    _quad(
+        cv,
+        floor,
+        [left, (cx, cy), right, (right[0], right[1] + 34), (cx, cy + 34), (left[0], left[1] + 34)],
+        cv.ink,
+        opacity=0.06,
+    )
+    _quad(cv, floor, wall_quad("back", -ROOM[0], CORNER, 0, BASEBOARD), p.baseboard, p.line, 3)
+    _quad(cv, floor, wall_quad("side", 0, w - cx, 0, BASEBOARD), p.baseboard, p.line, 3)
+
+
+def _shadow(cv: Canvas, g, cx: float, cy: float, rx: float, ry: float, opacity: float = 0.12) -> None:
+    cv.ellipse(g, cx - rx, cy - ry, 2 * rx, 2 * ry, cv.ink, opacity=opacity)
+
+
+def _window(cv: Canvas, g, wall: str, a0: float, a1: float, u0: float, u1: float, sky: str, frame: str, line: str):
+    """A window with a sky, a cloud, a cross of glazing bars and a sill; returns the glass corners."""
+    _quad(cv, g, wall_quad(wall, a0 - 12, a1 + 12, u0 - 12, u1 + 12), frame, line, 4)
+    glass = wall_quad(wall, a0, a1, u0, u1)
+    _quad(cv, g, glass, sky, line, 3)
+    (x0, y0), (x1, y1) = glass[3], glass[2]
+    for dx, dy, rw, rh in ((0.3, 0.32, 0.22, 0.09), (0.42, 0.27, 0.2, 0.11), (0.52, 0.33, 0.18, 0.08)):
+        cx, cy = x0 + (x1 - x0) * dx, y0 + (y1 - y0) * dx + (glass[0][1] - y0) * dy
+        cv.ellipse(g, cx - rw * (x1 - x0) / 2, cy - rh * 60, rw * (x1 - x0), rh * 120, "#FFFFFF", opacity=0.9)
+    mid_a, mid_u = (a0 + a1) / 2, (u0 + u1) / 2
+    for p, q in (wall_quad(wall, mid_a, mid_a, u0, u1)[1:3], wall_quad(wall, a0, a1, mid_u, mid_u)[0:2]):
+        _line(cv, g, p, q, frame, 9)
+    _quad(cv, g, wall_quad(wall, a0 - 26, a1 + 26, u0 - 26, u0 - 10), frame, line, 3)  # the sill
+    return glass
+
+
+# -- the meeting room --------------------------------------------------------------------------------------------
+MEETING = RoomPalette(
+    wall="#E3E6D6", side="#D0D6C2", floor="#DDBB98", grain="#C39C78", baseboard="#F7F1E6", line="#4A4636"
+)
+WALNUT_TOP, WALNUT_FRONT, WALNUT_SIDE, WALNUT_LINE, WALNUT_SHINE = "#8E5D3E", "#73492F", "#5E3A25", "#2E1B10", "#B9875F"
+UPHOLSTERY, UPHOLSTERY_SIDE, UPHOLSTERY_LINE = "#E07A5F", "#C4644B", "#5A2A1E"
+CHROME, CHROME_DARK = "#C9CFD4", "#7D858C"
+SCREEN_BEZEL, SCREEN_LIGHT, SCREEN_DEEP = "#2B2E36", "#5D8FD0", "#2F5490"
+TABLE_TOP = 300.0  # the table's top, above the floor: the desk's height, so a seated pose types on it
+_TABLE_A, _TABLE_C = (-1100.0, -110.0), (180.0, 440.0)
+WALL_DECOR: dict[str, tuple[str, float, float, float, float]] = {
+    "meeting-screen": ("back", -300.0, 120.0, 440.0, 700.0),
+    "meeting-clock": ("back", 250.0, 350.0, 520.0, 620.0),
+    "meeting-window": ("side", 60.0, 200.0, 320.0, 668.0),
+    "break-cabinets": ("back", -330.0, -60.0, 540.0, 745.0),
+    "break-window": ("back", 30.0, 250.0, 450.0, 680.0),
+}
+
+
+def meeting_table_top() -> list[Point]:
+    """The meeting table's top in output pixels, where the laptop stands."""
+    return floor_quad(*_TABLE_A, *_TABLE_C, TABLE_TOP)
+
+
+def swivel_seat() -> list[Point]:
+    """The swivel chair's seat in output pixels: the office chair's, so the seated hip lands on it."""
+    return [(640.0, 1315.0), (860.0, 1275.0), (950.0, 1340.0), (735.0, 1385.0)]
+
+
+def _meeting_table(cv: Canvas, g) -> None:
+    (a0, a1), (c0, c1) = _TABLE_A, _TABLE_C
+    for c in (c0 + 40, c1 - 40):  # a panel leg at the near end, each side
+        _block(
+            cv,
+            g,
+            (a1 - 70, a1 - 40),
+            (c - 20, c + 20),
+            (0, TABLE_TOP - 26),
+            (WALNUT_TOP, WALNUT_FRONT, WALNUT_SIDE),
+            WALNUT_LINE,
+        )
+    _block(cv, g, (a0, a1), (c0, c1), (TABLE_TOP - 26, TABLE_TOP), (WALNUT_TOP, WALNUT_FRONT, WALNUT_SIDE), WALNUT_LINE)
+    _line(cv, g, room_point(a0, c1 - 6, TABLE_TOP), room_point(a1 - 6, c1 - 6, TABLE_TOP), WALNUT_SHINE, 4)
+    _line(cv, g, room_point(a1 - 6, c0 + 6, TABLE_TOP), room_point(a1 - 6, c1 - 6, TABLE_TOP), WALNUT_SHINE, 4)
+    for a, c in ((-600, 320),):  # a notepad with its lines
+        _quad(cv, g, floor_quad(a, a + 110, c, c + 80, TABLE_TOP), "#FBF8F1", WALNUT_LINE, 3)
+        for k in (1, 2, 3):
+            _line(
+                cv,
+                g,
+                room_point(a + 14, c + 20 * k, TABLE_TOP),
+                room_point(a + 96, c + 20 * k, TABLE_TOP),
+                "#9DB8D8",
+                2.5,
+            )
+    gx, gy = room_point(-380, 380, TABLE_TOP)  # a glass of water by the laptop
+    cv.rect(g, gx - 18, gy - 62, 36, 62, "#DDEFF5", WALNUT_LINE, 3, radius=6, opacity=0.85)
+    cv.rect(g, gx - 15, gy - 34, 30, 31, "#A9D3E6", radius=4)
+    _line(cv, g, (gx - 9, gy - 54), (gx - 9, gy - 10), "#FFFFFF", 3, opacity=0.9)
+
+
+@register(
+    "prop",
+    "soft-swivel-chair",
+    summary="An upholstered swivel chair facing left on a five-spoke chrome base; seated poses fit it like the "
+    "office chair",
+)
+def swivel_chair(cv: Canvas, parent, id: str = "soft-swivel-chair"):
+    g = cv.group(parent, id)
+    hub_a, hub_c = 45.0, 415.0  # under the seated hip
+    spokes = [
+        (hub_a + 120 * math.cos(t), hub_c + 120 * math.sin(t)) for t in (math.radians(18 + 72 * k) for k in range(5))
+    ]
+    hub = room_point(hub_a, hub_c, 16)
+    _shadow(cv, g, *room_point(hub_a, hub_c), 150, 34)
+    back = [s for s in spokes if s[1] < hub_c]
+    for spokes_now in (back, [s for s in spokes if s[1] >= hub_c]):
+        for a, c in spokes_now:
+            tip = room_point(a, c, 16)
+            _line(cv, g, hub, tip, cv.ink, 18)
+            _line(cv, g, hub, tip, CHROME, 10)
+            cv.ellipse(g, tip[0] - 15, tip[1] - 2, 30, 20, "#2A2D33", cv.ink, 3)
+        if spokes_now is back:
+            cv.rect(g, hub[0] - 14, 1360, 28, hub[1] - 1355, CHROME, cv.ink, 4, radius=6)  # the gas lift
+            _line(cv, g, (hub[0] - 5, 1372), (hub[0] - 5, hub[1] - 8), "#FFFFFF", 3, opacity=0.8)
+    # the backrest: a padded panel up the seat's right edge, its thickness on the right, a stitched seam
+    _quad(cv, g, [(958, 1046), (978, 1036), (978, 1318), (958, 1330)], UPHOLSTERY_SIDE, UPHOLSTERY_LINE)
+    panel = "M 846 1262 L 846 1000 Q 846 966 878 980 L 932 1008 Q 958 1022 958 1052 L 958 1330 Z"
+    cv.path(g, panel, UPHOLSTERY, UPHOLSTERY_LINE, 4)
+    cv.path(g, "M 864 1240 L 864 1006 L 940 1046 L 940 1290", stroke=UPHOLSTERY_LINE, sw=2.5, opacity=0.45)
+    # the seat cushion, thick and rounded at the front
+    seat = swivel_seat()
+    _quad(cv, g, [seat[0], seat[3], (735, 1420), (640, 1350)], UPHOLSTERY_SIDE, UPHOLSTERY_LINE)
+    _quad(cv, g, [seat[3], seat[2], (950, 1375), (735, 1420)], UPHOLSTERY_SIDE, UPHOLSTERY_LINE)
+    cv.path(
+        g,
+        "M 652 1313 Q 640 1317 652 1326 L 727 1381 Q 735 1388 748 1382 L 940 1342 Q 952 1338 942 1330 "
+        "L 868 1278 Q 860 1273 850 1276 Z",
+        UPHOLSTERY,
+        UPHOLSTERY_LINE,
+        4,
+    )
+    _line(cv, g, (668, 1318), (740, 1371), "#F0A08A", 4, opacity=0.9)
+    return g
+
+
+def _screen(cv: Canvas, g) -> None:
+    """The wall screen showing a slide: a title, a bar chart and a page dot row; a webcam on top."""
+    _, a0, a1, u0, u1 = WALL_DECOR["meeting-screen"]
+    _quad(cv, g, wall_quad("back", a0 + 14, a1 + 14, u0 - 14, u1 - 14), cv.ink, opacity=0.12)  # cast on the wall
+    _quad(cv, g, wall_quad("back", a0, a1, u0, u1), SCREEN_BEZEL, cv.ink, 4)
+    glow = cv.grad("soft-screen-glow", [(0, SCREEN_LIGHT), (1, SCREEN_DEEP)])
+    i0, i1, v0, v1 = a0 + 16, a1 - 16, u0 + 16, u1 - 16
+    _quad(cv, g, wall_quad("back", i0, i1, v0, v1), glow)
+    _quad(cv, g, wall_quad("back", i0 + 24, i0 + 210, v1 - 46, v1 - 26), "#FFFFFF")  # the slide's title
+    _quad(cv, g, wall_quad("back", i0 + 24, i0 + 140, v1 - 66, v1 - 56), "#FFFFFF", opacity=0.6)
+    base = v0 + 34
+    for k, (height, colour) in enumerate(((70, LEAF), (104, "#F2A93B"), (140, "#E8695A"), (176, "#FFFFFF"))):
+        a = i0 + 40 + k * 64
+        _quad(cv, g, wall_quad("back", a, a + 40, base, base + height), colour)
+    _line(cv, g, room_point(i0 + 28, 0, base), room_point(i0 + 300, 0, base), "#FFFFFF", 3, opacity=0.8)
+    for k in range(6):  # page dots: the first of many
+        x, y = room_point(i1 - 120 + k * 18, 0, v0 + 18)
+        cv.ellipse(g, x - 4, y - 4, 8, 8, "#FFFFFF", opacity=1.0 if k == 0 else 0.35)
+    gloss = [
+        room_point(i0 + 200, 0, v1),
+        room_point(i0 + 270, 0, v1),
+        room_point(i0 + 110, 0, v0),
+        room_point(i0 + 40, 0, v0),
+    ]
+    _quad(cv, g, gloss, "#FFFFFF", opacity=0.07)
+    cx, cy = room_point((a0 + a1) / 2, 0, u1)
+    cv.rect(g, cx - 34, cy - 20, 68, 22, SCREEN_BEZEL, cv.ink, 3, radius=8)  # the webcam
+    cv.ellipse(g, cx - 8, cy - 17, 16, 16, "#1B1D22", "#5D8FD0", 2.5)
+
+
+def _clock(cv: Canvas, g) -> None:
+    _, a0, a1, u0, u1 = WALL_DECOR["meeting-clock"]
+    x, y = room_point((a0 + a1) / 2, 0, (u0 + u1) / 2)
+    r = 46.0
+    cv.ellipse(g, x - r + 5, y - r + 6, 2 * r, 2 * r, cv.ink, opacity=0.1)
+    cv.ellipse(g, x - r, y - r, 2 * r, 2 * r, "#FBF8F1", cv.ink, 5)
+    for k in range(12):
+        t = math.radians(30 * k)
+        inner = r - (12 if k % 3 == 0 else 8)
+        _line(
+            cv,
+            g,
+            (x + inner * math.sin(t), y - inner * math.cos(t)),
+            (x + (r - 5) * math.sin(t), y - (r - 5) * math.cos(t)),
+            cv.ink,
+            3,
+        )
+    _line(cv, g, (x, y), (x + 18, y - 14), cv.ink, 5)  # ten to two
+    _line(cv, g, (x, y), (x - 24, y - 16), cv.ink, 4)
+    cv.ellipse(g, x - 5, y - 5, 10, 10, "#E8695A")
+
+
+@register(
+    "location",
+    "soft-meeting-room",
+    summary="A polished meeting room in the office's 3/4 view: sage walls, a plank floor and baseboards, a walnut "
+    "table that takes the laptop, an upholstered swivel chair at the office chair's seat, a wall screen with a slide "
+    "and a webcam, a wall clock, a side window whose light falls on the floor, and the signature cactus",
+)
+def meeting_room(
+    cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-meeting-room"
+):
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    _shell(cv, g, id, MEETING, tiles=False)
+    decor = cv.group(g, f"{id}-decor")
+    _, w0, w1, u0, u1 = WALL_DECOR["meeting-window"]
+    _window(
+        cv,
+        decor,
+        "side",
+        w0,
+        w1,
+        u0,
+        u1,
+        cv.grad("soft-sky", [(0, "#BFE0F2"), (1, "#EAF6FB")]),
+        "#FBF7F0",
+        MEETING.line,
+    )
+    _screen(cv, decor)
+    _clock(cv, decor)
+    light = cv.group(g, f"{id}-light")
+    # The sun comes in low through the side window, across the room and toward the viewer, so the window's two
+    # panes fall on the open floor in front of the table: a window point (c, up) lands at (CORNER - up, c + 0.6 up).
+    half = (w0 + w1) / 2
+    for c0, c1 in ((w0, half - 5), (half + 5, w1)):
+        patch = [
+            room_point(CORNER - u0, c0 + 0.6 * u0),
+            room_point(CORNER - u0, c1 + 0.6 * u0),
+            room_point(CORNER - u1, c1 + 0.6 * u1),
+            room_point(CORNER - u1, c0 + 0.6 * u1),
+        ]
+        _quad(cv, light, patch, LIGHT_GLAZE, opacity=0.32)
+    furniture = cv.group(g, f"{id}-furniture")
+    _shadow(cv, furniture, *room_point(-400, 310), 360, 70, 0.1)
+    swivel_chair(cv, furniture)
+    _meeting_table(cv, furniture)
+    laptop(cv, furniture, id=f"{id}-laptop")
+    top = room_point(-330, 200, TABLE_TOP)
+    signature.cactus(cv, furniture, top[0], top[1], 0.55)
+    x, y = room_point(-620, _TABLE_C[1], TABLE_TOP - 18)
+    signature.code(cv, furniture, x, y, 14, color=WALNUT_SHINE, angle=-12)
+    return g
+
+
+# -- the break room --------------------------------------------------------------------------------------------
+BREAK = RoomPalette(
+    wall="#F6E5C3", side="#EAD2A7", floor="#E9C2A3", grain="#D29F7C", baseboard="#FBF4E6", line="#4D3B26"
+)
+CABINET, CABINET_SIDE, CABINET_LINE = "#A9D3C3", "#8DBBA9", "#2E4A41"
+STONE, STONE_EDGE = "#F4EFE7", "#DCD3C5"
+FRIDGE, FRIDGE_SIDE = "#F6B8A0", "#E29C83"
+MACHINE, MACHINE_SIDE = "#3B3F4A", "#2B2E36"
+COFFEE = "#5A3420"
+COUNTER_TOP = 352.0
+_COUNTER_A = (-1100.0, 250.0)
+STOOL_TOP = (800.0, 1335.0, 118.0, 46.0)  # the stool cushion's centre and radii in output pixels
+STOOL_FLOOR = 1490.0
+
+
+def _counter(cv: Canvas, g) -> None:
+    """Base cabinets with doors and drawers under a stone top, the tiled splashback and wall cabinets above."""
+    a0, a1 = _COUNTER_A
+    tiles = wall_quad("back", a0, a1, COUNTER_TOP, 470)
+    _quad(cv, g, tiles, "#FFFFFF", BREAK.line, 3)
+    for a in range(int(a0), int(a1), 40):
+        _line(cv, g, room_point(a, 0, COUNTER_TOP), room_point(a, 0, 470), STONE_EDGE, 2)
+    for u in range(int(COUNTER_TOP) + 39, 470, 39):
+        _line(cv, g, room_point(a0, 0, u), room_point(a1, 0, u), STONE_EDGE, 2)
+    _, ca0, ca1, cu0, cu1 = WALL_DECOR["break-cabinets"]
+    _block(cv, g, (a0, ca1), (0, 90), (cu0, cu1), (CABINET, CABINET, CABINET_SIDE), CABINET_LINE)
+    for a in range(int(ca1) - 130, int(a0), -130):
+        _quad(
+            cv,
+            g,
+            [
+                room_point(a + 10, 90, cu0 + 12),
+                room_point(a + 120, 90, cu0 + 12),
+                room_point(a + 120, 90, cu1 - 12),
+                room_point(a + 10, 90, cu1 - 12),
+            ],
+            CABINET,
+            CABINET_LINE,
+            2.5,
+        )
+        hx, hy = room_point(a + 108, 90, cu0 + 40)
+        cv.rect(g, hx - 4, hy - 26, 8, 28, CHROME, cv.ink, 2.5, radius=4)
+    _block(cv, g, (a0, a1), (0, 150), (0, 18), ("#2E3A35",) * 3, CABINET_LINE)  # the toe kick
+    _block(cv, g, (a0, a1), (0, 150), (18, COUNTER_TOP - 22), (CABINET, CABINET, CABINET_SIDE), CABINET_LINE)
+    for a in range(int(a1) - 160, int(a0), -160):
+        for u_lo, u_hi in ((30, COUNTER_TOP - 92), (COUNTER_TOP - 82, COUNTER_TOP - 34)):  # a door, a drawer
+            _quad(
+                cv,
+                g,
+                [
+                    room_point(a + 10, 150, u_lo),
+                    room_point(a + 150, 150, u_lo),
+                    room_point(a + 150, 150, u_hi),
+                    room_point(a + 10, 150, u_hi),
+                ],
+                CABINET,
+                CABINET_LINE,
+                2.5,
+            )
+        hx, hy = room_point(a + 80, 150, COUNTER_TOP - 58)
+        cv.rect(g, hx - 22, hy - 4, 44, 8, CHROME, cv.ink, 2.5, radius=4)
+    _block(
+        cv, g, (a0, a1 + 12), (0, 166), (COUNTER_TOP - 22, COUNTER_TOP), (STONE, STONE_EDGE, STONE_EDGE), CABINET_LINE
+    )
+    _line(cv, g, room_point(a0, 160, COUNTER_TOP), room_point(a1 + 6, 160, COUNTER_TOP), "#FFFFFF", 4)
+
+
+@register(
+    "prop",
+    "soft-coffee-machine",
+    summary="A drip coffee machine on the break-room counter: tower, hood with a lit button, a glass carafe half "
+    "full, and a mug steaming beside it",
+)
+def coffee_machine(cv: Canvas, parent, id: str = "soft-coffee-machine"):
+    g = cv.group(parent, id)
+    a0, a1, c0, c1, base = -290.0, -160.0, 26.0, 116.0, COUNTER_TOP
+    _shadow(cv, g, *room_point((a0 + a1) / 2, (c0 + c1) / 2, base), 90, 22, 0.14)
+    _block(cv, g, (a0, a1), (c0, c0 + 44), (base, base + 220), (MACHINE, MACHINE, MACHINE_SIDE), cv.ink)  # tower
+    _block(cv, g, (a0, a1), (c0 + 44, c1), (base, base + 16), (MACHINE, MACHINE, MACHINE_SIDE), cv.ink)  # plate
+    _block(cv, g, (a0, a1), (c0 + 44, c1), (base + 170, base + 220), (MACHINE, MACHINE, MACHINE_SIDE), cv.ink)  # hood
+    bx, by = room_point(a1 - 26, c1, base + 195)
+    cv.ellipse(g, bx - 7, by - 7, 14, 14, "#7ED957", cv.ink, 2)
+    gx, gy = room_point((a0 + a1) / 2 - 8, c0 + 80, base + 16)
+    cv.path(
+        g,
+        f"M {gx - 38:.1f} {gy - 112:.1f} L {gx + 38:.1f} {gy - 112:.1f} Q {gx + 50:.1f} {gy - 40:.1f} "
+        f"{gx + 34:.1f} {gy:.1f} L {gx - 34:.1f} {gy:.1f} Q {gx - 50:.1f} {gy - 40:.1f} {gx - 38:.1f} {gy - 112:.1f} Z",
+        "#D9ECF2",
+        cv.ink,
+        3.5,
+        opacity=0.9,
+    )
+    cv.path(
+        g,
+        f"M {gx - 45:.1f} {gy - 52:.1f} L {gx + 45:.1f} {gy - 52:.1f} Q {gx + 44:.1f} {gy - 24:.1f} "
+        f"{gx + 34:.1f} {gy - 2:.1f} L {gx - 34:.1f} {gy - 2:.1f} "
+        f"Q {gx - 44:.1f} {gy - 24:.1f} {gx - 45:.1f} {gy - 52:.1f} Z",
+        COFFEE,
+    )
+    cv.path(
+        g,
+        f"M {gx + 40:.1f} {gy - 96:.1f} Q {gx + 74:.1f} {gy - 90:.1f} {gx + 66:.1f} {gy - 54:.1f} "
+        f"Q {gx + 60:.1f} {gy - 32:.1f} {gx + 42:.1f} {gy - 30:.1f}",
+        stroke=cv.ink,
+        sw=6,
+    )
+    _line(cv, g, (gx - 24, gy - 100), (gx - 30, gy - 62), "#FFFFFF", 5, opacity=0.85)
+    mx, my = room_point(-370, 96, base)
+    cv.rect(g, mx - 26, my - 52, 52, 52, "#E8695A", cv.ink, 3.5, radius=8)
+    cv.path(
+        g,
+        f"M {mx + 24:.1f} {my - 40:.1f} Q {mx + 46:.1f} {my - 36:.1f} {mx + 24:.1f} {my - 14:.1f}",
+        stroke=cv.ink,
+        sw=5,
+    )
+    cv.ellipse(g, mx - 26, my - 60, 52, 16, COFFEE, cv.ink, 3)
+    for k, dx in enumerate((-10, 10)):  # steam
+        cv.path(
+            g,
+            f"M {mx + dx:.1f} {my - 70:.1f} Q {mx + dx - 14:.1f} {my - 92:.1f} {mx + dx:.1f} {my - 112:.1f} "
+            f"Q {mx + dx + 14:.1f} {my - 132:.1f} {mx + dx:.1f} {my - 152 + 10 * k:.1f}",
+            stroke="#FFFFFF",
+            sw=5,
+            opacity=0.75,
+        )
+    return g
+
+
+FRIDGE_BOX = (330.0, 500.0, 6.0, 150.0, 620.0)  # along, out, up: its top clears the captions
+
+
+@register(
+    "prop",
+    "soft-fridge",
+    summary="A rounded pastel fridge against the break-room wall: freezer and fridge doors, chrome handles, magnets "
+    "and a sticky note",
+)
+def fridge(cv: Canvas, parent, id: str = "soft-fridge"):
+    g = cv.group(parent, id)
+    a0, a1, c0, c1, height = FRIDGE_BOX
+    _quad(cv, g, floor_quad(a0 - 10, a1 + 10, c0, c1 + 26), cv.ink, opacity=0.12)
+    _block(cv, g, (a0, a1), (c0, c1), (12, height), (FRIDGE, FRIDGE, FRIDGE_SIDE), cv.ink)
+    _block(cv, g, (a0 + 14, a1 - 14), (c0, c1), (0, 12), ("#2B2E36",) * 3, cv.ink, sw=3)
+    split = 420.0
+    _line(cv, g, room_point(a0, c1, split), room_point(a1, c1, split), cv.ink, 4)
+    for u0, u1 in ((split - 200, split - 30), (split + 40, split + 160)):
+        p, q = room_point(a0 + 24, c1, u0), room_point(a0 + 24, c1, u1)
+        cv.rect(g, p[0] - 7, q[1], 14, p[1] - q[1], CHROME, cv.ink, 3, radius=7)
+    _line(cv, g, room_point(a1 - 18, c1, height - 40), room_point(a1 - 18, c1, 60), "#FFFFFF", 5, opacity=0.5)
+    for (a, u), colour in (((420, 540), "#5D8FD0"), ((455, 575), LEAF), ((395, 470), "#F2C94C")):
+        x, y = room_point(a, c1, u)
+        cv.ellipse(g, x - 10, y - 10, 20, 20, colour, cv.ink, 2.5)
+    _quad(
+        cv,
+        g,
+        [room_point(430, c1, 370), room_point(490, c1, 370), room_point(490, c1, 300), room_point(430, c1, 300)],
+        "#FFE58A",
+        cv.ink,
+        2.5,
+    )  # a sticky note, scribbled
+    for k in (1, 2, 3):
+        _line(
+            cv, g, room_point(438, c1, 370 - 16 * k), room_point(480 - 8 * k, c1, 370 - 16 * k), cv.ink, 2, opacity=0.6
+        )
+    return g
+
+
+@register(
+    "prop",
+    "soft-stool",
+    summary="A cushioned stool on a chrome stem with a foot ring, its seat at the office chair's height, so "
+    "seated poses (lounge) fit it",
+)
+def stool(cv: Canvas, parent, id: str = "soft-stool"):
+    g = cv.group(parent, id)
+    cx, cy, rx, ry = STOOL_TOP
+    _shadow(cv, g, cx, STOOL_FLOOR, 110, 26)
+    cv.ellipse(g, cx - 80, STOOL_FLOOR - 24, 160, 40, CHROME_DARK, cv.ink, 4)
+    cv.ellipse(g, cx - 80, STOOL_FLOOR - 30, 160, 40, CHROME, cv.ink, 4)
+    cv.rect(g, cx - 12, cy + 20, 24, STOOL_FLOOR - cy - 30, CHROME, cv.ink, 4, radius=6)
+    _line(cv, g, (cx - 4, cy + 30), (cx - 4, STOOL_FLOOR - 30), "#FFFFFF", 3, opacity=0.8)
+    cv.ellipse(g, cx - 66, STOOL_FLOOR - 112, 132, 40, cv.clear, cv.ink, 12)  # the foot ring
+    cv.ellipse(g, cx - 66, STOOL_FLOOR - 112, 132, 40, cv.clear, CHROME, 6)
+    cv.ellipse(g, cx - rx, cy - ry + 26, 2 * rx, 2 * ry, UPHOLSTERY_SIDE, UPHOLSTERY_LINE, 4)
+    cv.rect(g, cx - rx, cy, 2 * rx, 26, UPHOLSTERY_SIDE)
+    _line(cv, g, (cx - rx, cy), (cx - rx, cy + 26), UPHOLSTERY_LINE, 4)
+    _line(cv, g, (cx + rx, cy), (cx + rx, cy + 26), UPHOLSTERY_LINE, 4)
+    cv.ellipse(g, cx - rx, cy - ry, 2 * rx, 2 * ry, UPHOLSTERY, UPHOLSTERY_LINE, 4)
+    cv.path(
+        g,
+        f"M {cx - rx * 0.7:.1f} {cy - ry * 0.25:.1f} Q {cx - rx * 0.3:.1f} {cy - ry * 0.85:.1f} "
+        f"{cx + rx * 0.2:.1f} {cy - ry * 0.75:.1f}",
+        stroke="#F0A08A",
+        sw=5,
+        opacity=0.9,
+    )
+    return g
+
+
+def _pendant(cv: Canvas, g, light, x: float, y: float, floor_y: float) -> None:
+    """A pendant lamp hung from above the frame, and the cone of its light down to ``floor_y``."""
+    _line(cv, g, (x, 0), (x, y - 46), cv.ink, 4)
+    cv.path(
+        g,
+        f"M {x - 70:.1f} {y:.1f} Q {x - 66:.1f} {y - 52:.1f} {x:.1f} {y - 56:.1f} Q {x + 66:.1f} {y - 52:.1f} "
+        f"{x + 70:.1f} {y:.1f} Z",
+        "#E8695A",
+        cv.ink,
+        4,
+    )
+    cv.ellipse(g, x - 26, y - 12, 52, 24, "#FFF3C4", cv.ink, 3)
+    cone = cv.grad("soft-lamp-cone", [(0, LIGHT_GLAZE), (1, LIGHT_GLAZE + "00")], (0, 0, 0, 1))  # fades as it falls
+    _quad(cv, light, [(x - 56, y + 4), (x + 56, y + 4), (x + 200, floor_y), (x - 200, floor_y)], cone, opacity=0.4)
+
+
+@register(
+    "location",
+    "soft-break-room",
+    summary="A polished break room in the office's 3/4 view: butter walls, a tiled floor, mint cabinets under a "
+    "stone counter with a tiled splashback, a coffee machine and a steaming mug, wall cabinets, a window with a herb "
+    "pot, a pastel fridge, a pendant lamp and its light, a stool at the office chair's seat height, and the "
+    "signature cactus",
+)
+def break_room(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-break-room"):
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    _shell(cv, g, id, BREAK, tiles=True)
+    decor = cv.group(g, f"{id}-decor")
+    _, w0, w1, u0, u1 = WALL_DECOR["break-window"]
+    _window(
+        cv,
+        decor,
+        "back",
+        w0,
+        w1,
+        u0,
+        u1,
+        cv.grad("soft-sky-warm", [(0, "#BFE0F2"), (1, "#F6EBD5")]),
+        "#FBF7F0",
+        BREAK.line,
+    )
+    px, py = room_point(w0 + 50, 0, u0 - 10)  # a herb pot on the sill
+    cv.path(
+        g,
+        f"M {px - 22:.1f} {py - 40:.1f} L {px + 22:.1f} {py - 40:.1f} L {px + 16:.1f} {py:.1f} L {px - 16:.1f} "
+        f"{py:.1f} Z",
+        "#D9825B",
+        cv.ink,
+        3,
+    )
+    for dx, tip in ((-14, -92), (0, -110), (14, -88)):
+        cv.path(
+            g,
+            f"M {px + dx * 0.4:.1f} {py - 40:.1f} Q {px + dx * 2.2:.1f} {py + tip * 0.6:.1f} {px + dx:.1f} "
+            f"{py + tip:.1f} Q {px + dx * 0.2:.1f} {py + tip * 0.6:.1f} {px + dx * 0.4:.1f} {py - 40:.1f} Z",
+            LEAF,
+            cv.ink,
+            3,
+        )
+    light = cv.group(g, f"{id}-light")
+    # The window's light clears the counter and falls on the floor in front of it: a window point (a, up) lands
+    # at (a - 0.3 up, 0.8 up).
+    patch = [room_point(a - 0.3 * u, 0.8 * u) for a, u in ((w0, u0), (w1, u0), (w1, u1), (w0, u1))]
+    _quad(cv, light, patch, LIGHT_GLAZE, opacity=0.26)
+    signature.cactus(cv, decor, *room_point(w1 - 40, 0, u0 - 10), 0.5)  # on the sill, beside the herbs
+    furniture = cv.group(g, f"{id}-furniture")
+    _counter(cv, furniture)
+    coffee_machine(cv, furniture)
+    fridge(cv, furniture)
+    stool(cv, furniture)
+    lamp_light = cv.group(g, f"{id}-lamp-light")  # the lamp's glaze lies over the counter it lights
+    _pendant(cv, furniture, lamp_light, *room_point(-100, 90, 740), wall_base(room_point(-100, 90)[0]) + 60)
+    signature.code(cv, g, *room_point(-760, 620), 14, color=BREAK.grain, angle=-12)
     return g
