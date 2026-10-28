@@ -26,8 +26,11 @@ import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 from . import fonts
+from .compose import MusicClient, MusicOutputError, Plan, locate_lyrics
+from .compose import Song as ComposedSong
 from .generated import (
     Generated,
     PlacedClip,
@@ -37,6 +40,7 @@ from .generated import (
     gain_to_peak,
     pinned,
     resolve,
+    sha256_of,
     trim_effect,
     trim_speech,
 )
@@ -58,6 +62,9 @@ __all__ = [
     "Line",
     "Effect",
     "Song",
+    "Composition",
+    "Sung",
+    "sing",
     "Placed",
     "declarations",
     "hear",
@@ -110,7 +117,7 @@ class Line:
     role: str
     text: str  # what is spoken, and what speech-to-text must hear
     caption: str
-    at: tuple[float, float]  # (bar, beat) it starts on
+    at: tuple[float, float] | None  # (bar, beat) a spoken line starts on; None for a line the composition sings
     speed: float = 1.0
 
 
@@ -126,6 +133,17 @@ class Effect:
 
 
 @dataclass(frozen=True)
+class Composition:
+    """Music from the ElevenLabs Music API that sings every line of ``role``; the other lines are spoken over it.
+
+    ``plan`` is the request (its lyrics must be exactly the sung lines, in order) and ``seed`` pins the take."""
+
+    plan: Plan
+    seed: int
+    role: str
+
+
+@dataclass(frozen=True)
 class Song:
     slug: str
     title: str
@@ -137,6 +155,11 @@ class Song:
     effects: Sequence[Effect]
     lines_end: float  # (seconds) the last line must end before this
     voice_note: str
+    composition: Composition | None = None  # None: the groove is synthesised from ``sections``
+
+    def sung(self, line: Line) -> bool:
+        """Whether the composition sings ``line`` (else it is spoken, through the voice provider)."""
+        return self.composition is not None and line.role == self.composition.role
 
     def __post_init__(self) -> None:
         if not self.lines:
@@ -148,6 +171,12 @@ class Song:
         starts = []
         for i, line in enumerate(self.lines):
             where = f"{self.slug} line {i + 1}"
+            if self.sung(line):
+                if line.at is not None:
+                    raise SongError(f"{where}: {line.text!r} is sung by the composition, so it takes no beat")
+                continue
+            if line.at is None:
+                raise SongError(f"{where}: a spoken line needs a beat to start on")
             if line.role not in self.voices:
                 raise SongError(f"{where}: no voice for role {line.role!r}; voices are {sorted(self.voices)}")
             if not line.text.strip():
@@ -157,6 +186,14 @@ class Song:
             starts.append(self.groove.at(*line.at))
         if any(b <= a for a, b in zip(starts, starts[1:], strict=False)):
             raise SongError(f"{self.slug}: lines must start in order on the grid, got {starts}")
+        if self.composition is not None:
+            c = self.composition
+            if isinstance(c.seed, bool) or not isinstance(c.seed, int) or not 0 <= c.seed < 2**32:
+                raise SongError(f"{self.slug}: composition seed must be an integer in 0..2**32-1, got {c.seed!r}")
+            sung = [line.text for line in self.lines if self.sung(line)]
+            lyrics = [text for text, _ in c.plan.sung()]
+            if sung != lyrics:
+                raise SongError(f"{self.slug}: sung lines {sung} differ from the plan's lyrics {lyrics}")
         ids = [fx.id for fx in self.effects]
         if len(set(ids)) != len(ids):
             raise SongError(f"{self.slug}: effect ids must be unique, got {ids}")
@@ -171,8 +208,12 @@ class Song:
                 raise SongError(f"{self.slug} effect {fx.id}: peak must be positive and early non-negative")
 
 
+def _spoken(song: Song) -> list[tuple[int, Line]]:
+    return [(i, line) for i, line in enumerate(song.lines) if not song.sung(line)]
+
+
 def declarations(song: Song) -> tuple[list[Generated], list[Generated]]:
-    """The ``<generated>`` items: ``line-1..N`` (speech) and one sound effect per effect."""
+    """The ``<generated>`` items: ``line-N`` (speech) for each spoken line N and one sound effect per effect."""
     lines = [
         Generated(
             id=f"line-{i + 1}",
@@ -186,7 +227,7 @@ def declarations(song: Song) -> tuple[list[Generated], list[Generated]]:
             cache=f"assets/generated/line-{i + 1}.wav",
             license="ElevenLabs output; premade voice " + song.voices[line.role].name,
         )
-        for i, line in enumerate(song.lines)
+        for i, line in _spoken(song)
     ]
     effects = [
         Generated(
@@ -205,10 +246,10 @@ def declarations(song: Song) -> tuple[list[Generated], list[Generated]]:
 
 
 def hear(song: Song, pins: Mapping[str, Resolved], transcribe: Callable[[Path], Transcript]) -> tuple[dict, list[str]]:
-    """What the recogniser heard of every line (the ``voice-transcript.json`` record) and each mismatch."""
+    """What the recogniser heard of every spoken line (the ``voice-transcript.json`` record) and each mismatch."""
     lines, _ = declarations(song)
     heard, failures = [], []
-    for line, item in zip(song.lines, lines, strict=True):
+    for (_, line), item in zip(_spoken(song), lines, strict=True):
         transcript = transcribe(pins[item.id].path)
         heard.append({"role": line.role, "expected": line.text, "heard": transcript.text})
         try:
@@ -219,6 +260,34 @@ def hear(song: Song, pins: Mapping[str, Resolved], transcribe: Callable[[Path], 
 
 
 @dataclass(frozen=True)
+class Sung:
+    """The verified composed song and where each sung line was heard in it."""
+
+    made: ComposedSong
+    spans: list[tuple[float, float]]  # (start, end) of each sung line, in order
+    words: list[list[list]]  # each sung line's words as [text, start, end]
+    report: dict  # what the recogniser heard of the whole song
+
+
+def sing(
+    song: Song, compose_song: Callable[[Plan, int, float], ComposedSong], transcribe: Callable[[Path], Transcript]
+) -> Sung:
+    """Compose (or read the cached, re-verified take), then hear every sung line as written inside its chunk."""
+    if song.composition is None:
+        raise SongError(f"{song.slug}: there is no composition to sing")
+    c = song.composition
+    try:
+        made = compose_song(c.plan, c.seed, song.groove.bpm)
+        transcript = transcribe(made.wav)
+        spans = locate_lyrics(transcript, c.plan.sung())
+    except MusicOutputError as exc:
+        raise SongError(f"song: {exc}") from None
+    said = [w for w in transcript.words if w.type == "word"]
+    words = [[[w.text, w.start, w.end] for w in said if a <= w.start and w.end <= b] for a, b in spans]
+    return Sung(made, spans, words, {"heard": transcript.text, "passed": True})
+
+
+@dataclass(frozen=True)
 class Placed:
     phrases: list[dict]
     clips: list[PlacedClip]
@@ -226,21 +295,49 @@ class Placed:
     effect_starts: dict[str, float]  # by effect id
 
 
-def place(song: Song, pins: Mapping[str, Resolved]) -> Placed:
-    """Each line on its beat, levelled by the loudest line, ending before the next; each effect before its beat."""
+def place(song: Song, pins: Mapping[str, Resolved], sung: Sung | None = None) -> Placed:
+    """Each spoken line on its beat, levelled by the loudest one; each sung line where it was heard in the song.
+    Every line ends before the next starts; each effect starts just before its beat."""
+    if song.composition is not None and sung is None:
+        raise SongError(f"{song.slug}: a composed song is placed from where its lines were heard: sing() it first")
     lines, effects = declarations(song)
     groove = song.groove
-    trims = [trim_speech(pins[item.id].path) for item in lines]
-    voice_gain = gain_to_peak(max(t.peak for t in trims), VOICE_PEAK)
-    starts = [groove.at(*line.at) for line in song.lines]
+    items = {i: item for (i, _), item in zip(_spoken(song), lines, strict=True)}
+    trims = {i: trim_speech(pins[item.id].path) for i, item in items.items()}
+    voice_gain = gain_to_peak(max(t.peak for t in trims.values()), VOICE_PEAK) if trims else 0.0
+    heard = iter(zip(sung.spans, sung.words, strict=True)) if sung is not None else iter(())
+    timed: list[tuple[float, float, list | None]] = []
+    for i, line in enumerate(song.lines):
+        if i in trims:
+            start = groove.at(*cast(tuple[float, float], line.at))  # Song checked: spoken lines have a beat
+            timed.append((start, start + trims[i].clip_out - trims[i].clip_in, None))
+        else:
+            (a, b), heard_words = next(heard)
+            timed.append((a, b, heard_words))
     phrases, clips = [], []
-    for i, (line, item, trim) in enumerate(zip(song.lines, lines, trims, strict=True)):
-        start, end = starts[i], starts[i] + trim.clip_out - trim.clip_in
-        limit = starts[i + 1] if i + 1 < len(starts) else song.lines_end
+    for i, line in enumerate(song.lines):
+        start, end, words = timed[i]
+        limit = timed[i + 1][0] if i + 1 < len(timed) else song.lines_end
         if end > limit - GUARD:
             raise SongError(
                 f"line {i + 1} {line.text!r} runs to {end:.3f}s, past {limit - GUARD:.3f}s: speed it up or move it"
             )
+        if words is not None:
+            phrases.append(
+                {
+                    "role": line.role,
+                    "text": line.text,
+                    "caption": line.caption,
+                    "voice": "elevenlabs-music",
+                    "voice_name": "ElevenLabs Music singer",
+                    "sung": True,
+                    "start": round(start, 6),
+                    "end": round(end, 6),
+                    "words": words,
+                }
+            )
+            continue
+        trim, item = trims[i], items[i]
         voice = song.voices[line.role]
         phrases.append(
             {
@@ -297,9 +394,15 @@ def build(
     env: Mapping[str, str] | None = None,
     extra: Callable[[dict[str, float]], dict] = lambda starts: {},
     install_font: Callable[[fonts.GoogleFont, Path], object] = fonts.install,
+    compose_song: Callable[[Plan, int, float], ComposedSong] | None = None,
+    transcribe_song: Callable[[Path], Transcript] | None = None,
 ) -> Path:
     """Resolve, check, place and mix ``song`` into ``root/dialogue.json`` and return its path. ``extra`` adds
-    episode fields from the effects' start times, by id; ``env`` is added to the engine's environment."""
+    episode fields from the effects' start times, by id; ``env`` is added to the engine's environment.
+
+    A composed song is made by ``compose_song`` and heard by ``transcribe_song`` (by default the ElevenLabs
+    music and speech-to-text clients on the project's cache, which re-verify a cached take); its music is
+    written to ``assets/music.wav`` in place of the synthesised ``assets/groove.wav``."""
     root = Path(root).resolve()
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
@@ -317,17 +420,41 @@ def build(
 
     # 2. Every line must be heard as written (the provider cached each transcript; no key is needed to read it).
     report, failures = hear(song, pins, ElevenLabsClient(cache, key="").transcribe)
+    sung = None
+    if song.composition is not None and not failures:
+        # 2b. The composed song: verified when made or read, then every sung line heard in order inside its chunk.
+        sung = sing(
+            song,
+            compose_song or MusicClient(cache, key).compose,
+            transcribe_song or ElevenLabsClient(cache, key).transcribe,
+        )
+        report["song"] = sung.report
     (root / "voice-transcript.json").write_text(json.dumps(report, indent=2) + "\n")
     if failures:
         raise SongError("speech check failed:\n" + "\n".join(failures))
 
-    # 3. Each line on its beat, then the groove from the same grid.
-    placed = place(song, pins)
+    # 3. Each line in its place, then the music: the composed song, or the groove from the same grid.
+    placed = place(song, pins, sung)
     for phrase in placed.phrases:
         print(f"{phrase['start']:6.3f}-{phrase['end']:6.3f}  {phrase['role']}: {phrase['text']}")
-    music = render(song.groove, song.sections, rate=RATE, seed=song.seed, peak=MUSIC_PEAK, tail=TAIL)
-    write_wav(assets / "groove.wav", music, RATE)
-    duration = math.ceil(len(music) / RATE * FPS) / FPS
+    music_record = None
+    if sung is not None and song.composition is not None:
+        shutil.copyfile(sung.made.wav, assets / "music.wav")
+        duration = math.ceil((sung.made.duration + TAIL) * FPS) / FPS
+        tempo = sung.made.tempo
+        music_record = {
+            "provider": "ElevenLabs Music",
+            "file": "assets/music.wav",
+            "sha256": sha256_of(assets / "music.wav"),
+            "seed": song.composition.seed,
+            "plan": song.composition.plan.to_dict(),
+            "duration": sung.made.duration,
+            "tempo": {"bpm": tempo.bpm, "phase": tempo.phase, "strength": tempo.strength},
+        }
+    else:
+        music = render(song.groove, song.sections, rate=RATE, seed=song.seed, peak=MUSIC_PEAK, tail=TAIL)
+        write_wav(assets / "groove.wav", music, RATE)
+        duration = math.ceil(len(music) / RATE * FPS) / FPS
 
     # 4. The caption face: the Soft style's Google Font, fetched once, verified and pinned in fonts.lock.json.
     if SOFT.font is None or SOFT.font.google is None:  # pragma: no cover - a property of the style, tested there
@@ -349,6 +476,7 @@ def build(
         "phrases": placed.phrases,
         "sound_effects": placed.sound_effects,
         "clips": [c.to_dict() for c in placed.clips],
+        **({"music": music_record} if music_record else {}),
         **extra(placed.effect_starts),
     }
     out = root / "dialogue.json"

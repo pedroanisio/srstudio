@@ -228,3 +228,170 @@ def _with_font(build):
         return build(*args, install_font=lambda font, folder: FakeFont(), **kw)
 
     return run
+
+
+# -- a composed song: the music sings the lines of one role, the rest is spoken over it -----------------------------
+from srstudio import compose as C  # noqa: E402
+
+STYLES = ("120 BPM", "office pop", "male vocal")
+PLAN = C.Plan(
+    (
+        C.Chunk("Hook", 4.0, STYLES, ("Sit down.",)),
+        C.Chunk("Break", 4.0, ("120 BPM", "instrumental")),
+        C.Chunk("Out", 4.0, STYLES, ("Work, work.",)),
+    )
+)
+BOSS = S.Singer("cjVigY5qzO86Huf0OWal", "Eric", {"stability": 0.55, "similarity_boost": 0.75, "style": 0.15})
+
+
+def composed_song(**changes) -> S.Song:
+    kw: dict = dict(
+        voices={"boss": BOSS},
+        lines=[
+            S.Line("pip", "Sit down.", "SIT DOWN.", None),
+            S.Line("boss", "Slides.", "BOSS: Slides.", (2, 0.5)),
+            S.Line("pip", "Work, work.", "WORK!", None),
+        ],
+        sections=[],
+        composition=S.Composition(PLAN, seed=82043, role="pip"),
+        lines_end=12.0,
+    )
+    kw.update(changes)
+    return make_song(**kw)
+
+
+def sung_transcript(*timed) -> Transcript:
+    return Transcript("en", 0.99, " ".join(w for w, *_ in timed), tuple(Word(w, a, b, "word") for w, a, b in timed))
+
+
+HEARD = sung_transcript(("Sit", 0.2, 0.5), ("down.", 0.55, 1.1), ("Work,", 8.3, 8.7), ("work.", 8.8, 9.4))
+
+
+def fake_composer(tmp_path, calls=None, seconds=12.0):
+    def compose_song(plan, seed, bpm):
+        if calls is not None:
+            calls.append((plan, seed, bpm))
+        wav = tone(tmp_path / "music-x.wav", seconds - 0.2)
+        return C.Song(
+            plan, seed, tmp_path / "music-x.mp3", wav, tmp_path / "music-x.json", seconds, C.Tempo(120.0, 0.02, 0.3)
+        )
+
+    return compose_song
+
+
+@pytest.mark.parametrize(
+    "changes, match",
+    [
+        (dict(lines=[S.Line("pip", "Stand up.", "x", None), S.Line("pip", "Work, work.", "x", None)]), "lyrics"),
+        (dict(lines=[S.Line("pip", "Sit down.", "x", None)]), "lyrics"),
+        (dict(lines=[S.Line("pip", "Sit down.", "x", (0, 0)), S.Line("pip", "Work, work.", "x", None)]), "sung"),
+        (dict(lines=[S.Line("boss", "Hi.", "x", None)]), "beat"),
+        (dict(composition=S.Composition(PLAN, seed=-1, role="pip")), "seed"),
+    ],
+)
+def test_a_composed_song_must_sing_exactly_its_plan_lyrics(changes, match):
+    with pytest.raises(S.SongError, match=match):
+        composed_song(**changes)
+
+
+def test_only_spoken_lines_are_synthesised_and_heard_line_by_line(tmp_path):
+    song = composed_song()
+    lines, _ = S.declarations(song)
+    assert [g.id for g in lines] == ["line-2"] and lines[0].license.endswith("Eric")
+    pins = {"line-2": Resolved(lines[0], tone(tmp_path / "line-2.wav", 0.8), "0" * 64)}
+    report, failures = S.hear(song, pins, lambda p: heard("Slides."))
+    assert [r["expected"] for r in report["lines"]] == ["Slides."] and not failures
+
+
+def test_sing_composes_once_and_finds_every_sung_line_with_its_words(tmp_path):
+    calls = []
+    sung = S.sing(composed_song(), fake_composer(tmp_path, calls), lambda wav: HEARD)
+    assert calls == [(PLAN, 82043, 120)]
+    assert sung.spans == [(0.2, 1.1), (8.3, 9.4)]
+    assert sung.words == [[["Sit", 0.2, 0.5], ["down.", 0.55, 1.1]], [["Work,", 8.3, 8.7], ["work.", 8.8, 9.4]]]
+    assert sung.report == {"heard": HEARD.text, "passed": True}
+
+
+def test_a_song_that_drops_a_lyric_stops_the_build(tmp_path):
+    with pytest.raises(S.SongError, match="'Work, work.' not sung"):
+        S.sing(
+            composed_song(), fake_composer(tmp_path), lambda wav: sung_transcript(("Sit", 0.2, 0.5), ("down.", 0.5, 1))
+        )
+
+
+def test_a_song_that_fails_its_checks_stops_the_build(tmp_path):
+    def off_tempo(plan, seed, bpm):
+        raise C.MusicOutputError("tempo: the beat runs at about 100.0 bpm, not 120 bpm")
+
+    with pytest.raises(S.SongError, match="song: tempo"):
+        S.sing(composed_song(), off_tempo, lambda wav: HEARD)
+
+
+def test_place_puts_sung_lines_where_they_were_heard_and_spoken_lines_on_their_beat(tmp_path):
+    song = composed_song()
+    lines, _ = S.declarations(song)
+    pins = {"line-2": Resolved(lines[0], tone(tmp_path / "line-2.wav", 1.0), sha256_of(tmp_path / "line-2.wav"))}
+    pins.update(
+        {e.id: Resolved(e, tone(tmp_path / f"{e.id}.wav", 0.8, lead=0.02), "0" * 64) for e in S.declarations(song)[1]}
+    )
+    sung = S.sing(song, fake_composer(tmp_path), lambda wav: HEARD)
+    placed = S.place(song, pins, sung)
+    assert [(p["role"], p["start"]) for p in placed.phrases] == [
+        ("pip", 0.2),
+        ("boss", GROOVE.at(2, 0.5)),
+        ("pip", 8.3),
+    ]
+    assert placed.phrases[0]["sung"] is True and placed.phrases[0]["words"] == sung.words[0]
+    assert placed.phrases[0]["end"] == 1.1 and "sung" not in placed.phrases[1]
+    assert [c.generated.id for c in placed.clips] == ["line-2", "scratch"]
+
+
+def test_a_spoken_line_over_a_sung_one_stops_the_build(tmp_path):
+    song = composed_song(
+        lines=[
+            S.Line("pip", "Sit down.", "x", None),
+            S.Line("boss", "Slides.", "x", (0, 1)),  # 0.5 s: inside "Sit down." (0.2-1.1)
+            S.Line("pip", "Work, work.", "x", None),
+        ]
+    )
+    lines, _ = S.declarations(song)
+    pins = {"line-2": Resolved(lines[0], tone(tmp_path / "line-2.wav", 1.0), "0" * 64)}
+    pins.update({e.id: Resolved(e, tone(tmp_path / f"{e.id}.wav", 0.8), "0" * 64) for e in S.declarations(song)[1]})
+    with pytest.raises(S.SongError, match="line 1 'Sit down.' runs to 1.100s"):
+        S.place(song, pins, S.sing(song, fake_composer(tmp_path), lambda wav: HEARD))
+
+
+def test_place_needs_the_sung_lines_for_a_composed_song(tmp_path):
+    with pytest.raises(S.SongError, match="sing"):
+        S.place(composed_song(), {})
+
+
+@ffmpeg_required
+def test_build_of_a_composed_song_writes_the_music_and_its_record(tmp_path, fake_env):
+    song = composed_song()
+    root = tmp_path / "project"
+    out = S.build(
+        song,
+        root,
+        engine=engine(),
+        key="sk-test",
+        env={**fake_env, "FAKE_HEARD": "Slides."},
+        install_font=lambda font, folder: FakeFont(),
+        compose_song=fake_composer(tmp_path),
+        transcribe_song=lambda wav: HEARD,
+    )
+    data = json.loads(out.read_text())
+    assert [p["text"] for p in data["phrases"]] == ["Sit down.", "Slides.", "Work, work."]
+    assert (root / "assets" / "music.wav").read_bytes() == (tmp_path / "music-x.wav").read_bytes()
+    assert not (root / "assets" / "groove.wav").exists()
+    assert data["music"]["file"] == "assets/music.wav" and data["music"]["seed"] == 82043
+    assert data["music"]["plan"] == PLAN.to_dict() and data["music"]["tempo"]["bpm"] == 120.0
+    assert data["music"]["sha256"] == sha256_of(root / "assets" / "music.wav")
+    assert data["duration"] == pytest.approx(math.ceil((12.0 + S.TAIL) * 30) / 30)
+    report = json.loads((root / "voice-transcript.json").read_text())
+    assert report["passed"] and report["song"]["passed"] and report["song"]["heard"] == HEARD.text
+
+
+def test_sing_needs_a_composition(tmp_path):
+    with pytest.raises(S.SongError, match="no composition"):
+        S.sing(make_song(), fake_composer(tmp_path), lambda wav: HEARD)
