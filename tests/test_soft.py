@@ -3,6 +3,7 @@
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
@@ -556,3 +557,13 @@ def test_pip_and_bo_share_a_scene_without_an_id_clash_and_it_validates():
     ids = [e.get("id") for e in tree(scene).iter() if e.get("id")]
     assert len(ids) == len(set(ids))
     assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_bos_hairline_climbs_from_above_the_ear_on_the_parted_side():
+    scene, cv = canvas()
+    g = cv.group(cv.comp, "hair")
+    blob._side_part(cv, g, blob.HEAD)
+    (d,) = [e.get("path") for e in tree(scene).iter() if e.get("shape") == "path"]
+    points = [tuple(map(float, p.split())) for p in re.findall(r"-?[\d.]+ -?[\d.]+", d)]
+    parted = [(x, y) for x, y in points if x > 0]
+    assert parted and max(y for _, y in parted) < -0.15 * blob.HEAD  # no edge dropping down the cheek

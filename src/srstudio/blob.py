@@ -600,9 +600,9 @@ BO_HAIR = "#3B3F4A"
 
 def _side_part(cv: Canvas, g, r: float) -> None:
     """Bo's hair: a cap over the crown, parted on his right, the fringe swept to his left."""
-    rim = [(r * math.cos(math.radians(a)), -r * math.sin(math.radians(a))) for a in range(196, -17, -8)]
+    # the rim stops above the ear on the parted side, so the hairline climbs from it instead of dropping down the cheek
+    rim = [(r * math.cos(math.radians(a)), -r * math.sin(math.radians(a))) for a in range(196, 7, -8)]
     fringe = [
-        (0.97 * r, -0.10 * r),
         (0.80 * r, -0.36 * r),
         (0.42 * r, -0.50 * r),
         (0.30 * r, -0.62 * r),  # the parting
