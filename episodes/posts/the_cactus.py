@@ -1,0 +1,37 @@
+"""The release of the-cactus.
+
+Departures from the backlog script (docs/backlog, script 3), accepted by the orchestrator on 2026-10-29: no door
+in the office set (the chair's creak marks the interviewer's return), the counter beside the coffee instead of a
+tip jar, the last question asked from the applicant's chair with the cactus over his shoulder, then the bloom.
+"""
+
+from srstudio.releases import Release, Tags
+from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail
+
+RELEASE = Release(
+    "the-cactus",
+    InstagramPost(
+        title="Has this always been here?",
+        description=(
+            "The interviewer finally notices the cactus on his desk. It came with the chair. Then it is in the café, "
+            "by the coffee. Then on the park bench, before you get there. Then in the executive chair. It has an "
+            "employee number.\n"
+            "Comedy Cut 21: it has been in every video since Five Years. Go and check."
+        ),
+        credit="Voices: ElevenLabs premade voices Eric, Will, Jessica and Liam. Sound effects generated with "
+        "ElevenLabs.",
+        hashtags=(
+            "#jobinterview",
+            "#officehumor",
+            "#easteregg",
+            "#plantsofinstagram",
+            "#animatedshorts",
+            "#cartoon",
+            "#vectoranimation",
+        ),
+        thumbnail=Thumbnail("Has this always\nbeen here?", 1.6, "Comedy Cut 21", place="top"),
+    ),
+    cover=True,
+    tags=Tags("job-hunting", "other-person", "recognition", recurring=("cactus", "interviewer", "ava", "milo")),
+)
