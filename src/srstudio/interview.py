@@ -51,7 +51,16 @@ from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_v
 from .sample import SYSTEM_FONTS
 from .song import MAX_GAIN, Singer, SongError
 from .timeline import Phrase
-from .voice import MODEL, STT_MODEL, ElevenLabsClient, Transcript, TranscriptMismatch, check_transcript, normalize_words
+from .voice import (
+    MODEL,
+    SFX_SECONDS,
+    STT_MODEL,
+    ElevenLabsClient,
+    Transcript,
+    TranscriptMismatch,
+    check_transcript,
+    normalize_words,
+)
 
 RATE = 48000
 FPS = 30
@@ -151,6 +160,8 @@ class Interview:
         for fx in self.effects:
             if not _ID.match(fx.id) or fx.id.startswith("line-"):
                 raise InterviewError(f"effect {fx.id!r}: ids are lowercase words and never line-N")
+            if not (SFX_SECONDS[0] <= fx.seconds <= SFX_SECONDS[1]):
+                raise InterviewError(f"effect {fx.id}: seconds {fx.seconds} must lie in {SFX_SECONDS}, the API's range")
             if not (0 < fx.longest <= fx.seconds):
                 raise InterviewError(f"effect {fx.id}: longest {fx.longest} must lie in (0, {fx.seconds}]")
             if not (0 < fx.peak <= 1):
