@@ -114,3 +114,25 @@ full hand/prop collision solver.
 `examples/limbs_bimanual.py` demonstrates the crossing and a palm-up tray lift with original vector geometry,
 serialized motions and numeric QA. Tests verify shared moving anchors, forward/reverse sampling, body-span
 retargeting, inter-arm collision failure, panel bounds and rendered facial-detail visibility at a tilted view.
+
+## Authoring-contract audit
+
+Digit profiles now declare a validated local hinge axis. The mechanical gripper uses opposing axes and
+explicit flexion limits; its previous generic finger flexion moved both jaws out of the closing plane. The
+motion schema advances to `1.1.0`, while `1.0.0` remains readable with the original default axis. FK retains
+the full shoulder orientation in the wrist frame instead of reconstructing a frame from position alone.
+
+Frame budgets are checked before duration-to-frame multiplication, and clock precision is validated before
+writing visibility keys. Numeric conversion, derived lengths, quaternion normalization, rotation bases and
+projection output have explicit failure paths. Identifier bounds prevent a large input label from being
+copied into every frame. These checks complement structural decoding; schema conformance alone does not
+prove a performance can be compiled.
+
+Paint IDs use invocation-local surface ordinals rather than user-authored digit labels. This avoids invalid
+XML IDs and label-normalization collisions. RGBA shading preserves alpha, and zero outline width remains
+zero in the Ink treatment. Collage replaces independent vertex jitter with a deterministic affine treatment
+shared by outer and inner rings, preserving contour topology. Tests exercise each of these failure cases.
+
+Showcase builders require an explicit license sidecar when a custom font is supplied. Falling back to the
+system font's sidecar for a different font would make the generated asset metadata misleading; the failure
+now occurs before copying that font into the output package.

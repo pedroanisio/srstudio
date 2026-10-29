@@ -9,7 +9,7 @@ from dataclasses import dataclass, fields, replace
 from .constraints import hand_pose, reach
 from .errors import Diagnostic, LimbError
 from .math3d import Frame, Quaternion, Vec3, bounded, number
-from .model import ArmPose, ArmProfile, HandControl, HandPose, HandProfile
+from .model import ArmPose, ArmProfile, HandControl, HandPose, HandProfile, label
 
 ACTIONS = (
     "rest",
@@ -102,8 +102,9 @@ class WordRef:
     index: int
 
     def __post_init__(self) -> None:
-        if not self.take or isinstance(self.index, bool) or not isinstance(self.index, int) or self.index < 0:
-            raise LimbError("word reference needs a take ID and non-negative word index")
+        label(self.take, "word take ID")
+        if isinstance(self.index, bool) or not isinstance(self.index, int) or not 0 <= self.index < 1000000:
+            raise LimbError("word reference needs an integer word index in 0..999999")
 
 
 @dataclass(frozen=True)
@@ -120,10 +121,12 @@ class Action:
     pole: Vec3 | None = None
 
     def __post_init__(self) -> None:
+        label(self.name, "action name")
         if self.name not in ACTIONS:
             raise LimbError(f"unknown action {self.name!r}; expected one of {ACTIONS}")
         if number(self.start, "action start") < 0 or number(self.duration, "action duration") <= 0:
             raise LimbError("action start must be non-negative and duration positive")
+        number(self.start + self.duration, "action end")
         for n in ("preparation", "stroke", "hold"):
             bounded(getattr(self, n), 0, 1, n)
         if self.stroke <= 0 or self.preparation + self.stroke + self.hold >= 1:
@@ -159,6 +162,7 @@ class Contact:
     anchor: Frame = Frame()
 
     def __post_init__(self) -> None:
+        label(self.name, "contact name")
         if not self.name or not 0 <= number(self.start, "contact start") < number(self.end, "contact end"):
             raise LimbError("contact needs a name and ordered non-negative times")
 
@@ -176,6 +180,7 @@ class Attachment:
     tolerance: float = 1e-6
 
     def __post_init__(self) -> None:
+        label(self.name, "attachment name")
         if not self.name or not 0 <= number(self.attach, "attach") < number(self.release, "release"):
             raise LimbError("attachment needs a name and ordered non-negative times")
         if number(self.tolerance, "attachment tolerance") < 0:

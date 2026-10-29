@@ -47,6 +47,14 @@ class Projected:
     depth: float
     scale: float
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.xy, tuple) or len(self.xy) != 2:
+            raise LimbError("projected coordinates need an immutable x/y pair", code="projection")
+        for value in (*self.xy, self.depth, self.scale):
+            number(value, "projected coordinate or scale")
+        if self.scale <= 0:
+            raise LimbError("projected scale must remain positive", code="projection")
+
 
 _PARENT = Affine()
 

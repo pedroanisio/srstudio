@@ -14,7 +14,8 @@ from .errors import LimbError
 from .math3d import number
 from .motion import Motion
 
-SCHEMA = "srstudio.limbs/1.0.0"
+SCHEMA = "srstudio.limbs/1.1.0"
+LEGACY_SCHEMA = "srstudio.limbs/1.0.0"
 MAX_BYTES = 5 * 1024 * 1024
 MAX_ITEMS = 100000
 
@@ -60,6 +61,8 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
         if not isinstance(value, dict):
             raise LimbError(f"{where}: expected a {kind.__name__} object")
         definitions = {f.name: f for f in fields(kind)}
+        if len(value) > len(definitions) or any(not isinstance(key, str) for key in value):
+            raise LimbError(f"{where}: too many or unknown object fields")
         unknown = set(value) - definitions.keys()
         if unknown:
             raise LimbError(f"{where}: unknown fields {sorted(unknown)}")
@@ -84,16 +87,20 @@ def motion_dict(motion: Motion) -> dict:
 def parse_motion(data: object) -> Motion:
     if not isinstance(data, dict):
         raise LimbError("motion document must be an object")
+    if len(data) > 3 or any(not isinstance(key, str) for key in data):
+        raise LimbError("motion document has too many or unknown object fields")
     unknown = set(data) - {"schema", "generatedBy", "motion"}
     if unknown:
         raise LimbError(f"motion document has unknown fields {sorted(unknown)}")
-    if data.get("schema") != SCHEMA:
+    if data.get("schema") not in (SCHEMA, LEGACY_SCHEMA):
         raise LimbError(f"motion document needs schema {SCHEMA}")
     if "generatedBy" in data and not isinstance(data["generatedBy"], str):
         raise LimbError("motion generatedBy must be a string")
     if "motion" not in data:
         raise LimbError("motion document is missing motion")
     result: Motion = _decode(Motion, data["motion"], "motion", [MAX_ITEMS])
+    if data["schema"] == LEGACY_SCHEMA and any("bend_axis" in digit for digit in data["motion"]["hand"]["digits"]):
+        raise LimbError("custom bend axes require motion schema srstudio.limbs/1.1.0")
     return result
 
 

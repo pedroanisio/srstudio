@@ -59,7 +59,7 @@ def forward(profile: ArmProfile, *, shoulder_rotation: Quaternion = _IDENTITY, e
     joint = profile.shoulder + shoulder_rotation.rotate(Vec3(0, profile.upper, 0))
     q = shoulder_rotation * Quaternion.axis_angle(Vec3(0, 0, 1), -elbow)
     wrist = joint + q.rotate(Vec3(0, profile.forearm, 0))
-    return ArmPose(profile.shoulder, joint, wrist, along(wrist, wrist - joint), elbow)
+    return ArmPose(profile.shoulder, joint, wrist, Frame(wrist, q), elbow)
 
 
 def hand_pose(profile: HandProfile, control: HandControl, frame: Frame, *, side: str = "right") -> HandPose:
@@ -104,7 +104,7 @@ def hand_pose(profile: HandProfile, control: HandControl, frame: Frame, *, side:
             q = q * Quaternion.axis_angle(Vec3(0, 1, 0), -control.opposition * 1.4)
         cursor = base
         for length, angle in zip(digit.lengths, angles, strict=True):
-            q = q * Quaternion.axis_angle(Vec3(1, 0, 0), angle)
+            q = q * Quaternion.axis_angle(digit.bend_axis, angle)
             cursor = cursor + q.rotate(Vec3(0, length, 0))
             points.append(point(cursor))
         digits.append(DigitPose(digit.name, tuple(points)))

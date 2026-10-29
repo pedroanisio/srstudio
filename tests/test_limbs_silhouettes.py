@@ -67,3 +67,27 @@ def test_end_on_digit_has_a_finite_round_contour_and_fixed_sampling_bounds():
     ):
         with pytest.raises(LimbError):
             tube(points, widths)
+
+
+def test_collage_treatment_preserves_the_topology_of_thin_contours_and_holes():
+    import re
+
+    from shapely.geometry import Polygon
+    from sr_core.scene import Scene
+
+    from srstudio import Canvas
+    from srstudio.limbs.adapters import Appearance, adapter_for
+    from srstudio.limbs.geometry import Part, ProjectedPose, tube
+
+    line = ((0, 0), (0, 20), (20, 20), (20, 0), (0, 0))
+    contour = tube(line, (0.2,) * 5)
+    part = Part("digit:index", contour.exterior, line, 0, 0.2, "skin", holes=contour.holes)
+    pose = ProjectedPose((part,), (0, 0), (0, 0), (0, 0), (), "palm", 0)
+    cv = Canvas(Scene())
+    adapter_for("collage").draw(cv, cv.comp, pose, Appearance(detail=0), id="paper")
+    drawing = next(n.attributes()["path"] for n in cv.scene.iter("shape") if n.attributes().get("path"))
+    rings = []
+    for subpath in drawing.split("M")[1:]:
+        values = [float(v) for v in re.findall(r"[-+]?\d+(?:\.\d+)?", subpath)]
+        rings.append(tuple(zip(values[::2], values[1::2], strict=True)))
+    assert Polygon(rings[0], rings[1:]).is_valid

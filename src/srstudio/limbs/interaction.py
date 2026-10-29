@@ -9,7 +9,7 @@ from typing import Any, Protocol
 
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
-from .compile import BakeOptions
+from .compile import BakeOptions, _frame_count
 from .correctives import ContourCorrection
 from .errors import LimbError
 from .geometry import ProjectedPose, path, project_pose
@@ -144,7 +144,7 @@ def bake_interaction(
     ):
         raise LimbError(f"interaction ID {id!r} is already in use")
     duration = options.duration or max((a.end for p in participants for a in p.motion.actions), default=1.0)
-    count = math.ceil(duration * options.fps - 1e-9)
+    count = _frame_count(duration, options)
     surface_count = sum(3 + len(p.motion.hand.digits) for p in participants) + sum(len(p.mesh.faces) for p in props)
     estimate = count * (2 + surface_count * 24) + 1
     if count > options.max_frames or estimate > options.max_nodes:

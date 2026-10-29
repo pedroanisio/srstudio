@@ -195,3 +195,35 @@ collision measurements.
 PYTHONPATH=src python examples/limbs_bimanual.py ../generated/limbs/bimanual
 ../generated/bin/scene-render encode ../generated/limbs/bimanual/bimanual.scene.xml
 ```
+
+## Custom hinge mechanics and persisted data
+
+Each `DigitProfile.bend_axis` is a unit vector in that digit's local joint frame. The human, mitten, paw and
+three-finger presets retain +X flexion. The gripper uses opposing ±Z axes with its own flexion limits, so its
+jaws close toward one another rather than curling together. Custom profiles can change the axis, lengths,
+splay and per-joint limits; controls still enforce those limits. FK preserves the supplied shoulder rotation
+in the wrist frame, including axial roll.
+
+The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
+without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions
+and fields are rejected. Both versions pass through the current numeric and resource validation. Profile,
+digit, action, contact, attachment and take identifiers are bounded to 128 characters. Custom digit labels
+can contain spaces or Unicode; they do not become SVG paint IDs.
+
+Resolved bake durations are checked against frame budgets before arithmetic can overflow. The six-decimal
+scene clock must be able to represent every emitted interval. Invalid or under-resolved intervals, large
+offsets that lose clock precision, nonfinite derived lengths and nonfinite projections raise `LimbError`
+before scene emission. A zero outline width disables outlines in every adapter. RGBA material alpha is
+preserved by Gloss shading. Collage applies the same affine treatment to a contour and its holes so its
+surface treatment retains their topology.
+
+The style gallery accepts every built-in hand profile:
+
+```sh
+PYTHONPATH=src python examples/limbs_gallery.py ../generated/limbs/gripper-gallery --hand gripper
+../generated/bin/scene-render encode ../generated/limbs/gripper-gallery/limbs-gallery.scene.xml
+```
+
+Custom example fonts require both `--font` and `--font-license`. The examples do not attach the system
+DejaVu sidecar to a caller-provided font. Supply the matching source license file; the example copies and
+pins it alongside the font asset.

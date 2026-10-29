@@ -50,7 +50,11 @@ class Adapter(Protocol):
 
 
 def _shade(color: str, amount: float) -> str:
-    return "#" + "".join(f"{min(255, max(0, round(int(color[i : i + 2], 16) * amount))):02x}" for i in (1, 3, 5))
+    return (
+        "#"
+        + "".join(f"{min(255, max(0, round(int(color[i : i + 2], 16) * amount))):02x}" for i in (1, 3, 5))
+        + color[7:]
+    )
 
 
 def _brush_path(shape: brush.Shape) -> str:
@@ -58,6 +62,15 @@ def _brush_path(shape: brush.Shape) -> str:
     for i in range(2, len(shape), 6):
         out += " C" + " ".join(f"{v:.5f}" for v in shape[i : i + 6])
     return out + " Z"
+
+
+def _paper_warp(
+    points: tuple[tuple[float, float], ...], key: bytes, anchor_y: float
+) -> tuple[tuple[float, float], ...]:
+    # One affine warp preserves topology; independent vertex jitter can fold thin surfaces or cross a hole.
+    dx, dy = (key[i] / 255 - 0.5 for i in (0, 1))
+    shear = (key[2] / 255 - 0.5) * 0.04
+    return tuple((x + dx * 1.5 + shear * (y - anchor_y), y + dy * 1.5) for x, y in points)
 
 
 @dataclass(frozen=True)
@@ -70,23 +83,22 @@ class VectorAdapter:
 
     def draw(self, cv: Canvas, parent: Any, pose: ProjectedPose, appearance: Appearance, *, id: str) -> Any:
         group = cv.group(parent, id)
-        for part in pose.parts:
+        for part_index, part in enumerate(pose.parts):
             skin = appearance.skin or self.skin
             color = (appearance.sleeve or self.sleeve) if part.role == "sleeve" else skin
             outline, weight = appearance.outline, appearance.line_width
             points = part.polygon
+            holes = part.holes
             if self.treatment == "paper":
                 # Stable per-part texture: frame IDs are deliberately excluded, so seeking and motion cannot boil.
                 digest = hashlib.sha256(part.name.encode()).digest()
-                points = tuple(
-                    (x + (digest[i % 32] / 255 - 0.5) * 1.5, y + (digest[(i + 7) % 32] / 255 - 0.5) * 1.5)
-                    for i, (x, y) in enumerate(points)
-                )
+                points = _paper_warp(points, digest, part.centerline[0][1])
+                holes = tuple(_paper_warp(ring, digest, part.centerline[0][1]) for ring in holes)
                 weight = 0
             elif self.treatment == "cel":
                 weight = 0
             elif self.treatment == "pen":
-                color, weight = "#fffdf7", max(1, weight * 0.55)
+                color, weight = "#fffdf7", max(1, weight * 0.55) if weight else 0
             elif self.treatment == "stick" and part.role == "sleeve":
                 color, weight = outline, 0
                 points = part.polygon
@@ -95,7 +107,7 @@ class VectorAdapter:
             fill = color
             if self.treatment == "vinyl":
                 fill = cv.grad(
-                    f"{id}-{part.name.replace(':', '-')}-vinyl",
+                    f"{id}-surface-{part_index}-vinyl",
                     [(0, _shade(color, 1.22)), (0.45, color), (1, _shade(color, 0.72))],
                     (0, 0, 0.8, 1),
                 )
@@ -108,9 +120,9 @@ class VectorAdapter:
             ):
                 d = _brush_path(brush.stroke(part.centerline, max(0.1, part.width), brush.EVEN))
             else:
-                d = path(points, part.holes)
+                d = path(points, holes)
             node = cv.path(
-                group, d, fill, outline if weight else cv.clear, weight, fillRule="evenodd" if part.holes else "nonzero"
+                group, d, fill, outline if weight else cv.clear, weight, fillRule="evenodd" if holes else "nonzero"
             )
             if self.treatment in ("vinyl", "comic") and appearance.detail:
                 a, b = part.centerline[0], part.centerline[-1]
