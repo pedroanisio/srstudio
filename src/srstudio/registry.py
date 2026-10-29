@@ -14,7 +14,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from .errors import SrstudioError
+
 KINDS = ("character", "location", "prop", "graphic")
+
+
+class RegistryError(SrstudioError, ValueError):
+    """A part registered under a kind the catalog does not have."""
+
+
+class NotRegisteredError(SrstudioError, KeyError):
+    """No part of that kind is registered under that name."""
 
 
 @dataclass
@@ -40,7 +50,7 @@ def register(kind: str, name: str, *, summary: str = "", tags: tuple[str, ...] =
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style."""
     if kind not in KINDS:
-        raise ValueError(f"unknown kind {kind!r}; one of {KINDS}")
+        raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
 
     def wrap(obj):
         doc = summary
@@ -60,7 +70,7 @@ def get(kind: str, name: str) -> Entry:
         return _REGISTRY[kind][name]
     except KeyError:
         known = ", ".join(sorted(_REGISTRY.get(kind, {})))
-        raise KeyError(f"no {kind} named {name!r}; known: {known}") from None
+        raise NotRegisteredError(f"no {kind} named {name!r}; known: {known}") from None
 
 
 def entries(kind: str | None = None, style: str | None = None) -> list[Entry]:

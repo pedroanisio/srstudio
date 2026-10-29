@@ -23,6 +23,10 @@ class TimelineError(SrstudioError, ValueError):
     """Timing is invalid or a shot sequence would place its picture and audio on different clocks."""
 
 
+class UnknownTakeError(TimelineError, KeyError):
+    """The timeline has no take with that id."""
+
+
 def _finite(value: float, where: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         raise TimelineError(f"{where}: expected a finite number, got {value!r}")
@@ -293,7 +297,7 @@ class Timeline:
         for t in self.takes:
             if t.id == id:
                 return t
-        raise KeyError(f"no take {id!r}")
+        raise UnknownTakeError(f"no take {id!r}")
 
     # -- beats ------------------------------------------------------------------------------
     def __getattr__(self, name: str) -> float:
@@ -352,7 +356,7 @@ class Timeline:
         """When ``word`` starts inside a phrase, from the provider's character timestamps."""
         p = phrase if isinstance(phrase, Phrase) else self.phrases[phrase]
         if not p.timing_file or self.root is None:
-            raise ValueError(f"phrase {p.index} has no timing file")
+            raise TimelineError(f"phrase {p.index} has no timing file")
         provider = json.loads((self.root / p.timing_file).read_text())
         alignment = provider.get("normalized_alignment") or provider["alignment"]
         text = "".join(alignment["characters"]).lower()

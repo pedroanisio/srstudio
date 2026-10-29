@@ -141,7 +141,7 @@ def word_at(take: Any, prefix: str, which: int = 0) -> float:
     """When the ``which``-th word of ``take`` that starts with ``prefix`` starts, on the take's clock."""
     hits = [w["start"] for w in take.words if w["text"].lower().strip("\"'“”.,!?…").startswith(prefix.lower())]
     if len(hits) <= which:
-        raise ValueError(f"take {take.id}: no word {which} starting with {prefix!r} in {take.text!r}")
+        raise SeriesError(f"take {take.id}: no word {which} starting with {prefix!r} in {take.text!r}")
     return round(float(hits[which]), 3)
 
 

@@ -39,6 +39,10 @@ class PathError(SrstudioError, ValueError):
     """Path data that does not parse."""
 
 
+class RegionError(SrstudioError, ValueError):
+    """A box or safe area that does not describe a region."""
+
+
 class LayoutError(SrstudioError, RuntimeError):
     """The overlay check could not run, or (``strict``) found graphics outside the safe area."""
 
@@ -56,7 +60,7 @@ class Box:
 
     def __post_init__(self) -> None:
         if not all(math.isfinite(v) for v in self.as_tuple()) or self.x1 < self.x0 or self.y1 < self.y0:
-            raise ValueError(f"not a box: {self.as_tuple()}")
+            raise RegionError(f"not a box: {self.as_tuple()}")
 
     def as_tuple(self) -> tuple[float, float, float, float]:
         return (self.x0, self.y0, self.x1, self.y1)
@@ -92,15 +96,15 @@ class SafeArea:
 
     def __post_init__(self) -> None:
         if not _NCNAME.match(self.id):
-            raise ValueError(f"safe area id {self.id!r} is not an NCName")
+            raise RegionError(f"safe area id {self.id!r} is not an NCName")
         for name in _EDGES:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int | float) or not 0 <= value < 1:
-                raise ValueError(f"safe area {self.id}: {name} must be a fraction in [0, 1), not {value!r}")
+                raise RegionError(f"safe area {self.id}: {name} must be a fraction in [0, 1), not {value!r}")
         if self.top + self.bottom >= 1 or self.left + self.right >= 1:
-            raise ValueError(f"safe area {self.id}: the insets leave no region")
+            raise RegionError(f"safe area {self.id}: the insets leave no region")
         if self.enforce not in get_args(Enforce):
-            raise ValueError(f"safe area {self.id}: enforce must be one of {get_args(Enforce)}, not {self.enforce!r}")
+            raise RegionError(f"safe area {self.id}: enforce must be one of {get_args(Enforce)}, not {self.enforce!r}")
 
     def region(self, width: float, height: float) -> Box:
         return Box(self.left * width, self.top * height, width * (1 - self.right), height * (1 - self.bottom))
