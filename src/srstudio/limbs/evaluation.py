@@ -22,6 +22,9 @@ from .serialization import MAX_ITEMS, _decode
 _CLOCK = time.perf_counter
 
 
+MAX_SOURCE_FUNCTIONS = 256
+
+
 @dataclass(frozen=True)
 class Measurement:
     name: str
@@ -34,27 +37,19 @@ class Measurement:
     shapes: int
     source_lines: int
     scene_sha256: str
+    source_functions: tuple[tuple[str, int], ...] = ()
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def measure(
-    name: str, builder: Callable[[], Scene], *, repeats: int = 3, clock: Callable[[], float] = _CLOCK
-) -> Measurement:
-    """Measure building separately from schema validation; require byte-identical output across repetitions.
-
-    Source lines describe only the supplied entry function, excluding blanks, comments and docstrings.
-    They exclude library dependencies and human authoring time and must not be presented as either.
-    """
-    label(name, "measurement name")
-    if type(repeats) is not int or not 1 <= repeats <= 10:
-        raise LimbError("measurement repetitions must be an integer in 1..10")
-    if getattr(builder, "__name__", None) == "<lambda>":
+def _definition(function: Callable[..., Any]) -> tuple[ast.FunctionDef | ast.AsyncFunctionDef, int]:
+    """Parse one def function; count its lines, excluding blanks, comments and docstrings."""
+    if getattr(function, "__name__", None) == "<lambda>":
         # A lambda's source is the whole enclosing line, which may not parse or may count unrelated code.
         raise LimbError("measurement builder must be a def function, not a lambda")
     try:
-        source = textwrap.dedent(inspect.getsource(builder))
+        source = textwrap.dedent(inspect.getsource(function))
     except (OSError, TypeError) as error:
         raise LimbError("measurement builder needs inspectable Python source") from error
     if len(source) > 100000:
@@ -63,7 +58,8 @@ def measure(
         tree = ast.parse(source)
     except SyntaxError as error:
         raise LimbError("measurement builder must be a def function with parseable source") from error
-    if len(tree.body) != 1 or not isinstance(tree.body[0], (ast.FunctionDef, ast.AsyncFunctionDef)):
+    definition = tree.body[0] if len(tree.body) == 1 else None
+    if not isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
         raise LimbError("measurement builder must be a def function")
     doc_lines = {
         i
@@ -71,10 +67,81 @@ def measure(
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
         for i in range(node.lineno, (node.end_lineno or node.lineno) + 1)
     }
-    source_lines = sum(
+    lines = sum(
         bool(line.strip()) and not line.lstrip().startswith("#") and i not in doc_lines
         for i, line in enumerate(source.splitlines(), 1)
     )
+    return definition, lines
+
+
+def _reached(builder: Callable[..., Any]) -> tuple[tuple[str, int], ...]:
+    """The builder and every function of its own module that it references by name, transitively.
+
+    Library code lives in other modules and is excluded. Names are resolved through closures, then globals.
+    """
+    module = getattr(builder, "__module__", None)
+    counted: dict[str, int] = {}
+    pending = [builder]
+    while pending:
+        function = pending.pop()
+        key = f"{function.__module__}.{function.__qualname__}"
+        if key in counted:
+            continue
+        if len(counted) >= MAX_SOURCE_FUNCTIONS:
+            raise LimbError("measurement source reaches too many functions", code="budget")
+        definition, counted[key] = _definition(function)
+        scope = {**function.__globals__, **inspect.getclosurevars(function).nonlocals}
+        names = sorted({n.id for n in ast.walk(definition) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)})
+        pending.extend(
+            value
+            for value in (scope.get(name) for name in names)
+            if inspect.isfunction(value) and value.__module__ == module
+        )
+    return tuple(counted.items())
+
+
+@dataclass(frozen=True)
+class SourceComparison:
+    """Lines each side of a pair reaches that the other side does not; shared helpers count for neither."""
+
+    baseline: str
+    candidate: str
+    baseline_lines: int
+    candidate_lines: int
+    shared: tuple[str, ...]
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def compare_sources(baseline: Measurement, candidate: Measurement) -> SourceComparison:
+    if baseline.name == candidate.name:
+        raise LimbError("a source comparison needs two distinct measurements")
+    a, b = dict(baseline.source_functions), dict(candidate.source_functions)
+    shared = a.keys() & b.keys()
+    return SourceComparison(
+        baseline.name,
+        candidate.name,
+        sum(lines for name, lines in a.items() if name not in shared),
+        sum(lines for name, lines in b.items() if name not in shared),
+        tuple(sorted(shared)),
+    )
+
+
+def measure(
+    name: str, builder: Callable[[], Scene], *, repeats: int = 3, clock: Callable[[], float] = _CLOCK
+) -> Measurement:
+    """Measure building separately from schema validation; require byte-identical output across repetitions.
+
+    Source lines count the entry function and every function of its module that it reaches, excluding blanks,
+    comments and docstrings. ``compare_sources`` removes helpers both sides of a pair reach. Counts exclude
+    library dependencies and human authoring time and must not be presented as either.
+    """
+    label(name, "measurement name")
+    if type(repeats) is not int or not 1 <= repeats <= 10:
+        raise LimbError("measurement repetitions must be an integer in 1..10")
+    functions = _reached(builder)
+    source_lines = sum(lines for _, lines in functions)
     durations, hashes = [], []
     raw = b""
     scene = None
@@ -108,6 +175,7 @@ def measure(
         len(list(scene.iter("shape"))),
         source_lines,
         hashes[0],
+        functions,
     )
 
 

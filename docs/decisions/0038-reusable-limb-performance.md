@@ -145,9 +145,11 @@ now occurs before copying that font into the output package.
 ## Comparative evaluation
 
 `evaluation.measure` separates observed engineering cost from viewer preference and human authoring effort.
-Deterministic repeated builds are schema-validated and hashed. Node counts, XML bytes and entry-function
-source lines are reported with their boundaries; build time is not called authoring time. This avoids
-claiming an ergonomic benefit from a runtime benchmark.
+Deterministic repeated builds are schema-validated and hashed. Node counts, XML bytes and source lines
+are reported with their boundaries; build time is not called authoring time. This avoids claiming an
+ergonomic benefit from a runtime benchmark. Source lines count the entry function and every function of its
+module that it reaches; `compare_sources` then excludes helpers reached by both sides of a pair. Counting the
+entry function alone omitted helpers used by one side only and understated the spatial builders.
 
 `examples/limbs_evaluate.py` builds paired Stick, Toon and Gloss tasks and an opaque A/B review packet.
 The private implementation mapping stays outside the public review directory. Typed score records reject

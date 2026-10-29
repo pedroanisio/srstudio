@@ -247,8 +247,11 @@ PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
 
 `evaluation.json` records actual repeated build times, serialized scene bytes, node and shape counts, and
 scene hashes. Builds must be byte-identical across repetitions and pass schema validation. Timings exclude
-schema validation, serialization and rendering. Source lines describe the supplied entry function only;
-shared helpers and library dependencies are excluded. They do not measure human authoring effort. Without separate human observations,
+schema validation, serialization and rendering. Each measurement's `source_functions` lists the entry
+function and every example function it reaches, with their line counts. The per-pair `source_comparison` counts
+only lines one side reaches and the other does not, so helpers shared by both sides cancel. Library dependencies
+are excluded. In this example the spatial builders reach the `_track` helper, so they count more lines than
+the legacy builders. Line counts do not measure human authoring effort. Without separate human observations,
 authoring time is explicitly unmeasured.
 
 The `review/` directory contains opaque A/B clips, task descriptions, rating instructions and an empty
@@ -306,7 +309,8 @@ treatments, so a paint effect cannot reintroduce folded-finger outline crossings
 
 Build timing does not measure the time a person spends authoring a performance. The evaluation example
 accepts separate human observations through `--authoring FILE`. Its report schema is now
-`srstudio.limbs.evaluation/1.1.0`; the `authoring` summary replaces the former always-null
+`srstudio.limbs.evaluation/1.2.0`, which adds `source_functions` and `source_comparison` to the 1.1.0
+report; the `authoring` summary replaces the former always-null
 `human_authoring_seconds` field. With no observations, the summary says `awaiting_records` and has no results.
 An empty `authoring-template.json` is written outside the blinded viewer packet. Existing authoring and
 rating templates are preserved when rebuilding, including observations entered into those files.

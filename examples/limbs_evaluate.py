@@ -22,6 +22,7 @@ from srstudio.limbs.adapters import Appearance
 from srstudio.limbs.compile import BakeOptions, Occlusion
 from srstudio.limbs.evaluation import (
     Pair,
+    compare_sources,
     measure,
     parse_authoring,
     parse_ratings,
@@ -183,7 +184,9 @@ def build(
     if authoring is not None:
         authoring_records = parse_authoring(read_document(authoring, "authoring"))
     authoring_summary = summarize_authoring(PAIRS, authoring_records)
-    measurements = [measure(name, builder, repeats=repeats).to_dict() for name, builder in BUILDERS.items()]
+    measured = {name: measure(name, builder, repeats=repeats) for name, builder in BUILDERS.items()}
+    measurements = [item.to_dict() for item in measured.values()]
+    sources = {pair.id: compare_sources(measured[pair.baseline], measured[pair.candidate]).to_dict() for pair in PAIRS}
     for trial in trials:
         for side in ("a", "b"):
             name = getattr(trial, side)
@@ -228,13 +231,15 @@ def build(
     _write(
         report,
         {
-            "schema": "srstudio.limbs.evaluation/1.1.0",
+            "schema": "srstudio.limbs.evaluation/1.2.0",
             "measurements": measurements,
+            "source_comparison": sources,
             "review": summary,
             "authoring": authoring_summary,
             "limitations": [
                 "Build times exclude schema validation, serialization and video rendering.",
-                "Source lines count entry functions only; dependencies and shared helpers are excluded.",
+                "Source lines count each entry function and the example functions it reaches; a pair's "
+                "source_comparison excludes helpers both sides reach. Library code is excluded from both.",
                 "Authoring time, completion and author identity are caller-supplied and not independently verified.",
                 "Tasks match intent and framing, not exact pose geometry or hand silhouettes.",
                 "Legacy holds switch at 0.8 and 1.5 seconds; spatial gestures use continuous phases.",

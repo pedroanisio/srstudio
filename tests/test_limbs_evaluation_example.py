@@ -58,7 +58,14 @@ def test_evaluation_example_produces_schema_valid_pairs_and_blinded_packet(tmp_p
     report = json.loads(result.read_text())
     assert len(report["measurements"]) == 6
     assert report["review"]["status"] == ("partial" if observed else "awaiting_ratings")
-    assert report["schema"] == "srstudio.limbs.evaluation/1.1.0"
+    assert report["schema"] == "srstudio.limbs.evaluation/1.2.0"
+    for pair in ("point", "face", "shrug"):
+        comparison = report["source_comparison"][pair]
+        assert comparison["shared"] == ["limbs_evaluate._canvas"]
+        # The spatial builders reach the example's _track helper; its lines count on their side.
+        candidate = next(m for m in report["measurements"] if m["name"] == comparison["candidate"])
+        assert "limbs_evaluate._track" in dict(candidate["source_functions"])
+        assert comparison["candidate_lines"] > dict(candidate["source_functions"])["limbs_evaluate._track"]
     if observed:
         assert len(json.loads(observations.read_text())["records"]) == 2
         assert len(json.loads(ratings.read_text())["ratings"]) == 1

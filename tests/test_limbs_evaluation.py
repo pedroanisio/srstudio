@@ -195,3 +195,52 @@ def test_measure_refuses_renamed_lambdas_whose_source_is_not_a_def():
     assigned.__name__ = "assigned"  # its source line parses as an assignment, not a definition
     with pytest.raises(LimbError, match="def function"):
         measure("assigned", assigned, repeats=1)
+
+
+def _exclusive_helper():
+    # Comments, blanks and the docstring below are not counted.
+    """Two counted lines."""
+    scene = drawing()
+    return scene
+
+
+def _recursive_helper(depth):
+    return drawing() if depth == 0 else _recursive_helper(depth - 1)
+
+
+def one_sided():
+    return _exclusive_helper()
+
+
+def other_sided():
+    return drawing()
+
+
+def through_a_generator():
+    return next(_recursive_helper(n) for n in (1,))
+
+
+def test_source_lines_count_every_same_module_function_the_builder_reaches():
+    from srstudio.limbs.evaluation import compare_sources
+
+    one = measure("one", one_sided, repeats=1)
+    assert dict(one.source_functions) == {
+        f"{__name__}.one_sided": 2,
+        f"{__name__}._exclusive_helper": 3,
+        f"{__name__}.drawing": 6,
+    }
+    assert one.source_lines == 11
+    generated = measure("generated", through_a_generator, repeats=1)
+    assert f"{__name__}._recursive_helper" in dict(generated.source_functions)
+    comparison = compare_sources(one, measure("other", other_sided, repeats=1))
+    assert comparison.shared == (f"{__name__}.drawing",)
+    assert (comparison.baseline_lines, comparison.candidate_lines) == (5, 2)
+    assert comparison.to_dict()["baseline"] == "one"
+
+
+def test_source_comparison_requires_two_distinct_measurements():
+    from srstudio.limbs.evaluation import compare_sources
+
+    one = measure("one", one_sided, repeats=1)
+    with pytest.raises(LimbError, match="distinct"):
+        compare_sources(one, one)
