@@ -576,7 +576,11 @@ def cube_station(
     camera.anchor(fire, cx, cy, place=True)
     for r, c in ((1.3, "#f08a24"), (1.0, "#f2b84b"), (0.6, "#ffe3a3")):
         cv.ellipse(fire, cx - s * r, cy - s * r, 2 * s * r, 2 * s * r, c, opacity=0.9)
-    scale = [(0, 0.01), (boom, 0.01), (round(boom + 0.5, 4), 1.2), (round(min(end, boom + 2.5), 4), 1.5)]
+    burst = round(boom + 0.5, 4)
+    if burst < end:
+        scale = [(0, 0.01), (boom, 0.01), (burst, 1.2), (round(min(end, boom + 2.5), 4), 1.5)]
+    else:  # a boom in the shot's last half second: the fireball is as big as its burst gets by the end
+        scale = [(0, 0.01), (boom, 0.01), (end, round(0.01 + (1.2 - 0.01) * (end - boom) / 0.5, 4))]
     cv.keys(fire, "scaleX", scale, hold=False)
     cv.keys(fire, "scaleY", scale, hold=False)
     cv.keys(fire, "opacity", [(0, 0), (boom, 1), (round(min(end, boom + 2.5), 4), 0)], hold=False)
