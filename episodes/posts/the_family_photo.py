@@ -20,7 +20,7 @@ RELEASE = Release(
             "effects synthesised in code."
         ),
         hashtags=("#familyphoto", "#family", "#dadlife", "#brainrot", "#parenting", "#animatedshorts", "#satire"),
-        thumbnail=Thumbnail("Everyone,\nbe natural.", 5.0, "Collage 13", (540, 1300), 1.2),
+        thumbnail=Thumbnail("Everyone,\nbe natural.", 10.6, "Collage 13", (560, 1380), 1.5, place="top"),
     ),
     tags=Tags("family", "protagonist", "embarrassment", recurring=("gary", "rosa", "kai")),
 )
