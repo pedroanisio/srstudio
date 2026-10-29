@@ -3,6 +3,8 @@ dressing, the lip-sync tracks, the recording run's effects and manifest (the ske
 test_sketch.py)."""
 
 import json
+import os
+import shutil
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import replace
@@ -297,3 +299,27 @@ def test_a_staging_stands_the_office_desk_in_front_unless_it_lays_another(mods):
     assert build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress).desk is toon.desk
     laid = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, desk=toon_dinner.table)
     assert laid.desk is toon_dinner.table
+
+
+def test_a_voiced_build_of_the_report_plays_its_narration_and_effects_over_the_recorded_timing(mods, tmp_path):
+    """The voiced path end to end, on a copy of the generated project (``SRSTUDIO_EPISODES``): the recording's
+    narration and each effect become tracks, the project runs to the recorded end and the subtitles are written."""
+    env = os.environ.get("SRSTUDIO_EPISODES")
+    if not env or not (Path(env) / "the-report" / "narration.json").is_file():
+        pytest.skip("set SRSTUDIO_EPISODES to the folder of generated episode projects")
+    build, data, *_ = mods
+    root = tmp_path / "the-report"
+    shutil.copytree(Path(env) / "the-report", root, ignore=shutil.ignore_patterns("*.scene.xml", "*.srt"))
+    staging = build.Staging(
+        data.SKETCH, data.SEED, data.DESCRIPTION, data.ACCESSIBILITY, data.NARRATION, data.TINTS, data.dress,
+        stickers={"dog": data.STICKER},
+    )  # fmt: skip
+    ep = build.build(root, staging, {"--voice"})
+    assert ep is not None
+    effects = effect_cues(root / "narration.json", root)
+    end = manifest_duration(root / "narration.json")
+    xml = tree(ep.cv)
+    assert float(xml.find("project").get("duration")) == end
+    tracks = {t.get("asset") for t in xml.iter("audioTrack")}
+    assert effects and {f"fx-{fx.id}" for fx in effects} <= tracks and len(tracks) > len(effects)
+    assert (root / "the-report.srt").read_text().strip()
