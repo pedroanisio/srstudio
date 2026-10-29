@@ -75,6 +75,7 @@ def test_text_layout_is_title_description_credit_hashtags():
             InstagramPost(title="t", description="d", hashtags=("#ok", "no-hash", "#1starts", "#with space")),
             "must be '#'",
         ),
+        (InstagramPost(title="t", description="d", hashtags=("#ok", "#trailing\n")), "must be '#'"),
         (InstagramPost(title="t", description="d", hashtags=("#Same", "#same")), "duplicate"),
         (InstagramPost(title="t", description="d" * CAPTION_LIMIT), f"Instagram accepts {CAPTION_LIMIT}"),
         (InstagramPost(title="t", description="d", thumbnail=Thumbnail("a", -0.5)), "thumbnail: backdrop time"),
