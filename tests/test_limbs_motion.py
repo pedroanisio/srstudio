@@ -155,3 +155,13 @@ def test_successive_contacts_transition_from_the_previous_contact_without_jumpin
 def test_bad_actions_fail_before_any_scene_is_mutated(kwargs):
     with pytest.raises(LimbError):
         Action(**{"name": "point", "start": 0, "duration": 1, **kwargs})
+
+
+def test_contact_transitions_keep_the_authored_elbow_pole_at_rest_endpoints():
+    action = Action("grasp", duration=3, pole=Vec3(0, 1, 0))
+    base = Motion(ArmProfile(), HUMAN, (action,))
+    grip = base.sample(1.2).hand.frame
+    m = replace(base, contacts=(Contact("hold", 1.2, 2.1, TransformTrack.constant(grip)),))
+    for i in range(73):
+        sample = m.sample(i / 24)
+        assert abs(sample.control.wrist_deviation) <= 0.8

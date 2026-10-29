@@ -367,7 +367,13 @@ class Motion:
                         return self._contact_request(contact, at, self._request(at)[1])
                     rest = self._relative(_GOALS["rest"], at)
                     profile = replace(self.arm, shoulder=self.root.sample(at).point(self.arm.shoulder))
-                    resting = reach(profile, rest, policy=self.reach_policy)
+                    endpoint_root = self.root.sample(at)
+                    endpoint_pole = (
+                        action.pole
+                        if action.pole is not None
+                        else endpoint_root.point(self.arm.shoulder + Vec3(1 if self.arm.side == "right" else -1, 0, 0))
+                    )
+                    resting = reach(profile, rest, pole=endpoint_pole, policy=self.reach_policy)
                     return rest, resting.frame.rotation
 
                 a, qa = endpoint(previous, start_time)
