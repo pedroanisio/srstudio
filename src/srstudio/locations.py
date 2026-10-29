@@ -469,20 +469,20 @@ def elevator_stand_y(bottom: float, scale: float) -> float:
 
 def _check_floors(floors) -> None:
     if not floors or floors[0][0] != 0:
-        raise ValueError("the floor display needs (second, floor) pairs starting at 0")
+        raise LocationError("the floor display needs (second, floor) pairs starting at 0")
     for (a, _), (b, _) in zip(floors, floors[1:], strict=False):
         if not b > a:
-            raise ValueError(f"floor changes must be in time order: {a} then {b}")
+            raise LocationError(f"floor changes must be in time order: {a} then {b}")
     for _, n in floors:
         if not (isinstance(n, int) and 1 <= n <= FLOOR_MAX):
-            raise ValueError(f"a floor is a whole number 1 to {FLOOR_MAX}, got {n!r}")
+            raise LocationError(f"a floor is a whole number 1 to {FLOOR_MAX}, got {n!r}")
 
 
 def _check_doors(doors) -> None:
     last = -math.inf
     for a, b in doors:
         if not (0 <= a < b) or a < last:
-            raise ValueError(f"doors open and shut in order, each span after the last one shut: {(a, b)!r}")
+            raise LocationError(f"doors open and shut in order, each span after the last one shut: {(a, b)!r}")
         last = b + DOOR_SLIDE
 
 
@@ -521,9 +521,9 @@ def elevator(
     _check_floors(floors)
     _check_doors(doors)
     if lit is not None and not (isinstance(lit, int) and 1 <= lit <= BUTTONS):
-        raise ValueError(f"lit is a button, 1 to {BUTTONS}, got {lit!r}")
+        raise LocationError(f"lit is a button, 1 to {BUTTONS}, got {lit!r}")
     if going not in ("up", "down"):
-        raise ValueError(f"going is \"up\" or \"down\", got {going!r}")
+        raise LocationError(f"going is \"up\" or \"down\", got {going!r}")
     ink = cv.ink
     left, top, right, base = ELEVATOR_BACK
     g = cv.group(parent, id)

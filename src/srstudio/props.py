@@ -7,7 +7,13 @@ import random
 from collections.abc import Sequence
 
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
+
+
+class PropError(SrstudioError, ValueError):
+    """A prop asked for with arguments it cannot be drawn from."""
+
 
 # ---------------------------------------------------------------- office set dressing
 
@@ -485,11 +491,11 @@ CRUMB_FALL = 0.32  # seconds from the hand to the ground
 def crumbs(cv: Canvas, parent, x, y, ground, *, toss: float, count: int = 7, seed: int = 0, id="crumbs"):
     """``count`` crumbs leave ``(x, y)`` at ``toss`` and land scattered on ``ground``; nothing shows before."""
     if count < 1:
-        raise ValueError(f"crumbs needs at least one crumb, got {count}")
+        raise PropError(f"crumbs needs at least one crumb, got {count}")
     if toss < 0:
-        raise ValueError(f"crumbs toss {toss} is before the start")
+        raise PropError(f"crumbs toss {toss} is before the start")
     if ground <= y:
-        raise ValueError(f"crumbs fall down: ground {ground} must be below the hand at {y}")
+        raise PropError(f"crumbs fall down: ground {ground} must be below the hand at {y}")
     rng = random.Random(seed)
     g = cv.group(parent, id, x=x, y=y)
     cv.keys(g, "opacity", sorted({0.0: 0, float(toss): 1}.items()))  # shown from the toss on
@@ -523,7 +529,7 @@ def glow(cv: Canvas, parent, x, y, r, rings=4, color=GLOW, peak=0.2):
 def whiteboard(cv: Canvas, parent, x, y, w, h, rising=True, id="whiteboard"):
     """``rising`` draws the chart's trend line going up (blue) or down (red)."""
     if w < 160 or h < 160:
-        raise ValueError(f"a whiteboard needs at least 160×160 units for its chart and notes, got {w}×{h}")
+        raise PropError(f"a whiteboard needs at least 160×160 units for its chart and notes, got {w}×{h}")
     ink = cv.ink
     g = cv.group(parent, id)
     frame = cv.grad("aluminium", [(0, "#EEF2F1"), (0.5, "#AEB8BA"), (1, "#DCE2E1")], (0, 0, 1, 1))
@@ -613,7 +619,7 @@ def speakerphone(cv: Canvas, parent, x, y, id="speakerphone", talk: Sequence[tup
     last = 0.0
     for start, end in talk:
         if not (last <= start < end):
-            raise ValueError(f"speakerphone talk spans are (start, end) in order from 0, apart; got {list(talk)}")
+            raise PropError(f"speakerphone talk spans are (start, end) in order from 0, apart; got {list(talk)}")
         last = end
     ink = cv.ink
     g = cv.group(parent, id, x=x, y=y)
@@ -730,14 +736,14 @@ def tip_tablet(
     ``(time, index)`` lights that button from its time until the next pick."""
     cv.require_font("the tip tablet's screen is set in it")
     if not heading.strip():
-        raise ValueError("a tip tablet needs a heading")
+        raise PropError("a tip tablet needs a heading")
     if not 1 <= len(options) <= 4 or any(not o.strip() for o in options):
-        raise ValueError(f"a tip tablet shows 1 to 4 non-empty options, got {options!r}")
+        raise PropError(f"a tip tablet shows 1 to 4 non-empty options, got {options!r}")
     times = [t for t, _ in picks]
     if any(not (0 <= t) for t in times) or times != sorted(times) or any(not 0 <= i < len(options) for _, i in picks):
-        raise ValueError(f"each pick is (time >= 0, option index), in time order, got {picks!r}")
+        raise PropError(f"each pick is (time >= 0, option index), in time order, got {picks!r}")
     if not (math.isfinite(scale) and scale > 0):
-        raise ValueError(f"scale must be a positive number, got {scale!r}")
+        raise PropError(f"scale must be a positive number, got {scale!r}")
     ink = cv.ink
     w, h = TIP_SCREEN
     g = cv.group(parent, cv.uid("tip-tablet"), x=x, y=y, scaleX=scale, scaleY=scale)
@@ -799,13 +805,13 @@ def pink_slip(
     if name is not None:
         cv.require_font("the pink slip's name is lettered in it")
     if name is not None and (not name.strip() or len(name) > SLIP_CHARS):
-        raise ValueError(f"the slip's name has 1 to {SLIP_CHARS} characters, got {name!r}")
+        raise PropError(f"the slip's name has 1 to {SLIP_CHARS} characters, got {name!r}")
     if show is not None and (not 0 <= show[0] < show[1] or fall is not None):
-        raise ValueError(f"show is one (start, end) span with 0 <= start < end, and never with fall, got {show!r}")
+        raise PropError(f"show is one (start, end) span with 0 <= start < end, and never with fall, got {show!r}")
     if fall is not None and not (fall[0] >= 0 and fall[1] > 0):
-        raise ValueError(f"fall is (time >= 0, height > 0), got {fall!r}")
+        raise PropError(f"fall is (time >= 0, height > 0), got {fall!r}")
     if not (math.isfinite(scale) and scale > 0):
-        raise ValueError(f"scale must be a positive number, got {scale!r}")
+        raise PropError(f"scale must be a positive number, got {scale!r}")
     ink = cv.ink
     w, h = SLIP_SIZE
     g = cv.group(parent, cv.uid("pink-slip"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)

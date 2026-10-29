@@ -162,7 +162,7 @@ def code(
 ):
     """Draw the signature code with its top-left (or top-right, ``align="end"``) corner at ``x, y``.
 
-    Raises :class:`ValueError` when the code holds a character the glyph set lacks, so a typo in
+    Raises :class:`SignatureError` (a ``ValueError``) when the code holds a character the glyph set lacks, so a typo in
     ``EpisodeSpec.signature_code`` fails the build instead of printing a gap.
     """
     if cv.signature is None:
@@ -170,7 +170,7 @@ def code(
     text = cv.signature.code
     missing = sorted({c for c in text if c not in GLYPHS})
     if missing:
-        raise ValueError(f"signature code {text!r} uses characters without a glyph: {missing}")
+        raise SignatureError(f"signature code {text!r} uses characters without a glyph: {missing}")
     s = height / 16
     if align == "end":
         x = x - text_width(text, height)
