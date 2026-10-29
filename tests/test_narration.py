@@ -2,10 +2,12 @@
 fitting and the manifest an episode plays from."""
 
 import hashlib
+import io
 import json
 import math
 import struct
 import subprocess
+import urllib.error
 import wave
 from pathlib import Path
 
@@ -13,6 +15,7 @@ import pytest
 
 from srstudio import cel
 from srstudio import narration as _narration
+from srstudio.errors import ProviderHTTPError
 from srstudio.voice import RATE, Alignment, Voice, VoiceOutputError
 
 BOX = {"x": 1, "y": 1, "w": 1, "h": 1, "glyphs": "M 1 1"}
@@ -85,6 +88,64 @@ def test_confirm_voice_checks_the_name_and_caches_only_the_name(narration, tmp_p
         narration.confirm_voice(tmp_path, "k", Voice(role="h", id="other456", name="Chris"), lambda u, h: ["x"])
     with pytest.raises(RuntimeError, match="ELEVENLABS_API_KEY"):
         narration.confirm_voice(tmp_path, "", Voice(role="h", id="other789", name="Chris"), fetch)
+
+
+class _Reply:
+    def __init__(self, body: bytes):
+        self.body = body
+
+    def read(self, *_):
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+
+def _serve(monkeypatch, body, status=None):
+    """``urlopen`` answers ``body``, or raises HTTP ``status`` with ``body`` as the error document."""
+    seen = []
+
+    def urlopen(request, timeout):
+        seen.append((request, timeout))
+        if status:
+            raise urllib.error.HTTPError(request.full_url, status, "error", {}, io.BytesIO(body))
+        return _Reply(body)
+
+    monkeypatch.setattr(_narration.urllib.request, "urlopen", urlopen)
+    return seen
+
+
+def test_the_voice_lookup_gets_once_and_decodes_the_record(narration, monkeypatch):
+    seen = _serve(monkeypatch, b'{"name": "Chris - Charming"}')
+    assert narration._urllib_fetch("https://api/v1/voices/x", {"xi-api-key": "k"}) == {"name": "Chris - Charming"}
+    ((request, timeout),) = seen
+    assert request.method == "GET" and request.get_header("Xi-api-key") == "k" and timeout == 60
+
+
+def test_a_refused_voice_lookup_is_a_provider_error_carrying_only_its_message(narration, monkeypatch, tmp_path):
+    _serve(monkeypatch, b'{"detail": {"message": "invalid api key"}}', status=401)
+    with pytest.raises(ProviderHTTPError, match="^ElevenLabs HTTP 401: invalid api key$"):
+        narration.confirm_voice(tmp_path, "k", Voice(role="h", id="other123", name="Chris"))
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("body", [b"<html>502</html>", b"\x80 not utf-8", b""])
+def test_a_voice_lookup_answered_with_something_not_json_is_invalid_output(narration, monkeypatch, tmp_path, body):
+    _serve(monkeypatch, body)
+    with pytest.raises(VoiceOutputError, match="not JSON"):
+        narration.confirm_voice(tmp_path, "k", Voice(role="h", id="other123", name="Chris"))
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("stored", ["{not json", "\udcff", '["Chris"]', "null"])
+def test_a_cached_voice_record_that_is_not_an_object_is_invalid_output(narration, tmp_path, stored):
+    voice = Voice(role="h", id="other123", name="Chris")
+    (tmp_path / f"voice-{voice.id}.json").write_text(stored, errors="surrogateescape")
+    with pytest.raises(VoiceOutputError, match="not a voice record"):
+        narration.confirm_voice(tmp_path, "k", voice, lambda u, h: pytest.fail("a cached voice is never fetched"))
 
 
 def tone(path, seconds=1.0, amplitude=0.5):
