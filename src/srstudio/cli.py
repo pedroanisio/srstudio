@@ -269,13 +269,17 @@ def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
 
 
 def _run_script(script: Path, argv: list[str]) -> int:
-    """Run ``script`` as ``__main__`` with ``argv`` and its folder first on the path; its exit status."""
+    """Run ``script`` as ``__main__`` with ``argv`` and its folder first on the path; its exit status (1 for a
+    reason, which goes to stderr)."""
     sys.argv = argv
     sys.path.insert(0, str(script.resolve().parent))
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as stop:
-        return stop.code if isinstance(stop.code, int) else (0 if stop.code is None else 1)
+        if stop.code is None or isinstance(stop.code, int):
+            return stop.code or 0
+        print(stop.code, file=sys.stderr)  # a reason, as Python prints it for an exit it does not catch
+        return 1
     return 0
 
 
