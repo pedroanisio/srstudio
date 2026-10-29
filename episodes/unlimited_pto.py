@@ -60,7 +60,7 @@ def speaking(cues: list, role: str) -> list:
     out = [
         replace(c, mouth=SING) if any(p.start < until and c.time < p.end for p in lines) else c for c, until in holds
     ]
-    return blob.settle(out, FPS)
+    return blob.settle(out, FPS, published_full_gap_ease=True)
 
 
 bo_cues = speaking(

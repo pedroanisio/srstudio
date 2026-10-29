@@ -264,6 +264,36 @@ def test_cues_hold_and_ease_in_with_in_between_drawings():
     assert lo < out[2].pose.head[1] < hi
 
 
+@pytest.mark.parametrize("cues, keys", [((), 0), ((Cue(0, "clasp"),), 1)])
+def test_an_ease_filling_the_whole_gap_keeps_the_pose_it_leaves_on_screen(cues, keys):
+    first = float(len(cues))  # the gap the ease fills starts at 0, or after a cue at 0
+    cues = [*cues, Cue(first, "stand"), Cue(first + 1, "sit", ease=1.0)]
+    out = blob.drawings(cues, end=first + 2, fps=4)
+    times = [d.time for d in out]
+    assert times == sorted(set(times)), "two drawings at one time: the later hides the earlier"
+    assert times[keys:] == pytest.approx([first + t for t in (0, 0.25, 0.5, 0.75, 1)])
+    assert out[keys].cue.pose == "stand" and out[keys].u == 1  # the pose it leaves lands before the move
+
+
+def test_the_published_pin_still_draws_a_full_gap_ease_as_those_episodes_shipped():
+    cues = blob.settle([Cue(0, "stand"), Cue(1, "sit", ease=5.0)], 4, published_full_gap_ease=True)
+    times = [d.time for d in blob.drawings(cues, end=2, fps=4)]
+    assert times == pytest.approx([0, 0, 0.25, 0.5, 0.75, 1])  # the defect, kept byte for byte (L8)
+    fixed = [d.time for d in blob.drawings(blob.settle(cues, 4), end=2, fps=4)]
+    assert fixed == pytest.approx([0, 0.25, 0.5, 0.75, 1])
+
+
+PUBLISHED_PIN = {"camera_off", "day_off", "focus_mode", "off_and_on", "return_to_office", "the_cake", "unlimited_pto"}
+
+
+def test_only_the_seven_published_soft_episodes_pin_the_full_gap_ease_defect():
+    root = Path(__file__).resolve().parents[1]
+    users = {f.stem for f in (root / "episodes").rglob("*.py") if "published_full_gap_ease" in f.read_text()}
+    assert users == PUBLISHED_PIN, "published_full_gap_ease is for the frozen published episodes only"
+    library = [f.name for f in (root / "src").rglob("*.py") if "published_full_gap_ease=True" in f.read_text()]
+    assert library == []
+
+
 def test_in_betweens_keep_the_old_expression_until_the_new_pose_lands():
     cues = [Cue(0, "stand", eyes="open", mouth="smile"), Cue(1, "clasp", eyes="squint", mouth="grin", ease=0.2)]
     out = blob.drawings(cues, end=2, fps=15)

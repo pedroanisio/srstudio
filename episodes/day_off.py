@@ -106,7 +106,7 @@ cues = [
 cues = list({round(c.time, 6): c for c in sorted(cues, key=lambda c: c.time)}.values())
 holds = zip(cues, [c.time for c in cues[1:]] + [DURATION], strict=True)
 cues = [replace(c, mouth=SING) if any(p.start < until and c.time < p.end for p in P) else c for c, until in holds]
-cues = blob.settle(cues, FPS)
+cues = blob.settle(cues, FPS, published_full_gap_ease=True)
 mouths = ep.mouth("pip")
 
 room = blob.home(

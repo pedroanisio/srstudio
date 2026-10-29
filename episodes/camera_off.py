@@ -137,7 +137,7 @@ cues += [
     cue(at(11, 3), "sit", SEAT, ease=EIGHTH, eyes="squint", mouth="grin"),
 ]
 
-cues = blob.settle(cues, FPS)  # no move starts before the previous pose has landed
+cues = blob.settle(cues, FPS, published_full_gap_ease=True)  # no move starts before the previous pose has landed
 
 # Pip's words, as heard in the composed song. A cue whose hold overlaps a sung word shows the sung mouth.
 dialogue = json.loads((ep.root / "dialogue.json").read_text())

@@ -141,7 +141,7 @@ cues += [
     for i, when in enumerate(GROOVE.beats(OUT, OUT + 1, every=0.5)[1:] + [at(OUT + 1)])
 ]
 
-cues = blob.settle(cues, FPS)  # no move starts before the previous pose has landed
+cues = blob.settle(cues, FPS, published_full_gap_ease=True)  # no move starts before the previous pose has landed
 
 blob.office(cv, ep.comp)
 blob.pip(cv, ep.comp, cues, end=t.duration, scale=SCALE, mouth_states=ep.mouth("pip"), fps=FPS, shadow=True)
