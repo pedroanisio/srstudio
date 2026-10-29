@@ -291,6 +291,13 @@ def test_features_are_the_tracked_point_per_sample_and_per_pose(tmp_path):
         cel.parse_features(dict(FEATURES, poses=[{"name": "a", "time": 0, "feature": "no", "raised": True}]))
 
 
+@pytest.mark.parametrize("time", [None, -0.5, float("nan"), True])
+def test_a_poses_measured_time_is_checked_though_the_features_do_not_return_it(time):
+    pose = {"name": "a", "feature": [1.0, 2.0, 0.1], "raised": True} | ({} if time is None else {"time": time})
+    with pytest.raises(cel.CelDataError, match="time"):
+        cel.parse_features(dict(FEATURES, poses=[pose]))
+
+
 NAN, INF = float("nan"), float("inf")
 BOXED = {"x": 1, "y": 1, "w": 1, "h": 1, "glyphs": "M 1 1"}
 

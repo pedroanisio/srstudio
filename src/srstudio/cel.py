@@ -256,7 +256,11 @@ def parse_features(
     data: Any, step: float = 0.25, where: str = "poses"
 ) -> tuple[dict[str, tuple[float, float]], list[Feature], frozenset[str]]:
     """The tracked point of a pose timeline: its place in each pose, its track sampled every ``step`` s, and the
-    poses in which the hand is raised off the keyboard."""
+    poses in which the hand is raised off the keyboard.
+
+    A pose's ``time`` is when in the reference its feature was measured: provenance, checked but not returned (the
+    track's samples carry the timing). It stays in the schema because the traced packages carry it and the parse
+    refuses unknown fields."""
     checks.positive(step, CelDataError, f"{where}: step must be a positive number of seconds, got {step!r}")
     top = _record(data, where, dict(poses=list, features=list), optional=("runs",))
     base: dict[str, tuple[float, float]] = {}
