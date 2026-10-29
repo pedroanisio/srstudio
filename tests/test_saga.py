@@ -598,6 +598,14 @@ def test_a_set_is_drawn_for_a_number_of_seconds_above_zero(end):
         sets.space(cv, cv.comp, end=end)
 
 
+@pytest.mark.parametrize(
+    ("draw", "options"), [(sets.cantina, {"stare": [(5.0, 10.0)]}), (sets.cockpit, {"jump": [(2.0, 9.0)]})]
+)
+def test_a_set_span_that_starts_past_the_end_is_a_saga_error(draw, options):
+    with pytest.raises(SagaError, match="must rise from a second >= 0"):
+        draw(canvas(), canvas().comp, end=2.0, **options)
+
+
 def test_a_set_span_past_the_end_is_cut_at_it_and_a_bool_is_no_second():
     cv = canvas()
     sets.cantina(cv, cv.comp, end=2.0, stare=[(1.0, 9.0)])
