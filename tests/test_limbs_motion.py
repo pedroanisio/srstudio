@@ -184,3 +184,38 @@ def test_transform_tracks_sample_accumulated_float_times_near_a_key(time):
     sampled = track.sample(time)
     nearest = b if time < 1.5 else c
     assert sampled.origin.distance(nearest.origin) < 1e-9
+
+
+def _grasp_with_contact(start, end):
+    base = Motion(ArmProfile(), HUMAN, (Action("grasp", 0.5, 2.0),))
+    grip = base.sample(1.5).hand.frame
+    return replace(base, contacts=(Contact("grip", start, end, TransformTrack.constant(grip)),))
+
+
+@pytest.mark.parametrize(("start", "end"), [(0.5, 1.0), (2.0, 2.5), (0.5, 2.5)])
+def test_contacts_touching_an_action_edge_are_refused_instead_of_teleporting_the_wrist(start, end):
+    with pytest.raises(LimbError, match="transition"):
+        _grasp_with_contact(start, end)
+
+
+def test_adjacent_contacts_are_refused_because_the_hand_cannot_travel_between_them():
+    base = Motion(ArmProfile(), HUMAN, (Action("type", 0, 2),))
+    first = TransformTrack.constant(base.sample(0.5).hand.frame)
+    second = TransformTrack.constant(base.sample(1.1).hand.frame)
+    with pytest.raises(LimbError, match="transition"):
+        replace(base, contacts=(Contact("key-a", 0.4, 0.8, first), Contact("key-b", 0.8, 1.2, second)))
+
+
+def test_wrist_steps_stay_continuous_across_both_action_edges_of_a_contact():
+    import statistics
+
+    m = _grasp_with_contact(0.75, 2.25)
+    wrists = [m.sample(i / 24).arm.wrist for i in range(73)]
+    steps = [a.distance(b) for a, b in zip(wrists, wrists[1:], strict=False)]
+    moving = statistics.median(s for s in steps if s > 1e-9)
+    assert max(steps) <= 3 * moving
+    for edge in (0.5, 0.75, 2.25, 2.5):
+        coarse = m.sample(edge - 1e-3).arm.wrist.distance(m.sample(edge + 1e-3).arm.wrist)
+        fine = m.sample(edge - 1e-4).arm.wrist.distance(m.sample(edge + 1e-4).arm.wrist)
+        # A continuous pose moves less over a shorter interval; a jump does not shrink with the interval.
+        assert fine <= coarse * 0.2 + 1e-9

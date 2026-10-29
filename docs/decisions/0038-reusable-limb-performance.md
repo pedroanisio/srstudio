@@ -16,7 +16,10 @@ reports unreachable targets; clamping requires an explicit policy and retains it
 
 `Motion.sample(time)` is history independent. Actions carry preparation, stroke, hold and recovery phases.
 Relative targets scale with the arm; world targets and named prop anchors retain their coordinates. Contacts
-can constrain a wrist or a named fingertip. Attachment acquisition must match the initial prop transform,
+can constrain a wrist or a named fingertip. A contact locks exactly, so it must begin after its action starts,
+end before that action ends, and leave a gap before the next contact. A contact touching those edges would
+leave the hand no time to travel and make the wrist jump between two samples; validation refuses it rather
+than softening the lock or moving the hand outside its action. Attachment acquisition must match the initial prop transform,
 and release freezes its transform. `props.bind` coordinates independent arms against anchors on one prop
 track. Capsule-versus-sphere clearance reports penetration or raises in strict mode; it does not solve
 collisions or alter a locked contact.

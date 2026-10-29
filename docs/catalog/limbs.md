@@ -65,7 +65,9 @@ with replacement tracks. A single track replaces only its named side.
 `Contact` locks a wrist or a named fingertip to a `TransformTrack`, including an optional prop-local anchor.
 `props.Prop` supplies named anchors; `props.bind` returns a motion with a corresponding contact interval.
 `props.Coordination` samples two arms and their shared moving props without requiring sequential playback.
-Contacts enforce reach and wrist limits. `props.clearance` separately reports arm-capsule penetration against
+A contact must start after its action starts, end before that action ends and leave a gap before the next
+contact; the action eases the hand from rest into the lock and back out during those intervals. Contacts touching
+an action edge or another contact raise `LimbError`. Contacts enforce reach and wrist limits. `props.clearance` separately reports arm-capsule penetration against
 named spheres, or raises when `strict=True`; it does not silently displace a locked hand.
 
 An `Attachment` declares pickup and release times, an initial prop frame and a wrist-local grip offset.

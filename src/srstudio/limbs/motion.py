@@ -283,12 +283,19 @@ class Motion:
             raise LimbError("actions must be ordered without overlap")
         if any(a.end > b.start for a, b in zip(self.contacts, self.contacts[1:], strict=False)):
             raise LimbError("contacts must be ordered without overlap")
+        # A contact locks exactly, so the hand needs a transition interval to reach it and to leave it.
+        if any(a.end == b.start for a, b in zip(self.contacts, self.contacts[1:], strict=False)):
+            raise LimbError("successive contacts need a transition interval between them")
         names = [a.name for a in self.attachments]
         if len(set(names)) != len(names):
             raise LimbError("prop attachment names must be unique")
         for c in self.contacts:
             if not any(a.start <= c.start < c.end <= a.end for a in self.actions):
                 raise LimbError(f"contact {c.name} must lie inside one action")
+            if not any(a.start < c.start < c.end < a.end for a in self.actions):
+                raise LimbError(
+                    f"contact {c.name} needs a transition interval after its action starts and before it ends"
+                )
             if c.digit is not None and c.digit not in {d.name for d in self.hand.digits}:
                 raise LimbError(f"contact names an unknown digit {c.digit}")
         for a in self.attachments:
@@ -362,7 +369,7 @@ class Motion:
         orientation: Quaternion | None = None
         active: Contact | None = None
         if action is not None:
-            contacts = [c for c in self.contacts if action.start <= c.start < c.end <= action.end]
+            contacts = [c for c in self.contacts if action.start < c.start < c.end < action.end]
             active = next((c for c in contacts if c.start <= time <= c.end), None)
             if active:
                 goal, orientation = self._contact_request(active, time, control)
