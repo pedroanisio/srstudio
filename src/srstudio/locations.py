@@ -16,9 +16,14 @@ from collections.abc import Callable, Sequence
 
 from . import props, signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 
 Slot = Callable[[object], None] | None
+
+
+class LocationError(SrstudioError, ValueError):
+    """A location was given an option it cannot draw."""
 
 
 def _call(slot: Slot, g):
@@ -225,7 +230,14 @@ def park(
     id="location-park",
     shots=None,
     cactus: Slot = None,
+    *,
+    sign_lettering: bool = True,
 ):
+    """``sign_lettering=False`` keeps the sign's post, board and signature code but leaves its lettering out: the
+    safe-area audit (SA01) measures a text layer even off frame, so a framing that crops the sign away must not draw
+    it. The default draws the set as before, byte for byte."""
+    if not isinstance(sign_lettering, bool):
+        raise LocationError(f"sign_lettering is True or False, got {sign_lettering!r}")
     p = props.cafe_paints(cv)
     g = cv.group(parent, id)
     if shots:
@@ -243,7 +255,10 @@ def park(
     props.tree(cv, g)
     for xx in [18, 73, 210, 865, 940, 1010]:
         props.shrub(cv, g, xx)
-    props.park_sign(cv, g)
+    if sign_lettering:
+        props.park_sign(cv, g)
+    else:
+        props.park_sign(cv, g, text=None)
     signature.code(cv, g, 1030, 624, 9, color="#F0E7CF", opacity=0.85, align="end")
     props.bench(cv, g)
     signature.home_cactus(cv, g, 905, 1300, 0.75, slot=cactus)  # on the grass beside the bench

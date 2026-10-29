@@ -1,12 +1,15 @@
-"""The park bench as a two-hander: an office actor with legs to sit on it, the seat line, and a handful of crumbs."""
+"""The park bench as a two-hander: an office actor with legs to sit on it, the seat line, a handful of crumbs, and the
+park sign that can leave its lettering out."""
 
+import hashlib
 import xml.etree.ElementTree as ET
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import CAFE, Canvas, Signature, cast, locations, props, registry
+from srstudio import CAFE, Canvas, Signature, cast, locations, props, registry, signature
 from srstudio.rig import Performance
+from test_signature import TODAY, _canvas
 
 
 def canvas():
@@ -70,3 +73,28 @@ def test_crumbs_refuse_an_empty_a_negative_or_an_upward_toss(bad):
     args = dict(toss=1.0, count=5, ground=1500) | bad
     with pytest.raises(ValueError):
         props.crumbs(cv, cv.comp, 500, 1200, args.pop("ground"), **args)
+
+
+def test_the_park_keeps_todays_bytes_with_its_sign_lettered():
+    for kw in ({}, dict(sign_lettering=True)):
+        cv = _canvas(CAFE)
+        locations.park(cv, cv.comp, **kw)
+        assert hashlib.sha256(cv.scene.to_bytes()).hexdigest() == TODAY["park"]
+
+
+def test_the_park_can_leave_its_sign_lettering_out_and_keeps_the_board_and_both_marks():
+    lettered, plain = _canvas(CAFE), _canvas(CAFE)
+    locations.park(lettered, lettered.comp)
+    locations.park(plain, plain.comp, sign_lettering=False)
+    gone = set(ids(lettered.scene)) - set(ids(plain.scene))
+    assert gone == {"park-sign", "park-sign-layer"}  # the text and its layer, nothing else
+    assert signature.missing(plain.scene.to_bytes()) == []
+    assert by_id(plain.scene, "sig-code").get("x") == by_id(lettered.scene, "sig-code").get("x")  # still on the board
+    assert [f for f in plain.scene.check() if f.severity == "error"] == []
+
+
+@pytest.mark.parametrize("bad", [0, 1, None, "no"])
+def test_the_park_refuses_a_sign_lettering_that_is_not_a_bool(bad):
+    cv = _canvas(CAFE)
+    with pytest.raises(locations.LocationError, match="sign_lettering"):
+        locations.park(cv, cv.comp, sign_lettering=bad)

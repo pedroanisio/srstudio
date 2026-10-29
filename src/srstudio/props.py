@@ -459,10 +459,12 @@ def shrub(cv: Canvas, parent, x):
 
 
 @register("prop", "park-sign", summary="PUBLIC PARK sign on a post")
-def park_sign(cv: Canvas, parent, text="PUBLIC\nPARK"):
+def park_sign(cv: Canvas, parent, text: str | None = "PUBLIC\nPARK"):
+    """The post and the board; ``text=None`` leaves the lettering out (:func:`srstudio.locations.park`)."""
     cv.line(parent, 916, 520, 916, 1040, "#637969", 8)
     cv.rect(parent, 785, 526, 260, 112, "#486C58", cv.ink, 4, radius=13)
-    cv.text(parent, "park-sign", text, 804, 538, 222, 88, 32, "#F0E7CF")
+    if text is not None:
+        cv.text(parent, "park-sign", text, 804, 538, 222, 88, 32, "#F0E7CF")
 
 
 @register("prop", "bench", summary="Slatted wooden park bench")

@@ -236,7 +236,8 @@ measured, and a skip that names no project is refused.
   malformed (`cel.CelDataError`).
 - **Locations** (`srstudio.locations`): `office_wide(at_desk=)`, `office_reverse(in_chair=)`,
   `cafe(behind_counter=, at_counter=, on_counter=)`, `park(on_bench=, beside_bench=)`. Each takes `shots=` and gates its
-  root group before drawing, so new locations should do the same (see `examples/new_episode.py`). Two polished rooms
+  root group before drawing, so new locations should do the same (see `examples/new_episode.py`). `park(sign_lettering=False)`
+  keeps the sign's board and code but drops its lettering, for a framing that crops the sign: SA01 measures text off frame too. Two polished rooms
   add window and lamp light as a `-light` glaze group: `conference_room(behind_table=, on_table=, rising=,
   speaker_talk=)` (blinds, whiteboard, speakerphone, walnut table; `speaker_talk` spans light the speakerphone's ring
   while a caller speaks, as `props.speakerphone(talk=)` does) and `reception(behind_desk=, on_desk=, at_desk=)` (lit slat wall, backlit
