@@ -69,13 +69,19 @@ def latest_package(folder: Path, slug: str) -> Path | None:
 
 
 def ready(
-    items: Items, deliveries: Path, *, font: Path, packages: Mapping[str, Path] | None = None
+    items: Items,
+    deliveries: Path,
+    *,
+    font: Path,
+    packages: Mapping[str, Path] | None = None,
+    frozen: Mapping[str, str] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
     ``packages`` maps a video name to its package file; a current video without one is held back
     (:data:`NO_PACKAGE`). A package for a video that is not published, or one that does not exist, raises
-    :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready."""
+    :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready. ``frozen`` is passed to the gate
+    (:func:`~srstudio.social.check_delivery`)."""
     packages = dict(packages or {})
     unknown = sorted(set(packages) - set(items))
     if unknown:
@@ -83,7 +89,7 @@ def ready(
     missing = sorted(name for name, path in packages.items() if not Path(path).is_file())
     if missing:
         raise OutboxError(f"the package for {', '.join(missing)} is missing")
-    drift = list(check_delivery(items, deliveries, font=font))
+    drift = list(check_delivery(items, deliveries, font=font, frozen=frozen))
     held = {d.name for d in drift}
     if "*" in held:
         return [], drift

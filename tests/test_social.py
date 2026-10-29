@@ -432,6 +432,57 @@ def test_publish_only_still_needs_the_named_render_and_a_readable_manifest(deliv
         publish(items, out, font=FONT, engine="unused", only={"b"})
 
 
+# -- a frozen video is current at the drawing the operator accepted (ADR 0040) -------------------------------------
+@pytest.fixture
+def redrawn(delivered):
+    """``a``'s post changed after it was published; returns the items now, the out folder and ``a``'s new drawing."""
+    items, out, renders = delivered
+    now = {**items, "a": Item(post("A2"), renders / "a.mp4")}
+    return now, out, fingerprint(post("A2"), renders / "a.mp4", FONT)
+
+
+def test_a_frozen_video_is_current_only_at_the_drawing_it_was_frozen_at(redrawn):
+    items, out, accepted = redrawn
+    assert [str(d) for d in check_delivery(items, out, font=FONT, frozen={"a": accepted})] == []
+    assert [str(d) for d in check_delivery(items, out, font=FONT, frozen={"a": "0" * 64})] == [
+        "a: the post, its thumbnail, its scene, the font or the layout changed since delivery"
+    ]
+
+
+def test_a_frozen_video_still_drifts_when_its_render_or_its_files_change(redrawn):
+    items, out, accepted = redrawn
+    (out / "a" / "ig.txt").write_text("edited by hand\n", encoding="utf-8")
+    items["a"].video.write_bytes(items["a"].video.read_bytes() + b"\0")
+    assert [str(d) for d in check_delivery(items, out, font=FONT, frozen={"a": accepted})] == [
+        "a: the video was re-rendered after its cover was made",
+        "a: ig.txt was changed after delivery",
+    ]
+
+
+def test_frozen_must_name_published_videos(delivered):
+    items, out, _ = delivered
+    with pytest.raises(DeliveryError, match="frozen names a video that is not published: gone"):
+        check_delivery(items, out, font=FONT, frozen={"gone": "0" * 64})
+    with pytest.raises(DeliveryError, match="frozen names a video that is not published: gone"):
+        publish(items, out, font=FONT, engine="unused", frozen={"gone": "0" * 64})
+
+
+def test_a_full_delivery_leaves_a_frozen_video_and_its_manifest_entry_as_published(redrawn):
+    items, out, accepted = redrawn
+    entry = read_manifest(out)["a"]
+    cover = (out / "a" / COVER_NAME).read_bytes()
+    assert publish(items, out, font=FONT, engine="unused", frozen={"a": accepted}) == []
+    assert read_manifest(out)["a"] == entry and (out / "a" / COVER_NAME).read_bytes() == cover
+    assert check_delivery(items, out, font=FONT, frozen={"a": accepted}) == []
+
+
+def test_every_frozen_release_names_the_drawing_its_post_makes_now():
+    """A release is frozen at the fingerprint of its post now, so the pin goes stale (and the gate goes red) when
+    anything that draws its cover changes; the shipped ones are checked against the published delivery above."""
+    posts = shipped_posts()
+    assert posts.FROZEN == {r.video_name: r.frozen for r in posts.RELEASES.values() if r.frozen}
+
+
 # -- the post fingerprint is the drawing (ADR 0037) ----------------------------------------------------------------
 def test_an_edit_to_the_layout_source_alone_changes_no_fingerprint(tmp_path, monkeypatch):
     clip = tall(tmp_path / "v.mp4")

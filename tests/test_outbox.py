@@ -10,7 +10,7 @@ import pytest
 
 from srstudio.outbox import MANIFEST, NO_PACKAGE, Bundle, OutboxError, latest_package, push, ready, stage
 from srstudio.social import MANIFEST as DELIVERY
-from srstudio.social import Item, publish
+from srstudio.social import Item, fingerprint, publish
 from test_package import project
 from test_social import FONT, engine, post, tall
 
@@ -61,6 +61,16 @@ def test_a_drifted_video_is_left_out_and_reported(delivered):
     bundles, drift = ready(items, out, font=FONT, packages=pk)
     assert [b.name for b in bundles] == ["a"]
     assert [d.name for d in drift] == ["b"]
+
+
+def test_a_frozen_video_is_ready_at_the_drawing_it_was_frozen_at(delivered):
+    items, out, pk = delivered
+    items = {**items, "b": Item(post("B2"), items["b"].video)}  # its post changed after it was published
+    bundles, drift = ready(items, out, font=FONT, packages=pk)
+    assert [b.name for b in bundles] == ["a"] and [d.name for d in drift] == ["b"]
+    accepted = fingerprint(post("B2"), items["b"].video, FONT)
+    bundles, drift = ready(items, out, font=FONT, packages=pk, frozen={"b": accepted})
+    assert [b.name for b in bundles] == ["a", "b"] and drift == []
 
 
 def test_an_untrustworthy_delivery_manifest_makes_nothing_ready(delivered):
@@ -201,8 +211,8 @@ def test_push_refuses_a_missing_rclone(tmp_path):
 
 
 # -- the command ---------------------------------------------------------------------------------------------------
-def command(monkeypatch, items):
-    """``episodes/publish_drive.py`` with the posts replaced by ``items``."""
+def command(monkeypatch, items, frozen=None):
+    """``episodes/publish_drive.py`` with the posts replaced by ``items`` and the frozen releases by ``frozen``."""
     sys.path.insert(0, str(EPISODES))
     try:
         import publish_drive
@@ -210,6 +220,7 @@ def command(monkeypatch, items):
         sys.path.remove(str(EPISODES))
     monkeypatch.setattr(publish_drive.posts, "items", lambda renders: items)
     monkeypatch.setattr(publish_drive.posts, "font_file", lambda folder: FONT)
+    monkeypatch.setattr(publish_drive.posts, "FROZEN", dict(frozen or {}))
     return publish_drive
 
 
@@ -237,6 +248,17 @@ def test_the_command_stages_what_is_ready_and_pushes_it(delivered, tmp_path, mon
     printed = capsys.readouterr().out
     assert "b: the video was re-rendered" in printed and "1 ready, 1 held back" in printed
     assert len(run.calls) == 2  # --stage-only pushes nothing
+
+
+def test_the_command_stages_a_frozen_video_at_the_drawing_it_was_frozen_at(delivered, tmp_path, monkeypatch, capsys):
+    items, out, _ = delivered
+    items = {**items, "b": Item(post("B2"), items["b"].video)}  # its post changed after it was published
+    args = [*where(out, tmp_path, tmp_path), "--stage-only"]
+    assert command(monkeypatch, items).main(args) == 1
+    assert "1 ready, 1 held back" in capsys.readouterr().out
+    accepted = fingerprint(post("B2"), items["b"].video, FONT)
+    assert command(monkeypatch, items, frozen={"b": accepted}).main(args) == 0
+    assert "2 ready, 0 held back" in capsys.readouterr().out
 
 
 def test_the_command_packs_each_original_episode_and_holds_back_one_it_cannot_pack(

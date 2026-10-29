@@ -31,4 +31,6 @@ RELEASE = Release(
         thumbnail=Thumbnail("Why does nobody\never quit?", 8.0, "Saga 09", (540, 890), 1.0),
     ),
     cover=True,
+    # its cover drawing changed after it was published; the operator froze it as published (ADR 0040)
+    frozen="8b00377830d82ee599e0d92feebddd34522e102d1e10b20f3369a0dc505e2622",
 )

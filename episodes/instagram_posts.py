@@ -17,6 +17,10 @@ prints the same plan and writes nothing:
     python3 instagram_posts.py check OUT RENDERS --fonts DIR
     python3 instagram_posts.py migrate OUT RENDERS --fonts DIR [--dry-run]
 
+A release declared ``frozen`` (ADR 0040) is a published video whose post now draws another cover than the one
+delivered: the gate takes its delivery as current at the drawing the operator accepted, ``deliver`` leaves it as
+published, and ``check`` lists it.
+
 ``--only`` delivers the named videos alone (one ready to publish while another post waits for its render); the
 rest of the delivery is left as it was, and ``check`` still reports what drifted there.
 
@@ -51,6 +55,7 @@ RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file 
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
+FROZEN = {r.video_name: r.frozen for r in RELEASES.values() if r.frozen}  # video name -> accepted drawing
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:
@@ -71,12 +76,12 @@ def write_all(
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written."""
-    return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only)
+    return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
 
 
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     """Every drift between ``out`` and delivering every post from ``renders`` now."""
-    return check_delivery(items(renders), out, font=font_file(fonts_dir))
+    return check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
 
 
 def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:
@@ -111,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
         drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
         for d in drift:
             print(d)
+        if FROZEN:
+            print(f"frozen at an accepted drawing (ADR 0040): {', '.join(sorted(FROZEN))}")
         print(f"{len(POSTS)} videos, {len(drift)} drifted" if drift else f"{len(POSTS)} videos, delivery current")
         return 1 if drift else 0
     if not args.engine:

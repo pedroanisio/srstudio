@@ -31,4 +31,6 @@ RELEASE = Release(
         thumbnail=Thumbnail("Who approves\nhis expenses?", 10.0, "Saga 11", (540, 890), 1.0),
     ),
     cover=True,
+    # its cover drawing changed after it was published; the operator froze it as published (ADR 0040)
+    frozen="d51dd66b70617ad161789a85c5bf7559a8a223aecb9857a1f14e2a7bf5cffe59",
 )

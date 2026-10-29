@@ -53,6 +53,11 @@ def test_a_release_names_its_video_and_scene_after_its_slug_unless_told_otherwis
     )
 
 
+def test_a_release_is_frozen_at_one_cover_fingerprint_or_not_at_all():
+    assert Release("ok", POST).frozen == ""
+    assert Release("ok", POST, frozen="0f" * 32).frozen == "0f" * 32
+
+
 @pytest.mark.parametrize(
     ("kw", "match"),
     [
@@ -63,6 +68,8 @@ def test_a_release_names_its_video_and_scene_after_its_slug_unless_told_otherwis
         (dict(scene="x.json"), "scene"),
         (dict(post="not a post"), "post"),
         (dict(builder="printer-recreation"), "builder"),
+        (dict(frozen="abc"), "frozen"),
+        (dict(frozen="A" * 64), "frozen"),
     ],
 )
 def test_a_release_refuses_what_it_cannot_publish(kw, match):

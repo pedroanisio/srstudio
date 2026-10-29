@@ -26,7 +26,7 @@ import re
 import struct
 import subprocess
 import tempfile
-from collections.abc import Callable, Collection, Iterator
+from collections.abc import Callable, Collection, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -554,14 +554,17 @@ def _write(out: Path, entries: dict[str, dict[str, str]]) -> None:
     tmp.replace(manifest)
 
 
-def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
+def check_delivery(items: Items, out: Path, *, font: Path, frozen: Mapping[str, str] | None = None) -> list[Drift]:
     """Every way ``out`` differs from delivering ``items`` now; an empty list means the delivery is current.
 
     A video drifts when its render is missing or changed since its cover was made, its post or thumbnail (or the
     font or the cover's drawing) changed, its ``ig.txt`` or ``cover.jpg`` is missing or was edited, or it was never
-    delivered. A delivered folder whose video is no longer in ``items`` drifts too. Runs no engine, ffmpeg or
-    ffprobe."""
+    delivered. A delivered folder whose video is no longer in ``items`` drifts too. ``frozen`` maps a published
+    video to the fingerprint its post draws now that the operator accepted (ADR 0040): its delivery is current at
+    that drawing and no other, and every other check still holds. Raises :class:`DeliveryError` when ``frozen``
+    names a video not in ``items``. Runs no engine, ffmpeg or ffprobe."""
     out = Path(out)
+    frozen = _frozen(items, frozen)
     try:
         delivered = read_manifest(out)
     except DeliveryError as e:
@@ -582,7 +585,7 @@ def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
         except (CoverError, ThumbnailError) as e:
             drift.append(Drift(name, f"the cover cannot be drawn now: {e}"))
         else:
-            if now != entry["post"]:
+            if now not in (entry["post"], frozen.get(name)):
                 drift.append(
                     Drift(name, "the post, its thumbnail, its scene, the font or the layout changed since delivery")
                 )
@@ -597,6 +600,14 @@ def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
     return drift
 
 
+def _frozen(items: Items, frozen: Mapping[str, str] | None) -> dict[str, str]:
+    frozen = dict(frozen or {})
+    unknown = sorted(set(frozen) - set(items))
+    if unknown:
+        raise DeliveryError(f"frozen names a video that is not published: {', '.join(unknown)}")
+    return frozen
+
+
 def publish(
     items: Items,
     out: Path,
@@ -606,6 +617,7 @@ def publish(
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
     only: Collection[str] | None = None,
+    frozen: Mapping[str, str] | None = None,
 ) -> list[Path]:
     """Deliver every item that drifted, record ``<out>/delivery.json`` and return the folders written.
 
@@ -613,8 +625,12 @@ def publish(
     manifest (its folder is left for the operator to remove). After this, :func:`check_delivery` is empty.
 
     ``only`` names the videos to deliver: the others keep their manifest entries as they are (and need no
-    render), so :func:`check_delivery` still reports whatever drifted among them. It needs a readable manifest."""
+    render), so :func:`check_delivery` still reports whatever drifted among them. It needs a readable manifest.
+
+    A ``frozen`` video current at its accepted drawing is not delivered again: its files and entry stay as
+    published."""
     out = Path(out)
+    frozen = _frozen(items, frozen)
     if only is not None:
         unknown = sorted(set(only) - set(items))
         if unknown:
@@ -633,7 +649,7 @@ def publish(
         if only is not None:
             raise  # the entries of the videos left alone cannot be kept from a manifest that cannot be read
         delivered = {}  # an unreadable manifest is replaced: every item is delivered again below
-    stale = {d.name for d in check_delivery(items, out, font=font)} if delivered else set(items)
+    stale = {d.name for d in check_delivery(items, out, font=font, frozen=frozen)} if delivered else set(items)
     out.mkdir(parents=True, exist_ok=True)
     out.chmod(0o700)
     written, entries = [], {}
@@ -643,10 +659,12 @@ def publish(
             if name in delivered:
                 entries[name] = delivered[name]
             continue
-        if name in stale or "*" in stale:
-            post.deliver(folder, video, font=font, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe, scene=scene)
-            folder.chmod(0o700)
-            written.append(folder)
+        if name not in stale and "*" not in stale:
+            entries[name] = delivered[name]  # current: what was recorded is what is there
+            continue
+        post.deliver(folder, video, font=font, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe, scene=scene)
+        folder.chmod(0o700)
+        written.append(folder)
         entries[name] = {"render": _sha(video), "post": fingerprint(post, video, font, scene),
                          "ig": _sha(folder / FILE_NAME), "cover": _sha(folder / COVER_NAME)}  # fmt: skip
     with _locked(out):  # the covers above render unlocked

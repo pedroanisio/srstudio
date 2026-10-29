@@ -1489,7 +1489,11 @@ error is `InstagramPostError`, with every problem listed.
   delivery lock; it draws and delivers nothing.
   Every render must exist before `deliver` writes anything; current videos are left untouched. `--only <video name>`
   (repeatable) delivers the named videos alone, needing only their renders, while another post waits for its render;
-  the other manifest entries are kept as they were, so `check` still reports their drift. The font is installed
+  the other manifest entries are kept as they were, so `check` still reports their drift. A release declared
+  `frozen=<fingerprint>` ([ADR 0040](docs/decisions/0040-frozen-releases-at-an-accepted-drawing.md)) is a published
+  video whose post now draws another cover: the gate takes it as current at that one drawing (every other check
+  still holds), `deliver` leaves it as published, and `check` lists it. Only the operator freezes a release.
+  The font is installed
   into `--fonts` and pinned there (`generated/fonts`); the deliveries live in `generated/renders/ig/`. With
   `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` set, the test suite runs `check` against the real delivery, so a
   re-render without a new delivery fails the quality gate.

@@ -31,4 +31,6 @@ RELEASE = Release(
         thumbnail=Thumbnail("Worse than an\nicebreaker?", 12.0, "Saga 08", (540, 890), 1.0),
     ),
     cover=True,
+    # its cover drawing changed after it was published; the operator froze it as published (ADR 0040)
+    frozen="59d9c36a3aec7bbc260cb6549585360c209f5f0c192117d3ebac808ad853cacb",
 )

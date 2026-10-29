@@ -32,6 +32,7 @@ __all__ = ["Release", "ReleaseError", "Tags", "load", "items"]
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 CHARACTER = re.compile(r"[a-z][a-z0-9-]*")
+FINGERPRINT = re.compile(r"[0-9a-f]{64}")
 
 TERRITORIES = (
     "everyday-tech",
@@ -94,7 +95,10 @@ class Release:
     """``slug`` names the episode project (``<episodes>/<slug>/``); ``video`` is the rendered video's file name
     without extension (the slug when empty); ``scene`` is the project's scene file (``<slug>.scene.xml`` when
     empty); ``cover`` says the cover's backdrop is drawn from that scene's ``cover`` variant; ``builder`` is the stem
-    of the episode's build script when it is not the slug with underscores."""
+    of the episode's build script when it is not the slug with underscores. ``frozen`` is the cover fingerprint
+    (:func:`~srstudio.social.fingerprint`) the operator accepted for a published video whose post now draws another
+    cover than the one delivered: the publish gate takes its delivery as current at that drawing and no other, and
+    never delivers it again (ADR 0040)."""
 
     slug: str
     post: InstagramPost
@@ -103,6 +107,7 @@ class Release:
     cover: bool = False
     builder: str = ""
     tags: Tags | None = None
+    frozen: str = ""
 
     def __post_init__(self) -> None:
         if not SLUG.fullmatch(self.slug):
@@ -117,6 +122,8 @@ class Release:
             raise ReleaseError(f"{self.slug}: builder {self.builder!r} is not a module name")
         if self.tags is not None and not isinstance(self.tags, Tags):
             raise ReleaseError(f"{self.slug}: tags is a {type(self.tags).__name__}, not Tags")
+        if self.frozen and not FINGERPRINT.fullmatch(self.frozen):
+            raise ReleaseError(f"{self.slug}: frozen {self.frozen!r} is not a cover fingerprint (64 lowercase hex)")
 
     @property
     def video_name(self) -> str:
