@@ -122,3 +122,17 @@ including a mirrored parent. Build and encode the six-action, three-style skin d
 PYTHONPATH=src python examples/limbs_gallery.py ../generated/limbs/skin-gallery --deformation skin
 ../generated/bin/scene-render encode ../generated/limbs/skin-gallery/limbs-gallery.scene.xml
 ```
+
+## Folded-finger silhouettes
+
+Finger surfaces merge overlapping tapered phalanges into one contour. This avoids self-crossing ribbon
+edges when a curled finger projects back across itself. Genuine enclosed holes are preserved and drawn
+with even-odd fill. The operation changes the surface rather than the anatomical joints or contact anchors.
+Artist corrective artwork replaces the entire affected contour, including any holes.
+
+Shapely supplies polygon union and installs NumPy as a dependency. Install the test extra for its type stubs.
+For focused limb coverage, use the source directory as the coverage target:
+
+```sh
+PYTHONPATH=src python -m pytest tests/test_limbs* --cov=src/srstudio/limbs --cov-branch
+```

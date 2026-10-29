@@ -129,5 +129,5 @@ def apply_correctives(
             projected = [
                 (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u) for a, b in zip(original, projected, strict=True)
             ]
-        parts.append(replace(part, polygon=tuple(projected), authored=True))
+        parts.append(replace(part, polygon=tuple(projected), authored=True, holes=()))
     return replace(pose, parts=tuple(parts))

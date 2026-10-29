@@ -5,12 +5,12 @@ description = "Reusable cast, locations, props, graphics and episode builder for
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-dependencies = ["sr-core @ git+https://github.com/pedroanisio/sr-core"]
+dependencies = ["sr-core @ git+https://github.com/pedroanisio/sr-core", "shapely>=2.1,<3"]
 
 [project.optional-dependencies]
 validate = ["sr-core[validate]"]   # level-2 checks (XSD + Schematron through lxml)
-fast = ["numpy"]                  # faster amplitude analysis; not required
-test = ["pytest", "pytest-cov", "ruff", "mypy"]
+fast = ["numpy"]                  # legacy extra; Shapely also installs NumPy
+test = ["pytest", "pytest-cov", "ruff", "mypy", "types-shapely"]
 
 [project.scripts]
 srstudio = "srstudio.cli:main"
