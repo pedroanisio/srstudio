@@ -166,3 +166,32 @@ compose character artwork as data.
 PYTHONPATH=src python examples/limbs_cast.py ../generated/limbs/cast
 ../generated/bin/scene-render encode ../generated/limbs/cast/cast.scene.xml
 ```
+
+## Coordinating two arms
+
+`props.crossed_arms(right_profile, left_profile, front="right")` creates a reusable pair of crossed-arm
+motions. It uses the shoulder span to aim the wrists across the torso and assigns different spatial depths
+to the two arms. `front="left"` reverses their depth order. `start`, `duration` and `hand` customize the pair;
+strict reach and joint limits still apply to the supplied anatomy. The single-arm `crossed` action is also
+available through `Action` and `legacy_action`.
+
+`props.grip_prop(right_motion, left_motion, prop, right_anchor=..., left_anchor=..., start=..., end=...)`
+binds two hands to distinct named anchors on one moving prop and returns a `Coordination`. The prop's
+transform controls both contacts; it does not derive a separate prop animation from each hand. The motions
+choose the finger controls, so the same helper supports a grasp or a palm-up tray support.
+
+`Coordination.sample(time)` returns both arm samples, prop frames and collision diagnostics. Sampling after
+a seek or in reverse order has the same result as forward playback. Collision checks include conservative
+arm capsules against each other and against supplied spheres. They exclude fingers and full prop meshes.
+`strict_clearance=True` raises `LimbError` on a reported penetration. The checker reports the requested pose
+rather than moving a contact-constrained hand to hide a conflict.
+
+The two-arm example includes a torso, an illustrated head, crossed arms and a tray lifted and tilted by two
+hands. Its camera-facing head keeps facial artwork ordered under the tilted camera; the torso, arms and tray
+retain spatial perspective. It writes both motions for each interaction and reports anatomy, contact and
+collision measurements.
+
+```sh
+PYTHONPATH=src python examples/limbs_bimanual.py ../generated/limbs/bimanual
+../generated/bin/scene-render encode ../generated/limbs/bimanual/bimanual.scene.xml
+```
