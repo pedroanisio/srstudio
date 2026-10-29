@@ -168,6 +168,18 @@ def test_an_orphan_word_takes_the_tail_of_the_page_before_it():
     assert subtitles.chunk_words([{"text": "Hi.", "start": 0, "end": 0.2}], 0.5, min_seconds=0.85) == [(0, 0.5, "HI.")]
 
 
+def test_a_short_page_nothing_fits_beside_does_not_stop_a_later_one_merging():
+    words = [
+        {"text": "Xxxxxxxxxx.", "start": 0.0, "end": 0.9},
+        {"text": "Yyyyyyyyyy.", "start": 1.0, "end": 1.1},  # short, and no neighbour fits 12 characters with it
+        {"text": "Zzzzzzzzzz.", "start": 1.2, "end": 2.9},
+        {"text": "Go.", "start": 3.0, "end": 3.1},  # short, and joins the next page
+        {"text": "Now.", "start": 3.2, "end": 3.9},
+    ]
+    cues = subtitles.chunk_words(words, 4.0, max_chars=12, min_seconds=0.7)
+    assert [c[2] for c in cues] == ["XXXXXXXXXX.", "YYYYYYYYYY.", "ZZZZZZZZZZ.", "GO. NOW."]
+
+
 def test_canvas_options():
     scene = Scene(version="auto")
     scene.add_project(width=1080, height=1080, fps="24", duration=2)
