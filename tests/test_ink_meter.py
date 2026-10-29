@@ -99,6 +99,19 @@ def test_the_app_screen_lays_out_its_rows_ticks_them_and_fills_its_bar_and_stars
     assert [k[-1][0] for k in lit] == sorted(k[-1][0] for k in lit)
 
 
+def test_a_taken_row_flips_to_ink_with_a_cross_and_the_word_taken():
+    cv = canvas()
+    rows = (AppRow("A capital", tick=0.3), AppRow("A childhood memory", at=0.2, taken=1.1))
+    ink_meter.app_screen(cv, cv.comp, take("meter", 3.0), title="ParkPal", rows=rows)
+    assert {"A childhood memory", ink_meter.TAKEN_TEXT} <= set(texts(cv))
+    assert [(0.0, 0.0), (1.1, 1.0)] in animated(cv, "opacity")  # the flip shows from 1.1 s
+    root = tree(cv)
+    (word,) = [t.get("id") for t in root.iter("text") if t.get("text") == ink_meter.TAKEN_TEXT]
+    (flip,) = [g for g in root.iter("group") if any(x.get("asset") == word for x in g.findall("layer"))]
+    assert [(float(k.get("time")), float(k.get("value"))) for k in flip.iter("key")] == [(0.0, 0.0), (1.1, 1.0)]
+    assert len(flip.findall("shape")) == 3  # the ink box and the cross's two strokes, flipped with the word
+
+
 @pytest.mark.parametrize(
     "call, match",
     [
@@ -115,6 +128,12 @@ def test_the_app_screen_lays_out_its_rows_ticks_them_and_fills_its_bar_and_stars
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow(""),)), "row"),
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow("x", at=3.0),)), "within"),
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow("x", 0.5, 0.2),)), "tick"),
+        (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow("x", 0.5, taken=0.2),)), "taken"),
+        (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow("x", taken=5.0),)), "within"),
+        (
+            lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(AppRow("x", tick=0.2, taken=0.4),)),
+            "both",
+        ),  # fmt: skip
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(), progress=(1.0, 0.5)), "progress"),
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="P", rows=(), stars=7.0), "stars"),
     ],

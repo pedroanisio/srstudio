@@ -33,6 +33,7 @@ __all__ = [
     "ROWS_MAX",
     "ROW_MAX",
     "STARS",
+    "TAKEN_TEXT",
     "TAPE_TEXT",
     "PAVEMENT",
     "meter",
@@ -49,6 +50,7 @@ TITLE_MAX = 16
 ROWS_MAX = 6
 ROW_MAX = 24  # characters on a row of the app
 ROW_H, ROW_GAP, ROW_SIZE = 96, 18, 44
+TAKEN_TEXT = "TAKEN"  # a refused row's word, in white on its ink box
 STARS = 5
 STAR_STEP = 0.12  # seconds between one star lighting and the next
 LIFT_SECONDS, LIFT_DEGREES = 0.5, -7.0  # the hook lifts the car's front
@@ -65,11 +67,13 @@ class MeterError(SrstudioError, ValueError):
 
 @dataclass(frozen=True)
 class AppRow:
-    """One line of the app's form: its ``text``, shown from ``at`` and, when ``tick`` is set, ticked from then."""
+    """One line of the app's form: its ``text``, shown from ``at`` and, when ``tick`` is set, ticked from then; when
+    ``taken`` is set, refused from then: the row flips to ink with a cross and :data:`TAKEN_TEXT`."""
 
     text: str
     at: float = 0.0
     tick: float | None = None
+    taken: float | None = None
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: str = "center") -> None:
@@ -315,6 +319,12 @@ def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) 
             _within(r.tick, take, "a tick")
             if r.tick < r.at:
                 raise MeterError(f"a row is ticked after it shows: {r.text!r} at {r.at}, tick at {r.tick}")
+        if r.taken is not None:
+            if r.tick is not None:
+                raise MeterError(f"a row is ticked or taken, not both: {r.text!r}")
+            _within(r.taken, take, "a taken row")
+            if r.taken < r.at:
+                raise MeterError(f"a row is taken after it shows: {r.text!r} at {r.at}, taken at {r.taken}")
     if progress is not None:
         start, end = progress
         if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end <= take.duration):
@@ -337,8 +347,8 @@ def _star(cx: float, cy: float, r: float) -> str:
 @register(
     "graphic",
     "ink-app-screen",
-    summary="A parking app on a held phone: a title bar, form rows that arrive and tick in turn, a progress bar "
-    "that fills and five rating stars that light one after another",
+    summary="A parking app on a held phone: a title bar, form rows that arrive and tick (or flip to TAKEN) in "
+    "turn, a progress bar that fills and five rating stars that light one after another",
     style="ink",
 )
 def app_screen(
@@ -374,6 +384,14 @@ def app_screen(
             mid = y + ROW_H / 2
             path(cv, tick, f"M {sx + sw_ - 84} {mid} L {sx + sw_ - 66} {mid + 18} L {sx + sw_ - 38} {mid - 20}", sw=5)
             cv.keys(tick, "opacity", [(0.0, 0.0), (r.tick, 1.0)])
+        if r.taken is not None:
+            refused = group(cv, g)
+            mid, cross = y + ROW_H / 2, sx + sw_ - 61
+            path(cv, refused, _box(sx + 18, y, sw_ - 36, ROW_H, 16), cv.ink, sw=2.4)
+            _text(cv, refused, TAKEN_TEXT, sx + 34, y, sw_ - 120, ROW_H, ROW_SIZE, cv.white, align="start")
+            for d in (1, -1):
+                path(cv, refused, f"M {cross - 18} {mid - 18 * d} L {cross + 18} {mid + 18 * d}", sw=6, stroke=cv.white)
+            cv.keys(refused, "opacity", [(0.0, 0.0), (r.taken, 1.0)])
         y += ROW_H + ROW_GAP
     if progress is not None:
         start, end = progress
