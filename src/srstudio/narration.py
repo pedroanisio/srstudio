@@ -298,7 +298,8 @@ class Effect:
 
 
 def slots(captions: Sequence[_Caption], duration: float, margin: float = MARGIN) -> list[Slot]:
-    """One slot per caption. The project must last at least until the last caption ends."""
+    """One slot per caption. The project must last at least until the last caption ends, and a caption the next
+    one follows within ``margin`` has no room to speak in, so it is refused before any line is measured."""
     if not captions:
         raise NarrationError("no captions to narrate")
     last = captions[-1].end
@@ -309,8 +310,14 @@ def slots(captions: Sequence[_Caption], duration: float, margin: float = MARGIN)
         if not c.text.strip():
             raise NarrationError(f"caption {c.id} has no text")
         end = captions[i + 1].start - margin if i + 1 < len(captions) else duration
-        out.append(Slot(c.id, c.text, c.phase == "montage", c.start, max(c.start, end)))
+        out.append(_roomy(Slot(c.id, c.text, c.phase == "montage", c.start, max(c.start, end))))
     return out
+
+
+def _roomy(slot: Slot) -> Slot:
+    if slot.room <= 0:
+        raise NarrationError(f"caption {slot.id}: no room to speak in ({slot.start}..{slot.end})")
+    return slot
 
 
 def retry_speed(speech: float, room: float, base: float, max_speed: float = MAX_SPEED) -> float | None:
@@ -332,8 +339,7 @@ def place(
 
     Fits: on the caption. A montage fragment: on the caption, cut at the slot's end. A long line: as early as
     ``lead_max`` (never closer than ``guard`` to the previous clip), then up to ``tempo_max`` faster, then cut."""
-    if slot.room <= 0:
-        raise NarrationError(f"caption {slot.id}: no room to speak in ({slot.start}..{slot.end})")
+    _roomy(slot)
     if speech <= slot.room + 1e-9:
         return Placement(slot.start, speech, 0.0, 1.0, False)
     if slot.montage:
@@ -360,7 +366,10 @@ def plan_narration(
 
     A line is asked faster when it overflows its slot (:func:`retry_speed`); it is also asked at ``max_speed``
     when the next line, a long one, could not fit even quickened and led, unless this one ends earlier. At most
-    three measures per line (base, retry, maximum), so the number of requests is bounded by the script."""
+    three measures per line (base, retry, maximum), so the number of requests is bounded by the script. A slot with
+    no room is refused before the first measure."""
+    for slot in plan:
+        _roomy(slot)
     chosen: dict[int, tuple[float, float]] = {}
 
     def fitted(i: int) -> tuple[float, float]:

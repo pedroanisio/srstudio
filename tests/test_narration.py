@@ -200,6 +200,22 @@ def test_slots_run_from_a_caption_to_just_before_the_next_and_the_last_to_the_en
         narration.slots([], 1.0)
 
 
+def test_a_caption_followed_within_the_margin_has_no_room_and_is_refused_before_any_measure(narration):
+    caps = captions((0.0, 0.01, "One."), (0.015, 1.0, "Two."))
+    with pytest.raises(narration.NarrationError, match="caption 01: no room to speak in"):
+        narration.slots(caps, 1.0)
+    asked = []
+
+    def measure(i, speed):
+        asked.append(i)
+        return 1.0
+
+    plan = [narration.Slot("01", "a", False, 0.0, 1.0), narration.Slot("02", "b", False, 1.0, 1.0)]
+    with pytest.raises(narration.NarrationError, match="caption 02: no room to speak in"):
+        narration.plan_narration(plan, measure, 1.0)
+    assert asked == []  # refused before a paid measure, not a ZeroDivisionError after one
+
+
 def test_retry_speed_is_bounded_and_only_asked_for_when_the_line_overflows(narration):
     assert narration.retry_speed(1.0, 1.2, base=1.08) is None  # fits
     assert narration.retry_speed(1.3, 1.0, base=1.0) == 1.2  # would need 1.33: capped
