@@ -307,7 +307,16 @@ STICK = Style(
         google=GoogleFont("Inter", 700),
     ),
     mouths={},
-    parts=("stick", "stick_airport", "stick_car", "stick_flat", "stick_gym", "stick_school", "stick_shop"),
+    parts=(
+        "stick",
+        "stick_airport",
+        "stick_car",
+        "stick_flat",
+        "stick_gym",
+        "stick_school",
+        "stick_shop",
+        "stick_windshield",
+    ),
     namer=partial(flat_counter, "n"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # no mouth model; narration and music are dubbed over the captions

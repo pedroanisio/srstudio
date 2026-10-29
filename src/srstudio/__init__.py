@@ -43,6 +43,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_gym,
     stick_school,
     stick_shop,
+    stick_windshield,
     styles,
     subtitles,
     toon,
