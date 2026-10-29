@@ -5,10 +5,21 @@ from __future__ import annotations
 import math
 
 from .errors import Diagnostic, LimbError
-from .math3d import Frame, Quaternion, Vec3, along, bounded
+from .math3d import Frame, Quaternion, Vec3, bounded
 from .model import ArmPose, ArmProfile, DigitPose, HandControl, HandPose, HandProfile
 
 _IDENTITY = Quaternion()
+
+
+def _wrist_frame(wrist: Vec3, forearm: Vec3, hinge: Vec3, side: str) -> Frame:
+    """The one hand-frame convention for IK and FK: +y follows the forearm, +x is hinge x y, mirrored on the left.
+
+    ``hinge`` is the elbow's flexion axis, (shoulder-to-wrist) x (elbow bend direction). It stays perpendicular
+    to the forearm at every flexion, so the frame turns continuously with the elbow.
+    """
+    y = forearm.unit()
+    x = hinge.cross(y).unit() * (1 if side == "right" else -1)
+    return Frame(wrist, Quaternion.axes(x, y, x.cross(y)))
 
 
 def reach(profile: ArmProfile, target: Vec3, *, pole: Vec3 | None = None, policy: str = "strict") -> ArmPose:
@@ -48,18 +59,19 @@ def reach(profile: ArmProfile, target: Vec3, *, pole: Vec3 | None = None, policy
         elbow = profile.shoulder + direction * adjacent + bend * height
     wrist = profile.shoulder + direction * limit
     angle = math.acos(max(-1, min(1, (limit * limit - a * a - b * b) / (2 * a * b))))
-    across = bend * (1 if profile.side == "right" else -1)
-    return ArmPose(
-        profile.shoulder, elbow, wrist, along(wrist, wrist - elbow, across=across), angle, residual, diagnostics
-    )
+    frame = _wrist_frame(wrist, wrist - elbow, direction.cross(bend), profile.side)
+    return ArmPose(profile.shoulder, elbow, wrist, frame, angle, residual, diagnostics)
 
 
 def forward(profile: ArmProfile, *, shoulder_rotation: Quaternion = _IDENTITY, elbow: float = 0) -> ArmPose:
     bounded(elbow, *profile.elbow_limit, "elbow")
+    # The elbow bends toward the side's lateral direction in the shoulder frame, like reach()'s default pole.
+    sign = 1 if profile.side == "right" else -1
     joint = profile.shoulder + shoulder_rotation.rotate(Vec3(0, profile.upper, 0))
-    q = shoulder_rotation * Quaternion.axis_angle(Vec3(0, 0, 1), -elbow)
+    q = shoulder_rotation * Quaternion.axis_angle(Vec3(0, 0, 1), sign * elbow)
     wrist = joint + q.rotate(Vec3(0, profile.forearm, 0))
-    return ArmPose(profile.shoulder, joint, wrist, Frame(wrist, q), elbow)
+    hinge = shoulder_rotation.rotate(Vec3(0, 0, -sign))
+    return ArmPose(profile.shoulder, joint, wrist, _wrist_frame(wrist, wrist - joint, hinge, profile.side), elbow)
 
 
 def hand_pose(profile: HandProfile, control: HandControl, frame: Frame, *, side: str = "right") -> HandPose:

@@ -205,7 +205,10 @@ Each `DigitProfile.bend_axis` is a unit vector in that digit's local joint frame
 three-finger presets retain +X flexion. The gripper uses opposing ±Z axes with its own flexion limits, so its
 jaws close toward one another rather than curling together. Custom profiles can change the axis, lengths,
 splay and per-joint limits; controls still enforce those limits. FK preserves the supplied shoulder rotation
-in the wrist frame, including axial roll.
+in the wrist frame, including axial roll. FK and IK share one hand-frame convention: +Y follows the forearm and
++X is the elbow's hinge axis crossed with it, mirrored for the left arm. FK flexes each elbow toward its side's
+lateral direction, as `reach` does with its default pole, so an FK pose solved back through `reach` with its
+elbow as the pole returns the same hand frame on both sides.
 
 The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
 without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions

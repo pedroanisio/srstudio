@@ -124,7 +124,10 @@ retargeting, inter-arm collision failure, panel bounds and rendered facial-detai
 Digit profiles now declare a validated local hinge axis. The mechanical gripper uses opposing axes and
 explicit flexion limits; its previous generic finger flexion moved both jaws out of the closing plane. The
 motion schema advances to `1.1.0`, while `1.0.0` remains readable with the original default axis. FK retains
-the full shoulder orientation in the wrist frame instead of reconstructing a frame from position alone.
+the full shoulder orientation in the wrist frame instead of reconstructing a frame from position alone. FK and
+IK derive the hand frame from the same definition, the elbow's hinge axis crossed with the forearm. Projecting
+the bend direction instead flipped the frame by 180 degrees wherever the forearm passed perpendicular to the
+shoulder-to-wrist line, and gave the right arm the opposite FK and IK frames.
 
 Frame budgets are checked before duration-to-frame multiplication, and clock precision is validated before
 writing visibility keys. Numeric conversion, derived lengths, quaternion normalization, rotation bases and

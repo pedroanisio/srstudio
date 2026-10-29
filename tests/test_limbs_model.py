@@ -147,3 +147,41 @@ def test_reach_frames_do_not_roll_when_a_foreshortened_arm_crosses_a_reference_a
     a = before.frame.rotation.rotate(Vec3(1, 0, 0))
     b = after.frame.rotation.rotate(Vec3(1, 0, 0))
     assert a.dot(b) > 0.999
+
+
+def _axes(frame):
+    return tuple(frame.rotation.rotate(v) for v in (Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)))
+
+
+@pytest.mark.parametrize("side", ["right", "left"])
+@pytest.mark.parametrize("elbow", [0.05, 0.7, math.pi / 2, 1.4])
+@pytest.mark.parametrize("roll", [0.0, 0.4, -1.1])
+def test_forward_and_inverse_kinematics_agree_on_the_whole_hand_frame(side, elbow, roll):
+    p = ArmProfile(upper=1, forearm=1, elbow_limit=(0, math.pi / 2), side=side)
+    rotation = Quaternion.axis_angle(Vec3(0.2, 0.3, 1), roll) * Quaternion.axis_angle(Vec3(0, 1, 0), 0.3)
+    fk = forward(p, shoulder_rotation=rotation, elbow=min(elbow, math.pi / 2))
+    ik = reach(p, fk.wrist, pole=fk.elbow)
+    assert ik.elbow.distance(fk.elbow) < 1e-8
+    for a, b in zip(_axes(fk.frame), _axes(ik.frame), strict=True):
+        assert a.distance(b) < 1e-8
+
+
+def test_forward_kinematics_of_the_left_arm_mirrors_the_right_arm():
+    rotation = Quaternion.axis_angle(Vec3(0, 0, 1), 0.4)
+    mirrored = Quaternion(rotation.w, rotation.x, -rotation.y, -rotation.z)
+    right = forward(ArmProfile(), shoulder_rotation=rotation, elbow=0.9)
+    left = forward(ArmProfile(side="left"), shoulder_rotation=mirrored, elbow=0.9)
+    assert left.elbow.distance(right.elbow.mirror()) < 1e-9
+    assert left.wrist.distance(right.wrist.mirror()) < 1e-9
+    # The elbow bends toward the side's default pole, as reach() does.
+    assert right.elbow.x - right.wrist.x > 0 > left.elbow.x - left.wrist.x
+
+
+@pytest.mark.parametrize("side", ["right", "left"])
+def test_the_hand_frame_turns_continuously_when_the_forearm_passes_perpendicular_to_the_reach(side):
+    p = ArmProfile(upper=1, forearm=0.9, side=side)
+    critical = math.sqrt(1 - 0.81)  # the forearm is perpendicular to the shoulder-to-wrist line here
+    sign = 1 if side == "right" else -1
+    poses = [reach(p, Vec3(0, critical + d, 0), pole=Vec3(sign, 0, 0)) for d in (-1e-6, 1e-6)]
+    for a, b in zip(_axes(poses[0].frame), _axes(poses[1].frame), strict=True):
+        assert a.distance(b) < 1e-4
