@@ -188,6 +188,17 @@ def test_a_skipped_project_is_not_built_and_is_reported_unmeasured(tmp_path):
         U.discover(episodes, None, scripts, skip=("no-such-ep",))
 
 
+def test_arguments_for_a_project_that_does_not_exist_are_refused(tmp_path):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "done_ep.py").write_text("")
+    (tmp_path / "episodes" / "done-ep").mkdir(parents=True)
+    runs, _ = U.discover(tmp_path / "episodes", None, scripts, args={"done-ep": ["--fast"]})
+    assert runs[0].args == ("--fast",)
+    with pytest.raises(U.UsageError, match="--arg names no project: done-epp"):  # a typo, never silently dropped
+        U.discover(tmp_path / "episodes", None, scripts, args={"done-epp": ["--fast"]})
+
+
 def test_the_command_skips_a_project_it_is_told_to(tmp_path, project, capsys):
     from srstudio import cli
 
