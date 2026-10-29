@@ -183,19 +183,3 @@ class Frame:
 
     def compose(self, child: Frame) -> Frame:
         return Frame(self.point(child.origin), self.rotation * child.rotation)
-
-
-def along(origin: Vec3, direction: Vec3, twist: float = 0.0, *, across: Vec3 | None = None) -> Frame:
-    """A frame whose +y follows a limb and whose +z normally faces the viewer."""
-    y = direction.unit()
-    if across is None:
-        reference = Vec3(0, 0, 1) if abs(y.z) < 0.95 else Vec3(1, 0, 0)
-        x = y.cross(reference).unit()
-    else:
-        x = across - y * across.dot(y)
-        if x.length < 1e-10:
-            axis = min((Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)), key=lambda a: abs(a.dot(y)))
-            x = axis - y * axis.dot(y)
-        x = x.unit()
-    q = Quaternion.axes(x, y, x.cross(y))
-    return Frame(origin, q * Quaternion.axis_angle(Vec3(0, 1, 0), twist))
