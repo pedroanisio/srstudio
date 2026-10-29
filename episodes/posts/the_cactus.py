@@ -30,7 +30,7 @@ RELEASE = Release(
             "#cartoon",
             "#vectoranimation",
         ),
-        thumbnail=Thumbnail("Has this always\nbeen here?", 1.6, "Comedy Cut 21", place="top"),
+        thumbnail=Thumbnail("Has this always\nbeen here?", 1.94, "Comedy Cut 21"),  # his eyes on it; headline below
     ),
     cover=True,
     tags=Tags("job-hunting", "other-person", "recognition", recurring=("cactus", "interviewer", "ava", "milo")),
