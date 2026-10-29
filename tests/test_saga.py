@@ -253,6 +253,17 @@ def test_the_cube_bursts_without_a_full_frame_flash():
     assert not big_white
 
 
+@pytest.mark.parametrize("boom", [0.5, D - 1.0, D - 0.4, D - 0.05])
+def test_the_fireball_only_grows_however_late_the_boom(boom):
+    cv = canvas()
+    sets.cube_station(cv, cv.comp, at=(540, 800), end=D, boom=boom)
+    grows = [a for a in tree(cv).iter("animate") if a.get("property") in ("scaleX", "scaleY")]
+    assert len(grows) == 2
+    for animate in grows:
+        values = [float(k.get("value")) for k in animate.iter("key")]
+        assert values == sorted(values), values
+
+
 # -- text and the hologram --------------------------------------------------------------------------------------------
 @needs_font
 def test_wrap_measures_every_line_and_refuses_what_does_not_fit():
