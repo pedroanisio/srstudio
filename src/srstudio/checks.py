@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any
+from typing import Any, TypeGuard
 
 __all__ = ["number", "positive", "non_negative", "second", "spans", "rising"]
 
 EPSILON = 1e-6  # a span may end this far past its bound: an end summed from rounded seconds
 
 
-def number(value: object) -> bool:
+def number(value: object) -> TypeGuard[float]:
     """``value`` is a finite ``int`` or ``float``, not a ``bool``."""
     return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
 
