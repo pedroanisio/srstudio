@@ -102,6 +102,12 @@ def test_clamp_cuts_each_span_at_the_end_instead_of_refusing_it():
     assert checks.spans([(0, 1), (1, 9)], StyleError, bad, clamp=2.0) == [(0.0, 1.0), (1.0, 2.0)]
 
 
+@pytest.mark.parametrize("span", [(5, 10), (2.0, 3.0)])
+def test_clamp_refuses_a_span_that_starts_at_or_past_the_end_instead_of_inverting_it(span):
+    with pytest.raises(StyleError, match=f"^bad {span[0]}..{span[1]}$"):
+        checks.spans([(0, 1), span], StyleError, bad, clamp=2.0)
+
+
 def test_ordered_spans_refuse_an_overlap_or_a_step_back():
     assert checks.spans([(0, 1), (1, 2)], StyleError, bad, ordered="in order") == [(0.0, 1.0), (1.0, 2.0)]
     for spans in ([(0, 1.5), (1, 2)], [(2, 3), (0, 1)]):

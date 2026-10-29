@@ -63,14 +63,21 @@ def spans(
     """``values`` as float ``(start, end)`` pairs, each a number from 0 that rises (``bad(span)`` otherwise).
 
     ``shape(span)`` words the refusal of a value that is not a pair; ``within`` refuses a span that ends past it
-    (by more than :data:`EPSILON`), ``clamp`` instead cuts each span's end at it; ``ordered`` (the message, or a
+    (by more than :data:`EPSILON`), ``clamp`` instead cuts each span's end at it
+    (a span that starts at or past it is refused: nothing of it is left); ``ordered`` (the message, or a
     function of the span that words it) refuses a span that starts before the previous one ends."""
     out: list[tuple[float, float]] = []
     for span in values:
         if not (isinstance(span, tuple | list) and len(span) == 2):
             raise error(shape(span) if shape is not None else f"a span is a (start, end) pair, got {span!r}")
         a, b = span
-        if not (number(a) and number(b) and 0 <= a < b and (within is None or b <= within + EPSILON)):
+        if not (
+            number(a)
+            and number(b)
+            and 0 <= a < b
+            and (within is None or b <= within + EPSILON)
+            and (clamp is None or a < clamp)
+        ):
             raise error(bad(span))
         if ordered is not None and out and a < out[-1][1]:
             raise error(ordered if isinstance(ordered, str) else ordered(span))
