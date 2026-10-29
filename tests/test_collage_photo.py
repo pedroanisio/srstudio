@@ -91,6 +91,20 @@ def test_the_flash_whites_out_holds_and_fades():
     assert white == [(6.0, 1.0), (7.2, 1.0), (7.6, 0.0)]  # full white, held, then fading
 
 
+def test_subjects_blurred_at_two_scales_each_get_the_same_blur_on_the_print():
+    cv = canvas()
+    collage_photo.print_photo(cv, cv.comp, PLACES, LAUGH, x=90, y=600, width=900, blur=("gary", "kai"))
+    collage_photo.print_photo(cv, cv.comp, PLACES, LAUGH, x=90, y=600, width=900, blur=("rosa", "gary"))
+    root = tree(cv)
+    radius = {e.get("id"): float(e.get("radius")) for e in root.iter("effect")}
+    on = {g.get("id"): g.get("effects") for g in root.iter("group") if g.get("effects")}
+    for name in ("gary", "kai", "rosa"):
+        drawn = [fx for gid, fx in on.items() if gid.startswith(f"photo-{name}")]
+        assert drawn and all(radius[fx] * PLACES[name].scale == pytest.approx(collage_photo.PHOTO_BLUR) for fx in drawn)
+    assert radius["collage-photo-blur"] == collage_photo.PHOTO_BLUR / PLACES["gary"].scale  # the first keeps it
+    assert len([e for e in radius if e.startswith("collage-photo-blur")]) == 3  # one per scale
+
+
 def test_the_print_is_a_still_of_the_lineup_with_its_blurred_subjects_and_nothing_moving():
     cv = canvas()
     collage_photo.print_photo(cv, cv.comp, PLACES, LAUGH, x=90, y=600, width=900, tilt=-3, blur=("gary",))
