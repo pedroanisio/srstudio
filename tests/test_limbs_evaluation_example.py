@@ -9,16 +9,63 @@ import pytest
 from srstudio.limbs.geometry import project_pose
 
 
-def test_evaluation_example_produces_schema_valid_pairs_and_blinded_packet(tmp_path):
+@pytest.mark.parametrize("observed", [False, True])
+def test_evaluation_example_produces_schema_valid_pairs_and_blinded_packet(tmp_path, observed):
     path = Path(__file__).resolve().parents[1] / "examples/limbs_evaluate.py"
     spec = importlib.util.spec_from_file_location("limbs_evaluate", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    result = module.build(tmp_path / "evaluation", repeats=1)
+    observations = ratings = None
+    if observed:
+        public = tmp_path / "evaluation" / "review"
+        public.mkdir(parents=True)
+        observations = public.parent / "authoring-template.json"
+        ratings = public / "ratings-template.json"
+        ratings.write_text(
+            json.dumps(
+                {
+                    "schema": "srstudio.limbs.ratings/1.0.0",
+                    "ratings": [
+                        {
+                            "trial": "trial-001",
+                            "reviewer": "one",
+                            "preference": "tie",
+                            "a": {"clarity": 3, "naturalness": 3, "style_fit": 3},
+                            "b": {"clarity": 3, "naturalness": 3, "style_fit": 3},
+                        }
+                    ],
+                }
+            )
+        )
+        observations.write_text(
+            json.dumps(
+                {
+                    "schema": "srstudio.limbs.authoring/1.0.0",
+                    "records": [
+                        {
+                            "case": "point",
+                            "author": "one",
+                            "implementation": implementation,
+                            "seconds": seconds,
+                            "completed": True,
+                        }
+                        for implementation, seconds in (("legacy-stick", 120), ("spatial-stick", 90))
+                    ],
+                }
+            )
+        )
+    result = module.build(tmp_path / "evaluation", repeats=1, authoring=observations, ratings=ratings)
     report = json.loads(result.read_text())
     assert len(report["measurements"]) == 6
-    assert report["review"]["status"] == "awaiting_ratings"
-    assert report["human_authoring_seconds"] is None
+    assert report["review"]["status"] == ("partial" if observed else "awaiting_ratings")
+    assert report["schema"] == "srstudio.limbs.evaluation/1.1.0"
+    if observed:
+        assert len(json.loads(observations.read_text())["records"]) == 2
+        assert len(json.loads(ratings.read_text())["ratings"]) == 1
+        assert report["authoring"]["paired"]["point"]["median_candidate_minus_baseline_seconds"] == -30
+    else:
+        assert report["authoring"]["status"] == "awaiting_records"
+    assert (result.parent / "authoring-template.json").is_file()
     public = result.parent / "review"
     manifest = json.loads((public / "trials.json").read_text())
     assert len(manifest["trials"]) == 3

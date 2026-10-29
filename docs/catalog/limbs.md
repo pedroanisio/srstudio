@@ -244,7 +244,7 @@ PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
 `evaluation.json` records actual repeated build times, serialized scene bytes, node and shape counts, and
 scene hashes. Builds must be byte-identical across repetitions and pass schema validation. Timings exclude
 schema validation, serialization and rendering. Source lines describe the supplied entry function only;
-shared helpers and library dependencies are excluded. They do not measure human authoring effort. Human
+shared helpers and library dependencies are excluded. They do not measure human authoring effort. Without separate human observations,
 authoring time is explicitly unmeasured.
 
 The `review/` directory contains opaque A/B clips, task descriptions, rating instructions and an empty
@@ -297,3 +297,38 @@ Declare only capabilities the adapter implements. Perspective and native compila
 capabilities before emission. Keep anatomical solving and projection outside `draw`; a style receives the
 same motion geometry as other adapters. Preserve holes and respect authored contours when applying surface
 treatments, so a paint effect cannot reintroduce folded-finger outline crossings.
+
+## Observed authoring effort
+
+Build timing does not measure the time a person spends authoring a performance. The evaluation example
+accepts separate human observations through `--authoring FILE`. Its report schema is now
+`srstudio.limbs.evaluation/1.1.0`; the `authoring` summary replaces the former always-null
+`human_authoring_seconds` field. With no observations, the summary says `awaiting_records` and has no results.
+An empty `authoring-template.json` is written outside the blinded viewer packet. Existing authoring and
+rating templates are preserved when rebuilding, including observations entered into those files.
+
+Authoring input uses `srstudio.limbs.authoring/1.0.0`. Each record has `case`, `author`, `implementation`,
+`seconds`, `completed`, and optional `notes`. Case and implementation must match the example's pairs:
+`point` with `legacy-stick` or `spatial-stick`, `face` with `legacy-toon` or `spatial-toon`, and `shrug` with
+`legacy-gloss` or `spatial-gloss`. Seconds must be finite, positive and at most 86400. Completion must be a
+boolean. The parser rejects unknown fields and missing required data. The summary rejects duplicate
+observations for the same author, task and implementation.
+
+```sh
+PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
+  --authoring path/to/observed-authoring.json --ratings path/to/collected-ratings.json
+```
+
+Use the same task description, project assets and acceptance criteria for both implementations. Time one
+attempt per author, task and implementation. Start when the author begins the task; count editing,
+documentation lookup, debugging and active preview inspection. Pause for breaks and unattended rendering.
+Stop when the rendered result meets the task or the author ends an unsuccessful attempt. Record unsuccessful
+attempts with `completed: false`. Keep prior experience and deviations in the notes. Alternate which
+implementation is attempted first across authors to reduce order effects; do not treat repeat exposure as
+an independent first attempt.
+
+Summaries report attempts, completions and failures separately. Means and medians use completed attempts
+only. Paired differences use the same author's completed attempts on the same task and report candidate
+seconds minus baseline seconds; a negative difference means the candidate took less time in that pair.
+An unpaired attempt or failed attempt cannot become a successful paired comparison. These descriptive
+observations do not authenticate authors, judge the completed videos or establish statistical significance.

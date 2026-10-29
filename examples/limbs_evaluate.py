@@ -1,6 +1,7 @@
 """Build matched legacy/spatial tasks, engineering measurements and a blinded review packet.
 
 Run with --engine /path/to/scene-render to encode the six clips. Supply real reviews with --ratings FILE.
+Supply observed human authoring attempts with --authoring FILE.
 The implementation key and engineering report stay outside the public review directory.
 """
 
@@ -19,7 +20,15 @@ from srstudio import Canvas, gloss, stick, toon_cast
 from srstudio.limbs import HUMAN, MITTEN, ArmProfile, Camera, HandControl, LimbError, Vec3
 from srstudio.limbs.adapters import Appearance
 from srstudio.limbs.compile import BakeOptions, Occlusion
-from srstudio.limbs.evaluation import Pair, measure, parse_ratings, plan_trials, summarize
+from srstudio.limbs.evaluation import (
+    Pair,
+    measure,
+    parse_authoring,
+    parse_ratings,
+    plan_trials,
+    summarize,
+    summarize_authoring,
+)
 from srstudio.limbs.integration import LimbTrack
 from srstudio.limbs.motion import Action, Motion, Target
 from srstudio.toon import Pose
@@ -151,7 +160,14 @@ def _write(path: Path, data: object) -> None:
     path.chmod(0o600)
 
 
-def build(out: Path, *, repeats: int = 3, engine: str | None = None, ratings: Path | None = None) -> Path:
+def build(
+    out: Path,
+    *,
+    repeats: int = 3,
+    engine: str | None = None,
+    ratings: Path | None = None,
+    authoring: Path | None = None,
+) -> Path:
     os.umask(0o077)
     out.mkdir(parents=True, exist_ok=True, mode=0o700)
     public, scenes = out / "review", out / "scenes"
@@ -164,6 +180,12 @@ def build(out: Path, *, repeats: int = 3, engine: str | None = None, ratings: Pa
             raise LimbError("rating document exceeds 5 MiB", code="budget")
         observed = parse_ratings(json.loads(ratings.read_text()))
     summary = summarize(trials, observed)
+    authoring_records = ()
+    if authoring is not None:
+        if authoring.stat().st_size > 5 * 1024 * 1024:
+            raise LimbError("authoring document exceeds 5 MiB", code="budget")
+        authoring_records = parse_authoring(json.loads(authoring.read_text()))
+    authoring_summary = summarize_authoring(PAIRS, authoring_records)
     measurements = [measure(name, builder, repeats=repeats).to_dict() for name, builder in BUILDERS.items()]
     for trial in trials:
         for side in ("a", "b"):
@@ -191,7 +213,8 @@ def build(out: Path, *, repeats: int = 3, engine: str | None = None, ratings: Pa
     _write(
         public / "trials.json", {"schema": "srstudio.limbs.review/1.0.0", "trials": [t.public_dict() for t in trials]}
     )
-    _write(public / "ratings-template.json", {"schema": "srstudio.limbs.ratings/1.0.0", "ratings": []})
+    if not (public / "ratings-template.json").exists():
+        _write(public / "ratings-template.json", {"schema": "srstudio.limbs.ratings/1.0.0", "ratings": []})
     (public / "instructions.txt").write_text(
         "Watch each pair without consulting the private implementation key. Rate each clip from 1 (poor) to 5 "
         "(excellent) for clarity of the task, naturalness of movement, and fit with the drawing style. "
@@ -201,19 +224,21 @@ def build(out: Path, *, repeats: int = 3, engine: str | None = None, ratings: Pa
         '"b":{"clarity":3,"naturalness":3,"style_fit":3},"notes":"optional"}. '
         "Replace illustrative scores with your own observations.\n"
     )
+    if not (out / "authoring-template.json").exists():
+        _write(out / "authoring-template.json", {"schema": "srstudio.limbs.authoring/1.0.0", "records": []})
     _write(out / "private-key.json", {"trials": [asdict(t) for t in trials]})
     report = out / "evaluation.json"
     _write(
         report,
         {
-            "schema": "srstudio.limbs.evaluation/1.0.0",
+            "schema": "srstudio.limbs.evaluation/1.1.0",
             "measurements": measurements,
             "review": summary,
-            "human_authoring_seconds": None,
+            "authoring": authoring_summary,
             "limitations": [
                 "Build times exclude schema validation, serialization and video rendering.",
                 "Source lines count entry functions only; dependencies and shared helpers are excluded.",
-                "Human authoring time was not measured.",
+                "Authoring time, completion and author identity are caller-supplied and not independently verified.",
                 "Tasks match intent and framing, not exact pose geometry or hand silhouettes.",
                 "Legacy holds switch at 0.8 and 1.5 seconds; spatial gestures use continuous phases.",
                 "Ratings are descriptive observations, not evidence of statistical significance.",
@@ -233,8 +258,9 @@ def main() -> None:
     parser.add_argument("--engine")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--ratings", type=Path)
+    parser.add_argument("--authoring", type=Path)
     args = parser.parse_args()
-    print(build(args.out, repeats=args.repeats, engine=args.engine, ratings=args.ratings))
+    print(build(args.out, repeats=args.repeats, engine=args.engine, ratings=args.ratings, authoring=args.authoring))
 
 
 if __name__ == "__main__":
