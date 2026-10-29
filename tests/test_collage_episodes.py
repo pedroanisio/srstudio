@@ -15,6 +15,7 @@ from sr_core.scene import Scene
 from srstudio import Canvas, collage, collage_sets, flat_counter, releases, sketch
 from srstudio.canvas import Signature
 from srstudio.collage_group import Lineup
+from srstudio.errors import ConsentError
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -169,7 +170,7 @@ def test_sound_effects_follow_the_events(mods, tmp_path):
 
 def test_recording_needs_consent(mods, tmp_path):
     builder, data = mods
-    with pytest.raises(SystemExit, match="SRSTUDIO_ALLOW_CLOUD"):
+    with pytest.raises(ConsentError, match="SRSTUDIO_ALLOW_CLOUD"):
         builder.record_episode(data["book_report"].STAGING, tmp_path, {}, "ffmpeg", "note")
 
 

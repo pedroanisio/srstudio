@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable
 
-__all__ = ["FlagError", "MissingKeyError", "ProviderHTTPError", "SrstudioError", "flags"]
+__all__ = ["ConsentError", "FlagError", "MissingKeyError", "ProviderHTTPError", "SrstudioError", "flags"]
 
 
 class SrstudioError(Exception):
@@ -19,6 +19,11 @@ class SrstudioError(Exception):
 
 class MissingKeyError(SrstudioError, RuntimeError):
     """A provider call needs an API key the environment does not hold."""
+
+
+class ConsentError(SrstudioError, RuntimeError):
+    """A call would send data off the machine and the operator has not allowed it; a script's entry point turns it
+    into the script's exit."""
 
 
 class ProviderHTTPError(SrstudioError, RuntimeError):
