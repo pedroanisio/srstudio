@@ -40,7 +40,7 @@ from .stick import (
 
 __all__ = ["CUSHION", "DRIVING", "MOUNT", "SEAT_TOP", "Scroll", "car", "cockpit", "laptop", "phone", "ride", "seat"]
 
-ROOF, ROOF_LIGHT, ROOF_SHADE = "#d3c6ad", "#e0d5bf", "#bcae93"
+ROOF_LIGHT, ROOF_SHADE = "#e0d5bf", "#bcae93"
 DOOR, DOOR_LIGHT, DOOR_SHADE, TRIM, CHROME = "#8f8170", "#a4957f", "#776a5b", "#b3a48c", "#d9dde3"
 SEAT, SEAT_SHADE, SEAT_LIGHT, SEAT_DEEP = "#5d7397", "#4b5f80", "#7a92b8", "#425473"
 DASH, DASH_TOP, DASH_LIGHT, WHEEL, WHEEL_LIGHT = "#4d525d", "#666c79", "#7b8290", "#2f323a", "#5d6370"
