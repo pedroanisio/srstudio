@@ -3,8 +3,8 @@
 - Status: accepted and implemented, 2026-10-29 (`signature.Act`, `signature.cactus(act=)`,
   `signature.home_cactus`, the `cactus=` slot of `locations.office_wide`, `office_desk`, `office_reverse`, `cafe` and
   `park`; `tests/test_signature.py`; first episode: *The Cactus*). Amends [ADR 0001](0001-signature.md).
-- Deciders: the operator, by requesting The Cactus (2026-10-29); proposal by worskpace-74, approved by the
-  orchestrator
+- Deciders: the operator, by requesting The Cactus and then confirming this decision when offered a veto
+  (2026-10-29); proposal by worskpace-74
 - Back to the [library README](../../README.md)
 
 ## Context
