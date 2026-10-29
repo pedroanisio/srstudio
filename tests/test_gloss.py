@@ -118,7 +118,8 @@ def test_talk_reads_the_take_into_rising_visemes_that_end_closed():
 
 
 @pytest.mark.parametrize(
-    "bad", [[(0.5, "open"), (0.2, "closed")], [(-1, "open")], [(0.1, "yodel")], [(float("nan"), "open")]]
+    "bad",
+    [[(0.5, "open"), (0.2, "closed")], [(-1, "open")], [(0.1, "yodel")], [(float("nan"), "open")], [(True, "open")]],
 )
 def test_talk_states_out_of_order_or_unknown_are_refused(bad):
     with pytest.raises(GlossError):
@@ -814,3 +815,8 @@ def test_a_fallen_doll_lies_on_the_floor_not_half_through_it(at):
 def test_a_trait_second_or_span_is_a_number_inside_the_shot(who, traits, match):
     with pytest.raises(GlossError, match=match):
         gloss.check_traits(who, traits, 4.0)
+
+
+def test_a_face_track_with_a_bool_second_is_refused():
+    with pytest.raises(GlossError, match="must be finite, >= 0 and rise after"):
+        gloss.check_track([(True, "flat")], gloss.FACES, "face", D)

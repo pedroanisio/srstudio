@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
@@ -214,3 +216,79 @@ def test_a_toon_sketch_can_record_its_visemes_with_the_speech_mouth():
     assert shipped == ["open", "closed"]  # the m falls between samples: one open run, then the end
     speech = [v for _, v in sketch.visemes(quick_m, 1.0, 0.0, 0.4, style=SPEECH_MOUTH)]
     assert speech == ["open", "closed", "open", "closed"]
+
+
+# -- talk and state tracks (shared by Saga and Gloss) -----------------------------------------------------------------
+class StyleError(ValueError):
+    pass
+
+
+def spoken(text: str = "open your mouth", duration: float = 1.5):
+    phones = tuple(
+        {"c": c, "start": round(0.1 + i * 0.07, 3), "end": round(0.17 + i * 0.07, 3)} for i, c in enumerate(text)
+    )
+    return SimpleNamespace(phones=phones, duration=duration, mood="", is_effect=False)
+
+
+def test_talk_is_one_state_per_change_of_viseme_ending_closed_within_the_take():
+    states = lipsync.talk(spoken(), SPEECH_MOUTH)
+    assert states[0][0] == 0 and states[-1][1] == "closed" and states[-1][0] <= 1.5
+    assert all(b[0] > a[0] and b[1] != a[1] for a, b in zip(states, states[1:], strict=False))
+    assert {p for _, p in states} <= set(lipsync.VISEMES) and {"open", "round"} <= {p for _, p in states}
+
+
+def test_an_effect_or_a_take_without_timestamps_says_nothing():
+    assert lipsync.talk(SimpleNamespace(phones=spoken().phones, is_effect=True), SPEECH_MOUTH) == []
+    assert lipsync.talk(SimpleNamespace(phones=(), duration=1.0, mood=""), SPEECH_MOUTH) == []
+
+
+def check(track, end: float = math.inf, names=lipsync.VISEMES) -> None:
+    lipsync.check_track(
+        track,
+        names,
+        StyleError,
+        rising=lambda i, t, last: f"state {i}: {t!r} after {last}",
+        unknown=lambda i, state: f"state {i}: {state!r} unknown",
+        end=end,
+        outside=lambda i, t: f"state {i}: {t} outside",
+    )
+
+
+def test_a_track_rises_strictly_from_zero_in_known_states():
+    check([(0, "closed"), (0.25, "open"), (1, "closed")])
+
+
+@pytest.mark.parametrize(
+    ("track", "message"),
+    [
+        ([(0.5, "open"), (0.2, "closed")], "state 1: 0.2 after 0.5"),
+        ([(0.5, "open"), (0.5, "closed")], "state 1: 0.5 after 0.5"),
+        ([(-1, "open")], "state 0: -1 after -1.0"),
+        ([(True, "open")], "state 0: True after -1.0"),
+        ([(math.nan, "open")], "state 0: nan after -1.0"),
+        ([(math.inf, "open")], "state 0: inf after -1.0"),
+        ([("0", "open")], "state 0: '0' after -1.0"),
+        ([(0, "grin")], "state 0: 'grin' unknown"),
+    ],
+)
+def test_a_track_out_of_order_non_numeric_or_unknown_is_refused_in_the_callers_words(track, message):
+    with pytest.raises(StyleError, match=f"^{re.escape(message)}$"):
+        check(track)
+
+
+def test_a_track_with_an_end_keeps_its_states_before_it():
+    check([(0, "open")], end=1.0)
+    with pytest.raises(StyleError, match="^state 1: 1.0 outside$"):
+        check([(0, "open"), (1.0, "closed")], end=1.0)
+
+
+def test_a_track_with_an_end_and_no_outside_message_says_where_it_ends():
+    with pytest.raises(StyleError, match="^state 0: second 2 must fall before 1.0$"):
+        lipsync.check_track(
+            [(2, "open")], lipsync.VISEMES, StyleError, rising=lambda *_: "", unknown=lambda *_: "", end=1.0
+        )
+
+
+def test_a_take_cut_mid_word_closes_the_mouth_at_its_end():
+    states = lipsync.talk(spoken("aaaaaaaaaaaaaaaaaaaa", duration=1.0), SPEECH_MOUTH)
+    assert states[-1] == (1.0, "closed") and states[-2][1] != "closed"

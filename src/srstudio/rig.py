@@ -4,6 +4,9 @@ An :class:`Actor` draws a body, a head with eyes and a blink overlay, and five m
 shapes that hold-keyframes switch between. Subclasses supply the drawing; the episode
 supplies the performance (mouth poses, blinks, nods, gestures). The local head radius is
 always 100, so ``scale`` is the on-screen head radius divided by 100.
+
+:func:`check_place` and :func:`blinks` serve the lit cast (Saga, Gloss): a character's place on a shot, and eyes
+that close on a style's own beat.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from . import checks
 from .canvas import Canvas, Keys
 from .soundtrack import pose_keys
 
@@ -115,3 +119,23 @@ class Actor(ABC):
     def after_head(self, g, perf: Performance):
         """Anything drawn over the head and body (the manager's facepalm)."""
         return None
+
+
+# -- the lit cast (Saga, Gloss) -------------------------------------------------------------------------------------
+def check_place(scale: float, end: float, error: type[Exception]) -> None:
+    """A character is drawn at a scale above 0 for a shot of more than 0 s."""
+    checks.positive(scale, error, f"a character's scale must be > 0, got {scale}")
+    checks.positive(end, error, f"a character is drawn for more than 0 s, got {end}")
+
+
+def blinks(cv: Canvas, eyes, end: float, *, period: float, phase: float, skip_empty: bool) -> None:
+    """``eyes`` close for a blink every ``period`` seconds from ``phase`` while a whole blink fits before ``end``.
+    A shot too short for one keys nothing with ``skip_empty``, and holds the eyes open with a single key without
+    it."""
+    keys: list[tuple[float, float]] = [(0, 1)]
+    t = phase
+    while t + 0.16 < end:
+        keys += [(round(t, 4), 1), (round(t + 0.05, 4), 0.1), (round(t + 0.14, 4), 1)]
+        t += period
+    if len(keys) > 1 or not skip_empty:
+        cv.keys(eyes, "scaleY", keys, hold=False)

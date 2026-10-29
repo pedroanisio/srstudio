@@ -96,7 +96,9 @@ def test_talk_reads_the_take_into_rising_visemes_that_end_closed():
     assert saga.talk(Take("02", "sfx", "", "[BOOM]", 0, 1.0)) == []
 
 
-@pytest.mark.parametrize("bad", [[(0.5, "open"), (0.2, "closed")], [(0, "grin")], [(-1, "open")]])
+@pytest.mark.parametrize(
+    "bad", [[(0.5, "open"), (0.2, "closed")], [(0, "grin")], [(-1, "open")], [(True, "open")], [(float("inf"), "open")]]
+)
 def test_talk_states_out_of_order_or_unknown_are_refused(bad):
     with pytest.raises(SagaError):
         saga.check_talk(bad)
@@ -581,3 +583,10 @@ def test_a_set_span_past_the_end_is_cut_at_it_and_a_bool_is_no_second():
     sets.cantina(cv, cv.comp, end=2.0, stare=[(1.0, 9.0)])
     with pytest.raises(SagaError, match="must rise from a second >= 0"):
         sets.cantina(canvas(), canvas().comp, end=2.0, stare=[(True, 1.5)])
+
+
+@pytest.mark.parametrize(("scale", "end"), [(True, 2.0), (1.0, True), (float("inf"), 2.0)])
+def test_a_character_is_placed_at_a_numeric_scale_for_a_numeric_shot(scale, end):
+    cv = canvas()
+    with pytest.raises(SagaError, match="scale must be > 0|more than 0 s"):
+        saga.juno(cv, cv.comp, at=(540, 1500), scale=scale, end=end)

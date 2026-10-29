@@ -22,14 +22,19 @@ Two drivers share one reading of the letters (:func:`letter_poses`):
 
 :func:`score` measures a style over aligned takes (closed bilabials, word joins snapped shut, pose changes a
 second); ``srstudio lipsync TIMELINE...`` prints it for the shipped and the speech mouth.
+
+:func:`talk` reads a take into the :data:`VISEMES` states the Saga and Gloss cast speak with, and
+:func:`check_track` checks such a track, or any switched track (faces, poses), in the caller's error and words.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any
 
+from . import checks
 from .soundtrack import PhonemeStyle
 
 SPEECH_MOUTH = PhonemeStyle(spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
@@ -151,6 +156,47 @@ def letter_track(text: str, frames: int) -> list[str]:
             edge += weights[k]
         out.append(poses[k])
     return out
+
+
+# -- visemes of the lit cast (Saga, Gloss) --------------------------------------------------------------------------
+VISEMES = ("closed", "open", "round", "teeth", "shout")
+
+
+def talk(take: Any, style: PhonemeStyle) -> list[tuple[float, str]]:
+    """The viseme states of a spoken take on its own clock, one per change of pose, from its character timestamps;
+    an effect or a take without timestamps says nothing (``[]``). The mouth closes at the end of the take."""
+    if getattr(take, "is_effect", False) or not take.phones:
+        return []
+    out: list[tuple[float, str]] = []
+    for t, pose in phoneme_states(list(take.phones), float(take.duration), take.mood, style):
+        if not out or out[-1][1] != pose:
+            out.append((round(t, 6), pose))
+    if out[-1][1] != "closed":
+        out.append((round(float(take.duration), 6), "closed"))
+    return out
+
+
+def check_track(
+    track: Iterable[tuple[Any, Any]],
+    names: Sequence[str],
+    error: type[Exception],
+    *,
+    rising: Callable[[int, Any, float], str],
+    unknown: Callable[[int, Any], str],
+    end: float = math.inf,
+    outside: Callable[[int, float], str] | None = None,
+) -> None:
+    """``track``'s seconds are numbers that rise strictly from 0 (``rising(i, t, last)`` words the refusal) and
+    fall before ``end`` (``outside(i, t)``); its states are ``names`` (``unknown(i, state)``)."""
+    last = -1.0
+    for i, (t, state) in enumerate(track):
+        if not (checks.number(t) and t >= 0 and t > last):
+            raise error(rising(i, t, last))
+        if t >= end:
+            raise error(outside(i, t) if outside is not None else f"state {i}: second {t} must fall before {end}")
+        if state not in names:
+            raise error(unknown(i, state))
+        last = float(t)
 
 
 # -- scoring --------------------------------------------------------------------------------------------------------

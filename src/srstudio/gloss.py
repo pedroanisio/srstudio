@@ -25,9 +25,10 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any
 
-from . import camera, checks, lipsync
+from . import camera, checks, lipsync, rig
 from .canvas import PLASTIC, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -63,7 +64,7 @@ __all__ = [
 
 GLOSS_MOUTH: PhonemeStyle = lipsync.SPEECH_MOUTH
 SKIN = {"umber": "#7a4a2e", "tan": "#c98b5e", "peach": "#f3c6a5"}  # named vinyl looks, not per-episode overrides
-VISEMES = ("closed", "open", "round", "teeth", "shout")
+VISEMES = lipsync.VISEMES
 FACES = ("open", "wide", "flat", "shut")  # a doll's eyes: at rest, shocked, deadpan half-lidded, closed
 HOST_FACES = ("smile", "flat", "alert")  # Sunny's screen eyes
 POSES = ("down", "up", "shrug", "point")
@@ -114,19 +115,10 @@ class Drawn:
 
 # -- speech and tracks ------------------------------------------------------------------------------------------------
 def talk(take: Any, style: PhonemeStyle = GLOSS_MOUTH) -> list[tuple[float, str]]:
-    """The viseme states of a spoken take on its own clock, from its character timestamps; an effect or a take
-    without timestamps says nothing (``[]``). The mouth closes at the end of the take."""
-    if getattr(take, "is_effect", False) or not take.phones:
-        return []
-    states = lipsync.phoneme_states(list(take.phones), float(take.duration), take.mood, style)
-    out: list[tuple[float, str]] = []
-    for t, pose in states:
-        if not out or out[-1][1] != pose:
-            out.append((round(t, 6), pose))
-    if out[-1][1] != "closed":
-        out.append((round(float(take.duration), 6), "closed"))
-    check_talk(out)
-    return out
+    """The viseme states of a spoken take on its own clock (:func:`srstudio.lipsync.talk`), checked."""
+    states = lipsync.talk(take, style)
+    check_talk(states)
+    return states
 
 
 def check_talk(states: Talk) -> None:
@@ -137,22 +129,15 @@ def check_talk(states: Talk) -> None:
 def check_track(track: Track, names: Sequence[str], what: str, end: float) -> None:
     """A track's seconds rise strictly from >= 0 and stay inside the shot (before ``end``); its states are
     ``names``."""
-    last = -1.0
-    for i, (t, state) in enumerate(track):
-        if not (isinstance(t, int | float) and math.isfinite(t) and t >= 0 and t > last):
-            raise GlossError(f"{what} state {i}: second {t!r} must be finite, >= 0 and rise after {last}")
-        if t >= end:
-            raise GlossError(f"{what} state {i}: second {t} must fall inside the shot (0..{end})")
-        if state not in names:
-            raise GlossError(f"{what} state {i}: {state!r} is not one of {tuple(names)}")
-        last = float(t)
-
-
-def _check_place(scale: float, end: float) -> None:
-    if not (math.isfinite(scale) and scale > 0):
-        raise GlossError(f"a character's scale must be > 0, got {scale}")
-    if not (math.isfinite(end) and end > 0):
-        raise GlossError(f"a character is drawn for more than 0 s, got {end}")
+    lipsync.check_track(
+        track,
+        names,
+        GlossError,
+        rising=lambda i, t, last: f"{what} state {i}: second {t!r} must be finite, >= 0 and rise after {last}",
+        unknown=lambda i, state: f"{what} state {i}: {state!r} is not one of {tuple(names)}",
+        end=end,
+        outside=lambda i, t: f"{what} state {i}: second {t} must fall inside the shot (0..{end})",
+    )
 
 
 def _check_second(t: float | None, end: float, what: str) -> None:
@@ -260,13 +245,7 @@ def _fall(cv: Canvas, parent, at: float | None, end: float):
     return g
 
 
-def _blinks(cv: Canvas, eyes, end: float, phase: float = 0.6) -> None:
-    keys: list[tuple[float, float]] = [(0, 1)]
-    t = phase
-    while t + 0.16 < end:
-        keys += [(round(t, 4), 1), (round(t + 0.05, 4), 0.1), (round(t + 0.14, 4), 1)]
-        t += BLINK_EVERY
-    cv.keys(eyes, "scaleY", keys, hold=False)
+_blinks = partial(rig.blinks, period=BLINK_EVERY, phase=0.6, skip_empty=False)  # a shot too short holds one key
 
 
 def mix(a: str, b: str, t: float) -> str:
@@ -428,7 +407,7 @@ def _person(
     body_extra: Callable[[Any], None] | None = None,
     head_extra: Callable[[Any], None] | None = None,
 ) -> Drawn:
-    _check_place(scale, end)
+    rig.check_place(scale, end, GlossError)
     if skin not in SKIN.values():
         raise GlossError(f"skin {skin!r} is not a named look in {sorted(SKIN)}")
     check_talk(talk)
@@ -763,7 +742,7 @@ def sunny(
     tie: bool = False,
 ) -> Drawn:
     """Sunny, centred on ``at`` and hovering; its beam shines down inside each span of ``scan``."""
-    _check_place(scale, end)
+    rig.check_place(scale, end, GlossError)
     check_talk(talk)
     check_track(face, HOST_FACES, "face", end)
     _check_spans(scan, end, "a scan")

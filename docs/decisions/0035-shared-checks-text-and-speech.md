@@ -4,15 +4,16 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0035: One home for the checks, text helpers and speech helpers every style copied
 
-- Status: accepted; implemented 2026-10-29 (`srstudio.checks`, `Canvas.require_font`, `look.text`;
-  `tests/test_checks.py`, `tests/test_canvas_and_registry.py`, `tests/test_look.py`)
+- Status: accepted; implemented 2026-10-29 (`srstudio.checks`, `Canvas.require_font`, `look.text`,
+  `lipsync.talk`, `lipsync.check_track`, `rig.check_place`, `rig.blinks`; `tests/test_checks.py`,
+  `tests/test_canvas_and_registry.py`, `tests/test_look.py`, `tests/test_lipsync.py`, `tests/test_rig.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
 ## Context
 
-Each new style copied the previous style's input checks, font guard and text helper, so the same code existed in
-several modules with small differences. Some differences were deliberate:
+Each new style copied the previous style's input checks, font guard, text helper and speech helpers, so the same
+code existed in several modules with small differences. Some differences were deliberate:
 
 - A Saga or Gloss set is drawn for more than 0 s, while a Toon set may be a still (an end of 0).
 - Saga set spans are cut at the set's end, while staging and Gloss spans must end inside the shot.
@@ -52,6 +53,14 @@ Others were accidents of how each copy was written:
   `functools.partial`, or as a two-line wrapper where it rounds the box to whole pixels. `look.label`, which sets
   a line through `Canvas.text` (one id, a `-layer` suffix, line height 1.12), is unchanged. One function could
   not serve both, because the two write different ids and attributes, and published scenes hold both.
+- **The lit cast's speech and rig helpers live in `lipsync` and `rig`.** `lipsync.VISEMES`, `lipsync.talk` (one
+  state per change of viseme, closed at the end of the take) and `lipsync.check_track` (seconds that rise from 0
+  and fall before an end, in known states, refused in the caller's error and words) replace the identical copies
+  in `saga` and `gloss`. `rig.check_place` (a scale and a shot above 0) and `rig.blinks` replace their
+  `_check_place` and `_blinks` too. The styles' differences are parameters: the Saga blink is every 3.1 s from
+  0.7 s and keys nothing on a shot too short to blink, while the Gloss blink is every 2.9 s from 0.6 s and holds
+  the eyes open with one key. `saga.talk`, `saga.check_talk`, `gloss.talk`, `gloss.check_talk` and
+  `gloss.check_track` keep their signatures and their messages ("after" in Saga, "rise after" in Gloss).
 
 ## Rejected alternatives
 

@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Sequence
+from functools import partial
 from typing import Any
 
-from . import camera, lipsync
+from . import camera, lipsync, rig
 from .canvas import VOID, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -54,7 +55,7 @@ __all__ = [
 
 SAGA_MOUTH: PhonemeStyle = lipsync.SPEECH_MOUTH
 SKIN = {"deep": "#6b3f2a", "brown": "#b47a52", "fair": "#e8b896"}  # named looks, not per-episode overrides
-VISEMES = ("closed", "open", "round", "teeth", "shout")
+VISEMES = lipsync.VISEMES
 HEIGHT = 700  # head top above the feet at scale 1, frame pixels
 INK_W = 6.0
 SHADE = 0.16  # opacity of the ink laid over a part's shadow side; the light comes from the upper left
@@ -78,37 +79,21 @@ class SagaError(SrstudioError, ValueError):
 
 # -- speech -----------------------------------------------------------------------------------------------------------
 def talk(take: Any, style: PhonemeStyle = SAGA_MOUTH) -> list[tuple[float, str]]:
-    """The viseme states of a spoken take on its own clock, from its character timestamps; an effect or a take
-    without timestamps says nothing (``[]``). The mouth closes at the end of the take."""
-    if getattr(take, "is_effect", False) or not take.phones:
-        return []
-    states = lipsync.phoneme_states(list(take.phones), float(take.duration), take.mood, style)
-    out: list[tuple[float, str]] = []
-    for t, pose in states:
-        if not out or out[-1][1] != pose:
-            out.append((round(t, 6), pose))
-    if out[-1][1] != "closed":
-        out.append((round(float(take.duration), 6), "closed"))
-    check_talk(out)
-    return out
+    """The viseme states of a spoken take on its own clock (:func:`srstudio.lipsync.talk`), checked."""
+    states = lipsync.talk(take, style)
+    check_talk(states)
+    return states
 
 
 def check_talk(states: Talk) -> None:
     """States rise strictly in time from a second >= 0 and name known visemes."""
-    last = -1.0
-    for i, (t, pose) in enumerate(states):
-        if not (isinstance(t, int | float) and math.isfinite(t) and t >= 0 and t > last):
-            raise SagaError(f"talk state {i}: second {t!r} must be finite, >= 0 and after {last}")
-        if pose not in VISEMES:
-            raise SagaError(f"talk state {i}: viseme {pose!r} is not one of {VISEMES}")
-        last = float(t)
-
-
-def _check_place(scale: float, end: float) -> None:
-    if not (math.isfinite(scale) and scale > 0):
-        raise SagaError(f"a character's scale must be > 0, got {scale}")
-    if not (math.isfinite(end) and end > 0):
-        raise SagaError(f"a character is drawn for more than 0 s, got {end}")
+    lipsync.check_track(
+        states,
+        VISEMES,
+        SagaError,
+        rising=lambda i, t, last: f"talk state {i}: second {t!r} must be finite, >= 0 and after {last}",
+        unknown=lambda i, pose: f"talk state {i}: viseme {pose!r} is not one of {VISEMES}",
+    )
 
 
 # -- the shared rig ---------------------------------------------------------------------------------------------------
@@ -123,14 +108,7 @@ def _root(cv: Canvas, parent, at: tuple[float, float], scale: float, flip: bool,
     return body
 
 
-def _blinks(cv: Canvas, eyes, end: float, phase: float = 0.7) -> None:
-    keys: list[tuple[float, float]] = [(0, 1)]
-    t = phase
-    while t + 0.16 < end:
-        keys += [(round(t, 4), 1), (round(t + 0.05, 4), 0.1), (round(t + 0.14, 4), 1)]
-        t += BLINK_EVERY
-    if len(keys) > 1:
-        cv.keys(eyes, "scaleY", keys, hold=False)
+_blinks = partial(rig.blinks, period=BLINK_EVERY, phase=0.7, skip_empty=True)  # a shot too short keys none
 
 
 def _eyes(cv: Canvas, parent, cx: float, cy: float, gap: float, end: float, *, iris: str = "#2a1a12") -> None:
@@ -248,7 +226,7 @@ def gloom(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
 ):
     """Lord Gloom of the Directorate, feet at ``at``; his visor follows ``talk``."""
-    _check_place(scale, end)
+    rig.check_place(scale, end, SagaError)
     g = _root(cv, parent, at, scale, flip, end)
     armour, edge, cape = "#15161c", "#3a3f52", "#3b1d3f"
     cv.path(g, "M-150 -430 Q-210 -200 -190 0 L190 0 Q210 -200 150 -430 Z", cape, cv.ink, INK_W)
@@ -292,7 +270,7 @@ def enforcer(
     stripe: str = "#2fb5a9",
 ):
     """An enforcer, feet at ``at``; ``stripe`` is his shoulder colour, his mic light follows ``talk``."""
-    _check_place(scale, end)
+    rig.check_place(scale, end, SagaError)
     g = _root(cv, parent, at, scale, flip, end)
     white, joint = "#eef0f2", "#9aa3ad"
     _legs(cv, g, white, "#2a2e36")
@@ -328,7 +306,7 @@ def droid(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
 ):
     """The service droid, wheel at ``at``; its smile bar follows ``talk``."""
-    _check_place(scale, end)
+    rig.check_place(scale, end, SagaError)
     g = _root(cv, parent, at, scale, flip, end)
     copper, teal, screen = "#c4733b", "#2fb5a9", "#0f1a20"
     cv.ellipse(g, -50, -90, 100, 100, "#2a2e36", cv.ink, INK_W)
@@ -371,7 +349,7 @@ def _person(
     clothes: Callable[[Any], None],
     face_extra: Callable[[Any], None] | None = None,
 ):
-    _check_place(scale, end)
+    rig.check_place(scale, end, SagaError)
     if skin not in SKIN.values():
         raise SagaError(f"skin {skin!r} is not a named look in {sorted(SKIN)}")
     g = _root(cv, parent, at, scale, flip, end)
@@ -550,7 +528,7 @@ def mabel(
 )
 def handbook(cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, talk: Talk = (), end: float):
     """The Handbook, top-left corner at ``at``, 220 × 300 at scale 1; its screen follows ``talk``."""
-    _check_place(scale, end)
+    rig.check_place(scale, end, SagaError)
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=scale, scaleY=scale)
     cv.rect(g, 8, 10, 220, 300, cv.ink, radius=28, opacity=0.5)
     cv.rect(g, 0, 0, 220, 300, "#e2622e", cv.ink, INK_W, radius=28)
