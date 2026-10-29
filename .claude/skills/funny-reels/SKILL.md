@@ -2,13 +2,19 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.9.0
+schema_version: 1.10.0
 ---
 
 # Funny reels with srstudio
 
 The library is `srstudio/` (git repo, `../.venv`). Its [README](../../../README.md) is the reference for every
 part, style and pipeline named here; the decisions behind them are in `docs/decisions/`. CLAUDE.md binds every step.
+
+**In a git worktree, point Python at it.** The shared venv installs srstudio editable from the main checkout, so
+in a worktree `import srstudio` silently loads the main tree's code, and your tests and rebuilds prove nothing
+about your branch. Export `PYTHONPATH=<worktree>/src` and check it once with
+`python -c 'import srstudio; print(srstudio.__file__)'`, which must print a path inside the worktree. The relative
+`../generated` and `../.venv` paths below assume the main checkout; from a worktree, spell them out absolutely.
 
 ## The bar
 
@@ -122,10 +128,11 @@ Where the camera is and when nobody speaks are comic tools, not decoration. Plan
 | Insert | a full-frame detail (the card's front, the screen, the receipt) that the joke turns on, held long enough to read | a cut to the object alone, gated to its beat (`toon_sets.note_insert` in Toon, `Canvas.gate` elsewhere); cut back to a face |
 
 Rules of thumb: one camera move per beat, never during a spoken line's key word; let a pause run a beat longer
-than feels comfortable, then cut; a zoom without a payoff on screen is noise. Measure, don't assume: `srstudio craft`
-<project> --renders <dir> lists every move (punch-in, crash, push; camera or gag) and every pause between lines, with
-the rendered level in it, so a pause meant to be awkward is shown to be quiet and not filled by music. A push onto a drawn instance (a
-reused symbol) softens it when magnified, so draw the target inline or keep the zoom small, and look at the frame.
+than feels comfortable, then cut; a zoom without a payoff on screen is noise. Measure, don't assume:
+`srstudio craft <project> --renders <dir>` lists every move (punch-in, crash, push; camera or gag) and every pause
+between lines, with the rendered level in it, so a pause meant to be awkward is shown to be quiet and not filled by
+music. A push onto a drawn instance (a reused symbol) softens it when magnified, so draw the target inline or keep
+the zoom small, and look at the frame.
 
 Two things `craft` needs from a style, or it reports nothing useful:
 
@@ -137,6 +144,9 @@ Two things `craft` needs from a style, or it reports nothing useful:
   track's `gain` (audio automation, in dB) down through every gap `craft.pauses` finds, ramping inside the gap, as
   a style's reel helper (`gloss_reel.hush` is one); then re-run `craft` and see the holds read quiet. A sound
   effect inside a gap may fill it on purpose; say so in the report.
+
+A staged series gets both from `srstudio.staging` (ADR 0031): `staging.rig` builds the camera group, and its
+`name=` gives it an id `craft` counts.
 
 ## The picture has to look finished
 
@@ -156,10 +166,12 @@ How to get there:
 - **Look before you record.** Takes cost money and rebuilds are free, so render one still per set with the cast,
   a text panel and the caption band (`scene-render render` on a document, `-t` a second, `-o` a PNG), tile them
   into one sheet, look at it, and fix what fails the table before any audio request. Repeat after every change.
-- **Use the engine, not more shapes.** Gradients come from `Canvas.grad` and `Canvas.rgrad`; effects are declared
-  with `Canvas.effect` and put on a group with `Canvas.apply`. The engine has blur, drop and inner shadows, bloom,
-  glow, vignette, film grain, colour grading and many more (the full list is the effect type in the scene-render
-  schema). Depth of field and a grade lifted a style further than any redraw did.
+- **Use the engine, not more shapes.** Gradients come from `Canvas.grad` and `Canvas.rgrad`. A name is one
+  gradient: redeclaring it with other stops, coordinates or units raises `NativeError`, so give each colour its
+  own name. Effects are declared with `Canvas.effect` and put on a group with `Canvas.apply`. A style's finish is
+  drawn with `srstudio.look` (ADR 0031), called with the style's own numbers and id prefix. The engine has blur,
+  drop and inner shadows, bloom, glow, vignette, film grain, colour grading and many more (the full list is the
+  effect type in the scene-render schema). Depth of field and a grade lifted a style further than any redraw did.
 - **Test the look like any other contract.** A finish, a depth blur or a lit figure is a library default with a
   test (every shot carries the grade, every location blurs its far plane, no signature mark sits under a blur), so
   each episode in the style gets it.
@@ -334,7 +346,7 @@ them fresh each time:
 |---|---|
 | Which styles exist, and what is each good at? | `srstudio styles` (frame, clock, palettes, parts, description) |
 | Which characters, locations, props, graphics exist? | `srstudio catalog`, or `srstudio catalog --json` for facts and tags |
-| Which parts do episodes really use, and which are unused? | `srstudio usage --out ../generated/catalog/usage.json` (ADR 0017) |
+| Which parts do episodes really use, and which are unused? | `srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json`, with the `--arg` options the README's usage command passes (ADR 0017; it rebuilds every episode on a copy) |
 | What does each part look like? | the catalog page, `catalogo-scene-render.html` at the workspace root |
 | What is already planned? | `docs/backlog/` |
 
@@ -355,17 +367,17 @@ gap to fill:
 - voice: a distinct premade voice and accent per speaker.
 
 Give each new character a trait that *does* something in a gag (a headset that keeps beeping, glasses that slide on
-a double take), never one that *is* the gag. A new character is a registered part (step 5), so the next agent finds
+a double take), never one that *is* the gag. A new character is a registered part (step 4), so the next agent finds
 it in `srstudio catalog` without this file changing.
 
 ## Workflow
 
 1. **Inventory.** Run the live inventory above, then read the README section for the chosen style.
 2. **Script as data.** Start from the observation sentence and the answers of *Select before you produce*, and the
-   recurring characters' cards. Write the beats as a table: time, picture, line, speaker, sound, camera, layers. Keep it 11–35 s; loops of
-   12–15 s for a "repeat after me" format. Score it with the rubric. Avoid the premises and settings the usage report
-   and the backlog show the catalog already leans on. Never copy a reference's lines, drawings or brand: an
-   original script in the same format, an invented brand.
+   recurring characters' cards. Write the beats as a table: time, picture, line, speaker, sound, camera, layers.
+   Keep it 11–35 s; loops of 12–15 s for a "repeat after me" format. Score it with the rubric. Avoid the premises
+   and settings the usage report and the backlog show the catalog already leans on. Never copy a reference's lines,
+   drawings or brand: an original script in the same format, an invented brand.
    Name the mechanism and the opening (*Pick the mechanism*). Then write a **shot plan**: one row per shot, a shot
    being a run of beats in one framing. Each row has:
 
@@ -385,28 +397,53 @@ it in `srstudio catalog` without this file changing.
    in your own words and drawings; no franchise names, characters, designs, logos, catchphrases or music. Every
    episode script is then checked against the bible before it is scored.
 3. **Reuse first.** Build from registered parts and the shared pipelines: `srstudio.sketch` (Toon two-handers:
-   speakers, lines, beats, `check`), `srstudio.takes` (voiced takes checked by speech-to-text, optional music `Bed`),
-   `srstudio.song` (sung episodes on a beat grid with composed music), `srstudio.interview`, `srstudio.camera`,
-   `subtitles.chunk_words`, `Episode.audio(duck=)`, `Episode.check_overlays`, `blob.cue`, `blob.settle`, and the
-   polished rooms (ADR 0008, ADR 0011). Each style's own helpers are in its README section. For lip sync (ADR 0019),
-   use `lipsync.SPEECH_MOUTH` with timestamped takes, or `soundtrack.OFFICE_MOUTH` with `letters=True` for mouths
-   driven by amplitude. `srstudio.interview` gives exact line ends: put the reaction just
-   after the last line, hold, then cut to the end card.
-4. **Look.** Run the lookbook from *The picture has to look finished* and score the look table; fix the style in the
-   library until it reaches 8/10, before any audio. Add one frame from each shot of every scene, then check the
-   planes, the props, the light direction and the continuity rules from *Compose in depth, keep it continuous*.
-5. **Grow the library when it lacks something** (TDD, CLAUDE.md): a failing test first, then the part in
+   speakers, lines, beats, `check`; the Toon and Collage builders are `srstudio.toon_sketch` and
+   `srstudio.collage_sketch`, the beat helpers `srstudio.scripting`), `srstudio.takes` (voiced takes checked by
+   speech-to-text, optional music `Bed`), `srstudio.song` (sung episodes on a beat grid with composed music),
+   `srstudio.interview`, `srstudio.camera`, `subtitles.chunk_words`, `Episode.audio(duck=)`,
+   `Episode.check_overlays`, `blob.cue`, `blob.settle`, and the polished rooms (ADR 0008, ADR 0011). Each style's own
+   helpers are in its README section. For lip sync (ADR 0019), use `lipsync.SPEECH_MOUTH` with timestamped takes, or
+   `soundtrack.OFFICE_MOUTH` with `letters=True` for mouths driven by amplitude. `srstudio.interview` gives exact
+   line ends: put the reaction just after the last line, hold, then cut to the end card. A repeated graphic needs
+   its own `id=` per instance; an explicit `prefix=` or `text_id=` keeps the part names you give it.
+   **A staged series** (a recorded take timeline staged shot by shot) declares its voices, settings, music bed,
+   font, encoder output, reel builder and caption look once as a `series.Series`, subclasses `series.Reel`, finishes
+   its picture with `srstudio.look` and stages with `srstudio.staging` (ADR 0031). Never copy another style's
+   `*_sets`, `*_reel` or `episodes/_<style>.py`. A new series opts into readable captions,
+   `native.CaptionLook(min_last=2, min_seconds=0.84)`: no lone last word, and every cue held long enough to read.
+   **Shared helpers** (ADR 0035): set text with `look.text`, and get the caption font with `Canvas.require_font`,
+   which refuses a silent canvas with your error. A talking character takes its mouth states from `lipsync.talk`
+   and checks a mouth or pose track with `lipsync.check_track`; a rigged character is placed with
+   `rig.check_place` and blinks with `rig.blinks`. Never copy a style's private text, mouth or blink helper.
+4. **Grow the library when it lacks something** (TDD, CLAUDE.md): a failing test first, then the part in
    `src/srstudio/`, registered with `register` so the catalog and usage report see it, then an ADR in
    `docs/decisions/` when it is a decision (new style, rig change, new pipeline). Never put a reusable helper only in
-   an episode script (ADR 0016). Gates: `ruff format --check`, `ruff check`, `mypy src`, pytest with branch coverage
-   ≥ 80 %, run with `SRSTUDIO_PACKAGES=../generated/packages SRSTUDIO_ENGINE=../generated/bin/scene-render`.
+   an episode script (ADR 0016). A new module's error class subclasses `errors.SrstudioError`, and a builder reads
+   its command-line flags with `errors.flags`, which refuses a typo instead of silently building another cut
+   (ADR 0034). Check its inputs with `srstudio.checks` (`checks.positive`, `checks.non_negative`, `checks.second`,
+   `checks.spans`, `checks.rising`), passing your own error class and message, never with a hand-written range
+   test (ADR 0035). Gates: `ruff format --check`, `ruff check`, `mypy src`, pytest with branch coverage ≥ 80 %,
+   run with `SRSTUDIO_PACKAGES=../generated/packages SRSTUDIO_ENGINE=../generated/bin/scene-render`.
+5. **Look.** Run the lookbook from *The picture has to look finished* and score the look table. Fix the style in the
+   library (step 4) until it reaches 8/10, before any audio request. Add one frame from each shot of every scene,
+   then check the planes, the props, the light direction and the continuity rules from *Compose in depth, keep it
+   continuous*.
 6. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
-   every take checked by speech-to-text, never a retry driven by model output; a misheard line stops the run and
-   the operator decides. Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM with "steady kick on every beat" (slow tempo prompts come back
-   off-tempo and are refused). The API key comes from the environment; never print, copy or write it.
-7. **Build and review the master.** Build with `srstudio build`, render to `generated/renders/<slug>.mp4`, then
-   review that file, the mix as delivered, not the scene or a still from the build. You cannot judge comic timing
-   by ear, so measure everything that can be measured:
+   every take checked by speech-to-text, never a retry driven by model output. Record by slug with
+   `srstudio record <slug> <project>` (ADR 0032). A misheard line stops the run, and the operator decides. When the
+   operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`);
+   never accept one yourself. Structure the takes before the first request: a pause is part of a take's duration,
+   never a gap between takes, and shot-sequence takes start at 0 and run back to back, with every word inside its
+   take. `Timeline.load` refuses any other timeline with `TimelineError`, after the recording money is spent.
+   Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM
+   with "steady kick on every beat" (slow tempo prompts come back off-tempo and are refused). The API key comes from
+   the environment; never print, copy or write it.
+7. **Build, encode and review the master.** Build with `srstudio build <slug> <project>` (ADR 0032); it validates
+   the scene against the schema, and anything but "0 findings" is a defect to fix. Encode with
+   `scene-render encode <project>/<slug>.scene.xml --strict` to `generated/renders/<slug>.mp4`: `--strict` exits 1
+   on any accessibility finding (flashes, contrast) or anything not rendered as authored, and a reel that fails it
+   does not ship. Then review that file, the mix as delivered, not the scene or a still from the build. You cannot
+   judge comic timing by ear, so measure everything that can be measured:
    - a contact sheet with one frame per shot, the hook, the frame just before and just after the reveal, and the
      last frame;
    - captions that fit, and that appear no earlier than the words they show;
@@ -418,8 +455,8 @@ it in `srstudio catalog` without this file changing.
    Report what you measured; the operator watches the master with sound before it is published. A number from a
    scratch file is not evidence; quote real command output. Then update the catalog: re-run the usage report
    from *Live inventory*, then `srstudio page --usage ../generated/catalog/usage.json` with the other arguments
-   that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode calls has a
-   gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
+   that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode
+   calls has a gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
 8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
    `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`) and its
    `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test), then
@@ -430,12 +467,18 @@ it in `srstudio catalog` without this file changing.
        deliver generated/renders/ig generated/renders --fonts generated/fonts --only <slug>
    ```
 
-   and the same command with `check` (exit 1 on drift). Open `cover.jpg` and look: a zoom that crops a card, or a
-   frame caught mid-caption-fade, leaves a ghost. Credit voices as ElevenLabs premade voices and music as
-   "composed with ElevenLabs Music"; credit a reference creator when the format is adapted.
+   and the same command with `check` (exit 1 on drift). This publish gate compares each delivery with its render,
+   post, cover and font. Read the result from `check`'s exit code and output, never from the fields or version of
+   the `delivery.json` manifest, which the tool owns and migrates. Always deliver with `--only`, repeated for each
+   of your videos: a bare `deliver` re-delivers every drifted video, published ones included, which breaks the
+   frozen rule. Never re-deliver another video to clear its drift. Open `cover.jpg` and look: a zoom that crops a
+   card, or a frame caught mid-caption-fade, leaves a ghost.
+   Credit voices as ElevenLabs premade voices and music as "composed with ElevenLabs Music"; credit a reference
+   creator when the format is adapted.
 9. **Publish.** A clean delivery is picked up by the `srstudio-drive` systemd unit and copied to
-   `gdrive:srstudio/ready-to-publish` (video, `ig.txt`, `cover.jpg`, package). Run
-   `python3 episodes/publish_drive.py --dry-run` to see it without waiting.
+   `gdrive:srstudio/ready-to-publish` (video, `ig.txt`, `cover.jpg`, package). Leave it to the unit:
+   `python3 episodes/publish_drive.py --dry-run` is not a read-only preview, since it stages `generated/outbox`
+   (and packs `generated/vpkg`) before showing what rclone would upload.
 10. **Report.** The observation sentence and the tags of each episode, the batch variety table (below) when there
    is more than one episode, the comedy and look rubric estimates, the cast (and who is new), parts reused versus
    added, gates run with their output, anything skipped and why.
@@ -468,7 +511,6 @@ look, the signature marks, a character's traits), and vary the joke underneath i
 
 - Re-render, rebuild or re-deliver a published video unless the operator asks: published content is frozen, and
   improvements apply to new episodes only.
-
 - Present your rubric score, a render you did not watch, or expected output as observed.
 - Write scratch outside `srstudio/_tmp/`, or touch `protected/` or `authorial/`.
 - Edit a file another session owns without asking it (`ListAgents`, `SendMessage`); commit only your own paths.
