@@ -6,7 +6,16 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from srstudio.limbs.serialization import load_motion
+from srstudio.sample import SYSTEM_FONTS
+
+
+@pytest.fixture
+def system_font():
+    if not any(p.is_file() for p in SYSTEM_FONTS):
+        pytest.skip("no DejaVu Sans Bold at any srstudio.sample.SYSTEM_FONTS path")
 
 
 def example():
@@ -29,6 +38,7 @@ def test_two_hands_follow_distinct_anchors_of_one_tray_during_lift_and_seek():
     assert pair.props[0].track.sample(2.5).origin.distance(pair.props[0].track.sample(1).origin) > 0.2
 
 
+@pytest.mark.usefixtures("system_font")
 def test_bimanual_scene_builds_with_reusable_motion_and_quantitative_qa(tmp_path):
     path = example().build(tmp_path / "two-arms", fps=2)
     report = json.loads(path.with_name("bimanual-qa.json").read_text())
@@ -44,10 +54,9 @@ def test_bimanual_scene_builds_with_reusable_motion_and_quantitative_qa(tmp_path
         assert result.returncode == 0, result.stderr
 
 
+@pytest.mark.usefixtures("system_font")
 def test_tilted_camera_keeps_the_authored_mouth_visible_in_rendered_pixels(tmp_path):
     import shutil
-
-    import pytest
 
     engine = os.environ.get("SRSTUDIO_ENGINE")
     if not engine or not shutil.which("ffmpeg"):

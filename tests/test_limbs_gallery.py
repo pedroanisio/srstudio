@@ -7,9 +7,19 @@ import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 from srstudio.limbs.serialization import load_motion
+from srstudio.sample import SYSTEM_FONTS
 
 
+@pytest.fixture
+def system_font():
+    if not any(p.is_file() for p in SYSTEM_FONTS):
+        pytest.skip("no DejaVu Sans Bold at any srstudio.sample.SYSTEM_FONTS path")
+
+
+@pytest.mark.usefixtures("system_font")
 def test_example_builds_the_same_six_actions_in_three_styles(tmp_path):
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
     spec = importlib.util.spec_from_file_location("limbs_gallery", script)
@@ -30,6 +40,7 @@ def test_example_builds_the_same_six_actions_in_three_styles(tmp_path):
         assert result.returncode == 0, result.stderr
 
 
+@pytest.mark.usefixtures("system_font")
 def test_skin_gallery_runs_all_six_planar_actions_in_three_styles(tmp_path):
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
     spec = importlib.util.spec_from_file_location("limbs_gallery", script)
@@ -47,6 +58,7 @@ def test_skin_gallery_runs_all_six_planar_actions_in_three_styles(tmp_path):
         assert result.returncode == 0, result.stderr
 
 
+@pytest.mark.usefixtures("system_font")
 def test_gallery_can_retarget_the_shared_actions_to_a_mechanical_gripper(tmp_path):
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
     spec = importlib.util.spec_from_file_location("limbs_gallery", script)

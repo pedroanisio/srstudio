@@ -25,6 +25,9 @@ from srstudio.limbs.serialization import save_motion
 from srstudio.sample import SYSTEM_FONTS
 from srstudio.toon import Pose
 
+# The license note srstudio.sample ships beside the system DejaVu Sans Bold; --font-license replaces it.
+DEJAVU_LICENSE = "DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n"
+
 
 def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: Path | None = None) -> Path:
     if font is not None and license_file is None:
@@ -34,11 +37,13 @@ def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: P
     assets = out / "assets"
     assets.mkdir(exist_ok=True, mode=0o700)
     font = font or next((p for p in SYSTEM_FONTS if p.is_file()), None)
-    license_file = license_file or Path("/usr/share/doc/fonts-dejavu-core/copyright")
-    if font is None or not font.is_file() or not license_file.is_file():
+    if font is None or not font.is_file() or (license_file is not None and not license_file.is_file()):
         raise LimbError("the cast showcase needs an existing --font and --font-license")
     shutil.copyfile(font, assets / "font.ttf")
-    shutil.copyfile(license_file, assets / "FONT-LICENSE.txt")
+    if license_file is None:
+        (assets / "FONT-LICENSE.txt").write_text(DEJAVU_LICENSE)
+    else:
+        shutil.copyfile(license_file, assets / "FONT-LICENSE.txt")
     facts = inspect_ttf(font.read_bytes())
     scene = Scene(version="auto")
     scene.add_project(width=1920, height=1080, fps="24", duration=2, background="#f4f0e9", fontPolicy="pinned")

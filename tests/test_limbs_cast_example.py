@@ -5,9 +5,19 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from srstudio.limbs.serialization import load_motion
+from srstudio.sample import SYSTEM_FONTS
 
 
+@pytest.fixture
+def system_font():
+    if not any(p.is_file() for p in SYSTEM_FONTS):
+        pytest.skip("no DejaVu Sans Bold at any srstudio.sample.SYSTEM_FONTS path")
+
+
+@pytest.mark.usefixtures("system_font")
 def test_cast_example_builds_three_complete_characters_with_reusable_sources(tmp_path):
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_cast.py"
     spec = importlib.util.spec_from_file_location("limbs_cast", script)

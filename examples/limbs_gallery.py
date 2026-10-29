@@ -26,6 +26,9 @@ from srstudio.limbs.projection import Camera
 from srstudio.limbs.serialization import save_motion
 from srstudio.sample import SYSTEM_FONTS
 
+# The license note srstudio.sample ships beside the system DejaVu Sans Bold; --font-license replaces it.
+DEJAVU_LICENSE = "DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n"
+
 
 def build(
     out: Path,
@@ -50,11 +53,13 @@ def build(
     font = font or next((p for p in SYSTEM_FONTS if p.is_file()), None)
     if font is None:
         raise LimbError("the gallery needs --font and --font-license when DejaVu Sans is not installed")
-    license_file = license_file or Path("/usr/share/doc/fonts-dejavu-core/copyright")
-    if not license_file.is_file():
+    if license_file is not None and not license_file.is_file():
         raise LimbError("the gallery needs an existing --font-license file")
     shutil.copyfile(font, assets / "font.ttf")
-    shutil.copyfile(license_file, assets / "FONT-LICENSE.txt")
+    if license_file is None:
+        (assets / "FONT-LICENSE.txt").write_text(DEJAVU_LICENSE)
+    else:
+        shutil.copyfile(license_file, assets / "FONT-LICENSE.txt")
     facts = inspect_ttf(font.read_bytes())
     scene = Scene(version="auto")
     scene.add_project(width=1920, height=1080, fps="24", duration=12, background="#f5f0e9", fontPolicy="pinned")

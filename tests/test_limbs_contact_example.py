@@ -6,9 +6,19 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from srstudio.limbs.serialization import load_motion
+from srstudio.sample import SYSTEM_FONTS
 
 
+@pytest.fixture
+def system_font():
+    if not any(p.is_file() for p in SYSTEM_FONTS):
+        pytest.skip("no DejaVu Sans Bold at any srstudio.sample.SYSTEM_FONTS path")
+
+
+@pytest.mark.usefixtures("system_font")
 def test_contact_example_builds_and_validates_moving_press_and_attached_cup(tmp_path):
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_contact.py"
     spec = importlib.util.spec_from_file_location("limbs_contact", script)

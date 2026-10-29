@@ -97,8 +97,8 @@ PYTHONPATH=src python examples/limbs_contact.py ../generated/limbs/contact
 
 The output includes the moving button press, a visibly lifted cup, wrist release, reusable motion JSON,
 original prop meshes in the source example, a pinned font and numeric contact/anatomy reports. The default
-clip contains 72 frames at 1600×900 and 24 fps. Pass `--font` and `--font-license` when the system DejaVu font
-and its distribution license are unavailable.
+clip contains 72 frames at 1600×900 and 24 fps. Pass `--font` and `--font-license` when DejaVu Sans Bold is
+not installed at any `srstudio.sample.SYSTEM_FONTS` path.
 
 ## Native sleeve deformation
 
@@ -236,7 +236,9 @@ PYTHONPATH=src python examples/limbs_gallery.py ../generated/limbs/gripper-galle
 ../generated/bin/scene-render encode ../generated/limbs/gripper-gallery/limbs-gallery.scene.xml
 ```
 
-Custom example fonts require both `--font` and `--font-license`. The examples do not attach the system
+The examples resolve their font like the library: the first DejaVu Sans Bold in
+`srstudio.sample.SYSTEM_FONTS`, shipped with the same DejaVu license note `srstudio.sample` writes. Custom
+example fonts require both `--font` and `--font-license`. The examples do not attach the system
 DejaVu sidecar to a caller-provided font. Supply the matching source license file; the example copies and
 pins it alongside the font asset.
 
