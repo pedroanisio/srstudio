@@ -54,6 +54,11 @@ def test_a_crash_or_a_push_that_ends_inside_the_take_is_accepted(move):
         (Move("push", 0.5, 1.4, 540, 900, until=2.5), "must end inside"),
         (Move("crash", 1.95, 1.4, 540, 900), "must end inside"),
         (Move("crash", float("nan"), 1.4, 540, 900), "must end inside"),
+        (Move("crash", 0.5, float("nan"), 540, 900), "scale"),
+        (Move("crash", 0.5, -2, 540, 900), "scale"),
+        (Move("push", 0.0, 0, 540, 900, until=2.0), "scale"),
+        (Move("crash", 0.5, 1.4, float("inf"), 900), "aims"),
+        (Move("crash", 0.5, 1.4, 540, float("nan")), "aims"),
     ],
 )
 def test_a_move_that_is_unknown_or_overruns_its_take_is_refused_with_the_styles_error(move, message):

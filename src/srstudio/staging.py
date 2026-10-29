@@ -77,12 +77,15 @@ def check_cover(takes: Sequence[Any], stages: Collection[str], error: type[Excep
 
 
 def check_move(m: Move, end: float, where: str, error: type[Exception] = StagingError) -> None:
-    """``m`` is a crash or a push that ends inside the take (``0..end``)."""
+    """``m`` is a crash or a push that ends inside the take (``0..end``), at a positive scale and a finite aim."""
     if m.kind not in ("crash", "push"):
         raise error(f"{where}: a move is a crash or a push, not {m.kind!r}")
     stop = m.until if m.kind == "push" else (m.back if m.back is not None else m.at + 0.15)
     if stop is None or not inside(m.at, stop, end):
         raise error(f"{where}: the {m.kind} from {m.at} must end inside the take (0..{end})")
+    checks.positive(m.scale, error, f"{where}: the {m.kind}'s scale must be a positive number, got {m.scale!r}")
+    if not (checks.number(m.x) and checks.number(m.y)):
+        raise error(f"{where}: the {m.kind} aims at ({m.x!r}, {m.y!r}); both must be finite numbers")
 
 
 def check_spans(
