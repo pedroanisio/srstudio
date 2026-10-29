@@ -46,3 +46,4 @@ declarations had drifted: 19 parts that episodes draw, among them `juno`, `remy`
 - Measuring rebuilds every episode, so it is a separate command and not part of every page build.
 - The catalog's coverage check now follows real usage, so a part that a new episode draws must get a gallery item.
 - The `episodes=` declarations remain as documentation for library users who do not run `srstudio usage`.
+  Superseded by [ADR 0032](0032-releases-recorders-and-discovery.md): the declarations are removed.

@@ -162,9 +162,10 @@ cv.animate_text(layer, "pop")
 
 ## The parts
 
-`srstudio catalog` lists them; `srstudio catalog --json` is machine-readable.
+`srstudio catalog` lists them; `srstudio catalog --json` is machine-readable, and `--usage REPORT` adds the episodes
+that use each part, from the report below.
 
-The `episodes=` a part is registered with are written by hand. `srstudio usage` measures the real usage instead: it
+Which episodes use a part is measured, not declared: `srstudio usage`
 rebuilds every episode project on a copy and records each registered part its build calls
 ([ADR 0017](docs/decisions/0017-measured-part-usage.md)). It prints the used and unused parts per kind and writes the
 report that `srstudio page --usage` reads:
@@ -268,7 +269,7 @@ Register a part so the catalog and other episodes find it:
 ```python
 from srstudio import register
 
-@register("prop", "tip_jar", summary="A glass tip jar", episodes=("06",))
+@register("prop", "tip_jar", summary="A glass tip jar")
 def tip_jar(cv, parent, x, y, scale=1.0):
     g = cv.group(parent, cv.uid("tip-jar"), x=x, y=y, scaleX=scale, scaleY=scale)
     cv.rect(g, -40, -90, 80, 100, radius=10, fill="#DDEAF2", stroke=cv.ink, sw=3)
@@ -278,8 +279,10 @@ def tip_jar(cv, parent, x, y, scale=1.0):
 Kinds are `character`, `location`, `prop`, `graphic`. A new location is complete only when it places both marks
 of the [Signature](#signature) convention. Parts from another package are listed with
 `srstudio catalog --plugins my_package.parts`. A new episode is a script like the ones in [episodes/](episodes/):
-it takes the project folder as its first argument and is run with `python3 episode.py PROJECT` or
-`srstudio build episode.py PROJECT`. `srstudio.sample.write_sample_project` writes a synthetic project (dialogue,
+it takes the project folder as its first argument and is run with `python3 episode.py PROJECT`,
+`srstudio build episode.py PROJECT` or, once it has a release, `srstudio build <slug> PROJECT`. Its recorder
+(`<script>_audio.py`, front end `srstudio.recording.main`) runs with `srstudio record <slug> PROJECT`
+([ADR 0032](docs/decisions/0032-releases-recorders-and-discovery.md)). `srstudio.sample.write_sample_project` writes a synthetic project (dialogue,
 tone-burst soundtrack, font) to try a build without a TTS pass.
 
 ### Finishing a style: `srstudio.look`
@@ -1342,9 +1345,13 @@ write when a limit is broken (title longer than the 125 characters the feed show
 hashtags, a malformed or duplicate hashtag, a caption over 2200 characters, an empty title or description). The
 error is `InstagramPostError`, with every problem listed.
 
-- The captions of the shipped episodes live in [episodes/instagram_posts.py](episodes/instagram_posts.py) as a
-  `POSTS` map keyed by project slug; each episode script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a
-  build leaves `ig.txt` next to the scene. Recreations credit the original author in the caption itself.
+- Each shipped episode has a release, `episodes/posts/<slug with underscores>.py`, defining
+  `RELEASE = srstudio.releases.Release(slug, post, video=, scene=, cover=, builder=)`
+  ([ADR 0032](docs/decisions/0032-releases-recorders-and-discovery.md)). `cover=True` says the cover is drawn from
+  the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene.
+  [episodes/instagram_posts.py](episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
+  script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
+  Recreations credit the original author in the caption itself.
 - Every post designs its **cover**: `InstagramPost(thumbnail=Thumbnail(headline, at, kicker, focus, zoom, place))`
   from [srstudio.thumbnail](src/srstudio/thumbnail.py) (ADR 0013). The backdrop is the frame of the rendered video on
   screen at `at` (frame floor(t × fps), selected by index, not by seeking), magnified `zoom` times on `focus`; over it

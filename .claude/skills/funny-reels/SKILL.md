@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.7.0
+schema_version: 1.8.0
 ---
 
 # Funny reels with srstudio
@@ -360,8 +360,9 @@ it in `srstudio catalog` without this file changing.
    from *Live inventory*, then `srstudio page --usage ../generated/catalog/usage.json` with the other arguments
    that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode calls has a
    gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
-8. **Instagram delivery.** Add an `InstagramPost` (title, description, credit, `Thumbnail`) to `POSTS` and the
-   slug to `VIDEOS` in `episodes/instagram_posts.py`, then from the workspace root:
+8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
+   `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`), then from the
+   workspace root:
 
    ```
    SRSTUDIO_ENGINE=generated/bin/scene-render .venv/bin/python srstudio/episodes/instagram_posts.py \
