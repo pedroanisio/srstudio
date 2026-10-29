@@ -27,6 +27,42 @@ def push_in(cv: Canvas, group, *, x: Keys = (), y: Keys = (), scale: Keys = (), 
         cv.keys(group, "scaleY", scale, hold=hold_scale)
 
 
+SNAP = 0.25  # seconds: a scale change at least this fast is a crash zoom; slower is a push (srstudio.craft agrees)
+
+
+def crash_zoom(
+    cv: Canvas,
+    group,
+    at: float,
+    scale: float,
+    *,
+    duration: float = 0.15,
+    start_scale: float = 1.0,
+    back: float | None = None,
+) -> float:
+    """A crash (snap) zoom: ``group`` holds ``start_scale``, then snaps to ``scale`` over ``duration`` from ``at``;
+    with ``back`` it snaps out again at that time. Set the pivot first with :func:`anchor`. Returns ``at``, the cue
+    for the whoosh or sting that sells the move (:func:`srstudio.foley.whoosh`). A move slower than :data:`SNAP` is
+    a push: use :func:`push_in`."""
+    if not (math.isfinite(at) and at >= 0):
+        raise ValueError(f"crash zoom: at {at} must be a time >= 0")
+    if not (math.isfinite(scale) and scale > 0 and math.isfinite(start_scale) and start_scale > 0):
+        raise ValueError(f"crash zoom: scale {scale} and start_scale {start_scale} must be > 0")
+    if not (math.isfinite(duration) and duration > 0):
+        raise ValueError(f"crash zoom: duration {duration} must be > 0")
+    if duration > SNAP:
+        raise ValueError(f"crash zoom: {duration} s is slower than a snap ({SNAP} s); use push_in for a push")
+    if back is not None and not (math.isfinite(back) and back >= at + duration):
+        raise ValueError(f"crash zoom: back {back} must come after the zoom lands at {at + duration}")
+    keys: list[tuple[float, float]] = [(0, start_scale), (at, start_scale), (at + duration, scale)]
+    if back is not None:
+        keys += [(back, scale), (back + duration, start_scale)]
+    keys = [k for i, k in enumerate(keys) if i == 0 or k[0] > keys[i - 1][0]]  # at == 0 needs no lead-in key
+    cv.keys(group, "scaleX", keys, hold=False)
+    cv.keys(group, "scaleY", keys, hold=False)
+    return at
+
+
 def zoom_holds(cv: Canvas, group, scale: Keys):
     """Per-shot zoom levels that change on the cut (hold keys)."""
     cv.keys(group, "scaleX", scale)

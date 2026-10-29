@@ -241,7 +241,12 @@ srstudio usage --episodes ../generated/episodes --packages ../generated/packages
   glyph paths.
 - **Music** (`srstudio.music`): `Groove(bpm)` turns bars and beats into seconds; `render(groove, sections)`
   synthesises a deterministic groove on that grid (rests are cut, not faded), `write_wav` stores it.
-- **Camera** (`srstudio.camera`): `anchor`, `push_in`, `zoom_holds`, `reframe` (hard cuts by hold keys on one group).
+- **Camera** (`srstudio.camera`): `anchor`, `push_in`, `zoom_holds`, `reframe` (hard cuts by hold keys on one group),
+  `crash_zoom` (a snap onto the subject within `SNAP` seconds, optional snap back; returns the cue for
+  `foley.write_whoosh`, a seeded noise sweep that swells into the landing).
+- **Craft report** (`srstudio.craft`, [ADR 0023](docs/decisions/0023-comic-craft-measured.md)): `srstudio craft
+  PROJECT... --renders ../generated/renders` lists each episode's punch-ins, crash zooms and pushes (camera or gag)
+  and the pauses between its lines, with the rendered level inside each one (quiet or filled); `--json` for the data.
 - **Mouth styles** (`srstudio.soundtrack`): `OFFICE_MOUTH`, `CAFE_MOUTH`; `dataclasses.replace(CAFE_MOUTH, idle="smile")`
   keeps a character smiling between lines.
 

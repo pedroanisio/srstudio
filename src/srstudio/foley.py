@@ -27,6 +27,9 @@ __all__ = [
     "tones",
     "write_tones",
     "STING",
+    "whoosh",
+    "write_whoosh",
+    "WHOOSH",
     "CHIME",
     "RATE",
     "THRESHOLD",
@@ -152,6 +155,54 @@ def write_buzz(
 
 
 # -- stings and chimes ------------------------------------------------------------------------------------------------
+WHOOSH = 0.3  # seconds of one whoosh: it swells into the moment a crash zoom lands
+
+
+def whoosh(
+    times: Sequence[float], duration: float, length: float = WHOOSH, rate: int = RATE, peak: float = PEAK, seed: int = 0
+) -> list[float]:
+    """A mono bed of ``duration`` seconds with a whoosh of ``length`` seconds starting at each of ``times``: seeded
+    noise through a band that sweeps up from 300 Hz to 3 kHz, swelling to its loudest as it ends, so it lands with a
+    crash zoom (:func:`srstudio.camera.crash_zoom` returns the cue)."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (math.isfinite(length) and 0.05 <= length <= 2.0):
+        raise ValueError(f"length {length} must be within 0.05..2 s")
+    if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
+        raise ValueError(f"duration {duration} must leave {length:.2f} s after every cue")
+    if not (math.isfinite(peak) and 0 < peak <= 1):
+        raise ValueError(f"peak {peak} must be in 0..1")
+    rng = random.Random(seed)
+    out = [0.0] * int(round(duration * rate))
+    n = int(length * rate)
+    for at in sorted(times):
+        begin = int(at * rate)
+        low = band = 0.0
+        for k in range(n):
+            if begin + k >= len(out):
+                break
+            x = k / n
+            hz = 300.0 * (10.0**x)  # 300 Hz to 3 kHz, evenly in pitch
+            f = 2 * math.sin(math.pi * min(hz, rate / 6) / rate)  # a state-variable band-pass, stable up to rate/6
+            noise = rng.uniform(-1.0, 1.0)
+            high = noise - low - 0.5 * band
+            band += f * high
+            low += f * band
+            env = (x**2) * min(1.0, (1 - x) / 0.04)  # swell, then a 12 ms fade so it never clicks
+            out[begin + k] += env * band
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_whoosh(
+    path: Path, times: Sequence[float], duration: float, length: float = WHOOSH, rate: int = RATE, seed: int = 0
+) -> Path:
+    """The whoosh bed for the given cue times, written to ``path``."""
+    return write_wav(path, whoosh(times, duration, length, rate, PEAK, seed), rate)
+
+
 Glide = tuple[float, float, float]  # (start Hz, end Hz, seconds): one note that slides
 STING: tuple[Glide, ...] = ((330.0, 262.0, 0.32), (262.0, 196.0, 0.42))  # the "wah-wah": two sagging notes
 CHIME: tuple[Glide, ...] = ((784.0, 784.0, 0.12), (1047.0, 1047.0, 0.22))  # a call's two-note chime

@@ -1,6 +1,7 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
-scores the mouths over aligned takes, ``srstudio page`` rebuilds the catalog page."""
+scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
+rebuilds the catalog page."""
 
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import catalog_page, fonts, lipsync, registry, usage
+from . import catalog_page, craft, fonts, lipsync, registry, usage
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .timeline import Timeline
@@ -56,6 +57,11 @@ def main(argv=None):
     use.add_argument("--arg", action="append", default=[], metavar="SLUG=OPTION", help="an option for one episode")
     lips = sub.add_parser("lipsync", help="score the shipped and the speech mouth over the takes of timelines")
     lips.add_argument("timelines", nargs="+", type=Path, help="timeline.json files with character timestamps")
+    crafted = sub.add_parser("craft", help="measure the camera moves and the pauses between lines of episode projects")
+    crafted.add_argument("projects", nargs="+", type=Path, help="episode project folders (<slug>/<slug>.scene.xml)")
+    crafted.add_argument("--renders", type=Path, help="folder of renders (<slug>.mp4): measure the sound in each pause")
+    crafted.add_argument("--threshold", type=float, default=craft.PAUSE, help="seconds between lines that make a pause")
+    crafted.add_argument("--json", action="store_true", help="print the reports as JSON")
     build = sub.add_parser("build", help="run an episode script: python file or module, with its project root")
     build.add_argument("script")
     build.add_argument("root", nargs="?")
@@ -153,6 +159,33 @@ def main(argv=None):
         print(f"{len(takes)} takes")
         for name, result in scores.items():
             print(f"{name:<13} {result.summary()}")
+        return 0
+    if args.cmd == "craft":
+        try:
+            reports = []
+            for project in args.projects:
+                render = args.renders / f"{project.name}.mp4" if args.renders else None
+                video = render if render is not None and render.is_file() else None
+                reports.append(craft.measure(project, video=video, threshold=args.threshold))
+        except (craft.CraftError, ValueError) as exc:
+            print(f"srstudio craft: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps([r.to_dict() for r in reports], indent=2))
+            return 0
+        for r in reports:
+            print(f"{r.slug}: {len(r.moves)} moves ({sum(m.camera for m in r.moves)} camera), {len(r.pauses)} pauses")
+            same: dict[tuple, list[str]] = {}  # groups that make one move together print as one line
+            for m in r.moves:
+                same.setdefault((m.kind, m.ratio, m.start, m.end, m.camera), []).append(m.group)
+            for (kind, ratio, start, end, camera), groups in same.items():
+                where = groups[0] + (f" +{len(groups) - 1} more" if len(groups) > 1 else "")
+                print(f"  {kind:<8} x{ratio:<5} {start:6.2f}–{end:<6.2f} {where}{' (camera)' if camera else ''}")
+            for p in r.pauses:
+                level = (
+                    "unmeasured" if p.level_db is None else f"{p.level_db:.1f} dB, {'quiet' if p.quiet else 'filled'}"
+                )
+                print(f"  pause {p.start:.2f}–{p.end:.2f}  {p.end - p.start:.2f} s  {level}")
         return 0
     if args.cmd == "build":
         script = args.script
