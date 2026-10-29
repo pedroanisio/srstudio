@@ -77,10 +77,16 @@ def test_a_series_frames_its_episodes_in_the_vertical_safe_area_by_default():
 def test_a_line_and_an_effect_are_takes_and_an_effect_asks_for_no_voices_or_music():
     said = series.line("03", "rook", "Skip it!", 0.2, mood="angry")
     assert said == takes.Take("03", "rook", "Skip it!", 0.2, mood="angry")
+    assert said.heard == ()
     boom = series.effect("04", "[BOOM]", "A distant explosion", 1.6, 0.3, peak=0.4)
     assert boom.actor == "sfx" and boom.text == "[BOOM]"
     assert boom.prompt == "A distant explosion, no voices, no music"
     assert (boom.seconds, boom.longest, boom.peak, boom.hold) == (1.6, 1.6, 0.4, 0.3)
+
+
+def test_a_line_carries_the_hearings_the_operator_accepted():
+    said = series.line("09", "juno", "Real is also premium.", 1.2, heard=("Reel is also premium.",))
+    assert said == takes.Take("09", "juno", "Real is also premium.", 1.2, mood="calm", heard=("Reel is also premium.",))
 
 
 def test_word_at_finds_a_words_start_ignoring_case_and_punctuation():

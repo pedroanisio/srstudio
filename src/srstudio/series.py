@@ -121,9 +121,12 @@ class Reel:
         )
 
 
-def line(id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm") -> takes.Take:
-    """A spoken take: ``actor``'s voice says ``text``, then ``hold`` seconds of silence."""
-    return takes.Take(id, actor, text, hold, mood=mood)
+def line(
+    id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm", heard: tuple[str, ...] = ()
+) -> takes.Take:
+    """A spoken take: ``actor``'s voice says ``text``, then ``hold`` seconds of silence; ``heard`` lists the
+    transcripts the operator accepted for it (:attr:`srstudio.takes.Take.heard`)."""
+    return takes.Take(id, actor, text, hold, mood=mood, heard=heard)
 
 
 def effect(id: str, caption: str, prompt: str, seconds: float, hold: float = 0.2, peak: float = 0.5) -> takes.Take:
