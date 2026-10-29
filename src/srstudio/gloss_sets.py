@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import camera, fonts, gloss, signature
+from . import camera, gloss, look, signature
 from .canvas import Canvas
 from .gloss import GlossError, Talk
 from .registry import register
@@ -93,30 +93,11 @@ class Card:
 
 # -- text and numbers -------------------------------------------------------------------------------------------------
 def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> list[str]:
-    """``text`` broken greedily into lines the font draws within ``width`` at ``size``; explicit newlines are
-    kept. :class:`GlossError` when a word alone is too wide or the text needs more than ``max_lines`` lines."""
-    lines: list[str] = []
-    for para in text.split("\n"):
-        line = ""
-        for word in para.split():
-            trial = f"{line} {word}".strip()
-            if fonts.text_width(font, trial, size) <= width:
-                line = trial
-                continue
-            if not line:
-                raise GlossError(f"the word {word!r} is wider than {width:g} px at {size:g} px")
-            lines.append(line)
-            line = word
-            if fonts.text_width(font, line, size) > width:
-                raise GlossError(f"the word {word!r} is wider than {width:g} px at {size:g} px")
-        lines.append(line)
-    if len(lines) > max_lines:
-        raise GlossError(f"{text!r} needs {len(lines)} lines at {size:g} px; the box holds {max_lines}")
-    return lines
-
-
-def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color, align: Any = "center"):
-    return cv.text(parent, cv.uid("txt"), value, x, y, w, h, size, color=color, align=align)
+    """:func:`srstudio.look.wrap`, refusing with :class:`GlossError`."""
+    try:
+        return look.wrap(font, text, size, width, max_lines)
+    except look.FitError as e:
+        raise GlossError(str(e)) from None
 
 
 # segments a..g of a seven-segment digit: a top, b top right, c bottom right, d bottom, e bottom left, f top left,
@@ -199,21 +180,7 @@ GRADE: dict[str, dict[str, Any]] = {  # over every shot: lights bloom, corners f
 
 def finish(cv: Canvas, node) -> None:
     """The style's grade over a shot (:data:`GRADE`)."""
-    cv.apply(node, *(cv.effect(f"gloss-{kind}", kind, **attrs) for kind, attrs in GRADE.items()))
-
-
-def _far(cv: Canvas, g):
-    """The far plane: a group softened by :data:`DEPTH_BLUR`."""
-    far = cv.group(g, cv.uid("g"))
-    cv.apply(far, cv.effect("gloss-depth", "blur", radius=DEPTH_BLUR))
-    return far
-
-
-def _fade(cv: Canvas, g, y0: float, y1: float, colour: str, name: str) -> None:
-    """``colour`` at ``y0`` thinning to nothing at ``y1``: haze on a horizon, shade at the frame's foot."""
-    top, bottom = (y0, y1) if y0 < y1 else (y1, y0)
-    stops = [(0, colour), (1, colour[:7] + "00")] if y0 < y1 else [(0, colour[:7] + "00"), (1, colour)]
-    cv.rect(g, 0, top, W, bottom - top, cv.grad(name, stops, (0, 0, 0, 1)))
+    look.grade(cv, node, "gloss", GRADE)
 
 
 def _caption_shade(cv: Canvas, g) -> None:
@@ -226,11 +193,6 @@ def _card_shadow(cv: Canvas) -> str:
     """The soft plum shadow that lifts a card off the shot."""
     return cv.effect("gloss-card-shadow", "drop-shadow", radius=26, offsetX=6, offsetY=16, intensity=0.3,
                      color="#3a1f5c")  # fmt: skip
-
-
-def _glow(cv: Canvas, g, x: float, y: float, w: float, h: float, colour: str, name: str, opacity: float = 1.0):
-    """A soft radial pool of ``colour`` in the box ``x, y, w, h``: a light, its spill on a floor or wall."""
-    return cv.ellipse(g, x, y, w, h, cv.rgrad(name, [(0, colour), (1, colour[:7] + "00")]), opacity=opacity)
 
 
 def _sparkles(cv: Canvas, g, points: Sequence[tuple[float, float, float]], end: float) -> None:
@@ -268,8 +230,8 @@ def _floor(cv: Canvas, g, top: float, base: str, tile: str, *, vp: float = 560, 
     streak = cv.group(g, cv.uid("g"), opacity=0.5)  # the sky's light lying on the gloss
     cv.ellipse(streak, 140, top + 70, 800, 120, "#ffffff")
     cv.apply(streak, cv.effect("gloss-floor-sheen", "blur", radius=40))
-    _fade(cv, g, top, top + 260, HAZE, f"gloss-horizon-{HAZE[1:]}")
-    _fade(cv, g, H, 1380, "#3a1f5c66", "gloss-foot-shade")
+    look.fade(cv, g, f"gloss-horizon-{HAZE[1:]}", HAZE, top, top + 260, W)
+    look.fade(cv, g, "gloss-foot-shade", "#3a1f5c66", H, 1380, W)
     cv.rect(g, 0, top - 2, W, 4, "#ffffff", opacity=0.8)
 
 
@@ -324,7 +286,7 @@ def plaza(cv: Canvas, parent, *, end: float, sign: bool = False) -> None:
     g = cv.group(parent, cv.uid("g"))
     sky = [(0, "#7c68e6"), (0.42, "#b39af3"), (0.78, "#f5c4e6"), (1, "#ffe1d6")]
     cv.rect(g, 0, 0, W, 960, cv.grad("gloss-plaza-dome", sky, (0, 0, 0, 1)))
-    _glow(cv, g, -260, 560, 1600, 640, "#fff4e0", "gloss-plaza-sun", 0.9)
+    look.pool(cv, g, "gloss-plaza-sun", "#fff4e0", -260, 560, 1600, 640, opacity=0.9)
     seams = cv.group(g, cv.uid("g"), opacity=0.13)  # the sky is a dome, and its panels show if you look
     for k in range(1, 6):
         cv.path(seams, f"M-40 {120 * k + 40:g} Q540 {120 * k - 60:g} 1120 {120 * k + 40:g}", stroke="#ffffff", sw=3)
@@ -339,7 +301,8 @@ def plaza(cv: Canvas, parent, *, end: float, sign: bool = False) -> None:
         cv.ellipse(cloud, x - 120 * s, y + 30 * s, 240 * s, 34 * s, "#d9c6f5", opacity=0.6)
         cv.keys(cloud, "x", [(0, 0), (end, (-1) ** i * 30)], hold=False)
     _sparkles(cv, g, ((120, 560, 16), (960, 170, 20), (420, 210, 12), (700, 520, 14), (60, 150, 10)), end)
-    far = _far(cv, g)  # the skyline, hazy: hills, tents, a stacked tower, a standing ring
+    # the skyline, hazy: hills, tents, a stacked tower, a standing ring
+    far = look.depth(cv, g, "gloss-depth", DEPTH_BLUR)
     cv.path(far, "M-20 900 Q160 770 360 860 Q520 790 700 850 Q880 760 1100 880 L1100 920 L-20 920 Z",
             gloss.mix("#c9a6ee", HAZE, 0.35))  # fmt: skip
     for cx, w, h, a, b in ((150, 230, 170, "#ff9cc8", "#fff1f7"), (930, 260, 190, "#8fd9cf", "#f4fffc")):
@@ -353,7 +316,7 @@ def plaza(cv: Canvas, parent, *, end: float, sign: bool = False) -> None:
     for k, c in enumerate(("#ffd45e", "#b59cff", "#ff9cc8", "#7fd6c9")):
         cv.rect(far, 330 - 34 + 6 * (k % 2), 860 - 66 * (k + 1), 68, 66, gloss.mix(c, HAZE, 0.4), radius=10)
     cv.ellipse(far, 680, 640, 190, 250, cv.clear, gloss.mix("#ffd45e", HAZE, 0.35), 34)
-    _fade(cv, g, 920, 560, HAZE + "cc", "gloss-plaza-air")
+    look.fade(cv, g, "gloss-plaza-air", HAZE + "cc", 920, 560, W)
     cv.ellipse(g, 40, 720, 330, 330, gloss.vinyl(cv, "#ff8cc0", sphere=True), LINE, LINE_W)  # a giant ball, sunk
     gloss.sheen(cv, g, 90, 760, 110, 64)
     cv.path(g, "M700 905 L790 640 L880 905 Z", gloss.vinyl(cv, "#7fd6c9"), LINE, LINE_W)  # a striped cone
@@ -420,7 +383,7 @@ def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     cv.rect(window, 656, 616, 298, 138, cv.grad("gloss-lab-glass", [(0, "#4a3a70"), (1, "#1c1430")],
                                                (0, 0, 0.3, 1)), radius=18)  # fmt: skip
     eye = cv.group(window, cv.uid("g"))  # someone is watching
-    _glow(cv, eye, 740, 630, 130, 110, "#ffd45e", "gloss-lab-eye", 0.75)
+    look.pool(cv, eye, "gloss-lab-eye", "#ffd45e", 740, 630, 130, 110, opacity=0.75)
     cv.ellipse(eye, 790, 672, 30, 26, "#fff2b8")
     cv.keys(eye, "opacity", [(0, 1), (end * 0.6, 1), (end * 0.6 + 0.08, 0.2), (end * 0.6 + 0.2, 1)])
     cv.path(window, "M672 632 L742 632 L682 712 Z", "#ffffff", opacity=0.14)
@@ -428,9 +391,9 @@ def activity(cv: Canvas, parent, *, end: float, number: str = "07") -> None:
     digits(cv, g, number, 110, 620, 170, "#9a7fd1")  # a stencil that reads across the room
     gloss.letters(cv, g, "ACTIVITY ROOM", 110, 812, 28, "#8a7aa8")
     _floor(cv, g, 1000, "#e3dfee", "#cdc6de", vp=600)
-    _glow(cv, g, 160, 1120, 760, 260, "#ffffff", "gloss-lab-pool", 0.7)
+    look.pool(cv, g, "gloss-lab-pool", "#ffffff", 160, 1120, 760, 260, opacity=0.7)
     pad = cv.group(g, cv.uid("g"))
-    _glow(cv, pad, 340, 1190, 400, 160, "#ff5fa2", "gloss-lab-pad-glow", 0.45)
+    look.pool(cv, pad, "gloss-lab-pad-glow", "#ff5fa2", 340, 1190, 400, 160, opacity=0.45)
     cv.ellipse(pad, 400, 1222, 280, 96, gloss.vinyl(cv, "#ff5fa2"), LINE, LINE_W)
     cv.ellipse(pad, 440, 1236, 200, 68, gloss.vinyl(cv, "#ffd0e4"), LINE, 3)
     cv.path(pad, "M500 1252 L580 1286 M580 1252 L500 1286", stroke=LINE, sw=8)
@@ -457,7 +420,7 @@ def waiting(cv: Canvas, parent, *, end: float, serving: Sequence[tuple[float, st
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, W, 1000, cv.grad("gloss-wait-wall", [(0, "#c3ebdf"), (0.6, "#dcf5ee"), (1, "#cdeee4")],
                                       (0, 0, 0, 1)))  # fmt: skip
-    _glow(cv, g, 160, 160, 760, 560, "#ffffff", "gloss-wait-wash", 0.55)
+    look.pool(cv, g, "gloss-wait-wash", "#ffffff", 160, 160, 760, 560, opacity=0.55)
     cv.rect(g, 0, 840, W, 160, cv.grad("gloss-wait-wainscot", [(0, "#a9dccd"), (1, "#8fcdbb")], (0, 0, 0, 1)))
     cv.rect(g, 0, 834, W, 12, "#ecfbf6", LINE, 2)
     clock = cv.group(g, cv.uid("g"))  # a clock with no hands
@@ -576,7 +539,7 @@ def board(
             cv.gate(words, [(min(round(a + POP_OPEN, 4), (a + b) / 2), b)])
         ty = y + BOARD_PAD
         if c.heading:
-            _text(cv, words, c.heading, tx, ty, tw, 36, 28, tone, "start")
+            look.label(cv, words, c.heading, tx, ty, tw, 36, 28, tone, "start")
             ty += head
         if c.points is not None:
             badge = cv.group(pop, cv.uid("g"))
@@ -589,10 +552,10 @@ def board(
             cv.rect(badge, bx, by, BADGE_W, bh, tone, cv.ink, 5, radius=26)
             cv.rect(badge, bx + 14, by + 8, BADGE_W - 28, 12, "#ffffff", radius=6, opacity=0.35)
             sign = "+" if c.points > 0 else "−" if c.points < 0 else "±"
-            _text(cv, badge, f"{sign}{abs(c.points):,}", bx, by + 14, BADGE_W, bh - 28, 60, "#ffffff")
-        _text(cv, words, "\n".join(title), tx, ty, tw, 56 * len(title), 48, TEXT, "start")
+            look.label(cv, badge, f"{sign}{abs(c.points):,}", bx, by + 14, BADGE_W, bh - 28, 60, "#ffffff")
+        look.label(cv, words, "\n".join(title), tx, ty, tw, 56 * len(title), 48, TEXT, "start")
         if body:
-            _text(cv, words, "\n".join(body), tx, ty + 56 * len(title) + 8, tw, 46 * len(body), 38, tone, "start")
+            look.label(cv, words, "\n".join(body), tx, ty + 56 * len(title) + 8, tw, 46 * len(body), 38, tone, "start")
         out.append(g)
     return out
 
@@ -725,7 +688,7 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     lines = wrap(font, text, 48, 600, 4)
     h = 40 + 56 * len(lines)
     cv.apply(cv.rect(g, 206, 228, 706, h, PAPER, cv.ink, INK_W, radius=26), _card_shadow(cv))
-    _text(cv, g, "\n".join(lines), 236, 248, 650, 56 * len(lines), 48, TEXT, "start")
+    look.label(cv, g, "\n".join(lines), 236, 248, 650, 56 * len(lines), 48, TEXT, "start")
     gloss.sunny(cv, g, at=(SAFE[0] + 62, 300), scale=0.42, talk=talk, end=end)
     return g
 
@@ -758,14 +721,14 @@ def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes
     words = cv.group(g, cv.uid("g"))
     if settle > 0:
         cv.gate(words, [(settle, end)])
-    _text(cv, words, "PLAZA NOTICE", 150, top + 70, 520, 46, 36, TONES["plum"], "start")
-    _text(cv, words, "\n".join(t_lines), 150, top + 130, 700, 76 * len(t_lines), 66, TEXT, "start")
+    look.label(cv, words, "PLAZA NOTICE", 150, top + 70, 520, 46, 36, TONES["plum"], "start")
+    look.label(cv, words, "\n".join(t_lines), 150, top + 130, 700, 76 * len(t_lines), 66, TEXT, "start")
     by = top + 170 + 76 * len(t_lines)
-    layer = _text(cv, words, "\n".join(b_lines), 150, by, 700, 56 * len(b_lines), 46, TEXT, "start")
+    layer = look.label(cv, words, "\n".join(b_lines), 150, by, 700, 56 * len(b_lines), 46, TEXT, "start")
     cv.animate_text(layer, "typewriter", presetStart=max(0.3, settle), presetDuration=round(min(2.4, end * 0.6), 3))
     foot = by + 56 * len(b_lines) + 40
     cv.line(g, 150, foot, 640, foot, "#e5d9f2", 4)
-    _text(cv, words, "Thank you for existing at the Plaza.", 150, foot + 20, 520, 40, 30, TONES["plum"], "start")
+    look.label(cv, words, "Thank you for existing at the Plaza.", 150, foot + 20, 520, 40, 30, TONES["plum"], "start")
     gloss.sunny(cv, g, at=(840, top + h - 20), scale=1.0, talk=talk, end=end)
     signature.code(cv, g, 920, 1700, 14, color=TEXT, align="end")
     return g
