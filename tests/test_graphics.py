@@ -117,3 +117,22 @@ def test_graphic_instances_have_distinct_assets_and_resolve_their_own_text(build
     assert first_assets and second_assets and first_assets.isdisjoint(second_assets)
     declared = texts(root)
     assert all(asset in declared for asset in first_assets | second_assets)
+
+
+@pytest.mark.parametrize(
+    "builder,args,naming,expected",
+    [
+        (graphics.scorecard, ("SCORE", [("POINTS", "2", "#FFFFFF")], (1, 3)), "prefix", "{}-heading"),
+        (graphics.dashboard, ("STATUS", [("WORK", "DONE")], (1, 3)), "prefix", "{}-heading"),
+        (graphics.password_card, ("PASSWORD", "secret", "NO SPACES", (1, 3)), "prefix", "{}-heading"),
+        (graphics.location_slate, ("LATER", (1, 3)), "text_id", "{}"),
+        (graphics.connected_card, ("CONNECTED", "secret", (1, 3)), "prefix", "{}-heading"),
+    ],
+)
+def test_a_caller_named_part_keeps_its_name_on_a_custom_instance(builder, args, naming, expected):
+    cv = fresh()
+    builder(cv, cv.comp, *args, id="job-posting", **{naming: "posting"})
+    builder(cv, cv.comp, *args, id="job-offer", **{naming: "offer"})
+    declared = texts(render(cv))
+    assert expected.format("posting") in declared
+    assert expected.format("offer") in declared
