@@ -31,7 +31,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import registry
+from . import checks, registry
 from .errors import SrstudioError
 from .styles import STYLES
 from .usage import Report
@@ -161,8 +161,8 @@ def load_notes(path: Path) -> Notes:
 def _shot(where: str, raw: object) -> Shot:
     s = _fields(where, raw, {"episode", "at"}, {"box"})
     at = s["at"]
-    if isinstance(at, bool) or not isinstance(at, (int, float)) or at < 0:
-        raise CatalogError(f"{where}.at: expected seconds >= 0, got {at!r}")
+    if not checks.number(at) or at < 0:
+        raise CatalogError(f"{where}.at: expected finite seconds >= 0, got {at!r}")
     box = s.get("box")
     if box is not None:
         ok = isinstance(box, list) and len(box) == 4 and all(type(v) is int and v >= 0 for v in box)

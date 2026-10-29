@@ -324,6 +324,8 @@ def item(**changes):
         (item(shot=shot(at=-1)), "at"),
         (item(shot=shot(at="1")), "at"),
         (item(shot=shot(at=True)), "at"),
+        (item(shot=shot(at=float("nan"))), "at"),  # json reads NaN and Infinity
+        (item(shot=shot(at=float("inf"))), "at"),
         (item(shot=shot(box=[0, 0, 0, 10])), "box"),
         (item(shot=shot(box=[0, 0, 10])), "box"),
         (item(shot=shot(box=[0, -1, 10, 10])), "box"),
