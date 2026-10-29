@@ -11,7 +11,6 @@ renderer refuses any cache that changed.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import os
@@ -27,6 +26,8 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
 from sr_core.scene import Scene
+
+from . import digest
 
 PLACEHOLDER = "0" * 64  # the engine's "not made yet" digest
 PROVIDER_ENV = "SR_PROVIDER_SRSTUDIO_ELEVENLABS"
@@ -225,8 +226,7 @@ class Resolved:
     sha256: str
 
 
-def sha256_of(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+sha256_of = digest.sha256
 
 
 def verify(root: Path, item: Generated, sha256: str) -> Path:

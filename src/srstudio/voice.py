@@ -31,7 +31,7 @@ import urllib.parse
 import urllib.request
 import wave
 from array import array
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -425,6 +425,10 @@ def _spell(n: int) -> list[str]:
         return [_ONES[n]]
     if n < 100:
         return [_TENS[n // 10]] + ([_ONES[n % 10]] if n % 10 else [])
+    if n < 1000:
+        return [_ONES[n // 100], "hundred"] + (_spell(n % 100) if n % 100 else [])
+    if n < 1_000_000:
+        return _spell(n // 1000) + ["thousand"] + (_spell(n % 1000) if n % 1000 else [])
     return list(str(n))  # outside the scripts' range: compared digit by digit
 
 
@@ -432,9 +436,9 @@ TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text wri
 
 
 def normalize_words(text: str) -> list[str]:
-    """Lowercase words without punctuation; digits and abbreviated titles spelled out; curly apostrophes made
-    straight."""
-    text = text.lower().replace("\u2019", "'").replace("-", " ")
+    """Lowercase words without punctuation; digits, a percent sign and abbreviated titles spelled out; curly
+    apostrophes made straight."""
+    text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
     cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
     out: list[str] = []
     for token in cleaned.split():
@@ -448,11 +452,17 @@ def normalize_words(text: str) -> list[str]:
     return out
 
 
-def check_transcript(transcript: Transcript, expected: str) -> None:
-    """The heard words equal the scripted words, ignoring case, punctuation and number spelling."""
-    heard, want = normalize_words(transcript.text), normalize_words(expected)
-    if heard != want:
-        raise TranscriptMismatch(f"heard {transcript.text!r}, expected {expected!r}")
+def check_transcript(transcript: Transcript, expected: str, accepted: Sequence[str] = ()) -> None:
+    """The heard words equal the scripted words, ignoring case, punctuation and number spelling. A compound
+    may be heard split or joined ("well-being" for "wellbeing"): the letters must still match in order.
+    ``accepted`` lists hearings the operator approved for this line (a homophone the recognizer cannot tell
+    apart), each compared the same way; anything else is still a mismatch."""
+    heard = normalize_words(transcript.text)
+    for text in (expected, *accepted):
+        want = normalize_words(text)
+        if heard == want or "".join(heard) == "".join(want):
+            return
+    raise TranscriptMismatch(f"heard {transcript.text!r}, expected {expected!r}")
 
 
 @dataclass(frozen=True)

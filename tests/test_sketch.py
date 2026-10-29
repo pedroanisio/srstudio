@@ -165,6 +165,9 @@ def test_visemes_follow_the_letters_of_a_take_inside_what_was_kept_of_it():
         sketch.visemes(al2, -1.0, 0.0, 1.0)
     with pytest.raises(sketch.SketchError, match="more than 0 s"):
         sketch.visemes(al2, 0.0, 0.0, 0.0)
+    # a take that speaks from its first sample, placed at a second that rounds up, opens on the sound alone
+    track = sketch.visemes(al2, 2.0000006, 0.0, 1.0)
+    assert track[0] == (2.000001, "open") and all(b > a for (a, _), (b, _) in zip(track, track[1:], strict=False))
     # takes join in order; a take on top of the last one is refused
     track = [(0.0, "open"), (1.0, "closed")]
     sketch.extend_track(track, [(1.0, "closed"), (1.1, "round"), (1.5, "closed")])

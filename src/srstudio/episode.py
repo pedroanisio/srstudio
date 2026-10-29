@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import math
@@ -13,7 +12,7 @@ from typing import Any, cast
 
 from sr_core.scene import AudioMix, AudioTrack, Scene
 
-from . import native, signature
+from . import digest, native, signature
 from .canvas import Canvas, Palette, Signature
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
@@ -25,9 +24,7 @@ from .soundtrack import MouthStyle, PhonemeStyle, Soundtrack, mouth_states
 from .styles import CUTOUT, Style
 from .timeline import Timeline
 
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+sha256 = digest.sha256
 
 
 class _FromStyle:
@@ -182,7 +179,7 @@ class Episode:
             signature=Signature(spec.signature_code) if spec.signature else None,
         )
         self._mix: AudioMix | None = None
-        self._cover_hidden: list[str] = []  # ids hidden in the cover variant (hide_on_cover)
+        self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
         self._cover_written = False
         # Shot-sequence layouts add the font first and their audio per take; the interview family mixes one file.
         if spec.audio:
@@ -526,9 +523,12 @@ class Episode:
         if not nodes:
             raise ValueError("hide_on_cover needs at least one node")
         for node in nodes:
-            if node.id in self._cover_hidden:
+            if node.id in [target for target, _, _ in self._cover_hidden]:
                 raise ValueError(f"{node.id} is already hidden on the cover")
-            self._cover_hidden.append(node.id)
+            if node.xml_name == "captionTrack":  # a caption track has no visibility: on the cover it goes to a sidecar
+                self._cover_hidden.append((node.id, "mode", "sidecar"))
+            else:
+                self._cover_hidden.append((node.id, "visible", "false"))
 
     def finish(self, out: Path | None = None, report: Path | None = None, strict: bool = True) -> Path:
         """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path."""
@@ -536,8 +536,8 @@ class Episode:
             from .social import COVER_VARIANT
 
             variant = self.scene.add_parameters().add_variant(id=COVER_VARIANT, label="cover backdrop, no burned text")
-            for target in self._cover_hidden:
-                variant.add_override(target=target, property="visible", value="false")
+            for target, prop, value in self._cover_hidden:
+                variant.add_override(target=target, property=prop, value=value)
             self._cover_written = True
         findings = self.check()
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"

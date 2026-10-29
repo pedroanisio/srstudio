@@ -1525,6 +1525,27 @@ def _floor_at(a: float, c: float) -> Point:
     return _sofa_pt(a, c, -_DROP)
 
 
+LAMP_AT = _floor_at(260, -400)  # where the soft home's floor lamp stands
+LAMP_SHADE = (LAMP_AT[0], LAMP_AT[1] - 555)  # the middle of its shade, for a camera to frame
+
+
+def _lamp_glow(cv: Canvas, g, talk: Sequence[tuple[float, float]], id: str) -> None:
+    """The shade lit up, with a halo, in each ``talk`` span: a smart lamp speaking."""
+    x, floor = LAMP_AT
+    glow = cv.group(g, id, opacity=0)
+    cv.ellipse(glow, x - 170, floor - 725, 340, 340, "#FFE9A0", opacity=0.45)
+    _poly(
+        cv,
+        glow,
+        [(x - 62, floor - 500), (x + 62, floor - 500), (x + 44, floor - 610), (x - 44, floor - 610)],
+        "#FFF6CF",
+        WOOD_LINE,
+        4,
+    )
+    cv.path(glow, f"M {x - 58:g} {floor - 512:g} L {x + 58:g} {floor - 512:g}", stroke="#F2A93B", sw=6)
+    cv.keys(glow, "opacity", [(0, 0)] + [k for start, end in talk for k in ((start, 1), (end, 0))])
+
+
 def _lamp(cv: Canvas, g, x: float, floor: float) -> None:
     """A floor lamp: a round base, a thin pole and a drum shade."""
     cv.ellipse(g, x, floor, 90, 22, WOOD_FRONT, WOOD_LINE, 4)
@@ -1563,7 +1584,14 @@ def home(
     shots: Sequence[tuple[float, float]] | None = None,
     on_sofa: Callable[[object], object] | None = None,
     id: str = "soft-home",
+    lamp_talk: Sequence[tuple[float, float]] = (),
 ):
+    """``lamp_talk``: (start, end) spans, in order and apart, in which the floor lamp speaks and its shade glows."""
+    last = 0.0
+    for start, end in lamp_talk:
+        if not (math.isfinite(start) and math.isfinite(end) and last <= start < end):
+            raise BlobError(f"lamp_talk spans are (start, end) in order from 0, apart; got {list(lamp_talk)}")
+        last = end
     g = cv.group(parent, id)
     if shots:
         cv.gate(g, shots)
@@ -1575,8 +1603,10 @@ def home(
         RUG_LINE,
         4,
     )
-    lx, ly = _floor_at(260, -400)
+    lx, ly = LAMP_AT
     _lamp(cv, g, lx, ly)
+    if lamp_talk:
+        _lamp_glow(cv, g, lamp_talk, f"{id}-lamp-talk")
     sofa(cv, g, on_sofa=on_sofa)
     top = _side_table(cv, g, 24, _floor_at(-330, -250)[1])
     signature.cactus(cv, g, top[0], top[1], 0.55)
@@ -1845,8 +1875,17 @@ def swivel_chair(cv: Canvas, parent, id: str = "soft-swivel-chair"):
     return g
 
 
-def _screen(cv: Canvas, g) -> None:
-    """The wall screen showing a slide: a title, a bar chart and a page dot row; a webcam on top."""
+def meeting_screen() -> tuple[Point, float, float, float]:
+    """The meeting room screen's picture as a flat frame: its top-left corner in output pixels, its width and
+    height, and the ``skewY`` (degrees) that lays a flat drawing along the back wall."""
+    _, a0, a1, u0, u1 = WALL_DECOR["meeting-screen"]
+    i0, i1, v0, v1 = a0 + 16, a1 - 16, u0 + 16, u1 - 16
+    return room_point(i0, 0, v1), i1 - i0, v1 - v0, math.degrees(math.atan(_BACK))
+
+
+def _screen(cv: Canvas, g, call: Callable[[object], object] | None = None, call_id: str = "") -> None:
+    """The wall screen showing a slide: a title, a bar chart and a page dot row; a webcam on top. ``call`` draws
+    over the slide in the flat frame of :func:`meeting_screen`, masked to the picture."""
     _, a0, a1, u0, u1 = WALL_DECOR["meeting-screen"]
     _quad(cv, g, wall_quad("back", a0 + 14, a1 + 14, u0 - 14, u1 - 14), cv.ink, opacity=0.12)  # cast on the wall
     _quad(cv, g, wall_quad("back", a0, a1, u0, u1), SCREEN_BEZEL, cv.ink, 4)
@@ -1870,6 +1909,11 @@ def _screen(cv: Canvas, g) -> None:
         room_point(i0 + 40, 0, v0),
     ]
     _quad(cv, g, gloss, "#FFFFFF", opacity=0.07)
+    if call is not None:
+        (x, y), w, h, skew = meeting_screen()
+        frame = cv.group(g, call_id, x=x, y=y, skewY=skew)
+        frame.add_mask(type="rect", x=0, y=0, width=w, height=h)
+        call(frame)
     cx, cy = room_point((a0 + a1) / 2, 0, u1)
     cv.rect(g, cx - 34, cy - 20, 68, 22, SCREEN_BEZEL, cv.ink, 3, radius=8)  # the webcam
     cv.ellipse(g, cx - 8, cy - 17, 16, 16, "#1B1D22", "#5D8FD0", 2.5)
@@ -1905,8 +1949,14 @@ def _clock(cv: Canvas, g) -> None:
     "and a webcam, a wall clock, a side window whose light falls on the floor, and the signature cactus",
 )
 def meeting_room(
-    cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-meeting-room"
+    cv: Canvas,
+    parent,
+    *,
+    shots: Sequence[tuple[float, float]] | None = None,
+    id: str = "soft-meeting-room",
+    on_screen: Callable[[object], object] | None = None,
 ):
+    """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`."""
     g = cv.group(parent, id)
     if shots:
         cv.gate(g, shots)
@@ -1925,7 +1975,7 @@ def meeting_room(
         "#FBF7F0",
         MEETING.line,
     )
-    _screen(cv, decor)
+    _screen(cv, decor, on_screen, f"{id}-screen-call")
     _clock(cv, decor)
     light = cv.group(g, f"{id}-light")
     # The sun comes in low through the side window, across the room and toward the viewer, so the window's two

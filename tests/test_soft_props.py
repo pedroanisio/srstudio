@@ -80,3 +80,79 @@ def test_bad_badges_are_refused(states, box, message):
     cv = canvas()
     with pytest.raises(SoftPropError, match=message):
         soft_props.status_badge(cv, cv.comp, states, box)
+
+
+def test_the_cake_is_a_registered_prop():
+    entry = {e.name: e for e in registry.entries()}["soft-cake"]
+    assert entry.kind == "prop" and entry.style == "soft"
+
+
+def opacity_keys(group):
+    anim = next(a for a in group.iter("animate") if a.get("property") == "opacity")
+    return [(float(k.get("time")), float(k.get("value"))) for k in anim.iter("key")]
+
+
+def test_the_cake_reads_its_front_then_turns_to_show_its_back():
+    cv = canvas()
+    soft_props.cake(cv, cv.comp, "WE'LL MISS\nYOU", back="BYE PIP", turn_at=4.0, x=300, y=1250, scale=1.2)
+    t = tree(cv)
+    groups = {g.get("id"): g for g in t.iter("group")}
+    cake = groups["soft-cake"]
+    assert float(cake.get("x")) == 300 and float(cake.get("y")) == 1250 and float(cake.get("scaleX")) == 1.2
+    texts = [x.get("text") for x in t.iter("text")]
+    assert texts == ["WE'LL MISS\nYOU", "BYE PIP"]
+    spin = next(a for a in groups["soft-cake-spin"].iter("animate") if a.get("property") == "scaleX")
+    widths = [(float(k.get("time")), float(k.get("value"))) for k in spin.iter("key")]
+    assert widths[0] == (0.0, 1.0) and (4.0, 1.0) in widths and widths[-1][1] == 1.0
+    edge = min(widths, key=lambda kv: kv[1])
+    assert 4.0 < edge[0] < widths[-1][0] <= 4.0 + soft_props.CAKE_TURN and edge[1] < 0.1
+    assert opacity_keys(groups["soft-cake-front"]) == [(0.0, 1.0), (edge[0], 0.0)]
+    assert opacity_keys(groups["soft-cake-back"]) == [(0.0, 0.0), (edge[0], 1.0)]
+
+
+def test_a_cake_without_a_back_never_turns():
+    cv = canvas()
+    soft_props.cake(cv, cv.comp, "SURPRISE", id="party-cake")
+    t = tree(cv)
+    ids = [g.get("id") for g in t.iter("group")]
+    assert "party-cake" in ids and "party-cake-front" in ids and "party-cake-back" not in ids
+    assert not [a for a in t.iter("animate") if a.get("property") == "scaleX"]
+
+
+@pytest.mark.parametrize(
+    "front, kw, message",
+    [
+        ("", {}, "lettering"),
+        ("A\nB\nC", {}, "lettering"),
+        ("X" * 13, {}, "lettering"),
+        ("OK", {"back": "BYE"}, "turn_at"),
+        ("OK", {"turn_at": 2.0}, "back"),
+        ("OK", {"back": "BYE", "turn_at": -1.0}, "turn_at"),
+        ("OK", {"back": "BYE", "turn_at": float("nan")}, "turn_at"),
+        ("OK", {"back": "X" * 13, "turn_at": 1.0}, "lettering"),
+        ("OK", {"scale": 0}, "scale"),
+        ("OK", {"scale": float("inf")}, "scale"),
+    ],
+)
+def test_bad_cakes_are_refused(front, kw, message):
+    cv = canvas()
+    with pytest.raises(SoftPropError, match=message):
+        soft_props.cake(cv, cv.comp, front, **kw)
+
+
+def test_the_cake_lettering_shows_only_in_its_spans():
+    cv = canvas()
+    soft_props.cake(cv, cv.comp, "HI", back="BYE", turn_at=3.0, lettering=[(1.0, 5.0), (7.0, 9.0)])
+    groups = {g.get("id"): g for g in tree(cv).iter("group")}
+    gate = groups["soft-cake-lettering"]
+    assert opacity_keys(gate) == [(0.0, 0.0), (1.0, 1.0), (5.0, 0.0), (7.0, 1.0), (9.0, 0.0)]
+    inside = {g.get("id") for g in gate.iter("group")}
+    assert {"soft-cake-front", "soft-cake-back"} <= inside
+
+
+def test_cake_lettering_spans_must_be_in_order():
+    cv = canvas()
+    with pytest.raises(SoftPropError, match="lettering spans"):
+        soft_props.cake(cv, cv.comp, "HI", lettering=[(2.0, 1.0)])
+    with pytest.raises(SoftPropError, match="lettering spans"):
+        soft_props.cake(cv, cv.comp, "HI", lettering=[(0.0, 2.0), (1.0, 3.0)])

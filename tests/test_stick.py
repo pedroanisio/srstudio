@@ -219,7 +219,15 @@ def test_the_style_value(tmp_path):
     assert (spec.font, spec.font_id, spec.font_policy, spec.font_style) == (
         "assets/Inter-Bold.ttf", "inter", "pinned", "normal")  # fmt: skip
     assert spec.mouth_style is None and spec.namer is not None and spec.namer("anything") == "n1"
-    assert STICK.facts()["parts"] == ["stick", "stick_car"]
+    assert STICK.facts()["parts"] == [
+        "stick",
+        "stick_airport",
+        "stick_car",
+        "stick_flat",
+        "stick_gym",
+        "stick_school",
+        "stick_shop",
+    ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
     assert parts == {
         "stick-room",
@@ -238,6 +246,23 @@ def test_the_style_value(tmp_path):
         "stick-phone",
         "stick-cockpit",
         "stick-ride",
+        "stick-studio-flat",
+        "stick-murphy-bed",
+        "stick-checkout",
+        "stick-kiosk",
+        "stick-avocado",
+        "stick-name-badge",
+        "stick-gym",
+        "stick-gym-counter",
+        "stick-classroom",
+        "stick-tiny-chair",
+        "stick-teacher-desk",
+        "stick-essay",
+        "stick-gate",
+        "stick-gate-podium",
+        "stick-carry-on",
+        "stick-cabin",
+        "stick-armrests",
     }
 
 
@@ -477,3 +502,17 @@ def test_the_new_parts_are_registered():
     names = {e.name: e for e in registry.entries()}
     assert names["stick-call"].kind == "graphic" and names["stick-call"].style == "stick"
     assert "standing" in names["stick-rig"].tags and "looks" in names["stick-rig"].tags
+
+
+def test_an_apron_dresses_the_torso_under_the_tie_and_is_off_by_default():
+    plain, aproned = canvas(), canvas()
+    stick.rig(plain, plain.comp, [TYPE], 1.0)
+    stick.rig(aproned, aproned.comp, [TYPE, TURN], 1.0, look=stick.Look(apron="#2f7d57", tie="#b8433a"))
+    assert stick.Look().apron is None
+    assert not any(s.get("fill") == "#2f7d57" for s in xml(plain).iter("shape"))
+    fills = [s.get("fill") for s in xml(aproned).iter("shape")]
+    assert fills.count("#2f7d57") == 2  # an apron on each key's body
+    first_apron, first_tie = fills.index("#2f7d57"), fills.index("#b8433a")
+    assert first_apron < first_tie  # the tie hangs over the apron
+    with pytest.raises(stick.StickDataError, match="apron"):
+        stick.rig(canvas(), None, [TYPE], 1.0, look=stick.Look(apron="green"))

@@ -24,12 +24,26 @@ from .canvas import Canvas
 from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, ToonDataError, _d, _path, fh, fx, fy, shape_d
 
-__all__ = ["kitchen", "home", "coffee_machine", "desk_lamp", "plant", "calendar", "cycle_keys", "parse_pages"]
+__all__ = [
+    "kitchen",
+    "home",
+    "coffee_machine",
+    "desk_lamp",
+    "plant",
+    "calendar",
+    "call_centre",
+    "WAITING_MAX",
+    "cycle_keys",
+    "parse_pages",
+    "NOTE_MAX",
+    "note_insert",
+]
 
 INK = 5.5  # the brush's weight for an object's outline, reference pixels (as the characters')
 FINE = 3.0
 SHADOW = "#1b1430"  # soft shadows, at low opacity
 GLINT = "#ffffff"
+NOTE_MAX = 14  # the longest note the fridge door takes, in characters
 
 # the office kitchen
 KITCHEN_WALL = (("0", "#fff6e0"), ("0.55", "#fbe6bf"), ("1", "#f4d6a6"))
@@ -98,6 +112,23 @@ CAL_HEADER = "#b42318"
 CAL_W, CAL_H = 100, 116
 FLIP = 0.35  # seconds a torn page takes to fall
 PAGE = re.compile(r"^[A-Z]{3} [0-9]{1,2}$")
+
+# the call centre
+CENTRE_WALL = (("0", "#eef2f8"), ("0.6", "#dbe3ee"), ("1", "#c7d2e1"))
+PARTITION = "#5d7ea8"
+PARTITION_FLECK = "#7d9cc4"
+PARTITION_CAP = "#c9d1dc"
+CENTRE_CHAIR = "#3b4a63"
+CENTRE_CHAIR_LIGHT = "#56688a"
+BOARD = "#1f2430"
+BOARD_FRAME = "#9aa3b2"
+LED = "#ff4d3d"
+LED_DIM = "#5a2a28"
+POSTER = "#fff7e8"
+POSTER_BAND = "#f2a65a"
+POSTER_INK = "#2b2f3a"
+WAITING_MAX = 9999  # the most calls the board can count
+BLINK = 1.0  # seconds per blink of the board's lamp
 
 Spans = Sequence[tuple[float, float]]
 
@@ -222,10 +253,10 @@ def _door(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float, colour: str
 def kitchen(cv: Canvas, parent, note: str = "") -> None:
     """The office kitchen behind the character: a warm wall, mint upper and lower cabinets, a white subway-tile
     backsplash with a glint on every tile, a wooden counter at :data:`COUNTER_Y` that props stand on, and a tall
-    fridge at the right with magnets and, when ``note`` is given (1 to 14 characters), a note stuck to its door. The
-    signature marks are the desk's (:func:`srstudio.toon.desk`)."""
-    if note and (len(note) > 14 or not note.strip()):
-        raise ToonDataError("the fridge note is 1 to 14 characters")
+    fridge at the right with magnets and, when ``note`` is given (1 to :data:`NOTE_MAX` characters), a note stuck
+    to its door. The signature marks are the desk's (:func:`srstudio.toon.desk`)."""
+    if note and (len(note) > NOTE_MAX or not note.strip()):
+        raise ToonDataError(f"the fridge note is 1 to {NOTE_MAX} characters")
     g = cv.group(parent, cv.uid("g"))
     wall = cv.grad("toon-kitchen-wall", [(float(o), c) for o, c in KITCHEN_WALL], (0, 0, 0, 1))
     cv.rect(g, 0, 0, cv.width, cv.height, wall)
@@ -267,6 +298,47 @@ def _fridge(cv: Canvas, g, note: str) -> None:
         cv.ellipse(n, fx(x0 + 70), fy(seam + 64), fh(14), fh(14), MAGNETS[0], cv.ink, FINE_W * 0.5)
         cv.text(n, cv.uid("fridge-note"), note, fx(x0 + 36), fy(seam + 82), int(fh(82)), int(fh(66)), 24,
                 color=NOTE_INK, wrap="word")  # fmt: skip
+
+
+INSERT_NOTE = 760  # the note's side in the insert, frame pixels
+INSERT_TEXT = 128  # the insert's lettering, frame pixels: legible on a phone
+INSERT_PUSH = 1.04  # the slow push through the insert
+
+
+@register(
+    "prop",
+    "toon-note-insert",
+    summary="A full-frame close-up of the fridge note: the evidence cut in, legible on a phone",
+    style="toon",
+)
+def note_insert(cv: Canvas, parent, text: str, start: float, end: float) -> None:
+    """A full-frame insert of a note on the fridge door from ``start`` to ``end`` (project seconds): the steel with
+    its glint and handle, two magnets and the note, tipped and lettered at :data:`INSERT_TEXT` pixels, under a slow
+    push. Cut it in over a shot (into the props in front) when the note itself is the joke; the note on the fridge
+    in the wide shot is too small to read on a phone. ``text`` is 1 to :data:`NOTE_MAX` characters."""
+    if not text.strip() or len(text) > NOTE_MAX:
+        raise ToonDataError(f"the insert's note is 1 to {NOTE_MAX} characters")
+    if not 0 <= start < end:
+        raise ToonDataError(f"the insert starts before it ends, from 0: {start}..{end}")
+    w, h = cv.width, cv.height
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, anchorX=w / 2, anchorY=h / 2, x=w / 2, y=h / 2)
+    steel = cv.grad("toon-note-insert-steel", [(0.0, FRIDGE[0]), (0.6, FRIDGE[1]), (1.0, FRIDGE[2])], (0, 0, 1, 1))
+    cv.rect(g, 0, 0, w, h, steel, cv.clear, 0, radius=0)
+    cv.rect(g, 70, -20, 54, h * 0.62, FRIDGE_HANDLE, cv.ink, INK_W * 1.6, radius=27)
+    for x in (230, 270):  # the steel's glint
+        cv.rect(g, x, 120, 12, 520, GLINT, cv.clear, 0, radius=6, opacity=0.9)
+    x0, y0 = (w - INSERT_NOTE) / 2 + 30, (h - INSERT_NOTE) / 2
+    n = cv.group(g, cv.uid("g"), anchorX=w / 2, anchorY=h / 2, x=w / 2, y=h / 2)
+    n.rotation = 4
+    cv.rect(n, x0 + 18, y0 + 26, INSERT_NOTE, INSERT_NOTE, SHADOW, cv.clear, 0, radius=8, opacity=0.18)
+    cv.rect(n, x0, y0, INSERT_NOTE, INSERT_NOTE, NOTE, cv.ink, INK_W * 1.6, radius=8)
+    cv.text(n, cv.uid("insert-note"), text, x0 + 50, y0 + 150, INSERT_NOTE - 100, INSERT_NOTE - 260, INSERT_TEXT,
+            color=NOTE_INK, wrap="word")  # fmt: skip
+    for i, (mx, my, r) in enumerate(((w / 2 + 20, y0 - 10, 46), (w - 150, 260, 38))):
+        cv.ellipse(n if i == 0 else g, mx - r, my - r, 2 * r, 2 * r, MAGNETS[i], cv.ink, INK_W * 1.2)
+        cv.ellipse(n if i == 0 else g, mx - r * 0.45, my - r * 0.6, r * 0.5, r * 0.4, GLINT, opacity=0.8)
+    cv.keys(g, "scaleX", [(start, 1.0), (end, INSERT_PUSH)], hold=False)
+    cv.keys(g, "scaleY", [(start, 1.0), (end, INSERT_PUSH)], hold=False)
 
 
 # -- the home office at night ---------------------------------------------------------------------------------------
@@ -609,3 +681,74 @@ def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[f
         cv.ellipse(g, fx(rx - 5), fy(y0 - 10), fh(10), fh(18), "#9aa0a8", cv.ink, FINE_W * 0.5)
     cv.ellipse(g, fx(cx - 4), fy(y0 - 26), fh(8), fh(8), cv.ink)
     _line(cv, g, [(cx - 26, y0 - 6), (cx, y0 - 22), (cx + 26, y0 - 6)], 2.4)
+
+
+@register(
+    "location",
+    "toon-call-centre",
+    summary="A call-centre cubicle: a fabric partition, a YOUR CALL MATTERS poster and a CALLS WAITING board",
+)
+def call_centre(cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0, 12),), end: float = 0.0) -> None:
+    """The character's cubicle on a pale office wall: a flecked blue fabric partition with an aluminium cap behind
+    the character, a cheerful poster above it that reads YOUR CALL MATTERS, and, where the other sets have their
+    window, a dark LED board of the CALLS WAITING with a red lamp. ``waiting`` is ``(project second, count)`` from
+    0, in time order, each count 0 to :data:`WAITING_MAX`; the board shows one count at a time. The lamp blinks
+    from 0 to ``end`` (still when ``end`` is 0)."""
+    counts = _check_waiting(waiting)
+    end = _check_end(end)
+    g = cv.group(parent, cv.uid("g"))
+    wall = cv.grad("toon-centre-wall", [(float(o), c) for o, c in CENTRE_WALL], (0, 0, 0, 1))
+    cv.rect(g, 0, 0, cv.width, cv.height, wall)
+    # the poster: a band of colour, two lines of type
+    cv.rect(g, fx(42), fy(370), fh(250), fh(70), SHADOW, cv.clear, 0, radius=fh(4), opacity=0.16)
+    cv.rect(g, fx(36), fy(364), fh(250), fh(70), POSTER, cv.ink, FINE_W, radius=fh(4))
+    cv.rect(g, fx(36), fy(364), fh(250), fh(14), POSTER_BAND, cv.ink, FINE_W, radius=fh(4))
+    cv.text(g, cv.uid("centre-poster"), "YOUR CALL\nMATTERS", fx(36), fy(380), int(fh(250)), int(fh(52)), 40,
+            color=POSTER_INK)  # fmt: skip
+    # the board, in the window's place: a frame, the dark face, the label, the lamp and the count
+    cv.rect(g, fx(348), fy(362), fh(250), fh(150), BOARD_FRAME, cv.ink, INK_W, radius=fh(6))
+    cv.rect(g, fx(362), fy(374), fh(240), fh(126), BOARD, cv.ink, FINE_W, radius=fh(4))
+    cv.text(g, cv.uid("centre-label"), "CALLS WAITING", fx(380), fy(382), int(fh(200)), int(fh(30)), 30, color=LED,
+            align="start")  # fmt: skip
+    cv.ellipse(g, fx(566), fy(386), fh(18), fh(18), LED_DIM, cv.ink, FINE_W * 0.5)
+    lamp = cv.group(g, cv.uid("g"))
+    _glow(cv, lamp, "toon-centre-lamp", 575, 395, 22, LED)
+    cv.ellipse(lamp, fx(566), fy(386), fh(18), fh(18), LED, cv.ink, FINE_W * 0.5)
+    if end:
+        cv.keys(lamp, "opacity", cycle_keys([(0.0, 1.0), (BLINK / 2, 0.15)], BLINK, 0.0, end), hold=False)
+    for i, (at, count) in enumerate(counts):
+        digits = cv.group(g, cv.uid("g"))
+        cv.text(digits, cv.uid("centre-count"), str(count), fx(380), fy(410), int(fh(204)), int(fh(86)), 110,
+                color=LED, align="start")  # fmt: skip
+        keys = [(0.0, 1.0 if at == 0 else 0.0)] + ([(at, 1.0)] if at > 0 else [])
+        if i + 1 < len(counts):
+            keys.append((counts[i + 1][0], 0.0))
+        cv.keys(digits, "opacity", keys)
+    # the partition behind the character, its cap and a scatter of flecks in the weave, then the chair
+    cv.rect(g, fx(-10), fy(600), fh(612), fh(210), PARTITION, cv.ink, FINE_W, radius=0)
+    for k in range(40):
+        x, y = 8 + (k * 53) % 590, 616 + (k * 37) % 180
+        cv.ellipse(g, fx(x), fy(y), fh(4), fh(3), PARTITION_FLECK, opacity=0.8)
+    cv.rect(g, fx(-10), fy(588), fh(612), fh(16), PARTITION_CAP, cv.ink, FINE_W, radius=fh(4))
+    _path(cv, g, CHAIR_D, CENTRE_CHAIR)
+    _line(cv, g, [(60, 598), (160, 578), (260, 590)], 12.0, CENTRE_CHAIR_LIGHT)
+
+
+def _check_waiting(waiting: Sequence[tuple[float, int]]) -> list[tuple[float, int]]:
+    out: list[tuple[float, int]] = []
+    for item in waiting:
+        if not (isinstance(item, tuple | list) and len(item) == 2):
+            raise ToonDataError(f"the board takes (second, count) pairs, got {item!r}")
+        at, count = item
+        if isinstance(count, bool) or not isinstance(count, int) or not 0 <= count <= WAITING_MAX:
+            raise ToonDataError(f"a count of calls waiting is a whole number 0 to {WAITING_MAX}, got {count!r}")
+        if isinstance(at, bool) or not isinstance(at, int | float) or not math.isfinite(at):
+            raise ToonDataError(f"the board's counts change in order, from 0: got {at!r}")
+        if not out and at != 0:
+            raise ToonDataError(f"the board shows a count from 0, its first is at {at}")
+        if out and at <= out[-1][0]:
+            raise ToonDataError(f"the board's counts change in order, from 0: {at} after {out[-1][0]}")
+        out.append((float(at), count))
+    if not out:
+        raise ToonDataError("the board needs at least one count")
+    return out

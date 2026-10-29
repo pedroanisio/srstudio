@@ -113,6 +113,13 @@ def test_the_fridge_refuses_a_blank_or_long_note(note):
         toon_sets.kitchen(cv, cv.comp, note=note)
 
 
+def test_the_longest_note_the_fridge_takes_is_published_for_scripts_to_check():
+    cv = canvas()
+    toon_sets.kitchen(cv, cv.comp, note="X" * toon_sets.NOTE_MAX)
+    with pytest.raises(ToonDataError, match="1 to 14"):
+        toon_sets.kitchen(cv, cv.comp, note="X" * (toon_sets.NOTE_MAX + 1))
+
+
 # -- the home office ------------------------------------------------------------------------------------------------
 def test_the_home_office_is_still_without_an_end():
     cv = canvas()
@@ -267,3 +274,83 @@ def test_a_single_page_calendar_never_moves():
 def test_the_calendar_refuses_bad_pages(pages, message):
     with pytest.raises(ToonDataError, match=message):
         toon_sets.parse_pages(pages)
+
+
+# -- the note insert -----------------------------------------------------------------------------------------------
+def test_the_note_insert_fills_the_frame_with_the_note_for_its_span():
+    cv = canvas()
+    toon_sets.note_insert(cv, cv.comp, "IT MOVED.", 2.0, 3.5)
+    t = tree(cv)
+    g = next(g for g in t.iter("group") if g.get("start") == "2" or g.get("start") == "2.0")
+    assert float(g.get("end")) == 3.5
+    shapes = list(g.iter("shape"))
+    assert shapes[0].get("width") == "1080" and shapes[0].get("height") == "1920"  # the fridge door, the whole frame
+    assert texts(cv) == ["IT MOVED."]
+    size = next(int(a.get("size")) for a in t.iter("text"))
+    assert size >= 100  # legible on a phone, unlike the note on the fridge in the wide shot
+    pushes = animations(cv, "scaleX")
+    assert len(pushes) == 1 and keys_of(pushes[0])[0][0] == 2.0 and keys_of(pushes[0])[-1][0] == 3.5
+
+
+@pytest.mark.parametrize(
+    ("text", "start", "end", "match"),
+    [
+        ("", 1.0, 2.0, "1 to 14"),
+        ("X" * 15, 1.0, 2.0, "1 to 14"),
+        ("OK", 2.0, 2.0, "starts before it ends"),
+        ("OK", -1.0, 2.0, "starts before it ends"),
+    ],
+)
+def test_the_note_insert_refuses_a_note_or_span_it_cannot_show(text, start, end, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_sets.note_insert(cv, cv.comp, text, start, end)
+
+
+def test_the_note_insert_is_a_registered_toon_prop():
+    part = registry.get("prop", "toon-note-insert")
+    assert part.kind == "prop" and part.style == "toon"
+
+
+# -- the call centre --------------------------------------------------------------------------------------------------
+def test_the_call_centre_is_a_registered_toon_location():
+    entry = {e.name: e for e in registry.entries()}["toon-call-centre"]
+    assert entry.kind == "location" and entry.style == "toon"
+
+
+def test_the_call_centre_counts_the_calls_waiting_and_shows_one_count_at_a_time():
+    cv = canvas()
+    toon_sets.call_centre(cv, cv.comp, [(0.0, 41), (2.5, 128), (5.0, 999)])
+    shown = texts(cv)
+    assert "CALLS WAITING" in shown and "41" in shown and "128" in shown and "999" in shown
+    assert any("YOUR CALL" in t for t in shown if t)
+    gates = [keys_of(a) for a in animations(cv, "opacity")]
+    assert len(gates) == 3  # one gate per count, nothing else moves without an end
+    assert gates[1][0] == (0.0, 0.0) and (2.5, 1.0) in gates[1] and (5.0, 0.0) in gates[1]
+
+
+def test_the_call_centre_lamp_blinks_until_the_end_only():
+    still = canvas()
+    toon_sets.call_centre(still, still.comp, [(0.0, 7)])
+    moving = canvas()
+    toon_sets.call_centre(moving, moving.comp, [(0.0, 7)], end=6.0)
+    assert len(animations(moving, "opacity")) == len(animations(still, "opacity")) + 1
+
+
+@pytest.mark.parametrize(
+    ("waiting", "message"),
+    [
+        ([], "at least one"),
+        ([(1.0, 4)], "from 0"),
+        ([(0.0, 4), (2.0, 5), (2.0, 6)], "in order"),
+        ([(0.0, -1)], "0 to 9999"),
+        ([(0.0, 10000)], "0 to 9999"),
+        ([(0.0, 2.5)], "0 to 9999"),
+        ([(0.0, True)], "0 to 9999"),
+        ([(0.0, 3), (float("nan"), 4)], "in order"),
+    ],
+)
+def test_the_call_centre_refuses_counts_it_cannot_show(waiting, message):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=message):
+        toon_sets.call_centre(cv, cv.comp, waiting)

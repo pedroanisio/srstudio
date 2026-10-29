@@ -138,3 +138,37 @@ def test_the_conference_room_can_leave_its_wall_to_a_slot_drawn_behind_the_chair
     assert "location-conference-room-whiteboard" not in ids
     order = ["location-conference-room-window", "own-board", "location-conference-room-light", "seated"]
     assert [ids.index(i) for i in order] == sorted(ids.index(i) for i in order)
+
+
+def opacity_keys(el) -> list[tuple[float, float]]:
+    return [
+        (float(k.get("time")), float(k.get("value")))
+        for a in el.iter()
+        if local(a.tag) == "animate" and a.get("property") == "opacity"
+        for k in a.iter()
+        if local(k.tag) == "key"
+    ]
+
+
+def test_the_speakerphone_lights_its_ring_while_the_far_end_talks():
+    scene, cv = signed_canvas()
+    props.speakerphone(cv, cv.comp, 540, 1300, id="phone", talk=[(0.4, 1.0), (1.2, 1.8)])
+    ring = by_id(ET.fromstring(scene.to_bytes()), "phone-talk")
+    assert opacity_keys(ring) == [(0, 0), (0.4, 1), (1.0, 0), (1.2, 1), (1.8, 0)]
+    assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_a_quiet_speakerphone_draws_no_ring_and_bad_spans_are_refused():
+    scene, cv = signed_canvas()
+    props.speakerphone(cv, cv.comp, 540, 1300, id="phone")
+    assert "phone-talk" not in ids_in_order(ET.fromstring(scene.to_bytes()))
+    for spans in ([(1.0, 1.0)], [(-0.1, 0.5)], [(0.5, 1.0), (0.8, 1.2)], [(1.2, 1.8), (0.4, 1.0)]):
+        with pytest.raises(ValueError, match="talk"):
+            props.speakerphone(cv, cv.comp, 540, 1300, id="bad", talk=spans)
+
+
+def test_the_conference_room_passes_the_calls_talk_to_its_speakerphone():
+    scene, cv = signed_canvas()
+    locations.conference_room(cv, cv.comp, speaker_talk=[(0.2, 0.9)])
+    ring = by_id(ET.fromstring(scene.to_bytes()), "location-conference-room-speakerphone-talk")
+    assert opacity_keys(ring) == [(0, 0), (0.2, 1), (0.9, 0)]

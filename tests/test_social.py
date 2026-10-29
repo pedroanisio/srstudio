@@ -385,6 +385,24 @@ def test_publish_only_some_videos_leaves_the_rest_of_the_delivery_as_it_was(deli
     ]
 
 
+def test_two_deliveries_of_different_videos_that_overlap_both_keep_their_manifest_entries(delivered, monkeypatch):
+    items, out, renders = delivered
+    tall(renders / "a.mp4", lum="Y/4+N*20")
+    tall(renders / "b.mp4", lum="Y/3+N*10")  # both re-rendered: each run delivers one of them
+    real, other = InstagramPost.deliver, []
+
+    def slow_cover(self, folder, *args, **kw):  # while a's cover renders, another process delivers b
+        if folder.name == "a" and not other:
+            other.append(None)
+            other[0] = publish(items, out, font=FONT, engine=engine(), only={"b"})
+        return real(self, folder, *args, **kw)
+
+    monkeypatch.setattr(InstagramPost, "deliver", slow_cover)
+    assert [p.name for p in publish(items, out, font=FONT, engine=engine(), only={"a"})] == ["a"]
+    assert [p.name for p in other[0]] == ["b"]
+    assert reasons(items, out) == []  # b's entry, written mid-run, was not lost
+
+
 @pytest.mark.parametrize("only, needle", [({"zz"}, "not a published video: zz"), (set(), "at least one")])
 def test_publish_only_refuses_names_it_cannot_deliver(delivered, only, needle):
     items, out, _ = delivered

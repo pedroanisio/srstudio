@@ -16,15 +16,28 @@ class OfficeActor(Actor):
     """Shared body of the interview series: white shirt, dark tie, head radius 100.
 
     extras: ``arms`` = ``"static"`` (one stroke for both arms) or ``"articulated"`` (a
-    right-arm group with a forearm that can rotate at the elbow).
+    right-arm group with a forearm that can rotate at the elbow); ``legs`` = ``"seated"`` draws
+    trousers and shoes below the torso, for a bench, and ``"standing"`` trousers straight down to the shoes,
+    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them).
     """
 
     bottom = 312
     eye_xs = (-37, 31)
+    LEGS = ("seated", "standing")
+    STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
 
     def draw_body(self, g, perf: Performance):
         cv, ink, white, clear = self.cv, self.cv.ink, self.cv.white, self.cv.clear
         bottom = self.bottom
+        legs = perf.extras.get("legs")
+        if legs is not None:
+            if legs not in self.LEGS:
+                raise ValueError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
+            legs_group = cv.group(g, f"{self.tag_base}-legs")
+            if legs == "standing":
+                self.draw_standing_legs(legs_group)
+            else:
+                self.draw_seated_legs(legs_group)
         cv.rect(g, -10, 92, 20, 34, white, ink, 4)
         cv.path(
             g, f"M-64 {bottom} L-68 154 Q-69 124 -39 120 Q-4 113 38 120 Q68 126 68 154 L64 {bottom}Z", white, ink, 4.5
@@ -40,6 +53,25 @@ class OfficeActor(Actor):
             cv.path(g, f"M-66 148 L-87 235 L-79 {bottom} M67 148 L86 233 L77 {bottom}", stroke=ink, sw=5)
         cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
         cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
+
+    def draw_seated_legs(self, legs):
+        """Knees towards the camera, shins down to the path, as the seated café actors sit."""
+        cv, ink, b = self.cv, self.cv.ink, self.bottom
+        cv.path(legs, f"M-55 {b - 10} L-78 {b + 35} L-80 {b + 192} L-37 {b + 192} L-38 {b + 57} L-7 {b + 10}Z",
+                "#3F4652", ink, 4)  # fmt: skip
+        cv.path(legs, f"M55 {b - 10} L82 {b + 36} L88 {b + 192} L45 {b + 192} L40 {b + 57} L7 {b + 10}Z",
+                "#3F4652", ink, 4)  # fmt: skip
+        cv.path(legs, f"M-86 {b + 187} Q-50 {b + 182} -32 {b + 198} L-24 {b + 214} L-96 {b + 214}Z", ink, ink, 3)
+        cv.path(legs, f"M40 {b + 187} Q76 {b + 182} 96 {b + 198} L102 {b + 214} L32 {b + 214}Z", ink, ink, 3)
+
+    def draw_standing_legs(self, legs):
+        """Trouser legs straight down from the torso to shoes turned out a little, :data:`STANDING_LEGS` long."""
+        cv, ink, b, s = self.cv, self.cv.ink, self.bottom, self.STANDING_LEGS
+        cv.path(legs, f"M-62 {b - 10} L-66 {b + s - 22} L-14 {b + s - 22} L-6 {b + 20} L6 {b + 20} L14 {b + s - 22} "
+                      f"L66 {b + s - 22} L62 {b - 10}Z", "#3F4652", ink, 4)  # fmt: skip
+        cv.path(legs, f"M0 {b + 30} L0 {b + s - 30}", stroke="#2C323B", sw=3)  # the seam between the legs
+        cv.path(legs, f"M-70 {b + s - 26} Q-30 {b + s - 30} -10 {b + s - 14} L-8 {b + s} L-84 {b + s}Z", ink, ink, 3)
+        cv.path(legs, f"M10 {b + s - 26} Q46 {b + s - 30} 72 {b + s - 14} L84 {b + s} L8 {b + s}Z", ink, ink, 3)
 
     def draw_arm_gestures(self, perf: Performance):
         """Hook for the articulated arm; see the subclasses."""
@@ -222,7 +254,8 @@ class Barista(CafeActor):
         cv.ellipse(g, 108, 197, 21, 22, skin, ink, 2.5)
         cv.rect(g, -28, 237, 57, 45, "#2C5853", ink, 2, radius=8)
         name = perf.extras.get("name", "AVA")
-        cv.text(g, f"{name.lower()}-name", name, -24, 173, 48, 23, 13, "#F3E3BE")
+        if name:  # None leaves the tag blank: no text layer for a close-up to push out of the safe area
+            cv.text(g, f"{name.lower()}-name", name, -24, 173, 48, 23, 13, "#F3E3BE")
 
     def draw_head(self, head, perf):
         cv, ink, clear = self.cv, self.cv.ink, self.cv.clear

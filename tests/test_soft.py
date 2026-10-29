@@ -817,3 +817,32 @@ def test_the_meeting_room_seats_a_character_on_the_swivel_chair_and_validates():
     )
     blob.break_room(cv, cv.comp, id="other-room")
     assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def opacity_keys(el) -> list[tuple[float, float]]:
+    return [
+        (float(k.get("time")), float(k.get("value")))
+        for a in el.iter()
+        if local(a.tag) == "animate" and a.get("property") == "opacity"
+        for k in a.iter()
+        if local(k.tag) == "key"
+    ]
+
+
+def test_the_home_lamp_glows_while_it_talks_and_stays_plain_by_default():
+    scene, cv = canvas()
+    blob.home(cv, cv.comp, lamp_talk=[(0.5, 1.2), (2.0, 2.6)])
+    lamp = next(e for e in tree(scene).iter() if e.get("id") == "soft-home-lamp-talk")
+    assert opacity_keys(lamp) == [(0, 0), (0.5, 1), (1.2, 0), (2.0, 1), (2.6, 0)]
+    plain, cv = canvas()
+    blob.home(cv, cv.comp)
+    assert "soft-home-lamp-talk" not in {e.get("id") for e in tree(plain).iter()}
+    x, y = blob.LAMP_SHADE
+    assert 300 < x < 700 and 400 < y < 900  # the shade's centre, for a camera to frame
+
+
+@pytest.mark.parametrize("spans", [[(1.0, 1.0)], [(-0.2, 0.4)], [(0.5, 1.0), (0.9, 1.4)]])
+def test_lamp_talk_spans_out_of_order_or_empty_are_refused(spans):
+    _, cv = canvas()
+    with pytest.raises(BlobError, match="lamp_talk"):
+        blob.home(cv, cv.comp, lamp_talk=spans)

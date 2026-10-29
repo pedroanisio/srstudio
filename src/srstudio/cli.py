@@ -55,6 +55,9 @@ def main(argv=None):
     use.add_argument("--work", type=Path, required=True, help="scratch folder for the copies")
     use.add_argument("--out", type=Path, required=True, help="the usage report (JSON)")
     use.add_argument("--arg", action="append", default=[], metavar="SLUG=OPTION", help="an option for one episode")
+    use.add_argument(
+        "--skip", action="append", default=[], metavar="SLUG", help="a project not to build (still in progress)"
+    )
     lips = sub.add_parser("lipsync", help="score the shipped and the speech mouth over the takes of timelines")
     lips.add_argument("timelines", nargs="+", type=Path, help="timeline.json files with character timestamps")
     crafted = sub.add_parser("craft", help="measure the camera moves and the pauses between lines of episode projects")
@@ -126,8 +129,8 @@ def main(argv=None):
             if not sep or not slug or not option:
                 parser.error(f"--arg {item!r}: expected SLUG=OPTION")
             extra.setdefault(slug, []).append(option)
-        runs, missing = usage.discover(args.episodes, args.packages, args.scripts, extra)
         try:
+            runs, missing = usage.discover(args.episodes, args.packages, args.scripts, extra, skip=args.skip)
             report = usage.measure(runs, args.work, missing)
         except usage.UsageError as exc:
             print(f"srstudio usage: {exc}", file=sys.stderr)
@@ -138,8 +141,11 @@ def main(argv=None):
             print(
                 f"{kind}: {len(registry.entries(kind)) - len(unused)} used, {len(unused)} unused: {', '.join(unused)}"
             )
-        if missing:
-            print(f"not measured (no script): {', '.join(missing)}")
+        no_script = [slug for slug in missing if slug not in args.skip]
+        if no_script:
+            print(f"not measured (no script): {', '.join(no_script)}")
+        if args.skip:
+            print(f"not measured (skipped): {', '.join(sorted(args.skip))}")
         return 0
     if args.cmd == "lipsync":
         try:

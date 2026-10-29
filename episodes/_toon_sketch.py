@@ -68,7 +68,8 @@ class Shot:
 @dataclass(frozen=True)
 class Staging:
     """What an episode adds to its sketch: how each shot is dressed, the pill tints per speaker, the stickers on
-    a character, and its words for the metadata."""
+    a character, its words for the metadata and what stands in front of the character (the office desk unless a
+    dinner, say, lays a table instead)."""
 
     sketch: sketch.Sketch
     seed: int
@@ -78,6 +79,7 @@ class Staging:
     tints: Mapping[str, str]
     dress: Callable[[Shot], None]
     stickers: Mapping[str, Sequence[tuple]] = field(default_factory=dict)
+    desk: Callable[[Canvas, object], None] = toon.desk
 
 
 def badge_spans(
@@ -166,7 +168,7 @@ def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
         sketch.DRAWERS[app.who](cv, g, poses, app.end, taps, enter=app.start, **extra)
-        toon.desk(cv, g)
+        staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
     lines = toon.load_script(root / ep.spec.dialogue)

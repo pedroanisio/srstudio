@@ -12,7 +12,7 @@ in a new episode, and every new part you register shows up in `srstudio catalog`
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e ".[validate,test]"      # sr-core (the SDK), lxml for XSD + Schematron checks, pytest
-srstudio catalog                       # 20 characters, 26 locations, 52 props, 24 graphics; --style cutout|ink|soft|cel|stick|toon
+srstudio catalog                       # 26 characters, 35 locations, 65 props, 27 graphics; --style cutout|ink|soft|cel|stick|toon
 srstudio styles                        # Cutout 1080×1920 @ 30 fps clock · Ink 1080×1080 @ 24 fps sequence · Soft 1080×1920 @ 30 fps clock · Cel 1080×1920 @ 24 fps clock · Stick 1080×1920 @ 24 fps clock · Toon 1080×1920 @ 24 fps clock
 python3 examples/new_episode.py        # writes examples/out/coffee-review/coffee-review.scene.xml
 python3 -m pytest tests                # unit/integration tests; fidelity with SRSTUDIO_PACKAGES, engine tests with SRSTUDIO_ENGINE
@@ -82,20 +82,21 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 [docs/decisions/0003-soft-style.md](docs/decisions/0003-soft-style.md),
 [docs/decisions/0004-cel-style.md](docs/decisions/0004-cel-style.md),
 [docs/decisions/0006-stick-style.md](docs/decisions/0006-stick-style.md) and
-[docs/decisions/0010-toon-style.md](docs/decisions/0010-toon-style.md); `srstudio styles` lists them.
+[docs/decisions/0010-toon-style.md](docs/decisions/0010-toon-style.md) and
+[docs/decisions/0025-saga-style.md](docs/decisions/0025-saga-style.md); `srstudio styles` lists them.
 
-| | **Cutout** — `CUTOUT` (default) | **Ink** — `INK` | **Soft** — `SOFT` | **Cel** — `CEL` | **Stick** — `STICK` | **Toon** — `TOON` |
-|---|---|---|---|---|---|---|
-| Look | Flat vector shapes, soft gradients, bold outlines, like paper cut-outs | Pen stroke, one ink and one grey on white paper | Round white blob characters, one dark outline, flat warm stage, pose-to-pose | Traced, filled drawings with no outline, held per run under a measured camera push; silent | Stick figures in heavy ink traced at 12 fps, on painted, flat-shaded sets; dancers with badge heads | Flat cartoon in heavy ink on a gradient room: a cat whose expression swaps per cue and a brush-drawn, lip-synced cast, each phrase in a white pill; narrated portrait recreations and sketches |
-| Palettes | `OFFICE` (cool, stage `#D5DFDF`), `CAFE` (warm, stage `#F0DDC0`) | `MONO` (stage `#FFFFFF`) | `WARM` (stage `#F3DFCF`) | `LINEN` (stage `#c5bbb0`, shade = the lettering box teal) | `DAYLIGHT` (stage `#bda77a`, shade = the sets' brown line `#665541`) | `PEACH` (stage `#f8ead9`, shade = the cat's blue `#5bb7db`) |
-| Frame | 1080×1920 portrait, 30 fps | 1080×1080 square, 24 fps | 1080×1920 portrait, 30 fps | 1080×1920 portrait, 24 fps | 1080×1920 portrait, 24 fps | 1080×1920 portrait, 24 fps |
-| Clock | one composition on the project clock; camera setups gated by hold keys | a `<sequence>` of shots, each as long as its take; animations on the shot clock | one composition; each look of a character gated by hold keys on a beat grid (`music.Groove`) | one composition; the world group carries the measured camera (`cel.world`), the room its own inside it (`cel.compensate`); linear keys on the local clock, held to the end | one composition; each traced pose a group alive from its start to its end, each set a group per shot | one composition; each pose a group alive from its start to its end, the typing forearm keyed on the composition clock so it dips on the foley's keystrokes |
-| Input | `dialogue.json` + one mixed `assets/dialogue.wav` | `timeline.json` with takes (words, character timestamps, one audio file per take) | `dialogue.json` with pinned generated clips + `assets/groove.wav` from `music.render` | `script.json`, a list of timed captions; the measured camera, pose runs and drawings are read from `assets/` (`cel.load_*`) | `script.json`, timed captions with a size; poses, icons, lettering and foliage are read from `assets/` (`stick.load_*`) | `script.json`, timed captions, and `assets/poses.json` (eyes, mouth, arms per run), both derived from the episode's data module (`toon.load_*`) |
-| Mouths | five shapes from RMS amplitude windows (`OFFICE_MOUTH`, `CAFE_MOUTH`, chosen by palette) | five poses from character timestamps (`INK_MOUTH`, `phoneme_states`) | `SOFT_MOUTH` amplitude states drive the `sing` mouth of a cue | none: the style is silent and `mouth_style` resolves to `None` | none: `mouth_style` resolves to `None`; voice is narration over the captions | none: `mouth_style` resolves to `None`; the mouth is one of six drawn shapes per pose |
-| Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT |
-| Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one |
-| Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `subtitles` | `blob` | `cel` | `stick` | `toon`, `toon_cast`, `toon_props`, `toon_sets` |
+| | **Cutout** — `CUTOUT` (default) | **Ink** — `INK` | **Soft** — `SOFT` | **Cel** — `CEL` | **Stick** — `STICK` | **Toon** — `TOON` | **Saga** — `SAGA` |
+|---|---|---|---|---|---|---|---|
+| Look | Flat vector shapes, soft gradients, bold outlines, like paper cut-outs | Pen stroke, one ink and one grey on white paper | Round white blob characters, one dark outline, flat warm stage, pose-to-pose | Traced, filled drawings with no outline, held per run under a measured camera push; silent | Stick figures in heavy ink traced at 12 fps, on painted, flat-shaded sets; dancers with badge heads | Flat cartoon in heavy ink on a gradient room: a cat whose expression swaps per cue and a brush-drawn, lip-synced cast, each phrase in a white pill; narrated portrait recreations and sketches | Space-opera parody in heavy ink: a lit, shaded cast on sets whose far plane is out of focus, glowing holograms sized to their words, one grade (bloom, vignette, grain) over every shot |
+| Palettes | `OFFICE` (cool, stage `#D5DFDF`), `CAFE` (warm, stage `#F0DDC0`) | `MONO` (stage `#FFFFFF`) | `WARM` (stage `#F3DFCF`) | `LINEN` (stage `#c5bbb0`, shade = the lettering box teal) | `DAYLIGHT` (stage `#bda77a`, shade = the sets' brown line `#665541`) | `PEACH` (stage `#f8ead9`, shade = the cat's blue `#5bb7db`) | `VOID` (stage deep space, paper warm, shade gold) |
+| Frame | 1080×1920 portrait, 30 fps | 1080×1080 square, 24 fps | 1080×1920 portrait, 30 fps | 1080×1920 portrait, 24 fps | 1080×1920 portrait, 24 fps | 1080×1920 portrait, 24 fps | 1080×1920 portrait, 24 fps |
+| Clock | one composition on the project clock; camera setups gated by hold keys | a `<sequence>` of shots, each as long as its take; animations on the shot clock | one composition; each look of a character gated by hold keys on a beat grid (`music.Groove`) | one composition; the world group carries the measured camera (`cel.world`), the room its own inside it (`cel.compensate`); linear keys on the local clock, held to the end | one composition; each traced pose a group alive from its start to its end, each set a group per shot | one composition; each pose a group alive from its start to its end, the typing forearm keyed on the composition clock so it dips on the foley's keystrokes | a `<sequence>` of shots, each as long as its take; animations on the shot clock |
+| Input | `dialogue.json` + one mixed `assets/dialogue.wav` | `timeline.json` with takes (words, character timestamps, one audio file per take) | `dialogue.json` with pinned generated clips + `assets/groove.wav` from `music.render` | `script.json`, a list of timed captions; the measured camera, pose runs and drawings are read from `assets/` (`cel.load_*`) | `script.json`, timed captions with a size; poses, icons, lettering and foliage are read from `assets/` (`stick.load_*`) | `script.json`, timed captions, and `assets/poses.json` (eyes, mouth, arms per run), both derived from the episode's data module (`toon.load_*`) | `timeline.json` with takes from `srstudio.takes` (words, character timestamps, one audio file per take) and the music bed |
+| Mouths | five shapes from RMS amplitude windows (`OFFICE_MOUTH`, `CAFE_MOUTH`, chosen by palette) | five poses from character timestamps (`INK_MOUTH`, `phoneme_states`) | `SOFT_MOUTH` amplitude states drive the `sing` mouth of a cue | none: the style is silent and `mouth_style` resolves to `None` | none: `mouth_style` resolves to `None`; voice is narration over the captions | none: `mouth_style` resolves to `None`; the mouth is one of six drawn shapes per pose | visemes from character timestamps (`lipsync.SPEECH_MOUTH`); masked characters talk with a light |
+| Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
+| Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
+| Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `subtitles` | `blob` | `cel` | `stick`, `stick_car`, `stick_shop` | `toon`, `toon_cast`, `toon_props`, `toon_sets` | `saga`, `saga_sets`, `saga_reel` |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -149,6 +150,12 @@ cv.animate_text(layer, "pop")
   font, every wrapped line is measured against the safe width, so a line too wide is refused before the render.
   Capitals are wider: an uppercase look needs `max_chars` of about 18 at 53 px.
 - `mode="sidecar"` or `"both"` makes `scene-render encode` write `<video stem>.<track>.<language>.vtt` beside the video.
+- `CaptionLook(min_last=2, min_seconds=0.84)` makes captions readable
+  ([ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md)). A cue whose last line would hold a lone
+  word is split after a clause end, else where its halves balance. Each cue is held into the silence after it
+  for `min_seconds` (the engine's minimum is 0.8333 s), and a split that would show a half more briefly is not
+  made. A long take's last cue that is too small to read is re-cut with the one before it. The house look
+  leaves both off, so delivered videos rebuild unchanged.
 - Cues out of order or overlapping, words outside their cue, and a transition between shots that are not
   neighbours (or longer than either shot) raise `NativeError`. An unknown preset or type raises the SDK's
   `SchemaValueError`.
@@ -169,7 +176,9 @@ srstudio usage --episodes ../generated/episodes --packages ../generated/packages
 ```
 
 `--arg SLUG=OPTION` passes an option to one episode's script, here the narrated masters. A project with no script in
-`--scripts` is listed as not measured, and an episode whose build fails stops the run with its name.
+`--scripts` is listed as not measured, and an episode whose build fails stops the run with its name. `--skip SLUG`
+leaves out a project that cannot build yet (one still in progress, with no `timeline.json`): it is reported as not
+measured, and a skip that names no project is refused.
 
 - **Characters** (`srstudio.cast`): `Manager`, `Candidate` (office rig: five mouth shapes, blink overlay, head nods,
   static or articulated arms, raised brows, pupils, facepalm, pointing forearm), `Barista`, `Customer` (café rig;
@@ -210,8 +219,9 @@ srstudio usage --episodes ../generated/episodes --packages ../generated/packages
 - **Locations** (`srstudio.locations`): `office_wide(at_desk=)`, `office_reverse(in_chair=)`,
   `cafe(behind_counter=, at_counter=, on_counter=)`, `park(on_bench=, beside_bench=)`. Each takes `shots=` and gates its
   root group before drawing, so new locations should do the same (see `examples/new_episode.py`). Two polished rooms
-  add window and lamp light as a `-light` glaze group: `conference_room(behind_table=, on_table=, rising=)` (blinds,
-  whiteboard, speakerphone, walnut table) and `reception(behind_desk=, on_desk=, at_desk=)` (lit slat wall, backlit
+  add window and lamp light as a `-light` glaze group: `conference_room(behind_table=, on_table=, rising=,
+  speaker_talk=)` (blinds, whiteboard, speakerphone, walnut table; `speaker_talk` spans light the speakerphone's ring
+  while a caller speaks, as `props.speakerphone(talk=)` does) and `reception(behind_desk=, on_desk=, at_desk=)` (lit slat wall, backlit
   logo, globe pendants, fluted counter, reflective floor); `CONFERENCE_SEAT`, `RECEPTION_CLERK` and `RECEPTION_VISITOR`
   are the tested placements ([ADR 0011](docs/decisions/0011-polished-cutout-rooms.md)).
   (`srstudio.ink`): the shots `desk_shot`, `closeup`, `printer_shot`, `wide_shot`, `router_shot` (the router on its
@@ -223,7 +233,8 @@ srstudio usage --episodes ../generated/episodes --packages ../generated/packages
   standing pose). `home` (`soft-home`): the living room in the same 3/4 view, a fabric `sofa` (`soft-sofa`) facing
   left on a rug, a floor lamp and a side table with the cactus; the sofa shares the chair's axes and seat height, so
   a seated pose at `SOFA_SEAT` has its hip on `blob.sofa_seat()` and its soles on `SOFA_FLOOR` (tested), and
-  `on_sofa=` seats a character between the seat and the near arm. `meeting_room` (`soft-meeting-room`) and
+  `on_sofa=` seats a character between the seat and the near arm; `lamp_talk=` lights the floor lamp while it speaks, and
+  `LAMP_SHADE` is its shade's point. `meeting_room` (`soft-meeting-room`) and
   `break_room` (`soft-break-room`) are polished rooms on a shared shell (`room_point`, walls, plank or tile floor,
   baseboards, a `-light` glaze group): a walnut table with a swivel chair (`soft-swivel-chair`), a wall screen and a
   clock; mint cabinets, a coffee machine (`soft-coffee-machine`), a fridge (`soft-fridge`), a pendant lamp and a stool
@@ -270,6 +281,32 @@ of the [Signature](#signature) convention. Parts from another package are listed
 it takes the project folder as its first argument and is run with `python3 episode.py PROJECT` or
 `srstudio build episode.py PROJECT`. `srstudio.sample.write_sample_project` writes a synthetic project (dialogue,
 tone-burst soundtrack, font) to try a build without a TTS pass.
+
+### Finishing a style: `srstudio.look`
+
+A style's finish is a handful of calls with its own numbers and id prefix, never a copy of another style's helpers
+([ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md)):
+
+```python
+from srstudio import look
+
+lines = look.wrap(font, text, 50, 640, max_lines=3)    # measured; look.FitError when it does not fit
+far = look.depth(cv, g, "mystyle-depth", 3.0)          # the far plane, out of focus
+look.pool(cv, g, "mystyle-pool", "#ffc870", 40, 1160, 1000, 260, opacity=0.3)
+look.fade(cv, g, "mystyle-shade", "#3a1f5cb3", 1900, 1500, width=1080)
+look.grade(cv, shot, "mystyle", {"bloom": dict(threshold=0.9, radius=28, intensity=0.5)})
+```
+
+Every file hash in the library is `srstudio.digest.sha256`.
+
+### Staging and series: `srstudio.staging`, `srstudio.series`
+
+A sequence style stages a recorded take timeline with `staging` (the checks, the camera `rig` of a `Move` and a
+shake, `blackout`, `crossfades` into a closing card, and `close` for the transitions, captions and ducked mix),
+and declares its episodes once as a `series.Series` (voices, settings, music bed, font, output, reel builder,
+caption look). Each episode is a `Reel` subclass's instance; `series.record` records it and `series.build`
+builds it ([ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md)). `episodes/_saga.py` is the
+worked example.
 
 ### Google Fonts
 
@@ -338,6 +375,119 @@ leaves the chair to the slot), the `chair-back` prop, the `squeak-mark` graphic,
 `camera.show_facing` (a turn about the vertical axis, one `|cos|` key per frame, the far side swapped in at each
 edge-on moment).
 
+## Cutout episode with generated audio: *Tip Screen* (12)
+
+[episodes/tip_screen.py](episodes/tip_screen.py) brings Ava and Milo from episode 05 back to the café. Milo asks for
+a black coffee, Ava swivels the tip tablet, and Milo sets down a tablet of his own: "how would you like to tip me for
+ordering?" They tap "thirty" at each other until closing, and the scorecard nets it out at nothing.
+
+```bash
+python3 episodes/tip_screen_audio.py PROJECT --key-stdin < key   # srstudio.interview: resolve, speech check, timing
+srstudio build episodes/tip_screen.py PROJECT                     # PROJECT/tip-screen.scene.xml
+```
+
+The dialogue (Liam and Jessica, ElevenLabs premade voices), the swivel, the second tablet and five taps are an
+`Interview`; `schedule` lands each tap 0.05 s after the number it answers, and `TAPS` names whose tablet it lights
+and which option. Parts added for it: the `tip-tablet` prop (`props.tip_tablet(cv, parent, x, y, heading=,
+options=, picks=((time, index), ...), scale=)`: a stand, a heading, one button per option, the tiny "no tip", and
+a lit overlay per pick that holds until the next one), and `Barista(..., name=None)`, which leaves the name tag
+blank so a close-up carries no lettering out of frame (the default stays "AVA").
+
+The episode declares no engine safe area: its close-ups reframe the menu board and the tablets out of frame on
+purpose, which the SA01 text check refuses. Captions and cards are placed inside `layout.VERTICAL` by hand, the
+contact sheet is checked by eye, and the cover variant hides the burned captions (`ep.hide_on_cover`).
+
+## Cutout crossover in the park: *Culture Fit* (14)
+
+[episodes/culture_fit.py](episodes/culture_fit.py) seats Milo (episodes 05 and 09) next to the boss from the
+interview series on a park bench. Milo has sent two hundred applications; the boss interviews a pigeon on his lunch
+break, hires it, and explains why: "He works for crumbs." Milo makes a counter-offer.
+
+```bash
+python3 episodes/culture_fit_audio.py PROJECT --key-stdin < key   # srstudio.interview: resolve, speech check, timing
+srstudio build episodes/culture_fit.py PROJECT                     # PROJECT/culture-fit.scene.xml
+```
+
+The dialogue (Liam and Eric, ElevenLabs premade voices) and six effects (a flutter, three coos, two notification
+pings) are an `Interview`; `schedule` holds 1.3 s before the punchline and 1.2 s before Milo's answer. Parts added
+for it: the `legs="seated"` performance extra on the office actors (trousers and shoes below the torso, drawn behind
+it; without it nothing changes), `locations.PARK_SEAT_Y` with `locations.park_seat_y(bottom, scale)`, which seats
+any actor on the bench, and the `crumbs` prop (`props.crumbs(cv, parent, x, y, ground, toss=, count=, seed=)`: a
+handful that leaves the hand at `toss` and lands scattered on `ground`). The push notifications are the
+`notification` graphic at 2.25×. Like *Tip Screen*, the episode declares no engine safe area (the park sign's
+lettering sits right of x 920); captions and cards are placed inside `layout.VERTICAL` by hand.
+
+## Cutout episode in the conference room: *Market Rate* (16)
+
+[episodes/market_rate.py](episodes/market_rate.py) brings back the candidate from the interview series, a year into
+the job. Alone in the conference room, he asks the boss on the speakerphone for a raise and gets a title instead
+("Does Senior pay more?" "It's longer."). Then his own job turns up online, paying more, for external talent only.
+
+```bash
+python3 episodes/market_rate_audio.py PROJECT --key-stdin < key   # srstudio.interview: resolve, speech check, timing
+srstudio build episodes/market_rate.py PROJECT                     # PROJECT/market-rate.scene.xml
+```
+
+The dialogue (Will and Eric, ElevenLabs premade voices, as in the series) and four effects (a call chime, two pings
+and hold music) are an `Interview`; `schedule` holds 1.25 s before "It's longer." and puts the hold music before the
+last line. It is the first episode in `locations.conference_room`. The speakerphone's ring lights while the boss
+talks and while his hold music plays (`conference_room(speaker_talk=)`, new and off by default). The job posting is
+the `password-card` graphic, the endorsement the `notification` graphic at 2.25×. The episode declares
+`layout.VERTICAL`, so the engine holds every caption and card inside the safe area.
+
+## Cutout episode in the elevator: *Elevator Pitch* (18)
+
+[episodes/elevator_pitch.py](episodes/elevator_pitch.py) puts the employee from *Market Rate* in the elevator with the
+boss: "Working from home? Elevator pitch. You've got till my floor." At floor 4 the doors open on Kevin, the pigeon
+from *Culture Fit*, who is fully remote ("He negotiated. You took a title."). At floor 9: "Kevin, your call." Coo.
+
+```bash
+python3 episodes/elevator_pitch_audio.py PROJECT --key-stdin < key   # srstudio.interview: resolve, speech check, timing
+srstudio build episodes/elevator_pitch.py PROJECT                     # PROJECT/elevator-pitch.scene.xml
+```
+
+The dialogue (Will and Eric, as in the series) and four effects (two arrival dings, two coos) are an `Interview`;
+`schedule` opens the doors between the pitch and "Morning, Kevin." and holds 1.3 s before the coo that decides.
+Parts added for it:
+
+- `locations.elevator` (`elevator`): the cab seen from inside with the doors on the back wall. `riders` stand in front
+  of them facing the camera and `on_floor` draws in front of the riders. `floors=((second, floor), ...)` drives a
+  seven-segment display (`SEGMENTS`, no font needed), `doors=((open, shut), ...)` slides each door `DOOR_W` behind
+  the wall over `DOOR_SLIDE` seconds onto a hallway, and `lit=` lights a button. Out-of-order floors or overlapping
+  door spans raise `ValueError`.
+- `legs="standing"` on the office actors (`OfficeActor.STANDING_LEGS`): trousers and shoes straight down, drawn
+  behind the torso; `locations.elevator_stand_y(bottom, scale)` stands them on the cab floor. Without the extra
+  nothing changes.
+
+The pigeon is `cast.pigeon` in a walking group that comes forward through the doorway. The episode declares
+`layout.VERTICAL`.
+
+## Cutout crossover finale: *Going Down* (20)
+
+[episodes/going_down.py](episodes/going_down.py) closes the office series. Floor 9, going down. "Am I being fired?"
+"No. Your role is being sunset." "So I'm fired." "You're going fully remote. From your couch. Forever." At floor 4
+Kevin, the pigeon from *Culture Fit*, walks in with a pink slip in his beak: "He flew in for this. He's Head of People
+now." The slip lands at the boss's feet, lettered ERIC. "Kevin... is my role being sunset?" A 1.3 s hold, then a
+coo. The lobby, then the bench from *Culture Fit*: the two of them tossing crumbs to the pigeons. "What are we
+doing?" "Networking."
+
+```bash
+python3 episodes/going_down_audio.py PROJECT --key-stdin < key   # srstudio.interview: resolve, speech check, timing
+srstudio build episodes/going_down.py PROJECT                     # PROJECT/going-down.scene.xml, 29.8 s
+```
+
+The dialogue (Will and Eric, as in the series) and seven effects (two dings, three coos, the slip's slap, a flutter)
+are an `Interview`; `extra` returns `park_start`, where the elevator's shots end and the park's begin, and each room
+is reframed with only its own camera angles. Parts added or extended for it:
+
+- `props.pink_slip` (`pink-slip`): a sealed pink envelope lettered `name=` (up to `SLIP_CHARS`; `None` shows its
+  blank back), shown only in `show=(start, end)` (held in a hand or a beak) or falling `fall=(at, height)` onto its
+  mark in `SLIP_FALL` seconds, tipping as it lands.
+- `locations.elevator(going="down")` points the display's arrow down; the default stays `"up"`, byte for byte.
+
+The episode declares no engine safe area, as *Culture Fit* does, because the park sign's lettering sits right of
+x 920; captions and cards are placed inside x 80–920 by hand.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router
@@ -356,6 +506,111 @@ Each verified clip is trimmed, levelled and conformed to one 48 kHz mono WAV per
 sample, and `timeline.json` lists the takes with words and character timings relative to the take. The key is read
 from `ELEVENLABS_API_KEY` and never written. Parts added: `talking-router`, `ink-hand`, `ink-router-shot`,
 `ink-router-wide`.
+
+## Ink episode: *Not a Robot* (Ink 03)
+
+[episodes/not_a_robot.py](episodes/not_a_robot.py): one form before lunch, and the captcha escalates from traffic
+lights to sad traffic lights to "every moment you felt truly alive", fails the human for hesitating like one, and the
+router welcomes him home. Fourteen takes through `srstudio.takes` (human, captcha and router voices), with the
+screens as data in `SCREENS` ([episodes/not_a_robot_audio.py](episodes/not_a_robot_audio.py)).
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/not_a_robot_audio.py PROJECT   # takes, checked by speech-to-text
+python3 episodes/not_a_robot.py PROJECT                                # scene, SRT, ig.txt
+```
+
+`takes.Script(font=)` names the caption font (file, licence) a script ships with; it defaults to the takes font.
+Parts added (`srstudio.ink_captcha`): `ink-captcha`, a verification card with a prompt band, a grid of drawn tiles
+(`TILES`: lights, happy and sad lights, car, tree, laptop), timed picks with a tick and a verdict banner, and
+`ink-checkbox`, the "I'm not a robot" box whose tick lands at `tick_at`. Bad tiles, picks or timings raise
+`CaptchaError`. Burned captions are hidden on the cover (`hide_on_cover`).
+
+## Ink episode: *Message Failed* (Ink 04)
+
+[episodes/message_failed.py](episodes/message_failed.py): a text about the boss goes to the boss. The router from
+*The Router* drops the Wi-Fi so it fails, then retries it because it hates failing; the boss types, agrees, and the
+router offers a reply. Fourteen takes through `srstudio.takes` (human and router voices, two effects), with the chats
+as data in `SCREENS` and the router's power beats in `ROUTER_BEATS`
+([episodes/message_failed_audio.py](episodes/message_failed_audio.py)).
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/message_failed_audio.py PROJECT   # takes, checked by speech-to-text
+python3 episodes/message_failed.py PROJECT                                # scene, SRT, ig.txt
+```
+
+Parts added (`srstudio.ink_phone`): `ink-phone`, a held phone with the contact in its header, `Bubble`s (mine in
+ink on the right, theirs outlined on the left) that arrive at their second, a delivery status (`STATUS_TEXT`:
+sending, not delivered, delivered, read) under the last of mine that changes on the shot's clock, and typing dots
+that pulse in the slot their reply lands in; and `ink-phone-shot`, the phone over the desk line with the signature
+cactus. A contact, bubble, status or typing span the screen cannot show, or a chat that does not fit, raises
+`PhoneError`.
+
+## Ink episode: *U Up?* (Ink 05)
+
+[episodes/u_up.py](episodes/u_up.py): two in the morning, the human from *The Router* has texted his ex. The router
+will not unsend it: it does not fail any more, it has grown (a callback to *Message Failed*). She asks who this is,
+then remembers the forty dollars, and the router has already paid them from his account, with a memo. Twelve takes
+through `srstudio.takes` (human and router voices, two effects), the chats as data in `SCREENS`, under the contact
+"Do Not Text" ([episodes/u_up_audio.py](episodes/u_up_audio.py)). It reuses `ink-phone`, `ink-closeup` and the
+router shots; no new parts.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/u_up_audio.py PROJECT --font DIR   # takes, checked by speech-to-text
+python3 episodes/u_up.py PROJECT                                           # scene, SRT, ig.txt
+```
+
+## Ink episode: *Premium Suction* (Ink 06)
+
+[episodes/premium_suction.py](episodes/premium_suction.py): the robot vacuum has stopped in the middle of the floor,
+because its free trial ended. Suction is monthly, the kitchen premium, the corners platinum; what is free is the map
+of the home, which it sells. The landlord texts: he saw the map, and rent goes up in May. He liked the second
+bedroom, which is the closet. Deleting it is premium. Fourteen takes go through `srstudio.takes`: the human (Chris,
+as in the earlier Ink episodes), the vacuum (Lily) and one effect
+([episodes/premium_suction_audio.py](episodes/premium_suction_audio.py)). The vacuum's moves and displays are data
+in `VACUUM`, the map's in `MAPS`, the chat in `SCREENS`.
+
+The new parts are in [src/srstudio/ink_vacuum.py](src/srstudio/ink_vacuum.py):
+
+- `vacuum` (`talking-vacuum`): a disc seen from above at three quarters. Its ring of lights chases and voice marks
+  flicker while it speaks. `state` is `still`, `roll` (it rolls off through the take) or `stop` (it rolls in and
+  brakes), and `display` puts a word of up to five characters on top. The side band carries the signature code.
+- `vacuum_shot` (`ink-vacuum-shot`): the floor, the baseboard, the outlet and the dock, with the vacuum normal or
+  close.
+- `floor_map` (`ink-floor-map`): the app's map, with `Room`s outlined and named (`PLAN` by default). `trace=(start,
+  end)` draws the route dot by dot, and `relabel=(room, label, at)` renames and shades one room at its moment.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/premium_suction_audio.py PROJECT --font DIR   # takes, checked by speech-to-text
+python3 episodes/premium_suction.py PROJECT                                           # scene, SRT, ig.txt
+```
+
+## Ink episode: *Home Sick* (Ink 07)
+
+[episodes/home_sick.py](episodes/home_sick.py): it is Monday, 2:14 PM, and the human is home early with sunglasses on
+his forehead. His video doorbell will not let him in, because the resident is home sick today. He got better? Then
+he is late for work. The doorbell asks the street's group chat who he is, from his own account: never seen him,
+nope, and, after a hold, his boss: that's my employee. Face recognized, welcome home; the boss texts him, feeling
+better? Nice tan. Thirteen takes go through `srstudio.takes`: the human (Chris), the doorbell (George) and three
+message dings ([episodes/home_sick_audio.py](episodes/home_sick_audio.py)). The face box's tags are data in `LENS`,
+the doorbell's verdicts in `DOORBELL`, the chats in `SCREENS`.
+
+The new parts are in [src/srstudio/ink_doorbell.py](src/srstudio/ink_doorbell.py):
+
+- `doorbell` (`talking-doorbell`): a tall rounded box with the lens, the speaker and the button. Its ring of lights
+  chases and voice marks flicker while it speaks, and `mark=(verdict, at)` shows a cross (`deny`) or a tick
+  (`allow`) on the button from `at`. It carries the signature code.
+- `doorstep` (`ink-doorstep`): the siding, the front door with its panels, knob and deadbolt, the house number
+  (`number=`, up to four characters), the mat and the signature cactus, with the doorbell beside the door, normal or
+  close.
+- `doorbell_view` (`ink-doorbell-view`): the doorbell's camera. The human is seen through a round lens with REC
+  blinking, a FRONT DOOR strip with `clock=`, and a face box whose tag changes at each `(at, text)` of `tags=`.
+
+`ink.human(shades=True)` pushes a pair of sunglasses up on the doodle's forehead; the default draws him as before.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/home_sick_audio.py PROJECT --font DIR   # takes, checked by speech-to-text
+python3 episodes/home_sick.py PROJECT                                           # scene, SRT, ig.txt
+```
 
 ## Soft style episode: *Focus Mode* (07)
 
@@ -395,6 +650,106 @@ are captioned in blue. The video is 24.4 s.
 ```bash
 grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/camera_off_audio.py PROJECT --key-stdin
 python3 episodes/camera_off.py PROJECT && scene-render encode PROJECT/camera-off.scene.xml --output main -o "$PWD/camera-off.mp4"
+```
+
+## Soft style episode: *Day Off* (11)
+
+[episodes/day_off_audio.py](episodes/day_off_audio.py) is an instrumental `Song`: six 4-second chunks composed at
+120 bpm with no vocals, and Pip's six lines spoken by Will on the bar grid. Two effects sit on the grid with them: a
+calendar ping and a meeting-ended chime. An earlier sung version failed its speech-to-text checks repeatedly.
+Spoken lines over a composed bed passed on the first composition seed.
+
+In [episodes/day_off.py](episodes/day_off.py), Pip spends Saturday in `blob.home`. His hands keep typing on nothing
+(seeded keyboard foley on the eighths), he nods along to the lamp, and he books a meeting with the sofa. The meeting
+runs over and he extends it. The calendar is a `soft_props.status_badge`
+([src/srstudio/soft_props.py](src/srstudio/soft_props.py), graphic `soft-status-badge`): pill states that pop in
+by span, one of them struck through (SOFA SYNC, ACCEPTED, ENDED, EXTEND?, EXTENDED). Two crash zooms
+(`camera.push_in`, 0.2 s) land on Pip's face, on the invite and on the snap back to work. Each one cuts back to the
+wide shot on a beat, and the frame drops 150 px while zoomed so the sprout clears the badge. The video is 24.4 s.
+
+```bash
+grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/day_off_audio.py PROJECT --key-stdin --engine scene-render
+python3 episodes/day_off.py PROJECT && scene-render encode PROJECT/day-off.scene.xml -o "$PWD/day-off.mp4"
+```
+
+## Soft style episode: *Unlimited PTO* (13)
+
+[episodes/unlimited_pto_audio.py](episodes/unlimited_pto_audio.py) is an instrumental `Song` with two speakers on
+the bar grid: Bo (Eric, the boss of episode 08) and Pip (Will). It has three decline blips and an approval chime,
+and a composed bed of six 4-second chunks: office-pop while Bo sells unlimited vacation, one held pad for the hold
+before the punchline, and a steel-drum groove for the button.
+
+In [episodes/unlimited_pto.py](episodes/unlimited_pto.py), Bo is on screen for the first time, in the polished
+`blob.meeting_room`. Every one of his cues is mirrored (`Cue(flip=True)`), so he faces Pip across the room. Pip
+stands up from the swivel chair to ask (Friday, Friday afternoon, lunch) and drops back at each decline. The
+request badge (`soft_props.status_badge`) shows each ask in amber, then DECLINED struck through in red, and finally
+Bo's own "BO: BALI 3 WK" in green. Bo waves and walks out, and Pip types on. Bo's lines are captioned in blue. The
+video is 24.4 s.
+
+```bash
+grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/unlimited_pto_audio.py PROJECT --key-stdin --engine scene-render
+SRSTUDIO_ENGINE=scene-render python3 episodes/unlimited_pto.py PROJECT && scene-render encode PROJECT/unlimited-pto.scene.xml -o "$PWD/unlimited-pto.mp4"
+```
+
+## Soft style episode: *Return to Office* (15)
+
+[episodes/return_to_office_audio.py](episodes/return_to_office_audio.py) is an instrumental `Song`: Pip (Will) and
+Bo (Eric) on the bar grid, six effects (a call chime, a seagull, the call ending and three motion-sensor light
+switches) and a composed bed in six chunks: office-pop for the welcome, steel drums for Bali, a held pad before the
+punchline, almost nothing for the lights.
+
+In [episodes/return_to_office.py](episodes/return_to_office.py), Pip stands alone in `blob.meeting_room` on day one
+back, and Bo calls in from a beach on the wall screen. The room takes the call through an opt-in slot,
+`blob.meeting_room(on_screen=)`: `blob.meeting_screen()` gives the screen picture as a flat frame (its top-left, size
+and the `skewY` that lays it along the back wall), and the slot draws into it, masked to the picture; without it the
+slide is drawn as before. The call is the new `soft_props.beach_call` graphic (`soft-beach-call`: sky, sun, sea,
+sand, a swaying palm, a `guest` slot and a name tag placed by `tag=`), with Bo's rig grooving inside it. Two crash
+zooms land on the screen; the status badge tells the story (RTO: DAY 1, ON CALL, 312 WATCHING, CALL ENDED, NO
+MOTION), and a dark overlay plays the motion-sensor lights that switch off on Pip, back on for a wave, and off
+again. The video is 28.4 s.
+
+```bash
+grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/return_to_office_audio.py PROJECT --key-stdin --engine scene-render
+SRSTUDIO_ENGINE=scene-render python3 episodes/return_to_office.py PROJECT && scene-render encode PROJECT/return-to-office.scene.xml -o "$PWD/return-to-office.mp4"
+```
+
+## Soft style episode: *Smart Lamp* (17)
+
+[episodes/smart_lamp_audio.py](episodes/smart_lamp_audio.py) is an instrumental `Song` with three voices: Juno
+(Laura), Pip (Will) and the smart lamp (Matilda), four effects (a wake-up blip, two order chimes and an error bloop)
+and a composed bed in five chunks: a domestic sitcom groove for the argument, a shopping-channel bounce for the
+orders, a held pad before the proposal and a short outro.
+
+In [episodes/smart_lamp.py](episodes/smart_lamp.py), Pip sits on the sofa in `blob.home` and Juno stands at the left.
+The floor lamp is the third character through an opt-in slot, `blob.home(lamp_talk=)`: a list of `(start, end)`
+spans, in order and apart (a `BlobError` otherwise), during which a halo, a lit shade and an orange rim glow; without
+it the room is drawn as before. `blob.LAMP_SHADE` is the shade's point in the room, so the camera anchors on it and
+pushes in at "She said yes." and at the last line. The status badge tells the story (LISTENING, + FLOWERS, + RING,
+ENGAGED, PARDON?). The video is 30.4 s.
+
+```bash
+grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/smart_lamp_audio.py PROJECT --key-stdin --engine scene-render
+SRSTUDIO_ENGINE=scene-render python3 episodes/smart_lamp.py PROJECT && scene-render encode PROJECT/smart-lamp.scene.xml -o "$PWD/smart-lamp.mp4"
+```
+
+## Soft style episode: *The Cake* (19)
+
+[episodes/the_cake_audio.py](episodes/the_cake_audio.py) is an instrumental `Song` with three voices: Juno (Laura),
+Pip (Will) and Bo (Eric), three effects (a party blower, a plate turned on the counter and a sad trombone) and a
+composed bed in five chunks: an office sitcom groove for the collection, an office-party groove for Bo's entrance, a
+held pad for the pause before the cake turns, the party groove deflated, and an outro.
+
+In [episodes/the_cake.py](episodes/the_cake.py), Juno and Pip are in the polished break room (`blob.break_room`) and
+Bo glides in from the left carrying the cake. The cake is a new prop, `soft_props.cake`: a frosted round cake on a
+plate with one candle and iced lettering (up to two lines of twelve characters) on the front. With `back=` and
+`turn_at=` it turns half round on its plate (`CAKE_TURN`) and shows the back lettering. `lettering=` limits the
+lettering to spans: the lettering is text, which the engine holds inside the safe area, so it shows only while the
+cake is in frame. The camera cuts to the cake as Pip reads WE'LL MISS YOU, holds through the turn (BYE PIP) and the
+trombone, cuts to Pip for his line and goes back wide. The video is 32.5 s.
+
+```bash
+grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_cake_audio.py PROJECT --key-stdin --engine scene-render
+SRSTUDIO_ENGINE=scene-render python3 episodes/the_cake.py PROJECT && scene-render encode PROJECT/the-cake.scene.xml -o "$PWD/the-cake.mp4"
 ```
 
 ## Cel style package: *Work Training Be Like*
@@ -524,6 +879,151 @@ pipeline.
 ```bash
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/repeat_after_me_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
 python3 episodes/repeat_after_me.py PROJECT     # repeat-after-me.scene.xml + SRT, 14.708 s
+```
+
+### An original Stick episode at the store: *Unexpected Item* (R4)
+
+[episodes/unexpected_item.py](episodes/unexpected_item.py): Dev buys one avocado at the self-checkout. The kiosk
+wants it in the bagging area, calls it unexpected, wants it out, wants it back, and calls for help; the supervisor
+reads his month off the screen and makes him employee of the month. He asks whether he gets paid, which is an
+unexpected item too. On Saturday he wears the apron and says the kiosk's line to the next shopper.
+
+The store is `srstudio.stick_shop`:
+
+- `stick-checkout`: stocked shelves under strip lights, the hanging sign, a tiled floor and the bagging shelf
+  (`BAG_SPOT`).
+- `stick-kiosk`: the pedestal, the scanner bed and the screen. `Screen(start, text, tone, face=)` holds each message
+  until the next, in a tone from `TONES` (idle, error, help, award; white lettering passes the 4.5:1 contrast
+  check on every header), and an award shows a `Look`'s face. The lamp flashes red at each `alarm`. A schedule the
+  screen cannot show raises `StickDataError`.
+- `stick-avocado` and `stick-name-badge`. `hand(pose, at=, flip=)` finds where a placed figure's near hand carries
+  an item; `SHOPPER_AT` and `CLERK_AT` (mirrored) stand `STANDING` poses either side of the counter.
+
+`stick.Look(apron=)` dresses the torso in a shop apron under the tie; it is off by default, so earlier episodes
+rebuild byte for byte. [episodes/unexpected_item_audio.py](episodes/unexpected_item_audio.py) is a `takes.Script`
+in three premade voices (Laura for the kiosk, Will, Alice), a scanner beep and a supermarket music bed, with the
+screens per take in `SCREENS`.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/unexpected_item_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/unexpected_item.py PROJECT     # unexpected-item.scene.xml + SRT, 34.333 s
+```
+
+### An original Stick episode in a flat for rent: *The Viewing* (R5)
+
+[episodes/the_viewing.py](episodes/the_viewing.py): flat hunting, day 41. The kitchen has a toilet in it, the window
+is painted on, and the bed folds down out of the wall with Gary asleep in it: he comes with the lease. Two grand a
+month, each. Dev takes it and is applicant forty-seven; Gary, asleep, is forty-six.
+
+The flat is `srstudio.stick_flat`:
+
+- `stick-studio-flat`: the wall and floorboards, the counter with its stove, pot and tap, a toilet beside the stove,
+  a window whose sunny view is painted on (the blue runs over the frame and drips), and the bed's cabinet. The set
+  is `SET_W` wide, so a camera turns from the kitchen (`WINDOW_FOCUS`) to the bed (`BED_FOCUS`). Figures stand at
+  `VIEWER_AT` and, mirrored, `AGENT_AT`.
+- `stick-murphy-bed`: closed in the wall, folding down at `drop_at` through one mid frame (`FOLD`), and open on the
+  floor with a `sleeper` under the blanket who snores and opens his mouth in each `talk` span. A timing the bed
+  cannot show raises `StickDataError`.
+
+The word captions take three options, off by default so earlier episodes rebuild byte for byte:
+`stick.word_cues(size=)` letters the cues smaller so more quick words join a readable cue, `borrow=True` lets a cue
+shorter than `min_seconds` take time from the next cue of its take, and `stick.words(scrim=)` darkens the band behind
+the words over a bright set. With them the encode reports no legibility or contrast warning.
+[episodes/the_viewing_audio.py](episodes/the_viewing_audio.py) is a `takes.Script` in three premade voices (Will,
+Lily for the agent, Callum for Gary), a bed-drop effect and a lounge-house bed.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_viewing_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/the_viewing.py PROJECT     # the-viewing.scene.xml + SRT, 25.125 s
+```
+
+### An original Stick episode at the gym: *Cancel Anytime* (R6)
+
+[episodes/cancel_anytime.py](episodes/cancel_anytime.py): Theo wants to cancel his gym membership. The sign says
+anytime, with an asterisk: in person (he is here), on a Tuesday (it is Tuesday), before sunrise (it is still dark),
+with a note from his trainer, whom he has never met. Any other way? A death certificate. Whose? They are flexible.
+Then the sun comes up in the window, and Brooke at the desk sees him next week.
+
+The gym is `srstudio.stick_gym`:
+
+- `stick-gym`: the wall with the brand (`BRAND`), a poster, a dumbbell rack, a treadmill and mats, and a window on a
+  night city. `gym(..., sunrise=)` keys the dawn layer and the sun over `DAWN` seconds from that moment in the shot;
+  `sunrise=0` draws the day already up, and a time outside the shot raises `StickDataError`.
+- `stick-gym-counter`: the front desk with a card reader, a cactus and a tent sign: the headline in `LETTER` red
+  (contrast-checked) and a fine-print line that only reads in a close-up. A sign longer than `SIGN_CHARS` or fine
+  print longer than `FINE_CHARS` raises `StickDataError`. Figures stand at `MEMBER_AT` and, mirrored, `STAFF_AT`.
+
+`stick.word_cues(tail=True)` (off by default, so earlier episodes rebuild byte for byte) mends a take's last cue
+when it is shorter than `min_seconds`: it joins the cue before it when the joined words fit the width, and otherwise
+takes that cue's last words. It needs `min_seconds`. With it the encode reports no legibility or contrast warning.
+[episodes/cancel_anytime_audio.py](episodes/cancel_anytime_audio.py) is a `takes.Script` in two premade voices
+(Callum for Theo, Jessica for Brooke) and a 120 BPM gym-pop bed.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/cancel_anytime_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/cancel_anytime.py PROJECT     # cancel-anytime.scene.xml + SRT, 27.208 s
+```
+
+### An original Stick episode at school: *What My Dad Does* (R7)
+
+[episodes/what_my_dad_does.py](episodes/what_my_dad_does.py): parent-teacher night. Dev perches on a child's chair,
+knees above his hip, while the teacher reads his son's essay: Dad works from home, a tie on top and no pants; his job
+is saying "I think you're on mute"; at three he has Focus Time, and Focus Time snores. Dev has an answer for each.
+Last line: Dad says he works from home. Mom says he's just home. What did he get? An A. His mom helped.
+
+The classroom is `srstudio.stick_school`:
+
+- `stick-classroom`: the wall with an alphabet strip, a chalkboard lettered `board=` (up to `BOARD_CHARS`), the
+  class's drawings pinned up, a clock and the linoleum floor.
+- `stick-tiny-chair` and the `PERCHED` poses (`perch`, `perch-lean`, `perch-shrug`, `perch-point`, `perch-face`):
+  a grown-up on a child's chair, the hip on the seat at `SEAT_Y` and the knees above it.
+- `stick-teacher-desk`: the front layer at `DESK_X`, with marked papers, an apple and the cactus. The teacher
+  stands mirrored at `TEACHER_AT` in `TEACHER_POSES` (`STANDING` plus `READING`: `read`, `lower`), and
+  `held(pose)` is where the page in her hands goes.
+- `stick-essay`: the child's page, its title and author, the first `shown` lines (up to `ESSAY_LINES`, each up to
+  `LINE_CHARS`), a highlighter sweeping line `mark` over `SWEEP` seconds from `mark_at`, a circled `grade`, a margin
+  `note` that appears at `note_at`, and the crayon drawing of Dad. A page that would run ahead of the reading, or
+  letter more than it can hold, raises `StickDataError`.
+
+[episodes/what_my_dad_does_audio.py](episodes/what_my_dad_does_audio.py) is a `takes.Script` in two premade voices
+(Will for Dev, Sarah for the teacher), one chalk effect and a 120 BPM pizzicato bed; `PAGES` says, per essay take,
+how many lines are up, which is marked and the spoken word the highlighter starts on.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/what_my_dad_does_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/what_my_dad_does.py PROJECT     # what-my-dad-does.scene.xml + SRT, 32.417 s
+```
+
+### An original Stick episode at the airport: *Group 9* (R8)
+
+[episodes/group_nine.py](episodes/group_nine.py): gate B9. Sam asks if Group 9 is boarding. After the luggage; his
+bag is Group 4, and it's doing great. An upgrade? Same seat, you just pay. The plane can't leave without him?
+Everyone says that. He puts on the cap: he's the pilot, and pilots are Group 9. Button: row 38, between two
+neighbours who own both armrests, this is your captain speaking from the middle seat.
+
+The airport is `srstudio.stick_airport`:
+
+- `stick-gate`: the window with the parked plane, a `NOW BOARDING` sign calling `now=` (up to `NOW_CHARS`) under
+  the gate number `gate=` (up to `GATE_CHARS`), the waiting-room seats and the carpet.
+- `stick-gate-podium`: the agent's podium at `PODIUM_X`, drawn in front of the agent standing mirrored at
+  `AGENT_AT`; `plate=False` leaves its gate plate unlettered for a close-up whose caption band would cross it.
+- `stick-carry-on`: a wheeled bag whose tag (`TAG_SPAN` from its middle) is lettered `tag=` (up to `TAG_CHARS`;
+  `None` leaves it blank). Place it so the tag ends left of `PODIUM_X`, or the podium hides it.
+- `stick-cabin` and `stick-armrests`: a row seen from the aisle, the row number `row=` and seat letters `seats=` on
+  the overhead bins, seat backs at `SEATS` (`SEAT_STEP` apart); the armrests at `ARMRESTS` are drawn after the
+  passengers so an elbow rests on them. `SQUEEZED` holds the seated poses: `tucked` and `tucked-up` keep both
+  elbows between the armrests, `spread` takes the neighbouring one.
+
+`stick.Look(cap=)` (a `#rrggbb` colour; `None`, the default, draws no cap) puts a peaked cap with a badge on the
+head. `stick.word_cues(balance=True)` (off by default) splits each take where its shortest cue lasts longest within
+the width limit, the fewest cues on a tie, instead of filling cues greedily from the left; it needs `width` and
+refuses `tail`. [episodes/group_nine_audio.py](episodes/group_nine_audio.py) is a `takes.Script` in two premade
+voices (Liam for Sam, Matilda for the agent) and a 120 BPM airport-lounge bed; `NOW` says which group the sign calls
+on each gate take, and `CAPPED` the take from which Sam wears the cap.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/group_nine_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/group_nine.py PROJECT     # group-nine.scene.xml + SRT, 25.625 s
 ```
 
 ## Toon style package: *Anonymous Employee Survey*
@@ -658,7 +1158,53 @@ python3 episodes/the_report.py PROJECT --voice                               # t
 scene-render encode PROJECT/the-report.scene.xml -o /abs/path/the-report.mp4
 ```
 
-`logo_bigger.py`, `logo_bigger_audio.py`, `quick_question.py` and `quick_question_audio.py` take the same arguments.
+`logo_bigger.py`, `logo_bigger_audio.py`, `quick_question.py`, `quick_question_audio.py`, `whose_milk.py`,
+`whose_milk_audio.py`, `out_of_office.py`, `out_of_office_audio.py`, `date_night.py`, `date_night_audio.py`,
+`in_network.py`, `in_network_audio.py`, `split_it.py` and `split_it_audio.py` take the same arguments.
+
+*Whose Milk?* (T6, [episodes/whose_milk_data.py](episodes/whose_milk_data.py)) is the first sketch in the office
+kitchen. Fern (Matilda) and Rex (Charlie) argue over the milk in the fridge, labelled Rex, 2019. The note on the
+fridge escalates through `note:` events (WHOSE MILK?, IT MOVED., WHOSE YOGURT?). Each new note is cut in full frame
+with `toon_sets.note_insert` for its beat, and the last one holds to the end as the button. Rex's coffee brews
+behind him in every one of his shots.
+
+*Out of Office* (T7, [episodes/out_of_office_data.py](episodes/out_of_office_data.py)) brings Pip (Alice) and Bruno
+(Bill) back, and it is the first sketch in the home office at night. Bruno is on vacation, out-of-office on. He has
+answered every email to say so, personally. The tear-off calendar behind him loses its pages on `page:` events, only
+in his shots. His boss's reply and, as the button, his own auto-reply arrive as `toast:` events, drawn larger with
+`toon_props.toasts(size=)`. The desk lamp lights his laptop, and the plant stands in front of its glow, right of his
+paws.
+
+*Date Night* (T8, [episodes/date_night_data.py](episodes/date_night_data.py)) takes the Toon home: Mae (a
+rabbit, Sarah) is in the kitchen and Otto (a bear, Daniel) in the home office next door, on a video call. He has
+sent her a calendar invite for dinner. Its agenda, her status as optional and, as the button, a shared spreadsheet
+of apartments arrive on her phone as `toast:` events, and the fridge carries the date. The tear-off calendar
+behind him jumps from OCT 29 to JUN 30 on the `page:` event of the punchline, the month their lease ends.
+
+*In Network* (T9, [episodes/in_network_data.py](episodes/in_network_data.py)) is a phone call to an insurer. Gil (a
+frog, Chris) is in the home office at night; Dana (a dog, Jessica) is in claims, in the new call-centre cubicle
+(`toon_sets.call_centre`), and wears the new headset sticker (`toon_cast.headset`). Is a broken arm covered? Which
+arm? They cover the right. The claims arrive on his phone as `toast:` events. Her CALLS WAITING board climbs on
+`tick:` events, only in her shots, and jumps to 999 in the hold before her punchline: try again in January, fresh
+deductible. After the sting, his calendar jumps to JAN 1 and the button is the callback toast, a new claim.
+
+*Split It* (T10, [episodes/split_it_data.py](episodes/split_it_data.py)) is the end of a dinner. Brock (a bear,
+Roger) wants to split the bill evenly; Mia (a rabbit, River) had a side salad and water, he had three lobsters and
+the wine. It is the first sketch in the new restaurant (`toon_dinner.restaurant`), and its staging swaps the office
+desk for the dinner table with the new `Staging(desk=toon_dinner.table)` option (the default stays `toon.desk`).
+Each side of the table is laid with `toon_dinner.dishes`, and the card reader (`toon_dinner.card_reader`) changes
+screen on `reader:` events: DECLINED for him, APPROVED for her. Her payment, his transfer of $6.50 and, as the
+punchline, what it is for (half her salad) arrive on her phone as `toast:` events; the button is his last toast,
+"Same place Friday?".
+
+### Toon dinner: the restaurant, the table, the dishes and the card reader
+
+`srstudio.toon_dinner` draws the restaurant set in the Toon line. `restaurant(cv, parent, special=(dish, price))`
+is the wall with a seascape, a lit sconce, wainscot, a leather banquette and a chalk SPECIALS board.
+`table(cv, parent)` is a tablecloth that takes the desk's place in a sketch and carries the signature marks.
+`dishes(cv, parent, items, id=)` lays `(kind, x[, at])` items (salad, water, lobster, shells, wine, glass, empty,
+check), each appearing at `at` when given. `card_reader(cv, parent, states, at=, id=)` shows one screen per
+`(start, text, tone)` state, with tones `idle`, `bad` and `good`. Bad data raises `ToonDataError`.
 
 ### Toon sets: the office kitchen and the home office at night
 
@@ -671,15 +1217,93 @@ pixels and keyed on the composition clock. Looping motion runs from 0 to `end` (
 
 | Part | What it is | Motion |
 |---|---|---|
-| `toon-kitchen` | butter wall, mint cabinets, subway tiles with a glint each, a counter at `COUNTER_Y`, a tall fridge with magnets | a `note=` (1 to 14 characters) on the fridge door |
+| `toon-kitchen` | butter wall, mint cabinets, subway tiles with a glint each, a counter at `COUNTER_Y`, a tall fridge with magnets | a `note=` (1 to `NOTE_MAX` = 14 characters) on the fridge door |
 | `toon-home` | dusk-violet wall, a night window with a cratered moon, the city skyline, a gathered curtain, string lights, a bookshelf | stars twinkle, bulbs pulse, lit windows go out and come back, until `end` |
 | `toon-coffee-machine` | a drip machine on the counter: carafe, coffee, steel glint | in each `brewing` span: the light blinks, drops fall, steam sways |
 | `toon-desk-lamp` | an angled teal lamp at the desk's right, its head over the laptop | its cone and pool of light show in the `lit` spans (`None`: always on) |
 | `toon-plant` | a terracotta pot with five glossy leaves; `at` and `scale` | the leaves sway until `end` |
 | `toon-calendar` | a tear-off wall calendar in the clock's place | at each `(second, "OCT 28")` in `pages` the page above tears, tips and falls |
+| `toon-note-insert` | a full-frame close-up of the fridge note, lettered at 128 px so it reads on a phone | shown from `start` to `end` under a slow push |
+| `toon-call-centre` | a cubicle: a pale office wall, a flecked fabric partition, a YOUR CALL MATTERS poster, a CALLS WAITING LED board in the window's place | one count at a time from `waiting` (`(second, count)`, from 0, up to `WAITING_MAX`); the board's lamp blinks until `end` |
 
 The signature marks stay on `toon.desk`, which is in front of every Toon shot. The new sets draw neither mark, and
-the defaults of the lamp and the plant stand clear of the desk's cactus. No episode uses these parts yet.
+the defaults of the lamp and the plant stand clear of the desk's cactus. *Whose Milk?* uses the kitchen, the coffee
+machine and the note insert.
+
+`toon_cast.headset(look, mic=True)` (`toon-headset`) fits a headset to any brush-drawn look from its silhouette: a
+band just over the crown, ear cups at eye height and a boom to a mic beside the mouth. It is a list of layers, like
+`toon_cast.sticky_note`, passed to the figure with `stickers=` so it leans and sighs with the character.
+
+## Saga style: a space-opera parody in seven episodes (S1–S7)
+
+The galaxy's grandeur is the setup; the turn is that it runs on the systems the viewer suffers at work, and a
+deadpan field guide, the *Handbook*, gets the last word ([docs/decisions/0025-saga-style.md](docs/decisions/0025-saga-style.md)).
+Everything is original: no franchise names, characters, crawl or theme.
+
+- **Cast**, [src/srstudio/saga.py](src/srstudio/saga.py): Lord Gloom (a visor whose red glow is the mouth),
+  Enforcer Seven and Gary (helmets with a mic light), Juno, Rook and Elder Mabel (visemes and blinks; Mabel has
+  glasses and a cane), and a bar droid whose smile bar glows. Each figure is lit from the upper left: an inner
+  shadow and a soft drop shadow (`saga.FORM`, `saga.LIFT`), drawn shadow sides, a gold rim and a contact shadow.
+- **Sets and props**, [src/srstudio/saga_sets.py](src/srstudio/saga_sets.py): space, bridge, cantina (with its bar
+  as a front layer), desert, cockpit (with its console) and trash compactor; the hologram `holo`, the battle cube,
+  a freighter, a fighter, a pebble; the hook card and the Handbook `entry`. Each location blurs its far plane by
+  `DEPTH_BLUR` and keeps the floor, the cast and both signature marks sharp; `finish` grades a shot with `GRADE`.
+- **Staging as data**, [src/srstudio/saga_reel.py](src/srstudio/saga_reel.py): one `Stage` per recorded take
+  (set, `Place`s, panels, props, a `Move`, blackouts, shakes, or an `Entry`). `check` refuses a staging that does
+  not fit the recording before anything is drawn; `build` draws it, hooks the first take, crossfades into the
+  entry, captions and mixes.
+
+An episode is two files: `episodes/saga_<name>_audio.py` (its takes and stages; run it to record through
+`srstudio.takes`, every line heard back by speech-to-text, no retries) and a three-line `episodes/saga_<name>.py`
+that builds it. `tests/test_saga_episodes.py` holds all seven to the format: the narrator's hook question first, a
+hold of at least 1.2 s before the button, the Handbook entry last, and a staging that fits at other speaking rates.
+
+| # | Episode | The turn |
+|---|---|---|
+| S1 | *Known Issue* | the battle cube's fatal hole sat in the backlog for nine years |
+| S2 | *Annual Review* | an enforcer who never hit anything is enforcer of the year |
+| S3 | *Group Chat* | the big reveal was already in the family group chat |
+| S4 | *Card Reader* | a smuggler meets the tip screen |
+| S5 | *Update* | mid-chase, the jump drive installs an update |
+| S6 | *Free Tier* | the energy that binds the galaxy, on the free plan |
+| S7 | *Open Plan* | the compactor walls closing in are a workspace upgrade |
+
+## Gloss style: a cheerful forever-plaza in seven episodes (G1–G7)
+
+The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
+narrated by a calm orb host in the deadpan of a facility announcement while a Joy Points board scores every small act
+([docs/decisions/0030-gloss-style.md](docs/decisions/0030-gloss-style.md)). Everything is original: the Plaza,
+Sunny, the guests and the Joy Points are the library's own.
+
+- **Cast**, [src/srstudio/gloss.py](src/srstudio/gloss.py): glossy vinyl peg dolls Nadia (a NEW sticker that
+  peels), Gus (a wind-up key that unwinds) and Tamsin (a spring base that bounces), and Sunny, a floating orb with
+  a screen face that scans and wears a tie as the manager. Faces and poses are tracks on the shot's clock; the vinyl
+  is rounded from each silhouette (`gloss.FORM`, `gloss.RIM`, `gloss.LIFT`) with gradient highlights (`gloss.haze`).
+- **Sets and props**, [src/srstudio/gloss_sets.py](src/srstudio/gloss_sets.py): the Plaza, the Activity Room and
+  the Waiting Room (far planes softened by `DEPTH_BLUR`, lettering in strokes, a caption shade at the foot of the
+  frame); the Joy Points `board` of `Card`s, the painted-on `door`, the queue `ticket`; the `hook` card and the
+  Plaza `notice` that buttons each reel. `finish` grades a shot's world with `GRADE`; the board and the notice card
+  stay ungraded and crisp. A `Card(carried=True)` stays on across a cut without popping again.
+- **Staging as data**, [src/srstudio/gloss_reel.py](src/srstudio/gloss_reel.py): one `Stage` per recorded take
+  (set, `Place`s, cards, props, one camera `Move`, shake, blackout, or a `Notice`), checked against the takes before
+  anything is drawn. The music ducks `DUCK` dB under every line and a further `HUSH` dB through every pause between
+  lines (`hush`), so the hold before a punchline is quiet; the camera is the `gloss-<take>-angle` group, which
+  `srstudio craft` reports.
+
+An episode is two files: `episodes/gloss_<name>_audio.py` (its takes and stages; run it to record through
+`srstudio.takes` via `episodes/_gloss.py`, every line heard back by speech-to-text, no retries) and a short
+`episodes/gloss_<name>.py` that builds it. `tests/test_gloss_episodes.py` holds all seven to the format: Sunny's
+hook question first, a hold of at least 1.2 s before the button, the Plaza notice last.
+
+| # | Episode | The turn |
+|---|---|---|
+| G1 | *Orientation* | the exit is painted on, and it arrives "in a future update" |
+| G2 | *Joy Points* | points can be redeemed for more points, and the balance does not roll over |
+| G3 | *Trust Exercise* | nobody catches anyone; catching was not in the budget |
+| G4 | *Feedback* | the guests' complaint about the plaza is answered with more plaza |
+| G5 | *Exit* | behind the exit door is a waiting room, and waiting is the attraction |
+| G6 | *Wellness* | the manager is the same orb in a tie; wellbeing is the top priority, ranked fourth |
+| G7 | *Terms* | declining the terms is added to the terms; real is also premium |
 
 ## Signature
 
@@ -743,7 +1367,13 @@ error is `InstagramPostError`, with every problem listed.
   into `--fonts` and pinned there (`generated/fonts`); the deliveries live in `generated/renders/ig/`. With
   `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` set, the test suite runs `check` against the real delivery, so a
   re-render without a new delivery fails the quality gate.
-- `tests/test_social.py` covers the layout, each limit's failure path, the episode hook, every shipped post (each
+- **Outbox and packages** ([ADR 0024](docs/decisions/0024-every-video-ships-its-package.md)).
+  `python3 episodes/publish_drive.py` stages every video that passes the gate in `generated/outbox/<video name>/`
+  (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
+  without a package is held back like a drifted one. A recreation ships the package it was received with
+  (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
+  `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
+  the engine. It is repacked, as the next patch version beside the earlier ones, only when its scene changes. each limit's failure path, the episode hook, every shipped post (each
   with a thumbnail and one video), the frame selection on a synthetic video whose frames differ (first, middle and
   last frame), frames outside the video, blank frames, unreadable probes, deliveries that leave no files when the
   backdrop or the engine fails, and the gate: a fresh delivery, never delivered, a re-render (and that only it is

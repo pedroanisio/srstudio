@@ -201,7 +201,7 @@ def test_inject_adds_the_library_section_style_cards_and_figures(tree):
         assert f'id="lib-{slug}"' in page and f'src="{slug}.mp4"' in page
     assert 'class="style-tag soft"' in page and 'class="style-tag cel"' in page  # every registered style
     assert page.count('class="style-tag cutout">Cutout</span><b>Recorte') == 1  # cards already there are kept
-    assert "3 episódios novos" in page and "<b>6</b><span>estilos" in page
+    assert "3 episódios novos" in page and "<b>9</b><span>estilos" in page
     assert f"<b>{len(cp.registry.entries())}</b><span>peças registradas" in page  # fills the ninth spec cell
     assert 'alt="Pip, pose stand"' in page and "pip" in page  # pose sheet and the registry table
     assert "About camera-off &amp; more" in page  # escaped once

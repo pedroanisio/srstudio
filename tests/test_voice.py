@@ -385,6 +385,35 @@ def test_spelled_and_digit_numbers_are_equivalent():
     )
 
 
+@pytest.mark.parametrize(
+    ("heard", "script"),
+    [
+        ("12%. Please smile harder", "Twelve percent. Please smile harder."),
+        ("Your well-being is our top priority.", "Your wellbeing is our top priority."),
+        ("Log in to the well being portal.", "Log in to the wellbeing portal."),
+    ],
+)
+def test_a_percent_sign_and_a_compound_split_or_joined_read_as_the_same_words(heard, script):
+    check_transcript(parse_transcript(transcript(heard)), script)
+
+
+@pytest.mark.parametrize("heard", ["12. Please smile harder", "Your well-being is our top party.", "Your wellbeings"])
+def test_a_compound_still_has_to_carry_every_scripted_letter(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), "Your wellbeing is our top priority.")
+
+
+def test_a_hearing_the_operator_accepted_passes_and_nothing_else_does():
+    reel = parse_transcript(transcript("Reel is also premium."))
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(reel, "Real is also premium.")
+    check_transcript(reel, "Real is also premium.", accepted=("Reel is also premium.",))
+    check_transcript(reel, "Real is also premium.", accepted=("reel, is also premium",))  # the same normalisation
+    for other in (("Real is premium.",), ("Reel is also premium too.",), ()):
+        with pytest.raises(TranscriptMismatch, match="Real is also premium"):
+            check_transcript(reel, "Real is also premium.", accepted=other)
+
+
 @pytest.mark.parametrize("heard", ["No. Just the chairs.", "Just the chair.", "No. Just the chair. Thank you.", ""])
 def test_transcript_that_differs_from_the_script_fails(heard):
     with pytest.raises(TranscriptMismatch):
@@ -639,9 +668,22 @@ def test_an_abbreviated_title_is_still_the_word_it_stands_for():
         check_transcript(parse_transcript(transcript("Great point, Mr. Lamp.")), "Great point, Master Lamp.")
 
 
-def test_numbers_beyond_ninety_nine_are_not_spelled_as_words():
+def test_a_year_read_in_pairs_does_not_match_the_cardinal_its_digits_spell():
     with pytest.raises(TranscriptMismatch):
         check_transcript(parse_transcript(transcript("Since 1999!")), "Since nineteen ninety-nine!")
+
+
+@pytest.mark.parametrize(
+    ("heard", "said"),
+    [
+        ("for 900 years", "for nine hundred years"),
+        ("only 105 left", "only one hundred five left"),
+        ("1999 of them", "one thousand nine hundred ninety-nine of them"),
+        ("20000 credits", "twenty thousand credits"),
+    ],
+)
+def test_hundreds_and_thousands_match_their_cardinal_words(heard, said):
+    check_transcript(parse_transcript(transcript(heard)), said)
 
 
 def test_silent_sound_effect_is_rejected():

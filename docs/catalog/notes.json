@@ -117,6 +117,365 @@
         "Duas personagens novas, mais acabadas: sobrancelhas que acompanham o olhar, brilho nas pupilas, bochechas coradas, piscadas no próprio ritmo, orelhas forradas; a coelha tem dentes da frente e bigodes.",
         "Vozes premade Alice (Pip) e Bill (Bruno), com legendas tingidas por falante; uma pausa de 1,6 s enquanto ela olha para o quadro antes do golpe final (<em>Oh. Quick follow-up.</em>) e o <em>wah-wah</em> quando ele desliga."
       ]
+    },
+    "day-off": {
+      "number": "11",
+      "lede": "Sábado, sem trabalho. Mas as mãos de Pip continuam digitando no nada, ele concorda com a luminária e acaba marcando uma reunião com o sofá, que estoura o horário e precisa ser estendida.",
+      "highlights": [
+        "Música instrumental composta no ElevenLabs Music a 120 bpm, com as falas de Will encaixadas no grid de compassos (<code>srstudio.song</code>).",
+        "O selo de calendário <code>soft_props.status_badge</code>: convite, aceito, encerrado riscado, estender, estendido.",
+        "Dois crash zooms (<code>camera.push_in</code>) no rosto de Pip: o susto com o convite e a volta ao trabalho quando a reunião acaba.",
+        "Digitação de foley semeada nas colcheias de cada trecho de recaída."
+      ]
+    },
+    "whose-milk": {
+      "number": "T6",
+      "lede": "O leite da geladeira do escritório diz Rex, 2019. Sobreviveu a duas reestruturações, mais que o Dave. Depois, ele se mexeu. Agora é iogurte, e foi promovido. A Fern está lá há seis anos.",
+      "highlights": [
+        "A primeira esquete na cozinha do escritório (<code>toon_sets.kitchen</code>): a cafeteira passa café atrás do Rex o tempo todo.",
+        "O bilhete da geladeira escala entre os planos da Fern, e cada bilhete novo entra em tela cheia com <code>toon_sets.note_insert</code>, legível no celular.",
+        "Vozes premade Matilda (Fern) e Charlie (Rex) do ElevenLabs, conferidas por transcrição e sincronizadas nos lábios."
+      ]
+    },
+    "date-night": {
+      "number": "T8",
+      "lede": "O Otto manda para a Mae um convite de calendário para o jantar, do quarto ao lado. Tem pauta: item três, sentimentos, dez minutos. Ela é opcional; a massa é obrigatória. É recorrente. Até junho, quando acaba o aluguel.",
+      "highlights": [
+        "A primeira esquete em casa com os dois cômodos: a Mae na cozinha (<code>toon_sets.kitchen</code>, com a data na geladeira) e o Otto no escritório à noite (<code>toon_sets.home</code>).",
+        "A pauta, o status de opcional e a planilha de apartamentos chegam no celular dela como notificações (<code>toon_props.toasts</code>); o calendário dele salta de OCT 29 para JUN 30 na punchline.",
+        "Vozes premade Sarah (Mae) e Daniel (Otto) do ElevenLabs, conferidas por transcrição e sincronizadas nos lábios."
+      ]
+    },
+    "in-network": {
+      "number": "T9",
+      "lede": "Gil liga para o plano de saúde: braço quebrado tem cobertura? Dana, do setor de sinistros, adora a pergunta: qual braço? O esquerdo. Ah, não, eles cobrem o direito. O hospital é credenciado; o médico, não. A ambulância? Ele estava acordado? Então foi escolha dele. E agora? Tenta de novo em janeiro: franquia nova. O calendário pula para 1º de janeiro e chega um sinistro novo.",
+      "highlights": [
+        "Locação nova, o cubículo de call center (<code>toon_sets.call_centre</code>): divisória de tecido, o pôster YOUR CALL MATTERS e o painel CALLS WAITING, que sobe a cada <code>tick:</code> e salta para 999 na pausa antes da punchline.",
+        "Adereço novo, o headset (<code>toon_cast.headset</code>), ajustado à silhueta de qualquer personagem a pincel e preso como adesivo: a Dana se inclina e ele vai junto.",
+        "Os sinistros chegam no celular do Gil como notificações; o calendário dele pula de OCT 29 para JAN 1 e o botão final repete a primeira notificação com um número novo.",
+        "Vozes premade Chris (Gil) e Jessica (Dana) do ElevenLabs, conferidas por transcrição e sincronizadas nos lábios."
+      ]
+    },
+    "split-it": {
+      "number": "T10",
+      "lede": "Fim do jantar. O Brock comeu lagosta a preço de mercado e uma garrafa de vinho; a Mia, uma salada e água. Ele propõe dividir igualmente. Ela não bebe. O cartão dele é recusado; o dela, aprovado. Pagou: US$ 428,60. Chega a transferência dele: US$ 6,50, metade da salada. E um convite: mesmo lugar na sexta?",
+      "highlights": [
+        "Locação nova, o restaurante (<code>toon_dinner.restaurant</code>): parede com marinha, arandela, banco de couro e a lousa de SPECIALS com LOBSTER a MARKET PRICE.",
+        "A mesa posta (<code>toon_dinner.table</code>), que substitui a mesa de escritório pela opção nova <code>Staging(desk=)</code>, e os pratos (<code>toon_dinner.dishes</code>): a carcaça de lagosta, o vinho e a conta de um lado; a salada e a água do outro.",
+        "A maquininha de cartão (<code>toon_dinner.card_reader</code>) troca de tela por evento: TAP CARD, DECLINED para ele, APPROVED para ela; os valores chegam no celular como notificações.",
+        "Vozes premade Roger (Brock) e River (Mia) do ElevenLabs, conferidas por transcrição e sincronizadas nos lábios."
+      ]
+    },
+    "not-a-robot": {
+      "number": "I3",
+      "lede": "Um formulário antes do almoço. O captcha pede semáforos, depois semáforos tristes, depois todo momento em que ele se sentiu vivo de verdade: nove laptops iguais. Ele hesita como humano e clica como robô, e o roteador de The Router dá as boas-vindas ao irmão.",
+      "highlights": [
+        "O captcha em traço de caneta (<code>ink_captcha.captcha</code> e <code>ink_captcha.checkbox</code>): faixa de pergunta, grade 3×3 de desenhos, seleções que marcam e o selo de verificação falha.",
+        "Três vozes premade do ElevenLabs (Chris, Sarah e Daniel) pelo pipeline <code>srstudio.takes</code>, agora com a fonte de legenda do estilo (<code>Script.font</code>).",
+        "A capa sai de uma variante da cena sem as legendas queimadas (<code>Episode.hide_on_cover</code>)."
+      ]
+    },
+    "unexpected-item": {
+      "number": "R4",
+      "lede": "Um abacate no autoatendimento. A máquina pede o item na área de ensacamento, chama de item inesperado, pede para tirar, pede para pôr de volta e chama ajuda. A supervisora lê o mês dele na tela: duzentos itens passados, ensacados, três atolamentos resolvidos. Funcionário do mês. Ele pergunta se recebe, e a máquina chama isso de item inesperado também.",
+      "highlights": [
+        "O supermercado em código (<code>stick_shop.checkout</code>): prateleiras abastecidas, luminárias, piso em perspectiva e a área de ensacamento.",
+        "O quiosque que fala (<code>stick_shop.kiosk</code>): telas por tom (normal, erro, ajuda, prêmio) com o rosto do funcionário do mês e a lâmpada que pisca em vermelho.",
+        "Avental da loja como opção do visual (<code>stick.Look(apron=)</code>), crachá com nome e três vozes premade do ElevenLabs (Laura, Will e Alice) com trilha de supermercado composta."
+      ]
+    },
+    "tip-screen": {
+      "number": "12",
+      "lede": "Um café preto, servido da garrafa. A Ava vira o tablet: 20%, 25%, 30%. \"Você serviu de uma garrafa.\" \"Com intenção.\" O Milo coloca o próprio tablet no balcão e pergunta quanto ela quer dar de gorjeta para ele por ter pedido. Os dois tocam \"trinta\" até o fim do expediente, e o placar fecha em zero, com o café frio.",
+      "highlights": [
+        "O tablet de gorjeta (<code>props.tip_tablet</code>): título, opções em botões, “no tip” minúsculo e os toques acendendo a opção escolhida no tempo de cada efeito.",
+        "A crachá da barista agora é opcional (<code>cast.Barista</code> com <code>name=None</code>) para os closes não carregarem letras fora do quadro; o padrão “AVA” continua igual.",
+        "Diálogo pelo pipeline de entrevista (<code>srstudio.interview</code>) com duas vozes premade do ElevenLabs (Liam e Jessica) e cinco toques gerados, cada um logo depois do número que responde."
+      ]
+    },
+    "out-of-office": {
+      "number": "T7",
+      "lede": "O Bruno está de férias, com a resposta automática ligada. Mesmo assim respondeu a todos os e-mails, um por um, para avisar que está fora, porque é mais caloroso. Atrás dele, o calendário vai arrancando as folhas da semana. A chefe também respondeu: das férias dela. No fim, chega a resposta automática do próprio Bruno.",
+      "highlights": [
+        "Primeiro esquete no home office à noite (<code>toon_sets.home</code>), com o calendário de arrancar (<code>toon_sets.calendar</code>) avançando por eventos <code>page:</code> só nos planos do Bruno.",
+        "A luminária acesa sobre o laptop (<code>toon_sets.desk_lamp</code>) e a planta balançando (<code>toon_sets.plant</code>) à direita, longe das patas e do cacto.",
+        "Notificações maiores no celular (<code>toon_props.toasts(size=)</code>) para a resposta da chefe e a auto-resposta do botão; vozes premade do ElevenLabs Alice (Pip) e Bill (Bruno), com sincronia labial."
+      ]
+    },
+    "unlimited-pto": {
+      "number": "13",
+      "lede": "O Bo tem uma grande notícia: férias ilimitadas. O Pip pede a sexta. Depois a sexta à tarde. Depois o almoço. Recusado, recusado, recusado, sempre antes de o Bo terminar de explicar. Quantos dias tem o ilimitado? Ilimitado: por isso ninguém precisa de um. E o pedido do próprio Bo é aprovado: Bali, três semanas.",
+      "highlights": [
+        "Primeira vez do Bo em cena (<code>blob.bo</code>), espelhado para encarar o Pip (<code>Cue(flip=True)</code>), e primeira cena na sala de reunião polida (<code>blob.meeting_room</code>).",
+        "O crachá de pedidos (<code>soft_props.status_badge</code>): cada pedido pendente em âmbar, RECUSADO riscado em vermelho e o “BO: BALI 3 WK” em verde no fim.",
+        "Trilha instrumental composta pelo ElevenLabs Music a 120 bpm (office-pop, uma pausa no pad antes da piada, steel drum no botão) e vozes premade Eric (Bo) e Will (Pip)."
+      ]
+    },
+    "message-failed": {
+      "number": "I4",
+      "lede": "Uma mensagem sobre o chefe vai para o chefe. Ele implora ao roteador que derrube o Wi-Fi; a mensagem falha, e o roteador, que odeia falhar, reenvia. O chefe está digitando.",
+      "highlights": [
+        "O celular em traço de caneta (<code>ink_phone.phone</code> e <code>ink_phone.phone_shot</code>): contato, balões meus e dele chegando no relógio do plano, status de entrega que muda (enviando, não entregue, entregue, lido) e os três pontinhos de digitação.",
+        "Duas vozes premade do ElevenLabs (Chris e Daniel) e dois efeitos sonoros pelo pipeline <code>srstudio.takes</code>; o roteador de The Router apaga os LEDs no \"Dropping the Wi-Fi\".",
+        "A capa sai de uma variante da cena sem as legendas queimadas (<code>Episode.hide_on_cover</code>)."
+      ]
+    },
+    "u-up": {
+      "number": "I5",
+      "lede": "Duas da manhã: o humano mandou mensagem para a ex. O roteador não desenvia: ele não falha mais, ele cresceu. Ela pergunta quem é, depois lembra dos quarenta dólares, e o roteador já pagou, da conta dele, com um memo.",
+      "highlights": [
+        "Volta do roteador de <em>The Router</em> e <em>Message Failed</em>, com a deixa de que ele odeia falhar.",
+        "O contato se chama Do Not Text; a conversa inteira está no celular (<code>ink-phone</code>) e o botão é o pagamento com o memo u up?.",
+        "Vozes premade Chris e Daniel do ElevenLabs, cada fala conferida por transcrição; duas linhas reescritas para evitar números falados."
+      ]
+    },
+    "premium-suction": {
+      "number": "I6",
+      "lede": "O robô aspirador parou no meio da sala: o teste grátis acabou. Ele comprou o aparelho? Comprou o hardware; a sucção é mensal. A cozinha é premium, os cantos são platinum. O que é grátis? Ele mapeia a casa e vende o mapa. Quem compraria isso? Chega a mensagem do senhorio: viu o mapa, o aluguel sobe em maio. Ele gostou do segundo quarto, que é o closet, menos no mapa. Apagar é premium.",
+      "highlights": [
+        "Personagem novo do estilo Ink, o robô aspirador (<code>ink_vacuum.vacuum</code>): o anel de luzes gira e as marcas de voz piscam quando ele fala; fica parado, chega freando ou sai rodando, com uma palavra no visor (TRIAL, $9.99, PRO, $$$).",
+        "Locação nova, o chão junto ao rodapé (<code>ink_vacuum.vacuum_shot</code>), com a tomada e a base de carregamento; e gráfico novo, o mapa da casa (<code>ink_vacuum.floor_map</code>): cômodos contornados, a rota em pontos e o CLOSET que vira BEDROOM 2 na hora da revelação.",
+        "A mensagem do senhorio chega no celular (<code>ink_phone</code>) com a pausa antes da revelação; o botão final é o aspirador saindo de quadro com $$$ no visor.",
+        "Vozes premade Chris (o humano da série Ink) e Lily (o aspirador) do ElevenLabs, conferidas por transcrição, e o efeito gerado com ElevenLabs."
+      ]
+    },
+    "home-sick": {
+      "number": "I7",
+      "lede": "Duas da tarde de segunda, óculos escuros na testa: a campainha com câmera não deixa o humano entrar. O morador está em casa, doente. Ele melhorou? Então está atrasado para o trabalho. A campainha pergunta ao grupo da rua quem é ele, da conta dele: nunca vi, não. E, depois de uma pausa, o chefe: é meu funcionário. Rosto reconhecido, bem-vindo. Mensagem do chefe: melhorou? Bronzeado bonito.",
+      "highlights": [
+        "Personagem novo do estilo Ink, a campainha com câmera (<code>ink_doorbell.doorbell</code>): o anel de luzes gira e as marcas de voz piscam quando ela fala, e o botão mostra o veredito, um X ou um visto, na hora certa.",
+        "Locação nova, a porta de casa vista de fora (<code>ink_doorbell.doorstep</code>), com o número 14, o tapete e a campainha na parede; e gráfico novo, a imagem da câmera (<code>ink_doorbell.doorbell_view</code>): a lente redonda, REC piscando, o relógio e a etiqueta do rosto, que vai de UNKNOWN a INTRUDER e, na revelação, EMPLOYEE.",
+        "O boneco do Ink ganha óculos escuros na testa como opção (<code>ink.human(shades=True)</code>), a pista do bronzeado; o grupo da rua e o chefe chegam no celular (<code>ink_phone</code>) com a pausa antes da revelação.",
+        "Vozes premade Chris (o humano da série Ink) e George (a campainha) do ElevenLabs, conferidas por transcrição, e os efeitos gerados com ElevenLabs."
+      ]
+    },
+    "saga-known-issue": {
+      "number": "S1",
+      "lede": "O cubo de batalha tem um furo que o explode. Alguém reportou há nove anos. A prioridade cai de média para baixa e para \"seria bom ter\" enquanto os rebeldes atiram nele.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-annual-review": {
+      "number": "S2",
+      "lede": "Avaliação anual do Enforcer Seven: nove mil tiros, zero acertos, zero papelada. Enforcer do ano. E os que acertam? Não falamos do Gary.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-group-chat": {
+      "number": "S3",
+      "lede": "Nas dunas, Lord Gloom faz a grande revelação. Juno já sabia: o pai postou no grupo da família, e mandou para o Diretório inteiro.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-card-reader": {
+      "number": "S4",
+      "lede": "Rook pede uma bebida numa cantina perigosa. O droide vira a maquininha: gorjeta? Sem gorjeta. A cantina inteira se vira para encarar. O recibo vai direto para o Diretório.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-update": {
+      "number": "S5",
+      "lede": "No meio da perseguição, o motor de salto insiste em instalar uma atualização. Hoje à noite serve? Serve. A atualização também removeu o motor de salto, por segurança.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-free-tier": {
+      "number": "S6",
+      "lede": "A Mestra Mabel ensina o Fluxo a Juno, no plano grátis: uma pedrinha. Pedras grandes são Flow Plus, truques mentais são Premium. A grande perturbação? A renovação.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "saga-open-plan": {
+      "number": "S7",
+      "lede": "As paredes do compactador de lixo se fecham, e a manutenção chama de reforma. Abra um chamado: uns nove anos. Aí chega o Seven para a mesa compartilhada, às terças.",
+      "highlights": [
+        "Estilo novo, <code>SAGA</code> (ADR 0025): elenco em <code>srstudio.saga</code>, cenários e adereços em <code>srstudio.saga_sets</code>, encenação como dados em <code>srstudio.saga_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas; legendas nativas do motor divididas em palavras quando a fala é longa.",
+        "A capa sai de uma variante da cena sem o gancho e sem as legendas (a trilha de legendas vira arquivo à parte na variante <code>cover</code>)."
+      ]
+    },
+    "the-viewing": {
+      "number": "R5",
+      "lede": "Caça a apartamento, dia 41. A cozinha tem um vaso sanitário (planta aberta: cozinhar e fazer várias coisas), a janela é pintada (a vista nunca muda: estabilidade) e a cama desce da parede com o Gary dormindo nela; o Gary vem com o contrato. Dois mil por mês, cada um. Dev aceita e é o candidato quarenta e sete. O Gary, dormindo, é o quarenta e seis.",
+      "highlights": [
+        "O apartamento em traço Stick (<code>stick_flat.studio</code>): fogão, vaso sanitário ao lado do fogão, janela com a paisagem pintada que escorre pela parede e o armário da cama, mais largo que o quadro para a câmera virar até a cama.",
+        "A cama de parede (<code>stick_flat.murphy_bed</code>): desce no tempo do plano por um quadro intermediário, com um ocupante que ronca e fala dormindo.",
+        "Legendas palavra a palavra com tamanho menor, faixa mais escura e empréstimo de tempo entre deixas (<code>stick.word_cues(size=, borrow=)</code>, <code>stick.words(scrim=)</code>): render sem nenhum aviso de legibilidade ou contraste.",
+        "Três vozes premade do ElevenLabs (Will, Lily e Callum), um efeito e uma trilha do ElevenLabs Music a 120 BPM."
+      ]
+    },
+    "cancel-anytime": {
+      "number": "R6",
+      "lede": "Theo quer cancelar a academia antes do amanhecer. Na recepção, a Brooke lista as regras da placa: pessoalmente, numa terça, antes do nascer do sol; ele cumpre todas. Falta o atestado do personal que ele nunca conheceu (o personal conhece ele). Outro jeito? Certidão de óbito. De quem? Eles são flexíveis. Aí o sol nasce na janela, e a câmera fecha na letra miúda da placa.",
+      "highlights": [
+        "Cenário novo em traço Stick (<code>stick_gym.gym</code>): parede com a marca, pôster, aparelhos e a janela com a cidade à noite, cujo amanhecer é animado no tempo do plano (<code>sunrise=</code>).",
+        "Adereço novo (<code>stick_gym.counter</code>): o balcão com a maquininha, o cacto e a placa CANCEL ANYTIME* com a letra miúda legível em close.",
+        "Legendas palavra a palavra com a opção nova <code>stick.word_cues(tail=True)</code>: a última deixa curta de uma fala se junta à anterior; render sem nenhum aviso de legibilidade ou contraste.",
+        "Vozes premade do ElevenLabs (Callum e Jessica) conferidas por reconhecimento de fala e uma trilha de academia do ElevenLabs Music a 120 BPM, abaixada sob as falas."
+      ]
+    },
+    "what-my-dad-does": {
+      "number": "R7",
+      "lede": "Reunião de pais. Dev se encolhe numa cadeirinha de criança, joelhos acima do quadril, enquanto a professora lê a redação do filho: o pai trabalha de casa, de gravata em cima e sem calça; o trabalho dele é dizer “acho que você está no mudo”; às três tem Focus Time, e o Focus Time ronca. Dev tem resposta para tudo. Última linha: o pai diz que trabalha de casa; a mãe diz que ele só está em casa. Que nota ele tirou? Um A. A mãe ajudou.",
+      "highlights": [
+        "A sala de aula em traço Stick (<code>stick_school.classroom</code>): alfabeto, lousa com giz, desenhos da turma, relógio e piso de linóleo.",
+        "A cadeirinha de criança (<code>stick_school.tiny_chair</code>) com as poses novas <code>PERCHED</code>: o adulto sentado baixo, joelhos acima do quadril; a mesa da professora na frente dela e a página nas mãos dela (<code>held</code>).",
+        "A redação (<code>stick_school.essay</code>): as linhas aparecem conforme são lidas, o marca-texto passa na linha a partir da primeira palavra dita, e no fim a nota circulada e o recado “Edited by Mom” na margem.",
+        "Vozes premade Will (Dev) e Sarah (a professora) do ElevenLabs, conferidas por transcrição; um efeito de giz e uma trilha de pizzicato do ElevenLabs Music a 120 BPM, abaixada sob as falas."
+      ]
+    },
+    "group-nine": {
+      "number": "R8",
+      "lede": "Portão B9. Sam pergunta se o Grupo 9 já está embarcando. A atendente responde que é depois da bagagem; a mala dele é do Grupo 4 e está ótima. Upgrade? Mesmo assento, só que você paga. Sam insiste: o avião não sai sem ele. Todo mundo diz isso. Então ele põe o quepe: é o piloto. E pilotos são o Grupo 9. Na fileira 38, entre dois vizinhos donos dos dois apoios de braço, fala o seu comandante, direto do assento do meio.",
+      "highlights": [
+        "O portão em traço Stick (<code>stick_airport.gate</code>): janela com o avião, placa “NOW BOARDING” que sobe de grupo a cada fala, poltronas e o balcão da atendente (<code>stick_airport.podium</code>).",
+        "A mala de mão (<code>stick_airport.carry_on</code>) com a etiqueta do grupo; nos closes, balcão e etiqueta saem sem letras para não cruzar a faixa das legendas.",
+        "A fileira do avião (<code>stick_airport.cabin</code>, <code>stick_airport.armrests</code>) com as poses sentadas <code>SQUEEZED</code>: o passageiro do meio encolhido, os vizinhos com os dois apoios de braço.",
+        "O quepe de piloto como opção do visual (<code>Look(cap=)</code>) e legendas palavra a palavra equilibradas (<code>word_cues(balance=True)</code>), que dividem cada fala onde a deixa mais curta dura mais.",
+        "Vozes premade Liam (Sam) e Matilda (a atendente) do ElevenLabs, conferidas por transcrição; trilha de lounge de aeroporto do ElevenLabs Music a 120 BPM, abaixada sob as falas."
+      ]
+    },
+    "culture-fit": {
+      "number": "14",
+      "lede": "Caça a emprego, dia 200: duzentas candidaturas, nenhuma resposta. O chefe da entrevista senta no mesmo banco para almoçar, um pombo pousa aos pés dele e é entrevistado ali mesmo. Contratado. Milo tem mestrado; o pombo trabalha por migalhas. Milo topa migalhas. Fica no banco de currículos, e o pombo, agora líder de equipe, quer se conectar.",
+      "highlights": [
+        "Crossover em Cutout: Milo (episódios 05 e 09) e o chefe (a série da entrevista) no parque, que nenhum episódio novo tinha usado.",
+        "O chefe sentado no banco ganha pernas por opção (<code>legs=\"seated\"</code> nos atores de escritório), e a linha do assento (<code>locations.park_seat_y</code>) põe qualquer ator no banco; o padrão segue sem pernas.",
+        "Adereço novo, <code>crumbs</code>: um punhado de migalhas que cai da mão e fica no chão, onde o pombo bica.",
+        "Vozes premade do ElevenLabs (Liam e Eric), as mesmas dos episódios anteriores, e seis efeitos gerados, tudo conferido por reconhecimento de fala; render sem aviso de legibilidade ou contraste."
+      ]
+    },
+    "return-to-office": {
+      "number": "15",
+      "lede": "Primeiro dia da volta ao escritório: Pip passa duas horas no trem para chegar a uma sala de reunião vazia. A tela da parede toca: o Bo dá as boas-vindas ao time, direto de uma praia em Bali, porque a liderança é híbrida. Por que o Pip está ali? Alguém tem que ser a cultura. A chamada acaba e o sensor de presença apaga a luz; Pip acena para ela voltar e, assim que para, ela apaga de novo.",
+      "highlights": [
+        "A tela da sala de reunião recebe uma chamada por opção (<code>blob.meeting_room(on_screen=)</code>, <code>blob.meeting_screen()</code>): um desenho plano inclinado com <code>skewY</code> sobre a parede e recortado pela tela; sem a opção, o slide de sempre.",
+        "Gráfico novo, <code>soft-beach-call</code>: céu, sol, mar, areia e coqueiro que balança, um espaço para quem liga e o crachá com o nome; aqui o Bo, no mesmo rig, dança no ritmo do steel drum.",
+        "As luzes com sensor de presença como gag final, e o crachá de status contando a história: RTO, ON CALL, 312 WATCHING, CALL ENDED, NO MOTION.",
+        "Vozes premade do ElevenLabs (Will e Eric) e trilha instrumental do ElevenLabs Music a 120 BPM, com seis efeitos; tudo conferido por reconhecimento de fala e render sem aviso."
+      ]
+    },
+    "market-rate": {
+      "number": "16",
+      "lede": "O candidato da série da entrevista foi contratado. Sozinho na sala de reunião, pede aumento ao chefe no viva-voz. Recorde de faturamento! Então, aumento? Melhor: um título, Sênior. Paga mais? É mais comprido. Aí ele descobre a própria vaga anunciada, pagando mais: é para talentos externos. E se ele pedir demissão e se candidatar de novo? Aguarde na linha. A entrevista é quinta.",
+      "highlights": [
+        "Primeiro episódio na sala de reunião polida (<code>locations.conference_room</code>), que nenhum episódio tinha usado: persianas, quadro com o gráfico subindo e o viva-voz na mesa.",
+        "O viva-voz acende o anel enquanto o outro lado fala (<code>props.speakerphone(talk=)</code>, repassado por <code>conference_room(speaker_talk=)</code>); sem a opção, nada muda.",
+        "A vaga anunciada e o endosso por lealdade aparecem na tela (cartão e notificação), e a música de espera é a pausa antes do desfecho.",
+        "Vozes premade do ElevenLabs (Will e Eric, as mesmas da série) conferidas por reconhecimento de fala, e efeitos gerados com ElevenLabs."
+      ]
+    },
+    "elevator-pitch": {
+      "number": "18",
+      "lede": "O funcionário de Market Rate pega o elevador com o chefe. “Trabalhar de casa? Elevator pitch. Você tem até o meu andar.” Ele argumenta: mais produtivo, sem trânsito, sem reunião. Andar 4: as portas abrem e entra o Kevin, o pombo que o chefe contratou em Culture Fit. O Kevin é 100% remoto; voa até o escritório às terças. Por que ele pode? “Ele negociou. Você aceitou um título.” Andar 9: “Kevin, a decisão é sua.” Arrulho. “O Kevin disse cinco dias por semana.”",
+      "highlights": [
+        "Locação nova, o elevador (<code>locations.elevator</code>): cabine de aço escovado com as portas na parede do fundo, que deslizam para dentro da parede e mostram o corredor; o mostrador de sete segmentos sobe andar a andar e o botão do andar do chefe aceso.",
+        "Os atores do escritório agora ficam em pé (<code>legs=\"standing\"</code>, com <code>elevator_stand_y</code>): calça e sapatos até o chão da cabine, sem mudar nada nos episódios antigos.",
+        "Crossover: o funcionário de Market Rate, o chefe da série de entrevistas e o pombo de Culture Fit, que entra pela porta andando e balançando a cabeça a cada arrulho.",
+        "Vozes premade Will e Eric do ElevenLabs, conferidas por transcrição, e quatro efeitos gerados (dois sinos de chegada, dois arrulhos)."
+      ]
+    },
+    "the-cake": {
+      "number": "19",
+      "lede": "Na copa, a Juno cobra dez dólares do Pip para um bolo. Aniversário? Não: alguém está saindo. O Bo entra com o bolo, radiante: a empresa economizou um salário inteiro. O bolo diz WE'LL MISS YOU, e o Pip acha fofo. O Bo espera, sorrindo, e gira o bolo no prato: BYE PIP. O Pip pagou dez dólares por isso; o Bo agradece o espírito de equipe. Pelo menos é de chocolate? Baunilha, corte de orçamento. E a Juno: posso ficar com a cadeira dele?",
+      "highlights": [
+        "Adereço novo, o bolo (<code>soft_props.cake</code>): bolo confeitado no prato, com vela e escrita de glacê na frente; com <code>back=</code> e <code>turn_at=</code> ele gira no prato e mostra a escrita de trás. <code>lettering=</code> limita a escrita aos trechos em que o bolo está em quadro, porque o motor segura texto dentro da área segura.",
+        "O Bo entra carregando o bolo nas mãos da pose em pé; a câmera corta para o bolo na leitura, segura a pausa antes do giro e corta para o Pip na reação.",
+        "Três vozes premade do ElevenLabs (Laura, Will e Eric) conferidas por reconhecimento de fala sem nenhuma reescrita, três efeitos gerados (língua de sogra, prato girando, trombone triste) e trilha instrumental do ElevenLabs Music a 120 BPM."
+      ]
+    },
+    "going-down": {
+      "number": "20",
+      "lede": "Final da série do escritório. Andar 9, descendo. “Estou sendo demitido?” “Não. Seu cargo está sendo descontinuado.” “Então estou demitido.” “Você vai para o remoto total. Do seu sofá. Para sempre.” Ding, andar 4: Kevin, o pombo de Culture Fit, entra com um envelope rosa no bico. “O Kevin? Ele é remoto!” “Ele veio voando para isso. Agora é Head de Pessoas.” O envelope cai aos pés do chefe e diz ERIC. “Kevin… meu cargo está sendo descontinuado?” Pausa longa. Arrulho. Térreo. O banco de Culture Fit: os dois jogando migalhas para os pombos. “O que a gente está fazendo?” “Networking.”",
+      "highlights": [
+        "Crossover em Cutout: o chefe (Eric), o funcionário de Market Rate e Elevator Pitch (Will) e Kevin, o pombo de Culture Fit, no elevador de Elevator Pitch descendo (<code>elevator(going=\"down\")</code>) e, no fim, no banco do parque onde tudo começou.",
+        "O envelope rosa (<code>props.pink_slip</code>): de costas e em branco no bico do Kevin (<code>name=None</code>, <code>show=</code>), depois cai e vira no chão com o nome (<code>fall=</code>).",
+        "O bando no caminho do parque pousa no bater de asas e bica as migalhas jogadas pelos dois (<code>props.crumbs</code>).",
+        "Vozes premade Will e Eric do ElevenLabs, conferidas por transcrição; dings, arrulhos, o tapa do envelope e o bater de asas gerados com o ElevenLabs."
+      ]
+    },
+    "smart-lamp": {
+      "number": "17",
+      "lede": "Juno e Pip discutem na sala: você nunca me escuta. Escuto sim! O abajur inteligente se mete: não escuta, eu tenho gravações. Então resolve sozinho: encomenda flores com um cartão de desculpas. Pip não está arrependido? Então um anel. Pip manda cancelar, tarde demais: ela disse sim. Com quem ela vai casar? Desculpe, não entendi.",
+      "highlights": [
+        "O abajur da sala Soft vira personagem: acende enquanto fala (<code>blob.home(lamp_talk=)</code>, halo, cúpula iluminada e filete laranja); sem a opção, a sala é a de sempre. <code>blob.LAMP_SHADE</code> dá o ponto da cúpula para a câmera.",
+        "A câmera ancora na cúpula e aproxima duas vezes, no sim e na última fala; o crachá de status conta a história (LISTENING, + FLOWERS, + RING, ENGAGED, PARDON?).",
+        "Três vozes premade do ElevenLabs (Laura, Will e Matilda) conferidas por reconhecimento de fala, quatro efeitos gerados e trilha instrumental do ElevenLabs Music a 120 BPM."
+      ]
+    },
+    "gloss-orientation": {
+      "number": "G1",
+      "lede": "Primeiro dia da Nadia na Praça. Ela pergunta pela saída; a Sunny diz que está logo atrás dela. A porta é pintada na parede. A Tamsin tentou por onze anos, e o Gus ainda está no período de teste. A saída chega numa atualização futura.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-joy-points": {
+      "number": "G2",
+      "lede": "O Gus segura a porta: mais dois. O Gus respira, pesado: menos. A Tamsin tem nove milhões de Pontos de Alegria e está juntando para mais pontos, porque pontos se trocam por mais pontos. O saldo não acumula. Você também não.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-trust-fall": {
+      "number": "G3",
+      "lede": "A atividade do dia é cair de costas e confiar. A Nadia pergunta quem vai segurá-la. Ninguém segura: segurar não estava no orçamento. O Gus caiu em março e ainda espera a confiança.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-feedback": {
+      "number": "G4",
+      "lede": "A pesquisa de satisfação da estadia eterna, de um a cinco. A Tamsin dá cinco para sempre; o Gus dá zero, que não é opção, então vira um. Os comentários vão direto para o lixo. A partir do feedback, a Praça ganhou mais praça, que era justamente a reclamação.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-exit": {
+      "number": "G5",
+      "lede": "Quarenta anos o Gus procurou esta porta. Atrás dela, outra porta. Depois uma menor. Depois uma sala de espera com senha: ele é o quatro milhões e seis, e o painel chama o três. Esperar é a atração.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-wellness": {
+      "number": "G6",
+      "lede": "O check-up de bem-estar do Gus dá doze por cento: sorria mais. O rosto dele é escalado para o gerente, que é o mesmo orbe de gravata. O seu bem-estar é a nossa prioridade número um. Está em quarto lugar.",
+      "highlights": [
+        "Estilo novo, <code>GLOSS</code> (ADR 0030): elenco em <code>srstudio.gloss</code>, cenários e adereços em <code>srstudio.gloss_sets</code>, encenação como dados em <code>srstudio.gloss_reel</code>, que recusa uma encenação que não bate com a gravação.",
+        "Vozes premade do ElevenLabs conferidas por reconhecimento de fala, sem novas tentativas; trilha composta com ElevenLabs Music, abaixada sob as falas e mais ainda na pausa antes da piada (<code>gloss_reel.hush</code>), medida com <code>srstudio craft</code>."
+      ]
+    },
+    "gloss-terms": {
+      "number": "G7",
+      "lede": "A Praça atualizou os termos de existência. A Tamsin aceita sem ler. Seção quatro: a esperança agora é um recurso premium, e recusar foi incluído na seção quatro. Ao continuar existindo, você concorda em continuar existindo.",
+      "highlights": [
+        "Uma leitura aceita pelo operador: o reconhecimento de fala ouve \"Reel\" onde a Sunny diz \"Real\", e <code>takes.Take(heard=...)</code> registra essa única alternativa no relatório de transcrição; qualquer outra leitura ainda para a gravação.",
+        "Primeiro episódio com <code>gloss_reel.LOOK</code> (ADR 0031): nenhuma legenda termina numa palavra solta e toda legenda fica ao menos 0,84 s na tela; G1–G6, já publicados, mantêm as legendas originais."
+      ]
     }
   },
   "styles": {
@@ -135,6 +494,14 @@
     "toon": {
       "title": "Cartum chapado",
       "text": "Cartum em tinta grossa sobre uma sala em degradê: um gato cuja expressão troca a cada deixa, e um elenco desenhado a pincel (cachorro, rã, urso e coelha) com boca sincronizada à fala; legendas em pílula branca numa itálica manuscrita. 9:16 a 24 fps; paleta <i>peach</i>."
+    },
+    "saga": {
+      "title": "Ópera espacial",
+      "text": "Paródia de ópera espacial narrada por um guia de campo impassível, o <i>Guia</i>: um lorde sombrio de viseira, soldados que nunca acertam nada, um cubo de batalha com um furo fatal, e a galáxia funcionando com os mesmos sistemas do escritório. Elenco em tinta grossa com luz e sombra, cenários com fundo desfocado, hologramas do tamanho do texto e um acabamento com brilho, vinheta e grão. 9:16 a 24 fps; paleta <i>void</i>."
+    },
+    "gloss": {
+      "title": "Praça brilhante",
+      "text": "Sátira dos mundos alegres de onde não se sai: bonecos de vinil brilhante presos numa praça pastel para sempre, com a Sunny, um orbe flutuante de rosto na tela, narrando tudo no tom impassível de um aviso de instalação, enquanto o placar de Pontos de Alegria pontua cada gesto. Vinil arredondado pela própria silhueta, fundos desfocados, um acabamento com brilho, vinheta e grão só no cenário, e a música que some na pausa antes da piada. 9:16 a 24 fps; paleta <i>plastic</i>."
     }
   },
   "gallery": [
@@ -1758,6 +2125,30 @@
       "text": "Cabine vista da porta do passageiro: teto, retrovisor, porta com apoio de braço e alto-falante, e o país passando pela janela em seis camadas de paralaxe, com casas, postes, um carro em sentido contrário e o reflexo do vidro."
     },
     {
+      "section": "locations",
+      "name": "Sala de casa Soft",
+      "parts": [
+        "soft-home"
+      ],
+      "shot": {
+        "episode": "day-off",
+        "at": 19.6
+      },
+      "text": "Parede pêssego, luminária de pé, mesinha com cacto e tapete em perspectiva: o sábado de Pip, com o sofá no centro."
+    },
+    {
+      "section": "locations",
+      "name": "Cozinha do escritório",
+      "parts": [
+        "toon-kitchen"
+      ],
+      "shot": {
+        "episode": "whose-milk",
+        "at": 0.6
+      },
+      "text": "Armários menta, azulejos brancos com brilho, bancada de madeira e a geladeira alta com ímãs e um bilhete na porta."
+    },
+    {
       "section": "props",
       "name": "Volante, cinto e balanço",
       "parts": [
@@ -1831,6 +2222,78 @@
       "text": "Celular preso no para-brisa com uma notificação do chefe; vibra com marcas quando a mensagem chega."
     },
     {
+      "section": "props",
+      "name": "Sofá",
+      "parts": [
+        "soft-sofa"
+      ],
+      "shot": {
+        "episode": "day-off",
+        "at": 19.6,
+        "box": [
+          40,
+          700,
+          980,
+          940
+        ]
+      },
+      "text": "Sofá sálvia de três lugares em 3/4, braços altos e almofadas soltas; as poses sentadas encaixam no assento, as de pé passam atrás do braço."
+    },
+    {
+      "section": "props",
+      "name": "Cafeteira",
+      "parts": [
+        "toon-coffee-machine"
+      ],
+      "shot": {
+        "episode": "whose-milk",
+        "at": 2.6,
+        "box": [
+          620,
+          470,
+          300,
+          360
+        ]
+      },
+      "text": "Cafeteira preta na bancada: a luz vermelha acesa e o café pingando na jarra enquanto passa."
+    },
+    {
+      "section": "props",
+      "name": "Bilhete em close",
+      "parts": [
+        "toon-note-insert"
+      ],
+      "shot": {
+        "episode": "whose-milk",
+        "at": 28.5
+      },
+      "text": "O bilhete da geladeira em tela cheia, com letras de 128 px e um push lento: a prova entra no corte quando o bilhete é a piada."
+    },
+    {
+      "section": "props",
+      "name": "Captcha de imagens",
+      "parts": [
+        "ink-captcha"
+      ],
+      "shot": {
+        "episode": "not-a-robot",
+        "at": 8.9
+      },
+      "text": "A pergunta em branco numa faixa de tinta sobre uma grade 3×3 de desenhos (semáforos, carros, árvores, laptops); cada seleção acinzenta o quadro e carimba um visto."
+    },
+    {
+      "section": "props",
+      "name": "Caixa \"não sou um robô\"",
+      "parts": [
+        "ink-checkbox"
+      ],
+      "shot": {
+        "episode": "not-a-robot",
+        "at": 4.6
+      },
+      "text": "O cartão com a caixa, o rótulo e as setas circulares; o visto aparece no clique."
+    },
+    {
       "section": "graphics",
       "name": "Palavra por palavra",
       "parts": [
@@ -1847,6 +2310,1302 @@
         ]
       },
       "text": "Cada palavra na hora em que é dita, em branco com contorno de tinta sobre uma faixa escura esfumada, entrando com um pequeno salto."
+    },
+    {
+      "section": "graphics",
+      "name": "Selo de status",
+      "parts": [
+        "soft-status-badge"
+      ],
+      "shot": {
+        "episode": "day-off",
+        "at": 19.6,
+        "box": [
+          480,
+          480,
+          460,
+          170
+        ]
+      },
+      "text": "Pílula branca com ponto colorido que troca de estado com pop-in; um estado pode vir riscado. Em Day Off é o convite do sofá."
+    },
+    {
+      "section": "locations",
+      "name": "Autoatendimento",
+      "parts": [
+        "stick-checkout"
+      ],
+      "shot": {
+        "episode": "unexpected-item",
+        "at": 9.5
+      },
+      "text": "Parede de prateleiras com estoque colorido, placa SELF-CHECKOUT pendurada, piso de ladrilhos e a área de ensacamento à esquerda do quiosque."
+    },
+    {
+      "section": "props",
+      "name": "Quiosque de autoatendimento",
+      "parts": [
+        "stick-kiosk"
+      ],
+      "shot": {
+        "episode": "unexpected-item",
+        "at": 4.6
+      },
+      "text": "A tela troca de mensagem por tom (aqui, erro em vermelho com o alerta); o leitor com a linha vermelha, a maquininha e a lâmpada de alarme."
+    },
+    {
+      "section": "locations",
+      "name": "Academia",
+      "parts": [
+        "stick-gym"
+      ],
+      "shot": {
+        "episode": "cancel-anytime",
+        "at": 8.5
+      },
+      "text": "A marca na parede, o pôster NO EXCUSES, a janela com a cidade à noite que amanhece no tempo do plano, os halteres e o balcão da recepção."
+    },
+    {
+      "section": "props",
+      "name": "Balcão da academia",
+      "parts": [
+        "stick-gym-counter"
+      ],
+      "shot": {
+        "episode": "cancel-anytime",
+        "at": 25.5
+      },
+      "text": "O balcão com a maquininha, o cacto e a placa de mesa: o título em vermelho e a letra miúda que só se lê de perto."
+    },
+    {
+      "section": "props",
+      "name": "Abacate",
+      "parts": [
+        "stick-avocado"
+      ],
+      "shot": {
+        "episode": "unexpected-item",
+        "at": 9.5
+      },
+      "text": "O item do problema, erguido na mão do Dev ou parado na área de ensacamento."
+    },
+    {
+      "section": "props",
+      "name": "Crachá",
+      "parts": [
+        "stick-name-badge"
+      ],
+      "shot": {
+        "episode": "unexpected-item",
+        "at": 20.0
+      },
+      "text": "Nome grande e cargo pequeno no verde da loja, preso ao avental."
+    },
+    {
+      "section": "props",
+      "name": "Tablet de gorjeta",
+      "parts": [
+        "tip-tablet"
+      ],
+      "shot": {
+        "episode": "tip-screen",
+        "at": 3.2
+      },
+      "text": "O tablet que vira para o cliente: “Add a tip”, três porcentagens e o “no tip” que quase não se lê; um toque acende a opção."
+    },
+    {
+      "section": "locations",
+      "name": "Café",
+      "parts": [
+        "cafe",
+        "menu-board",
+        "cafe-window",
+        "pendant-light",
+        "espresso-machine",
+        "bean-jar",
+        "pastry-stand"
+      ],
+      "shot": {
+        "episode": "tip-screen",
+        "at": 0.4
+      },
+      "text": "O café em plano aberto: o quadro de menu com “FREE WI-FI”, a janela, as luminárias pendentes, a máquina de espresso, o pote de grãos e a vitrine de doces sobre o balcão."
+    },
+    {
+      "section": "cast",
+      "name": "Barista",
+      "parts": [
+        "barista"
+      ],
+      "shot": {
+        "episode": "tip-screen",
+        "at": 2.3
+      },
+      "text": "A Ava atrás do balcão, de avental verde; aqui com o crachá em branco (<code>name=None</code>) para o close não levar letras para fora do quadro."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartela de lugar e tempo",
+      "parts": [
+        "location-slate"
+      ],
+      "shot": {
+        "episode": "tip-screen",
+        "at": 14.6
+      },
+      "text": "A faixa “THREE HOURS LATER” no alto do quadro, que entra e sai sozinha na janela de tempo dada."
+    },
+    {
+      "section": "locations",
+      "name": "Home office à noite",
+      "parts": [
+        "toon-home"
+      ],
+      "shot": {
+        "episode": "out-of-office",
+        "at": 6.0
+      },
+      "text": "A parede violeta, a janela com a lua e a cidade, a cortina vermelha, o varal de luzinhas que pulsa e a estante sobre o personagem."
+    },
+    {
+      "section": "props",
+      "name": "Calendário de arrancar",
+      "parts": [
+        "toon-calendar"
+      ],
+      "shot": {
+        "episode": "out-of-office",
+        "at": 11.0
+      },
+      "text": "O bloco no prego, no lugar do relógio: a cada data nova a folha de cima rasga, tomba e cai."
+    },
+    {
+      "section": "props",
+      "name": "Luminária e planta",
+      "parts": [
+        "toon-desk-lamp",
+        "toon-plant"
+      ],
+      "shot": {
+        "episode": "out-of-office",
+        "at": 9.5
+      },
+      "text": "A luminária teal com o cone e a poça de luz sobre o laptop; a planta no vaso de terracota, folhas balançando, na frente do brilho."
+    },
+    {
+      "section": "cast",
+      "name": "Bo",
+      "parts": [
+        "bo"
+      ],
+      "shot": {
+        "episode": "unlimited-pto",
+        "at": 20.3
+      },
+      "text": "O chefe: o mesmo rig do Pip em azul-claro, cabelo repartido e óculos quadrados; aqui espelhado para encarar o Pip e acenando a caminho de Bali."
+    },
+    {
+      "section": "props",
+      "name": "Celular com conversa",
+      "parts": [
+        "ink-phone"
+      ],
+      "shot": {
+        "episode": "message-failed",
+        "at": 24.6
+      },
+      "text": "Um celular seguro na mão com a conversa: o contato no topo, meus balões em tinta à direita, os dele em branco à esquerda, o status de entrega sob o último meu e os pontinhos de digitação."
+    },
+    {
+      "section": "locations",
+      "name": "Plano do celular",
+      "parts": [
+        "ink-phone-shot"
+      ],
+      "shot": {
+        "episode": "message-failed",
+        "at": 8.6
+      },
+      "text": "O celular sobre a linha da mesa, com o cacto da assinatura no canto: o plano da tela no estilo Ink."
+    },
+    {
+      "section": "cast",
+      "name": "Lord Gloom e o Enforcer Seven",
+      "parts": [
+        "saga-gloom",
+        "saga-enforcer"
+      ],
+      "shot": {
+        "episode": "saga-annual-review",
+        "at": 6.0
+      },
+      "text": "O lorde sombrio, cuja viseira vermelha acende quando fala, e o soldado de armadura branca com a luz do microfone no capacete; o Gary é o Seven com uma faixa laranja."
+    },
+    {
+      "section": "cast",
+      "name": "Juno",
+      "parts": [
+        "saga-juno"
+      ],
+      "shot": {
+        "episode": "saga-group-chat",
+        "at": 7.0
+      },
+      "text": "A jovem heroína de túnica clara, com boca sincronizada à fala, piscadas e tom de pele nomeado."
+    },
+    {
+      "section": "cast",
+      "name": "Rook e o droide do bar",
+      "parts": [
+        "saga-rook",
+        "saga-droid"
+      ],
+      "shot": {
+        "episode": "saga-card-reader",
+        "at": 5.0
+      },
+      "text": "O contrabandista de colete e o droide atrás do balcão, cuja barra de sorriso acende quando fala."
+    },
+    {
+      "section": "cast",
+      "name": "Mestra Mabel",
+      "parts": [
+        "saga-mabel"
+      ],
+      "shot": {
+        "episode": "saga-free-tier",
+        "at": 8.0
+      },
+      "text": "A mestra idosa de manto, óculos e bengala, que ensina o Fluxo no plano grátis."
+    },
+    {
+      "section": "locations",
+      "name": "Ponte de comando",
+      "parts": [
+        "saga-bridge"
+      ],
+      "shot": {
+        "episode": "saga-known-issue",
+        "at": 10.0
+      },
+      "text": "Janela para as estrelas e uma lua alaranjada, fora de foco; faixa de alerta piscando e consoles com luzes."
+    },
+    {
+      "section": "locations",
+      "name": "Cantina e balcão",
+      "parts": [
+        "saga-cantina",
+        "saga-cantina-bar"
+      ],
+      "shot": {
+        "episode": "saga-card-reader",
+        "at": 11.5
+      },
+      "text": "Arcos de adobe, luminárias e clientes nas sombras cujos olhos acendem quando todos encaram; o balcão é uma camada à frente de quem serve."
+    },
+    {
+      "section": "locations",
+      "name": "Deserto ao pôr do sol",
+      "parts": [
+        "saga-desert"
+      ],
+      "shot": {
+        "episode": "saga-group-chat",
+        "at": 4.0
+      },
+      "text": "Dois sóis, dunas em camadas fora de foco, a cabana com o cacto da assinatura e a torre de orvalho."
+    },
+    {
+      "section": "locations",
+      "name": "Cabine e console",
+      "parts": [
+        "saga-cockpit",
+        "saga-cockpit-console"
+      ],
+      "shot": {
+        "episode": "saga-update",
+        "at": 8.0
+      },
+      "text": "O para-brisa que estica em hiperespaço, os encostos dos pilotos e o console à frente com luzes e manete."
+    },
+    {
+      "section": "locations",
+      "name": "Compactador de lixo",
+      "parts": [
+        "saga-compactor"
+      ],
+      "shot": {
+        "episode": "saga-open-plan",
+        "at": 6.0
+      },
+      "text": "Paredes rebitadas que fecham a cada plano, montes de lixo, uma poça com reflexo e a porta do fundo."
+    },
+    {
+      "section": "locations",
+      "name": "Espaço e o cubo de batalha",
+      "parts": [
+        "saga-space",
+        "saga-cube"
+      ],
+      "shot": {
+        "episode": "saga-known-issue",
+        "at": 6.5
+      },
+      "text": "O vazio com nebulosa e planeta anelado, e o cubo com faces sombreadas, trincheira e janelas acesas; explode numa bola de fogo laranja, sem clarão branco."
+    },
+    {
+      "section": "props",
+      "name": "Holograma",
+      "parts": [
+        "saga-holo"
+      ],
+      "shot": {
+        "episode": "saga-open-plan",
+        "at": 4.5
+      },
+      "text": "Painel de vidro ciano com linhas de varredura, título no tom da mensagem, texto medido e o rosto de quem chama; do tamanho do que diz, surge do próprio centro."
+    },
+    {
+      "section": "props",
+      "name": "Cargueiro e caça",
+      "parts": [
+        "saga-freighter",
+        "saga-fighter"
+      ],
+      "shot": {
+        "episode": "saga-update",
+        "at": 1.5
+      },
+      "text": "O cargueiro do contrabandista com o motor aceso e os caças que o perseguem."
+    },
+    {
+      "section": "props",
+      "name": "Pedrinha",
+      "parts": [
+        "saga-pebble"
+      ],
+      "shot": {
+        "episode": "saga-free-tier",
+        "at": 6.5
+      },
+      "text": "A pedrinha que o Fluxo grátis levanta e deixa flutuando."
+    },
+    {
+      "section": "graphics",
+      "name": "Gancho e o Guia",
+      "parts": [
+        "saga-hook",
+        "saga-handbook"
+      ],
+      "shot": {
+        "episode": "saga-annual-review",
+        "at": 1.5
+      },
+      "text": "A pergunta do narrador num cartão escuro ao lado do <i>Guia</i>, cujo visor acende com a voz."
+    },
+    {
+      "section": "graphics",
+      "name": "Verbete do Guia",
+      "parts": [
+        "saga-entry"
+      ],
+      "shot": {
+        "episode": "saga-open-plan",
+        "at": 22.0
+      },
+      "text": "O verbete que fecha cada episódio: o aparelho do tamanho do texto, título em dourado e o corpo datilografado."
+    },
+    {
+      "section": "locations",
+      "name": "Quitinete para alugar",
+      "parts": [
+        "stick-studio-flat"
+      ],
+      "shot": {
+        "episode": "the-viewing",
+        "at": 0.8
+      },
+      "text": "A quitinete Stick: fogão e panela no balcão, o vaso sanitário ao lado do fogão, a janela com a vista pintada que escorre pela parede e o armário da cama embutida."
+    },
+    {
+      "section": "props",
+      "name": "Cama de parede",
+      "parts": [
+        "stick-murphy-bed"
+      ],
+      "shot": {
+        "episode": "the-viewing",
+        "at": 13.6
+      },
+      "text": "A cama que desce da parede no tempo do plano, com um quadro intermediário; aberta, mostra o ocupante sob o cobertor, roncando, que pode falar dormindo."
+    },
+    {
+      "section": "props",
+      "name": "Migalhas",
+      "parts": [
+        "crumbs"
+      ],
+      "shot": {
+        "episode": "culture-fit",
+        "at": 18.0
+      },
+      "text": "Um punhado de migalhas de massa que sai da mão no momento do arremesso, cai espalhado e fica no chão."
+    },
+    {
+      "section": "graphics",
+      "name": "Chamada da praia",
+      "parts": [
+        "soft-beach-call"
+      ],
+      "shot": {
+        "episode": "return-to-office",
+        "at": 12.6
+      },
+      "text": "A chamada de vídeo direto da praia, na tela da sala de reunião: céu, sol, mar, coqueiro que balança, o chefe na frente e o crachá com o nome."
+    },
+    {
+      "section": "cast",
+      "name": "Brent",
+      "parts": [
+        "collage-brent"
+      ],
+      "voice": "Brian",
+      "shot": {
+        "episode": "thought-leader",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Executivo de terno e gravata vermelha, estilo Collage. Lê post de liderança em voz alta e nunca dá crédito a ninguém; aparece em Brand Refresh e Thought Leader."
+    },
+    {
+      "section": "cast",
+      "name": "Rosa",
+      "parts": [
+        "collage-rosa"
+      ],
+      "voice": "Matilda",
+      "shot": {
+        "episode": "the-will",
+        "at": 0.7,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Avó de coque branco, colar de pérolas e bengala. Lê o próprio testamento em vida só para ver a cara dos filhos (The Will)."
+    },
+    {
+      "section": "cast",
+      "name": "Gary",
+      "parts": [
+        "collage-gary"
+      ],
+      "voice": "Chris",
+      "shot": {
+        "episode": "goldfish-funeral",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Pai careca de suéter verde, fã incurável de Bowl Heads. Enterra o peixe Bubbles, sofre intervenção da família e herda a casa sob condição."
+    },
+    {
+      "section": "cast",
+      "name": "Kai",
+      "parts": [
+        "collage-kai"
+      ],
+      "voice": "River",
+      "shot": {
+        "episode": "goldfish-funeral",
+        "at": 3.1,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Filho de moletom vermelho e headset que apita na hora errada. Dez anos, largou Bowl Heads e agora gosta de direito tributário."
+    },
+    {
+      "section": "cast",
+      "name": "Priya",
+      "parts": [
+        "collage-priya"
+      ],
+      "voice": "Sarah",
+      "shot": {
+        "episode": "book-report",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Professora de óculos e rabo de cavalo, na sala de aula do Collage. Corrige o trabalho do Kai sobre um vaso sanitário (Book Report)."
+    },
+    {
+      "section": "cast",
+      "name": "Deb",
+      "parts": [
+        "collage-deb"
+      ],
+      "voice": "Jessica",
+      "shot": {
+        "episode": "intervention",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Mãe de suéter amarelo, organiza a intervenção do Gary e cai na vinheta do episódio novo (Intervention)."
+    },
+    {
+      "section": "cast",
+      "name": "Jun",
+      "parts": [
+        "collage-jun"
+      ],
+      "voice": "Will",
+      "shot": {
+        "episode": "thought-leader",
+        "at": 3.2,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Criador de Bowl Heads, de gorro e moletom escuro. Faz terapia por causa do sucesso e vê o próprio programa virar lição de liderança alheia."
+    },
+    {
+      "section": "cast",
+      "name": "Feld",
+      "parts": [
+        "collage-feld"
+      ],
+      "voice": "Alice",
+      "shot": {
+        "episode": "therapy-session",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Terapeuta de óculos redondos e cabelo grisalho. Cobra a sessão e aceita o vaso sanitário na próxima (Therapy Session)."
+    },
+    {
+      "section": "cast",
+      "name": "Omar",
+      "parts": [
+        "collage-omar"
+      ],
+      "voice": "Daniel",
+      "shot": {
+        "episode": "final-broadcast",
+        "at": 0.6,
+        "box": [
+          240,
+          620,
+          600,
+          720
+        ]
+      },
+      "text": "Âncora de bigode e terno, trinta anos de telejornal. Perde a bancada para um vaso sanitário (Final Broadcast)."
+    },
+    {
+      "section": "cast",
+      "name": "Flush",
+      "parts": [
+        "collage-flush"
+      ],
+      "voice": "Charlie",
+      "shot": {
+        "episode": "goldfish-funeral",
+        "at": 22.1,
+        "box": [
+          190,
+          880,
+          700,
+          840
+        ]
+      },
+      "text": "O vaso sanitário cantor de Bowl Heads, cabeça careca na água. Está em todo vaso: no palco, no banheiro do Gary e na bancada do jornal."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de reunião",
+      "parts": [
+        "collage-boardroom"
+      ],
+      "shot": {
+        "episode": "the-will",
+        "at": 0.7
+      },
+      "text": "Sala executiva com janelão para a cidade ao entardecer; recebe o rebranding e a leitura do testamento."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de aula",
+      "parts": [
+        "collage-classroom"
+      ],
+      "shot": {
+        "episode": "book-report",
+        "at": 0.6
+      },
+      "text": "Lousa verde, mesa da professora e prateleira com a assinatura; onde o trabalho sobre o vaso sanitário leva nota D."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de estar",
+      "parts": [
+        "collage-living-room"
+      ],
+      "shot": {
+        "episode": "intervention",
+        "at": 0.6
+      },
+      "text": "Parede listrada rosa, quadro e janela; a casa do Gary, palco de The Lore e da intervenção."
+    },
+    {
+      "section": "locations",
+      "name": "Café",
+      "parts": [
+        "collage-cafe"
+      ],
+      "shot": {
+        "episode": "thought-leader",
+        "at": 0.6
+      },
+      "text": "Parede de tijolos, luminárias pendentes e quadro de menu; encontros e posts de liderança."
+    },
+    {
+      "section": "locations",
+      "name": "Estúdio de telejornal",
+      "parts": [
+        "collage-newsroom"
+      ],
+      "shot": {
+        "episode": "final-broadcast",
+        "at": 0.6
+      },
+      "text": "Fundo azul com feixes de luz e globo, bancada em primeiro plano; o último telejornal do Omar."
+    },
+    {
+      "section": "locations",
+      "name": "Consultório",
+      "parts": [
+        "collage-therapy"
+      ],
+      "shot": {
+        "episode": "therapy-session",
+        "at": 0.6
+      },
+      "text": "Parede creme, estante de livros e diploma; as sessões do Jun com a Feld."
+    },
+    {
+      "section": "locations",
+      "name": "Palco de Bowl Heads",
+      "parts": [
+        "collage-stage"
+      ],
+      "shot": {
+        "episode": "gritty-reboot",
+        "at": 0.6
+      },
+      "text": "Arco-íris, piso xadrez e estrelas; o cenário do programa infantil e da sua versão sombria."
+    },
+    {
+      "section": "locations",
+      "name": "Banheiro",
+      "parts": [
+        "collage-bathroom"
+      ],
+      "shot": {
+        "episode": "goldfish-funeral",
+        "at": 0.6
+      },
+      "text": "Azulejos em dois tons, cortina listrada, espelho e toalha rosa; o velório do peixe Bubbles, com a assinatura na prateleira."
+    },
+    {
+      "section": "cast",
+      "name": "Nadia",
+      "parts": [
+        "gloss-nadia"
+      ],
+      "shot": {
+        "episode": "gloss-orientation",
+        "at": 9.5
+      },
+      "text": "A recém-chegada de vinil, de óculos redondos e o adesivo NOVA no peito, que descola e volta no lugar; boca sincronizada à fala e tom de pele nomeado."
+    },
+    {
+      "section": "cast",
+      "name": "Gus",
+      "parts": [
+        "gloss-gus"
+      ],
+      "shot": {
+        "episode": "gloss-wellness",
+        "at": 16.5
+      },
+      "text": "O veterano de bigode com a chave de corda nas costas, que gira até acabar a corda; o rosto impassível que a Sunny manda sorrir mais."
+    },
+    {
+      "section": "cast",
+      "name": "Tamsin",
+      "parts": [
+        "gloss-tamsin"
+      ],
+      "shot": {
+        "episode": "gloss-feedback",
+        "at": 8.2
+      },
+      "text": "A otimista de rabo de cavalo sobre uma base de mola que quica quando ela se empolga."
+    },
+    {
+      "section": "cast",
+      "name": "Sunny",
+      "parts": [
+        "gloss-sunny"
+      ],
+      "shot": {
+        "episode": "gloss-wellness",
+        "at": 21.0
+      },
+      "text": "O orbe anfitrião que flutua com um anel, o rosto numa tela e a boca em barra; faz varredura com um feixe e põe gravata quando é o gerente."
+    },
+    {
+      "section": "locations",
+      "name": "Praça",
+      "parts": [
+        "gloss-plaza"
+      ],
+      "shot": {
+        "episode": "gloss-orientation",
+        "at": 3.0
+      },
+      "text": "Cúpula lilás com nuvens, bandeirolas e cubos flutuando, tendas fora de foco e um piso xadrez sem fim, com a sombra para as legendas no pé do quadro."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de Atividades",
+      "parts": [
+        "gloss-activity"
+      ],
+      "shot": {
+        "episode": "gloss-trust-fall",
+        "at": 2.0
+      },
+      "text": "Parede branca de painéis com o número em estêncil, o tapete rosa e a luz fria de laboratório."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de Espera",
+      "parts": [
+        "gloss-waiting"
+      ],
+      "shot": {
+        "episode": "gloss-exit",
+        "at": 18.5
+      },
+      "text": "Cadeiras em fila e o painel AGORA ATENDENDO de sete segmentos, que muda de número no tempo do plano."
+    },
+    {
+      "section": "props",
+      "name": "Placar de Pontos de Alegria",
+      "parts": [
+        "gloss-board"
+      ],
+      "shot": {
+        "episode": "gloss-joy-points",
+        "at": 7.5
+      },
+      "text": "Os cartões que pontuam cada gesto: rótulo, título, corpo e o selo de pontos; abrem sem esmagar o texto e ficam no lugar através do corte."
+    },
+    {
+      "section": "props",
+      "name": "Porta de saída e senha",
+      "parts": [
+        "gloss-door",
+        "gloss-ticket"
+      ],
+      "shot": {
+        "episode": "gloss-orientation",
+        "at": 11.3
+      },
+      "text": "A porta de saída, pintada na parede ou aninhada em portas menores, e a senha de papel com o número da fila."
+    },
+    {
+      "section": "props",
+      "name": "Placa de papel",
+      "parts": [
+        "collage-sign"
+      ],
+      "shot": {
+        "episode": "the-will",
+        "at": 1.0,
+        "box": [
+          50,
+          480,
+          380,
+          240
+        ]
+      },
+      "text": "Cartão de papel inclinado com sombra, escrito à mão: LAST WILL, R.I.P. BUBBLES, NEW ANCHOR. Segura a prova da piada no plano do meio."
+    },
+    {
+      "section": "props",
+      "name": "Gráfico de papel",
+      "parts": [
+        "collage-chart"
+      ],
+      "shot": {
+        "episode": "brand-refresh",
+        "at": 6.0,
+        "box": [
+          40,
+          470,
+          400,
+          290
+        ]
+      },
+      "text": "Gráfico de barras em cartão de papel, as barras caindo atrás da Rosa enquanto o Brent apresenta a marca nova (Brand Refresh)."
+    },
+    {
+      "section": "props",
+      "name": "TV de papel",
+      "parts": [
+        "collage-tv"
+      ],
+      "shot": {
+        "episode": "first-date",
+        "at": 15.0,
+        "box": [
+          600,
+          470,
+          440,
+          360
+        ]
+      },
+      "text": "Televisão de papel passando Bowl Heads: o Flush brilhando dentro da tela, atrás do Kai em First Date."
+    },
+    {
+      "section": "graphics",
+      "name": "Gancho",
+      "parts": [
+        "gloss-hook"
+      ],
+      "shot": {
+        "episode": "gloss-orientation",
+        "at": 1.0
+      },
+      "text": "A pergunta da Sunny no topo da área segura, ao lado de uma Sunny pequena que fala."
+    },
+    {
+      "section": "graphics",
+      "name": "Aviso da Praça",
+      "parts": [
+        "gloss-notice"
+      ],
+      "shot": {
+        "episode": "gloss-orientation",
+        "at": 26.0
+      },
+      "text": "O aviso de tela cheia que fecha cada episódio: título, o corpo datilografado e a Sunny no canto do cartão."
+    },
+    {
+      "section": "props",
+      "name": "Bolo de despedida",
+      "parts": [
+        "soft-cake"
+      ],
+      "shot": {
+        "episode": "the-cake",
+        "at": 17.2
+      },
+      "text": "O bolo Soft (<code>soft_props.cake</code>) depois do giro: escrita de glacê na frente e outra atrás, trocadas quando o bolo gira no prato. Em The Cake (19), WE'LL MISS YOU vira BYE PIP."
+    },
+    {
+      "section": "locations",
+      "name": "Abajur falante",
+      "parts": [
+        "soft-home"
+      ],
+      "shot": {
+        "episode": "smart-lamp",
+        "at": 16.8
+      },
+      "text": "A sala Soft com <code>lamp_talk=</code>: o abajur acende enquanto fala (halo, cúpula e filete), e a câmera pode ancorar em <code>blob.LAMP_SHADE</code>. Em Smart Lamp (17) o abajur é personagem."
+    },
+    {
+      "section": "locations",
+      "name": "Cubículo de call center",
+      "parts": [
+        "toon-call-centre"
+      ],
+      "shot": {
+        "episode": "in-network",
+        "at": 22.0
+      },
+      "text": "Divisória de tecido, pôster YOUR CALL MATTERS e o painel CALLS WAITING, que mostra uma contagem por vez (<code>waiting=</code>) e pisca a luz até <code>end</code>. Em In Network (T9) sobe de 41 a 999."
+    },
+    {
+      "section": "props",
+      "name": "Headset",
+      "parts": [
+        "toon-headset"
+      ],
+      "shot": {
+        "episode": "in-network",
+        "at": 3.0,
+        "box": [
+          0,
+          640,
+          800,
+          820
+        ]
+      },
+      "text": "Headset de call center ajustado à silhueta de qualquer personagem a pincel (<code>toon_cast.headset</code>), preso com <code>stickers=</code>: arco sobre a cabeça, conchas e microfone ao lado da boca."
+    },
+    {
+      "section": "locations",
+      "name": "Restaurante",
+      "parts": [
+        "toon-restaurant"
+      ],
+      "shot": {
+        "episode": "split-it",
+        "at": 3.0
+      },
+      "text": "Parede com marinha, arandela acesa, banco de couro e a lousa de SPECIALS (<code>special=</code>, prato e preço). Em Split It (T10) a lagosta sai a MARKET PRICE."
+    },
+    {
+      "section": "props",
+      "name": "Mesa de restaurante",
+      "parts": [
+        "toon-table"
+      ],
+      "shot": {
+        "episode": "split-it",
+        "at": 12.0
+      },
+      "text": "Toalha branca com barra vermelha, no lugar da mesa de escritório via <code>Staging(desk=toon_dinner.table)</code>; leva o cacto e o código de assinatura."
+    },
+    {
+      "section": "props",
+      "name": "Pratos e bebidas",
+      "parts": [
+        "toon-dishes"
+      ],
+      "shot": {
+        "episode": "split-it",
+        "at": 1.0
+      },
+      "text": "Itens por tipo e posição (<code>(kind, x[, at])</code>): salada, água, lagosta, carcaça, vinho, taça, prato vazio e a conta, que podem aparecer no tempo dado. Em Split It (T10) o lado do urso conta a história."
+    },
+    {
+      "section": "props",
+      "name": "Maquininha de cartão",
+      "parts": [
+        "toon-card-reader"
+      ],
+      "shot": {
+        "episode": "split-it",
+        "at": 18.6
+      },
+      "text": "Telas por estado e tom (<code>idle</code>, <code>bad</code>, <code>good</code>) trocadas no tempo dado. Em Split It (T10) passa de TAP CARD a DECLINED e, no lado da coelha, APPROVED."
+    },
+    {
+      "section": "cast",
+      "name": "Robô aspirador",
+      "parts": [
+        "talking-vacuum"
+      ],
+      "shot": {
+        "episode": "premium-suction",
+        "at": 2.6
+      },
+      "text": "Disco visto de cima em três quartos: anel de luzes que gira quando fala, marcas de voz, torre do laser e visor com uma palavra; <code>state=</code> parado, chegando e freando ou saindo de quadro."
+    },
+    {
+      "section": "locations",
+      "name": "Chão e rodapé",
+      "parts": [
+        "ink-vacuum-shot"
+      ],
+      "shot": {
+        "episode": "premium-suction",
+        "at": 5.5
+      },
+      "text": "O piso com as tábuas, o rodapé, a tomada e a base de carregamento; o aspirador no chão, normal ou em close."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa da casa",
+      "parts": [
+        "ink-floor-map"
+      ],
+      "shot": {
+        "episode": "premium-suction",
+        "at": 20.2
+      },
+      "text": "O mapa do app do aspirador: cômodos com nome, a rota traçada ponto a ponto (<code>trace=</code>) e um cômodo renomeado no seu momento (<code>relabel=</code>), aqui o CLOSET que vira BEDROOM 2."
+    },
+    {
+      "section": "cast",
+      "name": "Campainha com câmera",
+      "parts": [
+        "talking-doorbell"
+      ],
+      "shot": {
+        "episode": "home-sick",
+        "at": 2.6
+      },
+      "text": "Lente no alto, alto-falante e o botão com o anel de luzes, que gira quando ela fala; <code>mark=(veredito, at)</code> mostra um X (<code>deny</code>) ou um visto (<code>allow</code>). Em Home Sick (I7) não reconhece o próprio morador."
+    },
+    {
+      "section": "locations",
+      "name": "Porta de casa",
+      "parts": [
+        "ink-doorstep"
+      ],
+      "shot": {
+        "episode": "home-sick",
+        "at": 4.4
+      },
+      "text": "Parede de tábuas, a porta com painéis, maçaneta e trinco, o número da casa (<code>number=</code>), o tapete e a campainha ao lado, normal ou de perto (<code>close=True</code>)."
+    },
+    {
+      "section": "graphics",
+      "name": "Câmera da campainha",
+      "parts": [
+        "ink-doorbell-view"
+      ],
+      "shot": {
+        "episode": "home-sick",
+        "at": 16.6
+      },
+      "text": "O boneco pela lente redonda, REC piscando, a faixa FRONT DOOR com o relógio e a caixa do rosto, cuja etiqueta muda na hora dada (<code>tags=</code>). Em Home Sick (I7) termina em EMPLOYEE."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de aula",
+      "parts": [
+        "stick-classroom"
+      ],
+      "shot": {
+        "episode": "what-my-dad-does",
+        "at": 18.6
+      },
+      "text": "A sala na reunião de pais: alfabeto, lousa com <code>board=</code>, desenhos da turma, relógio e linóleo."
+    },
+    {
+      "section": "props",
+      "name": "Cadeirinha de criança",
+      "parts": [
+        "stick-tiny-chair"
+      ],
+      "shot": {
+        "episode": "what-my-dad-does",
+        "at": 9.6
+      },
+      "text": "A cadeira de plástico de criança; com as poses <code>PERCHED</code> o adulto senta com os joelhos acima do quadril."
+    },
+    {
+      "section": "props",
+      "name": "Mesa da professora",
+      "parts": [
+        "stick-teacher-desk"
+      ],
+      "shot": {
+        "episode": "what-my-dad-does",
+        "at": 20.4
+      },
+      "text": "A mesa na frente da professora, com provas corrigidas, a maçã e o cacto; ela segura a página em <code>held(pose)</code>."
+    },
+    {
+      "section": "graphics",
+      "name": "Redação",
+      "parts": [
+        "stick-essay"
+      ],
+      "shot": {
+        "episode": "what-my-dad-does",
+        "at": 31.6
+      },
+      "text": "A página pautada da criança: linhas que aparecem conforme a leitura, marca-texto na linha lida, nota circulada e recado na margem."
+    },
+    {
+      "section": "locations",
+      "name": "Portão de embarque",
+      "parts": [
+        "stick-gate"
+      ],
+      "shot": {
+        "episode": "group-nine",
+        "at": 19.0
+      },
+      "text": "O portão B9: janela com o avião estacionado, placa “NOW BOARDING” com o grupo chamado (<code>now=</code>), poltronas da sala de espera e piso de carpete."
+    },
+    {
+      "section": "props",
+      "name": "Balcão do portão",
+      "parts": [
+        "stick-gate-podium"
+      ],
+      "shot": {
+        "episode": "group-nine",
+        "at": 19.6
+      },
+      "text": "O balcão da atendente com monitor e a placa do portão (<code>plate=False</code> deixa sem letras nos closes)."
+    },
+    {
+      "section": "props",
+      "name": "Mala de mão",
+      "parts": [
+        "stick-carry-on"
+      ],
+      "shot": {
+        "episode": "group-nine",
+        "at": 6.4
+      },
+      "text": "Mala de rodinhas com alça estendida e etiqueta de grupo (<code>tag=</code>, até oito caracteres; <code>None</code> deixa em branco)."
+    },
+    {
+      "section": "locations",
+      "name": "Fileira do avião",
+      "parts": [
+        "stick-cabin"
+      ],
+      "shot": {
+        "episode": "group-nine",
+        "at": 21.0
+      },
+      "text": "A fileira 38 vista do corredor: bagageiros com o número da fileira e a letra de cada assento, encostos com capa de cabeceira, almofadas e piso."
+    },
+    {
+      "section": "props",
+      "name": "Apoios de braço",
+      "parts": [
+        "stick-armrests"
+      ],
+      "shot": {
+        "episode": "group-nine",
+        "at": 22.0
+      },
+      "text": "Os dois apoios de braço entre os assentos, desenhados por cima dos passageiros para os cotovelos disputarem."
+    },
+    {
+      "section": "props",
+      "name": "Envelope rosa",
+      "parts": [
+        "pink-slip"
+      ],
+      "shot": {
+        "episode": "going-down",
+        "at": 15.0
+      },
+      "text": "Envelope de demissão com selo e nome em letras (<code>name=</code>, até dez caracteres; <code>None</code> mostra o verso em branco): segurado num intervalo (<code>show=</code>) ou caindo no chão e virando ao pousar (<code>fall=</code>)."
+    },
+    {
+      "section": "cast",
+      "name": "Pombo",
+      "parts": [
+        "pigeon"
+      ],
+      "shot": {
+        "episode": "going-down",
+        "at": 26.2
+      },
+      "text": "O pombo do Cutout: Kevin, contratado no banco em Culture Fit, remoto em Elevator Pitch e Head de Pessoas em Going Down. Acena com a cabeça por rotação (<code>nods=</code>), espelhado com <code>flip=</code>, e bica migalhas."
+    },
+    {
+      "section": "locations",
+      "name": "Parque",
+      "parts": [
+        "park",
+        "building",
+        "tree",
+        "shrub",
+        "park-sign",
+        "bench"
+      ],
+      "shot": {
+        "episode": "going-down",
+        "at": 22.3
+      },
+      "text": "O parque: prédios ao fundo com janelas acesas, gramado, árvore que balança, arbustos, a placa PUBLIC PARK e o banco de ripas, com o caminho onde pousam os pombos."
+    },
+    {
+      "section": "graphics",
+      "name": "Notificação no celular",
+      "parts": [
+        "notification"
+      ],
+      "shot": {
+        "episode": "culture-fit",
+        "at": 11.0,
+        "box": [
+          190,
+          310,
+          700,
+          300
+        ]
+      },
+      "text": "Notificação push com remetente e status, ampliada no alto do quadro: “Pigeon accepted your offer”."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão de destaque",
+      "parts": [
+        "password-card"
+      ],
+      "shot": {
+        "episode": "market-rate",
+        "at": 13.0,
+        "box": [
+          60,
+          220,
+          880,
+          280
+        ]
+      },
+      "text": "Cartão com título, frase grande e linha miúda: a vaga do próprio funcionário, “Pays more.”, só para candidatos externos."
+    },
+    {
+      "section": "locations",
+      "name": "Elevador",
+      "parts": [
+        "elevator"
+      ],
+      "shot": {
+        "episode": "elevator-pitch",
+        "at": 8.6
+      },
+      "text": "A cabine vista de dentro: portas que abrem para o corredor (<code>doors=</code>), mostrador de sete segmentos (<code>floors=</code>), painel com o botão aceso (<code>lit=</code>) e corrimãos."
     }
   ]
 }

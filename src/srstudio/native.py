@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal, get_args
 
 from .fonts import text_width
@@ -68,15 +68,19 @@ class CaptionLook:
     max_lines: int = 2
     max_words: int | None = None
     upper: bool = False
+    min_last: int = 1  # the fewest words a cue's last line may hold; more than 1 splits orphaned cues in two
+    min_seconds: float = 0.0  # the shortest a cue is shown: held into the silence after it (engine minimum 0.8333)
 
     def __post_init__(self) -> None:
         for name in ("size", "line_height"):
             value = getattr(self, name)
             if not (math.isfinite(value) and value > 0):
                 raise NativeError(f"caption {name} must be a positive number, got {value!r}")
+        if not (math.isfinite(self.min_seconds) and self.min_seconds >= 0):
+            raise NativeError(f"caption min_seconds must be zero or more seconds, got {self.min_seconds!r}")
         if not (math.isfinite(self.stroke_width) and self.stroke_width >= 0):
             raise NativeError(f"caption stroke_width must be zero or more, got {self.stroke_width!r}")
-        for name in ("max_chars", "max_lines", "max_words"):
+        for name in ("max_chars", "max_lines", "max_words", "min_last"):
             value = getattr(self, name)
             if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 1):
                 raise NativeError(f"caption {name} must be a whole number of at least 1, got {value!r}")
@@ -91,16 +95,94 @@ CAPTION_LOOK = CaptionLook()  # the house look: white, outlined, the sung word g
 
 
 # -- cues -----------------------------------------------------------------------------------------------------------
-def cues_from_takes(takes: Iterable[Take]) -> list[Cue]:
-    """One cue per spoken take, its words moved onto the scene clock; effect takes are not captioned."""
-    out = []
+def cues_from_takes(takes: Iterable[Take], look: CaptionLook | None = None) -> list[Cue]:
+    """One cue per spoken take, its words moved onto the scene clock; effect takes are not captioned. With a
+    ``look``, a take whose words wrap to more than ``look.max_lines`` is split at words into as few cues as fit,
+    each shown from its first word to its last, and then held for ``look.min_seconds`` where the silence after it
+    allows: never into the next cue nor past its own take."""
+    out: list[tuple[Cue, float]] = []
     for take in takes:
         if take.is_effect or not take.text.strip():
             continue
         words = tuple(Word(w["text"], take.start + w["start"], take.start + w["end"]) for w in take.words)
         start, end = (words[0].start, words[-1].end) if words else (take.start, take.end)
-        out.append(Cue(start, end, take.text, words))
-    return out
+        cue = Cue(start, end, take.text, words)
+        out.extend((c, take.end) for c in (_fit(cue, look, take.id, take.end) if look is not None else [cue]))
+    if look is None or not look.min_seconds:
+        return [c for c, _ in out]
+    held = []
+    for i, (cue, limit) in enumerate(out):
+        cap = min(limit, out[i + 1][0].start) if i + 1 < len(out) else limit
+        held.append(replace(cue, end=max(cue.end, min(cue.start + look.min_seconds, cap))))
+    return held
+
+
+def _fit(cue: Cue, look: CaptionLook, where: str, limit: float) -> list[Cue]:
+    cues = [cue]
+    if len(wrap(cue.text, look.max_chars, look.max_words)) > look.max_lines:
+        if not cue.words:
+            raise NativeError(f"take {where}: {cue.text!r} needs word timings to be split into cues that fit")
+        groups: list[list[Word]] = []
+        for word in cue.words:
+            if groups and len(wrap(" ".join(w.text for w in [*groups[-1], word]), look.max_chars,
+                                   look.max_words)) <= look.max_lines:  # fmt: skip
+                groups[-1].append(word)
+            else:
+                groups.append([word])
+        tail = groups[-1]
+        if len(groups) > 1 and (len(tail) < look.min_last or limit - tail[0].start < look.min_seconds):
+            both = groups[-2] + tail  # the greedy fill left a last cue too small to read: cut the two afresh
+            i = _split(both, look, limit)
+            if i is not None:
+                groups[-2:] = [both[:i], both[i:]]
+        cues = [_cue(g) for g in groups]
+    if look.min_last > 1:
+        cues = [part for c in cues for part in _unorphan(c, look, where, limit)]
+    return cues
+
+
+def _cue(words: Sequence[Word]) -> Cue:
+    return Cue(words[0].start, words[-1].end, " ".join(w.text for w in words), tuple(words))
+
+
+_CLAUSE_END = tuple(".,!?;:…")
+
+
+def _orphaned(text: str, look: CaptionLook) -> bool:
+    lines = wrap(text, look.max_chars, look.max_words)
+    return len(lines) > 1 and len(lines[-1].split()) < look.min_last
+
+
+def _unorphan(cue: Cue, look: CaptionLook, where: str, limit: float) -> list[Cue]:
+    """``cue`` as it is, or, when its last line would hold fewer than ``look.min_last`` words, split in two where both
+    halves fit without an orphan, the second holds at least ``min_last`` words and each half can be shown for
+    ``look.min_seconds`` (the second until ``limit``, its take's end): after a word that ends a clause (``.,!?;:``)
+    if one can, else where the halves' lengths balance, the longer half first on a tie. Without such a split the cue
+    is kept whole: a lone last word is easier to read than a caption shown too briefly."""
+    if not _orphaned(cue.text, look):
+        return [cue]
+    if not cue.words:
+        raise NativeError(f"take {where}: {cue.text!r} needs word timings to be split without an orphan")
+    i = _split(cue.words, look, limit)
+    return [cue] if i is None else [_cue(cue.words[:i]), _cue(cue.words[i:])]
+
+
+def _split(words: Sequence[Word], look: CaptionLook, limit: float) -> int | None:
+    """Where to cut ``words`` in two (see :func:`_unorphan`), or None when no cut gives two readable halves."""
+    best: tuple[tuple[bool, int, int], int] | None = None
+    for i in range(1, len(words)):
+        halves = [" ".join(w.text for w in part) for part in (words[:i], words[i:])]
+        if len(words) - i < look.min_last:  # the second half alone would be the orphan
+            continue
+        cut = words[i].start
+        if cut - words[0].start < look.min_seconds or limit - cut < look.min_seconds:
+            continue
+        if any(len(wrap(t, look.max_chars, look.max_words)) > look.max_lines or _orphaned(t, look) for t in halves):
+            continue
+        score = (not halves[0].endswith(_CLAUSE_END), max(len(t) for t in halves), -len(halves[0]))
+        if best is None or score < best[0]:
+            best = (score, i)
+    return None if best is None else best[1]
 
 
 def cues_from_phrases(phrases: Iterable[Phrase], lead: float = 0.0) -> list[Cue]:
@@ -262,14 +344,16 @@ def caption_track(
 
 # -- transitions ----------------------------------------------------------------------------------------------------
 def _spans(sequence: Any) -> dict[str, tuple[int, float, float]]:
-    """Each shot of ``sequence``: its position and its span (a shot starts where the one before it ends)."""
+    """Each shot of ``sequence``: its position and its span on the sequence's clock. A shot's ``end`` is its length
+    on its own clock (the engine plays each child for its ``end``, then the next), so a shot starts where the one
+    before it ends."""
     out, start = {}, 0.0
     shots = [c for c in sequence.elements() if c.xml_name != "transition"]
     for k, shot in enumerate(shots):
-        end = float(shot.end) if shot.end is not None else math.inf
+        length = float(shot.end) - float(shot.start or 0) if shot.end is not None else math.inf
         if shot.id is not None:
-            out[shot.id] = (k, float(shot.start) if shot.start is not None else start, end)
-        start = end
+            out[shot.id] = (k, start, start + length)
+        start += length
     return out
 
 

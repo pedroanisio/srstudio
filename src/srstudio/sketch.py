@@ -46,6 +46,8 @@ __all__ = [
     "Sketch",
     "Appearance",
     "Recorded",
+    "Cast",
+    "TOON_CAST",
     "CHARACTERS",
     "check",
     "cues",
@@ -126,6 +128,28 @@ class Beat:
 
 
 @dataclass(frozen=True)
+class Cast:
+    """The characters a sketch may show and the expressions they take, by name; the ``lip_synced`` ones key their
+    mouths on a viseme track. Another style's sketches pass their own; the default is :data:`TOON_CAST`."""
+
+    name: str
+    characters: tuple[str, ...]
+    lip_synced: tuple[str, ...]
+    eyes: tuple[str, ...]
+    mouths: tuple[str, ...]
+    arms: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not (self.characters and self.eyes and self.mouths and self.arms):
+            raise SketchError(f"the {self.name} cast needs characters and a vocabulary of eyes, mouths and arms")
+        if not set(self.lip_synced) <= set(self.characters):
+            raise SketchError(f"the {self.name} cast's lip-synced characters must be among {self.characters}")
+
+
+TOON_CAST = Cast("Toon", CHARACTERS, LIP_SYNCED, toon.EYES, toon.MOUTHS, toon.ARMS)
+
+
+@dataclass(frozen=True)
 class Sketch:
     slug: str
     title: str
@@ -133,6 +157,7 @@ class Sketch:
     lines: tuple[Line, ...]
     beats: tuple[Beat, ...]
     end: float
+    cast: Cast = TOON_CAST
 
 
 @dataclass(frozen=True)
@@ -153,9 +178,10 @@ def check(sketch: Sketch) -> None:
     names = [s.name for s in sketch.speakers]
     if not names or len(set(names)) != len(names):
         raise SketchError("speakers need distinct names")
+    cast = sketch.cast
     played = [s.character for s in sketch.speakers if s.character is not None]
-    if any(c not in CHARACTERS for c in played) or len(set(played)) != len(played):
-        raise SketchError(f"speakers play distinct characters among {CHARACTERS}, not {played}")
+    if any(c not in cast.characters for c in played) or len(set(played)) != len(played):
+        raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
     beats = sketch.beats
@@ -165,8 +191,9 @@ def check(sketch: Sketch) -> None:
     for i, b in enumerate(beats):
         if not math.isfinite(b.start) or (i and b.start < beats[i - 1].start + MIN_STEP - 1e-9):
             raise SketchError(f"beat {i} at {b.start} s is held less than {MIN_STEP} s after the one before")
-        if b.who not in CHARACTERS or b.eyes not in toon.EYES or b.mouth not in toon.MOUTHS or b.arms not in toon.ARMS:
-            raise SketchError(f"beat {i}: {b.who}/{b.eyes}/{b.mouth}/{b.arms} is not in the Toon vocabulary")
+        known = b.who in cast.characters and b.eyes in cast.eyes and b.mouth in cast.mouths and b.arms in cast.arms
+        if not known:
+            raise SketchError(f"beat {i}: {b.who}/{b.eyes}/{b.mouth}/{b.arms} is not in the {cast.name} vocabulary")
         if (b.line is None) != (b.word is None):
             raise SketchError(f"beat {i}: line and word go together")
         if b.line is not None and b.word is not None:
@@ -418,9 +445,10 @@ def load_beats(path: Path) -> tuple[list[Beat], float]:
     return beats, float(end)
 
 
-def load_mouths(path: Path) -> tuple[Mouths, float]:
+def load_mouths(path: Path, cast: Cast = TOON_CAST) -> tuple[Mouths, float]:
     """The viseme track per character and the project end from ``voiced/mouths.json``: typed, every character one
-    of :data:`LIP_SYNCED`, every state ``[second, viseme]`` with the visemes of :data:`srstudio.toon_cast.VISEMES`,
+    of ``cast``'s lip-synced ones (:data:`LIP_SYNCED` by default), every state ``[second, viseme]`` with the
+    visemes of :data:`srstudio.toon_cast.VISEMES`,
     in strictly rising time within the project."""
     try:
         data = json.loads(Path(path).read_text())
@@ -433,8 +461,8 @@ def load_mouths(path: Path) -> tuple[Mouths, float]:
         raise SketchError(f"{path}: end must be a positive number of seconds")
     out: Mouths = {}
     for who, states in data["mouths"].items():
-        if who not in LIP_SYNCED:
-            raise SketchError(f"{path}: {who!r} is not a lip-synced character among {LIP_SYNCED}")
+        if who not in cast.lip_synced:
+            raise SketchError(f"{path}: {who!r} is not a lip-synced character among {cast.lip_synced}")
         if not isinstance(states, list):
             raise SketchError(f"{path} {who}: states must be a list")
         track: list[tuple[float, str]] = []
@@ -476,10 +504,11 @@ def visemes(
         state = (round(at + t - clip_in, 6), VISEME_OF[pose])
         if not out or out[-1][1] != state[1]:
             out.append(state)
+    start = round(at, 6)  # compared rounded, like the states: a take speaking from its first sample adds no key
     if out and out[0][1] == "closed":
-        out[0] = (round(at, 6), "closed")  # the take opens closed: from its first second, not the first sample
-    elif not out or out[0][0] > at:
-        out.insert(0, (round(at, 6), "closed"))
+        out[0] = (start, "closed")  # the take opens closed: from its first second, not the first sample
+    elif not out or out[0][0] > start:
+        out.insert(0, (start, "closed"))
     stop = round(at + kept, 6)
     if out[-1][1] != "closed":
         out.append((stop, "closed"))
@@ -558,7 +587,8 @@ def record(
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = plan_relaxed(plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts = [], [], [], []
-    mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in LIP_SYNCED}
+    lip_synced = sketch.cast.lip_synced
+    mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
     for line, slot, (spoken, trim), at in zip(sketch.lines, plan, takes, placed, strict=True):
         transcript = client.transcribe(spoken.wav)
         heard.append({"id": slot.id, "speaker": line.speaker, "expected": line.text, "heard": transcript.text})

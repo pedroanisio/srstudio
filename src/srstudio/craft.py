@@ -5,8 +5,9 @@ the awkward pause). :func:`moves` reads them from the scene: every uniform scale
 alike, so a spin or a stretch is not a zoom) of at least 15 % on a group, told apart by speed (a hold key or a step
 under :data:`CUT` is a punch-in on the cut, :data:`~srstudio.camera.SNAP` or faster is a crash zoom, slower a push)
 and marked as the camera when the group is a location, an angle, a shot or a setup.
-:func:`pauses` finds the silences between the lines of ``dialogue.json`` or ``narration.json``, and :func:`levels`
-measures the rendered sound inside each one, so a pause meant to be awkward is shown to be quiet, or filled.
+:func:`pauses` finds the silences between the lines of ``dialogue.json``, ``narration.json`` or a takes
+``timeline.json``, and :func:`levels` measures the rendered sound inside each one, so a pause meant to be awkward is
+shown to be quiet, or filled.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
 
@@ -111,6 +112,7 @@ def moves(document: bytes) -> list[Move]:
     except ET.ParseError as e:
         raise CraftError(f"the scene is not XML: {e}") from None
     found = []
+    shifts = _sequence_shifts(root)
     for group in root.iter("group"):
         gid = group.get("id") or ""
         if gid.startswith("sig-"):
@@ -126,9 +128,49 @@ def moves(document: bytes) -> list[Move]:
                 continue
             cut = hold or t1 - t0 < CUT
             kind = "punch-in" if cut else ("crash" if t1 - t0 <= SNAP + 1e-9 else "push")
-            start = t1 if cut else t0
-            found.append(Move(kind, gid, round(start, 3), round(t1, 3), round(v1 / v0, 2), bool(CAMERA.fullmatch(gid))))
+            start, shift = (t1 if cut else t0), shifts.get(group, 0.0)
+            found.append(
+                Move(kind, gid, round(start + shift, 3), round(t1 + shift, 3), round(v1 / v0, 2),
+                     bool(CAMERA.fullmatch(gid)))
+            )  # fmt: skip
     return sorted(found, key=lambda m: (m.start, m.group))
+
+
+def _sequence_shifts(root: ET.Element) -> dict[ET.Element, float]:
+    """How far each element's clock is moved by the ``<sequence>`` elements above it, as the engine places them: a
+    child plays where the one before it ended (``end``), plus the sequence's ``timeGap``, its contents moved with it.
+    A child with a ``startMarker`` is placed by the engine on its marker, which craft does not resolve, so it and what
+    follows it keep the sequence's clock, as do the children after one without an ``end``."""
+    shifts: dict[ET.Element, float] = {}
+
+    def walk(node: ET.Element, shift: float) -> None:
+        if node.tag != "sequence":
+            for child in node:
+                shifts[child] = shift
+                walk(child, shift)
+            return
+        cursor: float | None = shift + _seconds(node, "start")
+        gap = _seconds(node, "timeGap")
+        for child in node:
+            if child.tag == "transition":
+                continue
+            marked = child.get("startMarker") is not None
+            moved = shift if cursor is None or marked else cursor
+            shifts[child] = moved
+            walk(child, moved)
+            placed = cursor is not None and not marked and child.get("end") is not None
+            cursor = moved + _seconds(child, "end") + gap if placed else None
+
+    walk(root, 0.0)
+    return shifts
+
+
+def _seconds(node: ET.Element, name: str) -> float:
+    value = node.get(name)
+    try:
+        return 0.0 if value is None else float(value)
+    except ValueError:
+        raise CraftError(f"<{node.tag} id={node.get('id')!r}> {name}={value!r} is not a number of seconds") from None
 
 
 def _number(value, where: str) -> float:
@@ -148,8 +190,10 @@ def _read(path: Path) -> dict:
 
 
 def lines(project: Path) -> list[tuple[float, float]]:
-    """The spoken lines of ``project`` as ``(start, end)`` seconds, in order: from ``dialogue.json`` phrases or the
-    ``line`` items of ``narration.json``; an empty list for a project with neither (a silent episode)."""
+    """The spoken lines of ``project`` as ``(start, end)`` seconds, in order: from ``dialogue.json`` phrases, the
+    ``line`` items of ``narration.json``, or the spoken takes of a :mod:`srstudio.takes` ``timeline.json`` (each take's
+    speech, without the hold after it; effect takes are skipped); an empty list for a project with none (a silent
+    episode)."""
     project = Path(project)
     spans = []
     if (project / "dialogue.json").is_file():
@@ -171,6 +215,17 @@ def lines(project: Path) -> list[tuple[float, float]]:
                 continue
             start = _number(row.get("start"), f"item {i} start")
             spans.append((start, start + _number(row.get("speech_duration"), f"item {i} speech_duration")))
+    elif (project / "timeline.json").is_file():
+        rows = _read(project / "timeline.json").get("items")
+        if not isinstance(rows, list):
+            raise CraftError(f"{project}/timeline.json: items must be a list")
+        for i, row in enumerate(rows):
+            if not isinstance(row, dict):
+                raise CraftError(f"{project}/timeline.json: take {i} is not an object")
+            start = _number(row.get("start"), f"take {i} start")
+            speech = _number(row.get("speech_duration"), f"take {i} speech_duration")
+            if speech:  # an effect take has no speech
+                spans.append((start, start + speech))
     for start, end in spans:
         if end < start:
             raise CraftError(f"{project}: a line ends ({end}) before it starts ({start})")

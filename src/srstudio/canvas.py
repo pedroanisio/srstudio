@@ -42,6 +42,10 @@ LINEN = Palette(ink="#240102", white="#fffaf5", shade="#2b87ab", name="linen", b
 DAYLIGHT = Palette(ink="#070708", white="#ffffff", shade="#665541", name="daylight", background="#bda77a")
 # Toon: near-black ink, white caption pills, the cat's blue as the one mid tone, on a cream-to-peach wall
 PEACH = Palette(ink="#0b0a0d", white="#ffffff", shade="#5bb7db", name="peach", background="#f8ead9")
+# Saga: deep-space navy ink, cream lettering, the gold of rim lights and the sung caption word, on the void
+VOID = Palette(ink="#0b0d1a", white="#fff4dc", shade="#f2b84b", name="void", background="#070914")
+# Gloss: plum ink on glossy pastel vinyl, hot-pink shade, a lavender sky (ADR 0030)
+PLASTIC = Palette(ink="#2a1f3d", white="#fff8ee", shade="#ff5fa2", name="plastic", background="#e9defa")
 
 
 @dataclass(frozen=True)

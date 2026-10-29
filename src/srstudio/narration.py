@@ -24,7 +24,6 @@ Every failure is a :class:`NarrationError` (a ``ValueError``) or the voice modul
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import re
@@ -36,6 +35,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
+from . import digest
 from .provider import CONSENT_ENV, KEY_ENV
 from .voice import RATE, Alignment, Voice, VoiceOutputError
 
@@ -212,8 +212,7 @@ def conform(
     return got
 
 
-def sha256_of(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+sha256_of = digest.sha256
 
 
 # -- fitting one line to each caption window ----------------------------------------------------------------

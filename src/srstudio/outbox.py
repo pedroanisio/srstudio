@@ -1,8 +1,9 @@
 """The outbox: every video that passed the publish gate, bundled with what is posted with it, ready to upload.
 
 :func:`ready` asks the publish gate (:func:`srstudio.social.check_delivery`) which videos are current and bundles
-each one with its ``ig.txt``, its ``cover.jpg`` and, for a recreation, its ``.vpkg.zip`` package; a video that
-drifted is held back and reported. :func:`stage` copies the bundles into one private folder per video next to an
+each one with its ``ig.txt``, its ``cover.jpg`` and its ``.vpkg.zip`` package (received with a recreation, packed by
+:mod:`srstudio.package` for an original episode); a video that drifted, or that has no package, is held back and
+reported. :func:`stage` copies the bundles into one private folder per video next to an
 ``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now;
 the operator's own top-level dot-files (``.ignore``) are carried over and uploaded with it.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
@@ -23,10 +24,21 @@ from pathlib import Path
 
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
-__all__ = ["MANIFEST", "MANIFEST_VERSION", "Bundle", "OutboxError", "latest_package", "push", "ready", "stage"]
+__all__ = [
+    "MANIFEST",
+    "MANIFEST_VERSION",
+    "NO_PACKAGE",
+    "Bundle",
+    "OutboxError",
+    "latest_package",
+    "push",
+    "ready",
+    "stage",
+]
 
 MANIFEST = "outbox.json"
 MANIFEST_VERSION = "1.0.0"
+NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package"
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 _REMOTE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*:.*")
 _run: Callable[..., subprocess.CompletedProcess] = subprocess.run
@@ -60,8 +72,9 @@ def ready(
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
-    ``packages`` maps a video name to its package file; a package for a video that is not published, or one that
-    does not exist, raises :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready."""
+    ``packages`` maps a video name to its package file; a current video without one is held back
+    (:data:`NO_PACKAGE`). A package for a video that is not published, or one that does not exist, raises
+    :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready."""
     packages = dict(packages or {})
     unknown = sorted(set(packages) - set(items))
     if unknown:
@@ -69,7 +82,7 @@ def ready(
     missing = sorted(name for name, path in packages.items() if not Path(path).is_file())
     if missing:
         raise OutboxError(f"the package for {', '.join(missing)} is missing")
-    drift = check_delivery(items, deliveries, font=font)
+    drift = list(check_delivery(items, deliveries, font=font))
     held = {d.name for d in drift}
     if "*" in held:
         return [], drift
@@ -77,9 +90,11 @@ def ready(
     for name, item in sorted(items.items()):
         if name in held:
             continue
+        if name not in packages:
+            drift.append(Drift(name, NO_PACKAGE))
+            continue
         folder = Path(deliveries) / name
-        files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME)
-        bundles.append(Bundle(name, files + ((Path(packages[name]),) if name in packages else ())))
+        bundles.append(Bundle(name, (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))))
     return bundles, drift
 
 

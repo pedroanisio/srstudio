@@ -102,7 +102,7 @@ class Run:
 @dataclass(frozen=True)
 class Report:
     episodes: Mapping[str, tuple[str, ...]]  # slug -> the parts its build called, sorted
-    unmeasured: tuple[str, ...] = ()  # projects with no script to build them
+    unmeasured: tuple[str, ...] = ()  # projects with no script to build them, or skipped on request
 
     def used_by(self, name: str) -> list[str]:
         return [slug for slug, parts in self.episodes.items() if name in parts]
@@ -147,11 +147,17 @@ class Report:
 
 
 def discover(
-    episodes: Path, packages: Path | None, scripts: Path, args: Mapping[str, Sequence[str]] | None = None
+    episodes: Path,
+    packages: Path | None,
+    scripts: Path,
+    args: Mapping[str, Sequence[str]] | None = None,
+    skip: Sequence[str] = (),
 ) -> tuple[list[Run], list[str]]:
     """A run per project folder in ``episodes`` and per ``<package>/project`` in ``packages`` whose script
     ``<slug with underscores>.py`` is in ``scripts`` (a project in both is built from ``episodes``); ``args`` adds
-    command-line options by slug. Returns the runs by slug and the projects with no script."""
+    command-line options by slug, and ``skip`` names projects not to build (one still in progress, whose build
+    cannot run yet). Returns the runs by slug and the projects not measured: those with no script and those
+    skipped. A skipped slug that names no project raises :class:`UsageError`."""
     projects: dict[str, Path] = {}
     if packages is not None and Path(packages).is_dir():
         for p in sorted(Path(packages).iterdir()):
@@ -160,8 +166,14 @@ def discover(
     for p in sorted(Path(episodes).iterdir()):
         if p.is_dir():
             projects[p.name] = p
+    unknown = sorted(set(skip) - set(projects))
+    if unknown:
+        raise UsageError(f"--skip names no project: {', '.join(unknown)}")
     runs, missing = [], []
     for slug in sorted(projects):
+        if slug in skip:
+            missing.append(slug)
+            continue
         script = Path(scripts) / f"{slug.replace('-', '_')}.py"
         if script.is_file():
             runs.append(Run(slug, script, projects[slug], tuple((args or {}).get(slug, ()))))

@@ -124,6 +124,38 @@ def test_a_misheard_take_stops_the_recording_and_says_what_was_heard(tmp_path):
     assert report["passed"] is False and not (tmp_path / "project" / "timeline.json").exists()
 
 
+def test_a_hearing_the_operator_accepted_records_the_take_and_says_so_in_the_report(tmp_path):
+    provider = Provider(tmp_path, heard={"speech-2.wav": "Repeat after knee."})
+    accepted = takes.Take("02", "dev", "Repeat after me.", 0.1, shot="push", heard=("Repeat after knee.",))
+    s = script(takes=(script().takes[0], accepted, script().takes[2]))
+    root, timeline, _ = run(tmp_path, s, provider=provider)
+    assert [q["id"] for q in timeline["items"]] == ["01", "02", "03"]
+    report = json.loads((root / "voice-transcript.json").read_text())
+    assert report["passed"] is True
+    assert report["lines"][1]["accepted"] == ["Repeat after knee."] and "accepted" not in report["lines"][0]
+
+
+@pytest.mark.parametrize(
+    ("take", "message"),
+    [
+        (takes.Take("02", "dev", "Repeat after me.", 0.1, shot="push", heard=("",)), "accepted hearing"),
+        (
+            takes.Take("02", "dev", "Repeat after me.", 0.1, shot="push", heard=("repeat, after me",)),
+            "accepted hearing",
+        ),
+        (
+            takes.Take(
+                "02", "sfx", "[BUZZ]", 0.1, shot="push", prompt="a buzz", seconds=1.0, longest=0.5, heard=("buzz",)
+            ),
+            "an effect is not transcribed",
+        ),
+    ],
+)
+def test_an_accepted_hearing_is_refused_when_it_is_empty_the_line_itself_or_on_an_effect(take, message):
+    with pytest.raises(takes.TakesError, match=message):
+        script(takes=(script().takes[0], take)).check()
+
+
 def test_the_bed_is_instrumental_conformed_to_the_episode_and_recorded(tmp_path):
     bed = takes.Bed(BED_PLAN, seed=11, bpm=96, gain_db=-12.0, fade=0.5)
     root, timeline, provider = run(tmp_path, script(bed=bed))
@@ -237,3 +269,25 @@ def test_main_needs_consent_a_font_and_reports_a_failure_as_an_exit(tmp_path, mo
     provider.spoken.clear()
     assert takes.main(script(), [str(project)], env={"SRSTUDIO_ALLOW_CLOUD": "1"}) == 0
     assert (project / "timeline.json").exists()
+
+
+def test_a_script_names_its_own_caption_font_and_main_copies_that_one(tmp_path):
+    ink = ("PatrickHand-Regular.ttf", "font-license.txt")
+    s = script(font=ink)
+    assert script().font == takes.FONT  # the Stick font stays the default
+    project = tmp_path / "p"
+    with pytest.raises(SystemExit, match="PatrickHand-Regular.ttf is missing"):
+        takes.main(s, [str(project)], env={"SRSTUDIO_ALLOW_CLOUD": "1"})
+    fonts = tmp_path / "fonts"
+    fonts.mkdir()
+    for name in ink:
+        (fonts / name).write_text("x")
+    with pytest.raises(RuntimeError, match="ELEVENLABS_API_KEY"):  # past the font: no key, the recording refuses
+        takes.main(s, [str(project), "--font", str(fonts)], env={"SRSTUDIO_ALLOW_CLOUD": "1"})
+    assert (project / "assets" / "PatrickHand-Regular.ttf").read_text() == "x"
+    assert not (project / "assets" / "Inter-Bold.ttf").exists()
+
+
+def test_a_script_refuses_a_font_without_its_licence():
+    with pytest.raises(takes.TakesError, match="font"):
+        script(font=("PatrickHand-Regular.ttf",)).check()

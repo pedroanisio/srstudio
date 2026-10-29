@@ -1,11 +1,14 @@
-"""Copy every video that is ready to publish to Google Drive, with its ig.txt, cover.jpg and package.
+"""Copy every video that is ready to publish to Google Drive, with its ig.txt, cover.jpg and .vpkg.zip package.
 
     python3 publish_drive.py                 # stage generated/outbox and push it to gdrive:srstudio/ready-to-publish
     python3 publish_drive.py --dry-run       # stage, then only preview what rclone would upload
     python3 publish_drive.py --stage-only    # stage, push nothing
 
 Ready means the publish gate (``instagram_posts.py check``) finds no drift for the video: its render, post,
-caption and cover all match the last delivery. A drifted video is held back and listed, and the command exits 1;
+caption and cover all match the last delivery, and it has its package. A recreation's package is the one received
+in ``videos-styles``; an original episode is packed from its project in ``generated/episodes`` into
+``generated/vpkg`` (``srstudio.package``: verified, validated by the engine, repacked only when its scene changed).
+A drifted video, or one without a package, is held back and listed, and the command exits 1;
 a staging or upload failure exits 2. ``tools/systemd/srstudio-drive.{path,service}`` run it on every delivery.
 The upload is ``rclone copy``, which never deletes on Drive; a video that is held back stays wherever an earlier
 push put it. Needs an rclone remote (``rclone config``; the default is ``gdrive:``).
@@ -17,7 +20,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from srstudio import outbox
+from srstudio import outbox, package
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -29,10 +32,34 @@ REMOTE = "gdrive:srstudio/ready-to-publish"
 PACKAGE_OF = {"honesty-interview-recreated": "honesty-interview", "Printer_Recreation": "printer-recreation"}
 
 
-def packages_for(names, folder: Path) -> dict[str, Path]:
-    """The latest package of every published video that has one in ``folder``."""
-    found = {name: outbox.latest_package(folder, PACKAGE_OF.get(name, name)) for name in names}
-    return {name: path for name, path in found.items() if path is not None}
+def packages_for(names, folders) -> dict[str, Path]:
+    """The latest package of every published video that has one, from the first of ``folders`` that holds it."""
+    found = {}
+    for name in names:
+        for folder in folders:
+            path = outbox.latest_package(folder, PACKAGE_OF.get(name, name))
+            if path is not None:
+                found[name] = path
+                break
+    return found
+
+
+def pack_originals(items, received, episodes: Path, out: Path) -> list[str]:
+    """Pack into ``out`` every published video that has no received package and whose project is in ``episodes``;
+    returns why each one that could not be packed failed."""
+    slug_of = {name: slug for slug, name in posts.VIDEOS.items()}
+    failures = []
+    for name, item in sorted(items.items()):
+        if packages_for([name], received):
+            continue
+        project = Path(episodes) / slug_of.get(name, name)
+        if not (project / f"{project.name}.scene.xml").is_file():
+            continue
+        try:
+            package.pack(project, out, item.post)
+        except package.PackageError as e:
+            failures.append(f"{name}: {e}")
+    return failures
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,7 +67,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--deliveries", type=Path, default=WORKSPACE / "generated/renders/ig")
     parser.add_argument("--renders", type=Path, default=WORKSPACE / "generated/renders")
     parser.add_argument("--fonts", type=Path, default=WORKSPACE / "generated/fonts")
-    parser.add_argument("--packages", type=Path, default=WORKSPACE / "videos-styles")
+    parser.add_argument(
+        "--packages", type=Path, action="append", help="folder of received packages (repeatable; default videos-styles)"
+    )
+    parser.add_argument("--episodes", type=Path, default=WORKSPACE / "generated/episodes", help="original projects")
+    parser.add_argument("--vpkg", type=Path, default=WORKSPACE / "generated/vpkg", help="their packages")
     parser.add_argument("--outbox", type=Path, default=WORKSPACE / "generated/outbox")
     parser.add_argument("--remote", default=REMOTE, help=f"rclone destination, name:path (default {REMOTE})")
     parser.add_argument("--rclone", default="rclone")
@@ -50,10 +81,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     items = posts.items(args.renders)
+    received = args.packages or [WORKSPACE / "videos-styles"]
+    for failure in pack_originals(items, received, args.episodes, args.vpkg):
+        print(f"not packed: {failure}")
     try:
-        bundles, drift = outbox.ready(
-            items, args.deliveries, font=posts.font_file(args.fonts), packages=packages_for(items, args.packages)
-        )
+        found = packages_for(items, [*received, args.vpkg])
+        bundles, drift = outbox.ready(items, args.deliveries, font=posts.font_file(args.fonts), packages=found)
         for d in drift:
             print(f"held back: {d}")
         manifest = outbox.stage(bundles, args.outbox)

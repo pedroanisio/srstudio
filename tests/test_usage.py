@@ -147,3 +147,42 @@ def test_the_command_writes_the_report_and_lists_the_unused_parts(tmp_path, proj
     with pytest.raises(SystemExit):
         cli.main([*common, "--out", str(out), "--arg", "my-ep"])
     assert cli.main([*common, "--out", str(out)]) == 2  # the script refuses to run without its option
+
+
+def test_a_skipped_project_is_not_built_and_is_reported_unmeasured(tmp_path):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    for name in ("done_ep.py", "half_done.py"):
+        (scripts / name).write_text("")
+    episodes = tmp_path / "episodes"
+    for slug in ("done-ep", "half-done"):
+        (episodes / slug).mkdir(parents=True)
+    runs, missing = U.discover(episodes, None, scripts, skip=("half-done",))
+    assert [r.slug for r in runs] == ["done-ep"]
+    assert missing == ["half-done"]
+    with pytest.raises(U.UsageError, match="no-such-ep"):  # a mistyped skip is refused, never ignored
+        U.discover(episodes, None, scripts, skip=("no-such-ep",))
+
+
+def test_the_command_skips_a_project_it_is_told_to(tmp_path, project, capsys):
+    from srstudio import cli
+
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "my_ep.py").write_text(
+        "import sys\nfrom pathlib import Path\nfrom srstudio import Episode, EpisodeSpec, props\n"
+        "ep = Episode(EpisodeSpec(slug='t', title='t', description='t', root=Path(sys.argv[1]), seed=1))\n"
+        "props.plant(ep.cv, ep.comp)\n"
+    )
+    (scripts / "unfinished.py").write_text("raise SystemExit('no timeline.json yet')\n")
+    episodes = tmp_path / "episodes"
+    shutil.copytree(project, episodes / "my-ep")
+    (episodes / "unfinished").mkdir()
+    out = tmp_path / "usage.json"
+    common = ["usage", "--episodes", str(episodes), "--scripts", str(scripts), "--work", str(tmp_path / "w")]
+    assert cli.main([*common, "--out", str(out)]) == 2  # without the skip, the unfinished build stops it
+    assert cli.main([*common, "--out", str(out), "--skip", "unfinished"]) == 0
+    assert "not measured (skipped): unfinished" in capsys.readouterr().out
+    report = U.Report.read(out)
+    assert report.episodes == {"my-ep": ("plant",)} and report.unmeasured == ("unfinished",)
+    assert cli.main([*common, "--out", str(out), "--skip", "typo"]) == 2

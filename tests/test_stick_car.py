@@ -400,3 +400,86 @@ def test_every_stick_location_signs_itself():
         unsigned = canvas()
         draw(unsigned)
         assert not any((g.get("id") or "").startswith("sig-") for g in xml(unsigned).iter("group"))
+
+
+def test_smaller_word_cues_let_more_quick_words_join_and_carry_their_size():
+    words = [{"text": w, "start": i * 0.2, "end": i * 0.2 + 0.15} for i, w in enumerate(("so", "the", "view", "never"))]
+    takes = [Take(0.0, 1.0, words)]
+    width = len
+    big = stick.word_cues(takes, min_seconds=0.85, width=width, max_width=7)
+    small = stick.word_cues(takes, min_seconds=0.85, width=width, max_width=20, size=80)
+    assert [c.text for c in big] == ["so the", "view", "never"]
+    assert [c.text for c in small] == ["so the view never"] and all(c.size == 80 for c in small)
+    assert all(c.size == stick.WORD_SIZE for c in big)  # the default is unchanged
+    with pytest.raises(stick.StickDataError, match="size"):
+        stick.word_cues(takes, size=0)
+
+
+def test_a_darker_scrim_is_its_own_paint_and_the_default_keeps_its_own():
+    cv = canvas()
+    stick.words(cv, cv.comp, [stick.Line(0, 1, "hi", 118)], scrim=0.9)
+    stick.words(cv, cv.comp, [stick.Line(1, 2, "there", 118)])
+    root = xml(cv)
+    stops = {g.get("id"): [s.get("color") for s in g.iter("stop")] for g in root.iter("linearGradient")}
+    assert stops["stick-word-scrim-90"][1] == f"{cv.ink}{round(0.9 * 255):02x}"
+    assert stops["stick-word-scrim"][1] == f"{cv.ink}{round(stick.SCRIM_PEAK * 255):02x}"
+    with pytest.raises(stick.StickDataError, match="scrim"):
+        stick.words(canvas(), None, [stick.Line(0, 1, "hi", 118)], scrim=1.5)
+
+
+def test_a_short_cue_can_borrow_time_from_the_next_cue_of_its_take():
+    words = [
+        {"text": "Absolutely", "start": 0.0, "end": 0.3},
+        {"text": "unbelievably", "start": 0.4, "end": 0.9},
+        {"text": "cheap", "start": 1.6, "end": 1.9},
+    ]
+    takes = [Take(0.0, 3.0, words), Take(3.0, 3.4, [{"text": "No", "start": 0.0, "end": 0.2}])]
+    plain = stick.word_cues(takes, min_seconds=0.8, width=len, max_width=12)
+    assert [(c.start, c.end) for c in plain] == [(0.0, 0.4), (0.4, 1.6), (1.6, 2.2), (3.0, 3.4)]
+    lent = stick.word_cues(takes, min_seconds=0.8, width=len, max_width=12, borrow=True)
+    # the first cue takes 0.4 s from the second, which keeps its 0.8 s; the takes' last cues lend nothing
+    assert [(c.start, c.end, c.text) for c in lent] == [
+        (0.0, 0.8, "Absolutely"),
+        (0.8, 1.6, "unbelievably"),
+        (1.6, 2.2, "cheap"),
+        (3.0, 3.4, "No"),
+    ]
+    with pytest.raises(stick.StickDataError, match="borrow"):
+        stick.word_cues(takes, borrow=True)
+
+
+def test_a_short_last_cue_can_join_the_cue_before_it():
+    words = [
+        {"text": "With", "start": 0.0, "end": 0.1},
+        {"text": "a", "start": 0.15, "end": 0.2},
+        {"text": "note", "start": 0.3, "end": 0.5},
+        {"text": "trainer.", "start": 0.9, "end": 1.2},
+    ]
+    takes = [Take(0.0, 1.5, words), Take(2.0, 2.3, [{"text": "No", "start": 0.0, "end": 0.2}])]
+    plain = stick.word_cues(takes, min_seconds=0.85, width=len, max_width=20)
+    assert [(c.start, c.end, c.text) for c in plain] == [(0.0, 0.9, "With a note"), (0.9, 1.5, "trainer"),
+                                                          (2.0, 2.3, "No")]  # fmt: skip
+    joined = stick.word_cues(takes, min_seconds=0.85, width=len, max_width=20, tail=True)
+    # the take's last cue, 0.6 s, joins the one before; a take of one cue has nothing to join
+    assert [(c.start, c.end, c.text) for c in joined] == [(0.0, 1.5, "With a note trainer"), (2.0, 2.3, "No")]
+    narrow = stick.word_cues(takes, min_seconds=0.85, width=len, max_width=12, tail=True)
+    assert [c.text for c in narrow][:2] == ["With a", "note trainer"]  # too wide together: it takes "note"
+    with pytest.raises(stick.StickDataError, match="tail"):
+        stick.word_cues(takes, tail=True)
+
+
+def test_a_short_last_cue_too_wide_to_join_takes_the_last_words_of_the_cue_before():
+    words = [
+        {"text": "With", "start": 0.0, "end": 0.1},
+        {"text": "a", "start": 0.15, "end": 0.2},
+        {"text": "note", "start": 0.3, "end": 0.45},
+        {"text": "from", "start": 0.5, "end": 0.6},
+        {"text": "your", "start": 0.65, "end": 0.8},
+        {"text": "trainer.", "start": 0.9, "end": 1.2},
+    ]
+    takes = [Take(0.0, 1.5, words)]
+    plain = stick.word_cues(takes, min_seconds=0.85, width=len, max_width=21)
+    assert [c.text for c in plain] == ["With a note from your", "trainer"]
+    moved = stick.word_cues(takes, min_seconds=0.85, width=len, max_width=21, tail=True)
+    # "your trainer" starts at 0.65 s and runs to the take's end: long enough, and it fits
+    assert [(c.start, c.end, c.text) for c in moved] == [(0.0, 0.65, "With a note from"), (0.65, 1.5, "your trainer")]

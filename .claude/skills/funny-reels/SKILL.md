@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.3.0
+schema_version: 1.7.0
 ---
 
 # Funny reels with srstudio
@@ -21,16 +21,16 @@ report the score as *your* estimate:
 
 | # | Criterion | 2 points means |
 |---|---|---|
-| 1 | Hook | the premise reads in the first 1–2 s, as on-screen text and the first spoken line, ideally as a question |
+| 1 | Hook | the premise reads in the first 1–2 s, through an opening chosen for it (see *Pick the mechanism*), not a question by default |
 | 2 | Premise | one situation an adult recognises from their own life |
-| 3 | Structure | setup, turn, punchline, in that order, nothing after the button |
+| 3 | Structure | the mechanism's setup, turn and payoff, nothing after the strongest laugh |
 | 4 | Surprise | the turn is not the first thing the viewer guessed |
 | 5 | Escalation | each beat raises the stakes of the previous one (rule of three, then break it) |
-| 6 | Shown | the gag is on screen (a note on the laptop, a toast with the evidence), not explained in a caption |
+| 6 | Shown | the gag is on screen, and a prop or the location does work in it (plants, escalates or pays off), not explained in a caption |
 | 7 | Timing | a hold of at least 1.2 s before the punchline, a sting or a voice right after; a camera move or pause on the beat (see below) |
 | 8 | Clarity | the viewer always knows who is talking (distinct voice, caption tint, speaker on screen) |
 | 9 | Sound | foley and music carry beats; music ducks under speech |
-| 10 | Ending | a button after the punchline (a "3 hours later…" card, a callback, a loop back to the start) |
+| 10 | Ending | the last frame is the strongest consequence or reaction; a button (a callback, a card, a loop) only when it tops the punchline |
 
 Measured failures to learn from: the silent Toon character sheet scored 5/20 and was retired as a comedy piece;
 *Focus Mode* sat at 13 until it got its punchline and callback.
@@ -39,7 +39,31 @@ What worked: one escalating premise with a hard reversal at the end. In *Upside 
 the scorecard reads "reception: taking notes". In *Five Years* the candidate wants the chair, not the job.
 What fell flat: captions that explain the joke, and music fighting the lines. *Camera Off*'s lines sat 6–7 dB
 under its score until `Episode.audio(duck=)` was added (ADR 0016). *Off and On*'s first cut was flat, and it only
-landed after a funnier rewrite and a composed jingle.
+landed after a funnier rewrite and a composed jingle. A batch of fifteen, spread over three styles, opened every
+episode on a question and ended every two-hander on the same hold, sting and button: one structure under three
+looks. A strong single episode does not excuse a repetitive batch (see *Review the batch for variety*).
+
+## Pick the mechanism, then stage it
+
+Choose how the joke works before writing lines, and let that choice set the opening, the shots and the ending.
+
+| Mechanism | The setup must plant | The camera and the cast | It ends on |
+|---|---|---|---|
+| Visual reveal | the object or space the viewer has not seen yet, kept out of frame or covered | a frame that hides it, then a cut or a move that shows it; no caption names it first | the reveal itself, or the first face that sees it |
+| Misunderstanding | two readings of one word or object, both fair | both characters sure of themselves; the reaction shot shows which reading was wrong | the moment one of them catches up |
+| Status reversal | who holds power, made visible (who sits, who stands, whose screen, whose room) | the framing changes as power changes hands (low angle to high angle, wide to small) | the new order, held |
+| Physical comedy | the space, the object and the body that will meet | a wide that shows the whole body and the room; no cut during the gag | the recovery, or the failed attempt at it |
+| Escalating consequences | one small choice | each beat a bigger result of that choice, each shown, not reported | the largest consequence, or the smallest possible reaction to it |
+| Callback | a line, a prop or a gesture that means one thing early on | the same framing as its first appearance | the callback with its meaning changed |
+
+Openings vary with the premise:
+- action already under way;
+- an awkward exchange in mid-sentence;
+- a surprising image held before anyone speaks;
+- narration, when the narrator has a point of view the picture contradicts;
+- a question.
+
+Whichever you choose, the premise still reads in 1–2 s.
 
 ## Camera and pauses are part of the joke
 
@@ -55,12 +79,184 @@ Where the camera is and when nobody speaks are comic tools, not decoration. Plan
 | Reaction shot / look to camera | the listener's face, or a glance into the lens, tells the viewer what to feel about what was just said | cut to the listener (`Timeline.shots` for the cut spans) and hold on a face that does not move |
 | Awkward pause | silence after a line that should get an answer; the discomfort is the laugh | leave 1.5–3 s of dead air between lines, with no new caption and the music ducked or stopped, then a small reaction or the button |
 | The spin, the double take | a turn or a look away and back marks the moment the character understands | `camera.spin` with `camera.show_facing`; a pose change held, released, then repeated faster |
+| Insert | a full-frame detail (the card's front, the screen, the receipt) that the joke turns on, held long enough to read | a cut to the object alone, gated to its beat (`toon_sets.note_insert` in Toon, `Canvas.gate` elsewhere); cut back to a face |
 
 Rules of thumb: one camera move per beat, never during a spoken line's key word; let a pause run a beat longer
 than feels comfortable, then cut; a zoom without a payoff on screen is noise. Measure, don't assume: `srstudio craft`
 <project> --renders <dir> lists every move (punch-in, crash, push; camera or gag) and every pause between lines, with
 the rendered level in it, so a pause meant to be awkward is shown to be quiet and not filled by music. A push onto a drawn instance (a
 reused symbol) softens it when magnified, so draw the target inline or keep the zoom small, and look at the frame.
+
+Two things `craft` needs from a style, or it reports nothing useful:
+
+- **Name the camera.** A move counts as camera only when its group id matches `craft.CAMERA` (a location, an angle,
+  a shot or a setup); an id from `Canvas.uid` reads as a gag that grows. Moves inside a `<sequence>` are reported on
+  the episode's clock, so a crash zoom's time can be checked against the line it underlines.
+- **Lower the music through the pauses, not only under the lines.** `Episode.audio(duck=)` ducks the bed while
+  someone speaks; in the silence it comes back up and `craft` reports the pause as filled. Animate the music
+  track's `gain` (audio automation, in dB) down through every gap `craft.pauses` finds, ramping inside the gap, as
+  a style's reel helper (`gloss_reel.hush` is one); then re-run `craft` and see the holds read quiet. A sound
+  effect inside a gap may fill it on purpose; say so in the report.
+
+## The picture has to look finished
+
+A funny script in a flat, unlit picture still reads as a draft: the operator scored a style 4/10 on looks alone.
+Score the look yourself, 0–2 each, aim for 8/10 or better, and report it as *your* estimate:
+
+| # | Criterion | 2 points means |
+|---|---|---|
+| 1 | Depth | at least three planes: a far plane out of focus, the cast sharp, a contact shadow under every figure |
+| 2 | Light | one light direction per set; figures shaded on their dark side and lifted off the set; lamps and screens bloom |
+| 3 | Composition | the cast stands on a floor line that leaves the caption band clean; panels and cards sized to their words, never half empty |
+| 4 | Finish | one grade over every shot (vignette, bloom, fine grain), owned by the style's module, not by an episode |
+| 5 | Consistency | one line weight, palette and light logic across sets, props and cards; the signature marks stay sharp |
+
+How to get there:
+
+- **Look before you record.** Takes cost money and rebuilds are free, so render one still per set with the cast,
+  a text panel and the caption band (`scene-render render` on a document, `-t` a second, `-o` a PNG), tile them
+  into one sheet, look at it, and fix what fails the table before any audio request. Repeat after every change.
+- **Use the engine, not more shapes.** Gradients come from `Canvas.grad` and `Canvas.rgrad`; effects are declared
+  with `Canvas.effect` and put on a group with `Canvas.apply`. The engine has blur, drop and inner shadows, bloom,
+  glow, vignette, film grain, colour grading and many more (the full list is the effect type in the scene-render
+  schema). Depth of field and a grade lifted a style further than any redraw did.
+- **Test the look like any other contract.** A finish, a depth blur or a lit figure is a library default with a
+  test (every shot carries the grade, every location blurs its far plane, no signature mark sits under a blur), so
+  each episode in the style gets it.
+- **Known traps.** A blur on a group that holds the signature marks softens them; draw the far plane in its own
+  group. Bloom with a low threshold makes white costumes glow. An inner glow goes all round a figure and reads as
+  a sticker outline, not a rim light. A pool of light under the caption band lowers caption contrast.
+
+## Compose in depth, keep it continuous
+
+A set is a stage with planes, not a backdrop with people pasted on it. Plan the depth of every location before
+drawing it, add a `layers` column to the beat table next to `camera`, and check it on the lookbook sheet.
+
+**Three planes, each with a job.**
+
+| Plane | Holds | Treatment |
+|---|---|---|
+| Background | the room or the street: walls, windows, far furniture, sky | lower contrast and saturation, blurred, lit by the set's key light only; never carries a word the joke needs |
+| Midground | the cast, the props they touch, the gag's evidence (the note, the screen, the chart) | sharp, full contrast, a contact shadow under every figure and prop that stands on something |
+| Foreground | a partial object at the frame edge (a mug, a plant, a chair back, a door frame) that the camera looks past | darker, larger, cropped by the frame, optionally blurred; never over a face, the gag's evidence, the caption band or the signature |
+
+Overlap sells depth more cheaply than any effect: a figure in front of a desk edge, a desk in front of a window
+frame. Draw each plane as its own group, far to near, so blur, light and parallax can be given per plane.
+
+**Props are placed, not scattered.**
+
+- Every prop on screen either sets the place in one glance or pays off a gag; remove the rest.
+- A gag prop has a job in the joke's structure. It is planted in the setup, changed or used in the escalation, and
+  pays off at the end (the board that changes text behind the speaker, a phone that keeps bringing worse news).
+  Let the location do the same: an obstacle the character has to work around, or a detail behind them that
+  contradicts what they are saying.
+- The gag's prop sits in the midground, on a third of the frame, at a size that reads on a phone, and never inside
+  the caption band or behind a speaker's head.
+- A prop that rests on something gets a contact shadow and the set's light direction; a floating prop reads as a
+  mistake.
+- Props stay clear of the signature marks, and a test proves it: the Collage episodes record every placed card,
+  chart and screen and assert each one clears `collage_sets.signature_box`. Give a new style the same test.
+
+**Frame for a phone held upright.**
+
+- 9:16: faces in the upper half, the caption band clean in the lower third, the cast on a floor line the style
+  fixes. `Episode.check_overlays` proves captions and cards cross no face or safe-area line; run it on every render.
+- One idea per frame. A wide shows the room and the physical gag; a medium shows who talks to whom; a close-up is
+  for the realisation. Cut in on a beat, never at random (see *Camera and pauses*).
+- Leave look room on the side a character faces, and headroom that does not change between cuts of the same shot
+  size.
+
+**Move the camera through the planes, not over a flat card.**
+
+- 2D move. `camera.push_in`, `camera.crash_zoom` and `camera.reframe` scale one group, so every plane grows at the
+  same rate. They are fine for comic snaps, but they look flat on a slow move.
+- Hand-drawn parallax. Each plane gets its own speed, as the scrolling scenery does in `stick_car.LAYERS` (far
+  layers slower, near layers faster, ADR 0018). This always works, and every speed is a number you set.
+- Native 2.5D parallax. Mark each plane group `threeD="true"` and give it a `zDepth`. Then add a perspective
+  `<camera>` to the composition and animate the camera, not the planes. The engine works out the parallax from
+  depth. Probed on scene-render 0.8.0:
+  - With the camera at the 1:1 distance below, a sideways dolly moved a near plane about 3.6 times as far as a
+    plane 1200 px behind it.
+  - A plane group that carries a blur effect still sits at its depth.
+  - To draw `zDepth` 0 at 1:1, place the camera at z = −(frame width / 2) / tan(fov / 2).
+  - A deeper plane draws smaller, so scale it up by (zDepth + that distance) / that distance to fill the frame.
+  - The camera's own `depthOfField` did not blur 2.5D planes. Keep depth blur as a blur effect on the far plane.
+  - srstudio wraps none of this yet. Grow it as a library helper with a test and an ADR before an episode uses it.
+- Size the move to the beat. A slow lateral drift (a few percent of the frame width over a line) gives life to a
+  dialogue; a push through the foreground into a close-up is a reveal. Do not run a parallax drift under a crash
+  zoom: one move per beat still holds.
+
+**Light the scene once, shade everything from it.**
+
+- One key light direction per set and per style, written down in the style sheet. Every figure, prop and contact
+  shadow follows it, and the shadows fall on the opposite side from the window or lamp the set shows.
+- Paint lit fills with gradients from `Canvas.grad` or `Canvas.rgrad`. Put form and rim effects in their own
+  group, and draw the ink outline on top of that group, outside it, so no effect softens the line.
+- Small soft highlights, blush and contact shadows are radial gradients that fade to a transparent colour, not
+  blur effects. Every node that carries effects renders in its own isolated buffer, so effects cost GPU memory node
+  by node. Count the `effects=` attributes on the busiest frame before a full render: frames with 81–105 effect
+  groups ran out of memory on an 8 GB GPU while 34 rendered, so keep a frame near 40.
+
+**3D and ray tracing, when the style earns it.**
+
+- The engine also renders lit 3D: `object3D` primitives (sphere, box, capsule, extruded text, meshes) with PBR
+  materials, lights (directional, spot, area, dome) and shadows. A probe composited a path-traced sphere, with a
+  soft contact shadow, over a flat 2D wall at about 0.4 s per 540×960 frame at 64 samples.
+- With `renderer="pathtrace"`, a shadow catcher is not drawn, and the engine says so; give the object a real floor
+  instead.
+- Use it for one hero object a joke turns on: a trophy, a glossy product, a toilet the gag is about. Never use it
+  for the cast or a whole set in a vector-ink style: lit 3D shading next to flat ink reads as two shows. ADR 0018
+  rejected `object3D` for Stick because its renderer and lighting were of no use to that style's vector ink.
+- Before any episode uses it, add it to the library with a test and an ADR, then look at a frame next to the
+  style's figures.
+
+**Continuity across shots.**
+
+- A set is one function that draws every plane. Every shot of that set reframes the same drawing (`camera.reframe`
+  or a camera move), so walls, windows and props never jump between cuts.
+- Keep screen direction: a character who faces right in the wide still faces right in their close-up, and two
+  speakers keep their sides of the frame (the 180° line). Eyelines meet across the cut.
+- Light, time of day, costume and props hold across a scene unless the gag changes them. If a mug is spilt in shot
+  2, it is still spilt in shot 4.
+- On the lookbook sheet, tile one frame from each shot of a scene and check plane by plane that nothing jumped.
+
+## Acting: each character performs, including when silent
+
+A rig that holds one pose while someone else talks reads as a cut-out. Before the beats, write a short acting
+note per character:
+- a resting posture;
+- two signature gestures;
+- how they listen (still, fidgeting, eyes on their screen);
+- their tempo (answers fast, or lets a silence sit);
+- how their personality handles this situation.
+
+Then act the beats with it:
+
+- **Listening.** Give the listener their own beat when a line lands on them: a look away, a narrowing, a pose that
+  changes. A face held still is a choice (deadpan, the awkward pause), written down as one, never the default.
+- **Hesitation and anticipation.** Before a big pose or a hard line, add a small opposite move or a held breath:
+  eyes away, the arms still, then the line. Soft's rig has this as `blob.cue` (anticipation) and `blob.settle`
+  (overshoot and rest); other rigs get it from a short beat with its own pose.
+- **Recovery.** After the punchline, show how the character carries on: they pretend nothing happened, try to
+  save face, or give up. The recovery is often the button.
+- **Eyelines.** Characters look where the thing is: at the other speaker across the cut, down at the prop, into
+  the lens only for a look to camera.
+- **Personality sets the reaction.** The same news gets a different reaction from each character: a controller
+  takes notes, an avoider changes the subject. Two characters reacting the same way is a missed joke.
+
+## Protect the reveal
+
+The laugh comes when the viewer gets the information, so control the moment each piece of information appears:
+
+- **Captions.** The punchline's words appear when they are spoken, never earlier. Split a long line so that the
+  reveal word starts its own cue. Never caption a reveal the picture shows.
+- **Props.** The reveal object is out of frame, covered or gated (`Canvas.gate`) until its beat. Toasts, boards
+  and cards that give the answer away arrive on the beat, not in the setup.
+- **Sound.** The sting goes after the reveal, never before it.
+- **Hook and cover.** The opening card and the cover pose the premise and never show the payoff. Use
+  `Episode.hide_on_cover` for burned-in text, and set a `Thumbnail` time before the reveal.
+- **The end.** Stop on the strongest consequence or reaction. Add a button only when it gets a laugh of its own;
+  otherwise cut a beat after the reaction.
 
 ## Made for adults
 
@@ -100,16 +296,34 @@ gap to fill:
 - voice: a distinct premade voice and accent per speaker.
 
 Give each new character a trait that *does* something in a gag (a headset that keeps beeping, glasses that slide on
-a double take), never one that *is* the gag. A new character is a registered part (step 4), so the next agent finds
+a double take), never one that *is* the gag. A new character is a registered part (step 5), so the next agent finds
 it in `srstudio catalog` without this file changing.
 
 ## Workflow
 
 1. **Inventory.** Run the live inventory above, then read the README section for the chosen style.
-2. **Script as data.** Write the beats as a table: time, picture, line, speaker, sound. Keep it 11–35 s; loops of
+2. **Script as data.** Write the beats as a table: time, picture, line, speaker, sound, camera, layers. Keep it 11–35 s; loops of
    12–15 s for a "repeat after me" format. Score it with the rubric. Avoid the premises and settings the usage report
    and the backlog show the catalog already leans on. Never copy a reference's lines, drawings or brand: an
    original script in the same format, an invented brand.
+   Name the mechanism and the opening (*Pick the mechanism*). Then write a **shot plan**: one row per shot, a shot
+   being a run of beats in one framing. Each row has:
+
+   | Field | What it says |
+   |---|---|
+   | purpose | setup, turn, reveal, reaction or ending |
+   | focus | the one thing the eye must land on |
+   | acting | what the speaker and the listener do |
+   | props | the props and their state |
+   | camera | framing, and a move or "hold" |
+   | continuity | what must match the shots before and after |
+
+   A simple entry is allowed ("hold, same as shot 2"); an empty cell is not.
+   For a **new style**, and above all a parody of a show or genre, first write a short series bible in the style's
+   ADR: the world, the cast with one working trait each, the recurring devices (a host, a board, an end card), and
+   the comic engine in one sentence (what the setup always is, what the turn always is). Parody the genre's tropes
+   in your own words and drawings; no franchise names, characters, designs, logos, catchphrases or music. Every
+   episode script is then checked against the bible before it is scored.
 3. **Reuse first.** Build from registered parts and the shared pipelines: `srstudio.sketch` (Toon two-handers:
    speakers, lines, beats, `check`), `srstudio.takes` (voiced takes checked by speech-to-text, optional music `Bed`),
    `srstudio.song` (sung episodes on a beat grid with composed music), `srstudio.interview`, `srstudio.camera`,
@@ -118,23 +332,35 @@ it in `srstudio catalog` without this file changing.
    use `lipsync.SPEECH_MOUTH` with timestamped takes, or `soundtrack.OFFICE_MOUTH` with `letters=True` for mouths
    driven by amplitude. `srstudio.interview` gives exact line ends: put the reaction just
    after the last line, hold, then cut to the end card.
-4. **Grow the library when it lacks something** (TDD, CLAUDE.md): a failing test first, then the part in
+4. **Look.** Run the lookbook from *The picture has to look finished* and score the look table; fix the style in the
+   library until it reaches 8/10, before any audio. Add one frame from each shot of every scene, then check the
+   planes, the props, the light direction and the continuity rules from *Compose in depth, keep it continuous*.
+5. **Grow the library when it lacks something** (TDD, CLAUDE.md): a failing test first, then the part in
    `src/srstudio/`, registered with `register` so the catalog and usage report see it, then an ADR in
    `docs/decisions/` when it is a decision (new style, rig change, new pipeline). Never put a reusable helper only in
    an episode script (ADR 0016). Gates: `ruff format --check`, `ruff check`, `mypy src`, pytest with branch coverage
    ≥ 80 %, run with `SRSTUDIO_PACKAGES=../generated/packages SRSTUDIO_ENGINE=../generated/bin/scene-render`.
-5. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
+6. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
    every take checked by speech-to-text, never a retry driven by model output; a misheard line stops the run and
    the operator decides. Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM with "steady kick on every beat" (slow tempo prompts come back
    off-tempo and are refused). The API key comes from the environment; never print, copy or write it.
-6. **Build and look.** Build with `srstudio build`, render to `generated/renders/<slug>.mp4`, then *look*: a
-   contact sheet of frames, the hook frame, the punchline hold, the safe area, captions that fit. Run `srstudio craft`
-   on the project with `--renders` and check that the planned camera moves and pauses are there. A number from a
+7. **Build and review the master.** Build with `srstudio build`, render to `generated/renders/<slug>.mp4`, then
+   review that file, the mix as delivered, not the scene or a still from the build. You cannot judge comic timing
+   by ear, so measure everything that can be measured:
+   - a contact sheet with one frame per shot, the hook, the frame just before and just after the reveal, and the
+     last frame;
+   - captions that fit, and that appear no earlier than the words they show;
+   - safe area and continuity, checked against the shot plan;
+   - `srstudio craft` on the project with `--renders`, to confirm the planned moves are there and the pauses read
+     quiet.
+
+   Write down every defect as a concrete correction (the time, what is wrong, the fix), fix it, and re-check.
+   Report what you measured; the operator watches the master with sound before it is published. A number from a
    scratch file is not evidence; quote real command output. Then update the catalog: re-run the usage report
    from *Live inventory*, then `srstudio page --usage ../generated/catalog/usage.json` with the other arguments
    that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode calls has a
    gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
-7. **Instagram delivery.** Add an `InstagramPost` (title, description, credit, `Thumbnail`) to `POSTS` and the
+8. **Instagram delivery.** Add an `InstagramPost` (title, description, credit, `Thumbnail`) to `POSTS` and the
    slug to `VIDEOS` in `episodes/instagram_posts.py`, then from the workspace root:
 
    ```
@@ -145,13 +371,36 @@ it in `srstudio catalog` without this file changing.
    and the same command with `check` (exit 1 on drift). Open `cover.jpg` and look: a zoom that crops a card, or a
    frame caught mid-caption-fade, leaves a ghost. Credit voices as ElevenLabs premade voices and music as
    "composed with ElevenLabs Music"; credit a reference creator when the format is adapted.
-8. **Publish.** A clean delivery is picked up by the `srstudio-drive` systemd unit and copied to
+9. **Publish.** A clean delivery is picked up by the `srstudio-drive` systemd unit and copied to
    `gdrive:srstudio/ready-to-publish` (video, `ig.txt`, `cover.jpg`, package). Run
    `python3 episodes/publish_drive.py --dry-run` to see it without waiting.
-9. **Report.** The rubric estimate, the cast (and who is new), parts reused versus added, gates run with their
+10. **Report.** The batch variety table (below) when there is more than one episode, the comedy and look rubric estimates, the cast (and who is new), parts reused versus added, gates run with their
    output, anything skipped and why.
 
+## Review the batch for variety
+
+When you write several episodes, check them as a set before any audio request, and again against the last
+episodes already published (the delivered posts in `episodes/instagram_posts.py`). Make one table with a row per
+episode and these columns:
+- premise area (work, money, family…);
+- opening;
+- mechanism;
+- staging (which shots and in what order);
+- pairing of characters;
+- ending.
+
+Rules of thumb:
+- no two episodes in a row share both opening and mechanism;
+- no opening, mechanism or ending appears in more than a third of the batch;
+- a pairing repeats only when the relationship is what the joke is about.
+
+The same structure redrawn in another style is still a repeat. Keep what makes a style or a cast recognisable (the
+look, the signature marks, a character's traits), and vary the joke underneath it.
+
 ## Never
+
+- Re-render, rebuild or re-deliver a published video unless the operator asks: published content is frozen, and
+  improvements apply to new episodes only.
 
 - Present your rubric score, a render you did not watch, or expected output as observed.
 - Write scratch outside `srstudio/_tmp/`, or touch `protected/` or `authorial/`.

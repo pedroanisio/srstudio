@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Sequence
 
 from .canvas import Canvas
 from .registry import register
@@ -501,6 +502,36 @@ def bench(cv: Canvas, parent):
     cv.rect(parent, 187, 1317, 681, 22, "#8B5F3D", cv.ink, 3, radius=5)
 
 
+CRUMB_FALL = 0.32  # seconds from the hand to the ground
+
+
+@register(
+    "prop",
+    "crumbs",
+    summary="A tossed handful of pastry crumbs that fall from the hand and stay on the ground",
+    episodes=("culture-fit",),
+)
+def crumbs(cv: Canvas, parent, x, y, ground, *, toss: float, count: int = 7, seed: int = 0, id="crumbs"):
+    """``count`` crumbs leave ``(x, y)`` at ``toss`` and land scattered on ``ground``; nothing shows before."""
+    if count < 1:
+        raise ValueError(f"crumbs needs at least one crumb, got {count}")
+    if toss < 0:
+        raise ValueError(f"crumbs toss {toss} is before the start")
+    if ground <= y:
+        raise ValueError(f"crumbs fall down: ground {ground} must be below the hand at {y}")
+    rng = random.Random(seed)
+    g = cv.group(parent, id, x=x, y=y)
+    cv.keys(g, "opacity", sorted({0.0: 0, float(toss): 1}.items()))  # shown from the toss on
+    for i in range(count):
+        dx, size = rng.uniform(-70, 70), rng.uniform(9, 15)
+        land = toss + CRUMB_FALL * rng.uniform(0.8, 1.1)
+        bit = cv.group(g, f"{id}-bit-{i}")
+        cv.keys(bit, "x", [(toss, 0), (land, dx)], hold=False)
+        cv.keys(bit, "y", [(toss, 0), (land, ground - y)], hold=False)
+        cv.ellipse(bit, -size / 2, -size / 2, size, size * 0.8, "#D9A657", cv.ink, 2)
+    return g
+
+
 # ---------------------------------------------------------------- polished office rooms (ADR 0011)
 
 GLOW = "#FFF3D6"  # the warm light every glaze in the polished rooms shares
@@ -606,7 +637,13 @@ def blinds_window(cv: Canvas, parent, x, y, w, h, id="blinds-window"):
 
 
 @register("prop", "speakerphone", summary="A three-lobed conference speakerphone with a live green ring")
-def speakerphone(cv: Canvas, parent, x, y, id="speakerphone"):
+def speakerphone(cv: Canvas, parent, x, y, id="speakerphone", talk: Sequence[tuple[float, float]] = ()):
+    """``talk``: (start, end) spans, in order and apart, in which the far end speaks and the ring lights up."""
+    last = 0.0
+    for start, end in talk:
+        if not (last <= start < end):
+            raise ValueError(f"speakerphone talk spans are (start, end) in order from 0, apart; got {list(talk)}")
+        last = end
     ink = cv.ink
     g = cv.group(parent, id, x=x, y=y)
     body = cv.grad("speaker-body", [(0, "#4B5257"), (0.5, "#2E3336"), (1, "#1E2224")], (0, 0, 0, 1))
@@ -620,6 +657,11 @@ def speakerphone(cv: Canvas, parent, x, y, id="speakerphone"):
     cv.ellipse(g, -22, -14, 44, 14, cv.clear, "#5FD1A0", 3.5)
     cv.ellipse(g, -38, -24, 76, 34, "#5FD1A0", opacity=0.16)
     cv.path(g, "M-96 -16 Q-40 -38 30 -34", stroke="#FFFFFF", sw=3, opacity=0.35)
+    if talk:
+        ring = cv.group(g, f"{id}-talk", opacity=0)
+        cv.ellipse(ring, -60, -34, 120, 54, "#5FD1A0", opacity=0.35)
+        cv.ellipse(ring, -26, -16, 52, 18, cv.clear, "#B9FFE0", 5)
+        cv.keys(ring, "opacity", [(0, 0)] + [k for start, end in talk for k in ((start, 1), (end, 0))])
     return g
 
 
@@ -689,4 +731,128 @@ def reception_counter(cv: Canvas, parent, x0, x1, top, bottom, id="reception-cou
     for vx, vy, vw in ((x0 + 60, top + 12, 140), (x0 + (x1 - x0) * 0.55, top + 20, 180), (x1 - 160, top + 9, 90)):
         cv.path(g, f"M{vx:.0f} {vy:.0f} q{vw / 3:.0f} -6 {vw / 2:.0f} 2 t{vw / 2:.0f} 0", stroke="#B9B1A3", sw=2)
     cv.line(g, x0 - 18, top + 6, x1 + 18, top + 6, "#FFFFFF", 3, opacity=0.8)
+    return g
+
+
+TIP_SCREEN = (300, 220)  # the tablet's screen, at scale 1
+TIP_PICKED, TIP_BUTTON = "#2E7D5B", "#EAF2EE"
+
+
+@register(
+    "prop",
+    "tip-tablet",
+    summary="A counter-top payment tablet asking for a tip: big percentage buttons, a tiny no tip, taps that light",
+    episodes=("tip-screen",),
+)
+def tip_tablet(
+    cv: Canvas,
+    parent,
+    x,
+    y,
+    *,
+    heading: str = "Add a tip",
+    options: tuple[str, ...] = ("20%", "25%", "30%"),
+    picks: tuple[tuple[float, int], ...] = (),
+    scale: float = 1.0,
+):
+    """A tablet on a swivel stand whose foot stands on (``x``, ``y``), its screen toward the viewer: ``heading``,
+    one big button per option (1 to 4), and under them the smallest thing on the screen, ``no tip``. Each pick
+    ``(time, index)`` lights that button from its time until the next pick."""
+    if cv.font_asset is None:
+        raise ValueError("this canvas has no caption font; the tip tablet's screen is set in it")
+    if not heading.strip():
+        raise ValueError("a tip tablet needs a heading")
+    if not 1 <= len(options) <= 4 or any(not o.strip() for o in options):
+        raise ValueError(f"a tip tablet shows 1 to 4 non-empty options, got {options!r}")
+    times = [t for t, _ in picks]
+    if any(not (0 <= t) for t in times) or times != sorted(times) or any(not 0 <= i < len(options) for _, i in picks):
+        raise ValueError(f"each pick is (time >= 0, option index), in time order, got {picks!r}")
+    if not (math.isfinite(scale) and scale > 0):
+        raise ValueError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    w, h = TIP_SCREEN
+    g = cv.group(parent, cv.uid("tip-tablet"), x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -70, -12, 140, 22, "#5C4D3E", opacity=0.18)
+    cv.rect(g, -56, -16, 112, 16, "#6B7178", ink, 3, radius=6)  # the foot and the swivel post
+    cv.rect(g, -10, -70, 20, 56, "#8A9097", ink, 3)
+    top = -70 - h - 24
+    cv.rect(g, -w / 2 - 12, top - 12, w + 24, h + 24, "#2B2F36", ink, 4, radius=18)
+    cv.rect(g, -w / 2, top, w, h, "#FFFFFF", radius=8)
+    cv.text(g, cv.uid("tip-heading"), heading, -w / 2, top + 6, w, 44, 28, ink, weight="700")
+    n = len(options)
+    gap, bh = 10, 92
+    bw = (w - 24 - (n - 1) * gap) // n
+    bx0, by = -w / 2 + 12, top + 60
+    for i, option in enumerate(options):
+        bx = bx0 + i * (bw + gap)
+        cv.rect(g, bx, by, bw, bh, TIP_BUTTON, "#2E7D5B", 3, radius=12)
+        cv.text(g, cv.uid("tip-option"), option, bx, by, bw, bh, 34, "#1D4D38", weight="700")
+    for k, (t, i) in enumerate(picks):
+        bx = bx0 + i * (bw + gap)
+        lit = cv.group(g, cv.uid("tip-pick"))
+        if k + 1 < len(picks):
+            cv.gate(lit, [(t, picks[k + 1][0])])
+        else:
+            cv.keys(lit, "opacity", [(0.0, 0), (t, 1)])
+        cv.rect(lit, bx, by, bw, bh, TIP_PICKED, ink, 3, radius=12)
+        cv.text(lit, cv.uid("tip-picked"), options[i], bx, by, bw, bh, 34, "#FFFFFF", weight="700")
+    cv.text(g, cv.uid("tip-none"), "no tip", -w / 2, top + h - 40, w, 30, 13, ink)
+    return g
+
+
+SLIP_CHARS = 10  # the most letters the envelope's name line holds
+SLIP_FALL = 0.28  # seconds from the drop to the floor
+SLIP_SIZE = (150, 96)  # the envelope's width and height
+
+
+@register(
+    "prop",
+    "pink-slip",
+    summary="A pink-slip envelope lettered with a name: held until a moment, or falling to the floor and tipping",
+    episodes=("going-down",),
+)
+def pink_slip(
+    cv: Canvas,
+    parent,
+    x,
+    y,
+    *,
+    name: str | None,
+    rotation: float = 0.0,
+    scale: float = 1.0,
+    show: tuple[float, float] | None = None,
+    fall: tuple[float, float] | None = None,
+):
+    """A sealed pink envelope whose middle rests on (``x``, ``y``), its flap drawn in and ``name`` (1 to
+    :data:`SLIP_CHARS` characters; ``None``: its back, blank) lettered across it. ``show=(start, end)`` shows it
+    only in that span (the slip in a hand or a beak); ``fall=(at, height)`` hides it until ``at``, then drops it
+    ``height`` above its mark onto the mark in :data:`SLIP_FALL` seconds, tipping as it lands. A slip either is
+    held or falls, not both."""
+    if name is not None and cv.font_asset is None:
+        raise ValueError("this canvas has no caption font; the pink slip's name is lettered in it")
+    if name is not None and (not name.strip() or len(name) > SLIP_CHARS):
+        raise ValueError(f"the slip's name has 1 to {SLIP_CHARS} characters, got {name!r}")
+    if show is not None and (not 0 <= show[0] < show[1] or fall is not None):
+        raise ValueError(f"show is one (start, end) span with 0 <= start < end, and never with fall, got {show!r}")
+    if fall is not None and not (fall[0] >= 0 and fall[1] > 0):
+        raise ValueError(f"fall is (time >= 0, height > 0), got {fall!r}")
+    if not (math.isfinite(scale) and scale > 0):
+        raise ValueError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    w, h = SLIP_SIZE
+    g = cv.group(parent, cv.uid("pink-slip"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)
+    if show is not None:
+        cv.gate(g, [show])
+    if fall is not None:
+        at, height = fall
+        cv.keys(g, "opacity", [(0.0, 0), (at, 1)])
+        cv.keys(g, "y", [(at, y - height), (at + SLIP_FALL, y)], hold=False)
+        turn = [(at, rotation - 28), (at + SLIP_FALL * 0.7, rotation + 5), (at + SLIP_FALL, rotation)]
+        cv.keys(g, "rotation", turn, hold=False)
+    cv.ellipse(g, -w / 2 + 6, h / 2 - 4, w - 12, 14, "#5C4D3E", opacity=0.16)  # its shadow on the floor
+    cv.rect(g, -w / 2, -h / 2, w, h, "#F4B6C2", ink, 3, radius=6)
+    cv.path(g, f"M{-w / 2 + 4} {-h / 2 + 4} L0 {-h / 2 + 40} L{w / 2 - 4} {-h / 2 + 4}", stroke="#C9788A", sw=3)
+    cv.ellipse(g, -9, -h / 2 + 31, 18, 18, "#C23B4E", ink, 2)  # the seal on the flap's point
+    if name is not None:
+        cv.text(g, cv.uid("pink-slip-name"), name, -w / 2 + 8, -h / 2 + 50, w - 16, 40, 30, ink, weight="700")
     return g

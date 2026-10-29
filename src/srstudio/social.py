@@ -14,6 +14,7 @@ backdrop is drawn from it instead (:func:`take_still`): the same frame, without 
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import math
@@ -25,6 +26,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import NamedTuple
 
+from . import digest
 from .thumbnail import Thumbnail, ThumbnailError, render
 
 __all__ = [
@@ -336,12 +338,7 @@ class Item(NamedTuple):
 Items = dict[str, Item]  # video name -> what is delivered for it
 
 
-def _sha(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
+_sha = digest.sha256
 
 
 def fingerprint(post: InstagramPost, font: Path, scene: Path | None = None) -> str:
@@ -474,8 +471,18 @@ def publish(
         entries[name] = {"render": _sha(video), "post": fingerprint(post, font, scene),
                          "ig": _sha(folder / FILE_NAME), "cover": _sha(folder / COVER_NAME)}  # fmt: skip
     manifest = out / MANIFEST
-    tmp = manifest.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": entries}, indent=2) + "\n", encoding="utf-8")
-    tmp.chmod(0o600)
-    tmp.replace(manifest)
+    lock = manifest.with_suffix(".json.lock")
+    with lock.open("a") as held:
+        lock.chmod(0o600)
+        fcntl.flock(held, fcntl.LOCK_EX)  # one writer at a time; the covers above render unlocked
+        if only is not None:  # another delivery may have written its videos since the read above: keep them
+            now = read_manifest(out)
+            entries = {name: now[name] for name in items if name not in chosen and name in now} | {
+                name: entries[name] for name in chosen
+            }
+        tmp = manifest.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": dict(sorted(entries.items()))}, indent=2)
+                       + "\n", encoding="utf-8")  # fmt: skip
+        tmp.chmod(0o600)
+        tmp.replace(manifest)
     return written

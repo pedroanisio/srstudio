@@ -662,6 +662,10 @@ def word_cues(
     min_seconds: float = 0.0,
     width: Callable[[str], float] | None = None,
     max_width: float = WORD_WIDTH,
+    size: float = WORD_SIZE,
+    borrow: bool = False,
+    tail: bool = False,
+    balance: bool = False,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -669,18 +673,37 @@ def word_cues(
 
     A word that would show for less than ``min_seconds`` takes the next words of its take with it while the cue,
     measured by ``width``, stays within ``max_width``: a word too quick to read, swapped six times a second in one
-    place, also flashes. A word whose neighbour does not fit stays alone, however briefly."""
+    place, also flashes. A word whose neighbour does not fit stays alone, however briefly. ``size`` is the cues'
+    lettering: smaller than :data:`WORD_SIZE`, with ``width`` measured at it, more quick words fit a cue. With
+    ``borrow``, a cue still shorter than ``min_seconds`` stays up longer, taking the time from the next cue of its
+    take as far as that one keeps ``min_seconds`` itself (its words then show a little after they are spoken). With
+    ``tail``, a take's last cue still shorter than ``min_seconds`` joins the cue before it when both fit
+    ``max_width`` together, or else takes that cue's last words until it is long enough, as far as it fits. With
+    ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
+    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie."""
+    if borrow and not min_seconds:
+        raise StickDataError("borrow lengthens cues shorter than min_seconds: give min_seconds")
+    if not (math.isfinite(size) and size > 0):
+        raise StickDataError(f"size must be a positive number, got {size!r}")
     if not (math.isfinite(linger) and linger >= 0):
         raise StickDataError(f"linger must be non-negative, got {linger!r}")
     if not (math.isfinite(min_seconds) and min_seconds >= 0):
         raise StickDataError(f"min_seconds must be non-negative, got {min_seconds!r}")
+    if tail and not min_seconds:
+        raise StickDataError("tail joins a last cue shorter than min_seconds: give min_seconds")
     if min_seconds and width is None:
         raise StickDataError("joining quick words needs the width of the text they make")
+    if balance and width is None:
+        raise StickDataError("balance splits words by the width of the text they make: give width")
+    if balance and tail:
+        raise StickDataError("balance already places a take's last cue: drop tail")
     cues: list[Line] = []
     for take in takes:
         words = [w for w in (take.words or []) if w["text"].strip(PUNCTUATION)]
-        groups: list[list[dict]] = []
-        i = 0
+        groups: list[list[dict]] = (
+            _balanced(words, take.end - take.start, linger, width, max_width) if balance and width is not None else []
+        )
+        i = len(words) if groups else 0  # balanced: every word is already placed
         while i < len(words):  # every pass takes at least one word: bounded by the word count
             group = [words[i]]
             i += 1
@@ -694,6 +717,16 @@ def word_cues(
                 group.append(words[i])
                 i += 1
             groups.append(group)
+        if tail and width is not None and len(groups) > 1:
+            last_end = min(take.end, take.start + groups[-1][-1]["end"] + linger)
+            short = last_end - (take.start + groups[-1][0]["start"]) < min_seconds
+            if short and width(_spoken(groups[-2] + groups[-1])) <= max_width:
+                groups[-2:] = [groups[-2] + groups[-1]]
+            else:  # too wide together: the cue before lends its last words while it keeps one and both fit
+                while short and len(groups[-2]) > 1 and width(_spoken(groups[-2][-1:] + groups[-1])) <= max_width:
+                    groups[-1].insert(0, groups[-2].pop())  # bounded: the cue before shrinks by a word each pass
+                    short = last_end - (take.start + groups[-1][0]["start"]) < min_seconds
+        spans: list[list[float]] = []
         for k, group in enumerate(groups):
             start = take.start + group[0]["start"]
             end = (
@@ -703,8 +736,42 @@ def word_cues(
             )
             if not end > start:
                 raise StickDataError(f"word {group[0]['text']!r} at {start:.3f} s ends before it starts")
-            cues.append(Line(round(start, 3), round(end, 3), _spoken(group), WORD_SIZE))
+            spans.append([start, end])
+        if borrow:
+            for here, after in zip(spans, spans[1:], strict=False):  # one pass, in order: bounded by the cue count
+                need = min_seconds - (here[1] - here[0])
+                spare = (after[1] - after[0]) - min_seconds
+                shift = min(need, spare)
+                if shift > 0:
+                    here[1] += shift
+                    after[0] += shift
+        for (start, end), group in zip(spans, groups, strict=True):
+            cues.append(Line(round(start, 3), round(end, 3), _spoken(group), size))
     return cues
+
+
+def _balanced(
+    words: Sequence[dict], length: float, linger: float, width: Callable[[str], float], max_width: float
+) -> list[list[dict]]:
+    """The split of a take's ``words`` into cues whose shortest lasts longest (each cue runs to the next one's first
+    word, the last to its last word plus ``linger``, within the take's ``length``), every cue but a lone word within
+    ``max_width``; on a tie, the fewest cues. Dynamic programming over the split points: n² candidate cues."""
+    n = len(words)
+    best: list[tuple[float, int, int]] = [(math.inf, 0, n)] * (n + 1)  # (shortest, -cues, next split) from i
+    for i in range(n - 1, -1, -1):
+        options = []
+        for j in range(i + 1, n + 1):
+            if j - i > 1 and width(_spoken(words[i:j])) > max_width:
+                break  # wider only grows with more words
+            end = words[j]["start"] if j < n else min(length, words[-1]["end"] + linger)
+            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j))
+        best[i] = max(options, key=lambda o: (round(o[0], 6), o[1]))
+    groups, i = [], 0
+    while i < n:  # every pass moves past at least one word: bounded by the word count
+        j = best[i][2]
+        groups.append(list(words[i:j]))
+        i = j
+    return groups
 
 
 def _spoken(words: Sequence[dict]) -> str:
@@ -712,14 +779,17 @@ def _spoken(words: Sequence[dict]) -> str:
 
 
 @register("graphic", "stick-words", episodes=("repeat-after-me",), tags=("captions", "outlined", "word-by-word"))
-def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y) -> None:
+def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim: float = SCRIM_PEAK) -> None:
     """Word-by-word captions: each cue a word (or a few, :func:`word_cues`), very large white text outlined in
     ink, centred at ``y``, popping in as it starts (:meth:`Canvas.pop_in`), over a feathered ink scrim that fades in
     with each run of words.
 
     The contrast check judges every text layer against what is behind it, so each word is one layer, and the scrim
     keeps what is behind it dark enough for white whatever the scene shows there: an outline layer of its own would
-    be ink measured against the scene. :func:`word_cues` makes the cues from timed takes."""
+    be ink measured against the scene. :func:`word_cues` makes the cues from timed takes. ``scrim`` is the band's
+    darkness (0..1), for a scene too bright behind the words for the default :data:`SCRIM_PEAK`."""
+    if not (math.isfinite(scrim) and 0 < scrim <= 1):
+        raise StickDataError(f"scrim is a darkness above 0 and up to 1, got {scrim!r}")
     if cv.font_asset is None:
         raise ValueError("this canvas has no caption font; the Stick style captions in its font")
     for cue in cues:
@@ -728,7 +798,7 @@ def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y) -> Non
         if not cue.end > cue.start:
             raise StickDataError(f"cue {cue.text!r} ends at {cue.end}, not after its start {cue.start}")
     if cues:
-        _scrim(cv, parent, cues, y)
+        _scrim(cv, parent, cues, y, scrim)
     for cue in cues:
         g = _group(cv, parent, x=cv.width / 2, y=y + WORD_H / 2, anchorX=cv.width / 2, anchorY=y + WORD_H / 2)
         cv.gate(g, [(cue.start, cue.end)])
@@ -741,7 +811,7 @@ def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y) -> Non
         cv.pop_in(g, cue.start, from_=0.86, over=1.06, rise=0.07, settle=0.14)
 
 
-def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float) -> None:
+def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCRIM_PEAK) -> None:
     """The ink band behind the words: up while a run of words shows, faded in and out around it."""
     runs: list[list[float]] = []
     for cue in sorted(cues, key=lambda c: c.start):
@@ -750,10 +820,11 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float) -> None:
         else:
             runs.append([cue.start, cue.end])
     h = WORD_H + 2 * SCRIM_FEATHER
-    band = f"{cv.ink}{round(SCRIM_PEAK * 255):02x}"
+    band = f"{cv.ink}{round(peak * 255):02x}"
     clear = f"{cv.ink}00"
     feather = SCRIM_FEATHER / h
-    fill = paint(cv, Gradient("stick-word-scrim", ((0, clear), (feather, band), (1 - feather, band), (1, clear)),
+    name = "stick-word-scrim" if peak == SCRIM_PEAK else f"stick-word-scrim-{round(peak * 100)}"
+    fill = paint(cv, Gradient(name, ((0, clear), (feather, band), (1 - feather, band), (1, clear)),
                               0, 0, 0, h))  # fmt: skip
     g = _group(cv, parent)
     box(cv, g, 0, y - SCRIM_FEATHER, cv.width, h, fill)
@@ -814,11 +885,14 @@ STRAND_HAIR, FILLED_HAIR = ("cowlick", "spiky"), ("side-part",)  # the bun sits 
 
 @dataclass(frozen=True)
 class Look:
-    """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, and a tie colour (``None``: no tie)."""
+    """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
+    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap)."""
 
     hair: str = "cowlick"
     glasses: bool = False
     tie: str | None = None
+    apron: str | None = None
+    cap: str | None = None
 
 
 PLAIN = Look()  # Dev's look: the cowlick, no glasses, no tie
@@ -832,6 +906,10 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"glasses must be true or false, got {look.glasses!r}")
     if look.tie is not None and not COLOUR.match(look.tie):
         raise StickDataError(f"tie must be a #rrggbb colour or None, got {look.tie!r}")
+    if look.apron is not None and not COLOUR.match(look.apron):
+        raise StickDataError(f"apron must be a #rrggbb colour or None, got {look.apron!r}")
+    if look.cap is not None and not COLOUR.match(look.cap):
+        raise StickDataError(f"cap must be a #rrggbb colour or None, got {look.cap!r}")
 
 
 @dataclass(frozen=True)
@@ -914,8 +992,8 @@ def _limb(cv: Canvas, parent, points: Sequence[Point], width: float):
     return shape(cv, parent, d, sw=width, stroke=cv.ink)
 
 
-def _body(cv: Canvas, parent, pose: RigPose, tie: str | None = None) -> None:
-    """Far limbs, torso (and its tie), near limbs: one stroked path each; a foot is a short run forward."""
+def _body(cv: Canvas, parent, pose: RigPose, tie: str | None = None, apron: str | None = None) -> None:
+    """Far limbs, torso (its apron, then its tie), near limbs: one stroked path each; a foot is a short run forward."""
     shoulder = (pose.neck[0] - 4, pose.neck[1] + 34)
     for i, width in ((0, LIMB_FAR), (1, LIMB)):
         knee, foot = pose.knees[i], pose.feet[i]
@@ -923,6 +1001,10 @@ def _body(cv: Canvas, parent, pose: RigPose, tie: str | None = None) -> None:
         _limb(cv, parent, [shoulder, pose.elbows[i], pose.hands[i]], width)
         if i == 0:
             _limb(cv, parent, [pose.neck, pose.hip], LIMB)
+            if apron is not None:
+                bib, strap = _apron(pose.neck, pose.hip)
+                shape(cv, parent, strap, sw=5, stroke=cv.ink)
+                shape(cv, parent, bib, apron, sw=4, stroke=cv.ink)
             if tie is not None:
                 shape(cv, parent, _tie(pose.neck, pose.hip), tie, sw=4, stroke=cv.ink)
 
@@ -941,6 +1023,24 @@ def _tie(neck: Point, hip: Point) -> str:
     )
 
 
+def _apron(neck: Point, hip: Point) -> tuple[str, str]:
+    """A shop apron along the torso: the bib and skirt as one outline, and the strap around the neck."""
+    length = math.dist(neck, hip)
+    u = ((hip[0] - neck[0]) / length, (hip[1] - neck[1]) / length)
+    n = (-u[1], u[0])
+
+    def at(along: float, across: float) -> str:
+        return f"{neck[0] + u[0] * along + n[0] * across:.1f} {neck[1] + u[1] * along + n[1] * across:.1f}"
+
+    bot = length + 96
+    bib = (
+        f"M {at(46, -30)} L {at(46, 30)} L {at(length * 0.55, 34)} L {at(length * 0.62, 58)} L {at(bot, 64)} "
+        f"L {at(bot, -64)} L {at(length * 0.62, -58)} L {at(length * 0.55, -34)} Z"
+    )
+    strap = f"M {at(46, -26)} L {at(4, -16)} L {at(4, 16)} L {at(46, 26)}"
+    return bib, strap
+
+
 def _head(cv: Canvas, parent, look: Look, r: float = HEAD_R) -> None:
     """A round head with its shade, outline and hair; features go on top."""
     if look.hair == "bun":
@@ -952,6 +1052,20 @@ def _head(cv: Canvas, parent, look: Look, r: float = HEAD_R) -> None:
     cv.ellipse(parent, -r, -r, 2 * r, 2 * r, cv.clear, stroke=cv.ink, sw=7)
     if look.hair in STRAND_HAIR:
         shape(cv, parent, HAIR[look.hair], sw=6, stroke=cv.ink)
+    if look.cap is not None:
+        _cap(cv, parent, look.cap)
+
+
+CAP_BAND, CAP_BADGE = "#111111", "#e3b23c"
+
+
+def _cap(cv: Canvas, parent, colour: str) -> None:
+    """A pilot's cap on a head of radius :data:`HEAD_R`: the crown, the black band, the visor toward the look and
+    the gold badge."""
+    shape(cv, parent, "M -90 -48 Q -98 -122 -8 -136 Q 92 -140 104 -66 L 94 -46 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -92 -60 Q 0 -74 98 -60 L 96 -40 Q 0 -54 -90 -42 Z", CAP_BAND, 4, stroke=cv.ink)
+    shape(cv, parent, "M 22 -44 Q 96 -50 138 -30 Q 84 -22 22 -32 Z", CAP_BAND, 4, stroke=cv.ink)
+    oval(cv, parent, -6, -110, 26, 20, CAP_BADGE)
 
 
 def _glasses(cv: Canvas, parent) -> None:
@@ -1098,7 +1212,7 @@ def rig(
     spans = _spans(keys, end)
     for k, a, b in spans:
         body = _group(cv, g)
-        _body(cv, body, poses[k.pose], look.tie)
+        _body(cv, body, poses[k.pose], look.tie, look.apron)
         _gate(cv, body, a, b, end)
     hx, hy = poses[keys[0].pose].head
     head = _group(cv, g, x=hx, y=hy)

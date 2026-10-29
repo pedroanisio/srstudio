@@ -118,6 +118,37 @@ def test_moves_tell_a_crash_a_punch_in_and_a_push_apart_and_mark_the_camera():
     ]
 
 
+def test_moves_inside_a_sequence_are_placed_on_the_episode_clock():
+    cv = canvas()
+    shots = cv.comp.add_sequence(id="shots", start=1, timeGap=0.5)
+    first = shots.add_group(id="shot-01", end=2)
+    second = shots.add_group(id="shot-02", start=0.25, end=3)  # its contents keep their clock: shifted by the slot
+    shots.add_transition(type="crossfade", from_="shot-01", to="shot-02", duration=0.3)  # moves no shot
+    for shot, at in ((first, 0.5), (second, 1.0)):
+        frame = cv.group(shot, f"{shot.id}-camera")
+        camera.crash_zoom(cv, frame, at, 1.4)
+    open_ended = shots.add_group(id="shot-03")  # placed, but with no end what follows it cannot be
+    marked = shots.add_group(id="shot-04", startMarker="m", end=1)  # the engine places it on its marker
+    after = shots.add_group(id="shot-05", end=1)
+    for shot in (open_ended, marked, after):
+        camera.crash_zoom(cv, cv.group(shot, f"{shot.id}-camera"), 0.5, 1.4)
+    found = {m.group: m.start for m in craft.moves(document(cv)) if m.ratio > 1}
+    assert found == {
+        "shot-01-camera": 1.5,
+        "shot-02-camera": 1 + 2 + 0.5 + 1.0,
+        "shot-03-camera": 1 + 2 + 0.5 + 3 + 0.5 + 0.5,
+        "shot-04-camera": 0.5,  # on its own clock: craft does not resolve markers
+        "shot-05-camera": 0.5,
+    }
+    assert all(m.camera for m in craft.moves(document(cv)))
+
+
+def test_a_sequence_time_that_is_not_a_number_is_a_typed_error():
+    doc = b'<scene><sequence id="shots" timeGap="soon"><group id="shot-01" end="1"/></sequence></scene>'
+    with pytest.raises(craft.CraftError, match="timeGap"):
+        craft.moves(doc)
+
+
 def test_a_near_instant_step_is_a_cut_and_a_spin_is_not_a_zoom():
     cv = canvas()
     cut = [(0, 1), (7.335, 1), (7.336, 1.62)]  # a 1 ms linear step: the cut from a wide to a close-up
@@ -148,6 +179,18 @@ def test_lines_come_from_the_dialogue_or_the_narration(tmp_path):
     assert craft.lines(tmp_path) == [(0.0, 1.25), (4.0, 5.0)]
 
 
+def test_lines_come_from_the_takes_timeline_without_its_effects(tmp_path):
+    items = [
+        {"id": "01", "actor": "ana", "start": 0.0, "speech_duration": 2.0, "duration": 2.3},
+        {"id": "02", "actor": "sfx", "start": 2.3, "speech_duration": 0, "duration": 1.2},  # an effect, not a line
+        {"id": "03", "actor": "bo", "start": 3.5, "speech_duration": 1.0, "duration": 2.4},  # held 1.4 s after it
+        {"id": "04", "actor": "ana", "start": 5.9, "speech_duration": 0.5, "duration": 0.8},
+    ]
+    (tmp_path / "timeline.json").write_text(json.dumps({"items": items}))
+    assert craft.lines(tmp_path) == [(0.0, 2.0), (3.5, 4.5), (5.9, 6.4)]
+    assert craft.pauses(craft.lines(tmp_path), craft.PAUSE) == [(2.0, 3.5), (4.5, 5.9)]
+
+
 @pytest.mark.parametrize(
     "name, data",
     [
@@ -156,6 +199,10 @@ def test_lines_come_from_the_dialogue_or_the_narration(tmp_path):
         ("dialogue.json", json.dumps({"phrases": [{"start": 2, "end": 1}]})),
         ("narration.json", json.dumps({"items": "lines"})),
         ("narration.json", json.dumps({"items": [{"phase": "line", "start": 1}]})),
+        ("timeline.json", json.dumps({"items": {"01": {}}})),
+        ("timeline.json", json.dumps({"items": ["take"]})),
+        ("timeline.json", json.dumps({"items": [{"start": 1}]})),
+        ("timeline.json", json.dumps({"items": [{"start": 1, "speech_duration": -1}]})),
     ],
 )
 def test_unreadable_line_times_are_a_typed_error(tmp_path, name, data):

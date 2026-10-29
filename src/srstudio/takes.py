@@ -63,6 +63,7 @@ from .voice import (
     Voice,
     VoiceSettings,
     check_transcript,
+    normalize_words,
 )
 
 __all__ = ["Bed", "FONT", "Script", "Take", "TakesError", "main", "record", "sha256_of"]
@@ -82,7 +83,8 @@ class Take:
     """One take: a spoken line (``actor`` is a voice role), or an effect (``actor`` is ``"sfx"``) with the prompt
     that generates it, its requested length and the most of it kept. ``hold`` is silence kept after the clip,
     still inside the take; ``speed`` overrides the voice's pace for this take; ``extra`` is copied into the
-    take's timeline item (an episode's own fields, such as its beat)."""
+    take's timeline item (an episode's own fields, such as its beat); ``heard`` lists transcripts the operator
+    accepted for this line besides its own words (a homophone speech-to-text cannot tell apart)."""
 
     id: str
     actor: str
@@ -96,6 +98,7 @@ class Take:
     longest: float = 0.0
     peak: float = VOICE_PEAK
     extra: Mapping[str, Any] = field(default_factory=dict)
+    heard: tuple[str, ...] = ()
 
     @property
     def is_effect(self) -> bool:
@@ -126,6 +129,7 @@ class Script:
     bed: Bed | None = None
     fps: int = 24
     language: str = "en-US"
+    font: tuple[str, str] = FONT  # the caption font file and its licence, copied into the project by main
 
     def settings_for(self, take: Take) -> VoiceSettings:
         base = self.settings[take.actor]
@@ -140,6 +144,8 @@ class Script:
         for role in self.voices:
             if role not in self.settings:
                 raise TakesError(f"{self.title}: no settings for {role}")
+        if len(self.font) != 2 or not all(isinstance(name, str) and name for name in self.font):
+            raise TakesError(f"{self.title}: font is (font file, licence file), got {self.font!r}")
         if isinstance(self.fps, bool) or not isinstance(self.fps, int) or self.fps <= 0:
             raise TakesError(f"{self.title}: fps must be a positive integer, got {self.fps!r}")
         ids = [take.id for take in self.takes]
@@ -159,6 +165,8 @@ def _check_take(script: Script, take: Take) -> None:
         raise TakesError(f"{where}: unknown shot {take.shot!r}")
     if not (math.isfinite(take.hold) and take.hold >= 0):
         raise TakesError(f"{where}: hold must be non-negative, got {take.hold}")
+    if take.is_effect and take.heard:
+        raise TakesError(f"{where}: an effect is not transcribed, so it has no accepted hearing")
     if take.is_effect:
         if not (take.prompt and SFX_SECONDS[0] <= take.seconds <= SFX_SECONDS[1] and 0 < take.longest <= take.seconds):
             raise TakesError(f"{where}: an effect needs a prompt, seconds in {SFX_SECONDS} and a kept length")
@@ -167,6 +175,9 @@ def _check_take(script: Script, take: Take) -> None:
         return
     if not take.text.strip():
         raise TakesError(f"{where}: a spoken line needs text")
+    for text in take.heard:
+        if not normalize_words(text) or normalize_words(text) == normalize_words(take.text):
+            raise TakesError(f"{where}: an accepted hearing must be other words than the line, got {text!r}")
     try:
         script.settings_for(take)
     except ValueError as exc:
@@ -302,9 +313,10 @@ def record(
         else:
             spoken = client.synthesize(take.text, script.voices[take.actor], script.settings_for(take))
             transcript = client.transcribe(spoken.wav)
-            heard.append({"id": take.id, "role": take.actor, "expected": take.text, "heard": transcript.text})
+            line = {"id": take.id, "role": take.actor, "expected": take.text, "heard": transcript.text}
+            heard.append(line | ({"accepted": list(take.heard)} if take.heard else {}))
             try:
-                check_transcript(transcript, take.text)
+                check_transcript(transcript, take.text, accepted=take.heard)
             except TranscriptMismatch as exc:
                 failures.append(f"take {take.id}: {exc}")
                 continue
@@ -338,7 +350,7 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
     """``python3 EPISODE_audio.py PROJECT [--font DIR] [--ffmpeg PATH]``: record ``script`` into PROJECT."""
     parser = argparse.ArgumentParser(description=script.title)
     parser.add_argument("project", type=Path)
-    parser.add_argument("--font", type=Path, help=f"folder holding {' and '.join(FONT)} to copy")
+    parser.add_argument("--font", type=Path, help=f"folder holding {' and '.join(script.font)} to copy")
     parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
     args = parser.parse_args(argv)
     env = os.environ if env is None else env
@@ -348,10 +360,10 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
     if args.font:
-        for name in FONT:
+        for name in script.font:
             shutil.copyfile(args.font / name, assets / name)
-    if not (assets / FONT[0]).exists():
-        raise SystemExit(f"{assets / FONT[0]} is missing; pass --font DIR")
+    if not (assets / script.font[0]).exists():
+        raise SystemExit(f"{assets / script.font[0]} is missing; pass --font DIR")
     key = env.get(KEY_ENV, "")
     cache = assets / "elevenlabs"
     client = ElevenLabsClient(cache, key, model=MODEL, seed=script.seed)

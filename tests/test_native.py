@@ -52,6 +52,40 @@ def test_cues_from_takes_place_each_word_on_the_scene_clock_and_skip_effects():
     assert cues[1].end == pytest.approx(4.45)
 
 
+def long_take(text="Why are the walls of this trash compactor closing in on us today?", start=10.0):
+    from srstudio.timeline import Take
+
+    words = tuple({"text": w, "start": i * 0.3, "end": i * 0.3 + 0.25} for i, w in enumerate(text.split()))
+    return Take("01", "narrator", "", text, start, 6.0, words=words)
+
+
+def test_cues_fitted_to_a_look_split_a_long_take_at_words_into_cues_that_wrap_inside_it():
+    look = CaptionLook(max_chars=24, max_lines=2)
+    take = long_take()
+    cues = native.cues_from_takes([take], look=look)
+    assert len(cues) > 1
+    assert " ".join(c.text for c in cues) == take.text  # every word, once, in order
+    assert all(len(native.wrap(c.text, look.max_chars, look.max_words)) <= look.max_lines for c in cues)
+    assert [w for c in cues for w in c.words] == list(native.cues_from_takes([take])[0].words)
+    for c in cues:
+        assert (c.start, c.end) == (c.words[0].start, c.words[-1].end)
+    assert all(a.end <= b.start for a, b in zip(cues, cues[1:], strict=False))
+
+
+def test_a_take_that_fits_stays_one_cue_and_without_a_look_nothing_is_split():
+    short = long_take("Stop the walls!")
+    assert native.cues_from_takes([short], look=CaptionLook()) == native.cues_from_takes([short])
+    assert len(native.cues_from_takes([long_take()])) == 1
+
+
+def test_a_take_without_word_timings_cannot_be_split_to_fit():
+    from srstudio.timeline import Take
+
+    bare = Take("01", "narrator", "", "Why are the walls of this trash compactor closing in on us today?", 0, 4.0)
+    with pytest.raises(NativeError, match="word timings"):
+        native.cues_from_takes([bare], look=CaptionLook())
+
+
 def test_cues_from_phrases_carry_the_caption_text_without_words(project):
     t = Timeline.load(project / "dialogue.json")
     cues = native.cues_from_phrases(t.phrases)
@@ -199,7 +233,7 @@ def test_a_transition_joins_two_neighbouring_shots():
         ("shot-a", "shot-x", {}, "no shot"),
         ("shot-b", "shot-a", {}, "follow"),
         ("shot-a", "shot-b", dict(duration=0), "duration"),
-        ("shot-a", "shot-b", dict(duration=2.0), "longer"),
+        ("shot-a", "shot-b", dict(duration=2.5), "longer"),  # shot-a lasts 2.2 s, shot-b 4.0 s
     ],
 )
 def test_a_transition_that_cannot_join_the_shots_is_refused(a, b, kw, match):
@@ -269,9 +303,12 @@ def full_scene(tmp_path: Path, mode="burn") -> Path:
     return path
 
 
-def frame(path: Path, t: float) -> tuple[bytes, int]:
-    png = path.with_name(f"t{t}.png")
-    subprocess.run([str(engine()), "render", "-t", str(t), "-o", str(png), str(path)], check=True, capture_output=True)
+def frame(path: Path, t: float, variant: str | None = None) -> tuple[bytes, int]:
+    png = path.with_name(f"t{t}{variant or ''}.png")
+    picked = ["--variant", variant] if variant else []
+    subprocess.run(
+        [str(engine()), "render", *picked, "-t", str(t), "-o", str(png), str(path)], check=True, capture_output=True
+    )
     raw = subprocess.run(
         ["ffmpeg", "-loglevel", "error", "-i", str(png), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
         check=True,
@@ -370,6 +407,22 @@ def test_the_engine_accepts_an_episode_with_native_captions_in_its_safe_area(tmp
     assert any(near(p, CaptionLook().active) for p in pixels(raw, width, box))
 
 
+def test_native_captions_hidden_on_the_cover_leave_its_still_clean_and_the_video_captioned(tmp_path):
+    ep = takes_episode(tmp_path)
+    shots = ep.sequence()
+    for take in ep.takes:
+        ep.shot(shots, take)
+    ep.hide_on_cover(ep.native_captions())
+    out = ep.finish(tmp_path / "scene.xml")
+    check = subprocess.run([str(engine()), "validate", "--deny-warnings", str(out)], capture_output=True, text=True)
+    assert check.returncode == 0, check.stdout + check.stderr
+    region = VERTICAL.region(ep.spec.width, ep.spec.height)
+    box = (int(region.x0), int(region.y0), int(region.x1), int(region.y1))
+    sung = [near(p, CaptionLook().active) for p in pixels(*frame(out, 4.4), box)]
+    cover = [near(p, CaptionLook().active) for p in pixels(*frame(out, 4.4, "cover"), box)]
+    assert any(sung) and not any(cover)
+
+
 # -- the feature map --------------------------------------------------------------------------------------------------
 def test_the_engine_feature_map_names_real_apis_and_real_tests():
     import importlib
@@ -397,3 +450,14 @@ def test_the_engine_feature_map_names_real_apis_and_real_tests():
         for test in f["verified_by"]:
             path, _, func = test.partition("::")
             assert f"def {func}(" in (repo / path).read_text(), test
+
+
+def test_a_shot_end_is_its_length_so_a_transition_fits_shots_after_the_first():
+    # Each child of a <sequence> lasts its own `end` (rendered: two 1 s shots show the second at 1.5 s).
+    scene, cv, _ = canvas()
+    seq = cv.comp.add_sequence(id="shots")
+    for name, length in (("a", 1.5), ("b", 1.5), ("c", 1.0)):
+        seq.add_group(id=f"shot-{name}", end=length)
+    native.transition(seq, "shot-b", "shot-c", "crossfade", duration=0.3)
+    with pytest.raises(NativeError, match="longer"):
+        native.transition(seq, "shot-a", "shot-b", "crossfade", duration=1.6)

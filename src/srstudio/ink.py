@@ -143,7 +143,8 @@ def mouth(cv: Canvas, parent, take: Take, *, x=274, y=295, style: PhonemeStyle =
     "waiting, pointing or head-grabbing arms",
     episodes=("printer",),
 )
-def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_after: float = 1.2):
+def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_after: float = 1.2, shades: bool = False):
+    """The doodle at ``x, y``; ``shades`` pushes a pair of sunglasses up on his forehead."""
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     # Shoulders and torso, shaded on the side away from the light.
     path(cv, g, "M 112 332 Q 70 428 61 640 L 323 640 Q 318 431 275 350 Z", cv.shade)
@@ -192,6 +193,10 @@ def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_af
         path(cv, head, "M 197 212 L 241 211 M 327 201 L 368 201", sw=2.3)
     else:
         path(cv, head, "M 197 216 L 242 216 M 325 216 L 365 216", sw=2.2)
+    if shades:
+        ellipse(cv, head, 184, 116, 78, 50, cv.ink, sw=2.4)
+        ellipse(cv, head, 304, 112, 78, 50, cv.ink, sw=2.4)
+        path(cv, head, "M 262 138 Q 283 124 304 136", sw=3)
     mouth(cv, head, take, speaks=take.actor == "human")
     return g
 

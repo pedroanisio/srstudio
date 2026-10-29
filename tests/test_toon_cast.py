@@ -1,6 +1,7 @@
 """The dog, the frog, the bear and the rabbit: brush-drawn Toon characters with the cat's vocabulary and contract,
 the polish of the later two (brows, highlights, blush, teeth, whiskers, blinks) and the lip sync they all take."""
 
+import math
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -248,3 +249,28 @@ def test_blink_times_fall_inside_the_run_and_the_lids_are_keyed():
         cv3, cv3.comp, toon.parse_poses([{"start": 0.0, "eyes": "closed", "mouth": "flat", "arms": "desk"}]), 3.0
     )
     assert runs_of(cv3)[0].findall("group") == []
+
+
+# -- the headset ------------------------------------------------------------------------------------------------------
+@pytest.mark.parametrize("look", [toon_cast.DOG, toon_cast.FROG, toon_cast.BEAR, toon_cast.RABBIT])
+def test_a_headset_sits_over_the_head_with_its_mic_at_the_mouth(look):
+    layers = toon_cast.headset(look)
+    top = min(y for _, y in look.silhouette)
+    left = min(x for x, y in look.silhouette if y < look.mouth[1])
+    right = max(x for x, y in look.silhouette if y < look.mouth[1])
+    band = brush.bounds(layers[0][0])
+    assert top - 16 < band[1] < top and left - 20 < band[0] and band[2] < right + 20  # just over the crown
+    mic = brush.bounds(layers[-1][0])
+    cx, cy = (mic[0] + mic[2]) / 2, (mic[1] + mic[3]) / 2
+    assert math.dist((cx, cy), look.mouth) < look.mouth_w  # the mic hangs by the mouth
+    assert len(toon_cast.headset(look, mic=False)) < len(layers)
+    assert all(c in ("ink", toon_cast.HEADSET, toon_cast.HEADSET_LIGHT) for _, c in layers)
+
+
+def test_a_headset_is_a_sticker_and_a_registered_toon_prop():
+    stuck = toon_cast.figure_shapes(toon_cast.DOG, "half", "flat", "desk", stickers=toon_cast.headset(toon_cast.DOG))
+    assert len(stuck) == len(toon_cast.figure_shapes(toon_cast.DOG, "half", "flat", "desk")) + len(
+        toon_cast.headset(toon_cast.DOG)
+    )
+    entry = {e.name: e for e in registry.entries()}["toon-headset"]
+    assert entry.kind == "prop" and entry.style == "toon"

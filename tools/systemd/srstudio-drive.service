@@ -12,3 +12,4 @@ ExecStartPre=/bin/sh -c 'n=0; while [ "$$n" -lt 60 ] && [ -n "$$(find %h/worskpa
 ExecStart=%h/worskpace/.venv/bin/python3 episodes/publish_drive.py
 SuccessExitStatus=1
 Environment=SRSTUDIO_PACKAGES=%h/worskpace/generated/packages
+Environment=SRSTUDIO_ENGINE=%h/worskpace/generated/bin/scene-render

@@ -540,6 +540,45 @@ def _place(layers: list[Layer], arms: str) -> list[Layer]:
 
 
 NOTE_PAPER = "#fff3a3"
+HEADSET = "#2f3442"
+HEADSET_LIGHT = "#6b7385"
+
+
+@register(
+    "prop",
+    "toon-headset",
+    summary="A call-centre headset for any brush-drawn character: a band over the crown, a cup and a mic boom",
+    style="toon",
+)
+def headset(look: Look, mic: bool = True) -> list[Layer]:
+    """A headset fitted to ``look``: a band arching just over the crown from cup to cup, ear cups at eye height on
+    the head's sides and, with ``mic``, a boom from the left cup to a mic beside the mouth. Reference pixels; stick
+    it on the figure with ``stickers=`` so it leans and sighs with it."""
+    top = min(y for _, y in look.silhouette)
+    head = [x for x, y in look.silhouette if y < look.mouth[1]]
+    left, right = min(head), max(head)
+    ear_y = (look.eyes[0][1] + look.eyes[1][1]) / 2
+    crown = top - 6.0
+    arc = []
+    for k in range(13):
+        s = k / 12
+        arc.append((left + (right - left) * s, crown + (ear_y - 20.0 - crown) * (2 * s - 1) ** 2))
+    layers: list[Layer] = [
+        (brush.stroke(arc, 10.0, brush.EVEN, steps=4), "ink"),
+        (brush.stroke(arc, 5.0, brush.EVEN, steps=4), HEADSET),
+    ]
+    for cx in (left + 2.0, right - 2.0):
+        layers.append((brush.ellipse(cx, ear_y, 17.0, 25.0), "ink"))
+        layers.append((brush.ellipse(cx, ear_y, 13.0, 21.0), HEADSET))
+        layers.append((brush.ellipse(cx - 3.0, ear_y - 8.0, 4.0, 7.0), HEADSET_LIGHT))
+    if mic:
+        end = (look.mouth[0] - look.mouth_w * 0.75, look.mouth[1] + 4.0)
+        boom = [(left + 6.0, ear_y + 18.0), ((left + end[0]) / 2, end[1] + 6.0), end]
+        layers.append((brush.stroke(boom, 6.0, brush.EVEN, steps=4), "ink"))
+        layers.append((brush.stroke(boom, 2.5, brush.EVEN, steps=4), HEADSET_LIGHT))
+        layers.append((brush.ellipse(end[0], end[1], 11.0, 9.0), "ink"))
+        layers.append((brush.ellipse(end[0], end[1], 8.0, 6.0), HEADSET_LIGHT))
+    return layers
 
 
 def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, paper: str = NOTE_PAPER) -> list[Layer]:

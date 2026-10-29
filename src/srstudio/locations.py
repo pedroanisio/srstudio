@@ -8,7 +8,7 @@ knowing the stacking. Slots receive the set's group and return nothing.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from . import props, signature
 from .canvas import Canvas
@@ -196,6 +196,14 @@ def cafe(
     return g
 
 
+PARK_SEAT_Y = 1262  # where a seated actor's torso meets the bench, under the backrest and above the seat's edge
+
+
+def park_seat_y(bottom: float, scale: float) -> float:
+    """The ``y`` that seats an actor whose torso ends at ``bottom`` (rig units) on the park bench at ``scale``."""
+    return PARK_SEAT_Y - bottom * scale
+
+
 @register(
     "location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench", episodes=("05",)
 )
@@ -252,9 +260,11 @@ def conference_room(
     shots=None,
     rising: bool | None = True,
     on_wall: Slot = None,
+    speaker_talk: Sequence[tuple[float, float]] = (),
 ):
     """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend, and
-    ``None`` leaves the wall bare for ``on_wall``, which draws over the wall and behind the light and the chair."""
+    ``None`` leaves the wall bare for ``on_wall``, which draws over the wall and behind the light and the chair.
+    ``speaker_talk`` lights the speakerphone in the spans a caller speaks (:func:`props.speakerphone`)."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots:
@@ -298,7 +308,7 @@ def conference_room(
     signature.code(cv, props.papers(cv, table, 70, 1290, 0.82, -7), 20, 10, 11, color="#5C625D")
     cv.path(table, "M300 1330 L392 1268", stroke="#1F2B4A", sw=9)  # a pen across the notes
     cv.path(table, "M300 1330 L312 1322", stroke="#C9A24E", sw=9)
-    props.speakerphone(cv, table, 560, 1330, id=f"{id}-speakerphone")
+    props.speakerphone(cv, table, 560, 1330, id=f"{id}-speakerphone", talk=speaker_talk)
     mug = cv.group(table, f"{id}-mug", x=850, y=1250)
     cv.ellipse(mug, -54, 92, 120, 22, "#2B1C12", opacity=0.25)
     cv.path(mug, "M44 22 Q86 24 82 56 Q78 82 42 80", stroke=ink, sw=12)
@@ -398,4 +408,157 @@ def reception(
     signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
     _call(on_desk, desk)
     _call(at_desk, g)
+    return g
+
+
+ELEVATOR_FLOOR = 1760  # where a standing rider's soles meet the cab floor
+ELEVATOR_BACK = (150, 230, 930, 1500)  # the back wall: left x, top y, right x, the floor line
+DOOR_X, DOOR_TOP, DOOR_W = 340, 560, 200  # the doors' left edge, top, and each panel's width (they meet at x 540)
+DOOR_SLIDE = 0.45  # seconds a door takes to slide open or shut
+FLOOR_MAX, BUTTONS = 99, 12  # the display's two digits; the panel's buttons, floors 1 to 12
+SEGMENTS = {  # seven-segment digits: a top, b top right, c bottom right, d bottom, e bottom left, f top left, g middle
+    "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc",
+    "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg",
+}  # fmt: skip
+_SEG = {  # x, y, w, h of each segment in a 34 × 60 cell
+    "a": (4, 0, 26, 6), "b": (28, 4, 6, 24), "c": (28, 32, 6, 24), "d": (4, 54, 26, 6),
+    "e": (0, 32, 6, 24), "f": (0, 4, 6, 24), "g": (4, 27, 26, 6),
+}  # fmt: skip
+LED, LED_OFF = "#FF5A3C", "#3A1E1A"
+
+
+def elevator_stand_y(bottom: float, scale: float) -> float:
+    """The ``y`` that stands an office actor with ``legs="standing"`` (torso ``bottom``) on the cab floor."""
+    from .cast import OfficeActor
+
+    return ELEVATOR_FLOOR - (bottom + OfficeActor.STANDING_LEGS) * scale
+
+
+def _check_floors(floors) -> None:
+    if not floors or floors[0][0] != 0:
+        raise ValueError("the floor display needs (second, floor) pairs starting at 0")
+    for (a, _), (b, _) in zip(floors, floors[1:], strict=False):
+        if not b > a:
+            raise ValueError(f"floor changes must be in time order: {a} then {b}")
+    for _, n in floors:
+        if not (isinstance(n, int) and 1 <= n <= FLOOR_MAX):
+            raise ValueError(f"a floor is a whole number 1 to {FLOOR_MAX}, got {n!r}")
+
+
+def _check_doors(doors) -> None:
+    last = -math.inf
+    for a, b in doors:
+        if not (0 <= a < b) or a < last:
+            raise ValueError(f"doors open and shut in order, each span after the last one shut: {(a, b)!r}")
+        last = b + DOOR_SLIDE
+
+
+def _digit(cv: Canvas, parent, ch: str, x, y, id: str):
+    g = cv.group(parent, id, x=x, y=y)
+    for seg in SEGMENTS[ch]:
+        sx, sy, sw, sh = _SEG[seg]
+        cv.rect(g, sx, sy, sw, sh, LED, radius=2)
+    return g
+
+
+@register(
+    "location",
+    "elevator",
+    summary="Elevator cab: brushed steel walls, sliding doors onto a hallway, a seven-segment floor display, a "
+    "button panel with the rider's floor lit, a ceiling light and handrails",
+)
+def elevator(
+    cv: Canvas,
+    parent,
+    riders: Slot = None,
+    on_floor: Slot = None,
+    id="location-elevator",
+    shots=None,
+    floors: Sequence[tuple[float, int]] = ((0.0, 1),),
+    doors: Sequence[tuple[float, float]] = (),
+    lit: int | None = None,
+    going: str = "up",
+):
+    """A cab seen from inside, the doors on the back wall: ``riders`` stand in front of them facing the camera
+    (office actors with ``legs="standing"`` at :func:`elevator_stand_y`), and ``on_floor`` draws in front of the
+    riders (a pigeon walking in). ``floors`` is ``(second, floor)`` from 0: the display shows each floor until the
+    next; ``doors`` are ``(open, shut)`` spans, each door sliding :data:`DOOR_W` behind the wall over
+    :data:`DOOR_SLIDE` seconds onto the hallway; ``lit`` lights a floor's button (1 to :data:`BUTTONS`); ``going``
+    points the display's arrow ``"up"`` (the default) or ``"down"``."""
+    _check_floors(floors)
+    _check_doors(doors)
+    if lit is not None and not (isinstance(lit, int) and 1 <= lit <= BUTTONS):
+        raise ValueError(f"lit is a button, 1 to {BUTTONS}, got {lit!r}")
+    if going not in ("up", "down"):
+        raise ValueError(f"going is \"up\" or \"down\", got {going!r}")
+    ink = cv.ink
+    left, top, right, base = ELEVATOR_BACK
+    g = cv.group(parent, id)
+    if shots:
+        cv.gate(g, shots)
+    steel = cv.grad("elevator-steel", [(0, "#AEB6BA"), (0.5, "#D5DADB"), (1, "#A3ABAF")], (0, 0, 1, 0))
+    side = cv.grad("elevator-side", [(0, "#8E979C"), (1, "#B9C0C2")], (0, 0, 1, 0))
+    cv.path(g, f"M0 0 L1080 0 L{right} {top} L{left} {top}Z", "#E7E9E6", ink, 3)  # the ceiling
+    cv.path(g, f"M0 0 L{left} {top} L{left} {base} L0 1720Z", side, ink, 3)
+    cv.path(g, f"M1080 0 L{right} {top} L{right} {base} L1080 1720Z", side, ink, 3)
+    floor = cv.grad("elevator-floor", [(0, "#5C5550"), (1, "#3E3935")], (0, 0, 0, 1))
+    cv.path(
+        g, f"M{left} {base} L{right} {base} L1080 1720 L1080 2600 L0 2600 L0 1720Z", floor, ink, 3
+    )  # deep: close-ups
+    for k in range(1, 5):  # the floor's diamond plate seams, in perspective
+        xb, xf = left + (right - left) * k / 5, 1080 * k / 5
+        cv.line(g, xb, base, xf, 1920, "#2E2A27", 2, opacity=0.5)
+    # the hallway through the doorway
+    cv.rect(g, DOOR_X, DOOR_TOP, 2 * DOOR_W, base - DOOR_TOP, "#EADFC8")
+    cv.rect(g, DOOR_X, base - 120, 2 * DOOR_W, 120, "#8C7A63")
+    cv.rect(g, DOOR_X + 60, DOOR_TOP + 120, 120, 150, "#F7F1E3", ink, 3)  # a print on the hallway wall
+    cv.path(g, f"M{DOOR_X + 72} {DOOR_TOP + 250} L{DOOR_X + 110} {DOOR_TOP + 180} L{DOOR_X + 168} {DOOR_TOP + 250}Z",
+            "#9DB7A5", ink, 2)  # fmt: skip
+    signature.cactus(cv, g, DOOR_X + 300, base - 120, 0.5)  # on the hallway floor, seen when the doors open
+    # the doors, then the wall around them, so an open door slides behind it
+    leaves = cv.group(g, f"{id}-doors")
+    for name, x0, sign in (("left", DOOR_X, -1), ("right", DOOR_X + DOOR_W, 1)):
+        leaf = cv.group(leaves, f"{id}-door-{name}")
+        cv.rect(leaf, x0, DOOR_TOP, DOOR_W, base - DOOR_TOP, steel, ink, 3)
+        cv.line(leaf, x0 + DOOR_W / 2, DOOR_TOP + 30, x0 + DOOR_W / 2, base - 30, "#FFFFFF", 4, opacity=0.35)
+        if doors:
+            keys = [(0.0, 0.0)]
+            for a, b in doors:
+                keys += [(a, 0.0), (a + DOOR_SLIDE, sign * DOOR_W), (b, sign * DOOR_W), (b + DOOR_SLIDE, 0.0)]
+            cv.keys(leaf, "x", keys, hold=False)
+    cv.rect(g, left, top, DOOR_X - left, base - top, steel, ink, 3)
+    cv.rect(g, DOOR_X + 2 * DOOR_W, top, right - DOOR_X - 2 * DOOR_W, base - top, steel, ink, 3)
+    cv.rect(g, DOOR_X, top, 2 * DOOR_W, DOOR_TOP - top, steel, ink, 3)
+    cv.rect(g, DOOR_X - 6, DOOR_TOP - 6, 2 * DOOR_W + 12, base - DOOR_TOP + 6, cv.clear, ink, 6)  # the frame
+    for x0, x1 in ((left, DOOR_X - 20), (DOOR_X + 2 * DOOR_W + 20, right)):  # the handrails
+        cv.rect(g, x0 + 10, 1150, x1 - x0 - 20, 16, "#C9CFD1", ink, 3, radius=8)
+    # the floor display above the doors
+    cv.rect(g, 470, 410, 140, 100, "#141414", ink, 4, radius=10)
+    cv.path(g, "M490 470 L506 440 L522 470Z" if going == "up" else "M490 440 L506 470 L522 440Z", LED)
+    for x in (540, 576):  # the unlit segments behind the digits
+        dim = cv.group(g, f"{id}-led-off-{x}", x=x, y=430)
+        for sx, sy, sw, sh in _SEG.values():
+            cv.rect(dim, sx, sy, sw, sh, LED_OFF, radius=2)
+    for n in sorted({n for _, n in floors}):
+        shown = cv.group(g, f"{id}-floor-{n}")
+        text = str(n)
+        for k, ch in enumerate(text):
+            _digit(cv, shown, ch, 576 - 36 * (len(text) - 1 - k), 430, f"{id}-floor-{n}-digit-{k}")
+        cv.keys(shown, "opacity", [(t, 1 if m == n else 0) for t, m in floors])
+    # the button panel on the right wall
+    panel = cv.group(g, f"{id}-panel")
+    cv.path(panel, "M968 760 L1040 740 L1040 1170 L968 1150Z", "#C4CACC", ink, 3)
+    for k in range(BUTTONS):
+        row, col = divmod(k, 2)
+        bx, by = 980 + col * 30, 1096 - row * 62 + col * 4
+        on = lit == k + 1
+        cv.ellipse(panel, bx, by, 22, 26, "#FFD27A" if on else "#E9ECEC", ink, 2)
+    signature.code(cv, panel, 972, 1186, 8, color="#5D6366")
+    light = cv.group(g, f"{id}-light")
+    cv.rect(g, 330, 70, 420, 70, "#FFFBEE", ink, 3, radius=10)  # the ceiling light
+    cv.path(light, f"M330 140 L750 140 L{right - 40} {base} L{left + 40} {base}Z", props.GLOW, cv.clear, 0,
+            opacity=0.16)  # fmt: skip
+    cv.ellipse(light, 300, 1560, 480, 70, props.GLOW, opacity=0.22)  # its pool on the floor
+    _call(riders, g)
+    _call(on_floor, g)
     return g

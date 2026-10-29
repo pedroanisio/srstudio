@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, TOON, Canvas, flat_counter, sketch, toon
+from srstudio import PEACH, TOON, Canvas, flat_counter, sketch, toon, toon_dinner
 from srstudio.narration import effect_cues, manifest_duration
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -280,3 +280,10 @@ def test_quick_question_refuses_events_its_props_cannot_do_and_lets_the_coffee_g
     ]
     # the answer is on the board from the first frame and the clock ends after it
     assert "9:45" in data.BOARD and sketch.events(sk.beats, "clock")[-2][1] == "09:48"
+
+
+def test_a_staging_stands_the_office_desk_in_front_unless_it_lays_another(mods):
+    build, data, *_ = mods
+    assert build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress).desk is toon.desk
+    laid = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, desk=toon_dinner.table)
+    assert laid.desk is toon_dinner.table

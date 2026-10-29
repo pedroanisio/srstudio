@@ -20,6 +20,9 @@ Five styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``
 * **Stick** (:data:`STICK`): stick figures in heavy ink, traced at 12 fps, on painted, flat-shaded sets, captions in
   white outlined text; portrait 1080×1920 at 24 fps; palette ``DAYLIGHT``. No mouth model: voice, if any, is
   narration over the captions.
+* **Saga** (:data:`SAGA`): a space-opera parody in heavy ink under night skies and glows, staged shot by shot from
+  recorded takes (:mod:`srstudio.saga_reel`), engine-native captions in Space Grotesk; portrait 1080×1920 at 24 fps
+  as a sequence of shots; palette ``VOID`` (``docs/decisions/0025-saga-style.md``).
 """
 
 from __future__ import annotations
@@ -29,8 +32,22 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal
 
-from .canvas import CAFE, DAYLIGHT, LINEN, MONO, OFFICE, PEACH, WARM, Palette, flat_counter, shared_counter
+from .canvas import (
+    CAFE,
+    DAYLIGHT,
+    LINEN,
+    MONO,
+    OFFICE,
+    PEACH,
+    PLASTIC,
+    VOID,
+    WARM,
+    Palette,
+    flat_counter,
+    shared_counter,
+)
 from .fonts import GoogleFont
+from .lipsync import SPEECH_MOUTH
 from .soundtrack import CAFE_MOUTH, INK_MOUTH, OFFICE_MOUTH, SOFT_MOUTH, MouthStyle, PhonemeStyle
 
 __all__ = [
@@ -44,6 +61,8 @@ __all__ = [
     "CEL",
     "STICK",
     "TOON",
+    "SAGA",
+    "GLOSS",
     "STYLES",
     "style_of_module",
 ]
@@ -204,7 +223,7 @@ INK = Style(
         policy="pinned",
     ),
     mouths={MONO.name: INK_MOUTH},
-    parts=("ink", "subtitles"),
+    parts=("ink", "ink_captcha", "ink_doorbell", "ink_phone", "ink_vacuum", "subtitles"),
     namer=shared_counter,
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn", minTextSize="2%"),
     mix=Mix(loudness="-14", bit_depth=None),
@@ -278,7 +297,7 @@ STICK = Style(
         google=GoogleFont("Inter", 700),
     ),
     mouths={},
-    parts=("stick", "stick_car"),
+    parts=("stick", "stick_airport", "stick_car", "stick_flat", "stick_gym", "stick_school", "stick_shop"),
     namer=partial(flat_counter, "n"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # no mouth model; narration and music are dubbed over the captions
@@ -308,13 +327,106 @@ TOON = Style(
         google=GoogleFont("Comic Neue", 700, italic=True),
     ),
     mouths={},
-    parts=("toon", "toon_cast", "toon_props", "toon_sets"),
+    parts=("toon", "toon_cast", "toon_dinner", "toon_props", "toon_sets"),
     namer=partial(flat_counter, "k"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # the expression is pose data; a voice is narration over the captions
 )
 
-STYLES: dict[str, Style] = {s.slug: s for s in (CUTOUT, INK, SOFT, CEL, STICK, TOON)}
+SAGA = Style(
+    slug="saga",
+    name="Saga",
+    summary="Pulp-poster space opera in heavy navy ink and gold rim light on deep space, read by a deadpan galactic "
+    "handbook; voiced, lip-synced portrait parodies cut as a shot sequence (ADR 0025)",
+    palettes=(VOID,),
+    width=1080,
+    height=1920,
+    fps=24,
+    timing="sequence",
+    dialogue="timeline.json",  # a srstudio.takes recording; saga_reel stages each take
+    audio=None,  # every take brings its own clip, plus a composed music bed
+    font=Font(
+        src="assets/space-grotesk-700.ttf",  # where srstudio.takes copies the font
+        id="space-grotesk",
+        family="Space Grotesk",
+        weight="700",
+        style="normal",
+        credit="Space Grotesk (Google Fonts)",
+        license="OFL-1.1",
+        policy="pinned",
+        google=GoogleFont("Space Grotesk", 700),
+    ),
+    mouths={VOID.name: SPEECH_MOUTH},
+    parts=("saga", "saga_sets"),
+    namer=partial(flat_counter, "s"),
+    accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
+)
+
+# Collage: paper cut-outs in ink on painted sets, and one glossy porcelain toilet (ADR 0026)
+PAPER = Palette(ink="#1d1a22", white="#fffaf0", shade="#e94f37", name="paper", background="#f3e3c3")
+COLLAGE = Style(
+    slug="collage",
+    name="Collage",
+    summary="Mixed-media satire: paper cut-out people with hand-cut edges and drop shadows on painted sets, and "
+    "Flush, a glossy porcelain toilet with a paper head from an invented kids' show; voiced, lip-synced sketches "
+    "about grown-ups losing to brainrot (ADR 0026)",
+    palettes=(PAPER,),
+    width=1080,
+    height=1920,
+    fps=24,
+    timing="clock",
+    dialogue="script.json",  # timed caption cues, as the Toon sketches write them
+    audio=None,
+    font=Font(
+        src="assets/fonts/luckiest-guy-400.ttf",
+        id="luckiest-guy",
+        family="Luckiest Guy",
+        weight="400",
+        style="normal",
+        credit="Luckiest Guy (Google Fonts)",
+        license="Apache-2.0",
+        policy="pinned",
+        google=GoogleFont("Luckiest Guy", 400),
+    ),
+    mouths={},
+    parts=("collage", "collage_sets"),
+    namer=partial(flat_counter, "c"),
+    accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
+    silent=True,  # like the Toon: the expression is pose data, the voices are narration over the captions
+)
+
+# Gloss: glossy vinyl peg dolls in a pastel forever-plaza, hosted by a floating orb (ADR 0030)
+GLOSS = Style(
+    slug="gloss",
+    name="Gloss",
+    summary="Glossy vinyl peg dolls trapped in a pastel checkerboard forever-plaza, hosted by Sunny, a floating orb "
+    "with a screen face, in the deadpan of a facility announcement while a Joy Points board scores every small act; "
+    "voiced, lip-synced portrait satires cut as a shot sequence (ADR 0030)",
+    palettes=(PLASTIC,),
+    width=1080,
+    height=1920,
+    fps=24,
+    timing="sequence",
+    dialogue="timeline.json",  # a srstudio.takes recording; gloss_reel stages each take
+    audio=None,  # every take brings its own clip, plus a composed music bed
+    font=Font(
+        src="assets/fredoka-600.ttf",  # where srstudio.takes copies the font
+        id="fredoka",
+        family="Fredoka",
+        weight="600",
+        style="normal",
+        credit="Fredoka (Google Fonts)",
+        license="OFL-1.1",
+        policy="pinned",
+        google=GoogleFont("Fredoka", 600),
+    ),
+    mouths={PLASTIC.name: SPEECH_MOUTH},
+    parts=("gloss", "gloss_sets"),
+    namer=partial(flat_counter, "g"),
+    accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
+)
+
+STYLES: dict[str, Style] = {s.slug: s for s in (CUTOUT, INK, SOFT, CEL, STICK, TOON, SAGA, COLLAGE, GLOSS)}
 
 
 def style_of_module(module: str) -> str:
