@@ -21,7 +21,7 @@ import wave
 import xml.etree.ElementTree as ET
 from array import array
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass, fields
+from dataclasses import MISSING, asdict, dataclass, fields
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
@@ -159,6 +159,11 @@ def _strict(cls, data: object, where: str) -> dict:
     unknown = set(data) - names
     if unknown:
         raise GeneratedError(f"{where}: unknown field(s) {sorted(unknown)}")
+    missing = [
+        f.name for f in fields(cls) if f.default is MISSING and f.default_factory is MISSING and f.name not in data
+    ]
+    if missing:
+        raise GeneratedError(f"{where}: missing field(s) {missing}")
     return data
 
 
