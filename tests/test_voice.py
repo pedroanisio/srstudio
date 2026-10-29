@@ -385,6 +385,17 @@ def test_transcript_parses_into_typed_words():
         (transcript(language_probability=1.7), "language_probability"),
         (transcript(words=[{"text": "No", "start": 0.5, "end": 0.2, "type": "word"}]), "ends before"),
         (transcript(words=[{"text": "No", "start": 0, "end": 0.2, "type": "word", "mood": "x"}]), "unknown field"),
+        (transcript(words=[{"text": "No", "start": -0.3, "end": 0.2, "type": "word"}]), "word 0 starts before"),
+        (
+            transcript(
+                words=[
+                    {"text": "No.", "start": 0.4, "end": 0.6, "type": "word"},
+                    {"text": " ", "start": 0.6, "end": 0.6, "type": "spacing"},
+                    {"text": "Just", "start": 0.1, "end": 0.3, "type": "word"},
+                ]
+            ),
+            "word 2 starts before word 1",
+        ),
     ],
 )
 def test_malformed_transcripts_are_rejected(body, match):

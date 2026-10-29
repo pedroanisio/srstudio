@@ -412,7 +412,7 @@ def parse_transcript(body: object) -> Transcript:
             raise VoiceOutputError("transcript: audio_duration_secs is negative")
     if not isinstance(body["words"], list):
         raise VoiceOutputError("transcript: words must be a list")
-    words = []
+    words: list[Word] = []
     for i, w in enumerate(body["words"]):
         if not isinstance(w, dict):
             raise VoiceOutputError(f"transcript: word {i} is not an object")
@@ -424,6 +424,10 @@ def parse_transcript(body: object) -> Transcript:
         a, b = _number(w.get("start"), f"word {i} start"), _number(w.get("end"), f"word {i} end")
         if b < a:
             raise VoiceOutputError(f"transcript: word {i} ends before it starts")
+        if a < 0:
+            raise VoiceOutputError(f"transcript: word {i} starts before the audio ({a})")
+        if words and a < words[-1].start:
+            raise VoiceOutputError(f"transcript: word {i} starts before word {i - 1} ({a} < {words[-1].start})")
         words.append(Word(w["text"], a, b, w["type"]))
     return Transcript(body["language_code"], prob, body["text"], tuple(words))
 
