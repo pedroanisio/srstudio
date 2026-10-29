@@ -16,7 +16,7 @@ from .geometry import Part, ProjectedPose, project_pose, ribbon
 from .math3d import number
 from .motion import Motion
 from .projection import Affine, Camera
-from .validation import MotionReport, audit
+from .validation import MotionReport, audit, motion_diagnostics
 
 _CAMERA = Camera()
 _APPEARANCE = Appearance()
@@ -186,7 +186,7 @@ def bake(
             adapter.draw(cv, group, pose.select(names_in_layer), appearance, id=f"{id}-drawing-{i:06d}-{layer}")
     nodes = sum(1 for _ in cv.scene.iter()) - before
     report = replace(audit(samples, poses, motion.arm), hidden_parts=hidden, nodes=nodes)
-    return Compiled(tuple(roots.values()), count, "baked", report)
+    return Compiled(tuple(roots.values()), count, "baked", report, motion_diagnostics(samples))
 
 
 def compile_motion(
@@ -272,7 +272,9 @@ def compile_motion(
             correctives=correctives,
         )
         return replace(
-            result, diagnostics=(Diagnostic("backend", "spatial, layered or corrected request uses baked contours"),)
+            result,
+            diagnostics=(Diagnostic("backend", "spatial, layered or corrected request uses baked contours"),)
+            + result.diagnostics,
         )
     # Preflight the entire baked hand, including budget, IDs, styles and occlusion, in an isolated scene.
     from sr_core.scene import Scene
@@ -360,4 +362,6 @@ def compile_motion(
     )
     nodes = sum(1 for _ in cv.scene.iter()) - before
     report = replace(result.report, hidden_parts=max(0, result.report.hidden_parts - 2 * count), nodes=nodes)
-    return Compiled((root,), result.frames, "native-skin" if deformation == "skin" else "native", report)
+    return Compiled(
+        (root,), result.frames, "native-skin" if deformation == "skin" else "native", report, result.diagnostics
+    )

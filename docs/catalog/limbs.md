@@ -4,7 +4,8 @@ generated-by: OpenAI Codex
 
 # Reusable arm and hand performance
 
-See the [library overview](../../README.md) and [architecture decision](../decisions/0035-reusable-limb-performance.md).
+See the [library overview](../../README.md), [architecture decision](../decisions/0035-reusable-limb-performance.md),
+and [requirements-to-verification map](limbs-verification.json).
 
 Build a motion once, then choose its camera and style when compiling it:
 
@@ -227,3 +228,72 @@ PYTHONPATH=src python examples/limbs_gallery.py ../generated/limbs/gripper-galle
 Custom example fonts require both `--font` and `--font-license`. The examples do not attach the system
 DejaVu sidecar to a caller-provided font. Supply the matching source license file; the example copies and
 pins it alongside the font asset.
+
+## Engineering comparison and blinded review
+
+The evaluation example compares three complete characters performing matched tasks: Stick pointing, Toon
+hands over the face, and Gloss shrugging. Each pair uses the same framing, duration, background and character.
+Legacy versions hold named poses; spatial versions use continuous gesture phases. The tasks match intent,
+not exact geometry or hand silhouettes.
+
+```sh
+PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
+  --engine ../generated/bin/scene-render
+```
+
+`evaluation.json` records actual repeated build times, serialized scene bytes, node and shape counts, and
+scene hashes. Builds must be byte-identical across repetitions and pass schema validation. Timings exclude
+schema validation, serialization and rendering. Source lines describe the supplied entry function only;
+shared helpers and library dependencies are excluded. They do not measure human authoring effort. Human
+authoring time is explicitly unmeasured.
+
+The `review/` directory contains opaque A/B clips, task descriptions, rating instructions and an empty
+ratings template. Keep `private-key.json`, `scenes/` and the engineering report outside the review material.
+There are no implementation names in the public trial manifest. A deterministic seed shuffles tasks and
+counterbalances A/B positions across tasks; one shared packet does not counterbalance order across viewers.
+
+Reviewers score task clarity, motion naturalness and fit with the drawing style from 1 to 5, then choose
+A, B or a tie. Each reviewer uses one stable anonymous ID. The instructions show the record format; the
+empty template contains no invented observations. Collect actual responses and run:
+
+```sh
+PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
+  --ratings path/to/collected-ratings.json
+```
+
+This rebuilds the scene measurements and review metadata. Include `--engine` to regenerate the video clips.
+`evaluation.parse_ratings` rejects unsupported schemas, unknown fields and invalid scores.
+`evaluation.summarize` rejects unknown trials and duplicate reviewer/trial records. It reports counts and
+means, with `awaiting_ratings` when empty and `partial` until every trial has at least five reviewers.
+`complete` means that the collection quota is met; it does not establish statistical significance, reviewer
+identity or a competitive advantage. Review identities are caller-supplied and are not independently verified.
+
+Compiled `MotionReport.max_reach_error` records allowed reach clamping separately from bone-length and
+contact errors. Compilation preserves aggregated anatomical diagnostics for baked, automatic and native
+backends, so a clamped request cannot appear as a perfect target match merely because bone lengths are valid.
+
+## Adding a drawing style
+
+A style implements `adapters.Adapter`: a name, explicit `Capabilities`, and
+`draw(cv, parent, pose, appearance, *, id)`. Register it once with
+`register_adapter(name, adapter)` and pass that name to compilation or `LimbTrack`. Duplicate names are
+rejected. The immutable `ProjectedPose` contains depth-ordered surfaces, centerlines, contour holes and
+an authored-contour flag. A custom adapter can draw these directly or delegate to an existing treatment:
+
+```python
+from srstudio.limbs.adapters import Capabilities, adapter_for, register_adapter
+
+class StudioInk:
+    name = "studio-ink"
+    capabilities = Capabilities()  # contour support; no native skin claim
+
+    def draw(self, cv, parent, pose, appearance, *, id):
+        return adapter_for("ink").draw(cv, parent, pose, appearance, id=id)
+
+register_adapter(StudioInk.name, StudioInk())
+```
+
+Declare only capabilities the adapter implements. Perspective and native compilation enforce those
+capabilities before emission. Keep anatomical solving and projection outside `draw`; a style receives the
+same motion geometry as other adapters. Preserve holes and respect authored contours when applying surface
+treatments, so a paint effect cannot reintroduce folded-finger outline crossings.

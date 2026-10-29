@@ -59,7 +59,8 @@ original prop meshes. `examples/limbs_contact.py` renders a moving fingertip pre
 lifts before release; motion sources and numeric QA accompany the clip. Explicit native sleeve skinning
 is available through `deformation="skin"`; renderer tests verify sleeve pixels at the wrist and elbow under
 multiple poses and a mirrored parent. The gallery supports a planar skin mode across six actions and three
-styles. Broader actor migrations and a comparative viewer evaluation remain unverified. The original
+styles. Stick, Toon and Gloss character integrations are also available. Comparative viewer preference
+remains unverified until real review records are collected. The original
 six-action style gallery remains separate from the prop-contact clip.
 
 ## Folded-finger surfaces
@@ -136,3 +137,39 @@ shared by outer and inner rings, preserving contour topology. Tests exercise eac
 Showcase builders require an explicit license sidecar when a custom font is supplied. Falling back to the
 system font's sidecar for a different font would make the generated asset metadata misleading; the failure
 now occurs before copying that font into the output package.
+
+
+## Comparative evaluation
+
+`evaluation.measure` separates observed engineering cost from viewer preference and human authoring effort.
+Deterministic repeated builds are schema-validated and hashed. Node counts, XML bytes and entry-function
+source lines are reported with their boundaries; build time is not called authoring time. This avoids
+claiming an ergonomic benefit from a runtime benchmark.
+
+`examples/limbs_evaluate.py` builds paired Stick, Toon and Gloss tasks and an opaque A/B review packet.
+The private implementation mapping stays outside the public review directory. Typed score records reject
+unknown fields, invalid ranges, duplicate reviewer/trial records and unknown trials. Empty ratings produce
+no preference result. Five reviewers per trial is a collection quota, not statistical evidence of superiority.
+Human authoring time and competitive advantage remain unmeasured; neither is inferred from synthetic scores.
+
+Compilation now retains aggregated anatomical diagnostics and maximum wrist reach residuals. Bone-length
+and contact checks alone could otherwise hide explicitly permitted target clamping. Native compilation and
+automatic fallback preserve this evidence rather than replacing it with backend selection messages.
+
+## Reference boundaries
+
+The [Buss inverse-kinematics survey](https://mathweb.ucsd.edu/~sbuss/ResearchWeb/ikmethods/iksurvey.pdf)
+describes iterative Jacobian methods. This module instead solves its fixed two-segment arm analytically;
+it does not expose a general multichain optimizer. That is an implementation choice for deterministic,
+bounded authoring, rather than a claim that analytic two-bone IK replaces those methods.
+
+The [Khronos skinning tutorial](https://github.com/KhronosGroup/glTF-Tutorials/blob/main/gltfTutorial/gltfTutorial_020_Skins.md)
+explains the distinction between bind geometry and animated joints. Here the engine owns skin evaluation;
+the library emits its supported skeleton and modifier contract. This does not imply glTF import/export support.
+
+The [OpenSim model catalog](https://opensimconfluence.atlassian.net/wiki/spaces/OpenSim/pages/53090607)
+includes experimentally derived upper-extremity models with muscle compartments. The limb package provides
+stylized kinematic authoring with configurable hinge axes and joint limits. Its presets are animation
+controls, not experimentally calibrated musculoskeletal models. It does not calculate muscle forces,
+clinical range of motion or tissue deformation. Those quantities cannot be inferred from successful
+bone-length and contact tests.
