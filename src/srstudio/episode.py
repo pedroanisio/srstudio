@@ -14,6 +14,7 @@ from sr_core.scene import AudioMix, AudioTrack, Scene
 
 from . import digest, native, signature
 from .canvas import Canvas, Palette, Signature
+from .errors import SrstudioError
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
 from .layout import Crossing, SafeArea, check_overlays, find_engine
@@ -25,6 +26,19 @@ from .styles import CUTOUT, Style
 from .timeline import Timeline
 
 sha256 = digest.sha256
+
+
+class EpisodeError(SrstudioError, ValueError):
+    """An episode the builder cannot make as asked."""
+
+
+class SceneCheckError(EpisodeError):
+    """The scene failed its SDK check; ``findings`` holds what the check found, one per line of the message. A build
+    entry point (``srstudio build``) turns it into its exit status."""
+
+    def __init__(self, findings: Sequence[object]):
+        self.findings = tuple(findings)
+        super().__init__("\n".join(str(f) for f in self.findings))
 
 
 class _FromStyle:
@@ -545,7 +559,8 @@ class Episode:
                 self._cover_hidden.append((node.id, "visible", "false"))
 
     def finish(self, out: Path | None = None, report: Path | None = None, strict: bool = True) -> Path:
-        """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path."""
+        """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path; a check that finds an
+        error (with ``strict``, any finding) is a :class:`SceneCheckError` and writes no scene."""
         if self._cover_hidden and not self._cover_written:
             from .social import COVER_VARIANT
 
@@ -562,7 +577,7 @@ class Episode:
         )
         errors = [f for f in findings if f.severity == "error"]
         if errors or (strict and findings):
-            raise SystemExit("\n".join(str(f) for f in findings))
+            raise SceneCheckError(findings)
         document = self.scene.to_bytes(layout="pretty")
         if self.cv.signature is not None and (absent := signature.missing(document)):
             raise signature.SignatureError(
