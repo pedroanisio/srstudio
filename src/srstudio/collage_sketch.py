@@ -151,6 +151,17 @@ class Shot:
     measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
 
 
+def solo(cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
+    """The default cast of a shot: the appearance's character alone, on its poses; returns its face, the pivot of a
+    zoom onto it."""
+    poses = collage.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
+    collage.DRAWERS[app.who](cv, parent, poses, app.end, (), enter=app.start, mouths=mouths.get(app.who, ()))
+    return collage.face(collage.LOOKS[app.who])
+
+
+CastDrawer = Callable[[Canvas, object, sketch.Appearance, sketch.Mouths], collage.Point]
+
+
 @dataclass(frozen=True)
 class Staging:
     """What an episode adds to its sketch: the set of each character, the props per shot, the pill tints."""
@@ -163,6 +174,7 @@ class Staging:
     tints: Mapping[str, str]
     sets: Mapping[str, str]
     dress: Callable[[Shot], None] = lambda shot: None
+    cast: CastDrawer = solo  # who is drawn in each shot (srstudio.collage_group.Lineup puts several on one set)
 
 
 def check_staging(staging: Staging) -> None:
@@ -254,12 +266,11 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
         cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
         collage_sets.SETS[staging.sets[app.who]](cv, g)
         back = cv.group(g, cv.uid("g"))
-        poses = collage.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
-        collage.DRAWERS[app.who](cv, g, poses, app.end, (), enter=app.start, mouths=mouths.get(app.who, ()))
+        face = staging.cast(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
         for at in zooms(sk.beats, app):
-            camera.anchor(g, *collage.face(collage.LOOKS[app.who]), place=True)
+            camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
     lines = toon.load_script(root / ep.spec.dialogue)
     collage.captions(cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints)
