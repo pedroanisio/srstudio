@@ -13,7 +13,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, path
@@ -46,9 +46,7 @@ class Bubble:
 
 
 def _check_time(at: float, what: str) -> float:
-    if not isinstance(at, (int, float)) or at < 0:
-        raise PhoneError(f"{what}: a time is seconds into the take, from 0, got {at!r}")
-    return float(at)
+    return checks.second(at, PhoneError, f"{what}: a time is seconds into the take, from 0, got {at!r}")
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: str = "center") -> None:

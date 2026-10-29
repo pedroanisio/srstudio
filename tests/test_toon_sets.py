@@ -173,6 +173,7 @@ def test_the_coffee_machine_blinks_drips_and_steams_while_it_brews():
         ([(2.0, 1.0)], "start < end"),
         ([(-1.0, 1.0)], "start < end"),
         ([(0.0, float("nan"))], "start < end"),
+        ([(True, 2.0)], "start < end"),
         ([(0.0, 2.0), (1.0, 3.0)], "overlap"),
         ([(1.0,)], "pairs"),
         (["ab"], "pairs"),

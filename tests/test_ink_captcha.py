@@ -1,5 +1,6 @@
 """The Ink captcha: the checkbox card, the 3×3 picture grid with its prompt, picks and verdict."""
 
+import math
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -111,3 +112,15 @@ def test_a_pick_at_the_first_frame_is_shown_without_keys():
     cv = canvas()
     ink_captcha.captcha(cv, cv.comp, prompt="Pick.", tiles=LIGHTS, picks=[(0.0, 2)])
     assert opacity_keys(cv) == []
+
+
+@pytest.mark.parametrize("at", [True, math.nan, math.inf, -1.0])
+def test_a_time_is_a_finite_number_of_seconds_from_zero(at):
+    """A bool, NaN or infinity is not a time: each would key a pick, the verdict or the tick nowhere."""
+    for kwargs in (dict(picks=[(at, 1)]), dict(verdict=(at, "NO"))):
+        cv = canvas()
+        with pytest.raises(CaptchaError, match="a time is seconds into the take, from 0"):
+            ink_captcha.captcha(cv, cv.comp, prompt="Pick.", tiles=LIGHTS, **kwargs)
+    cv = canvas()
+    with pytest.raises(CaptchaError, match="a time is seconds into the take, from 0"):
+        ink_captcha.checkbox(cv, cv.comp, "ok", tick_at=at)

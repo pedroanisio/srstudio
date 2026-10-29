@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, path
@@ -32,9 +32,7 @@ class CaptchaError(SrstudioError, ValueError):
 
 
 def _check_time(at: float, what: str) -> float:
-    if not isinstance(at, (int, float)) or at < 0:
-        raise CaptchaError(f"{what}: a time is seconds into the take, from 0, got {at!r}")
-    return float(at)
+    return checks.second(at, CaptchaError, f"{what}: a time is seconds into the take, from 0, got {at!r}")
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str) -> None:

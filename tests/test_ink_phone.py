@@ -1,6 +1,7 @@
 """The Ink phone: a chat with a contact, bubbles that arrive on the shot's clock, the delivery status under the last
 of mine, the typing dots, and the refusals for what the screen cannot show."""
 
+import math
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -99,3 +100,16 @@ def test_the_phone_shot_holds_the_phone_over_the_desk_with_the_signature_cactus(
     assert any(i.startswith("sig-cactus") for i in ids)
     assert "Boss" in texts(cv)
     assert registry.get("location", "ink-phone-shot").style == "ink"
+
+
+@pytest.mark.parametrize("at", [True, math.nan, math.inf, -1.0])
+def test_a_time_is_a_finite_number_of_seconds_from_zero(at):
+    """A bool, NaN or infinity is not a time: each would place a bubble, a status or the typing dots nowhere."""
+    for chat in (
+        dict(bubbles=[Bubble("hi", at=at)]),
+        dict(bubbles=[Bubble("hi")], status=[(at, "delivered")]),
+        dict(bubbles=[Bubble("hi")], typing=(at, 9.0)),
+    ):
+        cv = canvas()
+        with pytest.raises(PhoneError, match="a time is seconds into the take, from 0"):
+            ink_phone.phone(cv, cv.comp, "Boss", **chat)

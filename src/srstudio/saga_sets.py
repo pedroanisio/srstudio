@@ -20,7 +20,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import camera, look, saga, signature
+from . import camera, checks, look, saga, signature
 from .canvas import Canvas
 from .registry import register
 from .saga import SagaError, Talk
@@ -104,17 +104,14 @@ _text = look.label
 
 
 def _check_end(end: float) -> None:
-    if not (math.isfinite(end) and end > 0):
-        raise SagaError(f"a set is drawn for more than 0 s, got {end}")
+    checks.positive(end, SagaError, f"a set is drawn for more than 0 s, got {end}")
 
 
 def _check_spans(spans: Spans, end: float, what: str) -> list[tuple[float, float]]:
-    out = []
-    for a, b in spans:
-        if not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b):
-            raise SagaError(f"{what}: span {a}..{b} must rise from a second >= 0")
-        out.append((float(a), min(float(b), end)))
-    return out
+    """``spans`` cut at ``end``: a span may run past the set's end."""
+    return checks.spans(
+        spans, SagaError, lambda s: f"{what}: span {s[0]}..{s[1]} must rise from a second >= 0", clamp=end
+    )
 
 
 def _stars(cv: Canvas, g, seed: int, count: int, box=(0, 0, W, H), end: float = 0.0) -> None:
@@ -471,17 +468,20 @@ def holo(
         raise SagaError(f"a hologram box is at least 360 wide and {HOLO_MIN} tall, got {w} × {most}")
     if x < SAFE[0] or x + w > SAFE[2] or y < SAFE[1] or y + most > SAFE[3]:
         raise SagaError(f"a hologram box {(x, y, w, most)} leaves the safe region {SAFE}")
-    last = -1.0
+    starts = [p.start for p in panels]
+    checks.rising(
+        starts,
+        SagaError,
+        lambda i, t: f"panel {panels[i].title!r}: start {t} must rise inside the shot (0..{end})",
+        end=end,
+    )
     for p in panels:
-        if not (math.isfinite(p.start) and last < p.start < end):
-            raise SagaError(f"panel {p.title!r}: start {p.start} must rise inside the shot (0..{end})")
         if p.tone not in TONES:
             raise SagaError(f"panel {p.title!r}: tone {p.tone!r} is not one of {sorted(TONES)}")
         if p.face and p.face not in saga.CAST:
             raise SagaError(f"panel {p.title!r}: face {p.face!r} is not in the cast")
-        last = p.start
     out = []
-    starts = [p.start for p in panels] + [end]
+    starts.append(end)
     for i, (p, (a, b)) in enumerate(zip(panels, zip(starts, starts[1:], strict=False), strict=True)):
         g = cv.group(parent, cv.uid("g"))
         cv.gate(g, [(a, b)])

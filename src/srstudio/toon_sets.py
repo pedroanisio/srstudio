@@ -18,7 +18,7 @@ import math
 import re
 from collections.abc import Sequence
 
-from . import brush
+from . import brush, checks
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
@@ -162,23 +162,19 @@ def _shadow(cv: Canvas, g, cx: float, y: float, w: float, h: float = 8.0, opacit
 
 
 def _check_end(end: float) -> float:
-    if isinstance(end, bool) or not isinstance(end, int | float) or not (math.isfinite(end) and end >= 0):
-        raise ToonDataError(f"end is a number of seconds >= 0, got {end!r}")
-    return float(end)
+    """A Toon set may be drawn for 0 s (a still): its end is at least 0."""
+    return checks.non_negative(end, ToonDataError, f"end is a number of seconds >= 0, got {end!r}")
 
 
 def _check_spans(spans: Spans, what: str) -> list[tuple[float, float]]:
-    out: list[tuple[float, float]] = []
-    for span in spans:
-        if not (isinstance(span, tuple | list) and len(span) == 2):
-            raise ToonDataError(f"{what} spans are (start, end) pairs, got {span!r}")
-        a, b = span
-        if not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b):
-            raise ToonDataError(f"{what} spans need 0 <= start < end, got {span!r}")
-        if out and a < out[-1][1]:
-            raise ToonDataError(f"{what} spans must be in order and must not overlap")
-        out.append((float(a), float(b)))
-    return out
+    """Unbounded spans, in order and apart."""
+    return checks.spans(
+        spans,
+        ToonDataError,
+        lambda s: f"{what} spans need 0 <= start < end, got {s!r}",
+        shape=lambda s: f"{what} spans are (start, end) pairs, got {s!r}",
+        ordered=f"{what} spans must be in order and must not overlap",
+    )
 
 
 def cycle_keys(

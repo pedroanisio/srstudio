@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -52,12 +52,6 @@ VIEWER_AT = (-200.0, 0.0)  # a STANDING pose here stands at the stove, facing ri
 AGENT_AT = (1480.0, 0.0)  # with flip=True a STANDING pose here stands right of the toilet, facing the viewer
 FOLD = 0.125  # the mid frame of the fold, three frames at 24 fps
 NEAR_Y = 1730  # the open bed's foot, toward the camera
-
-
-def _check_time(t: float, end: float, what: str) -> float:
-    if not (isinstance(t, (int, float)) and math.isfinite(t) and 0 <= t < end):
-        raise StickDataError(f"{what} must be in the shot (0..{end}), got {t!r}")
-    return float(t)
 
 
 @register("location", "stick-studio-flat", tags=("home", "flat", "rental", "kitchen"))
@@ -247,7 +241,9 @@ def murphy_bed(
     if not (isinstance(end, (int, float)) and math.isfinite(end) and end > 0):
         raise StickDataError(f"the bed needs a positive shot length, got {end!r}")
     if drop_at is not None:
-        drop_at = _check_time(drop_at, end, "drop_at")
+        drop_at = checks.second(
+            drop_at, StickDataError, f"drop_at must be in the shot (0..{end}), got {drop_at!r}", end=end
+        )
     if sleeper is not None:
         check_look(sleeper)
     if talk and sleeper is None:

@@ -560,3 +560,24 @@ def test_the_compactor_walls_resume_where_the_last_shot_left_them():
     assert sorted(x[-1][1] for x in xs) == [-100.0, 100.0] and sorted(x[0][1] for x in xs) == [-40.0, 40.0]
     with pytest.raises(SagaError):
         sets.compactor(cv, cv.comp, end=D, walls=(0.0, 1.0), travel=200, start_px=200)
+
+
+@needs_font
+@pytest.mark.parametrize("start", [-0.5, True, float("nan")])
+def test_a_hologram_panel_starts_at_a_number_of_seconds_from_zero(start):
+    with pytest.raises(SagaError, match="must rise inside the shot"):
+        sets.holo(canvas(), canvas().comp, (Panel(start, "A"),), end=D, font=font())
+
+
+@pytest.mark.parametrize("end", [True, float("nan"), 0, -1])
+def test_a_set_is_drawn_for_a_number_of_seconds_above_zero(end):
+    cv = canvas()
+    with pytest.raises(SagaError, match="more than 0 s"):
+        sets.space(cv, cv.comp, end=end)
+
+
+def test_a_set_span_past_the_end_is_cut_at_it_and_a_bool_is_no_second():
+    cv = canvas()
+    sets.cantina(cv, cv.comp, end=2.0, stare=[(1.0, 9.0)])
+    with pytest.raises(SagaError, match="must rise from a second >= 0"):
+        sets.cantina(canvas(), canvas().comp, end=2.0, stare=[(True, 1.5)])

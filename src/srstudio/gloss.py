@@ -27,7 +27,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import camera, lipsync
+from . import camera, checks, lipsync
 from .canvas import PLASTIC, Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -156,14 +156,14 @@ def _check_place(scale: float, end: float) -> None:
 
 
 def _check_second(t: float | None, end: float, what: str) -> None:
-    if t is not None and not (math.isfinite(t) and 0 <= t < end):
-        raise GlossError(f"{what} at {t} must fall inside the shot (0..{end})")
+    if t is not None:
+        checks.second(t, GlossError, f"{what} at {t} must fall inside the shot (0..{end})", end=end)
 
 
 def _check_spans(spans: Sequence[tuple[float, float]], end: float, what: str) -> None:
-    for a, b in spans:
-        if not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b <= end + 1e-6):
-            raise GlossError(f"{what} span {a}..{b} must rise inside the shot (0..{end})")
+    checks.spans(
+        spans, GlossError, lambda s: f"{what} span {s[0]}..{s[1]} must rise inside the shot (0..{end})", within=end
+    )
 
 
 def check_traits(who: str, options: Mapping[str, Any], end: float) -> None:

@@ -800,3 +800,17 @@ def test_a_fallen_doll_lies_on_the_floor_not_half_through_it(at):
     (lift,) = [k for k in keys_of(cv, "y") if k[-1][1] == -gloss.LIE]
     assert lift[0] == ((0.0, -gloss.LIE) if at == 0 else (0.0, 0.0))
     assert gloss.LIE >= 105  # half the body's width: the side it lands on rests on the floor line
+
+
+@pytest.mark.parametrize(
+    ("who", "traits", "match"),
+    [
+        ("tamsin", {"bounce": [(True, 1.0)]}, "bounce span True..1.0 must rise inside the shot"),
+        ("tamsin", {"bounce": [(0.5, 9.0)]}, "bounce span 0.5..9.0 must rise inside the shot"),
+        ("nadia", {"fall": True}, "fall at True must fall inside the shot"),
+        ("gus", {"unwound": float("nan")}, "unwound at nan must fall inside the shot"),
+    ],
+)
+def test_a_trait_second_or_span_is_a_number_inside_the_shot(who, traits, match):
+    with pytest.raises(GlossError, match=match):
+        gloss.check_traits(who, traits, 4.0)

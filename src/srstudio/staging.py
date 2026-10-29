@@ -18,7 +18,7 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import camera, native
+from . import camera, checks, native
 from .errors import SrstudioError
 
 __all__ = [
@@ -87,9 +87,7 @@ def check_move(m: Move, end: float, where: str, error: type[Exception] = Staging
 
 def check_spans(spans: Spans, end: float, where: str, error: type[Exception] = StagingError) -> None:
     """Each span rises inside the take (``0..end``)."""
-    for a, b in spans:
-        if not inside(a, b, end):
-            raise error(f"{where}: span {a}..{b} falls outside the take (0..{end})")
+    checks.spans(spans, error, lambda s: f"{where}: span {s[0]}..{s[1]} falls outside the take (0..{end})", within=end)
 
 
 def shake(cv, group, spans: Spans) -> None:
