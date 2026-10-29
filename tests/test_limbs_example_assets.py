@@ -42,7 +42,7 @@ def test_system_font_ships_with_the_library_dejavu_notice(tmp_path, name, system
     load(name).build(tmp_path / "out", fps=2)
     assets = tmp_path / "out" / "assets"
     assert (assets / "font.ttf").read_bytes() == system_font.read_bytes()
-    assert (assets / "FONT-LICENSE.txt").read_text() == dejavu_license()
+    assert (assets / "FONT-LICENSE.txt").read_text(encoding="utf-8") == dejavu_license()
 
 
 @pytest.mark.parametrize("name", EXAMPLES)

@@ -23,21 +23,21 @@ SYSTEM_FONTS = (
     Path("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
     Path("/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"),
 )
-# The copyright and permission notice of the DejaVu fonts (Bitstream Vera, DejaVu's changes in the public domain),
-# word for word from the Files: * stanza of Debian's fonts-dejavu-core copyright file.
+# The DejaVu fonts' LICENSE, verbatim from upstream: the Bitstream Vera notice (DejaVu's changes are in the public
+# domain), the Arev notice for the glyphs imported from Tavmjong Bah's Arev fonts, and DejaVu Math TeX Gyre's notices.
 DEJAVU_LICENSE_FILE = "assets/fonts/DejaVu-LICENSE.txt"
 
 
 def dejavu_license() -> str:
     """The notice the DejaVu licence requires in every copy of the font."""
-    return files("srstudio").joinpath(DEJAVU_LICENSE_FILE).read_text()
+    return files("srstudio").joinpath(DEJAVU_LICENSE_FILE).read_text(encoding="utf-8")
 
 
 def copy_dejavu(source: Path, folder: Path, name: str = "DejaVuSans-Bold.ttf") -> Path:
     """Copy the DejaVu font ``source`` into ``folder`` as ``name``, its notice beside it as ``FONT-LICENSE.txt``."""
     target = Path(folder) / name
     shutil.copyfile(source, target)
-    (Path(folder) / "FONT-LICENSE.txt").write_text(dejavu_license())
+    (Path(folder) / "FONT-LICENSE.txt").write_text(dejavu_license(), encoding="utf-8")
     return target
 
 
