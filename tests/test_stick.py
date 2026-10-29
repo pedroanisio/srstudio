@@ -8,6 +8,8 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import DAYLIGHT, SPEECH_MOUTH, STICK, STYLES, Canvas, EpisodeSpec, flat_counter, registry, stick
+from srstudio.canvas import CanvasError
+from srstudio.errors import SrstudioError
 from srstudio.soundtrack import INK_MOUTH
 
 PLATE = {"fill": "#050506", "path": "M 0 0 L 10 0 L 10 10 Z"}
@@ -565,3 +567,15 @@ def test_an_apron_dresses_the_torso_under_the_tie_and_is_off_by_default():
     assert first_apron < first_tie  # the tie hangs over the apron
     with pytest.raises(stick.StickDataError, match="apron"):
         stick.rig(canvas(), None, [TYPE], 1.0, look=stick.Look(apron="green"))
+
+
+def test_stick_refusals_are_srstudio_errors_and_still_value_errors():
+    with pytest.raises(stick.StickDataError) as caught:
+        stick.parse_script([])
+    with pytest.raises(CanvasError, match="no caption font") as silent:
+        scene = Scene(version="auto")
+        scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background="#bda77a")
+        cv = Canvas(scene, DAYLIGHT, font_asset=None, namer=flat_counter("n"))
+        stick.card(cv, cv.comp, "hook")
+    for error in (caught.value, silent.value):
+        assert isinstance(error, SrstudioError) and isinstance(error, ValueError)
