@@ -173,7 +173,7 @@ class Request:
     fps: float | None
     duration: float | None
     sample_rate: int
-    bit_depth: int
+    bit_depth: int  # the mix's depth; read and checked, not honoured: see _wav_at
     timeline: Timeline
     input: str | None
     input_sha256: str | None
@@ -296,7 +296,12 @@ def _language(tag: str | None) -> str:
 
 
 def _wav_at(wav_bytes: bytes, rate: int) -> bytes:
-    """The decoded clip (16-bit mono at :data:`RATE`) at the mix's sample rate."""
+    """The decoded clip (16-bit mono at :data:`RATE`) at the mix's sample rate, still 16-bit.
+
+    The request's ``bitDepth`` is the mix's, not a format this provider must write: ElevenLabs returns 16-bit PCM,
+    so a wider sample would only pad it with zeros, and the engine's mixer converts every track to the mix's depth.
+    The engine's own ``elevenlabs`` adapter writes 16-bit too; ``audioforge`` honours ``bitDepth`` because it
+    synthesizes at the depth it is asked for."""
     if rate == RATE:
         return wav_bytes
     run = subprocess.run(
