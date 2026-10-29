@@ -466,7 +466,9 @@ def holo(
     x, y, w, most = box if box is not None else HOLO_BOX
     if w < 360 or most < HOLO_MIN:
         raise SagaError(f"a hologram box is at least 360 wide and {HOLO_MIN} tall, got {w} × {most}")
-    if x < SAFE[0] or x + w > SAFE[2] or y < SAFE[1] or y + most > SAFE[3]:
+    if not all(map(checks.number, (x, y, w, most))) or not (
+        SAFE[0] <= x and x + w <= SAFE[2] and SAFE[1] <= y and y + most <= SAFE[3]
+    ):
         raise SagaError(f"a hologram box {(x, y, w, most)} leaves the safe region {SAFE}")
     starts = [p.start for p in panels]
     checks.rising(
@@ -492,6 +494,8 @@ def holo(
         room = int((most - 2 * HOLO_PAD - 58 * len(title) - 8) // 48)
         body = wrap(font, p.body, 40, tw, max(1, room)) if p.body else []
         h = max(HOLO_MIN if p.face else 0, 2 * HOLO_PAD + 58 * len(title) + (8 + 48 * len(body) if body else 0))
+        if h > most:
+            raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
         if i == 0:

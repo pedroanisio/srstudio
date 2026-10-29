@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import camera, gloss, look, signature
+from . import camera, checks, gloss, look, signature
 from .canvas import Canvas
 from .gloss import GlossError, Talk
 from .registry import register
@@ -501,7 +501,9 @@ def board(
     x, y, w, most = box if box is not None else BOARD_BOX
     if w < 420 or most < BOARD_MIN:
         raise GlossError(f"a board box is at least 420 wide and {BOARD_MIN} tall, got {w} × {most}")
-    if x < SAFE[0] or x + w > SAFE[2] or y < SAFE[1] or y + most > SAFE[3]:
+    if not all(map(checks.number, (x, y, w, most))) or not (
+        SAFE[0] <= x and x + w <= SAFE[2] and SAFE[1] <= y and y + most <= SAFE[3]
+    ):
         raise GlossError(f"a board box {(x, y, w, most)} leaves the safe region {SAFE}")
     _rising([c.start for c in cards], end, "a card")
     for c in cards:
@@ -524,6 +526,8 @@ def board(
         body = wrap(font, c.body, 38, tw, max(1, room)) if c.body else []
         h = 2 * BOARD_PAD + head + 56 * len(title) + (8 + 46 * len(body) if body else 0)
         h = max(h, BOARD_MIN if c.points is not None else 0)
+        if h > most:
+            raise GlossError(f"card {c.title!r} needs {h} px; the box gives {most}")
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
         pops = i == 0 and not c.carried
