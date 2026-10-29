@@ -268,10 +268,12 @@ def take_still(
     :data:`COVER_VARIANT`, into the PNG ``out``, and return the video's facts.
 
     The frame is the one :func:`take_frame` would take (its index at the video's rate, drawn at that frame's time).
-    Raises :class:`CoverError` for a time outside the video, a scene without the variant, a still of another size
-    than the video, or a blank still, and then leaves no ``out``."""
-    info, index = _frame(video, at, ffprobe)
+    Raises :class:`CoverError` for a missing scene, a time outside the video, a scene without the variant, a still of
+    another size than the video, or a blank still, and then leaves no ``out``."""
     scene, out = Path(scene), Path(out)
+    if not scene.is_file():
+        raise CoverError(f"no scene {scene} to draw the cover from: build the project first")
+    info, index = _frame(video, at, ffprobe)
     if f'<variant id="{COVER_VARIANT}"'.encode() not in scene.read_bytes():
         raise CoverError(f"{scene.name} has no {COVER_VARIANT} variant to draw the cover's backdrop in")
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
@@ -393,7 +395,7 @@ class InstagramPost:
                                      f"{width}x{height}")  # fmt: skip
                 cover = render(self.thumbnail, backdrop, folder / COVER_NAME, font=font, engine=engine,
                                width=info.width, height=info.height, ffmpeg=ffmpeg)  # fmt: skip
-        except (CoverError, ThumbnailError):
+        except BaseException:  # whatever fails, a folder made for this delivery is not left behind
             if created and not any(folder.iterdir()):
                 folder.rmdir()
             raise

@@ -270,6 +270,23 @@ def test_a_scene_without_a_cover_variant_or_of_another_size_is_refused(tmp_path)
         assert not (tmp_path / "ig" / "v").exists()
 
 
+def test_a_cover_scene_that_was_never_built_is_refused_and_leaves_no_folder(tmp_path):
+    with pytest.raises(CoverError, match="no scene"):
+        post().deliver(tmp_path / "ig" / "v", tall(tmp_path / "v.mp4"), font=FONT, engine=engine(),
+                       scene=tmp_path / "unbuilt.scene.xml")  # fmt: skip
+    assert not (tmp_path / "ig" / "v").exists()
+
+
+def test_deliver_leaves_no_folder_whatever_fails(tmp_path, monkeypatch):
+    def broken(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(social, "render", broken)
+    with pytest.raises(OSError, match="disk full"):
+        post().deliver(tmp_path / "ig" / "v", tall(tmp_path / "v.mp4"), font=FONT, engine=engine())
+    assert not (tmp_path / "ig" / "v").exists()
+
+
 def test_an_edited_scene_drifts(tmp_path):
     renders = tmp_path / "renders"
     renders.mkdir()
