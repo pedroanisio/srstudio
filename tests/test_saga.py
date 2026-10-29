@@ -320,6 +320,25 @@ def test_the_hologram_is_as_tall_as_what_it_says_and_ends_above_the_cast_heads()
 
 
 @needs_font
+def test_a_hologram_panel_that_does_not_fit_its_box_is_refused_never_drawn_past_it():
+    box = (90, 1270, 820, sets.HOLO_MIN)  # ends on the safe region's bottom
+    cv = canvas()
+    sets.holo(cv, cv.comp, (Panel(0, "Status"),), end=D, font=font(), box=box)
+    assert panel_rect(cv)[1] <= box[1] + box[3]
+    for panels in ((Panel(0, "Status", "All systems nominal"),), (Panel(0, "Status " * 5),)):
+        with pytest.raises(SagaError, match=r"needs \d+ px; the box gives 150"):
+            sets.holo(canvas(), canvas().comp, panels, end=D, font=font(), box=box)
+
+
+@pytest.mark.parametrize(
+    "box", [(float("nan"), 232, 820, 300), (90, 232, float("inf"), 300), (90, 232, 820, float("nan"))]
+)
+def test_a_hologram_box_that_is_not_four_numbers_is_refused(box):
+    with pytest.raises(SagaError, match="safe region"):
+        sets.holo(canvas(), canvas().comp, (Panel(0, "Hi"),), end=D, font=font(), box=box)
+
+
+@needs_font
 def test_the_hologram_pops_in_about_its_own_centre_and_draws_nothing_below_itself():
     cv = canvas()
     sets.holo(cv, cv.comp, (Panel(0, "SKIP?", "No."),), end=D, font=font())

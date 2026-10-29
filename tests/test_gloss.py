@@ -363,6 +363,26 @@ def test_the_board_switches_cards_in_order_and_refuses_bad_ones():
         sets.board(cv, cv.comp, cards, end=D, font=font(), box=(100, 300, 300, 300))
 
 
+@needs_font
+def test_a_board_card_that_does_not_fit_its_box_is_refused_never_drawn_past_it():
+    box = (90, 1270, 820, sets.BOARD_MIN)  # ends on the safe region's bottom
+    cv = canvas()
+    sets.board(cv, cv.comp, [Card(0, "Status")], end=D, font=font(), box=box)
+    papers = [r for r in tree(cv).iter("shape") if r.get("fill") == sets.PAPER]
+    assert float(papers[0].get("y")) + float(papers[0].get("height")) <= box[1] + box[3]
+    for cards in ([Card(0, "Status", "All good here")], [Card(0, "Status " * 5)]):
+        with pytest.raises(GlossError, match=r"needs \d+ px; the box gives 150"):
+            sets.board(canvas(), canvas().comp, cards, end=D, font=font(), box=box)
+
+
+@pytest.mark.parametrize(
+    "box", [(float("nan"), 232, 820, 300), (90, 232, float("inf"), 300), (90, 232, 820, float("nan"))]
+)
+def test_a_board_box_that_is_not_four_numbers_is_refused(box):
+    with pytest.raises(GlossError, match="safe region"):
+        sets.board(canvas(), canvas().comp, [Card(0, "Hi")], end=D, font=font(), box=box)
+
+
 def contrast(a: str, b: str) -> float:
     def lum(hex_: str) -> float:
         c = [int(hex_[i : i + 2], 16) / 255 for i in (1, 3, 5)]
