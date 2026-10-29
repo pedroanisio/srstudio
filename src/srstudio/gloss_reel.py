@@ -100,6 +100,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
         if s.notice is not None:
             if s.set or s.cast or s.cards or s.props:
                 raise GlossError(f"{where}: the Plaza Notice fills the frame alone")
+            if s.move is not None or s.dark or s.shake:
+                raise GlossError(f"{where}: the Plaza Notice is drawn still: no move, dark or shake")
             if not take.is_effect and take.actor != HOST:
                 raise GlossError(f"{where}: only the host reads the notice, not {take.actor}")
             continue

@@ -106,6 +106,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
         if s.entry is not None:
             if s.set or s.cast or s.panels or s.props:
                 raise SagaError(f"{where}: the Handbook entry fills the frame alone")
+            if s.move is not None or s.dark or s.shake:
+                raise SagaError(f"{where}: the Handbook entry is drawn still: no move, dark or shake")
         elif s.set not in saga_sets.SETS:
             raise SagaError(f"{where}: unknown location {s.set!r}; one of {sorted(saga_sets.SETS)}")
         for p in s.cast:

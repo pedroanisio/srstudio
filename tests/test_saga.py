@@ -393,6 +393,9 @@ GOOD = {
         ({"02": Stage("desert", cast=(Place("juno", 540),), dark=((1.0, 3.0),))}, "outside"),
         ({"02": Stage("desert", cast=(Place("juno", 540),), shake=((0.2, 0.8), (0.5, 1.0)))}, "overlap"),
         ({"03": Stage("desert", entry=Entry("a", "b"))}, "alone"),
+        ({"03": Stage(entry=Entry("a", "b"), move=Move("crash", 0.1, 1.4, 540, 600))}, "no move"),
+        ({"03": Stage(entry=Entry("a", "b"), dark=((0.1, 0.2),))}, "no move"),
+        ({"03": Stage(entry=Entry("a", "b"), shake=((0.1, 0.2),))}, "no move"),
     ],
 )
 def test_staging_that_does_not_fit_the_recording_is_refused(change, message):
