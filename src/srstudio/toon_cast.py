@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from numbers import Number
 from typing import TYPE_CHECKING
 
-from . import brush
+from . import brush, checks
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
@@ -682,8 +682,8 @@ def viseme_keys(mouths: Mouths, start: float, end: float) -> dict[str, list[tupl
         for t, v in mouths
     ):
         raise ToonDataError(f"mouths are (non-negative seconds, viseme among {VISEMES}) states")
-    if any(b < a for (a, _), (b, _) in zip(mouths, mouths[1:], strict=False)):
-        raise ToonDataError("mouths must be in time order")
+    if any(b <= a for (a, _), (b, _) in zip(mouths, mouths[1:], strict=False)):
+        raise ToonDataError("mouths must be in time order, one state a second")
     current = "closed"
     for t, v in mouths:
         if t <= start + EPSILON:
@@ -748,7 +748,7 @@ def figure(
     ``duration``. ``mouths`` is the lip-sync track, ``(project second, viseme)`` states: inside every run where a
     sound is heard the mouth becomes one layer per viseme with hold keys (:func:`viseme_keys`), the pose's own mouth
     showing while closed. A look with a blink period shuts its eyes for :data:`BLINK_HOLD` at :func:`blink_times`."""
-    if not (isinstance(enter, int | float) and math.isfinite(enter) and 0 <= enter < duration):
+    if not (checks.number(enter) and 0 <= enter < duration):
         raise ToonDataError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     sides: frozenset[str] = frozenset()
     if limbs:

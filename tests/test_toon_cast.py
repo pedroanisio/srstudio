@@ -124,6 +124,8 @@ def test_a_character_can_enter_later_and_its_poses_count_from_then():
         toon_cast.frog(canvas(), cv.comp, poses, D, enter=3.0)
     with pytest.raises(toon.ToonDataError, match="enter must be"):
         toon_cast.frog(canvas(), cv.comp, poses, D, enter=-0.5)
+    with pytest.raises(toon.ToonDataError, match="enter must be"):  # a bool is not a second
+        toon_cast.frog(canvas(), cv.comp, poses, D, enter=True)
 
 
 def test_the_characters_are_registered_with_the_toon_style():
@@ -185,6 +187,8 @@ def test_viseme_keys_follow_the_track_inside_a_run_and_a_closed_run_needs_no_key
         toon_cast.viseme_keys([(0.5, "smile")], 0.0, 1.0)
     with pytest.raises(toon.ToonDataError, match="time order"):
         toon_cast.viseme_keys([(0.8, "open"), (0.5, "closed")], 0.0, 1.0)
+    with pytest.raises(toon.ToonDataError, match="time order"):  # two states at one second: two keys at one time
+        toon_cast.viseme_keys([(0.5, "open"), (0.5, "round")], 0.0, 1.0)
     with pytest.raises(toon.ToonDataError, match="non-negative"):
         toon_cast.viseme_keys([(-1.0, "open")], 0.0, 1.0)
 
