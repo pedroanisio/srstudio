@@ -1,5 +1,6 @@
 """The Ink style: takes, phoneme mouths, caption pages, and a full square shot-sequence build."""
 
+import inspect
 import json
 import xml.etree.ElementTree as ET
 
@@ -418,3 +419,8 @@ def test_router_episode_builds_and_validates(tmp_path):
     root = ET.parse(out).getroot()
     assert len(root.find("composition/sequence")) == 10 and len(root.findall("audioMix/audioTrack")) == 10
     assert sum(1 for n in root.iter() if (n.get("id") or "").startswith("sig-code")) >= 5
+
+
+@pytest.mark.parametrize("fn", [ink.router, ink.router_shot, ink.router_wide, ink.router_scene])
+def test_the_router_parts_take_no_frame_rate_they_would_never_read(fn):
+    assert "fps" not in inspect.signature(fn).parameters
