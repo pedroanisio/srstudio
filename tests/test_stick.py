@@ -1,5 +1,6 @@
 """The Stick style: traced stick figures on painted sets, badge-headed dancers, outlined captions."""
 
+import inspect
 import json
 import xml.etree.ElementTree as ET
 
@@ -378,6 +379,10 @@ def test_every_seated_pose_and_face_draws():
                 face = stick.Face(eyes, brows, "smirk", (-1, 1))
                 stick.rig(cv, cv.comp, [stick.RigKey(0, name, face)], 1.0)
                 assert len(list(xml(cv).iter("shape"))) > 10
+
+
+def test_the_camera_takes_no_end_it_would_never_read():
+    assert "end" not in inspect.signature(stick.camera).parameters
 
 
 def test_the_camera_frames_or_pushes_in():

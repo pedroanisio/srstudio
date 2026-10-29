@@ -1278,7 +1278,7 @@ def rig(
     return g
 
 
-def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float = 0.0, end: float = 0.0, to=(540, 760)):
+def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float = 0.0, to=(540, 760)):
     """A group that frames its contents: at ``zoom`` with ``focus`` moved to ``to``; with ``push`` > 0 it starts
     wide and eases in to that framing over ``push`` seconds. Drawings inside are vectors, so a close-up stays sharp."""
     if zoom < 1 or push < 0:
