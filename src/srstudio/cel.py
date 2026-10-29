@@ -494,7 +494,7 @@ NUMBER = re.compile(r"-?\d+\.?\d*(?:[eE]-?\d+)?")
 
 def subpaths(d: str, where: str = "path") -> list[str]:
     """The ``M``-started pieces of an absolute path (the traced drawings use only ``M``, ``Q`` and ``Z``)."""
-    if re.search(r"[a-z]", d):
+    if re.search(r"[mlhvcsqtaz]", d):  # a relative command; an exponent's "e" is part of a number
         raise CelDataError(f"{where}: only absolute path commands can be split into subpaths")
     return [piece.strip() for piece in SUBPATH.split(d) if piece.strip()]
 

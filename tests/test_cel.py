@@ -331,6 +331,13 @@ KEYS = "M40 40 L60 40 L60 60 L40 60 Z M45 45 L55 45 L55 55 L45 55 Z"
 BOX = (40.0, 40.0, 60.0, 60.0)
 
 
+def test_an_exponent_is_part_of_a_number_not_a_relative_command():
+    d = "M0 0 L1e1 0 L10 1.5e1 Z M2 2 L3 2 L3 3 Z"
+    assert cel.subpaths(d) == ["M0 0 L1e1 0 L10 1.5e1 Z", "M2 2 L3 2 L3 3 Z"]
+    with pytest.raises(cel.CelDataError, match="absolute"):
+        cel.subpaths("M0 0 q1 1 2 2")
+
+
 def test_pressed_parts_move_filled_regions_with_their_holes_and_leave_the_ink_frame():
     stay, sink = cel.pressed_parts(INK, BOX)
     assert stay == "M0 0 L100 0 L100 100 L0 100 Z M40 40 L60 40 L60 60 L40 60 Z"  # the frame and its hole stay
