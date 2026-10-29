@@ -26,5 +26,6 @@ STAGING = Staging(
     stickers={"dog": STICKER},
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
-ep.instagram(POSTS[SKETCH.slug])
-ep.finish()
+if ep is not None:  # None: --init wrote the project files
+    ep.instagram(POSTS[SKETCH.slug])
+    ep.finish()

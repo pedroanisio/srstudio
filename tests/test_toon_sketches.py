@@ -224,8 +224,7 @@ def test_the_build_refuses_a_voiced_project_whose_files_disagree(mods, tmp_path,
     staging = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress)
     installed = []
     monkeypatch.setattr(sketch.fonts, "install", lambda font, folder: installed.append(Path(folder)))
-    with pytest.raises(SystemExit):
-        build.build(tmp_path, staging, {"--init"})
+    assert build.build(tmp_path, staging, {"--init"}) is None  # the script, not the library, ends the process
     assert installed == [tmp_path / "assets" / "fonts"] and (tmp_path / "script.json").is_file()
     # a voiced build needs the placed beats, then a manifest of the same length
     with pytest.raises(sketch.SketchError, match="beats.json"):

@@ -70,9 +70,10 @@ def pinned_fonts() -> Path:
 
 def built(root: Path, st: Staging, fonts: Path):
     shutil.copytree(fonts, root / "assets" / "fonts")
-    with pytest.raises(SystemExit):
-        collage_sketch.build(root, st, ["--init"])
-    return collage_sketch.build(root, st, [])
+    assert collage_sketch.build(root, st, ["--init"]) is None  # the script, not the library, ends the process
+    ep = collage_sketch.build(root, st, [])
+    assert ep is not None
+    return ep
 
 
 def test_every_group_shot_draws_the_whole_lineup_in_fixed_places_and_zooms_on_the_speaker(pinned_fonts, tmp_path):
