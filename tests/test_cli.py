@@ -112,3 +112,10 @@ def test_catalog_shows_the_measured_episodes_from_a_usage_report(tmp_path, capsy
     assert main(["catalog", "--json", "--usage", str(report)]) == 0
     rows = {r["name"]: r for r in json.loads(capsys.readouterr().out)}
     assert rows["soft-desk"]["episodes"] == ["focus-mode"] and rows["juno"]["episodes"] == []
+
+
+def test_catalog_without_usage_claims_no_episodes(capsys):
+    assert main(["catalog", "--kind", "character"]) == 0
+    assert all("[" not in ln for ln in capsys.readouterr().out.splitlines())
+    assert main(["catalog", "--json"]) == 0
+    assert all("episodes" not in r for r in json.loads(capsys.readouterr().out))

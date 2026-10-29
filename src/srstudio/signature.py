@@ -97,7 +97,6 @@ def text_width(text: str, height: float) -> float:
     "graphic",
     "signature-code",
     summary="The recurring code (ADR 0001) as stroked glyphs; nothing when the episode is unsigned",
-    episodes=("06",),
 )
 def code(
     cv: Canvas,
@@ -160,7 +159,6 @@ _TOKEN = re.compile(r"[A-Za-z]|-?\d+(?:\.\d+)?")
     "signature-cactus",
     summary="The recurring potted cactus (ADR 0001), gradients or pen stroke by "
     "palette; nothing when the episode is unsigned",
-    episodes=("06",),
 )
 def cactus(cv: Canvas, parent, x, y, scale: float = 1):
     """A small potted cactus with one flower, its pot's base centred on ``x, y``; 152 units tall at scale 1."""

@@ -387,12 +387,7 @@ CHAIR_D = _d(
 )  # fmt: skip
 
 
-@register(
-    "location",
-    "toon-room",
-    summary="A gradient wall, a window and a chair back",
-    episodes=("employee-survey", "the-report", "logo-bigger", "quick-question"),
-)
+@register("location", "toon-room", summary="A gradient wall, a window and a chair back")
 def room(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, 0, 0, cv.width, cv.height, cv.grad("toon-wall", [(float(o), c) for o, c in WALL], (0, 0, 0, 1)))
@@ -403,12 +398,7 @@ def room(cv: Canvas, parent) -> None:
     _path(cv, g, CHAIR_D, CHAIR)
 
 
-@register(
-    "location",
-    "toon-desk",
-    summary="The laptop lid and the desk in front of the character",
-    episodes=("employee-survey", "the-report", "logo-bigger", "quick-question"),
-)
+@register("location", "toon-desk", summary="The laptop lid and the desk in front of the character")
 def desk(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     _path(cv, g, _d("M", (418, 531), "L", (660, 523), "L", (660, 760), "L", (415, 752), "Z"), LAPTOP)
@@ -490,12 +480,7 @@ def _face(cv: Canvas, g, eyes: Eyes, mouth: Mouth) -> None:
         flat(cv, g, s, LIPS)
 
 
-@register(
-    "character",
-    "toon-cat",
-    summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression",
-    episodes=("employee-survey",),
-)
+@register("character", "toon-cat", summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression")
 def cat(
     cv: Canvas, parent, poses: Sequence[Pose], duration: float, taps: Sequence[float] = (), enter: float = 0.0
 ) -> list:
@@ -526,12 +511,7 @@ def pill_width(measure: Callable[[str], float], text: str) -> float:
     return round(max(measure(text) + CAPTION_PAD, round(fh(CAPTION_H))), 2)
 
 
-@register(
-    "graphic",
-    "toon-captions",
-    summary="Each cue in a white pill at the top, in the style's italic",
-    episodes=("employee-survey", "the-report", "logo-bigger", "quick-question"),
-)
+@register("graphic", "toon-captions", summary="Each cue in a white pill at the top, in the style's italic")
 def captions(
     cv: Canvas, parent, lines: Sequence[Line], measure: Callable[[str], float], tints: Mapping[str, str] | None = None
 ) -> None:

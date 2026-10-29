@@ -23,7 +23,7 @@ import random
 import re
 import zlib
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from numbers import Number
 from typing import Any
 
@@ -133,7 +133,6 @@ class Look:
     accents: tuple[str, ...] = ()
     blink: float = BLINK
     toilet: bool = False
-    episodes: tuple[str, ...] = field(default=(), compare=False)
 
     def __post_init__(self) -> None:
         for key in ("skin", "hair_color", "top"):
@@ -162,7 +161,6 @@ LOOKS: dict[str, Look] = {
             "#2f3d5c",
             "broad",
             ("tie", "blazer"),
-            episodes=("brand-refresh",),
         ),
         Look(
             "rosa",
@@ -174,7 +172,6 @@ LOOKS: dict[str, Look] = {
             "slim",
             ("cane", "pearls"),
             blink=4.6,
-            episodes=("brand-refresh",),
         ),
         Look(
             "gary",
@@ -184,7 +181,6 @@ LOOKS: dict[str, Look] = {
             "#7a5a3c",
             "#5b8c4e",
             "round",
-            episodes=("book-report", "the-lore"),
         ),
         Look(
             "kai",
@@ -196,7 +192,6 @@ LOOKS: dict[str, Look] = {
             "kid",
             ("hoodie", "headset"),
             blink=2.6,
-            episodes=("the-lore", "first-date"),
         ),
         Look(
             "priya",
@@ -207,7 +202,6 @@ LOOKS: dict[str, Look] = {
             "#3c7a89",
             "slim",
             ("glasses",),
-            episodes=("book-report",),
         ),
         Look(
             "deb",
@@ -217,7 +211,6 @@ LOOKS: dict[str, Look] = {
             "#20150f",
             "#f2a541",
             "round",
-            episodes=("first-date",),
         ),
         Look(
             "jun",
@@ -227,7 +220,6 @@ LOOKS: dict[str, Look] = {
             "#4a4e69",
             "#22223b",
             "slim",
-            episodes=("first-date", "gritty-reboot", "therapy-session"),
         ),
         Look(
             "feld",
@@ -239,7 +231,6 @@ LOOKS: dict[str, Look] = {
             "slim",
             ("glasses",),
             blink=5.0,
-            episodes=("therapy-session",),
         ),
         Look(
             "omar",
@@ -250,7 +241,6 @@ LOOKS: dict[str, Look] = {
             "#1d3557",
             "broad",
             ("moustache", "tie", "blazer"),
-            episodes=("breaking-news",),
         ),
         Look(
             "flush",
@@ -262,7 +252,6 @@ LOOKS: dict[str, Look] = {
             "slim",
             blink=2.2,
             toilet=True,
-            episodes=("brand-refresh", "the-lore", "gritty-reboot", "breaking-news"),
         ),
     )
 }
@@ -1229,7 +1218,7 @@ def _drawer(look: Look) -> Drawer:
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary
-    return register("character", f"collage-{look.name}", summary=look.summary, episodes=look.episodes)(draw)
+    return register("character", f"collage-{look.name}", summary=look.summary)(draw)
 
 
 DRAWERS: dict[str, Drawer] = {name: _drawer(look) for name, look in LOOKS.items()}

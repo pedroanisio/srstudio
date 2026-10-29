@@ -19,3 +19,11 @@ def test_the_drive_publisher_names_the_engine_and_the_packages():
     env = environment("srstudio-drive.service")
     assert env["SRSTUDIO_ENGINE"] == "%h/worskpace/generated/bin/scene-render"
     assert env["SRSTUDIO_PACKAGES"] == "%h/worskpace/generated/packages"
+
+
+def test_the_catalog_page_is_built_from_the_measured_usage():
+    """The registry no longer says which episodes use a part (ADR 0032): without the usage report the page would
+    claim none, so the unit hands it the one ``srstudio usage`` last wrote."""
+    unit = (UNITS / "srstudio-catalog.service").read_text()
+    command = unit[unit.index("ExecStart=") :].split("\nEnvironment=")[0]
+    assert "--usage generated/catalog/usage.json" in command

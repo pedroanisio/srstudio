@@ -50,12 +50,7 @@ def _office_desk_front(cv: Canvas, g, p):
     props.laptop(cv, g)
 
 
-@register(
-    "location",
-    "office-wide",
-    summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back",
-    episodes=("01", "02", "03", "04", "06"),
-)
+@register("location", "office-wide", summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back")
 def office_wide(cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle", shots=None, instanced=False):
     """``instanced`` places the room and the desk as shared symbols (drawn once per document).
 
@@ -84,7 +79,6 @@ def office_wide(cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle"
     "office-desk",
     summary="Office, wide shot without the foreground candidate: whoever sits behind "
     "the desk; chair=False leaves the chair to the slot (to spin it)",
-    episodes=("06",),
 )
 def office_desk(
     cv: Canvas,
@@ -120,7 +114,6 @@ def office_desk(
     "location",
     "office-reverse",
     summary="Office, reverse angle on the candidate: warm wall, gray chair, glass of water",
-    episodes=("01", "02", "03", "04", "06"),
 )
 def office_reverse(cv: Canvas, parent, in_chair: Slot = None, id="candidate-reverse-angle", shots=None):
     p = props.office_paints(cv)
@@ -146,10 +139,7 @@ def office_reverse(cv: Canvas, parent, in_chair: Slot = None, id="candidate-reve
 
 
 @register(
-    "location",
-    "cafe",
-    summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter",
-    episodes=("05",),
+    "location", "cafe", summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter"
 )
 def cafe(
     cv: Canvas,
@@ -204,9 +194,7 @@ def park_seat_y(bottom: float, scale: float) -> float:
     return PARK_SEAT_Y - bottom * scale
 
 
-@register(
-    "location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench", episodes=("05",)
-)
+@register("location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench")
 def park(cv: Canvas, parent, on_bench: Slot = None, beside_bench: Slot = None, id="location-park", shots=None):
     p = props.cafe_paints(cv)
     g = cv.group(parent, id)

@@ -44,7 +44,7 @@ def test_registry_lists_the_shipped_parts_and_new_ones():
         ("graphic", "scorecard"),
     } <= names
 
-    @register("prop", "unit_test_prop", summary="a test", episodes=("t",))
+    @register("prop", "unit_test_prop", summary="a test")
     def prop(cv, parent):
         return cv.group(parent, "unit-test-prop")
 
@@ -54,6 +54,12 @@ def test_registry_lists_the_shipped_parts_and_new_ones():
         registry.get("prop", "missing")
     with pytest.raises(ValueError):
         register("gadget", "x")
+
+
+def test_the_registry_holds_no_episodes_the_usage_report_measures_them():
+    with pytest.raises(TypeError):
+        register("prop", "unit_test_episodes", episodes=("t",))  # type: ignore[call-arg]
+    assert all("episodes" not in row for row in registry.catalog())
 
 
 def test_an_effect_is_defined_once_and_named_by_its_id():

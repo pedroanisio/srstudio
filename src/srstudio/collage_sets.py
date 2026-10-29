@@ -117,7 +117,6 @@ def _frame(cv: Canvas, g, key: str, x: float, y: float, w: float, h: float, fill
     "location",
     "collage-boardroom",
     summary="A glass-walled boardroom: city at dusk, a mission poster, a shelf with the signature cactus",
-    episodes=("brand-refresh",),
 )
 def boardroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -144,7 +143,6 @@ def boardroom(cv: Canvas, parent) -> object:
     "location",
     "collage-classroom",
     summary="A classroom: chalkboard with scribbles, a colour strip, a clock and the cactus on the sill",
-    episodes=("book-report",),
 )
 def classroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -181,7 +179,6 @@ def classroom(cv: Canvas, parent) -> object:
     "collage-living-room",
     summary="A living room: striped wallpaper, a window with curtains, a "
     "framed sunset, a floor lamp, the cactus on a shelf",
-    episodes=("first-date", "the-lore"),
 )
 def living_room(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -218,7 +215,6 @@ def living_room(cv: Canvas, parent) -> object:
     "location",
     "collage-cafe",
     summary="A café: painted brick, a chalk menu, two glowing pendant lamps, the cactus on the counter shelf",
-    episodes=("first-date",),
 )
 def cafe(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -254,7 +250,6 @@ def cafe(cv: Canvas, parent) -> object:
     "location",
     "collage-newsroom",
     summary="A TV newsroom: blue gradient, a spinning-globe graphic, light streaks, the cactus on the anchor's shelf",
-    episodes=("breaking-news",),
 )
 def newsroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -280,7 +275,6 @@ def newsroom(cv: Canvas, parent) -> object:
     "collage-therapy",
     summary="A therapist's office: bookshelf, framed diploma, window blinds, a "
     "rubber plant and the cactus on the books",
-    episodes=("therapy-session",),
 )
 def therapy(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -308,7 +302,6 @@ def therapy(cv: Canvas, parent) -> object:
     "location",
     "collage-stage",
     summary="The BOWLHEADS stage: a candy sky, a rainbow, sparkles, a tiled floor and the cactus on a floating shelf",
-    episodes=("brand-refresh", "the-lore", "gritty-reboot", "breaking-news"),
 )
 def stage(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))
@@ -337,7 +330,6 @@ def stage(cv: Canvas, parent) -> object:
     "collage-bathroom",
     summary="A family bathroom: two-tone tiles, a mirror with a sheen, a striped shower curtain, a towel on its rail "
     "and the cactus on the shelf above the sink",
-    episodes=("goldfish-funeral",),
 )
 def bathroom(cv: Canvas, parent) -> object:
     g = cv.group(parent, cv.uid("g"))

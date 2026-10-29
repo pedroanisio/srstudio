@@ -15,20 +15,7 @@ from srstudio.saga import SagaError
 from srstudio.timeline import Take
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
-REELS = (
-    "known_issue",
-    "annual_review",
-    "group_chat",
-    "card_reader",
-    "update",
-    "free_tier",
-    "open_plan",
-    "icebreaker",
-    "exit_interview",
-    "moving_day",
-    "expense_report",
-    "on_hold",
-)
+REELS = tuple(sorted(p.name.removeprefix("saga_").removesuffix("_audio.py") for p in EPISODES.glob("saga_*_audio.py")))
 SECONDS_A_WORD = 0.35  # a calm speaking rate for the synthetic recording
 
 
@@ -67,7 +54,8 @@ def test_the_reels_are_numbered_in_order_with_distinct_saga_slugs():
         reels = [importlib.import_module(f"saga_{n}_audio").REEL for n in REELS]
     finally:
         sys.path.pop(0)
-    assert [r.number for r in reels] == [f"S{i}" for i in range(1, len(REELS) + 1)]
+    assert len(REELS) >= 12  # the reels are found, not listed
+    assert sorted(int(r.number.removeprefix("S")) for r in reels) == list(range(1, len(REELS) + 1))
     assert len({r.slug for r in reels}) == len(REELS) and all(r.slug.startswith("saga-") for r in reels)
     for n in REELS:
         assert (EPISODES / f"saga_{n}.py").read_text().count(f"from saga_{n}_audio import REEL") == 1

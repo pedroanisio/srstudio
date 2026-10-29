@@ -130,8 +130,7 @@ def test_the_characters_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert {"toon-dog", "toon-frog", "toon-bear", "toon-rabbit"} <= set(names)
     assert names["toon-dog"]["kind"] == "character" and names["toon-dog"]["style"] == "toon"
-    assert names["toon-bear"]["episodes"] == ["quick-question"] == names["toon-rabbit"]["episodes"]
-    assert names["toon-frog"]["episodes"] == ["the-report", "logo-bigger"]
+    assert all(names[n]["kind"] == "character" for n in ("toon-frog", "toon-bear", "toon-rabbit"))
 
 
 def test_a_sticky_note_sticks_to_the_figure_and_moves_with_it():

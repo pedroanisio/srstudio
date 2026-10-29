@@ -741,7 +741,6 @@ def figure(
     "character",
     "toon-dog",
     summary="A floppy-eared dog at the desk, brush-drawn: the cat's expressions and arms, its own snout and ears",
-    episodes=("the-report", "logo-bigger"),
 )
 def dog(
     cv: Canvas,
@@ -760,7 +759,6 @@ def dog(
     "character",
     "toon-frog",
     summary="A wide-mouthed frog at the desk, brush-drawn: eyes on bumps, a pale belly, the cat's vocabulary",
-    episodes=("the-report", "logo-bigger"),
 )
 def frog(
     cv: Canvas,
@@ -779,7 +777,6 @@ def frog(
     "character",
     "toon-bear",
     summary="A brown bear at the desk: round ears, a pale muzzle, eyebrows, blushing cheeks, blinks and lip sync",
-    episodes=("quick-question",),
 )
 def bear(
     cv: Canvas,
@@ -798,7 +795,6 @@ def bear(
     "character",
     "toon-rabbit",
     summary="A pale rabbit at the desk: tall pink-lined ears, whiskers, front teeth, eyebrows, blinks and lip sync",
-    episodes=("quick-question",),
 )
 def rabbit(
     cv: Canvas,

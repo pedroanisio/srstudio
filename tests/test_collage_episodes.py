@@ -2,6 +2,7 @@
 sets, opens on a question, holds a silent beat of at least 1.2 s before its button, and lands a zoom and a sting;
 the shared build's helpers (timing, prop spans, effects, staging checks) are tested on them (ADR 0026)."""
 
+import ast
 import importlib
 import sys
 from dataclasses import replace
@@ -14,19 +15,15 @@ from srstudio import Canvas, collage, collage_sets, flat_counter, sketch
 from srstudio.canvas import Signature
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
-NAMES = (
-    "brand_refresh",
-    "book_report",
-    "first_date",
-    "the_lore",
-    "gritty_reboot",
-    "breaking_news",
-    "therapy_session",
-    "the_will",
-    "intervention",
-    "goldfish_funeral",
-    "thought_leader",
-    "final_broadcast",
+
+
+def _imports(path: Path, module: str) -> bool:
+    return any(isinstance(n, ast.ImportFrom) and n.module == module for n in ast.parse(path.read_text()).body)
+
+
+# every sketch whose data module stages it with the shared Collage build, found rather than listed
+NAMES = tuple(
+    sorted(p.name.removesuffix("_data.py") for p in EPISODES.glob("*_data.py") if _imports(p, "_collage_sketch"))
 )
 
 
@@ -38,6 +35,10 @@ def mods():
         return builder, {n: importlib.import_module(f"{n}_data") for n in NAMES}
     finally:
         sys.path.pop(0)
+
+
+def test_the_collage_sketches_are_found():
+    assert len(NAMES) >= 12 and "brand_refresh" in NAMES and "final_broadcast" in NAMES
 
 
 def test_the_sketches_are_distinct_and_checked(mods):

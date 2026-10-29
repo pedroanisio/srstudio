@@ -26,6 +26,7 @@ import re
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
+from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -263,12 +264,14 @@ def lines_of(project: Path) -> tuple[list[Line], int]:
         raise CatalogError(f"{path}: {type(exc).__name__} {exc}") from None
 
 
-def style_of(slug: str, number: str = "") -> str:
-    """The style of the parts registered for the episode (by slug, or by its number)."""
-    for e in registry.entries():
-        if e.style and (slug in e.episodes or (number and number in e.episodes)):
-            return e.style
-    return ""
+def style_of(slug: str, usage: Report | None) -> str:
+    """The style most of the episode's measured parts belong to (a tie goes to the first by name; shared parts
+    count for none), or "" when the episode was not measured."""
+    if usage is None:
+        return ""
+    styles = {e.name: e.style for e in registry.entries()}
+    counts = Counter(styles[name] for name in usage.episodes.get(slug, ()) if styles.get(name))
+    return min(counts, key=lambda style: (-counts[style], style)) if counts else ""
 
 
 def _scene(project: Path) -> Path | None:
@@ -276,9 +279,9 @@ def _scene(project: Path) -> Path | None:
     return found[0] if found else None
 
 
-def discover(episodes: Path, renders: Path, notes: Notes) -> list[Card]:
+def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None = None) -> list[Card]:
     """One card per project folder with a scene document and a ``renders/<slug>.mp4``: noted episodes first, in
-    the notes' order, then the rest by name."""
+    the notes' order, then the rest by name; each card's style comes from the parts ``usage`` measured."""
     cards = []
     for project in sorted(p for p in Path(episodes).iterdir() if p.is_dir()):
         slug, render, scene = project.name, Path(renders) / f"{project.name}.mp4", _scene(project)
@@ -303,7 +306,7 @@ def discover(episodes: Path, renders: Path, notes: Notes) -> list[Card]:
                 slug=slug,
                 title=title,
                 description=description,
-                style=style_of(slug, note.number),
+                style=style_of(slug, usage),
                 number=note.number,
                 lede=note.lede or description,
                 highlights=note.highlights,
@@ -365,8 +368,8 @@ def _card(c: Card, media: Callable[[Path], str], poster: Callable[[Path], str] |
 
 
 def _episodes_of(entry: registry.Entry, usage: Report | None) -> list[str]:
-    """The episodes a part appears in: measured when there is a usage report, else as registered."""
-    return usage.used_by(entry.name) if usage is not None else list(entry.episodes)
+    """The episodes a part appears in, as measured; none are claimed without a usage report."""
+    return usage.used_by(entry.name) if usage is not None else []
 
 
 def _registry_table(usage: Report | None = None) -> str:
@@ -745,7 +748,7 @@ def build(
     except OSError as exc:
         raise CatalogError(f"base page: {exc}") from None
     check_base(page)
-    cards = discover(episodes, renders, notes)
+    cards = discover(episodes, renders, notes, usage)
     old = os.umask(0o077)
     try:
         cache.mkdir(parents=True, exist_ok=True)

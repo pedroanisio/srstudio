@@ -354,6 +354,6 @@ def test_captions_need_the_style_font():
 def test_the_bathroom_is_a_registered_set_with_a_shelf_for_the_signature():
     assert "bathroom" in collage_sets.SETS and "bathroom" in collage_sets.SHELVES
     entry = next(e for e in registry.entries() if e.name == "collage-bathroom")
-    assert entry.kind == "location" and "goldfish-funeral" in entry.episodes
+    assert entry.kind == "location" and entry.style == "collage"
     x0, y0, x1, y1 = collage_sets.signature_box("bathroom")
     assert 0 <= x0 < x1 <= 1080 and y1 < collage.FIGURE_BOX[1] + 400

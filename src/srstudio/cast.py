@@ -84,12 +84,7 @@ class OfficeActor(Actor):
             self.cv.path(closed, f"M{x - 12} -20 Q{x} -9 {x + 12} -20", stroke=self.cv.ink, sw=3.8)
 
 
-@register(
-    "character",
-    "manager",
-    summary="The interviewer: glasses-free, receding hairline, raised brows, facepalm",
-    episodes=("01", "02", "03", "04"),
-)
+@register("character", "manager", summary="The interviewer: glasses-free, receding hairline, raised brows, facepalm")
 class Manager(OfficeActor):
     """extras: ``brows`` = (left_keys, right_keys) rotation; ``pupils`` = y keys;
     ``hide_right_arm_at`` = time; ``facepalm`` = (start, end)."""
@@ -154,12 +149,7 @@ class Manager(OfficeActor):
         self.facepalm = palm
 
 
-@register(
-    "character",
-    "candidate",
-    summary="The applicant: quiff, dot eyes, a forearm that raises one finger",
-    episodes=("01", "02", "03", "04"),
-)
+@register("character", "candidate", summary="The applicant: quiff, dot eyes, a forearm that raises one finger")
 class Candidate(OfficeActor):
     """extras: ``forearm`` = rotation keys at the elbow; ``pointing`` = spans the raised finger shows."""
 
@@ -236,7 +226,7 @@ class CafeActor(Actor):
         }
 
 
-@register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings", episodes=("05",))
+@register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings")
 class Barista(CafeActor):
     """extras: ``name`` on the badge (default AVA)."""
 
@@ -286,12 +276,7 @@ class Barista(CafeActor):
             cv.path(eyes, f"M{xx - 8} -20 l-6 -5 M{xx + 7} -20 l5 -5", stroke=ink, sw=2)
 
 
-@register(
-    "character",
-    "customer",
-    summary="Milo the customer: beanie, stubble, phone in hand, standing or seated",
-    episodes=("05",),
-)
+@register("character", "customer", summary="Milo the customer: beanie, stubble, phone in hand, standing or seated")
 class Customer(CafeActor):
     """extras: ``held_cup`` = spans the takeaway cup is in hand (standing only; seated always holds it)."""
 
@@ -351,12 +336,7 @@ class Customer(CafeActor):
             self.cv.line(head, xx, yy, xx + 2, yy + 7, "#8F6B4D", 1.7, opacity=0.6)
 
 
-@register(
-    "character",
-    "pigeon",
-    summary="A park pigeon; mirrored with a negative scaleX, nods by rotation keys",
-    episodes=("05",),
-)
+@register("character", "pigeon", summary="A park pigeon; mirrored with a negative scaleX, nods by rotation keys")
 def pigeon(cv: Canvas, parent, x=1000, y=1556, scale=0.83, flip=True, nods=(), id="pigeon"):
     ink = cv.ink
     bird = cv.group(parent, id, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)

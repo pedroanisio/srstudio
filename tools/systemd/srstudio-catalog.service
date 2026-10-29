@@ -13,6 +13,7 @@ ExecStart=%h/worskpace/.venv/bin/srstudio page \
     --episodes generated/episodes \
     --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json \
+    --usage generated/catalog/usage.json \
     --cache generated/catalog/cache \
     --engine generated/bin/scene-render \
     --out catalogo-scene-render.html

@@ -66,12 +66,7 @@ class Toast:
 
 
 # -- sets -------------------------------------------------------------------------------------------------------------
-@register(
-    "location",
-    "toon-meeting",
-    summary="A mint meeting room: a whiteboard where the window was, and the chair",
-    episodes=("the-report", "logo-bigger", "quick-question"),
-)
+@register("location", "toon-meeting", summary="A mint meeting room: a whiteboard where the window was, and the chair")
 def meeting(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(
@@ -85,12 +80,7 @@ def meeting(cv: Canvas, parent) -> None:
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
-@register(
-    "prop",
-    "toon-mug",
-    summary="A coffee mug on the desk, steaming while asked",
-    episodes=("the-report", "quick-question"),
-)
+@register("prop", "toon-mug", summary="A coffee mug on the desk, steaming while asked")
 def mug(cv: Canvas, parent, x: float = 350, steam: Sequence[tuple[float, float]] = ()) -> None:
     """The mug stands on the desk top with its handle to the right; ``steam`` lists the spans its wisps show."""
     if any(not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b) for a, b in steam):
@@ -126,12 +116,7 @@ def clock_angles(time: str) -> tuple[float, float]:
     return ((hh % 12) * 30 + mm * 0.5) % 360, mm * 6.0
 
 
-@register(
-    "prop",
-    "toon-clock",
-    summary="A wall clock whose hands jump to each listed time",
-    episodes=("the-report", "quick-question"),
-)
+@register("prop", "toon-clock", summary="A wall clock whose hands jump to each listed time")
 def clock(
     cv: Canvas, parent, times: Sequence[tuple[float, str]], at: tuple[float, float] = (105, 385), r: float = 45
 ) -> None:
@@ -162,12 +147,7 @@ def clock(
     cv.ellipse(g, fx(cx - 5), fy(cy - 5), fh(10), fh(10), cv.ink)
 
 
-@register(
-    "prop",
-    "toon-notes",
-    summary="Sticky notes on the back of the laptop lid, lettered in the style's font",
-    episodes=("the-report", "quick-question"),
-)
+@register("prop", "toon-notes", summary="Sticky notes on the back of the laptop lid, lettered in the style's font")
 def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
     """Up to four notes on the lid, each turned a little the other way; ``texts`` are short (one or two words)."""
     if not texts or len(texts) > 4 or any(not t.strip() or len(t) > 10 for t in texts):
@@ -190,9 +170,7 @@ def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
         cv.text(n, cv.uid("note"), text, fx(x), fy(y), int(fh(side)), int(fh(side)), size, color=cv.ink, wrap="word")
 
 
-@register(
-    "graphic", "toon-toast", summary="A phone notification that buzzes in over the window", episodes=("the-report",)
-)
+@register("graphic", "toon-toast", summary="A phone notification that buzzes in over the window")
 def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28) -> None:
     """Each toast slides in from the right, shakes with the buzz and holds until its end."""
     for i, t in enumerate(items):
@@ -236,12 +214,7 @@ def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28) -> None:
         cv.keys(card, "x", slide + shake[1:], hold=False, local=False)
 
 
-@register(
-    "graphic",
-    "toon-board-text",
-    summary="Words in blue marker on the meeting room's whiteboard",
-    episodes=("the-report", "logo-bigger", "quick-question"),
-)
+@register("graphic", "toon-board-text", summary="Words in blue marker on the meeting room's whiteboard")
 def board_text(
     cv: Canvas, parent, text: str, size: int = 40, start: float | None = None, end: float | None = None
 ) -> None:
@@ -270,12 +243,7 @@ def scale_keys(sizes: Sequence[tuple[float, float]], grow: float = GROW) -> list
     return keys
 
 
-@register(
-    "graphic",
-    "toon-logo",
-    summary="A sun logo on the whiteboard that grows to each asked size",
-    episodes=("logo-bigger",),
-)
+@register("graphic", "toon-logo", summary="A sun logo on the whiteboard that grows to each asked size")
 def logo(
     cv: Canvas, parent, sizes: Sequence[tuple[float, float]] = ((0.0, 1.0),), shadow: tuple[float, float] | None = None
 ) -> None:
@@ -323,12 +291,7 @@ def logo(
     cv.keys(body, "scaleY", keys, hold=False, local=False)
 
 
-@register(
-    "graphic",
-    "toon-badge",
-    summary="A dark call badge under the captions: a red dot and who is on the line",
-    episodes=("the-report", "logo-bigger", "quick-question"),
-)
+@register("graphic", "toon-badge", summary="A dark call badge under the captions: a red dot and who is on the line")
 def badge(
     cv: Canvas, parent, text: str, start: float, end: float, measure: Callable[[str], float], size: int = 28
 ) -> None:

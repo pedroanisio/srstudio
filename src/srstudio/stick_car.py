@@ -277,12 +277,7 @@ def _sunk(cv: Canvas) -> str:
 
 
 # -- the cabin --------------------------------------------------------------------------------------------------
-@register(
-    "location",
-    "stick-car",
-    episodes=("repeat-after-me",),
-    tags=("car", "interior", "driving", "window", "scrolling", "parallax"),
-)
+@register("location", "stick-car", tags=("car", "interior", "driving", "window", "scrolling", "parallax"))
 def car(
     cv: Canvas, parent, end: float, *, scroll: Scroll | None = None, passing: Sequence[float] = (), defocus: float = 0.0
 ) -> None:
@@ -406,12 +401,7 @@ def _belt(cv: Canvas, parent, pose: RigPose) -> None:
     box(cv, parent, buckle[0] - 6, buckle[1] - 5, 14, 10, "#8c929b", r=2)
 
 
-@register(
-    "prop",
-    "stick-cockpit",
-    episodes=("repeat-after-me",),
-    tags=("car", "steering-wheel", "seatbelt", "shadows", "sunlight", "vignette"),
-)
+@register("prop", "stick-cockpit", tags=("car", "steering-wheel", "seatbelt", "shadows", "sunlight", "vignette"))
 def cockpit(
     cv: Canvas,
     parent,
@@ -461,7 +451,7 @@ def cockpit(
     box(s, _group(s, parent, blend="multiply", opacity=0.45), 0, 0, s.width, s.height, edge)
 
 
-@register("prop", "stick-ride", episodes=("repeat-after-me",), tags=("car", "motion", "suspension"))
+@register("prop", "stick-ride", tags=("car", "motion", "suspension"))
 def ride(cv: Canvas, node, end: float, *, amplitude: float = 2.5, phase: float = 0.0, step: float = 1 / 12) -> None:
     """Bobs ``node`` up and down by up to ``amplitude`` px, as the road shakes the car: two incommensurate waves
     sampled at ``step`` (12 fps cartoon timing), shifted by ``phase`` radians so two nodes need not bob together,
@@ -483,7 +473,7 @@ def ride(cv: Canvas, node, end: float, *, amplitude: float = 2.5, phase: float =
     cv.keys(node, "y", values, kind="linear")
 
 
-@register("prop", "stick-car-seat", episodes=("repeat-after-me",), tags=("car", "seat", "foreground"))
+@register("prop", "stick-car-seat", tags=("car", "seat", "foreground"))
 def seat(cv: Canvas, parent) -> None:
     """The passenger seat, close to the camera and over the driver's lap: its back at the left edge (top at
     :data:`SEAT_TOP`, clear of the driver's head) with a pleated panel between bolsters, its headrest, and a long
@@ -524,7 +514,7 @@ SCREEN_W, SCREEN_H = 330, 220  # the laptop's screen, before ``scale``
 BADGE, STAMP = "#a51d24", "#374151"  # the unread pill and the time stamp: 7:1 and more, for small antialiased text
 
 
-@register("prop", "stick-laptop", episodes=("repeat-after-me",), tags=("laptop", "email", "font"))
+@register("prop", "stick-laptop", tags=("laptop", "email", "font"))
 def laptop(
     cv: Canvas, parent, x: float, y: float, *, title: str, rows: Sequence[str], badge: str = "", scale: float = 1.0
 ):
@@ -556,7 +546,7 @@ def laptop(
 PHONE_W, PHONE_H = 204, 300
 
 
-@register("prop", "stick-phone", episodes=("repeat-after-me",), tags=("phone", "mount", "notification", "buzz", "font"))
+@register("prop", "stick-phone", tags=("phone", "mount", "notification", "buzz", "font"))
 def phone(cv: Canvas, parent, *, sender: str, text: str, buzz: Sequence[float] = (), at: tuple[float, float] = MOUNT):
     """A phone standing in a windshield mount with its top left at ``at`` (the dashboard's mount, :data:`MOUNT`),
     showing one notification from ``sender``; it shakes, with buzz marks, for a moment at each time in ``buzz``

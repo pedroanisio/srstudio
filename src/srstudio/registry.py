@@ -2,9 +2,10 @@
 
 Builders register under a kind (``character``, ``location``, ``prop``, ``graphic``) and a
 name. New modules extend the catalogue just by importing them; ``srstudio catalog`` lists
-what is available with its summary, its style and the episodes it appeared in. The style is
-taken from the module (see :func:`srstudio.styles.style_of_module`) unless ``register`` names one;
-parts that adapt to any palette, like the signature marks, carry no style.
+what is available with its summary and its style. The style is taken from the module (see
+:func:`srstudio.styles.style_of_module`) unless ``register`` names one; parts that adapt to any palette, like the
+signature marks, carry no style. Which episodes use a part is measured, not declared: ``srstudio usage`` builds
+every episode and records the parts it calls (ADR 0017, ADR 0032).
 """
 
 from __future__ import annotations
@@ -22,7 +23,6 @@ class Entry:
     name: str
     builder: Callable[..., Any]
     summary: str = ""
-    episodes: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     module: str = ""
     style: str = ""  # style slug, or "" when the part serves every style
@@ -34,16 +34,8 @@ class Entry:
 _REGISTRY: dict[str, dict[str, Entry]] = {k: {} for k in KINDS}
 
 
-def register(
-    kind: str,
-    name: str,
-    *,
-    summary: str = "",
-    episodes: tuple[str, ...] = (),
-    tags: tuple[str, ...] = (),
-    style: str | None = None,
-):
-    """Decorator: ``@register("prop", "coffee-cup", summary="...", episodes=("05",))``.
+def register(kind: str, name: str, *, summary: str = "", tags: tuple[str, ...] = (), style: str | None = None):
+    """Decorator: ``@register("prop", "coffee-cup", summary="...")``.
 
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style."""
@@ -57,7 +49,7 @@ def register(
         from .styles import style_of_module  # here, not at import: styles imports canvas and soundtrack
 
         resolved = style_of_module(obj.__module__) if style is None else style
-        _REGISTRY[kind][name] = Entry(kind, name, obj, doc, tuple(episodes), tuple(tags), obj.__module__, resolved)
+        _REGISTRY[kind][name] = Entry(kind, name, obj, doc, tuple(tags), obj.__module__, resolved)
         return obj
 
     return wrap
@@ -87,7 +79,6 @@ def catalog(style: str | None = None) -> list[dict]:
             "kind": e.kind,
             "name": e.name,
             "summary": e.summary,
-            "episodes": list(e.episodes),
             "tags": list(e.tags),
             "module": e.module,
             "style": e.style,

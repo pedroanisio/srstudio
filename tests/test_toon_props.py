@@ -203,18 +203,18 @@ def test_the_badge_sits_under_the_pill_sized_by_its_text():
         toon_props.badge(canvas(), cv.comp, "x", 1.0, 1.0, measure)
 
 
-def test_the_props_are_registered_with_the_toon_style_and_their_episodes():
+def test_the_props_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert "toon_props" in TOON.parts
     expected = {
-        "toon-meeting": ("location", ["the-report", "logo-bigger", "quick-question"]),
-        "toon-mug": ("prop", ["the-report", "quick-question"]),
-        "toon-clock": ("prop", ["the-report", "quick-question"]),
-        "toon-notes": ("prop", ["the-report", "quick-question"]),
-        "toon-toast": ("graphic", ["the-report"]),
-        "toon-board-text": ("graphic", ["the-report", "logo-bigger", "quick-question"]),
-        "toon-logo": ("graphic", ["logo-bigger"]),
-        "toon-badge": ("graphic", ["the-report", "logo-bigger", "quick-question"]),
+        "toon-meeting": "location",
+        "toon-mug": "prop",
+        "toon-clock": "prop",
+        "toon-notes": "prop",
+        "toon-toast": "graphic",
+        "toon-board-text": "graphic",
+        "toon-logo": "graphic",
+        "toon-badge": "graphic",
     }
-    for name, (kind, episodes) in expected.items():
-        assert (names[name]["kind"], names[name]["episodes"], names[name]["style"]) == (kind, episodes, "toon"), name
+    for name, kind in expected.items():
+        assert (names[name]["kind"], names[name]["style"]) == (kind, "toon"), name

@@ -60,7 +60,7 @@ def _check_time(t: float, end: float, what: str) -> float:
     return float(t)
 
 
-@register("location", "stick-studio-flat", episodes=("the-viewing",), tags=("home", "flat", "rental", "kitchen"))
+@register("location", "stick-studio-flat", tags=("home", "flat", "rental", "kitchen"))
 def studio(cv: Canvas, parent) -> None:
     """A studio flat for rent, :data:`SET_W` wide: the wall and its skirting over floorboards, the kitchen counter
     with a stove, a pot and a tap, a toilet plumbed in right beside the stove, a window whose sunny view is painted
@@ -230,7 +230,7 @@ def _between(talk: Sequence[tuple[float, float]], end: float) -> list[tuple[floa
     return out
 
 
-@register("prop", "stick-murphy-bed", episodes=("the-viewing",), tags=("home", "flat", "bed", "reveal"))
+@register("prop", "stick-murphy-bed", tags=("home", "flat", "bed", "reveal"))
 def murphy_bed(
     cv: Canvas,
     parent,

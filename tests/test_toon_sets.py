@@ -55,7 +55,6 @@ def test_the_sets_and_props_are_registered_for_the_toon_style():
     ):
         assert entries[name].kind == kind
         assert entries[name].style == "toon"
-        assert entries[name].episodes == ()
 
 
 # -- cycle_keys -----------------------------------------------------------------------------------------------------

@@ -444,7 +444,6 @@ BOARD_ENDS = (
     "cel-room",
     summary="A plain wall, a plank floor fanning from a vanishing point and a wooden desk, under the room's own "
     "measured camera inside the world's",
-    episodes=("mushroom-training",),
 )
 def room(
     cv: Canvas,
@@ -543,7 +542,6 @@ def _press_keys(run: Run, pressed: Pressed) -> list[tuple[float, float]]:
     "character",
     "cel-traced",
     summary="A traced character: a sheet of filled drawings, one held per run of the pose timeline",
-    episodes=("mushroom-training",),
 )
 def traced(
     cv: Canvas, parent, runs: Sequence[Run], drawings: Mapping[str, Sequence[Fill]], pressed: Pressed | None = None
@@ -586,7 +584,6 @@ def traced(
     "graphic",
     "cel-lettering",
     summary="A caption as traced lettering: timed boxes in the shade colour with the glyphs as white paths",
-    episodes=("mushroom-training",),
 )
 def lettering(cv: Canvas, parent, caption: Caption):
     g = cv.group(parent, cv.uid("g"), start=caption.start, end=caption.end)

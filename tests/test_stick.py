@@ -381,7 +381,7 @@ def test_the_hook_card_sets_its_text_in_the_caption_font():
 def test_the_rig_parts_are_registered():
     names = {e.name: e for e in registry.entries()}
     assert names["stick-rig"].kind == "character" and names["stick-rig"].style == "stick"
-    assert names["stick-card"].kind == "graphic" and "screen-share" in names["stick-card"].episodes
+    assert names["stick-card"].kind == "graphic" and names["stick-card"].style == "stick"
 
 
 # -- captions whose outline is measured apart, looks, standing figures and the call screen -------------------

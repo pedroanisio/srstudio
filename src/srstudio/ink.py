@@ -96,7 +96,7 @@ def caption(
 
 
 # -- props ----------------------------------------------------------------------------------------
-@register("prop", "ink-laptop", summary="An open laptop in three ink strokes", episodes=("printer",))
+@register("prop", "ink-laptop", summary="An open laptop in three ink strokes")
 def laptop(cv: Canvas, parent, x, y, scale=1):
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M 24 0 L 318 6 L 295 196 L 3 190 Z", cv.white)
@@ -106,7 +106,7 @@ def laptop(cv: Canvas, parent, x, y, scale=1):
     return g
 
 
-@register("prop", "ink-desk", summary="The wide desk slab with its shaded end", episodes=("printer",))
+@register("prop", "ink-desk", summary="The wide desk slab with its shaded end")
 def desk(cv: Canvas, parent):
     path(cv, parent, "M 100 787 L 955 787 L 955 1040 L 100 1040 Z", cv.white, sw=2.4)
     path(cv, parent, "M 100 787 L 78 774 L 78 1024 L 100 1040 Z", cv.shade, sw=2)
@@ -141,7 +141,6 @@ def mouth(cv: Canvas, parent, take: Take, *, x=274, y=295, style: PhonemeStyle =
     "doodle",
     summary="The round-headed doodle: shaded head, dot eyes, five phoneme mouths, "
     "waiting, pointing or head-grabbing arms",
-    episodes=("printer",),
 )
 def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_after: float = 1.2, shades: bool = False):
     """The doodle at ``x, y``; ``shades`` pushes a pair of sunglasses up on his forehead."""
@@ -207,7 +206,6 @@ def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_af
     "talking-printer",
     summary="An inkjet that talks: blinking LED and voice marks when it speaks, "
     "a shaking shell and bobbing paper when it whirrs",
-    episodes=("printer",),
 )
 def printer(cv: Canvas, parent, take: Take, x, y, scale=1, *, speaker: str = "printer", fps: int = 24):
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
@@ -271,7 +269,7 @@ def _model_plate(cv: Canvas, printer_group):
 
 
 # -- shots (locations of this family) ------------------------------------------------------------------
-@register("location", "ink-desk-shot", summary="The doodle at the laptop on a single desk line", episodes=("printer",))
+@register("location", "ink-desk-shot", summary="The doodle at the laptop on a single desk line")
 def desk_shot(cv: Canvas, parent, take: Take, *, scale=0.92):
     human(cv, parent, take, 67, 390, scale)
     laptop(cv, parent, 458, 784, 1)
@@ -280,12 +278,12 @@ def desk_shot(cv: Canvas, parent, take: Take, *, scale=0.92):
     return parent
 
 
-@register("location", "ink-closeup", summary="The doodle filling the square frame", episodes=("printer",))
+@register("location", "ink-closeup", summary="The doodle filling the square frame")
 def closeup(cv: Canvas, parent, take: Take, *, zoom=1.46, gesture=False):
     return human(cv, parent, take, 185, 360, zoom, gesture=gesture)
 
 
-@register("location", "ink-printer-shot", summary="The printer alone, normal or close", episodes=("printer",))
+@register("location", "ink-printer-shot", summary="The printer alone, normal or close")
 def printer_shot(cv: Canvas, parent, take: Take, *, close=False, fps: int = 24):
     sc = 1.42 if close else 1.19
     pg = printer(cv, parent, take, 174 if sc < 1.3 else 105, 386 if sc < 1.3 else 333, sc, fps=fps)
@@ -293,7 +291,7 @@ def printer_shot(cv: Canvas, parent, take: Take, *, close=False, fps: int = 24):
     return pg
 
 
-@register("location", "ink-wide", summary="Doodle, laptop and printer on the wide desk", episodes=("printer",))
+@register("location", "ink-wide", summary="Doodle, laptop and printer on the wide desk")
 def wide_shot(cv: Canvas, parent, take: Take, *, fps: int = 24):
     human(cv, parent, take, 166, 451, 0.50)
     laptop(cv, parent, 364, 672, 0.48)
@@ -337,7 +335,6 @@ def _led_keys(power: str, talking: bool, i: int, duration: float, drop_at: float
     "talking-router",
     summary="A home router that talks: four LEDs chase and the antennas bob when it speaks, "
     "the LEDs step down or sweep up when it is rebooted, a signed model plate",
-    episodes=("the-router",),
 )
 def router(
     cv: Canvas,
@@ -418,7 +415,6 @@ def router(
     "prop",
     "ink-hand",
     summary="A hand from the frame edge, index finger out: reaches for, presses or leaves the router button",
-    episodes=("the-router",),
 )
 def hand(cv: Canvas, parent, x, y, scale=1, *, action: str = "reach", at: float = 0.4):
     """The finger tip is the group's origin, so place it on the button; ``at`` is when the action lands."""
@@ -459,7 +455,6 @@ def _shelf(cv: Canvas, parent, x0, x1, y, depth=18, bracket=90):
     "location",
     "ink-router-shot",
     summary="The router on its wall shelf, normal or close; a hand may reach for the button",
-    episodes=("the-router",),
 )
 def router_shot(
     cv: Canvas,
@@ -485,12 +480,7 @@ def router_shot(
     return rg
 
 
-@register(
-    "location",
-    "ink-router-wide",
-    summary="Doodle and laptop at the wide desk, the router on a shelf above",
-    episodes=("the-router",),
-)
+@register("location", "ink-router-wide", summary="Doodle and laptop at the wide desk, the router on a shelf above")
 def router_wide(cv: Canvas, parent, take: Take, *, fps: int = 24):
     human(cv, parent, take, 166, 451, 0.50)
     laptop(cv, parent, 364, 672, 0.48)

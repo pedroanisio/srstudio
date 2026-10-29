@@ -162,13 +162,13 @@ def test_a_project_without_a_script_has_no_lines_and_a_broken_one_is_refused(tmp
 def test_discover_reads_every_rendered_project_in_note_order(tree):
     episodes, renders = tree
     notes = cp.Notes(episodes={"the-router": cp.EpisodeNote(number="I2", lede="Roteador.")})
-    cards = cp.discover(episodes, renders, notes)
+    cards = cp.discover(episodes, renders, notes, USAGE)
     assert [c.slug for c in cards] == ["the-router", "camera-off", "mushroom-training"]  # noted first, then by name
     router, camera = cards[0], cards[1]
     assert (router.number, router.lede, router.fmt, router.fps) == ("I2", "Roteador.", "1:1", 24)
     assert (camera.number, camera.lede, camera.fmt) == ("", "About camera-off & more", "9:16")
     assert camera.title == "camera-off title" and camera.duration == 4.0
-    assert camera.style == "soft" and router.style == "ink" and cards[2].style == "cel"  # from the registry
+    assert camera.style == "soft" and router.style == "ink" and cards[2].style == "cel"  # from the measured parts
 
 
 def test_a_project_without_a_scene_is_skipped_and_a_broken_scene_is_refused(tree):
@@ -181,9 +181,19 @@ def test_a_project_without_a_scene_is_skipped_and_a_broken_scene_is_refused(tree
         cp.discover(episodes, renders, cp.Notes())
 
 
-def test_style_of_an_unregistered_episode_is_empty():
-    assert cp.style_of("never-registered") == ""
-    assert cp.style_of("five-years", number="06") == "cutout"
+def test_the_style_of_an_episode_is_the_style_of_the_parts_it_was_measured_using():
+    assert cp.style_of("camera-off", USAGE) == "soft"
+    assert cp.style_of("the-router", USAGE) == "ink"
+    assert cp.style_of("honesty-interview", USAGE) == "cutout"
+    assert cp.style_of("never-measured", USAGE) == ""
+    assert cp.style_of("camera-off", None) == ""  # nothing measured, nothing claimed
+
+
+def test_a_crossover_takes_the_style_most_of_its_parts_come_from():
+    crossover = cp.Report({"mixed": ("pip", "soft-office", "talking-router")})
+    assert cp.style_of("mixed", crossover) == "soft"
+    tie = cp.Report({"tied": ("pip", "talking-router")})
+    assert cp.style_of("tied", tie) == "ink"  # a tie goes to the first style by name, never to chance
 
 
 # -- the page ---------------------------------------------------------------------------------------------
@@ -381,7 +391,7 @@ def test_without_a_curated_gallery_the_base_galleries_are_left_alone(tree):
 def test_the_gallery_is_checked_against_the_registry_and_the_renders(tree, tmp_path, change, match):
     notes = gallery_notes(tmp_path, change(list(GALLERY)))
     with pytest.raises(cp.CatalogError, match=match):
-        cp.inject(BASE, cards(tree), notes, media=str, poses=[], stills=stills)
+        cp.inject(BASE, cards(tree), notes, media=str, poses=[], stills=stills, usage=SHOWN)
 
 
 def test_a_gallery_needs_stills(tree, tmp_path):
@@ -426,6 +436,10 @@ USAGE = cp.Report(
 )
 
 
+# the measured usage less soft-desk: every part it names is shown by an item of GALLERY
+SHOWN = cp.Report({slug: tuple(p for p in parts if p != "soft-desk") for slug, parts in USAGE.episodes.items()})
+
+
 def test_the_registry_table_and_the_usage_lists_come_from_the_measured_usage(tree):
     page = cp.inject(BASE, cards(tree), cp.Notes(), media=str, poses=[], usage=USAGE)
     table = page[page.index('<table class="lib-registry">') : page.index("</table>")]
@@ -449,12 +463,12 @@ def test_the_registry_table_and_the_usage_lists_come_from_the_measured_usage(tre
     assert 'id="usage-graphic"' not in page  # characters, locations and props
 
 
-def test_without_usage_the_table_keeps_the_declared_episodes_and_no_list_is_added(tree):
+def test_without_usage_the_table_claims_no_episodes_and_no_list_is_added(tree):
     page = cp.inject(BASE, cards(tree), cp.Notes(), media=str, poses=[])
     assert 'id="lib-usage"' not in page
     table = page[page.index('<table class="lib-registry">') : page.index("</table>")]
     row = table[table.index("<code>pip</code>") :]
-    assert "focus-mode" in row[: row.index("</tr>")]
+    assert row[: row.index("</tr>")].endswith("<td>—</td>")
 
 
 def test_with_usage_the_gallery_must_show_every_part_a_rendered_episode_uses(tree, tmp_path):

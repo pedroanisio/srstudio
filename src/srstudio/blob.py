@@ -1201,7 +1201,6 @@ def blob(
     summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
     "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
     "the soundtrack",
-    episodes=("focus-mode", "camera-off"),
 )
 def pip(
     cv: Canvas,
@@ -1432,7 +1431,6 @@ def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
     "location",
     "soft-office",
     summary="The warm office in a 3/4 view: desk with laptop on the left, chair on the right, the signature cactus",
-    episodes=("focus-mode", "camera-off"),
 )
 def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-office"):
     g = cv.group(parent, id)

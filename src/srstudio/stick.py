@@ -436,9 +436,7 @@ TUFTS = (  # x, y, scale: grass tufts from the fence line to the foreground
 TUFT = "M -23 8 Q -29 -7 -37 -13 M -10 8 Q -12 -10 -21 -23 M 1 9 Q 1 -13 7 -27 M 12 10 Q 20 -12 28 -18 M 24 12 L 35 0"
 
 
-@register(
-    "location", "stick-room", episodes=("check-with-my-team", "screen-share"), tags=("room", "desk", "laptop", "window")
-)
+@register("location", "stick-room", tags=("room", "desk", "laptop", "window"))
 def room(cv: Canvas, parent) -> None:
     """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop."""
     s = cv
@@ -507,7 +505,7 @@ def room(cv: Canvas, parent) -> None:
     signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
 
 
-@register("location", "stick-yard", episodes=("check-with-my-team",), tags=("garden", "fence", "trees", "outdoor"))
+@register("location", "stick-yard", tags=("garden", "fence", "trees", "outdoor"))
 def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
     """A back garden: sky, trees with traced foliage, a board fence that jitters by ``seed``, grass and tufts."""
     s = cv
@@ -541,7 +539,7 @@ def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
 
 
 # -- the character ------------------------------------------------------------------------------------------
-@register("character", "stick-figure", episodes=("check-with-my-team",), tags=("traced", "12fps", "badges"))
+@register("character", "stick-figure", tags=("traced", "12fps", "badges"))
 def figures(cv: Canvas, parent, poses: Sequence[Pose], badges: Sequence[Badge], duration: float) -> None:
     """The traced stick figure, one group per pose: seated in the room, or leading a row of badge-headed dancers."""
     for i, pose in enumerate(poses):
@@ -580,7 +578,7 @@ def _badge(cv: Canvas, parent, badge: Badge, cx: float, cy: float, angle: float)
 
 
 # -- lettering and captions ---------------------------------------------------------------------------------
-@register("graphic", "stick-hook", episodes=("check-with-my-team",), tags=("lettering", "card"))
+@register("graphic", "stick-hook", tags=("lettering", "card"))
 def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     """The hook: traced lettering on a rounded white card at the top of the frame, from ``start`` to ``end``."""
     g = _group(cv, parent, start=start, end=end)
@@ -590,7 +588,7 @@ def hook(cv: Canvas, parent, lettering: Plate, start: float, end: float):
     return g
 
 
-@register("graphic", "stick-headline", episodes=("check-with-my-team",), tags=("lettering",))
+@register("graphic", "stick-headline", tags=("lettering",))
 def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end: float):
     """A headline: traced lettering, its outline plate under its fill, the fill edged in its own colour."""
     g = _group(cv, parent, start=start, end=end)
@@ -599,7 +597,7 @@ def headline(cv: Canvas, parent, outline: Plate, fill: Plate, start: float, end:
     return g
 
 
-@register("graphic", "stick-captions", episodes=("check-with-my-team", "screen-share"), tags=("captions", "outlined"))
+@register("graphic", "stick-captions", tags=("captions", "outlined"))
 def captions(cv: Canvas, parent, lines: Sequence[Line], *, outline: str = "stroke") -> None:
     """One caption per cue: centred font text in white, outlined in ink, across the frame at :data:`CAPTION_Y`.
 
@@ -778,7 +776,7 @@ def _spoken(words: Sequence[dict]) -> str:
     return " ".join(w["text"].strip(PUNCTUATION) for w in words)
 
 
-@register("graphic", "stick-words", episodes=("repeat-after-me",), tags=("captions", "outlined", "word-by-word"))
+@register("graphic", "stick-words", tags=("captions", "outlined", "word-by-word"))
 def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim: float = SCRIM_PEAK) -> None:
     """Word-by-word captions: each cue a word (or a few, :func:`word_cues`), very large white text outlined in
     ink, centred at ``y``, popping in as it starts (:meth:`Canvas.pop_in`), over a feathered ink scrim that fades in
@@ -1171,12 +1169,7 @@ def _gate(cv: Canvas, node, start: float, end: float, total: float) -> None:
     cv.gate(node, [(start, end)])
 
 
-@register(
-    "character",
-    "stick-rig",
-    episodes=("screen-share",),
-    tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"),
-)
+@register("character", "stick-rig", tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"))
 def rig(
     cv: Canvas,
     parent,
@@ -1255,7 +1248,7 @@ def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float =
 CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 
 
-@register("graphic", "stick-card", episodes=("screen-share",), tags=("hook", "card", "font"))
+@register("graphic", "stick-card", tags=("hook", "card", "font"))
 def card(cv: Canvas, parent, text: str, *, size: float = 54):
     """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card."""
     if cv.font_asset is None:
@@ -1329,7 +1322,7 @@ def _check_call(tiles: Sequence[Tile], inbox: Sequence[Mail], speaking: str, hig
         raise StickDataError(f"highlight must index one of the {len(inbox)} mails, got {highlight!r}")
 
 
-@register("graphic", "stick-call", episodes=("screen-share",), tags=("video-call", "screen", "inbox", "font"))
+@register("graphic", "stick-call", tags=("video-call", "screen", "inbox", "font"))
 def call(
     cv: Canvas,
     parent,

@@ -30,7 +30,7 @@ def office_paints(cv: Canvas) -> dict[str, str]:
     }
 
 
-@register("prop", "papers", summary="A stack of documents with seeded random lines", episodes=("01", "02", "03", "04"))
+@register("prop", "papers", summary="A stack of documents with seeded random lines")
 def papers(cv: Canvas, parent, x, y, scale=1, angle=0, seed=3):
     p = office_paints(cv)
     g = cv.group(parent, cv.uid("documents"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=angle)
@@ -50,7 +50,7 @@ def papers(cv: Canvas, parent, x, y, scale=1, angle=0, seed=3):
     return g
 
 
-@register("prop", "woodgrain", summary="Seeded grain strokes over a desk top", episodes=("01", "02", "03", "04"))
+@register("prop", "woodgrain", summary="Seeded grain strokes over a desk top")
 def woodgrain(cv: Canvas, parent, y, height, seed=4):
     rng = random.Random(seed)
     for _ in range(34):
@@ -66,9 +66,7 @@ def woodgrain(cv: Canvas, parent, y, height, seed=4):
         )
 
 
-@register(
-    "prop", "office-art", summary="The framed abstract print on the office wall", episodes=("01", "02", "03", "04")
-)
+@register("prop", "office-art", summary="The framed abstract print on the office wall")
 def office_art(cv: Canvas, parent):
     ink, clear = cv.ink, cv.clear
     cv.rect(parent, 301, 45, 424, 507, "#465052", radius=4, opacity=0.17)
@@ -110,7 +108,7 @@ def office_art(cv: Canvas, parent):
     cv.line(parent, 335, 523, 716, 521, "#FFFFFF", 2, opacity=0.4)
 
 
-@register("prop", "plant", summary="Potted plant with 18 formula-generated leaves", episodes=("01", "02", "03", "04"))
+@register("prop", "plant", summary="Potted plant with 18 formula-generated leaves")
 def plant(cv: Canvas, parent, id="office-plant"):
     p = office_paints(cv)
     g = cv.group(parent, id)
@@ -162,12 +160,7 @@ def plant(cv: Canvas, parent, id="office-plant"):
     return g
 
 
-@register(
-    "prop",
-    "chair",
-    summary="Office chair: the manager's black one or the candidate's gray one",
-    episodes=("01", "02", "03", "04"),
-)
+@register("prop", "chair", summary="Office chair: the manager's black one or the candidate's gray one")
 def chair(cv: Canvas, parent, style="black"):
     p = office_paints(cv)
     ink = cv.ink
@@ -211,12 +204,7 @@ def chair(cv: Canvas, parent, style="black"):
         )
 
 
-@register(
-    "prop",
-    "chair-back",
-    summary="The executive chair seen from behind, the occupant's crown above the headrest",
-    episodes=("06",),
-)
+@register("prop", "chair-back", summary="The executive chair seen from behind, the occupant's crown above the headrest")
 def chair_back(cv: Canvas, parent, head: tuple[float, float, float] | None = (560, 724, 145)):
     """``head`` = (x, y, radius) of the occupant drawn behind the backrest, or None for an empty chair."""
     p = office_paints(cv)
@@ -250,7 +238,7 @@ def chair_back(cv: Canvas, parent, head: tuple[float, float, float] | None = (56
     cv.path(parent, "M790 1060 Q802 1000 770 985 L740 990 L736 1120 Q770 1125 790 1060Z", "#282B2B", ink, 4)
 
 
-@register("prop", "laptop", summary="Open laptop on the interviewer's right", episodes=("01", "02", "03", "04"))
+@register("prop", "laptop", summary="Open laptop on the interviewer's right")
 def laptop(cv: Canvas, parent):
     ink = cv.ink
     cv.ellipse(parent, 820, 1263, 310, 50, "#9E8A70", opacity=0.20)
@@ -264,12 +252,7 @@ def laptop(cv: Canvas, parent):
     cv.path(parent, "M1011 1299 L1065 990", stroke="#B5BEC1", sw=2)
 
 
-@register(
-    "prop",
-    "water-glass",
-    summary="Glass of water at the edge of the reverse-angle desk",
-    episodes=("01", "02", "03", "04"),
-)
+@register("prop", "water-glass", summary="Glass of water at the edge of the reverse-angle desk")
 def water_glass(cv: Canvas, parent):
     ink = cv.ink
     cv.path(parent, "M1062 1380 Q1093 1369 1125 1380 L1115 1565 Q1089 1581 1071 1564Z", "#E3E8E1", ink, 3)
@@ -284,12 +267,7 @@ def water_glass(cv: Canvas, parent):
     cv.ellipse(parent, 1061, 1369, 65, 20, "#E4E9E4", ink, 2)
 
 
-@register(
-    "prop",
-    "candidate-back",
-    summary="The candidate seen from behind in the foreground of the wide shot",
-    episodes=("01", "02", "03", "04"),
-)
+@register("prop", "candidate-back", summary="The candidate seen from behind in the foreground of the wide shot")
 def candidate_back(cv: Canvas, parent):
     p = office_paints(cv)
     ink, white = cv.ink, cv.white
@@ -302,9 +280,7 @@ def candidate_back(cv: Canvas, parent):
     cv.path(parent, "M-3 1623 Q235 1610 513 1643", stroke="#A9ADAD", sw=14, opacity=0.55)
 
 
-@register(
-    "prop", "silent-phone", summary="A phone face up on the desk with a muted work notification", episodes=("02",)
-)
+@register("prop", "silent-phone", summary="A phone face up on the desk with a muted work notification")
 def silent_phone(cv: Canvas, parent, x=85, y=1640, rotation=-8, label="WORK\nSILENCED", id="silent-work-phone"):
     ink, clear = cv.ink, cv.clear
     g = cv.group(parent, id, x=x, y=y, rotation=rotation)
@@ -344,7 +320,7 @@ def cafe_paints(cv: Canvas) -> dict[str, str]:
     }
 
 
-@register("prop", "coffee-cup", summary="Takeaway cup with lid and a foam heart", episodes=("05",))
+@register("prop", "coffee-cup", summary="Takeaway cup with lid and a foam heart")
 def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0):
     ink, clear, white = cv.ink, cv.clear, cv.white
     g = cv.group(parent, cv.uid("coffee-cup"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)
@@ -358,7 +334,7 @@ def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0):
     return g
 
 
-@register("prop", "menu-board", summary="Chalkboard menu with the Free Wi-Fi line", episodes=("05",))
+@register("prop", "menu-board", summary="Chalkboard menu with the Free Wi-Fi line")
 def menu_board(
     cv: Canvas,
     parent,
@@ -375,7 +351,7 @@ def menu_board(
         cv.text(parent, name, value, 110, y, 320, h, size, color)
 
 
-@register("prop", "cafe-window", summary="Window onto the street, the view clipped by a rect mask", episodes=("05",))
+@register("prop", "cafe-window", summary="Window onto the street, the view clipped by a rect mask")
 def cafe_window(cv: Canvas, parent):
     p = cafe_paints(cv)
     cv.rect(parent, 620, 232, 365, 430, "#638789", cv.ink, 6, radius=8)
@@ -390,14 +366,14 @@ def cafe_window(cv: Canvas, parent):
     return window
 
 
-@register("prop", "pendant-light", summary="Hanging pendant lamp", episodes=("05",))
+@register("prop", "pendant-light", summary="Hanging pendant lamp")
 def pendant_light(cv: Canvas, parent, x):
     cv.line(parent, x, -200, x, 174, "#3C4C49", 5)
     cv.path(parent, f"M{x - 74} 218 Q{x - 60} 154 {x} 153 Q{x + 60} 154 {x + 74} 218Z", "#8E5141", cv.ink, 5)
     cv.ellipse(parent, x - 76, 207, 152, 24, "#F2CF91", cv.ink, 4)
 
 
-@register("prop", "bean-jar", summary="Jar of coffee beans on the shelf", episodes=("05",))
+@register("prop", "bean-jar", summary="Jar of coffee beans on the shelf")
 def bean_jar(cv: Canvas, parent, x):
     cv.rect(parent, x, 915, 67, 97, "#C2B595", cv.ink, 3, radius=8)
     cv.rect(parent, x - 3, 908, 73, 17, "#70513C", cv.ink, 3, radius=4)
@@ -405,9 +381,7 @@ def bean_jar(cv: Canvas, parent, x):
         cv.ellipse(parent, x + 9 + (k % 3) * 18, 948 + (k // 3) * 17, 12, 7, "#684E3A", rotation=30)
 
 
-@register(
-    "prop", "espresso-machine", summary="Espresso machine with steam that breathes by expression", episodes=("05",)
-)
+@register("prop", "espresso-machine", summary="Espresso machine with steam that breathes by expression")
 def espresso_machine(cv: Canvas, parent):
     p = cafe_paints(cv)
     ink = cv.ink
@@ -431,7 +405,7 @@ def espresso_machine(cv: Canvas, parent):
         cv.expression(steam, "y", f"-5*Math.sin(time*1.8+{i})")
 
 
-@register("prop", "pastry-stand", summary="Plate of croissants on the counter", episodes=("05",))
+@register("prop", "pastry-stand", summary="Plate of croissants on the counter")
 def pastry_stand(cv: Canvas, parent):
     cv.ellipse(parent, 470, 1190, 250, 36, "#ECE6D2", cv.ink, 3)
     for i in range(3):
@@ -451,7 +425,7 @@ def pastry_stand(cv: Canvas, parent):
         )
 
 
-@register("prop", "building", summary="Background apartment block with lit windows", episodes=("05",))
+@register("prop", "building", summary="Background apartment block with lit windows")
 def building(cv: Canvas, parent, x, y, w, h):
     cv.rect(parent, x, y, w, h, "#A9BCAD")
     for wx in range(int(x + 20), min(1060, int(x + w - 10)), 38):
@@ -459,7 +433,7 @@ def building(cv: Canvas, parent, x, y, w, h):
             cv.rect(parent, wx, wy, 16, 23, "#D9E1CD", radius=2)
 
 
-@register("prop", "tree", summary="Park tree whose canopy sways by expression", episodes=("05",))
+@register("prop", "tree", summary="Park tree whose canopy sways by expression")
 def tree(cv: Canvas, parent):
     cv.path(
         parent, "M49 1440 L91 670 L42 385 L88 373 L128 640 L161 450 L193 467 L154 751 L139 1440Z", "#8A7052", cv.ink, 4
@@ -479,19 +453,19 @@ def tree(cv: Canvas, parent):
     return canopy
 
 
-@register("prop", "shrub", summary="Small planted shrub along the path", episodes=("05",))
+@register("prop", "shrub", summary="Small planted shrub along the path")
 def shrub(cv: Canvas, parent, x):
     cv.path(parent, f"M{x} 1410 q-30 -60 -45 -40 q32 0 45 40 q16 -79 38 -68 q-10 45 -38 68Z", "#6F9563", cv.ink, 2)
 
 
-@register("prop", "park-sign", summary="PUBLIC PARK sign on a post", episodes=("05",))
+@register("prop", "park-sign", summary="PUBLIC PARK sign on a post")
 def park_sign(cv: Canvas, parent, text="PUBLIC\nPARK"):
     cv.line(parent, 916, 520, 916, 1040, "#637969", 8)
     cv.rect(parent, 785, 526, 260, 112, "#486C58", cv.ink, 4, radius=13)
     cv.text(parent, "park-sign", text, 804, 538, 222, 88, 32, "#F0E7CF")
 
 
-@register("prop", "bench", summary="Slatted wooden park bench", episodes=("05",))
+@register("prop", "bench", summary="Slatted wooden park bench")
 def bench(cv: Canvas, parent):
     p = cafe_paints(cv)
     for yy in [1030, 1100, 1170]:
@@ -505,12 +479,7 @@ def bench(cv: Canvas, parent):
 CRUMB_FALL = 0.32  # seconds from the hand to the ground
 
 
-@register(
-    "prop",
-    "crumbs",
-    summary="A tossed handful of pastry crumbs that fall from the hand and stay on the ground",
-    episodes=("culture-fit",),
-)
+@register("prop", "crumbs", summary="A tossed handful of pastry crumbs that fall from the hand and stay on the ground")
 def crumbs(cv: Canvas, parent, x, y, ground, *, toss: float, count: int = 7, seed: int = 0, id="crumbs"):
     """``count`` crumbs leave ``(x, y)`` at ``toss`` and land scattered on ``ground``; nothing shows before."""
     if count < 1:
@@ -742,7 +711,6 @@ TIP_PICKED, TIP_BUTTON = "#2E7D5B", "#EAF2EE"
     "prop",
     "tip-tablet",
     summary="A counter-top payment tablet asking for a tip: big percentage buttons, a tiny no tip, taps that light",
-    episodes=("tip-screen",),
 )
 def tip_tablet(
     cv: Canvas,
@@ -809,7 +777,6 @@ SLIP_SIZE = (150, 96)  # the envelope's width and height
     "prop",
     "pink-slip",
     summary="A pink-slip envelope lettered with a name: held until a moment, or falling to the floor and tipping",
-    episodes=("going-down",),
 )
 def pink_slip(
     cv: Canvas,

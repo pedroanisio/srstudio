@@ -15,7 +15,11 @@ from srstudio.gloss import GlossError
 from srstudio.timeline import Take
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
-REELS = ("orientation", "joy_points", "trust_fall", "feedback", "exit", "wellness", "terms")
+REELS = tuple(
+    sorted(p.name.removeprefix("gloss_").removesuffix("_audio.py") for p in EPISODES.glob("gloss_*_audio.py"))
+)
+# G1-G6 were published with the native caption look and keep it; every later reel reads with gloss_reel.LOOK
+PUBLISHED_WITH_NATIVE_LOOK = {"orientation", "joy_points", "trust_fall", "feedback", "exit", "wellness"}
 SECONDS_A_WORD = 0.35  # a calm speaking rate for the synthetic recording
 
 
@@ -52,10 +56,11 @@ def recorded(reel, rate: float = SECONDS_A_WORD) -> list[Take]:
     return out
 
 
-def test_the_seven_reels_are_numbered_g1_to_g7_with_distinct_gloss_slugs():
+def test_the_reels_are_numbered_from_g1_without_gaps_with_distinct_gloss_slugs():
     reels = [load(n) for n in REELS]
-    assert [r.number for r in reels] == [f"G{i}" for i in range(1, 8)]
-    assert len({r.slug for r in reels}) == 7 and all(r.slug.startswith("gloss-") for r in reels)
+    assert len(REELS) >= 7  # the reels are found, not listed
+    assert sorted(int(r.number.removeprefix("G")) for r in reels) == list(range(1, len(REELS) + 1))
+    assert len({r.slug for r in reels}) == len(REELS) and all(r.slug.startswith("gloss-") for r in reels)
     for n in REELS:
         assert (EPISODES / f"gloss_{n}.py").read_text().count(f"from gloss_{n}_audio import REEL") == 1
 
@@ -64,7 +69,8 @@ def test_published_reels_keep_the_caption_look_they_shipped_with_and_new_reels_r
     from srstudio import native
 
     looks = {n: load(n).look for n in REELS}
-    assert {n for n, look in looks.items() if look is native.CAPTION_LOOK} == set(REELS[:6])
+    assert {n for n, look in looks.items() if look is native.CAPTION_LOOK} == PUBLISHED_WITH_NATIVE_LOOK
+    assert all(looks[n] is gloss_reel.LOOK for n in set(REELS) - PUBLISHED_WITH_NATIVE_LOOK)
     assert looks["terms"] is gloss_reel.LOOK
 
 
