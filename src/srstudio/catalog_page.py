@@ -660,6 +660,18 @@ def data_uri(path: Path) -> str:
     return f"data:{kind};base64," + base64.b64encode(path.read_bytes()).decode()
 
 
+def _cache(out: Path, args: Sequence[str]) -> None:
+    """Run ``args`` with a hidden partial file beside ``out`` as their last argument, and move it onto ``out`` only
+    once the run succeeded: a failed or killed encode leaves nothing that a later run would take as cached."""
+    part = out.with_name(f".{out.stem}.part{out.suffix}")  # the same extension: the tools read the format from it
+    try:
+        _run([*args, str(part)])
+        if part.exists():
+            part.replace(out)
+    finally:
+        part.unlink(missing_ok=True)
+
+
 def web_video(render: Path, cache: Path) -> tuple[Path, Path]:
     """A 540-wide H.264 copy and a poster frame of ``render``, made once per render version."""
     st = render.stat()
@@ -668,12 +680,12 @@ def web_video(render: Path, cache: Path) -> tuple[Path, Path]:
     if not video.exists():
         video.parent.mkdir(parents=True, exist_ok=True)
         scale = ["-vf", "scale='if(gt(iw,ih),720,540)':-2"]
-        _run(["ffmpeg", "-v", "error", "-y", "-i", str(render), *scale, "-c:v", "libx264", "-crf", "27",
-              "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-c:a", "aac", "-b:a", "96k",
-              str(video)])  # fmt: skip
+        _cache(video, ["ffmpeg", "-v", "error", "-y", "-i", str(render), *scale, "-c:v", "libx264", "-crf", "27",
+                       "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-c:a", "aac", "-b:a",
+                       "96k"])  # fmt: skip
     if not poster.exists():
-        _run(["ffmpeg", "-v", "error", "-y", "-i", str(render), "-frames:v", "1", "-vf",
-              "select=gte(t\\,1.2)+eq(n\\,0),scale='if(gt(iw,ih),720,540)':-2", "-q:v", "4", str(poster)])  # fmt: skip
+        _cache(poster, ["ffmpeg", "-v", "error", "-y", "-i", str(render), "-frames:v", "1", "-vf",
+                        "select=gte(t\\,1.2)+eq(n\\,0),scale='if(gt(iw,ih),720,540)':-2", "-q:v", "4"])  # fmt: skip
     return video, poster
 
 
@@ -686,8 +698,8 @@ def still(render: Path, shot: Shot, cache: Path) -> Path:
     if not out.exists():
         out.parent.mkdir(parents=True, exist_ok=True)
         crop = "crop={2}:{3}:{0}:{1},".format(*shot.box) if shot.box else ""
-        _run(["ffmpeg", "-v", "error", "-y", "-ss", f"{shot.at:.3f}", "-i", str(render), "-frames:v", "1",
-              "-vf", f"{crop}scale='min(iw,480)':-2", "-q:v", "3", str(out)])  # fmt: skip
+        _cache(out, ["ffmpeg", "-v", "error", "-y", "-ss", f"{shot.at:.3f}", "-i", str(render), "-frames:v", "1",
+                     "-vf", f"{crop}scale='min(iw,480)':-2", "-q:v", "3"])  # fmt: skip
         if not out.exists():
             raise CatalogError(f"{render.name}: no frame at {shot.at:g} s")
     return out
@@ -727,7 +739,7 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     doc = folder / "poses.scene.xml"
     doc.write_bytes(scene.to_bytes())
     for i, (_, png) in enumerate(pngs):
-        _run([str(engine), "render", str(doc), "-f", str(i), "-o", str(png.resolve())])
+        _cache(png.resolve(), [str(engine), "render", str(doc), "-f", str(i), "-o"])
     return pngs
 
 
