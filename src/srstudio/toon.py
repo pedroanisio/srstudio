@@ -73,7 +73,7 @@ class ToonDataError(SrstudioError, ValueError):
 
 
 # -- the reference frame ----------------------------------------------------------------------------------------
-REF_W, REF_H = 592, 1058  # the reference reel's content, pixels
+REF_W = 592  # the reference reel's content width, pixels (1058 tall)
 REF_TOP = 70  # where that content starts on the recorded screen: every y below is a screen pixel
 SCALE = 1080 / REF_W
 EPSILON = 1e-6

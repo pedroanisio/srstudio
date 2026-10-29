@@ -32,7 +32,6 @@ MAX_SECONDS = 10  # the self-timer's longest countdown
 SOFA_TOP = 1690.0  # the sofa's seat front: what is below it is hidden
 PHOTO_BLUR = 9.0  # the blur radius of a subject who moved
 BORDER, CHIN = 0.045, 0.16  # the print's paper border and its deeper bottom margin, as fractions of its width
-SCREEN = "#20242c"
 BOOKS = ((-150, -64, 300, 64, "#bc4749"), (-130, -120, 262, 56, "#386641"), (-142, -168, 280, 48, "#f2e8cf"))
 PHONE_W, PHONE_H = 150.0, 262.0
 COUNT_AT, COUNT_R = (540.0, 660.0), 92.0  # the viewfinder's countdown disc: below the caption pill, above the heads

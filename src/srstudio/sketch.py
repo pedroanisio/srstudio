@@ -539,11 +539,6 @@ def _appearance_data(beats: Sequence[Beat], end: float) -> list[dict]:
 
 
 # -- recording --------------------------------------------------------------------------------------------------------
-class _Spoken(Protocol):
-    wav: Path
-    alignment: Alignment
-
-
 class _Client(Protocol):
     def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> Any: ...
 
