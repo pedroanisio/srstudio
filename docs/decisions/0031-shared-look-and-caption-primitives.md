@@ -46,6 +46,13 @@ each style and stays reusable and extensible, and then to fix what it found, tes
   font, encoder output, reel builder and caption look once; a `Reel` subclass names its series; `record` and
   `build` record and build any reel. It carries the LLM banner; `srstudio.takes` owns the verification.
 - **Saga is ported** onto all three; `saga_sets.wrap` stays as a thin wrapper that refuses with `SagaError`.
+- **Gloss is ported** onto all three once its reels were delivered: `gloss_sets` draws with `look`
+  (`gloss_sets.wrap` refuses with `GlossError`), `gloss_reel` stages with `staging` and `episodes/_gloss.py` is a
+  `Series` in the house caption look, a reel naming `captions=gloss_reel.LOOK` (G7 on). Two opt-in arguments
+  serve it: `staging.rig(name=)` names the camera frame (`gloss-<take>-angle`, which `srstudio.craft` counts the
+  moves of) without spending a serial id, and `series.line(heard=)` carries a transcript the operator accepted.
+  The grade stays on each shot's world group, so the board and the corner badge stay crisp, and the music still
+  hushes through the pauses (`gloss_reel.hush`).
 - **`srstudio.digest.sha256`** streams a file in 1 MiB blocks; the other modules' hashes are that function under
   their old names (`outbox` keeps its own until another session's edit to it lands).
 - **Readable captions, opt-in per `CaptionLook`:**
@@ -68,6 +75,9 @@ each style and stays reusable and extensible, and then to fix what it found, tes
   its own, and a fix to the shared code reaches every style that uses it.
 - Proof of no change to shipped work from the ports: each of the 12 Saga projects was rebuilt before and after
   each port, and the scene XML of every one whose episode script did not change in between was byte-identical.
+  The Gloss port was proved the same way: G1–G7 rebuilt from their recordings before it and after each of its
+  steps, and the scene XML, `ig.txt` and `qa/sdk-validation.json` of all seven were byte-identical to the
+  delivered projects.
 - The Saga caption look re-timed captions of S1–S7, so they were rebuilt, re-encoded and re-delivered. Their
   encodes report no caption legibility warning; `instagram_posts.py check` reports none of them drifted.
 - The engine still reports caption contrast below 4.5:1 on some Saga frames (down to 1.00:1). Its measure
