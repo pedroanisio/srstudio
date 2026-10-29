@@ -68,10 +68,22 @@ def test_the_reels_are_numbered_from_g1_without_gaps_with_distinct_gloss_slugs()
 def test_published_reels_keep_the_caption_look_they_shipped_with_and_new_reels_read_without_lone_words():
     from srstudio import native
 
-    looks = {n: load(n).look for n in REELS}
+    looks = {n: load(n).look() for n in REELS}
     assert {n for n, look in looks.items() if look is native.CAPTION_LOOK} == PUBLISHED_WITH_NATIVE_LOOK
     assert all(looks[n] is gloss_reel.LOOK for n in set(REELS) - PUBLISHED_WITH_NATIVE_LOOK)
     assert looks["terms"] is gloss_reel.LOOK
+
+
+def test_every_reel_is_a_gloss_series_reel_staged_by_the_gloss_reel_builder(reel):
+    from srstudio import GLOSS, series
+
+    assert isinstance(reel, series.Reel)
+    assert reel.series is not None and reel.series.style is GLOSS and reel.series.stage is gloss_reel.build
+
+
+def test_only_the_operator_approved_hearing_is_accepted():
+    heard = {(n, t.id): t.heard for n in REELS for t in load(n).takes if t.heard}
+    assert heard == {("terms", "09"): ("Reel is also premium.",)}
 
 
 def test_the_script_is_well_formed_before_anything_is_requested(reel):

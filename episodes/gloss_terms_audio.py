@@ -102,7 +102,7 @@ REEL = Reel(
     takes=TAKES,
     hook="Did anyone actually read the new terms of existence?",
     stages=stages,
-    look=gloss_reel.LOOK,
+    captions=gloss_reel.LOOK,
 )
 
 if __name__ == "__main__":

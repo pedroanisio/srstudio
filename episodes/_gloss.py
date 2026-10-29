@@ -8,8 +8,9 @@ Every Gloss episode is two files: ``gloss_<name>_audio.py`` holds its :class:`Re
 its staging as a function of the recorded takes), ``gloss_<name>.py`` builds it. The recording is
 :mod:`srstudio.takes` (one ElevenLabs request per take, speech-to-text must hear the scripted words, every voice
 confirmed by name, nothing retried); the music bed is one composition shared by the series, heard for words and cut
-to each episode. The build stages the recorded takes through :func:`srstudio.gloss_reel.build`, which checks the
-staging against the recording before it draws anything.
+to each episode. The harness is :mod:`srstudio.series` (ADR 0031): the build stages the recorded takes through
+:func:`srstudio.gloss_reel.build`, which checks the staging against the recording before it draws anything. The
+published reels G1-G6 caption in the house look; every later reel passes ``captions=gloss_reel.LOOK``.
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 gloss_<name>_audio.py PROJECT --font DIR   # takes, bed, timeline.json
     python3 gloss_<name>.py PROJECT                                          # → PROJECT/<slug>.scene.xml
@@ -17,17 +18,16 @@ staging against the recording before it draws anything.
 
 from __future__ import annotations
 
-import os
-import sys
-from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
-from srstudio import GLOSS, VERTICAL, Episode, EpisodeSpec, gloss_reel, native, takes
+from srstudio import GLOSS, gloss_reel, series, takes
 from srstudio.compose import Chunk, Plan
-from srstudio.gloss_reel import Stage
+from srstudio.series import effect, line, record, word_at
 from srstudio.voice import Voice, VoiceSettings
+
+__all__ = ["Reel", "SERIES", "VOICES", "SETTINGS", "BED", "OUTPUT", "FONT", "line", "effect", "word_at", "record",
+           "build"]  # fmt: skip
 
 FONT = ("fredoka-600.ttf", "fredoka.OFL.txt")
 VOICES = {
@@ -82,83 +82,19 @@ OUTPUT = dict(
 )
 
 
+SERIES = series.Series(
+    style=GLOSS, voices=VOICES, settings=SETTINGS, font=FONT, output=OUTPUT, stage=gloss_reel.build, bed=BED
+)  # the house caption look: the published reels keep it, later ones name gloss_reel.LOOK
+
+
 @dataclass(frozen=True)
-class Reel:
+class Reel(series.Reel):
     """One Gloss episode: its slug and number, the takes, the hook, and its staging from the recorded takes."""
 
-    slug: str
-    number: str
-    title: str
-    description: str
-    accessible: str
-    takes: tuple[takes.Take, ...]
-    hook: str
-    stages: Callable[[Sequence[Any]], Mapping[str, Stage]]
-    look: native.CaptionLook = native.CAPTION_LOOK  # the published reels' captions; new reels pass gloss_reel.LOOK
-
-    def script(self) -> takes.Script:
-        roles = sorted({t.actor for t in self.takes if not t.is_effect})
-        names = " and ".join(", ".join(VOICES[r].name for r in roles).rsplit(", ", 1))
-        return takes.Script(
-            title=self.title,
-            seed=1028,
-            voices={r: VOICES[r] for r in roles},
-            settings={r: SETTINGS[r] for r in roles},
-            takes=self.takes,
-            voice_note=f"ElevenLabs premade voices {names}; no reference-voice cloning. Instrumental music bed "
-            "composed with the ElevenLabs Music API.",
-            bed=BED,
-            font=FONT,
-        )
-
-
-def line(
-    id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm", heard: tuple[str, ...] = ()
-) -> takes.Take:
-    return takes.Take(id, actor, text, hold, mood=mood, heard=heard)
-
-
-def effect(id: str, caption: str, prompt: str, seconds: float, hold: float = 0.2, peak: float = 0.5) -> takes.Take:
-    return takes.Take(
-        id, "sfx", caption, hold, prompt=prompt + ", no voices, no music", seconds=seconds, longest=seconds, peak=peak
-    )
-
-
-def word_at(take: Any, prefix: str, which: int = 0) -> float:
-    """When the ``which``-th word of ``take`` that starts with ``prefix`` starts, on the take's clock."""
-    hits = [w["start"] for w in take.words if w["text"].lower().strip("\"'“”.,!?…").startswith(prefix.lower())]
-    if len(hits) <= which:
-        raise ValueError(f"take {take.id}: no word {which} starting with {prefix!r} in {take.text!r}")
-    return round(float(hits[which]), 3)
-
-
-def record(reel: Reel) -> int:
-    return takes.main(reel.script())
+    series = SERIES
 
 
 def build(reel: Reel, file: str) -> Path:
-    os.umask(0o077)  # generated outputs are private: folders 700, files 600
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(file).resolve().parent
     from instagram_posts import POSTS
 
-    ep = Episode(
-        EpisodeSpec(
-            slug=reel.slug,
-            number=reel.number,
-            title=reel.title,
-            description=reel.description,
-            root=root,
-            seed=1028,
-            style=GLOSS,
-            language="en-US",
-            output_options=OUTPUT,
-            safe_area=VERTICAL,
-            accessibility=dict(description=reel.accessible),
-        )
-    )
-    font = (root / ep.spec.font).read_bytes()
-    made = gloss_reel.build(ep, reel.stages(ep.takes), hook=reel.hook, font=font, look=reel.look)
-    ep.hide_on_cover(made["hook"], made["captions"])
-    if reel.slug in POSTS:
-        ep.instagram(POSTS[reel.slug])
-    return ep.finish(root / f"{reel.slug}.scene.xml", root / "qa" / "sdk-validation.json")
+    return series.build(reel, file, posts=POSTS)
