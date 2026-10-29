@@ -74,6 +74,38 @@ def test_the_kerb_puts_the_doodle_the_meter_and_the_car_in_frame_and_a_tow_takes
     assert away[0][0] == pytest.approx(0.8) and away[-1][1] > away[0][1] + 1080
 
 
+def views(cv: Canvas) -> list[tuple[float, float, float]]:
+    """The kerb's framings: (scale, where the pavement's left end lands in x and y)."""
+    return [
+        (float(g.get("scaleX") or 1), float(g.get("x")), float(g.get("y")))
+        for g in tree(cv).iter("group")
+        if g.get("anchorX") == "0" and g.get("anchorY") == str(ink_meter.PAVEMENT)
+    ]
+
+
+def test_the_kerb_frames_the_doodle_clear_of_the_left_edge_and_a_tow_wide_or_on_car_and_truck():
+    plain, wide, tight = canvas(), canvas(), canvas()
+    ink_meter.kerb(plain, plain.comp, take("human", 3.0))
+    ink_meter.kerb(wide, wide.comp, take("human", 3.0), tow=0.8)
+    ink_meter.kerb(tight, tight.comp, take("human", 3.0), tow=0.8, view=ink_meter.TOW_TIGHT)
+    assert views(plain) == [ink_meter.KERB_VIEW] and views(wide) == [ink_meter.TOW_WIDE]
+    assert views(tight) == [ink_meter.TOW_TIGHT]
+    assert ink_meter.KERB_VIEW[1] >= 60 and ink_meter.TOW_WIDE[1] >= 60 * ink_meter.TOW_WIDE[0] + 40  # head clear
+    zoom, x, _ = ink_meter.TOW_TIGHT
+    assert zoom == pytest.approx(1.4 * ink_meter.TOW_WIDE[0])
+    car_rear, truck_end = ink_meter.CAR_X, ink_meter.CAR_X + 480 + 40 + 430
+    assert 60 <= x + car_rear * zoom and x + truck_end * zoom <= 1080 - 60  # car and truck both in frame
+    (rise,) = animated(tight, "rotation")
+    assert rise[-1][1] == ink_meter.LIFT_DEGREES == pytest.approx(-15.0)  # the nose well up
+
+
+@pytest.mark.parametrize("view", [(0.0, 0.0, 880.0), (float("nan"), 0.0, 880.0), (1.0, float("inf"), 880.0)])
+def test_a_kerb_view_has_a_positive_scale_and_a_place(view):
+    cv = canvas()
+    with pytest.raises(MeterError, match="view"):
+        ink_meter.kerb(cv, cv.comp, take(), view=view)
+
+
 def test_the_close_kerb_frames_the_meter_alone(monkeypatch):
     drawn = []
     monkeypatch.setattr(ink_meter, "human", lambda *a, **kw: drawn.append(a))

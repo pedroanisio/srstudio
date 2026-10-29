@@ -35,7 +35,10 @@ __all__ = [
     "STARS",
     "TAKEN_TEXT",
     "TAPE_TEXT",
+    "KERB_VIEW",
     "PAVEMENT",
+    "TOW_TIGHT",
+    "TOW_WIDE",
     "meter",
     "kerb",
     "app_screen",
@@ -53,12 +56,15 @@ ROW_H, ROW_GAP, ROW_SIZE = 96, 18, 44
 TAKEN_TEXT = "TAKEN"  # a refused row's word, in white on its ink box
 STARS = 5
 STAR_STEP = 0.12  # seconds between one star lighting and the next
-LIFT_SECONDS, LIFT_DEGREES = 0.5, -7.0  # the hook lifts the car's front
+LIFT_SECONDS, LIFT_DEGREES = 0.5, -15.0  # the hook lifts the car's front, its nose well up
 TOW_SPEED = 1500.0  # px/s: truck and car leaving to the right
 CAR_X = 600  # the parked car's rear bumper, frame pixels
 DOODLE_SCALE = 0.84  # the doodle on the pavement, his feet on it
 METER_X = 486  # the meter's centre line in the kerb shot
-TOW_ZOOM, TOW_VIEW = 0.6, (40.0, 880.0)  # the pulled-back view of a tow: its scale, where the pavement's left end lands
+# a kerb view: its scale and where the pavement's left end lands (x, y); the doodle's head stays clear of the left edge
+KERB_VIEW = (1.0, 60.0, float(PAVEMENT))
+TOW_WIDE = (0.6, 100.0, 880.0)  # pulled back: the doodle, the meter, the car and the tow truck in front of it
+TOW_TIGHT = (0.84, -363.0, 900.0)  # 1.4 times closer, on the car and the truck: the lift reads
 
 
 class MeterError(SrstudioError, ValueError):
@@ -269,10 +275,22 @@ def _truck(cv: Canvas, parent, front: float) -> object:
     "lifts the car and drives off with it on cue; or the meter alone, close",
     style="ink",
 )
-def kerb(cv: Canvas, parent, take: Take, *, close: bool = False, tow: float | None = None, **meter_kw):
+def kerb(
+    cv: Canvas,
+    parent,
+    take: Take,
+    *,
+    close: bool = False,
+    tow: float | None = None,
+    view: tuple[float, float, float] | None = None,
+    **meter_kw,
+):
     """The kerb shot; ``tow`` (seconds into the take) brings the tow truck, already hooked on, that lifts the car
-    and leaves with it; ``close`` frames the meter alone. ``meter_kw`` (``display``, ``speaker``) go to
-    :func:`meter`."""
+    and leaves with it; ``close`` frames the meter alone. ``view`` frames the kerb (:data:`KERB_VIEW`, or
+    :data:`TOW_WIDE` with a tow; :data:`TOW_TIGHT` is on the car and the truck). ``meter_kw`` (``display``,
+    ``speaker``) go to :func:`meter`."""
+    if view is not None and not (all(math.isfinite(v) for v in view) and view[0] > 0):
+        raise MeterError(f"a kerb view is a positive scale and a place, got {view!r}")
     if tow is not None:
         if close:
             raise MeterError("a tow is seen from the wide kerb, not the close meter")
@@ -282,20 +300,18 @@ def kerb(cv: Canvas, parent, take: Take, *, close: bool = False, tow: float | No
         path(cv, parent, "M 0 1000 L 1080 1000", sw=2.4)
         signature.cactus(cv, parent, 930, 1000, 0.45)
         return meter(cv, parent, take, 560, 230, 1.55, **meter_kw)
-    view = parent
-    if tow is not None:  # pulled back, so the tow truck in front of the car is in frame
-        view = group(cv, parent, anchorX=0, anchorY=PAVEMENT, x=TOW_VIEW[0], y=TOW_VIEW[1], scaleX=TOW_ZOOM,
-                     scaleY=TOW_ZOOM)  # fmt: skip
-    far = 1080 / TOW_ZOOM  # the ground runs to the edge of the widest view
-    path(cv, view, f"M -400 {PAVEMENT} L {CAR_X - 40} {PAVEMENT} L {CAR_X - 40} {ROAD} L {far} {ROAD}", sw=2.6)
+    scale, x, y = view or (KERB_VIEW if tow is None else TOW_WIDE)
+    ground = group(cv, parent, anchorX=0, anchorY=PAVEMENT, x=x, y=y, scaleX=scale, scaleY=scale)
+    far = (1080 - x) / scale  # the ground runs to the frame's right edge
+    path(cv, ground, f"M -400 {PAVEMENT} L {CAR_X - 40} {PAVEMENT} L {CAR_X - 40} {ROAD} L {far} {ROAD}", sw=2.6)
     for k in range(-4, 7):  # the paving's joints
-        path(cv, view, f"M {40 + k * 90} {PAVEMENT + 8} L {20 + k * 90} {PAVEMENT + 40}", stroke=cv.shade, sw=1.6)
+        path(cv, ground, f"M {40 + k * 90} {PAVEMENT + 8} L {20 + k * 90} {PAVEMENT + 40}", stroke=cv.shade, sw=1.6)
     for dx in range(CAR_X - 20, round(far), 70):  # the road's dashed line
-        path(cv, view, f"M {dx} {ROAD + 70} L {dx + 40} {ROAD + 70}", stroke=cv.shade, sw=4)
-    signature.cactus(cv, view, CAR_X - 62, PAVEMENT, 0.32)
-    human(cv, view, take, 10, PAVEMENT - 640 * DOODLE_SCALE, DOODLE_SCALE)
-    out = meter(cv, view, take, METER_X, PAVEMENT - 500, 1, **meter_kw)
-    hauled = group(cv, view)
+        path(cv, ground, f"M {dx} {ROAD + 70} L {dx + 40} {ROAD + 70}", stroke=cv.shade, sw=4)
+    signature.cactus(cv, ground, CAR_X - 62, PAVEMENT, 0.32)
+    human(cv, ground, take, 10, PAVEMENT - 640 * DOODLE_SCALE, DOODLE_SCALE)
+    out = meter(cv, ground, take, METER_X, PAVEMENT - 500, 1, **meter_kw)
+    hauled = group(cv, ground)
     car = _car(cv, hauled)
     if tow is not None:
         _truck(cv, hauled, CAR_X + 480)
