@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from .correctives import ContourCorrection, apply_correctives
 from .errors import LimbError
 from .math3d import Vec3, number
 from .motion import Sample
@@ -22,6 +23,7 @@ class Part:
     depth: float
     width: float
     role: str
+    authored: bool = False
 
 
 @dataclass(frozen=True)
@@ -105,7 +107,13 @@ def ribbon(points: tuple[Point, ...], widths: tuple[float, ...]) -> tuple[Point,
 
 
 def project_pose(
-    sample: Sample, camera: Camera, *, width: float, parent: Affine = _PARENT, thickness: float = 0.09
+    sample: Sample,
+    camera: Camera,
+    *,
+    width: float,
+    parent: Affine = _PARENT,
+    thickness: float = 0.09,
+    correctives: tuple[ContourCorrection, ...] = (),
 ) -> ProjectedPose:
     if number(width, "limb width") <= 0 or number(thickness, "hand thickness") <= 0:
         raise LimbError("limb width and hand thickness must be positive")
@@ -144,7 +152,7 @@ def project_pose(
     view = "palm" if normal.z > 0.2 else "back" if normal.z < -0.2 else "side"
     parts.sort(key=lambda p: (p.depth, p.name))
     # Palm and finger bases share an overlap rather than exposing gaps at the knuckles.
-    return ProjectedPose(
+    pose = ProjectedPose(
         tuple(parts),
         inverse.point(camera.project(arm.shoulder).xy),
         inverse.point(camera.project(arm.elbow).xy),
@@ -153,6 +161,7 @@ def project_pose(
         view,
         sample.time,
     )
+    return apply_correctives(pose, sample, camera, parent, correctives) if correctives else pose
 
 
 def path(points: tuple[Point, ...]) -> str:
