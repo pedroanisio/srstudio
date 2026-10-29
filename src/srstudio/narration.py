@@ -28,6 +28,7 @@ import json
 import math
 import re
 import subprocess
+import urllib.error
 import urllib.request
 import wave
 from collections.abc import Callable, Mapping, Sequence
@@ -38,7 +39,7 @@ from typing import Protocol
 from . import digest
 from .errors import MissingKeyError, SrstudioError
 from .provider import CONSENT_ENV, KEY_ENV
-from .voice import RATE, Alignment, Voice, VoiceOutputError
+from .voice import RATE, Alignment, Voice, VoiceOutputError, _cached_record, _http_error, _json_body
 
 __all__ = [
     "EFFECT_FIELDS",
@@ -100,17 +101,21 @@ def require_consent(env: Mapping[str, str]) -> None:
         raise SystemExit(f"this script sends the script to ElevenLabs; set {CONSENT_ENV}=1 to allow it")
 
 
-def _urllib_fetch(url: str, headers: Mapping[str, str]) -> object:  # pragma: no cover - network
+def _urllib_fetch(url: str, headers: Mapping[str, str]) -> object:
+    """One GET, no retries; errors are typed as the voice transports type them."""
     request = urllib.request.Request(url, headers=dict(headers), method="GET")
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return _json_body(response, "the voice record")
+    except urllib.error.HTTPError as exc:
+        raise _http_error(exc) from None
 
 
 def confirm_voice(cache: Path, key: str, voice: Voice, fetch: Fetch = _urllib_fetch) -> dict:
     """The voice id resolves to the premade voice of that name; the answer (name and category only) is cached."""
     record = cache / f"voice-{voice.id}.json"
     if record.exists():
-        body = json.loads(record.read_text())
+        body: object = _cached_record(record, "a voice record")
     else:
         if not key:
             raise MissingKeyError(f"{KEY_ENV} is required to confirm an unchecked voice")
