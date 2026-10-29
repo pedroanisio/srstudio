@@ -179,7 +179,7 @@ def discover(
     :mod:`srstudio.releases`; a project in both is built from ``episodes``); ``args`` adds
     command-line options by slug, and ``skip`` names projects not to build (one still in progress, whose build
     cannot run yet). Returns the runs by slug and the projects not measured: those with no script and those
-    skipped. A skipped slug that names no project raises :class:`UsageError`."""
+    skipped. A skipped slug, or one given ``args``, that names no project raises :class:`UsageError`."""
     projects: dict[str, Path] = {}
     if packages is not None and Path(packages).is_dir():
         for p in sorted(Path(packages).iterdir()):
@@ -191,6 +191,9 @@ def discover(
     unknown = sorted(set(skip) - set(projects))
     if unknown:
         raise UsageError(f"--skip names no project: {', '.join(unknown)}")
+    unknown = sorted(set(args or {}) - set(projects))
+    if unknown:
+        raise UsageError(f"--arg names no project: {', '.join(unknown)}")
     builders: dict[str, str] = {}
     if (Path(scripts) / "posts" / "__init__.py").is_file():
         try:
