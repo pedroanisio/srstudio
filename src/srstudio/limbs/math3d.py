@@ -20,7 +20,13 @@ def number(value: object, name: str) -> float:
     return result
 
 
-def bounded(value: float, low: float, high: float, name: str) -> float:
+def items(value: object, name: str) -> tuple[object, ...]:
+    if not isinstance(value, (tuple, list)):
+        raise LimbError(f"{name} must be a tuple")
+    return tuple(value)
+
+
+def bounded(value: object, low: float, high: float, name: str) -> float:
     value = number(value, name)
     if not low <= value <= high:
         raise LimbError(f"{name} must be within {low}..{high}, got {value}", code="joint-limit")

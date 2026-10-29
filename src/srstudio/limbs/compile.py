@@ -24,7 +24,7 @@ _PARENT = Affine()
 
 
 def _check_id(cv: Canvas, id: str) -> None:
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", id):
+    if not isinstance(id, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", id):
         raise LimbError("a compiled limb ID must be an XML name")
     existing = {str(n.attributes().get("id", "")) for n in cv.scene.iter()}
     if any(name == id or name.startswith(id + "-") for name in existing):

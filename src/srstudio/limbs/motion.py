@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
 
 from .constraints import hand_pose, reach
@@ -148,6 +148,8 @@ class Action:
             raise LimbError(f"word reference {ref.take}:{ref.index} does not resolve uniquely")
         take = matches[0]
         word = take.words[ref.index]
+        if not isinstance(word, Mapping) or "start" not in word:
+            raise LimbError(f"word {ref.take}:{ref.index} has no start time")
         at = number(word["start"], "word start") + number(take.start, "take start")
         candidate = cls(name, duration=duration, **options)
         return replace(candidate, start=at - candidate.stroke_at)

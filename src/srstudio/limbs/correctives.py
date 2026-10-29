@@ -11,7 +11,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from .errors import LimbError
-from .math3d import Vec3, bounded, number
+from .math3d import Vec3, bounded, items, number
 
 if TYPE_CHECKING:
     from .geometry import Point, ProjectedPose
@@ -30,10 +30,10 @@ class ContourKey:
 
     def __post_init__(self) -> None:
         bounded(self.view, -1, 1, "corrective view")
-        if not 3 <= len(self.vertices) <= 1024:
+        if not 3 <= len(items(self.vertices, "corrective vertices")) <= 1024:
             raise LimbError("corrective contours need 3..1024 vertices")
         for point in self.vertices:
-            if len(point) != 2:
+            if len(items(point, "corrective vertex")) != 2:
                 raise LimbError("corrective vertices need x and y")
             for value in point:
                 number(value, "corrective vertex")

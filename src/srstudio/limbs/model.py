@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 
 from .errors import Diagnostic, LimbError
-from .math3d import Frame, Vec3, bounded, number
+from .math3d import Frame, Vec3, bounded, items, number
 
 
 def label(value: object, name: str) -> str:
@@ -16,7 +16,7 @@ def label(value: object, name: str) -> str:
 
 
 def limits(pair: tuple[float, float], name: str) -> None:
-    if len(pair) != 2 or number(pair[0], name) > number(pair[1], name):
+    if len(items(pair, name)) != 2 or number(pair[0], name) > number(pair[1], name):
         raise LimbError(f"{name} must be ordered lower and upper limits")
 
 
@@ -61,7 +61,7 @@ class DigitProfile:
 
     def __post_init__(self) -> None:
         label(self.name, "digit name")
-        if not self.lengths or len(self.lengths) > 8:
+        if not items(self.lengths, "phalanx lengths") or len(self.lengths) > 8:
             raise LimbError("a digit needs a name and one to eight phalanges")
         if any(number(x, "phalanx length") <= 0 for x in self.lengths):
             raise LimbError("phalanx lengths must be positive")
@@ -69,7 +69,7 @@ class DigitProfile:
         number(self.splay, "splay")
         if abs(self.bend_axis.length - 1) > 1e-6:
             raise LimbError("digit bend axis must be a unit vector")
-        if self.max_flex and len(self.max_flex) != len(self.lengths):
+        if items(self.max_flex, "digit max_flex") and len(self.max_flex) != len(self.lengths):
             raise LimbError("digit max_flex and lengths must have the same size")
         for angle in self.max_flex:
             bounded(angle, 0, math.pi, "digit max_flex")
@@ -110,17 +110,21 @@ class HandControl:
             bounded(getattr(self, name), 0, 1, name)
         for name in ("wrist_flex", "wrist_deviation", "forearm_twist"):
             number(getattr(self, name), name)
-        names = [n for n, _ in self.curls]
-        if len(names) != len(set(names)):
-            raise LimbError("finger curl overrides must be unique")
-        for name, value in self.curls:
+        for name, value in _overrides(self.curls, "finger curl"):
             bounded(value, 0, 1, name)
-        names = [n for n, _ in self.joints]
-        if len(names) != len(set(names)):
-            raise LimbError("finger joint overrides must be unique")
-        for name, angles in self.joints:
-            for angle in angles:
+        for name, angles in _overrides(self.joints, "finger joint"):
+            for angle in items(angles, f"{name} joint angles"):
                 bounded(angle, 0, math.pi, name)
+
+
+def _overrides(entries: object, kind: str) -> list[tuple[str, object]]:
+    pairs = [items(entry, f"{kind} override") for entry in items(entries, f"{kind} overrides")]
+    if any(len(pair) != 2 for pair in pairs):
+        raise LimbError(f"each {kind} override needs a digit name and a value")
+    names = [label(pair[0], f"{kind} override digit") for pair in pairs]
+    if len(names) != len(set(names)):
+        raise LimbError(f"{kind} overrides must be unique")
+    return [(name, pair[1]) for name, pair in zip(names, pairs, strict=True)]
 
 
 @dataclass(frozen=True)

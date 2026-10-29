@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 
 from .errors import Diagnostic, LimbError
 from .math3d import Frame, Vec3, number
-from .model import HUMAN, ArmProfile, HandProfile
+from .model import HUMAN, ArmProfile, HandProfile, label
 from .motion import Action, Contact, Motion, Sample, Target, TransformTrack
 
 
@@ -17,8 +17,7 @@ class Anchor:
     digit: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.name:
-            raise LimbError("prop anchor needs a name")
+        label(self.name, "prop anchor name")
 
 
 @dataclass(frozen=True)
@@ -28,9 +27,10 @@ class Prop:
     anchors: tuple[Anchor, ...]
 
     def __post_init__(self) -> None:
+        label(self.name, "prop name")
         names = [a.name for a in self.anchors]
-        if not self.name or not names or len(names) != len(set(names)):
-            raise LimbError("prop needs a name and unique named anchors")
+        if not names or len(names) != len(set(names)):
+            raise LimbError("prop needs unique named anchors")
 
     def anchor(self, name: str) -> Anchor:
         for anchor in self.anchors:
@@ -56,8 +56,9 @@ class Sphere:
     radius: float
 
     def __post_init__(self) -> None:
-        if not self.name or number(self.radius, "collider radius") <= 0:
-            raise LimbError("sphere collider needs a name and positive radius")
+        label(self.name, "sphere collider name")
+        if number(self.radius, "collider radius") <= 0:
+            raise LimbError("sphere collider needs a positive radius")
 
 
 def clearance(

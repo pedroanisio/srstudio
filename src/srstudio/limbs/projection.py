@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .errors import LimbError
-from .math3d import Frame, Vec3, number
+from .math3d import Frame, Vec3, items, number
 
 _IDENTITY = Frame()
 
@@ -75,7 +75,7 @@ class Camera:
         for n in ("distance", "focal", "scale", "near"):
             if number(getattr(self, n), n) <= 0:
                 raise LimbError(f"camera {n} must be positive")
-        if len(self.origin) != 2:
+        if len(items(self.origin, "camera origin")) != 2:
             raise LimbError("camera origin must contain x and y")
         for v in self.origin:
             number(v, "camera origin")

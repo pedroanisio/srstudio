@@ -218,7 +218,9 @@ and fields are rejected. Both versions pass through the current numeric and reso
 `load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so
 an oversized, deeply nested or non-UTF-8 file raises `LimbError` instead of exhausting the parser. Profile,
 digit, action, contact, attachment and take identifiers are bounded to 128 characters. Custom digit labels
-can contain spaces or Unicode; they do not become SVG paint IDs.
+can contain spaces or Unicode; they do not become SVG paint IDs. Wrongly typed constructor input, such as a
+number where a name, color, tuple or (digit, value) override belongs, raises `LimbError` (still a `ValueError`)
+rather than a bare `TypeError` or `KeyError`.
 
 Resolved bake durations are checked against frame budgets before arithmetic can overflow. The six-decimal
 scene clock must be able to represent every emitted interval. Invalid or under-resolved intervals, large

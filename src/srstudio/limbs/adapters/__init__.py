@@ -33,7 +33,9 @@ class Appearance:
 
     def __post_init__(self) -> None:
         for color in (self.skin, self.sleeve, self.outline):
-            if color is not None and not re.fullmatch(r"#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?", color):
+            if color is not None and not (
+                isinstance(color, str) and re.fullmatch(r"#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?", color)
+            ):
                 raise LimbError(f"limb color {color!r} must be hexadecimal RGB or RGBA")
         bounded(self.line_width, 0, 100, "outline width")
         bounded(self.detail, 0, 1, "hand detail")
@@ -171,10 +173,9 @@ def register_adapter(name: str, adapter: Adapter) -> None:
 
 
 def adapter_for(name: str) -> Adapter:
-    try:
-        return _ADAPTERS[name]
-    except KeyError:
-        raise LimbError(f"no limb adapter {name!r}; registered: {', '.join(_ADAPTERS)}") from None
+    if not isinstance(name, str) or name not in _ADAPTERS:
+        raise LimbError(f"no limb adapter {name!r}; registered: {', '.join(_ADAPTERS)}")
+    return _ADAPTERS[name]
 
 
 for _adapter in (

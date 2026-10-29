@@ -24,7 +24,7 @@ _PARENT = Affine()
 
 
 def _name(value: str) -> None:
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", value):
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", value):
         raise LimbError(f"interaction ID {value!r} must be an XML name")
 
 
@@ -57,7 +57,7 @@ class Face:
         if not 3 <= len(self.vertices) <= 1024:
             raise LimbError("prop faces need 3..1024 vertices")
         for color in (self.fill, self.outline):
-            if not re.fullmatch(r"#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?", color):
+            if not isinstance(color, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?", color):
                 raise LimbError("prop colors must be hexadecimal RGB or RGBA")
         origin = self.vertices[0]
         if not any(

@@ -10,6 +10,7 @@ from .adapters import Appearance, adapter_for
 from .compile import BakeOptions, Compiled, LayerTargets, Occlusion, bake, compile_motion
 from .correctives import ContourCorrection
 from .errors import LimbError
+from .model import label
 from .motion import ACTIONS, Action, Motion
 from .projection import Camera
 
@@ -85,7 +86,7 @@ _LEGACY = {
 def legacy_action(style: str, pose: str, *, start: float, duration: float, **options: Any) -> Action:
     """Explicitly convert supported old pose names; unsupported poses never silently become an idle hand."""
     adapter_for(style)
-    name = _LEGACY.get(pose, pose)
+    name = _LEGACY.get(label(pose, "legacy arm pose"), pose)
     if name not in ACTIONS:
         raise LimbError(f"legacy {style} arm pose {pose!r} has no action mapping")
     return Action(name, start, duration, **options)
