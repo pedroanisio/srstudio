@@ -210,7 +210,7 @@ def sound_effects(
     buzz under every ``toast`` event and the sting on ``hangup``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
-    taps = foley.taps(sketch.typing_bursts(beats, end, speech), seed=seed)
+    taps = foley.taps(sketch.typing_bursts(beats, end, speech), seed=seed, until=end - foley.KEY_TAIL)
     typing = foley.write_typing(audio / "typing.wav", taps, end, seed=seed, peak=TYPING_PEAK)
     out = [sketch.effect("typing", 0.0, TYPING_GAIN_DB, root, typing, taps)]
     buzzes = [at for at, _ in sketch.events(beats, "toast")]

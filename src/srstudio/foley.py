@@ -40,6 +40,7 @@ RATE = 48000
 THRESHOLD = 8.0  # pixels the tracked point moves between samples for a burst
 PEAK = 0.5
 CLICK = 0.012  # seconds of one keystroke's noise
+KEY_TAIL = 0.1  # seconds a keystroke bed runs on after its last keystroke
 BUZZ = 0.36  # seconds of one phone buzz: two pulses
 BUZZ_TONE = 165.0  # the motor's hum, Hz
 BUZZ_RATTLE = 28.0  # how fast the phone rattles on the desk, Hz
@@ -61,16 +62,17 @@ def typing_bursts(
     return out
 
 
-def taps(bursts: Sequence[float], seed: int = 0) -> list[float]:
+def taps(bursts: Sequence[float], seed: int = 0, until: float | None = None) -> list[float]:
     """Two to four keystroke onsets after each burst time, within about 0.2 s, the same for the same seed; the
-    sound (:func:`keystrokes`) and the picture (:class:`srstudio.cel.Hands`) share them."""
+    sound (:func:`keystrokes`) and the picture (:class:`srstudio.cel.Hands`) share them. With ``until``, the
+    onsets after it are dropped and the rest are unchanged: a bed of ``until + KEY_TAIL`` seconds takes them."""
     rng = random.Random(seed)
     out = []
     for at in sorted(bursts):
         for _ in range(rng.randint(2, 4)):
             at += rng.uniform(0.02, 0.08)
             out.append(round(at, 6))
-    return out
+    return out if until is None else [t for t in out if t <= until]
 
 
 def keystrokes(
@@ -79,8 +81,8 @@ def keystrokes(
     """A mono bed of ``duration`` seconds with one keystroke at each of ``times`` (see :func:`taps`)."""
     if not (isinstance(rate, int) and rate >= MIN_RATE):
         raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
-    if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - 0.1 for t in times)):
-        raise ValueError(f"duration {duration} must leave 0.1 s after every keystroke")
+    if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - KEY_TAIL for t in times)):
+        raise ValueError(f"duration {duration} must leave {KEY_TAIL} s after every keystroke")
     if not (math.isfinite(peak) and 0 < peak <= 1):
         raise ValueError(f"peak {peak} must be in 0..1")
     out = [0.0] * int(round(duration * rate))
