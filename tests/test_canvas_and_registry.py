@@ -4,6 +4,8 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import CAFE, OFFICE, Canvas, registry
+from srstudio.canvas import CanvasError
+from srstudio.errors import SrstudioError
 from srstudio.native import NativeError
 from srstudio.registry import register
 
@@ -151,7 +153,8 @@ def test_require_font_returns_the_caption_font():
 
 def test_require_font_refuses_a_silent_canvas_with_the_callers_error_and_words():
     cv = Canvas(Scene(version="auto"), OFFICE, font_asset=None)
-    with pytest.raises(ValueError, match="^this canvas has no caption font; the card is set in it$"):
+    with pytest.raises(CanvasError, match="^this canvas has no caption font; the card is set in it$") as caught:
         cv.require_font("the card is set in it")
+    assert isinstance(caught.value, SrstudioError) and isinstance(caught.value, ValueError)
     with pytest.raises(StyleError, match="^this canvas has no caption font; the Stick style captions in its font$"):
         cv.require_font("the Stick style captions in its font", StyleError)
