@@ -9,7 +9,7 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from . import brush
+from . import brush, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, REF_W, ToonDataError, _d, _path, fh, flat, fx, fy
@@ -232,6 +232,7 @@ def board_text(
 def scale_keys(sizes: Sequence[tuple[float, float]], grow: float = GROW) -> list[tuple[float, float]]:
     """Linear keys that hold each scale and change to the next over ``grow`` seconds: ``sizes`` are
     ``(project second, scale)`` in rising order; the first scale holds from 0."""
+    checks.positive(grow, ToonDataError, f"a size change needs a grow over 0 s, got {grow!r}")
     if not sizes or any(not (math.isfinite(t) and math.isfinite(s) and s > 0) for t, s in sizes):
         raise ToonDataError("sizes need finite times and positive scales")
     if any(b[0] < a[0] + grow for a, b in zip(sizes, sizes[1:], strict=False)) or sizes[0][0] < 0:
