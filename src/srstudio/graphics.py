@@ -12,6 +12,11 @@ SLATE_INK = "#203638"
 RED = "#BE5C51"
 
 
+def _part_id(instance: str, default: str, name: str) -> str:
+    """Namespace a custom instance's children; keep the shipped default instance's public IDs."""
+    return name if instance == default else f"{instance}-{name}"
+
+
 @register("graphic", "episode-slate", summary="Episode number badge and title, fading in and out in the first second")
 def episode_slate(
     cv: Canvas,
@@ -40,8 +45,10 @@ def episode_slate(
     cv.keys(g, "opacity", [(0, 0), (fade[0], 1), (fade[1], 1), (fade[2], 0)], hold=False)
     cv.rect(g, 0, 0, w, h, bg, radius=radius)
     cv.rect(g, 12, 12, 55, badge_h, badge, radius=badge_radius)
-    cv.text(g, "episode-number", number, 12, 12, 55, badge_h, 27, number_color)
-    cv.text(g, "episode-title", title, title_x, 12, title_w, badge_h, title_size, title_color)
+    cv.text(g, _part_id(id, "episode-slate", "episode-number"), number, 12, 12, 55, badge_h, 27, number_color)
+    cv.text(
+        g, _part_id(id, "episode-slate", "episode-title"), title, title_x, 12, title_w, badge_h, title_size, title_color
+    )
     return g
 
 
@@ -65,10 +72,10 @@ def quiz_card(
     cv.rect(g, 7, 11, 600, 200, "#465453", radius=25, opacity=0.16)
     cv.rect(g, 0, 0, 600, 200, "#FDFCF7", SLATE_INK, 4, radius=25)
     cv.rect(g, 0, 0, 12, 200, GOLD, radius=6)
-    cv.text(g, "quiz-label", label, 30, 12, 540, 37, 23, "#657975")
-    cv.text(g, "quiz-question", question, 28, 48, 544, 103, 64, SLATE_INK)
+    cv.text(g, _part_id(id, "quiz-card", "quiz-label"), label, 30, 12, 540, 37, 23, "#657975")
+    cv.text(g, _part_id(id, "quiz-card", "quiz-question"), question, 28, 48, 544, 103, 64, SLATE_INK)
     if verdict:
-        nope = cv.text(g, "wrong-label", verdict, 80, 145, 440, 45, 31, RED)
+        nope = cv.text(g, _part_id(id, "quiz-card", "wrong-label"), verdict, 80, 145, 440, 45, 31, RED)
         cv.gate(nope, [verdict_span or show])
     return g
 
@@ -83,7 +90,7 @@ def answer_bubble(
     for yy, ll in [(25, 40), (75, 58), (130, 37)]:
         cv.line(g, -ll, yy, -8, yy, GOLD, 6)
     cv.ellipse(g, 0, 0, 200, 160, "#DBEAE0", SLATE_INK, 4)
-    cv.text(g, "wrong-answer-number", value, 7, 8, 186, 140, 81, SLATE_INK)
+    cv.text(g, _part_id(id, "instant-answer", "wrong-answer-number"), value, 7, 8, 186, 140, 81, SLATE_INK)
     return g
 
 
@@ -118,13 +125,15 @@ def scorecard(
     _slide_up(cv, g, show[0], y)
     cv.rect(g, 7, 12, w, h, "#8C765C", radius=24, opacity=0.22)
     cv.rect(g, 0, 0, w, h, SLATE_INK, GOLD, 3, radius=24)
-    cv.text(g, f"{prefix}-heading", heading, 35, 15, w - 70, 44, heading_size, "#BFCFCA")
+    cv.text(
+        g, _part_id(id, "final-scorecard", f"{prefix}-heading"), heading, 35, 15, w - 70, 44, heading_size, "#BFCFCA"
+    )
     cv.line(g, 42, 73, w - 42, 73, "#6B807B", 2)
     for i, (label, value, color) in enumerate(rows):
         yy = 89 + i * row_h
         cv.text(
             g,
-            f"{prefix}-{i}-label" if prefix != "score" else f"{label.lower()}-label",
+            _part_id(id, "final-scorecard", f"{prefix}-{i}-label" if prefix != "score" else f"{label.lower()}-label"),
             label,
             45,
             yy,
@@ -136,7 +145,7 @@ def scorecard(
         )
         cv.text(
             g,
-            f"{prefix}-{i}-value" if prefix != "score" else f"{label.lower()}-value",
+            _part_id(id, "final-scorecard", f"{prefix}-{i}-value" if prefix != "score" else f"{label.lower()}-value"),
             value,
             w - value_w - 55,
             yy,
@@ -169,12 +178,34 @@ def dashboard(
     _slide_up(cv, g, show[0], y)
     cv.rect(g, 7, 12, w, h, "#8C765C", radius=24, opacity=0.22)
     cv.rect(g, 0, 0, w, h, SLATE_INK, GOLD, 3, radius=24)
-    cv.text(g, f"{prefix}-heading", heading, 35, 15, w - 70, 45, 29, "#BFCFCA")
+    cv.text(g, _part_id(id, "multitasking-dashboard", f"{prefix}-heading"), heading, 35, 15, w - 70, 45, 29, "#BFCFCA")
     cv.line(g, 42, 77, w - 42, 77, "#6B807B", 2)
     for i, (label, value) in enumerate(rows):
         yy = 91 + i * 79
-        cv.text(g, f"{prefix}-label-{i}", label, 38, yy, 370, 61, 34, "#F7F4E9", "start")
-        cv.text(g, f"{prefix}-value-{i}", value, 423, yy, 425, 61, 34, "#E6AA92", "end")
+        cv.text(
+            g,
+            _part_id(id, "multitasking-dashboard", f"{prefix}-label-{i}"),
+            label,
+            38,
+            yy,
+            370,
+            61,
+            34,
+            "#F7F4E9",
+            "start",
+        )
+        cv.text(
+            g,
+            _part_id(id, "multitasking-dashboard", f"{prefix}-value-{i}"),
+            value,
+            423,
+            yy,
+            425,
+            61,
+            34,
+            "#E6AA92",
+            "end",
+        )
     return g
 
 
@@ -216,9 +247,9 @@ def password_card(
     cv.pop_in(g, show[0], from_=0.93, over=1.025, rise=0.15, settle=0.28)
     cv.rect(g, 6, 9, 720, 200, "#624F3C", radius=22, opacity=0.16)
     cv.rect(g, 0, 0, 720, 200, "#FCF6E8", "#2D5753", 4, radius=22)
-    cv.text(g, f"{prefix}-heading", heading, 30, 17, 660, 42, 29, "#628074")
-    cv.text(g, f"{prefix}-password", password, 25, 65, 670, 102, 55, "#2D5753")
-    cv.text(g, f"{prefix}-no-spaces", footnote, 30, 163, 660, 26, 18, "#A7794C")
+    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-heading"), heading, 30, 17, 660, 42, 29, "#628074")
+    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-password"), password, 25, 65, 670, 102, 55, "#2D5753")
+    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-no-spaces"), footnote, 30, 163, 660, 26, 18, "#A7794C")
     return g
 
 
@@ -237,7 +268,7 @@ def location_slate(
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     cv.rect(g, 0, 0, 460, 69, "#355C53", radius=13)
-    cv.text(g, text_id, text, 14, 9, 430, 51, 25, "#F2E7C6")
+    cv.text(g, _part_id(id, "new-location-slate", text_id), text, 14, 9, 430, 51, 25, "#F2E7C6")
     return g
 
 
@@ -259,8 +290,8 @@ def connected_card(
     cv.rect(g, 5, 8, 680, 151, "#5A735E", radius=21, opacity=0.17)
     cv.rect(g, 0, 0, 680, 151, "#F7F4E4", "#426B5E", 3, radius=21)
     cv.ellipse(g, 31, 57, 21, 21, "#62976F")
-    cv.text(g, f"{prefix}-heading", heading, 61, 13, 578, 47, 29, "#426B5E")
-    cv.text(g, f"{prefix}-password", value, 52, 64, 580, 67, 42, "#263F39")
+    cv.text(g, _part_id(id, "park-connected-card", f"{prefix}-heading"), heading, 61, 13, 578, 47, 29, "#426B5E")
+    cv.text(g, _part_id(id, "park-connected-card", f"{prefix}-password"), value, 52, 64, 580, 67, 42, "#263F39")
     return g
 
 

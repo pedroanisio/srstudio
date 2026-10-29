@@ -166,6 +166,10 @@ cv.animate_text(layer, "pop")
 
 ## The parts
 
+Give repeated graphics distinct `id=` values. Each custom instance namespaces its text assets and layers as
+`<instance id>-<text id>`; the default instance retains the original IDs. This also applies to graphics with
+`prefix=` or `text_id=` options.
+
 `srstudio catalog` lists them; `srstudio catalog --json` is machine-readable, and `--usage REPORT` adds the episodes
 that use each part, from the report below.
 
