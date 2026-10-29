@@ -26,13 +26,16 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from . import camera, checks, lipsync, rig
 from .canvas import PLASTIC, Canvas
 from .errors import SrstudioError
 from .registry import register
 from .soundtrack import PhonemeStyle
+
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 
 __all__ = [
     "PLASTIC",
@@ -351,12 +354,13 @@ _ARMS = {  # the right arm's shoulder, bend and hand (x mirrored for the left); 
 }
 
 
-def _arms(cv: Canvas, g, colour: str, skin: str, state: str) -> None:
+def _arms(cv: Canvas, g, colour: str, skin: str, state: str, omit_arms: frozenset[str] = frozenset()) -> None:
     """Both arms in ``state``: crisp ink outlines, the two lit sleeves finished as one group (one offscreen, not
     two), then the hands, lit by their own gradient."""
     right = _ARMS[state]
     left = tuple((-x, y) for x, y in _ARMS["down" if state == "point" else state])
-    curves = [f"M{sx:g} {sy:g} Q{cx:g} {cy:g} {ex:g} {ey:g}" for (sx, sy), (cx, cy), (ex, ey) in (right, left)]
+    arms = tuple(arm for side, arm in (("right", right), ("left", left)) if side not in omit_arms)
+    curves = [f"M{sx:g} {sy:g} Q{cx:g} {cy:g} {ex:g} {ey:g}" for (sx, sy), (cx, cy), (ex, ey) in arms]
     for d in curves:
         cv.path(g, d, stroke=cv.ink, sw=50)
     sleeves = cv.group(g, cv.uid("g"))
@@ -365,7 +369,7 @@ def _arms(cv: Canvas, g, colour: str, skin: str, state: str) -> None:
         cv.path(sleeves, d, stroke=colour, sw=37)
         cv.path(light, d, stroke=mix(colour, "#fff6e8", 0.45), sw=9, opacity=0.7)
     finish(cv, sleeves)
-    for _, _, (ex, ey) in (right, left):
+    for _, _, (ex, ey) in arms:
         cv.ellipse(g, ex - 25, ey - 25, 50, 50, vinyl(cv, skin, sphere=True), cv.ink, 5)
         cv.ellipse(g, ex - 14, ey - 17, 15, 10, SHINE, opacity=0.85)
 
@@ -406,6 +410,7 @@ def _person(
     base: Callable[[Any], Any] | None = None,
     body_extra: Callable[[Any], None] | None = None,
     head_extra: Callable[[Any], None] | None = None,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> Drawn:
     rig.check_place(scale, end, GlossError)
     if skin not in SKIN.values():
@@ -413,16 +418,24 @@ def _person(
     check_talk(talk)
     check_track(face, FACES, "face", end)
     check_track(pose, POSES, "pose", end)
+    if limbs:
+        from .limbs.compile import LayerTargets
+        from .limbs.integration import draw_tracks, prepare_tracks
+
+        limbs = prepare_tracks(cv, limbs, end)
+    sides = frozenset(track.motion.arm.side for track in limbs)
     root = _root(cv, parent, at, scale, flip, end, walk, colour)
     g = _fall(cv, root, fall, end)
     if base is None:  # the peg's round foot
         cv.ellipse(g, -92, -62, 184, 66, vinyl(cv, mix(colour, "#4a2470", 0.18)), cv.ink, INK_W)
     else:
         g = base(g)
+    behind = cv.group(g, cv.uid("g")) if limbs else None
     _glossy_body(cv, g, colour)
     if body_extra is not None:
         body_extra(g)
-    poses = _switch(cv, g, pose, "down", lambda node, state: _arms(cv, node, colour, skin, state))
+    poses = _switch(cv, g, pose, "down", lambda node, state: _arms(cv, node, colour, skin, state, sides))
+    limb_body = cv.group(g, cv.uid("g")) if limbs else None
     head = cv.group(g, cv.uid("g"))
     hair(head, "back")
     _glossy_head(cv, head, skin)
@@ -439,6 +452,9 @@ def _person(
     if head_extra is not None:
         head_extra(head)
     mouths = _switch(cv, head, talk, "closed", lambda node, state: _mouth_shape(cv, node, state, 0, MOUTH_Y, MOUTH_W))
+    if limbs:
+        front = cv.group(g, cv.uid("g"))
+        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
     return Drawn(root, {"mouth": mouths, "face": faces, "pose": poses})
 
 
@@ -515,6 +531,7 @@ def nadia(
     end: float,
     walk: Walk | None = None,
     fall: float | None = None,
+    limbs: tuple[LimbTrack, ...] = (),
     peel: Sequence[float] = (),
 ) -> Drawn:
     """Nadia, feet at ``at``; her sticker lifts and snaps back at each second of ``peel``."""
@@ -557,7 +574,7 @@ def nadia(
         cv.line(h, -8, EYE_Y - 4, 8, EYE_Y - 4, "#3a2f5c", 6)
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, skin=SKIN["tan"], colour="#2fb3a6", hair=hair, body_extra=sticker,
+                   fall=fall, limbs=limbs, skin=SKIN["tan"], colour="#2fb3a6", hair=hair, body_extra=sticker,
                    head_extra=glasses)  # fmt: skip
 
 
@@ -581,6 +598,7 @@ def gus(
     end: float,
     walk: Walk | None = None,
     fall: float | None = None,
+    limbs: tuple[LimbTrack, ...] = (),
     unwound: float | None = None,
 ) -> Drawn:
     """Gus, feet at ``at``; his key turns until ``unwound`` (slowing over the last second), or all shot long."""
@@ -633,7 +651,7 @@ def gus(
         return g
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, skin=SKIN["umber"], colour="#f0b43c", hair=hair, base=base, body_extra=chips,
+                   fall=fall, limbs=limbs, skin=SKIN["umber"], colour="#f0b43c", hair=hair, base=base, body_extra=chips,
                    head_extra=moustache)  # fmt: skip
 
 
@@ -657,6 +675,7 @@ def tamsin(
     end: float,
     walk: Walk | None = None,
     fall: float | None = None,
+    limbs: tuple[LimbTrack, ...] = (),
     bounce: Sequence[tuple[float, float]] = (),
 ) -> Drawn:
     """Tamsin, spring at ``at``; she bounces on it inside each span of ``bounce``."""
@@ -698,7 +717,7 @@ def tamsin(
         return top
 
     return _person(cv, parent, at=at, scale=scale, flip=flip, talk=talk, face=face, pose=pose, end=end, walk=walk,
-                   fall=fall, skin=SKIN["peach"], colour="#ff7fb6", hair=hair, base=spring)  # fmt: skip
+                   fall=fall, limbs=limbs, skin=SKIN["peach"], colour="#ff7fb6", hair=hair, base=spring)  # fmt: skip
 
 
 # -- the host ---------------------------------------------------------------------------------------------------------

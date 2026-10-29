@@ -82,3 +82,19 @@ solid volume. Unioning the solid phalanges constructs the intended visible surfa
 The [Shapely manual](https://shapely.readthedocs.io/en/stable/manual.html#efficient-unions) describes the polygon
 union operation. Tests independently check edge intersections across curl and palm-turn angles, coincident
 projection, a genuinely enclosed hole and renderer fill rules.
+
+## Style character integration
+
+Stick's articulated rig, the four brush-drawn Toon cast members and the three Gloss people now accept typed
+limb tracks. Named-side suppression happens where each style creates its legacy arm, so replacing one side
+retains the other side and the rest of the character. The default empty-track path adds no groups or IDs.
+
+Shared integration helpers preflight complete tracks on an isolated canvas before creating character
+geometry. Each builder supplies behind-body, arm and foreground layers in its own coordinate system.
+Toon splits its unchanged foundation layers from its arm/face layers and maps replacement tracks through the
+same reference-pixel conversion and lean/sigh transform. Renderer tests compare that mapping under desk,
+sigh and lean poses. Existing character regression suites and byte comparisons cover the empty-track path.
+
+`examples/limbs_cast.py` renders the same pointing action on complete Stick, Toon and Gloss characters with
+character-specific placement, sleeve width, colors and hand topology. It complements the isolated six-action
+and prop-contact clips; it does not establish viewer preference or comparative authoring effort.
