@@ -22,6 +22,7 @@ class OfficeActor(Actor):
     """
 
     bottom = 312
+    supports_limbs = True
     eye_xs = (-37, 31)
     LEGS = ("seated", "standing")
     STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
@@ -42,7 +43,12 @@ class OfficeActor(Actor):
         cv.path(
             g, f"M-64 {bottom} L-68 154 Q-69 124 -39 120 Q-4 113 38 120 Q68 126 68 154 L64 {bottom}Z", white, ink, 4.5
         )
-        if perf.extras.get("arms", "static") == "articulated":
+        if perf.limbs:
+            if "left" not in perf.limb_sides:
+                cv.path(g, f"M-66 148 L-87 235 L-79 {bottom}", stroke=ink, sw=5)
+            if "right" not in perf.limb_sides:
+                cv.path(g, f"M67 148 L86 233 L77 {bottom}", stroke=ink, sw=5)
+        elif perf.extras.get("arms", "static") == "articulated":
             cv.path(g, f"M-66 148 L-87 235 L-79 {bottom}", stroke=ink, sw=5)
             self.right_arm = cv.group(g, f"{self.tag_base}-right-arm")
             cv.path(self.right_arm, "M67 148 L86 233", stroke=ink, sw=5)
@@ -200,6 +206,7 @@ class CafeActor(Actor):
     """
 
     mouth_stroke = 3.5
+    supports_limbs = True
     skin = "#F1D0AA"
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
@@ -239,9 +246,17 @@ class Barista(CafeActor):
         cv.rect(g, -10, 91, 20, 39, skin, ink, 3)
         cv.path(g, "M-68 322 L-73 150 Q-74 121 -44 116 L43 116 Q74 121 75 150 L68 322Z", "#F5EAD4", ink, 4)
         cv.path(g, "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z", "#366761", ink, 3)
-        cv.path(g, "M-66 140 L-104 212 L-119 229 M68 141 L101 205 L117 208", stroke=ink, sw=5)
-        cv.ellipse(g, -128, 217, 20, 23, skin, ink, 2.5)
-        cv.ellipse(g, 108, 197, 21, 22, skin, ink, 2.5)
+        if perf.limbs:
+            if "left" not in perf.limb_sides:
+                cv.path(g, "M-66 140 L-104 212 L-119 229", stroke=ink, sw=5)
+            if "right" not in perf.limb_sides:
+                cv.path(g, "M68 141 L101 205 L117 208", stroke=ink, sw=5)
+        else:
+            cv.path(g, "M-66 140 L-104 212 L-119 229 M68 141 L101 205 L117 208", stroke=ink, sw=5)
+        if "left" not in perf.limb_sides:
+            cv.ellipse(g, -128, 217, 20, 23, skin, ink, 2.5)
+        if "right" not in perf.limb_sides:
+            cv.ellipse(g, 108, 197, 21, 22, skin, ink, 2.5)
         cv.rect(g, -28, 237, 57, 45, "#2C5853", ink, 2, radius=8)
         name = perf.extras.get("name", "AVA")
         if name:  # None leaves the tag blank: no text layer for a close-up to push out of the safe area
@@ -304,14 +319,25 @@ class Customer(CafeActor):
         cv.line(g, -12, 145, -17, 195, "#E9E2CC", 2.5)
         cv.line(g, 14, 145, 18, 192, "#E9E2CC", 2.5)
         cv.rect(g, -43, 236, 86, 47, "#426C82", ink, 2.5, radius=12)
-        cv.path(g, "M-72 143 L-103 213 L-122 212 M73 144 L100 204 L125 181", stroke=ink, sw=5)
-        cv.ellipse(g, -131, 204, 20, 24, skin, ink, 2.5)
-        cv.ellipse(g, 116, 171, 22, 25, skin, ink, 2.5)
-        phone = cv.group(g, f"{self.tag}-phone", x=-133, y=179, rotation=-12)
-        cv.rect(phone, 0, 0, 33, 58, "#293F49", ink, 2.5, radius=6)
-        cv.rect(phone, 5, 7, 23, 41, "#B7D5CD", radius=2)
-        cv.line(phone, 11, 52, 23, 52, "#A3B8B3", 1.5)
-        held = coffee_cup(cv, g, 130, 163, 0.62, 8)
+        if perf.limbs:
+            if "left" not in perf.limb_sides:
+                cv.path(g, "M-72 143 L-103 213 L-122 212", stroke=ink, sw=5)
+            if "right" not in perf.limb_sides:
+                cv.path(g, "M73 144 L100 204 L125 181", stroke=ink, sw=5)
+        else:
+            cv.path(g, "M-72 143 L-103 213 L-122 212 M73 144 L100 204 L125 181", stroke=ink, sw=5)
+        phone, held = None, None
+        if "left" not in perf.limb_sides:
+            cv.ellipse(g, -131, 204, 20, 24, skin, ink, 2.5)
+        if "right" not in perf.limb_sides:
+            cv.ellipse(g, 116, 171, 22, 25, skin, ink, 2.5)
+        if "left" not in perf.limb_sides:
+            phone = cv.group(g, f"{self.tag}-phone", x=-133, y=179, rotation=-12)
+            cv.rect(phone, 0, 0, 33, 58, "#293F49", ink, 2.5, radius=6)
+            cv.rect(phone, 5, 7, 23, 41, "#B7D5CD", radius=2)
+            cv.line(phone, 11, 52, 23, 52, "#A3B8B3", 1.5)
+        if "right" not in perf.limb_sides:
+            held = coffee_cup(cv, g, 130, 163, 0.62, 8)
         if not self.seated and perf.extras.get("held_cup") is not None:
             cv.gate(held, perf.extras["held_cup"])
         self.phone, self.cup = phone, held

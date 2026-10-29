@@ -11,10 +11,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from .canvas import Canvas, Keys
 from .soundtrack import pose_keys
 
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 Span = tuple[float, float]
 
 
@@ -26,6 +29,25 @@ class Performance:
     blinks: Sequence[Span] = ()  # eyes closed inside these spans
     nods: Keys = ()  # head rotation keys (linear)
     extras: dict = field(default_factory=dict)  # rig-specific gestures, read by subclasses
+    limbs: Sequence[LimbTrack] = ()
+
+    def __post_init__(self) -> None:
+        if not self.limbs:
+            return
+        from .limbs.errors import LimbError
+        from .limbs.integration import LimbTrack
+
+        if any(not isinstance(track, LimbTrack) for track in self.limbs):
+            raise LimbError("performance limbs must be typed LimbTracks")
+        sides = [track.motion.arm.side for track in self.limbs]
+        if len(sides) != len(set(sides)):
+            raise LimbError("performance contains duplicate tracks for one arm")
+        if {"arms", "forearm", "pointing", "hide_right_arm_at", "facepalm", "held_cup"} & self.extras.keys():
+            raise LimbError("typed limb tracks cannot be mixed with legacy arm controls")
+
+    @property
+    def limb_sides(self) -> set[str]:
+        return {track.motion.arm.side for track in self.limbs}
 
 
 class Actor(ABC):
@@ -33,6 +55,7 @@ class Actor(ABC):
 
     role: str = "actor"
     mouth_stroke: float = 3.6
+    supports_limbs: bool = False
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None):
         self.cv = canvas
@@ -46,9 +69,15 @@ class Actor(ABC):
     # -- public -----------------------------------------------------------------------------
     def build(self, parent, x: float, y: float, scale: float = 1.0, perf: Performance | None = None):
         perf = perf or Performance()
+        if perf.limbs and not self.supports_limbs:
+            from .limbs.errors import LimbError
+
+            raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
         cv = self.cv
         self.group = g = cv.group(parent, self.tag, x=x, y=y, scaleX=scale, scaleY=scale)
+        behind = cv.group(g, f"{self.tag}-limbs-behind") if perf.limbs else None
         self.draw_body(g, perf)
+        body = cv.group(g, f"{self.tag}-limbs-body") if perf.limbs else None
         self.head = head = cv.group(g, f"{self.tag_base}-head")
         self.draw_head(head, perf)
         self.eyes = eyes = cv.group(head, f"{self.tag_base}-eyes")
@@ -68,6 +97,12 @@ class Actor(ABC):
             for name, shape in self.mouths.items():
                 cv.keys(shape, "opacity", pose_keys(perf.mouth, name))
         self.after_head(g, perf)
+        if perf.limbs:
+            from .limbs.compile import LayerTargets
+
+            front = cv.group(g, f"{self.tag}-limbs-front")
+            for track in perf.limbs:
+                track.draw(cv, LayerTargets(behind, body, front), id=f"{self.tag}-limb-{track.motion.arm.side}")
         return g
 
     # -- hooks ----------------------------------------------------------------------------------

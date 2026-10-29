@@ -271,10 +271,12 @@ class Episode:
             )
         return mouth_states(self.track, self.t, role, self.spec.fps, smile=smile, style=model, speaking=speaking)
 
-    def perform(self, actor: Actor, parent, x, y, scale, *, mouth=None, smile=(), blinks=(), nods=(), **extras):
+    def perform(
+        self, actor: Actor, parent, x, y, scale, *, mouth=None, smile=(), blinks=(), nods=(), limbs=(), **extras
+    ):
         """Build ``actor`` with a performance assembled from keyword arguments."""
         states = mouth if mouth is not None else self.mouth(actor.role, smile=smile)
-        perf = Performance(mouth=states, blinks=list(blinks), nods=list(nods), extras=extras)
+        perf = Performance(mouth=states, blinks=list(blinks), nods=list(nods), extras=extras, limbs=limbs)
         node = actor.build(parent, x, y, scale, perf)
         self.cast[actor.tag] = actor
         return node

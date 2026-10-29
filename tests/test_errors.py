@@ -17,15 +17,15 @@ SRC = Path(srstudio.__file__).resolve().parent
 
 
 def _error_classes():
-    for info in pkgutil.iter_modules([str(SRC)]):
-        if info.name == "__main__":  # runs the command line
+    for info in pkgutil.walk_packages([str(SRC)], prefix="srstudio."):
+        if info.name.endswith(".__main__"):  # runs the command line
             continue
-        module = importlib.import_module(f"srstudio.{info.name}")
-        for node in ast.parse((SRC / f"{info.name}.py").read_text()).body:
+        module = importlib.import_module(info.name)
+        for node in ast.parse(Path(module.__file__).read_text()).body:
             if isinstance(node, ast.ClassDef):
                 cls = getattr(module, node.name)
                 if isinstance(cls, type) and issubclass(cls, BaseException):
-                    yield f"{info.name}.{node.name}", cls
+                    yield f"{info.name.removeprefix('srstudio.')}.{node.name}", cls
 
 
 ERRORS = dict(_error_classes())
