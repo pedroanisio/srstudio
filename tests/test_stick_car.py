@@ -350,6 +350,22 @@ def test_a_scrim_for_words_from_the_first_frame_is_up_from_the_first_frame():
     assert keys_of(scrim, "opacity") == [[(0, 1), (0.4, 1), (0.4 + stick.SCRIM_FADE, 0)]]
 
 
+def test_scrims_that_draw_different_bands_get_different_gradients_and_named_peaks_keep_their_names():
+    cv = canvas()
+    for peak in (0.5, 0.504, 0.502, 0.9, stick.SCRIM_PEAK):
+        stick.words(cv, cv.comp, [stick.Line(0, 1, "hi", 118)], scrim=peak)
+    fills = [r.get("fill") for r in xml(cv).iter("shape") if (r.get("fill") or "").startswith("url(#stick-word-scrim")]
+    assert fills == [
+        "url(#stick-word-scrim-50)",
+        "url(#stick-word-scrim-50-81)",  # 0.504 is alpha 0x81, not the 0x80 of 0.50
+        "url(#stick-word-scrim-50)",  # 0.502 draws 0.50's band, so it shares its gradient
+        "url(#stick-word-scrim-90)",
+        "url(#stick-word-scrim)",
+    ]
+    bands = {g.get("id"): g.findall("stop")[1].get("color") for g in xml(cv).iter("linearGradient")}
+    assert bands["stick-word-scrim-50"] == f"{cv.ink}80" and bands["stick-word-scrim-50-81"] == f"{cv.ink}81"
+
+
 def test_every_gradient_filled_rect_holds_its_gradient_in_its_own_coordinates():
     # a rect's paint is in the rect's own space (its top-left is 0, 0); a gradient given in frame coordinates
     # paints a rect that is not at the origin with its first or last stop only

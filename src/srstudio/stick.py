@@ -820,10 +820,15 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
         else:
             runs.append([cue.start, cue.end])
     h = WORD_H + 2 * SCRIM_FEATHER
-    band = f"{cv.ink}{round(peak * 255):02x}"
+    alpha = round(peak * 255)
+    band = f"{cv.ink}{alpha:02x}"
     clear = f"{cv.ink}00"
     feather = SCRIM_FEATHER / h
+    # named by the peak in hundredths; a peak whose band differs from that hundredth's adds its alpha, so two
+    # scrims share a gradient only when they draw the same band
     name = "stick-word-scrim" if peak == SCRIM_PEAK else f"stick-word-scrim-{round(peak * 100)}"
+    if peak != SCRIM_PEAK and alpha != round(round(peak * 100) / 100 * 255):
+        name += f"-{alpha:02x}"
     fill = paint(cv, Gradient(name, ((0, clear), (feather, band), (1 - feather, band), (1, clear)),
                               0, 0, 0, h))  # fmt: skip
     g = _group(cv, parent)
