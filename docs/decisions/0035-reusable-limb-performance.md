@@ -54,5 +54,7 @@ Stick, Toon and Gloss with reusable motion JSON and numeric QA reports.
 
 This initial implementation does not establish viewer preference or a measured competitive advantage.
 View-keyed artist contours are now available through `ContourCorrection` and `LimbTrack.correctives`;
-see the [usage guide](../catalog/limbs.md). A skinning/deformation capability demonstration, a rendered
-prop-contact showcase, broader actor migrations and a comparative viewer evaluation remain unverified. The gallery demonstrates arms and hands rather than complete prop interactions.
+see the [usage guide](../catalog/limbs.md). The interaction compiler now depth-composites hands and
+original prop meshes. `examples/limbs_contact.py` renders a moving fingertip press and a cup that visibly
+lifts before release; motion sources and numeric QA accompany the clip. A skinning/deformation capability
+demonstration, broader actor migrations and a comparative viewer evaluation remain unverified. The original six-action style gallery remains separate from the prop-contact clip.

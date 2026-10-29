@@ -58,3 +58,39 @@ them with its procedural brush outline. Corrected performances use the baked bac
 For existing supported actors, pass the same corrections through `LimbTrack(correctives=(palm,), ...)` in
 `Performance(limbs=(track,))` or `Episode.perform(..., limbs=(track,))`. Legacy arm flags cannot be combined
 with replacement tracks. A single track replaces only its named side.
+
+## Prop contact and compositing
+
+`Contact` locks a wrist or a named fingertip to a `TransformTrack`, including an optional prop-local anchor.
+`props.Prop` supplies named anchors; `props.bind` returns a motion with a corresponding contact interval.
+`props.Coordination` samples two arms and their shared moving props without requiring sequential playback.
+Contacts enforce reach and wrist limits. `props.clearance` separately reports arm-capsule penetration against
+named spheres, or raises when `strict=True`; it does not silently displace a locked hand.
+
+An `Attachment` declares pickup and release times, an initial prop frame and a wrist-local grip offset.
+Acquisition rejects position or orientation jumps. The prop follows the hand while attached and retains its
+release frame afterward. `interaction.AttachedProp` exposes that lifetime as a reusable frame source.
+
+For drawing, use `interaction.PropMesh` with named polygon `Face` surfaces in canonical spatial units.
+`interaction.PropDrawing` pairs a mesh with a transform track or attachment. `interaction.Participant` pairs
+a motion with its style, appearance and optional artist contours. `interaction.bake_interaction` projects all
+participants and props through one camera, then sorts individual limb surfaces and prop faces together on
+every frame. This lets fingers pass behind and in front of different prop surfaces. It returns each arm's
+numeric report and the surface-depth order of every frame.
+
+The compositor uses average surface depth. Split intersecting geometry into smaller faces when a single
+surface would need two different depth orders. It does not implement a spatial depth buffer or resolve
+physical collisions. Projection, reach, style capabilities, duplicate names and resource budgets are checked
+before scene mutation. Supply `parent_transform` when the drawing parent has a nonidentity affine transform.
+
+Run the complete contact example from the repository root:
+
+```sh
+PYTHONPATH=src python examples/limbs_contact.py ../generated/limbs/contact
+../generated/bin/scene-render encode ../generated/limbs/contact/contact.scene.xml
+```
+
+The output includes the moving button press, a visibly lifted cup, wrist release, reusable motion JSON,
+original prop meshes in the source example, a pinned font and numeric contact/anatomy reports. The default
+clip contains 72 frames at 1600×900 and 24 fps. Pass `--font` and `--font-license` when the system DejaVu font
+and its distribution license are unavailable.
