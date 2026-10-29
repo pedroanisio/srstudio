@@ -16,13 +16,17 @@ import shutil
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
-from .errors import ConsentError
+from .errors import ConsentError, SrstudioError
 
-__all__ = ["Options", "Record", "main"]
+__all__ = ["Options", "Record", "RecordingError", "main"]
 
 Record = Callable[..., object]  # (project, environment, ffmpeg, **options) -> anything
 Options = Callable[[argparse.ArgumentParser], object]
 SHARED = ("project", "ffmpeg")
+
+
+class RecordingError(SrstudioError, ValueError):
+    """A recording script whose options clash with the shared arguments."""
 
 
 def main(
@@ -43,7 +47,7 @@ def main(
         dests = [action.dest for action in parser._actions]
         for name in SHARED:
             if dests.count(name) > 1:
-                raise ValueError(f"an option of the script shadows the shared argument {name!r}")
+                raise RecordingError(f"an option of the script shadows the shared argument {name!r}")
     args = vars(parser.parse_args(argv))
     project, ffmpeg = args.pop("project"), args.pop("ffmpeg")
     try:

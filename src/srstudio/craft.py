@@ -236,7 +236,7 @@ def lines(project: Path) -> list[tuple[float, float]]:
 def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> list[tuple[float, float]]:
     """The gaps of at least ``threshold`` seconds in which no line of ``spoken`` plays."""
     if not (math.isfinite(threshold) and threshold > 0):
-        raise ValueError(f"threshold {threshold} must be > 0")
+        raise CraftError(f"threshold {threshold} must be > 0")
     gaps: list[tuple[float, float]] = []
     heard_until: float | None = None
     for start, end in sorted(spoken):
