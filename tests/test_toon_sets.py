@@ -90,6 +90,18 @@ def test_cycle_keys_refuse_a_bad_cycle(pattern, period, start, end, message):
         toon_sets.cycle_keys(pattern, period, start, end)
 
 
+@pytest.mark.parametrize("phase", [float("nan"), float("inf"), float("-inf"), True, "0.5"])
+def test_cycle_keys_refuse_a_phase_that_is_not_a_finite_number_of_seconds(phase):
+    with pytest.raises(ToonDataError, match="phase"):
+        toon_sets.cycle_keys([(0.0, 1.0)], 1.0, 0.0, 2.0, phase=phase)
+
+
+def test_cycle_keys_take_a_negative_phase_as_the_same_cycle_shifted_back():
+    keys = toon_sets.cycle_keys([(0.0, 1.0), (0.5, 0.0)], 1.0, 0.0, 1.0, phase=-0.25)
+    assert keys == [(0.0, 1.0), (0.25, 0.0), (0.75, 1.0), (1.0, 1.0)]
+    assert keys == toon_sets.cycle_keys([(0.0, 1.0), (0.5, 0.0)], 1.0, 0.0, 1.0, phase=0.75)
+
+
 # -- the kitchen ----------------------------------------------------------------------------------------------------
 def test_the_kitchen_is_still_and_leaves_the_signature_to_the_desk():
     cv = canvas()

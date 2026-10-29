@@ -188,6 +188,8 @@ def cycle_keys(
         raise ToonDataError("a cycle's offsets lie in [0, period)")
     if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end):
         raise ToonDataError(f"a cycle runs from a start to a later end, got {start!r}..{end!r}")
+    if not checks.number(phase):
+        raise ToonDataError(f"a cycle's phase is a finite number of seconds, got {phase!r}")
 
     def value_at(t: float) -> float:
         local = (t - start - phase) % period
