@@ -18,6 +18,15 @@ python3 examples/new_episode.py        # writes examples/out/coffee-review/coffe
 python3 -m pytest tests                # unit/integration tests; fidelity with SRSTUDIO_PACKAGES, engine tests with SRSTUDIO_ENGINE
 ```
 
+The suite skips the tests whose inputs are not on this machine; each variable turns one group on:
+
+| Variable | Points at | Turns on |
+|---|---|---|
+| `SRSTUDIO_PACKAGES` | the folder of extracted `.vpkg` projects (`<package>/project`) | the fidelity tests (`tests/test_fidelity.py`) |
+| `SRSTUDIO_ENGINE` | the `scene-render` binary | validation, overlay and encode tests |
+| `SRSTUDIO_EPISODES` | the folder of generated episode projects (`<slug>/assets/fonts`) | the Collage build tests, which measure captions in the pinned font (`tests/test_collage_build.py`) |
+| `SRSTUDIO_RENDERS` + `SRSTUDIO_FONTS` | the rendered videos (delivered into `<renders>/ig`) and the pinned headline font | the publish gate over the real delivery (`tests/test_social.py`) |
+
 ## Reusable arms and hands
 
 [`srstudio.limbs`](docs/catalog/limbs.md) separates spatial anatomy and motion from drawing style. Reuse gestures,
