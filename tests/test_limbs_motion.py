@@ -165,3 +165,22 @@ def test_contact_transitions_keep_the_authored_elbow_pole_at_rest_endpoints():
     for i in range(73):
         sample = m.sample(i / 24)
         assert abs(sample.control.wrist_deviation) <= 0.8
+
+
+@pytest.mark.parametrize("u", [0.9999999999999999, 0.999999997, 1 - 2**-40, 1e-17, 0.5])
+def test_minimum_jerk_easing_stays_inside_its_unit_range_at_rounding_limits(u):
+    from srstudio.limbs.motion import smooth
+
+    assert 0.0 <= smooth(u) <= 1.0
+    assert smooth(0) == 0.0 and smooth(1) == 1.0
+
+
+@pytest.mark.parametrize("time", [0.7 + 0.1 + 0.1 + 0.1, 1 - 2**-52, 2 - 2**-51])
+def test_transform_tracks_sample_accumulated_float_times_near_a_key(time):
+    a = Frame(Vec3(), Quaternion())
+    b = Frame(Vec3(1, 0, 0), Quaternion.axis_angle(Vec3(0, 0, 1), 1))
+    c = Frame(Vec3(2, 0, 0), Quaternion.axis_angle(Vec3(0, 0, 1), 2))
+    track = TransformTrack((TransformKey(0, a), TransformKey(1, b), TransformKey(2, c)))
+    sampled = track.sample(time)
+    nearest = b if time < 1.5 else c
+    assert sampled.origin.distance(nearest.origin) < 1e-9

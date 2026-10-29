@@ -31,7 +31,8 @@ ACTIONS = (
 def smooth(value: float) -> float:
     """Minimum-jerk unit interpolation; zero velocity and acceleration at both ends."""
     u = min(1.0, max(0.0, value))
-    return u * u * u * (10 + u * (-15 + 6 * u))
+    # Rounding in the polynomial can exceed 1 within a few ulps of u=1; the range is [0, 1] by contract.
+    return min(1.0, u * u * u * (10 + u * (-15 + 6 * u)))
 
 
 @dataclass(frozen=True)
