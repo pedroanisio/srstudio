@@ -29,6 +29,7 @@ from typing import Any
 
 from . import camera, lipsync
 from .canvas import PLASTIC, Canvas
+from .errors import SrstudioError
 from .registry import register
 from .soundtrack import PhonemeStyle
 
@@ -99,7 +100,7 @@ Track = Sequence[tuple[float, str]]
 Walk = tuple[float, float, float]
 
 
-class GlossError(ValueError):
+class GlossError(SrstudioError, ValueError):
     """A Gloss part, stage or reel asked for something the style does not draw."""
 
 

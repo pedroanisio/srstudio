@@ -21,12 +21,14 @@ from typing import Any
 
 import sr_core.scene as sc
 
+from .errors import SrstudioError
+
 ROLES = ("dialogue", "voiceover", "music", "effects", "ambience", "audio-description", "other")
 GAIN_DB = (-60.0, 12.0)
 _ID = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]*\Z")
 
 
-class DubError(ValueError):
+class DubError(SrstudioError, ValueError):
     """The tracks or the scene cannot be dubbed; nothing was written."""
 
 

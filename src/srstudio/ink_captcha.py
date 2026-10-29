@@ -13,6 +13,7 @@ from collections.abc import Sequence
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .ink import ellipse, group, path
 from .registry import register
 
@@ -26,7 +27,7 @@ BAND = 150
 TILE, GAP = 206, 10
 
 
-class CaptchaError(ValueError):
+class CaptchaError(SrstudioError, ValueError):
     """A prompt, a tile, a pick or a verdict the card cannot show."""
 
 

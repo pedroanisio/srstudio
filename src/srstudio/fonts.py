@@ -24,6 +24,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from .errors import SrstudioError
+
 if TYPE_CHECKING:
     from .styles import Font
 
@@ -52,7 +54,7 @@ AGENT = "Mozilla/4.0 (compatible; srstudio)"
 Fetch = Callable[[str], bytes]
 
 
-class FontError(RuntimeError):
+class FontError(SrstudioError, RuntimeError):
     """A font request, response, file, licence or pin that cannot be trusted."""
 
 

@@ -34,6 +34,7 @@ from typing import Any, ClassVar
 
 from . import native, takes
 from .episode import Episode, EpisodeSpec
+from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
 from .styles import Style
 from .takes import Script
@@ -42,7 +43,7 @@ from .voice import Voice, VoiceSettings
 __all__ = ["SeriesError", "Series", "Reel", "line", "effect", "word_at", "record", "build"]
 
 
-class SeriesError(ValueError):
+class SeriesError(SrstudioError, ValueError):
     """A series or a reel the harness cannot record or build."""
 
 

@@ -28,6 +28,7 @@ from typing import Any, Literal
 from sr_core.scene import Scene
 
 from . import digest
+from .errors import SrstudioError
 
 PLACEHOLDER = "0" * 64  # the engine's "not made yet" digest
 PROVIDER_ENV = "SR_PROVIDER_SRSTUDIO_ELEVENLABS"
@@ -37,7 +38,7 @@ _NCNAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]*$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
-class ResolveError(RuntimeError):
+class ResolveError(SrstudioError, RuntimeError):
     """Generated media is missing, unpinned, changed, or the provider failed to make it."""
 
     def __init__(self, message: str, targets: Sequence[Target] = ()):

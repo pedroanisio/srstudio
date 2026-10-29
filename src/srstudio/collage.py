@@ -28,6 +28,7 @@ from numbers import Number
 from typing import Any
 
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 from .sketch import Cast
 from .styles import PAPER
@@ -114,7 +115,7 @@ Shape = tuple[str, str, str | None, float, float]  # d, fill, stroke (None: none
 Point = tuple[float, float]
 
 
-class CollageError(ValueError):
+class CollageError(SrstudioError, ValueError):
     """A Collage look, pose or drawing request is malformed."""
 
 

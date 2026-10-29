@@ -46,6 +46,7 @@ from .canvas import (
     flat_counter,
     shared_counter,
 )
+from .errors import SrstudioError
 from .fonts import GoogleFont
 from .lipsync import SPEECH_MOUTH
 from .soundtrack import CAFE_MOUTH, INK_MOUTH, OFFICE_MOUTH, SOFT_MOUTH, MouthStyle, PhonemeStyle
@@ -70,7 +71,7 @@ __all__ = [
 Timing = Literal["clock", "sequence"]
 
 
-class StyleError(ValueError):
+class StyleError(SrstudioError, ValueError):
     """An episode asks a style for something it does not offer (a palette, a mouth model)."""
 
 

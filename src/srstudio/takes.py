@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .compose import MusicClient, MusicOutputError, Plan
+from .errors import SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
 from .narration import (
     confirm_voice,
@@ -74,7 +75,7 @@ SPEECH_LEAD, SPEECH_TAIL = 0.04, 0.08  # kept around the first and last audible 
 EFFECT = "sfx"  # the actor of an effect take
 
 
-class TakesError(ValueError):
+class TakesError(SrstudioError, ValueError):
     """A script, a take or a music bed the recording cannot use."""
 
 

@@ -67,6 +67,7 @@ from .canvas import (
     shared_counter,
 )
 from .episode import Episode, EpisodeSpec
+from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
 from .lipsync import SPEECH_MOUTH
 from .registry import catalog, get, register
@@ -106,6 +107,7 @@ from .timeline import Take, Timeline
 __version__ = "0.1.0"
 __all__ = [
     "Episode",
+    "SrstudioError",
     "EpisodeSpec",
     "Style",
     "Mix",

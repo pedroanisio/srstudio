@@ -31,6 +31,7 @@ from typing import cast
 from . import fonts
 from .compose import MusicClient, MusicOutputError, Plan, locate_lyrics
 from .compose import Song as ComposedSong
+from .errors import SrstudioError
 from .generated import (
     Generated,
     PlacedClip,
@@ -83,7 +84,7 @@ GUARD = 0.05  # silence kept between the end of a line and the start of the next
 MAX_GAIN = 24.0  # (dB) the most an audio track may boost; a take that needs more came back near-silent
 
 
-class SongError(ValueError):
+class SongError(SrstudioError, ValueError):
     """A song, a misheard line or a placement the build cannot use."""
 
 

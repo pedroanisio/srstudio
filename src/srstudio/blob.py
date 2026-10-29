@@ -26,6 +26,7 @@ from dataclasses import dataclass, field, replace
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 from .soundtrack import MOUTHS as MOUTH_STATES
 
@@ -125,7 +126,7 @@ RUG = "#E9C9A8"
 RUG_LINE = "#C99D74"
 
 
-class BlobError(ValueError):
+class BlobError(SrstudioError, ValueError):
     """A stroke, pose, cue or mouth track the blob cannot draw."""
 
 

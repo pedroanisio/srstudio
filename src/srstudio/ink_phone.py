@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .ink import ellipse, group, path
 from .registry import register
 
@@ -30,7 +31,7 @@ BUBBLE_W, PAD, GAP = 360, 16, 16
 STATUS_H, TYPING_H = 48, 76
 
 
-class PhoneError(ValueError):
+class PhoneError(SrstudioError, ValueError):
     """A contact, a bubble, a status or a typing span the phone cannot show."""
 
 

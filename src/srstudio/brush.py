@@ -25,6 +25,8 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from .errors import SrstudioError
+
 __all__ = [
     "BrushError",
     "Point",
@@ -48,7 +50,7 @@ Shape = tuple[float, ...]
 KAPPA = 0.5523  # a quarter circle as one cubic
 
 
-class BrushError(ValueError):
+class BrushError(SrstudioError, ValueError):
     """A measure the brush refuses."""
 
 

@@ -26,6 +26,7 @@ from typing import Any
 
 from . import camera, lipsync
 from .canvas import VOID, Canvas
+from .errors import SrstudioError
 from .registry import register
 from .soundtrack import PhonemeStyle
 
@@ -71,7 +72,7 @@ MASKED = ("gloom", "seven", "gary", "droid")
 Talk = Sequence[tuple[float, str]]
 
 
-class SagaError(ValueError):
+class SagaError(SrstudioError, ValueError):
     """A Saga part, stage or reel asked for something the style does not draw."""
 
 

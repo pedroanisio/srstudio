@@ -32,6 +32,7 @@ from typing import Any, Protocol
 
 from . import fonts, soundtrack, toon, toon_cast
 from .canvas import Canvas
+from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
@@ -87,7 +88,7 @@ VISEME_OF = {"closed": "closed", "open": "open", "round": "round", "teeth": "tee
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
-class SketchError(ValueError):
+class SketchError(SrstudioError, ValueError):
     """The sketch (or a placement or recording of it) is inconsistent."""
 
 

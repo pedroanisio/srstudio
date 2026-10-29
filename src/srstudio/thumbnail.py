@@ -26,6 +26,7 @@ from sr_core.scene import Scene
 
 from . import fonts
 from .canvas import Canvas, Palette
+from .errors import SrstudioError
 
 __all__ = [
     "Thumbnail",
@@ -56,7 +57,7 @@ _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 INK = Palette(ink="#0b0b0d", white="#ffffff", name="thumbnail", background="#0b0b0d")
 
 
-class ThumbnailError(ValueError):
+class ThumbnailError(SrstudioError, ValueError):
     """The thumbnail cannot be made as asked: bad data, a headline too wide, or a backdrop that cannot be read."""
 
 

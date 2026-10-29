@@ -24,6 +24,8 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal, cast, get_args
 
+from .errors import SrstudioError
+
 Enforce = Literal["off", "warn", "error"]
 Edge = Literal["top", "right", "bottom", "left"]
 Matrix = tuple[float, float, float, float, float, float]
@@ -33,11 +35,11 @@ _NCNAME = re.compile(r"[A-Za-z_][\w.-]*\Z")
 _EDGES: tuple[Edge, ...] = ("top", "right", "bottom", "left")
 
 
-class PathError(ValueError):
+class PathError(SrstudioError, ValueError):
     """Path data that does not parse."""
 
 
-class LayoutError(RuntimeError):
+class LayoutError(SrstudioError, RuntimeError):
     """The overlay check could not run, or (``strict``) found graphics outside the safe area."""
 
     def __init__(self, message: str, crossings: Sequence[Crossing] = ()):

@@ -17,6 +17,7 @@ from dataclasses import dataclass
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .ink import ellipse, group, path
 from .registry import register
 from .timeline import Take
@@ -34,7 +35,7 @@ TOP = "#FDFDFD"
 BAND = "#E6E6E6"
 
 
-class VacuumError(ValueError):
+class VacuumError(SrstudioError, ValueError):
     """A state, a display, a room, a relabel or a trace the vacuum or its map cannot show."""
 
 

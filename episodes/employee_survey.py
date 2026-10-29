@@ -14,11 +14,11 @@ from functools import partial
 from _common import project_root
 from employee_survey_data import FLASH, SEGMENTS, flashes, write_project
 from instagram_posts import POSTS
-from srstudio import TOON, Episode, EpisodeSpec, fonts, subtitles, toon
+from srstudio import TOON, Episode, EpisodeSpec, errors, fonts, subtitles, toon
 from srstudio.narration import effect_cues, manifest_duration
 
 ROOT = project_root(__file__)
-FLAGS = set(sys.argv[2:])
+FLAGS = errors.flags(sys.argv[2:], ("--init", "--voice"))
 if "--init" in FLAGS:
     write_project(ROOT, TOON.font.google)
     sys.exit(0)

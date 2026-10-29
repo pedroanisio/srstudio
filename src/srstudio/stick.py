@@ -42,6 +42,7 @@ from typing import Any
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 from .soundtrack import INK_MOUTH, PhonemeStyle, phoneme_states, pose_keys
 
@@ -111,7 +112,7 @@ OUTLINES = ("stroke", "layer", "none")  # how :func:`captions` draws the ink out
 HOOK_CARD = (111, 367, 858, 216, 50)  # x, y, w, h, radius of the white card under the hook lettering
 
 
-class StickDataError(ValueError):
+class StickDataError(SrstudioError, ValueError):
     """A measured-data file (poses, plates, icons, lettering, script) is malformed or inconsistent."""
 
 

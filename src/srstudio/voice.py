@@ -35,6 +35,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from .errors import MissingKeyError, ProviderHTTPError, SrstudioError
+
 MODEL = "eleven_multilingual_v2"
 API = "https://api.elevenlabs.io/v1/text-to-speech/{voice}/with-timestamps?output_format=mp3_44100_128"
 RATE = 48000  # decoded sample rate, the rate of the episode mix
@@ -51,7 +53,7 @@ SFX_SECONDS = (0.5, 22.0)  # the sound-generation API's duration range
 SFX_SLACK = 0.30  # generated effect may differ from the requested length by this much
 
 
-class VoiceOutputError(ValueError):
+class VoiceOutputError(SrstudioError, ValueError):
     """The provider's output failed verification; it must not be used."""
 
 
@@ -268,7 +270,8 @@ def verify_audio(wav_bytes: bytes, alignment: Alignment) -> float:
 
 # -- client -------------------------------------------------------------------------------------------
 def urllib_transport(url: str, payload: dict, headers: dict) -> tuple[object, str | None]:
-    """One POST, no retries. HTTP errors become ``RuntimeError`` with the provider's message only."""
+    """One POST, no retries. HTTP errors become :class:`~srstudio.errors.ProviderHTTPError` with the provider's
+    message only."""
     request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
@@ -289,7 +292,7 @@ def _request_id(response) -> str | None:
     return response.headers.get("request-id", response.headers.get("x-request-id"))
 
 
-def _http_error(exc: urllib.error.HTTPError) -> RuntimeError:
+def _http_error(exc: urllib.error.HTTPError) -> ProviderHTTPError:
     """Only the provider's ``detail`` message travels on; an unreadable error document says so."""
     try:
         doc = json.loads(exc.read())
@@ -297,7 +300,7 @@ def _http_error(exc: urllib.error.HTTPError) -> RuntimeError:
         doc = None
     detail = doc.get("detail", {}) if isinstance(doc, dict) else {}
     message = detail.get("message", "request failed") if isinstance(detail, dict) else str(detail)
-    return RuntimeError(f"ElevenLabs HTTP {exc.code}: {message}")
+    return ProviderHTTPError(f"ElevenLabs HTTP {exc.code}: {message}")
 
 
 def urllib_binary_transport(url: str, payload: dict, headers: dict) -> tuple[bytes, str | None]:
@@ -534,7 +537,7 @@ class ElevenLabsClient:
         if timing.exists() and mp3.exists():
             return self._from_cache(text, voice, settings, timing, mp3, wav)
         if not self.key:
-            raise RuntimeError("ELEVENLABS_API_KEY is required to generate an uncached line")
+            raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached line")
         payload = self.payload(text, settings)
         body, request_id = self.transport(
             API.format(voice=urllib.parse.quote(voice.id, safe="")),
@@ -588,7 +591,7 @@ class ElevenLabsClient:
             wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
             return EffectClip(text, float(seconds), wav, record, verify_effect(wav_bytes, seconds))
         if not self.key:
-            raise RuntimeError("ELEVENLABS_API_KEY is required to generate an uncached sound effect")
+            raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached sound effect")
         audio, request_id = self.binary_transport(
             SFX_API, payload, {"xi-api-key": self.key, "Content-Type": "application/json", "Accept": "audio/mpeg"}
         )
@@ -623,7 +626,7 @@ class ElevenLabsClient:
                 raise VoiceOutputError(f"{record.name}: not a transcript record")
             return parse_transcript(stored["response"])
         if not self.key:
-            raise RuntimeError("ELEVENLABS_API_KEY is required for speech-to-text")
+            raise MissingKeyError("ELEVENLABS_API_KEY is required for speech-to-text")
         body, request_id = self.multipart_transport(
             STT_API,
             fields,

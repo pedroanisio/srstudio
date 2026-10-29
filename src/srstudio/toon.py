@@ -31,6 +31,7 @@ from typing import Any
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 
 __all__ = [
@@ -67,7 +68,7 @@ __all__ = [
 ]
 
 
-class ToonDataError(ValueError):
+class ToonDataError(SrstudioError, ValueError):
     """A measured input the Toon parts refuse."""
 
 

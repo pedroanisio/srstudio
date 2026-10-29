@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import registry
+from .errors import SrstudioError
 from .styles import STYLES
 from .usage import Report
 
@@ -40,7 +41,7 @@ SCHEMAS = ("1.0.0", NOTES_SCHEMA)  # 1.1.0 adds the optional gallery
 SCRIPTS = ("dialogue.json", "timeline.json", "narration.json")
 
 
-class CatalogError(Exception):
+class CatalogError(SrstudioError):
     """A notes file, project, base page or media step the page cannot be built from."""
 
 

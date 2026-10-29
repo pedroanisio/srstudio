@@ -23,6 +23,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .camera import SNAP
+from .errors import SrstudioError
 
 __all__ = [
     "SCHEMA",
@@ -52,7 +53,7 @@ _MEAN = re.compile(r"mean_volume:\s*(-?inf|-?\d+(?:\.\d+)?) dB")
 _run = subprocess.run
 
 
-class CraftError(ValueError):
+class CraftError(SrstudioError, ValueError):
     """A scene, a line file or a measurement that cannot be read."""
 
 

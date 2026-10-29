@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from . import digest
+from .errors import SrstudioError
 from .thumbnail import Thumbnail, ThumbnailError, render
 
 __all__ = [
@@ -63,7 +64,7 @@ BLANK = 3.0  # a frame whose luma varies less than this (standard deviation, 0-2
 _HASHTAG = re.compile(r"^#[^\W\d_][\w]*$", re.UNICODE)
 
 
-class InstagramPostError(ValueError):
+class InstagramPostError(SrstudioError, ValueError):
     """The post breaks one of Instagram's limits or the house rules; ``problems`` lists every reason."""
 
     def __init__(self, problems: list[str]):
@@ -71,7 +72,7 @@ class InstagramPostError(ValueError):
         self.problems = problems
 
 
-class CoverError(ValueError):
+class CoverError(SrstudioError, ValueError):
     """The backdrop cannot be taken: the video cannot be read, the time is outside it, or the frame is blank."""
 
 
@@ -312,7 +313,7 @@ MANIFEST_VERSION = "1.0.0"
 _ENTRY_KEYS = {"render", "post", "ig", "cover"}
 
 
-class DeliveryError(ValueError):
+class DeliveryError(SrstudioError, ValueError):
     """The delivery cannot start (a render is missing) or its manifest cannot be trusted."""
 
 

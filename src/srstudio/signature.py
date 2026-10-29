@@ -19,6 +19,7 @@ import re
 import xml.etree.ElementTree as ET
 
 from .canvas import MONO, Canvas, Signature
+from .errors import SrstudioError
 from .registry import register
 
 __all__ = ["Signature", "SignatureError", "code", "cactus", "missing", "MARKS", "GLYPHS", "ADVANCE"]
@@ -26,7 +27,7 @@ __all__ = ["Signature", "SignatureError", "code", "cactus", "missing", "MARKS", 
 MARKS = ("sig-cactus", "sig-code")  # group-id prefixes of the two marks, as :func:`_next_id` numbers them
 
 
-class SignatureError(ValueError):
+class SignatureError(SrstudioError, ValueError):
     """A signed episode whose document lacks a mark (ADR 0001)."""
 
 

@@ -12,12 +12,12 @@ from dataclasses import replace
 
 from _common import project_root
 from instagram_posts import POSTS
-from srstudio import CEL, Episode, EpisodeSpec, cel, subtitles
+from srstudio import CEL, Episode, EpisodeSpec, cel, errors, subtitles
 from srstudio.narration import effect_cues, manifest_duration
 
 ROOT = project_root(__file__)
 ASSETS = ROOT / "assets"
-VOICED = "--voice" in sys.argv[2:]
+VOICED = "--voice" in errors.flags(sys.argv[2:], ("--voice",))
 NARRATION = "Narrated with ElevenLabs premade voice Alice; synthesised keyboard foley."
 # the laptop keyboard in drawing pixels: the ink is one compound path, so the keyboard face (and the key rows it
 # carries) is what sinks on each keystroke, inside the ink frame that stays (srstudio.cel.Pressed)

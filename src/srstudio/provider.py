@@ -49,6 +49,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, Literal
 
+from .errors import SrstudioError
 from .voice import (
     RATE,
     SFX_SECONDS,
@@ -74,7 +75,7 @@ _VOICE_ID = re.compile(r"^[A-Za-z0-9]{8,40}$")
 _LANGUAGE = re.compile(r"^([A-Za-z]{2,3})(-[A-Za-z0-9]{1,8})*$")
 
 
-class ProviderError(ValueError):
+class ProviderError(SrstudioError, ValueError):
     """The request cannot be served as asked; nothing was sent and nothing was written."""
 
 

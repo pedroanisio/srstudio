@@ -31,6 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import MissingKeyError
 from .voice import (
     RATE,
     SILENT_RMS,
@@ -324,7 +325,7 @@ class MusicClient:
                 wav.write_bytes(_decode_stereo(audio))
             return Song(plan, seed, mp3, wav, record, duration, tempo)
         if not self.key:
-            raise RuntimeError("ELEVENLABS_API_KEY is required to compose an uncached song")
+            raise MissingKeyError("ELEVENLABS_API_KEY is required to compose an uncached song")
         audio, request_id = self.binary_transport(
             API, payload, {"xi-api-key": self.key, "Content-Type": "application/json", "Accept": "audio/mpeg"}
         )

@@ -22,6 +22,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Literal, get_args
 
+from .errors import SrstudioError
 from .fonts import text_width
 from .layout import SafeArea
 from .timeline import Phrase, Take
@@ -29,7 +30,7 @@ from .timeline import Phrase, Take
 Mode = Literal["burn", "sidecar", "both"]
 
 
-class NativeError(ValueError):
+class NativeError(SrstudioError, ValueError):
     """A native feature asked for something the engine cannot show as asked."""
 
 

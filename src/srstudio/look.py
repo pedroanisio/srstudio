@@ -20,11 +20,12 @@ from typing import Any
 
 from . import fonts
 from .canvas import Canvas
+from .errors import SrstudioError
 
 __all__ = ["FitError", "wrap", "label", "grade", "depth", "pool", "fade"]
 
 
-class FitError(ValueError):
+class FitError(SrstudioError, ValueError):
     """A text does not fit its box: a word wider than the box, or more lines than it holds."""
 
 

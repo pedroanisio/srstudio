@@ -22,6 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import digest
+from .errors import SrstudioError
 from .layout import LayoutError, find_engine
 from .outbox import latest_package
 from .social import InstagramPost
@@ -33,7 +34,7 @@ _VERSION = re.compile(r"scene-render (\d+\.\d+\.\d+)")
 _run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 
 
-class PackageError(ValueError):
+class PackageError(SrstudioError, ValueError):
     """A project that cannot be packed, a tool that fails, or a package that does not prove itself."""
 
 

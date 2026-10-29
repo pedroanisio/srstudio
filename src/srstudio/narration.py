@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Protocol
 
 from . import digest
+from .errors import MissingKeyError, SrstudioError
 from .provider import CONSENT_ENV, KEY_ENV
 from .voice import RATE, Alignment, Voice, VoiceOutputError
 
@@ -89,7 +90,7 @@ TAIL = 0.30  # relaxed policy: silence kept after the last line before the proje
 Fetch = Callable[[str, Mapping[str, str]], object]
 
 
-class NarrationError(ValueError):
+class NarrationError(SrstudioError, ValueError):
     """A schedule, slot, placement, conform or manifest the narration cannot use."""
 
 
@@ -112,7 +113,7 @@ def confirm_voice(cache: Path, key: str, voice: Voice, fetch: Fetch = _urllib_fe
         body = json.loads(record.read_text())
     else:
         if not key:
-            raise RuntimeError(f"{KEY_ENV} is required to confirm an unchecked voice")
+            raise MissingKeyError(f"{KEY_ENV} is required to confirm an unchecked voice")
         body = fetch(VOICES_API.format(voice=voice.id), {"xi-api-key": key, "Accept": "application/json"})
     if not isinstance(body, dict) or not isinstance(body.get("name"), str):
         raise VoiceOutputError(f"voice {voice.id}: the voice record has no name")

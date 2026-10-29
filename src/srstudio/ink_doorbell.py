@@ -16,6 +16,7 @@ from collections.abc import Sequence
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .ink import ellipse, group, human, path
 from .registry import register
 from .timeline import Take
@@ -32,7 +33,7 @@ FACE = (240, 400, 1.25)  # the human in the camera view: position and scale
 BOX = (230, 390, 520, 520)  # the face box: left, top, width, height
 
 
-class DoorbellError(ValueError):
+class DoorbellError(SrstudioError, ValueError):
     """A verdict, a house number, a tag or a clock the doorbell or its camera cannot show."""
 
 

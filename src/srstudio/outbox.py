@@ -22,6 +22,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import SrstudioError
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
 __all__ = [
@@ -44,7 +45,7 @@ _REMOTE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*:.*")
 _run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 
 
-class OutboxError(ValueError):
+class OutboxError(SrstudioError, ValueError):
     """A bundle, the outbox folder or an upload that cannot be trusted or completed."""
 
 

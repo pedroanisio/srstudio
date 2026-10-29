@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 
 __all__ = ["BadgeState", "SoftPropError", "beach_call", "cake", "status_badge"]
@@ -29,7 +30,7 @@ CAKE_SIZE = 30
 CAKE_TURN = 0.3  # seconds for the cake to turn half round on its plate
 
 
-class SoftPropError(ValueError):
+class SoftPropError(SrstudioError, ValueError):
     """A Soft prop asked for something it cannot draw."""
 
 

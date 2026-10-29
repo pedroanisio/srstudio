@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from .errors import SrstudioError
 from .voice import Alignment, normalize_words
 
 PRE, POST = 0.03, 0.06  # breath kept before a phrase's first word and after its last
@@ -28,7 +29,7 @@ GUARD = 0.02  # silence kept between a phrase and the one before it
 JOIN = 0.05  # captions closer than this are one run of speech
 
 
-class PhrasingError(ValueError):
+class PhrasingError(SrstudioError, ValueError):
     """The take cannot be placed on the captions without cutting or mis-attributing a word."""
 
 

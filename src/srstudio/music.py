@@ -15,6 +15,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .errors import SrstudioError
+
 __all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "render", "write_wav", "LOOP"]
 
 PARTS = ("kick", "snare", "hat", "bass", "keys")
@@ -27,7 +29,7 @@ LOOP: tuple[tuple[int, tuple[int, ...]], ...] = (
 )
 
 
-class MusicError(ValueError):
+class MusicError(SrstudioError, ValueError):
     """A grid, a section list or a render setting the synthesiser cannot play."""
 
 

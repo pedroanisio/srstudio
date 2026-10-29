@@ -285,6 +285,12 @@ it takes the project folder as its first argument and is run with `python3 episo
 ([ADR 0032](docs/decisions/0032-releases-recorders-and-discovery.md)). `srstudio.sample.write_sample_project` writes a synthetic project (dialogue,
 tone-burst soundtrack, font) to try a build without a TTS pass.
 
+Every error the library raises is a `srstudio.SrstudioError` and keeps its built-in base (`ValueError` for bad
+data, `RuntimeError` for a provider failure), so `except srstudio.SrstudioError` catches them all. A missing API key
+is `MissingKeyError`, a provider HTTP failure `ProviderHTTPError`, and a builder given a flag it does not know raises
+`FlagError` before building anything (`srstudio.errors.flags`;
+[ADR 0034](docs/decisions/0034-one-error-base.md)).
+
 ### Finishing a style: `srstudio.look`
 
 A style's finish is a handful of calls with its own numbers and id prefix, never a copy of another style's helpers

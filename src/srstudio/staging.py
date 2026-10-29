@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, native
+from .errors import SrstudioError
 
 __all__ = [
     "StagingError",
@@ -43,7 +44,7 @@ CROSSFADE = 0.3  # the longest crossfade into a closing card, s
 Spans = Sequence[tuple[float, float]]
 
 
-class StagingError(ValueError):
+class StagingError(SrstudioError, ValueError):
     """A staging does not fit its recording (a style passes its own error class instead)."""
 
 

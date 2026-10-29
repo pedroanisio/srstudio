@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 
 __all__ = [
@@ -72,7 +73,7 @@ PATH_START = re.compile(r"\s*[Mm]")
 Number = (int, float)
 
 
-class CelDataError(ValueError):
+class CelDataError(SrstudioError, ValueError):
     """A measured-data file (camera, pose runs, drawings, captions) is malformed or inconsistent."""
 
 

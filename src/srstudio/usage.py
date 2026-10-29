@@ -25,12 +25,13 @@ from pathlib import Path
 from types import CodeType
 
 from . import registry, releases
+from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
 _VERSION = re.compile(r"-\d+\.\d+\.\d+\Z")
 
 
-class UsageError(RuntimeError):
+class UsageError(SrstudioError, RuntimeError):
     """An episode that failed to build, or a usage file that cannot be read."""
 
 

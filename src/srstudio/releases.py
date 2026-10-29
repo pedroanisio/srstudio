@@ -24,6 +24,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import SrstudioError
 from .social import COVER_VARIANT, InstagramPost, Item
 
 __all__ = ["Release", "ReleaseError", "load", "items"]
@@ -32,7 +33,7 @@ SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 
-class ReleaseError(ValueError):
+class ReleaseError(SrstudioError, ValueError):
     """A release, or a folder of them, cannot be published as declared."""
 
 

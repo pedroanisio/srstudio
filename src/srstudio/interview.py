@@ -32,6 +32,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .errors import SrstudioError
 from .generated import (
     Generated,
     PlacedClip,
@@ -57,7 +58,7 @@ ROOM_TONE = 0.00018  # standard deviation of the room tone
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
 
 
-class InterviewError(ValueError):
+class InterviewError(SrstudioError, ValueError):
     """A script, a misheard line or a schedule the build cannot use."""
 
 
