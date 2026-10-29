@@ -348,6 +348,14 @@ def test_hand_reaches_or_presses_the_router_button():
         ink.hand(cv, g, 0, 0, action="wave")
 
 
+@pytest.mark.parametrize("action", ink.HAND_ACTIONS)
+@pytest.mark.parametrize("at", [-1.0, 0.0, float("nan"), float("inf"), True])
+def test_hand_refuses_an_action_time_that_is_not_a_positive_number_of_seconds(action, at):
+    _, cv = square_canvas()
+    with pytest.raises(ink.InkError, match="lands at a time over 0 s"):
+        ink.hand(cv, cv.group(cv.comp, "h"), 900, 700, action=action, at=at)
+
+
 def test_router_shots_place_the_router_on_its_shelf():
     scene, cv = square_canvas()
     for close in (False, True):
