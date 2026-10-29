@@ -102,9 +102,10 @@ def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: s
     parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
 
 
-def _lettering(cv: Canvas, parent, value: str, x, y, w, h, size, seen: float) -> None:
-    """``value`` set in ink when it reads at ``seen`` (the scale it is drawn at), else a pen scrawl in its place."""
-    if size * seen >= LEGIBLE_PX:
+def _lettering(cv: Canvas, parent, value: str, x, y, w, h, size, seen: float, whole: bool = True) -> None:
+    """``value`` set in ink when it reads at ``seen`` (the scale it is drawn at) and the frame shows it ``whole``,
+    else a pen scrawl in its place."""
+    if whole and size * seen >= LEGIBLE_PX:
         _text(cv, parent, value, x, y, w, h, size, cv.ink)
         return
     mid, a, b = y + h / 2, x + w * 0.15, x + w * 0.85
@@ -173,11 +174,17 @@ def meter(
     speaker: str = "meter",
     display: Sequence[tuple[float, str]] = ((0.0, "SCAN TO PAY"),),
     zoom: float = 1.0,
+    framed: tuple[float, float] = (-math.inf, math.inf),
 ):
     """The meter's head centred on ``x``, its top at ``y``, the post down to the pavement (:data:`PAVEMENT` at
     scale 1, placed at ``y + 500``); each ``(at, text)`` of ``display`` shows from ``at`` until the next. ``zoom`` is
-    the scale ``parent`` is seen at: lettering that would draw under :data:`LEGIBLE_PX` is a scrawl instead."""
+    the scale ``parent`` is seen at and ``framed`` the x span of ``parent`` the frame shows: lettering that would
+    draw under :data:`LEGIBLE_PX`, or that the frame's edge would cut, is a scrawl instead."""
     _check_display(display, take)
+
+    def whole(left: float, right: float) -> bool:  # a span of the meter's own x, inside the frame
+        return framed[0] <= x + left * scale and x + right * scale <= framed[1]
+
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M -24 250 L -24 500 L 24 500 L 24 250 Z", cv.white, sw=2.6)  # the post
     path(cv, g, "M 6 262 L 6 494", stroke=cv.shade, sw=8)
@@ -188,7 +195,7 @@ def meter(
     path(cv, g, _box(-96, 50, 180, 72, 12), cv.white, sw=2.6)  # the display
     for k, (at, text) in enumerate(display):
         reading = group(cv, g)
-        _lettering(cv, reading, text, -92, 54, 172, 64, DISPLAY_SIZE, scale * zoom)
+        _lettering(cv, reading, text, -92, 54, 172, 64, DISPLAY_SIZE, scale * zoom, whole(-92, 80))
         if len(display) > 1:
             keys = [(0.0, 1.0)] if k == 0 else [(0.0, 0.0), (at, 1.0)]
             if k + 1 < len(display):
@@ -208,7 +215,7 @@ def meter(
     path(cv, g, "M 22 150 L 92 150", sw=9)  # the coin slot
     tape = group(cv, g, x=58, y=180, rotation=-8)  # taped over, by hand
     path(cv, tape, "M -66 -46 L 70 -40 L 66 22 L -70 16 Z", cv.white, stroke=cv.shade, sw=2)
-    _lettering(cv, tape, TAPE_TEXT, -64, -40, 128, 52, TAPE_SIZE, scale * zoom)
+    _lettering(cv, tape, TAPE_TEXT, -64, -40, 128, 52, TAPE_SIZE, scale * zoom, whole(58 - 70, 58 + 70))
     signature.code(cv, g, -22, 420, 9, color=cv.shade)
     if talking:
         marks = group(cv, g, x=124, y=-16)
@@ -327,7 +334,7 @@ def kerb(
         path(cv, ground, f"M {dx} {ROAD + 70} L {dx + 40} {ROAD + 70}", stroke=cv.shade, sw=4)
     signature.cactus(cv, ground, CAR_X - 62, PAVEMENT, 0.32)
     human(cv, ground, take, 10, PAVEMENT - 640 * DOODLE_SCALE, DOODLE_SCALE)
-    out = meter(cv, ground, take, METER_X, PAVEMENT - 500, 1, zoom=scale, **meter_kw)
+    out = meter(cv, ground, take, METER_X, PAVEMENT - 500, 1, zoom=scale, framed=(-x / scale, far), **meter_kw)
     hauled = group(cv, ground)
     car = _car(cv, hauled)
     if tow is not None:

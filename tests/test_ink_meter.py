@@ -69,12 +69,44 @@ def test_lettering_too_small_to_read_is_scrawled_not_set():
     ink_meter.kerb(far, far.comp, take("human", 3.0), tow=0.8)  # pulled back to TOW_WIDE
     assert {"SCAN TO PAY", ink_meter.TAPE_TEXT} <= set(texts(near))
     assert texts(far) == []  # the display and the tape drawn as pen scrawl at 0.6, under LEGIBLE_PX
-    tight = canvas()
-    ink_meter.kerb(tight, tight.comp, take("human", 3.0), tow=0.8, view=ink_meter.TOW_TIGHT)
-    assert texts(tight) == ["SCAN TO PAY"]  # at 0.84 the display still reads; the tape's smaller hand does not
     small = canvas()
     ink_meter.meter(small, small.comp, take(), 500, 300, 0.5)
     assert texts(small) == []
+
+
+def text_spans(cv: Canvas) -> list[tuple[str, float, float]]:
+    """Each text layer's text and the x span it is drawn over in the frame, through its groups' x, anchor and scale."""
+    root = tree(cv)
+    assets = {t.get("id"): t for t in root.iter("text")}
+    spans = []
+
+    def walk(node, at: float, scale: float):
+        for child in node:
+            if child.tag == "group":
+                s = float(child.get("scaleX") or 1)
+                x, ax = float(child.get("x") or 0), float(child.get("anchorX") or 0)
+                walk(child, at + (x - ax * s) * scale, scale * s)
+            elif child.tag == "layer" and child.get("asset") in assets:
+                asset = assets[child.get("asset")]
+                left = at + float(child.get("x") or 0) * scale
+                spans.append((asset.get("text"), left, left + float(asset.get("width")) * scale))
+            elif child.tag != "assets":
+                walk(child, at, scale)  # the project and the composition hold the groups
+
+    walk(root, 0.0, 1.0)
+    return spans
+
+
+@pytest.mark.parametrize("view", [ink_meter.KERB_VIEW, ink_meter.TOW_WIDE, ink_meter.TOW_TIGHT])
+def test_no_lettering_is_cut_by_the_frame_edge_in_any_kerb_view(view):
+    cv = canvas()
+    ink_meter.kerb(cv, cv.comp, take("human", 3.0), tow=0.8, view=view, display=((0.0, "SESSION ON"),))
+    spans = text_spans(cv)
+    assert all(0 <= left and right <= 1080 for _, left, right in spans), spans
+    if view == ink_meter.TOW_TIGHT:
+        assert spans == []  # the meter sits on the left edge: its display is a scrawl, not "ESSION ON"
+    if view == ink_meter.KERB_VIEW:
+        assert {text for text, _, _ in spans} == {"SESSION ON", ink_meter.TAPE_TEXT}
 
 
 def test_the_kerb_puts_the_doodle_the_meter_and_the_car_in_frame_and_a_tow_takes_the_car():
