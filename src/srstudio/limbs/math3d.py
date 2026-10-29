@@ -9,9 +9,15 @@ from .errors import LimbError
 
 
 def number(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value):
-        raise LimbError(f"{name} must be a finite number, got {value!r}")
-    return float(value)
+    if isinstance(value, bool) or not isinstance(value, (float, int)):
+        raise LimbError(f"{name} must be a finite number")
+    try:
+        result = float(value)
+    except (OverflowError, ValueError, TypeError) as error:
+        raise LimbError(f"{name} must be a finite number") from error
+    if not math.isfinite(result):
+        raise LimbError(f"{name} must be a finite number")
+    return result
 
 
 def bounded(value: float, low: float, high: float, name: str) -> float:
@@ -64,9 +70,11 @@ class Vec3:
         return math.hypot(self.x, self.y, self.z)
 
     def unit(self) -> Vec3:
-        if self.length < 1e-12:
+        scale = max(abs(self.x), abs(self.y), abs(self.z))
+        if scale == 0 or (scale < 1e-12 and self.length < 1e-12):
             raise LimbError("a direction must not be zero")
-        return self / self.length
+        scaled = Vec3(self.x / scale, self.y / scale, self.z / scale)
+        return scaled / scaled.length
 
     def distance(self, other: Vec3) -> float:
         return (self - other).length
@@ -87,9 +95,11 @@ class Quaternion:
 
     def __post_init__(self) -> None:
         values = [number(getattr(self, n), n) for n in ("w", "x", "y", "z")]
-        length = math.hypot(*values)
-        if length < 1e-12:
+        scale = max(abs(v) for v in values)
+        if scale == 0 or (scale < 1e-12 and math.hypot(*values) < 1e-12):
             raise LimbError("a rotation must not be a zero quaternion")
+        values = [value / scale for value in values]
+        length = math.hypot(*values)
         for name, value in zip(("w", "x", "y", "z"), values, strict=True):
             object.__setattr__(self, name, value / length)
 
@@ -102,6 +112,12 @@ class Quaternion:
     @classmethod
     def axes(cls, x: Vec3, y: Vec3, z: Vec3) -> Quaternion:
         # Matrix columns are the local axes in the parent frame.
+        if (
+            any(abs(v.length - 1) > 1e-6 for v in (x, y, z))
+            or any(abs(a.dot(b)) > 1e-6 for a, b in ((x, y), (y, z), (z, x)))
+            or x.cross(y).distance(z) > 1e-6
+        ):
+            raise LimbError("a rotation basis must be orthonormal and right-handed")
         trace = x.x + y.y + z.z
         if trace > 0:
             s = math.sqrt(trace + 1) * 2

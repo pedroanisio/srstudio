@@ -152,6 +152,8 @@ def tray_mesh() -> PropMesh:
 
 
 def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: Path | None = None) -> Path:
+    if font is not None and license_file is None:
+        raise LimbError("a custom font requires its own explicit --font-license")
     os.umask(0o077)
     out.mkdir(parents=True, exist_ok=True, mode=0o700)
     assets = out / "assets"

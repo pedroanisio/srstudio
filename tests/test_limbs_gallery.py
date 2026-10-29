@@ -45,3 +45,16 @@ def test_skin_gallery_runs_all_six_planar_actions_in_three_styles(tmp_path):
     if engine:
         result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
+
+
+def test_gallery_can_retarget_the_shared_actions_to_a_mechanical_gripper(tmp_path):
+    script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
+    spec = importlib.util.spec_from_file_location("limbs_gallery", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    path = module.build(tmp_path / "gripper", fps=2, hand="gripper")
+    motion = load_motion(path.with_name("motion.json"))
+    assert motion.hand.name == "gripper"
+    assert motion.hand.digits[0].bend_axis.z == -1
+    assert motion.hand.digits[1].bend_axis.z == 1
+    assert json.loads(path.with_name("limbs-qa.json").read_text())["hand"] == "gripper"

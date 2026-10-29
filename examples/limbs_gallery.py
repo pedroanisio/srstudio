@@ -20,7 +20,7 @@ from srstudio.fonts import inspect_ttf
 from srstudio.limbs.adapters import Appearance
 from srstudio.limbs.compile import BakeOptions, compile_motion
 from srstudio.limbs.math3d import Vec3
-from srstudio.limbs.model import HUMAN, ArmProfile, LimbError
+from srstudio.limbs.model import HANDS, ArmProfile, LimbError
 from srstudio.limbs.motion import Action, Motion, Target
 from srstudio.limbs.projection import Camera
 from srstudio.limbs.serialization import save_motion
@@ -34,9 +34,14 @@ def build(
     font: Path | None = None,
     license_file: Path | None = None,
     deformation: str = "contour",
+    hand: str = "human",
 ) -> Path:
     if deformation not in ("contour", "skin"):
         raise LimbError("gallery deformation must be contour or skin")
+    if hand not in HANDS:
+        raise LimbError(f"gallery hand must be one of {tuple(HANDS)}")
+    if font is not None and license_file is None:
+        raise LimbError("a custom font requires its own explicit --font-license")
     os.umask(0o077)
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -93,7 +98,7 @@ def build(
             Action(name, i * 2, 2, target=Target(Vec3(x, y, 0)))
             for i, (name, (x, y)) in enumerate(zip(names, targets, strict=True))
         )
-    motion = Motion(ArmProfile(), HUMAN, actions)
+    motion = Motion(ArmProfile(), HANDS[hand], actions)
     save_motion(motion, out / "motion.json")
     report = {
         "schema": "srstudio.limbs.gallery/1.0.0",
@@ -101,6 +106,7 @@ def build(
         "styles": {},
         "deformation": deformation,
         "backends": {},
+        "hand": hand,
     }
     for i, (style, background) in enumerate((("stick", "#e7dcc7"), ("toon", "#f8e5d5"), ("gloss", "#e8dcf0"))):
         left = i * 640
@@ -123,7 +129,7 @@ def build(
             deformation=deformation,
             style=style,
             camera=camera,
-            appearance=Appearance(),
+            appearance=Appearance(skin="#cbd5e1" if hand == "gripper" else None),
             options=BakeOptions(fps=fps),
         )
         report["styles"][style] = compiled.report.to_dict()
@@ -165,8 +171,18 @@ def main() -> None:
     parser.add_argument("--font", type=Path)
     parser.add_argument("--font-license", type=Path)
     parser.add_argument("--deformation", choices=("contour", "skin"), default="contour")
+    parser.add_argument("--hand", choices=tuple(HANDS), default="human")
     args = parser.parse_args()
-    print(build(args.out, fps=args.fps, font=args.font, license_file=args.font_license, deformation=args.deformation))
+    print(
+        build(
+            args.out,
+            fps=args.fps,
+            font=args.font,
+            license_file=args.font_license,
+            deformation=args.deformation,
+            hand=args.hand,
+        )
+    )
 
 
 if __name__ == "__main__":

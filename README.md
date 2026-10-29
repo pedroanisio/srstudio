@@ -18,6 +18,18 @@ python3 examples/new_episode.py        # writes examples/out/coffee-review/coffe
 python3 -m pytest tests                # unit/integration tests; fidelity with SRSTUDIO_PACKAGES, engine tests with SRSTUDIO_ENGINE
 ```
 
+## Reusable arms and hands
+
+[`srstudio.limbs`](docs/catalog/limbs.md) separates spatial anatomy and motion from drawing style. Reuse gestures,
+word timing, perspectives, custom hand topologies, artist contours and prop contacts across all nine style
+adapters. Native planar IK and sleeve skinning complement bounded spatial contour baking. Existing Office/Cafe,
+Stick, Toon-cast and Gloss people accept typed limb tracks.
+
+Runnable examples cover the [six-action style gallery](examples/limbs_gallery.py),
+[complete style characters](examples/limbs_cast.py), [cup and button contact](examples/limbs_contact.py), and
+[two-arm interactions](examples/limbs_bimanual.py). The [guide](docs/catalog/limbs.md) describes customization,
+JSON reuse, supported character builders and rendering limits.
+
 ## How an episode is built
 
 ```python

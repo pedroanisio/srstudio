@@ -48,6 +48,23 @@ class BakeOptions:
             raise LimbError("bake duration must be positive")
         if number(self.offset, "bake offset") < 0:
             raise LimbError("bake offset must be non-negative")
+        if math.ulp(self.offset) > 1e-6 or self.offset + 1 / self.fps <= self.offset:
+            raise LimbError("bake offset cannot represent a frame interval")
+
+
+def _frame_count(duration: float, options: BakeOptions) -> int:
+    """Bound work before multiplication, and reject intervals the six-decimal scene clock cannot represent."""
+    duration = number(duration, "resolved bake duration")
+    if duration <= 0:
+        raise LimbError("resolved bake duration must be positive")
+    if duration > options.max_frames / options.fps:
+        raise LimbError("limb frame budget exceeded", code="budget")
+    count = max(1, math.ceil(duration * options.fps - 1e-9))
+    start = options.offset + (count - 1) / options.fps
+    end = options.offset + duration
+    if not math.isfinite(end) or math.ulp(end) > 1e-6 or math.floor(start * 1e6 + 1e-9) >= math.floor(end * 1e6 + 1e-9):
+        raise LimbError("bake interval cannot be represented at the scene clock resolution")
+    return count
 
 
 @dataclass(frozen=True)
@@ -114,7 +131,7 @@ def bake(
     if "contour" not in adapter.capabilities.deformation:
         raise LimbError(f"adapter {style} does not support contour deformation")
     duration = options.duration or max((a.end for a in motion.actions), default=1.0)
-    count = math.ceil(duration * options.fps - 1e-9)
+    count = _frame_count(duration, options)
     # A conservative bound on built-in adapters: group, visibility keys, contours, details and paints in three slots.
     estimate = count * (24 + 12 * len(motion.hand.digits)) * 3
     if count > options.max_frames or estimate > options.max_nodes:
@@ -219,7 +236,7 @@ def compile_motion(
             correctives=correctives,
         )
     duration = options.duration or max((a.end for a in motion.actions), default=1.0)
-    count = math.ceil(duration * options.fps - 1e-9)
+    count = _frame_count(duration, options)
     if count > options.max_frames or count * (24 + 12 * len(motion.hand.digits)) * 3 + 128 > options.max_nodes:
         raise LimbError("native limb budget exceeded", code="budget")
     adapter = adapter_for(style)

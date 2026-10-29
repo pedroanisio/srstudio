@@ -9,6 +9,12 @@ from .errors import Diagnostic, LimbError
 from .math3d import Frame, Vec3, bounded, number
 
 
+def label(value: object, name: str) -> str:
+    if not isinstance(value, str) or not 1 <= len(value) <= 128:
+        raise LimbError(f"{name} must be a string of 1..128 characters")
+    return value
+
+
 def limits(pair: tuple[float, float], name: str) -> None:
     if len(pair) != 2 or number(pair[0], name) > number(pair[1], name):
         raise LimbError(f"{name} must be ordered lower and upper limits")
@@ -30,6 +36,7 @@ class ArmProfile:
         for name in ("upper", "forearm", "width"):
             if number(getattr(self, name), name) <= 0:
                 raise LimbError(f"{name} must be positive")
+        number(self.upper + self.forearm, "arm length")
         if self.side not in ("left", "right"):
             raise LimbError("arm side must be left or right")
         for name in ("elbow_limit", "twist_limit", "flex_limit", "deviation_limit"):
@@ -50,13 +57,18 @@ class DigitProfile:
     splay: float = 0.0
     thumb: bool = False
     max_flex: tuple[float, ...] = ()
+    bend_axis: Vec3 = Vec3(1, 0, 0)
 
     def __post_init__(self) -> None:
-        if not self.name or not self.lengths or len(self.lengths) > 8:
+        label(self.name, "digit name")
+        if not self.lengths or len(self.lengths) > 8:
             raise LimbError("a digit needs a name and one to eight phalanges")
         if any(number(x, "phalanx length") <= 0 for x in self.lengths):
             raise LimbError("phalanx lengths must be positive")
+        number(sum(self.lengths), "digit length")
         number(self.splay, "splay")
+        if abs(self.bend_axis.length - 1) > 1e-6:
+            raise LimbError("digit bend axis must be a unit vector")
         if self.max_flex and len(self.max_flex) != len(self.lengths):
             raise LimbError("digit max_flex and lengths must have the same size")
         for angle in self.max_flex:
@@ -72,11 +84,12 @@ class HandProfile:
     thickness: float = 0.09
 
     def __post_init__(self) -> None:
+        label(self.name, "hand profile name")
         for value in (self.palm_width, self.palm_length, self.thickness):
             if number(value, "hand dimension") <= 0:
                 raise LimbError("hand dimensions must be positive")
         names = [d.name for d in self.digits]
-        if not self.name or not names or len(names) != len(set(names)) or len(names) > 16:
+        if not names or len(names) != len(set(names)) or len(names) > 16:
             raise LimbError("a hand needs a name and one to sixteen uniquely named digits")
 
 
@@ -162,8 +175,10 @@ GRIPPER = HandProfile(
     0.28,
     0.25,
     (
-        DigitProfile("jaw-a", Vec3(-0.14, 0.25, 0), (0.20, 0.15), 0.35),
-        DigitProfile("jaw-b", Vec3(0.14, 0.25, 0), (0.20, 0.15), -0.35),
+        DigitProfile(
+            "jaw-a", Vec3(-0.14, 0.25, 0), (0.20, 0.15), 0.02, max_flex=(0.25, 0.16), bend_axis=Vec3(0, 0, -1)
+        ),
+        DigitProfile("jaw-b", Vec3(0.14, 0.25, 0), (0.20, 0.15), -0.02, max_flex=(0.25, 0.16), bend_axis=Vec3(0, 0, 1)),
     ),
 )
 HANDS = {p.name: p for p in (HUMAN, THREE_FINGER, MITTEN, PAW, GRIPPER)}
