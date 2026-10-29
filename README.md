@@ -1052,6 +1052,38 @@ SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/group_nine_audio.py PROJECT --font FONT_
 python3 episodes/group_nine.py PROJECT     # group-nine.scene.xml + SRT, 25.625 s
 ```
 
+### An original Stick episode in the car: *The Exit* (R9)
+
+[episodes/the_exit.py](episodes/the_exit.py): Dev has missed the exit, and he and Noor run their oldest argument in
+shorthand. "Your sister's wedding." "Your mum's birthday." "The tent." "The tent." Dead air. "Sorry." "Sorry." Then
+it dawns on them: they are not going to her sister's. Her sister texts; Noor puts the phone face down.
+
+The car from the front is `srstudio.stick_windshield`:
+
+- `stick-windshield`: the back layer seen from the hood, with the sky, the headliner, the rear window with the road
+  receding behind the car (`speed=` dashes a second), the rear seat and the two front seats at `SEATS`.
+- `FRONT` holds the seated poses, centred on x 540: `sit`, `drive`, `cite`, `crossed`, `reach` and `slump`. Place
+  them with `stick.rig(at=PASSENGER_AT)` or `at=DRIVER_AT`.
+- `stick-windshield-dash`: what lies between the camera and the couple. That is the wheel, the dashboard (its top at
+  `DASH_TOP`) with the cactus, the phone in its mount buzzing at `buzz=`, put face down at `down=`, the glare, the
+  wipers, the pillars and the hood with the code. The phone cannot buzz in its mount once it is down.
+- `COUPLE` holds the couple's looks under their short names (`dev`, and `noor`: a bun and glasses).
+
+[episodes/the_exit_audio.py](episodes/the_exit_audio.py) is a `takes.Script` in two premade voices: Will for Dev,
+as in R3, and Jessica for Noor. It has two effects and a 120 BPM car-radio bed, hushed (`gloss_reel.hush`) through
+the dead air. It also holds the staging: `PARTS`, both figures' poses per take; `SETTLE`, the beat after a line
+lands; and `CAMERAS`, framed as follows:
+- the two-shot at 1.25× on the windshield;
+- the singles at 1.7×;
+- the face-down punch-in at 1.5×, with the phone down at `DOWN` and the cut back to the two-shot at `CUT`.
+
+The word captions sit at `WORDS_Y`, over the hood.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_exit_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
+python3 episodes/the_exit.py PROJECT     # the-exit.scene.xml + SRT, 17.792 s
+```
+
 ## Toon style package: *Anonymous Employee Survey*
 
 The sixth style recreates a the.nope.cat reel from a screen recording: a blue cartoon cat at a laptop answers an
