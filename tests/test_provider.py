@@ -216,6 +216,16 @@ def test_speech_is_cached_so_a_second_resolve_costs_nothing(tmp_path, tone):
 
 
 @ffmpeg_required
+def test_a_corrupt_cached_timing_file_is_an_answer_not_a_traceback(tmp_path, tone):
+    fake = FakeElevenLabs(tone)
+    run(tmp_path, request(tmp_path), fake)
+    timing = next(p for p in (tmp_path / "assets" / "elevenlabs").glob("*.json") if not p.name.startswith("stt-"))
+    timing.write_text("[]")
+    answer, code = run(tmp_path, request(tmp_path), fake)
+    assert code == 1 and answer["ok"] is False and "not a JSON object" in answer["error"]
+
+
+@ffmpeg_required
 def test_the_cache_folder_follows_the_environment(tmp_path, tone):
     fake = FakeElevenLabs(tone)
     run(tmp_path, request(tmp_path), fake, env={**ENV, "SRSTUDIO_ELEVENLABS_CACHE": str(tmp_path / "shared")})

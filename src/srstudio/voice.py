@@ -206,6 +206,17 @@ def _check_text(alignment: Alignment, requested_text: str) -> None:
         raise VoiceOutputError(f"aligned text {alignment.text!r} does not match the requested {requested_text!r}")
 
 
+def _cached_record(path: Path, what: str) -> dict:
+    """A cached JSON record, re-read as untrusted: anything but a JSON object is a :class:`VoiceOutputError`."""
+    try:
+        data = json.loads(path.read_text())
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        data = None
+    if not isinstance(data, dict):
+        raise VoiceOutputError(f"{path.name}: not {what} (the cached record is not a JSON object)")
+    return data
+
+
 def decode(mp3: bytes) -> bytes:
     """MP3 → 16-bit mono WAV at :data:`RATE`, in memory."""
     run = subprocess.run(
@@ -584,7 +595,7 @@ class ElevenLabsClient:
         return SpokenLine(text, voice, settings, speech.alignment, wav, timing, duration)
 
     def _from_cache(self, text, voice, settings, timing: Path, mp3: Path, wav: Path) -> SpokenLine:
-        meta = json.loads(timing.read_text())
+        meta = _cached_record(timing, "a timing record")
         alignment = Alignment.parse(meta.get("alignment"))
         _check_text(alignment, text)
         wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
@@ -643,8 +654,8 @@ class ElevenLabsClient:
         ).hexdigest()[:20]
         record = self.cache / f"stt-{digest}.json"
         if record.exists():
-            stored = json.loads(record.read_text())
-            if not isinstance(stored, dict) or "response" not in stored:
+            stored = _cached_record(record, "a transcript record")
+            if "response" not in stored:
                 raise VoiceOutputError(f"{record.name}: not a transcript record")
             return parse_transcript(stored["response"])
         if not self.key:

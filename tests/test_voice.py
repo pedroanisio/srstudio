@@ -214,6 +214,27 @@ def test_cached_files_are_reverified_on_read(tmp_path, mp3):
         ElevenLabsClient(tmp_path / "cache", key="", transport=Transport()).synthesize(TEXT, VOICE, SETTINGS)
 
 
+@pytest.mark.parametrize("stored", ["[1, 2]", '"text"', "{not json", ""])
+def test_a_cached_timing_file_that_is_not_an_object_is_refused(tmp_path, mp3, stored):
+    client = ElevenLabsClient(tmp_path / "cache", key="k", transport=Transport(response(audio=mp3)))
+    client.synthesize(TEXT, VOICE, SETTINGS).timing_file.write_text(stored)
+    with pytest.raises(VoiceOutputError, match="not a JSON object"):
+        ElevenLabsClient(tmp_path / "cache", key="", transport=Transport()).synthesize(TEXT, VOICE, SETTINGS)
+
+
+@pytest.mark.parametrize("stored", ["[1, 2]", "{not json", ""])
+def test_a_cached_transcript_record_that_is_not_an_object_is_refused(tmp_path, stored):
+    wav = tmp_path / "line.wav"
+    wav.write_bytes(b"RIFF....WAVE")
+    ElevenLabsClient(tmp_path / "c", key="k", multipart_transport=Multipart(transcript("In your chair."))).transcribe(
+        wav
+    )
+    (record,) = (tmp_path / "c").glob("stt-*.json")
+    record.write_text(stored)
+    with pytest.raises(VoiceOutputError, match="not a JSON object"):
+        ElevenLabsClient(tmp_path / "c", key="").transcribe(wav)
+
+
 def test_transport_failure_is_not_retried(tmp_path):
     transport = Transport(exc=RuntimeError("HTTP 500"))
     client = ElevenLabsClient(tmp_path, key="k", transport=transport)
