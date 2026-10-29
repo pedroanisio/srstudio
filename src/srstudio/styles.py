@@ -408,7 +408,7 @@ COLLAGE = Style(
         google=GoogleFont("Luckiest Guy", 400),
     ),
     mouths={},
-    parts=("collage", "collage_sets"),
+    parts=("collage", "collage_photo", "collage_sets"),
     namer=partial(flat_counter, "c"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # like the Toon: the expression is pose data, the voices are narration over the captions
