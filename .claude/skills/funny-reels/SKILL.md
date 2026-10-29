@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.11.0
-changelog: "1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.12.0
+changelog: "1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -212,6 +212,11 @@ frame. Draw each plane as its own group, far to near, so blur, light and paralla
   keeps both marks in frame too: choose its pivot so it does, and look at the frame.
 - Lettering reads at the scale the shot shows it, or it is not lettering. Text below the engine's legibility floor
   (`ink_meter.LEGIBLE_PX` on a 1080 frame) or cut by the frame edge reads as a rendering slip; draw it as a scrawl.
+- Lettering framed out is still measured. The engine's safe-area check (SA01) measures a text layer even off frame,
+  so a framing that crops a sign fails the build until the text is not drawn at all. Leave it out with a typed
+  option on the location (`locations.park(sign_lettering=False)` is the model), added with a test when the
+  location lacks one. Never key or hide a set's inner node from the episode, and never set `safeAreaForce` on set
+  dressing.
 
 **Frame for a phone held upright.**
 
@@ -298,6 +303,10 @@ Then act the beats with it:
   save face, or give up. The recovery is often the button.
 - **Eyelines.** Characters look where the thing is: at the other speaker across the cut, down at the prop, into
   the lens only for a look to camera.
+- **Measure the face before you push it.** Brows keyed by rotation (the `brows=` extra of `Episode.perform`) turn
+  about the head's origin, not their own centre, so a big "raised" angle tilts them inward. In *The Cactus* the
+  shock read with brows at 12° and the eyes scaled to 1.10; past those, it read as anger, and the eye whites hid the
+  brows. Look at the frame for any expression pushed to the rig's limit.
 - **Personality sets the reaction.** The same news gets a different reaction from each character: a controller
   takes notes, an avoider changes the subject. Two characters reacting the same way is a missed joke.
 
@@ -410,7 +419,8 @@ it in `srstudio catalog` without this file changing.
    `Episode.check_overlays`, `blob.cue`, `blob.settle`, and the polished rooms (ADR 0008, ADR 0011). Each style's own
    helpers are in its README section. For lip sync (ADR 0019), use `lipsync.SPEECH_MOUTH` with timestamped takes, or
    `soundtrack.OFFICE_MOUTH` with `letters=True` for mouths driven by amplitude. `srstudio.interview` gives exact
-   line ends: put the reaction just after the last line, hold, then cut to the end card. A repeated graphic needs
+   line ends: put the reaction just after the last line, hold, then cut to the end card. Time a beat inside a line
+   from the word that triggers it with `interview.said`, never from a fraction of the line. A repeated graphic needs
    its own `id=` per instance; an explicit `prefix=` or `text_id=` keeps the part names you give it.
    **A staged series** (a recorded take timeline staged shot by shot) declares its voices, settings, music bed,
    font, encoder output, reel builder and caption look once as a `series.Series`, subclasses `series.Reel`, finishes
@@ -437,8 +447,13 @@ it in `srstudio catalog` without this file changing.
 6. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
    every take checked by speech-to-text, never a retry driven by model output. Record by slug with
    `srstudio record <slug> <project>` (ADR 0032). A misheard line stops the run, and the operator decides. When the
-   operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`).
-   Only the operator approves a hearing: never you, a reviewer, another session or a model. Structure the takes
+   operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`,
+   `interview.Spoken(heard=)`).
+   Only the operator approves a hearing: never you, a reviewer, another session or a model. Write each line for the
+   recogniser before the first request: letters spelled out ("S-R") come back as one word ("SAR"), so respell them
+   or plan the hearing with the operator. A number read digit by digit ("one-oh-two-eight") matches its digits
+   (`voice.check_transcript`). Where a caption must differ from the words spoken, the line keeps the two apart
+   (`interview.Spoken` has `text` and `caption`). Structure the takes
    before the first request: a pause is part of a take's duration, never a gap between takes, and shot-sequence
    takes start at 0 and run back to back, with every word inside its take. `Timeline.load` refuses any other
    timeline with `TimelineError`, after the recording money is spent. The recording re-times every beat, so time
@@ -480,10 +495,12 @@ it in `srstudio catalog` without this file changing.
 
    Then run the same command with `check` instead of `deliver` (and no `--only`). This publish gate compares each
    delivery with its render, post, cover drawing and font. Read the result from `check`'s output, never from the
-   fields or version of the `delivery.json` manifest. Your video must not appear in it. Drift it reports on
-   videos that are not yours is known and the operator's to rule on, so it can leave the exit code at 1: never
-   re-deliver another video to clear it, and never run `migrate` or extend `social.LEGACY_LAYOUTS` (a one-time
-   conversion and a closed set, ADR 0037). Always deliver with `--only`, repeated for each of your videos: a bare
+   fields or version of the `delivery.json` manifest. It must end "delivery current" and exit 0. Every run also
+   lists the releases frozen at a cover the operator accepted (ADR 0040); a frozen video stays current only while
+   its post draws exactly that cover. Any drift is a defect to report, not background: fix your own video and
+   deliver it again with `--only`; for another video, stop and tell the operator. Never re-deliver another video
+   to clear it, never freeze a release yourself (`releases.Release(frozen=)` is the operator's decision), and
+   never run `migrate` or extend `social.LEGACY_LAYOUTS` (a one-time conversion and a closed set, ADR 0037). Always deliver with `--only`, repeated for each of your videos: a bare
    `deliver` re-delivers every drifted video, published ones included, which breaks the frozen rule. Open
    `cover.jpg` and look: a zoom that crops a card, or a frame caught mid-caption-fade, leaves a ghost.
    Credit voices as ElevenLabs premade voices and music as "composed with ElevenLabs Music"; credit a reference
@@ -531,6 +548,8 @@ look, the signature marks, a character's traits), and vary the joke underneath i
 - Make a character's identity the punchline, or depict a real person or brand.
 - Echo a franchise (its names, characters, designs, logos, catchphrases or music) or build a joke on a reference a
   newcomer would not get.
+- Let a signature mark carry a plot beat except through `signature.cactus(act=)` or a location's `cactus=` slot,
+  with exactly one `sig-cactus` in every shot (ADR 0039).
 - Change a shipped default (a mouth style, a style's frame or palette) for a new episode: it breaks the fidelity
   tests and the rebuilds of videos already delivered. Add an option and leave the default alone; prove a refactor
   with a byte-identical rebuild.
