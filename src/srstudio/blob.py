@@ -1356,6 +1356,12 @@ def remy(
 
 
 # -- props and the stage: a 3/4 view from above and to the right ---------------------------------------------
+def _part(id: str, default: str, part: str, name: str) -> str:
+    """The id of a location's ``part``: the default instance keeps the part's own ``name``; a location drawn under
+    another ``id`` namespaces it, so a room drawn twice never repeats an id."""
+    return name if id == default else f"{id}-{part}"
+
+
 def _poly(cv: Canvas, g, pts: Sequence[Point], fill: str, line: str = WOOD_LINE, sw: float = 4) -> None:
     d = "M " + " L ".join(f"{x:g} {y:g}" for x, y in pts) + " Z"
     cv.path(g, d, fill, line, sw)
@@ -1437,10 +1443,10 @@ def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = 
     g = cv.group(parent, id)
     if shots:
         cv.gate(g, shots)
-    chair(cv, g)
-    desk(cv, g)
+    chair(cv, g, _part(id, "soft-office", "chair", "soft-chair"))
+    desk(cv, g, _part(id, "soft-office", "desk", "soft-desk"))
     signature.cactus(cv, g, 170, 1040, 0.62)
-    laptop(cv, g)
+    laptop(cv, g, _part(id, "soft-office", "laptop", "soft-laptop"))
     signature.code(cv, g, 40, 1327, 14, color=WOOD_LINE, angle=-9)
     return g
 
@@ -1606,7 +1612,7 @@ def home(
     _lamp(cv, g, lx, ly)
     if lamp_talk:
         _lamp_glow(cv, g, lamp_talk, f"{id}-lamp-talk")
-    sofa(cv, g, on_sofa=on_sofa)
+    sofa(cv, g, on_sofa=on_sofa, id=_part(id, "soft-home", "sofa", "soft-sofa"))
     top = _side_table(cv, g, 24, _floor_at(-330, -250)[1])
     signature.cactus(cv, g, top[0], top[1], 0.55)
     signature.code(cv, g, *_floor_at(-330, 120), 14, color=RUG_LINE, angle=36)
@@ -1990,7 +1996,7 @@ def meeting_room(
         _quad(cv, light, patch, LIGHT_GLAZE, opacity=0.32)
     furniture = cv.group(g, f"{id}-furniture")
     _shadow(cv, furniture, *room_point(-400, 310), 360, 70, 0.1)
-    swivel_chair(cv, furniture)
+    swivel_chair(cv, furniture, _part(id, "soft-meeting-room", "swivel-chair", "soft-swivel-chair"))
     _meeting_table(cv, furniture)
     laptop(cv, furniture, id=f"{id}-laptop")
     top = room_point(-330, 200, TABLE_TOP)
@@ -2268,9 +2274,9 @@ def break_room(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | Non
     signature.cactus(cv, decor, *room_point(w1 - 40, 0, u0 - 10), 0.5)  # on the sill, beside the herbs
     furniture = cv.group(g, f"{id}-furniture")
     _counter(cv, furniture)
-    coffee_machine(cv, furniture)
-    fridge(cv, furniture)
-    stool(cv, furniture)
+    coffee_machine(cv, furniture, _part(id, "soft-break-room", "coffee-machine", "soft-coffee-machine"))
+    fridge(cv, furniture, _part(id, "soft-break-room", "fridge", "soft-fridge"))
+    stool(cv, furniture, _part(id, "soft-break-room", "stool", "soft-stool"))
     lamp_light = cv.group(g, f"{id}-lamp-light")  # the lamp's glaze lies over the counter it lights
     _pendant(cv, furniture, lamp_light, *room_point(-100, 90, 740), wall_base(room_point(-100, 90)[0]) + 60)
     signature.code(cv, g, *room_point(-760, 620), 14, color=BREAK.grain, angle=-12)
