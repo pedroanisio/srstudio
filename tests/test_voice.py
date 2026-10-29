@@ -716,9 +716,12 @@ def test_cached_sound_effect_is_reverified_and_its_samples_read(tmp_path, mp3):
     client = ElevenLabsClient(tmp_path, key="k", binary_transport=Binary(mp3))
     clip = client.sound_effect("a squeaky office chair", 1.0)
     assert len(clip.samples()) == round(clip.duration * 48000)
+    original = clip.wav.read_bytes()
     clip.wav.unlink()  # cache hit without the wav: decoded again from the mp3 and re-verified
     again = ElevenLabsClient(tmp_path, key="").sound_effect("a squeaky office chair", 1.0)
     assert again.duration == clip.duration
+    assert again.wav.read_bytes() == original
+    assert len(again.samples()) == round(again.duration * 48000)
     clip.wav.write_bytes(wav_of([0] * 48000))  # a tampered cached wav is re-verified, not trusted
     with pytest.raises(VoiceOutputError, match="silent"):
         ElevenLabsClient(tmp_path, key="").sound_effect("a squeaky office chair", 1.0)

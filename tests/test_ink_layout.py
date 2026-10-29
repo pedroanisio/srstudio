@@ -369,8 +369,11 @@ def router_takes_data():
         q = dict(id=id, actor=actor, shot=shot, mood=mood, text=text, start=start, duration=1.5, speech_duration=1.3)
         q["audio"] = f"audio/{'fx' if effect else 'take'}-{id}.wav"
         if not effect:
-            q["words"] = [{"text": w, "start": 0.1 + i * 0.3, "end": 0.3 + i * 0.3} for i, w in enumerate(text.split())]
-            q["phones"] = phones(text.lower(), 0.04)
+            step = 1.2 / len(text.split())
+            q["words"] = [
+                {"text": w, "start": 0.1 + i * step, "end": 0.1 + (i + 0.8) * step} for i, w in enumerate(text.split())
+            ]
+            q["phones"] = phones(text.lower(), 1.2 / len(text))
         else:
             q["speech_duration"], q["seconds"] = 0, 1.0
         out.append(q)

@@ -589,7 +589,10 @@ class ElevenLabsClient:
         record, mp3, wav = (prefix.with_suffix(s) for s in (".json", ".mp3", ".wav"))
         if record.exists() and mp3.exists():
             wav_bytes = wav.read_bytes() if wav.exists() else decode(mp3.read_bytes())
-            return EffectClip(text, float(seconds), wav, record, verify_effect(wav_bytes, seconds))
+            duration = verify_effect(wav_bytes, seconds)
+            if not wav.exists():
+                wav.write_bytes(wav_bytes)
+            return EffectClip(text, float(seconds), wav, record, duration)
         if not self.key:
             raise MissingKeyError("ELEVENLABS_API_KEY is required to generate an uncached sound effect")
         audio, request_id = self.binary_transport(

@@ -102,7 +102,7 @@ from .styles import (
     StyleError,
 )
 from .thumbnail import Thumbnail, ThumbnailError
-from .timeline import Take, Timeline
+from .timeline import Take, Timeline, TimelineError
 
 __version__ = "0.1.0"
 __all__ = [
@@ -143,6 +143,7 @@ __all__ = [
     "Actor",
     "Performance",
     "Timeline",
+    "TimelineError",
     "Take",
     "Soundtrack",
     "MouthStyle",

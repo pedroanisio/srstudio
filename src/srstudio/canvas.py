@@ -8,6 +8,7 @@ needs nothing but these few calls.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -108,7 +109,9 @@ class Canvas:
         self._paints = None
         self.comp = scene.add_composition()
         self._serial = 0
-        self._gradients: dict[str, str] = {}
+        self._gradients: dict[
+            str, tuple[str, tuple[tuple[float, str], ...], tuple[float, ...], str | None, str | None]
+        ] = {}
         self._symbols: dict[str, Any] = {}
         self._symbol_root: Any = None
         self._effects: dict[str, tuple[str, dict[str, Any]]] = {}
@@ -153,28 +156,63 @@ class Canvas:
         self._serial += 1
         return f"{prefix}-{self._serial:04d}"
 
-    def grad(self, name: str, stops: Sequence[tuple[float, str]], xy=(0, 0, 1, 1)) -> str:
-        """A named linear gradient; returns the ``url(#name)`` paint. Created once per name."""
-        if name not in self._gradients:
-            g = self.paints.add_linearGradient(
-                id=name, x1=xy[0], y1=xy[1], x2=xy[2], y2=xy[3], interpolationSpace="srgb"
-            )
-            for offset, color in stops:
-                g.add_stop(offset=offset, color=color)
-            self._gradients[name] = f"url(#{name})"
-        return self._gradients[name]
+    def grad(
+        self,
+        name: str,
+        stops: Sequence[tuple[float, str]],
+        xy=(0, 0, 1, 1),
+        *,
+        units: str | None = None,
+        interpolation_space: str | None = "srgb",
+    ) -> str:
+        """A named linear gradient; identical declarations reuse it, conflicting settings raise NativeError."""
+        return self._gradient(name, "linearGradient", stops, xy, units, interpolation_space)
 
-    def rgrad(self, name: str, stops: Sequence[tuple[float, str]], circle=(0.5, 0.5, 0.5)) -> str:
+    def rgrad(
+        self,
+        name: str,
+        stops: Sequence[tuple[float, str]],
+        circle=(0.5, 0.5, 0.5),
+        *,
+        units: str | None = None,
+        interpolation_space: str | None = "srgb",
+    ) -> str:
         """A named radial gradient about ``circle`` (cx, cy, r as fractions of the painted box); returns the
-        ``url(#name)`` paint. Created once per name."""
-        if name not in self._gradients:
-            g = self.paints.add_radialGradient(
-                id=name, cx=circle[0], cy=circle[1], r=circle[2], interpolationSpace="srgb"
-            )
-            for offset, color in stops:
-                g.add_stop(offset=offset, color=color)
-            self._gradients[name] = f"url(#{name})"
-        return self._gradients[name]
+        ``url(#name)`` paint. Identical declarations reuse it; conflicting settings raise NativeError."""
+        return self._gradient(name, "radialGradient", stops, circle, units, interpolation_space)
+
+    def _gradient(
+        self,
+        name: str,
+        kind: str,
+        stops: Sequence[tuple[float, str]],
+        geometry: Sequence[float],
+        units: str | None,
+        interpolation_space: str | None,
+    ) -> str:
+        definition = (
+            kind,
+            tuple((offset, color) for offset, color in stops),
+            tuple(geometry),
+            units,
+            interpolation_space,
+        )
+        if name in self._gradients:
+            if self._gradients[name] != definition:
+                raise NativeError(f"gradient {name!r} is already declared with different settings")
+            return f"url(#{name})"
+        axes = ("x1", "y1", "x2", "y2") if kind == "linearGradient" else ("cx", "cy", "r")
+        attrs: dict[str, Any] = dict(zip(axes, geometry, strict=True))
+        if units is not None:
+            attrs["units"] = units
+        if interpolation_space is not None:
+            attrs["interpolationSpace"] = interpolation_space
+        builder = self.paints.add_linearGradient if kind == "linearGradient" else self.paints.add_radialGradient
+        g = builder(id=name, **attrs)
+        for offset, color in definition[1]:
+            g.add_stop(offset=offset, color=color)
+        self._gradients[name] = definition
+        return f"url(#{name})"
 
     def effect(self, name: str, type: str, **attrs) -> str:
         """A named ``<effect>`` of ``type`` (blur, drop-shadow, inner-shadow, directional-blur, vignette...);
@@ -329,11 +367,23 @@ class Canvas:
         return a
 
     def gate(self, node, spans: Spans):
-        """Visible only inside ``spans``: opacity 0 → 1 → 0 with hold keys, which keeps seeking exact."""
-        events = {0.0: 0}
+        """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
+        intervals = []
         for start, end in spans:
-            events[float(start)] = 1
-            events[float(end)] = 0
+            if not (math.isfinite(start) and math.isfinite(end) and 0 <= start <= end):
+                raise ValueError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+            if end > start:
+                intervals.append((float(start), float(end)))
+        merged: list[tuple[float, float]] = []
+        for start, end in sorted(intervals):
+            if merged and start <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+            else:
+                merged.append((start, end))
+        events = {0.0: 0}
+        for start, end in merged:
+            events[start] = 1
+            events[end] = 0
         return self.keys(node, "opacity", sorted(events.items()))
 
     def pop_in(

@@ -2,10 +2,11 @@
 
 import json
 import subprocess
+import wave
 import zipfile
 
 import pytest
-from sr_core.scene import Scene
+from sr_core.scene import Scene, read, write
 
 from srstudio import Canvas, package
 from srstudio.social import InstagramPost
@@ -72,6 +73,72 @@ def test_an_unchanged_scene_keeps_its_package_and_a_changed_one_gets_the_next_pa
     assert second == out / "demo-1.0.1.vpkg.zip"
     assert package.scene_sha(second) == package.sha256(scene)
     assert first.is_file()  # an earlier version is kept, never overwritten
+
+
+def audio_project(root):
+    folder = project(root)
+    (folder / "assets").mkdir()
+    with wave.open(str(folder / "assets" / "tone.wav"), "wb") as w:
+        w.setparams((1, 2, 48000, 0, "NONE", "not compressed"))
+        w.writeframes(b"\x01\x00" * 48000)
+    scene = read(folder / "demo.scene.xml")
+    scene.add_assets().add_audio(id="tone", src="assets/tone.wav")
+    write(scene, folder / "demo.scene.xml")
+    return folder
+
+
+def test_replacing_an_unpinned_asset_repackages_its_current_bytes(tmp_path):
+    folder = audio_project(tmp_path)
+    out = tmp_path / "vpkg"
+    first = package.pack(folder, out, post())
+    xml = (folder / "demo.scene.xml").read_bytes()
+    audio = folder / "assets" / "tone.wav"
+    with wave.open(str(audio), "wb") as w:
+        w.setparams((1, 2, 48000, 0, "NONE", "not compressed"))
+        w.writeframes(b"\x02\x00" * 48000)
+    second = package.pack(folder, out, post())
+    assert second != first and second.name == "demo-1.0.1.vpkg.zip"
+    assert (folder / "demo.scene.xml").read_bytes() == xml
+    with zipfile.ZipFile(second) as z:
+        assert z.read("project/assets/tone.wav") == audio.read_bytes()
+    assert package.pack(folder, out, post()) == second
+
+
+@pytest.mark.parametrize("change", ["add", "edit", "delete"])
+def test_supporting_files_are_part_of_package_freshness(tmp_path, change):
+    folder = project(tmp_path)
+    notes = folder / "notes.txt"
+    if change != "add":
+        notes.write_text("original")
+    out = tmp_path / "vpkg"
+    first = package.pack(folder, out, post())
+    if change == "delete":
+        notes.unlink()
+    else:
+        notes.write_text("updated")
+    second = package.pack(folder, out, post())
+    assert second != first
+    listed = {f["path"] for f in manifest(second)["files"]}
+    assert ("notes.txt" in listed) == (change != "delete")
+
+
+def test_a_missing_referenced_asset_cannot_reuse_an_older_package(tmp_path):
+    folder = audio_project(tmp_path)
+    out = tmp_path / "vpkg"
+    first = package.pack(folder, out, post())
+    (folder / "assets" / "tone.wav").unlink()
+    with pytest.raises(package.PackageError, match="pack failed"):
+        package.pack(folder, out, post())
+    assert list(out.iterdir()) == [first]
+
+
+def test_changed_package_metadata_gets_a_new_version(tmp_path):
+    folder = project(tmp_path)
+    out = tmp_path / "vpkg"
+    first = package.pack(folder, out, post())
+    second = package.pack(folder, out, post("Revised title"))
+    assert second != first
+    assert manifest(second)["package"]["title"] == "Revised title"
 
 
 def test_a_project_without_its_scene_is_refused(tmp_path):

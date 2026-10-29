@@ -52,7 +52,8 @@ def phones(text: str, start: float = 0.1, step: float = 0.07) -> tuple[dict, ...
 
 def take(id="01", actor="juno", text="I know.", start=0.0, duration=1.5, **kw) -> Take:
     words = tuple({"text": w, "start": 0.1 + i * 0.3, "end": 0.35 + i * 0.3} for i, w in enumerate(text.split()))
-    return Take(id, actor, "", text, start, duration, words=words, phones=phones(text.lower()), **kw)
+    phone_step = min(0.07, (duration - 0.2) / max(1, len(text)))
+    return Take(id, actor, "", text, start, duration, words=words, phones=phones(text.lower(), step=phone_step), **kw)
 
 
 # -- the style and its registration -----------------------------------------------------------------------------------

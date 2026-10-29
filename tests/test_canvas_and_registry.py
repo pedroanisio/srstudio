@@ -30,7 +30,7 @@ def test_path_defaults_and_gradient_cache():
     p = cv.path(cv.comp, "M0 0 L10 10")
     assert p.stroke == OFFICE.ink and p.fill == OFFICE.clear and p.strokeCap == "round"
     first = cv.grad("test-grad", [(0, "#000000"), (1, "#FFFFFF")], (0, 0, 0, 1))
-    assert first == "url(#test-grad)" and cv.grad("test-grad", [], (0, 0, 0, 1)) == first
+    assert first == "url(#test-grad)" and cv.grad("test-grad", [(0, "#000000"), (1, "#FFFFFF")], (0, 0, 0, 1)) == first
     assert CAFE.ink != OFFICE.ink
 
 
@@ -82,7 +82,60 @@ def test_an_effect_is_defined_once_and_named_by_its_id():
 def test_a_radial_gradient_is_defined_once():
     cv = fresh()
     first = cv.rgrad("glow", [(0, "#FFFFFF"), (1, "#FFFFFF00")], (0.5, 0.3, 0.6))
-    assert first == "url(#glow)" and cv.rgrad("glow", [], (0, 0, 1)) == first
+    assert first == "url(#glow)" and cv.rgrad("glow", [(0, "#FFFFFF"), (1, "#FFFFFF00")], (0.5, 0.3, 0.6)) == first
     root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
     (g,) = root.findall(".//radialGradient")
     assert (g.get("cx"), g.get("cy"), g.get("r"), len(g.findall("stop"))) == ("0.5", "0.3", "0.6", 2)
+
+
+@pytest.mark.parametrize("spans", [[(1, 3), (2, 4)], [(2, 4), (1, 3)], [(1, 4), (2, 3)], [(1, 2), (2, 4)]])
+def test_visibility_is_the_union_of_overlapping_nested_and_touching_spans(spans):
+    cv = fresh()
+    g = cv.group(cv.comp, "g")
+    cv.gate(g, iter(spans))
+    root = ET.fromstring(cv.scene.to_bytes())
+    keys = [(float(k.get("time")), float(k.get("value"))) for k in root.findall(".//animate/key")]
+    assert keys == [(0, 0), (1, 1), (4, 0)]
+
+
+@pytest.mark.parametrize("spans", [[(2, 1)], [(-1, 1)], [(float("nan"), 1)], [(0, float("inf"))]])
+def test_invalid_visibility_spans_are_rejected_without_adding_animation(spans):
+    cv = fresh()
+    g = cv.group(cv.comp, "g")
+    with pytest.raises(ValueError, match="span"):
+        cv.gate(g, spans)
+    assert not any(n.xml_name == "animate" for n in g.iter())
+
+
+@pytest.mark.parametrize("first,second", [("grad", "grad"), ("rgrad", "rgrad"), ("grad", "rgrad"), ("rgrad", "grad")])
+def test_gradient_name_conflicts_are_rejected_without_changing_the_original(first, second):
+    cv = fresh()
+    stops = [(0, "#000000"), (1, "#FFFFFF")]
+    getattr(cv, first)("paint", stops)
+    original = cv.scene.to_bytes()
+    with pytest.raises(NativeError, match="already declared"):
+        getattr(cv, second)("paint", [(0, "#FF0000"), (1, "#FFFFFF")])
+    assert cv.scene.to_bytes() == original
+
+
+@pytest.mark.parametrize("kind,geometry", [("grad", (0, 0, 0, 1)), ("rgrad", (0.2, 0.3, 0.4))])
+def test_gradient_geometry_conflicts_are_rejected(kind, geometry):
+    cv = fresh()
+    stops = [(0, "#000000"), (1, "#FFFFFF")]
+    getattr(cv, kind)("paint", stops)
+    with pytest.raises(NativeError, match="already declared"):
+        getattr(cv, kind)("paint", stops, geometry)
+
+
+@pytest.mark.parametrize("stick_first", [True, False])
+def test_style_gradients_share_conflict_detection_with_canvas_gradients(stick_first):
+    from srstudio import stick
+
+    cv = fresh()
+    gradient = stick.Gradient("paint", ((0, "#000000"), (1, "#FFFFFF")), 0, 0, 1, 1)
+    declarations = [lambda: stick.paint(cv, gradient), lambda: cv.grad("paint", gradient.stops)]
+    if not stick_first:
+        declarations.reverse()
+    declarations[0]()
+    with pytest.raises(NativeError, match="already declared"):
+        declarations[1]()

@@ -2,6 +2,7 @@
 
 import xml.etree.ElementTree as ET
 
+import pytest
 from sr_core.scene import Scene
 
 from srstudio import OFFICE, Canvas, graphics
@@ -88,3 +89,31 @@ def test_connected_card_shows_heading_and_value_with_a_status_dot():
     assert texts(root) == {"ok-heading": "CONNECTED", "ok-password": "hunter2"}
     assert keys(root, "park-connected-card", "opacity") == [(0, 0), (0.5, 1), (2.0, 0)]
     assert [s.get("fill") for s in card.iter("shape") if s.get("shape") == "ellipse"] == ["#62976F"]
+
+
+@pytest.mark.parametrize(
+    "builder,args,options",
+    [
+        (graphics.episode_slate, ("01", "TITLE"), {}),
+        (graphics.quiz_card, ("QUESTION", "1 + 1?", (1, 3)), {"verdict": "YES"}),
+        (graphics.answer_bubble, ("2", (1, 3)), {}),
+        (graphics.scorecard, ("SCORE", [("POINTS", "2", "#FFFFFF")], (1, 3)), {}),
+        (graphics.dashboard, ("STATUS", [("WORK", "DONE")], (1, 3)), {}),
+        (graphics.password_card, ("PASSWORD", "secret", "NO SPACES", (1, 3)), {}),
+        (graphics.location_slate, ("LATER", (1, 3)), {}),
+        (graphics.connected_card, ("CONNECTED", "secret", (1, 3)), {}),
+    ],
+)
+def test_graphic_instances_have_distinct_assets_and_resolve_their_own_text(builder, args, options):
+    cv = fresh()
+    builder(cv, cv.comp, *args, **options)
+    first = builder(cv, cv.comp, *args, id="first", **options)
+    second = builder(cv, cv.comp, *args, id="second", **options)
+    root = render(cv)
+    ids = [el.get("id") for el in root.iter() if el.get("id")]
+    assert len(ids) == len(set(ids)), "reusing a graphic must not duplicate scene IDs"
+    first_assets = {n.asset for n in first.iter() if n.xml_name == "layer"}
+    second_assets = {n.asset for n in second.iter() if n.xml_name == "layer"}
+    assert first_assets and second_assets and first_assets.isdisjoint(second_assets)
+    declared = texts(root)
+    assert all(asset in declared for asset in first_assets | second_assets)

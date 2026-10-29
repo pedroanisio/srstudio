@@ -1,5 +1,7 @@
 """End-to-end: synthetic projects through the office and café kits, checked by the SDK."""
 
+import json
+import shutil
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -134,3 +136,39 @@ def test_finish_refuses_a_document_with_findings(project, tmp_path):
     with pytest.raises(SystemExit):
         ep.finish(tmp_path / "t-bad.scene.xml")
     assert not (tmp_path / "t-bad.scene.xml").exists()
+
+
+def test_default_captions_work_without_reaction_beats_and_clamp_the_first_lead(project, tmp_path):
+    project = shutil.copytree(project, tmp_path / "project")
+    data = json.loads((project / "dialogue.json").read_text())
+    data.pop("reaction_start")
+    data["phrases"][0]["start"] = 0
+    (project / "dialogue.json").write_text(json.dumps(data))
+    ep = Episode(EpisodeSpec(slug="captions", title="t", description="t", root=project, seed=1, signature=False))
+    specs = ep.default_captions()
+    assert specs[0][0] == 0
+    assert specs[-1][1] == ep.t.duration
+    ep.captions()
+    assert ep.check() == []
+
+
+def test_caption_boundaries_follow_time_instead_of_cut_indices(project, tmp_path):
+    project = shutil.copytree(project, tmp_path / "project")
+    data = json.loads((project / "dialogue.json").read_text())
+    phrases = data["phrases"]
+    # More than one shot within a line must not truncate that line's caption.
+    extra = {"time": (phrases[0]["start"] + phrases[0]["end"]) / 2, "angle": "insert"}
+    data["camera_cuts"].insert(1, extra)
+    (project / "dialogue.json").write_text(json.dumps(data))
+    ep = Episode(EpisodeSpec(slug="captions", title="t", description="t", root=project, seed=1))
+    specs = ep.default_captions()
+    assert specs[0][1] == data["camera_cuts"][2]["time"]
+    assert all(end >= p.end for (_, end, _, _), p in zip(specs, ep.phrases, strict=True))
+
+
+def test_caption_scripts_keep_their_own_windows(project, tmp_path):
+    project = shutil.copytree(project, tmp_path / "project")
+    items = [{"start": 0, "end": 1, "text": "First"}, {"start": 2, "end": 3, "text": "Second"}]
+    (project / "script.json").write_text(json.dumps(items))
+    ep = Episode(EpisodeSpec(slug="captions", title="t", description="t", root=project, seed=1, dialogue="script.json"))
+    assert [(a, b) for a, b, _, _ in ep.default_captions(lead=0)] == [(0, 1), (2, 3)]

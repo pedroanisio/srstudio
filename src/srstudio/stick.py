@@ -394,15 +394,13 @@ def oval(cv: Canvas, parent, x, y, w, h, fill: str, **kw):
 
 def paint(cv: Canvas, gradient: Gradient) -> str:
     """The ``url(#id)`` of ``gradient``, defined in ``<paints>`` the first time it is asked for."""
-    known = cv._gradients
-    if gradient.id not in known:
-        g = cv.paints.add_linearGradient(
-            id=gradient.id, units="user", x1=gradient.x1, y1=gradient.y1, x2=gradient.x2, y2=gradient.y2
-        )
-        for offset, color in gradient.stops:
-            g.add_stop(offset=offset, color=color)
-        known[gradient.id] = f"url(#{gradient.id})"
-    return known[gradient.id]
+    return cv.grad(
+        gradient.id,
+        gradient.stops,
+        (gradient.x1, gradient.y1, gradient.x2, gradient.y2),
+        units="user",
+        interpolation_space=None,
+    )
 
 
 def plates(cv: Canvas, parent, fills: Sequence[Plate]) -> None:

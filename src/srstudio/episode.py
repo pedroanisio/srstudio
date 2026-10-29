@@ -318,10 +318,22 @@ class Episode:
         return track
 
     def default_captions(self, lead: float = 0.06, name="dialogue-{n}"):
+        """Lead each phrase, hold until the next caption or a cut after speech, and end on reaction/duration.
+
+        Caption scripts keep their explicit end times. A camera cut within a spoken phrase never truncates it.
+        """
+        if not (math.isfinite(lead) and lead >= 0):
+            raise ValueError(f"caption lead must be finite and non-negative, got {lead}")
         out = []
         for i, p in enumerate(self.phrases):
-            end = self.t.cuts[i + 1].time if i + 1 < len(self.t.cuts) and i < len(self.phrases) - 1 else self.t.reaction
-            out.append((p.start - lead, end, p.caption, name.format(n=i + 1)))
+            if p.role == "caption" and not self.t.takes:
+                end = p.end
+            elif i + 1 < len(self.phrases):
+                boundary = max(p.end, self.phrases[i + 1].start - lead)
+                end = next((c.time for c in self.t.cuts if p.end <= c.time <= boundary + 1e-9), boundary)
+            else:
+                end = max(p.end, self.t.beats.get("reaction_start", self.t.duration))
+            out.append((max(0.0, p.start - lead), end, p.caption, name.format(n=i + 1)))
         return out
 
     def mix(

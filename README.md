@@ -63,6 +63,10 @@ font. `Episode` reads both and gives you:
 
 `finish()` refuses to write a document with findings (`strict=True`) and always writes `sdk-validation.json`.
 
+Default captions follow phrase times rather than camera-cut indices: cuts during speech do not truncate a caption.
+The last spoken caption ends on the reaction beat, or the project duration when that beat is absent. Caption scripts
+keep their explicit end times, and caption lead-in is clamped at zero.
+
 `ep.audio()` plays whatever the project brings (`ep.audio_source`): pinned generated clips (`extra=` adds the
 groove), one audio file per take (`take=` maps a take to its track options), one mixed `assets/dialogue.wav`
 (`track_id=`), a verified `narration.json` (`narration=`, through `srstudio.narration.narration_cues`), or nothing
@@ -100,7 +104,11 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
-`Timeline.load` picks the input format by content (`phrases`, `items`, or a list of captions). A new style is a `Style` value, usually
+`Timeline.load` picks the input format by content (`phrases`, `items`, or a list of captions). It raises
+`TimelineError` for invalid ranges or unordered cuts. Shot-sequence takes must be contiguous from zero
+(within one microsecond of recording roundoff); include pauses in a take's duration. Word and character
+times must stay within their take. Frame-rounded trailing silence is allowed, and validation never retimes inputs.
+A new style is a `Style` value, usually
 `dataclasses.replace` of an existing one, plus a module of parts named in its `parts` (see `ink.py`: ~40 lines of
 drawing conventions before the first character, or `blob.py`: a pose sheet); nothing in `Episode` is specific to a
 style.
@@ -161,6 +169,15 @@ cv.animate_text(layer, "pop")
   `SchemaValueError`.
 
 ## The parts
+
+Give repeated graphics distinct `id=` values. Each custom instance namespaces its text assets and layers as
+`<instance id>-<text id>`; the default instance retains the original IDs. This also applies to graphics with
+`prefix=` or `text_id=` options.
+
+`Canvas.gate` merges overlapping and touching visibility spans, independent of their input order; empty spans
+draw nothing, and reversed, negative or nonfinite spans are refused before adding animation. Named linear and
+radial gradients reuse identical declarations and raise `NativeError` for conflicting types, stops, coordinates,
+units or interpolation spaces. Stick's user-space gradients use the same checks.
 
 `srstudio catalog` lists them; `srstudio catalog --json` is machine-readable, and `--usage REPORT` adds the episodes
 that use each part, from the report below.
@@ -1389,7 +1406,9 @@ error is `InstagramPostError`, with every problem listed.
   without a package is held back like a drifted one. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
-  the engine. It is repacked, as the next patch version beside the earlier ones, only when its scene changes. each limit's failure path, the episode hook, every shipped post (each
+  the engine. Each call builds and verifies a candidate, comparing its resolved files and metadata with the latest
+  release. Changed assets, supporting files or metadata produce the next patch version; unchanged content keeps
+  the existing archive. The tests cover each limit's failure path, the episode hook, every shipped post (each
   with a thumbnail and one video), the frame selection on a synthetic video whose frames differ (first, middle and
   last frame), frames outside the video, blank frames, unreadable probes, deliveries that leave no files when the
   backdrop or the engine fails, and the gate: a fresh delivery, never delivered, a re-render (and that only it is
