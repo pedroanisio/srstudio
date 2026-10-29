@@ -173,3 +173,25 @@ def test_automatic_spatial_fallback_retains_clamping_alongside_backend_diagnosti
     assert result.backend == "baked"
     assert {d.code for d in result.diagnostics} >= {"backend", "unreachable"}
     assert result.report.to_dict()["max_reach_error"] > 1
+
+
+def test_measure_refuses_lambda_builders_instead_of_leaking_a_syntax_error():
+    builders = {"inline": lambda: drawing()}
+    with pytest.raises(LimbError, match="def function"):
+        measure("lambda", builders["inline"], repeats=1)
+    with pytest.raises(LimbError, match="def function"):
+        measure("multiline", lambda: drawing(), repeats=1)
+
+
+def test_measure_refuses_renamed_lambdas_whose_source_is_not_a_def():
+    table = {
+        "a": lambda: drawing()  # this dict entry line does not parse on its own
+    }
+    fragment = table["a"]
+    fragment.__name__ = "fragment"
+    with pytest.raises(LimbError, match="parseable"):
+        measure("fragment", fragment, repeats=1)
+    assigned = lambda: drawing()  # noqa: E731
+    assigned.__name__ = "assigned"  # its source line parses as an assignment, not a definition
+    with pytest.raises(LimbError, match="def function"):
+        measure("assigned", assigned, repeats=1)

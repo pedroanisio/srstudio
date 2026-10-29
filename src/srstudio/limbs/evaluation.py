@@ -50,13 +50,21 @@ def measure(
     label(name, "measurement name")
     if type(repeats) is not int or not 1 <= repeats <= 10:
         raise LimbError("measurement repetitions must be an integer in 1..10")
+    if getattr(builder, "__name__", None) == "<lambda>":
+        # A lambda's source is the whole enclosing line, which may not parse or may count unrelated code.
+        raise LimbError("measurement builder must be a def function, not a lambda")
     try:
         source = textwrap.dedent(inspect.getsource(builder))
     except (OSError, TypeError) as error:
         raise LimbError("measurement builder needs inspectable Python source") from error
     if len(source) > 100000:
         raise LimbError("measurement source exceeds its bound", code="budget")
-    tree = ast.parse(source)
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as error:
+        raise LimbError("measurement builder must be a def function with parseable source") from error
+    if len(tree.body) != 1 or not isinstance(tree.body[0], (ast.FunctionDef, ast.AsyncFunctionDef)):
+        raise LimbError("measurement builder must be a def function")
     doc_lines = {
         i
         for node in ast.walk(tree)
