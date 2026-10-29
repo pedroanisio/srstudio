@@ -52,6 +52,7 @@ LENGTH_SLACK = 0.5  # the song may differ from the plan's total by this much (v2
 TEMPO_TOLERANCE = 0.03  # measured tempo within ±3 % of the requested one
 BEAT_SIGMA = 5.0  # the beat must stand this many noise-floor units (1/sqrt(frames)) above chance
 ENVELOPE_RATE = 200  # onset envelope frames a second
+MEASURABLE_BPM = (50, 250)  # the tempos the beat check reads; a song at any other tempo is never requested
 LYRIC_SLACK = 0.35  # a sung line may start / end this much outside its chunk
 
 
@@ -157,18 +158,26 @@ def _autocorrelation(env: Sequence[float], lag: int) -> float:
     return sum(env[i] * env[i + lag] for i in range(len(env) - lag))
 
 
+def _check_measurable(bpm: float) -> None:
+    slowest, fastest = MEASURABLE_BPM
+    if isinstance(bpm, bool) or not isinstance(bpm, (int, float)) or not slowest <= bpm <= fastest:
+        raise MusicOutputError(f"tempo {bpm!r} bpm is outside the measurable {slowest}..{fastest} bpm")
+
+
 def measure_tempo(samples: Sequence[float], rate: int, expected: float, tolerance: float = TEMPO_TOLERANCE) -> Tempo:
     """The song's tempo and beat phase; raises :class:`MusicOutputError` unless the beat is steady and on tempo.
 
     The onset envelope's autocorrelation is read near the requested beat period. A song in double time also has
     a peak there and passes (its beats include the grid's); one in half time, or at another tempo, does not."""
+    _check_measurable(expected)
     onsets = _onsets(samples, rate)
     mean = sum(onsets) / len(onsets) if onsets else 0.0
     env = [v - mean for v in onsets]
     power = sum(v * v for v in env)
     if power <= 1e-12:
         raise MusicOutputError("no steady beat: the song has no onsets")
-    lags = range(round(ENVELOPE_RATE * 60 / 250), round(ENVELOPE_RATE * 60 / 50) + 1)
+    slowest, fastest = MEASURABLE_BPM
+    lags = range(round(ENVELOPE_RATE * 60 / fastest), round(ENVELOPE_RATE * 60 / slowest) + 1)
     r = {lag: _autocorrelation(env, lag) / power for lag in lags}
     # A real arrangement spreads onsets everywhere, so the beat's autocorrelation is low in absolute terms; what
     # marks a steady beat is a peak far above chance (whose spread is about 1/sqrt(frames)).
@@ -314,6 +323,7 @@ class MusicClient:
     def compose(self, plan: Plan, seed: int, bpm: float) -> Song:
         if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed < 2**32:
             raise ValueError(f"seed must be an integer in 0..2**32-1, got {seed!r}")
+        _check_measurable(bpm)  # before any request: a song whose beat cannot be checked is never paid for
         payload = self.payload(plan, seed)
         digest = hashlib.sha256(json.dumps({"music": payload}, sort_keys=True).encode()).hexdigest()[:20]
         prefix = self.cache / f"music-{digest}"
