@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 from . import catalog_page, craft, fonts, lipsync, registry, releases, usage
+from .episode import SceneCheckError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .timeline import Timeline
@@ -233,11 +234,15 @@ def main(argv=None):
         if episode is not None:
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
-        if script.endswith(".py"):
-            sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
-            runpy.run_path(script, run_name="__main__")
-        else:
-            runpy.run_module(script, run_name="__main__")
+        try:
+            if script.endswith(".py"):
+                sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
+                runpy.run_path(script, run_name="__main__")
+            else:
+                runpy.run_module(script, run_name="__main__")
+        except SceneCheckError as exc:
+            print(exc, file=sys.stderr)
+            return 1
         return 0
 
 

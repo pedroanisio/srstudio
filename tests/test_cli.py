@@ -99,6 +99,13 @@ def test_build_without_a_root_hands_the_episode_only_its_own_path(isolated):
     assert json.loads((isolated / "episode_argv.py.json").read_text()) == [str(script)]
 
 
+def test_build_exits_1_with_the_findings_of_a_scene_that_fails_its_check(isolated, capsys):
+    script = isolated / "episode_unchecked.py"
+    script.write_text("from srstudio.episode import SceneCheckError\nraise SceneCheckError(['error: dup id'])\n")
+    assert main(["build", str(script)]) == 1
+    assert capsys.readouterr().err == "error: dup id\n"
+
+
 def test_build_propagates_a_failing_episode(isolated):
     (isolated / "episode_broken.py").write_text("raise RuntimeError('scene check failed')\n")
     with pytest.raises(RuntimeError, match="scene check failed"):

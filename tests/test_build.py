@@ -7,6 +7,8 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from srstudio import CAFE, CAFE_MOUTH, Episode, EpisodeSpec, camera, cast, graphics, locations, props
+from srstudio.episode import SceneCheckError
+from srstudio.errors import SrstudioError
 
 
 def office_episode(project, out):
@@ -133,8 +135,10 @@ def test_finish_refuses_a_document_with_findings(project, tmp_path):
     ep = Episode(EpisodeSpec(slug="t-bad", title="t", description="t", root=project, seed=3, background="#D5DFDF"))
     ep.comp.add_group(id="dup")
     ep.comp.add_group(id="dup")
-    with pytest.raises(SystemExit):
+    with pytest.raises(SceneCheckError, match="id 'dup' is already used") as refused:
         ep.finish(tmp_path / "t-bad.scene.xml")
+    assert isinstance(refused.value, SrstudioError) and isinstance(refused.value, ValueError)
+    assert [f.code for f in refused.value.findings] == ["xsd:id-unique"]
     assert not (tmp_path / "t-bad.scene.xml").exists()
 
 
