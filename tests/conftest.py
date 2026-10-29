@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -27,3 +28,13 @@ def packages() -> Path:
     if not env or not Path(env).is_dir():
         pytest.skip("set SRSTUDIO_PACKAGES to the folder of extracted .vpkg projects")
     return Path(env)
+
+
+@pytest.fixture(scope="session")
+def scene_render() -> Path:
+    """The scene-render binary (``$SRSTUDIO_ENGINE``, else ``scene-render`` on the PATH), or skip: a test that runs
+    the engine cannot pass without one."""
+    found = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    if not found or not Path(found).is_file():
+        pytest.skip("runs the scene-render engine: set SRSTUDIO_ENGINE to a scene-render binary")
+    return Path(found)

@@ -49,10 +49,10 @@ def test_a_slug_the_format_cannot_name_is_refused(slug):
 
 
 # -- packing with the real tools ---------------------------------------------------------------------------------------
-def test_pack_writes_a_verified_private_package_the_engine_validates(tmp_path):
+def test_pack_writes_a_verified_private_package_the_engine_validates(scene_render, tmp_path):
     folder = project(tmp_path)
     out = tmp_path / "vpkg"
-    path = package.pack(folder, out, post())
+    path = package.pack(folder, out, post(), engine=scene_render)
     assert path == out / "demo-1.0.0.vpkg.zip"
     assert path.stat().st_mode & 0o777 == 0o600 and out.stat().st_mode & 0o777 == 0o700
     m = manifest(path)
@@ -61,15 +61,15 @@ def test_pack_writes_a_verified_private_package_the_engine_validates(tmp_path):
     assert sorted(p.name for p in out.iterdir()) == ["demo-1.0.0.vpkg.zip"]  # no scratch left behind
 
 
-def test_an_unchanged_scene_keeps_its_package_and_a_changed_one_gets_the_next_patch(tmp_path):
+def test_an_unchanged_scene_keeps_its_package_and_a_changed_one_gets_the_next_patch(scene_render, tmp_path):
     folder = project(tmp_path)
     out = tmp_path / "vpkg"
-    first = package.pack(folder, out, post())
+    first = package.pack(folder, out, post(), engine=scene_render)
     stamp = first.stat().st_mtime_ns
-    assert package.pack(folder, out, post()) == first and first.stat().st_mtime_ns == stamp
+    assert package.pack(folder, out, post(), engine=scene_render) == first and first.stat().st_mtime_ns == stamp
     scene = folder / "demo.scene.xml"
     scene.write_bytes(scene.read_bytes().replace(b'id="x"', b'id="y"'))
-    second = package.pack(folder, out, post())
+    second = package.pack(folder, out, post(), engine=scene_render)
     assert second == out / "demo-1.0.1.vpkg.zip"
     assert package.scene_sha(second) == package.sha256(scene)
     assert first.is_file()  # an earlier version is kept, never overwritten
@@ -87,56 +87,56 @@ def audio_project(root):
     return folder
 
 
-def test_replacing_an_unpinned_asset_repackages_its_current_bytes(tmp_path):
+def test_replacing_an_unpinned_asset_repackages_its_current_bytes(scene_render, tmp_path):
     folder = audio_project(tmp_path)
     out = tmp_path / "vpkg"
-    first = package.pack(folder, out, post())
+    first = package.pack(folder, out, post(), engine=scene_render)
     xml = (folder / "demo.scene.xml").read_bytes()
     audio = folder / "assets" / "tone.wav"
     with wave.open(str(audio), "wb") as w:
         w.setparams((1, 2, 48000, 0, "NONE", "not compressed"))
         w.writeframes(b"\x02\x00" * 48000)
-    second = package.pack(folder, out, post())
+    second = package.pack(folder, out, post(), engine=scene_render)
     assert second != first and second.name == "demo-1.0.1.vpkg.zip"
     assert (folder / "demo.scene.xml").read_bytes() == xml
     with zipfile.ZipFile(second) as z:
         assert z.read("project/assets/tone.wav") == audio.read_bytes()
-    assert package.pack(folder, out, post()) == second
+    assert package.pack(folder, out, post(), engine=scene_render) == second
 
 
 @pytest.mark.parametrize("change", ["add", "edit", "delete"])
-def test_supporting_files_are_part_of_package_freshness(tmp_path, change):
+def test_supporting_files_are_part_of_package_freshness(scene_render, tmp_path, change):
     folder = project(tmp_path)
     notes = folder / "notes.txt"
     if change != "add":
         notes.write_text("original")
     out = tmp_path / "vpkg"
-    first = package.pack(folder, out, post())
+    first = package.pack(folder, out, post(), engine=scene_render)
     if change == "delete":
         notes.unlink()
     else:
         notes.write_text("updated")
-    second = package.pack(folder, out, post())
+    second = package.pack(folder, out, post(), engine=scene_render)
     assert second != first
     listed = {f["path"] for f in manifest(second)["files"]}
     assert ("notes.txt" in listed) == (change != "delete")
 
 
-def test_a_missing_referenced_asset_cannot_reuse_an_older_package(tmp_path):
+def test_a_missing_referenced_asset_cannot_reuse_an_older_package(scene_render, tmp_path):
     folder = audio_project(tmp_path)
     out = tmp_path / "vpkg"
-    first = package.pack(folder, out, post())
+    first = package.pack(folder, out, post(), engine=scene_render)
     (folder / "assets" / "tone.wav").unlink()
     with pytest.raises(package.PackageError, match="pack failed"):
-        package.pack(folder, out, post())
+        package.pack(folder, out, post(), engine=scene_render)
     assert list(out.iterdir()) == [first]
 
 
-def test_changed_package_metadata_gets_a_new_version(tmp_path):
+def test_changed_package_metadata_gets_a_new_version(scene_render, tmp_path):
     folder = project(tmp_path)
     out = tmp_path / "vpkg"
-    first = package.pack(folder, out, post())
-    second = package.pack(folder, out, post("Revised title"))
+    first = package.pack(folder, out, post(), engine=scene_render)
+    second = package.pack(folder, out, post("Revised title"), engine=scene_render)
     assert second != first
     assert manifest(second)["package"]["title"] == "Revised title"
 
@@ -173,11 +173,12 @@ class Runner:
         ((None, None, None, 1), "valid"),
     ],
 )
-def test_a_failing_pack_verify_or_engine_check_is_a_typed_error_and_leaves_no_package(tmp_path, codes, match):
+def test_a_failing_pack_verify_or_engine_check_is_a_typed_error_and_leaves_no_package(request, tmp_path, codes, match):
+    engine = request.getfixturevalue("scene_render") if None in codes else None  # None runs the real command
     folder = project(tmp_path)
     out = tmp_path / "vpkg"
     with pytest.raises(package.PackageError, match=match):
-        package.pack(folder, out, post(), run=Runner(*codes))
+        package.pack(folder, out, post(), engine=engine, run=Runner(*codes))
     assert not out.exists() or list(out.iterdir()) == []  # no package and no scratch
 
 
