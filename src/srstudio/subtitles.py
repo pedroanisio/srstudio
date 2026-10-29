@@ -53,15 +53,17 @@ def _page_text(chunk: Sequence[dict]) -> str:
 
 def _merge_short(chunks: list[list[dict]], duration: float, max_chars: int, min_seconds: float) -> list[list[dict]]:
     """Joins pages shorter than ``min_seconds`` with a neighbour while the joined text fits, else moves the tail of
-    the previous page onto the short one; at most one step per page, so the loop is bounded by the page count."""
+    the previous page onto the short one; a page nothing fits beside stays and the search goes on past it. Each step
+    joins two pages, fixes one or sets one aside, so the loop is bounded by three steps a page."""
     pages = [list(c) for c in chunks]
+    stuck: set[int] = set()  # ids of the first word of short pages nothing fits beside
 
     def span(i: int, start: float | None = None) -> float:
         begin = 0.0 if i == 0 else (pages[i][0]["start"] if start is None else start)
         return (pages[i + 1][0]["start"] if i + 1 < len(pages) else duration) - begin
 
-    for _ in range(2 * len(pages)):
-        i = next((i for i in range(len(pages)) if span(i) < min_seconds), None)
+    for _ in range(3 * len(pages)):
+        i = next((i for i in range(len(pages)) if span(i) < min_seconds and id(pages[i][0]) not in stuck), None)
         if i is None:
             break
         if i + 1 < len(pages) and len(_page_text(pages[i] + pages[i + 1])) <= max_chars:
@@ -82,7 +84,7 @@ def _merge_short(chunks: list[list[dict]], duration: float, max_chars: int, min_
                 pages[i - 1], pages[i], moved = head, tail + pages[i], True
                 break
         if not moved:
-            break  # nothing fits beside it; the renderer's legibility check reports what is left
+            stuck.add(id(pages[i][0]))  # nothing fits beside it; the renderer's legibility check reports it
     return pages
 
 
