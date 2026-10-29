@@ -24,9 +24,9 @@ import re
 import zlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from numbers import Number
 from typing import Any
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -146,7 +146,7 @@ class Look:
         unknown = [a for a in self.accents if a not in ACCENTS]
         if unknown:
             raise CollageError(f"{self.name}: accent {unknown} is not one of {ACCENTS}")
-        if not (isinstance(self.blink, Number) and math.isfinite(self.blink) and self.blink >= 0):
+        if not (checks.number(self.blink) and self.blink >= 0):
             raise CollageError(f"{self.name}: blink {self.blink!r} must be a non-negative number of seconds")
 
 
@@ -352,7 +352,7 @@ def parse_poses(data: Any, where: str = "poses") -> list[Pose]:
             if item.get(key) not in allowed:
                 raise CollageError(f"{where}[{i}]: {key} {item.get(key)!r} is not one of {allowed}")
         start = item.get("start")
-        if not isinstance(start, int | float) or isinstance(start, bool) or not math.isfinite(start):
+        if not checks.number(start):
             raise CollageError(f"{where}[{i}]: start {start!r} is not a number")
         if i == 0 and start != 0:
             raise CollageError(f"{where}[0]: the first pose starts at {start}, not 0")
@@ -1169,7 +1169,7 @@ def figure(
     track (``(project second, viseme)``): the mouth becomes one layer per viseme with hold keys inside each run, the
     pose's own mouth showing while closed. The eyes shut for :data:`srstudio.toon_cast.BLINK_HOLD` at the look's
     pace. ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast types on no keyboard."""
-    if not (isinstance(enter, int | float) and math.isfinite(enter) and 0 <= enter < duration):
+    if not (checks.number(enter) and 0 <= enter < duration):
         raise CollageError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     groups = []
     for pose, start, end in runs(poses, duration - enter):

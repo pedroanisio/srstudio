@@ -12,11 +12,10 @@ framing inside a paper border.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Collection, Mapping
 from typing import TYPE_CHECKING
 
-from . import collage, collage_sets
+from . import checks, collage, collage_sets
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, draw_shapes, figure_shapes
 from .errors import SrstudioError
@@ -47,9 +46,9 @@ class PhotoError(SrstudioError, ValueError):
 
 
 def _check_count(start: float, seconds: int, tick: float) -> None:
-    if not (isinstance(start, int | float) and math.isfinite(start) and start >= 0):
+    if not (checks.number(start) and start >= 0):
         raise PhotoError(f"a countdown starts at a project second, got start={start!r}")
-    if not (isinstance(tick, int | float) and math.isfinite(tick) and tick > 0):
+    if not (checks.number(tick) and tick > 0):
         raise PhotoError(f"a countdown ticks forward, got tick={tick!r}")
     if not (isinstance(seconds, int) and not isinstance(seconds, bool) and 1 <= seconds <= MAX_SECONDS):
         raise PhotoError(f"the self-timer counts whole seconds from 1 to {MAX_SECONDS}, got seconds={seconds!r}")
@@ -139,7 +138,7 @@ def sofa(cv: Canvas, parent):
 def flash(cv: Canvas, parent, at: float, *, hold: float = 1.2, fade: float = 0.5):
     """White over the whole frame from ``at`` (project seconds), held ``hold`` seconds, fading over ``fade``."""
     numbers = (at, hold, fade)
-    if not (all(math.isfinite(v) for v in numbers) and at >= 0 and hold >= 0 and fade > 0):
+    if not (all(checks.number(v) for v in numbers) and at >= 0 and hold >= 0 and fade > 0):
         raise PhotoError(f"a flash fires at a project second, holds and fades, got at={at}, hold={hold}, fade={fade}")
     g = cv.group(parent, cv.uid("flash"))
     cv.gate(g, [(at, at + hold + fade)])
@@ -162,12 +161,12 @@ def _check_print(places, poses, width, blur, room, crop) -> None:
     stray = sorted(set(blur) - set(places))
     if stray:
         raise PhotoError(f"blur names {stray}, who are not in the photo")
-    if not (math.isfinite(width) and width > 0):
+    if not (checks.number(width) and width > 0):
         raise PhotoError(f"a print has a positive width, got {width!r}")
     if room not in collage_sets.SETS:
         raise PhotoError(f"room {room!r} is not one of {sorted(collage_sets.SETS)}")
     x, y, w, h = crop
-    if not (all(math.isfinite(v) for v in crop) and x >= 0 and y >= 0 and w > 0 and h > 0
+    if not (all(checks.number(v) for v in crop) and x >= 0 and y >= 0 and w > 0 and h > 0
             and x + w <= 1080 and y + h <= 1920):  # fmt: skip
         raise PhotoError(f"the crop {crop} is not inside the 1080 × 1920 frame")
 

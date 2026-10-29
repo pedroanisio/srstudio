@@ -12,12 +12,11 @@ draws the speaker alone, as :func:`srstudio.collage_sketch.solo` does, so one st
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import collage, sketch
+from . import checks, collage, sketch
 from .canvas import Canvas
 from .collage_sketch import solo
 from .errors import SrstudioError
@@ -62,7 +61,7 @@ class Lineup:
         for name, p in self.places.items():
             if name not in collage.LOOKS:
                 raise GroupError(f"{name!r} is not in the Collage cast")
-            if not all(math.isfinite(v) for v in (p.x, p.base, p.scale)):
+            if not all(checks.number(v) for v in (p.x, p.base, p.scale)):
                 raise GroupError(f"{name}: a place is finite, got {p}")
             if not 0 < p.scale <= 1:
                 raise GroupError(f"{name}: the scale is in (0, 1], got {p.scale}")
@@ -75,7 +74,7 @@ class Lineup:
         if not self.spans:
             raise GroupError("a lineup needs at least one span to stage")
         for a, b in self.spans:
-            if not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b):
+            if not (checks.number(a) and checks.number(b) and 0 <= a < b):
                 raise GroupError(f"a span runs forward from 0 or later, got {(a, b)}")
 
     def staged(self, app: sketch.Appearance) -> bool:
