@@ -111,10 +111,11 @@ def _move(cv, group, m: Move) -> None:
         camera.push_in(cv, group, scale=[(0, 1.0), (m.at, 1.0), (until, m.scale)])
 
 
-def rig(cv, parent, move: Move | None, shaking: Spans):
+def rig(cv, parent, move: Move | None, shaking: Spans, *, name: str | None = None):
     """The camera of a shot in ``parent``: a frame group that makes ``move`` holding a group shaken in
-    ``shaking``; returns the inner group, which the set, cast and props are drawn into."""
-    frame = cv.group(parent, cv.uid("g"))
+    ``shaking``; returns the inner group, which the set, cast and props are drawn into. ``name`` is the frame's id
+    (``srstudio.craft`` counts the moves of a group named as the camera); without one it takes a serial id."""
+    frame = cv.group(parent, name if name is not None else cv.uid("g"))
     if move is not None:
         _move(cv, frame, move)
     shaken = cv.group(frame, cv.uid("g"))

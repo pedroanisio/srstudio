@@ -95,6 +95,23 @@ def test_a_still_rig_is_two_plain_groups():
     assert frame.get("id") != shaken.id
 
 
+def test_a_named_rig_frame_takes_its_name_and_no_serial_id():
+    cv = canvas()
+    shaken = staging.rig(cv, cv.comp, Move("push", 0.5, 1.2, 540, 900, until=1.5), (), name="gloss-01-angle")
+    root = ET.fromstring(cv.scene.to_bytes())
+    frame = next(n for n in root.iter("group") if any(c.get("id") == shaken.id for c in n))
+    assert frame.get("id") == "gloss-01-angle"
+    assert keys(frame, "scaleX")[-1] == (1.5, 1.2)
+    named, plain = canvas(), canvas()
+    staging.rig(named, named.comp, None, (), name="still")
+    staging.rig(plain, plain.comp, None, ())
+    fresh = canvas()
+    serials = [fresh.uid("g") for _ in range(3)]
+    assert (named.uid("g"), plain.uid("g")) == (serials[1], serials[2])  # the name took no serial: later ids stay put
+    with pytest.raises(TypeError):
+        staging.rig(named, named.comp, None, (), "positional")  # type: ignore[misc]
+
+
 def test_the_rig_moves_its_frame_and_shakes_its_inner_group():
     cv = canvas()
     shaken = staging.rig(cv, cv.comp, Move("push", 0.5, 1.2, 540, 900, until=1.5), ((0.2, 0.6),))
