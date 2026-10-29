@@ -23,6 +23,7 @@ import base64
 import binascii
 import hashlib
 import io
+import itertools
 import json
 import math
 import subprocess
@@ -438,32 +439,50 @@ def _spell(n: int) -> list[str]:
 TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text writes a spoken title abbreviated
 
 
+MAX_READINGS = 4096  # readings of one text compared at most: each digit string has up to three
+
+
+def _tokens(text: str) -> list[str]:
+    text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
+    cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
+    return [token for token in (t.strip("'") for t in cleaned.split()) if token]
+
+
+def _word(token: str) -> list[str]:
+    return _spell(int(token)) if token.isdecimal() else [TITLES.get(token, token)]
+
+
 def normalize_words(text: str) -> list[str]:
     """Lowercase words without punctuation; digits, a percent sign and abbreviated titles spelled out; curly
     apostrophes made straight."""
-    text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
-    cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
-    out: list[str] = []
-    for token in cleaned.split():
-        token = token.strip("'")
-        if token.isdigit():
-            out.extend(_spell(int(token)))
-        elif token in TITLES:
-            out.append(TITLES[token])
-        elif token:
-            out.append(token)
-    return out
+    return [word for token in _tokens(text) for word in _word(token)]
+
+
+def _readings(text: str) -> set[str]:
+    """Every way ``text`` may be read aloud, its words joined: a digit string read as its cardinal or digit by
+    digit, 0 as "zero" or as "oh" ("1028": "one thousand twenty eight", "one zero two eight", "one oh two eight").
+    More than :data:`MAX_READINGS` combinations raise :class:`TranscriptMismatch` before any is built."""
+    options: list[list[str]] = []
+    for token in _tokens(text):
+        alternatives = ["".join(_word(token))]
+        if token.isdecimal():
+            for zero in ("zero", "oh"):
+                alternatives.append("".join(zero if d == 0 else _ONES[d] for d in map(int, token)))
+        options.append(sorted(set(alternatives)))
+    if math.prod(len(o) for o in options) > MAX_READINGS:
+        raise TranscriptMismatch(f"{text!r} has too many numbers to compare (more than {MAX_READINGS} readings)")
+    return {"".join(choice) for choice in itertools.product(*options)}
 
 
 def check_transcript(transcript: Transcript, expected: str, accepted: Sequence[str] = ()) -> None:
-    """The heard words equal the scripted words, ignoring case, punctuation and number spelling. A compound
-    may be heard split or joined ("well-being" for "wellbeing"): the letters must still match in order.
-    ``accepted`` lists hearings the operator approved for this line (a homophone the recognizer cannot tell
-    apart), each compared the same way; anything else is still a mismatch."""
-    heard = normalize_words(transcript.text)
+    """The heard words equal the scripted words, ignoring case, punctuation and number spelling: a digit string
+    reads as its cardinal or digit by digit ("1028" is "one oh two eight" too). A compound may be heard split or
+    joined ("well-being" for "wellbeing"): the letters must still match in order. ``accepted`` lists hearings the
+    operator approved for this line (a homophone the recognizer cannot tell apart), each compared the same way;
+    anything else is still a mismatch."""
+    heard = _readings(transcript.text)
     for text in (expected, *accepted):
-        want = normalize_words(text)
-        if heard == want or "".join(heard) == "".join(want):
+        if heard & _readings(text):
             return
     raise TranscriptMismatch(f"heard {transcript.text!r}, expected {expected!r}")
 

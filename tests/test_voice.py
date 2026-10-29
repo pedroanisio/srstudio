@@ -414,6 +414,52 @@ def test_a_hearing_the_operator_accepted_passes_and_nothing_else_does():
             check_transcript(reel, "Real is also premium.", accepted=other)
 
 
+@pytest.mark.parametrize(
+    ("heard", "script"),
+    [
+        ("SR 1028?", "S-R... one-oh-two-eight?"),  # a code read digit by digit, 0 as "oh"
+        ("S-R, 1028?", "S-R... one-oh-two-eight?"),
+        ("SR one zero two eight?", "S-R... 1028?"),  # 0 as "zero", the digits on the script's side
+        ("S R 1028", "S R one thousand twenty eight"),  # the cardinal reading still matches
+        ("Room 1 0 4.", "Room 104."),
+        ("Code 007.", "Code oh oh seven."),  # leading zeros are read too
+    ],
+)
+def test_a_digit_string_matches_its_digit_by_digit_reading(heard, script):
+    check_transcript(parse_transcript(transcript(heard)), script)
+
+
+@pytest.mark.parametrize(
+    ("heard", "script"),
+    [
+        ("SR 1029?", "S-R... one-oh-two-eight?"),  # another digit
+        ("SAR 1028?", "S-R... one-oh-two-eight?"),  # the letters misheard
+        ("SR 10280?", "S-R... one-oh-two-eight?"),  # an extra digit
+        ("SR 102?", "S-R... one-oh-two-eight?"),  # a missing digit
+        ("SR 1028?", "S-R... one-two-eight?"),  # the script's digits lack the zero
+        ("SR 1028?", "S-R... one-oh-two-eight-oh?"),
+        ("SR 10 28?", "S-R... one-thousand-twenty-eight?"),  # two numbers are not one cardinal
+        ("SR one oh two eight?", "S-R... one thousand twenty eight?"),  # spelled digits are not the cardinal
+    ],
+)
+def test_a_wrong_digit_string_is_still_refused(heard, script):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), script)
+
+
+def test_a_superscript_digit_is_a_mismatch_not_a_crash():
+    """``str.isdigit`` holds for "²", which ``int`` cannot read: a heard superscript is a word that does not match."""
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript("Room 4²")), "Room four two")
+
+
+def test_a_transcript_with_too_many_numbers_to_compare_is_refused_not_explored():
+    """Each digit string has up to three readings, so their combinations are bounded before any is built."""
+    flood = " ".join(["10"] * 40)
+    with pytest.raises(TranscriptMismatch, match="too many numbers"):
+        check_transcript(parse_transcript(transcript(flood)), " ".join(["ten"] * 40))
+
+
 @pytest.mark.parametrize("heard", ["No. Just the chairs.", "Just the chair.", "No. Just the chair. Thank you.", ""])
 def test_transcript_that_differs_from_the_script_fails(heard):
     with pytest.raises(TranscriptMismatch):
