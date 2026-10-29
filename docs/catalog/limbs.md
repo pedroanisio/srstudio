@@ -4,7 +4,7 @@ generated-by: OpenAI Codex
 
 # Reusable arm and hand performance
 
-See the [library overview](../../README.md), [architecture decision](../decisions/0035-reusable-limb-performance.md),
+See the [library overview](../../README.md), [architecture decision](../decisions/0038-reusable-limb-performance.md),
 and [requirements-to-verification map](limbs-verification.json).
 
 Build a motion once, then choose its camera and style when compiling it:

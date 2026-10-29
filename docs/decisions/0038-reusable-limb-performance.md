@@ -2,7 +2,7 @@
 generated-by: OpenAI Codex
 ---
 
-# ADR 0035: Spatial limb performance with explicit rendering capabilities
+# ADR 0038: Spatial limb performance with explicit rendering capabilities
 
 - Status: accepted for the initial limb implementation
 - Back to the [library README](../../README.md)
