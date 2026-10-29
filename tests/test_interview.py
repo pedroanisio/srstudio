@@ -11,7 +11,9 @@ import pytest
 from fakes import ffmpeg_required
 from srstudio import interview as I
 from srstudio.generated import PLACEHOLDER, Resolved, ResolveError, sha256_of
+from srstudio.provider import parse_voice
 from srstudio.song import Singer
+from srstudio.voice import parse_transcript
 from test_song import engine, fake_env, tone  # noqa: F401  (fake_env is a fixture)
 
 WILL = Singer("bIHbv24MWmeRgasZH58o", "Will", {"stability": 0.4, "similarity_boost": 0.75, "style": 0.2})
@@ -100,6 +102,35 @@ def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
 def test_a_line_seed_is_a_whole_number_the_provider_accepts(seed):
     with pytest.raises(I.InterviewError, match="line 1: seed"):
         make(lines=[I.Spoken("manager", "Why here?", "Why here?", seed=seed)], voices={"manager": ERIC})
+
+
+def test_heard_reaches_only_its_own_line_and_leaves_the_other_requests_unchanged():
+    lines = [I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "S-R.", "S-R.", 0.95, heard=("SAR",))]
+    before, after = I.declarations(make())[0], I.declarations(make(lines=lines))[0]
+    assert after[0] == before[0] and parse_voice(after[0].voice).heard == ()
+    assert parse_voice(after[1].voice).heard == ("SAR",) and after[1].voice.startswith(before[1].voice + "&")
+
+
+@pytest.mark.parametrize("heard", [("",), (" ",), (1028,), "SAR", ["SAR"]])
+def test_a_hearing_is_a_tuple_of_non_empty_strings(heard):
+    with pytest.raises(I.InterviewError, match="line 1: heard"):
+        make(lines=[I.Spoken("manager", "S-R.", "S-R.", heard=heard)], voices={"manager": ERIC})
+
+
+def transcript_of(text: str):
+    return parse_transcript({"language_code": "en", "language_probability": 1.0, "text": text, "words": []})
+
+
+def test_the_hearing_check_accepts_a_line_s_own_approval_and_nothing_else(tmp_path):
+    lines = [I.Spoken("manager", "S-R.", "S-R.", heard=("SAR",)), I.Spoken("candidate", "S-R.", "S-R.")]
+    iv = make(lines=lines)
+    pins = {g.id: Resolved(g, tmp_path / f"{g.id}.wav", "0" * 64) for g in I.declarations(iv)[0]}
+    said = {"line-1": "SAR", "line-2": "SAR"}
+    report, failures = I.hear(iv, pins, lambda path: transcript_of(said[path.stem]))
+    assert len(failures) == 1 and "S-R." in failures[0]  # the approval is line 1's alone
+    assert report["lines"][0]["accepted"] == ["SAR"] and "accepted" not in report["lines"][1]
+    said["line-1"] = "SAR 1028"
+    assert len(I.hear(iv, pins, lambda path: transcript_of(said[path.stem]))[1]) == 2  # an unlisted hearing
 
 
 # -- placement --------------------------------------------------------------------------------------------------

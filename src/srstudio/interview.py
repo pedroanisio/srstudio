@@ -69,6 +69,7 @@ class Spoken:
     caption: str
     speed: float = 1.0
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
+    heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
 
 
 @dataclass(frozen=True)
@@ -133,6 +134,8 @@ class Interview:
                 isinstance(line.seed, bool) or not isinstance(line.seed, int) or not 0 <= line.seed < 2**32
             ):
                 raise InterviewError(f"line {i}: seed must be an integer in 0..2**32-1, got {line.seed!r}")
+            if not isinstance(line.heard, tuple) or not all(isinstance(h, str) and h.strip() for h in line.heard):
+                raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -161,7 +164,9 @@ def declarations(iv: Interview) -> tuple[list[Generated], list[Generated]]:
             provider=NAME,
             model=MODEL,
             prompt=line.text,
-            voice=format_voice(iv.voices[line.role].id, iv.voices[line.role].voice_settings(line.speed)),
+            voice=format_voice(
+                iv.voices[line.role].id, iv.voices[line.role].voice_settings(line.speed), heard=line.heard
+            ),
             language="en",
             seed=iv.seed if line.seed is None else line.seed,
             cache=f"assets/generated/line-{i + 1}.wav",
@@ -201,9 +206,10 @@ def hear(
                 "heard": transcript.text,
                 "language_code": transcript.language_code,
             }
+            | ({"accepted": list(line.heard)} if line.heard else {})
         )
         try:
-            check_transcript(transcript, line.text)
+            check_transcript(transcript, line.text, accepted=line.heard)
         except TranscriptMismatch as exc:
             failures.append(str(exc))
     return {"recognizer": f"ElevenLabs {STT_MODEL}", "lines": heard, "passed": not failures}, failures

@@ -84,19 +84,31 @@ class ProviderError(SrstudioError, ValueError):
 class VoiceSpec:
     voice_id: str
     settings: VoiceSettings
+    heard: tuple[str, ...] = ()  # hearings the operator approved for the line, besides its own words
 
 
 _SETTING_FIELDS = tuple(f.name for f in fields(VoiceSettings))
 
 
-def format_voice(voice_id: str, settings: VoiceSettings) -> str:
-    """The ``voice`` attribute for ``voice_id`` spoken with ``settings``."""
+def _hearing(text: object) -> str:
+    if not isinstance(text, str) or not text.strip():
+        raise ProviderError(f"voice: a hearing is a non-empty string, got {text!r}")
+    return text
+
+
+def format_voice(voice_id: str, settings: VoiceSettings, heard: tuple[str, ...] = ()) -> str:
+    """The ``voice`` attribute for ``voice_id`` spoken with ``settings``. ``heard`` adds the hearings the operator
+    approved for the line after the settings, so a line without one keeps the attribute, and its request key, as
+    it was; an approval changes the key, and the engine has the line heard again (the take comes from the cache)."""
     if not _VOICE_ID.match(voice_id):
         raise ProviderError(f"voice id {voice_id!r} is not 8 to 40 letters and digits")
+    if not isinstance(heard, tuple):
+        raise ProviderError(f"voice: the hearings are a tuple of strings, got {heard!r}")
     query = []
     for name in _SETTING_FIELDS:
         value = getattr(settings, name)
         query.append((name, ("true" if value else "false") if isinstance(value, bool) else repr(float(value))))
+    query += [("heard", _hearing(text)) for text in heard]
     return f"{voice_id}?{urllib.parse.urlencode(query)}"
 
 
@@ -106,7 +118,11 @@ def parse_voice(text: str) -> VoiceSpec:
     if not _VOICE_ID.match(voice_id):
         raise ProviderError(f"voice id {voice_id!r} is not 8 to 40 letters and digits")
     values: dict[str, Any] = {}
+    heard: list[str] = []
     for name, raw in urllib.parse.parse_qsl(query, keep_blank_values=True):
+        if name == "heard":
+            heard.append(_hearing(raw))
+            continue
         if name not in _SETTING_FIELDS:
             raise ProviderError(f"voice: unknown setting {name!r}")
         if name in values:
@@ -127,7 +143,7 @@ def parse_voice(text: str) -> VoiceSpec:
         if required not in values:
             raise ProviderError(f"voice: setting {required!r} is required")
     try:
-        return VoiceSpec(voice_id, VoiceSettings(**values))
+        return VoiceSpec(voice_id, VoiceSettings(**values), tuple(heard))
     except ValueError as exc:
         raise ProviderError(f"voice: {exc}") from None
 
@@ -360,7 +376,7 @@ def serve(req: Request, env: Mapping[str, str], make_client: MakeClient) -> list
                                  spec.settings)  # fmt: skip
         heard = client.transcribe(line.wav, language=_language(req.language))
         try:
-            check_transcript(heard, req.prompt or "")
+            check_transcript(heard, req.prompt or "", accepted=spec.heard)
         except TranscriptMismatch as exc:  # the take stays cached, so the same request fails the same way
             raise TranscriptMismatch(f"{exc}; change @seed to ask for another take") from None
         output.write_bytes(_wav_at(line.wav.read_bytes(), req.sample_rate))

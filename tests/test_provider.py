@@ -86,6 +86,30 @@ def test_malformed_voice_attributes_are_refused(voice, match):
         parse_voice(voice)
 
 
+def test_a_voice_without_hearings_is_written_exactly_as_before():
+    """Every pinned line's request key is its voice attribute: no hearing, no change to it."""
+    assert VOICE == format_voice("bIHbv24MWmeRgasZH58o", SETTINGS, heard=())
+    assert "heard" not in VOICE and parse_voice(VOICE).heard == ()
+
+
+def test_operator_hearings_round_trip_through_the_voice_attribute():
+    voice = format_voice("bIHbv24MWmeRgasZH58o", SETTINGS, heard=("SAR 1028", "S.R. & 1028?"))
+    spec = parse_voice(voice)
+    assert spec.heard == ("SAR 1028", "S.R. & 1028?") and spec.settings == SETTINGS
+    assert voice.startswith(VOICE + "&")  # the settings first, as before; the hearings after them
+
+
+@pytest.mark.parametrize("heard", [("",), ("  ",), (1028,), "SAR 1028"])
+def test_a_hearing_is_a_non_empty_string_in_a_tuple(heard):
+    with pytest.raises(ProviderError, match="hearing"):
+        format_voice("bIHbv24MWmeRgasZH58o", SETTINGS, heard=heard)
+
+
+def test_an_empty_hearing_in_a_voice_attribute_is_refused():
+    with pytest.raises(ProviderError, match="hearing"):
+        parse_voice(VOICE + "&heard=")
+
+
 # -- the request --------------------------------------------------------------------------------------
 def test_request_parses_into_typed_fields(tmp_path):
     req = parse_request(request(tmp_path))
@@ -159,6 +183,26 @@ def test_speech_the_recogniser_does_not_hear_as_scripted_fails(tmp_path, tone):
     answer, code = run(tmp_path, request(tmp_path), fake)
     assert code == 1 and "heard" in answer["error"] and "change @seed" in answer["error"]
     assert not (tmp_path / "work" / "result.wav").exists()
+
+
+@ffmpeg_required
+def test_a_hearing_the_operator_approved_passes_and_another_still_fails(tmp_path, tone):
+    approved = format_voice("bIHbv24MWmeRgasZH58o", SETTINGS, heard=("In your chairs.",))
+    answer, code = run(tmp_path, request(tmp_path, voice=approved), FakeElevenLabs(tone, heard="In your chairs."))
+    assert code == 0 and (tmp_path / "work" / "result.wav").exists(), answer
+    other = tmp_path / "other"  # its own cache: a fresh take, heard otherwise
+    other.mkdir()
+    answer, code = run(other, request(other, voice=approved), FakeElevenLabs(tone, heard="In your hair."))
+    assert code == 1 and "In your hair" in answer["error"] and not (other / "work" / "result.wav").exists()
+
+
+@ffmpeg_required
+def test_a_hearing_does_not_change_the_take_so_approving_one_costs_nothing(tmp_path, tone):
+    fake = FakeElevenLabs(tone, heard="In your chairs.")
+    assert run(tmp_path, request(tmp_path), fake)[1] == 1  # paid, cached, refused
+    approved = format_voice("bIHbv24MWmeRgasZH58o", SETTINGS, heard=("In your chairs.",))
+    assert run(tmp_path, request(tmp_path, voice=approved), fake)[1] == 0
+    assert [kind for kind, _ in fake.calls] == ["tts", "stt"]  # the same take and transcript, from the cache
 
 
 @ffmpeg_required
