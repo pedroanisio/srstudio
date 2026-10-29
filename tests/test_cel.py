@@ -162,7 +162,7 @@ def test_loaders_parse_the_package_files_and_refuse_bad_ones(tmp_path):
     refused(cel.load_captions, [CAPTIONS[0], {**CAPTIONS[1], "start": 0.5}], "overlap")
     refused(cel.load_runs, {"runs": ["a"]}, "expected an object")
     refused(cel.load_runs, {"runs": [{"name": 1, "start": 0.0, "end": 1.0}]}, "name must be a str")
-    refused(cel.load_runs, {"runs": [{"name": "a", "start": True, "end": 1.0}]}, "start must be a number")
+    refused(cel.load_runs, {"runs": [{"name": "a", "start": True, "end": 1.0}]}, "start must be a finite number")
     (tmp_path / "bad.json").write_text("{")
     with pytest.raises(cel.CelDataError, match="not JSON"):
         cel.load_camera(tmp_path / "bad.json")
@@ -289,6 +289,39 @@ def test_features_are_the_tracked_point_per_sample_and_per_pose(tmp_path):
         cel.parse_features(FEATURES, step=0)
     with pytest.raises(cel.CelDataError, match="feature"):
         cel.parse_features(dict(FEATURES, poses=[{"name": "a", "time": 0, "feature": "no", "raised": True}]))
+
+
+NAN, INF = float("nan"), float("inf")
+BOXED = {"x": 1, "y": 1, "w": 1, "h": 1, "glyphs": "M 1 1"}
+
+
+@pytest.mark.parametrize(
+    "parse, data, match",
+    [
+        (cel.parse_camera, [{**CAM[0], "time": NAN}], r"\[0\]: time must be a finite number"),
+        (cel.parse_camera, [{**CAM[0], "tx": INF}], r"\[0\]: tx must be a finite number"),
+        (cel.parse_camera, [{**CAM[0], "scale": INF}], "scale must be a finite number"),
+        (cel.parse_camera, [{**CAM[0], "time": -0.5}, CAM[1]], r"\[0\]: time must be at or after 0"),
+        (cel.parse_runs, {"runs": [{"name": "a", "start": 0.0, "end": INF}]}, "end must be a finite number"),
+        (cel.parse_runs, {"runs": [{"name": "a", "start": 0.0, "end": NAN}]}, "end must be a finite number"),
+        (cel.parse_captions, [{**CAPTIONS[0], "start": -0.5}], r"\[0\]: start must be at or after 0"),
+        (cel.parse_captions, [{**CAPTIONS[0], "end": NAN}], "end must be a finite number"),
+        (cel.parse_captions, [{**CAPTIONS[0], "boxes": [{**BOXED, "x": NAN}]}], "x must be a finite number"),
+        (cel.parse_features, dict(FEATURES, poses=[{**FEATURES["poses"][0], "time": NAN}]), "time must be a finite"),
+        (cel.parse_features, dict(FEATURES, poses=[{**FEATURES["poses"][0], "time": -1}]), "time must be at or after"),
+        (cel.parse_features, dict(FEATURES, features=[[NAN, 1.0, 0.0]]), "three numbers"),
+    ],
+)
+def test_the_parsers_refuse_nan_infinity_and_times_before_0(parse, data, match):
+    """Python's json reads NaN and Infinity: a package carrying one is malformed, as is a time before the start."""
+    with pytest.raises(cel.CelDataError, match=match):
+        parse(json.loads(json.dumps(data)))
+
+
+@pytest.mark.parametrize("step", [NAN, INF, True])
+def test_a_feature_step_is_a_finite_positive_number(step):
+    with pytest.raises(cel.CelDataError, match="step"):
+        cel.parse_features(FEATURES, step=step)
 
 
 # an ink-like fill: a square with a hole, and a filled island inside the hole (nesting depths 0, 1, 2)

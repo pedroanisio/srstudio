@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -179,10 +180,16 @@ def _record(item: Any, where: str, required: Mapping[str, Any], optional: Sequen
         raise CelDataError(f"{where}: unknown fields {unknown}")
     for key, kind in required.items():
         value = item[key]
+        if kind is Number and not checks.number(value):  # json reads NaN and Infinity
+            raise CelDataError(f"{where}: {key} must be a finite number, got {value!r}")
         if isinstance(value, bool) or not isinstance(value, kind):
-            wanted = "a number" if kind is Number else f"a {kind.__name__}"
-            raise CelDataError(f"{where}: {key} must be {wanted}, got {value!r}")
+            raise CelDataError(f"{where}: {key} must be a {kind.__name__}, got {value!r}")
     return item
+
+
+def _from_zero(t: float, where: str, key: str) -> None:
+    if t < 0:
+        raise CelDataError(f"{where}: {key} must be at or after 0, got {t}")
 
 
 def _items(data: Any, where: str) -> list:
@@ -214,6 +221,7 @@ def parse_camera(items: Any, where: str = "camera") -> list[CameraKey]:
     for i, item in enumerate(_items(items, where)):
         q = _record(item, f"{where}[{i}]", dict(time=Number, scale=Number, tx=Number, ty=Number), optional=("bbox",))
         key = CameraKey(float(q["time"]), float(q["scale"]), float(q["tx"]), float(q["ty"]))
+        _from_zero(key.time, f"{where}[{i}]", "time")
         if key.scale <= 0:
             raise CelDataError(f"{where}[{i}]: scale must be positive, got {key.scale}")
         if out and key.time <= out[-1].time:
@@ -239,9 +247,7 @@ def parse_runs(data: Any, where: str = "poses") -> list[Run]:
 
 
 def _point(value: Any, where: str) -> tuple[float, float]:
-    if not (isinstance(value, list) and len(value) == 3) or any(
-        isinstance(v, bool) or not isinstance(v, Number) for v in value
-    ):
+    if not (isinstance(value, list) and len(value) == 3) or not all(checks.number(v) for v in value):
         raise CelDataError(f"{where}: a feature is three numbers [x, y, angle], got {value!r}")
     return float(value[0]), float(value[1])
 
@@ -251,13 +257,13 @@ def parse_features(
 ) -> tuple[dict[str, tuple[float, float]], list[Feature], frozenset[str]]:
     """The tracked point of a pose timeline: its place in each pose, its track sampled every ``step`` s, and the
     poses in which the hand is raised off the keyboard."""
-    if isinstance(step, bool) or not isinstance(step, Number) or step <= 0:
-        raise CelDataError(f"{where}: step must be a positive number of seconds, got {step!r}")
+    checks.positive(step, CelDataError, f"{where}: step must be a positive number of seconds, got {step!r}")
     top = _record(data, where, dict(poses=list, features=list), optional=("runs",))
     base: dict[str, tuple[float, float]] = {}
     raised = set()
     for i, item in enumerate(_items(top["poses"], f"{where}.poses")):
         q = _record(item, f"{where}.poses[{i}]", dict(name=str, time=Number, feature=list), optional=("raised",))
+        _from_zero(q["time"], f"{where}.poses[{i}]", "time")
         if not isinstance(q.get("raised", False), bool):
             raise CelDataError(f"{where}.poses[{i}]: raised must be true or false, got {q['raised']!r}")
         base[q["name"]] = _point(q["feature"], f"{where}.poses[{i}].feature")
@@ -291,6 +297,7 @@ def parse_captions(items: Any, where: str = "script") -> list[Caption]:
             optional=("caption", "phase", "sample_time"),
         )
         start, end = float(q["start"]), float(q["end"])
+        _from_zero(start, here, "start")
         _span(start, end, here)
         if out and start < out[-1].end - EPSILON:
             raise CelDataError(f"{here}: overlaps the caption before it ({out[-1].end} > {start})")
