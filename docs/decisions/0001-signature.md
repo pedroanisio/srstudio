@@ -2,6 +2,7 @@
 
 - Status: accepted and implemented, 2026-10-28 (`srstudio.signature`, `EpisodeSpec.signature`,
   `tests/test_signature.py`; first signed episode: 06 `five-years`)
+- Amended by [ADR 0039](0039-the-signature-cactus-may-perform.md): the cactus may perform, opt-in per episode
 - Deciders: the operator (pedroanisio), proposals drafted by Claude Fable 5.1 in Claude Code
 - Back to the [library README](../../README.md)
 

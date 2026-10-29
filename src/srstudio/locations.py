@@ -3,6 +3,10 @@
 Each builder draws the set in z-order and calls the slot callbacks at the right depth,
 so a character sits behind the desk and in front of the chair without the episode
 knowing the stacking. Slots receive the set's group and return nothing.
+
+The office, café and park sets take a ``cactus`` slot (ADR 0039): it replaces the set's own signature cactus at the
+same depth and must draw exactly one (:func:`srstudio.signature.home_cactus`), so the cactus can perform without a
+second one in the shot. Without it the set is drawn as before, byte for byte.
 """
 
 from __future__ import annotations
@@ -40,22 +44,34 @@ def _office_desk_front_symbol(cv: Canvas) -> str:
     return cv.symbol("office-desk-front", lambda s: _office_desk_front(cv, s, props.office_paints(cv)))
 
 
-def _office_desk_front(cv: Canvas, g, p):
+def _refuse_instanced_hand_off(instanced: bool, cactus: Slot):
+    if instanced and cactus is not None:
+        raise signature.SignatureError(
+            "an instanced office draws its desk once for every angle; hand its cactus "
+            "over on the inline drawing (instanced=False)"
+        )
+
+
+def _office_desk_front(cv: Canvas, g, p, cactus: Slot = None):
     """The interviewer's desk with its papers and laptop, in front of whoever sits behind it."""
     cv.path(g, "M0 1217 L1080 1137 L1080 1533 L0 1588Z", p["desk"], cv.ink, 4)
     props.woodgrain(cv, g, 1200, 355)
     cv.path(g, "M0 1590 L1080 1537 L1080 1920 L0 1920Z", p["desk_front"], cv.ink, 4)
     signature.code(cv, props.papers(cv, g, 467, 1197, 0.88, -3), 20, 10, 11, color="#5C625D")
-    signature.cactus(cv, g, 780, 1200, 0.55)  # between the papers and the laptop, the far corner of the desk
+    signature.home_cactus(cv, g, 780, 1200, 0.55, slot=cactus)  # between the papers and the laptop, far corner
     props.laptop(cv, g)
 
 
 @register("location", "office-wide", summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back")
-def office_wide(cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle", shots=None, instanced=False):
+def office_wide(
+    cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle", shots=None, instanced=False, cactus: Slot = None
+):
     """``instanced`` places the room and the desk as shared symbols (drawn once per document).
 
     The engine draws an instance into an offscreen at its symbol's frame size and scales that texture, so
-    a camera push-in on an instanced angle softens its edges: keep the inline drawing for angles that zoom."""
+    a camera push-in on an instanced angle softens its edges: keep the inline drawing for angles that zoom.
+    ``cactus`` draws the desk's cactus instead of the set (ADR 0039); it needs the inline drawing."""
+    _refuse_instanced_hand_off(instanced, cactus)
     p = props.office_paints(cv)
     g = cv.group(parent, id)
     if shots:
@@ -69,7 +85,7 @@ def office_wide(cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle"
     if instanced:
         cv.instance(g, f"{id}-desk-front", _office_desk_front_symbol(cv))
     else:
-        _office_desk_front(cv, g, p)
+        _office_desk_front(cv, g, p, cactus)
     props.candidate_back(cv, g)
     return g
 
@@ -88,10 +104,13 @@ def office_desk(
     id="desk-office-angle",
     shots=None,
     instanced=False,
+    cactus: Slot = None,
 ):
     """``instanced`` places the room and the desk as shared symbols; inline, the plant takes an id of its own.
 
-    As for :func:`office_wide`, keep the inline drawing for an angle the camera zooms into."""
+    As for :func:`office_wide`, keep the inline drawing for an angle the camera zooms into. ``cactus`` draws the
+    desk's cactus instead of the set, after ``behind_desk`` and before the desk's front (ADR 0039)."""
+    _refuse_instanced_hand_off(instanced, cactus)
     p = props.office_paints(cv)
     g = cv.group(parent, id)
     if shots:
@@ -106,7 +125,7 @@ def office_desk(
     if instanced:
         cv.instance(g, f"{id}-desk-front", _office_desk_front_symbol(cv))
     else:
-        _office_desk_front(cv, g, p)
+        _office_desk_front(cv, g, p, cactus)
     return g
 
 
@@ -115,7 +134,9 @@ def office_desk(
     "office-reverse",
     summary="Office, reverse angle on the candidate: warm wall, gray chair, glass of water",
 )
-def office_reverse(cv: Canvas, parent, in_chair: Slot = None, id="candidate-reverse-angle", shots=None):
+def office_reverse(
+    cv: Canvas, parent, in_chair: Slot = None, id="candidate-reverse-angle", shots=None, cactus: Slot = None
+):
     p = props.office_paints(cv)
     ink = cv.ink
     g = cv.group(parent, id)
@@ -133,7 +154,7 @@ def office_reverse(cv: Canvas, parent, in_chair: Slot = None, id="candidate-reve
     cv.rect(g, 0, 1833, 1080, 20, "#B09171", ink, 3)
     cv.rect(g, 0, 1856, 1080, 64, p["desk_front"])
     signature.code(cv, props.papers(cv, g, 649, 1482, 1.23, 6), 20, 10, 11, color="#5C625D")
-    signature.cactus(cv, g, 120, 1440, 0.9)
+    signature.home_cactus(cv, g, 120, 1440, 0.9, slot=cactus)
     props.water_glass(cv, g)
     return g
 
@@ -149,6 +170,7 @@ def cafe(
     on_counter: Slot = None,
     id="location-cafe",
     shots=None,
+    cactus: Slot = None,
 ):
     p = props.cafe_paints(cv)
     ink = cv.ink
@@ -172,7 +194,7 @@ def cafe(
         props.pendant_light(cv, g, xx)
     for i in range(3):
         props.bean_jar(cv, g, 85 + i * 93)
-    signature.cactus(cv, g, 430, 1012, 0.6)  # on the shelf, after the jars
+    signature.home_cactus(cv, g, 430, 1012, 0.6, slot=cactus)  # on the shelf, after the jars
     _call(behind_counter, g)
     props.espresso_machine(cv, g)
     cv.rect(g, -600, 1240, 2300, 78, p["wood"], ink, 5)
@@ -195,7 +217,15 @@ def park_seat_y(bottom: float, scale: float) -> float:
 
 
 @register("location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench")
-def park(cv: Canvas, parent, on_bench: Slot = None, beside_bench: Slot = None, id="location-park", shots=None):
+def park(
+    cv: Canvas,
+    parent,
+    on_bench: Slot = None,
+    beside_bench: Slot = None,
+    id="location-park",
+    shots=None,
+    cactus: Slot = None,
+):
     p = props.cafe_paints(cv)
     g = cv.group(parent, id)
     if shots:
@@ -216,7 +246,7 @@ def park(cv: Canvas, parent, on_bench: Slot = None, beside_bench: Slot = None, i
     props.park_sign(cv, g)
     signature.code(cv, g, 1030, 624, 9, color="#F0E7CF", opacity=0.85, align="end")
     props.bench(cv, g)
-    signature.cactus(cv, g, 905, 1300, 0.75)  # on the grass beside the bench
+    signature.home_cactus(cv, g, 905, 1300, 0.75, slot=cactus)  # on the grass beside the bench
     _call(on_bench, g)
     _call(beside_bench, g)
     return g

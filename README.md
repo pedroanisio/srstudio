@@ -1441,9 +1441,15 @@ Rules:
   The groups are ided `sig-code`, `sig-cactus` (then `-2`, `-3`… per location) so `tests/test_signature.py` asserts
   both are present in every location of a signed scene, absent when `signature=False`, and that the `MONO` variant
   adds no gradient paints.
-- The marks never carry story information, never sit inside a caption's box or on a face, and stay inside the
-  engine's safe area. They must not trigger the legibility check: the code is at least the `minTextSize` of the
-  episode's `<accessibility>` or is drawn as paths.
+- The marks never carry story information unless an episode opts in (next rule), never sit inside a caption's box or
+  on a face, and stay inside the engine's safe area. They must not trigger the legibility check: the code is at
+  least the `minTextSize` of the episode's `<accessibility>` or is drawn as paths.
+- The cactus may perform ([ADR 0039](docs/decisions/0039-the-signature-cactus-may-perform.md)). A
+  `signature.Act(end, turn=, bloom=, code=)` turns its flower, pops it into bloom on a beat and writes the code
+  inline on its pot (`signature.cactus(..., act=)`). `office_wide`, `office_desk`, `office_reverse`, `cafe` and
+  `park` take a `cactus=` slot that replaces their own cactus at the same depth, through
+  `signature.home_cactus`: on a signed canvas the slot must draw exactly one cactus, so a shot never loses or
+  doubles the mark. Without `act=` or `cactus=` every drawing keeps its bytes, which `tests/test_signature.py` pins.
 
 ## Instagram captions
 

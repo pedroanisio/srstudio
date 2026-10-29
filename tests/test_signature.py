@@ -1,11 +1,12 @@
 """The signature marks (ADR 0001): present in every signed location, absent when unsigned, typed on bad input."""
 
+import hashlib
 import xml.etree.ElementTree as ET
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import MONO, Canvas, Episode, EpisodeSpec, locations, signature
+from srstudio import CAFE, MONO, OFFICE, Canvas, Episode, EpisodeSpec, locations, signature
 from srstudio.canvas import Signature
 from test_build import office_episode
 
@@ -131,3 +132,151 @@ def test_every_toon_shot_is_signed_clear_of_the_character_and_the_captions(back)
 
 def test_an_unsigned_toon_shot_draws_no_marks():
     assert _ids(_toon_shot("room", signed=False), "sig-") == []
+
+
+# -- the cactus performs (ADR 0039): the defaults keep today's bytes, the act and the hand-off are checked ----------
+TODAY = {  # sha256 of each drawing at da62288, before ADR 0039: act=None and cactus=None must keep these bytes
+    "office_wide": "729f478cc99ad66244b9bc5c615e6ccce91006b2d9fe97e6f87bcb5ea1cdab9d",
+    "office_wide_instanced": "fa6142603e814c9b64d6560100255c13287c627b02e355df82cc4a4f7498effd",
+    "office_desk": "0e7b54a2af76bd393dc9576ac6e9f2df4ece6f95abe731d2edad758e1e1c0527",
+    "office_desk_instanced": "62f177ce1c205cae33b7cbb9624f8fe2b7898bfe9c30b6b0a3f72df356bc6652",
+    "office_reverse": "0059da92b94739b1ea5b13b5ebb27107c75c7b76876d9e054799677e752e98cb",
+    "cafe": "fc9747749853f8bf9113ddef01a85b9bfc18e2718aaaf7978a2a0c8e08ad71a8",
+    "park": "7890b394f5e9b918401b553951b358f13b9cb8c0c3cece620c5a209027d59592",
+    "cactus_mono": "bf04357ead35aed1bc0795e7cc6a385a46c19d1f045f7f18b9fd77add0b3cb16",
+    "cactus_office": "c871e0c046158ffc6c29d680d14bb6fb0157cc06695ded927e84aca6edb96881",
+}
+DRAW = {
+    "office_wide": (OFFICE, lambda cv: locations.office_wide(cv, cv.comp)),
+    "office_wide_instanced": (OFFICE, lambda cv: locations.office_wide(cv, cv.comp, instanced=True)),
+    "office_desk": (OFFICE, lambda cv: locations.office_desk(cv, cv.comp)),
+    "office_desk_instanced": (OFFICE, lambda cv: locations.office_desk(cv, cv.comp, instanced=True)),
+    "office_reverse": (OFFICE, lambda cv: locations.office_reverse(cv, cv.comp)),
+    "cafe": (CAFE, lambda cv: locations.cafe(cv, cv.comp)),
+    "park": (CAFE, lambda cv: locations.park(cv, cv.comp)),
+    "cactus_mono": (MONO, lambda cv: signature.cactus(cv, cv.comp, 500, 900, 0.8)),
+    "cactus_office": (OFFICE, lambda cv: signature.cactus(cv, cv.comp, 500, 900, 0.8)),
+}
+SPAN = 6.0
+
+
+def _canvas(palette=OFFICE, signed=True) -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=SPAN, background=palette.background)
+    return Canvas(scene, palette, signature=Signature() if signed else None)
+
+
+@pytest.mark.parametrize("name", sorted(TODAY))
+def test_without_an_act_or_a_hand_off_every_drawing_keeps_todays_bytes(name):
+    palette, draw = DRAW[name]
+    cv = _canvas(palette)
+    draw(cv)
+    assert hashlib.sha256(cv.scene.to_bytes()).hexdigest() == TODAY[name]
+
+
+def _group(root, id):
+    (g,) = [el for el in root.iter("group") if el.get("id") == id]
+    return g
+
+
+def _keys(group, prop):
+    (a,) = [a for a in group.iter("animate") if a.get("property") == prop]
+    return [(float(k.get("time")), k.get("value")) for k in a.iter("key")]
+
+
+def test_an_acting_cactus_turns_its_flower_blooms_on_its_beat_and_wears_the_code_on_its_pot():
+    cv = _canvas()
+    act = signature.Act(end=SPAN, turn=((1.0, 0), (1.6, -18)), bloom=4.5)
+    g = signature.cactus(cv, cv.comp, 500, 900, 0.8, act=act)
+    root = ET.fromstring(cv.scene.to_bytes())
+    assert g.id == "sig-cactus" and signature.missing(cv.scene.to_bytes()) == []
+    flower = _group(root, "flower-of-sig-cactus")
+    assert _keys(flower, "rotation") == [(1.0, "0"), (1.6, "-18")]
+    bud, bloom = _group(root, "bud-of-sig-cactus"), _group(root, "bloom-of-sig-cactus")
+    assert _keys(bud, "opacity") == [(0.0, "1"), (4.5, "0")]
+    assert _keys(bloom, "opacity") == [(0.0, "0"), (4.5, "1"), (SPAN, "0")]  # open to the end of the episode
+    assert [t for t, _ in _keys(bloom, "scaleX")][1] == pytest.approx(4.5)  # the pop starts on the beat
+    code = _group(_group(root, "sig-cactus"), "sig-code")  # on the pot, inside the cactus
+    assert len(code.findall("shape")) == 7 and code.find(".//instance") is None
+    assert root.find(".//instance") is None  # drawn inline: a camera can push in without softening it
+
+
+def test_an_act_can_leave_the_bloom_and_the_code_out():
+    cv = _canvas()
+    signature.cactus(cv, cv.comp, 500, 900, act=signature.Act(end=SPAN, code=False))
+    root = ET.fromstring(cv.scene.to_bytes())
+    assert _ids(root, "sig-code") == [] and not [g for g in root.iter("group") if g.get("id", "").startswith("bloom")]
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [
+        (dict(end=0), "end"),
+        (dict(end=float("nan")), "end"),
+        (dict(end=SPAN, turn=((1.0, 0), (0.5, 10))), "turn"),  # times go back
+        (dict(end=SPAN, turn=((1.0, 0), (1.0, 10))), "turn"),  # a time repeats
+        (dict(end=SPAN, turn=((-0.1, 0),)), "turn"),
+        (dict(end=SPAN, turn=((SPAN, 0),)), "turn"),  # at the end is past the span
+        (dict(end=SPAN, turn=((1.0, "left"),)), "turn"),
+        (dict(end=SPAN, turn=((1.0,),)), "turn"),
+        (dict(end=SPAN, bloom=-1.0), "bloom"),
+        (dict(end=SPAN, bloom=SPAN), "bloom"),
+        (dict(end=SPAN, bloom=True), "bloom"),
+    ],
+)
+def test_an_act_outside_the_episode_or_out_of_order_is_refused(kw, match):
+    with pytest.raises(signature.SignatureError, match=match):
+        signature.Act(**kw)
+
+
+def test_an_acting_cactus_on_an_unsigned_canvas_is_refused():
+    cv = _canvas(signed=False)
+    with pytest.raises(signature.SignatureError, match="signed"):
+        signature.cactus(cv, cv.comp, 0, 0, act=signature.Act(end=SPAN))
+    assert signature.cactus(cv, cv.comp, 0, 0) is None  # the resting mark stays silent, as before
+
+
+def test_a_home_cactus_is_the_locations_own_or_exactly_one_from_the_slot():
+    cv = _canvas()
+    assert signature.home_cactus(cv, cv.comp, 10, 20, 0.5).id == "sig-cactus"
+    signature.home_cactus(cv, cv.comp, 10, 20, 0.5, slot=lambda g: signature.cactus(cv, g, 300, 400))
+    assert _ids(ET.fromstring(cv.scene.to_bytes()), "sig-cactus") == ["sig-cactus", "sig-cactus-2"]
+    with pytest.raises(signature.SignatureError, match="drew 0"):
+        signature.home_cactus(cv, cv.comp, 10, 20, 0.5, slot=lambda g: None)
+
+    def two(g):
+        signature.cactus(cv, g, 1, 1)
+        signature.cactus(cv, g, 2, 2)
+
+    with pytest.raises(signature.SignatureError, match="drew 2"):
+        signature.home_cactus(cv, cv.comp, 10, 20, 0.5, slot=two)
+    plain = _canvas(signed=False)  # unsigned, the slot draws no mark and owes none
+    assert signature.home_cactus(plain, plain.comp, 10, 20, 0.5, slot=lambda g: None) is None
+
+
+HANDED = {  # each location that takes cactus=, with its palette
+    "office_wide": (OFFICE, locations.office_wide),
+    "office_desk": (OFFICE, locations.office_desk),
+    "office_reverse": (OFFICE, locations.office_reverse),
+    "cafe": (CAFE, locations.cafe),
+    "park": (CAFE, locations.park),
+}
+
+
+@pytest.mark.parametrize("name", sorted(HANDED))
+def test_a_location_hands_its_cactus_to_the_slot_and_still_shows_exactly_one(name):
+    palette, location = HANDED[name]
+    cv = _canvas(palette)
+    g = location(cv, cv.comp, cactus=lambda g: signature.cactus(cv, g, 333, 777, 0.4))
+    root = ET.fromstring(cv.scene.to_bytes())
+    (mark,) = [el for el in _group(root, g.id).iter("group") if el.get("id", "").startswith("sig-cactus")]
+    assert (float(mark.get("x")), float(mark.get("y"))) == (333, 777)
+    with pytest.raises(signature.SignatureError, match="drew 0"):
+        location(_canvas(palette), cv.comp, cactus=lambda g: None)
+
+
+@pytest.mark.parametrize("location", [locations.office_wide, locations.office_desk])
+def test_an_instanced_office_refuses_a_hand_off(location):
+    cv = _canvas()
+    with pytest.raises(signature.SignatureError, match="instanced"):
+        location(cv, cv.comp, instanced=True, cactus=lambda g: signature.cactus(cv, g, 0, 0))

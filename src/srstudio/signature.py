@@ -11,24 +11,73 @@ legibility check at the sizes it is used.
 
 :func:`missing` is the gate: ``Episode.finish`` refuses to write a signed episode whose document lacks either
 mark, so a location that forgets to call :func:`code` or :func:`cactus` cannot ship.
+
+The cactus may perform (ADR 0039): an :class:`Act` turns its flower, blooms it on a beat and writes the code on its
+pot, and a location calls :func:`home_cactus`, which draws the location's own cactus or hands it to the episode's
+slot, refusing a slot that draws none or two. Without an act or a slot the drawing is the same, byte for byte.
 """
 
 from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
+from . import checks
 from .canvas import MONO, Canvas, Signature
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["Signature", "SignatureError", "code", "cactus", "missing", "MARKS", "GLYPHS", "ADVANCE"]
+__all__ = [
+    "Signature",
+    "SignatureError",
+    "Act",
+    "code",
+    "cactus",
+    "home_cactus",
+    "missing",
+    "MARKS",
+    "GLYPHS",
+    "ADVANCE",
+]
 
 MARKS = ("sig-cactus", "sig-code")  # group-id prefixes of the two marks, as :func:`_next_id` numbers them
 
 
 class SignatureError(SrstudioError, ValueError):
-    """A signed episode whose document lacks a mark (ADR 0001)."""
+    """A signed episode whose document lacks a mark (ADR 0001), or a cactus that performs out of bounds (ADR 0039)."""
+
+
+@dataclass(frozen=True)
+class Act:
+    """What the signature cactus does in an episode where it performs (ADR 0039), on the episode's clock.
+
+    ``end`` is the episode's length; ``turn`` the flower's rotation, ``(seconds, degrees)`` keys whose times rise
+    strictly inside ``[0, end)``; ``bloom`` when the bud opens into a flower with a pop, inside the same span, or
+    ``None``; ``code`` writes the signature code on the pot, inline, so a camera may push in on it."""
+
+    end: float
+    turn: tuple[tuple[float, float], ...] = ()
+    bloom: float | None = None
+    code: bool = True
+
+    def __post_init__(self):
+        end = checks.positive(self.end, SignatureError, f"an act's end must be a number above 0, got {self.end!r}")
+        for key in self.turn:
+            if not (isinstance(key, tuple | list) and len(key) == 2 and checks.number(key[1])):
+                raise SignatureError(f"a turn key is a (seconds, degrees) pair of numbers, got {key!r}")
+        checks.rising(
+            (t for t, _ in self.turn),
+            SignatureError,
+            lambda i, t: f"turn key {i} at {t!r} s must come after the one before it and inside 0..{end} s",
+            end=end,
+        )
+        if self.bloom is not None:
+            checks.second(
+                self.bloom, SignatureError, f"the bloom at {self.bloom!r} s must be inside 0..{end} s", end=end
+            )
 
 
 def missing(document: bytes) -> list[str]:
@@ -161,9 +210,14 @@ _TOKEN = re.compile(r"[A-Za-z]|-?\d+(?:\.\d+)?")
     summary="The recurring potted cactus (ADR 0001), gradients or pen stroke by "
     "palette; nothing when the episode is unsigned",
 )
-def cactus(cv: Canvas, parent, x, y, scale: float = 1):
-    """A small potted cactus with one flower, its pot's base centred on ``x, y``; 152 units tall at scale 1."""
+def cactus(cv: Canvas, parent, x, y, scale: float = 1, *, act: Act | None = None):
+    """A small potted cactus with one flower, its pot's base centred on ``x, y``; 152 units tall at scale 1.
+
+    ``act`` makes it perform (:class:`Act`, ADR 0039); an acting cactus needs a signed canvas, since unsigned the
+    mark draws nothing and the performer would silently leave the story."""
     if cv.signature is None:
+        if act is not None:
+            raise SignatureError("an acting cactus is the signature mark: it needs a signed episode")
         return None
     g = cv.group(parent, _next_id(cv, "sig-cactus"), x=x, y=y, scaleX=scale, scaleY=scale)
     ink = cv.ink
@@ -199,10 +253,62 @@ def cactus(cv: Canvas, parent, x, y, scale: float = 1):
         cv.line(g, xx, -58, xx, -132, rib, 1.4, opacity=0.55 if not pen else 1)
     for xx, yy in ((-13, -70), (13, -78), (-12, -110), (12, -126), (-40, -108), (40, -122)):
         cv.path(g, f"M{xx - 3} {yy - 3} L{xx + 3} {yy + 3} M{xx + 3} {yy - 3} L{xx - 3} {yy + 3}", stroke=rib, sw=1.1)
-    cv.ellipse(g, -8, -152, 16, 14, flower, ink, 1.6)
-    cv.ellipse(g, -3, -148, 6, 5, "#F6D36B" if not pen else ink)
+    centre = "#F6D36B" if not pen else ink
+    if act is None:
+        cv.ellipse(g, -8, -152, 16, 14, flower, ink, 1.6)
+        cv.ellipse(g, -3, -148, 6, 5, centre)
+    else:
+        _flower(cv, g, act, flower, centre)
     # pot in front
     cv.path(g, "M-30 0 L-36 -42 L36 -42 L30 0 Z", pot, ink, sw)
     cv.ellipse(g, -32, -58, 64, 12, soil, ink, 1.6)
     cv.rect(g, -40, -54, 80, 12, rim, ink, sw, radius=3)
+    if act is not None and act.code:
+        code(cv, g, -text_width(cv.signature.code, POT_CODE) / 2, -30, POT_CODE, color=ink if pen else "#FBEBD8")
     return g
+
+
+POT_CODE = 10.0  # the code's glyph height on the pot's face, which is 60-72 units wide at scale 1
+POP = ((0.0, 0.2), (0.12, 1.3), (0.24, 1.0))  # the bloom's scale, seconds after the beat
+
+
+def _flower(cv: Canvas, g, act: Act, flower: str, centre: str):
+    """The flower on its own pivot, the top of the trunk: the bud until the bloom, then five petals that pop open."""
+    ink = cv.ink
+    head = cv.group(g, f"flower-of-{g.id}", anchorX=0, anchorY=-140, x=0, y=-140)  # in place, pivoting there
+    if act.turn:
+        cv.keys(head, "rotation", act.turn, hold=False, kind="sine-in-out")
+    bud = cv.group(head, f"bud-of-{g.id}")
+    cv.ellipse(bud, -8, -152, 16, 14, flower, ink, 1.6)
+    cv.ellipse(bud, -3, -148, 6, 5, centre)
+    if act.bloom is None:
+        return
+    cv.gate(bud, [(0, act.bloom)])
+    bloom = cv.group(head, f"bloom-of-{g.id}", x=0, y=-145)  # drawn round its own origin, the bud's centre
+    cv.gate(bloom, [(act.bloom, act.end)])
+    pop = [(0.0, POP[0][1])] + [(act.bloom + dt, s) for dt, s in POP]
+    for axis in ("scaleX", "scaleY"):
+        cv.keys(bloom, axis, pop, hold=False)
+    for k in range(5):
+        cv.ellipse(cv.group(bloom, f"petal-{k + 1}-of-{g.id}", rotation=k * 72), -7, -26, 14, 22, flower, ink, 1.4)
+    cv.ellipse(bloom, -6, -6, 12, 12, centre, ink, 1.2)
+
+
+SlotFn = Callable[[Any], None]
+
+
+def home_cactus(cv: Canvas, parent, x, y, scale: float = 1, *, slot: SlotFn | None = None):
+    """A location's own cactus (ADR 0001) at ``x, y`` and ``scale``, or, given the episode's ``slot``, the cactus
+    the slot draws in its place, at the same depth (ADR 0039).
+
+    The slot receives ``parent`` and may draw into any group of the location made before this call. On a signed
+    canvas it must draw exactly one :func:`cactus`, so a hand-off can neither drop the mark nor double it; anything
+    else raises :class:`SignatureError`. Without a slot this is :func:`cactus`, byte for byte."""
+    if slot is None:
+        return cactus(cv, parent, x, y, scale)
+    before = cv._sig_ids.get("sig-cactus", 0)
+    slot(parent)
+    drawn = cv._sig_ids.get("sig-cactus", 0) - before
+    if cv.signature is not None and drawn != 1:
+        raise SignatureError(f"a location's cactus slot drew {drawn} signature cactuses; it must draw exactly one")
+    return None
