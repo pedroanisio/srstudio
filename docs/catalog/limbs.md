@@ -50,7 +50,9 @@ compiled = compile_motion(
 ```
 
 Keep vertex order, winding and semantic correspondence across keys. Use `mirror=True` for mirrored artwork,
-and `strength` in 0..1 to blend toward a correction. Corrective contours affect only surfaces; fingertips,
+and `strength` in 0..1 to blend toward a correction. A partial blend first resamples the original surface to match the artwork's
+winding, starting point and arc-length spacing, so mirrored or opposite-winding artwork blends without folding.
+Every corrected contour must be a simple polygon; self-intersecting artwork or a folded blend raises `LimbError`. Corrective contours affect only surfaces; fingertips,
 contact anchors, joint limits and bone lengths retain their canonical positions. Artwork must fit the intended
 hand controls and topology. Corrections can name `palm`, `digit:index`, another digit, `upper` or `forearm`;
 unknown or duplicate parts fail before scene mutation. Toon respects authored contours instead of replacing

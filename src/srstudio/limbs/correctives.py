@@ -76,22 +76,66 @@ class ContourCorrection:
         return self.keys[-1].vertices
 
 
-def _resample(points: tuple[Point, ...], count: int) -> tuple[Point, ...]:
+def _resample(points: tuple[Point, ...], fractions: tuple[float, ...], start: float) -> tuple[Point, ...]:
+    """Points at ``start`` plus each perimeter fraction, walking the closed contour in its own order."""
     lengths = [math.dist(a, b) for a, b in zip(points, (*points[1:], points[0]), strict=True)]
     perimeter = sum(lengths)
     if perimeter < 1e-12:
         raise LimbError("cannot blend a zero-length contour")
     result = []
-    for i in range(count):
-        distance = i * perimeter / count
-        for j, length in enumerate(lengths):
-            if distance <= length and length > 0:
-                a, b = points[j], points[(j + 1) % len(points)]
-                u = distance / length
-                result.append((a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u))
-                break
-            distance -= length
+    for fraction in fractions:
+        distance = (start + fraction * perimeter) % perimeter
+        j = 0
+        # The last edge absorbs rounding left over from the walk.
+        while j < len(lengths) - 1 and distance > lengths[j]:
+            distance -= lengths[j]
+            j += 1
+        a, b = points[j], points[(j + 1) % len(points)]
+        u = min(1.0, distance / lengths[j]) if lengths[j] > 0 else 0.0
+        result.append((a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u))
     return tuple(result)
+
+
+_STARTS = 256
+
+
+def _corresponding(original: tuple[Point, ...], authored: tuple[Point, ...]) -> tuple[Point, ...]:
+    """Resample ``original`` to correspond with ``authored`` vertex by vertex before an index-wise blend.
+
+    Index pairing alone matches unrelated start vertices and, under mirroring or opposite winding, walks the
+    two contours in opposite directions, which folds the blend. This matches the winding, spaces samples by
+    the authored arc length and chooses, among a fixed grid of starts, the one whose centred samples lie
+    closest to the centred artwork; a linear blend can fold only through that centred correspondence.
+    """
+    if _area(original) * _area(authored) < 0:
+        original = original[::-1]
+    edges = [math.dist(a, b) for a, b in zip(authored, (*authored[1:], authored[0]), strict=True)]
+    total = sum(edges)
+    if total < 1e-12:
+        raise LimbError("cannot blend a zero-length contour")
+    fractions = tuple(sum(edges[:i]) / total for i in range(len(authored)))
+    grid = _resample(original, tuple(i / _STARTS for i in range(_STARTS)), 0.0)
+    gx, gy = sum(p[0] for p in grid) / _STARTS, sum(p[1] for p in grid) / _STARTS
+    ax, ay = sum(p[0] for p in authored) / len(authored), sum(p[1] for p in authored) / len(authored)
+    offsets = [round(f * _STARTS) for f in fractions]
+
+    def cost(k: int) -> float:
+        return sum(
+            (grid[(k + o) % _STARTS][0] - gx - x + ax) ** 2 + (grid[(k + o) % _STARTS][1] - gy - y + ay) ** 2
+            for o, (x, y) in zip(offsets, authored, strict=True)
+        )
+
+    best = min(range(_STARTS), key=cost)
+    perimeter = sum(math.dist(a, b) for a, b in zip(original, (*original[1:], original[0]), strict=True))
+    return _resample(original, fractions, best / _STARTS * perimeter)
+
+
+def _simple(polygon: tuple[Point, ...], part: str) -> tuple[Point, ...]:
+    from shapely.geometry import Polygon
+
+    if not Polygon(polygon).is_valid:
+        raise LimbError(f"corrected {part} contour is not a simple polygon", code="geometry")
+    return polygon
 
 
 def apply_correctives(
@@ -124,10 +168,10 @@ def apply_correctives(
                 )
             )
         if correction.strength < 1:
-            original = _resample(part.polygon, len(projected))
+            original = _corresponding(part.polygon, tuple(projected))
             u = correction.strength
             projected = [
                 (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u) for a, b in zip(original, projected, strict=True)
             ]
-        parts.append(replace(part, polygon=tuple(projected), authored=True, holes=()))
+        parts.append(replace(part, polygon=_simple(tuple(projected), part.name), authored=True, holes=()))
     return replace(pose, parts=tuple(parts))

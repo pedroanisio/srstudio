@@ -135,3 +135,50 @@ def test_correctives_are_available_from_public_package_api():
 
     assert limbs.ContourCorrection is ContourCorrection
     assert limbs.ContourKey is ContourKey
+
+
+def _ellipse(cx, cy, rx, ry, n=24, ccw=True):
+    points = [(cx + rx * math.cos(i * math.tau / n), cy + ry * math.sin(i * math.tau / n)) for i in range(n)]
+    return tuple(points if ccw else reversed(points))
+
+
+@pytest.mark.parametrize("part", ["digit:index", "digit:thumb", "palm", "forearm"])
+@pytest.mark.parametrize("ccw", [True, False])
+@pytest.mark.parametrize("mirror", [False, True])
+@pytest.mark.parametrize("strength", [0.25, 0.5, 0.75])
+def test_partial_blends_of_24_vertex_artwork_produce_simple_contours(part, ccw, mirror, strength):
+    from shapely.geometry import Polygon
+
+    sample = Motion(ArmProfile(), HUMAN).sample(0)
+    shape = _ellipse(0.0, 0.6, 0.05, 0.25, ccw=ccw)
+    c = ContourCorrection(part, (ContourKey(0, shape),), strength=strength, mirror=mirror)
+    parts = {p.name: p for p in project_pose(sample, Camera(), width=0.18, correctives=(c,)).parts}
+    blended = Polygon(parts[part].polygon)
+    assert blended.is_valid and blended.area > 0
+    original = Polygon(next(p for p in project_pose(sample, Camera(), width=0.18).parts if p.name == part).polygon)
+    authored = Polygon(
+        {p.name: p for p in project_pose(sample, Camera(), width=0.18, correctives=(replace(c, strength=1),)).parts}[
+            part
+        ].polygon
+    )
+    # A blend of two simple contours lies between them rather than folding to a sliver.
+    assert blended.area >= 0.5 * min(original.area, authored.area)
+
+
+def test_self_intersecting_artwork_is_refused_instead_of_drawn():
+    sample = Motion(ArmProfile(), HUMAN).sample(0)
+    crossed = ((-0.1, 0.0), (0.2, 0.4), (0.2, 0.0), (-0.1, 0.2))  # unequal lobes give a nonzero signed area
+    c = ContourCorrection("palm", (ContourKey(0, crossed),))
+    with pytest.raises(LimbError, match="simple") as caught:
+        project_pose(sample, Camera(), width=0.18, correctives=(c,))
+    assert caught.value.code == "geometry"
+
+
+def test_contour_resampling_walks_duplicate_vertices_and_wraps_past_the_start():
+    from srstudio.limbs.correctives import _resample
+
+    square = ((0.0, 0.0), (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
+    assert _resample(square, (0.0, 0.25, 0.5, 0.875), 0.0) == ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 0.5))
+    assert _resample(square, (0.0, 0.5), 3.5) == ((0.0, 0.5), (1.0, 0.5))
+    with pytest.raises(LimbError, match="zero-length"):
+        _resample(((0.0, 0.0),) * 3, (0.0,), 0.0)
