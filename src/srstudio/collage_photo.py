@@ -50,11 +50,12 @@ def _check_count(start: float, seconds: int) -> None:
 
 
 def _digits(cv: Canvas, parent, start: float, seconds: int, x: float, y: float, w: float, h: float, size: float):
-    """The digits ``seconds`` down to 1, each shown for its second from ``start``."""
+    """The digits ``seconds`` down to 1, each shown for its second from ``start``; the first also waits on screen
+    from 0, as a self-timer shows its full count before it starts."""
     for i in range(seconds):
         digit = cv.group(parent, cv.uid("count"))
         cv.text(digit, cv.uid("count-digit"), str(seconds - i), x, y, round(w), round(h), size, color=INK)
-        cv.gate(digit, [(start + i, start + i + 1)])
+        cv.gate(digit, [(0.0 if i == 0 else start + i, start + i + 1)])
 
 
 @register("prop", "collage-phone-timer", summary="A phone propped on three paper books, its self-timer counting")

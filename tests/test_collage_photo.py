@@ -54,8 +54,9 @@ def test_the_phone_and_its_viewfinder_count_down_one_second_a_digit(draw):
         draw(cv, cv.comp, start=2.0, seconds=5)
     assert [t for t in texts(cv) if t.isdigit()] == ["5", "4", "3", "2", "1"]
     fades = animated(cv, "opacity")
-    for i in range(5):
-        assert [(0.0, 0.0), (2.0 + i, 1.0), (3.0 + i, 0.0)] in fades  # each digit for its second, in turn
+    assert [(0.0, 1.0), (3.0, 0.0)] in fades  # the full count waits on the screen until its first second is up
+    for i in range(1, 5):
+        assert [(0.0, 0.0), (2.0 + i, 1.0), (3.0 + i, 0.0)] in fades  # then each digit for its second, in turn
 
 
 def test_the_flash_whites_out_holds_and_fades():

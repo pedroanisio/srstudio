@@ -53,12 +53,15 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
-EVENTS = ("zoom", "sting", "beep", "reveal")  # reveal: no sound; a prop shows from it (see until)
+# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
 WHOOSH_GAIN_DB = -6.0
 STING_GAIN_DB = -5.0
 BEEP_GAIN_DB = -9.0
+SHUTTER = (0.0, 0.085)  # a shutter: the mirror up, then down, as two clicks
+SHUTTER_GAIN_DB = -4.0
 BEEP = ((1568.0, 1568.0, 0.09), (2093.0, 2093.0, 0.11))  # Kai's headset: two short high notes
 
 
@@ -160,6 +163,12 @@ def solo(cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> c
 
 
 CastDrawer = Callable[[Canvas, object, sketch.Appearance, sketch.Mouths], collage.Point]
+Casting = Callable[[Sequence[sketch.Beat], float], CastDrawer]
+
+
+def alone(beats: Sequence[sketch.Beat], end: float) -> CastDrawer:
+    """The default casting: every shot is the speaker alone (:func:`solo`), whatever the beats."""
+    return solo
 
 
 @dataclass(frozen=True)
@@ -174,7 +183,9 @@ class Staging:
     tints: Mapping[str, str]
     sets: Mapping[str, str]
     dress: Callable[[Shot], None] = lambda shot: None
-    cast: CastDrawer = solo  # who is drawn in each shot (srstudio.collage_group.Lineup puts several on one set)
+    # who is drawn in each shot, made from the beats the build draws (scripted or voiced), whose times differ;
+    # a srstudio.collage_group.Lineup made from them puts several on one set
+    cast: Casting = alone
 
 
 def check_staging(staging: Staging) -> None:
@@ -261,12 +272,13 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
         raise StagingError("the Collage style has no font to measure its captions in")
     font = (root / COLLAGE.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
+    cast = staging.cast(sk.beats, sk.end)
     for app in sketch.appearances(sk.beats, sk.end):
         g = cv.group(ep.comp, cv.uid("g"), start=app.start, end=app.end)
         cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
         collage_sets.SETS[staging.sets[app.who]](cv, g)
         back = cv.group(g, cv.uid("g"))
-        face = staging.cast(cv, g, app, mouths)
+        face = cast(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
         for at in zooms(sk.beats, app):
@@ -285,7 +297,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
 
 # -- the recording run ------------------------------------------------------------------------------------------------
 def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
-    """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``."""
+    """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
+    shutter on ``flash``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -303,6 +316,11 @@ def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: in
     if beeps:
         beep = foley.write_tones(audio / "beep.wav", beeps, end, notes=BEEP)
         out.append(sketch.effect("beep", 0.0, BEEP_GAIN_DB, root, beep))
+    flashes = [at for at, _ in sketch.events(beats, "flash")]
+    if flashes:
+        clicks = sorted(at + d for at in flashes for d in SHUTTER)
+        shutter = foley.write_typing(audio / "shutter.wav", clicks, end, seed=seed)
+        out.append(sketch.effect("shutter", 0.0, SHUTTER_GAIN_DB, root, shutter))
     return out
 
 

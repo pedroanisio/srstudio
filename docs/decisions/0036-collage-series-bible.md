@@ -58,7 +58,9 @@ card in the same commit.
 
 ### The group shot
 
-- **`collage_group.Lineup`** is a `collage_sketch.Staging.cast`. Inside its `spans` it draws every placed
+- **`collage_group.Lineup`** is what a `collage_sketch.Staging.cast` returns. That casting is called with the beats
+  the build draws, scripted or voiced. A recording re-times every beat, so an episode makes its lineup's spans and
+  reactions from the beats' events, not from fixed times. Inside its `spans` the lineup draws every placed
   character, each scaled into its `Place` (centre line, the bust's cut-off bottom, and a scale), at the same place
   in every shot. The cut from one speaker to the next therefore keeps the room and the family where they were.
 - The speaker plays its own beats. The others hold `reactions`, which are poses on the project clock, so a
@@ -103,6 +105,9 @@ A release's `Tags.recurring` uses these short names: `gary`, `rosa` and `kai` ar
 
 ## Consequences
 
-- A new Collage sketch can put several of the cast on one set: `Staging(cast=Lineup(...))`.
+- A new Collage sketch can put several of the cast on one set: `Staging(cast=casting)`, where
+  `casting(beats, end)` returns a `Lineup`.
+- The `timer` and `flash` events mark the self-timer's start and the shutter. The build makes the shutter's sound
+  on `flash`, and an episode times its countdown and flash from the two events.
 - Cards are binding for new sketches. A deliberate change to a character changes its card here, with a reason.
 - The Stick couple and the Ink doodle have short names that analytics can count across styles.
