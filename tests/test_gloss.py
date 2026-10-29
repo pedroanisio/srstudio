@@ -330,6 +330,16 @@ def test_a_door_refuses_what_it_cannot_do(kw, message):
         sets.door(cv, cv.comp, at=(540, 1200), end=D, **kw)
 
 
+@pytest.mark.parametrize("t", [-0.5, True, float("nan")])
+def test_a_set_cue_is_a_number_of_seconds_from_zero(t):
+    with pytest.raises(GlossError, match=r"a door opening at .* must rise inside the shot \(0\.\.4\.0\)"):
+        sets.door(canvas(), canvas().comp, at=(540, 1200), end=D, opens=(t,))
+    with pytest.raises(GlossError, match="a NOW SERVING change at .* must rise"):
+        sets.waiting(canvas(), canvas().comp, end=D, serving=((0, "3"), (t, "4")))
+    with pytest.raises(GlossError, match="a card at .* must rise"):
+        sets.board(canvas(), canvas().comp, [Card(t, "Hi")], end=D, font=font())
+
+
 @needs_font
 def test_wrap_measures_every_line_and_refuses_what_does_not_fit():
     assert sets.wrap(font(), "one two three four", 48, 2000, 1) == ["one two three four"]

@@ -154,11 +154,7 @@ def _check_end(end: float) -> None:
 
 
 def _rising(seconds: Sequence[float], end: float, what: str) -> None:
-    last = -1.0
-    for t in seconds:
-        if not (math.isfinite(t) and last < t < end):
-            raise GlossError(f"{what} at {t} must rise inside the shot (0..{end})")
-        last = t
+    checks.rising(seconds, GlossError, lambda _, t: f"{what} at {t} must rise inside the shot (0..{end})", end=end)
 
 
 def _marks(cv: Canvas, g, cactus_at: tuple[float, float], code_at: tuple[float, float], colour=None) -> None:
