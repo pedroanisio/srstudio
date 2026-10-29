@@ -9,7 +9,6 @@ and writes nothing.
 
 from __future__ import annotations
 
-import hashlib
 import math
 import os
 import re
@@ -21,6 +20,7 @@ from typing import Any
 
 import sr_core.scene as sc
 
+from . import digest
 from .errors import SrstudioError
 
 ROLES = ("dialogue", "voiceover", "music", "effects", "ambience", "audio-description", "other")
@@ -80,7 +80,7 @@ def _check(track: Track, root: Path, duration: float, taken: set[str]) -> None:
         raise DubError(f"{where}: {track.audio} must be inside {root}")
     if not path.is_file():
         raise DubError(f"{where}: {track.audio} is missing")
-    if hashlib.sha256(path.read_bytes()).hexdigest() != track.sha256:
+    if digest.sha256(path) != track.sha256:
         raise DubError(f"{where}: sha256 of {track.audio} does not match")
 
 

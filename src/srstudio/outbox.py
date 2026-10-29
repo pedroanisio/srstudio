@@ -12,7 +12,6 @@ check that every staged file arrived with the same hash.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import shutil
@@ -22,6 +21,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import digest
 from .errors import SrstudioError
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
@@ -105,14 +105,6 @@ def ready(
     return bundles, drift
 
 
-def _sha(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def _check(bundles: Sequence[Bundle]) -> None:
     names = [b.name for b in bundles]
     for name in names:
@@ -153,11 +145,11 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
             target.mkdir(mode=0o700)
             hashes = {}
             for source in b.files:
-                before = _sha(source)
+                before = digest.sha256(source)
                 copy = target / source.name
                 shutil.copyfile(source, copy)
                 copy.chmod(0o600)
-                hashes[copy.name] = _sha(copy)
+                hashes[copy.name] = digest.sha256(copy)
                 if hashes[copy.name] != before:
                     raise OutboxError(f"{source} changed while it was staged")
             videos[b.name] = hashes
