@@ -410,6 +410,21 @@ def test_bad_cues_are_refused(cues, match):
         blob.drawings(cues, end=4)
 
 
+@pytest.mark.parametrize("bad", [0, -15, float("nan"), float("inf"), True])
+def test_a_performance_needs_a_positive_fps_and_end(bad):
+    with pytest.raises(BlobError, match=r"fps must be a positive number"):
+        blob.drawings([Cue(0, "stand")], end=4, fps=bad)
+    with pytest.raises(BlobError, match=r"end must be a positive number"):
+        blob.drawings([Cue(0, "stand")], end=bad)
+
+
+@pytest.mark.parametrize("scale", [0, -1, float("nan"), float("inf"), True])
+def test_a_blob_needs_a_positive_scale(scale):
+    _, cv = canvas()
+    with pytest.raises(BlobError, match="scale must be a positive number"):
+        blob.pip(cv, cv.comp, [Cue(0, "stand")], end=4, scale=scale)
+
+
 def test_singing_needs_mouth_states_on_the_episode_frames():
     _, cv = canvas()
     with pytest.raises(BlobError, match="mouth states"):

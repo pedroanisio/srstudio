@@ -24,7 +24,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -1024,6 +1024,8 @@ def _check(cues: Sequence[Cue], end: float) -> None:
 def drawings(cues: Sequence[Cue], *, end: float, fps: float = 15) -> list[Drawing]:
     """The drawings of a performance: each cue's eased in-betweens, its key drawing and, after an overshoot,
     its settle. Poses blend in pose space and positions and turns blend apart, so a turn is a rotation."""
+    checks.positive(end, BlobError, f"a performance's end must be a positive number of seconds, got {end!r}")
+    checks.positive(fps, BlobError, f"a performance's fps must be a positive number, got {fps!r}")
     _check(cues, end)
     out: list[Drawing] = []
     before: tuple[Pose, float, float, float, bool, Cue] | None = None  # the previous cue at rest
@@ -1118,7 +1120,7 @@ def blob(
     """The blob rig in ``look`` performing ``cues`` until ``end``; ``mouth_states`` (``Episode.mouth``) drive every
     ``sing`` mouth; ``shadow`` puts a contact shadow under the feet on every drawing."""
     body_fill = look.fill or cv.white
-
+    checks.positive(scale, BlobError, f"a blob's scale must be a positive number, got {scale!r}")
     frames = drawings(cues, end=end, fps=fps)
     if any(c.mouth == "sing" for c in cues):
         if not mouth_states:
