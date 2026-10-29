@@ -18,6 +18,14 @@ def system_font():
         pytest.skip("no DejaVu Sans Bold at any srstudio.sample.SYSTEM_FONTS path")
 
 
+@pytest.fixture
+def engine():
+    path = os.environ.get("SRSTUDIO_ENGINE")
+    if not path:
+        pytest.skip("set SRSTUDIO_ENGINE to validate the example scene with scene-render")
+    return path
+
+
 def example():
     script = Path(__file__).resolve().parents[1] / "examples" / "limbs_bimanual.py"
     spec = importlib.util.spec_from_file_location("limbs_bimanual", script)
@@ -48,10 +56,6 @@ def test_bimanual_scene_builds_with_reusable_motion_and_quantitative_qa(tmp_path
         assert report[name]["collision_frames"] == 0
         assert all(report[name][side]["bounds"][3] < 860 for side in ("right", "left"))
     assert load_motion(path.with_name("crossed-right.motion.json")).actions[0].name == "crossed"
-    engine = os.environ.get("SRSTUDIO_ENGINE")
-    if engine:
-        result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
-        assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.usefixtures("system_font")
@@ -92,3 +96,10 @@ def test_tilted_camera_keeps_the_authored_mouth_visible_in_rendered_pixels(tmp_p
         for xx in range(round(x) - 2, round(x) + 3)
     ]
     assert any(all(abs(a - b) < 12 for a, b in zip(color, (124, 68, 56), strict=True)) for color in colors)
+
+
+@pytest.mark.usefixtures("system_font")
+def test_bimanual_scene_passes_engine_validation(tmp_path, engine):
+    path = example().build(tmp_path / "two-arms", fps=2)
+    result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
