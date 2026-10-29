@@ -638,6 +638,37 @@ SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/home_sick_audio.py PROJECT --font DIR   
 python3 episodes/home_sick.py PROJECT                                           # scene, SRT, ig.txt
 ```
 
+## Ink episode: *Pay to Park* (Ink 08)
+
+[episodes/pay_to_park.py](episodes/pay_to_park.py): the human holds a coin up to a parking meter whose slot is taped
+over. Coins? How retro. The meter sends him through its app: download it, create an account (full name, email, shoe
+size), choose a password with a capital, a symbol and a childhood memory. Biscuit. That memory is already in use.
+Enable location; he is right in front of it. Minimum session two hours, rate your parking experience, and "Session
+started!" as the tow truck lifts his car. The hold music stops dead as it drives off, and he says thank you. Fourteen
+takes go through `srstudio.takes`: the human (Chris), the meter (Laura), two effects and a hold-music bed
+([episodes/pay_to_park_audio.py](episodes/pay_to_park_audio.py)). The app's screens are data in `SCREENS` and the
+meter's readings in `DISPLAYS`; a cue there is a word of the take's line, resolved on the recorded words, or seconds
+into the take. Take 06's `heard=("Biskit",)` is an operator-approved speech-to-text spelling (2026-10-29).
+
+The new parts are in [src/srstudio/ink_meter.py](src/srstudio/ink_meter.py):
+
+- `meter` (`talking-meter`): a box on a post with a display whose reading changes at each `(at, text)` of
+  `display=`, lights that chase and voice marks while it speaks, a QR code, and a coin slot taped over with
+  `TAPE_TEXT`. Lettering that would draw under `LEGIBLE_PX` at the scale it is seen is a pen scrawl instead. It carries
+  the signature code.
+- `kerb` (`ink-kerb`): the pavement and the road from the side, with the doodle, the meter, the signature cactus and
+  his parked car, or the meter alone (`close=True`). `tow=` brings a tow truck, already hooked on, that lifts the
+  car's front by `LIFT_DEGREES` and drives off with it; a negative `tow` began before the take, so a cut carries the
+  tow on. `view=` frames it: `KERB_VIEW`, `TOW_WIDE` (the default with a tow) or `TOW_TIGHT` on the car and the truck.
+- `app_screen` (`ink-app-screen`): the held phone of `ink_phone` with a form on it. A title bar, `AppRow`s that
+  arrive, tick or are refused (`taken=`: the row flips to ink with a cross and `TAKEN_TEXT`), a progress bar and five
+  stars that light one after another.
+
+```bash
+SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/pay_to_park_audio.py PROJECT --font DIR   # takes, bed, checked by speech-to-text
+python3 episodes/pay_to_park.py PROJECT                                           # scene, SRT, ig.txt
+```
+
 ## Soft style episode: *Focus Mode* (07)
 
 [episodes/focus_mode_audio.py](episodes/focus_mode_audio.py) declares seven sung lines and a record scratch as
