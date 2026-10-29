@@ -109,3 +109,17 @@ def test_bake_honors_local_clock_and_rejects_unsupported_adapter_modes():
     )
     with pytest.raises(LimbError, match="perspective"):
         bake(cv, cv.comp, m, id="unsupported", style="unit-planar", camera=Camera(projection="perspective"))
+
+
+@pytest.mark.parametrize(("fps", "max_frames"), [(24, 2400), (3, 7), (120, 100000), (7, 1)])
+def test_the_frame_count_alone_owns_the_frame_budget_at_its_exact_limit(fps, max_frames):
+    import math
+
+    from srstudio.limbs.compile import _frame_count
+
+    options = BakeOptions(fps=fps, max_frames=max_frames)
+    limit = max_frames / fps
+    assert _frame_count(limit, options) == max_frames
+    with pytest.raises(LimbError, match="frame budget") as caught:
+        _frame_count(math.nextafter(limit, math.inf), options)
+    assert caught.value.code == "budget"

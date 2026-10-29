@@ -53,7 +53,10 @@ class BakeOptions:
 
 
 def _frame_count(duration: float, options: BakeOptions) -> int:
-    """Bound work before multiplication, and reject intervals the six-decimal scene clock cannot represent."""
+    """Bound work before multiplication, and reject intervals the six-decimal scene clock cannot represent.
+
+    This is the only frame-budget check: refusing ``duration > max_frames / fps`` leaves at most ``max_frames``.
+    """
     duration = number(duration, "resolved bake duration")
     if duration <= 0:
         raise LimbError("resolved bake duration must be positive")
@@ -134,7 +137,7 @@ def bake(
     count = _frame_count(duration, options)
     # A conservative bound on built-in adapters: group, visibility keys, contours, details and paints in three slots.
     estimate = count * (24 + 12 * len(motion.hand.digits)) * 3
-    if count > options.max_frames or estimate > options.max_nodes:
+    if estimate > options.max_nodes:
         raise LimbError(f"limb bake budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
     samples = tuple(motion.sample(i / options.fps) for i in range(count))
     poses = tuple(
@@ -237,7 +240,7 @@ def compile_motion(
         )
     duration = options.duration or max((a.end for a in motion.actions), default=1.0)
     count = _frame_count(duration, options)
-    if count > options.max_frames or count * (24 + 12 * len(motion.hand.digits)) * 3 + 128 > options.max_nodes:
+    if count * (24 + 12 * len(motion.hand.digits)) * 3 + 128 > options.max_nodes:
         raise LimbError("native limb budget exceeded", code="budget")
     adapter = adapter_for(style)
     if deformation == "skin" and "skin" not in adapter.capabilities.deformation:

@@ -147,7 +147,7 @@ def bake_interaction(
     count = _frame_count(duration, options)
     surface_count = sum(3 + len(p.motion.hand.digits) for p in participants) + sum(len(p.mesh.faces) for p in props)
     estimate = count * (2 + surface_count * 24) + 1
-    if count > options.max_frames or estimate > options.max_nodes:
+    if estimate > options.max_nodes:
         raise LimbError(f"interaction budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
     inverse = parent_transform.inverse()
     reports = []
