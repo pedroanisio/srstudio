@@ -281,3 +281,30 @@ def test_main_needs_an_engine(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", str(tmp_path))
     with pytest.raises(SystemExit, match="no scene-render engine"):
         I.main(make(), back_to_back, argv=[str(tmp_path / "p")])
+
+
+def test_five_years_times_its_reaction_and_end_card_from_the_published_rounded_line_end():
+    """Five Years was published before the interview pipeline (frozen): its beats follow the last line's end as
+    written to the microsecond, not the unrounded sum the pipeline carries in ``Timing.last_end``."""
+    import importlib
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "episodes"))
+    try:
+        five_years = importlib.import_module("five_years_audio")
+    finally:
+        sys.path.pop(0)
+    spans = [(0.62, 2.124), (2.424, 3.370146), (3.710146, 4.895646), (5.865646, 6.956708)]  # published phrases
+    last_end = 6.956708499999999  # start + recorded length, before rounding
+    t = I.Timing(
+        phrases=[{"start": a, "end": b} for a, b in spans],
+        effects={"chair-squeak": 0.14, "chair-squeak-loud": 5.155646, "swivel-spin": 8.486708},
+        last_end=last_end,
+        reaction=last_end + 0.38,
+        ending=last_end + 0.38 + 1.05,
+        duration=11.0,
+    )
+    fields = five_years.extra(t)
+    assert (fields["reaction_start"], fields["end_card_start"]) == (7.336708, 8.386708)
+    cuts = {c["angle"]: c["time"] for c in fields["camera_cuts"]}
+    assert (cuts["manager-reaction"], cuts["candidate-ending"]) == (7.336708, 8.386708)

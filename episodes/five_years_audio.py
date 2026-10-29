@@ -98,19 +98,22 @@ def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
 def extra(t: Timing) -> dict:
     """The squeaks and the spin, the reaction and end card, and the camera cuts."""
     p, fx = t.phrases, t.effects
+    # The last line's end as written, as the frozen baseline timed it (t.reaction follows the unrounded end).
+    reaction = p[-1]["end"] + INTERVIEW.reaction_after
+    ending = reaction + INTERVIEW.reaction_hold
     return {
         "squeak_soft_start": fx["chair-squeak"],
         "squeak_loud_start": fx["chair-squeak-loud"],
         "spin_start": fx["swivel-spin"],
-        "reaction_start": t.reaction,
-        "end_card_start": t.ending,
+        "reaction_start": reaction,
+        "end_card_start": ending,
         "camera_cuts": [
             {"time": 0, "angle": "wide"},
             {"time": p[1]["start"] - 0.15, "angle": "candidate"},
             {"time": p[2]["start"] - 0.16, "angle": "wide"},
             {"time": fx["chair-squeak-loud"] - 0.12, "angle": "candidate-punchline"},
-            {"time": t.reaction, "angle": "manager-reaction"},
-            {"time": t.ending, "angle": "candidate-ending"},
+            {"time": reaction, "angle": "manager-reaction"},
+            {"time": ending, "angle": "candidate-ending"},
         ],
     }
 
