@@ -344,11 +344,12 @@ class Motion:
         if phase == "stroke":
             fraction = (u - action.preparation) / action.stroke
             target_position += Vec3(0, -action.style.arc * distance * math.sin(math.pi * fraction) ** 2, 0)
-        if phase == "hold" and action.style.settling:
+        if phase == "hold" and action.style.settling and action.hold:
             elapsed = time - action.stroke_at
-            target_position += Vec3(
-                0, math.sin(elapsed * 18) * math.exp(-elapsed * 9) * action.style.settling * distance * 0.03, 0
-            )
+            # The wobble fades to rest by the end of the hold so recovery starts from the held pose.
+            fade = 1 - smooth(elapsed / (action.hold * action.duration))
+            wobble = math.sin(elapsed * 18) * math.exp(-elapsed * 9) * fade
+            target_position += Vec3(0, wobble * action.style.settling * distance * 0.03, 0)
         target_position += Vec3(action.style.asymmetry * distance * math.sin(math.pi * u) ** 2 * 0.05, 0, 0)
         control = action.control or _recipe(action.name, self.hand, time - action.start)
         control = replace(control, curl=control.curl + (1 - control.curl) * action.style.tension * 0.2)

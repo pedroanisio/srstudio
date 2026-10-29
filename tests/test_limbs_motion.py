@@ -1,5 +1,6 @@
 """Gesture timing, retargeting and prop contact must remain exact under random-access sampling."""
 
+import math
 from dataclasses import replace
 
 import pytest
@@ -219,3 +220,23 @@ def test_wrist_steps_stay_continuous_across_both_action_edges_of_a_contact():
         fine = m.sample(edge - 1e-4).arm.wrist.distance(m.sample(edge + 1e-4).arm.wrist)
         # A continuous pose moves less over a shorter interval; a jump does not shrink with the interval.
         assert fine <= coarse * 0.2 + 1e-9
+
+
+@pytest.mark.parametrize("duration", [0.4, 2.0])
+def test_settling_wobble_fades_out_by_the_end_of_the_hold(duration):
+    action = Action("point", 0, duration, style=MotionStyle(settling=1.0))
+    m = Motion(ArmProfile(), HUMAN, (action,))
+    end_hold = action.start + (action.preparation + action.stroke + action.hold) * action.duration
+    before, after = m.sample(end_hold - 1e-9), m.sample(end_hold + 1e-9)
+    assert (before.phase, after.phase) == ("hold", "recovery")
+    assert before.arm.wrist.distance(after.arm.wrist) < 1e-6
+    still = Motion(ArmProfile(), HUMAN, (replace(action, style=MotionStyle()),))
+    middle = action.stroke_at + math.pi / 36  # the wobble's first peak
+    # The wobble still shapes the hold; it only ends with it.
+    assert m.sample(middle).arm.wrist.distance(still.sample(middle).arm.wrist) > 1e-4
+
+
+def test_settling_without_a_hold_samples_the_instantaneous_hold_without_dividing_by_zero():
+    action = Action("point", 0, 2, hold=0, style=MotionStyle(settling=1.0))
+    sample = Motion(ArmProfile(), HUMAN, (action,)).sample(action.stroke_at)
+    assert sample.phase == "hold"
