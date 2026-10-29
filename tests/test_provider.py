@@ -178,6 +178,16 @@ def test_speech_is_generated_heard_and_written_at_the_mix_rate(tmp_path, tone):
 
 
 @ffmpeg_required
+@pytest.mark.parametrize("rate", [44100, 48000])
+@pytest.mark.parametrize("depth", [16, 24, 32])
+def test_speech_is_written_as_the_16_bit_pcm_it_was_decoded_to_whatever_the_mix_depth(tmp_path, tone, rate, depth):
+    answer, code = run(tmp_path, request(tmp_path, sampleRate=rate, bitDepth=depth), FakeElevenLabs(tone))
+    assert code == 0 and answer["ok"] is True
+    with wave.open(str(tmp_path / "work" / "result.wav")) as w:
+        assert w.getsampwidth() == 2 and w.getframerate() == rate
+
+
+@ffmpeg_required
 def test_speech_the_recogniser_does_not_hear_as_scripted_fails(tmp_path, tone):
     fake = FakeElevenLabs(tone, heard="In your chairs.")
     answer, code = run(tmp_path, request(tmp_path), fake)
