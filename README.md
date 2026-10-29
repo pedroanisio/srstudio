@@ -291,12 +291,6 @@ is `MissingKeyError`, a provider HTTP failure `ProviderHTTPError`, and a builder
 `FlagError` before building anything (`srstudio.errors.flags`;
 [ADR 0034](docs/decisions/0034-one-error-base.md)).
 
-Every error the library raises is a `srstudio.SrstudioError` and keeps its built-in base (`ValueError` for bad
-data, `RuntimeError` for a provider failure), so `except srstudio.SrstudioError` catches them all. A missing API key
-is `MissingKeyError`, a provider HTTP failure `ProviderHTTPError`, and a builder given a flag it does not know raises
-`FlagError` before building anything (`srstudio.errors.flags`;
-[ADR 0034](docs/decisions/0034-one-error-base.md)).
-
 ### Finishing a style: `srstudio.look`
 
 A style's finish is a handful of calls with its own numbers and id prefix, never a copy of another style's helpers
@@ -1360,7 +1354,10 @@ error is `InstagramPostError`, with every problem listed.
 - Each shipped episode has a release, `episodes/posts/<slug with underscores>.py`, defining
   `RELEASE = srstudio.releases.Release(slug, post, video=, scene=, cover=, builder=)`
   ([ADR 0032](docs/decisions/0032-releases-recorders-and-discovery.md)). `cover=True` says the cover is drawn from
-  the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene.
+  the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene. A new release
+  also sets `tags=srstudio.releases.Tags(territory, cause, emotion, recurring=, test=, arm=)`, from closed sets the
+  account's analytics count ([ADR 0033](docs/decisions/0033-episode-tags-for-analytics.md)); releases published
+  before tags existed leave it `None`.
   [episodes/instagram_posts.py](episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
   script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
   Recreations credit the original author in the caption itself.

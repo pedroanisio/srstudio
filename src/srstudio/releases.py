@@ -27,14 +27,66 @@ from pathlib import Path
 from .errors import SrstudioError
 from .social import COVER_VARIANT, InstagramPost, Item
 
-__all__ = ["Release", "ReleaseError", "load", "items"]
+__all__ = ["Release", "ReleaseError", "Tags", "load", "items"]
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
+CHARACTER = re.compile(r"[a-z][a-z0-9-]*")
+
+TERRITORIES = (
+    "everyday-tech",
+    "money-services",
+    "job-hunting",
+    "relationships",
+    "family",
+    "own-worst-enemy",
+    "epic-world",
+    "office",
+)
+CAUSES = ("institution", "other-person", "protagonist")
+EMOTIONS = ("recognition", "embarrassment", "tension", "relief", "affection", "triumph")
+TESTS = ("opening", "rhythm", "jargon")
+ARMS = ("a", "b")
 
 
 class ReleaseError(SrstudioError, ValueError):
     """A release, or a folder of them, cannot be published as declared."""
+
+
+@dataclass(frozen=True)
+class Tags:
+    """What the account's analytics compare across episodes: the ``territory`` the premise comes from, the
+    ``cause`` of the problem (an institution, another person or the protagonist), the ``emotion`` it leaves, the
+    ``recurring`` characters it brings back (their registered short names), and, for an episode in a running A/B
+    test, the ``test`` and its ``arm``. Every value comes from a closed set, so the tags can be counted."""
+
+    territory: str
+    cause: str
+    emotion: str
+    recurring: tuple[str, ...] = ()
+    test: str = ""
+    arm: str = ""
+
+    def __post_init__(self) -> None:
+        for field, value, allowed in (
+            ("territory", self.territory, TERRITORIES),
+            ("cause", self.cause, CAUSES),
+            ("emotion", self.emotion, EMOTIONS),
+        ):
+            if value not in allowed:
+                raise ReleaseError(f"{field} {value!r} is not one of {', '.join(allowed)}")
+        if not isinstance(self.recurring, tuple) or not all(
+            isinstance(name, str) and CHARACTER.fullmatch(name) for name in self.recurring
+        ):
+            raise ReleaseError(f"recurring {self.recurring!r} is not a tuple of lowercase character names")
+        if len(set(self.recurring)) != len(self.recurring):
+            raise ReleaseError(f"recurring {self.recurring!r} names a character twice")
+        if self.test and self.test not in TESTS:
+            raise ReleaseError(f"test {self.test!r} is not one of {', '.join(TESTS)}")
+        if bool(self.test) != bool(self.arm):
+            raise ReleaseError(f"test {self.test!r} and arm {self.arm!r}: an A/B test needs both or neither")
+        if self.arm and self.arm not in ARMS:
+            raise ReleaseError(f"arm {self.arm!r} is not one of {', '.join(ARMS)}")
 
 
 @dataclass(frozen=True)
@@ -50,6 +102,7 @@ class Release:
     scene: str = ""
     cover: bool = False
     builder: str = ""
+    tags: Tags | None = None
 
     def __post_init__(self) -> None:
         if not SLUG.fullmatch(self.slug):
@@ -62,6 +115,8 @@ class Release:
             raise ReleaseError(f"{self.slug}: scene {self.scene!r} is not a plain *scene.xml file name")
         if self.builder and not self.builder.isidentifier():
             raise ReleaseError(f"{self.slug}: builder {self.builder!r} is not a module name")
+        if self.tags is not None and not isinstance(self.tags, Tags):
+            raise ReleaseError(f"{self.slug}: tags is a {type(self.tags).__name__}, not Tags")
 
     @property
     def video_name(self) -> str:

@@ -151,3 +151,36 @@ def test_items_refuse_a_scene_that_is_not_xml(tmp_path):
     (project / "one.scene.xml").write_text("<scene>")
     with pytest.raises(ReleaseError, match="cannot read"):
         releases.items({"one": Release("one", POST)}, tmp_path / "renders", tmp_path / "episodes")
+
+
+def test_a_new_release_carries_tags_and_a_published_one_need_not():
+    tags = releases.Tags("family", "protagonist", "embarrassment", recurring=("gary", "kai"), test="opening", arm="a")
+    assert Release("the-family-photo", POST, tags=tags).tags == tags
+    assert Release("going-down", POST).tags is None
+    assert releases.Tags("everyday-tech", "institution", "recognition").recurring == ()
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(territory="work"), "territory"),
+        (dict(cause="fate"), "cause"),
+        (dict(emotion="joy"), "emotion"),
+        (dict(recurring=["gary"]), "recurring"),
+        (dict(recurring=("Gary",)), "recurring"),
+        (dict(recurring=("gary", "gary")), "recurring"),
+        (dict(test="opening"), "arm"),
+        (dict(arm="a"), "test"),
+        (dict(test="caption", arm="a"), "test"),
+        (dict(test="opening", arm="c"), "arm"),
+    ],
+)
+def test_tags_refuse_a_value_outside_their_closed_sets(kw, match):
+    base = dict(territory="family", cause="protagonist", emotion="embarrassment")
+    with pytest.raises(ReleaseError, match=match):
+        releases.Tags(**(base | kw))
+
+
+def test_a_release_refuses_tags_of_the_wrong_type():
+    with pytest.raises(ReleaseError, match="tags"):
+        Release("the-family-photo", POST, tags={"territory": "family"})

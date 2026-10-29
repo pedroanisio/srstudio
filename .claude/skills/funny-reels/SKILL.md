@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.8.0
+schema_version: 1.9.0
 ---
 
 # Funny reels with srstudio
@@ -22,10 +22,10 @@ report the score as *your* estimate:
 | # | Criterion | 2 points means |
 |---|---|---|
 | 1 | Hook | the premise reads in the first 1–2 s, through an opening chosen for it (see *Pick the mechanism*), not a question by default |
-| 2 | Premise | one situation an adult recognises from their own life |
+| 2 | Premise | one situation most adults recognise from their own life, in plain words: no workplace jargon, no niche or franchise reference |
 | 3 | Structure | the mechanism's setup, turn and payoff, nothing after the strongest laugh |
 | 4 | Surprise | the turn is not the first thing the viewer guessed |
-| 5 | Escalation | each beat raises the stakes of the previous one (rule of three, then break it) |
+| 5 | Escalation | each beat raises the stakes of the previous one (rule of three, then break it), and the payoff is still owed at the halfway mark |
 | 6 | Shown | the gag is on screen, and a prop or the location does work in it (plants, escalates or pays off), not explained in a caption |
 | 7 | Timing | a hold of at least 1.2 s before the punchline, a sting or a voice right after; a camera move or pause on the beat (see below) |
 | 8 | Clarity | the viewer always knows who is talking (distinct voice, caption tint, speaker on screen) |
@@ -42,6 +42,46 @@ under its score until `Episode.audio(duck=)` was added (ADR 0016). *Off and On*'
 landed after a funnier rewrite and a composed jingle. A batch of fifteen, spread over three styles, opened every
 episode on a question and ended every two-hander on the same hold, sting and button: one structure under three
 looks. A strong single episode does not excuse a repetitive batch (see *Review the batch for variety*).
+
+The account's own analytics add a harder lesson: the joke can be right and the premise still lose. Premises most
+adults live through were promoted far more often than ones mainly office workers recognise, and office was both the
+weakest setting and the most produced. Job interviews and everyday tech did best. A world built on a niche reference
+stalled on every episode. A reel was more likely to be promoted than not once viewers watched about half of it.
+And reach did not turn into follows, which is the case for recurring characters people want to see again.
+
+## Select before you produce
+
+Every post slot is scarce (the platform caps posts per day), so a weak reel displaces a stronger one. Make choosing
+the premise harder than making the reel.
+
+1. **Write the observation first.** One sentence about people, true off screen, before choosing a style, a cast or
+   a reference: "Parents ask for a natural family photo and then direct every smile." If it reduces to "work is
+   annoying" or "technology is stupid", it is not specific enough yet.
+2. **Most adults must recognise it.** On this account, that alone separated the reels that were promoted from those
+   that were not. Prefer the territories the analytics favour: everyday tech, money and services, job hunting. Keep
+   office premises to at most one reel in five, so they stay measured but in the minority. Until relationships,
+   family and "our own worst enemy" have been measured, give them deliberate tries in every batch (the operator
+   sets the split; the last one was seven reels from the favoured territories and three untested).
+3. **Epic and absurd worlds, ordinary problems.** An invented world is welcome when the problem in it is an
+   everyday one ("a galactic villain who cannot coordinate childcare"). Build the world from scratch; never echo a
+   franchise (it invites takedown claims) or lean on a niche reference a newcomer would not get.
+4. **Ask the selection questions.** Answer each one in writing; a "no" sends the premise back:
+   - Is there a specific observation behind it (step 1)?
+   - Would most adults recognise the situation?
+   - Does a character's choice cause something?
+   - Can part of the joke happen through action, expression or a prop?
+   - Will a viewer still be watching at the halfway mark (about 12 s of a 24 s reel)? Something new must happen on
+     screen at least every few seconds, and the payoff must still be owed at that point.
+   - Does the ending change what we understood, or deliver a satisfying consequence?
+   - Does it add something distinct to the recent episodes (*Review the batch for variety*)?
+5. **Tag it.** Decide the territory, who causes the problem (an institution, another person, or the protagonist)
+   and the emotion it leaves (recognition, embarrassment, tension, relief, affection, triumph). They go in the
+   release as `releases.Tags` (ADR 0033), and the batch alternates emotions as well as styles.
+
+Make reels only; no carousels unless the operator reopens them. When the operator runs an A/B test (an opening, a
+release rhythm, plain words against jargon), keep the paired reels matched in series, length and territory, and
+set the `test` and `arm` in the release's tags. Tests are decided by promotion, not by shares, until a typical reel
+draws several shares.
 
 ## Pick the mechanism, then stage it
 
@@ -244,6 +284,25 @@ Then act the beats with it:
 - **Personality sets the reaction.** The same news gets a different reaction from each character: a controller
   takes notes, an avoider changes the subject. Two characters reacting the same way is a missed joke.
 
+## Characters people come back for
+
+A viewer follows for someone they expect to see again. Before a character appears in a second episode, write their
+card in the style's series bible (its ADR or README section):
+
+- **a desire**: what they want in every episode ("Gary wants respect");
+- **a contradiction**: what in them works against it ("he cannot stop defending his most embarrassing obsession");
+- **a predictable weakness with unpredictable consequences**: the viewer knows how the character will fail, not what
+  it will cost this time.
+
+Then:
+
+- Write the joke from the card. The weakness causes the turn; the desire sets what is at stake.
+- Every episode pays off for a first-time viewer. A relationship may grow across episodes, but a callback to an
+  earlier one is a bonus for regulars, never the joke.
+- Prefer a recurring pair over a new cast. One pair in three standalone situations, each showing a different side
+  of their relationship, tests the strategy faster than three unrelated casts.
+- Name them in the release tags (`recurring`), so the analytics can compare their episodes with the rest.
+
 ## Protect the reveal
 
 The laugh comes when the viewer gets the information, so control the moment each piece of information appears:
@@ -302,7 +361,8 @@ it in `srstudio catalog` without this file changing.
 ## Workflow
 
 1. **Inventory.** Run the live inventory above, then read the README section for the chosen style.
-2. **Script as data.** Write the beats as a table: time, picture, line, speaker, sound, camera, layers. Keep it 11–35 s; loops of
+2. **Script as data.** Start from the observation sentence and the answers of *Select before you produce*, and the
+   recurring characters' cards. Write the beats as a table: time, picture, line, speaker, sound, camera, layers. Keep it 11–35 s; loops of
    12–15 s for a "repeat after me" format. Score it with the rubric. Avoid the premises and settings the usage report
    and the backlog show the catalog already leans on. Never copy a reference's lines, drawings or brand: an
    original script in the same format, an invented brand.
@@ -361,8 +421,9 @@ it in `srstudio catalog` without this file changing.
    that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode calls has a
    gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
 8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
-   `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`), then from the
-   workspace root:
+   `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`) and its
+   `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test), then
+   from the workspace root:
 
    ```
    SRSTUDIO_ENGINE=generated/bin/scene-render .venv/bin/python srstudio/episodes/instagram_posts.py \
@@ -375,15 +436,18 @@ it in `srstudio catalog` without this file changing.
 9. **Publish.** A clean delivery is picked up by the `srstudio-drive` systemd unit and copied to
    `gdrive:srstudio/ready-to-publish` (video, `ig.txt`, `cover.jpg`, package). Run
    `python3 episodes/publish_drive.py --dry-run` to see it without waiting.
-10. **Report.** The batch variety table (below) when there is more than one episode, the comedy and look rubric estimates, the cast (and who is new), parts reused versus added, gates run with their
-   output, anything skipped and why.
+10. **Report.** The observation sentence and the tags of each episode, the batch variety table (below) when there
+   is more than one episode, the comedy and look rubric estimates, the cast (and who is new), parts reused versus
+   added, gates run with their output, anything skipped and why.
 
 ## Review the batch for variety
 
 When you write several episodes, check them as a set before any audio request, and again against the last
-episodes already published (the delivered posts in `episodes/instagram_posts.py`). Make one table with a row per
-episode and these columns:
-- premise area (work, money, family…);
+episodes already published (the releases in `episodes/posts/`). Make one table with a row per episode and these
+columns:
+- territory (the `Tags` territory) and who causes the problem;
+- emotion it leaves;
+- recurring characters;
 - opening;
 - mechanism;
 - staging (which shots and in what order);
@@ -393,7 +457,9 @@ episode and these columns:
 Rules of thumb:
 - no two episodes in a row share both opening and mechanism;
 - no opening, mechanism or ending appears in more than a third of the batch;
-- a pairing repeats only when the relationship is what the joke is about.
+- a pairing repeats only when the relationship is what the joke is about;
+- office premises make at most one in five, counting the recent releases;
+- no two episodes in a row leave the same emotion.
 
 The same structure redrawn in another style is still a repeat. Keep what makes a style or a cast recognisable (the
 look, the signature marks, a character's traits), and vary the joke underneath it.
@@ -408,6 +474,8 @@ look, the signature marks, a character's traits), and vary the joke underneath i
 - Edit a file another session owns without asking it (`ListAgents`, `SendMessage`); commit only your own paths.
 - Commit unless the operator asked; never lower a gate or skip a test to pass.
 - Make a character's identity the punchline, or depict a real person or brand.
+- Echo a franchise (its names, characters, designs, logos, catchphrases or music) or build a joke on a reference a
+  newcomer would not get.
 - Change a shipped default (a mouth style, a style's frame or palette) for a new episode: it breaks the fidelity
   tests and the rebuilds of videos already delivered. Add an option and leave the default alone; prove a refactor
   with a byte-identical rebuild.
