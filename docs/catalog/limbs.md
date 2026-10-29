@@ -94,3 +94,31 @@ The output includes the moving button press, a visibly lifted cup, wrist release
 original prop meshes in the source example, a pinned font and numeric contact/anatomy reports. The default
 clip contains 72 frames at 1600×900 and 24 fps. Pass `--font` and `--font-license` when the system DejaVu font
 and its distribution license are unavailable.
+
+## Native sleeve deformation
+
+`compile_motion(..., deformation="skin")` requests a connected sleeve surface driven by the native
+planar two-bone skeleton. The style draws a tapered, subdivided rest contour; each resulting sleeve shape
+binds to that skeleton through the renderer's `skin` modifier. The hand and fingers retain their spatial
+controls and deterministic baked contours. The returned backend is `native-skin`.
+
+The explicit skin request requires an orthographic camera, a planar arm, an adapter declaring skin support,
+and no separated layers or artist contour corrections. Unsupported combinations raise `LimbError` before
+scene mutation. `backend="baked"` cannot satisfy a native skin request. Use the default `deformation="contour"`
+for perspectives, separated body/head layers and corrective artwork. Existing actors can opt in with
+`LimbTrack(..., deformation="skin")`.
+
+All built-in vector adapters declare skin support. The engine uses automatic weights based on distance to
+the rest bone segments. Those weights blend surfaces; the canonical motion report checks bone and contact
+constraints rather than measuring the deformed sleeve's silhouette or volume. Native linear blend skinning
+can narrow a sleeve at a bent elbow. Artist-corrected baked surfaces remain appropriate when that shape is
+unacceptable. Explicit weight files in the engine use nearest-sample lookup rather than smooth interpolation;
+the limb compiler does not emit them.
+
+The renderer-enabled skin tests check actual sleeve pixels near the wrist and elbow at multiple poses,
+including a mirrored parent. Build and encode the six-action, three-style skin demonstration with:
+
+```sh
+PYTHONPATH=src python examples/limbs_gallery.py ../generated/limbs/skin-gallery --deformation skin
+../generated/bin/scene-render encode ../generated/limbs/skin-gallery/limbs-gallery.scene.xml
+```

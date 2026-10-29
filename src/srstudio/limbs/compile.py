@@ -23,6 +23,14 @@ _APPEARANCE = Appearance()
 _PARENT = Affine()
 
 
+def _check_id(cv: Canvas, id: str) -> None:
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", id):
+        raise LimbError("a compiled limb ID must be an XML name")
+    existing = {str(n.attributes().get("id", "")) for n in cv.scene.iter()}
+    if any(name == id or name.startswith(id + "-") for name in existing):
+        raise LimbError(f"compiled limb ID namespace {id!r} is already in use")
+
+
 @dataclass(frozen=True)
 class BakeOptions:
     fps: int = 24
@@ -97,13 +105,7 @@ def bake(
     Occlusion rules override anatomy by part name/glob, in declaration order; hidden parts are counted in the report.
     """
     options = options or BakeOptions()
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", id):
-        raise LimbError("a compiled limb ID must be an XML name")
-    existing = {str(n.attributes().get("id", "")) for n in cv.scene.iter()}
-    if any(
-        name == id or name.startswith(id + "-frame-") or name in (id + "-front", id + "-behind") for name in existing
-    ):
-        raise LimbError(f"compiled limb ID {id!r} is already in use")
+    _check_id(cv, id)
     adapter = adapter_for(style)
     if camera.projection == "perspective" and not adapter.capabilities.perspective:
         raise LimbError(f"adapter {style} does not support perspective")
@@ -185,6 +187,7 @@ def compile_motion(
     layers: LayerTargets | None = None,
     occlusion: tuple[Occlusion, ...] = (),
     correctives: tuple[ContourCorrection, ...] = (),
+    deformation: str = "contour",
 ) -> Compiled:
     """Use native two-bone IK for strictly planar arms; bake spatial requests with an explicit selection diagnostic.
 
@@ -194,6 +197,11 @@ def compile_motion(
     """
     if backend not in ("auto", "native", "baked"):
         raise LimbError(f"unknown limb backend {backend!r}")
+    if deformation not in ("contour", "skin"):
+        raise LimbError(f"unknown limb deformation {deformation!r}", code="capability")
+    if deformation == "skin" and backend == "baked":
+        raise LimbError("skin deformation requires native planar IK", code="capability")
+    _check_id(cv, id)
     options = options or BakeOptions()
     if backend == "baked":
         return bake(
@@ -215,6 +223,8 @@ def compile_motion(
     if count > options.max_frames or count * (24 + 12 * len(motion.hand.digits)) * 3 + 128 > options.max_nodes:
         raise LimbError("native limb budget exceeded", code="budget")
     adapter = adapter_for(style)
+    if deformation == "skin" and "skin" not in adapter.capabilities.deformation:
+        raise LimbError(f"adapter {style} does not support skin deformation", code="capability")
     samples = tuple(motion.sample(min(duration, i / options.fps)) for i in range(count + 1))
     planar = camera.projection == "orthographic" and parent_transform == _PARENT and layers is None
     for s in samples:
@@ -224,7 +234,7 @@ def compile_motion(
     planar = planar and not any(fnmatch.fnmatchcase(p, rule.part) for p in ("upper", "forearm") for rule in occlusion)
     planar = planar and adapter.capabilities.native_planar and not correctives
     if not planar:
-        if backend == "native":
+        if backend == "native" or deformation == "skin":
             raise LimbError(
                 "native limb compilation requires a planar arm, orthographic camera "
                 "and a common untransformed drawing parent without artist contour corrections",
@@ -263,8 +273,6 @@ def compile_motion(
         options=options,
         occlusion=hidden + occlusion,
     )
-    if any(n.attributes().get("id") == id for n in cv.scene.iter()):
-        raise LimbError(f"compiled limb ID {id!r} is already in use")
     before = sum(1 for _ in cv.scene.iter())
     root = cv.group(parent, id)
     cv.gate(root, [(options.offset, options.offset + duration)])
@@ -294,7 +302,27 @@ def compile_motion(
             [(time + options.offset, p[index]) for time, p in zip(times, shoulders, strict=True)],
             hold=False,
         )
-    for name, length, widths in (("upper", motion.arm.upper, (1.2, 1.0)), ("forearm", motion.arm.forearm, (1.0, 0.72))):
+    segments = (
+        ()
+        if deformation == "skin"
+        else (("upper", motion.arm.upper, (1.2, 1.0)), ("forearm", motion.arm.forearm, (1.0, 0.72)))
+    )
+    if deformation == "skin":
+        # Keep intermediate rest vertices: older renderers do not adaptively subdivide skin-deformed edges.
+        bind_points = tuple((motion.arm.upper * camera.scale * i / 8, 0.0) for i in range(9)) + tuple(
+            ((motion.arm.upper + motion.arm.forearm * i / 8) * camera.scale, 0.0) for i in range(1, 9)
+        )
+        sizes = tuple(motion.arm.width * camera.scale * (1.2 - 0.2 * i / 8) for i in range(9)) + tuple(
+            motion.arm.width * camera.scale * (1 - 0.28 * i / 8) for i in range(1, 9)
+        )
+        part = Part(
+            "sleeve", ribbon(bind_points, sizes), bind_points, 0, sum(sizes) / len(sizes), "sleeve", authored=True
+        )
+        pose = ProjectedPose((part,), bind_points[0], bind_points[8], bind_points[-1], (), "palm", 0)
+        drawing = adapter.draw(cv, root, pose, appearance, id=f"{id}-sleeve-drawing")
+        for shape in drawing.iter("shape"):
+            shape.add_deform().add_modifier(type="skin", skeleton=f"{id}-skeleton")
+    for name, length, widths in segments:
         group = cv.group(root, f"{id}-{name}-draw")
         group.add_transformConstraint(type="copy-transform", target=f"{id}-{name}")
         strip_points = ((0.0, 0.0), (length * camera.scale, 0.0))
@@ -315,4 +343,4 @@ def compile_motion(
     )
     nodes = sum(1 for _ in cv.scene.iter()) - before
     report = replace(result.report, hidden_parts=max(0, result.report.hidden_parts - 2 * count), nodes=nodes)
-    return Compiled((root,), result.frames, "native", report)
+    return Compiled((root,), result.frames, "native-skin" if deformation == "skin" else "native", report)

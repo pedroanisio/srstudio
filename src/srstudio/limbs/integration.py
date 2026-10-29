@@ -26,6 +26,7 @@ class LimbTrack:
     backend: str = "auto"
     occlusion: tuple[Occlusion, ...] = ()
     correctives: tuple[ContourCorrection, ...] = ()
+    deformation: str = "contour"
 
     def __post_init__(self) -> None:
         adapter_for(self.style)
@@ -33,6 +34,10 @@ class LimbTrack:
             raise LimbError(f"unknown limb backend {self.backend}")
         if self.backend == "native" and (self.occlusion or self.correctives):
             raise LimbError("native limb tracks do not support separated body/head layers or artist corrections")
+        if self.deformation not in ("contour", "skin"):
+            raise LimbError(f"unknown limb deformation {self.deformation!r}")
+        if self.deformation == "skin" and (self.backend == "baked" or self.occlusion or self.correctives):
+            raise LimbError("skin tracks require native planar IK without layered or artist-corrected contours")
 
     def draw(self, cv: Canvas, layers: LayerTargets, *, id: str) -> Compiled:
         if self.occlusion:
@@ -60,6 +65,7 @@ class LimbTrack:
             options=self.options,
             backend=self.backend,
             correctives=self.correctives,
+            deformation=self.deformation,
         )
 
 

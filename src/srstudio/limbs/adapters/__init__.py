@@ -66,7 +66,7 @@ class VectorAdapter:
     skin: str
     sleeve: str
     treatment: str = "flat"
-    capabilities: Capabilities = Capabilities()
+    capabilities: Capabilities = Capabilities(deformation=("contour", "skin"))
 
     def draw(self, cv: Canvas, parent: Any, pose: ProjectedPose, appearance: Appearance, *, id: str) -> Any:
         group = cv.group(parent, id)
