@@ -8,6 +8,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import CAFE, Canvas, Signature, cast, locations, props, registry, signature
+from srstudio.errors import SrstudioError
 from srstudio.rig import Performance
 from test_signature import TODAY, _canvas
 
@@ -42,10 +43,11 @@ def test_a_seated_office_actor_has_legs_drawn_behind_its_torso():
     assert [f for f in scene.check() if f.severity == "error"] == []
 
 
-def test_an_unknown_leg_pose_is_refused():
+def test_an_unknown_leg_pose_is_refused_as_a_cast_error_and_still_a_value_error():
     _, cv = canvas()
-    with pytest.raises(ValueError, match="legs"):
+    with pytest.raises(cast.CastError, match="legs") as caught:
         cast.Manager(cv).build(cv.comp, 540, 800, 1.0, Performance(extras={"legs": "kneeling"}))
+    assert isinstance(caught.value, SrstudioError) and isinstance(caught.value, ValueError)
 
 
 def test_the_seat_line_puts_a_seated_actors_torso_on_the_bench():

@@ -8,8 +8,13 @@ subclass or on a plain ``fn(cv, parent, ...)``.
 from __future__ import annotations
 
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 from .rig import Actor, Performance
+
+
+class CastError(SrstudioError, ValueError):
+    """An actor was asked for a pose it does not draw."""
 
 
 class OfficeActor(Actor):
@@ -33,7 +38,7 @@ class OfficeActor(Actor):
         legs = perf.extras.get("legs")
         if legs is not None:
             if legs not in self.LEGS:
-                raise ValueError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
+                raise CastError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
             legs_group = cv.group(g, f"{self.tag_base}-legs")
             if legs == "standing":
                 self.draw_standing_legs(legs_group)
