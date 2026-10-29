@@ -63,6 +63,20 @@ def test_the_slot_is_taped_over_and_the_display_changes_on_cue():
     assert [(0.0, 0.0), (1.2, 1.0)] in animated(cv, "opacity")  # the second reading shows from 1.2 s
 
 
+def test_lettering_too_small_to_read_is_scrawled_not_set():
+    near, far = canvas(), canvas()
+    ink_meter.kerb(near, near.comp, take("human", 3.0))
+    ink_meter.kerb(far, far.comp, take("human", 3.0), tow=0.8)  # pulled back to TOW_WIDE
+    assert {"SCAN TO PAY", ink_meter.TAPE_TEXT} <= set(texts(near))
+    assert texts(far) == []  # the display and the tape drawn as pen scrawl at 0.6, under LEGIBLE_PX
+    tight = canvas()
+    ink_meter.kerb(tight, tight.comp, take("human", 3.0), tow=0.8, view=ink_meter.TOW_TIGHT)
+    assert texts(tight) == ["SCAN TO PAY"]  # at 0.84 the display still reads; the tape's smaller hand does not
+    small = canvas()
+    ink_meter.meter(small, small.comp, take(), 500, 300, 0.5)
+    assert texts(small) == []
+
+
 def test_the_kerb_puts_the_doodle_the_meter_and_the_car_in_frame_and_a_tow_takes_the_car():
     still, towed = canvas(), canvas()
     ink_meter.kerb(still, still.comp, take("human", 3.0))

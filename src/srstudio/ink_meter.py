@@ -36,6 +36,7 @@ __all__ = [
     "TAKEN_TEXT",
     "TAPE_TEXT",
     "KERB_VIEW",
+    "LEGIBLE_PX",
     "PAVEMENT",
     "TOW_TIGHT",
     "TOW_WIDE",
@@ -47,6 +48,8 @@ __all__ = [
 LIGHTS = 4
 DISPLAY_MAX = 12  # characters on the meter's display
 TAPE_TEXT = "SCAN TO PAY"
+LEGIBLE_PX = 21.6  # the engine's legibility floor on a 1080 frame; smaller lettering is drawn as a scrawl
+DISPLAY_SIZE, TAPE_SIZE = 30, 22
 PAVEMENT = 880  # the pavement's line in the kerb shot, frame pixels
 ROAD = 912  # the road's surface, a kerb's step below the pavement
 TITLE_MAX = 16
@@ -57,7 +60,7 @@ TAKEN_TEXT = "TAKEN"  # a refused row's word, in white on its ink box
 STARS = 5
 STAR_STEP = 0.12  # seconds between one star lighting and the next
 LIFT_SECONDS, LIFT_DEGREES = 0.5, -15.0  # the hook lifts the car's front, its nose well up
-TOW_SPEED = 1500.0  # px/s: truck and car leaving to the right
+TOW_SPEED = 700.0  # px/s: truck and car leaving to the right, slow enough to watch go in the wide shot
 CAR_X = 600  # the parked car's rear bumper, frame pixels
 DOODLE_SCALE = 0.84  # the doodle on the pavement, his feet on it
 METER_X = 486  # the meter's centre line in the kerb shot
@@ -97,6 +100,17 @@ def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: s
         wrap="none",
     )
     parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
+
+
+def _lettering(cv: Canvas, parent, value: str, x, y, w, h, size, seen: float) -> None:
+    """``value`` set in ink when it reads at ``seen`` (the scale it is drawn at), else a pen scrawl in its place."""
+    if size * seen >= LEGIBLE_PX:
+        _text(cv, parent, value, x, y, w, h, size, cv.ink)
+        return
+    mid, a, b = y + h / 2, x + w * 0.15, x + w * 0.85
+    step = (b - a) / 6
+    waves = " ".join(f"q {step / 2:.1f} {-h * 0.18 * (-1) ** k:.1f} {step:.1f} 0" for k in range(6))
+    path(cv, parent, f"M {a:.1f} {mid:.1f} {waves}", sw=2.4)
 
 
 def _box(x: float, y: float, w: float, h: float, r: float) -> str:
@@ -158,9 +172,11 @@ def meter(
     *,
     speaker: str = "meter",
     display: Sequence[tuple[float, str]] = ((0.0, "SCAN TO PAY"),),
+    zoom: float = 1.0,
 ):
     """The meter's head centred on ``x``, its top at ``y``, the post down to the pavement (:data:`PAVEMENT` at
-    scale 1, placed at ``y + 500``); each ``(at, text)`` of ``display`` shows from ``at`` until the next."""
+    scale 1, placed at ``y + 500``); each ``(at, text)`` of ``display`` shows from ``at`` until the next. ``zoom`` is
+    the scale ``parent`` is seen at: lettering that would draw under :data:`LEGIBLE_PX` is a scrawl instead."""
     _check_display(display, take)
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M -24 250 L -24 500 L 24 500 L 24 250 Z", cv.white, sw=2.6)  # the post
@@ -172,7 +188,7 @@ def meter(
     path(cv, g, _box(-96, 50, 180, 72, 12), cv.white, sw=2.6)  # the display
     for k, (at, text) in enumerate(display):
         reading = group(cv, g)
-        _text(cv, reading, text, -92, 54, 172, 64, 30, cv.ink)
+        _lettering(cv, reading, text, -92, 54, 172, 64, DISPLAY_SIZE, scale * zoom)
         if len(display) > 1:
             keys = [(0.0, 1.0)] if k == 0 else [(0.0, 0.0), (at, 1.0)]
             if k + 1 < len(display):
@@ -192,7 +208,7 @@ def meter(
     path(cv, g, "M 22 150 L 92 150", sw=9)  # the coin slot
     tape = group(cv, g, x=58, y=180, rotation=-8)  # taped over, by hand
     path(cv, tape, "M -66 -46 L 70 -40 L 66 22 L -70 16 Z", cv.white, stroke=cv.shade, sw=2)
-    _text(cv, tape, TAPE_TEXT, -64, -40, 128, 52, 22, cv.ink)
+    _lettering(cv, tape, TAPE_TEXT, -64, -40, 128, 52, TAPE_SIZE, scale * zoom)
     signature.code(cv, g, -22, 420, 9, color=cv.shade)
     if talking:
         marks = group(cv, g, x=124, y=-16)
@@ -311,7 +327,7 @@ def kerb(
         path(cv, ground, f"M {dx} {ROAD + 70} L {dx + 40} {ROAD + 70}", stroke=cv.shade, sw=4)
     signature.cactus(cv, ground, CAR_X - 62, PAVEMENT, 0.32)
     human(cv, ground, take, 10, PAVEMENT - 640 * DOODLE_SCALE, DOODLE_SCALE)
-    out = meter(cv, ground, take, METER_X, PAVEMENT - 500, 1, **meter_kw)
+    out = meter(cv, ground, take, METER_X, PAVEMENT - 500, 1, zoom=scale, **meter_kw)
     hauled = group(cv, ground)
     car = _car(cv, hauled)
     if tow is not None:
