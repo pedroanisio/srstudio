@@ -43,7 +43,9 @@ RELEASE = Release("scene", InstagramPost(title="T", description="D."), builder="
 @pytest.fixture
 def episodes(monkeypatch, tmp_path):
     """An episodes folder with a helper, a builder and a recorder for ``my-ep``, and a release that builds the
-    ``scene`` project with ``printer_recreation.py``; argv, path and modules restored after each test."""
+    ``scene`` project with ``printer_recreation.py``; argv, path and modules restored after each test. The
+    operator's own ``SRSTUDIO_SCRIPTS`` is cleared: the folder is found from the working directory."""
+    monkeypatch.delenv("SRSTUDIO_SCRIPTS", raising=False)
     monkeypatch.setattr(sys, "argv", list(sys.argv))
     monkeypatch.setattr(sys, "path", list(sys.path))
     before = set(sys.modules)
