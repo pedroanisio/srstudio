@@ -60,8 +60,16 @@ Facts that shaped the design:
 6. **The migration is one-time and works only on proof.** `instagram_posts.py migrate OUT RENDERS --fonts DIR`
    (`social.migrate_manifest`) handles a 1.0.0 manifest only.
    - It rewrites an entry's `post` only when the stored value equals the 1.0.0 fingerprint of the post now,
-     recomputed with `social.LEGACY_LAYOUT`. That constant is the SHA-256 of `thumbnail.py` as of f7c86d3^, the
-     source every 1.0.0 delivery hashed. A match proves the delivery was made from this caption, spec, font and scene.
+     recomputed with one of `social.LEGACY_LAYOUTS`. A match proves the delivery was made from this caption, spec,
+     font and scene, and with a layout that draws as today's does.
+   - `LEGACY_LAYOUTS` holds the SHA-256 of the two `thumbnail.py` sources that 1.0.0 deliveries hashed:
+     - `LEGACY_LAYOUT_7CDAFF4`, the file as 7cdaff4 wrote it (`git show f7c86d3^:src/srstudio/thumbnail.py`);
+     - `LEGACY_LAYOUT_F7C86D3`, the file as f7c86d3 left it (`git show f7c86d3:src/srstudio/thumbnail.py`).
+   - The two count as one layout. `git diff f7c86d3^ f7c86d3 -- src/srstudio/thumbnail.py` is two insertions and
+     one deletion: `from .errors import SrstudioError`, and `SrstudioError` added to the bases of `ThumbnailError`.
+     Nothing `compose` or `render` does depends on either line.
+   - The set is closed. No later source hash is ever added: after the migration, the drawing fingerprint is the
+     only scheme, and a manifest at 1.1.0 is never migrated again.
    - Every other entry is kept as it was, so `check` still reports it. That includes the five changed Saga scenes
      and a video that is no longer published.
    - `render`, `ig` and `cover` are never touched. Nothing is drawn or delivered.
@@ -89,11 +97,17 @@ Facts that shaped the design:
   shows this by pointing the module at an edited copy of its source.
 - A change to the scene SDK that changes the bytes of the composed document drifts every cover, even if the JPEG
   would come out the same. The engine reads those bytes, so this is counted as drift.
-- A 1.0.0 entry written by code that already had f7c86d3's `thumbnail.py` hashed other source bytes than
-  `LEGACY_LAYOUT`. The migration keeps such an entry, and it drifts until that video is delivered again.
-- The rehearsal ran on a copy of the delivery as it stood on 2026-10-29, with the posts of this change. `migrate
-  --dry-run` and `migrate` printed the same plan: 76 entries migrated and 6 kept. The 6 kept were the five Saga
-  videos whose scenes changed, plus one video delivered from another branch whose post this branch does not ship.
-  Each migrated entry changed only its `post`. `check` then listed exactly those six.
+- Two videos were delivered on 2026-10-29 by code that already had f7c86d3's `thumbnail.py`. Accepting that
+  source's hash lets their entries migrate on the same proof, with no redelivery.
+- An entry can only be proven against a post the migrating checkout ships. A video delivered from a release that is
+  not in that checkout is kept as "no longer published". Run `migrate` from a checkout that ships every delivered
+  release.
+- The rehearsal ran on copies of the delivery as it stood on 2026-10-29, which held 83 entries.
+  - With the releases of this change, `migrate --dry-run` and `migrate` printed the same plan: 76 migrated and 7
+    kept. Five of the kept were the Saga videos whose scenes changed. The other two were videos whose releases are
+    on another branch, so they were kept as no longer published.
+  - With that other branch's releases, it printed 78 migrated and 5 kept, and `check` listed only the five Saga
+    videos.
+  - Each migrated entry changed only its `post`.
 - Covers drawn before and after this change from the same render are byte-identical. This was checked on a
   portrait post, a square post and a post drawn from its scene.

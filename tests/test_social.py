@@ -18,7 +18,9 @@ from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
     HASHTAG_LIMIT,
-    LEGACY_LAYOUT,
+    LEGACY_LAYOUT_7CDAFF4,
+    LEGACY_LAYOUT_F7C86D3,
+    LEGACY_LAYOUTS,
     MANIFEST,
     MANIFEST_VERSION,
     CoverError,
@@ -587,10 +589,10 @@ def test_a_cover_that_cannot_be_drawn_now_drifts(delivered):
 
 
 # -- the one-time migration of a 1.0.0 manifest ---------------------------------------------------------------------
-def legacy(item: Item) -> str:
+def legacy(item: Item, layout: str = LEGACY_LAYOUT_7CDAFF4) -> str:
     """The 1.0.0 post fingerprint as it was delivered: the layout code was the SHA-256 of thumbnail.py's source."""
     p = item.post
-    data = {"text": p.text(), "thumbnail": asdict(p.thumbnail) if p.thumbnail else None, "layout": LEGACY_LAYOUT,
+    data = {"text": p.text(), "thumbnail": asdict(p.thumbnail) if p.thumbnail else None, "layout": layout,
             "font": hashlib.sha256(FONT.read_bytes()).hexdigest()}  # fmt: skip
     if item.scene is not None:
         data["scene"] = hashlib.sha256(Path(item.scene).read_bytes()).hexdigest()
@@ -599,8 +601,9 @@ def legacy(item: Item) -> str:
 
 @pytest.fixture
 def old_delivery(tmp_path):
-    """A 1.0.0 manifest: a and c were delivered with the posts they have now, b with another headline, and gone is
-    no longer published. Returns the items, the out folder and the entries as written."""
+    """A 1.0.0 manifest: a and c were delivered with the posts they have now (a by the thumbnail.py of 7cdaff4, c by
+    that of f7c86d3), b with another headline, and gone is no longer published. Returns the items, the out folder and
+    the entries as written."""
     renders = tmp_path / "renders"
     renders.mkdir()
     items = {
@@ -612,13 +615,32 @@ def old_delivery(tmp_path):
     entries = {
         "a": {"render": "1" * 64, "post": legacy(items["a"]), "ig": "2" * 64, "cover": "3" * 64},
         "b": {"render": "4" * 64, "post": other, "ig": "5" * 64, "cover": "6" * 64},
-        "c": {"render": "7" * 64, "post": legacy(items["c"]), "ig": "8" * 64, "cover": "9" * 64},
+        "c": {"render": "7" * 64, "post": legacy(items["c"], LEGACY_LAYOUT_F7C86D3), "ig": "8" * 64, "cover": "9" * 64},
         "gone": {"render": "a" * 64, "post": "b" * 64, "ig": "c" * 64, "cover": "d" * 64},
     }
     out = tmp_path / "ig"
     out.mkdir()
     (out / MANIFEST).write_text(json.dumps({"version": "1.0.0", "videos": entries}, indent=2) + "\n", "utf-8")
     return items, out, entries
+
+
+def test_the_legacy_layouts_are_the_two_sources_every_1_0_0_delivery_hashed_and_no_other():
+    assert LEGACY_LAYOUTS == {  # closed (ADR 0037): no later source is ever added
+        "cee600d0102510c78586d39ac0c449c6a0a5959af04c6f97bfcd509971b86c09",  # thumbnail.py at f7c86d3^
+        "96dfe994aa02fb4eb4028ffd5030aa7721463a810e7624de25d46737acee4f64",  # thumbnail.py at f7c86d3
+    }
+    assert isinstance(LEGACY_LAYOUTS, frozenset)
+
+
+def test_an_entry_hashed_with_either_legacy_layout_migrates_and_one_with_another_source_is_kept(old_delivery):
+    items, out, entries = old_delivery
+    data = json.loads((out / MANIFEST).read_text(encoding="utf-8"))
+    data["videos"]["a"]["post"] = legacy(items["a"], LEGACY_LAYOUT_F7C86D3)
+    data["videos"]["c"]["post"] = legacy(items["c"], "0" * 64)  # a source no 1.0.0 delivery hashed
+    (out / MANIFEST).write_text(json.dumps(data), encoding="utf-8")
+    result = migrate_manifest(items, out, font=FONT, dry_run=True)
+    assert result.migrated == ["a"]
+    assert "not the 1.0.0 fingerprint" in dict(result.kept)["c"]
 
 
 def test_an_old_manifest_is_refused_by_name_and_is_drift(old_delivery):

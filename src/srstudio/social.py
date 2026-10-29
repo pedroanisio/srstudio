@@ -61,7 +61,9 @@ __all__ = [
     "MANIFEST",
     "MANIFEST_VERSION",
     "LEGACY_VERSION",
-    "LEGACY_LAYOUT",
+    "LEGACY_LAYOUTS",
+    "LEGACY_LAYOUT_7CDAFF4",
+    "LEGACY_LAYOUT_F7C86D3",
     "BACKDROP_ARGS",
     "FRAME_SLACK",
     "CAPTION_LIMIT",
@@ -402,9 +404,14 @@ class InstagramPost:
 MANIFEST = "delivery.json"
 MANIFEST_VERSION = "1.1.0"  # 1.1.0: the post fingerprint holds the cover's drawing, not the layout source
 LEGACY_VERSION = "1.0.0"
-# The SHA-256 of src/srstudio/thumbnail.py as of f7c86d3^ (the file 7cdaff4 wrote, unchanged until f7c86d3). Every
-# 1.0.0 entry hashed this source as its "layout": `git show f7c86d3^:src/srstudio/thumbnail.py | sha256sum`.
-LEGACY_LAYOUT = "cee600d0102510c78586d39ac0c449c6a0a5959af04c6f97bfcd509971b86c09"
+# The SHA-256 of each thumbnail.py source a 1.0.0 entry hashed as its "layout". The two draw the same covers: f7c86d3
+# only imported SrstudioError and made it a base of ThumbnailError. The set is closed (ADR 0037): the drawing
+# fingerprint is the only scheme after the migration, and no later source is ever added.
+# thumbnail.py as 7cdaff4 wrote it: `git show f7c86d3^:src/srstudio/thumbnail.py | sha256sum`
+LEGACY_LAYOUT_7CDAFF4 = "cee600d0102510c78586d39ac0c449c6a0a5959af04c6f97bfcd509971b86c09"
+# thumbnail.py as f7c86d3 left it: `git show f7c86d3:src/srstudio/thumbnail.py | sha256sum`
+LEGACY_LAYOUT_F7C86D3 = "96dfe994aa02fb4eb4028ffd5030aa7721463a810e7624de25d46737acee4f64"
+LEGACY_LAYOUTS = frozenset({LEGACY_LAYOUT_7CDAFF4, LEGACY_LAYOUT_F7C86D3})
 _ENTRY_KEYS = {"render", "post", "ig", "cover"}
 
 
@@ -479,13 +486,13 @@ def fingerprint(post: InstagramPost, video: Path, font: Path, scene: Path | None
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def _legacy_fingerprint(post: InstagramPost, font: Path, scene: Path | None) -> str:
-    """The 1.0.0 post fingerprint, as delivered before ADR 0037: the layout was the hash of the layout source."""
+def _legacy_fingerprint(post: InstagramPost, font: Path, scene: Path | None, layout: str) -> str:
+    """The 1.0.0 post fingerprint, as delivered before ADR 0037: ``layout`` was the hash of the layout source."""
     data = {
         "text": post.text(),
         "thumbnail": asdict(post.thumbnail) if post.thumbnail is not None else None,
         "font": _sha(font),
-        "layout": LEGACY_LAYOUT,
+        "layout": layout,
     }
     if scene is not None:
         data["scene"] = _sha(scene) if Path(scene).is_file() else "missing"
@@ -675,7 +682,7 @@ def _plan(items: Items, path: Path, font: Path) -> tuple[Migration, dict[str, di
         post, video, scene = item
         if not Path(video).is_file():
             kept.append((name, f"no render at {video}"))
-        elif entry["post"] != _legacy_fingerprint(post, font, scene):
+        elif entry["post"] not in {_legacy_fingerprint(post, font, scene, layout) for layout in LEGACY_LAYOUTS}:
             kept.append((name, f"its post is not the {LEGACY_VERSION} fingerprint of the post now: the post, its "
                                "thumbnail, its scene or the font changed since delivery"))  # fmt: skip
         else:
@@ -693,7 +700,8 @@ def migrate_manifest(items: Items, out: Path, *, font: Path, dry_run: bool = Fal
     """Move ``<out>/delivery.json`` from version 1.0.0 to :data:`MANIFEST_VERSION` once, on proof (ADR 0037).
 
     An entry's ``post`` is rewritten to :func:`fingerprint` only when it equals the 1.0.0 fingerprint of the post
-    now, recomputed with :data:`LEGACY_LAYOUT`: then the delivery was made from exactly this post, font and scene.
+    now, recomputed with one of the :data:`LEGACY_LAYOUTS`: then the delivery was made from exactly this post, font
+    and scene.
     Every other entry is kept as it was, so :func:`check_delivery` still reports it. ``render``, ``ig`` and
     ``cover`` are never changed, and nothing is drawn or delivered. The manifest is read and replaced under the
     delivery lock, in one step. ``dry_run`` returns the same plan and writes nothing, not even the lock. Raises
