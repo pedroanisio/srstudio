@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+import types
 
 import pytest
 
@@ -36,6 +37,29 @@ def test_a_class_part_counts_when_its_own_drawing_runs_not_when_it_is_looked_up(
         except Exception:
             pass
     assert used == {"manager"}
+
+
+def test_parts_made_by_one_factory_count_as_themselves_not_as_the_last_one_registered():
+    gary, kai = (registry.get("character", f"collage-{name}").builder for name in ("gary", "kai"))
+    assert gary.__code__ is kai.__code__  # one closure per look: the code object alone cannot tell them apart
+    for drawer, name in ((gary, "collage-gary"), (kai, "collage-kai")):
+        with U.trace() as used:
+            try:
+                drawer(None, None, (), 1.0)  # its own drawing runs (and fails on the dummy arguments)
+            except Exception:
+                pass
+        assert used == {name}
+
+
+def test_an_unregistered_closure_of_a_part_s_code_counts_as_no_part():
+    gary = registry.get("character", "collage-gary").builder
+    stranger = types.FunctionType(gary.__code__, gary.__globals__, closure=(types.CellType(object()),))
+    with U.trace() as used:
+        try:
+            stranger(None, None, (), 1.0)
+        except Exception:
+            pass
+    assert used == set()
 
 
 def test_trace_stops_recording_and_restores_the_profiler(project):

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import operator
 import os
 import re
 import runpy
@@ -35,18 +36,36 @@ class UsageError(SrstudioError, RuntimeError):
     """An episode that failed to build, or a usage file that cannot be read."""
 
 
-def _codes() -> dict[CodeType, str]:
-    codes: dict[CodeType, str] = {}
+def _cells(func) -> tuple[object, ...]:
+    """The values a closure closed over, in its code's ``co_freevars`` order (empty for a plain function)."""
+    return tuple(cell.cell_contents for cell in func.__closure__ or ())
+
+
+def _codes() -> dict[CodeType, list[tuple[str, tuple[object, ...]]]]:
+    """Each builder's code object, with the part it draws and the values it closed over: parts made by one factory
+    (one closure per look) share a code object, and only those values tell them apart."""
+    codes: dict[CodeType, list[tuple[str, tuple[object, ...]]]] = {}
     for entry in registry.entries():
         b = entry.builder
         if inspect.isclass(b):
             for value in vars(b).values():
                 func = value.__func__ if isinstance(value, (staticmethod, classmethod)) else value
                 if inspect.isfunction(func):
-                    codes[func.__code__] = entry.name
+                    codes.setdefault(func.__code__, []).append((entry.name, ()))
         elif inspect.isfunction(b):
-            codes[b.__code__] = entry.name
+            codes.setdefault(b.__code__, []).append((entry.name, _cells(b)))
     return codes
+
+
+def _called(frame, parts: Sequence[tuple[str, tuple[object, ...]]]) -> str | None:
+    """The part a call into a builder's code draws: the only one with that code, or the one whose closed-over values
+    are the frame's own."""
+    if len(parts) == 1:
+        return parts[0][0]
+    values = tuple(frame.f_locals.get(name) for name in frame.f_code.co_freevars)
+    return next(
+        (name for name, cells in parts if len(cells) == len(values) and all(map(operator.is_, cells, values))), None
+    )
 
 
 @contextmanager
@@ -57,7 +76,8 @@ def trace() -> Iterator[set[str]]:
 
     def hook(frame, event, arg):
         if event == "call":
-            name = codes.get(frame.f_code)
+            parts = codes.get(frame.f_code)
+            name = _called(frame, parts) if parts else None
             if name is not None:
                 used.add(name)
 
