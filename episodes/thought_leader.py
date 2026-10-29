@@ -14,5 +14,6 @@ from srstudio.collage_sketch import build
 from thought_leader_data import STAGING
 
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
-ep.instagram(POSTS[STAGING.sketch.slug])
-ep.finish()
+if ep is not None:  # None: --init wrote the project files
+    ep.instagram(POSTS[STAGING.sketch.slug])
+    ep.finish()

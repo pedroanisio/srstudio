@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import partial
@@ -208,16 +207,16 @@ def zooms(beats: Sequence[sketch.Beat], app: sketch.Appearance) -> list[float]:
     return [t for t, _ in sketch.events(beats, "zoom") if app.start <= t < app.end][:1]
 
 
-def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
+def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     """The episode, drawn and ready for its post and :meth:`Episode.finish`; ``--init`` writes the project files
-    and exits, ``--voice`` builds from the recording."""
+    and returns ``None`` (the script ends there), ``--voice`` builds from the recording."""
     root = Path(root)
     flags = errors.flags(flags, BUILD_FLAGS)
     check_staging(staging)
     sk = staging.sketch
     if "--init" in flags:
         sketch.write_project(root, sk, COLLAGE.google_font())
-        sys.exit(0)
+        return None
     voiced = "--voice" in flags
     mouths: sketch.Mouths = {}
     if voiced:
