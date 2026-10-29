@@ -197,7 +197,14 @@ park = ep.setup(
         *MILO_BENCH,
         mouth=ep.mouth("milo"),
         blinks=[(FLUTTER + 0.3, FLUTTER + 0.44)],
-        nods=[(0, -6), (glance + 0.55, -6), (glance + 0.65, 9), (P(4).end, 9), (P(4).end + 0.3, -4)],  # the snap
+        nods=[
+            (0, -6),
+            (glance + 0.55, -6),
+            (glance + 0.65, 20),
+            (P(4).start, 12),
+            (P(4).end, 12),
+            (P(4).end + 0.3, -4),
+        ],  # the snap at the cactus, settling as he speaks
     ),
     beside_bench=pigeon,
     cactus=performer(560, 1270, 1.0),
