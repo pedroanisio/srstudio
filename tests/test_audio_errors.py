@@ -47,3 +47,8 @@ def test_generated_refusals_are_generated_errors():
     refused(lambda: item(cache="../a.wav"), generated.GeneratedError, "inside")
     refused(lambda: generated.load_clips("nope"), generated.GeneratedError, "not a list")
     refused(lambda: generated.load_clips([{"surprise": 1}]), generated.GeneratedError, "unknown field")
+
+
+def test_a_clip_missing_a_required_field_is_a_generated_error_naming_it():
+    clip = {"generated": {"id": "line"}, "sha256": "0" * 64, "placement": {}}
+    refused(lambda: generated.load_clips([clip]), generated.GeneratedError, r"clip.generated: missing field\(s\) \[")
