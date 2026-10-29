@@ -286,7 +286,8 @@ def kerb(
     **meter_kw,
 ):
     """The kerb shot; ``tow`` (seconds into the take) brings the tow truck, already hooked on, that lifts the car
-    and leaves with it; ``close`` frames the meter alone. ``view`` frames the kerb (:data:`KERB_VIEW`, or
+    and leaves with it; a negative ``tow`` began that long before the take, so a cut carries the tow on (mid-lift,
+    driving off, or long gone); ``close`` frames the meter alone. ``view`` frames the kerb (:data:`KERB_VIEW`, or
     :data:`TOW_WIDE` with a tow; :data:`TOW_TIGHT` is on the car and the truck). ``meter_kw`` (``display``,
     ``speaker``) go to :func:`meter`."""
     if view is not None and not (all(math.isfinite(v) for v in view) and view[0] > 0):
@@ -294,8 +295,8 @@ def kerb(
     if tow is not None:
         if close:
             raise MeterError("a tow is seen from the wide kerb, not the close meter")
-        if not (math.isfinite(tow) and 0 <= tow < take.duration):
-            raise MeterError(f"the tow starts within the take (0..{take.duration}), got {tow}")
+        if not (math.isfinite(tow) and tow < take.duration):
+            raise MeterError(f"the tow starts before the take ends ({take.duration}), got {tow}")
     if close:
         path(cv, parent, "M 0 1000 L 1080 1000", sw=2.4)
         signature.cactus(cv, parent, 930, 1000, 0.45)
@@ -316,10 +317,23 @@ def kerb(
     if tow is not None:
         _truck(cv, hauled, CAR_X + 480)
         lifted = tow + LIFT_SECONDS
-        cv.keys(car, "rotation", [*([(0.0, 0.0)] if tow > 0 else []), (tow, 0.0), (lifted, LIFT_DEGREES)], hold=False)
+        rise = [*([(0.0, 0.0)] if tow > 0 else []), (tow, 0.0), (lifted, LIFT_DEGREES)]
+        cv.keys(car, "rotation", _from_start(rise), hold=False)
         gone = lifted + (far + 600) / TOW_SPEED
-        cv.keys(hauled, "x", [(tow, 0.0), (lifted, 0.0), (gone, far + 600.0)], hold=False)
+        cv.keys(hauled, "x", _from_start([(tow, 0.0), (lifted, 0.0), (gone, far + 600.0)]), hold=False)
     return out
+
+
+def _from_start(keys: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Linear ``keys`` seen from the take's start: the ones before it fold into the value they reach at 0."""
+    if keys[0][0] >= 0:
+        return keys
+    before = [k for k in keys if k[0] <= 0][-1]
+    later = [k for k in keys if k[0] > 0]
+    if not later:
+        return [(0.0, before[1])]
+    (t0, v0), (t1, v1) = before, later[0]
+    return [(0.0, v0 + (v1 - v0) * -t0 / (t1 - t0)), *later]
 
 
 def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) -> None:

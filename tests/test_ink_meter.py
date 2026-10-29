@@ -74,6 +74,20 @@ def test_the_kerb_puts_the_doodle_the_meter_and_the_car_in_frame_and_a_tow_takes
     assert away[0][0] == pytest.approx(0.8) and away[-1][1] > away[0][1] + 1080
 
 
+def test_a_tow_begun_before_the_take_carries_on_across_the_cut():
+    lifting, leaving, gone = canvas(), canvas(), canvas()
+    ink_meter.kerb(lifting, lifting.comp, take("human", 3.0), tow=-0.25)  # cut in mid-lift
+    ink_meter.kerb(leaving, leaving.comp, take("human", 3.0), tow=-1.0)  # cut in as it pulls away
+    ink_meter.kerb(gone, gone.comp, take("human", 3.0), tow=-9.0)  # long gone
+    (rise,) = animated(lifting, "rotation")
+    assert rise[0] == (0.0, pytest.approx(ink_meter.LIFT_DEGREES / 2)) and rise[-1] == (0.25, ink_meter.LIFT_DEGREES)
+    (away,) = animated(leaving, "x")
+    assert away[0] == (0.0, pytest.approx(0.5 * ink_meter.TOW_SPEED))  # half a second under way at the cut
+    (rise,) = animated(gone, "rotation")
+    (away,) = animated(gone, "x")
+    assert rise == [(0.0, ink_meter.LIFT_DEGREES)] and len(away) == 1 and away[0][1] > 1080 / ink_meter.TOW_WIDE[0]
+
+
 def views(cv: Canvas) -> list[tuple[float, float, float]]:
     """The kerb's framings: (scale, where the pavement's left end lands in x and y)."""
     return [
@@ -152,7 +166,7 @@ def test_a_taken_row_flips_to_ink_with_a_cross_and_the_word_taken():
         (lambda cv: ink_meter.meter(cv, cv.comp, take(), 0, 0, display=((0.0, "A"), (0.0, "B"))), "rising"),
         (lambda cv: ink_meter.meter(cv, cv.comp, take(), 0, 0, display=((0.0, "X" * 20),)), "characters"),
         (lambda cv: ink_meter.meter(cv, cv.comp, take(), 0, 0, display=((0.0, "OK"), (9.0, "NO"))), "within"),
-        (lambda cv: ink_meter.kerb(cv, cv.comp, take(), tow=-1.0), "tow"),
+        (lambda cv: ink_meter.kerb(cv, cv.comp, take(), tow=float("nan")), "tow"),
         (lambda cv: ink_meter.kerb(cv, cv.comp, take(), tow=5.0), "tow"),
         (lambda cv: ink_meter.kerb(cv, cv.comp, take(), close=True, tow=1.0), "close"),
         (lambda cv: ink_meter.app_screen(cv, cv.comp, take(), title="", rows=()), "title"),
