@@ -96,6 +96,8 @@ class Chunk:
                 raise ComposeError(f"chunk {self.name!r}: a lyric is one line: {line!r}")
             if not 1 <= len(line) <= MAX_CHARS:
                 raise ComposeError(f"chunk {self.name!r}: a lyric line is 1..{MAX_CHARS} characters")
+            if not normalize_words(line):
+                raise ComposeError(f"chunk {self.name!r}: the lyric {line!r} has no words to sing or to check")
         if any(c in self.direction for c in "{}\n") or len(self.direction) > MAX_CHARS:
             raise ComposeError(
                 f"chunk {self.name!r}: a direction is one line of at most {MAX_CHARS} characters, no braces"
@@ -234,7 +236,7 @@ def locate_lyrics(
     for line, (lo, hi) in lines:
         want = normalize_words(line)
         found = None
-        for i in range(cursor, len(tokens) - len(want) + 1):
+        for i in range(cursor, len(tokens) - len(want) + 1) if want else ():
             run = tokens[i : i + len(want)]
             if [t for t, _, _ in run] == want and run[0][1] >= lo - slack and run[-1][2] <= hi + slack:
                 found = i

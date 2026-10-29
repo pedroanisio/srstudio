@@ -16,7 +16,16 @@ from array import array
 import pytest
 
 from srstudio import compose
-from srstudio.compose import Chunk, LyricMismatch, MusicClient, MusicOutputError, Plan, locate_lyrics, measure_tempo
+from srstudio.compose import (
+    Chunk,
+    ComposeError,
+    LyricMismatch,
+    MusicClient,
+    MusicOutputError,
+    Plan,
+    locate_lyrics,
+    measure_tempo,
+)
 from srstudio.voice import VoiceOutputError, parse_transcript
 
 RATE = 48000
@@ -229,6 +238,18 @@ def test_lines_must_come_in_order():
     t = heard(("Nod.", 0.2, 0.5), ("Camera", 1.0, 1.4), ("on.", 1.4, 1.7))
     with pytest.raises(LyricMismatch, match="Nod"):
         locate_lyrics(t, [("Camera on.", (0, 4)), ("Nod.", (0, 4))])
+
+
+def test_a_line_with_no_words_is_a_mismatch_not_an_index_error():
+    t = heard(("Camera", 0.4, 0.8), ("on.", 0.8, 1.1))
+    with pytest.raises(LyricMismatch, match="'...' not sung"):
+        locate_lyrics(t, [("...", (0, 4))])
+
+
+@pytest.mark.parametrize("line", ["...", "!?", "\u2014"])
+def test_a_lyric_with_no_words_is_refused_before_any_request(line):
+    with pytest.raises(ComposeError, match="no words"):
+        Chunk("verse", 10.0, ("jazz",), lines=(line,))
 
 
 def test_lyric_mismatch_is_a_verification_failure():
