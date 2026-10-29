@@ -1,0 +1,209 @@
+{
+  "schema": "srstudio.limbs.requirements/1.0.0",
+  "generated_by": "OpenAI Codex",
+  "scope": "Reusable stylized arm and hand authoring, spatial movement, deformation and style integration",
+  "requirements": [
+    {
+      "id": "anatomy",
+      "requirement": "Immutable spatial anatomy, handedness, five topologies, configurable axes and joint limits",
+      "implementation": [
+        "src/srstudio/limbs/model.py",
+        "src/srstudio/limbs/math3d.py"
+      ],
+      "verification": [
+        "tests/test_limbs_model.py",
+        "tests/test_limbs_custom_anatomy.py"
+      ]
+    },
+    {
+      "id": "kinematics",
+      "requirement": "Deterministic analytic reach and forward kinematics, strict limits or explicit clamps",
+      "implementation": [
+        "src/srstudio/limbs/constraints.py"
+      ],
+      "verification": [
+        "tests/test_limbs_model.py",
+        "tests/test_limbs_evaluation.py"
+      ]
+    },
+    {
+      "id": "motion",
+      "requirement": "Reusable phased gestures, per-digit controls, retargeting and stable word references",
+      "implementation": [
+        "src/srstudio/limbs/motion.py"
+      ],
+      "verification": [
+        "tests/test_limbs_motion.py"
+      ]
+    },
+    {
+      "id": "projection",
+      "requirement": "Orthographic and perspective projection with explicit parent transform ownership",
+      "implementation": [
+        "src/srstudio/limbs/projection.py"
+      ],
+      "verification": [
+        "tests/test_limbs_model.py",
+        "tests/test_limbs_bounds.py"
+      ]
+    },
+    {
+      "id": "contact",
+      "requirement": "Moving wrist and fingertip contacts, attachment acquisition and release",
+      "implementation": [
+        "src/srstudio/limbs/motion.py",
+        "src/srstudio/limbs/props.py"
+      ],
+      "verification": [
+        "tests/test_limbs_motion.py",
+        "tests/test_limbs_props.py"
+      ]
+    },
+    {
+      "id": "coordination",
+      "requirement": "Crossed arms, distinct two-hand prop anchors and conservative clearance diagnostics",
+      "implementation": [
+        "src/srstudio/limbs/props.py"
+      ],
+      "verification": [
+        "tests/test_limbs_bimanual.py"
+      ]
+    },
+    {
+      "id": "styles",
+      "requirement": "Nine built-in drawing treatments and a registration protocol for additional styles",
+      "implementation": [
+        "src/srstudio/limbs/adapters/__init__.py"
+      ],
+      "verification": [
+        "tests/test_limbs_drawing.py",
+        "tests/test_limbs_custom_anatomy.py"
+      ]
+    },
+    {
+      "id": "deformation",
+      "requirement": "Bounded contours, view-keyed artist corrections and explicit native sleeve skinning",
+      "implementation": [
+        "src/srstudio/limbs/geometry.py",
+        "src/srstudio/limbs/correctives.py",
+        "src/srstudio/limbs/compile.py"
+      ],
+      "verification": [
+        "tests/test_limbs_silhouettes.py",
+        "tests/test_limbs_correctives.py",
+        "tests/test_limbs_skin.py"
+      ]
+    },
+    {
+      "id": "compositing",
+      "requirement": "Per-surface hand/prop depth sorting and explicit body/head layers",
+      "implementation": [
+        "src/srstudio/limbs/interaction.py",
+        "src/srstudio/limbs/compile.py"
+      ],
+      "verification": [
+        "tests/test_limbs_interaction.py",
+        "tests/test_limbs_compile.py"
+      ]
+    },
+    {
+      "id": "backends",
+      "requirement": "Capability-checked native planar IK and deterministic baked fallback",
+      "implementation": [
+        "src/srstudio/limbs/compile.py"
+      ],
+      "verification": [
+        "tests/test_limbs_native.py",
+        "tests/test_limbs_compile.py"
+      ]
+    },
+    {
+      "id": "integration",
+      "requirement": "Typed actor and episode tracks plus opt-in Stick, Toon and Gloss character replacement",
+      "implementation": [
+        "src/srstudio/limbs/integration.py",
+        "src/srstudio/rig.py",
+        "src/srstudio/episode.py",
+        "src/srstudio/stick.py",
+        "src/srstudio/toon_cast.py",
+        "src/srstudio/gloss.py"
+      ],
+      "verification": [
+        "tests/test_limbs_integration.py",
+        "tests/test_limbs_style_rigs.py"
+      ]
+    },
+    {
+      "id": "persistence",
+      "requirement": "Versioned bounded typed motion JSON with rejection paths and private atomic files",
+      "implementation": [
+        "src/srstudio/limbs/serialization.py"
+      ],
+      "verification": [
+        "tests/test_limbs_serialization.py",
+        "tests/test_limbs_bounds.py"
+      ]
+    },
+    {
+      "id": "quality",
+      "requirement": "Bone, contact, reach, temporal and resource measurements; random access and failure preflight",
+      "implementation": [
+        "src/srstudio/limbs/validation.py",
+        "src/srstudio/limbs/compile.py"
+      ],
+      "verification": [
+        "tests/test_limbs_compile.py",
+        "tests/test_limbs_motion.py",
+        "tests/test_limbs_bounds.py",
+        "tests/test_limbs_evaluation.py"
+      ]
+    },
+    {
+      "id": "showcases",
+      "requirement": "Six-action style and skin galleries, contact, complete cast, gripper and bimanual examples",
+      "implementation": [
+        "examples/limbs_gallery.py",
+        "examples/limbs_contact.py",
+        "examples/limbs_cast.py",
+        "examples/limbs_bimanual.py"
+      ],
+      "verification": [
+        "tests/test_limbs_gallery.py",
+        "tests/test_limbs_contact_example.py",
+        "tests/test_limbs_cast_example.py",
+        "tests/test_limbs_bimanual_example.py",
+        "tests/test_limbs_example_assets.py"
+      ]
+    },
+    {
+      "id": "evaluation",
+      "requirement": "Measured legacy/spatial engineering costs, blinded clips and validated descriptive ratings",
+      "implementation": [
+        "src/srstudio/limbs/evaluation.py",
+        "examples/limbs_evaluate.py"
+      ],
+      "verification": [
+        "tests/test_limbs_evaluation.py",
+        "tests/test_limbs_evaluation_example.py"
+      ]
+    }
+  ],
+  "gates": [
+    "pytest --cov=srstudio --cov-branch --cov-report=term -q",
+    "ruff check src tests examples/limbs_evaluate.py",
+    "mypy src/srstudio",
+    "git diff --check"
+  ],
+  "external_evidence": {
+    "viewer_ratings": "not collected",
+    "human_authoring_time": "not measured",
+    "competitive_advantage": "not demonstrated"
+  },
+  "boundaries": [
+    "Kinematic animation presets are not calibrated musculoskeletal models.",
+    "Clearance uses conservative arm proxies; it is not a full hand/prop collision solver.",
+    "Interaction depth sorting uses average surface depth, not intersecting 3D mesh clipping.",
+    "Spatial fallback uses frame-held vector samples; native skin supports planar arms.",
+    "Existing character replacement is opt-in for the documented supported builders."
+  ]
+}

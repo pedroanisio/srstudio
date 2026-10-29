@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-from .errors import LimbError
+from .errors import Diagnostic, LimbError
 from .geometry import ProjectedPose
 from .model import ArmProfile
 from .motion import Sample
@@ -20,6 +20,7 @@ class MotionReport:
     bounds: tuple[float, float, float, float]
     hidden_parts: int = 0
     nodes: int = 0
+    max_reach_error: float = 0.0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -66,4 +67,17 @@ def audit(
         (min(xs), min(ys), max(xs), max(ys)),
         hidden_parts,
         nodes,
+        max(s.arm.residual for s in samples),
+    )
+
+
+def motion_diagnostics(samples: tuple[Sample, ...]) -> tuple[Diagnostic, ...]:
+    """Keep bounded evidence of allowed anatomical clamps across sampled frames."""
+    grouped: dict[str, list[float]] = {}
+    for sample in samples:
+        for diagnostic in sample.arm.diagnostics:
+            grouped.setdefault(diagnostic.code, []).append(diagnostic.residual)
+    return tuple(
+        Diagnostic(code, f"{len(values)} sampled poses reported {code}; maximum residual {max(values):g}", max(values))
+        for code, values in sorted(grouped.items())
     )
