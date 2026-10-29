@@ -210,7 +210,11 @@ def _record(item: Any, where: str, required: Mapping[str, Any]) -> dict:
     if unknown:
         raise StickDataError(f"{where}: unknown fields {unknown}")
     for key, kind in required.items():
-        if isinstance(item[key], bool) or not isinstance(item[key], kind):
+        if (
+            isinstance(item[key], bool)
+            or not isinstance(item[key], kind)
+            or (kind is Number and not _is_number(item[key]))
+        ):
             wanted = "a number" if kind is Number else f"a {kind.__name__}"
             raise StickDataError(f"{where}: {key} must be {wanted}, got {item[key]!r}")
     return item
@@ -235,10 +239,12 @@ def _point(value: Any, where: str) -> tuple[float, float]:
 
 
 def _is_number(value: Any) -> bool:
-    return isinstance(value, Number) and not isinstance(value, bool)
+    return checks.number(value)
 
 
 def _span(start: float, end: float, where: str) -> None:
+    if start < 0:
+        raise StickDataError(f"{where}: start {start} must be a second from 0")
     if end <= start:
         raise StickDataError(f"{where}: end {end} must come after start {start}")
 
@@ -966,6 +972,8 @@ STANDING: dict[str, RigPose] = {
 
 def check_keys(keys: Sequence[RigKey], end: float, poses: Mapping[str, RigPose] = SEATED) -> None:
     """A performance the rig can draw: keys from 0, in order, before ``end``, with known poses and face states."""
+    if not (_is_number(end) and end > 0):
+        raise StickDataError(f"end must be a number of seconds over 0, got {end!r}")
     if not keys or keys[0].start != 0:
         raise StickDataError("a performance starts with a key at 0")
     for a, b in zip(keys, keys[1:], strict=False):
@@ -984,7 +992,7 @@ def check_face(f: Face) -> None:
     for value, allowed, what in ((f.eyes, EYES, "eyes"), (f.brows, BROWS, "brows"), (f.mouth, MOUTHS, "mouth")):
         if value not in allowed:
             raise StickDataError(f"unknown {what} {value!r}; known: {', '.join(allowed)}")
-    if not all(_is_number(v) and -1 <= v <= 1 for v in f.look):
+    if not (len(f.look) == 2 and all(_is_number(v) and -1 <= v <= 1 for v in f.look)):
         raise StickDataError(f"look must be two numbers in -1..1, got {f.look!r}")
 
 

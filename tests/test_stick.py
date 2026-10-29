@@ -40,6 +40,11 @@ def test_poses_parse_into_typed_room_and_yard_poses():
         (lambda p: p[0].pop("legs"), "missing"),
         (lambda p: p[0].update(start=True), "start must be a number"),
         (lambda p: p[0].update(end=0.0), "after start"),
+        (lambda p: p[0].update(start=float("nan")), "start must be a number"),
+        (lambda p: p[0].update(end=float("inf")), "end must be a number"),
+        (lambda p: (p[0].update(start=-0.5), p[0].update(end=0.0)), "start -0.5 must be a second from 0"),
+        (lambda p: p[0].update(legs=[[float("nan"), 1.0]]), r"\[x, y\]"),
+        (lambda p: p[1].update(angle=float("inf")), "angle must be a number"),
         (lambda p: p[1].update(start=0.6), "the pose before ends"),
         (lambda p: p[0].update(legs=[[1.0]]), r"\[x, y\]"),
         (lambda p: p[0].update(head=[]), "non-empty"),
@@ -78,6 +83,9 @@ def test_icons_lettering_and_script_parse_and_refuse():
         ([{"start": 0, "end": 0.5, "text": "a"}], "missing"),
         ([{"start": 0, "end": 0.5, "text": " ", "size": 80}], "empty text"),
         ([{"start": 0, "end": 0.5, "text": "a", "size": 0}], "positive"),
+        ([{"start": 0, "end": 0.5, "text": "a", "size": float("nan")}], "size must be a number"),
+        ([{"start": -1, "end": 0.5, "text": "a", "size": 80}], "start -1.0 must be a second from 0"),
+        ([{"start": 0, "end": float("inf"), "text": "a", "size": 80}], "end must be a number"),
         ([{"start": 0, "end": 0.5, "text": "a", "size": 80}, {"start": 0.4, "end": 1, "text": "b", "size": 80}],
          "before the cue"),
         ([], "non-empty"),
@@ -349,10 +357,17 @@ def test_a_performance_the_rig_cannot_draw_is_refused():
         ([stick.RigKey(0, "type-a", stick.Face(brows="none"))], "unknown brows"),
         ([stick.RigKey(0, "type-a", stick.Face(mouth="o"))], "unknown mouth"),
         ([stick.RigKey(0, "type-a", stick.Face(look=(2, 0)))], "look"),
+        ([stick.RigKey(0, "type-a", stick.Face(look=(0,)))], "look must be two numbers"),
+        ([stick.RigKey(0, "type-a", stick.Face(look=(0, 0, 0)))], "look must be two numbers"),
+        ([stick.RigKey(0, "type-a", stick.Face(look=(float("nan"), 0)))], "look must be two numbers"),
+        ([TYPE, stick.RigKey(float("nan"), "lean")], "time order"),
     ]
     for keys, match in cases:
         with pytest.raises(stick.StickDataError, match=match):
             stick.rig(canvas(), None, keys, 1.0)
+    for end in (float("nan"), float("inf"), 0.0, True):
+        with pytest.raises(stick.StickDataError, match="end must be a number of seconds over 0"):
+            stick.rig(canvas(), None, [TYPE], end)
 
 
 def test_every_seated_pose_and_face_draws():
