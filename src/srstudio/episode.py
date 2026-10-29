@@ -32,6 +32,15 @@ class EpisodeError(SrstudioError, ValueError):
     """An episode the builder cannot make as asked."""
 
 
+class EpisodeFileError(EpisodeError, FileNotFoundError):
+    """A file the episode needs (its caption font) is not in the project."""
+
+
+class EpisodeArgumentError(EpisodeError, TypeError):
+    """A call the episode cannot take as given: a mouth model the style has not, an option its audio source does
+    not take."""
+
+
 class SceneCheckError(EpisodeError):
     """The scene failed its SDK check; ``findings`` holds what the check found, one per line of the message. A build
     entry point (``srstudio build``) turns it into its exit status."""
@@ -218,7 +227,7 @@ class Episode:
                 if google
                 else ""
             )
-            raise FileNotFoundError(f"caption font {font_file} is missing{hint}")
+            raise EpisodeFileError(f"caption font {font_file} is missing{hint}")
         font_kw: dict[str, Any] = dict(
             id=spec.font_id,
             src=font,
@@ -275,11 +284,13 @@ class Episode:
     ):
         model = style or self.spec.mouth_style
         if model is None:
-            raise TypeError(f"the {self.spec.style.name} style is silent and has no mouth model; pass style= for one")
+            raise EpisodeArgumentError(
+                f"the {self.spec.style.name} style is silent and has no mouth model; pass style= for one"
+            )
         if self.track is None:
-            raise ValueError("this episode has no soundtrack; amplitude mouths need EpisodeSpec.audio")
+            raise EpisodeError("this episode has no soundtrack; amplitude mouths need EpisodeSpec.audio")
         if not isinstance(model, MouthStyle):
-            raise TypeError(
+            raise EpisodeArgumentError(
                 f"amplitude mouths need a MouthStyle; the {self.spec.style.name} style speaks from character "
                 "timestamps (srstudio.soundtrack.phoneme_states), so pass style= explicitly"
             )
@@ -339,7 +350,7 @@ class Episode:
         Caption scripts keep their explicit end times. A camera cut within a spoken phrase never truncates it.
         """
         if not (math.isfinite(lead) and lead >= 0):
-            raise ValueError(f"caption lead must be finite and non-negative, got {lead}")
+            raise EpisodeError(f"caption lead must be finite and non-negative, got {lead}")
         out = []
         for i, p in enumerate(self.phrases):
             if p.role == "caption" and not self.t.takes:
@@ -407,7 +418,7 @@ class Episode:
         ``(asset id, path, track attributes)``, such as a room tone."""
         clips = list(clips) if clips is not None else load_clips(self.t.meta.get("clips"))
         if not clips:
-            raise ValueError("generated_audio needs at least one clip")
+            raise EpisodeError("generated_audio needs at least one clip")
         placed = []
         for clip in clips:
             path = verify(self.root, clip.generated, clip.sha256)
@@ -482,7 +493,8 @@ class Episode:
         ``duck`` (dB, negative) lowers every ``music`` track by that much while any ``dialogue`` track plays, so a
         spoken line is never masked by the score (``duckUnder``/``duckAmount``; clips and takes only).
 
-        An option the source does not take is a ``TypeError``, so a misplaced argument is never ignored."""
+        An option the source does not take is an :class:`EpisodeArgumentError` (a ``TypeError``), so a misplaced
+        argument is never ignored."""
         source = "narration" if narration is not None else self.audio_source
         allowed = {
             "narration": set(),
@@ -494,7 +506,8 @@ class Episode:
         options = (("extra", extra), ("take", take), ("track_id", track_id), ("duck", duck is not None))
         given = {name for name, value in options if value}
         if given - allowed:
-            raise TypeError(f"a {source} project takes no {', '.join(f'{k}=' for k in sorted(given - allowed))}")
+            unknown = ", ".join(f"{k}=" for k in sorted(given - allowed))
+            raise EpisodeArgumentError(f"a {source} project takes no {unknown}")
         style = self.spec.style.mix
         loud, peak = loudness or style.loudness, true_peak or style.true_peak
         if source == "silent":
@@ -502,7 +515,7 @@ class Episode:
         if source == "mixed":
             return self.audio_mix(track_id or "synthetic-dialogue", loud, peak, bit_depth=style.bit_depth)
         if duck is not None and not (math.isfinite(duck) and duck < 0):
-            raise ValueError(f"duck {duck} must be a negative number of dB")
+            raise EpisodeError(f"duck {duck} must be a negative number of dB")
         if source == "clips":
             mix = self.generated_audio(loudness=loud, true_peak=peak, extra=extra, bit_depth=style.bit_depth)
             return _duck(mix, duck) if duck is not None else mix
@@ -549,10 +562,10 @@ class Episode:
         :func:`srstudio.social.take_still` draws a cover's backdrop in, so the designed headline is not laid over a
         cut card or a ghost caption. Written by :meth:`finish`."""
         if not nodes:
-            raise ValueError("hide_on_cover needs at least one node")
+            raise EpisodeError("hide_on_cover needs at least one node")
         for node in nodes:
             if node.id in [target for target, _, _ in self._cover_hidden]:
-                raise ValueError(f"{node.id} is already hidden on the cover")
+                raise EpisodeError(f"{node.id} is already hidden on the cover")
             if node.xml_name == "captionTrack":  # a caption track has no visibility: on the cover it goes to a sidecar
                 self._cover_hidden.append((node.id, "mode", "sidecar"))
             else:
@@ -598,9 +611,9 @@ def _duck(mix: AudioMix, amount: float) -> AudioMix:
     spoken = [t.id for t in tracks if t.role == "dialogue" and t.id]
     music = [t for t in tracks if t.role == "music"]
     if not music:
-        raise ValueError("duck: the mix has no music track to lower")
+        raise EpisodeError("duck: the mix has no music track to lower")
     if not spoken:
-        raise ValueError("duck: the mix has no spoken track to duck under")
+        raise EpisodeError("duck: the mix has no spoken track to duck under")
     for track in music:
         track.duckUnder = spoken
         track.duckAmount = amount
