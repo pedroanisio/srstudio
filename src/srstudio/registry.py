@@ -72,8 +72,8 @@ def entries(kind: str | None = None, style: str | None = None) -> list[Entry]:
     return out
 
 
-def catalog(style: str | None = None) -> list[dict]:
-    """The registry as plain data, for a listing or a page."""
+def catalog(style: str | None = None, *, kind: str | None = None) -> list[dict]:
+    """The registry as plain data, for a listing or a page; the same parts :func:`entries` lists."""
     return [
         {
             "kind": e.kind,
@@ -83,5 +83,5 @@ def catalog(style: str | None = None) -> list[dict]:
             "module": e.module,
             "style": e.style,
         }
-        for e in entries(style=style)
+        for e in entries(kind, style)
     ]

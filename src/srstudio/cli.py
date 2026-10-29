@@ -88,7 +88,7 @@ def main(argv=None):
             return 2
         rows = registry.entries(args.kind, args.style)
         if args.json:
-            data = registry.catalog(args.style)
+            data = registry.catalog(args.style, kind=args.kind)
             if measured is not None:
                 data = [row | {"episodes": measured.used_by(row["name"])} for row in data]
             print(json.dumps(data, indent=2, ensure_ascii=False))

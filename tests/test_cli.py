@@ -48,6 +48,14 @@ def test_catalog_json_lists_every_entry_with_its_facts(capsys):
     assert {"kind": "graphic", "name": "quiz-card"}.items() <= next(r for r in rows if r["name"] == "quiz-card").items()
 
 
+@pytest.mark.parametrize("args", [["--kind", "prop"], ["--kind", "character", "--style", "toon"]])
+def test_catalog_json_lists_the_same_parts_as_the_text_listing(capsys, args):
+    assert main(["catalog", *args]) == 0
+    shown = [ln.split()[2] for ln in capsys.readouterr().out.splitlines()]
+    assert main(["catalog", *args, "--json"]) == 0
+    assert [r["name"] for r in json.loads(capsys.readouterr().out)] == shown
+
+
 def test_catalog_imports_plugins_before_listing(isolated, capsys):
     (isolated / "plugin_badges.py").write_text(PLUGIN)
     sys.path.insert(0, str(isolated))
