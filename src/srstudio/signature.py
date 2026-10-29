@@ -8,16 +8,33 @@ shipped packages, older than the convention, keep reproducing element for elemen
 The code is drawn as stroked paths from a small built-in glyph set, not as a text asset,
 so it needs no font, looks the same in every family and never trips the engine's
 legibility check at the sizes it is used.
+
+:func:`missing` is the gate: ``Episode.finish`` refuses to write a signed episode whose document lacks either
+mark, so a location that forgets to call :func:`code` or :func:`cactus` cannot ship.
 """
 
 from __future__ import annotations
 
 import re
+import xml.etree.ElementTree as ET
 
 from .canvas import MONO, Canvas, Signature
 from .registry import register
 
-__all__ = ["Signature", "code", "cactus", "GLYPHS", "ADVANCE"]
+__all__ = ["Signature", "SignatureError", "code", "cactus", "missing", "MARKS", "GLYPHS", "ADVANCE"]
+
+MARKS = ("sig-cactus", "sig-code")  # group-id prefixes of the two marks, as :func:`_next_id` numbers them
+
+
+class SignatureError(ValueError):
+    """A signed episode whose document lacks a mark (ADR 0001)."""
+
+
+def missing(document: bytes) -> list[str]:
+    """The marks (:data:`MARKS`) no group of the scene ``document`` carries; paints and other elements do not count."""
+    ids = {el.get("id") or "" for el in ET.fromstring(document).iter("group")}
+    return [m for m in MARKS if not any(i == m or re.fullmatch(rf"{m}-\d+", i) for i in ids)]
+
 
 # Stroke glyphs on a 10 × 16 box (y down), drawn with round caps; ADVANCE is the pen move per character.
 ADVANCE = 13.5

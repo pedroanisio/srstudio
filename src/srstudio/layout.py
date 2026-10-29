@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -508,6 +510,16 @@ class _ShapeIndex:
         if shape is None:
             raise LayoutError(f"eval reports shape {scoped!r}, which the document does not declare")
         return shape
+
+
+def find_engine(explicit: Path | str | None = None) -> Path:
+    """The scene-render binary: ``explicit``, else ``$SRSTUDIO_ENGINE``, else ``scene-render`` on the ``PATH``."""
+    found = explicit or os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    if not found:
+        raise LayoutError("no scene-render engine: pass one or set SRSTUDIO_ENGINE")
+    if not Path(found).is_file():
+        raise LayoutError(f"no such engine: {found}")
+    return Path(found)
 
 
 def _eval(engine: Path, document: Path, frame: int) -> dict[str, Any]:

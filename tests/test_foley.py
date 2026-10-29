@@ -43,3 +43,41 @@ def test_keystrokes_are_deterministic_bounded_and_levelled(tmp_path):
         assert (w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()) == (1, 2, 8000, 16000)
     with pytest.raises(ValueError, match="rate"):
         foley.write_typing(tmp_path / "x.wav", [0.8], duration=2.0, rate=100, seed=3, peak=0.5)
+
+
+def test_a_phone_buzz_is_two_pulses_deterministic_bounded_and_quiet_elsewhere(tmp_path):
+    bed = foley.buzz([0.5, 1.5], 2.0, rate=8000, seed=3, peak=0.6)
+    assert len(bed) == 16000 and bed == foley.buzz([0.5, 1.5], 2.0, rate=8000, seed=3, peak=0.6)
+    assert max(abs(v) for v in bed) == pytest.approx(0.6)
+    assert all(v == 0 for v in bed[:4000]) and all(v == 0 for v in bed[int(0.86 * 8000) : 12000])
+    first, second = (
+        bed[4000 : 4000 + int(foley.BUZZ * 8000 / 2)],
+        bed[4000 + int(foley.BUZZ * 8000 / 2) : 4000 + int(foley.BUZZ * 8000)],
+    )
+    assert max(map(abs, first)) > 0.3 and max(map(abs, second)) > 0.3
+    gap = bed[4000 + int(foley.BUZZ / 2 * 0.9 * 8000) : 4000 + int(foley.BUZZ / 2 * 8000)]
+    assert all(v == 0 for v in gap)  # the gap between the pulses
+    out = foley.write_buzz(tmp_path / "buzz.wav", [0.5], 2.0, rate=8000, seed=3, peak=0.6)
+    with wave.open(str(out), "rb") as w:
+        assert (w.getnchannels(), w.getframerate(), w.getnframes()) == (1, 8000, 16000)
+    with pytest.raises(ValueError, match="must leave"):
+        foley.buzz([1.9], 2.0, rate=8000)
+    with pytest.raises(ValueError, match="length"):
+        foley.buzz([0.5], 2.0, rate=8000, length=3.0)
+
+
+def test_a_sting_plays_its_notes_in_turn_and_a_chime_is_a_different_tune(tmp_path):
+    bed = foley.tones([0.5], 2.0, rate=8000, peak=0.7)
+    assert len(bed) == 16000 and max(abs(v) for v in bed) == pytest.approx(0.7)
+    assert all(v == 0 for v in bed[:4000])
+    first, second = bed[4000 : 4000 + int(0.32 * 8000)], bed[4000 + int(0.32 * 8000) : 4000 + int(0.74 * 8000)]
+    assert max(map(abs, first)) > 0.3 and max(map(abs, second)) > 0.3 and all(v == 0 for v in bed[4000 + 6000 :])
+    chime = foley.tones([0.5], 2.0, foley.CHIME, rate=8000, peak=0.7)
+    assert chime != bed and sum(1 for v in chime if v != 0) < sum(1 for v in bed if v != 0)  # shorter notes
+    out = foley.write_tones(tmp_path / "sting.wav", [0.5, 1.0], 2.0, rate=8000)
+    with wave.open(str(out), "rb") as w:
+        assert (w.getnchannels(), w.getframerate(), w.getnframes()) == (1, 8000, 16000)
+    with pytest.raises(ValueError, match="must leave"):
+        foley.tones([1.5], 2.0, rate=8000)
+    with pytest.raises(ValueError, match="notes are"):
+        foley.tones([0.5], 2.0, [(10.0, 10.0, 0.1)], rate=8000)

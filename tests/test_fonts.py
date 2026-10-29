@@ -197,3 +197,25 @@ def test_the_cli_adds_a_font(tmp_path, monkeypatch, capsys):
     assert main(["fonts", "add", "DejaVu Sans", "--weight", "700", "--into", str(tmp_path)]) == 0
     assert "dejavu-sans-700.ttf" in capsys.readouterr().out
     assert main(["fonts", "add", "DejaVu Sans", "--weight", "450", "--into", str(tmp_path)]) == 2
+
+
+# -- measuring --------------------------------------------------------------------------------------
+def test_text_width_sums_the_glyph_advances_at_the_size():
+    data = BOLD.read_bytes()
+    assert fonts.text_width(data, "", 40) == 0
+    i, w = fonts.text_width(data, "i", 40), fonts.text_width(data, "W", 40)
+    assert 0 < i < w and fonts.text_width(data, "ii", 40) == pytest.approx(2 * i)
+    assert fonts.text_width(data, "Survey", 80) == pytest.approx(2 * fonts.text_width(data, "Survey", 40))
+    assert fonts.text_width(data, "\U000e0001", 40) == fonts.text_width(data, "\U0010fffd", 40)  # both fall to .notdef
+    assert 0.5 * 40 < fonts.text_width(data, "n", 40) < 0.8 * 40  # a bold lowercase n is about two thirds of an em
+
+
+def test_text_width_refuses_a_font_without_its_metric_tables():
+    data = bytearray(BOLD.read_bytes())
+    n = struct.unpack(">H", data[4:6])[0]
+    for i in range(n):
+        at = 12 + 16 * i
+        if bytes(data[at : at + 4]) == b"hmtx":
+            data[at : at + 4] = b"xxxx"
+    with pytest.raises(FontError, match="no 'hmtx' table"):
+        fonts.text_width(bytes(data), "a", 40)

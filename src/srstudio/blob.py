@@ -22,7 +22,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from . import signature
 from .canvas import Canvas
@@ -939,6 +939,30 @@ class Cue:
     lift: float = 0.0
     pin: str | None = None
     overshoot: float = 0.0
+
+
+def cue(
+    time: float, pose: str, spot: tuple[float, float] | None = None, *, scale: float = 1.0, ease: float = 0.0, **kw
+) -> Cue:
+    """A :class:`Cue` at ``spot`` in output pixels, for a character drawn at ``scale`` (the rig's units are
+    pixels / scale); without a spot the character stays where it is. A cue at 0 has nothing to ease from."""
+    if not (math.isfinite(scale) and scale > 0):
+        raise BlobError(f"scale {scale} must be a positive number to map pixels to rig units")
+    x, y = (0.0, 0.0) if spot is None else (spot[0] / scale, spot[1] / scale)
+    return Cue(time, pose, x=x, y=y, ease=ease if time else 0.0, **kw)
+
+
+def settle(cues: Sequence[Cue], fps: float) -> list[Cue]:
+    """``cues`` in time order, each ease capped so the move starts only after the previous pose has landed (and,
+    after an overshoot, settled one drawing at ``fps`` later)."""
+    if not (math.isfinite(fps) and fps > 0):
+        raise BlobError(f"fps {fps} must be a positive number")
+    ordered = sorted(cues, key=lambda c: c.time)
+    for a, b in zip(ordered, ordered[1:], strict=False):
+        if b.time <= a.time:
+            raise BlobError(f"cue times must be increasing: {a.time} then {b.time}")
+    landed = [0.0, *(c.time + (1 / fps + 1e-3 if c.overshoot else 0.0) for c in ordered)]
+    return [replace(c, ease=max(0.0, min(c.ease, c.time - s))) for s, c in zip(landed, ordered, strict=False)]
 
 
 @dataclass(frozen=True)

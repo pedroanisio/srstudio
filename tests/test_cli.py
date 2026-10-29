@@ -97,4 +97,4 @@ def test_python_dash_m_exits_with_the_command_status(isolated, module, capsys):
     with pytest.raises(SystemExit) as stop:
         runpy.run_module(module, run_name="__main__", alter_sys=True)
     assert stop.value.code == 0
-    assert [s["slug"] for s in json.loads(capsys.readouterr().out)] == ["cutout", "ink", "soft", "cel"]
+    assert [s["slug"] for s in json.loads(capsys.readouterr().out)] == ["cutout", "ink", "soft", "cel", "stick", "toon"]

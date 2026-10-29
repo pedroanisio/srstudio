@@ -428,8 +428,12 @@ def _spell(n: int) -> list[str]:
     return list(str(n))  # outside the scripts' range: compared digit by digit
 
 
+TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text writes a spoken title abbreviated
+
+
 def normalize_words(text: str) -> list[str]:
-    """Lowercase words without punctuation; digits spelled out; curly apostrophes made straight."""
+    """Lowercase words without punctuation; digits and abbreviated titles spelled out; curly apostrophes made
+    straight."""
     text = text.lower().replace("\u2019", "'").replace("-", " ")
     cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
     out: list[str] = []
@@ -437,6 +441,8 @@ def normalize_words(text: str) -> list[str]:
         token = token.strip("'")
         if token.isdigit():
             out.extend(_spell(int(token)))
+        elif token in TITLES:
+            out.append(TITLES[token])
         elif token:
             out.append(token)
     return out

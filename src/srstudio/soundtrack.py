@@ -118,6 +118,7 @@ class MouthStyle:
     loud: float = 0.04  # above this the mouth is fully open
     rounding: Callable[[float], bool] = lambda t: int(t * 12) % 5 in (0, 3)
     idle: str = "rest"  # pose while not speaking
+    letters: bool = False  # the line's letters pick round, closed or open (srstudio.lipsync.letter_track)
 
 
 OFFICE_MOUTH = MouthStyle()
@@ -136,21 +137,37 @@ def mouth_states(
     speaking: Sequence[tuple[float, float]] | None = None,
 ) -> list[tuple[float, str]]:
     """One ``(time, pose)`` per frame for ``role``; ``smile`` spans force the smile."""
+    if style.letters and speaking is not None:
+        raise ValueError("letters guide the mouth from the role's phrases; bare speaking spans have no text")
     spans = list(timeline.spans(role) if speaking is None else speaking)
     smile = list(smile)
+    frames = math.ceil(timeline.duration * fps - 1e-9)
+    energy = [track.rms(f / fps + style.window[0], f / fps + style.window[1]) for f in range(frames)]
+    talking = [any(a <= f / fps < b for a, b in spans) and energy[f] > style.threshold for f in range(frames)]
+    guide: dict[int, str] = {}
+    if style.letters:
+        from .lipsync import letter_track
+
+        for phrase in timeline.phrases:
+            if phrase.role == role:
+                voiced = [f for f in range(frames) if talking[f] and phrase.start <= f / fps < phrase.end]
+                guide.update(zip(voiced, letter_track(phrase.text, len(voiced)), strict=False))
     out: list[tuple[float, str]] = []
-    for frame in range(math.ceil(timeline.duration * fps - 1e-9)):
+    for frame in range(frames):
         t = frame / fps
-        energy = track.rms(t + style.window[0], t + style.window[1])
-        talking = any(a <= t < b for a, b in spans) and energy > style.threshold
-        if talking:
-            state = "round" if style.rounding(t) else "open" if energy > style.loud else "small"
+        if talking[frame] and frame in guide:
+            state = _GUIDED[guide[frame]] if guide[frame] != "open" or energy[frame] > style.loud else "small"
+        elif talking[frame]:
+            state = "round" if style.rounding(t) else "open" if energy[frame] > style.loud else "small"
         else:
             state = style.idle
-        if any(a <= t < b for a, b in smile) and not talking:
+        if any(a <= t < b for a, b in smile) and not talking[frame]:
             state = "smile"
         out.append((t, state))
     return out
+
+
+_GUIDED = {"round": "round", "closed": "rest", "open": "open", "teeth": "small"}  # letter pose -> amplitude mouth
 
 
 def pose_keys(states: Sequence[tuple[float, str]], pose: str) -> list[tuple[float, int]]:
@@ -179,6 +196,21 @@ class PhonemeStyle:
     closed_letters: str = "bmp"
     scream_moods: tuple[str, ...] = ("scream",)
     angry_moods: tuple[str, ...] = ("angry",)
+    # opt-in improvements, all on in srstudio.lipsync.SPEECH_MOUTH; the defaults sample as the packages shipped
+    spelling: bool = False  # English spelling: ph, w, qu, silent final e and gh
+    close_bilabials: bool = False  # every b, m, p closes the mouth on its nearest sample
+    lead: float = 0.0  # seconds the mouth shows a sound early
+    min_rest: float = 0.0  # a pause between letters shorter than this keeps the pose before it
+
+    def __post_init__(self):
+        if isinstance(self.rate, bool) or not isinstance(self.rate, int) or self.rate <= 0:
+            raise ValueError(
+                f"a phoneme style's rate is a positive whole number of samples a second, got {self.rate!r}"
+            )
+        for name in ("lead", "min_rest"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value) or value < 0:
+                raise ValueError(f"a phoneme style's {name} is a finite number of seconds >= 0, got {value!r}")
 
 
 INK_MOUTH = PhonemeStyle()
@@ -187,22 +219,8 @@ INK_MOUTH = PhonemeStyle()
 def phoneme_states(
     phones: Sequence[dict], duration: float, mood: str = "", style: PhonemeStyle = INK_MOUTH
 ) -> list[tuple[float, str]]:
-    """``(time, pose)`` samples from character timestamps ``{c, start, end}`` relative to the take."""
-    out: list[tuple[float, str]] = []
-    for j in range(math.ceil(duration * style.rate) + 1):
-        t = min(duration, j / style.rate)
-        ch = next((z["c"].lower() for z in phones if z["start"] <= t < z["end"]), " ")
-        pose = "closed"
-        if ch.isalpha():
-            if mood in style.scream_moods:
-                pose = "shout"
-            elif ch in style.round_letters:
-                pose = "round"
-            elif ch in style.open_letters:
-                pose = "open" if mood not in style.angry_moods else "shout"
-            elif ch in style.closed_letters:
-                pose = "closed"
-            else:
-                pose = "teeth"
-        out.append((t, pose))
-    return out
+    """``(time, pose)`` samples from character timestamps ``{c, start, end}`` relative to the take
+    (:func:`srstudio.lipsync.phoneme_states`)."""
+    from .lipsync import phoneme_states as sample
+
+    return sample(phones, duration, mood, style)

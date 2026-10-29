@@ -15,17 +15,39 @@ from . import (  # noqa: F401  (registers builders)
     graphics,
     ink,
     layout,
+    lipsync,
     locations,
     music,
     props,
     registry,
     signature,
+    soft_props,
+    stick,
+    stick_car,
     styles,
     subtitles,
+    toon,
+    toon_cast,
+    toon_props,
+    toon_sets,
 )
-from .canvas import CAFE, LINEN, MONO, OFFICE, WARM, Canvas, Palette, Signature, flat_counter, shared_counter
+from .canvas import (
+    CAFE,
+    DAYLIGHT,
+    LINEN,
+    MONO,
+    OFFICE,
+    PEACH,
+    WARM,
+    Canvas,
+    Palette,
+    Signature,
+    flat_counter,
+    shared_counter,
+)
 from .episode import Episode, EpisodeSpec
 from .layout import VERTICAL, SafeArea
+from .lipsync import SPEECH_MOUTH
 from .registry import catalog, get, register
 from .rig import Actor, Performance
 from .social import InstagramPost, InstagramPostError
@@ -40,7 +62,8 @@ from .soundtrack import (
     mouth_states,
     phoneme_states,
 )
-from .styles import CEL, CUTOUT, INK, SOFT, STYLES, Font, Mix, Style, StyleError
+from .styles import CEL, CUTOUT, INK, SOFT, STICK, STYLES, TOON, Font, Mix, Style, StyleError
+from .thumbnail import Thumbnail, ThumbnailError
 from .timeline import Take, Timeline
 
 __version__ = "0.1.0"
@@ -55,6 +78,8 @@ __all__ = [
     "INK",
     "SOFT",
     "CEL",
+    "STICK",
+    "TOON",
     "STYLES",
     "styles",
     "Canvas",
@@ -66,6 +91,8 @@ __all__ = [
     "MONO",
     "WARM",
     "LINEN",
+    "DAYLIGHT",
+    "PEACH",
     "shared_counter",
     "flat_counter",
     "Actor",
@@ -79,6 +106,7 @@ __all__ = [
     "CAFE_MOUTH",
     "INK_MOUTH",
     "SOFT_MOUTH",
+    "SPEECH_MOUTH",
     "mouth_states",
     "phoneme_states",
     "catalog",
@@ -100,4 +128,6 @@ __all__ = [
     "registry",
     "InstagramPost",
     "InstagramPostError",
+    "Thumbnail",
+    "ThumbnailError",
 ]

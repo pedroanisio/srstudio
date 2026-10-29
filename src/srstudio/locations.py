@@ -229,6 +229,7 @@ def park(cv: Canvas, parent, on_bench: Slot = None, beside_bench: Slot = None, i
 # -- polished rooms (ADR 0011) ------------------------------------------------------------------------------------
 
 CONFERENCE_SEAT = (540, 735, 1.45)  # x, y, scale of an office actor in the conference chair, as ``perform`` takes
+CONFERENCE_BOARD = (620, 300, 420, 420)  # x, y, width, height of the whiteboard
 CONFERENCE_TABLE_Y = 1130  # the table's far edge: everything of the seated actor below it is hidden
 RECEPTION_CLERK = (600, 790, 1.3)  # an office actor behind the counter
 RECEPTION_VISITOR = (250, 1080, 1.5)  # a standing café actor in front of it
@@ -249,9 +250,11 @@ def conference_room(
     on_table: Slot = None,
     id="location-conference-room",
     shots=None,
-    rising=True,
+    rising: bool | None = True,
+    on_wall: Slot = None,
 ):
-    """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend."""
+    """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend, and
+    ``None`` leaves the wall bare for ``on_wall``, which draws over the wall and behind the light and the chair."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots:
@@ -265,7 +268,9 @@ def conference_room(
     cv.line(g, 0, 118, 1080, 118, ink, 3)
     cv.rect(g, 250, 44, 580, 28, "#FFFDF4", ink, 3, radius=14)  # a linear ceiling light
     props.blinds_window(cv, g, 40, 210, 330, 880, id=f"{id}-window")
-    props.whiteboard(cv, g, 620, 300, 420, 420, rising=rising, id=f"{id}-whiteboard")
+    if rising is not None:
+        props.whiteboard(cv, g, *CONFERENCE_BOARD, rising=rising, id=f"{id}-whiteboard")
+    _call(on_wall, g)
     light = cv.group(g, f"{id}-light")
     cv.path(light, "M56 762 L356 762 L820 1236 L520 1236Z", "#FFE7B0", cv.clear, 0, opacity=0.34)
     cv.path(light, "M56 762 L356 762 L1000 1460 L700 1460Z", "#FFE7B0", cv.clear, 0, opacity=0.14)

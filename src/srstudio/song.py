@@ -44,6 +44,7 @@ from .generated import (
     trim_effect,
     trim_speech,
 )
+from .layout import LayoutError, find_engine
 from .music import Groove, Section, render, write_wav
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
 from .styles import SOFT
@@ -79,6 +80,7 @@ TAIL = 0.4
 MUSIC_PEAK, VOICE_PEAK = 0.34, 0.80
 SPEED = (0.7, 1.2)  # the speeds the provider accepts
 GUARD = 0.05  # silence kept between the end of a line and the start of the next
+MAX_GAIN = 24.0  # (dB) the most an audio track may boost; a take that needs more came back near-silent
 
 
 class SongError(ValueError):
@@ -136,11 +138,12 @@ class Effect:
 class Composition:
     """Music from the ElevenLabs Music API that sings every line of ``role``; the other lines are spoken over it.
 
-    ``plan`` is the request (its lyrics must be exactly the sung lines, in order) and ``seed`` pins the take."""
+    ``plan`` is the request (its lyrics must be exactly the sung lines, in order) and ``seed`` pins the take. With
+    ``role=None`` the music is instrumental: every line is spoken, and a take in which words are heard is refused."""
 
     plan: Plan
     seed: int
-    role: str
+    role: str | None
 
 
 @dataclass(frozen=True)
@@ -283,6 +286,8 @@ def sing(
     except MusicOutputError as exc:
         raise SongError(f"song: {exc}") from None
     said = [w for w in transcript.words if w.type == "word"]
+    if c.role is None and said:
+        raise SongError(f"song: the music must be instrumental, but {' '.join(w.text for w in said)!r} was heard")
     words = [[[w.text, w.start, w.end] for w in said if a <= w.start and w.end <= b] for a, b in spans]
     return Sung(made, spans, words, {"heard": transcript.text, "passed": True})
 
@@ -305,6 +310,8 @@ def place(song: Song, pins: Mapping[str, Resolved], sung: Sung | None = None) ->
     items = {i: item for (i, _), item in zip(_spoken(song), lines, strict=True)}
     trims = {i: trim_speech(pins[item.id].path) for i, item in items.items()}
     voice_gain = gain_to_peak(max(t.peak for t in trims.values()), VOICE_PEAK) if trims else 0.0
+    if voice_gain > MAX_GAIN:
+        raise SongError(f"{song.slug}: the lines are near-silent (+{voice_gain:.1f} dB to level them): regenerate them")
     heard = iter(zip(sung.spans, sung.words, strict=True)) if sung is not None else iter(())
     timed: list[tuple[float, float, list | None]] = []
     for i, line in enumerate(song.lines):
@@ -364,6 +371,12 @@ def place(song: Song, pins: Mapping[str, Resolved], sung: Sung | None = None) ->
     sound_effects, effect_starts = [], {}
     for spec, item in zip(song.effects, effects, strict=True):
         fx = trim_effect(pins[item.id].path, longest=spec.longest)
+        gain = gain_to_peak(fx.peak, spec.peak)
+        if gain > MAX_GAIN:
+            raise SongError(
+                f"effect {item.id} is near-silent (peak {fx.peak:.4f}, +{gain:.1f} dB to reach {spec.peak}): "
+                "regenerate it with another prompt"
+            )
         start = round(groove.at(*spec.at) - spec.early, 6)
         clips.append(
             PlacedClip(
@@ -373,7 +386,7 @@ def place(song: Song, pins: Mapping[str, Resolved], sung: Sung | None = None) ->
                     start=start,
                     clip_in=fx.clip_in,
                     clip_out=fx.clip_out,
-                    gain_db=round(gain_to_peak(fx.peak, spec.peak), 4),
+                    gain_db=round(gain, 4),
                     fade_in=0.005,
                     fade_out=0.06,
                     role="effects",
@@ -494,13 +507,14 @@ def main(
     parser.add_argument("--key-stdin", action="store_true", help="read the ElevenLabs key from standard input")
     parser.add_argument("--engine", type=Path, default=None)
     args = parser.parse_args(argv)
-    engine = args.engine or os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
-    if not engine:
-        raise SystemExit("no scene-render engine: pass --engine or set SRSTUDIO_ENGINE")
+    try:
+        engine = find_engine(args.engine)
+    except LayoutError as exc:
+        raise SystemExit(f"{exc} (--engine)") from None
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     key = sys.stdin.read().strip().strip("'\"") if args.key_stdin else os.environ.get(KEY_ENV, "")
     try:
-        build(song, args.project, engine=Path(engine), key=key, extra=extra)
+        build(song, args.project, engine=engine, key=key, extra=extra)
     except SongError as exc:
         raise SystemExit(str(exc)) from None
     return 0

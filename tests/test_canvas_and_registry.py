@@ -53,3 +53,28 @@ def test_registry_lists_the_shipped_parts_and_new_ones():
         registry.get("prop", "missing")
     with pytest.raises(ValueError):
         register("gadget", "x")
+
+
+def test_an_effect_is_defined_once_and_named_by_its_id():
+    cv = fresh()
+    first = cv.effect("soft", "blur", radius=6)
+    assert first == "soft" and cv.effect("soft", "blur", radius=6) == first
+    assert cv.effect("soft", "blur", radius=99) == first  # one name, one effect: a second call returns the first
+    cv.effect("lift", "drop-shadow", radius=10, offsetY=6, intensity=0.4)
+    root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    effects = root.findall(".//effects/effect")
+    assert [(e.get("id"), e.get("type"), e.get("radius")) for e in effects] == [
+        ("soft", "blur", "6"),
+        ("lift", "drop-shadow", "10"),
+    ]
+    with pytest.raises(ValueError, match="effect"):
+        cv.effect(" ", "blur")
+
+
+def test_a_radial_gradient_is_defined_once():
+    cv = fresh()
+    first = cv.rgrad("glow", [(0, "#FFFFFF"), (1, "#FFFFFF00")], (0.5, 0.3, 0.6))
+    assert first == "url(#glow)" and cv.rgrad("glow", [], (0, 0, 1)) == first
+    root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    (g,) = root.findall(".//radialGradient")
+    assert (g.get("cx"), g.get("cy"), g.get("r"), len(g.findall("stop"))) == ("0.5", "0.3", "0.6", 2)

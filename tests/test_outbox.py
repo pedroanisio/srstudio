@@ -10,7 +10,7 @@ import pytest
 
 from srstudio.outbox import MANIFEST, Bundle, OutboxError, latest_package, push, ready, stage
 from srstudio.social import MANIFEST as DELIVERY
-from srstudio.social import publish
+from srstudio.social import Item, publish
 from test_social import FONT, engine, post, tall
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -21,7 +21,7 @@ def delivered(tmp_path):
     """Two videos through the publish gate, and a package for one of them."""
     renders = tmp_path / "renders"
     renders.mkdir()
-    items = {"a": (post("A"), tall(renders / "a.mp4")), "b": (post("B"), tall(renders / "b.mp4"))}
+    items = {"a": Item(post("A"), tall(renders / "a.mp4")), "b": Item(post("B"), tall(renders / "b.mp4"))}
     out = tmp_path / "ig"
     publish(items, out, font=FONT, engine=engine())
     pkg = tmp_path / "a-1.0.0.vpkg.zip"
@@ -102,6 +102,22 @@ def test_restaging_holds_exactly_what_is_ready_now(delivered, tmp_path):
     stage(ready(items, out, font=FONT)[0], folder)
     assert sorted(p.name for p in folder.iterdir()) == ["a", MANIFEST]
     assert list(json.loads((folder / MANIFEST).read_text())["videos"]) == ["a"]
+
+
+def test_restaging_keeps_the_operators_dot_files_and_nothing_else_of_theirs(delivered, tmp_path):
+    """A dot-file the operator keeps in the outbox (``.ignore``) survives every restage, byte for byte and mode, so
+    the next push uploads it with the videos."""
+    items, out, _ = delivered
+    folder = tmp_path / "outbox"
+    stage(ready(items, out, font=FONT)[0], folder)
+    note = folder / ".ignore"
+    note.write_text("/somewhere/outbox/b")
+    note.chmod(0o664)
+    (folder / ".cache").mkdir()  # a dot-folder is not the operator's note: it goes with the old outbox
+    stage(ready(items, out, font=FONT)[0], folder)
+    assert note.read_text() == "/somewhere/outbox/b" and note.stat().st_mode & 0o777 == 0o664
+    assert sorted(p.name for p in folder.iterdir()) == [".ignore", "a", "b", MANIFEST]
+    assert ".ignore" not in json.loads((folder / MANIFEST).read_text())["videos"]
 
 
 def test_stage_refuses_a_folder_it_did_not_make_and_leaves_it_alone(delivered, tmp_path):

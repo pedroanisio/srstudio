@@ -137,3 +137,43 @@ def test_an_explicit_level_wins_over_the_style(project):
     ep.audio(loudness="-14", true_peak="-1")
     master = mix_of(ep).find("master")
     assert (master.get("loudness"), master.get("truePeak")) == ("-14", "-1")
+
+
+def clips_project(project, tmp_path, role="dialogue"):
+    root = tmp_path / "ep"
+    shutil.copytree(project, root)
+    wav = write_wav(root / "assets" / "generated" / "line-1.wav", [0.3 * math.sin(i / 7) for i in range(4800)])
+    clip = PlacedClip(SPEECH, hashlib.sha256(wav.read_bytes()).hexdigest(), Placement(start=0.5, role=role))
+    data = json.loads((root / "dialogue.json").read_text())
+    data["clips"] = [clip.to_dict()]
+    (root / "dialogue.json").write_text(json.dumps(data))
+    write_wav(root / "assets" / "groove.wav", [0.1] * 4800)
+    return root
+
+
+def test_the_music_ducks_under_every_spoken_track_when_asked(project, tmp_path):
+    root = clips_project(project, tmp_path)
+    ep = Episode(spec(root, style=SOFT, font=None))
+    ep.audio(extra=[("groove", "assets/groove.wav", {"role": "music", "gain": -3})], duck=-10)
+    tracks = {t.get("id"): t for t in mix_of(ep).findall("audioTrack")}
+    music = tracks["track-groove"]
+    assert (music.get("duckUnder"), music.get("duckAmount"), music.get("gain")) == ("track-line-1", "-10", "-3")
+    assert tracks["track-line-1"].get("duckUnder") is None
+
+
+@pytest.mark.parametrize("duck", [0, 3, float("nan")])
+def test_a_duck_must_lower_the_music(project, tmp_path, duck):
+    ep = Episode(spec(clips_project(project, tmp_path), style=SOFT, font=None))
+    with pytest.raises(ValueError, match="duck"):
+        ep.audio(extra=[("groove", "assets/groove.wav", {"role": "music"})], duck=duck)
+
+
+def test_a_duck_with_no_music_or_nothing_spoken_is_refused(project, tmp_path):
+    ep = Episode(spec(clips_project(project, tmp_path), style=SOFT, font=None))
+    with pytest.raises(ValueError, match="no music track"):
+        ep.audio(extra=[("groove", "assets/groove.wav", {"role": "effects"})], duck=-12)
+    unspoken = Episode(spec(clips_project(project, tmp_path / "fx", role="effects"), style=SOFT, font=None))
+    with pytest.raises(ValueError, match="no spoken track"):
+        unspoken.audio(extra=[("groove", "assets/groove.wav", {"role": "music"})], duck=-12)
+    with pytest.raises(TypeError, match="duck="):
+        Episode(spec(project)).audio(duck=-12)  # one mixed file: nothing to duck

@@ -1,0 +1,1852 @@
+{
+  "schema": "1.1.0",
+  "episodes": {
+    "five-years": {
+      "number": "06",
+      "lede": "O primeiro episódio original da biblioteca. Onde o candidato se vê em cinco anos? Na cadeira do gerente, e ele já está sentando nela.",
+      "highlights": [
+        "Diálogo e efeitos declarados como assets <code>&lt;generated&gt;</code>; o motor resolve e fixa cada arquivo com SHA-256.",
+        "Cada fala é checada por speech-to-text antes de entrar na cena; uma fala ouvida errada para o build.",
+        "Área segura vertical (<code>VERTICAL</code>) e verificação de sobreposição dos gráficos vetoriais.",
+        "Primeiro episódio assinado: código SR-1028 e o cacto (ADR 0001)."
+      ]
+    },
+    "focus-mode": {
+      "number": "07",
+      "lede": "Pip senta para trabalhar, digita por um compasso e o groove vence. Um arranhão de disco: o prazo. Ele senta de novo, e a música volta.",
+      "highlights": [
+        "Comédia pose a pose num beat de 120 bpm: poses, falas e música no mesmo grid (<code>music.Groove</code>).",
+        "Um rig interpolável de cinco traços (<code>blob.Pose</code>) com in-betweens suaves, arcos, overshoot e passo com pé plantado.",
+        "9,5 trocas de desenho por segundo, contra 8,1 da referência.",
+        "Legendas em Poppins Bold, baixada do Google Fonts e fixada em <code>fonts.lock.json</code>."
+      ]
+    },
+    "camera-off": {
+      "number": "08",
+      "lede": "Numa reunião, Pip desliga a câmera e dança, até o chefe pedir para ele compartilhar a tela. O selo sobre o laptop mostra o que a chamada vê.",
+      "highlights": [
+        "Duas vozes por papel: Pip canta (Will), o chefe fala (Eric); clique e notificação gerados.",
+        "Poses novas <code>nod</code>, <code>cheer-a/b</code> e <code>wave-a/b</code>, presas às mesmas regras de comprimento de membro e de rosto livre.",
+        "Pipeline de música compartilhado (<code>episodes/_song.py</code>): uma música nova é só a sua especificação.",
+        "9,8 trocas de desenho por segundo."
+      ]
+    },
+    "the-router": {
+      "number": "I2",
+      "lede": "A internet caiu. O roteador, calmo demais, sugere desligar e ligar de novo, e o reboot vira uma pequena tragédia em traço de caneta.",
+      "highlights": [
+        "20 takes numa <code>&lt;sequence&gt;</code> de planos, com humor por take e fonemas cronometrados.",
+        "Peças novas: <code>talking-router</code> (LEDs e antenas), <code>ink-hand</code> e dois planos do roteador.",
+        "Vozes Chris e Daniel; cada take conferido por speech-to-text."
+      ]
+    },
+    "mushroom-training": {
+      "number": "C1",
+      "lede": "O treinamento obrigatório de 45 minutos, contado por desenhos traçados. Porte do pacote mushroom-training 2.0.0, agora com narração.",
+      "highlights": [
+        "Desenhos preenchidos, um por trecho da linha de poses, sob a câmera medida do original.",
+        "Legendas como letreiro: caixas na cor de sombra com os glifos como caminhos brancos.",
+        "Teste de fidelidade: 2 300 elementos iguais ao XML do pacote, SRT idêntico byte a byte.",
+        "Narração ElevenLabs (Alice) no ritmo natural da voz, sem acelerar; teclado animado e sonorizado em cada tecla."
+      ]
+    },
+    "check-with-my-team": {
+      "number": "R1",
+      "lede": "“Deixa eu só checar com o meu time.” O time é uma pessoa e três agentes de IA dançando no quintal. A recriação vetorial do pacote, agora com voz e música.",
+      "highlights": [
+        "Estilo Stick: a imagem é redesenhada com as peças de <code>srstudio.stick</code> a partir dos dados do pacote (verificados pelo <code>vpkg.json</code>) e confere elemento por elemento com o <code>scene.xml</code> original.",
+        "Um loop só: o pacote repetia a abertura a partir do quadro 230; o vídeo termina ali e emenda no início sem costura.",
+        "Voz ElevenLabs (Chris) cortada nas fronteiras das palavras e posta frase a frase na legenda (<code>srstudio.phrasing</code>): cada primeira palavra a ≤ 0,12 s do seu texto.",
+        "Música ElevenLabs Music a 152 bpm, o tempo medido do balanço da dança; o drop cai no corte para o quintal e a batida acompanha os passos."
+      ]
+    },
+    "screen-share": {
+      "number": "R2",
+      "lede": "Três momentos de um dia de trabalho remoto, cada um sob o seu cartão: a tela compartilhada que mostra demais, a reunião que passa da hora e o “tem um segundo?” da sexta às 16h59.",
+      "highlights": [
+        "Primeiro episódio original do estilo Stick: Dev é o rig desenhado da biblioteca (<code>stick.rig</code>), posado por chaves a 12 fps, com olhos, sobrancelhas e boca de fonemas; o chefe é o mesmo rig em pé, com outro visual.",
+        "A chamada é a tela <code>stick-call</code>: a caixa de entrada do chefe compartilhada com todos, e a câmera avança até a linha sobre o Dev.",
+        "Vozes ElevenLabs (Eric e Will), cada take conferida por transcrição antes de entrar; legendas de até 24 caracteres medidas contra a largura do quadro, com o contorno numa camada própria, sem nenhum aviso de contraste."
+      ]
+    },
+    "repeat-after-me": {
+      "number": "R3",
+      "lede": "No caminho para casa, Dev faz você repetir os votos dele: nada de e-mail no carro, trabalho fica no trabalho. O celular vibra, a câmera corta para o banco do passageiro, e o laptop aberto conta outra história.",
+      "highlights": [
+        "O carro é <code>stick_car</code>: cabine, volante, cinto e o país passando pela janela em seis camadas de paralaxe, as distantes desfocadas pelo efeito <code>blur</code> do motor e as próximas com <code>motionBlur</code> de verdade; sombras projetadas e internas dão volume ao banco, ao painel e à porta.",
+        "No close, o fundo sai de foco e corre mais devagar: o zoom que aproxima o rosto também aumentaria a velocidade e o contraste das árvores, o que a checagem de flashes do motor reprova.",
+        "As palavras aparecem uma a uma, cada uma quando é dita, sobre uma faixa escura que garante o contraste; uma palavra rápida demais para ler junta-se à seguinte. A capa sai da própria cena, numa variante sem o cartão e sem as palavras."
+      ]
+    },
+    "employee-survey": {
+      "number": "T1",
+      "lede": "A pesquisa anônima de clima, respondida em voz alta por um gato azul diante do laptop. Recriação do reel do the.nope.cat a partir de uma gravação de tela, com narração nova.",
+      "highlights": [
+        "Primeiro estilo medido direto do vídeo: o gato é decalcado dos quadros da gravação (um corpo por pose de braços, olhos e bocas por expressão), em pixels da referência que vão para o quadro por fx/fy.",
+        "Uma expressão por fala: nove olhos, nove bocas e sete braços trocam a cada deixa, num grupo por pose; quando digita, dois desenhos se alternam a cada tecla ouvida.",
+        "Legendas em pílula branca, com a largura medida nas tabelas da fonte (Comic Neue Bold Italic), sem renderizar.",
+        "Narração ElevenLabs (Brian) no ritmo natural; a imagem segue a voz: cada legenda nasce na palavra falada, e o teclado sintetizado só toca entre as falas, nunca por cima delas."
+      ]
+    },
+    "the-report": {
+      "number": "T3",
+      "lede": "Primeira esquete narrada do estilo Toon: Fern liga para Rex atrás do relatório das 9. Rex nunca ouviu falar. As provas se acumulam no quadro: o celular, as notas no laptop e o bilhete colado na própria testa.",
+      "highlights": [
+        "Gancho em pergunta nos primeiros 2 s (<em>Rex, where's the report?</em>) e uma virada de verdade: as onze mensagens de lembrete que Fern recebeu foram escritas pelo próprio Rex.",
+        "A piada é mostrada, não contada: duas notificações entram vibrando sobre a janela (<code>toon-toast</code>), as notas no laptop dizem REPORT!! e DO NOT FORGET (<code>toon-notes</code>), e o relógio pula de 9:04 a 9:06 (<code>toon-clock</code>).",
+        "Plano e contraplano por fala: Rex na sala do gato, Fern na sala de reunião nova (<code>toon-meeting</code>) com REPORT REVIEW 9:00 no quadro; o selo da chamada diz quem está na linha (<code>toon-badge</code>).",
+        "Duas vozes ElevenLabs (Charlie como Rex, Matilda como Fern) com legendas tingidas por falante; silêncio de 2 s antes do golpe final (<em>...What report?</em>) e um <em>wah-wah</em> sintetizado quando a chamada cai."
+      ]
+    },
+    "logo-bigger": {
+      "number": "T4",
+      "lede": "O cliente no viva-voz quer o logo maior. Depois maior. Depois que ele salte aos olhos. Fern aguenta, Rex executa, e o sol do quadro cresce até engolir a sala.",
+      "highlights": [
+        "O gag é visível: o logo (<code>toon-logo</code>) cresce a cada pedido, 1,6×, 2,3× e 4,6× em 0,3 s, ganha sombra no <em>pop</em> e volta ao tamanho original, que o cliente então aprova como novo.",
+        "Três vozes: George é o cliente, só voz, sem personagem; Fern (Matilda) e Rex (Charlie) alternam plano e contraplano, Rex com uma única palavra de resposta por pedido.",
+        "Virada no fim: a fatura sai e o cliente pede para fazê-la menor. Rex segura 1,4 s e responde <em>No.</em>; o selo vira CALL ENDED com o <em>wah-wah</em>.",
+        "Mesmo kit da esquete T3: sala de reunião, texto de quadro (<code>toon-board-text</code>) e selo de chamada reaproveitados por parâmetros, sem desenho novo além do logo."
+      ]
+    },
+    "quick-question": {
+      "number": "T5",
+      "lede": "Pip, a coelha, tem uma perguntinha rápida para Bruno, o urso. Antes, um contexto: começou em março, depois o Dave saiu. Quarenta e seis minutos depois, a pergunta é a que horas é a daily. Foi há três minutos, e está escrito no quadro atrás dela.",
+      "highlights": [
+        "Primeira esquete com sincronia labial: cada fala da ElevenLabs traz o tempo de cada letra, que vira um trilho de bocas (fechada, aberta, redonda, dentes) em <code>voiced/mouths.json</code>; o urso e a coelha mexem a boca nas próprias palavras.",
+        "A piada é plantada no primeiro quadro: STAND-UP 9:45 já está no quadro atrás de Pip (<code>toon-board-text</code>), enquanto o relógio de Bruno pula de 9:02 para 9:48 durante o contexto e o café dele para de soltar vapor (<code>toon-clock</code>, <code>toon-mug</code>).",
+        "Duas personagens novas, mais acabadas: sobrancelhas que acompanham o olhar, brilho nas pupilas, bochechas coradas, piscadas no próprio ritmo, orelhas forradas; a coelha tem dentes da frente e bigodes.",
+        "Vozes premade Alice (Pip) e Bill (Bruno), com legendas tingidas por falante; uma pausa de 1,6 s enquanto ela olha para o quadro antes do golpe final (<em>Oh. Quick follow-up.</em>) e o <em>wah-wah</em> quando ele desliga."
+      ]
+    }
+  },
+  "styles": {
+    "soft": {
+      "title": "Blob pose a pose",
+      "text": "Personagem branco de um só contorno num palco quente; poses no beat com in-betweens, legendas escuras no topo. 9:16 a 30 fps; paleta <i>warm</i>."
+    },
+    "cel": {
+      "title": "Desenho traçado",
+      "text": "Desenhos preenchidos por trecho de pose sob câmera medida, letreiro em caixas. 9:16 a 24 fps; paleta <i>linen</i>."
+    },
+    "stick": {
+      "title": "Palitinho traçado",
+      "text": "Bonecos de palitinho em tinta grossa, poses traçadas a 12 fps, sobre cenários pintados em tons chapados; legendas brancas com contorno. 9:16 a 24 fps; paleta <i>daylight</i>."
+    },
+    "toon": {
+      "title": "Cartum chapado",
+      "text": "Cartum em tinta grossa sobre uma sala em degradê: um gato cuja expressão troca a cada deixa, e um elenco desenhado a pincel (cachorro, rã, urso e coelha) com boca sincronizada à fala; legendas em pílula branca numa itálica manuscrita. 9:16 a 24 fps; paleta <i>peach</i>."
+    }
+  },
+  "gallery": [
+    {
+      "section": "cast",
+      "name": "Pip",
+      "parts": [
+        "pip"
+      ],
+      "voice": "Will",
+      "shot": {
+        "episode": "focus-mode",
+        "at": 1.0,
+        "box": [
+          390,
+          560,
+          690,
+          920
+        ]
+      },
+      "text": "Blob do estilo Soft: corpo, olhos e boca trocados pose a pose, com quadros intermediários interpolados. Trabalha, dança e esconde a câmera nos episódios 07 e 08; no 08 a voz cantada vem do ElevenLabs Music.",
+      "poses": [
+        {
+          "label": "dança",
+          "shot": {
+            "episode": "focus-mode",
+            "at": 9.5,
+            "box": [
+              260,
+              740,
+              820,
+              820
+            ]
+          }
+        },
+        {
+          "label": "susto",
+          "shot": {
+            "episode": "camera-off",
+            "at": 4.6,
+            "box": [
+              130,
+              600,
+              950,
+              950
+            ]
+          }
+        },
+        {
+          "label": "braços para cima",
+          "shot": {
+            "episode": "camera-off",
+            "at": 10.7,
+            "box": [
+              240,
+              700,
+              840,
+              840
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "O gerente e o candidato, de novo",
+      "parts": [
+        "manager",
+        "candidate"
+      ],
+      "voice": "Eric e Will",
+      "shot": {
+        "episode": "five-years",
+        "at": 0.3,
+        "box": [
+          180,
+          480,
+          600,
+          800
+        ]
+      },
+      "text": "Os mesmos rigs das entrevistas, montados pela biblioteca no episódio 06: em cinco anos, o candidato se vê na cadeira do gerente.",
+      "poses": [
+        {
+          "label": "na cadeira",
+          "shot": {
+            "episode": "five-years",
+            "at": 2.4,
+            "box": [
+              100,
+              420,
+              860,
+              860
+            ]
+          }
+        },
+        {
+          "label": "a cadeira gira",
+          "shot": {
+            "episode": "five-years",
+            "at": 9.0,
+            "box": [
+              230,
+              500,
+              660,
+              660
+            ]
+          }
+        },
+        {
+          "label": "no fim",
+          "shot": {
+            "episode": "five-years",
+            "at": 9.6,
+            "box": [
+              230,
+              500,
+              660,
+              660
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "O roteador",
+      "parts": [
+        "talking-router"
+      ],
+      "voice": "Daniel",
+      "shot": {
+        "episode": "the-router",
+        "at": 2.0,
+        "box": [
+          180,
+          100,
+          690,
+          920
+        ]
+      },
+      "text": "Prop que fala no estilo Ink: LEDs que acendem com a fala e marcas de voz nas antenas. Fica na prateleira e responde ao humano quando a internet cai.",
+      "poses": [
+        {
+          "label": "close",
+          "shot": {
+            "episode": "the-router",
+            "at": 12.0
+          }
+        },
+        {
+          "label": "no plano geral",
+          "shot": {
+            "episode": "the-router",
+            "at": 21.0,
+            "box": [
+              580,
+              160,
+              400,
+              400
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "O humano do roteador",
+      "parts": [
+        "doodle"
+      ],
+      "voice": "Chris",
+      "shot": {
+        "episode": "the-router",
+        "at": 0.5,
+        "box": [
+          0,
+          320,
+          540,
+          720
+        ]
+      },
+      "text": "O mesmo rig de caneta do episódio da impressora, agora na mesa diante do laptop que não carrega."
+    },
+    {
+      "section": "cast",
+      "name": "O cogumelo",
+      "parts": [
+        "cel-traced"
+      ],
+      "voice": "Alice (narração)",
+      "shot": {
+        "episode": "mushroom-training",
+        "at": 1.0,
+        "box": [
+          200,
+          480,
+          690,
+          920
+        ]
+      },
+      "text": "Desenho traçado do estilo Cel, com preenchimentos chapados e sem contorno. Faz um módulo de treinamento enquanto a narração lê o texto.",
+      "poses": [
+        {
+          "label": "no meio do módulo",
+          "shot": {
+            "episode": "mushroom-training",
+            "at": 30.0,
+            "box": [
+              200,
+              500,
+              700,
+              700
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "Os bonecos de palitinho",
+      "parts": [
+        "stick-figure"
+      ],
+      "voice": "Chris (narração)",
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 1.2,
+        "box": [
+          100,
+          700,
+          780,
+          1040
+        ]
+      },
+      "text": "Pernas e braços em tinta grossa, poses traçadas a 12 fps. Os dançarinos dividem um corpo e trocam a cabeça por um emblema: rosto colorido com um ícone.",
+      "poses": [
+        {
+          "label": "falando",
+          "shot": {
+            "episode": "check-with-my-team",
+            "at": 0.4,
+            "box": [
+              260,
+              680,
+              400,
+              400
+            ]
+          }
+        },
+        {
+          "label": "a fila de dança",
+          "shot": {
+            "episode": "check-with-my-team",
+            "at": 5.0,
+            "box": [
+              80,
+              680,
+              800,
+              800
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "locations",
+      "name": "Escritório da biblioteca",
+      "parts": [
+        "office-wide",
+        "office-reverse"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 0.3
+      },
+      "text": "Os setups do escritório refeitos como peças: plano aberto com o gerente atrás da mesa e o candidato de costas, e o contraplano."
+    },
+    {
+      "section": "locations",
+      "name": "Mesa do gerente",
+      "parts": [
+        "office-desk"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 2.4
+      },
+      "text": "O close na mesa, com a cadeira do gerente inteira no quadro."
+    },
+    {
+      "section": "locations",
+      "name": "Escritório Soft",
+      "parts": [
+        "soft-office"
+      ],
+      "shot": {
+        "episode": "focus-mode",
+        "at": 1.0
+      },
+      "text": "Mesa de madeira, laptop e cadeira sobre fundo creme liso. O palco dos episódios 07 e 08."
+    },
+    {
+      "section": "locations",
+      "name": "Prateleira do roteador",
+      "parts": [
+        "ink-router-shot"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 17.0
+      },
+      "text": "Plano 1:1 do roteador na prateleira, com o cabo descendo pela parede; o plano mais repetido do episódio."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto, plano geral",
+      "parts": [
+        "ink-router-wide"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 21.0
+      },
+      "text": "O humano à mesa e o roteador no alto da parede, os mesmos desenhos dos closes em escala menor."
+    },
+    {
+      "section": "locations",
+      "name": "Mesa do humano",
+      "parts": [
+        "ink-desk-shot"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 0.5
+      },
+      "text": "Humano, laptop e cacto sobre uma linha de mesa, traço de caneta no branco."
+    },
+    {
+      "section": "locations",
+      "name": "Sala do treinamento",
+      "parts": [
+        "cel-room"
+      ],
+      "shot": {
+        "episode": "mushroom-training",
+        "at": 1.0
+      },
+      "text": "Parede cinza-areia, mesa de madeira e piso de tábuas em perspectiva, traçados como a personagem."
+    },
+    {
+      "section": "locations",
+      "name": "Escritório de casa",
+      "parts": [
+        "stick-room"
+      ],
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 1.2
+      },
+      "text": "Janela, quadro, estante, cadeira, mesa e laptop em tons chapados contornados de marrom, com gradiente na parede."
+    },
+    {
+      "section": "locations",
+      "name": "Quintal",
+      "parts": [
+        "stick-yard"
+      ],
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 5.0
+      },
+      "text": "Céu em gradiente, árvores com folhagem traçada, cerca de tábuas com variação semeada e grama com tufos."
+    },
+    {
+      "section": "props",
+      "name": "Mão no botão",
+      "parts": [
+        "ink-hand"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 23.5,
+        "box": [
+          700,
+          700,
+          380,
+          380
+        ]
+      },
+      "text": "Entra pelo canto e aperta o botão de desligar do roteador."
+    },
+    {
+      "section": "props",
+      "name": "Encosto da cadeira",
+      "parts": [
+        "chair-back"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 9.0,
+        "box": [
+          260,
+          520,
+          600,
+          700
+        ]
+      },
+      "text": "A cadeira vista de costas, girada no fim do episódio 06."
+    },
+    {
+      "section": "props",
+      "name": "Cacto de assinatura",
+      "parts": [
+        "signature-cactus"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 2.4,
+        "box": [
+          0,
+          1260,
+          220,
+          220
+        ]
+      },
+      "text": "O cacto que assina os episódios da biblioteca (ADR 0001), num canto da cena."
+    },
+    {
+      "section": "graphics",
+      "name": "Código SR-1028",
+      "parts": [
+        "signature-code"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 2.4,
+        "box": [
+          620,
+          1450,
+          380,
+          240
+        ]
+      },
+      "text": "A outra assinatura, impressa nos papéis da mesa ou na frente do roteador."
+    },
+    {
+      "section": "graphics",
+      "name": "Marca de rangido",
+      "parts": [
+        "squeak-mark"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 0.3,
+        "box": [
+          100,
+          1180,
+          480,
+          300
+        ]
+      },
+      "text": "Letreiro <i>squeak</i> com ondas, ao lado da cadeira."
+    },
+    {
+      "section": "graphics",
+      "name": "Slate de episódio",
+      "parts": [
+        "episode-slate"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 0.3,
+        "box": [
+          60,
+          200,
+          500,
+          140
+        ]
+      },
+      "text": "Número e título no canto, como nos episódios 03 a 05."
+    },
+    {
+      "section": "graphics",
+      "name": "Plano de cinco anos",
+      "parts": [
+        "scorecard"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 9.0,
+        "box": [
+          60,
+          200,
+          900,
+          330
+        ]
+      },
+      "text": "O scorecard do 03 reaproveitado como punchline: emprego, não obrigado; cadeira, adquirida."
+    },
+    {
+      "section": "graphics",
+      "name": "Letreiro do treinamento",
+      "parts": [
+        "cel-lettering"
+      ],
+      "shot": {
+        "episode": "mushroom-training",
+        "at": 1.0,
+        "box": [
+          60,
+          250,
+          960,
+          260
+        ]
+      },
+      "text": "Legendas em letra traçada dentro de caixas azul-petróleo, uma linha por caixa."
+    },
+    {
+      "section": "graphics",
+      "name": "Balão do gancho",
+      "parts": [
+        "stick-hook"
+      ],
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 1.2,
+        "box": [
+          100,
+          350,
+          880,
+          250
+        ]
+      },
+      "text": "Cartão branco arredondado com o gancho em letra traçada."
+    },
+    {
+      "section": "graphics",
+      "name": "Título do quintal",
+      "parts": [
+        "stick-headline"
+      ],
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 5.0,
+        "box": [
+          100,
+          320,
+          880,
+          220
+        ]
+      },
+      "text": "Letreiro grande, branco com contorno preto."
+    },
+    {
+      "section": "graphics",
+      "name": "Legenda com contorno",
+      "parts": [
+        "stick-captions"
+      ],
+      "shot": {
+        "episode": "check-with-my-team",
+        "at": 1.2,
+        "box": [
+          200,
+          1360,
+          680,
+          180
+        ]
+      },
+      "text": "Inter Bold branca com contorno de tinta por fora, uma linha por fala."
+    },
+    {
+      "section": "cast",
+      "name": "Dev",
+      "parts": [
+        "stick-rig"
+      ],
+      "voice": "Will",
+      "shot": {
+        "episode": "screen-share",
+        "at": 7.0,
+        "box": [
+          150,
+          740,
+          700,
+          1000
+        ]
+      },
+      "text": "O boneco desenhado do estilo Stick: membros em tinta posados por chaves, cabeça com topete, olhos que mudam de estado, sobrancelhas e boca que fala pelos tempos dos caracteres da ElevenLabs. O visual (<code>stick.Look</code>) é o padrão: topete, sem óculos e sem gravata.",
+      "poses": [
+        {
+          "label": "conexão ruim",
+          "shot": {
+            "episode": "screen-share",
+            "at": 9.0,
+            "box": [
+              180,
+              720,
+              560,
+              560
+            ]
+          }
+        },
+        {
+          "label": "fim da chamada",
+          "shot": {
+            "episode": "screen-share",
+            "at": 12.6,
+            "box": [
+              80,
+              480,
+              800,
+              800
+            ]
+          }
+        },
+        {
+          "label": "espreguiçando",
+          "shot": {
+            "episode": "screen-share",
+            "at": 13.6,
+            "box": [
+              130,
+              620,
+              520,
+              520
+            ]
+          }
+        },
+        {
+          "label": "encarando",
+          "shot": {
+            "episode": "screen-share",
+            "at": 16.8,
+            "box": [
+              140,
+              460,
+              800,
+              800
+            ]
+          }
+        },
+        {
+          "label": "ao volante",
+          "shot": {
+            "episode": "repeat-after-me",
+            "at": 7.0,
+            "box": [
+              140,
+              520,
+              800,
+              800
+            ]
+          }
+        },
+        {
+          "label": "pego no flagra",
+          "shot": {
+            "episode": "repeat-after-me",
+            "at": 9.7,
+            "box": [
+              130,
+              720,
+              520,
+              520
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "Chefe",
+      "parts": [
+        "stick-rig"
+      ],
+      "voice": "Eric",
+      "shot": {
+        "episode": "screen-share",
+        "at": 13.9,
+        "box": [
+          580,
+          560,
+          460,
+          1060
+        ]
+      },
+      "text": "O mesmo rig, em pé (<code>stick.STANDING</code>), espelhado para encarar o Dev e com visual próprio: careca, óculos e gravata (<code>stick.Look</code>). Aparece na sala na sexta às 16h59 e na chamada como um dos quadros."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão do gancho",
+      "parts": [
+        "stick-card"
+      ],
+      "shot": {
+        "episode": "screen-share",
+        "at": 1.0,
+        "box": [
+          70,
+          280,
+          940,
+          270
+        ]
+      },
+      "text": "O gancho na fonte das legendas: texto em tinta, balanceado em até três linhas, num cartão branco arredondado."
+    },
+    {
+      "section": "graphics",
+      "name": "Tela da chamada",
+      "parts": [
+        "stick-call"
+      ],
+      "shot": {
+        "episode": "screen-share",
+        "at": 4.9,
+        "box": [
+          0,
+          520,
+          1080,
+          1400
+        ]
+      },
+      "text": "Uma videochamada que ocupa o quadro: a caixa de entrada compartilhada acima das legendas, com uma linha marcada em amarelo, e os quadros dos participantes abaixo, o de quem fala contornado em verde."
+    },
+    {
+      "section": "cast",
+      "name": "O gato da pesquisa",
+      "parts": [
+        "toon-cat"
+      ],
+      "voice": "Brian (narração)",
+      "shot": {
+        "episode": "employee-survey",
+        "at": 0.5,
+        "box": [
+          0,
+          640,
+          720,
+          800
+        ]
+      },
+      "text": "Decalcado da gravação: um corpo por pose de braços, olhos e boca escolhidos por fala. Quando digita, dois desenhos se alternam a cada tecla ouvida.",
+      "poses": [
+        {
+          "label": "de olho meio fechado, digitando",
+          "shot": {
+            "episode": "employee-survey",
+            "at": 5.9,
+            "box": [
+              0,
+              640,
+              720,
+              800
+            ]
+          }
+        },
+        {
+          "label": "patas na boca",
+          "shot": {
+            "episode": "employee-survey",
+            "at": 54.0,
+            "box": [
+              0,
+              640,
+              720,
+              800
+            ]
+          }
+        },
+        {
+          "label": "número de funcionário?",
+          "shot": {
+            "episode": "employee-survey",
+            "at": 37.0,
+            "box": [
+              0,
+              640,
+              720,
+              800
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "locations",
+      "name": "Sala do gato",
+      "parts": [
+        "toon-room"
+      ],
+      "shot": {
+        "episode": "employee-survey",
+        "at": 2.0,
+        "box": [
+          400,
+          280,
+          680,
+          1000
+        ]
+      },
+      "text": "Parede em degradê pêssego, janela de moldura marrom com céu claro e o encosto azul da cadeira, atrás da personagem."
+    },
+    {
+      "section": "locations",
+      "name": "Mesa e laptop",
+      "parts": [
+        "toon-desk"
+      ],
+      "shot": {
+        "episode": "employee-survey",
+        "at": 2.0,
+        "box": [
+          520,
+          780,
+          560,
+          760
+        ]
+      },
+      "text": "A tampa cinza do laptop e a mesa terracota, com a borda escura e a faixa lateral, na frente da personagem."
+    },
+    {
+      "section": "graphics",
+      "name": "Pílula de legenda",
+      "parts": [
+        "toon-captions"
+      ],
+      "shot": {
+        "episode": "employee-survey",
+        "at": 0.5,
+        "box": [
+          120,
+          290,
+          840,
+          190
+        ]
+      },
+      "text": "Cada deixa numa pílula branca centrada no alto, em Comic Neue Bold Italic; a largura vem das tabelas da fonte."
+    },
+    {
+      "section": "cast",
+      "name": "Rex, o cachorro",
+      "parts": [
+        "toon-dog"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 0.6,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem laranja, orelhas caídas e focinho claro, desenhado a pincel com o vocabulário do gato: nove olhos, nove bocas e sete braços trocam a cada legenda.",
+      "poses": [
+        {
+          "label": "pálpebras baixas",
+          "shot": {
+            "episode": "the-report",
+            "at": 11.9,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "susto",
+          "shot": {
+            "episode": "the-report",
+            "at": 13.0,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "olhando para cima",
+          "shot": {
+            "episode": "the-report",
+            "at": 28.3,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "braço estendido",
+          "shot": {
+            "episode": "logo-bigger",
+            "at": 21.0,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "Fern, a rã",
+      "parts": [
+        "toon-frog"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 3.8,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "Verde com barriga clara e pintas, os olhos nas protuberâncias da cabeça e a boca larga; mesma folha de poses do cachorro e do gato.",
+      "poses": [
+        {
+          "label": "braços cruzados",
+          "shot": {
+            "episode": "the-report",
+            "at": 25.6,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "testa franzida",
+          "shot": {
+            "episode": "logo-bigger",
+            "at": 11.2,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "mãos no rosto",
+          "shot": {
+            "episode": "logo-bigger",
+            "at": 31.2,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "Bruno, o urso",
+      "parts": [
+        "toon-bear"
+      ],
+      "shot": {
+        "episode": "quick-question",
+        "at": 2.3,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem marrom, orelhas redondas forradas, focinho e barriga claros, sobrancelhas, brilho nas pupilas, bochechas coradas e piscadas a cada 3,4 s; a boca segue a fala.",
+      "poses": [
+        {
+          "label": "olhos semicerrados",
+          "shot": {
+            "episode": "quick-question",
+            "at": 5.6,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "mãos no rosto",
+          "shot": {
+            "episode": "quick-question",
+            "at": 16.6,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "susto",
+          "shot": {
+            "episode": "quick-question",
+            "at": 22.9,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "braços cruzados",
+          "shot": {
+            "episode": "quick-question",
+            "at": 25.0,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "cast",
+      "name": "Pip, a coelha",
+      "parts": [
+        "toon-rabbit"
+      ],
+      "shot": {
+        "episode": "quick-question",
+        "at": 0.5,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem clara, orelhas altas forradas de rosa, dentes da frente, bigodes, sobrancelhas, brilho nas pupilas e piscadas a cada 2,6 s; a boca segue a fala.",
+      "poses": [
+        {
+          "label": "olhando para cima",
+          "shot": {
+            "episode": "quick-question",
+            "at": 7.0,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "de lado",
+          "shot": {
+            "episode": "quick-question",
+            "at": 10.2,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "olhos arregalados",
+          "shot": {
+            "episode": "quick-question",
+            "at": 19.4,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        },
+        {
+          "label": "olhando o quadro",
+          "shot": {
+            "episode": "quick-question",
+            "at": 26.0,
+            "box": [
+              0,
+              560,
+              800,
+              900
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "section": "locations",
+      "name": "Sala de reunião",
+      "parts": [
+        "toon-meeting"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 3.8,
+        "box": [
+          400,
+          280,
+          680,
+          1000
+        ]
+      },
+      "text": "Parede em degradê menta, um quadro branco de moldura cinza onde ficava a janela e o mesmo encosto azul; o contraplano das chamadas de Fern."
+    },
+    {
+      "section": "props",
+      "name": "Caneca",
+      "parts": [
+        "toon-mug"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 10.6,
+        "box": [
+          540,
+          1120,
+          300,
+          300
+        ]
+      },
+      "text": "Uma caneca rosa com faixa clara na beira da mesa, com vapor opcional em intervalos pedidos."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de parede",
+      "parts": [
+        "toon-clock"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 0.6,
+        "box": [
+          60,
+          440,
+          270,
+          270
+        ]
+      },
+      "text": "Mostrador creme com doze marcas; os ponteiros saltam a cada hora listada, calculados de HH:MM."
+    },
+    {
+      "section": "props",
+      "name": "Notas no laptop",
+      "parts": [
+        "toon-notes"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 10.6,
+        "box": [
+          740,
+          760,
+          340,
+          500
+        ]
+      },
+      "text": "Até quatro post-its coloridos na tampa do laptop, em Comic Neue, cada um com até dez caracteres e sua própria inclinação."
+    },
+    {
+      "section": "graphics",
+      "name": "Notificação",
+      "parts": [
+        "toon-toast"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 10.6,
+        "box": [
+          580,
+          500,
+          500,
+          260
+        ]
+      },
+      "text": "Cartão branco que desliza da direita sobre a janela, com ponto verde, remetente e mensagem, e sai pelo mesmo caminho; o celular vibra junto."
+    },
+    {
+      "section": "graphics",
+      "name": "Texto no quadro",
+      "parts": [
+        "toon-board-text"
+      ],
+      "shot": {
+        "episode": "logo-bigger",
+        "at": 0.6,
+        "box": [
+          620,
+          360,
+          460,
+          300
+        ]
+      },
+      "text": "Até quarenta caracteres em marcador azul no alto do quadro, visíveis num intervalo opcional."
+    },
+    {
+      "section": "graphics",
+      "name": "Logo do cliente",
+      "parts": [
+        "toon-logo"
+      ],
+      "shot": {
+        "episode": "logo-bigger",
+        "at": 8.8,
+        "box": [
+          420,
+          380,
+          660,
+          760
+        ]
+      },
+      "text": "Um sol sorridente no centro do quadro, escalado pelo próprio centro a cada tamanho pedido em 0,3 s; ganha sombra num intervalo para \"saltar aos olhos\". Aos 8,8 s já está em 2,3×; aos 15 s cobre a sala."
+    },
+    {
+      "section": "graphics",
+      "name": "Selo da chamada",
+      "parts": [
+        "toon-badge"
+      ],
+      "shot": {
+        "episode": "the-report",
+        "at": 0.6,
+        "box": [
+          300,
+          400,
+          480,
+          160
+        ]
+      },
+      "text": "Pílula escura sob a legenda com um ponto vermelho e quem está na linha; a largura vem das tabelas da fonte, e o texto troca em CALL ENDED quando a chamada cai."
+    },
+    {
+      "section": "cast",
+      "name": "Juno",
+      "parts": [
+        "juno"
+      ],
+      "voice": "Laura",
+      "shot": {
+        "episode": "off-and-on",
+        "at": 1.0,
+        "box": [
+          60,
+          660,
+          500,
+          980
+        ]
+      },
+      "text": "A colega que já leu o e-mail: o rig e as poses do Pip num corpo damasco, com coque ruivo, franja recortada, elástico coral e sardas. Estreia no episódio 10."
+    },
+    {
+      "section": "cast",
+      "name": "Remy, do suporte",
+      "parts": [
+        "remy"
+      ],
+      "voice": "cantado pelo ElevenLabs Music",
+      "shot": {
+        "episode": "off-and-on",
+        "at": 4.5,
+        "box": [
+          560,
+          380,
+          520,
+          980
+        ]
+      },
+      "text": "O suporte de TI: o rig do Pip em lilás, com topete espetado e headset com luz de status. No episódio 10 canta o jingle de desligar e ligar de novo."
+    },
+    {
+      "section": "cast",
+      "name": "Milo, o cliente",
+      "parts": [
+        "customer"
+      ],
+      "voice": "Liam",
+      "shot": {
+        "episode": "upside-down",
+        "at": 0.5,
+        "box": [
+          0,
+          840,
+          520,
+          1000
+        ]
+      },
+      "text": "Gorro, barba por fazer e celular na mão, de pé ou sentado. Pede café no episódio 05 e chega à recepção no 09."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de reunião Soft",
+      "parts": [
+        "soft-meeting-room"
+      ],
+      "shot": {
+        "episode": "off-and-on",
+        "at": 4.5
+      },
+      "text": "Paredes sálvia, piso de tábuas, mesa de nogueira, tela com slide e webcam, relógio e janela lateral com a luz no chão."
+    },
+    {
+      "section": "locations",
+      "name": "Copa Soft",
+      "parts": [
+        "soft-break-room"
+      ],
+      "shot": {
+        "episode": "off-and-on",
+        "at": 1.0
+      },
+      "text": "Paredes amarelo-manteiga, piso de ladrilho, armários menta, cafeteira, geladeira pastel, luminária pendente e banqueta."
+    },
+    {
+      "section": "locations",
+      "name": "Close do humano",
+      "parts": [
+        "ink-closeup"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 4.0
+      },
+      "text": "O doodle ocupando o quadro quadrado: o contraplano das falas do humano."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de conferência",
+      "parts": [
+        "conference-room"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 7.5
+      },
+      "text": "Persianas com feixes de luz, quadro branco com gráfico e post-its, cadeira de espaldar alto e mesa de nogueira com viva-voz, papéis e caneca."
+    },
+    {
+      "section": "locations",
+      "name": "Recepção",
+      "parts": [
+        "reception"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 0.5
+      },
+      "text": "Painel ripado de nogueira com logo iluminado, pendentes globo, planta, balcão de pedra canelado e piso polido que reflete tudo."
+    },
+    {
+      "section": "props",
+      "name": "Mesa, cadeira e laptop Soft",
+      "parts": [
+        "soft-desk",
+        "soft-chair",
+        "soft-laptop"
+      ],
+      "shot": {
+        "episode": "camera-off",
+        "at": 2.0,
+        "box": [
+          0,
+          820,
+          1000,
+          820
+        ]
+      },
+      "text": "A mesa de madeira em 3/4 vista de cima, a cadeira baixa de encosto ripado e o laptop aberto sobre a mesa."
+    },
+    {
+      "section": "props",
+      "name": "Cadeira giratória",
+      "parts": [
+        "soft-swivel-chair"
+      ],
+      "shot": {
+        "episode": "off-and-on",
+        "at": 4.5,
+        "box": [
+          540,
+          920,
+          520,
+          720
+        ]
+      },
+      "text": "Estofada, virada para a esquerda, sobre base cromada de cinco pés; as poses sentadas encaixam como na cadeira do escritório."
+    },
+    {
+      "section": "props",
+      "name": "Cafeteira e geladeira",
+      "parts": [
+        "soft-coffee-machine",
+        "soft-fridge"
+      ],
+      "shot": {
+        "episode": "off-and-on",
+        "at": 1.0,
+        "box": [
+          0,
+          400,
+          1000,
+          820
+        ]
+      },
+      "text": "A cafeteira no balcão, com jarra pela metade e caneca fumegando, e a geladeira pastel com ímãs e um post-it."
+    },
+    {
+      "section": "props",
+      "name": "Banqueta",
+      "parts": [
+        "soft-stool"
+      ],
+      "shot": {
+        "episode": "off-and-on",
+        "at": 1.0,
+        "box": [
+          640,
+          1240,
+          380,
+          340
+        ]
+      },
+      "text": "Assento acolchoado sobre haste cromada com apoio para os pés, na altura da cadeira do escritório."
+    },
+    {
+      "section": "props",
+      "name": "Laptop e mesa de tinta",
+      "parts": [
+        "ink-laptop",
+        "ink-desk"
+      ],
+      "shot": {
+        "episode": "the-router",
+        "at": 21.0
+      },
+      "text": "O laptop em três traços e a laje larga da mesa com a ponta sombreada."
+    },
+    {
+      "section": "props",
+      "name": "Mesa da entrevista",
+      "parts": [
+        "papers",
+        "woodgrain",
+        "laptop",
+        "plant",
+        "office-art",
+        "chair"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 1.0
+      },
+      "text": "O plano aberto do escritório: quadro abstrato, planta de 18 folhas, cadeira preta do gerente, mesa com veios, papéis e laptop."
+    },
+    {
+      "section": "props",
+      "name": "Candidato de costas",
+      "parts": [
+        "candidate-back"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 1.0,
+        "box": [
+          0,
+          880,
+          520,
+          1040
+        ]
+      },
+      "text": "O candidato visto de trás, em primeiro plano, na cadeira cinza."
+    },
+    {
+      "section": "props",
+      "name": "Copo d'água",
+      "parts": [
+        "water-glass"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 2.4,
+        "box": [
+          860,
+          1280,
+          220,
+          360
+        ]
+      },
+      "text": "Na borda direita da mesa, no contraplano do candidato."
+    },
+    {
+      "section": "props",
+      "name": "Copo de café",
+      "parts": [
+        "coffee-cup"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 5.2,
+        "box": [
+          200,
+          1440,
+          240,
+          240
+        ]
+      },
+      "text": "Copo para viagem com tampa e coração de espuma, na mão do Milo."
+    },
+    {
+      "section": "props",
+      "name": "Persiana e quadro branco",
+      "parts": [
+        "blinds-window",
+        "whiteboard"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 7.5,
+        "box": [
+          0,
+          180,
+          1080,
+          960
+        ]
+      },
+      "text": "A janela alta com cidade e persiana baixada, e o quadro branco com gráfico, post-its e bandeja de canetas."
+    },
+    {
+      "section": "props",
+      "name": "Viva-voz",
+      "parts": [
+        "speakerphone"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 9.5,
+        "box": [
+          100,
+          560,
+          880,
+          400
+        ]
+      },
+      "text": "Três lóbulos e um anel verde aceso enquanto alguém fala do outro lado."
+    },
+    {
+      "section": "props",
+      "name": "Painel, pendentes e balcão",
+      "parts": [
+        "slat-wall",
+        "globe-pendant",
+        "reception-counter"
+      ],
+      "shot": {
+        "episode": "upside-down",
+        "at": 0.5,
+        "box": [
+          140,
+          0,
+          940,
+          1460
+        ]
+      },
+      "text": "As peças da recepção: o painel ripado com LED no topo, os pendentes globo e o balcão canelado com monitor."
+    },
+    {
+      "section": "graphics",
+      "name": "Legenda",
+      "parts": [
+        "captions"
+      ],
+      "shot": {
+        "episode": "five-years",
+        "at": 1.0,
+        "box": [
+          80,
+          1250,
+          840,
+          170
+        ]
+      },
+      "text": "Legenda com contorno e sombra; um destaque pinta parte da fala."
+    },
+    {
+      "section": "locations",
+      "name": "Carro na estrada",
+      "parts": [
+        "stick-car"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 2.6
+      },
+      "text": "Cabine vista da porta do passageiro: teto, retrovisor, porta com apoio de braço e alto-falante, e o país passando pela janela em seis camadas de paralaxe, com casas, postes, um carro em sentido contrário e o reflexo do vidro."
+    },
+    {
+      "section": "props",
+      "name": "Volante, cinto e balanço",
+      "parts": [
+        "stick-cockpit",
+        "stick-ride"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 1.0,
+        "box": [
+          150,
+          560,
+          900,
+          700
+        ]
+      },
+      "text": "A camada da frente: painel dos joelhos, coluna e volante sobre as mãos, um cinto para cada pose e as sombras das árvores varrendo a cabine; tudo balança na suspensão, em duas ondas que nunca se repetem."
+    },
+    {
+      "section": "props",
+      "name": "Banco do passageiro",
+      "parts": [
+        "stick-car-seat"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 9.7,
+        "box": [
+          0,
+          660,
+          1080,
+          1260
+        ]
+      },
+      "text": "Banco em primeiro plano com encosto pregueado, costura tracejada e almofada em degradê."
+    },
+    {
+      "section": "props",
+      "name": "Laptop",
+      "parts": [
+        "stick-laptop"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 9.7,
+        "box": [
+          420,
+          930,
+          560,
+          400
+        ]
+      },
+      "text": "Janela de e-mails enviados, cada linha com um visto verde, e o contador em vermelho."
+    },
+    {
+      "section": "props",
+      "name": "Celular no suporte",
+      "parts": [
+        "stick-phone"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 1.0,
+        "box": [
+          780,
+          480,
+          300,
+          480
+        ]
+      },
+      "text": "Celular preso no para-brisa com uma notificação do chefe; vibra com marcas quando a mensagem chega."
+    },
+    {
+      "section": "graphics",
+      "name": "Palavra por palavra",
+      "parts": [
+        "stick-words"
+      ],
+      "shot": {
+        "episode": "repeat-after-me",
+        "at": 2.0,
+        "box": [
+          0,
+          1180,
+          1080,
+          420
+        ]
+      },
+      "text": "Cada palavra na hora em que é dita, em branco com contorno de tinta sobre uma faixa escura esfumada, entrando com um pequeno salto."
+    }
+  ]
+}

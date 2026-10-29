@@ -35,6 +35,13 @@ CASES = [
         ("script.json", "assets"),
         ("Mushroom_Training_Captions.srt",),
     ),
+    (
+        "check_with_my_team",
+        "check-with-my-team-1.0.0",
+        "scene.xml",
+        ("script.json", "assets"),
+        ("Check_With_My_Team.srt",),
+    ),
 ]
 
 

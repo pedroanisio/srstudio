@@ -9,7 +9,11 @@ from srstudio import Episode, EpisodeSpec, camera, cast, graphics, locations, pr
 
 
 def episode(project, slug):
-    return Episode(EpisodeSpec(slug=slug, title="t", description="t", root=project, seed=6, background="#D5DFDF"))
+    # part tests draw no location, so nothing places the signature marks (ADR 0001)
+    spec = EpisodeSpec(
+        slug=slug, title="t", description="t", root=project, seed=6, background="#D5DFDF", signature=False
+    )
+    return Episode(spec)
 
 
 def shapes(group):

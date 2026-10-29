@@ -10,8 +10,6 @@ has the applicant spinning in the executive chair under a five-year plan.
 """
 
 import os
-import shutil
-from pathlib import Path
 
 from _common import project_root
 from instagram_posts import POSTS
@@ -218,9 +216,5 @@ ep.captions(
 ep.markers(extra=[("marker-squeak", SQUEAK_LOUD, "Loud squeak"), ("marker-spin", SPIN, "Executive spin")])
 ep.instagram(POSTS["five-years"])
 out = ep.finish()
-# The engine does not measure vector graphics against the safe area; srstudio checks the overlays.
-engine = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
-if engine is None:
-    raise SystemExit("no scene-render engine: set SRSTUDIO_ENGINE to check the overlays against the safe area")
 OVERLAYS = ["episode-slate", "squeak-soft", "squeak-loud", "final-scorecard"]
-layout.check_overlays(out, OVERLAYS, engine=Path(engine), strict=True)
+ep.check_overlays(out, OVERLAYS)

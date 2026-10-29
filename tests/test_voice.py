@@ -626,10 +626,17 @@ def test_transcripts_with_wrongly_typed_fields_are_rejected(body, match):
         ("Room 40.", "Room forty."),
         ("Since 1999!", "since 1999"),  # beyond the scripts' range: compared digit by digit
         ("Rock '' roll", "rock roll"),  # a bare apostrophe is no word
+        ("Great point, Mr. Lamp.", "Great point, Mister Lamp."),  # a spoken title is written abbreviated
+        ("Thanks, Mrs Hill and Dr. Ng.", "Thanks, Missus Hill and Doctor Ng."),
     ],
 )
 def test_number_and_apostrophe_normalisation(heard, script):
     check_transcript(parse_transcript(transcript(heard)), script)
+
+
+def test_an_abbreviated_title_is_still_the_word_it_stands_for():
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript("Great point, Mr. Lamp.")), "Great point, Master Lamp.")
 
 
 def test_numbers_beyond_ninety_nine_are_not_spelled_as_words():

@@ -317,7 +317,14 @@ def test_episode_declares_its_safe_area_and_the_engine_enforces_it(project, tmp_
     root = shutil.copytree(project, tmp_path / "project")  # the scene's asset paths are relative to it
     ep = Episode(
         EpisodeSpec(
-            slug="t-safe", title="t", description="t", root=root, seed=1, background="#D5DFDF", safe_area=VERTICAL
+            slug="t-safe",
+            title="t",
+            description="t",
+            root=root,
+            seed=1,
+            background="#D5DFDF",
+            safe_area=VERTICAL,
+            signature=False,  # a layout test, not a set: no location draws the marks
         )
     )
     graphics.episode_slate(ep.cv, ep.comp, "T1", "TEST")  # at y 65: above the region's top edge
@@ -330,7 +337,11 @@ def test_episode_declares_its_safe_area_and_the_engine_enforces_it(project, tmp_
 
 
 def test_episode_without_a_safe_area_declares_none(project, tmp_path):
-    ep = Episode(EpisodeSpec(slug="t-plain", title="t", description="t", root=project, seed=1, background="#D5DFDF"))
+    ep = Episode(
+        EpisodeSpec(
+            slug="t-plain", title="t", description="t", root=project, seed=1, background="#D5DFDF", signature=False
+        )
+    )
     ep.captions()
     out = ep.finish(out=tmp_path / "plain.scene.xml", report=tmp_path / "report.json")
     root = ET.fromstring(out.read_bytes())
@@ -524,3 +535,55 @@ def test_check_overlays_rejects_a_scoped_id_it_cannot_resolve(tmp_path, scoped):
     nodes = frame(node("overlay", "group", IDENTITY), node(scoped, "shape", IDENTITY, parent=0))
     with pytest.raises(LayoutError, match="does not declare"):
         check_overlays(doc, ["overlay"], engine=fake_engine(tmp_path, nodes))
+
+
+# -- the engine, found once ----------------------------------------------------------------------------
+
+
+def test_the_engine_is_the_given_path_then_the_environment_then_the_path(tmp_path, monkeypatch):
+    from srstudio.layout import find_engine
+
+    binary = tmp_path / "scene-render"
+    binary.write_text("#!/bin/sh\n")
+    binary.chmod(0o700)
+    other = tmp_path / "other"
+    other.write_text("#!/bin/sh\n")
+    monkeypatch.setenv("SRSTUDIO_ENGINE", str(other))
+    assert find_engine(binary) == binary
+    assert find_engine() == other
+    monkeypatch.delenv("SRSTUDIO_ENGINE")
+    monkeypatch.setenv("PATH", str(tmp_path))
+    assert find_engine() == binary
+
+
+def test_no_engine_anywhere_says_how_to_supply_one(tmp_path, monkeypatch):
+    from srstudio.layout import find_engine
+
+    monkeypatch.delenv("SRSTUDIO_ENGINE", raising=False)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    with pytest.raises(LayoutError, match="SRSTUDIO_ENGINE"):
+        find_engine()
+    with pytest.raises(LayoutError, match="no such engine"):
+        find_engine(tmp_path / "missing")
+
+
+def test_an_episode_checks_its_overlays_with_the_engine_it_finds(project, tmp_path, monkeypatch):
+    monkeypatch.setenv("SRSTUDIO_ENGINE", str(engine()))
+    root = shutil.copytree(project, tmp_path / "project")
+    ep = Episode(
+        EpisodeSpec(
+            slug="t-over",
+            title="t",
+            description="t",
+            root=root,
+            seed=1,
+            background="#D5DFDF",
+            safe_area=VERTICAL,
+            signature=False,  # a layout test, not a set: no location draws the marks
+        )
+    )
+    graphics.episode_slate(ep.cv, ep.comp, "T1", "TEST")  # at y 65: above the region's top edge
+    ep.captions()
+    out = ep.finish(strict=False)
+    with pytest.raises(LayoutError, match="episode-slate"):
+        ep.check_overlays(out, ["episode-slate"])

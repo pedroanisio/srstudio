@@ -6,7 +6,8 @@ input file, the caption font, the mouth model per palette, the palettes it may b
 modules that hold its parts. ``EpisodeSpec(style=INK)`` resolves every unset field from the style, and
 an explicit field still wins, so a script states only what is particular to its episode.
 
-Four styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``, ``0004-cel-style.md``):
+Five styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``, ``0004-cel-style.md``,
+``0006-stick-style.md``):
 
 * **Cutout** (:data:`CUTOUT`): flat vector shapes with soft gradients and bold outlines, like paper
   cut-outs; portrait 1080×1920 at 30 fps on the project clock; palettes ``OFFICE`` and ``CAFE``.
@@ -16,6 +17,9 @@ Four styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``
   pose-to-pose on a beat, dark captions at the top; portrait 1080×1920 at 30 fps; palette ``WARM``.
 * **Cel** (:data:`CEL`): traced, filled drawings held per run under a measured camera, captions as boxed
   lettering, no sound; portrait 1080×1920 at 24 fps; palette ``LINEN``. Silent: no font and no mouth model.
+* **Stick** (:data:`STICK`): stick figures in heavy ink, traced at 12 fps, on painted, flat-shaded sets, captions in
+  white outlined text; portrait 1080×1920 at 24 fps; palette ``DAYLIGHT``. No mouth model: voice, if any, is
+  narration over the captions.
 """
 
 from __future__ import annotations
@@ -25,11 +29,24 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal
 
-from .canvas import CAFE, LINEN, MONO, OFFICE, WARM, Palette, flat_counter, shared_counter
+from .canvas import CAFE, DAYLIGHT, LINEN, MONO, OFFICE, PEACH, WARM, Palette, flat_counter, shared_counter
 from .fonts import GoogleFont
 from .soundtrack import CAFE_MOUTH, INK_MOUTH, OFFICE_MOUTH, SOFT_MOUTH, MouthStyle, PhonemeStyle
 
-__all__ = ["Style", "StyleError", "Font", "Mix", "CUTOUT", "INK", "SOFT", "CEL", "STYLES", "style_of_module"]
+__all__ = [
+    "Style",
+    "StyleError",
+    "Font",
+    "Mix",
+    "CUTOUT",
+    "INK",
+    "SOFT",
+    "CEL",
+    "STICK",
+    "TOON",
+    "STYLES",
+    "style_of_module",
+]
 
 Timing = Literal["clock", "sequence"]
 
@@ -215,7 +232,7 @@ SOFT = Style(
         google=GoogleFont("Poppins", 700),
     ),
     mouths={WARM.name: SOFT_MOUTH},
-    parts=("blob",),
+    parts=("blob", "soft_props"),
 )
 
 CEL = Style(
@@ -238,7 +255,66 @@ CEL = Style(
     silent=True,
 )
 
-STYLES: dict[str, Style] = {s.slug: s for s in (CUTOUT, INK, SOFT, CEL)}
+STICK = Style(
+    slug="stick",
+    name="Stick",
+    summary="Stick figures in heavy ink, traced at 12 fps, on painted, flat-shaded sets; captions in white outlined "
+    "text; portrait recreations",
+    palettes=(DAYLIGHT,),
+    width=1080,
+    height=1920,
+    fps=24,
+    timing="clock",
+    dialogue="script.json",  # timed caption cues; Timeline.load reads them as caption phrases
+    audio=None,
+    font=Font(
+        src="assets/Inter-Bold.ttf",
+        id="inter",
+        family="Inter",
+        weight="700",
+        style="normal",
+        license="OFL-1.1",
+        policy="pinned",
+        google=GoogleFont("Inter", 700),
+    ),
+    mouths={},
+    parts=("stick", "stick_car"),
+    namer=partial(flat_counter, "n"),
+    accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
+    silent=True,  # no mouth model; narration and music are dubbed over the captions
+)
+
+TOON = Style(
+    slug="toon",
+    name="Toon",
+    summary="Flat cartoon in heavy ink on a gradient room: a cat whose expression swaps per cue, captions in a "
+    "white pill in a hand-written italic; narrated portrait recreations",
+    palettes=(PEACH,),
+    width=1080,
+    height=1920,
+    fps=24,
+    timing="clock",
+    dialogue="script.json",  # timed caption cues; Timeline.load reads them as caption phrases
+    audio=None,
+    font=Font(
+        src="assets/fonts/comic-neue-700-italic.ttf",
+        id="comic-neue",
+        family="Comic Neue",
+        weight="700",
+        style="italic",
+        credit="Comic Neue (Google Fonts)",
+        license="OFL-1.1",
+        policy="pinned",
+        google=GoogleFont("Comic Neue", 700, italic=True),
+    ),
+    mouths={},
+    parts=("toon", "toon_cast", "toon_props", "toon_sets"),
+    namer=partial(flat_counter, "k"),
+    accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
+    silent=True,  # the expression is pose data; a voice is narration over the captions
+)
+
+STYLES: dict[str, Style] = {s.slug: s for s in (CUTOUT, INK, SOFT, CEL, STICK, TOON)}
 
 
 def style_of_module(module: str) -> str:

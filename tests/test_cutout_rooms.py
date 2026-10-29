@@ -127,3 +127,14 @@ def test_props_draw_alone_and_the_whiteboard_chart_is_typed():
     with pytest.raises(ValueError, match="whiteboard"):
         props.whiteboard(cv, cv.comp, 0, 0, 40, 40)
     assert [f for f in scene.check() if f.severity == "error"] == []
+
+
+def test_the_conference_room_can_leave_its_wall_to_a_slot_drawn_behind_the_chair():
+    scene, cv = signed_canvas()
+    locations.conference_room(
+        cv, cv.comp, rising=None, on_wall=marker(cv, "own-board"), behind_table=marker(cv, "seated")
+    )
+    ids = ids_in_order(ET.fromstring(scene.to_bytes()))
+    assert "location-conference-room-whiteboard" not in ids
+    order = ["location-conference-room-window", "own-board", "location-conference-room-light", "seated"]
+    assert [ids.index(i) for i in order] == sorted(ids.index(i) for i in order)

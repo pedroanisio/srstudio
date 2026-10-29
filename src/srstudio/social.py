@@ -1,22 +1,63 @@
-"""Social captions for a finished episode: a typed Instagram post and the ``ig.txt`` it is written to.
+"""Social captions for a finished episode: a typed Instagram post, the ``ig.txt`` it is written to, and its cover.
 
-The post is data first (title, description, credit, hashtags) and text second, so a caption can be
+The post is data first (title, description, credit, hashtags, thumbnail) and text second, so a caption can be
 checked against Instagram's limits before anyone pastes it. ``ig.txt`` is the plain-text rendering:
 title, blank line, description, blank line, credit, blank line, hashtags on one line.
+
+A delivery (:meth:`InstagramPost.deliver`) writes ``ig.txt`` and ``cover.jpg`` side by side. The cover is the post's
+designed :class:`~srstudio.thumbnail.Thumbnail`: its backdrop is the frame of the rendered video on screen at the
+thumbnail's time (:func:`take_frame`, which refuses a time past the last frame and a blank frame), and the engine
+draws the headline over it at the video's own size. An episode that hides its burned-in text (hook cards, captions)
+in a ``cover`` variant of its scene (:meth:`srstudio.episode.Episode.hide_on_cover`) names that scene, and the
+backdrop is drawn from it instead (:func:`take_still`): the same frame, without the text the headline would fight.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
+import math
 import re
-from dataclasses import dataclass, field
+import subprocess
+import tempfile
+from collections.abc import Collection
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import NamedTuple
 
-__all__ = ["InstagramPost", "InstagramPostError", "CAPTION_LIMIT", "HASHTAG_LIMIT", "TITLE_LIMIT", "FILE_NAME"]
+from .thumbnail import Thumbnail, ThumbnailError, render
+
+__all__ = [
+    "InstagramPost",
+    "InstagramPostError",
+    "CoverError",
+    "VideoInfo",
+    "probe",
+    "take_frame",
+    "take_still",
+    "COVER_VARIANT",
+    "Item",
+    "Drift",
+    "DeliveryError",
+    "fingerprint",
+    "read_manifest",
+    "check_delivery",
+    "publish",
+    "MANIFEST",
+    "MANIFEST_VERSION",
+    "CAPTION_LIMIT",
+    "HASHTAG_LIMIT",
+    "TITLE_LIMIT",
+    "FILE_NAME",
+    "COVER_NAME",
+]
 
 CAPTION_LIMIT = 2200  # characters Instagram accepts in one caption
 HASHTAG_LIMIT = 30  # hashtags Instagram accepts in one caption
 TITLE_LIMIT = 125  # characters shown in the feed before "… more"
 FILE_NAME = "ig.txt"
+COVER_NAME = "cover.jpg"
+BLANK = 3.0  # a frame whose luma varies less than this (standard deviation, 0-255) is blank: a fade, a black cut
 _HASHTAG = re.compile(r"^#[^\W\d_][\w]*$", re.UNICODE)
 
 
@@ -28,6 +69,137 @@ class InstagramPostError(ValueError):
         self.problems = problems
 
 
+class CoverError(ValueError):
+    """The backdrop cannot be taken: the video cannot be read, the time is outside it, or the frame is blank."""
+
+
+@dataclass(frozen=True)
+class VideoInfo:
+    """What :func:`probe` reads from a video's first video stream."""
+
+    width: int
+    height: int
+    fps: float
+    duration: float
+    frames: int
+
+
+def _run(cmd: list[str], what: str) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(cmd, check=True, capture_output=True)
+    except (OSError, subprocess.CalledProcessError) as e:
+        detail = getattr(e, "stderr", b"") or b""
+        raise CoverError(f"{what}: {detail.decode(errors='replace').strip() or e}") from e
+
+
+def probe(video: Path, *, ffprobe: str = "ffprobe") -> VideoInfo:
+    """The size, frame rate, duration and frame count of ``video``'s first video stream."""
+    out = _run(
+        [ffprobe, "-v", "error", "-select_streams", "v:0", "-count_frames", "-show_entries",
+         "stream=width,height,avg_frame_rate,nb_read_frames:format=duration", "-of", "json", str(video)],
+        f"cannot read {video}",
+    ).stdout  # fmt: skip
+    try:
+        data = json.loads(out)
+        stream = data["streams"][0]
+        num, den = (int(x) for x in stream["avg_frame_rate"].split("/"))
+        fps = num / den if den else 0.0
+        frames = int(stream.get("nb_read_frames") or 1)
+        duration = float(data.get("format", {}).get("duration") or frames / fps)
+        info = VideoInfo(int(stream["width"]), int(stream["height"]), fps, duration, frames)
+    except (KeyError, IndexError, ValueError, ZeroDivisionError) as e:
+        raise CoverError(f"cannot read {video}: unexpected ffprobe output ({e})") from e
+    if info.width <= 0 or info.height <= 0 or info.fps <= 0:
+        raise CoverError(f"cannot read {video}: {info}")
+    return info
+
+
+def _spread(image: Path, ffmpeg: str) -> float:
+    """The standard deviation of the luma of ``image`` shrunk to 64 px wide."""
+    raw = _run([ffmpeg, "-v", "error", "-i", str(image), "-vf", "scale=64:-2,format=gray", "-f", "rawvideo", "-"],
+               f"cannot read the cover {image}").stdout  # fmt: skip
+    if not raw:
+        raise CoverError(f"the cover {image} has no pixels")
+    mean = sum(raw) / len(raw)
+    return math.sqrt(sum((v - mean) ** 2 for v in raw) / len(raw))
+
+
+def _frame(video: Path, at: float, ffprobe: str) -> tuple[VideoInfo, int]:
+    """``video``'s facts and the index of its frame on screen at ``at`` seconds, floor(at × fps)."""
+    if isinstance(at, bool) or not isinstance(at, (int, float)) or not math.isfinite(at) or at < 0:
+        raise CoverError(f"frame time must be a number of seconds >= 0, got {at!r}")
+    info = probe(video, ffprobe=ffprobe)
+    index = math.floor(at * info.fps + 1e-6)
+    if index >= info.frames:
+        raise CoverError(
+            f"frame time {at} s is after the last frame of {video.name} ({info.frames} frames at {info.fps:g} fps)"
+        )
+    return info, index
+
+
+def take_frame(video: Path, at: float, out: Path, *, ffmpeg: str = "ffmpeg", ffprobe: str = "ffprobe") -> VideoInfo:
+    """Write the frame of ``video`` on screen at ``at`` seconds to the image ``out`` and return the video's facts.
+
+    The frame is selected by its index, floor(at × fps), not by seeking, so it is exactly that frame, at the video's
+    size. Raises :class:`CoverError` for a time outside the video or a blank frame, and then leaves no ``out``."""
+    info, index = _frame(video, at, ffprobe)
+    out = Path(out)
+    with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
+        still = Path(tmp) / out.name
+        select = [ffmpeg, "-v", "error", "-y", "-i", str(video), "-vf", f"select=eq(n\\,{index})", "-fps_mode",
+                  "passthrough", "-frames:v", "1", "-q:v", "2", str(still)]  # fmt: skip
+        _run(select, f"cannot take frame {index} of {video}")
+        if not still.exists():
+            raise CoverError(f"ffmpeg wrote no frame {index} of {video}")
+        spread = _spread(still, ffmpeg)
+        if spread < BLANK:
+            raise CoverError(f"frame {index} of {video.name} at {at} s is blank (luma spread {spread:.1f})")
+        still.replace(out)
+    out.chmod(0o600)
+    return info
+
+
+COVER_VARIANT = "cover"  # the scene variant a cover's backdrop is drawn in
+
+
+def take_still(
+    scene: Path,
+    video: Path,
+    at: float,
+    out: Path,
+    *,
+    engine: str | Path,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+) -> VideoInfo:
+    """Draw the frame of ``video`` on screen at ``at`` seconds from its ``scene`` document, in the scene's
+    :data:`COVER_VARIANT`, into the PNG ``out``, and return the video's facts.
+
+    The frame is the one :func:`take_frame` would take (its index at the video's rate, drawn at that frame's time).
+    Raises :class:`CoverError` for a time outside the video, a scene without the variant, a still of another size
+    than the video, or a blank still, and then leaves no ``out``."""
+    info, index = _frame(video, at, ffprobe)
+    scene, out = Path(scene), Path(out)
+    if f'<variant id="{COVER_VARIANT}"'.encode() not in scene.read_bytes():
+        raise CoverError(f"{scene.name} has no {COVER_VARIANT} variant to draw the cover's backdrop in")
+    with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
+        still = Path(tmp) / "still.png"
+        _run([str(engine), "render", str(scene.resolve()), "--variant", COVER_VARIANT, "-t", f"{index / info.fps:.6f}",
+              "-o", str(still.resolve())], f"the engine cannot draw frame {index} of {scene.name}")  # fmt: skip
+        if not still.exists():
+            raise CoverError(f"the engine wrote no frame {index} of {scene.name}")
+        size = _run([ffprobe, "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x",
+                     str(still)], f"cannot read the still of {scene.name}").stdout.decode().strip()  # fmt: skip
+        if size != f"{info.width}x{info.height}":
+            raise CoverError(f"{scene.name} draws {size}, but {video.name} is {info.width}x{info.height}")
+        spread = _spread(still, ffmpeg)
+        if spread < BLANK:
+            raise CoverError(f"frame {index} of {scene.name} at {at} s is blank (luma spread {spread:.1f})")
+        still.replace(out)
+    out.chmod(0o600)
+    return info
+
+
 @dataclass(frozen=True)
 class InstagramPost:
     title: str
@@ -35,7 +207,8 @@ class InstagramPost:
     hashtags: tuple[str, ...] = ()
     credit: str = ""
     language: str = "en-US"
-    extra: dict = field(default_factory=dict)  # anything a publisher wants to carry along (alt text, cover time)
+    extra: dict = field(default_factory=dict)  # anything a publisher wants to carry along (alt text...)
+    thumbnail: Thumbnail | None = None  # the designed cover; needed to deliver
 
     def problems(self) -> list[str]:
         out = []
@@ -56,6 +229,8 @@ class InstagramPost:
         lowered = [h.lower() for h in self.hashtags]
         if len(set(lowered)) != len(lowered):
             out.append("duplicate hashtags")
+        if self.thumbnail is not None:
+            out += [f"thumbnail: {p}" for p in self.thumbnail.problems()]
         n = len(self.text())
         if n > CAPTION_LIMIT:
             out.append(f"caption has {n} characters; Instagram accepts {CAPTION_LIMIT}")
@@ -84,3 +259,223 @@ class InstagramPost:
         path.write_text(self.text(), encoding="utf-8")
         path.chmod(0o600)
         return path
+
+    def deliver(
+        self,
+        folder: Path,
+        video: Path,
+        *,
+        font: Path,
+        engine: str | Path,
+        ffmpeg: str = "ffmpeg",
+        ffprobe: str = "ffprobe",
+        scene: Path | None = None,
+    ) -> tuple[Path, Path]:
+        """Write ``ig.txt`` and ``cover.jpg`` (the :attr:`thumbnail` over its frame of ``video``, drawn from the
+        ``cover`` variant of ``scene`` when one is given) into ``folder``.
+
+        The cover is drawn before the caption is written: a post without a thumbnail, an invalid post, a time outside
+        the video, a blank frame, a headline that does not fit or a failed render raise, and leave no file. ``font``
+        is the headline's TrueType file and ``engine`` the scene-render binary."""
+        problems = self.problems() + (
+            ["thumbnail is missing; a delivery needs a cover"] if self.thumbnail is None else []
+        )
+        if problems:
+            raise InstagramPostError(problems)
+        assert self.thumbnail is not None
+        folder = Path(folder)
+        created = not folder.exists()
+        folder.mkdir(parents=True, exist_ok=True)
+        try:
+            with tempfile.TemporaryDirectory(dir=folder) as tmp:
+                backdrop = Path(tmp) / "backdrop.png"
+                at = self.thumbnail.at
+                info = (
+                    take_frame(video, at, backdrop, ffmpeg=ffmpeg, ffprobe=ffprobe)
+                    if scene is None
+                    else take_still(scene, video, at, backdrop, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe)
+                )
+                cover = render(self.thumbnail, backdrop, folder / COVER_NAME, font=font, engine=engine,
+                               width=info.width, height=info.height, ffmpeg=ffmpeg)  # fmt: skip
+        except (CoverError, ThumbnailError):
+            if created and not any(folder.iterdir()):
+                folder.rmdir()
+            raise
+        return self.write(folder), cover
+
+
+# -- the publish gate: what was delivered, and whether it still matches -----------------------------------------
+MANIFEST = "delivery.json"
+MANIFEST_VERSION = "1.0.0"
+_ENTRY_KEYS = {"render", "post", "ig", "cover"}
+
+
+class DeliveryError(ValueError):
+    """The delivery cannot start (a render is missing) or its manifest cannot be trusted."""
+
+
+@dataclass(frozen=True)
+class Drift:
+    """One way a delivered folder no longer matches what would be published now."""
+
+    name: str  # the video's folder name, or "*" for the manifest itself
+    reason: str
+
+    def __str__(self) -> str:
+        return f"{self.name}: {self.reason}"
+
+
+class Item(NamedTuple):
+    """One published video: its post, its render, and the scene its cover is drawn from (None: the video's frame)."""
+
+    post: InstagramPost
+    video: Path
+    scene: Path | None = None
+
+
+Items = dict[str, Item]  # video name -> what is delivered for it
+
+
+def _sha(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def fingerprint(post: InstagramPost, font: Path, scene: Path | None = None) -> str:
+    """What the delivered files are made from besides the video: the caption, the thumbnail spec, the headline font,
+    the thumbnail layout code and, when the cover is drawn from it, the scene document. Any change to one of them
+    changes this digest; a post without a scene digests as it always did."""
+    from . import thumbnail as layout_code
+
+    data = {
+        "text": post.text(),
+        "thumbnail": asdict(post.thumbnail) if post.thumbnail is not None else None,
+        "font": _sha(font),
+        "layout": _sha(Path(layout_code.__file__)),
+    }
+    if scene is not None:
+        data["scene"] = _sha(scene) if Path(scene).is_file() else "missing"
+    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def read_manifest(out: Path) -> dict[str, dict[str, str]]:
+    """The entries of ``<out>/delivery.json``; an absent manifest is empty. Raises :class:`DeliveryError` for a
+    manifest of another version, unknown fields or a malformed entry."""
+    path = Path(out) / MANIFEST
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise DeliveryError(f"{path} cannot be read: {e}") from e
+    if not isinstance(data, dict) or set(data) != {"version", "videos"}:
+        raise DeliveryError(f"{path} must hold exactly 'version' and 'videos'")
+    if data["version"] != MANIFEST_VERSION:
+        raise DeliveryError(f"{path} is version {data['version']!r}; this srstudio reads {MANIFEST_VERSION}")
+    videos = data["videos"]
+    if not isinstance(videos, dict):
+        raise DeliveryError(f"{path}: 'videos' must be an object")
+    for name, entry in videos.items():
+        if not isinstance(entry, dict) or set(entry) != _ENTRY_KEYS:
+            raise DeliveryError(f"{path}: entry {name!r} must hold exactly {sorted(_ENTRY_KEYS)}")
+        if not all(isinstance(v, str) and re.fullmatch(r"[0-9a-f]{64}", v) for v in entry.values()):
+            raise DeliveryError(f"{path}: entry {name!r} holds a value that is not a SHA-256")
+    return videos
+
+
+def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
+    """Every way ``out`` differs from delivering ``items`` now; an empty list means the delivery is current.
+
+    A video drifts when its render is missing or changed since its cover was made, its post or thumbnail (or the
+    font or the layout code) changed, its ``ig.txt`` or ``cover.jpg`` is missing or was edited, or it was never
+    delivered. A delivered folder whose video is no longer in ``items`` drifts too."""
+    out = Path(out)
+    try:
+        delivered = read_manifest(out)
+    except DeliveryError as e:
+        return [Drift("*", str(e))]
+    drift = []
+    for name, (post, video, scene) in sorted(items.items()):
+        entry = delivered.get(name)
+        if not Path(video).is_file():
+            drift.append(Drift(name, f"no render at {video}"))
+            continue
+        if entry is None:
+            drift.append(Drift(name, "never delivered"))
+            continue
+        if _sha(video) != entry["render"]:
+            drift.append(Drift(name, "the video was re-rendered after its cover was made"))
+        if fingerprint(post, font, scene) != entry["post"]:
+            drift.append(
+                Drift(name, "the post, its thumbnail, its scene, the font or the layout changed since delivery")
+            )
+        for key, file in (("ig", FILE_NAME), ("cover", COVER_NAME)):
+            path = out / name / file
+            if not path.is_file():
+                drift.append(Drift(name, f"{file} is missing"))
+            elif _sha(path) != entry[key]:
+                drift.append(Drift(name, f"{file} was changed after delivery"))
+    for name in sorted(set(delivered) - set(items)):
+        drift.append(Drift(name, "delivered, but no longer published"))
+    return drift
+
+
+def publish(
+    items: Items,
+    out: Path,
+    *,
+    font: Path,
+    engine: str | Path,
+    ffmpeg: str = "ffmpeg",
+    ffprobe: str = "ffprobe",
+    only: Collection[str] | None = None,
+) -> list[Path]:
+    """Deliver every item that drifted, record ``<out>/delivery.json`` and return the folders written.
+
+    Every render must exist before anything is written. A video no longer in ``items`` is dropped from the
+    manifest (its folder is left for the operator to remove). After this, :func:`check_delivery` is empty.
+
+    ``only`` names the videos to deliver: the others keep their manifest entries as they are (and need no
+    render), so :func:`check_delivery` still reports whatever drifted among them. It needs a readable manifest."""
+    out = Path(out)
+    if only is not None:
+        unknown = sorted(set(only) - set(items))
+        if unknown:
+            raise DeliveryError(f"not a published video: {', '.join(unknown)}")
+        if not only:
+            raise DeliveryError("only must name at least one video")
+    chosen = set(items) if only is None else set(only)
+    missing = sorted(name for name, item in items.items() if name in chosen and not Path(item.video).is_file())
+    if missing:
+        raise DeliveryError(f"no render for: {', '.join(missing)}")
+    try:
+        delivered = read_manifest(out)
+    except DeliveryError:
+        if only is not None:
+            raise  # the entries of the videos left alone cannot be kept from a manifest that cannot be read
+        delivered = {}  # an unreadable manifest is replaced: every item is delivered again below
+    stale = {d.name for d in check_delivery(items, out, font=font)} if delivered else set(items)
+    out.mkdir(parents=True, exist_ok=True)
+    out.chmod(0o700)
+    written, entries = [], {}
+    for name, (post, video, scene) in sorted(items.items()):
+        folder = out / name
+        if name not in chosen:
+            if name in delivered:
+                entries[name] = delivered[name]
+            continue
+        if name in stale or "*" in stale:
+            post.deliver(folder, video, font=font, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe, scene=scene)
+            folder.chmod(0o700)
+            written.append(folder)
+        entries[name] = {"render": _sha(video), "post": fingerprint(post, font, scene),
+                         "ig": _sha(folder / FILE_NAME), "cover": _sha(folder / COVER_NAME)}  # fmt: skip
+    manifest = out / MANIFEST
+    tmp = manifest.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": entries}, indent=2) + "\n", encoding="utf-8")
+    tmp.chmod(0o600)
+    tmp.replace(manifest)
+    return written

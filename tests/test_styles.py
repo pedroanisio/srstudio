@@ -82,7 +82,7 @@ def test_cel_is_the_silent_style_and_a_silent_style_needs_no_mouth_model():
     assert replace(CEL, palettes=(LINEN, MONO)).mouths == {}  # silent: no model per palette required
     with pytest.raises(StyleError, match="no mouth model"):
         replace(CEL, silent=False)
-    assert list(STYLES) == ["cutout", "ink", "soft", "cel"]
+    assert list(STYLES) == ["cutout", "ink", "soft", "cel", "stick", "toon"]
 
 
 def test_a_palette_the_style_is_not_drawn_in_is_refused():

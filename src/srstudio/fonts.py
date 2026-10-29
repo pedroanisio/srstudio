@@ -35,6 +35,7 @@ __all__ = [
     "Installed",
     "parse_css",
     "inspect_ttf",
+    "text_width",
     "install",
     "as_font",
     "fetch_url",
@@ -197,6 +198,64 @@ def inspect_ttf(data: bytes) -> FontFacts:
         raise FontError("font 'name' table has no family name")
     weight, selection = struct.unpack(">H", tables[b"OS/2"][4:6])[0], struct.unpack(">H", tables[b"OS/2"][62:64])[0]
     return FontFacts(family=family, weight=weight, italic=bool(selection & 1))
+
+
+def _cmap(table: bytes) -> dict[int, int]:
+    """Code point to glyph index from the first Unicode subtable in format 4 or 12 (what Google serves)."""
+    (count,) = struct.unpack(">H", table[2:4])
+    for i in range(count):
+        platform, _enc, offset = struct.unpack(">HHI", table[4 + 8 * i : 12 + 8 * i])
+        if platform not in (0, 3) or offset + 4 > len(table):
+            continue
+        (fmt,) = struct.unpack(">H", table[offset : offset + 2])
+        out: dict[int, int] = {}
+        if fmt == 4:
+            (segx2,) = struct.unpack(">H", table[offset + 6 : offset + 8])
+            n = segx2 // 2
+            ends = struct.unpack(f">{n}H", table[offset + 14 : offset + 14 + segx2])
+            starts = struct.unpack(f">{n}H", table[offset + 16 + segx2 : offset + 16 + 2 * segx2])
+            deltas = struct.unpack(f">{n}h", table[offset + 16 + 2 * segx2 : offset + 16 + 3 * segx2])
+            range_at = offset + 16 + 3 * segx2
+            ranges = struct.unpack(f">{n}H", table[range_at : range_at + segx2])
+            for k in range(n):
+                for code in range(starts[k], min(ends[k], 0xFFFE) + 1):
+                    if ranges[k] == 0:
+                        out[code] = (code + deltas[k]) & 0xFFFF
+                    else:
+                        at = range_at + 2 * k + ranges[k] + 2 * (code - starts[k])
+                        if at + 2 <= len(table):
+                            (glyph,) = struct.unpack(">H", table[at : at + 2])
+                            out[code] = (glyph + deltas[k]) & 0xFFFF if glyph else 0
+            return out
+        if fmt == 12:
+            (groups,) = struct.unpack(">I", table[offset + 12 : offset + 16])
+            for g in range(groups):
+                first, last, glyph = struct.unpack(">III", table[offset + 16 + 12 * g : offset + 28 + 12 * g])
+                for code in range(first, min(last, 0x10FFFF) + 1):
+                    out[code] = glyph + code - first
+            return out
+    raise FontError("font 'cmap' has no Unicode subtable in format 4 or 12")
+
+
+def text_width(data: bytes, text: str, size: float) -> float:
+    """The advance width of ``text`` set in this font at ``size`` pixels: the sum of the glyph advances (no
+    kerning), so a box drawn this wide holds the engine's run of the same text."""
+    tables = _tables(data)
+    for name in (b"head", b"cmap", b"hhea", b"hmtx"):
+        if name not in tables:
+            raise FontError(f"font has no {name.decode()!r} table")
+    (upm,) = struct.unpack(">H", tables[b"head"][18:20])
+    (metrics,) = struct.unpack(">H", tables[b"hhea"][34:36])
+    if not upm or not metrics or len(tables[b"hmtx"]) < 4 * metrics:
+        raise FontError("font 'head', 'hhea' or 'hmtx' table is inconsistent")
+    cmap = _cmap(tables[b"cmap"])
+    hmtx = tables[b"hmtx"]
+
+    def advance(glyph: int) -> int:
+        at = 4 * min(glyph, metrics - 1)
+        return struct.unpack(">H", hmtx[at : at + 2])[0]
+
+    return sum(advance(cmap.get(ord(ch), 0)) for ch in text) * size / upm
 
 
 # -- install -----------------------------------------------------------------------------------------------------

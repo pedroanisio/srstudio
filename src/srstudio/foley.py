@@ -17,12 +17,29 @@ from pathlib import Path
 from .cel import Feature
 from .music import write_wav
 
-__all__ = ["typing_bursts", "taps", "keystrokes", "write_typing", "RATE", "THRESHOLD", "PEAK"]
+__all__ = [
+    "typing_bursts",
+    "taps",
+    "keystrokes",
+    "write_typing",
+    "buzz",
+    "write_buzz",
+    "tones",
+    "write_tones",
+    "STING",
+    "CHIME",
+    "RATE",
+    "THRESHOLD",
+    "PEAK",
+]
 
 RATE = 48000
 THRESHOLD = 8.0  # pixels the tracked point moves between samples for a burst
 PEAK = 0.5
 CLICK = 0.012  # seconds of one keystroke's noise
+BUZZ = 0.36  # seconds of one phone buzz: two pulses
+BUZZ_TONE = 165.0  # the motor's hum, Hz
+BUZZ_RATTLE = 28.0  # how fast the phone rattles on the desk, Hz
 MIN_RATE = 8000
 
 
@@ -91,3 +108,97 @@ def write_typing(
 ) -> Path:
     """The keystroke bed for the given onsets, written to ``path``."""
     return write_wav(path, keystrokes(times, duration, rate, seed, peak), rate)
+
+
+def buzz(
+    times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK, length: float = BUZZ
+) -> list[float]:
+    """A mono bed of ``duration`` seconds with one phone buzz at each of ``times``: a low hum shaken by the rattle
+    of the phone on the desk, in two pulses with a short gap, faded in and out; seeded for the touch of noise."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (math.isfinite(length) and 0.05 <= length <= 2.0):
+        raise ValueError(f"length {length} must be within 0.05..2 s")
+    if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
+        raise ValueError(f"duration {duration} must leave {length} s after every buzz")
+    if not (math.isfinite(peak) and 0 < peak <= 1):
+        raise ValueError(f"peak {peak} must be in 0..1")
+    out = [0.0] * int(round(duration * rate))
+    rng = random.Random(seed)
+    pulse = length / 2
+    for at in sorted(times):
+        start = int(at * rate)
+        for k in range(int(length * rate)):
+            if start + k >= len(out):
+                break
+            t = k / rate
+            inside = t % pulse
+            if inside > pulse * 0.82:  # the gap between the two pulses, and after the second
+                continue
+            env = min(1.0, inside / 0.008, (pulse * 0.82 - inside) / 0.02)
+            hum = math.sin(2 * math.pi * BUZZ_TONE * t) * (0.55 + 0.45 * math.sin(2 * math.pi * BUZZ_RATTLE * t))
+            out[start + k] += env * (hum + 0.25 * math.sin(4 * math.pi * BUZZ_TONE * t) + 0.08 * rng.uniform(-1, 1))
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_buzz(
+    path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK
+) -> Path:
+    """The phone-buzz bed for the given onsets, written to ``path``."""
+    return write_wav(path, buzz(times, duration, rate, seed, peak), rate)
+
+
+# -- stings and chimes ------------------------------------------------------------------------------------------------
+Glide = tuple[float, float, float]  # (start Hz, end Hz, seconds): one note that slides
+STING: tuple[Glide, ...] = ((330.0, 262.0, 0.32), (262.0, 196.0, 0.42))  # the "wah-wah": two sagging notes
+CHIME: tuple[Glide, ...] = ((784.0, 784.0, 0.12), (1047.0, 1047.0, 0.22))  # a call's two-note chime
+
+
+def tones(
+    times: Sequence[float], duration: float, notes: Sequence[Glide] = STING, rate: int = RATE, peak: float = PEAK
+) -> list[float]:
+    """A mono bed of ``duration`` seconds with the ``notes`` played in turn at each of ``times``: each note a soft
+    tone (a sine with a touch of its octave) sliding from its start to its end frequency, faded in and out."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not notes or any(not (20 <= a <= 8000 and 20 <= b <= 8000 and 0.02 <= n <= 3.0) for a, b, n in notes):
+        raise ValueError("notes are (start Hz, end Hz, seconds) within 20..8000 Hz and 0.02..3 s")
+    length = sum(n for _, _, n in notes)
+    if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
+        raise ValueError(f"duration {duration} must leave {length:.2f} s after every cue")
+    if not (math.isfinite(peak) and 0 < peak <= 1):
+        raise ValueError(f"peak {peak} must be in 0..1")
+    out = [0.0] * int(round(duration * rate))
+    for at in sorted(times):
+        offset = 0.0
+        for start_hz, end_hz, seconds in notes:
+            begin = int((at + offset) * rate)
+            phase = 0.0
+            for k in range(int(seconds * rate)):
+                if begin + k >= len(out):
+                    break
+                t = k / rate
+                hz = start_hz + (end_hz - start_hz) * t / seconds
+                phase += 2 * math.pi * hz / rate
+                env = min(1.0, t / 0.015, (seconds - t) / 0.06)
+                out[begin + k] += env * (math.sin(phase) + 0.3 * math.sin(2 * phase)) * (1.0 - 0.35 * t / seconds)
+            offset += seconds
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_tones(
+    path: Path,
+    times: Sequence[float],
+    duration: float,
+    notes: Sequence[Glide] = STING,
+    rate: int = RATE,
+    peak: float = PEAK,
+) -> Path:
+    """The sting or chime bed for the given cue times, written to ``path``."""
+    return write_wav(path, tones(times, duration, notes, rate, peak), rate)

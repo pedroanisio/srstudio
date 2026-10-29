@@ -1,0 +1,14 @@
+# Rebuilds the catalog page whenever a render, the library, the notes or the base page changes.
+# Install: systemctl --user link $PWD/srstudio-catalog.{path,service} && systemctl --user enable --now srstudio-catalog.path
+[Unit]
+Description=Watch renders and the srstudio library for the scene-render catalog
+
+[Path]
+PathChanged=%h/worskpace/generated/renders
+PathChanged=%h/worskpace/srstudio/.git/refs/heads
+PathChanged=%h/worskpace/srstudio/docs/catalog/notes.json
+PathChanged=%h/worskpace/generated/catalog/packages-base.html
+Unit=srstudio-catalog.service
+
+[Install]
+WantedBy=default.target

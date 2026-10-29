@@ -36,6 +36,10 @@ MONO = Palette(ink="#282828", white="#FFFFFF", shade="#BEBEBE", name="mono", bac
 WARM = Palette(ink="#231E19", white="#FFFFFF", shade="#E9D3C3", name="warm", background="#F3DFCF")
 # Cel: traced fills on a greige wall; the one mid tone is the teal of the lettering boxes, white is the lettering
 LINEN = Palette(ink="#240102", white="#fffaf5", shade="#2b87ab", name="linen", background="#c5bbb0")
+# Stick: heavy near-black ink, white caption text, the warm brown line the sets are outlined in, on a sand wall
+DAYLIGHT = Palette(ink="#070708", white="#ffffff", shade="#665541", name="daylight", background="#bda77a")
+# Toon: near-black ink, white caption pills, the cat's blue as the one mid tone, on a cream-to-peach wall
+PEACH = Palette(ink="#0b0a0d", white="#ffffff", shade="#5bb7db", name="peach", background="#f8ead9")
 
 
 @dataclass(frozen=True)
@@ -101,6 +105,8 @@ class Canvas:
         self._gradients: dict[str, str] = {}
         self._symbols: dict[str, Any] = {}
         self._symbol_root: Any = None
+        self._effects: dict[str, str] = {}
+        self._effect_root: Any = None
 
     @property
     def assets(self):
@@ -151,6 +157,30 @@ class Canvas:
                 g.add_stop(offset=offset, color=color)
             self._gradients[name] = f"url(#{name})"
         return self._gradients[name]
+
+    def rgrad(self, name: str, stops: Sequence[tuple[float, str]], circle=(0.5, 0.5, 0.5)) -> str:
+        """A named radial gradient about ``circle`` (cx, cy, r as fractions of the painted box); returns the
+        ``url(#name)`` paint. Created once per name."""
+        if name not in self._gradients:
+            g = self.paints.add_radialGradient(
+                id=name, cx=circle[0], cy=circle[1], r=circle[2], interpolationSpace="srgb"
+            )
+            for offset, color in stops:
+                g.add_stop(offset=offset, color=color)
+            self._gradients[name] = f"url(#{name})"
+        return self._gradients[name]
+
+    def effect(self, name: str, type: str, **attrs) -> str:
+        """A named ``<effect>`` of ``type`` (blur, drop-shadow, inner-shadow, directional-blur, vignette...);
+        returns its id for a node's ``effects``. Created once per name: a second call returns the first."""
+        if not name.strip():
+            raise ValueError("an effect needs a name")
+        if name not in self._effects:
+            if self._effect_root is None:
+                self._effect_root = self.scene.add_effects()
+            self._effect_root.add_effect(id=name, type=type, **attrs)
+            self._effects[name] = name
+        return self._effects[name]
 
     # -- shapes -------------------------------------------------------------------------
     def path(self, parent, d: str, fill: str | None = None, stroke: str | None = None, sw: float = 3, **kw):

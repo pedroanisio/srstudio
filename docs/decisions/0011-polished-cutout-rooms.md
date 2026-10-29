@@ -40,7 +40,9 @@ more polished than those. Here, polish means four things:
      - a stone-topped, fluted counter lit along its kick, with a monitor and a vase of flowers on it;
      - a polished floor that reflects the counter and the pendants.
 2. **Slots in the existing pattern, with the placements published and tested.**
-   - The conference room has two slots: `behind_table` (between the chair and the table) and `on_table`.
+   - The conference room has three slots: `behind_table` (between the chair and the table), `on_table` and
+     `on_wall` (over the wall, behind the light and the chair). `rising=None` leaves the wall without its whiteboard,
+     so an episode can hang its own at `CONFERENCE_BOARD` and animate it (episode 09 flips it).
    - The reception has three: `behind_desk` (between the wall and the counter), `on_desk` and `at_desk` (in front of
      the counter).
    - The constants `CONFERENCE_SEAT`, `RECEPTION_CLERK` and `RECEPTION_VISITOR` give the `x, y, scale` that

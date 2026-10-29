@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
-from sr_core.scene import AudioMix, Scene
+from sr_core.scene import AudioMix, AudioTrack, Scene
 
+from . import signature
 from .canvas import Canvas, Palette, Signature
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
-from .layout import SafeArea
+from .layout import Crossing, SafeArea, check_overlays, find_engine
 from .narration import narration_cues
 from .rig import Actor, Performance
 from .social import InstagramPost
@@ -177,6 +180,8 @@ class Episode:
             signature=Signature(spec.signature_code) if spec.signature else None,
         )
         self._mix: AudioMix | None = None
+        self._cover_hidden: list[str] = []  # ids hidden in the cover variant (hide_on_cover)
+        self._cover_written = False
         # Shot-sequence layouts add the font first and their audio per take; the interview family mixes one file.
         if spec.audio:
             audio_kw = dict(id="dialogue", src=spec.audio, sha256=sha256(self.root / spec.audio))
@@ -405,6 +410,7 @@ class Episode:
         track_id: str | None = None,
         loudness: str | None = None,
         true_peak: str | None = None,
+        duck: float | None = None,
     ) -> AudioMix | None:
         """The mix of whatever the project plays (:attr:`audio_source`), mastered as the style says (``Style.mix``)
         unless ``loudness``/``true_peak`` are given. Returns ``None`` for a silent episode.
@@ -415,16 +421,20 @@ class Episode:
         * takes: :meth:`take_audio` for every take, with ``take(take)`` as its track attributes, then ``extra``.
         * mixed: :meth:`audio_mix` on ``track_id``.
 
+        ``duck`` (dB, negative) lowers every ``music`` track by that much while any ``dialogue`` track plays, so a
+        spoken line is never masked by the score (``duckUnder``/``duckAmount``; clips and takes only).
+
         An option the source does not take is a ``TypeError``, so a misplaced argument is never ignored."""
         source = "narration" if narration is not None else self.audio_source
         allowed = {
             "narration": set(),
-            "clips": {"extra"},
-            "takes": {"extra", "take"},
+            "clips": {"extra", "duck"},
+            "takes": {"extra", "take", "duck"},
             "mixed": {"track_id"},
             "silent": set(),
         }[source]
-        given = {name for name, value in (("extra", extra), ("take", take), ("track_id", track_id)) if value}
+        options = (("extra", extra), ("take", take), ("track_id", track_id), ("duck", duck is not None))
+        given = {name for name, value in options if value}
         if given - allowed:
             raise TypeError(f"a {source} project takes no {', '.join(f'{k}=' for k in sorted(given - allowed))}")
         style = self.spec.style.mix
@@ -433,8 +443,11 @@ class Episode:
             return None
         if source == "mixed":
             return self.audio_mix(track_id or "synthetic-dialogue", loud, peak, bit_depth=style.bit_depth)
+        if duck is not None and not (math.isfinite(duck) and duck < 0):
+            raise ValueError(f"duck {duck} must be a negative number of dB")
         if source == "clips":
-            return self.generated_audio(loudness=loud, true_peak=peak, extra=extra, bit_depth=style.bit_depth)
+            mix = self.generated_audio(loudness=loud, true_peak=peak, extra=extra, bit_depth=style.bit_depth)
+            return _duck(mix, duck) if duck is not None else mix
         mix = self.mix(loud, peak, bit_depth=style.bit_depth)
         if source == "narration":
             lang = self.spec.language
@@ -447,7 +460,7 @@ class Episode:
         for asset_id, src, track_kw in extra:
             self.cv.assets.add_audio(id=asset_id, src=src, sha256=sha256(self.root / src))
             self.add_track(f"track-{asset_id}", asset_id, **track_kw)
-        return mix
+        return _duck(mix, duck) if duck is not None else mix
 
     def markers(self, specs=None, name="marker-{name}", extra: Sequence[tuple[str, float, str]] = ()):
         markers = self.scene.add_markers()
@@ -459,19 +472,40 @@ class Episode:
 
     # -- finish -----------------------------------------------------------------------------------------
     def check(self):
-        try:
-            import lxml  # noqa: F401
-
+        if importlib.util.find_spec("lxml") is not None:  # the XSD and Schematron checks need it
             return self.scene.check(schema=True)
-        except ImportError:
-            return self.scene.check()
+        return self.scene.check()
+
+    def check_overlays(self, document: Path, roots: Sequence[str], engine: Path | None = None) -> list[Crossing]:
+        """Hold the overlay groups ``roots`` of the finished ``document`` inside the safe area: the engine does not
+        measure vector graphics, so any crossing raises :class:`~srstudio.layout.LayoutError` (see
+        :func:`~srstudio.layout.check_overlays`); the engine is found by :func:`~srstudio.layout.find_engine`."""
+        return check_overlays(document, roots, engine=find_engine(engine), strict=True)
 
     def instagram(self, post: InstagramPost) -> Path:
         """Validate the Instagram caption of this episode and write it as ``<root>/ig.txt``."""
         return post.write(self.root)
 
+    def hide_on_cover(self, *nodes) -> None:
+        """Hide ``nodes`` (the burned-in text: a hook card, the captions) in the scene's ``cover`` variant, which
+        :func:`srstudio.social.take_still` draws a cover's backdrop in, so the designed headline is not laid over a
+        cut card or a ghost caption. Written by :meth:`finish`."""
+        if not nodes:
+            raise ValueError("hide_on_cover needs at least one node")
+        for node in nodes:
+            if node.id in self._cover_hidden:
+                raise ValueError(f"{node.id} is already hidden on the cover")
+            self._cover_hidden.append(node.id)
+
     def finish(self, out: Path | None = None, report: Path | None = None, strict: bool = True) -> Path:
         """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path."""
+        if self._cover_hidden and not self._cover_written:
+            from .social import COVER_VARIANT
+
+            variant = self.scene.add_parameters().add_variant(id=COVER_VARIANT, label="cover backdrop, no burned text")
+            for target in self._cover_hidden:
+                variant.add_override(target=target, property="visible", value="false")
+            self._cover_written = True
         findings = self.check()
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"
         report = Path(report) if report else out.with_name("sdk-validation.json")
@@ -483,9 +517,29 @@ class Episode:
         if errors or (strict and findings):
             raise SystemExit("\n".join(str(f) for f in findings))
         document = self.scene.to_bytes(layout="pretty")
+        if self.cv.signature is not None and (absent := signature.missing(document)):
+            raise signature.SignatureError(
+                f"{self.spec.slug} is signed but its document has no {', '.join(absent)}: every location must draw "
+                "both marks (ADR 0001), or the episode passes signature=False because its package predates them"
+            )
         out.write_bytes(document)
         print(
             f"{out.name}: {document.count(b'<shape ')} shapes, {document.count(b'<group ')} groups, "
             f"{len(self.caption_specs)} captions, {len(findings)} findings"
         )
         return out
+
+
+def _duck(mix: AudioMix, amount: float) -> AudioMix:
+    """Every ``music`` track of ``mix`` ducked ``amount`` dB under all its ``dialogue`` tracks."""
+    tracks = [cast(AudioTrack, t) for t in mix.find_all("audioTrack")]
+    spoken = [t.id for t in tracks if t.role == "dialogue" and t.id]
+    music = [t for t in tracks if t.role == "music"]
+    if not music:
+        raise ValueError("duck: the mix has no music track to lower")
+    if not spoken:
+        raise ValueError("duck: the mix has no spoken track to duck under")
+    for track in music:
+        track.duckUnder = spoken
+        track.duckAmount = amount
+    return mix

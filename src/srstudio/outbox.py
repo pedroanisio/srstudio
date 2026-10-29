@@ -3,7 +3,8 @@
 :func:`ready` asks the publish gate (:func:`srstudio.social.check_delivery`) which videos are current and bundles
 each one with its ``ig.txt``, its ``cover.jpg`` and, for a recreation, its ``.vpkg.zip`` package; a video that
 drifted is held back and reported. :func:`stage` copies the bundles into one private folder per video next to an
-``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now.
+``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now;
+the operator's own top-level dot-files (``.ignore``) are carried over and uploaded with it.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
 check that every staged file arrived with the same hash.
 """
@@ -73,11 +74,11 @@ def ready(
     if "*" in held:
         return [], drift
     bundles = []
-    for name, (_, video) in sorted(items.items()):
+    for name, item in sorted(items.items()):
         if name in held:
             continue
         folder = Path(deliveries) / name
-        files = (Path(video), folder / FILE_NAME, folder / COVER_NAME)
+        files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME)
         bundles.append(Bundle(name, files + ((Path(packages[name]),) if name in packages else ())))
     return bundles, drift
 
@@ -104,11 +105,19 @@ def _check(bundles: Sequence[Bundle]) -> None:
             raise OutboxError(f"{b.name}: two files share one name, so one would be staged twice")
 
 
+def _dot_files(folder: Path) -> list[Path]:
+    """The operator's regular top-level dot-files in ``folder``: kept across restages and uploaded with the rest."""
+    if not folder.is_dir():
+        return []
+    return sorted(p for p in folder.iterdir() if p.name.startswith(".") and p.is_file() and not p.is_symlink())
+
+
 def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
     """Replace ``folder`` with one private folder per bundle and ``outbox.json``; returns the manifest's path.
 
     The new outbox is built beside ``folder`` and swapped in, so a failure leaves the previous one in place. A
-    ``folder`` that holds anything but a previous outbox is refused and left untouched."""
+    ``folder`` that holds anything but a previous outbox is refused and left untouched. The operator's top-level
+    dot-files in ``folder`` (``.ignore``) are kept as they are, content and mode."""
     _check(bundles)
     folder = Path(folder)
     if folder.exists() and any(folder.iterdir()) and not (folder / MANIFEST).is_file():
@@ -133,6 +142,8 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
         manifest = build / MANIFEST
         manifest.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")
         manifest.chmod(0o600)
+        for kept in _dot_files(folder):
+            shutil.copy2(kept, build / kept.name)
         if folder.exists():
             old = Path(tempfile.mkdtemp(prefix=f".{folder.name}-old-", dir=folder.parent))
             folder.replace(old / folder.name)

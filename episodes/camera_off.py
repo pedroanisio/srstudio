@@ -16,12 +16,13 @@ the speech-to-text check heard there: any cue held while he sings shows the sung
 import json
 import os
 from dataclasses import replace
+from functools import partial
 
 from _common import project_root
 from camera_off_audio import GROOVE
 from instagram_posts import POSTS
 from srstudio import SOFT, Episode, EpisodeSpec, blob, layout
-from srstudio.blob import FLOOR, SCALE, SEAT, Cue
+from srstudio.blob import FLOOR, SCALE, SEAT
 from srstudio.soundtrack import SOFT_MOUTH, Soundtrack, mouth_states
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -40,7 +41,8 @@ ep = Episode(
         safe_area=layout.VERTICAL,  # captions and the call badge stay inside x 80–920, y 220–1420
     )
 )
-ep.audio(extra=[("music", "assets/music.wav", {"role": "music"})])
+# Pip sings in the music; the spoken lines would sit 6-7 dB under it: 4 dB down, 8 more while they speak.
+ep.audio(extra=[("music", "assets/music.wav", {"role": "music", "gain": -4})], duck=-8)
 t, cv, at = ep.t, ep.cv, GROOVE.at
 SING = "sing"
 BEAT, EIGHTH = 0.3, 0.125  # in-between time before a pose lands on the beat (four drawings) or the eighth (two)
@@ -51,10 +53,7 @@ STAND, DANCE = (700.0, FLOOR), (660.0, FLOOR)
 L = {i + 1: p for i, p in enumerate(t.phrases)}
 
 
-def cue(when, pose, spot=None, ease=BEAT, **kw):
-    """A cue at a spot in output pixels; Pip is drawn at ``SCALE``, so the rig's units are pixels / SCALE."""
-    at_spot = {} if spot is None else {"x": spot[0] / SCALE, "y": spot[1] / SCALE}
-    return Cue(when, pose, ease=ease if when else 0.0, **at_spot, **kw)
+cue = partial(blob.cue, scale=SCALE, ease=BEAT)  # spots in output pixels; Pip is drawn at SCALE
 
 
 # Bars 0–1: camera on. Nodding along on the beat, very professional.
@@ -138,10 +137,7 @@ cues += [
     cue(at(11, 3), "sit", SEAT, ease=EIGHTH, eyes="squint", mouth="grin"),
 ]
 
-# A move cannot start before the previous pose has landed (and settled, after an overshoot): each ease is capped
-# to the time left before its cue.
-settled = [c.time + (1 / FPS + 1e-3 if c.overshoot else 0) for c in cues]
-cues = [replace(c, ease=min(c.ease, c.time - s)) for s, c in zip([0.0, *settled], cues, strict=False)]
+cues = blob.settle(cues, FPS)  # no move starts before the previous pose has landed
 
 # Pip's words, as heard in the composed song. A cue whose hold overlaps a sung word shows the sung mouth.
 dialogue = json.loads((ep.root / "dialogue.json").read_text())

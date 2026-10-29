@@ -126,6 +126,21 @@ def test_place_puts_each_line_on_its_beat_and_each_effect_just_before_its_own(tm
     assert len(gains) == 1, "every line is levelled by the one loudest line, so the lines keep their balance"
 
 
+def test_a_near_silent_take_stops_the_build_instead_of_being_boosted(tmp_path):
+    song = make_song()
+    pins = pins_for(tmp_path, song, {0: 0.5, 1: 0.4})
+    quiet = tone(tmp_path / "quiet-scratch.wav", 0.8, lead=0.02, amplitude=0.004)  # a take the model left silent
+    pins["scratch"] = Resolved(pins["scratch"].generated, quiet, sha256_of(quiet))
+    with pytest.raises(S.SongError, match="effect scratch is near-silent"):
+        S.place(song, pins)
+    pins = pins_for(tmp_path, song, {0: 0.5, 1: 0.4})
+    for item in S.declarations(song)[0]:
+        whisper = tone(tmp_path / f"quiet-{item.id}.wav", 0.4, amplitude=0.02)  # +32 dB to level
+        pins[item.id] = Resolved(item, whisper, sha256_of(whisper))
+    with pytest.raises(S.SongError, match="lines are near-silent"):
+        S.place(song, pins)
+
+
 def test_a_line_that_runs_into_the_next_stops_the_build_instead_of_overlapping(tmp_path):
     song = make_song()
     with pytest.raises(S.SongError, match="line 1 'Sit down.' runs to"):
@@ -395,3 +410,39 @@ def test_build_of_a_composed_song_writes_the_music_and_its_record(tmp_path, fake
 def test_sing_needs_a_composition(tmp_path):
     with pytest.raises(S.SongError, match="no composition"):
         S.sing(make_song(), fake_composer(tmp_path), lambda wav: HEARD)
+
+
+# -- an instrumental composition: no role is sung, every line is spoken over it ------------------------------------
+GROOVE_PLAN = C.Plan((C.Chunk("Groove", 4.0, ("120 BPM", "instrumental")), C.Chunk("Out", 4.0, ("120 BPM",))))
+
+
+def instrumental_song(**changes) -> S.Song:
+    kw: dict = dict(
+        voices={"boss": BOSS},
+        lines=[S.Line("boss", "Slides.", "BOSS: Slides.", (1, 0))],
+        sections=[],
+        composition=S.Composition(GROOVE_PLAN, seed=7, role=None),
+        lines_end=8.0,
+    )
+    kw.update(changes)
+    return make_song(**kw)
+
+
+def test_an_instrumental_composition_sings_no_line_and_its_plan_has_no_lyrics():
+    song = instrumental_song()
+    assert not any(song.sung(line) for line in song.lines)
+    assert [g.id for g in S.declarations(song)[0]] == ["line-1"]
+    with pytest.raises(S.SongError, match="lyrics"):
+        instrumental_song(composition=S.Composition(PLAN, seed=7, role=None))
+
+
+def test_an_instrumental_take_with_no_words_passes(tmp_path):
+    events = Transcript("en", 0.99, "(upbeat music)", (Word("(upbeat music)", 0.0, 8.0, "audio_event"),))
+    sung = S.sing(instrumental_song(), fake_composer(tmp_path, seconds=8.0), lambda wav: events)
+    assert sung.spans == [] and sung.words == [] and sung.report["passed"]
+
+
+@pytest.mark.parametrize("words", [(("Yeah", 1.0, 1.3),), (("la", 0.1, 0.2), ("la", 5.0, 5.2))])
+def test_an_instrumental_take_with_heard_words_stops_the_build(tmp_path, words):
+    with pytest.raises(S.SongError, match="instrumental"):
+        S.sing(instrumental_song(), fake_composer(tmp_path, seconds=8.0), lambda wav: sung_transcript(*words))
