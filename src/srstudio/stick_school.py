@@ -17,7 +17,7 @@ import math
 from collections.abc import Sequence
 from functools import partial
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import STANDING, Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -199,7 +199,7 @@ def _check_essay(lines, title, shown, mark, mark_at, grade, note, note_at) -> No
     if mark is not None and not (isinstance(mark, int) and 0 <= mark < shown):
         raise StickDataError(f"mark is a line already shown (0 to {shown - 1}), got {mark!r}")
     for value, what in ((mark_at, "mark_at"), (note_at, "note_at")):
-        if not (isinstance(value, (int, float)) and math.isfinite(value) and value >= 0):
+        if not (checks.number(value) and value >= 0):
             raise StickDataError(f"{what} is a second on the shot clock, got {value!r}")
     if grade is not None and not 1 <= len(grade.strip()) <= 3:
         raise StickDataError(f"a grade has 1 to 3 characters, got {grade!r}")

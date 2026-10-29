@@ -19,7 +19,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -81,7 +81,7 @@ class Scroll:
     offset: float = 0.0
 
     def check(self) -> None:
-        if not (math.isfinite(self.speed) and self.speed >= 0 and math.isfinite(self.offset)):
+        if not (checks.number(self.speed) and self.speed >= 0 and checks.number(self.offset)):
             raise StickDataError(f"scroll speed must be non-negative and offset finite, got {self!r}")
 
 
@@ -290,11 +290,11 @@ def car(
     focused on the driver: the lens that magnifies the face magnifies the passing trees' contrast too."""
     scroll = scroll or Scroll()
     scroll.check()
-    if not (math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise StickDataError(f"the car needs a positive shot length, got {end!r}")
-    if any(not (math.isfinite(t) and 0 <= t <= end) for t in passing):
+    if any(not (checks.number(t) and 0 <= t <= end) for t in passing):
         raise StickDataError(f"a passing car must pass within the shot (0..{end}), got {tuple(passing)}")
-    if not (math.isfinite(defocus) and defocus >= 0):
+    if not (checks.number(defocus) and defocus >= 0):
         raise StickDataError(f"defocus must be a non-negative radius, got {defocus!r}")
     s = cv
     box(s, parent, 0, 0, s.width, s.height, DOOR)
@@ -458,7 +458,7 @@ def ride(cv: Canvas, node, end: float, *, amplitude: float = 2.5, phase: float =
     sampled at ``step`` (12 fps cartoon timing), shifted by ``phase`` radians so two nodes need not bob together,
     the same every time."""
     numbers = (amplitude, phase, step, end)
-    if not (all(math.isfinite(v) for v in numbers) and amplitude >= 0 and step > 0 and end > 0):
+    if not (all(checks.number(v) for v in numbers) and amplitude >= 0 and step > 0 and end > 0):
         raise StickDataError(f"ride needs amplitude >= 0, step > 0 and a positive end, got {amplitude}, {step}, {end}")
     if amplitude == 0:
         return
@@ -525,7 +525,7 @@ def laptop(
     cv.require_font("the laptop's screen is set in it")
     if not title.strip() or not 1 <= len(rows) <= 4 or any(not r.strip() for r in rows):
         raise StickDataError(f"a laptop screen needs a title and 1 to 4 non-empty rows, got {title!r}, {rows!r}")
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
     g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     shape(cv, g, f"M -20 0 L {SCREEN_W + 60} 0 L {SCREEN_W + 20} 34 L -50 34 Z", "#6e737c", 5)
@@ -554,7 +554,7 @@ def phone(cv: Canvas, parent, *, sender: str, text: str, buzz: Sequence[float] =
     cv.require_font("the phone's notification is set in it")
     if not sender.strip() or not text.strip():
         raise StickDataError("a phone notification needs a sender and a text")
-    if any(not (math.isfinite(t) and t >= 0) for t in buzz) or list(buzz) != sorted(buzz):
+    if any(not (checks.number(t) and t >= 0) for t in buzz) or list(buzz) != sorted(buzz):
         raise StickDataError(f"buzz times must be non-negative and in order, got {list(buzz)!r}")
     x, y = at
     shape(cv, parent, f"M {x + PHONE_W / 2} {y + PHONE_H} L {x + PHONE_W / 2 + 30} {y + PHONE_H + 70}", sw=26,

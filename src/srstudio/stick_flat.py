@@ -12,7 +12,6 @@ Everything is in frame pixels of the 1080 × 1920 Stick frame and nothing is ran
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from . import checks, signature
@@ -238,7 +237,7 @@ def murphy_bed(
     ``drop_at``, folding down through one mid frame (:data:`FOLD`) and open on the floor (0: open the whole shot).
     Open, it holds ``sleeper`` under the blanket, snoring, and his mouth opens in each ``(start, stop)`` of
     ``talk``, which must fall while the bed is open."""
-    if not (isinstance(end, (int, float)) and math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise StickDataError(f"the bed needs a positive shot length, got {end!r}")
     if drop_at is not None:
         drop_at = checks.second(

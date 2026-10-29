@@ -690,11 +690,11 @@ def word_cues(
     left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie."""
     if borrow and not min_seconds:
         raise StickDataError("borrow lengthens cues shorter than min_seconds: give min_seconds")
-    if not (math.isfinite(size) and size > 0):
+    if not (checks.number(size) and size > 0):
         raise StickDataError(f"size must be a positive number, got {size!r}")
-    if not (math.isfinite(linger) and linger >= 0):
+    if not (checks.number(linger) and linger >= 0):
         raise StickDataError(f"linger must be non-negative, got {linger!r}")
-    if not (math.isfinite(min_seconds) and min_seconds >= 0):
+    if not (checks.number(min_seconds) and min_seconds >= 0):
         raise StickDataError(f"min_seconds must be non-negative, got {min_seconds!r}")
     if tail and not min_seconds:
         raise StickDataError("tail joins a last cue shorter than min_seconds: give min_seconds")
@@ -795,7 +795,7 @@ def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim:
     keeps what is behind it dark enough for white whatever the scene shows there: an outline layer of its own would
     be ink measured against the scene. :func:`word_cues` makes the cues from timed takes. ``scrim`` is the band's
     darkness (0..1), for a scene too bright behind the words for the default :data:`SCRIM_PEAK`."""
-    if not (math.isfinite(scrim) and 0 < scrim <= 1):
+    if not (checks.number(scrim) and 0 < scrim <= 1):
         raise StickDataError(f"scrim is a darkness above 0 and up to 1, got {scrim!r}")
     cv.require_font("the Stick style captions in its font")
     for cue in cues:

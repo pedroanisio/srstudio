@@ -13,12 +13,11 @@ the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import partial
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -155,7 +154,7 @@ def checkout(cv: Canvas, parent) -> None:
 
 
 def _check_screens(screens: Sequence[Screen], end: float, alarm: Sequence[float]) -> None:
-    if not (math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise StickDataError(f"the kiosk needs a positive shot length, got {end!r}")
     if not screens or screens[0].start != 0:
         raise StickDataError("the kiosk's schedule starts with a screen at 0")
@@ -171,7 +170,7 @@ def _check_screens(screens: Sequence[Screen], end: float, alarm: Sequence[float]
             raise StickDataError(f"unknown tone {sc.tone!r}; known: {', '.join(TONES)}")
         if sc.face is not None:
             check_look(sc.face)
-    if any(not (math.isfinite(t) and 0 <= t < end) for t in alarm) or list(alarm) != sorted(set(alarm)):
+    if any(not (checks.number(t) and 0 <= t < end) for t in alarm) or list(alarm) != sorted(set(alarm)):
         raise StickDataError(f"alarm times must be in the shot (0..{end}), in order, got {list(alarm)!r}")
 
 
@@ -241,7 +240,7 @@ def kiosk(cv: Canvas, parent, screens: Sequence[Screen], end: float, *, alarm: S
 def avocado(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     """An avocado standing on (``x``, ``y``): a pear-shaped dark green skin, a highlight and a stalk, about 90 px
     tall at ``scale`` 1."""
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
     g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     shape(cv, g, "M 0 -88 Q 20 -88 22 -60 Q 24 -44 36 -30 Q 44 -14 30 -3 Q 16 4 0 4 Q -16 4 -30 -3 "

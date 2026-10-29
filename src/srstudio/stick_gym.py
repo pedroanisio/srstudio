@@ -12,10 +12,9 @@ nothing is random, so a shot redraws the same.
 
 from __future__ import annotations
 
-import math
 from functools import partial
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import Gradient, StickDataError, _group, box, oval, paint, shape
@@ -80,7 +79,7 @@ def gym(cv: Canvas, parent, end: float, *, sunrise: float | None = None) -> None
     dawn from ``sunrise`` seconds on the parent's clock, turning over :data:`DAWN`; 0 draws it already day), the
     rack and the treadmill, the mats."""
     cv.require_font("the gym's sign is set in it")
-    if sunrise is not None and not (math.isfinite(sunrise) and 0 <= sunrise < end):
+    if sunrise is not None and not (checks.number(sunrise) and 0 <= sunrise < end):
         raise StickDataError(f"sunrise is a second in the shot (0..{end}), got {sunrise!r}")
     s = cv
     box(s, parent, 0, 0, s.width, 1480, paint(s, Gradient("gym-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, 1480)))

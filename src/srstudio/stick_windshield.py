@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import PLAIN, Gradient, Look, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -96,7 +96,7 @@ SHAKE = (0.05, -7.0), (0.1, 7.0), (0.15, -5.0), (0.2, 5.0), (0.25, 0.0)  # a buz
 
 
 def _check_end(end: float, what: str) -> None:
-    if not (math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise StickDataError(f"the {what} needs a positive shot length, got {end!r}")
 
 
@@ -172,7 +172,7 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
     rear seat and the two front seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw
     :func:`dashboard` over them."""
     _check_end(end, "windshield")
-    if not (math.isfinite(speed) and speed >= 0):
+    if not (checks.number(speed) and speed >= 0):
         raise StickDataError(f"the road's speed must be a non-negative number of dashes a second, got {speed!r}")
     s = cv
     sky = paint(s, Gradient("ws-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 0, 0, 600))
@@ -197,11 +197,11 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
 
 
 def _check_phone(end: float, buzz: Sequence[float], down: float | None) -> None:
-    if any(not (math.isfinite(t) and 0 <= t < end) for t in buzz) or list(buzz) != sorted(buzz):
+    if any(not (checks.number(t) and 0 <= t < end) for t in buzz) or list(buzz) != sorted(buzz):
         raise StickDataError(f"buzz times must be in order within the shot (0..{end}), got {list(buzz)!r}")
     if down is None:
         return
-    if not (math.isfinite(down) and 0 < down < end):
+    if not (checks.number(down) and 0 < down < end):
         raise StickDataError(f"the phone is put down within the shot (0..{end}), got down={down!r}")
     if any(t >= down for t in buzz):
         raise StickDataError(f"a phone face down from {down} s cannot buzz in its mount at {list(buzz)!r}")
