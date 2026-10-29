@@ -1,0 +1,179 @@
+"""The staged-reel toolkit every sequence style shares (srstudio.staging): the stage checks, the camera rig, the
+blackout, the crossfade into a closing card, and the captions and mix that close a reel."""
+
+from __future__ import annotations
+
+import xml.etree.ElementTree as ET
+from types import SimpleNamespace
+
+import pytest
+from sr_core.scene import Scene
+
+from srstudio import VOID, Canvas, flat_counter, native, staging
+from srstudio.staging import Move, StagingError
+
+
+def canvas() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=4.0, background=VOID.background)
+    return Canvas(scene, VOID, font_asset="f", namer=flat_counter("s"))
+
+
+def take(id: str, duration: float = 2.0, actor: str = "juno", effect: bool = False):
+    return SimpleNamespace(id=id, duration=duration, actor=actor, is_effect=effect)
+
+
+class StyleError(ValueError):
+    pass
+
+
+# -- checks -----------------------------------------------------------------------------------------------------------
+def test_every_take_needs_a_stage_and_every_stage_a_take():
+    staging.check_cover([take("01"), take("02")], {"01": 0, "02": 0})
+    with pytest.raises(StyleError, match=r"without a stage \['02'\], stages without a take \['03'\]"):
+        staging.check_cover([take("01"), take("02")], {"01": 0, "03": 0}, StyleError)
+
+
+@pytest.mark.parametrize(
+    "move",
+    [
+        Move("crash", 0.5, 1.4, 540, 900),
+        Move("crash", 0.5, 1.4, 540, 900, back=1.5),
+        Move("push", 0.0, 1.1, 540, 900, until=2.0),
+    ],
+)
+def test_a_crash_or_a_push_that_ends_inside_the_take_is_accepted(move):
+    staging.check_move(move, 2.0, "take 01")
+
+
+@pytest.mark.parametrize(
+    "move, message",
+    [
+        (Move("spin", 0.5, 1.4, 540, 900), "crash or a push, not 'spin'"),
+        (Move("push", 0.5, 1.4, 540, 900), "must end inside"),
+        (Move("push", 0.5, 1.4, 540, 900, until=2.5), "must end inside"),
+        (Move("crash", 1.95, 1.4, 540, 900), "must end inside"),
+        (Move("crash", float("nan"), 1.4, 540, 900), "must end inside"),
+    ],
+)
+def test_a_move_that_is_unknown_or_overruns_its_take_is_refused_with_the_styles_error(move, message):
+    with pytest.raises(StyleError, match=message):
+        staging.check_move(move, 2.0, "take 01", StyleError)
+
+
+def test_spans_fall_inside_the_take():
+    staging.check_spans([(0.0, 1.0), (1.5, 2.0)], 2.0, "take 01")
+    for bad in [(1.0, 1.0), (-0.1, 1.0), (1.0, 2.5), (float("inf"), 3.0)]:
+        with pytest.raises(StagingError, match="falls outside the take"):
+            staging.check_spans([bad], 2.0, "take 01")
+
+
+def test_the_default_error_is_a_value_error():
+    assert issubclass(StagingError, ValueError)
+
+
+# -- drawing ----------------------------------------------------------------------------------------------------------
+def node(root: ET.Element, id: str) -> ET.Element:
+    return next(n for n in root.iter() if n.get("id") == id)
+
+
+def keys(element: ET.Element, prop: str) -> list[tuple[float, float]]:
+    return [
+        (float(k.get("time")), float(k.get("value")))
+        for a in element.findall("animate")
+        if a.get("property") == prop
+        for k in a.iter("key")
+    ]
+
+
+def test_a_still_rig_is_two_plain_groups():
+    cv = canvas()
+    shaken = staging.rig(cv, cv.comp, None, ())
+    root = ET.fromstring(cv.scene.to_bytes())
+    frame = next(n for n in root.iter("group") if any(c.get("id") == shaken.id for c in n))
+    assert not list(root.iter("animate"))
+    assert frame.get("id") != shaken.id
+
+
+def test_the_rig_moves_its_frame_and_shakes_its_inner_group():
+    cv = canvas()
+    shaken = staging.rig(cv, cv.comp, Move("push", 0.5, 1.2, 540, 900, until=1.5), ((0.2, 0.6),))
+    root = ET.fromstring(cv.scene.to_bytes())
+    frame = next(n for n in root.iter("group") if any(c.get("id") == shaken.id for c in n))
+    assert keys(frame, "scaleX")[-1] == (1.5, 1.2)
+    assert keys(node(root, shaken.id), "x")[-1] == (0.6, 0.0)
+
+
+def test_a_crash_rig_snaps_in():
+    cv = canvas()
+    shaken = staging.rig(cv, cv.comp, Move("crash", 0.5, 1.4, 540, 900, back=1.5), ())
+    root = ET.fromstring(cv.scene.to_bytes())
+    frame = next(n for n in root.iter("group") if any(c.get("id") == shaken.id for c in n))
+    assert max(v for _, v in keys(frame, "scaleX")) == pytest.approx(1.4)
+
+
+def test_the_shake_settles_to_rest_at_the_end_of_each_span():
+    cv = canvas()
+    g = cv.group(cv.comp, "g")
+    staging.shake(cv, g, ((0.5, 1.0), (1.5, 1.75)))
+    xs = keys(node(ET.fromstring(cv.scene.to_bytes()), "g"), "x")
+    assert xs[0] == (0.0, 0.0)
+    assert (1.0, 0.0) in xs and (1.75, 0.0) in xs
+    assert max(abs(v) for _, v in xs) == staging.SHAKE_PX
+
+
+def test_a_blackout_covers_the_frame_only_in_its_spans_and_is_absent_without_spans():
+    cv = canvas()
+    g = cv.group(cv.comp, "g")
+    assert staging.blackout(cv, g, ()) is None
+    black = staging.blackout(cv, g, ((0.4, 1.0),))
+    assert black is not None
+    assert (black.x, black.y, black.width, black.height) == (-200, -200, 1480, 2320)
+
+
+# -- closing ----------------------------------------------------------------------------------------------------------
+def test_the_closing_card_is_crossfaded_into_at_most_half_of_either_shot():
+    takes = [take("01", 2.0), take("02", 0.4), take("03", 3.0), take("04", 2.0)]
+    closing = {"03", "04"}
+    assert staging.crossfades(takes, lambda id: id in closing) == {"03": 0.2}
+    assert staging.crossfades([take("01", 2.0), take("02", 2.0)], lambda id: id == "02") == {"02": 0.3}
+    assert staging.crossfades(takes, lambda id: False) == {}
+
+
+def test_close_captions_the_takes_and_mixes_them_with_the_bed_ducked_under_speech():
+    calls = {}
+
+    class FakeEpisode:
+        t = SimpleNamespace(meta={"music": {"file": "audio/bed.wav", "gain_db": -16.0}})
+
+        def native_captions(self, cues, look):
+            calls["captions"] = (cues, look)
+            return "captions-node"
+
+        def audio(self, *, take, extra, duck):
+            calls["audio"] = ([take(t) for t in recorded], extra, duck)
+            return "mix-node"
+
+    recorded = [take("01", actor="juno"), take("02", actor="gloom")]
+    look = native.CaptionLook(min_last=2)
+    out = staging.close(FakeEpisode(), None, [], fades={}, look=look, pans={"gloom": -0.06}, duck=-9.0)
+    assert out == {"captions": "captions-node", "mix": "mix-node"}
+    assert calls["captions"] == ([], look)
+    params, extra, duck = calls["audio"]
+    assert [p["pan"] for p in params] == [0.0, -0.06]
+    assert extra == [("music", "audio/bed.wav", {"role": "music", "gain": "-16.0"})]
+    assert duck == -9.0
+
+
+def test_close_without_a_bed_mixes_no_music_and_ducks_nothing():
+    class FakeEpisode:
+        t = SimpleNamespace(meta={})
+
+        def native_captions(self, cues, look):
+            return "c"
+
+        def audio(self, *, take, extra, duck):
+            return (extra, duck)
+
+    out = staging.close(FakeEpisode(), None, [], fades={}, look=native.CAPTION_LOOK, pans={}, duck=-9.0)
+    assert out["mix"] == ([], None)
