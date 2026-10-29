@@ -4,6 +4,7 @@ from copy import deepcopy
 import pytest
 
 from srstudio import Timeline
+from srstudio.timeline import TimelineError
 
 
 def test_load_phrases_cuts_and_beats(project):
@@ -38,14 +39,15 @@ def test_unknown_beat_raises(project):
         t.park_start  # noqa: B018
 
 
-def test_word_time_from_character_alignment(tmp_path):
+def aligned(tmp_path, sentence: str) -> Timeline:
+    """A one-phrase timeline from 1.0 s whose timing file gives character i of ``sentence`` at i × 0.05 s."""
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "p.json").write_text(
         json.dumps(
             {
                 "normalized_alignment": {
-                    "characters": list("I can disappoint several people"),
-                    "character_start_times_seconds": [i * 0.05 for i in range(len("I can disappoint several people"))],
+                    "characters": list(sentence),
+                    "character_start_times_seconds": [i * 0.05 for i in range(len(sentence))],
                 }
             }
         )
@@ -69,11 +71,33 @@ def test_word_time_from_character_alignment(tmp_path):
             }
         )
     )
-    t = Timeline.load(tmp_path / "dialogue.json")
+    return Timeline.load(tmp_path / "dialogue.json")
+
+
+def test_word_time_from_character_alignment(tmp_path):
+    t = aligned(tmp_path, "I can disappoint several people")
     index = "I can disappoint several people".index("several")
     assert t.word_time(0, "several") == pytest.approx(1.0 + index * 0.05 - 0.1)
-    with pytest.raises(ValueError):
+    with pytest.raises(TimelineError, match="no word 'absent'"):
         t.word_time(0, "absent")
+
+
+@pytest.mark.parametrize(
+    "sentence, word, at",
+    [
+        ("This is it.", "is", 5),  # not the "is" inside "This"
+        ("Is this it?", "is", 0),  # case-blind, at the start
+        ("Nope, no spaces here.", "no spaces", 6),  # a run of words, not "no" inside "Nope"
+        ("It's here.", "it's", 0),  # an apostrophe belongs to the word
+    ],
+)
+def test_word_time_matches_whole_words_only(tmp_path, sentence, word, at):
+    assert aligned(tmp_path, sentence).word_time(0, word) == pytest.approx(1.0 + at * 0.05 - 0.1)
+
+
+def test_word_time_refuses_a_word_only_found_inside_another(tmp_path):
+    with pytest.raises(TimelineError, match="no word 'is'"):
+        aligned(tmp_path, "This was it.").word_time(0, "is")
 
 
 def dialogue():

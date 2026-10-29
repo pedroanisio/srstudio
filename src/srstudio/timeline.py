@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -353,12 +354,16 @@ class Timeline:
 
     # -- word-level timing ----------------------------------------------------------------------
     def word_time(self, phrase: int | Phrase, word: str) -> float:
-        """When ``word`` starts inside a phrase, from the provider's character timestamps."""
+        """When ``word`` (one word or a run of them, matched whole and case-blind) first starts inside a phrase, from
+        the provider's character timestamps."""
         p = phrase if isinstance(phrase, Phrase) else self.phrases[phrase]
         if not p.timing_file or self.root is None:
             raise TimelineError(f"phrase {p.index} has no timing file")
         provider = json.loads((self.root / p.timing_file).read_text())
         alignment = provider.get("normalized_alignment") or provider["alignment"]
         text = "".join(alignment["characters"]).lower()
-        index = text.index(word.lower())
+        found = re.search(rf"(?<![\w'’]){re.escape(word.lower())}(?![\w'’])", text)
+        if found is None:
+            raise TimelineError(f"phrase {p.index}: no word {word!r} in {text!r}")
+        index = found.start()
         return p.start + alignment["character_start_times_seconds"][index] - p.trim_seconds
