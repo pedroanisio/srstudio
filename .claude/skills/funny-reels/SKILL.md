@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.1.0
+schema_version: 1.3.0
 ---
 
 # Funny reels with srstudio
@@ -27,7 +27,7 @@ report the score as *your* estimate:
 | 4 | Surprise | the turn is not the first thing the viewer guessed |
 | 5 | Escalation | each beat raises the stakes of the previous one (rule of three, then break it) |
 | 6 | Shown | the gag is on screen (a note on the laptop, a toast with the evidence), not explained in a caption |
-| 7 | Timing | a hold of at least 1.2 s before the punchline, a sting or a voice right after |
+| 7 | Timing | a hold of at least 1.2 s before the punchline, a sting or a voice right after; a camera move or pause on the beat (see below) |
 | 8 | Clarity | the viewer always knows who is talking (distinct voice, caption tint, speaker on screen) |
 | 9 | Sound | foley and music carry beats; music ducks under speech |
 | 10 | Ending | a button after the punchline (a "3 hours later…" card, a callback, a loop back to the start) |
@@ -40,6 +40,27 @@ the scorecard reads "reception: taking notes". In *Five Years* the candidate wan
 What fell flat: captions that explain the joke, and music fighting the lines. *Camera Off*'s lines sat 6–7 dB
 under its score until `Episode.audio(duck=)` was added (ADR 0016). *Off and On*'s first cut was flat, and it only
 landed after a funnier rewrite and a composed jingle.
+
+## Camera and pauses are part of the joke
+
+Where the camera is and when nobody speaks are comic tools, not decoration. Plan them in the beat table (a
+`camera` column next to picture, line and sound), and check them on the render.
+
+| Technique | What it does to the joke | How to build it |
+|---|---|---|
+| Wide for the physical gag | the viewer sees the whole body and the room, so a fall or a slow reaction reads as comic, not painful | hold the location's wide angle; cut in only after the gag has landed |
+| Crash zoom (snap zoom) | a sudden push onto a face or object underlines a realisation; pair it with a whoosh or a sting | `camera.crash_zoom` (snaps in at most `camera.SNAP` seconds, optional snap back, returns the cue), the pivot set by `camera.anchor`; `foley.write_whoosh` on the returned cue |
+| Punch-in on the cut | a hold-key change of framing between shots for emphasis without a visible move | `camera.zoom_holds`, or `camera.reframe` for cut-to-cut scale and position |
+| Slow push | builds dread or importance under a line that is about to go wrong | `camera.push_in` eased over 1–3 s |
+| Reaction shot / look to camera | the listener's face, or a glance into the lens, tells the viewer what to feel about what was just said | cut to the listener (`Timeline.shots` for the cut spans) and hold on a face that does not move |
+| Awkward pause | silence after a line that should get an answer; the discomfort is the laugh | leave 1.5–3 s of dead air between lines, with no new caption and the music ducked or stopped, then a small reaction or the button |
+| The spin, the double take | a turn or a look away and back marks the moment the character understands | `camera.spin` with `camera.show_facing`; a pose change held, released, then repeated faster |
+
+Rules of thumb: one camera move per beat, never during a spoken line's key word; let a pause run a beat longer
+than feels comfortable, then cut; a zoom without a payoff on screen is noise. Measure, don't assume: `srstudio craft`
+<project> --renders <dir> lists every move (punch-in, crash, push; camera or gag) and every pause between lines, with
+the rendered level in it, so a pause meant to be awkward is shown to be quiet and not filled by music. A push onto a drawn instance (a
+reused symbol) softens it when magnified, so draw the target inline or keep the zoom small, and look at the frame.
 
 ## Made for adults
 
@@ -107,7 +128,8 @@ it in `srstudio catalog` without this file changing.
    the operator decides. Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM with "steady kick on every beat" (slow tempo prompts come back
    off-tempo and are refused). The API key comes from the environment; never print, copy or write it.
 6. **Build and look.** Build with `srstudio build`, render to `generated/renders/<slug>.mp4`, then *look*: a
-   contact sheet of frames, the hook frame, the punchline hold, the safe area, captions that fit. A number from a
+   contact sheet of frames, the hook frame, the punchline hold, the safe area, captions that fit. Run `srstudio craft`
+   on the project with `--renders` and check that the planned camera moves and pauses are there. A number from a
    scratch file is not evidence; quote real command output. Then update the catalog: re-run the usage report
    from *Live inventory*, then `srstudio page --usage ../generated/catalog/usage.json` with the other arguments
    that `tools/systemd/srstudio-catalog.service` passes. The page build fails until every part the new episode calls has a
