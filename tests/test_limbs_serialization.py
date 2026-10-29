@@ -73,3 +73,36 @@ def test_malformed_and_oversized_files_do_not_get_coerced_to_an_empty_motion(tmp
     file.write_bytes(b" " * (5 * 1024 * 1024 + 1))
     with pytest.raises(LimbError, match="size"):
         load_motion(file)
+
+
+@pytest.mark.parametrize("depth", [65, 1000, 200000])
+def test_deeply_nested_files_under_the_size_cap_fail_with_a_budget_error(tmp_path, depth):
+    file = tmp_path / "deep.json"
+    file.write_text("[" * depth + "]" * depth)
+    with pytest.raises(LimbError, match="nesting") as caught:
+        load_motion(file)
+    assert caught.value.code == "budget"
+
+
+def test_brackets_inside_strings_do_not_count_toward_the_nesting_bound(tmp_path):
+    motion = Motion(ArmProfile(), HUMAN, (Action("point", 0, 2),))
+    data = motion_dict(motion)
+    data["generatedBy"] = "[{" * 500 + '\\"' + "}]" * 500
+    file = tmp_path / "motion.json"
+    file.write_text(json.dumps(data))
+    assert load_motion(file) == motion
+
+
+def test_motion_files_that_are_not_utf8_fail_as_invalid_documents(tmp_path):
+    file = tmp_path / "motion.json"
+    file.write_bytes(b'{"schema": "\xff"}')
+    with pytest.raises(LimbError, match="UTF-8"):
+        load_motion(file)
+
+
+def test_an_unterminated_string_of_escaped_quotes_is_scanned_once_and_rejected(tmp_path):
+    file = tmp_path / "motion.json"
+    file.write_text('{"schema": "' + '\\"[{' * 100000)
+    with pytest.raises(LimbError, match="cannot read motion document") as caught:
+        load_motion(file)
+    assert caught.value.code == "io"

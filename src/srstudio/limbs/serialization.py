@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 import types
 from dataclasses import MISSING, asdict, fields, is_dataclass
@@ -18,6 +19,8 @@ SCHEMA = "srstudio.limbs/1.1.0"
 LEGACY_SCHEMA = "srstudio.limbs/1.0.0"
 MAX_BYTES = 5 * 1024 * 1024
 MAX_ITEMS = 100000
+MAX_DEPTH = 64
+_STRUCTURE = re.compile(r'"(?:[^"\\]|\\.)*"?|[\[\]{}]', re.DOTALL)
 
 
 def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int = 0) -> Any:
@@ -104,18 +107,41 @@ def parse_motion(data: object) -> Motion:
     return result
 
 
-def load_motion(path: str | Path) -> Motion:
+def _nesting(text: str) -> None:
+    """Bound array/object nesting before parsing; the standard parser recurses once per level."""
+    depth = 0
+    for token in _STRUCTURE.finditer(text):
+        symbol = token.group()
+        if symbol in "[{":
+            depth += 1
+            if depth > MAX_DEPTH:
+                raise LimbError(f"document exceeds the {MAX_DEPTH}-level nesting bound", code="budget")
+        elif symbol in "]}":
+            depth -= 1
+
+
+def read_document(path: str | Path, kind: str = "motion") -> object:
+    """Read one bounded UTF-8 JSON document: size and nesting are checked before parsing."""
     try:
         with Path(path).open("rb") as file:
             raw = file.read(MAX_BYTES + 1)
-        if len(raw) > MAX_BYTES:
-            raise LimbError("motion file exceeds the 5 MiB size limit", code="budget")
-        data = json.loads(raw)
-    except (OSError, ValueError) as error:
-        if isinstance(error, LimbError):
-            raise
-        raise LimbError(f"cannot read motion document: {error}", code="io") from error
-    return parse_motion(data)
+    except OSError as error:
+        raise LimbError(f"cannot read {kind} document: {error}", code="io") from error
+    if len(raw) > MAX_BYTES:
+        raise LimbError(f"{kind} file exceeds the 5 MiB size limit", code="budget")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise LimbError(f"{kind} document is not UTF-8: {error}") from error
+    _nesting(text)
+    try:
+        return json.loads(text)
+    except ValueError as error:
+        raise LimbError(f"cannot read {kind} document: {error}", code="io") from error
+
+
+def load_motion(path: str | Path) -> Motion:
+    return parse_motion(read_document(path))
 
 
 def save_motion(motion: Motion, path: str | Path) -> Path:

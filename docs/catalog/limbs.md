@@ -209,7 +209,9 @@ in the wrist frame, including axial roll.
 
 The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
 without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions
-and fields are rejected. Both versions pass through the current numeric and resource validation. Profile,
+and fields are rejected. Both versions pass through the current numeric and resource validation.
+`load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so
+an oversized, deeply nested or non-UTF-8 file raises `LimbError` instead of exhausting the parser. Profile,
 digit, action, contact, attachment and take identifiers are bounded to 128 characters. Custom digit labels
 can contain spaces or Unicode; they do not become SVG paint IDs.
 
