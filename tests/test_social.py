@@ -1,30 +1,40 @@
 """Instagram captions: typed limits, the ig.txt layout, the episode hook, and every shipped post is valid."""
 
+import fcntl
+import hashlib
+import json
 import os
 import shutil
 import subprocess
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec
+from srstudio import Episode, EpisodeSpec, social, thumbnail
 from srstudio.sample import SYSTEM_FONTS
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
     HASHTAG_LIMIT,
+    LEGACY_LAYOUT,
     MANIFEST,
+    MANIFEST_VERSION,
     CoverError,
     DeliveryError,
     InstagramPost,
     InstagramPostError,
     Item,
+    ManifestVersionError,
     check_delivery,
+    fingerprint,
+    migrate_manifest,
     probe,
     publish,
     read_manifest,
     take_frame,
+    video_size,
 )
 from srstudio.thumbnail import Thumbnail
 
@@ -315,7 +325,7 @@ def test_a_changed_post_or_thumbnail_drifts(delivered):
     items, out, renders = delivered
     changed = {
         **items,
-        "a": Item(post("A changed"), renders / "a.mp4"),
+        "a": Item(post("A2"), renders / "a.mp4"),
         "b": Item(post("B", hashtags=("#x",)), renders / "b.mp4"),
     }
     assert reasons(changed, out) == [
@@ -375,7 +385,7 @@ def test_publish_refuses_a_missing_render_before_writing(tmp_path):
 def test_publish_only_some_videos_leaves_the_rest_of_the_delivery_as_it_was(delivered):
     items, out, renders = delivered
     tall(renders / "a.mp4", lum="Y/4+N*20")  # both drift: a re-rendered, b's post edited
-    changed = {**items, "b": Item(post("B changed"), renders / "b.mp4"), "new": Item(post("N"), renders / "new.mp4")}
+    changed = {**items, "b": Item(post("B2"), renders / "b.mp4"), "new": Item(post("N"), renders / "new.mp4")}
     before = read_manifest(out)["b"]
     assert [p.name for p in publish(changed, out, font=FONT, engine=engine(), only={"a"})] == ["a"]
     assert read_manifest(out)["b"] == before and "new" not in read_manifest(out)
@@ -418,6 +428,241 @@ def test_publish_only_still_needs_the_named_render_and_a_readable_manifest(deliv
     (out / MANIFEST).write_text("not json", encoding="utf-8")
     with pytest.raises(DeliveryError, match="cannot be read"):
         publish(items, out, font=FONT, engine="unused", only={"b"})
+
+
+# -- the post fingerprint is the drawing (ADR 0037) ----------------------------------------------------------------
+def test_an_edit_to_the_layout_source_alone_changes_no_fingerprint(tmp_path, monkeypatch):
+    clip = tall(tmp_path / "v.mp4")
+    before = fingerprint(post(), clip, FONT)
+    edited = tmp_path / "thumbnail.py"
+    source = Path(thumbnail.__file__).read_text(encoding="utf-8")
+    edited.write_text(source.replace('"""The designed thumbnail', '"""Edited. The designed thumbnail', 1), "utf-8")
+    monkeypatch.setattr(thumbnail, "__file__", str(edited))  # a docstring, a base class: the drawing is the same
+    assert fingerprint(post(), clip, FONT) == before
+
+
+@pytest.mark.parametrize(
+    "module, name, value",
+    [
+        (thumbnail, "OUTLINE", thumbnail.OUTLINE + 1),  # compose draws something else
+        (thumbnail, "ENGINE_ARGS", ("-f", "1")),
+        (thumbnail, "ENCODER_ARGS", ("-q:v", "3")),
+        (social, "BACKDROP_ARGS", ("-frames:v", "1")),
+        (social, "FRAME_SLACK", 0.0),
+        (social, "COVER_VARIANT", "poster"),
+    ],
+)
+def test_a_change_to_the_drawing_or_a_render_step_changes_the_fingerprint(tmp_path, monkeypatch, module, name, value):
+    clip = tall(tmp_path / "v.mp4")
+    before = fingerprint(post(), clip, FONT)
+    monkeypatch.setattr(module, name, value)
+    assert fingerprint(post(), clip, FONT) != before
+
+
+def test_the_fingerprint_draws_the_cover_at_the_video_size(tmp_path):
+    square = InstagramPost(title="t", description="d", thumbnail=Thumbnail("Hi", 0.3))
+    portrait, flat = tall(tmp_path / "p.mp4"), video(tmp_path / "s.mp4", fps=4, size="540x540")
+    assert fingerprint(square, portrait, FONT) != fingerprint(square, flat, FONT)
+    assert fingerprint(square, portrait, FONT) == fingerprint(square, tall(tmp_path / "q.mp4", lum="Y/2"), FONT)
+
+
+def test_the_video_size_is_read_from_the_container_as_probe_reads_it(tmp_path):
+    clips = [video(tmp_path / f"v{size}.mp4", size=size) for size in ("64x112", "540x960", "540x540")]
+    fast = tmp_path / "fast.mp4"  # the index (moov) before the media, as a streaming encoder writes it
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clips[0]), "-c", "copy", "-movflags", "+faststart",
+                    str(fast)], check=True)  # fmt: skip
+    for clip in [*clips, fast]:
+        info = probe(clip)
+        assert video_size(clip) == (info.width, info.height), clip.name
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"",
+        b"not a video at all",
+        b"\x00\x00\x00\x04moov",  # a box shorter than its own header
+        b"\x00\x00\x00\x10ftypisom\x00\x00\x00\x00",  # no index
+        b"\x00\x00\x00\x08moov",  # an index without a video track
+        b"\x00\x00\x01\x00moov\x00\x00\x00\x08trak",  # a box that runs past the end of the file
+    ],
+)
+def test_a_file_without_a_readable_video_size_is_refused(tmp_path, data):
+    bad = tmp_path / "bad.mp4"
+    bad.write_bytes(data)
+    with pytest.raises(CoverError, match="cannot read the size of bad.mp4"):
+        video_size(bad)
+
+
+def test_a_truncated_video_is_refused(tmp_path):
+    clip = video(tmp_path / "v.mp4")
+    cut = tmp_path / "cut.mp4"
+    cut.write_bytes(clip.read_bytes()[: clip.stat().st_size - 200])  # ffmpeg writes the index last
+    with pytest.raises(CoverError, match="cannot read the size of cut.mp4"):
+        video_size(cut)
+
+
+def test_deliver_refuses_a_video_whose_index_names_another_size_than_it_decodes_at(tmp_path):
+    clip = tall(tmp_path / "v.mp4")
+    data = bytearray(clip.read_bytes())
+    entry = data.index(b"stsd") + 12  # the first sample entry, after the type, version, flags and entry count
+    data[entry + 32 : entry + 34] = (600).to_bytes(2, "big")  # its width; the stream still decodes 540 wide
+    clip.write_bytes(bytes(data))
+    assert video_size(clip) == (600, 960) and probe(clip).width == 540
+    with pytest.raises(CoverError, match="decodes at 540x960, but its index says 600x960"):
+        post().deliver(tmp_path / "ig" / "v", clip, font=FONT, engine="unused")
+    assert not (tmp_path / "ig" / "v").exists()
+
+
+def test_check_never_runs_the_engine_ffmpeg_or_ffprobe(delivered, monkeypatch):
+    items, out, _ = delivered
+
+    def refuse(cmd, *args, **kw):
+        raise AssertionError(f"check ran {cmd}")
+
+    monkeypatch.setattr(subprocess, "run", refuse)
+    monkeypatch.setattr(subprocess, "Popen", refuse)
+    assert reasons(items, out) == []
+
+
+def test_a_cover_that_cannot_be_drawn_now_drifts(delivered):
+    items, out, renders = delivered
+    wide = {**items, "a": Item(post("A headline far too wide to fit"), renders / "a.mp4")}
+    (drift,) = check_delivery(wide, out, font=FONT)
+    assert drift.name == "a" and "cannot be drawn" in drift.reason and "wider than" in drift.reason
+
+
+# -- the one-time migration of a 1.0.0 manifest ---------------------------------------------------------------------
+def legacy(item: Item) -> str:
+    """The 1.0.0 post fingerprint as it was delivered: the layout code was the SHA-256 of thumbnail.py's source."""
+    p = item.post
+    data = {"text": p.text(), "thumbnail": asdict(p.thumbnail) if p.thumbnail else None, "layout": LEGACY_LAYOUT,
+            "font": hashlib.sha256(FONT.read_bytes()).hexdigest()}  # fmt: skip
+    if item.scene is not None:
+        data["scene"] = hashlib.sha256(Path(item.scene).read_bytes()).hexdigest()
+    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+@pytest.fixture
+def old_delivery(tmp_path):
+    """A 1.0.0 manifest: a and c were delivered with the posts they have now, b with another headline, and gone is
+    no longer published. Returns the items, the out folder and the entries as written."""
+    renders = tmp_path / "renders"
+    renders.mkdir()
+    items = {
+        "a": Item(post("A"), tall(renders / "a.mp4")),
+        "b": Item(post("B"), tall(renders / "b.mp4")),
+        "c": Item(post("C"), tall(renders / "c.mp4"), scene_doc(tmp_path / "c.scene.xml")),
+    }
+    other = legacy(Item(post("B before"), renders / "b.mp4"))  # b was delivered with another headline
+    entries = {
+        "a": {"render": "1" * 64, "post": legacy(items["a"]), "ig": "2" * 64, "cover": "3" * 64},
+        "b": {"render": "4" * 64, "post": other, "ig": "5" * 64, "cover": "6" * 64},
+        "c": {"render": "7" * 64, "post": legacy(items["c"]), "ig": "8" * 64, "cover": "9" * 64},
+        "gone": {"render": "a" * 64, "post": "b" * 64, "ig": "c" * 64, "cover": "d" * 64},
+    }
+    out = tmp_path / "ig"
+    out.mkdir()
+    (out / MANIFEST).write_text(json.dumps({"version": "1.0.0", "videos": entries}, indent=2) + "\n", "utf-8")
+    return items, out, entries
+
+
+def test_an_old_manifest_is_refused_by_name_and_is_drift(old_delivery):
+    items, out, _ = old_delivery
+    with pytest.raises(ManifestVersionError, match="1.0.0.*instagram_posts.py migrate"):
+        read_manifest(out)
+    (drift,) = check_delivery(items, out, font=FONT)
+    assert drift.name == "*" and "migrate" in drift.reason
+
+
+def test_publish_refuses_to_replace_a_manifest_of_another_version(old_delivery):
+    items, out, _ = old_delivery
+    before = (out / MANIFEST).read_bytes()
+    for version in ("1.0.0", "2.0.0"):
+        (out / MANIFEST).write_bytes(before.replace(b'"1.0.0"', f'"{version}"'.encode()))
+        with pytest.raises(ManifestVersionError, match=version):
+            publish(items, out, font=FONT, engine="unused")
+    assert sorted(p.name for p in out.iterdir()) == [MANIFEST]  # nothing delivered over it
+
+
+def test_migrate_rewrites_only_the_post_of_an_entry_that_holds_the_old_fingerprint_of_the_post_now(old_delivery):
+    items, out, entries = old_delivery
+    result = migrate_manifest(items, out, font=FONT)
+    assert result.migrated == ["a", "c"]
+    assert [name for name, _ in result.kept] == ["b", "gone"]
+    assert "not the 1.0.0 fingerprint" in dict(result.kept)["b"] and "no longer published" in dict(result.kept)["gone"]
+    data = json.loads((out / MANIFEST).read_text(encoding="utf-8"))
+    assert data["version"] == MANIFEST_VERSION == "1.1.0"
+    for name in ("a", "c"):
+        item = items[name]
+        assert data["videos"][name] == entries[name] | {"post": fingerprint(item.post, item.video, FONT, item.scene)}
+    assert data["videos"]["b"] == entries["b"] and data["videos"]["gone"] == entries["gone"]
+    assert (out / MANIFEST).stat().st_mode & 0o777 == 0o600
+    assert read_manifest(out) == data["videos"]
+    assert sorted(p.name for p in out.iterdir()) == [MANIFEST, MANIFEST + ".lock"]  # no temporary file left
+
+
+def test_a_dry_run_reports_the_same_plan_and_writes_nothing(old_delivery):
+    items, out, _ = old_delivery
+    files = {p.name: p.read_bytes() for p in out.iterdir()}
+    result = migrate_manifest(items, out, font=FONT, dry_run=True)
+    assert result.migrated == ["a", "c"] and [name for name, _ in result.kept] == ["b", "gone"]
+    assert {p.name: p.read_bytes() for p in out.iterdir()} == files  # not even the lock file
+
+
+def test_migrate_reads_the_manifest_it_rewrites_under_the_delivery_lock(old_delivery, monkeypatch):
+    items, out, entries = old_delivery
+    real, held = fcntl.flock, []
+
+    def flock(fd, operation):  # another delivery rewrote a's entry while this migration waited for the lock
+        real(fd, operation)
+        if operation == fcntl.LOCK_EX:
+            held.append(Path(fd.name).name)
+            data = json.loads((out / MANIFEST).read_text(encoding="utf-8"))
+            data["videos"]["a"]["post"] = "f" * 64
+            (out / MANIFEST).write_text(json.dumps(data), encoding="utf-8")
+
+    monkeypatch.setattr(fcntl, "flock", flock)
+    result = migrate_manifest(items, out, font=FONT)
+    assert held == [MANIFEST + ".lock"]
+    assert result.migrated == ["c"] and read_manifest(out)["a"]["post"] == "f" * 64  # the newer entry is kept
+
+
+@pytest.mark.parametrize(
+    "manifest, needle",
+    [
+        (None, "no delivery.json to migrate"),
+        ("not json", "cannot be read"),
+        ('{"version": "1.1.0", "videos": {}}', "already version 1.1.0"),
+        ('{"version": "2.0.0", "videos": {}}', "version '2.0.0'"),
+        ('{"version": "1.0.0", "videos": {"a": {"render": "x"}}}', "entry 'a'"),
+    ],
+)
+def test_migrate_refuses_a_manifest_that_is_not_a_1_0_0_one(tmp_path, manifest, needle):
+    if manifest is not None:
+        (tmp_path / MANIFEST).write_text(manifest, encoding="utf-8")
+    for dry_run in (True, False):
+        with pytest.raises(DeliveryError, match=needle):
+            migrate_manifest({}, tmp_path, font=FONT, dry_run=dry_run)
+    assert (tmp_path / MANIFEST).read_text(encoding="utf-8") == manifest if manifest else not any(tmp_path.iterdir())
+
+
+def test_the_migrate_command_prints_its_plan_and_writes_only_without_dry_run(old_delivery, monkeypatch, capsys):
+    items, out, _ = old_delivery
+    posts = shipped_posts()
+    monkeypatch.setattr(posts, "font_file", lambda folder: FONT)
+    monkeypatch.setattr(posts, "items", lambda renders, episodes=None: items)
+    before = (out / MANIFEST).read_bytes()
+    args = ["migrate", str(out), str(out), "--fonts", str(out)]
+    assert posts.main([*args, "--dry-run"]) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[:2] == ["migrate a", "migrate c"] and printed[2].startswith("keep b: ")
+    assert printed[3].startswith("keep gone: ") and printed[4:] == ["2 migrated, 2 kept (dry run: nothing written)"]
+    assert (out / MANIFEST).read_bytes() == before
+    assert posts.main(args) == 0
+    assert capsys.readouterr().out.splitlines()[-1] == f"2 migrated, 2 kept; {out / MANIFEST} is now version 1.1.0"
+    with pytest.raises(SystemExit, match="migrate: .* already version 1.1.0"):
+        posts.main(args)
 
 
 def shipped_posts():

@@ -3,7 +3,9 @@
 A :class:`Thumbnail` names a moment of the video and the words to sell it: a frame of the published video is the
 backdrop, magnified on its subject, and over it a short headline in a heavy display face, its last line in the
 accent colour, under a kicker pill that names the series. :func:`compose` lays it out as a one-frame scene
-document; :func:`render` draws that with the engine into a JPEG at the video's own size.
+document; :func:`render` draws that with the engine into a JPEG at the video's own size, with the fixed steps
+:data:`ENGINE_ARGS` and :data:`ENCODER_ARGS`. The composed document and those steps are what a cover is made of
+besides its backdrop, so the publish gate fingerprints them (:func:`srstudio.social.fingerprint`, ADR 0037).
 
 Everything that carries meaning sits inside the grid area: the profile grid shows a cover cropped to 3:4 around
 its centre (:func:`grid_box`), so a headline outside it would be cut. :func:`compose` refuses a headline
@@ -35,6 +37,11 @@ __all__ = [
     "grid_box",
     "layout",
     "compose",
+    "render",
+    "BACKDROP_FILE",
+    "FONT_FILE",
+    "ENGINE_ARGS",
+    "ENCODER_ARGS",
     "MAX_LINES",
     "MAX_SIZE",
     "MIN_SIZE",
@@ -55,6 +62,11 @@ FADE = 1 / 6  # of the grid area height, the fade past the headline
 GRID = 3 / 4  # the profile grid's crop of a portrait cover, width / height
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 INK = Palette(ink="#0b0b0d", white="#ffffff", name="thumbnail", background="#0b0b0d")
+# How :func:`render` turns the composed document into the JPEG. A change here changes every cover, so the publish
+# gate digests these with the document (ADR 0037).
+BACKDROP_FILE, FONT_FILE = "backdrop.png", "font.ttf"  # the document's sources, beside it in the work folder
+ENGINE_ARGS = ("-f", "0")  # after `render DOC`: the one frame of the document
+ENCODER_ARGS = ("-q:v", "2")  # ffmpeg's JPEG quality (2: near the best)
 
 
 class ThumbnailError(SrstudioError, ValueError):
@@ -246,16 +258,16 @@ def render(
     out = Path(out)
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         work = Path(tmp)
-        shutil.copyfile(backdrop, work / "backdrop.png")
-        shutil.copyfile(font, work / "font.ttf")
-        scene = compose(thumb, backdrop="backdrop.png", font="font.ttf", font_bytes=font_bytes, width=width,
+        shutil.copyfile(backdrop, work / BACKDROP_FILE)
+        shutil.copyfile(font, work / FONT_FILE)
+        scene = compose(thumb, backdrop=BACKDROP_FILE, font=FONT_FILE, font_bytes=font_bytes, width=width,
                         height=height)  # fmt: skip
         doc = work / "thumbnail.scene.xml"
         doc.write_bytes(scene.to_bytes())
         png = work / "thumbnail.png"
-        _run([str(engine), "render", str(doc), "-f", "0", "-o", str(png.resolve())], "the engine cannot draw it")
+        _run([str(engine), "render", str(doc), *ENGINE_ARGS, "-o", str(png.resolve())], "the engine cannot draw it")
         jpg = work / out.name
-        _run([ffmpeg, "-v", "error", "-y", "-i", str(png), "-q:v", "2", str(jpg)], f"cannot encode {out.name}")
+        _run([ffmpeg, "-v", "error", "-y", "-i", str(png), *ENCODER_ARGS, str(jpg)], f"cannot encode {out.name}")
         if not jpg.exists():
             raise ThumbnailError(f"no {out.name} was written")
         jpg.replace(out)

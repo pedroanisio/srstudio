@@ -8,10 +8,14 @@ build leaves ``ig.txt`` next to its scene. Each post also designs its cover: a
 :class:`~srstudio.thumbnail.Thumbnail` drawn over a frame of the video. ``deliver`` writes one ``<out>/<video name>/``
 folder per rendered video, holding ``ig.txt`` and ``cover.jpg``, for every video that drifted, and records
 ``<out>/delivery.json``; ``check`` exits 1 and lists every drift (a video re-rendered after its cover, a changed post,
-an edited or missing file, a post without a render) and writes nothing:
+an edited or missing file, a post without a render) and writes nothing. ``check`` runs no engine, ffmpeg or ffprobe.
+``migrate`` moves a 1.0.0 ``delivery.json`` to 1.1.0 once (ADR 0037): it rewrites the post fingerprint of each
+entry delivered from the post it has now, keeps every other entry, and draws or delivers nothing; ``--dry-run``
+prints the same plan and writes nothing:
 
     python3 instagram_posts.py deliver OUT RENDERS --fonts DIR [--engine BIN] [--only NAME ...]
     python3 instagram_posts.py check OUT RENDERS --fonts DIR
+    python3 instagram_posts.py migrate OUT RENDERS --fonts DIR [--dry-run]
 
 ``--only`` delivers the named videos alone (one ready to publish while another post waits for its render); the
 rest of the delivery is left as it was, and ``check`` still reports what drifted there.
@@ -28,7 +32,18 @@ import shutil
 from pathlib import Path
 
 from srstudio import fonts, releases
-from srstudio.social import DeliveryError, Drift, InstagramPost, Item, check_delivery, publish
+from srstudio.social import (
+    MANIFEST,
+    MANIFEST_VERSION,
+    DeliveryError,
+    Drift,
+    InstagramPost,
+    Item,
+    Migration,
+    check_delivery,
+    migrate_manifest,
+    publish,
+)
 
 THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two big lines fit a portrait cover
 
@@ -64,15 +79,34 @@ def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     return check_delivery(items(renders), out, font=font_file(fonts_dir))
 
 
+def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:
+    """Migrate ``out``'s 1.0.0 manifest against every post from ``renders`` (or only plan it, with ``dry_run``)."""
+    return migrate_manifest(items(renders), out, font=font_file(fonts_dir), dry_run=dry_run)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=("deliver", "check"))
+    parser.add_argument("command", choices=("deliver", "check", "migrate"))
     parser.add_argument("out", type=Path, help="the delivery folder: one folder per video and delivery.json")
     parser.add_argument("renders", type=Path, help="the folder of rendered <video name>.mp4 files")
     parser.add_argument("--fonts", type=Path, required=True, help="where the headline font is installed")
     parser.add_argument("--engine", default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render"))
     parser.add_argument("--only", action="append", metavar="NAME", help="deliver this video alone (repeatable)")
+    parser.add_argument("--dry-run", action="store_true", help="migrate: print the plan and write nothing")
     args = parser.parse_args(argv)
+    if args.command == "migrate":
+        try:
+            result = migrate_all(args.out, args.renders, fonts_dir=args.fonts, dry_run=args.dry_run)
+        except DeliveryError as exc:
+            raise SystemExit(f"migrate: {exc}") from None
+        for name in result.migrated:
+            print(f"migrate {name}")
+        for name, why in result.kept:
+            print(f"keep {name}: {why}")
+        counts = f"{len(result.migrated)} migrated, {len(result.kept)} kept"
+        done = f"{args.out / MANIFEST} is now version {MANIFEST_VERSION}"
+        print(f"{counts} (dry run: nothing written)" if args.dry_run else f"{counts}; {done}")
+        return 0
     if args.command == "check":
         drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
         for d in drift:

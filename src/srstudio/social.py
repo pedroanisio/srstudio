@@ -10,6 +10,10 @@ thumbnail's time (:func:`take_frame`, which refuses a time past the last frame a
 draws the headline over it at the video's own size. An episode that hides its burned-in text (hook cards, captions)
 in a ``cover`` variant of its scene (:meth:`srstudio.episode.Episode.hide_on_cover`) names that scene, and the
 backdrop is drawn from it instead (:func:`take_still`): the same frame, without the text the headline would fight.
+
+The publish gate (:func:`publish`, :func:`check_delivery`) records what each delivery was made from in
+``delivery.json``. A post's :func:`fingerprint` holds the cover's drawing (the composed document at the video's own
+size and the fixed render steps), not the source of the code that drew it (ADR 0037).
 """
 
 from __future__ import annotations
@@ -19,14 +23,17 @@ import hashlib
 import json
 import math
 import re
+import struct
 import subprocess
 import tempfile
-from collections.abc import Collection
+from collections.abc import Callable, Collection, Iterator
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from . import digest
+from . import thumbnail as drawing
 from .errors import SrstudioError
 from .thumbnail import Thumbnail, ThumbnailError, render
 
@@ -36,18 +43,27 @@ __all__ = [
     "CoverError",
     "VideoInfo",
     "probe",
+    "video_size",
     "take_frame",
     "take_still",
     "COVER_VARIANT",
     "Item",
     "Drift",
     "DeliveryError",
+    "ManifestVersionError",
+    "Migration",
     "fingerprint",
+    "render_steps",
     "read_manifest",
     "check_delivery",
     "publish",
+    "migrate_manifest",
     "MANIFEST",
     "MANIFEST_VERSION",
+    "LEGACY_VERSION",
+    "LEGACY_LAYOUT",
+    "BACKDROP_ARGS",
+    "FRAME_SLACK",
     "CAPTION_LIMIT",
     "HASHTAG_LIMIT",
     "TITLE_LIMIT",
@@ -61,6 +77,8 @@ TITLE_LIMIT = 125  # characters shown in the feed before "… more"
 FILE_NAME = "ig.txt"
 COVER_NAME = "cover.jpg"
 BLANK = 3.0  # a frame whose luma varies less than this (standard deviation, 0-255) is blank: a fade, a black cut
+FRAME_SLACK = 1e-6  # the frame on screen at t is floor(t × fps + FRAME_SLACK), so t = n / fps is frame n
+BACKDROP_ARGS = ("-fps_mode", "passthrough", "-frames:v", "1", "-q:v", "2")  # how take_frame writes its frame
 _HASHTAG = re.compile(r"^#[^\W\d_][\w]*$", re.UNICODE)
 
 
@@ -117,6 +135,75 @@ def probe(video: Path, *, ffprobe: str = "ffprobe") -> VideoInfo:
     return info
 
 
+def _boxes(read: Callable[[int, int], bytes], start: int, end: int) -> Iterator[tuple[bytes, int, int]]:
+    """Each ISO media box from ``start`` to ``end``: its type and the bounds of its payload. Raises ValueError for a
+    box that is cut short or runs past ``end``."""
+    pos = start
+    while pos < end:
+        head = read(pos, 16)
+        if len(head) < 8:
+            raise ValueError(f"the box at byte {pos} is cut short")
+        size, kind = struct.unpack(">I4s", head[:8])
+        body = pos + 8
+        if size == 1:  # a 64-bit size follows the type
+            if len(head) < 16:
+                raise ValueError(f"the box at byte {pos} is cut short")
+            size, body = struct.unpack(">Q", head[8:])[0], pos + 16
+        elif size == 0:  # the box runs to the end
+            size = end - pos
+        if size < body - pos or pos + size > end:
+            raise ValueError(f"the {kind.decode(errors='replace')!r} box at byte {pos} does not fit")
+        yield kind, body, pos + size
+        pos += size
+
+
+def _child(read: Callable[[int, int], bytes], start: int, end: int, kind: bytes) -> tuple[int, int]:
+    """The payload bounds of the first ``kind`` box from ``start`` to ``end``."""
+    for found, body, stop in _boxes(read, start, end):
+        if found == kind:
+            return body, stop
+    raise ValueError(f"it has no {kind.decode()!r} box")
+
+
+def video_size(video: Path) -> tuple[int, int]:
+    """The width and height of ``video``'s first video track, read from its MP4 index without running ffprobe: the
+    size in the track's sample entry, which is the size :func:`probe` reports for every video :meth:`deliver`
+    accepts. Raises :class:`CoverError` for a file that is not an MP4 with a sized video track."""
+    video = Path(video)
+    try:
+        with video.open("rb") as f:
+
+            def from_file(offset: int, n: int) -> bytes:
+                f.seek(offset)
+                return f.read(n)
+
+            start, stop = _child(from_file, 0, video.stat().st_size, b"moov")
+            index = from_file(start, stop - start)
+
+        def read(offset: int, n: int) -> bytes:
+            return index[offset : offset + n]
+
+        for kind, body, end in _boxes(read, 0, len(index)):
+            if kind != b"trak":
+                continue
+            mdia = _child(read, body, end, b"mdia")
+            hdlr, _ = _child(read, *mdia, b"hdlr")
+            if read(hdlr + 8, 4) != b"vide":  # after version, flags and pre_defined: the handler type
+                continue
+            stsd, stsd_end = _child(read, *_child(read, *_child(read, *mdia, b"minf"), b"stbl"), b"stsd")
+            entry = stsd + 8  # after version, flags and the entry count
+            if entry + 36 > stsd_end:
+                raise ValueError("its video sample entry is cut short")
+            # a visual sample entry: size, type, 6 reserved, data reference, 16 pre-defined, then width and height
+            width, height = struct.unpack(">HH", read(entry + 32, 4))
+            if not (width and height):
+                raise ValueError("its video sample entry has no size")
+            return width, height
+        raise ValueError("it has no video track")
+    except (OSError, ValueError, struct.error) as e:
+        raise CoverError(f"cannot read the size of {video.name}: {e}") from e
+
+
 def _spread(image: Path, ffmpeg: str) -> float:
     """The standard deviation of the luma of ``image`` shrunk to 64 px wide."""
     raw = _run([ffmpeg, "-v", "error", "-i", str(image), "-vf", "scale=64:-2,format=gray", "-f", "rawvideo", "-"],
@@ -132,7 +219,7 @@ def _frame(video: Path, at: float, ffprobe: str) -> tuple[VideoInfo, int]:
     if isinstance(at, bool) or not isinstance(at, (int, float)) or not math.isfinite(at) or at < 0:
         raise CoverError(f"frame time must be a number of seconds >= 0, got {at!r}")
     info = probe(video, ffprobe=ffprobe)
-    index = math.floor(at * info.fps + 1e-6)
+    index = math.floor(at * info.fps + FRAME_SLACK)
     if index >= info.frames:
         raise CoverError(
             f"frame time {at} s is after the last frame of {video.name} ({info.frames} frames at {info.fps:g} fps)"
@@ -149,8 +236,8 @@ def take_frame(video: Path, at: float, out: Path, *, ffmpeg: str = "ffmpeg", ffp
     out = Path(out)
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         still = Path(tmp) / out.name
-        select = [ffmpeg, "-v", "error", "-y", "-i", str(video), "-vf", f"select=eq(n\\,{index})", "-fps_mode",
-                  "passthrough", "-frames:v", "1", "-q:v", "2", str(still)]  # fmt: skip
+        select = [ffmpeg, "-v", "error", "-y", "-i", str(video), "-vf", f"select=eq(n\\,{index})", *BACKDROP_ARGS,
+                  str(still)]  # fmt: skip
         _run(select, f"cannot take frame {index} of {video}")
         if not still.exists():
             raise CoverError(f"ffmpeg wrote no frame {index} of {video}")
@@ -298,6 +385,10 @@ class InstagramPost:
                     if scene is None
                     else take_still(scene, video, at, backdrop, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe)
                 )
+                width, height = video_size(video)  # the size the gate fingerprints the cover at
+                if (width, height) != (info.width, info.height):
+                    raise CoverError(f"{Path(video).name} decodes at {info.width}x{info.height}, but its index says "
+                                     f"{width}x{height}")  # fmt: skip
                 cover = render(self.thumbnail, backdrop, folder / COVER_NAME, font=font, engine=engine,
                                width=info.width, height=info.height, ffmpeg=ffmpeg)  # fmt: skip
         except (CoverError, ThumbnailError):
@@ -309,12 +400,21 @@ class InstagramPost:
 
 # -- the publish gate: what was delivered, and whether it still matches -----------------------------------------
 MANIFEST = "delivery.json"
-MANIFEST_VERSION = "1.0.0"
+MANIFEST_VERSION = "1.1.0"  # 1.1.0: the post fingerprint holds the cover's drawing, not the layout source
+LEGACY_VERSION = "1.0.0"
+# The SHA-256 of src/srstudio/thumbnail.py as of f7c86d3^ (the file 7cdaff4 wrote, unchanged until f7c86d3). Every
+# 1.0.0 entry hashed this source as its "layout": `git show f7c86d3^:src/srstudio/thumbnail.py | sha256sum`.
+LEGACY_LAYOUT = "cee600d0102510c78586d39ac0c449c6a0a5959af04c6f97bfcd509971b86c09"
 _ENTRY_KEYS = {"render", "post", "ig", "cover"}
 
 
 class DeliveryError(SrstudioError, ValueError):
     """The delivery cannot start (a render is missing) or its manifest cannot be trusted."""
+
+
+class ManifestVersionError(DeliveryError):
+    """The manifest is of another version. A 1.0.0 one is migrated (:func:`migrate_manifest`); none is delivered
+    over."""
 
 
 @dataclass(frozen=True)
@@ -342,37 +442,65 @@ Items = dict[str, Item]  # video name -> what is delivered for it
 _sha = digest.sha256
 
 
-def fingerprint(post: InstagramPost, font: Path, scene: Path | None = None) -> str:
-    """What the delivered files are made from besides the video: the caption, the thumbnail spec, the headline font,
-    the thumbnail layout code and, when the cover is drawn from it, the scene document. Any change to one of them
-    changes this digest; a post without a scene digests as it always did."""
-    from . import thumbnail as layout_code
+def render_steps() -> dict[str, Any]:
+    """The fixed steps between a post and its cover besides the composed document: how the backdrop frame is chosen
+    and written, the scene variant it is drawn in, and how the engine and the encoder make the JPEG."""
+    return {
+        "frame": FRAME_SLACK,
+        "backdrop": list(BACKDROP_ARGS),
+        "variant": COVER_VARIANT,
+        "engine": list(drawing.ENGINE_ARGS),
+        "encoder": list(drawing.ENCODER_ARGS),
+    }
 
+
+def fingerprint(post: InstagramPost, video: Path, font: Path, scene: Path | None = None) -> str:
+    """What the delivered files are made from besides the video's frames: the caption, the thumbnail spec, the
+    headline font, the cover's drawing (the document :func:`~srstudio.thumbnail.compose` lays out at ``video``'s size,
+    with the sources :func:`~srstudio.thumbnail.render` gives it), the :func:`render_steps` and, when the cover is drawn
+    from it, the scene document. Any change to one of them changes this digest; an edit to the code that changes none
+    of them does not. Runs no engine, ffmpeg or ffprobe. Raises :class:`CoverError` for a video whose size cannot be
+    read and :class:`~srstudio.thumbnail.ThumbnailError` for a thumbnail that cannot be laid out."""
+    cover = None
+    if post.thumbnail is not None:
+        width, height = video_size(video)
+        document = drawing.compose(post.thumbnail, backdrop=drawing.BACKDROP_FILE, font=drawing.FONT_FILE,
+                                   font_bytes=Path(font).read_bytes(), width=width, height=height)  # fmt: skip
+        cover = hashlib.sha256(document.to_bytes()).hexdigest()
     data = {
         "text": post.text(),
         "thumbnail": asdict(post.thumbnail) if post.thumbnail is not None else None,
         "font": _sha(font),
-        "layout": _sha(Path(layout_code.__file__)),
+        "cover": cover,
+        "steps": render_steps(),
     }
     if scene is not None:
         data["scene"] = _sha(scene) if Path(scene).is_file() else "missing"
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def read_manifest(out: Path) -> dict[str, dict[str, str]]:
-    """The entries of ``<out>/delivery.json``; an absent manifest is empty. Raises :class:`DeliveryError` for a
-    manifest of another version, unknown fields or a malformed entry."""
-    path = Path(out) / MANIFEST
-    if not path.exists():
-        return {}
+def _legacy_fingerprint(post: InstagramPost, font: Path, scene: Path | None) -> str:
+    """The 1.0.0 post fingerprint, as delivered before ADR 0037: the layout was the hash of the layout source."""
+    data = {
+        "text": post.text(),
+        "thumbnail": asdict(post.thumbnail) if post.thumbnail is not None else None,
+        "font": _sha(font),
+        "layout": LEGACY_LAYOUT,
+    }
+    if scene is not None:
+        data["scene"] = _sha(scene) if Path(scene).is_file() else "missing"
+    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def _load(path: Path) -> tuple[Any, dict[str, dict[str, str]]]:
+    """The version and the entries of the manifest at ``path``, of any version. Raises :class:`DeliveryError` for
+    a manifest that cannot be read, unknown fields or a malformed entry."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
         raise DeliveryError(f"{path} cannot be read: {e}") from e
     if not isinstance(data, dict) or set(data) != {"version", "videos"}:
         raise DeliveryError(f"{path} must hold exactly 'version' and 'videos'")
-    if data["version"] != MANIFEST_VERSION:
-        raise DeliveryError(f"{path} is version {data['version']!r}; this srstudio reads {MANIFEST_VERSION}")
     videos = data["videos"]
     if not isinstance(videos, dict):
         raise DeliveryError(f"{path}: 'videos' must be an object")
@@ -381,15 +509,51 @@ def read_manifest(out: Path) -> dict[str, dict[str, str]]:
             raise DeliveryError(f"{path}: entry {name!r} must hold exactly {sorted(_ENTRY_KEYS)}")
         if not all(isinstance(v, str) and re.fullmatch(r"[0-9a-f]{64}", v) for v in entry.values()):
             raise DeliveryError(f"{path}: entry {name!r} holds a value that is not a SHA-256")
+    return data["version"], videos
+
+
+def read_manifest(out: Path) -> dict[str, dict[str, str]]:
+    """The entries of ``<out>/delivery.json``; an absent manifest is empty. Raises :class:`ManifestVersionError` for
+    a manifest of another version and :class:`DeliveryError` for unknown fields or a malformed entry."""
+    path = Path(out) / MANIFEST
+    if not path.exists():
+        return {}
+    version, videos = _load(path)
+    if version == LEGACY_VERSION:
+        raise ManifestVersionError(f"{path} is version {LEGACY_VERSION!r}, whose post fingerprints hash the layout "
+                                   "source; run instagram_posts.py migrate (ADR 0037)")  # fmt: skip
+    if version != MANIFEST_VERSION:
+        raise ManifestVersionError(f"{path} is version {version!r}; this srstudio reads {MANIFEST_VERSION}")
     return videos
+
+
+@contextmanager
+def _locked(out: Path) -> Iterator[None]:
+    """Hold the delivery's exclusive lock: one writer of ``delivery.json`` at a time."""
+    lock = Path(out) / (MANIFEST + ".lock")
+    with lock.open("a") as held:
+        lock.chmod(0o600)
+        fcntl.flock(held, fcntl.LOCK_EX)
+        yield
+
+
+def _write(out: Path, entries: dict[str, dict[str, str]]) -> None:
+    """Replace ``<out>/delivery.json`` (mode 600) in one step; the caller holds the lock."""
+    manifest = Path(out) / MANIFEST
+    tmp = manifest.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": dict(sorted(entries.items()))}, indent=2) + "\n",
+                   encoding="utf-8")  # fmt: skip
+    tmp.chmod(0o600)
+    tmp.replace(manifest)
 
 
 def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
     """Every way ``out`` differs from delivering ``items`` now; an empty list means the delivery is current.
 
     A video drifts when its render is missing or changed since its cover was made, its post or thumbnail (or the
-    font or the layout code) changed, its ``ig.txt`` or ``cover.jpg`` is missing or was edited, or it was never
-    delivered. A delivered folder whose video is no longer in ``items`` drifts too."""
+    font or the cover's drawing) changed, its ``ig.txt`` or ``cover.jpg`` is missing or was edited, or it was never
+    delivered. A delivered folder whose video is no longer in ``items`` drifts too. Runs no engine, ffmpeg or
+    ffprobe."""
     out = Path(out)
     try:
         delivered = read_manifest(out)
@@ -406,10 +570,15 @@ def check_delivery(items: Items, out: Path, *, font: Path) -> list[Drift]:
             continue
         if _sha(video) != entry["render"]:
             drift.append(Drift(name, "the video was re-rendered after its cover was made"))
-        if fingerprint(post, font, scene) != entry["post"]:
-            drift.append(
-                Drift(name, "the post, its thumbnail, its scene, the font or the layout changed since delivery")
-            )
+        try:
+            now = fingerprint(post, video, font, scene)
+        except (CoverError, ThumbnailError) as e:
+            drift.append(Drift(name, f"the cover cannot be drawn now: {e}"))
+        else:
+            if now != entry["post"]:
+                drift.append(
+                    Drift(name, "the post, its thumbnail, its scene, the font or the layout changed since delivery")
+                )
         for key, file in (("ig", FILE_NAME), ("cover", COVER_NAME)):
             path = out / name / file
             if not path.is_file():
@@ -451,6 +620,8 @@ def publish(
         raise DeliveryError(f"no render for: {', '.join(missing)}")
     try:
         delivered = read_manifest(out)
+    except ManifestVersionError:
+        raise  # a manifest of another version is migrated or left alone, never delivered over
     except DeliveryError:
         if only is not None:
             raise  # the entries of the videos left alone cannot be kept from a manifest that cannot be read
@@ -469,21 +640,70 @@ def publish(
             post.deliver(folder, video, font=font, engine=engine, ffmpeg=ffmpeg, ffprobe=ffprobe, scene=scene)
             folder.chmod(0o700)
             written.append(folder)
-        entries[name] = {"render": _sha(video), "post": fingerprint(post, font, scene),
+        entries[name] = {"render": _sha(video), "post": fingerprint(post, video, font, scene),
                          "ig": _sha(folder / FILE_NAME), "cover": _sha(folder / COVER_NAME)}  # fmt: skip
-    manifest = out / MANIFEST
-    lock = manifest.with_suffix(".json.lock")
-    with lock.open("a") as held:
-        lock.chmod(0o600)
-        fcntl.flock(held, fcntl.LOCK_EX)  # one writer at a time; the covers above render unlocked
+    with _locked(out):  # the covers above render unlocked
         if only is not None:  # another delivery may have written its videos since the read above: keep them
             now = read_manifest(out)
             entries = {name: now[name] for name in items if name not in chosen and name in now} | {
                 name: entries[name] for name in chosen
             }
-        tmp = manifest.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": dict(sorted(entries.items()))}, indent=2)
-                       + "\n", encoding="utf-8")  # fmt: skip
-        tmp.chmod(0o600)
-        tmp.replace(manifest)
+        _write(out, entries)
     return written
+
+
+class Migration(NamedTuple):
+    """What :func:`migrate_manifest` did, or would do: the entries rewritten, and each entry kept with why."""
+
+    migrated: list[str]
+    kept: list[tuple[str, str]]
+
+
+def _plan(items: Items, path: Path, font: Path) -> tuple[Migration, dict[str, dict[str, str]]]:
+    """The migration of the 1.0.0 manifest at ``path`` and the entries it leaves."""
+    version, videos = _load(path)
+    if version == MANIFEST_VERSION:
+        raise DeliveryError(f"{path} is already version {MANIFEST_VERSION}; there is nothing to migrate")
+    if version != LEGACY_VERSION:
+        raise ManifestVersionError(f"{path} is version {version!r}; only a {LEGACY_VERSION} manifest is migrated")
+    migrated, kept, entries = [], [], dict(videos)
+    for name, entry in sorted(videos.items()):
+        item = items.get(name)
+        if item is None:
+            kept.append((name, "no longer published"))
+            continue
+        post, video, scene = item
+        if not Path(video).is_file():
+            kept.append((name, f"no render at {video}"))
+        elif entry["post"] != _legacy_fingerprint(post, font, scene):
+            kept.append((name, f"its post is not the {LEGACY_VERSION} fingerprint of the post now: the post, its "
+                               "thumbnail, its scene or the font changed since delivery"))  # fmt: skip
+        else:
+            try:
+                now = fingerprint(post, video, font, scene)
+            except (CoverError, ThumbnailError) as e:
+                kept.append((name, f"the cover cannot be drawn now: {e}"))
+            else:
+                entries[name] = entry | {"post": now}
+                migrated.append(name)
+    return Migration(migrated, kept), entries
+
+
+def migrate_manifest(items: Items, out: Path, *, font: Path, dry_run: bool = False) -> Migration:
+    """Move ``<out>/delivery.json`` from version 1.0.0 to :data:`MANIFEST_VERSION` once, on proof (ADR 0037).
+
+    An entry's ``post`` is rewritten to :func:`fingerprint` only when it equals the 1.0.0 fingerprint of the post
+    now, recomputed with :data:`LEGACY_LAYOUT`: then the delivery was made from exactly this post, font and scene.
+    Every other entry is kept as it was, so :func:`check_delivery` still reports it. ``render``, ``ig`` and
+    ``cover`` are never changed, and nothing is drawn or delivered. The manifest is read and replaced under the
+    delivery lock, in one step. ``dry_run`` returns the same plan and writes nothing, not even the lock. Raises
+    :class:`DeliveryError` for a missing manifest, one that cannot be read or one that is not version 1.0.0."""
+    path = Path(out) / MANIFEST
+    if not path.is_file():
+        raise DeliveryError(f"{out} has no {MANIFEST} to migrate")
+    if dry_run:
+        return _plan(items, path, font)[0]
+    with _locked(out):
+        result, entries = _plan(items, path, font)
+        _write(out, entries)
+    return result
