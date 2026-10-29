@@ -82,6 +82,15 @@ def test_build_runs_a_module_by_name(isolated):
     assert (root / "built.txt").read_text() == "module __main__"
 
 
+def test_build_without_a_root_hands_the_episode_only_its_own_path(isolated):
+    """The episode then builds next to itself (episodes/_common.project_root), never into srstudio's own words."""
+    script = isolated / "episode_argv.py"
+    script.write_text("import json, sys\nopen(__file__ + '.json', 'w').write(json.dumps(sys.argv))\n")
+    sys.argv = ["srstudio", "build", "--scripts", str(isolated), str(script)]
+    assert main(sys.argv[1:]) == 0
+    assert json.loads((isolated / "episode_argv.py.json").read_text()) == [str(script)]
+
+
 def test_build_propagates_a_failing_episode(isolated):
     (isolated / "episode_broken.py").write_text("raise RuntimeError('scene check failed')\n")
     with pytest.raises(RuntimeError, match="scene check failed"):

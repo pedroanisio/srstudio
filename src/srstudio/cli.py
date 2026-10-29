@@ -232,8 +232,7 @@ def main(argv=None):
             return 2
         if episode is not None:
             script = str(episode)
-        if args.root:
-            sys.argv = [script, args.root, *args.options]
+        sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         if script.endswith(".py"):
             sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
             runpy.run_path(script, run_name="__main__")
