@@ -5,6 +5,11 @@ from __future__ import annotations
 import math
 
 from .canvas import Canvas, Keys
+from .errors import SrstudioError
+
+
+class CameraError(SrstudioError, ValueError):
+    """A camera move that cannot play: a time, scale or duration out of range, a snap too slow to be one."""
 
 
 def anchor(group, x: float, y: float, *, place: bool = False):
@@ -45,15 +50,15 @@ def crash_zoom(
     for the whoosh or sting that sells the move (:func:`srstudio.foley.whoosh`). A move slower than :data:`SNAP` is
     a push: use :func:`push_in`."""
     if not (math.isfinite(at) and at >= 0):
-        raise ValueError(f"crash zoom: at {at} must be a time >= 0")
+        raise CameraError(f"crash zoom: at {at} must be a time >= 0")
     if not (math.isfinite(scale) and scale > 0 and math.isfinite(start_scale) and start_scale > 0):
-        raise ValueError(f"crash zoom: scale {scale} and start_scale {start_scale} must be > 0")
+        raise CameraError(f"crash zoom: scale {scale} and start_scale {start_scale} must be > 0")
     if not (math.isfinite(duration) and duration > 0):
-        raise ValueError(f"crash zoom: duration {duration} must be > 0")
+        raise CameraError(f"crash zoom: duration {duration} must be > 0")
     if duration > SNAP:
-        raise ValueError(f"crash zoom: {duration} s is slower than a snap ({SNAP} s); use push_in for a push")
+        raise CameraError(f"crash zoom: {duration} s is slower than a snap ({SNAP} s); use push_in for a push")
     if back is not None and not (math.isfinite(back) and back >= at + duration):
-        raise ValueError(f"crash zoom: back {back} must come after the zoom lands at {at + duration}")
+        raise CameraError(f"crash zoom: back {back} must come after the zoom lands at {at + duration}")
     keys: list[tuple[float, float]] = [(0, start_scale), (at, start_scale), (at + duration, scale)]
     if back is not None:
         keys += [(back, scale), (back + duration, start_scale)]
@@ -84,7 +89,7 @@ def spin(cv: Canvas, group, start: float, turns: int = 2, period: float = 0.9, f
     The flat group cannot show its far side, so the turn reports when the near side changes:
     ``[(time, "back"|"front"), ...]`` at each edge-on moment. Pass it to :func:`show_facing`."""
     if turns < 1 or period <= 0 or fps <= 0:
-        raise ValueError(f"spin needs turns >= 1, period > 0 and fps > 0 (got {turns}, {period}, {fps})")
+        raise CameraError(f"spin needs turns >= 1, period > 0 and fps > 0 (got {turns}, {period}, {fps})")
     total = turns * period
     frames = math.ceil(total * fps - 1e-9)
     values: list[tuple[float, float]] = [(0, 1), (start, 1)]
