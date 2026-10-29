@@ -182,6 +182,23 @@ controls, not experimentally calibrated musculoskeletal models. It does not calc
 clinical range of motion or tissue deformation. Those quantities cannot be inferred from successful
 bone-length and contact tests.
 
+## Anatomical sides
+
+A track's side names the character's own arm in every style. Before this, each builder read `left` and
+`right` in its own drawing terms: Stick by its profile pose, so the near arm was right; Gloss, Toon and
+Cutout by screen side. Then one right-hand action reached out from the right on a front-facing character, so
+it moved the character's left arm. A flipped Stick figure also kept its far arm as left.
+`integration.Facing` now states each builder's facing. It maps an anatomical side to the builder's legacy arm
+and wraps a front-facing character's track layers in a reflection about the track origin. A flipped Gloss
+person adds a mirror about its centre line. A cross-style test drives one right-hand point track through Stick
+(flipped and unflipped), Gloss (flipped and unflipped), Toon and Cutout. It asserts the replaced arm and the
+track's shoulder and reach direction on screen.
+
+The rejected alternative kept screen-side names and documented them per builder. Motions and showcase
+examples would then need a different side for the same anatomical gesture in each style, and flipping a
+figure would silently swap the arm a track drives. No published episode uses limb tracks, so the change
+reaches only the limb examples and tests.
+
 ## Authoring observations
 
 The evaluation boundary also accepts versioned authoring records, separate from measured scene-build time.

@@ -83,7 +83,8 @@ def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: P
         width = {"stick": 0.1, "toon": 0.4, "gloss": 0.37}[style]
         motion = Motion(ArmProfile(width=width), MITTEN if style == "toon" else HUMAN, (action,))
         save_motion(motion, out / f"{style}.motion.json")
-        origin, size = {"stick": ((536, 891), 150), "toon": ((308, 712), 70), "gloss": ((92, -345), 100)}[style]
+        # Each character's right shoulder: the near arm of a Stick profile, screen-left on a front-facing figure.
+        origin, size = {"stick": ((536, 891), 150), "toon": ((62, 712), 70), "gloss": ((-92, -345), 100)}[style]
         skin = {"stick": stick.SKIN, "toon": toon_cast.DOG.coat, "gloss": gloss.SKIN["tan"]}[style]
         sleeve = {"stick": "#15151b", "toon": toon_cast.DOG.coat, "gloss": "#2fb3a6"}[style]
         track = LimbTrack(

@@ -1209,12 +1209,14 @@ def rig(
     check_look(look)
     if not (_is_number(scale) and scale > 0):
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    sides: frozenset[str] = frozenset()
     if limbs:
         from .limbs.compile import LayerTargets
-        from .limbs.integration import draw_tracks, prepare_tracks
+        from .limbs.integration import Facing, draw_tracks, prepare_tracks
 
         limbs = prepare_tracks(cv, limbs, end)
-    sides = frozenset(track.motion.arm.side for track in limbs)
+        facing = Facing(front=False, flip=flip)  # drawn in profile facing right; ``flip`` turns it to face left
+        sides = facing.slots(limbs)
     g = _group(cv, parent)
     if tuple(at) != (0, 0) or scale != 1 or flip:
         g.x, g.y, g.scaleX, g.scaleY = at[0], at[1], -scale if flip else scale, scale
@@ -1248,7 +1250,7 @@ def rig(
     _mouth(cv, lips, spans, phones, end, mood, mouth)
     if limbs:
         front = _group(cv, g)
-        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
+        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
     return g
 
 

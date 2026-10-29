@@ -114,6 +114,49 @@ def prepare_tracks(cv: Canvas, tracks: tuple[LimbTrack, ...], end: float) -> tup
     return tuple(tracks)
 
 
-def draw_tracks(cv: Canvas, layers: LayerTargets, tracks: tuple[LimbTrack, ...], *, id: str) -> tuple[Compiled, ...]:
-    """Draw validated tracks into a character's ordered layers in its own coordinate system."""
-    return tuple(track.draw(cv, layers, id=f"{id}-{track.motion.arm.side}") for track in tracks)
+_OTHER = {"left": "right", "right": "left"}
+
+
+@dataclass(frozen=True)
+class Facing:
+    """How a character shows its own sides on screen; a track's ``left`` or ``right`` is always anatomical.
+
+    Motions reach outward toward +x with the right arm. A profile character (``front=False``) faces +x, so its near
+    arm is its right. A ``front`` character faces the viewer, so its right arm is on screen-left: each of its tracks
+    is reflected about its shoulder origin. ``flip`` mirrors the character's group. A profile character then faces
+    -x and its far arm is its right. A front character's tracks are mirrored back about local x = 0, so they stay on
+    its anatomical side; a builder that flips a front character keeps its centre line there.
+    """
+
+    front: bool
+    flip: bool = False
+
+    def slot(self, side: str) -> str:
+        """The builder's own name for the arm on anatomical ``side``: front builders name arms by screen side
+        before any flip; a profile builder names its far arm left and its near arm right."""
+        return _OTHER[side] if self.front != self.flip else side
+
+    def slots(self, tracks: tuple[LimbTrack, ...]) -> frozenset[str]:
+        return frozenset(self.slot(track.motion.arm.side) for track in tracks)
+
+    def layers(self, cv: Canvas, layers: LayerTargets, track: LimbTrack) -> LayerTargets:
+        """``layers`` for one track, wrapped so its arm lands on the character's anatomical side."""
+        if not self.front:
+            return layers
+        x = track.camera.origin[0]
+        # Unflipped: reflect about the shoulder, x -> 2x0 - x. Flipped: that reflection followed by the mirror back
+        # about the centre line, x -> x - 2x0, so the flipped group draws the arm on screen-left with no reflection.
+        transform = {"x": -2 * x} if self.flip else {"x": 2 * x, "scaleX": -1}
+        return LayerTargets(
+            *(cv.group(layer, cv.uid("g"), **transform) for layer in (layers.behind, layers.body, layers.front))
+        )
+
+
+def draw_tracks(
+    cv: Canvas, layers: LayerTargets, tracks: tuple[LimbTrack, ...], *, id: str, facing: Facing
+) -> tuple[Compiled, ...]:
+    """Draw validated tracks into a character's ordered layers in its own coordinate system, each on the
+    anatomical side ``facing`` shows."""
+    return tuple(
+        track.draw(cv, facing.layers(cv, layers, track), id=f"{id}-{track.motion.arm.side}") for track in tracks
+    )

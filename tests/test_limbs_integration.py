@@ -18,7 +18,7 @@ def track():
     return LimbTrack(
         Motion(ArmProfile(width=0.05), HUMAN, (Action("facepalm", 0, 2),)),
         style="cutout",
-        camera=Camera(scale=80, origin=(67, 148)),
+        camera=Camera(scale=80, origin=(-66, 148)),  # the right shoulder, on screen-left
         options=BakeOptions(fps=2),
         occlusion=(Occlusion("palm", 0, 2, layer="front"),),
     )
@@ -37,7 +37,8 @@ def test_actors_accept_limb_tracks_without_drawing_the_replaced_legacy_arm(actor
     assert xml.find(f".//group[@id='{a.tag}-limb-right-front']") is not None
     assert xml.find(f".//group[@id='{a.tag_base}-forearm']") is None
     if actor is cast.Customer:
-        assert a.cup is None and a.phone is not None  # only the right-hand prop was replaced
+        # Only the prop in the customer's own right hand, the phone drawn on screen-left, was replaced.
+        assert a.phone is None and a.cup is not None
 
 
 def test_episode_perform_passes_typed_tracks_to_the_rig_instead_of_hiding_them_in_extras(project):

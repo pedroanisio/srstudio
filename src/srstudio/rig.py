@@ -49,10 +49,6 @@ class Performance:
         if {"arms", "forearm", "pointing", "hide_right_arm_at", "facepalm", "held_cup"} & self.extras.keys():
             raise LimbError("typed limb tracks cannot be mixed with legacy arm controls")
 
-    @property
-    def limb_sides(self) -> set[str]:
-        return {track.motion.arm.side for track in self.limbs}
-
 
 class Actor(ABC):
     """Base rig: group → body, head → eyes, blink overlay, mouths."""
@@ -103,11 +99,26 @@ class Actor(ABC):
         self.after_head(g, perf)
         if perf.limbs:
             from .limbs.compile import LayerTargets
+            from .limbs.integration import Facing, draw_tracks
 
             front = cv.group(g, f"{self.tag}-limbs-front")
-            for track in perf.limbs:
-                track.draw(cv, LayerTargets(behind, body, front), id=f"{self.tag}-limb-{track.motion.arm.side}")
+            draw_tracks(
+                cv,
+                LayerTargets(behind, body, front),
+                tuple(perf.limbs),
+                id=f"{self.tag}-limb",
+                facing=Facing(front=True),
+            )
         return g
+
+    def replaced_arms(self, perf: Performance) -> frozenset[str]:
+        """The drawn arms, named by screen side before any track, that ``perf``'s limb tracks replace. Actors face
+        the viewer, so a track's anatomical right replaces the arm on screen-left."""
+        if not perf.limbs:
+            return frozenset()
+        from .limbs.integration import Facing
+
+        return Facing(front=True).slots(tuple(perf.limbs))
 
     # -- hooks ----------------------------------------------------------------------------------
     @property

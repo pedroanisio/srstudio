@@ -121,7 +121,7 @@ def spatial_toon() -> Scene:
     placed = cv.group(cv.comp, "placement", x=130, y=-140, scaleX=0.6, scaleY=0.6)
     tracks = tuple(
         _track("toon", side, "facepalm", Vec3(-79 / 135, -48 / 135, 0), (x, 712), 100, pole=Vec3(pole, 1, 0))
-        for side, x, pole in (("right", 308, 1), ("left", 62, -1))
+        for side, x, pole in (("right", 62, 1), ("left", 308, -1))  # the dog faces the viewer: right is screen-left
     )
     toon_cast.dog(cv, placed, (Pose(0, "wide", "flat", "desk"),), 2, limbs=tracks)
     return cv.scene
@@ -136,7 +136,7 @@ def legacy_gloss() -> Scene:
 def spatial_gloss() -> Scene:
     cv = _canvas()
     tracks = tuple(
-        _track("gloss", side, "shrug", Vec3(94 / 190, -55 / 190, 0), (sign * 92, -345), 100, pole=Vec3(sign, 0.3, 0))
+        _track("gloss", side, "shrug", Vec3(94 / 190, -55 / 190, 0), (-sign * 92, -345), 100, pole=Vec3(sign, 0.3, 0))
         for side, sign in (("right", 1), ("left", -1))
     )
     gloss.nadia(cv, cv.comp, at=(320, 750), scale=0.9, end=2, limbs=tracks)

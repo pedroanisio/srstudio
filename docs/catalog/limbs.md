@@ -144,19 +144,29 @@ PYTHONPATH=src python -m pytest tests/test_limbs* --cov=src/srstudio/limbs --cov
 
 ## Existing style characters
 
-The following character builders accept `limbs=(track, ...)` directly:
+The following character builders accept `limbs=(track, ...)` directly. A track's `ArmProfile.side` names the
+character's own arm in every style, so one right-hand track drives each character's anatomical right arm:
 
-| Builder | Track camera coordinates | Replaced legacy arm |
-| --- | --- | --- |
-| `stick.rig` | Rig-pose pixel coordinates, before `at`, `scale` and `flip` | Left means far arm; right means near arm |
-| `gloss.nadia`, `gloss.gus`, `gloss.tamsin` | Person-local pixels relative to the feet | Named left or right sleeve and hand |
-| `toon_cast.figure`, `dog`, `frog`, `bear`, `rabbit` | Toon reference pixels before `fx`/`fy` | Named left or right paw and arm |
+| Builder | Track camera coordinates | Facing | A right track replaces |
+| --- | --- | --- | --- |
+| `stick.rig` | Rig-pose pixel coordinates, before `at`, `scale` and `flip` | Profile, facing screen-right; `flip` turns it to face left | The near arm; with `flip`, the far arm |
+| `gloss.nadia`, `gloss.gus`, `gloss.tamsin` | Person-local pixels relative to the feet, before `flip` | The viewer | The sleeve and hand on screen-left, flipped or not |
+| `toon_cast.figure`, `dog`, `frog`, `bear`, `rabbit` | Toon reference pixels before `fx`/`fy` | The viewer | The paw and arm on screen-left |
+| `cast.Manager`, `Candidate`, `Barista`, `Customer` via `Performance(limbs=...)` | Actor-local pixels before the actor's position and scale | The viewer | The arm, hand and held prop on screen-left |
+
+Motions reach outward toward +x with the right arm. A profile Stick figure draws a track as authored; a
+flipped one mirrors it with the rest of the figure, so it points the way the figure faces. A front-facing
+character reflects each track about its camera origin, so the right arm reaches out to screen-left. A flipped
+Gloss person mirrors its tracks back about its centre line, keeping each on its anatomical side.
+`integration.Facing` records each builder's facing and maps a side to the builder's legacy arm.
 
 Character placement, flipping, Gloss walking/falling/bouncing and Toon lean/sigh placement carry the limb
 tracks with the character. For a moving shoulder within a Stick pose sequence, author the corresponding
 motion root track; the builder does not infer a spatial torso animation from held pose drawings.
 
-Choose the track's camera origin at the desired shoulder and its scale to fit the character. Retarget arm
+Choose the track's camera origin at the shoulder of the named side, in the coordinates above before any flip:
+for a front-facing character, the right shoulder is the screen-left one. Choose its scale to fit the
+character. Retarget arm
 width, proportions and hand topology as needed. Pass an `Appearance` matching the coat, sleeve or skin.
 `examples/limbs_cast.py` supplies concrete placements for a Stick person, the Toon dog with a mitten hand,
 and Gloss Nadia using the same pointing action. It exports each retargeted motion as JSON.

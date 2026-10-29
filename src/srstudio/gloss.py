@@ -418,12 +418,14 @@ def _person(
     check_talk(talk)
     check_track(face, FACES, "face", end)
     check_track(pose, POSES, "pose", end)
+    sides: frozenset[str] = frozenset()
     if limbs:
         from .limbs.compile import LayerTargets
-        from .limbs.integration import draw_tracks, prepare_tracks
+        from .limbs.integration import Facing, draw_tracks, prepare_tracks
 
         limbs = prepare_tracks(cv, limbs, end)
-    sides = frozenset(track.motion.arm.side for track in limbs)
+        facing = Facing(front=True, flip=flip)  # faces the viewer; ``flip`` mirrors the doll
+        sides = facing.slots(limbs)
     root = _root(cv, parent, at, scale, flip, end, walk, colour)
     g = _fall(cv, root, fall, end)
     if base is None:  # the peg's round foot
@@ -454,7 +456,7 @@ def _person(
     mouths = _switch(cv, head, talk, "closed", lambda node, state: _mouth_shape(cv, node, state, 0, MOUTH_Y, MOUTH_W))
     if limbs:
         front = cv.group(g, cv.uid("g"))
-        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
+        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
     return Drawn(root, {"mouth": mouths, "face": faces, "pose": poses})
 
 

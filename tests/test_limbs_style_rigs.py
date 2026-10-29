@@ -34,8 +34,9 @@ def test_gloss_people_accept_single_side_tracks_and_keep_the_other_legacy_arm(na
     result = getattr(gloss, name)(cv, cv.comp, at=(540, 1500), end=2, limbs=(track("gloss"),))
     assert result.parts["pose"]
     paths = [n.attributes().get("path", "") for n in cv.scene.iter("shape")]
-    assert "M92 -345 Q128 -290 126 -222" not in paths
-    assert "M-92 -345 Q-128 -290 -126 -222" in paths
+    # A doll faces the viewer: its own right arm, which the track replaces, is the one drawn on screen-left.
+    assert "M-92 -345 Q-128 -290 -126 -222" not in paths
+    assert "M92 -345 Q128 -290 126 -222" in paths
     assert any(n.attributes().get("id", "").endswith("-right") for n in cv.scene.iter("group"))
     assert cv.scene.check(schema=True) == []
 

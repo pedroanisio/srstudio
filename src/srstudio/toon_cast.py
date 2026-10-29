@@ -750,12 +750,14 @@ def figure(
     showing while closed. A look with a blink period shuts its eyes for :data:`BLINK_HOLD` at :func:`blink_times`."""
     if not (isinstance(enter, int | float) and math.isfinite(enter) and 0 <= enter < duration):
         raise ToonDataError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
+    sides: frozenset[str] = frozenset()
     if limbs:
         from .limbs.compile import LayerTargets
-        from .limbs.integration import draw_tracks, prepare_tracks
+        from .limbs.integration import Facing, draw_tracks, prepare_tracks
 
         limbs = prepare_tracks(cv, limbs, duration)
-    sides = frozenset(track.motion.arm.side for track in limbs)
+        facing = Facing(front=True)  # faces the viewer and never flips
+        sides = facing.slots(limbs)
     groups = []
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
@@ -797,7 +799,7 @@ def figure(
         _draw(cv, g, over)
         if limbs:
             front = _limb_layer(cv, g, pose.arms)
-            draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
+            draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
         groups.append(g)
     return groups
 

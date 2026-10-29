@@ -99,21 +99,26 @@ def test_comparison_spatial_targets_match_the_legacy_gesture_endpoints(monkeypat
         action = track.motion.actions[0]
         sample = track.motion.sample(action.stroke_at)
         wrist = sample.arm.wrist
+        # Both characters face the viewer, so each track is drawn reflected about its origin (integration.Facing).
+        ox = track.camera.origin[0]
         if args[0] == "toon":
             pose = project_pose(sample, track.camera, width=track.motion.arm.width)
-            xs = [p[0] for part in pose.parts if part.role == "skin" for p in part.polygon]
-            assert min(xs) > 185 if args[1] == "right" else max(xs) < 185
-        endpoints.append((args[0], args[1], track.camera.project(wrist).xy))
+            xs = [2 * ox - p[0] for part in pose.parts if part.role == "skin" for p in part.polygon]
+            # The dog's own right arm stays on screen-left of its centre line.
+            assert max(xs) < 185 if args[1] == "right" else min(xs) > 185
+        x, y = track.camera.project(wrist).xy
+        endpoints.append((args[0], args[1], (2 * ox - x, y)))
         return track
 
     monkeypatch.setattr(module, "_track", capture)
     module.spatial_toon()
     module.spatial_gloss()
+    # The legacy paws and hands on screen; a character's right is the one on screen-left.
     expected = {
-        ("toon", "right"): (229, 664),
-        ("toon", "left"): (141, 664),
-        ("gloss", "right"): (186, -400),
-        ("gloss", "left"): (-186, -400),
+        ("toon", "right"): (141, 664),
+        ("toon", "left"): (229, 664),
+        ("gloss", "right"): (-186, -400),
+        ("gloss", "left"): (186, -400),
     }
     for style, side, xy in endpoints:
         assert xy == pytest.approx(expected[style, side], abs=1e-6)
