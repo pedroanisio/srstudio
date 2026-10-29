@@ -776,6 +776,18 @@ def test_a_room_is_walls_floor_light_and_furniture_gated_to_its_shots_and_signed
     assert [f for f in scene.check() if f.severity == "error"] == []
 
 
+@pytest.mark.parametrize("name", ["office", "home", "meeting_room", "break_room"])
+def test_a_location_drawn_twice_namespaces_the_second_ones_furniture(name):
+    scene, cv = canvas()
+    getattr(blob, name)(cv, cv.comp)
+    first = [e.get("id") for e in tree(scene).iter() if e.get("id")]
+    getattr(blob, name)(cv, cv.comp, id="again")
+    ids = [e.get("id") for e in tree(scene).iter() if e.get("id")]
+    assert len(ids) == len(set(ids)), sorted({i for i in ids if ids.count(i) > 1})
+    named = [i for i in ids[len(first) :] if not re.fullmatch(r"[a-z]+-\d+", i)]  # cv.uid names are unique already
+    assert named and all(i.startswith("again") for i in named), named
+
+
 def test_wall_decor_stays_below_the_captions_and_on_its_wall():
     for name, (wall, a0, a1, u0, u1) in blob.WALL_DECOR.items():
         corners = blob.wall_quad(wall, a0, a1, u0, u1)
