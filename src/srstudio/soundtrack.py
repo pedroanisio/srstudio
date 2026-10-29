@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from .errors import SrstudioError
 from .timeline import Timeline
 
 if TYPE_CHECKING:
@@ -29,6 +30,10 @@ except Exception:  # pragma: no cover
 MOUTHS = ("rest", "round", "open", "small", "smile")
 
 
+class SoundtrackError(SrstudioError, ValueError):
+    """A clip the mix cannot read, or a mouth style it cannot follow."""
+
+
 def _read_mono(path: Path) -> tuple[Any, int]:
     """A 16-bit PCM WAV as mono floats in -1..1 (a numpy array when available), and its rate."""
     with wave.open(str(path), "rb") as wav:
@@ -37,7 +42,7 @@ def _read_mono(path: Path) -> tuple[Any, int]:
         width = wav.getsampwidth()
         raw = wav.readframes(wav.getnframes())
     if width != 2:
-        raise ValueError(f"{path}: only 16-bit PCM is supported")
+        raise SoundtrackError(f"{path}: only 16-bit PCM is supported")
     if _np is not None:
         return _np.frombuffer(raw, dtype=_np.int16).astype(float).reshape(-1, channels).mean(1) / 32768, rate
     samples = array("h")
@@ -74,7 +79,7 @@ class Soundtrack:
         for path, place in clips:
             mono, clip_rate = _read_mono(Path(path))
             if clip_rate != rate:
-                raise ValueError(f"{path}: {clip_rate} Hz, but the mix runs at {rate} Hz")
+                raise SoundtrackError(f"{path}: {clip_rate} Hz, but the mix runs at {rate} Hz")
             a = round(place.clip_in * rate)
             b = len(mono) if place.clip_out is None else min(len(mono), round(place.clip_out * rate))
             gain = 10 ** (place.gain_db / 20)
@@ -138,7 +143,7 @@ def mouth_states(
 ) -> list[tuple[float, str]]:
     """One ``(time, pose)`` per frame for ``role``; ``smile`` spans force the smile."""
     if style.letters and speaking is not None:
-        raise ValueError("letters guide the mouth from the role's phrases; bare speaking spans have no text")
+        raise SoundtrackError("letters guide the mouth from the role's phrases; bare speaking spans have no text")
     spans = list(timeline.spans(role) if speaking is None else speaking)
     smile = list(smile)
     frames = math.ceil(timeline.duration * fps - 1e-9)
@@ -204,13 +209,13 @@ class PhonemeStyle:
 
     def __post_init__(self):
         if isinstance(self.rate, bool) or not isinstance(self.rate, int) or self.rate <= 0:
-            raise ValueError(
+            raise SoundtrackError(
                 f"a phoneme style's rate is a positive whole number of samples a second, got {self.rate!r}"
             )
         for name in ("lead", "min_rest"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value) or value < 0:
-                raise ValueError(f"a phoneme style's {name} is a finite number of seconds >= 0, got {value!r}")
+                raise SoundtrackError(f"a phoneme style's {name} is a finite number of seconds >= 0, got {value!r}")
 
 
 INK_MOUTH = PhonemeStyle()
