@@ -108,3 +108,20 @@ def test_comparison_spatial_targets_match_the_legacy_gesture_endpoints(monkeypat
     }
     for style, side, xy in endpoints:
         assert xy == pytest.approx(expected[style, side], abs=1e-6)
+
+
+@pytest.mark.parametrize("option", ["ratings", "authoring"])
+def test_evaluation_example_reads_collected_files_through_the_bounded_document_reader(tmp_path, option):
+    from srstudio.limbs import LimbError
+
+    path = Path(__file__).resolve().parents[1] / "examples/limbs_evaluate.py"
+    spec = importlib.util.spec_from_file_location("limbs_evaluate", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    collected = tmp_path / "collected.json"
+    collected.write_text('{"schema": "a", "schema": "b"}')
+    with pytest.raises(LimbError, match="duplicate"):
+        module.build(tmp_path / "evaluation", repeats=1, **{option: collected})
+    collected.write_text("[" * 100 + "]" * 100)
+    with pytest.raises(LimbError, match="nesting"):
+        module.build(tmp_path / "evaluation", repeats=1, **{option: collected})

@@ -106,3 +106,20 @@ def test_an_unterminated_string_of_escaped_quotes_is_scanned_once_and_rejected(t
     with pytest.raises(LimbError, match="cannot read motion document") as caught:
         load_motion(file)
     assert caught.value.code == "io"
+
+
+@pytest.mark.parametrize(
+    "original,duplicated",
+    [
+        ('"reach_policy": "strict"', '"reach_policy": "clamp", "reach_policy": "strict"'),
+        ('"schema": "srstudio.limbs/1.1.0"', '"schema": "srstudio.limbs/1.1.0", "schema": "srstudio.limbs/1.1.0"'),
+        ('"upper": 1.0', '"upper": 1.0, "upper": 1.0'),
+    ],
+)
+def test_duplicate_object_keys_are_rejected_instead_of_last_one_winning(tmp_path, original, duplicated):
+    text = json.dumps(document())
+    assert original in text
+    file = tmp_path / "motion.json"
+    file.write_text(text.replace(original, duplicated, 1))
+    with pytest.raises(LimbError, match="duplicate"):
+        load_motion(file)

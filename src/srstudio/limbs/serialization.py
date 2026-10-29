@@ -120,8 +120,17 @@ def _nesting(text: str) -> None:
             depth -= 1
 
 
+def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise LimbError(f"document repeats the object key {key[:128]!r}; duplicate keys are ambiguous")
+        result[key] = value
+    return result
+
+
 def read_document(path: str | Path, kind: str = "motion") -> object:
-    """Read one bounded UTF-8 JSON document: size and nesting are checked before parsing."""
+    """Read one bounded UTF-8 JSON document: size and nesting are checked before parsing, duplicate keys refused."""
     try:
         with Path(path).open("rb") as file:
             raw = file.read(MAX_BYTES + 1)
@@ -135,7 +144,9 @@ def read_document(path: str | Path, kind: str = "motion") -> object:
         raise LimbError(f"{kind} document is not UTF-8: {error}") from error
     _nesting(text)
     try:
-        return json.loads(text)
+        return json.loads(text, object_pairs_hook=_unique)
+    except LimbError:
+        raise
     except ValueError as error:
         raise LimbError(f"cannot read {kind} document: {error}", code="io") from error
 

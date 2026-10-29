@@ -31,6 +31,7 @@ from srstudio.limbs.evaluation import (
 )
 from srstudio.limbs.integration import LimbTrack
 from srstudio.limbs.motion import Action, Motion, Target
+from srstudio.limbs.serialization import read_document
 from srstudio.toon import Pose
 
 
@@ -176,15 +177,11 @@ def build(
     trials = plan_trials(PAIRS, seed="srstudio-limbs-review-1")
     observed = ()
     if ratings is not None:
-        if ratings.stat().st_size > 5 * 1024 * 1024:
-            raise LimbError("rating document exceeds 5 MiB", code="budget")
-        observed = parse_ratings(json.loads(ratings.read_text()))
+        observed = parse_ratings(read_document(ratings, "rating"))
     summary = summarize(trials, observed)
     authoring_records = ()
     if authoring is not None:
-        if authoring.stat().st_size > 5 * 1024 * 1024:
-            raise LimbError("authoring document exceeds 5 MiB", code="budget")
-        authoring_records = parse_authoring(json.loads(authoring.read_text()))
+        authoring_records = parse_authoring(read_document(authoring, "authoring"))
     authoring_summary = summarize_authoring(PAIRS, authoring_records)
     measurements = [measure(name, builder, repeats=repeats).to_dict() for name, builder in BUILDERS.items()]
     for trial in trials:
