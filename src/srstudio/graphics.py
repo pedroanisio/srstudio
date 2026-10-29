@@ -12,9 +12,13 @@ SLATE_INK = "#203638"
 RED = "#BE5C51"
 
 
-def _part_id(instance: str, default: str, name: str) -> str:
-    """Namespace a custom instance's children; keep the shipped default instance's public IDs."""
-    return name if instance == default else f"{instance}-{name}"
+def _part_id(instance: str, default: str, name: str, *, own: bool = False) -> str:
+    """Namespace a custom instance's children; keep the shipped default instance's public IDs.
+
+    ``own`` marks a name the caller chose (an explicit ``prefix`` or ``text_id``): it is kept as given, so the
+    caller that picked it also keeps it unique.
+    """
+    return name if own or instance == default else f"{instance}-{name}"
 
 
 @register("graphic", "episode-slate", summary="Episode number badge and title, fading in and out in the first second")
@@ -120,20 +124,31 @@ def scorecard(
 ):
     """``rows`` = (label, value, value_colour); the height follows the row count."""
     h = 89 + row_h * len(rows) + 19
+    own = prefix != "score"
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     _slide_up(cv, g, show[0], y)
     cv.rect(g, 7, 12, w, h, "#8C765C", radius=24, opacity=0.22)
     cv.rect(g, 0, 0, w, h, SLATE_INK, GOLD, 3, radius=24)
     cv.text(
-        g, _part_id(id, "final-scorecard", f"{prefix}-heading"), heading, 35, 15, w - 70, 44, heading_size, "#BFCFCA"
+        g,
+        _part_id(id, "final-scorecard", f"{prefix}-heading", own=own),
+        heading,
+        35,
+        15,
+        w - 70,
+        44,
+        heading_size,
+        "#BFCFCA",
     )
     cv.line(g, 42, 73, w - 42, 73, "#6B807B", 2)
     for i, (label, value, color) in enumerate(rows):
         yy = 89 + i * row_h
         cv.text(
             g,
-            _part_id(id, "final-scorecard", f"{prefix}-{i}-label" if prefix != "score" else f"{label.lower()}-label"),
+            _part_id(
+                id, "final-scorecard", f"{prefix}-{i}-label" if prefix != "score" else f"{label.lower()}-label", own=own
+            ),
             label,
             45,
             yy,
@@ -145,7 +160,9 @@ def scorecard(
         )
         cv.text(
             g,
-            _part_id(id, "final-scorecard", f"{prefix}-{i}-value" if prefix != "score" else f"{label.lower()}-value"),
+            _part_id(
+                id, "final-scorecard", f"{prefix}-{i}-value" if prefix != "score" else f"{label.lower()}-value", own=own
+            ),
             value,
             w - value_w - 55,
             yy,
@@ -173,18 +190,29 @@ def dashboard(
     id="multitasking-dashboard",
     prefix="dashboard",
 ):
+    own = prefix != "dashboard"
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     _slide_up(cv, g, show[0], y)
     cv.rect(g, 7, 12, w, h, "#8C765C", radius=24, opacity=0.22)
     cv.rect(g, 0, 0, w, h, SLATE_INK, GOLD, 3, radius=24)
-    cv.text(g, _part_id(id, "multitasking-dashboard", f"{prefix}-heading"), heading, 35, 15, w - 70, 45, 29, "#BFCFCA")
+    cv.text(
+        g,
+        _part_id(id, "multitasking-dashboard", f"{prefix}-heading", own=own),
+        heading,
+        35,
+        15,
+        w - 70,
+        45,
+        29,
+        "#BFCFCA",
+    )
     cv.line(g, 42, 77, w - 42, 77, "#6B807B", 2)
     for i, (label, value) in enumerate(rows):
         yy = 91 + i * 79
         cv.text(
             g,
-            _part_id(id, "multitasking-dashboard", f"{prefix}-label-{i}"),
+            _part_id(id, "multitasking-dashboard", f"{prefix}-label-{i}", own=own),
             label,
             38,
             yy,
@@ -196,7 +224,7 @@ def dashboard(
         )
         cv.text(
             g,
-            _part_id(id, "multitasking-dashboard", f"{prefix}-value-{i}"),
+            _part_id(id, "multitasking-dashboard", f"{prefix}-value-{i}", own=own),
             value,
             423,
             yy,
@@ -242,14 +270,37 @@ def password_card(
     id="cafe-password-reveal",
     prefix="wifi",
 ):
+    own = prefix != "wifi"
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     cv.pop_in(g, show[0], from_=0.93, over=1.025, rise=0.15, settle=0.28)
     cv.rect(g, 6, 9, 720, 200, "#624F3C", radius=22, opacity=0.16)
     cv.rect(g, 0, 0, 720, 200, "#FCF6E8", "#2D5753", 4, radius=22)
-    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-heading"), heading, 30, 17, 660, 42, 29, "#628074")
-    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-password"), password, 25, 65, 670, 102, 55, "#2D5753")
-    cv.text(g, _part_id(id, "cafe-password-reveal", f"{prefix}-no-spaces"), footnote, 30, 163, 660, 26, 18, "#A7794C")
+    cv.text(
+        g, _part_id(id, "cafe-password-reveal", f"{prefix}-heading", own=own), heading, 30, 17, 660, 42, 29, "#628074"
+    )
+    cv.text(
+        g,
+        _part_id(id, "cafe-password-reveal", f"{prefix}-password", own=own),
+        password,
+        25,
+        65,
+        670,
+        102,
+        55,
+        "#2D5753",
+    )
+    cv.text(
+        g,
+        _part_id(id, "cafe-password-reveal", f"{prefix}-no-spaces", own=own),
+        footnote,
+        30,
+        163,
+        660,
+        26,
+        18,
+        "#A7794C",
+    )
     return g
 
 
@@ -265,10 +316,11 @@ def location_slate(
     id="new-location-slate",
     text_id="park-transition",
 ):
+    own = text_id != "park-transition"
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     cv.rect(g, 0, 0, 460, 69, "#355C53", radius=13)
-    cv.text(g, _part_id(id, "new-location-slate", text_id), text, 14, 9, 430, 51, 25, "#F2E7C6")
+    cv.text(g, _part_id(id, "new-location-slate", text_id, own=own), text, 14, 9, 430, 51, 25, "#F2E7C6")
     return g
 
 
@@ -285,13 +337,18 @@ def connected_card(
     id="park-connected-card",
     prefix="connected",
 ):
+    own = prefix != "connected"
     g = cv.group(parent, id, x=x, y=y)
     cv.gate(g, [show])
     cv.rect(g, 5, 8, 680, 151, "#5A735E", radius=21, opacity=0.17)
     cv.rect(g, 0, 0, 680, 151, "#F7F4E4", "#426B5E", 3, radius=21)
     cv.ellipse(g, 31, 57, 21, 21, "#62976F")
-    cv.text(g, _part_id(id, "park-connected-card", f"{prefix}-heading"), heading, 61, 13, 578, 47, 29, "#426B5E")
-    cv.text(g, _part_id(id, "park-connected-card", f"{prefix}-password"), value, 52, 64, 580, 67, 42, "#263F39")
+    cv.text(
+        g, _part_id(id, "park-connected-card", f"{prefix}-heading", own=own), heading, 61, 13, 578, 47, 29, "#426B5E"
+    )
+    cv.text(
+        g, _part_id(id, "park-connected-card", f"{prefix}-password", own=own), value, 52, 64, 580, 67, 42, "#263F39"
+    )
     return g
 
 

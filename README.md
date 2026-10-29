@@ -171,8 +171,8 @@ cv.animate_text(layer, "pop")
 ## The parts
 
 Give repeated graphics distinct `id=` values. Each custom instance namespaces its text assets and layers as
-`<instance id>-<text id>`; the default instance retains the original IDs. This also applies to graphics with
-`prefix=` or `text_id=` options.
+`<instance id>-<text id>`; the default instance retains the original IDs. A part named with an explicit `prefix=`
+or `text_id=` keeps that name on any instance, so give each such instance its own prefix.
 
 `Canvas.gate` merges overlapping and touching visibility spans, independent of their input order; empty spans
 draw nothing, and reversed, negative or nonfinite spans are refused before adding animation. Named linear and
