@@ -2,7 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.10.0
+schema_version: 1.11.0
+changelog: "1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -207,12 +208,16 @@ frame. Draw each plane as its own group, far to near, so blur, light and paralla
 - A prop that rests on something gets a contact shadow and the set's light direction; a floating prop reads as a
   mistake.
 - Props stay clear of the signature marks, and a test proves it: the Collage episodes record every placed card,
-  chart and screen and assert each one clears `collage_sets.signature_box`. Give a new style the same test.
+  chart and screen and assert each one clears `collage_sets.signature_box`. Give a new style the same test. A zoom
+  keeps both marks in frame too: choose its pivot so it does, and look at the frame.
+- Lettering reads at the scale the shot shows it, or it is not lettering. Text below the engine's legibility floor
+  (`ink_meter.LEGIBLE_PX` on a 1080 frame) or cut by the frame edge reads as a rendering slip; draw it as a scrawl.
 
 **Frame for a phone held upright.**
 
 - 9:16: faces in the upper half, the caption band clean in the lower third, the cast on a floor line the style
-  fixes. `Episode.check_overlays` proves captions and cards cross no face or safe-area line; run it on every render.
+  fixes. `Episode.check_overlays` proves the overlay groups you name (cards, panels, toasts) stay inside the safe
+  area on every frame of the finished scene; faces against captions you check on the contact sheet.
 - One idea per frame. A wide shows the room and the physical gag; a medium shows who talks to whom; a close-up is
   for the realisation. Cut in on a beat, never at random (see *Camera and pauses*).
 - Leave look room on the side a character faces, and headroom that does not change between cuts of the same shot
@@ -299,21 +304,22 @@ Then act the beats with it:
 ## Characters people come back for
 
 A viewer follows for someone they expect to see again. Before a character appears in a second episode, write their
-card in the style's series bible (its ADR or README section):
+card in the style's series bible (its ADR or README section; ADR 0036 is the model):
 
-- **a desire**: what they want in every episode ("Gary wants respect");
-- **a contradiction**: what in them works against it ("he cannot stop defending his most embarrassing obsession");
-- **a predictable weakness with unpredictable consequences**: the viewer knows how the character will fail, not what
-  it will cost this time.
+- **wants**: what they want in every episode ("Gary wants respect");
+- **flaw**: what in them works against it ("he cannot stop defending his most embarrassing obsession");
+- **habit**: the predictable way they fail, with consequences the viewer cannot predict.
 
 Then:
 
-- Write the joke from the card. The weakness causes the turn; the desire sets what is at stake.
+- Write the joke from the card. The flaw or the habit causes the turn; what they want sets what is at stake. A
+  script that contradicts a card changes the card in the same commit.
 - Every episode pays off for a first-time viewer. A relationship may grow across episodes, but a callback to an
   earlier one is a bonus for regulars, never the joke.
 - Prefer a recurring pair over a new cast. One pair in three standalone situations, each showing a different side
   of their relationship, tests the strategy faster than three unrelated casts.
-- Name them in the release tags (`recurring`), so the analytics can compare their episodes with the rest.
+- Name them in the release tags (`recurring`) by the short name the bible records, so the analytics can compare
+  their episodes with the rest.
 
 ## Protect the reveal
 
@@ -431,16 +437,19 @@ it in `srstudio catalog` without this file changing.
 6. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
    every take checked by speech-to-text, never a retry driven by model output. Record by slug with
    `srstudio record <slug> <project>` (ADR 0032). A misheard line stops the run, and the operator decides. When the
-   operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`);
-   never accept one yourself. Structure the takes before the first request: a pause is part of a take's duration,
-   never a gap between takes, and shot-sequence takes start at 0 and run back to back, with every word inside its
-   take. `Timeline.load` refuses any other timeline with `TimelineError`, after the recording money is spent.
-   Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM
+   operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`).
+   Only the operator approves a hearing: never you, a reviewer, another session or a model. Structure the takes
+   before the first request: a pause is part of a take's duration, never a gap between takes, and shot-sequence
+   takes start at 0 and run back to back, with every word inside its take. `Timeline.load` refuses any other
+   timeline with `TimelineError`, after the recording money is spent. The recording re-times every beat, so time
+   the picture (a reaction, a prop's change, a group shot) from the takes' words and events, never from fixed
+   seconds. Takes cost money: reuse the cache rather than regenerating them. Music: ask for 120 BPM
    with "steady kick on every beat" (slow tempo prompts come back off-tempo and are refused). The API key comes from
    the environment; never print, copy or write it.
 7. **Build, encode and review the master.** Build with `srstudio build <slug> <project>` (ADR 0032); it validates
-   the scene against the schema, and anything but "0 findings" is a defect to fix. Encode with
-   `scene-render encode <project>/<slug>.scene.xml --strict` to `generated/renders/<slug>.mp4`: `--strict` exits 1
+   the scene against the schema, and anything but "0 findings" is a defect to fix. Encode from the workspace root
+   with `generated/bin/scene-render encode <project>/<slug>.scene.xml --out-dir generated --strict`, which writes
+   `generated/renders/<slug>.mp4` (without `--out-dir`, the path resolves inside the project). `--strict` exits 1
    on any accessibility finding (flashes, contrast) or anything not rendered as authored, and a reel that fails it
    does not ship. Then review that file, the mix as delivered, not the scene or a still from the build. You cannot
    judge comic timing by ear, so measure everything that can be measured:
@@ -459,24 +468,28 @@ it in `srstudio catalog` without this file changing.
    calls has a gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
 8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
    `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`) and its
-   `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test), then
-   from the workspace root:
+   `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test).
+   Deliver only once your branch is merged into develop, from the workspace root with the main checkout's code,
+   never from a branch or worktree: any write to `generated/renders/ig` fires the `srstudio-drive` unit, which
+   checks and uploads with the main checkout's code and releases:
 
    ```
    SRSTUDIO_ENGINE=generated/bin/scene-render .venv/bin/python srstudio/episodes/instagram_posts.py \
        deliver generated/renders/ig generated/renders --fonts generated/fonts --only <slug>
    ```
 
-   and the same command with `check` (exit 1 on drift). This publish gate compares each delivery with its render,
-   post, cover and font. Read the result from `check`'s exit code and output, never from the fields or version of
-   the `delivery.json` manifest, which the tool owns and migrates. Always deliver with `--only`, repeated for each
-   of your videos: a bare `deliver` re-delivers every drifted video, published ones included, which breaks the
-   frozen rule. Never re-deliver another video to clear its drift. Open `cover.jpg` and look: a zoom that crops a
-   card, or a frame caught mid-caption-fade, leaves a ghost.
+   Then run the same command with `check` instead of `deliver` (and no `--only`). This publish gate compares each
+   delivery with its render, post, cover drawing and font. Read the result from `check`'s output, never from the
+   fields or version of the `delivery.json` manifest. Your video must not appear in it. Drift it reports on
+   videos that are not yours is known and the operator's to rule on, so it can leave the exit code at 1: never
+   re-deliver another video to clear it, and never run `migrate` or extend `social.LEGACY_LAYOUTS` (a one-time
+   conversion and a closed set, ADR 0037). Always deliver with `--only`, repeated for each of your videos: a bare
+   `deliver` re-delivers every drifted video, published ones included, which breaks the frozen rule. Open
+   `cover.jpg` and look: a zoom that crops a card, or a frame caught mid-caption-fade, leaves a ghost.
    Credit voices as ElevenLabs premade voices and music as "composed with ElevenLabs Music"; credit a reference
    creator when the format is adapted.
-9. **Publish.** A clean delivery is picked up by the `srstudio-drive` systemd unit and copied to
-   `gdrive:srstudio/ready-to-publish` (video, `ig.txt`, `cover.jpg`, package). Leave it to the unit:
+9. **Publish.** The `srstudio-drive` unit copies every video without drift to `gdrive:srstudio/ready-to-publish`
+   (video, `ig.txt`, `cover.jpg`, package) and holds the drifted ones back. Leave it to the unit:
    `python3 episodes/publish_drive.py --dry-run` is not a read-only preview, since it stages `generated/outbox`
    (and packs `generated/vpkg`) before showing what rclone would upload.
 10. **Report.** The observation sentence and the tags of each episode, the batch variety table (below) when there
