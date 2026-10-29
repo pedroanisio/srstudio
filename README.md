@@ -128,6 +128,31 @@ ep.mouth("candidate", style=replace(OFFICE_MOUTH, letters=True))  # amplitude mo
 - `srstudio lipsync TIMELINE...` scores the shipped and the speech mouth over the takes of timelines with character
   timestamps: bilabials closed, word joins snapped shut, and pose changes a second.
 
+### Engine-native captions, transitions, effects and text animators
+
+`srstudio.native` writes the scene-render elements the library used to draw by hand
+([ADR 0021](docs/decisions/0021-engine-native-features.md); the map of adopted features is
+[docs/engine-features.json](docs/engine-features.json)). All of it is opt-in:
+
+```python
+from srstudio import native
+from srstudio.native import CaptionLook
+
+ep.native_captions()                                     # the takes' words, sung word by word, burned in
+ep.native_captions(look=CaptionLook(preset="pop", upper=True, max_chars=18), mode="both")  # + a WebVTT sidecar
+native.transition(shots, "shot-01", "shot-02", "whip-pan", duration=0.4)
+cv.apply(layer, cv.effect("lift", "drop-shadow", offsetY=8))
+cv.animate_text(layer, "pop")
+```
+
+- A caption track is centred on the safe area with its last line on the region's bottom edge. With the episode
+  font, every wrapped line is measured against the safe width, so a line too wide is refused before the render.
+  Capitals are wider: an uppercase look needs `max_chars` of about 18 at 53 px.
+- `mode="sidecar"` or `"both"` makes `scene-render encode` write `<video stem>.<track>.<language>.vtt` beside the video.
+- Cues out of order or overlapping, words outside their cue, and a transition between shots that are not
+  neighbours (or longer than either shot) raise `NativeError`. An unknown preset or type raises the SDK's
+  `SchemaValueError`.
+
 ## The parts
 
 `srstudio catalog` lists them; `srstudio catalog --json` is machine-readable.

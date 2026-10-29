@@ -1,7 +1,7 @@
 """Drawing primitives on top of ``sr_core.scene``.
 
-A :class:`Canvas` owns the scene, its ``<assets>``, ``<paints>`` and ``<composition>``,
-and hands out ids, gradients, shapes, text layers and keyframes. Every builder in the
+A :class:`Canvas` owns the scene, its ``<assets>``, ``<paints>``, ``<effects>`` and ``<composition>``,
+and hands out ids, gradients, shapes, text layers, effects, text animators and keyframes. Every builder in the
 library (cast, locations, props, graphics) only ever talks to a canvas, so a new item
 needs nothing but these few calls.
 """
@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from sr_core.scene import Scene
+
+from .native import NativeError
 
 CLEAR = "#00000000"
 Align = Literal["start", "center", "end", "justify"]
@@ -105,7 +107,7 @@ class Canvas:
         self._gradients: dict[str, str] = {}
         self._symbols: dict[str, Any] = {}
         self._symbol_root: Any = None
-        self._effects: dict[str, str] = {}
+        self._effects: dict[str, tuple[str, dict[str, Any]]] = {}
         self._effect_root: Any = None
 
     @property
@@ -172,15 +174,21 @@ class Canvas:
 
     def effect(self, name: str, type: str, **attrs) -> str:
         """A named ``<effect>`` of ``type`` (blur, drop-shadow, inner-shadow, directional-blur, vignette...);
-        returns its id for a node's ``effects``. Created once per name: a second call returns the first."""
+        returns its id for a node's ``effects`` or :meth:`apply`. Created once per name: a second call with the same
+        type and settings returns the first, other settings under the same name are refused."""
         if not name.strip():
             raise ValueError("an effect needs a name")
-        if name not in self._effects:
-            if self._effect_root is None:
-                self._effect_root = self.scene.add_effects()
-            self._effect_root.add_effect(id=name, type=type, **attrs)
-            self._effects[name] = name
-        return self._effects[name]
+        if name in self._effects:
+            if self._effects[name] != (type, attrs):
+                raise NativeError(
+                    f"effect {name!r} is already declared as {self._effects[name][0]} with other settings"
+                )
+            return name
+        if self._effect_root is None:
+            self._effect_root = self.scene.add_effects()
+        self._effect_root.add_effect(id=name, type=type, **attrs)
+        self._effects[name] = (type, attrs)
+        return name
 
     # -- shapes -------------------------------------------------------------------------
     def path(self, parent, d: str, fill: str | None = None, stroke: str | None = None, sw: float = 3, **kw):
@@ -282,6 +290,23 @@ class Canvas:
             **kw,
         )
         return parent.add_layer(id=name + "-layer", asset=name, x=x, y=y)
+
+    def animate_text(self, layer, preset: str, **kw):
+        """An engine text animator on a text ``layer`` (``pop``, ``typewriter``, ``word-by-word``, ``wave``...);
+        ``presetStart``, ``presetDuration``, ``unit``, ``order``, ``stagger``... pass through."""
+        if layer.xml_name != "layer" or layer.asset is None:
+            raise NativeError(f"a text animator needs a text layer, not <{layer.xml_name} id={layer.id!r}>")
+        return layer.add_textAnimator(preset=preset, **kw)
+
+    # -- effects --------------------------------------------------------------------------
+    def apply(self, node, *effects: str):
+        """Add declared ``effects`` to ``node`` (a layer, group, instance...), after the ones it has."""
+        missing = [e for e in effects if e not in self._effects]
+        if missing:
+            raise NativeError(f"no effect {missing[0]!r}: declare it with Canvas.effect first")
+        have = list(node.effects or [])
+        node.effects = " ".join(have + [e for e in effects if e not in have])
+        return node
 
     # -- animation ------------------------------------------------------------------------
     def keys(

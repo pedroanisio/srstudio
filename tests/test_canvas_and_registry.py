@@ -4,6 +4,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import CAFE, OFFICE, Canvas, registry
+from srstudio.native import NativeError
 from srstudio.registry import register
 
 
@@ -59,7 +60,8 @@ def test_an_effect_is_defined_once_and_named_by_its_id():
     cv = fresh()
     first = cv.effect("soft", "blur", radius=6)
     assert first == "soft" and cv.effect("soft", "blur", radius=6) == first
-    assert cv.effect("soft", "blur", radius=99) == first  # one name, one effect: a second call returns the first
+    with pytest.raises(NativeError, match="already declared"):
+        cv.effect("soft", "blur", radius=99)  # one name, one effect: other settings are refused
     cv.effect("lift", "drop-shadow", radius=10, offsetY=6, intensity=0.4)
     root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
     effects = root.findall(".//effects/effect")

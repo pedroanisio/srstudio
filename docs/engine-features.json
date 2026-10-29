@@ -1,0 +1,71 @@
+{
+  "version": "1.0.0",
+  "engine": "scene-render 0.8.0",
+  "schema_release": "sr-core.scene 1.7.2",
+  "decision": "docs/decisions/0021-engine-native-features.md",
+  "features": [
+    {
+      "feature": "caption tracks with word timing",
+      "elements": ["captions", "captionTrack", "cue", "word", "styles/textStyle", "output@burnCaptions", "output@captions"],
+      "status": "adopted",
+      "library": ["srstudio.native.caption_track", "srstudio.native.cues_from_takes", "srstudio.native.cues_from_phrases", "srstudio.native.CaptionLook", "srstudio.episode.Episode.native_captions"],
+      "verified_by": [
+        "tests/test_native.py::test_the_engine_sings_the_words_crossfades_the_shots_and_writes_the_sidecar",
+        "tests/test_native.py::test_the_engine_accepts_an_episode_with_native_captions_in_its_safe_area"
+      ],
+      "replaces": "graphics.captions, ink.caption, toon.captions, stick.captions and subtitles.chunk_words paging, for new episodes",
+      "notes": "Presets rendered and checked by pixels: karaoke. The others pass the schema; the engine's SA01 check measures the drawn caption against the safe area."
+    },
+    {
+      "feature": "transitions between shots",
+      "elements": ["sequence/transition"],
+      "status": "adopted",
+      "library": ["srstudio.native.transition"],
+      "verified_by": ["tests/test_native.py::test_the_engine_sings_the_words_crossfades_the_shots_and_writes_the_sidecar"],
+      "replaces": "hard cuts only",
+      "notes": "Rendered and checked by pixels: crossfade."
+    },
+    {
+      "feature": "effects",
+      "elements": ["effects/effect", "@effects"],
+      "status": "adopted",
+      "library": ["srstudio.canvas.Canvas.effect", "srstudio.canvas.Canvas.apply"],
+      "verified_by": [
+        "tests/test_native.py::test_an_effect_is_declared_once_and_applied_to_any_node",
+        "tests/test_native.py::test_the_engine_validates_the_native_features_inside_the_safe_area"
+      ],
+      "replaces": "shadows and blurs drawn as extra shapes",
+      "notes": "Already used by stick_car (blur, drop-shadow, inner-shadow)."
+    },
+    {
+      "feature": "text animators",
+      "elements": ["layer/textAnimator"],
+      "status": "adopted",
+      "library": ["srstudio.canvas.Canvas.animate_text"],
+      "verified_by": [
+        "tests/test_native.py::test_a_text_animator_animates_a_text_layer",
+        "tests/test_native.py::test_the_engine_validates_the_native_features_inside_the_safe_area"
+      ],
+      "replaces": "Canvas.pop_in scale keys on text cards, for new episodes",
+      "notes": "Validated by the engine; no pixel check."
+    },
+    {
+      "feature": "symbols and instances",
+      "elements": ["symbols/symbol", "instance"],
+      "status": "adopted",
+      "library": ["srstudio.canvas.Canvas.symbol", "srstudio.canvas.Canvas.instance"],
+      "verified_by": ["tests/test_symbols.py::test_instanced_office_draws_what_the_inline_office_draws"],
+      "replaces": "scenery redrawn per camera angle",
+      "notes": "An instance magnified by a camera move is sampled, not redrawn: its edges soften."
+    },
+    {
+      "feature": "2D camera moves",
+      "elements": ["camera", "shake"],
+      "status": "hand-rolled",
+      "library": ["srstudio.camera"],
+      "verified_by": [],
+      "replaces": "",
+      "notes": "The engine's camera and shake apply to 3D content; srstudio keeps its group-key moves for 2D layers."
+    }
+  ]
+}

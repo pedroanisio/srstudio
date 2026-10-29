@@ -13,7 +13,7 @@ from typing import Any, cast
 
 from sr_core.scene import AudioMix, AudioTrack, Scene
 
-from . import signature
+from . import native, signature
 from .canvas import Canvas, Palette, Signature
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
@@ -166,7 +166,9 @@ class Episode:
                 audioBitrate=spec.audio_bitrate,
             )
         )
-        output = self.scene.add_output(id="main", path=spec.output or f"renders/{spec.slug}.mp4", **output_kw)
+        self.output = output = self.scene.add_output(
+            id="main", path=spec.output or f"renders/{spec.slug}.mp4", **output_kw
+        )
         if spec.poster:
             output.add_poster(**spec.poster)
         self.cv = Canvas(
@@ -286,6 +288,37 @@ class Episode:
         specs = list(specs) if specs is not None else self.default_captions()
         self.caption_specs.extend(specs)
         return _captions(self.cv, specs, **style)
+
+    def native_captions(
+        self,
+        cues: Sequence[native.Cue] | None = None,
+        *,
+        look: native.CaptionLook = native.CAPTION_LOOK,
+        mode: native.Mode = "burn",
+        id: str = "captions",
+    ):
+        """The engine's own caption track (:func:`srstudio.native.caption_track`): ``cues`` default to the words
+        of the spoken takes, else one per phrase; placed in the spec's safe area, every wrapped line measured with
+        the episode font, burned into the main output (``mode="sidecar"`` writes a WebVTT beside it instead)."""
+        if cues is None:
+            cues = native.cues_from_takes(self.takes) if self.takes else native.cues_from_phrases(self.phrases)
+        font = self.root / self.spec.font if self.spec.font else None
+        track = native.caption_track(
+            self.scene,
+            cues,
+            font_asset=self.cv.font_asset,
+            safe_area=self.spec.safe_area,
+            width=self.spec.width,
+            height=self.spec.height,
+            look=look,
+            output=self.output,
+            mode=mode,
+            id=id,
+            language=self.spec.language,
+            font_data=font.read_bytes() if font is not None else None,
+        )
+        self.caption_specs.extend((c.start, c.end, c.text, f"{id}-{i + 1}") for i, c in enumerate(cues))
+        return track
 
     def default_captions(self, lead: float = 0.06, name="dialogue-{n}"):
         out = []
