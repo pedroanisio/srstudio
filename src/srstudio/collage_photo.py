@@ -27,15 +27,17 @@ __all__ = ["PhotoError", "SOFA_TOP", "PHOTO_CROP", "flash", "print_photo", "sofa
 
 MAX_SECONDS = 10  # the self-timer's longest countdown
 SOFA_TOP = 1690.0  # the sofa's seat front: what is below it is hidden
-PHOTO_CROP = (0.0, 700.0, 1080.0, 1080.0)  # x, y, w, h of the frame the print shows: the group, below the captions
 PHOTO_BLUR = 9.0  # the blur radius of a subject who moved
 BORDER, CHIN = 0.045, 0.16  # the print's paper border and its deeper bottom margin, as fractions of its width
 SCREEN = "#20242c"
 BOOKS = ((-150, -64, 300, 64, "#bc4749"), (-130, -120, 262, 56, "#386641"), (-142, -168, 280, 48, "#f2e8cf"))
 PHONE_W, PHONE_H = 150.0, 262.0
 COUNT_AT, COUNT_R = (540.0, 660.0), 92.0  # the viewfinder's countdown disc: below the caption pill, above the heads
-CORNERS = (60.0, 580.0, 1020.0, 1860.0)  # the viewfinder's frame lines: x0, y0, x1, y1
+# the viewfinder's frame lines, x0, y0, x1, y1: below the living room's cactus shelf, around the seated group
+CORNERS = (60.0, 790.0, 1020.0, 1780.0)
 BRACKET = 90.0
+# x, y, w, h of the frame the print shows: the one the viewfinder showed
+PHOTO_CROP = (CORNERS[0], CORNERS[1], CORNERS[2] - CORNERS[0], CORNERS[3] - CORNERS[1])
 
 
 class PhotoError(SrstudioError, ValueError):

@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import COLLAGE, Canvas, collage, collage_photo, registry
+from srstudio import COLLAGE, Canvas, collage, collage_photo, collage_sets, registry
 from srstudio.canvas import Signature
 from srstudio.collage_group import Place
 from srstudio.collage_photo import PhotoError
@@ -57,6 +57,15 @@ def test_the_phone_and_its_viewfinder_count_down_one_second_a_digit(draw):
     assert [(0.0, 1.0), (3.0, 0.0)] in fades  # the full count waits on the screen until its first second is up
     for i in range(1, 5):
         assert [(0.0, 0.0), (2.0 + i, 1.0), (3.0 + i, 0.0)] in fades  # then each digit for its second, in turn
+
+
+def test_the_viewfinder_frames_what_the_print_shows_clear_of_the_living_room_signature():
+    x0, y0, x1, y1 = collage_photo.CORNERS
+    assert collage_photo.PHOTO_CROP == (x0, y0, x1 - x0, y1 - y0)  # the print is the frame the viewfinder showed
+    sx0, sy0, sx1, sy1 = collage_sets.signature_box("living-room")
+    m = collage_photo.BRACKET / 4
+    assert y0 >= sy1 + m or x0 + collage_photo.BRACKET <= sx0 - m  # the top-left bracket clears the cactus shelf
+    assert y0 > collage.CAPTION_TOP and collage_photo.COUNT_AT[1] + collage_photo.COUNT_R <= y0  # pill, disc, frame
 
 
 def test_the_flash_whites_out_holds_and_fades():
