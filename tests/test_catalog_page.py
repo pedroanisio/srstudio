@@ -399,6 +399,37 @@ def test_a_gallery_needs_stills(tree, tmp_path):
         cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[])
 
 
+HALF_WRITER = """#!/bin/sh
+# writes part of its output (the file after -o, else the last argument), then fails like a killed encode
+out=""; prev=""; last=""
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; last="$a"; done
+[ -z "$out" ] && out="$last"
+printf partial > "$out"
+exit 1
+"""
+
+
+@pytest.mark.parametrize("make", ["web_video", "still", "pose_sheet"])
+def test_a_failed_encode_leaves_nothing_a_later_run_would_take_as_cached(tmp_path, monkeypatch, make):
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    for name in ("ffmpeg", "engine"):
+        (tools / name).write_text(HALF_WRITER)
+        (tools / name).chmod(0o700)
+    monkeypatch.setenv("PATH", f"{tools}{os.pathsep}{os.environ['PATH']}")
+    render, cache = tmp_path / "ep.mp4", tmp_path / "cache"
+    render.write_bytes(b"not a video")
+    call = {
+        "web_video": lambda: cp.web_video(render, cache),
+        "still": lambda: cp.still(render, cp.Shot("ep", 1.0), cache),
+        "pose_sheet": lambda: cp.pose_sheet(tools / "engine", cache),
+    }[make]
+    for _ in range(2):
+        with pytest.raises(cp.CatalogError, match="failed"):
+            call()
+    assert [p for p in cache.rglob("*") if p.is_file() and not p.name.endswith(".scene.xml")] == []
+
+
 def test_a_still_is_cut_from_the_render_once(tmp_path):
     if not shutil.which("ffmpeg"):
         pytest.skip("needs ffmpeg")
