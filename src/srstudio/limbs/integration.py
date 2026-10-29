@@ -140,8 +140,11 @@ class Facing:
         return frozenset(self.slot(track.motion.arm.side) for track in tracks)
 
     def layers(self, cv: Canvas, layers: LayerTargets, track: LimbTrack) -> LayerTargets:
-        """``layers`` for one track, wrapped so its arm lands on the character's anatomical side."""
+        """``layers`` for one track, wrapped so its arm lands on the character's anatomical side. A profile
+        character's far arm draws its body layer behind the torso, like the legacy far arm it replaces."""
         if not self.front:
+            if self.slot(track.motion.arm.side) == "left":
+                return LayerTargets(layers.behind, layers.behind, layers.front)
             return layers
         x = track.camera.origin[0]
         # Unflipped: reflect about the shoulder, x -> 2x0 - x. Flipped: that reflection followed by the mirror back

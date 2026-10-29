@@ -157,8 +157,9 @@ character's own arm in every style, so one right-hand track drives each characte
 Motions reach outward toward +x with the right arm. A profile Stick figure draws a track as authored; a
 flipped one mirrors it with the rest of the figure, so it points the way the figure faces. A front-facing
 character reflects each track about its camera origin, so the right arm reaches out to screen-left. A flipped
-Gloss person mirrors its tracks back about its centre line, keeping each on its anatomical side.
-`integration.Facing` records each builder's facing and maps a side to the builder's legacy arm.
+Gloss person mirrors its tracks back about its centre line, keeping each on its anatomical side. A Stick
+far-arm track draws behind the torso, like the legacy far arm; an `Occlusion(..., layer="front")` still brings a
+part forward. `integration.Facing` records each builder's facing and maps a side to the builder's legacy arm.
 
 Character placement, flipping, Gloss walking/falling/bouncing and Toon lean/sigh placement carry the limb
 tracks with the character. For a moving shoulder within a Stick pose sequence, author the corresponding

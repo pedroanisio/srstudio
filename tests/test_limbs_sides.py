@@ -141,3 +141,21 @@ def test_a_right_track_is_drawn_from_the_right_shoulder_outward(style, flip):
     else:
         assert shoulder[0] < centre, "the track starts at the screen-left shoulder"
         assert reach < 0, "the right arm points outward, to screen-left"
+
+
+@pytest.mark.parametrize("flip", [False, True])
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_a_stick_far_arm_track_is_drawn_behind_the_torso_and_a_near_one_over_it(side, flip):
+    root, _ = build("stick", flip, side)
+    order = {e: i for i, e in enumerate(root.iter())}
+    neck, hip = stick.STANDING["stand"].neck, stick.STANDING["stand"].hip
+    (torso,) = [e for e in order if e.get("path") == f"M {neck[0]} {neck[1]} L {hip[0]} {hip[1]}"]
+    (limb,) = _track_roots(root)
+    shapes = [order[e] for e in limb.iter("shape")]
+    assert shapes
+    # Like the legacy far arm, drawn before the torso; the near arm after it. The far arm is the left one facing
+    # right, the right one when flipped to face left.
+    if (side == "left") != flip:
+        assert max(shapes) < order[torso]
+    else:
+        assert min(shapes) > order[torso]
