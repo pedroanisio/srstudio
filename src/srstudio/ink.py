@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -425,6 +425,7 @@ def hand(cv: Canvas, parent, x, y, scale=1, *, action: str = "reach", at: float 
     """The finger tip is the group's origin, so place it on the button; ``at`` is when the action lands."""
     if action not in HAND_ACTIONS:
         raise InkError(f"action must be one of {HAND_ACTIONS}, got {action!r}")
+    checks.positive(at, InkError, f"the hand's {action} lands at a time over 0 s, got {at!r}")
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M 64 96 Q 170 150 330 220 L 372 330 Q 200 250 86 170 Z", cv.white, sw=2.6)  # forearm, to the edge
     path(cv, g, "M 22 52 Q 66 36 100 72 Q 122 110 96 150 Q 60 176 30 150 Q 4 118 22 52 Z", cv.white, sw=2.5)  # fist
