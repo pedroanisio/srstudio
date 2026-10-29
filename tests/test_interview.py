@@ -10,10 +10,12 @@ import pytest
 
 from fakes import ffmpeg_required
 from srstudio import interview as I
+from srstudio.errors import MissingKeyError
 from srstudio.generated import PLACEHOLDER, Resolved, ResolveError, sha256_of
 from srstudio.provider import parse_voice
 from srstudio.song import Singer
-from srstudio.voice import parse_transcript
+from srstudio.timeline import Phrase
+from srstudio.voice import ElevenLabsClient, parse_transcript
 from test_song import engine, fake_env, tone  # noqa: F401  (fake_env is a fixture)
 
 WILL = Singer("bIHbv24MWmeRgasZH58o", "Will", {"stability": 0.4, "similarity_boost": 0.75, "style": 0.2})
@@ -134,6 +136,53 @@ def test_the_hearing_check_accepts_a_line_s_own_approval_and_nothing_else(tmp_pa
 
 
 # -- placement --------------------------------------------------------------------------------------------------
+
+
+def heard_take(root: Path, line: int, words: list[tuple[str, float, float]]) -> None:
+    """``line``'s pinned take and the transcript ``hear`` cached for it, as a build leaves them."""
+    take = root / "assets" / "generated" / f"line-{line}.wav"
+    take.parent.mkdir(parents=True)
+    take.write_bytes(f"take {line}".encode())
+    said = [{"text": w, "start": a, "end": b, "type": "word"} for w, a, b in words]
+    body = {"language_code": "en", "language_probability": 1.0, "text": " ".join(w for w, *_ in words), "words": said}
+    ElevenLabsClient(root / "assets" / "elevenlabs", key="k", multipart_transport=lambda *a: (body, "r")).transcribe(
+        take
+    )
+
+
+SAID = Phrase(index=0, role="manager", text="Has this always been here?", caption="", start=0.8, end=1.84,
+              trim_seconds=0.05)  # fmt: skip
+
+
+def test_a_word_is_placed_on_the_episode_clock_from_the_cached_hearing_without_a_key(tmp_path):
+    heard_take(tmp_path, 1, [("Has", 0.1, 0.2), ("this", 0.24, 0.36), ("always", 0.44, 0.66), ("this.", 0.9, 1.0)])
+    assert I.said(tmp_path, SAID, "this") == pytest.approx(0.8 + 0.24 - 0.05)
+    assert I.said(tmp_path, SAID, "This", which=1) == pytest.approx(0.8 + 0.9 - 0.05)  # its reading, not its spelling
+
+
+@pytest.mark.parametrize(
+    "word, which, match",
+    [
+        ("chair", 0, "not heard"),
+        ("this", 2, "not heard"),
+        ("this", -1, "which"),
+        ("", 0, "word"),
+        ("always", 0, "outside"),
+    ],
+)
+def test_a_word_the_take_does_not_say_or_says_outside_its_phrase_is_refused(tmp_path, word, which, match):
+    heard_take(tmp_path, 1, [("this", 0.24, 0.36), ("this", 0.5, 0.6), ("always", 1.5, 1.7)])  # past the phrase's end
+    with pytest.raises(I.InterviewError, match=match):
+        I.said(tmp_path, SAID, word, which=which)
+
+
+def test_a_take_never_heard_is_refused_without_a_request(tmp_path):
+    (tmp_path / "assets" / "generated").mkdir(parents=True)
+    (tmp_path / "assets" / "generated" / "line-1.wav").write_bytes(b"never heard")
+    with pytest.raises(MissingKeyError):
+        I.said(tmp_path, SAID, "this")
+
+
 def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):
     iv = make()
     placed = I.place(iv, pins_for(tmp_path, iv, [1.0, 0.8]), back_to_back)

@@ -7,7 +7,8 @@ All LLM output must be treated as untrusted and validated explicitly.
 An :class:`Interview` is checked when it is made (voices, roles, speeds, effect bounds), before anything is
 requested. Each line and effect is a ``<generated>`` item for the ``srstudio-elevenlabs`` provider
 (:func:`declarations`), resolved and pinned by the engine; the provider parses and verifies every response.
-Speech-to-text must then hear every line as written (:func:`hear`), or the build stops. The episode's
+Speech-to-text must then hear every line as written (:func:`hear`), or the build stops; :func:`said` reads that
+cached hearing back, so the picture keys on the words of the take. The episode's
 schedule places the lines and effects from the trimmed clip lengths (:func:`place`): a line that runs into
 the next, a missing or unknown effect, or anything past the end card stops the build instead of being
 mixed. :func:`build` runs the steps, writes the room tone, the caption font and ``dialogue.json``;
@@ -49,7 +50,8 @@ from .layout import LayoutError, find_engine
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
 from .sample import SYSTEM_FONTS
 from .song import MAX_GAIN, Singer, SongError
-from .voice import MODEL, STT_MODEL, ElevenLabsClient, Transcript, TranscriptMismatch, check_transcript
+from .timeline import Phrase
+from .voice import MODEL, STT_MODEL, ElevenLabsClient, Transcript, TranscriptMismatch, check_transcript, normalize_words
 
 RATE = 48000
 FPS = 30
@@ -213,6 +215,33 @@ def hear(
         except TranscriptMismatch as exc:
             failures.append(str(exc))
     return {"recognizer": f"ElevenLabs {STT_MODEL}", "lines": heard, "passed": not failures}, failures
+
+
+def said(root: Path, phrase: Phrase, word: str, which: int = 0) -> float:
+    """When ``phrase``'s take says ``word`` (its ``which``-th time, counted from 0), on the episode clock.
+
+    The time is the recogniser's word start from the transcript :func:`hear` cached for the pinned take under
+    ``root``, less the take's trim; reading it needs no key and makes no request (an uncached take raises
+    :class:`~srstudio.errors.MissingKeyError`). Words compare by their reading (:func:`normalize_words`). A word
+    the take does not say that often, or one heard outside the phrase's span, raises :class:`InterviewError`."""
+    wanted = normalize_words(word)
+    if not wanted:
+        raise InterviewError(f"line {phrase.index + 1}: no word to find in {word!r}")
+    if isinstance(which, bool) or not isinstance(which, int) or which < 0:
+        raise InterviewError(f"line {phrase.index + 1}: which counts from 0, got {which!r}")
+    assets = Path(root) / "assets"
+    transcript = ElevenLabsClient(assets / "elevenlabs", key="").transcribe(
+        assets / "generated" / f"line-{phrase.index + 1}.wav"
+    )
+    starts = [w.start for w in transcript.words if w.type == "word" and normalize_words(w.text) == wanted]
+    if len(starts) <= which:
+        raise InterviewError(
+            f"line {phrase.index + 1}: {word!r} is not heard {which + 1} time(s) in {transcript.text!r}"
+        )
+    at = phrase.start + starts[which] - phrase.trim_seconds
+    if not phrase.start <= at <= phrase.end:
+        raise InterviewError(f"line {phrase.index + 1}: {word!r} is heard at {at:.3f} s, outside {phrase.span}")
+    return at
 
 
 @dataclass(frozen=True)
