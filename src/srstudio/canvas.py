@@ -320,7 +320,7 @@ class Canvas:
         return parent.add_instance(id=id, symbol=symbol, **kw)
 
     # -- text ---------------------------------------------------------------------------
-    def require_font(self, what: str, error: type[Exception] = ValueError) -> str:
+    def require_font(self, what: str, error: type[Exception] = CanvasError) -> str:
         """The caption font asset; a silent canvas (no font) raises ``error`` saying ``what`` needs it."""
         if self.font_asset is None:
             raise error(f"this canvas has no caption font; {what}")
