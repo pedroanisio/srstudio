@@ -119,6 +119,16 @@ def test_load_refuses_a_folder_it_cannot_trust(tmp_path, files, match):
         releases.load(folder(tmp_path, files))
 
 
+def test_a_package_that_fails_to_import_is_refused_every_time_until_it_is_fixed(tmp_path):
+    root = folder(tmp_path, {"one.py": release_file("one")})
+    (root / "__init__.py").write_text("raise RuntimeError('broken shared constants')\n")
+    for _ in range(2):  # not half-imported on the second try, where it would silently hold no release
+        with pytest.raises(ReleaseError, match="__init__.py cannot be imported: broken shared constants"):
+            releases.load(root)
+    (root / "__init__.py").write_text("")
+    assert list(releases.load(root)) == ["one"]
+
+
 def test_load_twice_gives_the_same_releases(tmp_path):
     root = folder(tmp_path, {"one.py": release_file("one")})
     assert releases.load(root) == releases.load(root)

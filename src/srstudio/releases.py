@@ -154,8 +154,12 @@ def _package(folder: Path) -> str:
         if spec is None or spec.loader is None:  # pragma: no cover - a file location always yields a spec
             raise ReleaseError(f"cannot import {folder}")
         package = importlib.util.module_from_spec(spec)
-        sys.modules[name] = package
-        spec.loader.exec_module(package)
+        sys.modules[name] = package  # before it runs, as the import system does, so its relative imports resolve
+        try:
+            spec.loader.exec_module(package)
+        except Exception as exc:
+            del sys.modules[name]  # a half-imported package would load as one holding no release
+            raise ReleaseError(f"{init} cannot be imported: {exc}") from exc
     return name
 
 
