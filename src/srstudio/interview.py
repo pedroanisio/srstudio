@@ -68,6 +68,7 @@ class Spoken:
     text: str  # what is spoken, and what speech-to-text must hear
     caption: str
     speed: float = 1.0
+    seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
 
 
 @dataclass(frozen=True)
@@ -128,6 +129,10 @@ class Interview:
                 raise InterviewError(f"line {i}: no voice for role {line.role!r}")
             if not line.text.strip():
                 raise InterviewError(f"line {i}: no text to speak")
+            if line.seed is not None and (
+                isinstance(line.seed, bool) or not isinstance(line.seed, int) or not 0 <= line.seed < 2**32
+            ):
+                raise InterviewError(f"line {i}: seed must be an integer in 0..2**32-1, got {line.seed!r}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -158,7 +163,7 @@ def declarations(iv: Interview) -> tuple[list[Generated], list[Generated]]:
             prompt=line.text,
             voice=format_voice(iv.voices[line.role].id, iv.voices[line.role].voice_settings(line.speed)),
             language="en",
-            seed=iv.seed,
+            seed=iv.seed if line.seed is None else line.seed,
             cache=f"assets/generated/line-{i + 1}.wav",
             license="ElevenLabs output; premade voice " + iv.voices[line.role].name,
         )

@@ -87,6 +87,21 @@ def test_declarations_name_every_line_and_effect_and_pin_the_voice():
     assert lines[0].license.endswith("Eric")
 
 
+def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
+    """A re-take changes one line's request: its own seed; every other line keeps the interview's."""
+    retake = make(
+        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", seed=7)]
+    )
+    before, after = I.declarations(make())[0], I.declarations(retake)[0]
+    assert [g.seed for g in after] == [11, 7] and before[0] == after[0] and before[1].seed == 11
+
+
+@pytest.mark.parametrize("seed", [-1, True, 1.5, 2**32])
+def test_a_line_seed_is_a_whole_number_the_provider_accepts(seed):
+    with pytest.raises(I.InterviewError, match="line 1: seed"):
+        make(lines=[I.Spoken("manager", "Why here?", "Why here?", seed=seed)], voices={"manager": ERIC})
+
+
 # -- placement --------------------------------------------------------------------------------------------------
 def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):
     iv = make()
