@@ -851,6 +851,28 @@ def test_a_trait_second_or_span_is_a_number_inside_the_shot(who, traits, match):
         gloss.check_traits(who, traits, 4.0)
 
 
+@pytest.mark.parametrize(
+    ("who", "traits", "match"),
+    [
+        ("nadia", {"peel": [2.0, 1.0]}, "peel at 1.0 must come after the peel at 2.0 has snapped back"),
+        ("nadia", {"peel": [1.0, 1.2]}, "peel at 1.2 must come after the peel at 1.0 has snapped back"),
+        ("tamsin", {"bounce": [(2.0, 3.0), (0.5, 1.0)]}, "bounce spans must come in time order"),
+        ("tamsin", {"bounce": [(0.5, 2.0), (1.0, 3.0)]}, "bounce spans must come in time order"),
+        ("sunny", {"scan": [(1.0, 3.0), (2.0, 3.5)]}, "scan spans must come in time order"),
+    ],
+)
+def test_peels_and_spans_out_of_order_or_overlapping_are_refused_before_their_keys_interleave(who, traits, match):
+    with pytest.raises(GlossError, match=match):
+        gloss.check_traits(who, traits, 4.0)
+    with pytest.raises(GlossError, match=match):
+        getattr(gloss, who)(Canvas(Scene(version="auto")), None, at=(0, 0), end=4.0, **traits)
+
+
+def test_peels_snapped_back_and_spans_in_order_are_accepted():
+    gloss.check_traits("nadia", {"peel": [1.0, 1.46, 3.0]}, 4.0)
+    gloss.check_traits("tamsin", {"bounce": [(0.5, 1.0), (1.0, 2.0)]}, 4.0)  # touching spans are in order
+
+
 def test_a_face_track_with_a_bool_second_is_refused():
     with pytest.raises(GlossError, match="must be finite, >= 0 and rise after"):
         gloss.check_track([(True, "flat")], gloss.FACES, "face", D)

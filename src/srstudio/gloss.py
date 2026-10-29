@@ -150,8 +150,25 @@ def _check_second(t: float | None, end: float, what: str) -> None:
 
 def _check_spans(spans: Sequence[tuple[float, float]], end: float, what: str) -> None:
     checks.spans(
-        spans, GlossError, lambda s: f"{what} span {s[0]}..{s[1]} must rise inside the shot (0..{end})", within=end
+        spans,
+        GlossError,
+        lambda s: f"{what} span {s[0]}..{s[1]} must rise inside the shot (0..{end})",
+        within=end,
+        ordered=lambda s: f"{what} spans must come in time order without overlapping: {s[0]}..{s[1]} is early",
     )
+
+
+PEEL = 0.46  # seconds from a peel's start until the sticker has snapped back
+
+
+def _check_peels(peel: Sequence[float], end: float, what: str) -> None:
+    """Each peel falls inside the shot and starts after the one before has snapped back, so their keys never
+    interleave."""
+    for t in peel:
+        _check_second(t, end - 0.5, what)
+    for a, b in zip(peel, peel[1:], strict=False):
+        if b < a + PEEL:
+            raise GlossError(f"{what} at {b} must come after the peel at {a} has snapped back ({PEEL} s)")
 
 
 def check_traits(who: str, options: Mapping[str, Any], end: float) -> None:
@@ -166,8 +183,7 @@ def check_traits(who: str, options: Mapping[str, Any], end: float) -> None:
         if name in ("fall", "unwound"):
             _check_second(value, end, f"{who}'s {name}")
         elif name == "peel":
-            for t in value:
-                _check_second(t, end - 0.5, f"{who}'s peel")
+            _check_peels(value, end, f"{who}'s peel")
         elif name in ("bounce", "scan"):
             _check_spans(value, end, f"{who}'s {name}")
         elif not isinstance(value, bool):
@@ -537,8 +553,7 @@ def nadia(
     peel: Sequence[float] = (),
 ) -> Drawn:
     """Nadia, feet at ``at``; her sticker lifts and snaps back at each second of ``peel``."""
-    for t in peel:
-        _check_second(t, end - 0.5, "a peel")
+    _check_peels(peel, end, "a peel")
     hair_c = "#1d1726"
 
     def hair(h, layer: str) -> None:
@@ -566,7 +581,7 @@ def nadia(
         if peel:
             keys: list[tuple[float, float]] = [(0, 0)]
             for t in peel:
-                keys += [(t, 0), (round(t + 0.25, 4), -38), (round(t + 0.4, 4), -38), (round(t + 0.46, 4), 0)]
+                keys += [(t, 0), (round(t + 0.25, 4), -38), (round(t + 0.4, 4), -38), (round(t + PEEL, 4), 0)]
             cv.keys(s, "rotation", keys, hold=False)
 
     def glasses(h) -> None:
