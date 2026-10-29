@@ -177,14 +177,15 @@
     },
     {
       "id": "evaluation",
-      "requirement": "Measured legacy/spatial engineering costs, blinded clips and validated descriptive ratings",
+      "requirement": "Measured legacy/spatial engineering costs, observed authoring effort, blinded clips and validated descriptive ratings",
       "implementation": [
         "src/srstudio/limbs/evaluation.py",
         "examples/limbs_evaluate.py"
       ],
       "verification": [
         "tests/test_limbs_evaluation.py",
-        "tests/test_limbs_evaluation_example.py"
+        "tests/test_limbs_evaluation_example.py",
+        "tests/test_limbs_authoring_evaluation.py"
       ]
     }
   ],

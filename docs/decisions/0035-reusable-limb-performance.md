@@ -173,3 +173,12 @@ stylized kinematic authoring with configurable hinge axes and joint limits. Its 
 controls, not experimentally calibrated musculoskeletal models. It does not calculate muscle forces,
 clinical range of motion or tissue deformation. Those quantities cannot be inferred from successful
 bone-length and contact tests.
+
+## Authoring observations
+
+The evaluation boundary also accepts versioned authoring records, separate from measured scene-build time.
+It validates task/implementation references and rejects duplicate author/task/implementation observations.
+Failed attempts remain visible in completion counts and are excluded from completed-work timing statistics.
+Paired differences require both implementations to be completed by the same author on the same task.
+Without actual observations the report remains empty; build timings and entry-function line counts cannot
+supply missing human measurements. The example report advances to `1.1.0` for its structured authoring summary.

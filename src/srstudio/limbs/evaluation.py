@@ -1,4 +1,4 @@
-"""Observed scene cost and blinded review records; absent ratings never become preference evidence."""
+"""Observed build costs, human authoring attempts and blinded reviews with explicit missing evidence."""
 
 from __future__ import annotations
 
@@ -247,4 +247,91 @@ def summarize(trials: tuple[Trial, ...], ratings: tuple[Rating, ...], *, minimum
         "trial_reviewers": {name: len(group) for name, group in counts.items()},
         "results": results if ratings else None,
         "provenance": "caller-supplied ratings; identities not verified",
+    }
+
+
+@dataclass(frozen=True)
+class AuthoringRecord:
+    """One observed attempt by an author using one implementation for one task."""
+
+    case: str
+    author: str
+    implementation: str
+    seconds: float
+    completed: bool
+    notes: str = ""
+
+    def __post_init__(self) -> None:
+        for field in ("case", "author", "implementation"):
+            label(getattr(self, field), "authoring " + field)
+        if not 0 < number(self.seconds, "authoring seconds") <= 86400:
+            raise LimbError("authoring seconds must be positive and at most 86400")
+        if type(self.completed) is not bool:
+            raise LimbError("authoring completion must be boolean")
+        if not isinstance(self.notes, str) or len(self.notes) > 2000:
+            raise LimbError("authoring notes exceed the 2000 character bound")
+
+
+def parse_authoring(data: object) -> tuple[AuthoringRecord, ...]:
+    if not isinstance(data, dict) or set(data) != {"schema", "records"}:
+        raise LimbError("authoring document needs only schema and records fields")
+    if data["schema"] != "srstudio.limbs.authoring/1.0.0":
+        raise LimbError("unsupported authoring schema")
+    result: tuple[AuthoringRecord, ...] = _decode(tuple[AuthoringRecord, ...], data["records"], "records", [MAX_ITEMS])
+    return result
+
+
+def summarize_authoring(pairs: tuple[Pair, ...], records: tuple[AuthoringRecord, ...]) -> dict[str, Any]:
+    """Describe observed attempts; pair only completed work by the same author on the same task.
+
+    Timings and completion judgments are caller-supplied. No inference is made about author identity,
+    task equivalence, learning effects, statistical significance or the quality of completed work.
+    """
+    if not 1 <= len(pairs) <= 100 or len(records) > 10000:
+        raise LimbError("authoring summary exceeds its bounds", code="budget")
+    lookup = {pair.id: pair for pair in pairs}
+    if len(lookup) != len(pairs):
+        raise LimbError("duplicate authoring task")
+    observed: dict[tuple[str, str, str], AuthoringRecord] = {}
+    grouped: dict[tuple[str, str], list[AuthoringRecord]] = {}
+    for row in records:
+        pair = lookup.get(row.case)
+        if pair is None or row.implementation not in (pair.baseline, pair.candidate):
+            raise LimbError("authoring record must resolve to an implementation of its task")
+        key = (row.case, row.author, row.implementation)
+        if key in observed:
+            raise LimbError("duplicate authoring observation for one author, task and implementation")
+        observed[key] = row
+        grouped.setdefault((row.case, row.implementation), []).append(row)
+    results: dict[str, dict[str, dict[str, Any]]] = {}
+    paired: dict[str, dict[str, Any]] = {}
+    for pair in pairs:
+        results[pair.id] = {}
+        for implementation in (pair.baseline, pair.candidate):
+            rows = grouped.get((pair.id, implementation), [])
+            seconds = [row.seconds for row in rows if row.completed]
+            results[pair.id][implementation] = {
+                "attempts": len(rows),
+                "completed": len(seconds),
+                "failed": len(rows) - len(seconds),
+                "median_completed_seconds": statistics.median(seconds) if seconds else None,
+                "mean_completed_seconds": statistics.mean(seconds) if seconds else None,
+            }
+        differences = []
+        for author in sorted({row.author for row in records if row.case == pair.id}):
+            baseline = observed.get((pair.id, author, pair.baseline))
+            candidate = observed.get((pair.id, author, pair.candidate))
+            if baseline is not None and candidate is not None and baseline.completed and candidate.completed:
+                differences.append(candidate.seconds - baseline.seconds)
+        paired[pair.id] = {
+            "completed_pairs": len(differences),
+            "median_candidate_minus_baseline_seconds": statistics.median(differences) if differences else None,
+        }
+    return {
+        "status": "observed" if records else "awaiting_records",
+        "authors": len({row.author for row in records}),
+        "records": len(records),
+        "results": results if records else None,
+        "paired": paired if records else None,
+        "provenance": "caller-supplied times and completion judgments; author identities not verified",
     }
