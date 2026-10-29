@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, TOON, Canvas, flat_counter, sketch, toon, toon_dinner
+from srstudio import PEACH, TOON, Canvas, flat_counter, foley, sketch, toon, toon_dinner
 from srstudio.narration import effect_cues, manifest_duration
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -206,6 +206,16 @@ def test_the_recording_run_writes_the_effects_and_the_manifest(mods, tmp_path, m
     assert all(not any(a - 0.2 < at < b + 0.2 for a, b in spans) for at in typing.taps)  # never under a line
     assert (tmp_path / "audio" / "buzz.wav").stat().st_mode & 0o077 == 0
     assert manifest["voice_note"] == "note" and manifest["model"] and manifest["items"] == []
+
+
+def test_a_typing_beat_held_to_the_end_still_makes_its_keyboard_bed(mods, tmp_path):
+    """Its last burst lands just before the end; taps that would sound past the bed's tail are not played (seed 0
+    once refused the whole bed, after the paid lines were recorded)."""
+    toon_sketch = mods[0]
+    beats = [sketch.Beat(0.0, "cat", "", "wide", "flat", "desk"), sketch.Beat(0.49, "cat", "", "wide", "flat", "type")]
+    (typing,) = toon_sketch.sound_effects(beats, 3.0, [], tmp_path, seed=0)
+    assert typing["id"] == "typing" and typing["taps"]
+    assert max(typing["taps"]) <= 3.0 - foley.KEY_TAIL
 
 
 def test_the_build_refuses_a_voiced_project_whose_files_disagree(mods, tmp_path, monkeypatch):

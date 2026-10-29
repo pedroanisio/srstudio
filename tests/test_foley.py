@@ -26,6 +26,17 @@ def test_taps_are_a_few_keystrokes_shortly_after_each_burst_and_repeat_for_a_see
     assert foley.taps([]) == []
 
 
+def test_taps_until_a_bound_are_the_same_taps_cut_there_so_a_bed_of_that_length_takes_them():
+    bursts = [0.4, 1.0, 2.69]  # the last one held to a 3 s end: its taps can run past the bed's tail
+    end = 3.0
+    for seed in range(40):
+        free = foley.taps(bursts, seed=seed)
+        bound = foley.taps(bursts, seed=seed, until=end - foley.KEY_TAIL)
+        assert bound == [t for t in free if t <= end - foley.KEY_TAIL]
+        foley.keystrokes(bound, end, rate=8000, seed=seed)
+    assert any(max(foley.taps(bursts, seed=s)) > end - foley.KEY_TAIL for s in range(40))
+
+
 def test_keystrokes_are_deterministic_bounded_and_levelled(tmp_path):
     a = foley.keystrokes([0.75, 1.0], duration=1.5, rate=8000, seed=7, peak=0.5)
     b = foley.keystrokes([0.75, 1.0], duration=1.5, rate=8000, seed=7, peak=0.5)
