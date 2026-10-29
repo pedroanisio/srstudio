@@ -27,7 +27,6 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from numbers import Number
 from typing import TYPE_CHECKING
 
 from . import brush, checks
@@ -600,7 +599,7 @@ def headset(look: Look, mic: bool = True) -> list[Layer]:
 def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, paper: str = NOTE_PAPER) -> list[Layer]:
     """A square note with three lines of scribble, centred on ``cx, cy`` and turned ``tilt`` degrees: ink rim, paper,
     scribbles. Reference pixels; stick it on a figure with ``stickers=``."""
-    if not (math.isfinite(size) and size > 8):
+    if not (checks.number(size) and size > 8):
         raise ToonDataError(f"a note needs a size over 8 px, got {size!r}")
     h = size / 2
     square = [(cx - h, cy - h), (cx + h, cy - h), (cx + h, cy + h), (cx - h, cy + h)]
@@ -677,10 +676,7 @@ def viseme_keys(mouths: Mouths, start: float, end: float) -> dict[str, list[tupl
     """Opacity hold keys per viseme over the run ``[start, end)`` from the ``(second, viseme)`` states: the state in
     force at ``start`` (closed when none precedes it), then every change inside the run. Empty when the mouth is
     closed throughout, so the pose's own mouth is drawn plainly."""
-    if any(
-        not (isinstance(t, Number) and not isinstance(t, bool) and math.isfinite(t) and t >= 0) or v not in VISEMES
-        for t, v in mouths
-    ):
+    if any(not (checks.number(t) and t >= 0) or v not in VISEMES for t, v in mouths):
         raise ToonDataError(f"mouths are (non-negative seconds, viseme among {VISEMES}) states")
     if any(b <= a for (a, _), (b, _) in zip(mouths, mouths[1:], strict=False)):
         raise ToonDataError("mouths must be in time order, one state a second")
@@ -701,7 +697,7 @@ def viseme_keys(mouths: Mouths, start: float, end: float) -> dict[str, list[tupl
 def blink_times(start: float, end: float, period: float) -> list[float]:
     """When a character blinks through a run: every ``period`` seconds from :data:`BLINK_PHASE` of one into it,
     never within a hold of the end; none when ``period`` is 0."""
-    if not (isinstance(period, Number) and not isinstance(period, bool) and math.isfinite(period) and period >= 0):
+    if not (checks.number(period) and period >= 0):
         raise ToonDataError(f"a blink period is a non-negative number of seconds, got {period!r}")
     if period == 0:
         return []

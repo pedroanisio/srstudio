@@ -13,10 +13,9 @@ Every measure is a reference screen pixel (:func:`srstudio.toon.fx`/``fy``), lik
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, REF_W, ToonDataError, _path, fh, fx, fy
@@ -241,7 +240,7 @@ def dishes(cv: Canvas, parent, items: Sequence[tuple], id: str = "dish") -> None
         if isinstance(x, bool) or not isinstance(x, int | float) or not 0 <= x <= REF_W:
             raise ToonDataError(f"a dish stands inside the frame, x 0 to {REF_W}, got {x!r}")
         at = item[2] if len(item) == 3 else 0.0
-        if isinstance(at, bool) or not isinstance(at, int | float) or not (math.isfinite(at) and at >= 0):
+        if not (checks.number(at) and at >= 0):
             raise ToonDataError(f"a dish arrives at a time >= 0, got {at!r}")
         seen[kind] = seen.get(kind, 0) + 1
         name = f"{id}-{kind}" if seen[kind] == 1 else f"{id}-{kind}-{seen[kind]}"
@@ -274,9 +273,11 @@ def card_reader(
         if not (isinstance(state, tuple | list) and len(state) == 3):
             raise ToonDataError(f"a card reader screen is (second, text, tone), got {state!r}")
         t, text, tone = state
+        if not checks.number(t):
+            raise ToonDataError(f"a card reader screen's second is a number, got {t!r}")
         if k == 0 and t != 0:
             raise ToonDataError(f"a card reader shows a screen from 0, its first is at {t}")
-        if k and not (math.isfinite(t) and t > states[k - 1][0]):
+        if k and not t > states[k - 1][0]:
             raise ToonDataError(f"card reader screens need rising seconds: {t} after {states[k - 1][0]}")
         if not text.strip() or len(text) > SCREEN_MAX:
             raise ToonDataError(f"a card reader screen reads 1 to {SCREEN_MAX} characters, got {text!r}")

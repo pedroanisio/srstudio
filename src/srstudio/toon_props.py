@@ -83,7 +83,7 @@ def meeting(cv: Canvas, parent) -> None:
 @register("prop", "toon-mug", summary="A coffee mug on the desk, steaming while asked")
 def mug(cv: Canvas, parent, x: float = 350, steam: Sequence[tuple[float, float]] = ()) -> None:
     """The mug stands on the desk top with its handle to the right; ``steam`` lists the spans its wisps show."""
-    if any(not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b) for a, b in steam):
+    if any(not (checks.number(a) and checks.number(b) and 0 <= a < b) for a, b in steam):
         raise ToonDataError("steam spans need 0 <= start < end")
     g = cv.group(parent, cv.uid("g"))
     base = 838
@@ -174,7 +174,7 @@ def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
 def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28) -> None:
     """Each toast slides in from the right, shakes with the buzz and holds until its end."""
     for i, t in enumerate(items):
-        if not (math.isfinite(t.start) and math.isfinite(t.end) and 0 <= t.start < t.end):
+        if not (checks.number(t.start) and checks.number(t.end) and 0 <= t.start < t.end):
             raise ToonDataError(f"toast {i}: needs 0 <= start < end")
         if not t.sender.strip() or not t.text.strip() or len(t.text) > 24 or len(t.sender) > 12:
             raise ToonDataError(f"toast {i}: a sender (at most 12 characters) and a text (at most 24)")
@@ -233,7 +233,7 @@ def scale_keys(sizes: Sequence[tuple[float, float]], grow: float = GROW) -> list
     """Linear keys that hold each scale and change to the next over ``grow`` seconds: ``sizes`` are
     ``(project second, scale)`` in rising order; the first scale holds from 0."""
     checks.positive(grow, ToonDataError, f"a size change needs a grow over 0 s, got {grow!r}")
-    if not sizes or any(not (math.isfinite(t) and math.isfinite(s) and s > 0) for t, s in sizes):
+    if not sizes or any(not (checks.number(t) and checks.number(s) and s > 0) for t, s in sizes):
         raise ToonDataError("sizes need finite times and positive scales")
     if any(b[0] < a[0] + grow for a, b in zip(sizes, sizes[1:], strict=False)) or sizes[0][0] < 0:
         raise ToonDataError(f"sizes need rising project seconds at least {grow} s apart")
@@ -279,7 +279,7 @@ def logo(
 
     if shadow is not None:
         a, b = shadow
-        if not (math.isfinite(a) and math.isfinite(b) and 0 <= a < b):
+        if not (checks.number(a) and checks.number(b) and 0 <= a < b):
             raise ToonDataError("shadow needs 0 <= start < end")
         sh = cv.group(g, cv.uid("g"), anchorX=fx(cx), anchorY=fy(cy), x=fx(cx), y=fy(cy))
         sun(sh, 7, 9, LOGO_SHADOW)
@@ -298,7 +298,7 @@ def badge(
 ) -> None:
     if not text.strip() or len(text) > 30:
         raise ToonDataError("badge text is 1 to 30 characters")
-    if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end):
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end):
         raise ToonDataError("badge needs 0 <= start < end")
     g = cv.group(parent, cv.uid("g"), start=start, end=end)
     width = round(measure(text.upper()) + fh(56), 2)

@@ -21,7 +21,6 @@ keys or paths are not what the rig draws (:class:`ToonDataError`).
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
@@ -29,7 +28,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -196,7 +195,7 @@ def _record(item: Any, where: str, required: Mapping[str, Any], optional: Mappin
         if isinstance(value, bool) or not isinstance(value, kind):
             wanted = "a number" if kind is Number else f"a {kind.__name__}"
             raise ToonDataError(f"{where}: {key} must be {wanted}, got {value!r}")
-        if kind is Number and not math.isfinite(value):
+        if kind is Number and not checks.number(value):
             raise ToonDataError(f"{where}: {key} must be finite, got {value!r}")
     return item
 
@@ -249,7 +248,7 @@ def _shape(data: Any, where: str) -> Shape:
         got = len(data) if isinstance(data, list) else data
         raise ToonDataError(f"{where}: a shape is a start point and whole cubic curves, got {got!r}")
     for v in data:
-        if isinstance(v, bool) or not isinstance(v, Number) or not math.isfinite(v) or abs(v) > 4000:
+        if not checks.number(v) or abs(v) > 4000:
             raise ToonDataError(f"{where}: coordinate {v!r} is not a reference pixel")
     return tuple(float(v) for v in data)
 
@@ -445,7 +444,7 @@ def swap_frames(
 ) -> None:
     """Two frames of a typing pose in ``g``, drawn by ``draw(parent, frame)``, swapped on the composition clock
     by :func:`typing_frames`; one frame when the run has no keystrokes."""
-    if any(isinstance(t, bool) or not isinstance(t, Number) or not (math.isfinite(t) and t >= 0) for t in taps):
+    if any(not (checks.number(t) and t >= 0) for t in taps):
         raise ToonDataError("taps must be non-negative seconds")
     frames = typing_frames(start, end, taps)
     rest = cv.group(g, cv.uid("g"))
@@ -488,9 +487,9 @@ def cat(
     """One group per pose run, alive from its start to its end; ``taps`` (project seconds) swap the two typing
     bodies of every typing pose that contains them. ``enter`` puts the cat on from that project second: its poses
     count from it, and it leaves at ``duration``."""
-    if any(isinstance(t, bool) or not isinstance(t, Number) or not (math.isfinite(t) and t >= 0) for t in taps):
+    if any(not (checks.number(t) and t >= 0) for t in taps):
         raise ToonDataError("taps must be non-negative seconds")
-    if isinstance(enter, bool) or not isinstance(enter, Number) or not (math.isfinite(enter) and 0 <= enter < duration):
+    if not (checks.number(enter) and 0 <= enter < duration):
         raise ToonDataError(f"enter must be a project second before the end, got {enter!r}")
     drawn = art()
     groups = []

@@ -182,11 +182,11 @@ def cycle_keys(
 ) -> list[tuple[float, float]]:
     """Keys that repeat ``pattern`` (``(offset, value)`` within one ``period``, offsets in ``[0, period)``) from
     ``start`` to ``end``, shifted by ``phase`` seconds; the value at ``start`` and at ``end`` is keyed too."""
-    if not (math.isfinite(period) and period > 0):
+    if not (checks.number(period) and period > 0):
         raise ToonDataError(f"a cycle needs a period over 0 s, got {period!r}")
     if not pattern or any(not 0 <= o < period for o, _ in pattern):
         raise ToonDataError("a cycle's offsets lie in [0, period)")
-    if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end):
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end):
         raise ToonDataError(f"a cycle runs from a start to a later end, got {start!r}..{end!r}")
     if not checks.number(phase):
         raise ToonDataError(f"a cycle's phase is a finite number of seconds, got {phase!r}")
@@ -590,7 +590,7 @@ def plant(cv: Canvas, parent, at: tuple[float, float] = (380, 838), scale: float
     """A terracotta pot standing on ``at`` (its centre and base; by default the desk's left end, the mug's place)
     with five leaves on stems, each with a vein and a
     gloss, ``scale`` times the default size. The leaves sway gently from 0 to ``end`` (still when ``end`` is 0)."""
-    if not (isinstance(scale, int | float) and math.isfinite(scale) and 0.3 <= scale <= 3):
+    if not (checks.number(scale) and 0.3 <= scale <= 3):
         raise ToonDataError(f"a plant's scale is 0.3 to 3, got {scale!r}")
     end = _check_end(end)
     x, y = at
@@ -635,7 +635,7 @@ def parse_pages(pages: Sequence[tuple[float, str]]) -> list[tuple[float, str, st
         if not (isinstance(item, tuple | list) and len(item) == 2):
             raise ToonDataError(f"a calendar page is (second, 'MON 14'), got {item!r}")
         t, text = item
-        if isinstance(t, bool) or not isinstance(t, int | float) or not (math.isfinite(t) and t >= 0):
+        if not (checks.number(t) and t >= 0):
             raise ToonDataError(f"a calendar page's second is a number >= 0, got {t!r}")
         if not isinstance(text, str) or not PAGE.match(text) or not 1 <= int(text.split()[1]) <= 31:
             raise ToonDataError(f"a calendar page reads like 'OCT 14', got {text!r}")
@@ -740,7 +740,7 @@ def _check_waiting(waiting: Sequence[tuple[float, int]]) -> list[tuple[float, in
         at, count = item
         if isinstance(count, bool) or not isinstance(count, int) or not 0 <= count <= WAITING_MAX:
             raise ToonDataError(f"a count of calls waiting is a whole number 0 to {WAITING_MAX}, got {count!r}")
-        if isinstance(at, bool) or not isinstance(at, int | float) or not math.isfinite(at):
+        if not checks.number(at):
             raise ToonDataError(f"the board's counts change in order, from 0: got {at!r}")
         if not out and at != 0:
             raise ToonDataError(f"the board shows a count from 0, its first is at {at}")
