@@ -17,7 +17,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, human, path
@@ -86,20 +86,7 @@ class AppRow:
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: str = "center") -> None:
-    aid = cv.uid("txt")
-    cv.assets.add_text(
-        id=aid,
-        text=value,
-        width=round(w),
-        height=round(h),
-        size=size,
-        fontAsset=cv.font_asset,
-        color=color,
-        align=align,
-        verticalAlign="middle",
-        wrap="none",
-    )
-    parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
+    look.text(cv, parent, value, x, y, round(w), round(h), size, color, align=align, asset="txt", layer="label")
 
 
 def _lettering(cv: Canvas, parent, value: str, x, y, w, h, size, seen: float, whole: bool = True) -> None:
