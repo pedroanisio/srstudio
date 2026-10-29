@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from srstudio import GLOSS, VERTICAL, Episode, EpisodeSpec, gloss_reel, takes
+from srstudio import GLOSS, VERTICAL, Episode, EpisodeSpec, gloss_reel, native, takes
 from srstudio.compose import Chunk, Plan
 from srstudio.gloss_reel import Stage
 from srstudio.voice import Voice, VoiceSettings
@@ -94,6 +94,7 @@ class Reel:
     takes: tuple[takes.Take, ...]
     hook: str
     stages: Callable[[Sequence[Any]], Mapping[str, Stage]]
+    look: native.CaptionLook = native.CAPTION_LOOK  # the published reels' captions; new reels pass gloss_reel.LOOK
 
     def script(self) -> takes.Script:
         roles = sorted({t.actor for t in self.takes if not t.is_effect})
@@ -111,8 +112,10 @@ class Reel:
         )
 
 
-def line(id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm") -> takes.Take:
-    return takes.Take(id, actor, text, hold, mood=mood)
+def line(
+    id: str, actor: str, text: str, hold: float = 0.2, mood: str = "calm", heard: tuple[str, ...] = ()
+) -> takes.Take:
+    return takes.Take(id, actor, text, hold, mood=mood, heard=heard)
 
 
 def effect(id: str, caption: str, prompt: str, seconds: float, hold: float = 0.2, peak: float = 0.5) -> takes.Take:
@@ -154,7 +157,7 @@ def build(reel: Reel, file: str) -> Path:
         )
     )
     font = (root / ep.spec.font).read_bytes()
-    made = gloss_reel.build(ep, reel.stages(ep.takes), hook=reel.hook, font=font)
+    made = gloss_reel.build(ep, reel.stages(ep.takes), hook=reel.hook, font=font, look=reel.look)
     ep.hide_on_cover(made["hook"], made["captions"])
     if reel.slug in POSTS:
         ep.instagram(POSTS[reel.slug])

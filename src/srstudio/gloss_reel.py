@@ -33,6 +33,8 @@ __all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "build",
 DUCK = -9.0  # dB the music drops under a line
 HUSH = -12.0  # dB more it drops through a pause between lines, so the beat before a punchline is quiet, not muzak
 HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise again for the next
+# no lone last word, every caption readable (ADR 0031); for new reels, as published ones keep the house look
+LOOK = native.CaptionLook(min_last=2, min_seconds=0.84)
 MUSIC_GAIN = -17.0
 SHAKE_STEP = 1 / 12
 SHAKE_PX = 14

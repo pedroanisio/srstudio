@@ -82,5 +82,9 @@ for seven videos in it. Then: the first cut's visual polish scored 3.5 of 10, an
   silenced.
 - Cards carried across shots are new layers per shot, so the engine's per-layer legibility check flags them under
   0.833 s even though they stay on screen continuously.
+- New reels caption with `gloss_reel.LOOK` (`Reel.look`), the readable look Saga uses (ADR 0031): a line that
+  wraps past two lines is split so no cue ends on a lone word, and every cue is held at least 0.84 s where the
+  next line allows. The house default had left fragments such as "existing." on screen for 0.7 s. G7 is the first;
+  the published G1–G6 keep the house look so they rebuild unchanged.
 - `HUSH` and the craft fixes apply to every future Gloss reel. Other takes-based styles can adopt the hush through
   the shared reel engine.

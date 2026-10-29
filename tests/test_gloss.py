@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import shutil
 import subprocess
@@ -22,6 +23,7 @@ from srstudio import (
     craft,
     flat_counter,
     gloss,
+    native,
     registry,
 )
 from srstudio.canvas import Signature
@@ -543,6 +545,19 @@ def test_a_reel_builds_with_the_hook_the_board_the_notice_crossfade_captions_and
         pytest.skip("set SRSTUDIO_ENGINE to a scene-render binary")
     check = subprocess.run([str(Path(found).resolve()), "validate", str(out)], capture_output=True, text=True)
     assert check.returncode == 0, check.stdout + check.stderr
+
+
+def test_reel_captions_leave_no_lone_last_word_and_stay_up_long_enough_to_read():
+    assert inspect.signature(reel.build).parameters["look"].default is native.CAPTION_LOOK  # shipped reels rebuild
+    assert reel.LOOK.min_last == 2 and reel.LOOK.min_seconds >= 0.8334  # the engine's legibility minimum
+    words, at = [], 0.0
+    for w in "By continuing to exist, you agree to continue existing.".split():
+        words.append({"text": w, "start": at, "end": at + 0.3})
+        at += 0.35
+    line = Take("10", "sunny", "", " ".join(w["text"] for w in words), 20.0, at + 1.2, words=tuple(words))
+    cues = native.cues_from_takes([line], look=reel.LOOK)
+    assert [len(c.text.split()) > 1 for c in cues] == [True] * len(cues) and len(cues) > 1
+    assert all(c.end - c.start >= reel.LOOK.min_seconds for c in cues)
 
 
 @needs_font

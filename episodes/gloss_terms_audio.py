@@ -15,6 +15,7 @@ from __future__ import annotations
 import sys
 
 from _gloss import Reel, line, record, word_at
+from srstudio import gloss_reel
 from srstudio.gloss_reel import Move, Notice, Place, Stage
 from srstudio.gloss_sets import Card
 
@@ -28,7 +29,8 @@ TAKES = (
     line("06", "gus", "And if I decline?", 0.3),
     line("07", "sunny", "Declining has been added to section four.", 1.3),
     line("08", "nadia", "Is any of this even real?", 0.3),
-    line("09", "sunny", "Real is also premium.", 1.2),
+    # the operator accepted the homophone speech-to-text hears; the spoken word is still "Real"
+    line("09", "sunny", "Real is also premium.", 1.2, heard=("Reel is also premium.",)),
     line("10", "sunny", "By continuing to exist, you agree to continue existing.", 1.2),
 )
 
@@ -100,6 +102,7 @@ REEL = Reel(
     takes=TAKES,
     hook="Did anyone actually read the new terms of existence?",
     stages=stages,
+    look=gloss_reel.LOOK,
 )
 
 if __name__ == "__main__":

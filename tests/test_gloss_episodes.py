@@ -60,6 +60,14 @@ def test_the_seven_reels_are_numbered_g1_to_g7_with_distinct_gloss_slugs():
         assert (EPISODES / f"gloss_{n}.py").read_text().count(f"from gloss_{n}_audio import REEL") == 1
 
 
+def test_published_reels_keep_the_caption_look_they_shipped_with_and_new_reels_read_without_lone_words():
+    from srstudio import native
+
+    looks = {n: load(n).look for n in REELS}
+    assert {n for n, look in looks.items() if look is native.CAPTION_LOOK} == set(REELS[:6])
+    assert looks["terms"] is gloss_reel.LOOK
+
+
 def test_the_script_is_well_formed_before_anything_is_requested(reel):
     reel.script().check()
 
