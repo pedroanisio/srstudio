@@ -25,6 +25,8 @@ from pathlib import Path
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
     Path(args[0], "recorded.txt").write_text(" ".join([Path(sys.argv[0]).name, *args[1:]]))
+    if "--refuse" in args:
+        raise SystemExit("set SRSTUDIO_ALLOW_CLOUD=1 to allow it")
     return 3 if "--fail" in args else 0
 
 
@@ -85,6 +87,11 @@ def test_record_runs_the_episode_recorder_and_returns_its_status(episodes):
     assert main(["record", "my-ep", "project", "--key-stdin"]) == 0
     assert (episodes / "project" / "recorded.txt").read_text() == "my_ep_audio.py --key-stdin"
     assert main(["record", "my-ep", "project", "--fail"]) == 3
+
+
+def test_record_shows_the_reason_a_recorder_exits_with(episodes, capsys):
+    assert main(["record", "my-ep", "project", "--refuse"]) == 1
+    assert capsys.readouterr().err == "set SRSTUDIO_ALLOW_CLOUD=1 to allow it\n"
 
 
 @pytest.mark.parametrize("command", ["build", "record"])
