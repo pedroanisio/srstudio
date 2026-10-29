@@ -32,6 +32,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import checks
 from .errors import SrstudioError
 from .generated import (
     Generated,
@@ -133,7 +134,7 @@ class Interview:
             raise InterviewError(f"{self.slug}: an interview needs at least one line")
         for name in ("reaction_after", "reaction_hold", "end_card"):
             value = getattr(self, name)
-            if not (math.isfinite(value) and value >= 0):
+            if not (checks.number(value) and value >= 0):
                 raise InterviewError(f"{self.slug}: {name} {value} must be a non-negative number of seconds")
         for i, line in enumerate(self.lines, 1):
             if line.role not in self.voices:
@@ -159,9 +160,9 @@ class Interview:
         for fx in self.effects:
             if not _ID.match(fx.id) or fx.id.startswith("line-"):
                 raise InterviewError(f"effect {fx.id!r}: ids are lowercase words and never line-N")
-            if not (SFX_SECONDS[0] <= fx.seconds <= SFX_SECONDS[1]):
+            if not (checks.number(fx.seconds) and SFX_SECONDS[0] <= fx.seconds <= SFX_SECONDS[1]):
                 raise InterviewError(f"effect {fx.id}: seconds {fx.seconds} must lie in {SFX_SECONDS}, the API's range")
-            if not (0 < fx.longest <= fx.seconds):
+            if not (checks.number(fx.longest) and 0 < fx.longest <= fx.seconds):
                 raise InterviewError(f"effect {fx.id}: longest {fx.longest} must lie in (0, {fx.seconds}]")
             if not (0 < fx.peak <= 1):
                 raise InterviewError(f"effect {fx.id}: peak {fx.peak} must lie in (0, 1]")
@@ -286,7 +287,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
     if set(plan.effects) != set(by_id):
         raise InterviewError(f"{iv.slug}: the schedule places effects {sorted(plan.effects)}, not {sorted(by_id)}")
     fx_starts = {g.id: plan.effects[g.id] for g in effects}
-    if not all(math.isfinite(t) and t >= 0 for t in [*starts, *fx_starts.values()]):
+    if not all(checks.number(t) and t >= 0 for t in [*starts, *fx_starts.values()]):
         raise InterviewError(f"{iv.slug}: the schedule has a negative or non-finite start: {starts} {fx_starts}")
     for i in range(len(starts) - 1):
         end = starts[i] + speech[i]

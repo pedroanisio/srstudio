@@ -9,7 +9,6 @@ and writes nothing.
 
 from __future__ import annotations
 
-import math
 import os
 import re
 import tempfile
@@ -20,7 +19,7 @@ from typing import Any
 
 import sr_core.scene as sc
 
-from . import digest
+from . import checks, digest
 from .errors import SrstudioError
 
 ROLES = ("dialogue", "voiceover", "music", "effects", "ambience", "audio-description", "other")
@@ -61,18 +60,18 @@ def _check(track: Track, root: Path, duration: float, taken: set[str]) -> None:
         raise DubError(f"{where}: id is already used in the scene")
     if track.role not in ROLES:
         raise DubError(f"{where}: role must be one of {', '.join(ROLES)}")
-    if not (math.isfinite(track.start) and 0 <= track.start < duration):
+    if not (checks.number(track.start) and 0 <= track.start < duration):
         raise DubError(f"{where}: start {track.start} is outside 0..{duration} s")
     lo, hi = GAIN_DB
-    if not (math.isfinite(track.gain) and lo <= track.gain <= hi):
+    if not (checks.number(track.gain) and lo <= track.gain <= hi):
         raise DubError(f"{where}: gain {track.gain} dB is outside {lo}..{hi}")
-    if not all(math.isfinite(f) and f >= 0 for f in (track.fade_in, track.fade_out)):
+    if not all(checks.number(f) and f >= 0 for f in (track.fade_in, track.fade_out)):
         raise DubError(f"{where}: fades must be non-negative")
     clip_in = track.clip_in or 0.0
     if (
-        not math.isfinite(clip_in)
+        not checks.number(clip_in)
         or clip_in < 0
-        or (track.clip_out is not None and not (math.isfinite(track.clip_out) and track.clip_out > clip_in))
+        or (track.clip_out is not None and not (checks.number(track.clip_out) and track.clip_out > clip_in))
     ):
         raise DubError(f"{where}: clip range {track.clip_in}..{track.clip_out} is empty or invalid")
     path = (root / track.audio).resolve()
@@ -117,7 +116,7 @@ def dub(
     full = float(project.attributes()["duration"])
     if duration is None:
         duration = full
-    elif not (math.isfinite(duration) and 0 < duration <= full):
+    elif not (checks.number(duration) and 0 < duration <= full):
         raise DubError(f"duration {duration} must be within 0..{full} s, the source's length")
     taken = {str(e.attributes()["id"]) for e in scene.iter() if "id" in e.attributes()}
     for track in tracks:
@@ -173,12 +172,12 @@ def dub(
 def beat_offset(*, phase: float, bpm: float, at: float, near: float = 0.0) -> float:
     """How far into a song to start it so that one of its beats (first at ``phase``) lands at timeline ``at``: of
     the offsets that do, the one closest to ``near`` (never negative)."""
-    if not (math.isfinite(bpm) and bpm > 0):
+    if not (checks.number(bpm) and bpm > 0):
         raise DubError(f"tempo must be positive, got {bpm}")
     beat = 60 / bpm
-    if not (math.isfinite(phase) and 0 <= phase < beat):
+    if not (checks.number(phase) and 0 <= phase < beat):
         raise DubError(f"beat phase {phase} must be within 0..{beat} s")
-    if not (math.isfinite(near) and near >= 0):
+    if not (checks.number(near) and near >= 0):
         raise DubError(f"near must be a non-negative offset, got {near}")
     base = round((phase - at) % beat, 6) % beat
     return round(base + max(0, round((near - base) / beat)) * beat, 6)

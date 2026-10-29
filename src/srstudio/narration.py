@@ -37,7 +37,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
-from . import digest
+from . import checks, digest
 from .errors import ConsentError, MissingKeyError, SrstudioError
 from .provider import CONSENT_ENV, KEY_ENV
 from .voice import RATE, Alignment, Voice, VoiceOutputError, _cached_record, _http_error, _json_body
@@ -159,7 +159,7 @@ def schedule(items: list[dict], fps: int = 24) -> float:
     """Sets each item's ``start`` from the previous one's end; returns the duration, rounded up to the frame."""
     cursor = 0.0
     for q in items:
-        if not (math.isfinite(q["duration"]) and q["duration"] > 0):
+        if not (checks.number(q["duration"]) and q["duration"] > 0):
             raise NarrationError(f"take {q['id']}: duration must be positive, got {q['duration']}")
         q["start"] = round(cursor, 6)
         cursor += q["duration"]
@@ -417,13 +417,13 @@ def plan_relaxed(
     where the last slot ends, if that is later). ``speeches`` are the trimmed lengths of the lines, in order."""
     if len(speeches) != len(plan):
         raise NarrationError(f"plan_relaxed needs one speech per line: {len(plan)} lines, {len(speeches)} speeches")
-    if not (math.isfinite(lag_max) and lag_max >= 0):
+    if not (checks.number(lag_max) and lag_max >= 0):
         raise NarrationError(f"lag_max {lag_max} must be a non-negative number of seconds")
-    if not (math.isfinite(guard) and guard >= 0 and math.isfinite(tail) and tail >= 0):
+    if not (checks.number(guard) and guard >= 0 and checks.number(tail) and tail >= 0):
         raise NarrationError(f"guard {guard} and tail {tail} must be non-negative numbers of seconds")
     out: list[Placement] = []
     for slot, speech in zip(plan, speeches, strict=True):
-        if not (math.isfinite(speech) and speech > 0):
+        if not (checks.number(speech) and speech > 0):
             raise NarrationError(f"caption {slot.id}: speech length must be positive, got {speech}")
         if slot.room <= 0:
             raise NarrationError(f"caption {slot.id}: no room to speak in ({slot.start}..{slot.end})")
@@ -508,7 +508,7 @@ def narration_cues(path: Path, root: Path) -> list[Cue]:
     for i, item in enumerate(items):
         where = f"{path} item {i}"
         q = _checked(item, where, ITEM_FIELDS, OPTIONAL_ITEM_FIELDS)
-        if not (math.isfinite(q["duration"]) and q["duration"] > 0 and math.isfinite(q["start"]) and q["start"] >= 0):
+        if not (checks.number(q["duration"]) and q["duration"] > 0 and checks.number(q["start"]) and q["start"] >= 0):
             raise NarrationError(f"{where}: duration must be positive and start non-negative")
         _clip(root, q, where)
         cues.append(Cue(q["id"], q["text"], float(q["start"]), float(q["duration"]), q["audio"], q["sha256"]))
@@ -524,10 +524,10 @@ def effect_cues(path: Path, root: Path) -> list[Effect]:
     for i, item in enumerate(effects):
         where = f"{path} effect {i}"
         q = _checked(item, where, EFFECT_FIELDS, OPTIONAL_EFFECT_FIELDS)
-        if not (math.isfinite(q["start"]) and q["start"] >= 0 and math.isfinite(q["gain_db"]) and q["gain_db"] <= 0):
+        if not (checks.number(q["start"]) and q["start"] >= 0 and checks.number(q["gain_db"]) and q["gain_db"] <= 0):
             raise NarrationError(f"{where}: start must be non-negative and gain_db at most 0")
         taps = q.get("taps", [])
-        if any(isinstance(t, bool) or not isinstance(t, _Number) or not (math.isfinite(t) and t >= 0) for t in taps):
+        if any(not (checks.number(t) and t >= 0) for t in taps):
             raise NarrationError(f"{where}: taps must be non-negative numbers of seconds")
         if any(b < a for a, b in zip(taps, taps[1:], strict=False)):
             raise NarrationError(f"{where}: taps must be in order")
@@ -539,6 +539,6 @@ def effect_cues(path: Path, root: Path) -> list[Effect]:
 def manifest_duration(path: Path) -> float:
     """The project duration ``narration.json`` was planned for: a positive number of seconds."""
     value = _manifest(path).get("duration")
-    if isinstance(value, bool) or not isinstance(value, _Number) or not (math.isfinite(value) and value > 0):
-        raise NarrationError(f"{path}: duration must be a positive number of seconds, got {value!r}")
-    return float(value)
+    return checks.positive(
+        value, NarrationError, f"{path}: duration must be a positive number of seconds, got {value!r}"
+    )

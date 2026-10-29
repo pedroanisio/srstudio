@@ -31,6 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import checks
 from .errors import MissingKeyError, SrstudioError
 from .voice import (
     RATE,
@@ -85,7 +86,7 @@ class Chunk:
         if not 1 <= len(self.name) <= MAX_NAME or any(c in self.name for c in "[]\n"):
             raise ComposeError(f"chunk name must be 1..{MAX_NAME} characters without brackets: {self.name!r}")
         lo, hi = CHUNK_SECONDS
-        if not (isinstance(self.seconds, (int, float)) and math.isfinite(self.seconds) and lo <= self.seconds <= hi):
+        if not (checks.number(self.seconds) and lo <= self.seconds <= hi):
             raise ComposeError(f"chunk {self.name!r}: duration must be within {lo}..{hi} s, got {self.seconds}")
         if not self.styles or not all(isinstance(s, str) and s.strip() for s in self.styles):
             raise ComposeError(f"chunk {self.name!r}: positive styles must be non-empty strings")

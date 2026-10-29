@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import checks
 from .errors import SrstudioError
 
 __all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "render", "write_wav", "LOOP"]
@@ -42,11 +43,11 @@ class Groove:
     offset: float = 0.0
 
     def __post_init__(self) -> None:
-        if not (math.isfinite(self.bpm) and 30 <= self.bpm <= 300):
+        if not (checks.number(self.bpm) and 30 <= self.bpm <= 300):
             raise MusicError(f"bpm {self.bpm} outside 30..300")
         if self.beats_per_bar < 1:
             raise MusicError(f"beats_per_bar {self.beats_per_bar} must be at least 1")
-        if not (math.isfinite(self.offset) and self.offset >= 0):
+        if not (checks.number(self.offset) and self.offset >= 0):
             raise MusicError(f"offset {self.offset} must be a non-negative number of seconds")
 
     @property

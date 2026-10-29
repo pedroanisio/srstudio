@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
 
-from . import fonts
+from . import checks, fonts
 from .compose import MusicClient, MusicOutputError, Plan, locate_lyrics
 from .compose import Song as ComposedSong
 from .errors import SrstudioError
@@ -168,7 +168,7 @@ class Song:
     def __post_init__(self) -> None:
         if not self.lines:
             raise SongError(f"{self.slug}: a song needs at least one line")
-        if not math.isfinite(self.lines_end):
+        if not checks.number(self.lines_end):
             raise SongError(f"{self.slug}: lines_end must be finite, got {self.lines_end}")
         for singer in self.voices.values():
             singer.voice_settings()
@@ -208,7 +208,7 @@ class Song:
                 raise SongError(
                     f"{self.slug} effect {fx.id}: seconds must lie in {SFX_SECONDS} and longest in 0..seconds"
                 )
-            if not (fx.peak > 0 and math.isfinite(fx.early) and fx.early >= 0):
+            if not (fx.peak > 0 and checks.number(fx.early) and fx.early >= 0):
                 raise SongError(f"{self.slug} effect {fx.id}: peak must be positive and early non-negative")
 
 

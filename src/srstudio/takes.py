@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import re
 import shutil
@@ -38,6 +37,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
+from . import checks
 from .compose import MusicClient, MusicOutputError, Plan
 from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
@@ -164,12 +164,18 @@ def _check_take(script: Script, take: Take) -> None:
         raise TakesError(f"{where}: unknown actor {take.actor!r}")
     if script.shots and take.shot not in script.shots:
         raise TakesError(f"{where}: unknown shot {take.shot!r}")
-    if not (math.isfinite(take.hold) and take.hold >= 0):
+    if not (checks.number(take.hold) and take.hold >= 0):
         raise TakesError(f"{where}: hold must be non-negative, got {take.hold}")
     if take.is_effect and take.heard:
         raise TakesError(f"{where}: an effect is not transcribed, so it has no accepted hearing")
     if take.is_effect:
-        if not (take.prompt and SFX_SECONDS[0] <= take.seconds <= SFX_SECONDS[1] and 0 < take.longest <= take.seconds):
+        if not (
+            take.prompt
+            and checks.number(take.seconds)
+            and SFX_SECONDS[0] <= take.seconds <= SFX_SECONDS[1]
+            and checks.number(take.longest)
+            and 0 < take.longest <= take.seconds
+        ):
             raise TakesError(f"{where}: an effect needs a prompt, seconds in {SFX_SECONDS} and a kept length")
         if not re.fullmatch(r"\[[A-Z0-9 ·]+\]", take.text):
             raise TakesError(f"{where}: an effect's text is its bracketed caption, got {take.text!r}")
@@ -188,11 +194,11 @@ def _check_take(script: Script, take: Take) -> None:
 def _check_bed(bed: Bed) -> None:
     if isinstance(bed.seed, bool) or not isinstance(bed.seed, int) or not 0 <= bed.seed < 2**32:
         raise TakesError(f"bed: seed must be an integer in 0..2**32-1, got {bed.seed!r}")
-    if not (math.isfinite(bed.bpm) and bed.bpm > 0):
+    if not (checks.number(bed.bpm) and bed.bpm > 0):
         raise TakesError(f"bed: bpm must be positive, got {bed.bpm}")
-    if not (math.isfinite(bed.gain_db) and bed.gain_db <= 0):
+    if not (checks.number(bed.gain_db) and bed.gain_db <= 0):
         raise TakesError(f"bed: gain must be 0 dB or lower (music goes under the voices), got {bed.gain_db}")
-    if not (math.isfinite(bed.fade) and bed.fade >= 0):
+    if not (checks.number(bed.fade) and bed.fade >= 0):
         raise TakesError(f"bed: fade must be non-negative, got {bed.fade}")
 
 
