@@ -41,7 +41,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -114,6 +114,7 @@ FACE_ROUND = (-91, -91, 182, 182)
 CAPTION_Y, CAPTION_H, CAPTION_STROKE = 1385, 124, 5.5
 OUTLINES = ("stroke", "layer", "none")  # how :func:`captions` draws the ink outline
 HOOK_CARD = (111, 367, 858, 216, 50)  # x, y, w, h, radius of the white card under the hook lettering
+BLINK = 0.12  # seconds a blink takes from open, through shut, to open again
 
 
 class StickDataError(SrstudioError, ValueError):
@@ -1209,6 +1210,15 @@ def rig(
     check_look(look)
     if not (_is_number(scale) and scale > 0):
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    blinks = checks.rising(
+        blinks,
+        StickDataError,
+        lambda i, t: f"blink {i} at {t!r} must be a second inside 0..{end} after the last",
+        end=end,
+    )
+    for t0, t1 in zip(blinks, blinks[1:], strict=False):
+        if t1 < t0 + BLINK:
+            raise StickDataError(f"blink at {t1} must come {BLINK} s after the one at {t0}, when the eyes are open")
     sides: frozenset[str] = frozenset()
     if limbs:
         from .limbs.compile import LayerTargets
@@ -1237,9 +1247,10 @@ def rig(
         f = k.face
         face = _group(cv, head, x=f.look[0] * 14, y=f.look[1] * 8)  # the features turn with the look
         eyes = _features(cv, face, f, look)
-        for t in blinks:
-            if a <= t < b - 0.14 and f.eyes in ("open", "wide", "half"):
-                cv.keys(eyes, "scaleY", [(0, 1), (t, 1), (t + 0.05, 0.1), (t + 0.12, 1)], kind="linear")
+        shut = [t for t in blinks if a <= t < b - 0.14] if f.eyes in ("open", "wide", "half") else []
+        if shut:  # one track for the span: a second track on the eyes would replace the first
+            cv.keys(eyes, "scaleY", [(0, 1)] + [k for t in shut for k in ((t, 1), (t + 0.05, 0.1), (t + BLINK, 1))],
+                    kind="linear")  # fmt: skip
         _gate(cv, face, a, b, end)
     lips = _group(cv, head, x=0, y=44)
     if len(keys) > 1:

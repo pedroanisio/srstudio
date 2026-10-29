@@ -289,6 +289,32 @@ def test_the_rig_switches_poses_and_moves_the_head_with_them():
     assert len(blink) == 1  # the blink at 0.2 s falls in the first span only
 
 
+def test_every_blink_in_one_span_plays_not_only_the_last():
+    cv = canvas()
+    g = stick.rig(cv, cv.comp, [stick.RigKey(0, "type-a")], 1.0, blinks=(0.1, 0.4, 0.7))
+    (blink,) = [a for a in by_id(xml(cv), g.id).iter("animate") if a.get("property") == "scaleY"]
+    keys = [float(k.get(field)) for k in blink.findall("key") for field in ("time", "value")]
+    dips = [v for t in (0.1, 0.4, 0.7) for v in (t, 1.0, t + 0.05, 0.1, t + 0.12, 1.0)]
+    assert keys == pytest.approx([0.0, 1.0, *dips])
+
+
+@pytest.mark.parametrize(
+    "blinks, match",
+    [
+        ((0.4, 0.2), "blink 1 at 0.2"),
+        ((0.2, 0.3), "blink at 0.3 must come 0.12 s after the one at 0.2"),
+        ((-0.1,), "blink 0 at -0.1"),
+        ((1.0,), "blink 0 at 1.0"),
+        ((float("nan"),), "blink 0 at nan"),
+        ((True,), "blink 0 at True"),
+    ],
+)
+def test_blinks_must_rise_inside_the_shot_a_blink_apart(blinks, match):
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match=match):
+        stick.rig(cv, cv.comp, [TYPE, TURN], 1.0, blinks=blinks)
+
+
 def test_the_mouth_speaks_the_phones_and_closes_to_the_current_face():
     cv = canvas()
     phones = [{"c": "o", "start": 0.1, "end": 0.3}, {"c": "a", "start": 0.6, "end": 0.8}]
