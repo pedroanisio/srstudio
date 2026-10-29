@@ -4,7 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0035: One home for the input checks every style copied
 
-- Status: accepted; implemented 2026-10-29 (`srstudio.checks`; `tests/test_checks.py`)
+- Status: accepted; implemented 2026-10-29 (`srstudio.checks`, `Canvas.require_font`; `tests/test_checks.py`,
+  `tests/test_canvas_and_registry.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
@@ -40,6 +41,10 @@ Others were accidents of how each copy was written:
 - **Adopted by** `staging.check_spans`, the `saga_sets`, `toon_sets` and `gloss` end, second and span checks, the
   `stick_flat` drop time, the Ink captcha and phone times, and the Saga hologram's panel starts. The Gloss set
   checks in `gloss_sets` adopt `checks.rising` after this change merges.
+- **`Canvas.require_font(what, error=ValueError)` is the font guard.** It returns the caption font asset, or
+  raises `error("this canvas has no caption font; <what>")`. The 14 guards in the Stick, Stick sets, Toon, Collage
+  and prop modules call it with their own `what`, so each refusal reads as before, and Collage keeps
+  `CollageError`. `Canvas.text` and `native` keep their own guards, whose wording points at `EpisodeSpec.font`.
 
 ## Rejected alternatives
 

@@ -139,3 +139,19 @@ def test_style_gradients_share_conflict_detection_with_canvas_gradients(stick_fi
     declarations[0]()
     with pytest.raises(NativeError, match="already declared"):
         declarations[1]()
+
+
+class StyleError(ValueError):
+    pass
+
+
+def test_require_font_returns_the_caption_font():
+    assert fresh().require_font("the card is set in it") == fresh().font_asset
+
+
+def test_require_font_refuses_a_silent_canvas_with_the_callers_error_and_words():
+    cv = Canvas(Scene(version="auto"), OFFICE, font_asset=None)
+    with pytest.raises(ValueError, match="^this canvas has no caption font; the card is set in it$"):
+        cv.require_font("the card is set in it")
+    with pytest.raises(StyleError, match="^this canvas has no caption font; the Stick style captions in its font$"):
+        cv.require_font("the Stick style captions in its font", StyleError)

@@ -61,11 +61,6 @@ ARMREST_TOP = 1220
 SEAT_TOP, CUSHION = 640, 1270
 
 
-def _need_font(cv: Canvas, what: str) -> None:
-    if cv.font_asset is None:
-        raise ValueError(f"this canvas has no caption font; the {what} is set in it")
-
-
 def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight=700, align="center"):
     name = cv.uid("text")
     cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
@@ -103,7 +98,7 @@ def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1") -> None:
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
     (ADR 0001)."""
-    _need_font(cv, "boarding sign")
+    cv.require_font("the boarding sign is set in it")
     if not gate.strip() or len(gate) > GATE_CHARS:
         raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
     if not now.strip() or len(now) > NOW_CHARS:
@@ -150,7 +145,7 @@ def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
     her legs. A screen on top and the gate lettered on its front plate, or the plate blank with ``plate=False``
     (a close-up whose caption band would sit over the lettering)."""
     if plate:
-        _need_font(cv, "gate plate")
+        cv.require_font("the gate plate is set in it")
     if not gate.strip() or len(gate) > GATE_CHARS:
         raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
     s = cv
@@ -171,7 +166,7 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
     """A wheeled carry-on standing on ``x, y`` (the floor under its middle), its handle up and a luggage tag
     lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip."""
     if tag is not None:
-        _need_font(cv, "luggage tag")
+        cv.require_font("the luggage tag is set in it")
     if tag is not None and (not tag.strip() or len(tag) > TAG_CHARS):
         raise StickDataError(f"the tag has 1 to {TAG_CHARS} characters, got {tag!r}")
     s = cv
@@ -197,7 +192,7 @@ def cabin(cv: Canvas, parent, *, row: str = "38", seats: str = "DEF") -> None:
     """A row of the cabin seen from the aisle: the overhead bins with the ``row`` number (1 to :data:`ROW_CHARS`
     characters) and a letter over each of the three seats (``seats``, three letters), the seat backs at
     :data:`SEATS` with their headrest covers, the cushions and the floor. The code sits on the floor (ADR 0001)."""
-    _need_font(cv, "row label")
+    cv.require_font("the row label is set in it")
     if not row.strip() or len(row) > ROW_CHARS:
         raise StickDataError(f"the row has 1 to {ROW_CHARS} characters, got {row!r}")
     if len(seats) != len(SEATS) or not all(c.strip() for c in seats):

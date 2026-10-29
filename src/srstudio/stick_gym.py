@@ -53,11 +53,6 @@ STAFF_AT = (1520.0, 0.0)  # with flip=True a STANDING pose here stands behind th
 DAWN = 1.5  # seconds the sky takes to turn and the sun to climb
 
 
-def _need_font(cv: Canvas, what: str) -> None:
-    if cv.font_asset is None:
-        raise ValueError(f"this canvas has no caption font; the {what} is set in it")
-
-
 def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight: int = 700, lines: int = 1):
     name = cv.uid("text")
     cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
@@ -88,7 +83,7 @@ def gym(cv: Canvas, parent, end: float, *, sunrise: float | None = None) -> None
     """The gym's front desk area before dawn: the wall, the brand, the poster, the window with the city (night, or
     dawn from ``sunrise`` seconds on the parent's clock, turning over :data:`DAWN`; 0 draws it already day), the
     rack and the treadmill, the mats."""
-    _need_font(cv, "gym's sign")
+    cv.require_font("the gym's sign is set in it")
     if sunrise is not None and not (math.isfinite(sunrise) and 0 <= sunrise < end):
         raise StickDataError(f"sunrise is a second in the shot (0..{end}), got {sunrise!r}")
     s = cv
@@ -150,7 +145,7 @@ def counter(cv: Canvas, parent, *, sign: str, fine: str = ""):
     """The front desk, drawn over the staff: the slab, the front with its stripe, a card reader, and the tent sign
     on top lettered ``sign`` (1 to :data:`SIGN_CHARS` characters) over its ``fine`` print (up to
     :data:`FINE_CHARS`, set small: it reads in a close-up on :data:`SIGN_CENTRE`)."""
-    _need_font(cv, "counter's sign")
+    cv.require_font("the counter's sign is set in it")
     if not sign.strip() or len(sign) > SIGN_CHARS:
         raise StickDataError(f"the sign has 1 to {SIGN_CHARS} characters, got {sign!r}")
     if len(fine) > FINE_CHARS:

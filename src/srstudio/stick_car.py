@@ -521,8 +521,7 @@ def laptop(
     """An open laptop standing on a surface at (``x``, ``y``: its base's left end), its screen toward the camera: a
     mail window with ``title``, up to four ``rows`` each ticked as sent, and an optional ``badge`` (a count in a red
     pill), all sized by ``scale``."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the laptop's screen is set in it")
+    cv.require_font("the laptop's screen is set in it")
     if not title.strip() or not 1 <= len(rows) <= 4 or any(not r.strip() for r in rows):
         raise StickDataError(f"a laptop screen needs a title and 1 to 4 non-empty rows, got {title!r}, {rows!r}")
     if not (math.isfinite(scale) and scale > 0):
@@ -551,8 +550,7 @@ def phone(cv: Canvas, parent, *, sender: str, text: str, buzz: Sequence[float] =
     """A phone standing in a windshield mount with its top left at ``at`` (the dashboard's mount, :data:`MOUNT`),
     showing one notification from ``sender``; it shakes, with buzz marks, for a moment at each time in ``buzz``
     (seconds on the parent's clock)."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the phone's notification is set in it")
+    cv.require_font("the phone's notification is set in it")
     if not sender.strip() or not text.strip():
         raise StickDataError("a phone notification needs a sender and a text")
     if any(not (math.isfinite(t) and t >= 0) for t in buzz) or list(buzz) != sorted(buzz):

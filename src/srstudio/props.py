@@ -726,8 +726,7 @@ def tip_tablet(
     """A tablet on a swivel stand whose foot stands on (``x``, ``y``), its screen toward the viewer: ``heading``,
     one big button per option (1 to 4), and under them the smallest thing on the screen, ``no tip``. Each pick
     ``(time, index)`` lights that button from its time until the next pick."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the tip tablet's screen is set in it")
+    cv.require_font("the tip tablet's screen is set in it")
     if not heading.strip():
         raise ValueError("a tip tablet needs a heading")
     if not 1 <= len(options) <= 4 or any(not o.strip() for o in options):
@@ -795,8 +794,8 @@ def pink_slip(
     only in that span (the slip in a hand or a beak); ``fall=(at, height)`` hides it until ``at``, then drops it
     ``height`` above its mark onto the mark in :data:`SLIP_FALL` seconds, tipping as it lands. A slip either is
     held or falls, not both."""
-    if name is not None and cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the pink slip's name is lettered in it")
+    if name is not None:
+        cv.require_font("the pink slip's name is lettered in it")
     if name is not None and (not name.strip() or len(name) > SLIP_CHARS):
         raise ValueError(f"the slip's name has 1 to {SLIP_CHARS} characters, got {name!r}")
     if show is not None and (not 0 <= show[0] < show[1] or fall is not None):

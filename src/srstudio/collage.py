@@ -1253,8 +1253,7 @@ def captions(
 ) -> None:
     """One pill per cue, centred under :data:`CAPTION_TOP`, one or two lines (:func:`caption_lines`), sized by
     ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise)."""
-    if cv.font_asset is None:
-        raise CollageError("this canvas has no caption font; the Collage style letters its captions in its font")
+    cv.require_font("the Collage style letters its captions in its font", CollageError)
     for line in lines:
         rows = caption_lines(measure, line.text, cv.width)
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)

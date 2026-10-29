@@ -518,8 +518,7 @@ def captions(
 ) -> None:
     """One pill per cue, centred, sized by ``measure(text)`` (the text's advance width at :data:`CAPTION_SIZE`);
     ``tints`` colours the pill of a cue by its speaker (white otherwise)."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the Toon style letters its captions in its font")
+    cv.require_font("the Toon style letters its captions in its font")
     top, height = int(round(fy(CAPTION_TOP))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
     for line in lines:
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)

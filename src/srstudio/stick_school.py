@@ -94,11 +94,6 @@ def held(pose: str) -> tuple[float, float]:
     return TEACHER_AT[0] - (hands[0][0] + hands[1][0]) / 2, (hands[0][1] + hands[1][1]) / 2
 
 
-def _need_font(cv: Canvas, what: str) -> None:
-    if cv.font_asset is None:
-        raise ValueError(f"this canvas has no caption font; the {what} is set in it")
-
-
 def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight=700, lines=1, align="center"):
     name = cv.uid("text")
     cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
@@ -112,7 +107,7 @@ def classroom(cv: Canvas, parent, *, board: str = "PARENT-TEACHER NIGHT") -> Non
     """A primary-school classroom: the wall and its alphabet strip, the chalkboard lettered ``board`` (1 to
     :data:`BOARD_CHARS` characters, in chalk), the class's crayon drawings pinned up, the clock and the linoleum
     floor. The code sits on the floor's near edge (ADR 0001)."""
-    _need_font(cv, "chalkboard")
+    cv.require_font("the chalkboard is set in it")
     if not board.strip() or len(board) > BOARD_CHARS:
         raise StickDataError(f"the board has 1 to {BOARD_CHARS} characters, got {board!r}")
     s = cv
@@ -253,7 +248,7 @@ def essay(
     :data:`LINE_CHARS` characters, two rows at most), a highlighter sweeping line ``mark`` over :data:`SWEEP`
     seconds from ``mark_at``, a ``grade`` circled in red, a margin ``note`` that appears at ``note_at``, and the
     crayon drawing of Dad. Lines not yet read are not drawn, so the page never runs ahead of the reading."""
-    _need_font(cv, "essay")
+    cv.require_font("the essay is set in it")
     _check_essay(lines, title, shown, mark, mark_at, grade, note, note_at)
     s = cv
     x, y, w, h = SHEET

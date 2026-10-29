@@ -605,8 +605,7 @@ def captions(cv: Canvas, parent, lines: Sequence[Line], *, outline: str = "strok
     and the contrast check, which measures the pixels a text layer changes, compares the white with the ink behind
     it instead of their mix with the background. ``"none"`` draws the white text alone, for cues over a dark
     backdrop (the call screen), where an ink outline cannot contrast and the white needs none."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the Stick style captions in its font")
+    cv.require_font("the Stick style captions in its font")
     if outline not in OUTLINES:
         raise StickDataError(f"outline must be one of {', '.join(OUTLINES)}, got {outline!r}")
     for line in lines:
@@ -787,8 +786,7 @@ def words(cv: Canvas, parent, cues: Sequence[Line], *, y: float = WORD_Y, scrim:
     darkness (0..1), for a scene too bright behind the words for the default :data:`SCRIM_PEAK`."""
     if not (math.isfinite(scrim) and 0 < scrim <= 1):
         raise StickDataError(f"scrim is a darkness above 0 and up to 1, got {scrim!r}")
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the Stick style captions in its font")
+    cv.require_font("the Stick style captions in its font")
     for cue in cues:
         if not cue.text.strip() or "\n" in cue.text:
             raise StickDataError(f"a word cue holds one line, got {cue.text!r}")
@@ -1250,8 +1248,7 @@ CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 @register("graphic", "stick-card", tags=("hook", "card", "font"))
 def card(cv: Canvas, parent, text: str, *, size: float = 54):
     """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the Stick card sets its hook in it")
+    cv.require_font("the Stick card sets its hook in it")
     if not text.strip():
         raise StickDataError("a hook card needs text")
     x, y, w, h, r = CARD
@@ -1337,8 +1334,7 @@ def call(
     ``highlight`` marks one inbox row (by index) in marker yellow.
 
     The inbox's rows and the tiles are the episode's data; :func:`_check_call` refuses what the screen cannot show."""
-    if cv.font_asset is None:
-        raise ValueError("this canvas has no caption font; the Stick call screen sets its text in it")
+    cv.require_font("the Stick call screen sets its text in it")
     _check_call(tiles, inbox, speaking, highlight)
     g = _group(cv, parent)
     box(cv, g, 0, 0, cv.width, cv.height, CALL_BG)

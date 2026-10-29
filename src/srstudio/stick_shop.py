@@ -95,11 +95,6 @@ def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, lines
     return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
 
 
-def _need_font(cv: Canvas, what: str) -> None:
-    if cv.font_asset is None:
-        raise ValueError(f"this canvas has no caption font; the {what} is set in it")
-
-
 def hand(pose: RigPose, *, at: Point = SHOPPER_AT, flip: bool = False) -> Point:
     """Where ``pose``'s near hand is once the figure stands at ``at`` (mirrored with ``flip``, as
     :func:`srstudio.stick.rig` places it): the point an item it carries is drawn at."""
@@ -112,7 +107,7 @@ def checkout(cv: Canvas, parent) -> None:
     """A supermarket's self-checkout: stocked shelves along the back wall under strip lights, the hanging
     ``SELF-CHECKOUT`` sign, a tiled floor in perspective and the bagging shelf with its rack, left of where
     :func:`kiosk` stands."""
-    _need_font(cv, "checkout's sign")
+    cv.require_font("the checkout's sign is set in it")
     s = cv
     box(s, parent, 0, 0, s.width, 1480, paint(s, Gradient("shop-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, 1480)))
     box(s, parent, 0, 0, s.width, 120, CEILING)
@@ -213,7 +208,7 @@ def kiosk(cv: Canvas, parent, screens: Sequence[Screen], end: float, *, alarm: S
     scanner bed with its red line, and the screen on its neck showing each of ``screens`` from its start until the
     next (seconds on the parent's clock, to ``end``). Its lamp flashes red three times from each time in
     ``alarm``. :func:`_check_screens` refuses a schedule the screen cannot show."""
-    _need_font(cv, "kiosk's screen")
+    cv.require_font("the kiosk's screen is set in it")
     _check_screens(screens, end, alarm)
     s = cv
     g = _group(s, parent)
@@ -264,7 +259,7 @@ def avocado(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
 def name_badge(cv: Canvas, parent, x: float, y: float, name: str, title: str):
     """A name badge with its top left at (``x``, ``y``): ``name`` large over ``title`` small, white on the
     store's green, for the chest of an apron."""
-    _need_font(cv, "name badge")
+    cv.require_font("the name badge is set in it")
     if not name.strip() or not title.strip():
         raise StickDataError(f"a name badge needs a name and a title, got {name!r}, {title!r}")
     g = _group(cv, parent, x=x, y=y)
