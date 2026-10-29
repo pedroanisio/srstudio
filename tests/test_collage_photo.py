@@ -46,7 +46,7 @@ def test_the_props_are_registered_in_the_collage_style():
 
 
 @pytest.mark.parametrize("draw", [collage_photo.timer, collage_photo.viewfinder])
-def test_the_phone_and_its_viewfinder_count_down_one_second_a_digit(draw):
+def test_the_phone_and_its_viewfinder_count_down_one_tick_a_digit(draw):
     cv = canvas()
     if draw is collage_photo.timer:
         draw(cv, cv.comp, 800, 1500, start=2.0, seconds=5)
@@ -57,6 +57,21 @@ def test_the_phone_and_its_viewfinder_count_down_one_second_a_digit(draw):
     assert [(0.0, 1.0), (3.0, 0.0)] in fades  # the full count waits on the screen until its first second is up
     for i in range(1, 5):
         assert [(0.0, 0.0), (2.0 + i, 1.0), (3.0 + i, 0.0)] in fades  # then each digit for its second, in turn
+
+
+def test_a_count_stretched_over_a_scene_ticks_evenly_to_zero():
+    cv = canvas()
+    collage_photo.timer(cv, cv.comp, 800, 1500, start=0.0, seconds=10, tick=1.26)
+    fades = animated(cv, "opacity")
+    assert [(0.0, 1.0), (1.26, 0.0)] in fades  # 10 ticks over from the press
+    assert [(0.0, 0.0), (1.26, 1.0), (2.52, 0.0)] in fades  # then 9: the count visibly drops
+    assert [(0.0, 0.0), (11.34, 1.0), (12.6, 0.0)] in fades  # and 1 ends on the shutter
+
+
+def test_the_viewfinder_disc_shows_only_while_it_counts():
+    cv = canvas()
+    collage_photo.viewfinder(cv, cv.comp, start=1.0, seconds=4, tick=1.5)
+    assert [(0.0, 1.0), (7.0, 0.0)] in animated(cv, "opacity")  # gone with the last digit: no empty disc after
 
 
 def test_the_viewfinder_frames_what_the_print_shows_clear_of_the_living_room_signature():
@@ -105,6 +120,8 @@ def test_the_sofa_front_covers_the_busts_cut_off_bottoms():
         (lambda cv: collage_photo.timer(cv, cv.comp, 0, 0, start=0.0, seconds=0), "seconds"),
         (lambda cv: collage_photo.timer(cv, cv.comp, 0, 0, start=0.0, seconds=11), "seconds"),
         (lambda cv: collage_photo.viewfinder(cv, cv.comp, start=0.0, seconds=2.5), "seconds"),
+        (lambda cv: collage_photo.viewfinder(cv, cv.comp, start=0.0, tick=0.0), "tick"),
+        (lambda cv: collage_photo.timer(cv, cv.comp, 0, 0, start=0.0, tick=float("inf")), "tick"),
         (lambda cv: collage_photo.flash(cv, cv.comp, -0.5), "flash"),
         (lambda cv: collage_photo.flash(cv, cv.comp, 1.0, fade=0.0), "flash"),
         (lambda cv: collage_photo.flash(cv, cv.comp, 1.0, hold=-1.0), "flash"),

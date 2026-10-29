@@ -12,9 +12,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from srstudio import collage, collage_photo
+from srstudio import collage, collage_photo, collage_sets
 from srstudio.collage_group import Lineup, Place
-from srstudio.collage_sketch import TINTS, CastDrawer, Staging, make_sketch, solo, timed, voices_note
+from srstudio.collage_sketch import TINTS, ZOOM_SCALE, CastDrawer, Staging, make_sketch, solo, timed, voices_note
 from srstudio.sketch import Appearance, Beat, Line, Mouths, appearances, events
 
 SEED = 3907
@@ -40,6 +40,10 @@ PHONE = (820.0, 1900.0, 1.3)  # the timer prop in Gary's setup shot: the books' 
 PRINT = dict(x=100.0, y=560.0, width=840.0, tilt=-3.0)
 LAUGH = {"gary": ("wide", "o", "shrug"), "rosa": ("closed", "grin", "hold"), "kai": ("closed", "grin", "hold")}
 FLASH_HOLD, FLASH_FADE = 1 / 24, 0.3  # one white frame, then the room comes back
+# the crash zoom keeps the signature's cactus this far inside the frame's left edge; the cactus stands 70 px into
+# its shelf (collage_sets._shelf), 44 units either side at most (signature.cactus's shadow) at the shelf's scale
+SIGNATURE_MARGIN = 12.0
+CACTUS_LEFT = 70.0 - 44.0 * collage_sets.CACTUS_SCALE
 
 LINES = (
     Line("gary", "Ten seconds! Natural!"),
@@ -81,12 +85,14 @@ def _pose(start: float, eyes: str, mouth: str, arms: str) -> dict:
 
 @dataclass(frozen=True)
 class Plan:
-    """The staging made from the beats the build draws: the lineup on the sofa, the self-timer's count (from
-    ``start``, ``seconds`` long, reaching zero on the shutter) and the ``reveal`` that cuts to the print."""
+    """The staging made from the beats the build draws: the lineup on the sofa, the self-timer's count (from the
+    press at ``start``, ``seconds`` digits of ``tick`` each, reaching zero on the shutter) and the ``reveal`` that
+    cuts to the print."""
 
     lineup: Lineup
     start: float
     seconds: int
+    tick: float
     flash: float
     reveal: float
 
@@ -116,12 +122,22 @@ def plan(beats: Sequence[Beat], end: float) -> Plan:
     spans = tuple(
         (a.start, a.end) for a in appearances(beats, end) if timer < a.start < reveal and a.who != "kai"
     )  # every shot between the setup and the print, but Kai's close
+    # the count runs from the press to the shutter, its tick stretched to fit: it visibly drops from the first line
     seconds = max(1, min(collage_photo.MAX_SECONDS, round(flash - timer)))
-    return Plan(Lineup(PLACES, reactions, spans), round(flash - seconds, 6), seconds, flash, reveal)
+    return Plan(Lineup(PLACES, reactions, spans), timer, seconds, round((flash - timer) / seconds, 6), flash, reveal)
+
+
+def pivot(face: collage.Point) -> collage.Point:
+    """Where a crash zoom onto ``face`` pivots: on the face, moved left only as far as keeps the living room's
+    signature, its cactus and its code, inside the frame; the bare end of the shelf may crop, the face stays
+    clear of the right edge."""
+    left = collage_sets.signature_box("living-room")[0] + CACTUS_LEFT
+    return min(face[0], (ZOOM_SCALE * left - SIGNATURE_MARGIN) / (ZOOM_SCALE - 1)), face[1]
 
 
 def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
-    """The lineup in the group shots, the speaker alone in the singles, and nobody in front of the print."""
+    """The lineup in the group shots, the speaker alone in the singles (a zoom framed to keep the signature whole),
+    and nobody in front of the print."""
     p = plan(beats, end)
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
@@ -129,7 +145,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
             return collage.face(collage.LOOKS[app.who])  # no one drawn: no zoom lands here
         if p.lineup.staged(app):
             return p.lineup(cv, parent, app, mouths)
-        return solo(cv, parent, app, mouths)
+        return pivot(solo(cv, parent, app, mouths))
 
     return draw
 
@@ -141,10 +157,10 @@ def dress(shot) -> None:
     p = plan(shot.beats, shot.end)
     if app.start == 0.0:
         x, y, scale = PHONE
-        collage_photo.timer(cv, shot.front, x, y, start=p.start, seconds=p.seconds, scale=scale)
+        collage_photo.timer(cv, shot.front, x, y, start=p.start, seconds=p.seconds, tick=p.tick, scale=scale)
     elif p.lineup.staged(app):
         collage_photo.sofa(cv, shot.front)
-        collage_photo.viewfinder(cv, shot.front, start=p.start, seconds=p.seconds)
+        collage_photo.viewfinder(cv, shot.front, start=p.start, seconds=p.seconds, tick=p.tick)
         if app.start <= p.flash < app.end:
             collage_photo.flash(cv, shot.front, p.flash, hold=FLASH_HOLD, fade=FLASH_FADE)
     elif app.start == p.reveal:

@@ -3,9 +3,11 @@ same countdown in the phone's viewfinder over the group shot, the front of the s
 into, the camera's flash, and the printed photo.
 
 The group shot itself is a :class:`srstudio.collage_group.Lineup`; the props here sit in a shot's ``front``. The
-countdown shows one digit per second from ``start`` (project seconds), from ``seconds`` down to 1. The print is a
-still of the lineup in its room: each character in one pose (no breath, no blink), the ones in ``blur`` out of
-focus, the room cropped to the camera's framing inside a paper border.
+countdown shows one digit per ``tick`` from ``start`` (project seconds), from ``seconds`` down to 1, the full count
+waiting on screen before ``start``; a scene longer or shorter than the count stretches the tick, so the count
+visibly drops from the press and reaches zero on the shutter. The print is a still of the lineup in its room: each
+character in one pose (no breath, no blink), the ones in ``blur`` out of focus, the room cropped to the camera's
+framing inside a paper border.
 """
 
 from __future__ import annotations
@@ -44,27 +46,44 @@ class PhotoError(SrstudioError, ValueError):
     """A countdown, a flash or a print the props cannot show."""
 
 
-def _check_count(start: float, seconds: int) -> None:
+def _check_count(start: float, seconds: int, tick: float) -> None:
     if not (isinstance(start, int | float) and math.isfinite(start) and start >= 0):
         raise PhotoError(f"a countdown starts at a project second, got start={start!r}")
+    if not (isinstance(tick, int | float) and math.isfinite(tick) and tick > 0):
+        raise PhotoError(f"a countdown ticks forward, got tick={tick!r}")
     if not (isinstance(seconds, int) and not isinstance(seconds, bool) and 1 <= seconds <= MAX_SECONDS):
         raise PhotoError(f"the self-timer counts whole seconds from 1 to {MAX_SECONDS}, got seconds={seconds!r}")
 
 
-def _digits(cv: Canvas, parent, start: float, seconds: int, x: float, y: float, w: float, h: float, size: float):
-    """The digits ``seconds`` down to 1, each shown for its second from ``start``; the first also waits on screen
+def _tick(start: float, tick: float, i: int) -> float:
+    return round(start + i * tick, 6)
+
+
+def _digits(cv: Canvas, parent, start: float, seconds: int, tick: float, box: tuple[float, float, float, float]):
+    """The digits ``seconds`` down to 1, each shown for its ``tick`` from ``start``; the first also waits on screen
     from 0, as a self-timer shows its full count before it starts."""
+    x, y, w, h = box
     for i in range(seconds):
         digit = cv.group(parent, cv.uid("count"))
-        cv.text(digit, cv.uid("count-digit"), str(seconds - i), x, y, round(w), round(h), size, color=INK)
-        cv.gate(digit, [(0.0 if i == 0 else start + i, start + i + 1)])
+        cv.text(digit, cv.uid("count-digit"), str(seconds - i), x, y, round(w), round(h), 120, color=INK)
+        cv.gate(digit, [(0.0 if i == 0 else _tick(start, tick, i), _tick(start, tick, i + 1))])
 
 
 @register("prop", "collage-phone-timer", summary="A phone propped on three paper books, its self-timer counting")
-def timer(cv: Canvas, parent, x: float, y: float, *, start: float, seconds: int = MAX_SECONDS, scale: float = 1.0):
+def timer(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    start: float,
+    seconds: int = MAX_SECONDS,
+    tick: float = 1.0,
+    scale: float = 1.0,
+):
     """The books' bottom centre at ``x, y``, the phone standing on them facing the room, its screen counting
-    ``seconds`` down from ``start``."""
-    _check_count(start, seconds)
+    ``seconds`` down from ``start``, one digit per ``tick``."""
+    _check_count(start, seconds, tick)
     g = cv.group(parent, cv.uid("timer"), x=x, y=y, scaleX=scale, scaleY=scale)
     for i, (bx, by, bw, bh, fill) in enumerate(BOOKS):
         draw_shapes(cv, g, _paper(_cut(f"timer-book-{i}", [(bx, by), (bx + bw, by), (bx + bw, by + bh),
@@ -74,15 +93,16 @@ def timer(cv: Canvas, parent, x: float, y: float, *, start: float, seconds: int 
     draw_shapes(cv, g, _paper(_cut("timer-phone", [(px, py), (px + PHONE_W, py), (px + PHONE_W, top), (px, top)], 2),
                               "#2b2d42"))  # fmt: skip
     cv.rect(g, px + 12, py + 16, PHONE_W - 24, PHONE_H - 32, "#fffaf0", radius=14)
-    _digits(cv, g, start, seconds, px + 12, py + 40, PHONE_W - 24, PHONE_H - 80, 120)
+    _digits(cv, g, start, seconds, tick, (px + 12, py + 40, PHONE_W - 24, PHONE_H - 80))
     return g
 
 
 @register("prop", "collage-viewfinder", summary="The phone camera's frame lines and its countdown over a shot")
-def viewfinder(cv: Canvas, parent, *, start: float, seconds: int = MAX_SECONDS):
+def viewfinder(cv: Canvas, parent, *, start: float, seconds: int = MAX_SECONDS, tick: float = 1.0):
     """The shot seen through the phone on the books: white corner brackets and a paper disc counting ``seconds``
-    down from ``start``, under the caption pill and over the heads."""
-    _check_count(start, seconds)
+    down from ``start``, one digit per ``tick``, under the caption pill and over the heads; the disc goes with the
+    last digit."""
+    _check_count(start, seconds, tick)
     g = cv.group(parent, cv.uid("viewfinder"))
     x0, y0, x1, y1 = CORNERS
     for cx, cy, sx, sy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
@@ -90,8 +110,10 @@ def viewfinder(cv: Canvas, parent, *, start: float, seconds: int = MAX_SECONDS):
         cv.path(g, d, fill=cv.clear, stroke=INK, sw=14, opacity=0.35)
         cv.path(g, d, fill=cv.clear, stroke="#ffffff", sw=8)
     (ax, ay), r = COUNT_AT, COUNT_R
-    cv.ellipse(g, ax - r, ay - r, 2 * r, 2 * r, "#fffaf0", stroke=INK, sw=6)
-    _digits(cv, g, start, seconds, ax - r, ay - r * 0.8, 2 * r, 1.7 * r, 120)
+    disc = cv.group(g, cv.uid("count-disc"))
+    cv.gate(disc, [(0.0, _tick(start, tick, seconds))])
+    cv.ellipse(disc, ax - r, ay - r, 2 * r, 2 * r, "#fffaf0", stroke=INK, sw=6)
+    _digits(cv, disc, start, seconds, tick, (ax - r, ay - r * 0.8, 2 * r, 1.7 * r))
     return g
 
 

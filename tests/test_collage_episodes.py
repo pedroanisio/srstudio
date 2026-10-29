@@ -229,9 +229,9 @@ def test_the_family_photo_stages_its_group_countdown_and_flash_from_its_events(m
     for app in sketch.appearances(beats, end):
         group = timer < app.start < reveal and app.who != "kai"
         assert plan.lineup.staged(app) == group, (k, app.who, app.start)  # Kai's close and the ends are singles
-    # the countdown reaches zero on the shutter, at most ten seconds long
-    assert plan.start + plan.seconds == pytest.approx(flash)
-    assert 1 <= plan.seconds <= 10 and plan.start >= timer
+    # the countdown starts on the press and ticks evenly to zero on the shutter, from at most ten
+    assert plan.start == timer and plan.start + plan.seconds * plan.tick == pytest.approx(flash)
+    assert 1 <= plan.seconds <= 10 and 0.5 <= plan.tick <= 2.0
     flushy = next(b.start for b in beats if b.line == 6)
     for name in ("rosa", "kai"):
         laughing = [r for r in plan.lineup.reactions[name] if r["eyes"] == "closed" and r["mouth"] == "grin"]
@@ -252,3 +252,23 @@ def test_the_family_photo_reveal_shows_the_print_alone(mods):
     assert scene.to_bytes(layout="pretty").count(b"<shape") == 0  # nobody in front of the print
     cast(cv, cv.comp, apps[0.0], {})
     assert scene.to_bytes(layout="pretty").count(b"<shape") > 0  # the setup shot draws Gary
+
+
+def test_the_family_photo_zoom_keeps_the_whole_signature_in_frame(mods):
+    builder, data = mods
+    fp = data["the_family_photo"]
+    sk = fp.STAGING.sketch
+    cast = fp.STAGING.cast(sk.beats, sk.end)
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=sk.end, background=collage.PAPER.background)
+    cv = Canvas(scene, collage.PAPER, namer=flat_counter("k"))
+    zoom = sketch.events(sk.beats, "zoom")[0][0]
+    app = next(a for a in sketch.appearances(sk.beats, sk.end) if a.start <= zoom < a.end)
+    px, py = cast(cv, cv.comp, app, {})
+    x0, y0, x1, y1 = collage_sets.signature_box(fp.STAGING.sets[app.who])
+    k = builder.ZOOM_SCALE
+    # the cactus from its left edge, and the code at the shelf's right end, top to bottom of the box
+    corners = [(px + (x - px) * k, py + (y - py) * k) for x in (x0 + fp.CACTUS_LEFT, x1) for y in (y0, y1)]
+    assert all(0 <= x <= 1080 and 0 <= y <= 1920 for x, y in corners), corners  # cactus and label both in frame
+    fx, _ = collage.face(collage.LOOKS[app.who])
+    assert 0 < px + (fx - px) * k <= 720  # the face stays in frame, its headset's far cup clear of the edge
