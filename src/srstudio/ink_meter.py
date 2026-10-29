@@ -17,7 +17,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, human, path
@@ -110,7 +110,7 @@ def _box(x: float, y: float, w: float, h: float, r: float) -> str:
 
 
 def _within(at: float, take: Take, what: str) -> None:
-    if not (math.isfinite(at) and 0 <= at <= take.duration):
+    if not (checks.number(at) and 0 <= at <= take.duration):
         raise MeterError(f"{what} falls within the take (0..{take.duration}), got {at}")
 
 
@@ -300,12 +300,12 @@ def kerb(
     driving off, or long gone); ``close`` frames the meter alone. ``view`` frames the kerb (:data:`KERB_VIEW`, or
     :data:`TOW_WIDE` with a tow; :data:`TOW_TIGHT` is on the car and the truck). ``meter_kw`` (``display``,
     ``speaker``) go to :func:`meter`."""
-    if view is not None and not (all(math.isfinite(v) for v in view) and view[0] > 0):
+    if view is not None and not (all(checks.number(v) for v in view) and view[0] > 0):
         raise MeterError(f"a kerb view is a positive scale and a place, got {view!r}")
     if tow is not None:
         if close:
             raise MeterError("a tow is seen from the wide kerb, not the close meter")
-        if not (math.isfinite(tow) and tow < take.duration):
+        if not (checks.number(tow) and tow < take.duration):
             raise MeterError(f"the tow starts before the take ends ({take.duration}), got {tow}")
     if close:
         path(cv, parent, "M 0 1000 L 1080 1000", sw=2.4)
@@ -367,11 +367,11 @@ def _check_app(title: str, rows: Sequence[AppRow], progress, stars, take: Take) 
                 raise MeterError(f"a row is taken after it shows: {r.text!r} at {r.at}, taken at {r.taken}")
     if progress is not None:
         start, end = progress
-        if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end <= take.duration):
+        if not (checks.number(start) and checks.number(end) and 0 <= start < end <= take.duration):
             raise MeterError(f"the progress bar fills forward within the take (0..{take.duration}), got {progress}")
     if stars is not None:
         last = stars + (STARS - 1) * STAR_STEP
-        if not (math.isfinite(stars) and 0 <= stars and last <= take.duration):
+        if not (checks.number(stars) and 0 <= stars and last <= take.duration):
             raise MeterError(f"the stars light within the take (0..{take.duration}), from {stars} to {last}")
 
 

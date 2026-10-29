@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, human, path
@@ -66,7 +66,7 @@ def _check_mark(mark: tuple[str, float] | None, take: Take) -> None:
     kind, at = mark
     if kind not in MARKS:
         raise DoorbellError(f"the mark is one of {MARKS}, got {kind!r}")
-    if not (math.isfinite(at) and 0 <= at <= take.duration):
+    if not (checks.number(at) and 0 <= at <= take.duration):
         raise DoorbellError(f"the mark falls within the take (0..{take.duration}), got {at}")
 
 
@@ -160,7 +160,7 @@ def _check_tags(tags: Sequence[tuple[float, str]], take: Take) -> None:
     for at, text in tags:
         if not (text.strip() and len(text) <= TAG_MAX):
             raise DoorbellError(f"a tag is 1 to {TAG_MAX} characters, got {text!r}")
-        if not (math.isfinite(at) and 0 <= at <= take.duration):
+        if not (checks.number(at) and 0 <= at <= take.duration):
             raise DoorbellError(f"a tag changes within the take (0..{take.duration}), got {at}")
     if tags[0][0] != 0:
         raise DoorbellError(f"the first tag shows from 0, got {tags[0][0]}")
