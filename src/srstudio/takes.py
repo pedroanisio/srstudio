@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .compose import MusicClient, MusicOutputError, Plan
-from .errors import SrstudioError
+from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
 from .narration import (
     confirm_voice,
@@ -356,7 +356,10 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
     args = parser.parse_args(argv)
     env = os.environ if env is None else env
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
-    require_consent(env)
+    try:
+        require_consent(env)
+    except ConsentError as exc:
+        raise SystemExit(str(exc)) from None
     root = args.project.resolve()
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)

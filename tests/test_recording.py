@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import recording
+from srstudio import narration, recording
+from srstudio.errors import SrstudioError
 
 
 def test_main_hands_the_project_the_environment_and_ffmpeg_to_the_recording(tmp_path):
@@ -23,6 +24,15 @@ def test_main_defaults_to_the_ffmpeg_on_the_path_and_the_process_environment(mon
     project, env, ffmpeg = got[0]
     assert env["SRSTUDIO_RECORDING_TEST"] == "yes"
     assert ffmpeg == (shutil.which("ffmpeg") or "ffmpeg")
+
+
+def test_a_recording_refused_for_want_of_consent_exits_with_the_reason():
+    def record(project, env, ffmpeg):
+        narration.require_consent(env)
+
+    with pytest.raises(SystemExit, match="SRSTUDIO_ALLOW_CLOUD") as stop:
+        recording.main(record, None, ["proj"], env={})
+    assert not isinstance(stop.value, SrstudioError)  # the script's exit: a message and status 1
 
 
 def test_main_refuses_a_missing_project_before_recording_anything():

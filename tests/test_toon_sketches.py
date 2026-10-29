@@ -12,6 +12,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import PEACH, TOON, Canvas, flat_counter, foley, sketch, toon, toon_dinner
+from srstudio.errors import ConsentError
 from srstudio.narration import effect_cues, manifest_duration
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -183,7 +184,7 @@ def test_the_recording_run_writes_the_effects_and_the_manifest(mods, tmp_path, m
         return fake
 
     monkeypatch.setattr(sketch, "record", record)
-    with pytest.raises(SystemExit, match="SRSTUDIO_ALLOW_CLOUD"):
+    with pytest.raises(ConsentError, match="SRSTUDIO_ALLOW_CLOUD"):
         build.record_episode(sk, tmp_path, {}, "ffmpeg", 7, "note")
     manifest = build.record_episode(sk, tmp_path, {"SRSTUDIO_ALLOW_CLOUD": "1"}, "ffmpeg", 7, "note")
     assert seen["sketch"] is sk and seen["root"] == tmp_path and seen["key"] == "" and seen["ffmpeg"] == "ffmpeg"

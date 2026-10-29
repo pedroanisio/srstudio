@@ -8,8 +8,9 @@ The model output itself is parsed and checked in :mod:`srstudio.voice` (typed re
 audible audio, speech-to-text). This module holds what comes after a take passed those checks, and what
 the episode script reads back:
 
-* :func:`require_consent` and :func:`confirm_voice`: nothing leaves the machine without consent, and a
-  voice id must resolve to the premade voice the script names (the record is parsed, not trusted).
+* :func:`require_consent` and :func:`confirm_voice`: nothing leaves the machine without consent (a
+  :class:`~srstudio.errors.ConsentError` otherwise, the script's exit at its entry point), and a voice id must
+  resolve to the premade voice the script names (the record is parsed, not trusted).
 * :func:`words_from_alignment`, :func:`phones_from_alignment`: timings relative to the trimmed clip; a word
   the trim cut is an error, never a silently shortened caption.
 * :func:`schedule` chains takes one after another (Ink); :func:`slots`, :func:`retry_speed`, :func:`place`
@@ -37,7 +38,7 @@ from pathlib import Path
 from typing import Protocol
 
 from . import digest
-from .errors import MissingKeyError, SrstudioError
+from .errors import ConsentError, MissingKeyError, SrstudioError
 from .provider import CONSENT_ENV, KEY_ENV
 from .voice import RATE, Alignment, Voice, VoiceOutputError, _cached_record, _http_error, _json_body
 
@@ -98,7 +99,7 @@ class NarrationError(SrstudioError, ValueError):
 def require_consent(env: Mapping[str, str]) -> None:
     """The lines leave the machine, so the operator must say so."""
     if env.get(CONSENT_ENV) != "1":
-        raise SystemExit(f"this script sends the script to ElevenLabs; set {CONSENT_ENV}=1 to allow it")
+        raise ConsentError(f"this script sends the script to ElevenLabs; set {CONSENT_ENV}=1 to allow it")
 
 
 def _urllib_fetch(url: str, headers: Mapping[str, str]) -> object:

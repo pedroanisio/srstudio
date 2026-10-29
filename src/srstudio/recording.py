@@ -2,8 +2,10 @@
 
 A recording script names what it records (a sketch, its staging, its voices) and hands :func:`main` the function
 that records it; :func:`main` parses the arguments, resolves the project and passes the environment through, so
-the key and ``SRSTUDIO_ALLOW_CLOUD`` are read where the recording checks them, never here. A script with flags of
-its own (``--font``, ``--key-stdin``) adds them with ``options`` and receives their values as keywords.
+the key and ``SRSTUDIO_ALLOW_CLOUD`` are read where the recording checks them, never here; a recording refused
+for want of consent (:class:`~srstudio.errors.ConsentError`) is the script's exit, with the reason. A script
+with flags of its own (``--font``, ``--key-stdin``) adds them with ``options`` and receives their values as
+keywords.
 """
 
 from __future__ import annotations
@@ -13,6 +15,8 @@ import os
 import shutil
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+
+from .errors import ConsentError
 
 __all__ = ["Options", "Record", "main"]
 
@@ -42,5 +46,8 @@ def main(
                 raise ValueError(f"an option of the script shadows the shared argument {name!r}")
     args = vars(parser.parse_args(argv))
     project, ffmpeg = args.pop("project"), args.pop("ffmpeg")
-    record(project.resolve(), os.environ if env is None else env, ffmpeg, **args)
+    try:
+        record(project.resolve(), os.environ if env is None else env, ffmpeg, **args)
+    except ConsentError as exc:
+        raise SystemExit(str(exc)) from None
     return 0

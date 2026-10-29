@@ -15,7 +15,7 @@ import pytest
 
 from srstudio import cel
 from srstudio import narration as _narration
-from srstudio.errors import ProviderHTTPError
+from srstudio.errors import ConsentError, ProviderHTTPError, SrstudioError
 from srstudio.voice import RATE, Alignment, Voice, VoiceOutputError
 
 BOX = {"x": 1, "y": 1, "w": 1, "h": 1, "glyphs": "M 1 1"}
@@ -61,8 +61,9 @@ def test_schedule_chains_the_takes_and_rounds_up_to_the_frame(narration):
 
 
 def test_consent_is_required(narration):
-    with pytest.raises(SystemExit, match="SRSTUDIO_ALLOW_CLOUD"):
+    with pytest.raises(ConsentError, match="SRSTUDIO_ALLOW_CLOUD") as refused:
         narration.require_consent({})
+    assert isinstance(refused.value, SrstudioError) and isinstance(refused.value, RuntimeError)
     narration.require_consent({"SRSTUDIO_ALLOW_CLOUD": "1"})
 
 
