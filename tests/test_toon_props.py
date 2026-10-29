@@ -162,6 +162,12 @@ def test_scale_keys_hold_each_size_and_ramp_to_the_next():
         toon_props.scale_keys([(0.0, 0.0)])
 
 
+@pytest.mark.parametrize("grow", [0.0, -0.3, float("nan"), float("inf"), True])
+def test_scale_keys_refuse_a_grow_that_is_not_a_positive_number_of_seconds(grow):
+    with pytest.raises(toon.ToonDataError, match="grow"):
+        toon_props.scale_keys([(0.0, 1.0), (2.0, 1.6)], grow=grow)
+
+
 def test_the_logo_grows_about_its_centre_and_its_shadow_shows_through_its_span():
     cv = canvas()
     toon_props.logo(cv, cv.comp, [(0.0, 1.0), (2.0, 2.0), (4.0, 5.0)], shadow=(3.0, 5.5))
