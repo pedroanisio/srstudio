@@ -350,7 +350,6 @@ def router(
     scale=1,
     *,
     speaker: str = "router",
-    fps: int = 24,
     power: str = "on",
     drop_at: float | None = None,
 ):
@@ -468,7 +467,6 @@ def router_shot(
     take: Take,
     *,
     close=False,
-    fps: int = 24,
     power: str = "on",
     drop_at: float | None = None,
     hand_action: str | None = None,
@@ -479,7 +477,7 @@ def router_shot(
     _shelf(cv, parent, 40 if close else 90, 1040 if close else 990, shelf_y)
     cable_x = rx + 300 * sc
     path(cv, parent, f"M {cable_x} {shelf_y + 18} Q {cable_x + 30} {shelf_y + 200} {cable_x - 60} 1120", sw=3)
-    rg = router(cv, parent, take, rx, ry, sc, fps=fps, power=power, drop_at=drop_at)
+    rg = router(cv, parent, take, rx, ry, sc, power=power, drop_at=drop_at)
     if hand_action:
         bx, by = ROUTER_BUTTON
         hand(cv, parent, rx + bx * sc + 6, ry + by * sc + 4, 0.78 if close else 0.55, action=hand_action, at=hand_at)
@@ -487,18 +485,18 @@ def router_shot(
 
 
 @register("location", "ink-router-wide", summary="Doodle and laptop at the wide desk, the router on a shelf above")
-def router_wide(cv: Canvas, parent, take: Take, *, fps: int = 24):
+def router_wide(cv: Canvas, parent, take: Take):
     human(cv, parent, take, 166, 451, 0.50)
     laptop(cv, parent, 364, 672, 0.48)
     _shelf(cv, parent, 600, 960, 386, depth=10, bracket=60)
     path(cv, parent, "M 790 396 Q 800 560 760 787", sw=2)
-    router(cv, parent, take, 640, 300, 0.5, fps=fps)
+    router(cv, parent, take, 640, 300, 0.5)
     desk(cv, parent)
     signature.cactus(cv, parent, 920, 787, 0.28)
     return parent
 
 
-def router_scene(cv: Canvas, parent, take: Take, *, fps: int = 24, **router_kw):
+def router_scene(cv: Canvas, parent, take: Take, **router_kw):
     """The shot a take of *The Router* calls for: ``desk``, ``human``, ``router``, ``router-close`` or ``wide``.
 
     ``router_kw`` (``power``, ``drop_at``, ``hand_action``, ``hand_at``) go to :func:`router_shot`."""
@@ -507,7 +505,7 @@ def router_scene(cv: Canvas, parent, take: Take, *, fps: int = 24, **router_kw):
     if take.shot == "human":
         return closeup(cv, parent, take, zoom=1.53 if take.mood in ("angry", "scream") else 1.46)
     if take.shot in ("router", "router-close"):
-        return router_shot(cv, parent, take, close=take.shot == "router-close", fps=fps, **router_kw)
+        return router_shot(cv, parent, take, close=take.shot == "router-close", **router_kw)
     if take.shot == "wide":
-        return router_wide(cv, parent, take, fps=fps)
+        return router_wide(cv, parent, take)
     raise InkError(f"take {take.id}: unknown shot {take.shot!r}")
