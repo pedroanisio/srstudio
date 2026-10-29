@@ -175,6 +175,18 @@ def test_silence_has_no_beat():
         measure_tempo([0.0] * RATE * 4, RATE, expected=120)
 
 
+@pytest.mark.parametrize("bpm", compose.MEASURABLE_BPM)
+def test_the_edges_of_the_measurable_range_are_measured(bpm):
+    tempo = measure_tempo(clicks(bpm), RATE, expected=bpm)
+    assert abs(tempo.bpm - bpm) < bpm * compose.TEMPO_TOLERANCE
+
+
+@pytest.mark.parametrize("bpm", [40, 49.9, 250.1, 280, math.nan, math.inf, True])
+def test_a_tempo_the_beat_check_cannot_read_is_refused(bpm):
+    with pytest.raises(MusicOutputError, match="measurable"):
+        measure_tempo(clicks(120), RATE, expected=bpm)
+
+
 # -- the lyric check -----------------------------------------------------------------------------------
 def heard(*timed):
     """A transcript body whose words are ``(text, start, end)``."""
@@ -322,6 +334,15 @@ def test_transport_failure_is_not_retried(tmp_path):
     with pytest.raises(RuntimeError, match="429"):
         MusicClient(tmp_path, key="k", binary_transport=binary).compose(plan(), seed=1, bpm=120)
     assert len(binary.calls) == 1
+
+
+@pytest.mark.parametrize("bpm", [40, 280, math.nan, True])
+def test_a_tempo_that_cannot_be_verified_is_refused_before_any_request(tmp_path, bpm):
+    """Groove accepts 30..300 bpm, but a song is only paid for when its beat can be checked."""
+    binary = Binary(b"ID3")
+    with pytest.raises(MusicOutputError, match="measurable"):
+        MusicClient(tmp_path / "c", key="k", binary_transport=binary).compose(plan(), seed=1, bpm=bpm)
+    assert binary.calls == [] and not (tmp_path / "c").exists()
 
 
 @pytest.mark.parametrize("seed", [-1, 2**32, 1.5, True])
