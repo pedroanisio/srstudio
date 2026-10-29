@@ -940,6 +940,7 @@ class Cue:
     lift: float = 0.0
     pin: str | None = None
     overshoot: float = 0.0
+    published_full_gap_ease: bool = False  # set by settle(); see there
 
 
 def cue(
@@ -953,9 +954,13 @@ def cue(
     return Cue(time, pose, x=x, y=y, ease=ease if time else 0.0, **kw)
 
 
-def settle(cues: Sequence[Cue], fps: float) -> list[Cue]:
+def settle(cues: Sequence[Cue], fps: float, *, published_full_gap_ease: bool = False) -> list[Cue]:
     """``cues`` in time order, each ease capped so the move starts only after the previous pose has landed (and,
-    after an overshoot, settled one drawing at ``fps`` later)."""
+    after an overshoot, settled one drawing at ``fps`` later).
+
+    ``published_full_gap_ease`` reproduces a defect kept only for frozen published episodes (L8); never use in new
+    work. It makes :func:`drawings` draw an ease that fills the whole gap as those episodes shipped: its first
+    in-between at the time of the drawing before it, which hides that drawing."""
     if not (math.isfinite(fps) and fps > 0):
         raise BlobError(f"fps {fps} must be a positive number")
     ordered = sorted(cues, key=lambda c: c.time)
@@ -963,7 +968,10 @@ def settle(cues: Sequence[Cue], fps: float) -> list[Cue]:
         if b.time <= a.time:
             raise BlobError(f"cue times must be increasing: {a.time} then {b.time}")
     landed = [0.0, *(c.time + (1 / fps + 1e-3 if c.overshoot else 0.0) for c in ordered)]
-    return [replace(c, ease=max(0.0, min(c.ease, c.time - s))) for s, c in zip(landed, ordered, strict=False)]
+    return [
+        replace(c, ease=max(0.0, min(c.ease, c.time - s)), published_full_gap_ease=published_full_gap_ease)
+        for s, c in zip(landed, ordered, strict=False)
+    ]
 
 
 @dataclass(frozen=True)
@@ -1048,8 +1056,10 @@ def drawings(cues: Sequence[Cue], *, end: float, fps: float = 15) -> list[Drawin
         if before is not None and cue.ease > 0:
             n = max(1, round(cue.ease * fps))
             for j in range(n):
-                u = _smooth((j + 1) / (n + 1))
-                out.append(Drawing(cue.time - cue.ease + j * cue.ease / n, cue, at(u), u, before[5]))
+                u, t = _smooth((j + 1) / (n + 1)), cue.time - cue.ease + j * cue.ease / n
+                if t <= out[-1].time + 1e-9 and not cue.published_full_gap_ease:
+                    continue  # an ease filling the whole gap: the pose it leaves keeps its drawing
+                out.append(Drawing(t, cue, at(u), u, before[5]))
         rest = at(1.0)
         if cue.overshoot:
             settle = cue.time + 1 / fps

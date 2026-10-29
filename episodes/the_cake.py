@@ -62,7 +62,7 @@ def spoken(cues: list, role: str) -> list:
     cues = [
         replace(c, mouth=SING) if any(p.start < until and c.time < p.end for p in mine) else c for c, until in holds
     ]
-    return blob.settle(cues, FPS)
+    return blob.settle(cues, FPS, published_full_gap_ease=True)
 
 
 juno = spoken(

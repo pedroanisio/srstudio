@@ -61,7 +61,15 @@ cue = partial(blob.cue, scale=SCALE, ease=BEAT)  # spots in output pixels; the c
 
 def perform(make, parent, cues, mouths, id):
     make(
-        cv, parent, blob.settle(cues, FPS), end=DURATION, scale=SCALE, mouth_states=mouths, id=id, fps=FPS, shadow=True
+        cv,
+        parent,
+        blob.settle(cues, FPS, published_full_gap_ease=True),
+        end=DURATION,
+        scale=SCALE,
+        mouth_states=mouths,
+        id=id,
+        fps=FPS,
+        shadow=True,
     )
 
 
