@@ -1331,6 +1331,28 @@ hook question first, a hold of at least 1.2 s before the button, the Plaza notic
 | G6 | *Wellness* | the manager is the same orb in a tie; wellbeing is the top priority, ranked fourth |
 | G7 | *Terms* | declining the terms is added to the terms; real is also premium |
 
+## Collage style: grown-ups losing to brainrot
+
+Paper cut-out people on painted sets give up their dignity to *BOWLHEADS*, an invented kids' show starring Flush,
+a singing porcelain toilet. The series bible (the world, the family at its centre and a card per character) is
+[docs/decisions/0036-collage-series-bible.md](docs/decisions/0036-collage-series-bible.md).
+
+- **Cast and sets**, [src/srstudio/collage.py](src/srstudio/collage.py) and
+  [src/srstudio/collage_sets.py](src/srstudio/collage_sets.py): ten characters as data (`collage.LOOKS`, drawn by
+  `collage.DRAWERS`), eight painted rooms (`collage_sets.SETS`), and the paper sign, chart and TV props.
+- **The build**, [src/srstudio/collage_sketch.py](src/srstudio/collage_sketch.py): a `Staging` per episode turns a
+  sketch's beats into one shot per appearance, with crash zooms, the sting, Kai's beep, lip sync and tinted
+  caption pills. `Staging.cast` decides who is drawn in a shot.
+- **Group shots**, [src/srstudio/collage_group.py](src/srstudio/collage_group.py): `Lineup` puts several of the
+  cast on one set, each in a fixed `Place`, the listeners holding their reactions while the speaker plays its
+  beats; outside its spans it draws the speaker alone.
+- **The family photo's props**, [src/srstudio/collage_photo.py](src/srstudio/collage_photo.py): the self-timer
+  on a stack of books, the viewfinder's countdown, the sofa front, the flash and the printed photo.
+
+An episode is `episodes/<name>_data.py` (the lines, the timed beats and the `Staging`), `episodes/<name>.py`
+(the build) and `episodes/<name>_audio.py` (the ElevenLabs recording, every line heard back by speech-to-text, no
+retries). Its release is `episodes/posts/<name>.py`.
+
 ## Signature
 
 Every episode built with this library carries two recurring marks that sign the work. They are a convention
