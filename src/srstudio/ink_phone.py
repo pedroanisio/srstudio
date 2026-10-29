@@ -125,8 +125,9 @@ def phone(
 ):
     """The phone under the caption band: ``contact`` (1 to :data:`CONTACT_MAX` characters) in the header,
     ``bubbles`` stacked from the top in arrival order, each ``(seconds, kind)`` in ``status`` shown under the last
-    of my bubbles until the next one, and ``typing`` (``(start, end)``) pulsing three dots in their bubble, in the
-    slot of the first bubble that arrives at or after its end (after the last bubble when none does)."""
+    of my bubbles until the next one (from that bubble's arrival: one replaced before it arrives never shows), and
+    ``typing`` (``(start, end)``) pulsing three dots in their bubble, in the slot of the first bubble that arrives
+    at or after its end (after the last bubble when none does)."""
     _validate(contact, bubbles, status, typing)
     x0, y0, w, h = BODY
     sx, sy, sw_, sh = x0 + BEZEL, y0 + BEZEL, w - 2 * BEZEL, h - BEZEL - CHIN
@@ -169,9 +170,11 @@ def phone(
         mine = bubbles[last_mine]
         ly = slots[last_mine] + _size(mine.text)[1] + 4
         for k, (at, kind) in enumerate(status):
+            end = status[k + 1][0] if k + 1 < len(status) else None
+            if end is not None and end <= mine.at:
+                continue  # replaced before the bubble it sits under arrives
             node = group(cv, g)
             _text(cv, node, STATUS_TEXT[kind], sx + 18, ly, sw_ - 36, STATUS_H - 4, 36, cv.ink, align="end")
-            end = status[k + 1][0] if k + 1 < len(status) else None
             _visible(cv, node, max(float(at), mine.at), end)
     if typing is not None and typing_slot is not None:
         start, end = (float(v) for v in typing)

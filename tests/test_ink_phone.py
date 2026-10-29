@@ -51,6 +51,19 @@ def test_the_chat_shows_the_contact_the_bubbles_and_the_status_in_turn():
     assert [(0.0, 1.0), (1.0, 0.0)] in keys and [(0.0, 0.0), (1.0, 1.0)] in keys  # sending, then failed
 
 
+def test_a_status_replaced_before_my_bubble_arrives_never_shows():
+    cv = canvas()
+    bubbles = [Bubble("hi", mine=False), Bubble("u up?", at=2.0)]
+    ink_phone.phone(cv, cv.comp, "Boss", bubbles, status=[(0.5, "sending"), (1.0, "sent")])
+    shown = texts(cv)
+    assert ink_phone.STATUS_TEXT["sent"] in shown and ink_phone.STATUS_TEXT["sending"] not in shown
+    assert [(0.0, 0.0), (2.0, 1.0)] in opacity_keys(cv)  # sent, from the bubble on; nothing over it
+    cv = canvas()
+    ink_phone.phone(cv, cv.comp, "Boss", bubbles, status=[(0.5, "sending"), (2.5, "sent")])
+    keys = opacity_keys(cv)
+    assert [(0.0, 0.0), (2.0, 1.0), (2.5, 0.0)] in keys and [(0.0, 0.0), (2.5, 1.0)] in keys  # in turn
+
+
 def test_the_typing_dots_pulse_only_in_their_span():
     cv = canvas()
     ink_phone.phone(cv, cv.comp, "Boss", [Bubble("hi")], typing=(0.5, 2.0))
