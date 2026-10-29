@@ -98,3 +98,19 @@ sigh and lean poses. Existing character regression suites and byte comparisons c
 `examples/limbs_cast.py` renders the same pointing action on complete Stick, Toon and Gloss characters with
 character-specific placement, sleeve width, colors and hand topology. It complements the isolated six-action
 and prop-contact clips; it does not establish viewer preference or comparative authoring effort.
+
+## Paired-arm recipes and clearance
+
+The `crossed` action and `crossed_arms` recipe add an explicit foreground arm and retarget crossing positions
+from the shoulder span. Fixed relative wrist targets were rejected because wider shoulders and shorter arms
+could stop before crossing the torso. `grip_prop` binds distinct right and left anchors on a shared moving
+prop, preserving independent finger controls and strict contact/joint constraints.
+
+Coordination checks mutual arm capsules as well as external sphere colliders. The segment-distance routine
+handles crossing, parallel, point and endpoint cases; the proxy radii include the widest sleeve taper.
+Clearance remains a diagnostic by default, with explicit strict failure available. It does not represent a
+full hand/prop collision solver.
+
+`examples/limbs_bimanual.py` demonstrates the crossing and a palm-up tray lift with original vector geometry,
+serialized motions and numeric QA. Tests verify shared moving anchors, forward/reverse sampling, body-span
+retargeting, inter-arm collision failure, panel bounds and rendered facial-detail visibility at a tilted view.

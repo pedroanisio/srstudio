@@ -13,6 +13,7 @@ from .model import ArmPose, ArmProfile, HandControl, HandPose, HandProfile
 
 ACTIONS = (
     "rest",
+    "crossed",
     "reach",
     "point",
     "present",
@@ -225,6 +226,8 @@ def _recipe(name: str, hand: HandProfile, time: float) -> HandControl:
     finger = next((d.name for d in hand.digits if not d.thumb), hand.digits[0].name)
     if name in ("point", "press"):
         return HandControl(curl=0.75, curls=((finger, 0),), opposition=0.3)
+    if name == "crossed":
+        return HandControl(curl=0.55, cup=0.1, opposition=0.3)
     if name in ("grasp", "pinch"):
         return HandControl(curl=0.65 if name == "grasp" else 0.5, cup=0.5, opposition=0.85)
     if name in ("present", "shrug"):
@@ -242,6 +245,7 @@ def _recipe(name: str, hand: HandProfile, time: float) -> HandControl:
 
 _GOALS = {
     "rest": Vec3(0.18, 0.68, 0),
+    "crossed": Vec3(-0.4, 0.26, 0.1),
     "reach": Vec3(0.55, 0.42, -0.2),
     "point": Vec3(0.72, 0.15, -0.18),
     "present": Vec3(0.55, 0.3, 0.1),
