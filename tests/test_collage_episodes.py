@@ -1,6 +1,7 @@
-"""The seven Collage sketches as data: each is cast from the Collage cast with the shared voices, staged on known
-sets, opens on a question, holds a silent beat of at least 1.2 s before its button, and lands a zoom and a sting;
-the shared build's helpers (timing, prop spans, effects, staging checks) are tested on them (ADR 0026)."""
+"""The Collage sketches as data: each is cast from the Collage cast with the shared voices, staged on known sets,
+opens on its hook, holds a silent beat of at least 1.0 s before its button, and lands a zoom and a sting; the shared
+build's helpers (timing, prop spans, effects, staging checks) are tested on them (ADR 0026). The Family Photo's group
+shot, countdown and flash follow its events, scripted or voiced (ADR 0036)."""
 
 import ast
 import importlib
@@ -11,8 +12,9 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, collage, collage_sets, flat_counter, sketch
+from srstudio import Canvas, collage, collage_sets, flat_counter, releases, sketch
 from srstudio.canvas import Signature
+from srstudio.collage_group import Lineup
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -27,6 +29,25 @@ NAMES = tuple(
         p.name.removesuffix("_data.py") for p in EPISODES.glob("*_data.py") if _imports(p, "srstudio.collage_sketch")
     )
 )
+
+
+# the sketches published while the hook was a question; frozen as published, each still opens on one
+PUBLISHED = (
+    "book_report",
+    "brand_refresh",
+    "breaking_news",
+    "final_broadcast",
+    "first_date",
+    "goldfish_funeral",
+    "gritty_reboot",
+    "intervention",
+    "the_lore",
+    "the_will",
+    "therapy_session",
+    "thought_leader",
+)
+HOOK_SECONDS = 2.0  # funny-reels rubric #1, Hook: the premise reads in the first 1-2 s
+RELEASES = releases.load(EPISODES / "posts")
 
 
 @pytest.fixture(scope="module")
@@ -57,13 +78,31 @@ def test_the_sketches_are_distinct_and_checked(mods):
 def test_each_sketch_has_the_comic_beats(mods, name):
     builder, data = mods
     sk = data[name].STAGING.sketch
-    assert sk.lines[0].text.endswith("?")  # the hook is a question
     assert 11 <= sk.end <= 35
     assert sketch.events(sk.beats, "zoom") and sketch.events(sk.beats, "sting")
     last_spoken = max(i for i, b in enumerate(sk.beats) if b.line is not None)
     silent = [(b, nxt) for b, nxt in zip(sk.beats, sk.beats[1:], strict=False) if b.line is None and b.caption == ""]
     assert any(nxt.start - b.start >= 1.0 for b, nxt in silent)  # an awkward pause with no caption
     assert sk.beats[last_spoken].line == len(sk.lines) - 1  # the button is the last line
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_each_sketch_opens_on_its_hook(mods, name):
+    _, data = mods
+    sk = data[name].STAGING.sketch
+    if name in PUBLISHED:
+        assert sk.lines[0].text.endswith("?")  # published when the hook was a question by default
+        return
+    # rubric #1: the hook is an opening chosen for the premise, tagged for analytics, its first beat a spoken line
+    # that has landed by HOOK_SECONDS
+    assert RELEASES[sk.slug].tags is not None, f"{sk.slug}: a new release carries its Tags"
+    first, second = sk.beats[0], sk.beats[1]
+    assert first.start == 0.0 and first.line == 0
+    assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
+
+
+def test_the_published_sketches_are_still_there():
+    assert set(PUBLISHED) <= set(NAMES)
 
 
 def test_every_character_keeps_one_voice_across_episodes(mods):
@@ -170,3 +209,46 @@ def test_no_prop_covers_the_signature_on_its_set(mods, name, monkeypatch):
 def test_signature_box_names_a_known_set():
     with pytest.raises(collage.CollageError, match="no set"):
         collage_sets.signature_box("moon")
+
+
+def _retimed(beats, end, k):
+    """The beats as a recording might place them: every start and the end stretched by ``k``."""
+    return [replace(b, start=round(b.start * k, 6)) for b in beats], round(end * k, 6)
+
+
+@pytest.mark.parametrize("k", [1.0, 1.15, 1.4])
+def test_the_family_photo_stages_its_group_countdown_and_flash_from_its_events(mods, k):
+    _, data = mods
+    fp = data["the_family_photo"]
+    beats, end = _retimed(fp.STAGING.sketch.beats, fp.STAGING.sketch.end, k)
+    plan = fp.plan(beats, end)
+    timer = sketch.events(beats, "timer")[0][0]
+    flash = sketch.events(beats, "flash")[0][0]
+    reveal = sketch.events(beats, "reveal")[0][0]
+    assert isinstance(plan.lineup, Lineup) and set(plan.lineup.places) == {"gary", "rosa", "kai"}
+    for app in sketch.appearances(beats, end):
+        group = timer < app.start < reveal and app.who != "kai"
+        assert plan.lineup.staged(app) == group, (k, app.who, app.start)  # Kai's close and the ends are singles
+    # the countdown reaches zero on the shutter, at most ten seconds long
+    assert plan.start + plan.seconds == pytest.approx(flash)
+    assert 1 <= plan.seconds <= 10 and plan.start >= timer
+    flushy = next(b.start for b in beats if b.line == 6)
+    for name in ("rosa", "kai"):
+        laughing = [r for r in plan.lineup.reactions[name] if r["eyes"] == "closed" and r["mouth"] == "grin"]
+        assert laughing and laughing[0]["start"] >= flushy  # they crack up at the impression, not before
+    assert plan.reveal == reveal
+
+
+def test_the_family_photo_reveal_shows_the_print_alone(mods):
+    _, data = mods
+    fp = data["the_family_photo"]
+    sk = fp.STAGING.sketch
+    cast = fp.STAGING.cast(sk.beats, sk.end)
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=sk.end, background=collage.PAPER.background)
+    cv = Canvas(scene, collage.PAPER, namer=flat_counter("k"))
+    apps = {a.start: a for a in sketch.appearances(sk.beats, sk.end)}
+    cast(cv, cv.comp, apps[fp.plan(sk.beats, sk.end).reveal], {})
+    assert scene.to_bytes(layout="pretty").count(b"<shape") == 0  # nobody in front of the print
+    cast(cv, cv.comp, apps[0.0], {})
+    assert scene.to_bytes(layout="pretty").count(b"<shape") > 0  # the setup shot draws Gary
