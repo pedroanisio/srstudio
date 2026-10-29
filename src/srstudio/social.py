@@ -81,7 +81,7 @@ COVER_NAME = "cover.jpg"
 BLANK = 3.0  # a frame whose luma varies less than this (standard deviation, 0-255) is blank: a fade, a black cut
 FRAME_SLACK = 1e-6  # the frame on screen at t is floor(t × fps + FRAME_SLACK), so t = n / fps is frame n
 BACKDROP_ARGS = ("-fps_mode", "passthrough", "-frames:v", "1", "-q:v", "2")  # how take_frame writes its frame
-_HASHTAG = re.compile(r"^#[^\W\d_][\w]*$", re.UNICODE)
+_HASHTAG = re.compile(r"#[^\W\d_]\w*", re.UNICODE)  # whole tag: fullmatch, so no trailing newline
 
 
 class InstagramPostError(SrstudioError, ValueError):
@@ -317,7 +317,7 @@ class InstagramPost:
             out.append("description is empty")
         if len(self.hashtags) > HASHTAG_LIMIT:
             out.append(f"{len(self.hashtags)} hashtags; Instagram accepts {HASHTAG_LIMIT}")
-        bad = [h for h in self.hashtags if not _HASHTAG.match(h)]
+        bad = [h for h in self.hashtags if not _HASHTAG.fullmatch(h)]
         if bad:
             out.append(f"hashtags must be '#' plus letters, digits or '_' and start with a letter: {bad}")
         lowered = [h.lower() for h in self.hashtags]
