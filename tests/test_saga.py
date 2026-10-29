@@ -585,6 +585,35 @@ def test_the_pebble_floats_up_from_its_lift_and_must_lift_inside_the_shot():
         sets.pebble(cv, cv.comp, at=(700, 1480), end=D, lift=D)
 
 
+def keys_by(cv: Canvas, prop: str) -> list[list[tuple[float, float]]]:
+    return [
+        [(float(k.get("time")), float(k.get("value"))) for k in a.iter("key")]
+        for a in tree(cv).iter("animate")
+        if a.get("property") == prop
+    ]
+
+
+def test_the_cockpit_streaks_the_stars_only_through_its_jumps():
+    still, jumping = canvas(), canvas()
+    sets.cockpit(still, still.comp, end=D)
+    sets.cockpit(jumping, jumping.comp, end=D, jump=[(1.0, 2.0)])
+    assert len(list(tree(jumping).iter())) - len(list(tree(still).iter())) > 28  # 28 streaks, in a gated group
+    assert any((1.0, 1.0) in k and (2.0, 0.0) in k for k in keys_by(jumping, "opacity"))
+    assert not any((1.0, 1.0) in k and (2.0, 0.0) in k for k in keys_by(still, "opacity"))
+
+
+@pytest.mark.parametrize("part", [sets.freighter, sets.fighter])
+def test_the_ships_face_right_and_flip_to_face_left_at_their_scale(part):
+    cv = canvas()
+    right = part(cv, cv.comp, at=(300, 400), end=D, scale=0.5)
+    left = part(cv, cv.comp, at=(700, 400), end=D, scale=0.5, flip=True)
+    assert (right.scaleX, right.scaleY, right.x, right.y) == (0.5, 0.5, 300, 400)
+    assert (left.scaleX, left.scaleY) == (-0.5, 0.5)
+    assert len(list(tree(cv).iter("shape"))) > 0
+    with pytest.raises(SagaError):
+        part(cv, cv.comp, at=(0, 0), end=-1.0)
+
+
 def test_the_compactor_walls_resume_where_the_last_shot_left_them():
     cv = canvas()
     sets.compactor(cv, cv.comp, end=D, walls=(0.0, 2.0), travel=60, start_px=40)

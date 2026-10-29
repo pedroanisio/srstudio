@@ -248,6 +248,25 @@ def test_sunny_wears_a_tie_only_when_asked_and_scans_only_inside_its_spans():
     assert gates
 
 
+def test_nadias_sticker_peels_off_and_snaps_back_within_a_peel_each_time():
+    cv = canvas()
+    gloss.nadia(cv, cv.comp, at=(540, 1270), end=D, peel=[1.0, 2.0])
+    (peel,) = keys_of(cv, "rotation")
+    assert peel == [(0.0, 0.0)] + [
+        k for t in (1.0, 2.0) for k in [(t, 0.0), (t + 0.25, -38.0), (t + 0.4, -38.0), (t + gloss.PEEL, 0.0)]
+    ]
+
+
+def test_tamsins_spring_bounces_only_inside_its_spans_and_lands_at_each_end():
+    cv = canvas()
+    gloss.tamsin(cv, cv.comp, at=(540, 1270), end=D, bounce=[(1.0, 2.0)])
+    (ys,) = [k for k in keys_of(cv, "y") if (1.0, 0.0) in k]
+    (sy,) = [k for k in keys_of(cv, "scaleY") if (0.0, 1.0) in k and any(v == 1.6 for _, v in k)]
+    assert ys[0] == (0.0, 0.0) and ys[-1] == (2.0, 0.0) and min(v for _, v in ys) == -44.0
+    assert all(1.0 <= t <= 2.0 for t, _ in ys[1:]) and [t for t, _ in sy] == [t for t, _ in ys]
+    assert {v for _, v in sy} == {1.0, 1.6}
+
+
 # -- the sets ---------------------------------------------------------------------------------------------------------
 from srstudio import gloss_reel as reel  # noqa: E402
 from srstudio import gloss_sets as sets  # noqa: E402
