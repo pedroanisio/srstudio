@@ -123,3 +123,24 @@ def test_duplicate_object_keys_are_rejected_instead_of_last_one_winning(tmp_path
     file.write_text(text.replace(original, duplicated, 1))
     with pytest.raises(LimbError, match="duplicate"):
         load_motion(file)
+
+
+def test_saving_under_a_regular_file_raises_an_io_limb_error(tmp_path):
+    blocker = tmp_path / "afile"
+    blocker.write_text("x")
+    motion = Motion(ArmProfile(), HUMAN, (Action("point", 0, 2),))
+    with pytest.raises(LimbError, match="cannot write motion document") as caught:
+        save_motion(motion, blocker / "motion.json")
+    assert caught.value.code == "io"
+
+
+def test_a_failed_replace_removes_the_temporary_file_and_raises_an_io_limb_error(tmp_path):
+    target = tmp_path / "motion.json"
+    target.mkdir()
+    (target / "keep").write_text("x")
+    motion = Motion(ArmProfile(), HUMAN, (Action("point", 0, 2),))
+    with pytest.raises(LimbError, match="cannot write motion document") as caught:
+        save_motion(motion, target)
+    assert caught.value.code == "io"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["motion.json"]
+    assert sorted(p.name for p in target.iterdir()) == ["keep"]

@@ -162,13 +162,18 @@ def save_motion(motion: Motion, path: str | Path) -> Path:
     if len(data.encode()) > MAX_BYTES:
         raise LimbError("motion file exceeds the 5 MiB size limit", code="budget")
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    fd, temporary = tempfile.mkstemp(prefix=".motion-", suffix=".json", dir=path.parent)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd, temporary = tempfile.mkstemp(prefix=".motion-", suffix=".json", dir=path.parent)
+    except OSError as error:
+        raise LimbError(f"cannot write motion document: {error}", code="io") from error
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as file:
             file.write(data)
         os.replace(temporary, path)
-    except BaseException:
+    except BaseException as error:
         Path(temporary).unlink(missing_ok=True)
+        if isinstance(error, OSError):
+            raise LimbError(f"cannot write motion document: {error}", code="io") from error
         raise
     return path
