@@ -1,6 +1,7 @@
 """Reusable spatial arm and hand performance, independent of drawing style."""
 
 from .constraints import forward, hand_pose, reach
+from .correctives import ContourCorrection, ContourKey
 from .errors import Diagnostic, LimbError
 from .math3d import Frame, Quaternion, Vec3
 from .model import (
@@ -23,6 +24,8 @@ __all__ = [
     "ArmPose",
     "ArmProfile",
     "Camera",
+    "ContourCorrection",
+    "ContourKey",
     "Diagnostic",
     "Frame",
     "GRIPPER",

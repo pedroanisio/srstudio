@@ -8,6 +8,7 @@ from typing import Any
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
 from .compile import BakeOptions, Compiled, LayerTargets, Occlusion, bake, compile_motion
+from .correctives import ContourCorrection
 from .errors import LimbError
 from .motion import ACTIONS, Action, Motion
 from .projection import Camera
@@ -24,13 +25,14 @@ class LimbTrack:
     options: BakeOptions = BakeOptions()
     backend: str = "auto"
     occlusion: tuple[Occlusion, ...] = ()
+    correctives: tuple[ContourCorrection, ...] = ()
 
     def __post_init__(self) -> None:
         adapter_for(self.style)
         if self.backend not in ("auto", "native", "baked"):
             raise LimbError(f"unknown limb backend {self.backend}")
-        if self.backend == "native" and self.occlusion:
-            raise LimbError("native limb tracks do not support separated body/head layers")
+        if self.backend == "native" and (self.occlusion or self.correctives):
+            raise LimbError("native limb tracks do not support separated body/head layers or artist corrections")
 
     def draw(self, cv: Canvas, layers: LayerTargets, *, id: str) -> Compiled:
         if self.occlusion:
@@ -45,6 +47,7 @@ class LimbTrack:
                 options=self.options,
                 layers=layers,
                 occlusion=self.occlusion,
+                correctives=self.correctives,
             )
         return compile_motion(
             cv,
@@ -56,6 +59,7 @@ class LimbTrack:
             appearance=self.appearance,
             options=self.options,
             backend=self.backend,
+            correctives=self.correctives,
         )
 
 

@@ -10,6 +10,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
+from .correctives import ContourCorrection
 from .errors import Diagnostic, LimbError
 from .geometry import Part, ProjectedPose, project_pose, ribbon
 from .math3d import number
@@ -87,6 +88,7 @@ def bake(
     parent_transform: Affine = _PARENT,
     layers: LayerTargets | None = None,
     occlusion: tuple[Occlusion, ...] = (),
+    correctives: tuple[ContourCorrection, ...] = (),
 ) -> Compiled:
     """Validate all samples before writing groups. Each sample is held only on its own frame interval.
 
@@ -117,7 +119,14 @@ def bake(
         raise LimbError(f"limb bake budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
     samples = tuple(motion.sample(i / options.fps) for i in range(count))
     poses = tuple(
-        project_pose(s, camera, width=motion.arm.width, parent=parent_transform, thickness=motion.hand.thickness)
+        project_pose(
+            s,
+            camera,
+            width=motion.arm.width,
+            parent=parent_transform,
+            thickness=motion.hand.thickness,
+            correctives=correctives,
+        )
         for s in samples
     )
     names = {p.name for pose in poses for p in pose.parts}
@@ -175,6 +184,7 @@ def compile_motion(
     parent_transform: Affine = _PARENT,
     layers: LayerTargets | None = None,
     occlusion: tuple[Occlusion, ...] = (),
+    correctives: tuple[ContourCorrection, ...] = (),
 ) -> Compiled:
     """Use native two-bone IK for strictly planar arms; bake spatial requests with an explicit selection diagnostic.
 
@@ -198,6 +208,7 @@ def compile_motion(
             parent_transform=parent_transform,
             layers=layers,
             occlusion=occlusion,
+            correctives=correctives,
         )
     duration = options.duration or max((a.end for a in motion.actions), default=1.0)
     count = math.ceil(duration * options.fps - 1e-9)
@@ -211,12 +222,12 @@ def compile_motion(
         planar = planar and abs(math.dist(a, b) - motion.arm.upper * camera.scale) < 1e-6
         planar = planar and abs(math.dist(b, c) - motion.arm.forearm * camera.scale) < 1e-6
     planar = planar and not any(fnmatch.fnmatchcase(p, rule.part) for p in ("upper", "forearm") for rule in occlusion)
-    planar = planar and adapter.capabilities.native_planar
+    planar = planar and adapter.capabilities.native_planar and not correctives
     if not planar:
         if backend == "native":
             raise LimbError(
                 "native limb compilation requires a planar arm, orthographic camera "
-                "and a common untransformed drawing parent",
+                "and a common untransformed drawing parent without artist contour corrections",
                 code="capability",
             )
         result = bake(
@@ -231,8 +242,11 @@ def compile_motion(
             parent_transform=parent_transform,
             layers=layers,
             occlusion=occlusion,
+            correctives=correctives,
         )
-        return replace(result, diagnostics=(Diagnostic("backend", "spatial or layered request uses baked contours"),))
+        return replace(
+            result, diagnostics=(Diagnostic("backend", "spatial, layered or corrected request uses baked contours"),)
+        )
     # Preflight the entire baked hand, including budget, IDs, styles and occlusion, in an isolated scene.
     from sr_core.scene import Scene
 

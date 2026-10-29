@@ -53,6 +53,6 @@ skeleton world transforms with canonical samples. `examples/limbs_gallery.py` bu
 Stick, Toon and Gloss with reusable motion JSON and numeric QA reports.
 
 This initial implementation does not establish viewer preference or a measured competitive advantage.
-Artist-authored corrective contours, a skinning/deformation capability demonstration, a rendered prop-contact
-showcase, broader actor migrations and a comparative viewer evaluation are outside this commit's verified
-scope. The gallery demonstrates arms and hands rather than complete prop interactions.
+View-keyed artist contours are now available through `ContourCorrection` and `LimbTrack.correctives`;
+see the [usage guide](../catalog/limbs.md). A skinning/deformation capability demonstration, a rendered
+prop-contact showcase, broader actor migrations and a comparative viewer evaluation remain unverified. The gallery demonstrates arms and hands rather than complete prop interactions.

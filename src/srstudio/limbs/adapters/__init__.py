@@ -99,7 +99,12 @@ class VectorAdapter:
                     [(0, _shade(color, 1.22)), (0.45, color), (1, _shade(color, 0.72))],
                     (0, 0, 0.8, 1),
                 )
-            if self.treatment == "brush" and len(part.centerline) >= 2:
+            if (
+                self.treatment == "brush"
+                and not part.authored
+                and len(part.centerline) >= 2
+                and max(math.dist(part.centerline[0], p) for p in part.centerline) > 1e-7
+            ):
                 d = _brush_path(brush.stroke(part.centerline, max(0.1, part.width), brush.EVEN))
             else:
                 d = path(points)
