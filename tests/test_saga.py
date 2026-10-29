@@ -361,6 +361,7 @@ GOOD = {
         ({"02": Stage("desert", cast=(Place("juno", 540),), move=Move("crash", 1.45, 1.4, 540, 600))}, "inside"),
         ({"02": Stage("desert", cast=(Place("juno", 540),), move=Move("dolly", 0.1, 1.4, 540, 600))}, "crash or"),
         ({"02": Stage("desert", cast=(Place("juno", 540),), dark=((1.0, 3.0),))}, "outside"),
+        ({"02": Stage("desert", cast=(Place("juno", 540),), shake=((0.2, 0.8), (0.5, 1.0)))}, "overlap"),
         ({"03": Stage("desert", entry=Entry("a", "b"))}, "alone"),
     ],
 )

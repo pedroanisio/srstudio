@@ -441,6 +441,7 @@ GOOD = {
         ({"02": Stage("plaza", cast=(Place("nadia", 540),), move=Move("crash", 1.45, 1.4, 540, 600))}, "inside"),
         ({"02": Stage("plaza", cast=(Place("nadia", 540),), move=Move("dolly", 0.1, 1.4, 540, 600))}, "crash or"),
         ({"02": Stage("plaza", cast=(Place("nadia", 540),), dark=((1.0, 3.0),))}, "outside"),
+        ({"02": Stage("plaza", cast=(Place("nadia", 540),), shake=((0.2, 0.8), (0.5, 1.0)))}, "overlap"),
         ({"04": Stage("plaza", notice=Notice("a", "b"))}, "alone"),
         ({"02": Stage(notice=Notice("a", "b"))}, "only the host"),
         ({"02": Stage("plaza", cast=(Place("nadia", 540, traits={"tie": True}),))}, "no trait"),
