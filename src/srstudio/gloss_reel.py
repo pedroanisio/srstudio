@@ -19,14 +19,14 @@ own word-by-word captions; and the mix of the takes, effects and music bed, the 
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import camera, craft, gloss, gloss_sets, native
+from . import craft, gloss, gloss_sets, native, staging
 from .gloss import HOST, GlossError, Track, Walk
 from .gloss_sets import Card
+from .staging import Move
 
 __all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "build", "DUCK", "MUSIC_GAIN", "BADGE"]
 
@@ -36,10 +36,7 @@ HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise agai
 # no lone last word, every caption readable (ADR 0031); for new reels, as published ones keep the house look
 LOOK = native.CaptionLook(min_last=2, min_seconds=0.84)
 MUSIC_GAIN = -17.0
-SHAKE_STEP = 1 / 12
-SHAKE_PX = 14
 BADGE = (150, 330)  # where Sunny speaks from when it is not in the shot
-CROSSFADE = 0.3
 PANS = {"sunny": 0.0, "nadia": -0.05, "gus": 0.06, "tamsin": 0.04}
 
 
@@ -74,20 +71,6 @@ class Prop:
 
 
 @dataclass(frozen=True)
-class Move:
-    """A camera move on the shot: a ``crash`` zoom at ``at`` (back out at ``back``), or a ``push`` from ``at`` to
-    ``until``; the lens aims at ``x``, ``y``."""
-
-    kind: str
-    at: float
-    scale: float
-    x: float
-    y: float
-    until: float | None = None
-    back: float | None = None
-
-
-@dataclass(frozen=True)
 class Notice:
     """The Plaza Notice that buttons the reel: its title and the footnote typed on it."""
 
@@ -109,18 +92,9 @@ class Stage:
     notice: Notice | None = None
 
 
-def _inside(a: float, b: float, end: float) -> bool:
-    return math.isfinite(a) and math.isfinite(b) and 0 <= a < b <= end + 1e-6
-
-
 def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
     """The staging fits the recording; :class:`~srstudio.gloss.GlossError` names the first take that does not."""
-    ids = [t.id for t in takes]
-    if set(ids) != set(stages):
-        raise GlossError(
-            f"takes without a stage {sorted(set(ids) - set(stages))}, stages without a take "
-            f"{sorted(set(stages) - set(ids))}"
-        )
+    staging.check_cover(takes, stages, GlossError)
     for take in takes:
         s, where, end = stages[take.id], f"take {take.id}", take.duration
         if s.notice is not None:
@@ -144,7 +118,7 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
                 raise GlossError(f"{where}: {p.who}: {e}") from None
             if p.who == HOST and (p.pose or p.walk):
                 raise GlossError(f"{where}: the host floats; it has no pose or walk")
-            if p.walk is not None and not _inside(p.walk[0], p.walk[1], end):
+            if p.walk is not None and not staging.inside(p.walk[0], p.walk[1], end):
                 raise GlossError(f"{where}: {p.who}'s walk {p.walk} must fall inside the take (0..{end})")
         for prop in s.props:
             if prop.name not in gloss_sets.PROPS:
@@ -156,24 +130,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
             if not 0 <= card.start < end:
                 raise GlossError(f"{where}: card {card.title!r} starts at {card.start}, outside 0..{end}")
         if s.move is not None:
-            m = s.move
-            if m.kind not in ("crash", "push"):
-                raise GlossError(f"{where}: a move is a crash or a push, not {m.kind!r}")
-            stop = m.until if m.kind == "push" else (m.back if m.back is not None else m.at + 0.15)
-            if stop is None or not _inside(m.at, stop, end):
-                raise GlossError(f"{where}: the {m.kind} from {m.at} must end inside the take (0..{end})")
-        for a, b in (*s.dark, *s.shake):
-            if not _inside(a, b, end):
-                raise GlossError(f"{where}: span {a}..{b} falls outside the take (0..{end})")
-
-
-def _shake(cv, group, spans: Sequence[tuple[float, float]]) -> None:
-    keys: list[tuple[float, float]] = [(0, 0)]
-    for a, b in spans:
-        n = max(2, int((b - a) / SHAKE_STEP))
-        keys += [(round(a + i * SHAKE_STEP, 4), (SHAKE_PX, -SHAKE_PX)[i % 2] * (1 - i / n)) for i in range(n)]
-        keys.append((round(b, 4), 0))
-    cv.keys(group, "x", keys, hold=False)
+            staging.check_move(s.move, end, where, GlossError)
+        staging.check_spans((*s.dark, *s.shake), end, where, GlossError)
 
 
 def hush(cv, track, spoken: Sequence[tuple[float, float]], gain: float) -> None:
@@ -183,15 +141,6 @@ def hush(cv, track, spoken: Sequence[tuple[float, float]], gain: float) -> None:
     for start, end in craft.pauses(spoken):
         keys += [(start, gain), (start + HUSH_RAMP, gain + HUSH), (end - HUSH_RAMP, gain + HUSH), (end, gain)]
     cv.keys(track, "gain", [(round(t, 6), round(v, 6)) for t, v in keys], hold=False, local=False)
-
-
-def _move(cv, group, m: Move) -> None:
-    camera.anchor(group, m.x, m.y, place=True)
-    if m.kind == "crash":
-        camera.crash_zoom(cv, group, m.at, m.scale, back=m.back)
-    else:
-        until = m.until if m.until is not None else m.at
-        camera.push_in(cv, group, scale=[(0, 1.0), (m.at, 1.0), (until, m.scale)])
 
 
 def _draw(cv, parent, p: Place, said, end: float) -> None:
@@ -213,11 +162,7 @@ def build(
     check(takes, stages)
     cv = ep.cv
     shots = ep.sequence("shots")
-    fades = {
-        after.id: min(CROSSFADE, before.duration / 2, after.duration / 2)
-        for before, after in zip(takes, takes[1:], strict=False)
-        if stages[after.id].notice is not None and stages[before.id].notice is None
-    }
+    fades = staging.crossfades(takes, lambda id: stages[id].notice is not None)
     for take in takes:
         s, end = stages[take.id], take.duration
         g = ep.shot(shots, take)
@@ -228,12 +173,8 @@ def build(
             continue
         world = cv.group(g, cv.uid("g"))  # graded; the board and Sunny's corner badge sit over it, crisp
         gloss_sets.finish(cv, world)
-        frame = cv.group(world, f"gloss-{take.id}-angle")  # named as the camera, so srstudio.craft counts its moves
-        if s.move is not None:
-            _move(cv, frame, s.move)
-        shaken = cv.group(frame, cv.uid("g"))
-        if s.shake:
-            _shake(cv, shaken, s.shake)
+        # the frame is named as the camera, so srstudio.craft counts its moves
+        shaken = staging.rig(cv, world, s.move, s.shake, name=f"gloss-{take.id}-angle")
         gloss_sets.SETS[s.set](cv, shaken, end=end, **s.options)
         for front in (False, True):
             if front:
@@ -242,9 +183,7 @@ def build(
             for prop in s.props:
                 if prop.front == front:
                     gloss_sets.PROPS[prop.name](cv, shaken, at=(prop.x, prop.y), end=end, **prop.options)
-        if s.dark:
-            black = cv.rect(shaken, -200, -200, cv.width + 400, cv.height + 400, "#000000")
-            cv.gate(black, s.dark)
+        staging.blackout(cv, shaken, s.dark)
         if s.cards:  # over the camera, not in it: a zoom never pushes the board's text out of the safe area
             gloss_sets.board(cv, g, s.cards, end=end, font=font, box=s.box)
         if take.actor == HOST and take is not takes[0] and HOST not in {p.who for p in s.cast}:
@@ -253,19 +192,10 @@ def build(
     hook_node = gloss_sets.hook(
         cv, cv.comp, hook, end=first.duration, font=font, talk=gloss.talk(first) if first.actor == HOST else ()
     )
-    for before, after in zip(takes, takes[1:], strict=False):
-        if after.id in fades:
-            native.transition(shots, f"shot-{before.id}", f"shot-{after.id}", "crossfade", duration=fades[after.id])
-    captions = ep.native_captions(native.cues_from_takes(takes, look=look), look=look)
+    closed = staging.close(ep, shots, takes, fades=fades, look=look, pans=PANS, duck=DUCK)
     music = ep.t.meta.get("music")
-    extra = [("music", music["file"], dict(role="music", gain=str(music["gain_db"])))] if music else []
-    mix = ep.audio(
-        take=lambda t: dict(pan=PANS.get(t.actor, 0.0), fadeIn=".003", fadeOut=".008"),
-        extra=extra,
-        duck=DUCK if music else None,
-    )
     if music:
-        (bed,) = [t for t in mix.find_all("audioTrack") if t.role == "music"]
+        (bed,) = [t for t in closed["mix"].find_all("audioTrack") if t.role == "music"]
         spoken = [(t.start, t.start + t.speech_duration) for t in takes if not t.is_effect]
         hush(cv, bed, spoken, float(music["gain_db"]))
-    return {"hook": hook_node, "captions": captions, "mix": mix}
+    return {"hook": hook_node, **closed}
