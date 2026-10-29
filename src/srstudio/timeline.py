@@ -9,9 +9,43 @@ episode a list of timed captions (``script.json``). Everything time-related in a
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from .errors import SrstudioError
+
+ROUNDING = 1e-6  # recordings store start times rounded to six decimal places
+
+
+class TimelineError(SrstudioError, ValueError):
+    """Timing is invalid or a shot sequence would place its picture and audio on different clocks."""
+
+
+def _finite(value: float, where: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise TimelineError(f"{where}: expected a finite number, got {value!r}")
+
+
+def _span(start: float, end: float, duration: float, where: str, *, empty: bool = False) -> None:
+    _finite(start, where)
+    _finite(end, where)
+    if start < 0 or (end < start if empty else end <= start) or end > duration + ROUNDING:
+        raise TimelineError(f"{where}: range {start}..{end} must be inside 0..{duration} with end after start")
+
+
+def _alignment(items: tuple[dict, ...], duration: float, where: str) -> None:
+    previous = -1.0
+    for i, item in enumerate(items):
+        label = f"{where} {i}"
+        if not isinstance(item, dict) or not {"start", "end"} <= item.keys():
+            raise TimelineError(f"{label}: expected start and end times")
+        start, end = item["start"], item["end"]
+        _span(start, end, duration, label, empty=True)
+        if start < previous:
+            raise TimelineError(f"{label}: alignment must be ordered by start time")
+        previous = start
 
 
 @dataclass(frozen=True)
@@ -83,6 +117,55 @@ class Timeline:
     root: Path | None = None
     takes: list[Take] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        _finite(self.duration, "duration")
+        if self.duration <= 0:
+            raise TimelineError(f"duration must be positive, got {self.duration}")
+        self._check_takes()
+        previous = -1.0
+        for p in self.phrases:
+            _span(p.start, p.end, self.duration, f"phrase {p.index}")
+            if p.start < previous:
+                raise TimelineError(f"phrase {p.index}: phrases must be ordered by start time")
+            previous = p.start
+        previous = -1.0
+        for i, cut in enumerate(self.cuts):
+            _finite(cut.time, f"cut {i}")
+            if not 0 <= cut.time < self.duration or cut.time <= previous:
+                raise TimelineError(f"cut {i}: times must be strictly increasing inside 0..{self.duration}")
+            previous = cut.time
+        for effect in self.sound_effects:
+            _finite(effect.duration, f"sound effect {effect.name}")
+            _span(
+                effect.start, effect.start + effect.duration, self.duration, f"sound effect {effect.name}", empty=True
+            )
+        for name, time in self.beats.items():
+            _finite(time, f"beat {name}")
+            if not 0 <= time <= self.duration:
+                raise TimelineError(f"beat {name}: time must be inside 0..{self.duration}")
+
+    def _check_takes(self) -> None:
+        cursor = 0.0
+        ids: set[str] = set()
+        for take in self.takes:
+            where = f"take {take.id}"
+            if not take.id or take.id in ids:
+                raise TimelineError(f"{where}: take IDs must be nonempty and unique")
+            ids.add(take.id)
+            _finite(take.duration, where)
+            _span(take.start, take.end, self.duration, where)
+            if abs(take.start - cursor) > ROUNDING:
+                raise TimelineError(
+                    f"{where}: sequence must be contiguous from zero; expected start {cursor}, got {take.start}. "
+                    "Represent a pause inside a take's duration."
+                )
+            _finite(take.speech_duration, where)
+            if not 0 <= take.speech_duration <= take.duration + ROUNDING:
+                raise TimelineError(f"{where}: speech_duration must be inside 0..{take.duration}")
+            _alignment(take.words, take.duration, f"{where} word")
+            _alignment(take.phones, take.duration, f"{where} phone")
+            cursor += take.duration
+
     # -- loading --------------------------------------------------------------------------
     @classmethod
     def load(cls, path: str | Path) -> Timeline:
@@ -133,7 +216,10 @@ class Timeline:
 
     @classmethod
     def from_takes(cls, data: dict, root: Path | None = None) -> Timeline:
-        """A shot-sequence timeline: every item is a take with its own shot, clock and audio file."""
+        """A shot-sequence timeline: contiguous takes from zero, each with its own shot, clock and audio file.
+
+        Pauses belong in a take's duration; gaps or overlaps would desynchronise sequential picture from audio.
+        """
         known = {
             "id",
             "actor",
@@ -188,16 +274,16 @@ class Timeline:
 
         A caption without its own ``caption`` text is the spoken text without its ellipsis (the lettering rule)."""
         if not items:
-            raise ValueError("a caption script needs at least one caption")
+            raise TimelineError("a caption script needs at least one caption")
         phrases: list[Phrase] = []
         for i, q in enumerate(items):
             if not isinstance(q, dict) or not {"start", "end", "text"} <= set(q):
-                raise ValueError(f"caption {i}: expected an object with start, end and text")
+                raise TimelineError(f"caption {i}: expected an object with start, end and text")
             start, end = float(q["start"]), float(q["end"])
             if end <= start:
-                raise ValueError(f"caption {i}: end {end} must come after start {start}")
+                raise TimelineError(f"caption {i}: end {end} must come after start {start}")
             if phrases and start < phrases[-1].end - 1e-9:
-                raise ValueError(f"caption {i}: overlaps the caption before it ({phrases[-1].end} > {start})")
+                raise TimelineError(f"caption {i}: overlaps the caption before it ({phrases[-1].end} > {start})")
             text = str(q["text"])
             caption = q.get("caption") or text.replace("...", "")
             phrases.append(Phrase(index=i, role="caption", text=text, caption=str(caption), start=start, end=end))

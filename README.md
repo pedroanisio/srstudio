@@ -100,7 +100,11 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
-`Timeline.load` picks the input format by content (`phrases`, `items`, or a list of captions). A new style is a `Style` value, usually
+`Timeline.load` picks the input format by content (`phrases`, `items`, or a list of captions). It raises
+`TimelineError` for invalid ranges or unordered cuts. Shot-sequence takes must be contiguous from zero
+(within one microsecond of recording roundoff); include pauses in a take's duration. Word and character
+times must stay within their take. Frame-rounded trailing silence is allowed, and validation never retimes inputs.
+A new style is a `Style` value, usually
 `dataclasses.replace` of an existing one, plus a module of parts named in its `parts` (see `ink.py`: ~40 lines of
 drawing conventions before the first character, or `blob.py`: a pose sheet); nothing in `Episode` is specific to a
 style.
