@@ -58,13 +58,13 @@ def spans(
     shape: Callable[[Any], str] | None = None,
     within: float | None = None,
     clamp: float | None = None,
-    ordered: str | None = None,
+    ordered: str | Callable[[Sequence[Any]], str] | None = None,
 ) -> list[tuple[float, float]]:
     """``values`` as float ``(start, end)`` pairs, each a number from 0 that rises (``bad(span)`` otherwise).
 
     ``shape(span)`` words the refusal of a value that is not a pair; ``within`` refuses a span that ends past it
-    (by more than :data:`EPSILON`), ``clamp`` instead cuts each span's end at it; ``ordered`` (the message) refuses
-    a span that starts before the previous one ends."""
+    (by more than :data:`EPSILON`), ``clamp`` instead cuts each span's end at it; ``ordered`` (the message, or a
+    function of the span that words it) refuses a span that starts before the previous one ends."""
     out: list[tuple[float, float]] = []
     for span in values:
         if not (isinstance(span, tuple | list) and len(span) == 2):
@@ -73,7 +73,7 @@ def spans(
         if not (number(a) and number(b) and 0 <= a < b and (within is None or b <= within + EPSILON)):
             raise error(bad(span))
         if ordered is not None and out and a < out[-1][1]:
-            raise error(ordered)
+            raise error(ordered if isinstance(ordered, str) else ordered(span))
         out.append((float(a), float(b) if clamp is None else min(float(b), clamp)))
     return out
 

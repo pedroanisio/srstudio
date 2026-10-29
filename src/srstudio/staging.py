@@ -85,17 +85,34 @@ def check_move(m: Move, end: float, where: str, error: type[Exception] = Staging
         raise error(f"{where}: the {m.kind} from {m.at} must end inside the take (0..{end})")
 
 
-def check_spans(spans: Spans, end: float, where: str, error: type[Exception] = StagingError) -> None:
-    """Each span rises inside the take (``0..end``)."""
-    checks.spans(spans, error, lambda s: f"{where}: span {s[0]}..{s[1]} falls outside the take (0..{end})", within=end)
+def check_spans(
+    spans: Spans, end: float, where: str, error: type[Exception] = StagingError, *, ordered: bool = False
+) -> None:
+    """Each span rises inside the take (``0..end``); ``ordered`` (a shake's spans) also refuses a span that starts
+    before the one before it ends."""
+    checks.spans(
+        spans,
+        error,
+        lambda s: f"{where}: span {s[0]}..{s[1]} falls outside the take (0..{end})",
+        within=end,
+        ordered=(lambda s: f"{where}: span {s[0]}..{s[1]} overlaps the one before") if ordered else None,
+    )
 
 
 def shake(cv, group, spans: Spans) -> None:
-    """``group`` shaken side to side through each span, settling to rest at its end."""
+    """``group`` shaken side to side through each span, settling to rest at its end; every swing falls before
+    that end, and spans that overlap or run backwards are a :class:`StagingError`."""
+    checks.spans(
+        spans,
+        StagingError,
+        lambda s: f"shake span {s[0]}..{s[1]} must rise from 0",
+        ordered=lambda s: f"shake span {s[0]}..{s[1]} overlaps the one before",
+    )
     keys: list[tuple[float, float]] = [(0, 0)]
     for a, b in spans:
         n = max(2, int((b - a) / SHAKE_STEP))
-        keys += [(round(a + i * SHAKE_STEP, 4), (SHAKE_PX, -SHAKE_PX)[i % 2] * (1 - i / n)) for i in range(n)]
+        swings = [(round(a + i * SHAKE_STEP, 4), (SHAKE_PX, -SHAKE_PX)[i % 2] * (1 - i / n)) for i in range(n)]
+        keys += [(t, v) for t, v in swings if t < round(b, 4)]
         keys.append((round(b, 4), 0))
     cv.keys(group, "x", keys, hold=False)
 

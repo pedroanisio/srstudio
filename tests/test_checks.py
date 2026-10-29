@@ -109,6 +109,11 @@ def test_ordered_spans_refuse_an_overlap_or_a_step_back():
             checks.spans(spans, StyleError, bad, ordered="in order")
 
 
+def test_ordered_may_word_its_refusal_from_the_span():
+    with pytest.raises(StyleError, match=r"^1\.0\.\.2 overlaps$"):
+        checks.spans([(0, 1.5), (1.0, 2)], StyleError, bad, ordered=lambda s: f"{s[0]}..{s[1]} overlaps")
+
+
 def test_unordered_spans_may_overlap():
     assert checks.spans([(2, 3), (0, 2.5)], StyleError, bad) == [(2.0, 3.0), (0.0, 2.5)]
 

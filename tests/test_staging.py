@@ -68,6 +68,14 @@ def test_spans_fall_inside_the_take():
             staging.check_spans([bad], 2.0, "take 01")
 
 
+def test_ordered_spans_refuse_one_that_starts_before_the_last_ends():
+    staging.check_spans([(0.0, 1.0), (1.0, 2.0)], 2.0, "take 01", ordered=True)
+    for spans in [[(0.0, 1.0), (0.5, 1.5)], [(1.0, 2.0), (0.0, 0.5)]]:
+        staging.check_spans(spans, 2.0, "take 01")  # a blackout may overlap itself
+        with pytest.raises(StagingError, match="take 01: span .* overlaps the one before"):
+            staging.check_spans(spans, 2.0, "take 01", ordered=True)
+
+
 def test_the_default_error_is_a_value_error():
     assert issubclass(StagingError, ValueError)
 
@@ -137,6 +145,24 @@ def test_the_shake_settles_to_rest_at_the_end_of_each_span():
     assert xs[0] == (0.0, 0.0)
     assert (1.0, 0.0) in xs and (1.75, 0.0) in xs
     assert max(abs(v) for _, v in xs) == staging.SHAKE_PX
+
+
+@pytest.mark.parametrize("span", [(1.0, 1.05), (1.0, 1.0 + staging.SHAKE_STEP), (1.0, 1.1)])
+def test_a_shake_shorter_than_its_swings_still_settles_at_its_end(span):
+    cv = canvas()
+    g = cv.group(cv.comp, "g")
+    staging.shake(cv, g, (span,))
+    xs = keys(node(ET.fromstring(cv.scene.to_bytes()), "g"), "x")
+    times = [t for t, _ in xs]
+    assert times == sorted(set(times)) and xs[-1] == (round(span[1], 4), 0.0)
+    assert all(t < span[1] for t, v in xs if v)
+
+
+@pytest.mark.parametrize("spans", [((0.0, 0.5), (0.25, 0.6)), ((1.0, 1.5), (0.0, 0.5))])
+def test_shakes_that_overlap_or_run_backwards_are_refused(spans):
+    cv = canvas()
+    with pytest.raises(StagingError, match="overlaps the one before"):
+        staging.shake(cv, cv.group(cv.comp, "g"), spans)
 
 
 def test_a_blackout_covers_the_frame_only_in_its_spans_and_is_absent_without_spans():

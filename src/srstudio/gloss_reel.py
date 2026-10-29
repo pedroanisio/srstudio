@@ -131,7 +131,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
                 raise GlossError(f"{where}: card {card.title!r} starts at {card.start}, outside 0..{end}")
         if s.move is not None:
             staging.check_move(s.move, end, where, GlossError)
-        staging.check_spans((*s.dark, *s.shake), end, where, GlossError)
+        staging.check_spans(s.dark, end, where, GlossError)
+        staging.check_spans(s.shake, end, where, GlossError, ordered=True)
 
 
 def hush(cv, track, spoken: Sequence[tuple[float, float]], gain: float) -> None:

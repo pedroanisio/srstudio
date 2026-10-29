@@ -126,7 +126,8 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
                 raise SagaError(f"{where}: panel {panel.title!r} starts at {panel.start}, outside 0..{end}")
         if s.move is not None:
             staging.check_move(s.move, end, where, SagaError)
-        staging.check_spans((*s.dark, *s.shake), end, where, SagaError)
+        staging.check_spans(s.dark, end, where, SagaError)
+        staging.check_spans(s.shake, end, where, SagaError, ordered=True)
 
 
 def build(
