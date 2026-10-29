@@ -494,6 +494,60 @@ def test_a_file_without_a_readable_video_size_is_refused(tmp_path, data):
         video_size(bad)
 
 
+def box(kind: bytes, payload: bytes = b"") -> bytes:
+    return (8 + len(payload)).to_bytes(4, "big") + kind + payload
+
+
+def track(handler: bytes, entry: bytes) -> bytes:
+    """A track whose handler is ``handler`` and whose one sample entry is ``entry``."""
+    stsd = box(b"stsd", bytes(4) + (1).to_bytes(4, "big") + entry)
+    return box(b"trak", box(b"mdia", box(b"hdlr", bytes(8) + handler + bytes(12)) + box(b"minf", box(b"stbl", stsd))))
+
+
+def visual(width: int, height: int) -> bytes:
+    """A visual sample entry: reserved, data reference and pre-defined fields, then the width and height."""
+    return box(b"avc1", bytes(24) + width.to_bytes(2, "big") + height.to_bytes(2, "big") + bytes(50))
+
+
+@pytest.mark.parametrize(
+    "data, size",
+    [
+        (box(b"ftyp", b"isom") + box(b"moov", track(b"soun", b"") + track(b"vide", visual(320, 240))), (320, 240)),
+        (b"\x00\x00\x00\x01moov" + (16 + 8).to_bytes(8, "big") + box(b"free"), None),  # a 64-bit size: no track
+        (b"\x00\x00\x00\x00moov" + box(b"free"), None),  # a size of 0 runs to the end: no track
+    ],
+)
+def test_the_video_size_follows_the_index_to_the_first_video_track(tmp_path, data, size):
+    clip = tmp_path / "v.mp4"
+    clip.write_bytes(data)
+    if size is not None:
+        assert video_size(clip) == size
+    else:
+        with pytest.raises(CoverError, match="no video track"):
+            video_size(clip)
+
+
+@pytest.mark.parametrize(
+    "data, needle",
+    [
+        (box(b"ftyp", b"isom") + b"abc", "cut short"),  # a header shorter than 8 bytes after the last box
+        (b"\x00\x00\x00\x01moov\x00\x00", "cut short"),  # a 64-bit size cut short
+        (box(b"moov", track(b"vide", b"")), "sample entry is cut short"),
+        (box(b"moov", track(b"vide", visual(0, 240))), "sample entry has no size"),
+    ],
+)
+def test_a_video_index_without_a_whole_video_sample_entry_is_refused(tmp_path, data, needle):
+    clip = tmp_path / "v.mp4"
+    clip.write_bytes(data)
+    with pytest.raises(CoverError, match=needle):
+        video_size(clip)
+
+
+def test_a_post_without_a_thumbnail_is_fingerprinted_without_its_video(tmp_path):
+    bare = InstagramPost(title="t", description="d")
+    assert fingerprint(bare, tmp_path / "absent.mp4", FONT) == fingerprint(bare, tmp_path / "other.mp4", FONT)
+
+
 def test_a_truncated_video_is_refused(tmp_path):
     clip = video(tmp_path / "v.mp4")
     cut = tmp_path / "cut.mp4"
@@ -608,6 +662,23 @@ def test_a_dry_run_reports_the_same_plan_and_writes_nothing(old_delivery):
     result = migrate_manifest(items, out, font=FONT, dry_run=True)
     assert result.migrated == ["a", "c"] and [name for name, _ in result.kept] == ["b", "gone"]
     assert {p.name: p.read_bytes() for p in out.iterdir()} == files  # not even the lock file
+
+
+def test_migrate_keeps_an_entry_without_a_render_or_whose_cover_cannot_be_drawn_now(old_delivery):
+    items, out, _ = old_delivery
+    renders = items["a"].video.parent
+    absent, wide = (
+        Item(post("A"), renders / "absent.mp4"),
+        Item(post("A headline far too wide to fit"), renders / "b.mp4"),
+    )
+    data = json.loads((out / MANIFEST).read_text(encoding="utf-8"))
+    data["videos"]["b"]["post"] = legacy(wide)  # delivered from this very post, which no longer lays out
+    (out / MANIFEST).write_text(json.dumps(data), encoding="utf-8")
+    result = migrate_manifest({**items, "a": absent, "b": wide}, out, font=FONT, dry_run=True)
+    kept = dict(result.kept)
+    assert result.migrated == ["c"]
+    assert kept["a"] == f"no render at {renders / 'absent.mp4'}"
+    assert kept["b"].startswith("the cover cannot be drawn now:") and "wider than" in kept["b"]
 
 
 def test_migrate_reads_the_manifest_it_rewrites_under_the_delivery_lock(old_delivery, monkeypatch):
