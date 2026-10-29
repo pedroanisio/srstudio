@@ -1,6 +1,6 @@
 """Which registered parts each episode uses, measured from the calls its build makes.
 
-A part's ``episodes=`` in :func:`~srstudio.registry.register` is written by hand and drifts as episodes are added.
+Hand-written declarations of the episodes that use a part drift as episodes are added (ADR 0017, ADR 0032).
 :func:`trace` records instead every registered builder that runs: it matches the code objects of each builder (a
 function, or the methods a class part defines itself) under a profiler hook, so a call counts however it is
 reached (a module attribute, an imported name, the registry, or another part drawing it). :func:`measure` runs each
@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import CodeType
 
-from . import registry
+from . import registry, releases
 
 SCHEMA = "1.0.0"
 _VERSION = re.compile(r"-\d+\.\d+\.\d+\Z")
@@ -154,7 +154,8 @@ def discover(
     skip: Sequence[str] = (),
 ) -> tuple[list[Run], list[str]]:
     """A run per project folder in ``episodes`` and per ``<package>/project`` in ``packages`` whose script
-    ``<slug with underscores>.py`` is in ``scripts`` (a project in both is built from ``episodes``); ``args`` adds
+    ``<slug with underscores>.py`` is in ``scripts`` (or the builder its release in ``<scripts>/posts`` names, see
+    :mod:`srstudio.releases`; a project in both is built from ``episodes``); ``args`` adds
     command-line options by slug, and ``skip`` names projects not to build (one still in progress, whose build
     cannot run yet). Returns the runs by slug and the projects not measured: those with no script and those
     skipped. A skipped slug that names no project raises :class:`UsageError`."""
@@ -169,12 +170,18 @@ def discover(
     unknown = sorted(set(skip) - set(projects))
     if unknown:
         raise UsageError(f"--skip names no project: {', '.join(unknown)}")
+    builders: dict[str, str] = {}
+    if (Path(scripts) / "posts" / "__init__.py").is_file():
+        try:
+            builders = {slug: r.builder_name for slug, r in releases.load(Path(scripts) / "posts").items()}
+        except releases.ReleaseError as exc:
+            raise UsageError(f"the releases in {scripts}/posts cannot be read: {exc}") from exc
     runs, missing = [], []
     for slug in sorted(projects):
         if slug in skip:
             missing.append(slug)
             continue
-        script = Path(scripts) / f"{slug.replace('-', '_')}.py"
+        script = Path(scripts) / f"{builders.get(slug, slug.replace('-', '_'))}.py"
         if script.is_file():
             runs.append(Run(slug, script, projects[slug], tuple((args or {}).get(slug, ()))))
         else:

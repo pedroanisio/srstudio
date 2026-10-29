@@ -1,0 +1,21 @@
+"""The release of pressure-interview."""
+
+from srstudio.releases import Release
+from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail
+
+from ._interview import SERIES, VOICES
+
+RELEASE = Release(
+    "pressure-interview",
+    InstagramPost(
+        title="How do you handle pressure?",
+        description=(
+            "Episode 02 of The Interview. A perfectly honest answer about pressure, and a manager who realises too "
+            "late that they were talking about the same thing."
+        ),
+        credit=VOICES,
+        hashtags=SERIES + ("#notifications", "#worklifebalance"),
+        thumbnail=Thumbnail("How do you handle\npressure?", 6.0, "The Interview · 02", (540, 700), 1.4),
+    ),
+)

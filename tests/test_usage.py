@@ -186,3 +186,31 @@ def test_the_command_skips_a_project_it_is_told_to(tmp_path, project, capsys):
     report = U.Report.read(out)
     assert report.episodes == {"my-ep": ("plant",)} and report.unmeasured == ("unfinished",)
     assert cli.main([*common, "--out", str(out), "--skip", "typo"]) == 2
+
+
+def test_a_release_names_the_builder_of_a_project_whose_script_is_not_its_slug(tmp_path):
+    scripts = tmp_path / "scripts"
+    (scripts / "posts").mkdir(parents=True)
+    (scripts / "posts" / "__init__.py").write_text("")
+    (scripts / "posts" / "scene.py").write_text(
+        "from srstudio.releases import Release\nfrom srstudio.social import InstagramPost\n"
+        'RELEASE = Release("scene", InstagramPost(title="T", description="D."), builder="printer_recreation")\n'
+    )
+    (scripts / "printer_recreation.py").write_text("")
+    (scripts / "plain_ep.py").write_text("")
+    episodes = tmp_path / "episodes"
+    for slug in ("scene", "plain-ep"):
+        (episodes / slug).mkdir(parents=True)
+    runs, missing = U.discover(episodes, None, scripts)
+    assert {r.slug: r.script.name for r in runs} == {"scene": "printer_recreation.py", "plain-ep": "plain_ep.py"}
+    assert missing == []
+
+
+def test_unreadable_releases_stop_the_discovery(tmp_path):
+    scripts = tmp_path / "scripts"
+    (scripts / "posts").mkdir(parents=True)
+    (scripts / "posts" / "__init__.py").write_text("")
+    (scripts / "posts" / "one.py").write_text("X = 1\n")
+    (tmp_path / "episodes").mkdir()
+    with pytest.raises(U.UsageError, match="RELEASE"):
+        U.discover(tmp_path / "episodes", None, scripts)
