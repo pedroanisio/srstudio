@@ -16,8 +16,9 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import partial
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -87,12 +88,7 @@ class Screen:
     face: Look | None = None
 
 
-def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, lines: int = 1):
-    name = cv.uid("text")
-    cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=700,
-                       color=color, align="center", verticalAlign="middle", wrap="balance" if lines > 1 else "none",
-                       lineHeight="1.1", maxLines=lines, overflow="ellipsis")  # fmt: skip
-    return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
+_label = partial(look.text, weight=700, lines=1, line_height="1.1", overflow="ellipsis")
 
 
 def hand(pose: RigPose, *, at: Point = SHOPPER_AT, flip: bool = False) -> Point:

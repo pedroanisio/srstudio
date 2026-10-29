@@ -37,10 +37,11 @@ import random
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -1289,11 +1290,7 @@ class Mail:
     unread: bool = False
 
 
-def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight: int = 400, align="start"):
-    name = cv.uid("text")
-    cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
-                       color=color, align=align, verticalAlign="middle", wrap="none", overflow="ellipsis")  # fmt: skip
-    return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
+_label = partial(look.text, weight=400, align="start", overflow="ellipsis")  # one line, cut with an ellipsis
 
 
 def _check_call(tiles: Sequence[Tile], inbox: Sequence[Mail], speaking: str, highlight: int | None) -> None:

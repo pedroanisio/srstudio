@@ -17,8 +17,9 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import (
@@ -531,14 +532,14 @@ def laptop(
     box(cv, g, 0, -SCREEN_H - 30, SCREEN_W + 40, SCREEN_H + 30, "#5b5d69", 5, r=14)
     box(cv, g, 14, -SCREEN_H - 16, SCREEN_W + 12, SCREEN_H + 4, "#ffffff", 3, r=6)
     box(cv, g, 14, -SCREEN_H - 16, SCREEN_W + 12, 44, "#eef0f3", 0, r=6)
-    _text(cv, g, title, 26, -SCREEN_H - 16, SCREEN_W - 70, 44, 26, cv.ink, 700)
+    _text(cv, g, title, 26, -SCREEN_H - 16, SCREEN_W - 70, 44, 26, cv.ink, weight=700)
     if badge:
         box(cv, g, SCREEN_W - 50, -SCREEN_H - 9, 70, 32, BADGE, r=16)
-        _text(cv, g, badge, SCREEN_W - 50, -SCREEN_H - 9, 70, 32, 22, "#ffffff", 700, align="center")
+        _text(cv, g, badge, SCREEN_W - 50, -SCREEN_H - 9, 70, 32, 22, "#ffffff", weight=700, align="center")
     for i, row in enumerate(rows):
         top = -SCREEN_H + 34 + i * 42
         shape(cv, g, f"M 30 {top + 22} L 38 {top + 30} L 52 {top + 12}", sw=4, stroke="#3ccf6e")
-        _text(cv, g, row, 62, top, SCREEN_W - 40, 42, 22, cv.ink, 400)
+        _text(cv, g, row, 62, top, SCREEN_W - 40, 42, 22, cv.ink, weight=400)
     return g
 
 
@@ -564,9 +565,9 @@ def phone(cv: Canvas, parent, *, sender: str, text: str, buzz: Sequence[float] =
     box(cv, g, 0, 0, PHONE_W, PHONE_H, "#2b2e35", 5, r=24)
     box(cv, g, 10, 14, PHONE_W - 20, PHONE_H - 28, "#3d5a80", 0, r=14)
     box(cv, g, 16, 40, PHONE_W - 32, 110, "#f4f5f7", 0, r=12)
-    _text(cv, g, sender, 26, 44, PHONE_W - 52, 34, 24, cv.ink, 700)
-    _text(cv, g, text, 26, 78, PHONE_W - 44, 32, 19, cv.ink, 400)
-    _text(cv, g, "now", 26, 108, PHONE_W - 52, 30, 18, STAMP, 700)
+    _text(cv, g, sender, 26, 44, PHONE_W - 52, 34, 24, cv.ink, weight=700)
+    _text(cv, g, text, 26, 78, PHONE_W - 44, 32, 19, cv.ink, weight=400)
+    _text(cv, g, "now", 26, 108, PHONE_W - 52, 30, 18, STAMP, weight=700)
     if buzz:
         keys = [(0.0, x)]
         for t in buzz:
@@ -580,8 +581,4 @@ def phone(cv: Canvas, parent, *, sender: str, text: str, buzz: Sequence[float] =
     return g
 
 
-def _text(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, weight: int, align: str = "start"):
-    name = cv.uid("text")
-    cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
-                       color=color, align=align, verticalAlign="middle", wrap="none", overflow="ellipsis")  # fmt: skip
-    return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
+_text = partial(look.text, align="start", overflow="ellipsis")  # one line, cut with an ellipsis

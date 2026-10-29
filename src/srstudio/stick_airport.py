@@ -12,7 +12,9 @@ of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the sam
 
 from __future__ import annotations
 
-from . import signature
+from functools import partial
+
+from . import look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -61,11 +63,7 @@ ARMREST_TOP = 1220
 SEAT_TOP, CUSHION = 640, 1270
 
 
-def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight=700, align="center"):
-    name = cv.uid("text")
-    cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
-                       color=color, align=align, verticalAlign="middle", wrap="none")  # fmt: skip
-    return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
+_label = partial(look.text, weight=700)  # one line, no cut
 
 
 def _plane(cv: Canvas, parent) -> None:

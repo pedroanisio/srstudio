@@ -5,7 +5,8 @@ A style keeps its own numbers (its grade, its blur, its colours, the prefix of e
 these for the drawing, so a finish learned in one style is a call away in the next:
 
 * :func:`wrap` breaks a text into lines the font draws within a width and refuses a text that does not fit, so a
-  panel's lettering never spills; :func:`label` sets a line in its box;
+  panel's lettering never spills; :func:`label` sets a line in its box, and :func:`text` sets one in an asset
+  of its own with the weight, wrapping and overflow a style chooses;
 * :func:`grade` applies a style's effects (bloom, vignette, grain...) to any node, a shot or a world group inside
   it; :func:`depth` is a group thrown out of focus for a set's far plane;
 * :func:`pool` is a soft radial light, :func:`fade` a band of colour thinning to nothing (haze, a shade at the
@@ -22,7 +23,7 @@ from . import fonts
 from .canvas import Canvas
 from .errors import SrstudioError
 
-__all__ = ["FitError", "wrap", "label", "grade", "depth", "pool", "fade"]
+__all__ = ["FitError", "wrap", "label", "text", "grade", "depth", "pool", "fade"]
 
 
 class FitError(SrstudioError, ValueError):
@@ -55,6 +56,51 @@ def wrap(font: bytes, text: str, size: float, width: float, max_lines: int) -> l
 def label(cv: Canvas, parent, value: str, x, y, w, h, size, color, align: Any = "center"):
     """A text layer of ``value`` in the box ``x, y, w, h``."""
     return cv.text(parent, cv.uid("txt"), value, x, y, w, h, size, color=color, align=align)
+
+
+def text(
+    cv: Canvas,
+    parent,
+    value: str,
+    x,
+    y,
+    w,
+    h,
+    size,
+    color: str,
+    *,
+    weight: int | None = None,
+    align: Any = "center",
+    lines: int | None = None,
+    wrap: str | None = None,
+    line_height: str | None = None,
+    overflow: str | None = None,
+    asset: str = "text",
+    layer: str = "layer",
+):
+    """``value`` set in the box ``x, y, w, h``: a text asset (id from ``asset``) and the layer that shows it (id
+    from ``layer``). With ``lines`` it balances over at most that many lines (one line keeps it on one); ``wrap``
+    chooses the wrapping outright. An option left ``None`` is not set, so the engine's default holds."""
+    if wrap is None:
+        wrap = "balance" if lines is not None and lines > 1 else "none"
+    name = cv.uid(asset)
+    cv.assets.add_text(
+        id=name,
+        text=value,
+        width=w,
+        height=h,
+        size=size,
+        fontAsset=cv.font_asset,
+        weight=weight,
+        color=color,
+        align=align,
+        verticalAlign="middle",
+        wrap=wrap,
+        lineHeight=line_height,
+        maxLines=lines,
+        overflow=overflow,
+    )
+    return parent.add_layer(id=cv.uid(layer), asset=name, x=x, y=y)
 
 
 def grade(cv: Canvas, node, prefix: str, effects: Mapping[str, Mapping[str, Any]]):

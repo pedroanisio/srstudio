@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import VOID, Canvas, flat_counter, fonts, look
+from srstudio import VOID, Canvas, flat_counter, fonts, look, shared_counter
 from srstudio.sample import SYSTEM_FONTS
 
 FONT_FILE = next((f for f in SYSTEM_FONTS if f.exists()), None)
@@ -140,3 +140,48 @@ def test_a_fade_runs_from_its_colour_at_y0_to_nothing_at_y1_either_way_up():
     assert stops(root, "demo-shade") == ["#3a1f5c00", "#3a1f5c"]
     assert (down.y, down.height) == (100, 300)
     assert (up.y, up.height) == (1500, 400)
+
+
+# -- a text set in its own asset ---------------------------------------------------------------------------------------
+def counted() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=2.0, background=VOID.background)
+    cv = Canvas(scene, VOID, font_asset="f", namer=shared_counter())
+    cv.assets.add_font(id="f", src="f.ttf", family="DejaVu Sans", weight="700")
+    return cv
+
+
+def text_asset(cv: Canvas, name: str) -> dict[str, str]:
+    return dict(next(t for t in tree(cv).iter("text") if t.get("id") == name).attrib)
+
+
+def test_text_sets_one_line_in_its_box_and_shows_it_in_a_layer_of_its_own():
+    cv = counted()
+    layer = look.text(cv, cv.comp, "BAGGING AREA", 10, 20, 300, 44, 24, "#ffffff")
+    assert text_asset(cv, "text1") == dict(
+        id="text1", text="BAGGING AREA", width="300", height="44", size="24", color="#ffffff", align="center",
+        verticalAlign="middle", wrap="none", fontAsset="f",
+    )  # fmt: skip
+    shown = next(e for e in tree(cv).iter("layer") if e.get("asset") == "text1")
+    assert (shown.get("id"), shown.get("x"), shown.get("y")) == ("layer2", "10", "20") and layer is not None
+
+
+def test_text_lines_balance_a_text_over_at_most_that_many_lines():
+    cv = counted()
+    look.text(cv, cv.comp, "a", 0, 0, 10, 10, 12, "#000000", lines=1)
+    look.text(cv, cv.comp, "a b", 0, 0, 10, 10, 12, "#000000", lines=2)
+    assert (text_asset(cv, "text1")["wrap"], text_asset(cv, "text1")["maxLines"]) == ("none", "1")
+    assert (text_asset(cv, "text3")["wrap"], text_asset(cv, "text3")["maxLines"]) == ("balance", "2")
+
+
+def test_text_passes_weight_alignment_line_height_overflow_wrap_and_its_id_prefixes():
+    cv = counted()
+    look.text(
+        cv, cv.comp, "Mon", 0, 0, 10, 10, 12, "#000000", weight=700, align="start", line_height="1.15",
+        overflow="ellipsis", wrap="word", asset="txt", layer="label",
+    )  # fmt: skip
+    attrs = text_asset(cv, "txt1")
+    assert {k: attrs[k] for k in ("weight", "align", "lineHeight", "overflow", "wrap")} == dict(
+        weight="700", align="start", lineHeight="1.15", overflow="ellipsis", wrap="word"
+    )
+    assert next(e for e in tree(cv).iter("layer") if e.get("asset") == "txt1").get("id") == "label2"

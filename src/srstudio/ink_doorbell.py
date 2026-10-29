@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, human, path
@@ -38,20 +38,8 @@ class DoorbellError(SrstudioError, ValueError):
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str) -> None:
-    aid = cv.uid("txt")
-    cv.assets.add_text(
-        id=aid,
-        text=value,
-        width=round(w),
-        height=round(h),
-        size=size,
-        fontAsset=cv.font_asset,
-        color=color,
-        align="center",
-        verticalAlign="middle",
-        wrap="none",
-    )
-    parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
+    """``value`` on one line in the box, its size in whole pixels."""
+    look.text(cv, parent, value, x, y, round(w), round(h), size, color, asset="txt", layer="label")
 
 
 def _box(x: float, y: float, w: float, h: float, r: float) -> str:

@@ -13,7 +13,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import checks, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, path
@@ -50,20 +50,10 @@ def _check_time(at: float, what: str) -> float:
 
 
 def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str, align: str = "center") -> None:
-    aid = cv.uid("txt")
-    cv.assets.add_text(
-        id=aid,
-        text=value,
-        width=round(w),
-        height=round(h),
-        size=size,
-        fontAsset=cv.font_asset,
-        color=color,
-        align=align,
-        verticalAlign="middle",
-        wrap="word",
+    """``value`` wrapped at words in the box, its size in whole pixels."""
+    look.text(
+        cv, parent, value, x, y, round(w), round(h), size, color, align=align, wrap="word", asset="txt", layer="label"
     )
-    parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
 
 
 def _visible(cv: Canvas, node, start: float, end: float | None = None) -> None:

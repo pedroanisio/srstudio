@@ -10,8 +10,9 @@ card carries the signature code (ADR 0001), small, in its corner.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import partial
 
-from . import checks, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .ink import ellipse, group, path
@@ -35,21 +36,7 @@ def _check_time(at: float, what: str) -> float:
     return checks.second(at, CaptchaError, f"{what}: a time is seconds into the take, from 0, got {at!r}")
 
 
-def _text(cv: Canvas, parent, value: str, x, y, w, h, size, color: str) -> None:
-    aid = cv.uid("txt")
-    cv.assets.add_text(
-        id=aid,
-        text=value,
-        width=w,
-        height=h,
-        size=size,
-        fontAsset=cv.font_asset,
-        color=color,
-        align="center",
-        verticalAlign="middle",
-        wrap="word",
-    )
-    parent.add_layer(id=cv.uid("label"), asset=aid, x=x, y=y)
+_text = partial(look.text, wrap="word", asset="txt", layer="label")
 
 
 def _appear(cv: Canvas, node, at: float) -> None:

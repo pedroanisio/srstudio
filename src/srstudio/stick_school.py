@@ -15,8 +15,9 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from functools import partial
 
-from . import signature
+from . import look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import STANDING, Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -94,12 +95,7 @@ def held(pose: str) -> tuple[float, float]:
     return TEACHER_AT[0] - (hands[0][0] + hands[1][0]) / 2, (hands[0][1] + hands[1][1]) / 2
 
 
-def _label(cv: Canvas, parent, text: str, x, y, w, h, size, color: str, *, weight=700, lines=1, align="center"):
-    name = cv.uid("text")
-    cv.assets.add_text(id=name, text=text, width=w, height=h, size=size, fontAsset=cv.font_asset, weight=weight,
-                       color=color, align=align, verticalAlign="middle", wrap="balance" if lines > 1 else "none",
-                       lineHeight="1.15", maxLines=lines, overflow="ellipsis")  # fmt: skip
-    return parent.add_layer(id=cv.uid("layer"), asset=name, x=x, y=y)
+_label = partial(look.text, weight=700, lines=1, line_height="1.15", overflow="ellipsis")
 
 
 @register("location", "stick-classroom", tags=("school", "classroom", "parent-teacher", "chalkboard", "font"))

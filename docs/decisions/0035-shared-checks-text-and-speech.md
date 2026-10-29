@@ -2,17 +2,17 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0035: One home for the input checks every style copied
+# ADR 0035: One home for the checks, text helpers and speech helpers every style copied
 
-- Status: accepted; implemented 2026-10-29 (`srstudio.checks`, `Canvas.require_font`; `tests/test_checks.py`,
-  `tests/test_canvas_and_registry.py`)
+- Status: accepted; implemented 2026-10-29 (`srstudio.checks`, `Canvas.require_font`, `look.text`;
+  `tests/test_checks.py`, `tests/test_canvas_and_registry.py`, `tests/test_look.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
 ## Context
 
-Each new style copied the previous style's input checks, so the same check existed in several modules with
-small differences. Some differences were deliberate:
+Each new style copied the previous style's input checks, font guard and text helper, so the same code existed in
+several modules with small differences. Some differences were deliberate:
 
 - A Saga or Gloss set is drawn for more than 0 s, while a Toon set may be a still (an end of 0).
 - Saga set spans are cut at the set's end, while staging and Gloss spans must end inside the shot.
@@ -45,6 +45,13 @@ Others were accidents of how each copy was written:
   raises `error("this canvas has no caption font; <what>")`. The 14 guards in the Stick, Stick sets, Toon, Collage
   and prop modules call it with their own `what`, so each refusal reads as before, and Collage keeps
   `CollageError`. `Canvas.text` and `native` keep their own guards, whose wording points at `EpisodeSpec.font`.
+- **`look.text` sets a text in an asset of its own.** It takes `weight`, `align`, `lines` (balance over at most
+  that many lines), `wrap`, `line_height`, `overflow` and the id prefixes of its asset and its layer, and it sets
+  only the options given. It replaces the `_label` and `_text` copies in `stick`, `stick_car`, the Stick sets
+  (gym, airport, school, shop) and the Ink captcha, phone, doorbell and vacuum. Each module keeps its defaults as a
+  `functools.partial`, or as a two-line wrapper where it rounds the box to whole pixels. `look.label`, which sets
+  a line through `Canvas.text` (one id, a `-layer` suffix, line height 1.12), is unchanged. One function could
+  not serve both, because the two write different ids and attributes, and published scenes hold both.
 
 ## Rejected alternatives
 
