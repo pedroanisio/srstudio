@@ -37,7 +37,7 @@ from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
-from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript
+from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
 __all__ = [
     "SketchError",
@@ -104,8 +104,12 @@ class Speaker:
 
 @dataclass(frozen=True)
 class Line:
+    """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
+    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest."""
+
     speaker: str
     text: str
+    heard: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -185,6 +189,10 @@ def check(sketch: Sketch) -> None:
         raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
+    for i, line in enumerate(sketch.lines):
+        for text in line.heard:
+            if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
+                raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
     beats = sketch.beats
     if not beats or beats[0].start != 0:
         raise SketchError("the first beat starts at 0")
@@ -592,9 +600,12 @@ def record(
     mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
     for line, slot, (spoken, trim), at in zip(sketch.lines, plan, takes, placed, strict=True):
         transcript = client.transcribe(spoken.wav)
-        heard.append({"id": slot.id, "speaker": line.speaker, "expected": line.text, "heard": transcript.text})
+        heard.append(
+            {"id": slot.id, "speaker": line.speaker, "expected": line.text, "heard": transcript.text}
+            | ({"accepted": list(line.heard)} if line.heard else {})
+        )
         try:
-            check_transcript(transcript, line.text)
+            check_transcript(transcript, line.text, accepted=line.heard)
         except TranscriptMismatch as exc:
             failures.append(f"line {slot.id} ({line.speaker}): {exc}")
             continue

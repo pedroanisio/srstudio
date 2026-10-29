@@ -381,6 +381,31 @@ def test_record_refuses_a_line_speech_to_text_did_not_hear_as_scripted(tmp_path)
     assert not (tmp_path / "voiced").exists()
 
 
+def test_record_takes_a_hearing_the_operator_accepted_and_reports_it(tmp_path):
+    lines = (LINES[0], replace(LINES[1], heard=("How is it growing?",)), LINES[2])
+    client = FakeClient(tmp_path, heard={"How is it going?": "How is it growing?"})
+    rec = sketch.record(replace(SK, lines=lines), tmp_path, client, confirm=confirm_stub, conform_clip=copy_clip)
+    assert [q["id"] for q in rec.items] == ["01", "02", "03"]
+    heard = json.loads((tmp_path / "voice-transcript.json").read_text())
+    assert heard["passed"] and heard["lines"][1]["accepted"] == ["How is it growing?"]
+    assert "accepted" not in heard["lines"][0]
+
+
+def test_record_still_refuses_a_hearing_that_was_not_accepted(tmp_path):
+    lines = (LINES[0], replace(LINES[1], heard=("How is it growing?",)), LINES[2])
+    client = FakeClient(tmp_path, heard={"How is it going?": "Who is it owing?"})
+    with pytest.raises(sketch.SketchError, match=r"line 02 \(boss\).*owing"):
+        sketch.record(replace(SK, lines=lines), tmp_path, client, confirm=confirm_stub, conform_clip=copy_clip)
+    assert not json.loads((tmp_path / "voice-transcript.json").read_text())["passed"]
+
+
+@pytest.mark.parametrize("heard", [("How is it going?",), ("how is it, going",), ("",), ("?!",)])
+def test_check_refuses_an_accepted_hearing_that_is_the_line_itself_or_empty(heard):
+    lines = (LINES[0], replace(LINES[1], heard=heard), LINES[2])
+    with pytest.raises(sketch.SketchError, match=r"line 1.*accepted hearing"):
+        sketch.check(replace(SK, lines=lines))
+
+
 def test_voiced_beats_round_trip_and_bad_files_are_refused(tmp_path):
     sketch.write_voiced(tmp_path, BEATS, SK.end, LINES)
     beats, end = sketch.load_beats(tmp_path / "voiced" / "beats.json")

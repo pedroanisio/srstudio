@@ -32,7 +32,10 @@ LINES = (
     Line("gary", "Ninety-nine episodes. I watched them all. On double speed."),
     Line("kai", "Nobody watches Bowl Heads anymore."),
     Line("gary", "Then what do they watch?"),
-    Line("kai", "Sinkheads. There's a new episode every hour."),
+    # the operator approved the recorded take: speech-to-text hears the invented show's name as two words
+    Line(
+        "kai", "Sinkheads. There's a new episode every hour.", heard=("Sync Heads, there's a new episode every hour",)
+    ),
     Line("gary", "Okay. Episode one."),
 )
 BEATS, END = timed(
