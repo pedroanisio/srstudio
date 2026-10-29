@@ -1390,10 +1390,18 @@ error is `InstagramPostError`, with every problem listed.
   and then `ig.txt`; a post without a thumbnail is an `InstagramPostError`, and on any failure nothing is written.
 - **Publish gate.** `python3 episodes/instagram_posts.py deliver <out> <renders> --fonts <dir>` delivers every video
   that drifted (one `<out>/<video name>/` folder with `ig.txt` and `cover.jpg` per `<renders>/<video name>.mp4`) and
-  records `<out>/delivery.json` (version 1.0.0): per video, the SHA-256 of its render, of its post fingerprint (the
-  caption, the thumbnail spec, the headline font and the layout code) and of the two files written. `check` writes
-  nothing, lists every drift and exits 1: a video re-rendered after its cover was made, a changed post or thumbnail,
-  an `ig.txt` or `cover.jpg` edited or missing, a post without a render, a video delivered but no longer published.
+  records `<out>/delivery.json` (version 1.1.0): per video, the SHA-256 of its render, of its post fingerprint and
+  of the two files written. The post fingerprint is the cover's drawing, not the source of the code that draws it
+  ([ADR 0037](docs/decisions/0037-the-cover-fingerprint-is-the-drawing.md)): the caption, the thumbnail spec, the
+  headline font, the document `compose` lays out at the video's own size (read from the MP4 index) and the named
+  render steps (`thumbnail.ENGINE_ARGS`, `thumbnail.ENCODER_ARGS`, `social.BACKDROP_ARGS`, `social.FRAME_SLACK`,
+  `social.COVER_VARIANT`), so a refactor of `thumbnail.py` that draws the same covers drifts nothing. `check` writes
+  nothing, runs no engine, ffmpeg or ffprobe, lists every drift and exits 1: a video re-rendered after its cover was
+  made, a changed post, thumbnail or drawing, a cover that can no longer be laid out, an `ig.txt` or `cover.jpg`
+  edited or missing, a post without a render, a video delivered but no longer published. A 1.0.0 manifest is
+  refused by name; `instagram_posts.py migrate <out> <renders> --fonts <dir> [--dry-run]` moves it to 1.1.0 once,
+  rewriting only the entries that provably hold the 1.0.0 fingerprint of the post they have now, under the
+  delivery lock; it draws and delivers nothing.
   Every render must exist before `deliver` writes anything; current videos are left untouched. `--only <video name>`
   (repeatable) delivers the named videos alone, needing only their renders, while another post waits for its render;
   the other manifest entries are kept as they were, so `check` still reports their drift. The font is installed

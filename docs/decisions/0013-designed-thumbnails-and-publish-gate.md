@@ -45,16 +45,19 @@ Facts that shaped the design:
    requested, and the installer correctly refuses that.
 5. **The manifest and the gate.** `publish` delivers each item that drifted and writes `delivery.json` (1.0.0). Per
    video, it records the SHA-256 of the render, a post fingerprint (caption, thumbnail spec, font, layout code) and
-   the two files written. `check_delivery` recomputes every entry and returns typed `Drift` values. The episode
-   script exposes both as `deliver` and `check`, and `check` exits 1 on drift. The suite runs `check` against the
-   real delivery when `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` are set.
+   the two files written. ([ADR 0037](0037-the-cover-fingerprint-is-the-drawing.md) replaced the layout code in the
+   fingerprint with the cover's drawing, and moved the manifest to 1.1.0.) `check_delivery` recomputes every entry
+   and returns typed `Drift` values. The episode script exposes both as `deliver` and `check`, and `check` exits 1
+   on drift. The suite runs `check` against the real delivery when `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` are set.
 
 ## Consequences
 
 - A re-render without a new delivery fails `check` and the gated suite. `deliver` repairs it by redrawing only the
   videos that drifted.
 - Any change to `thumbnail.py` changes the fingerprint, so every cover is redrawn on the next delivery. That is
-  deliberate: a layout change is a change to every published cover.
+  deliberate: a layout change is a change to every published cover. (Superseded by
+  [ADR 0037](0037-the-cover-fingerprint-is-the-drawing.md): only a change to what is drawn changes the fingerprint.
+  A source-only edit does not.)
 - Thumbnail picks (time, focus, zoom, headline) are chosen by looking at the frames. The layout guarantees fit and
   bounds, not taste.
 - The gate test skips when the two variables are unset, as the fidelity test does without `SRSTUDIO_PACKAGES`. The
