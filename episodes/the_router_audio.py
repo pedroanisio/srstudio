@@ -36,6 +36,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from srstudio import recording
 from srstudio.generated import gain_to_peak, trim_effect, trim_speech
 from srstudio.narration import (
     confirm_voice,
@@ -190,23 +191,16 @@ def check_script(script: tuple[Line, ...] = SCRIPT) -> None:
             raise ValueError(f"take {line.id}: a spoken line needs text and a voiced actor")
 
 
-def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("project", type=Path)
-    parser.add_argument("--font", type=Path, help="folder holding PatrickHand-Regular.ttf and font-license.txt to copy")
-    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
-    args = parser.parse_args(argv)
-    env = os.environ if env is None else env
+def record(root: Path, env: Mapping[str, str], ffmpeg: str, font: Path | None = None) -> int:
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     require_consent(env)
     check_script()
-    root = args.project.resolve()
     assets, audio = root / "assets", root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     assets.mkdir(exist_ok=True)
-    if args.font:
+    if font:
         for name in ("PatrickHand-Regular.ttf", "font-license.txt"):
-            shutil.copyfile(args.font / name, assets / name)
+            shutil.copyfile(font / name, assets / name)
     if not (assets / "PatrickHand-Regular.ttf").exists():
         raise SystemExit(f"{assets / 'PatrickHand-Regular.ttf'} is missing; pass --font DIR")
     key = env.get(KEY_ENV, "")
@@ -222,7 +216,7 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
             trim = trim_effect(clip.wav, longest=line.longest)
             length = round(trim.clip_out - trim.clip_in, 6)
             dst = audio / f"fx-{line.id}.wav"
-            conform(clip.wav, dst, trim.clip_in, trim.clip_out, length, gain_to_peak(trim.peak, line.peak), args.ffmpeg)
+            conform(clip.wav, dst, trim.clip_in, trim.clip_out, length, gain_to_peak(trim.peak, line.peak), ffmpeg)
             item.update(
                 speech_duration=0,
                 seconds=line.seconds,
@@ -243,9 +237,7 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
             trim = trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)
             speech = round(trim.clip_out - trim.clip_in, 6)
             dst = audio / f"take-{line.id}.wav"
-            conform(
-                spoken.wav, dst, trim.clip_in, trim.clip_out, speech, gain_to_peak(trim.peak, line.peak), args.ffmpeg
-            )
+            conform(spoken.wav, dst, trim.clip_in, trim.clip_out, speech, gain_to_peak(trim.peak, line.peak), ffmpeg)
             item.update(
                 voice=voice.id,
                 voice_name=voice.name,
@@ -281,6 +273,14 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
     (root / "timeline.json").write_text(json.dumps(timeline, indent=2) + "\n")
     print(f"{len(items)} takes, {duration:.3f} s")
     return 0
+
+
+def options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--font", type=Path, help="folder holding PatrickHand-Regular.ttf and font-license.txt to copy")
+
+
+def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+    return recording.main(record, __doc__, argv, env, options=options)
 
 
 if __name__ == "__main__":

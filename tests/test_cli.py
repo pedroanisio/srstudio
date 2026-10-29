@@ -99,3 +99,16 @@ def test_python_dash_m_exits_with_the_command_status(isolated, module, capsys):
     assert stop.value.code == 0
     slugs = [s["slug"] for s in json.loads(capsys.readouterr().out)]
     assert slugs == ["cutout", "ink", "soft", "cel", "stick", "toon", "saga", "collage", "gloss"]
+
+
+def test_catalog_shows_the_measured_episodes_from_a_usage_report(tmp_path, capsys):
+    from srstudio.usage import Report
+
+    report = tmp_path / "usage.json"
+    Report({"camera-off": ("pip",), "focus-mode": ("pip", "soft-desk")}).write(report)
+    assert main(["catalog", "--kind", "character", "--usage", str(report)]) == 0
+    line = next(ln for ln in capsys.readouterr().out.splitlines() if ln.split()[2] == "pip")
+    assert "[camera-off,focus-mode]" in line
+    assert main(["catalog", "--json", "--usage", str(report)]) == 0
+    rows = {r["name"]: r for r in json.loads(capsys.readouterr().out)}
+    assert rows["soft-desk"]["episodes"] == ["focus-mode"] and rows["juno"]["episodes"] == []

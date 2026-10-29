@@ -28,7 +28,19 @@ from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
 
-from srstudio import TOON, Episode, EpisodeSpec, foley, fonts, sketch, soundtrack, subtitles, toon, toon_props
+from srstudio import (
+    TOON,
+    Episode,
+    EpisodeSpec,
+    foley,
+    fonts,
+    recording,
+    sketch,
+    soundtrack,
+    subtitles,
+    toon,
+    toon_props,
+)
 from srstudio.canvas import Canvas
 from srstudio.narration import effect_cues, manifest_duration, require_consent
 from srstudio.provider import KEY_ENV
@@ -231,3 +243,26 @@ def record_episode(
         print(f"{q['id']} {q['duration']:5.2f}s {flags:8} {q['text']}")
     print(f"{len(rec.items)} lines, {len(effects)} effects, the project runs {rec.end:.3f} s")
     return manifest
+
+
+def recorder(
+    sk: sketch.Sketch,
+    seed: int,
+    note: str,
+    doc: str | None,
+    mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
+    validate: Callable[[sketch.Sketch], object] | None = None,
+) -> Callable[..., int]:
+    """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
+    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
+    once the arguments are parsed, before anything is recorded."""
+
+    def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
+        if validate is not None:
+            validate(sk)
+        return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth)
+
+    def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+        return recording.main(record, doc, argv, env)
+
+    return main

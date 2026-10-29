@@ -11,25 +11,12 @@ All LLM output must be treated as untrusted and validated explicitly.
 
 from __future__ import annotations
 
-import argparse
-import os
-import shutil
 import sys
-from collections.abc import Mapping
-from pathlib import Path
 
-from _collage_sketch import MOUTH, record_episode
+from _collage_sketch import MOUTH, recorder
 from intervention_data import NOTE, STAGING
 
-
-def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("project", type=Path)
-    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
-    args = parser.parse_args(argv)
-    environ = os.environ if env is None else env
-    record_episode(STAGING, args.project.resolve(), environ, args.ffmpeg, NOTE, mouth=MOUTH)
-    return 0
+main = recorder(STAGING, NOTE, __doc__, mouth=MOUTH)
 
 
 if __name__ == "__main__":

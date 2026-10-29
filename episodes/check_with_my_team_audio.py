@@ -46,6 +46,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from pathlib import Path
 
+from srstudio import recording
 from srstudio.compose import MODEL as MUSIC_MODEL
 from srstudio.compose import Chunk, MusicClient, MusicOutputError, Plan
 from srstudio.dub import beat_offset
@@ -297,23 +298,16 @@ def music(root: Path, key: str, client: ElevenLabsClient) -> dict:
     raise SystemExit("no song passed verification:\n" + "\n".join(refused))
 
 
-def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("project", type=Path)
-    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
-    parser.add_argument("--key-stdin", action="store_true", help="read the ElevenLabs key from standard input")
-    args = parser.parse_args(argv)
-    env = os.environ if env is None else env
+def record(root: Path, env: Mapping[str, str], ffmpeg: str, key_stdin: bool = False) -> int:
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     require_consent(env)
-    root = args.project.resolve()
     (root / "audio").mkdir(parents=True, exist_ok=True)
-    key = sys.stdin.read().strip().strip("'\"") if args.key_stdin else env.get(KEY_ENV, "")
+    key = sys.stdin.read().strip().strip("'\"") if key_stdin else env.get(KEY_ENV, "")
     cache = root / "assets" / "elevenlabs"
     client = ElevenLabsClient(cache, key, model=MODEL, seed=SEED)
     voice = confirm_voice(cache, key, SPEAKER)
 
-    items, heard, failures = voice_over(root, client, args.ffmpeg)
+    items, heard, failures = voice_over(root, client, ffmpeg)
     (root / "voice-transcript.json").write_text(
         json.dumps({"recognizer": f"ElevenLabs {STT_MODEL}", "lines": heard, "passed": not failures}, indent=2) + "\n"
     )
@@ -334,6 +328,14 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (root / "music.json").write_text(json.dumps(music(root, key, client), indent=2) + "\n")
     return 0
+
+
+def options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--key-stdin", action="store_true", help="read the ElevenLabs key from standard input")
+
+
+def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+    return recording.main(record, __doc__, argv, env, options=options)
 
 
 if __name__ == "__main__":

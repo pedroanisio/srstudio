@@ -33,15 +33,13 @@ The placement, the conform and the manifest check are :mod:`srstudio.narration`,
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
-import shutil
 import sys
 from collections.abc import Mapping
 from pathlib import Path
 
-from srstudio import cel, foley
+from srstudio import cel, foley, recording
 from srstudio.generated import gain_to_peak, trim_speech
 from srstudio.narration import confirm_voice, conform, plan_relaxed, require_consent, sha256_of, slots
 from srstudio.provider import KEY_ENV
@@ -75,15 +73,9 @@ SPOKEN = {
 
 
 # -- the run -------------------------------------------------------------------------------------------------------
-def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("project", type=Path)
-    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
-    args = parser.parse_args(argv)
-    env = os.environ if env is None else env
+def record(root: Path, env: Mapping[str, str], ffmpeg: str) -> int:
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     require_consent(env)
-    root = args.project.resolve()
     captions = cel.load_captions(root / "script.json")
     duration = captions[-1].end  # the project ends with the last caption (Timeline.from_captions)
     plan = slots(captions, duration)
@@ -112,9 +104,7 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
             continue
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
-        conform(
-            spoken.wav, dst, trim.clip_in, trim.clip_in + kept, kept, gain_to_peak(trim.peak, VOICE_PEAK), args.ffmpeg
-        )
+        conform(spoken.wav, dst, trim.clip_in, trim.clip_in + kept, kept, gain_to_peak(trim.peak, VOICE_PEAK), ffmpeg)
         items.append(
             {
                 "id": slot.id,
@@ -172,6 +162,10 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
     print(f"{len(items)} lines, {cut} cut at their caption, {late} waited for the line before, {len(taps)} keystrokes")
     print(f"captions end at {duration:.3f} s, the narrated project at {needed:.3f} s")
     return 0
+
+
+def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+    return recording.main(record, __doc__, argv, env)
 
 
 if __name__ == "__main__":

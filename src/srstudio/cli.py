@@ -14,7 +14,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import catalog_page, craft, fonts, lipsync, registry, usage
+from . import catalog_page, craft, fonts, lipsync, registry, releases, usage
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .timeline import Timeline
@@ -28,6 +28,7 @@ def main(argv=None):
     cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
+    cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -65,21 +66,37 @@ def main(argv=None):
     crafted.add_argument("--renders", type=Path, help="folder of renders (<slug>.mp4): measure the sound in each pause")
     crafted.add_argument("--threshold", type=float, default=craft.PAUSE, help="seconds between lines that make a pause")
     crafted.add_argument("--json", action="store_true", help="print the reports as JSON")
-    build = sub.add_parser("build", help="run an episode script: python file or module, with its project root")
+    build = sub.add_parser(
+        "build", help="run an episode script: an episode's slug, a python file or a module, with its project root"
+    )
+    build.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     build.add_argument("script")
     build.add_argument("root", nargs="?")
+    build.add_argument("options", nargs=argparse.REMAINDER, help="passed to the episode (--voice, ...)")
+    record = sub.add_parser("record", help="run an episode's recording script (<builder>_audio.py) by its slug")
+    record.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
+    record.add_argument("slug")
+    record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
     args = parser.parse_args(argv)
     if args.cmd == "catalog":
         for mod in args.plugins:
             importlib.import_module(mod)
+        try:
+            measured = usage.Report.read(args.usage) if args.usage else None
+        except usage.UsageError as exc:
+            print(f"srstudio catalog: {exc}", file=sys.stderr)
+            return 2
         rows = registry.entries(args.kind, args.style)
         if args.json:
-            print(json.dumps(registry.catalog(args.style), indent=2, ensure_ascii=False))
+            data = registry.catalog(args.style)
+            if measured is not None:
+                data = [row | {"episodes": measured.used_by(row["name"])} for row in data]
+            print(json.dumps(data, indent=2, ensure_ascii=False))
             return 0
         width = max((len(e.name) for e in rows), default=4)
         for e in rows:
-            eps = ",".join(e.episodes) or "-"
-            print(f"{e.kind:<10} {e.style or 'any':<7} {e.name:<{width}}  [{eps}]  {e.summary}")
+            eps = f"  [{','.join(measured.used_by(e.name)) or '-'}]" if measured is not None else ""
+            print(f"{e.kind:<10} {e.style or 'any':<7} {e.name:<{width}}{eps}  {e.summary}")
         return 0
     if args.cmd == "styles":
         if args.json:
@@ -193,16 +210,69 @@ def main(argv=None):
                 )
                 print(f"  pause {p.start:.2f}–{p.end:.2f}  {p.end - p.start:.2f} s  {level}")
         return 0
+    if args.cmd == "record":
+        try:
+            recorder = _episode_script(args.scripts, args.slug, "_audio")
+        except releases.ReleaseError as exc:
+            print(f"srstudio record: {exc}", file=sys.stderr)
+            return 2
+        if recorder is None:
+            print(f"srstudio record: no episode {args.slug!r} in {args.scripts}", file=sys.stderr)
+            return 2
+        return _run_script(recorder, [str(recorder), *args.options])
     if args.cmd == "build":
         script = args.script
+        try:
+            episode = _episode_script(args.scripts, script, "")
+        except releases.ReleaseError as exc:
+            print(f"srstudio build: {exc}", file=sys.stderr)
+            return 2
+        if episode is None and "-" in script and not script.endswith(".py"):
+            print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
+            return 2
+        if episode is not None:
+            script = str(episode)
         if args.root:
-            sys.argv = [script, args.root]
+            sys.argv = [script, args.root, *args.options]
         if script.endswith(".py"):
             sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
             runpy.run_path(script, run_name="__main__")
         else:
             runpy.run_module(script, run_name="__main__")
         return 0
+
+
+def _scripts_default() -> Path:
+    return Path(os.environ.get("SRSTUDIO_SCRIPTS") or "episodes")
+
+
+def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
+    """The script ``<builder><suffix>.py`` of the episode ``slug`` in ``scripts`` (the builder named by its release
+    when it has one), or None when ``scripts`` holds no episode by that name;
+    :class:`~srstudio.releases.ReleaseError` when the episode is there but this script is not."""
+    if not releases.SLUG.fullmatch(slug):
+        return None
+    stem = slug.replace("-", "_")
+    known = (scripts / "posts" / "__init__.py").is_file() and (scripts / "posts" / f"{stem}.py").is_file()
+    if known:
+        stem = releases.load(scripts / "posts")[slug].builder_name
+    script = scripts / f"{stem}{suffix}.py"
+    if script.is_file():
+        return script
+    if known or (suffix and (scripts / f"{stem}.py").is_file()):
+        raise releases.ReleaseError(f"episode {slug!r} has no {script.name} in {scripts}")
+    return None
+
+
+def _run_script(script: Path, argv: list[str]) -> int:
+    """Run ``script`` as ``__main__`` with ``argv`` and its folder first on the path; its exit status."""
+    sys.argv = argv
+    sys.path.insert(0, str(script.resolve().parent))
+    try:
+        runpy.run_path(str(script), run_name="__main__")
+    except SystemExit as stop:
+        return stop.code if isinstance(stop.code, int) else (0 if stop.code is None else 1)
+    return 0
 
 
 if __name__ == "__main__":

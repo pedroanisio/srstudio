@@ -35,6 +35,7 @@ from srstudio import (
     collage_sets,
     foley,
     fonts,
+    recording,
     sketch,
     soundtrack,
     subtitles,
@@ -324,3 +325,20 @@ def record_episode(
         print(f"{q['id']} {q['duration']:5.2f}s {flags:8} {q['text']}")
     print(f"{len(rec.items)} lines, {len(effects)} effects, the project runs {rec.end:.3f} s")
     return manifest
+
+
+def recorder(
+    staging: Staging, note: str, doc: str | None, mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE
+) -> Callable[..., int]:
+    """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
+    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``)."""
+
+    def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+        return recording.main(
+            lambda project, env, ffmpeg: record_episode(staging, project, env, ffmpeg, note, mouth=mouth),
+            doc,
+            argv,
+            env,
+        )
+
+    return main
