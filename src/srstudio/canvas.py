@@ -15,9 +15,17 @@ from typing import Any, Literal
 
 from sr_core.scene import Scene
 
+from .errors import SrstudioError
 from .native import NativeError
 
 CLEAR = "#00000000"
+
+
+class CanvasError(SrstudioError, ValueError):
+    """A drawing call the canvas cannot make: an unnamed effect, an undefined symbol, text without a font, a
+    visibility span that runs backwards."""
+
+
 Align = Literal["start", "center", "end", "justify"]
 
 
@@ -219,7 +227,7 @@ class Canvas:
         returns its id for a node's ``effects`` or :meth:`apply`. Created once per name: a second call with the same
         type and settings returns the first, other settings under the same name are refused."""
         if not name.strip():
-            raise ValueError("an effect needs a name")
+            raise CanvasError("an effect needs a name")
         if name in self._effects:
             if self._effects[name] != (type, attrs):
                 raise NativeError(
@@ -308,7 +316,7 @@ class Canvas:
     def instance(self, parent, id: str, symbol: str, **kw):
         """Place ``symbol``; the engine scopes the ids inside it as ``id/inner``."""
         if symbol not in self._symbols:
-            raise ValueError(f"no symbol {symbol!r}: define it with Canvas.symbol first")
+            raise CanvasError(f"no symbol {symbol!r}: define it with Canvas.symbol first")
         return parent.add_instance(id=id, symbol=symbol, **kw)
 
     # -- text ---------------------------------------------------------------------------
@@ -323,7 +331,7 @@ class Canvas:
     ):
         """A text asset plus the layer that shows it; ``name`` is the asset id, ``name-layer`` the layer."""
         if self.font_asset is None:
-            raise ValueError("this canvas has no caption font (a silent style); set EpisodeSpec.font to draw text")
+            raise CanvasError("this canvas has no caption font (a silent style); set EpisodeSpec.font to draw text")
         self.assets.add_text(
             id=name,
             text=value,
@@ -377,7 +385,7 @@ class Canvas:
         intervals = []
         for start, end in spans:
             if not (math.isfinite(start) and math.isfinite(end) and 0 <= start <= end):
-                raise ValueError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+                raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
             if end > start:
                 intervals.append((float(start), float(end)))
         merged: list[tuple[float, float]] = []

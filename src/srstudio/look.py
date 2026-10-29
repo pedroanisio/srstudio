@@ -23,7 +23,11 @@ from . import fonts
 from .canvas import Canvas
 from .errors import SrstudioError
 
-__all__ = ["FitError", "wrap", "label", "text", "grade", "depth", "pool", "fade"]
+__all__ = ["FitError", "LookError", "wrap", "label", "text", "grade", "depth", "pool", "fade"]
+
+
+class LookError(SrstudioError, ValueError):
+    """A grade or a far plane the look cannot make: no effect, a blur radius that is not positive."""
 
 
 class FitError(SrstudioError, ValueError):
@@ -107,14 +111,14 @@ def grade(cv: Canvas, node, prefix: str, effects: Mapping[str, Mapping[str, Any]
     """``node`` (a shot, or the world group inside it) graded by ``effects``, ``{type: attrs}``, each declared as
     ``<prefix>-<type>``; returns ``node``."""
     if not effects:
-        raise ValueError("a grade needs at least one effect")
+        raise LookError("a grade needs at least one effect")
     return cv.apply(node, *(cv.effect(f"{prefix}-{kind}", kind, **attrs) for kind, attrs in effects.items()))
 
 
 def depth(cv: Canvas, parent, name: str, radius: float):
     """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane."""
     if not (math.isfinite(radius) and radius > 0):
-        raise ValueError(f"a far plane's blur radius must be positive, got {radius}")
+        raise LookError(f"a far plane's blur radius must be positive, got {radius}")
     far = cv.group(parent, cv.uid("g"))
     cv.apply(far, cv.effect(name, "blur", radius=radius))
     return far

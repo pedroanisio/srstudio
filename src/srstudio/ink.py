@@ -14,11 +14,16 @@ import math
 
 from . import signature
 from .canvas import Canvas
+from .errors import SrstudioError
 from .registry import register
 from .soundtrack import INK_MOUTH, INK_POSES, PhonemeStyle, phoneme_states, pose_keys
 from .timeline import Take
 
 SW = 2.4
+
+
+class InkError(SrstudioError, ValueError):
+    """An Ink part asked for something it cannot draw: an unknown power, action or shot, a drop outside the take."""
 
 
 # -- drawing conventions of the family -------------------------------------------------------------
@@ -352,9 +357,9 @@ def router(
     """The router at ``x, y``; ``power`` is ``on``, ``off``, ``down`` (switched off during the take) or ``up``
     (booting during the take); ``drop_at`` turns every LED off at that moment of the take."""
     if power not in ROUTER_POWER:
-        raise ValueError(f"power must be one of {ROUTER_POWER}, got {power!r}")
+        raise InkError(f"power must be one of {ROUTER_POWER}, got {power!r}")
     if drop_at is not None and not 0 <= drop_at <= take.duration:
-        raise ValueError(f"drop_at must be within the take (0..{take.duration}), got {drop_at}")
+        raise InkError(f"drop_at must be within the take (0..{take.duration}), got {drop_at}")
     talking = take.actor == speaker and power == "on"
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     # Antennas first: they stand behind the body.
@@ -419,7 +424,7 @@ def router(
 def hand(cv: Canvas, parent, x, y, scale=1, *, action: str = "reach", at: float = 0.4):
     """The finger tip is the group's origin, so place it on the button; ``at`` is when the action lands."""
     if action not in HAND_ACTIONS:
-        raise ValueError(f"action must be one of {HAND_ACTIONS}, got {action!r}")
+        raise InkError(f"action must be one of {HAND_ACTIONS}, got {action!r}")
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     path(cv, g, "M 64 96 Q 170 150 330 220 L 372 330 Q 200 250 86 170 Z", cv.white, sw=2.6)  # forearm, to the edge
     path(cv, g, "M 22 52 Q 66 36 100 72 Q 122 110 96 150 Q 60 176 30 150 Q 4 118 22 52 Z", cv.white, sw=2.5)  # fist
@@ -504,4 +509,4 @@ def router_scene(cv: Canvas, parent, take: Take, *, fps: int = 24, **router_kw):
         return router_shot(cv, parent, take, close=take.shot == "router-close", fps=fps, **router_kw)
     if take.shot == "wide":
         return router_wide(cv, parent, take, fps=fps)
-    raise ValueError(f"take {take.id}: unknown shot {take.shot!r}")
+    raise InkError(f"take {take.id}: unknown shot {take.shot!r}")
