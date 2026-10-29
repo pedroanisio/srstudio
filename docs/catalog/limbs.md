@@ -246,9 +246,13 @@ Legacy versions hold named poses; spatial versions use continuous gesture phases
 not exact geometry or hand silhouettes.
 
 ```sh
+export SRSTUDIO_LIMBS_REVIEW_SEED=...   # a private key chosen for this study; never commit or publish it
 PYTHONPATH=src python examples/limbs_evaluate.py ../generated/limbs/evaluation \
   --engine ../generated/bin/scene-render
 ```
+
+The example refuses to run without a review key from `--seed` or `SRSTUDIO_LIMBS_REVIEW_SEED`. Rebuild with
+the same key to keep the trial mapping; a different key produces a different, unrelated packet.
 
 `evaluation.json` records actual repeated build times, serialized scene bytes, node and shape counts, and
 scene hashes. Builds must be byte-identical across repetitions and pass schema validation. Timings exclude
@@ -261,8 +265,9 @@ authoring time is explicitly unmeasured.
 
 The `review/` directory contains opaque A/B clips, task descriptions, rating instructions and an empty
 ratings template. Keep `private-key.json`, `scenes/` and the engineering report outside the review material.
-There are no implementation names in the public trial manifest. A deterministic seed shuffles tasks and
-counterbalances A/B positions across tasks; one shared packet does not counterbalance order across viewers.
+There are no implementation names in the public trial manifest. The private key shuffles task order and,
+separately, which half of the trials show the candidate as A, so neither side nor order follows from the trial
+number. One shared packet does not counterbalance order across viewers.
 
 Reviewers score task clarity, motion naturalness and fit with the drawing style from 1 to 5, then choose
 A, B or a tie. Each reviewer uses one stable anonymous ID. The instructions show the record format; the

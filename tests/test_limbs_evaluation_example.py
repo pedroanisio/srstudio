@@ -8,6 +8,8 @@ import pytest
 
 from srstudio.limbs.geometry import project_pose
 
+TEST_KEY = "explicit-test-review-key"
+
 
 @pytest.mark.parametrize("observed", [False, True])
 def test_evaluation_example_produces_schema_valid_pairs_and_blinded_packet(tmp_path, observed):
@@ -54,7 +56,7 @@ def test_evaluation_example_produces_schema_valid_pairs_and_blinded_packet(tmp_p
                 }
             )
         )
-    result = module.build(tmp_path / "evaluation", repeats=1, authoring=observations, ratings=ratings)
+    result = module.build(tmp_path / "evaluation", seed=TEST_KEY, repeats=1, authoring=observations, ratings=ratings)
     report = json.loads(result.read_text())
     assert len(report["measurements"]) == 6
     assert report["review"]["status"] == ("partial" if observed else "awaiting_ratings")
@@ -128,7 +130,46 @@ def test_evaluation_example_reads_collected_files_through_the_bounded_document_r
     collected = tmp_path / "collected.json"
     collected.write_text('{"schema": "a", "schema": "b"}')
     with pytest.raises(LimbError, match="duplicate"):
-        module.build(tmp_path / "evaluation", repeats=1, **{option: collected})
+        module.build(tmp_path / "evaluation", seed=TEST_KEY, repeats=1, **{option: collected})
     collected.write_text("[" * 100 + "]" * 100)
     with pytest.raises(LimbError, match="nesting"):
-        module.build(tmp_path / "evaluation", repeats=1, **{option: collected})
+        module.build(tmp_path / "evaluation", seed=TEST_KEY, repeats=1, **{option: collected})
+
+
+def _example():
+    path = Path(__file__).resolve().parents[1] / "examples/limbs_evaluate.py"
+    spec = importlib.util.spec_from_file_location("limbs_evaluate", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_evaluation_example_refuses_to_run_without_a_private_review_key(tmp_path, monkeypatch, capsys):
+    module = _example()
+    monkeypatch.delenv("SRSTUDIO_LIMBS_REVIEW_SEED", raising=False)
+    monkeypatch.setattr("sys.argv", ["limbs_evaluate.py", str(tmp_path / "evaluation")])
+    with pytest.raises(SystemExit) as caught:
+        module.main()
+    assert caught.value.code == 2
+    assert "private review key" in capsys.readouterr().err
+    assert not (tmp_path / "evaluation").exists()
+    with pytest.raises(TypeError):
+        module.build(tmp_path / "evaluation", repeats=1)
+
+
+def test_evaluation_example_takes_its_review_key_from_the_environment(tmp_path, monkeypatch, capsys):
+    module = _example()
+    seen = {}
+
+    def build(out, *, seed, **options):
+        seen["seed"] = seed
+        return out
+
+    monkeypatch.setattr(module, "build", build)
+    monkeypatch.setenv("SRSTUDIO_LIMBS_REVIEW_SEED", TEST_KEY)
+    monkeypatch.setattr("sys.argv", ["limbs_evaluate.py", str(tmp_path / "evaluation")])
+    module.main()
+    assert seen == {"seed": TEST_KEY}
+    monkeypatch.setattr("sys.argv", ["limbs_evaluate.py", str(tmp_path / "evaluation"), "--seed", "cli-key"])
+    module.main()
+    assert seen == {"seed": "cli-key"}

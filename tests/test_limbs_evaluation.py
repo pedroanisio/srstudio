@@ -270,3 +270,24 @@ def test_measure_bounds_how_many_functions_and_how_much_source_it_reads(tmp_path
     with pytest.raises(LimbError, match="source exceeds") as caught:
         measure("huge", module.huge, repeats=1)
     assert caught.value.code == "budget"
+
+
+def _positions(trials):
+    return tuple(trial.a == trial.case + "-new" for trial in trials)
+
+
+PAIRS_8 = tuple(Pair(f"task-{i}", f"Task {i}", f"task-{i}-old", f"task-{i}-new") for i in range(8))
+
+
+def test_review_positions_are_balanced_and_keyed_rather_than_alternating_by_trial_number():
+    patterns = {_positions(plan_trials(PAIRS_8, seed=f"key-{k}")) for k in range(12)}
+    alternating = {tuple(i % 2 == p for i in range(8)) for p in (0, 1)}
+    assert all(sum(pattern) == 4 for pattern in patterns)
+    assert len(patterns - alternating) >= 10
+    assert _positions(plan_trials(PAIRS_8, seed="key-1")) == _positions(plan_trials(PAIRS_8, seed="key-1"))
+
+
+def test_an_odd_number_of_review_pairs_differs_by_at_most_one_position():
+    for k in range(6):
+        trials = plan_trials(PAIRS_8[:5], seed=f"key-{k}")
+        assert sum(_positions(trials)) in (2, 3)

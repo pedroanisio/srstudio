@@ -1,6 +1,7 @@
 """Build matched legacy/spatial tasks, engineering measurements and a blinded review packet.
 
 Run with --engine /path/to/scene-render to encode the six clips. Supply real reviews with --ratings FILE.
+The review key comes from --seed or SRSTUDIO_LIMBS_REVIEW_SEED and must stay private; there is no default.
 Supply observed human authoring attempts with --authoring FILE.
 The implementation key and engineering report stay outside the public review directory.
 """
@@ -165,6 +166,7 @@ def _write(path: Path, data: object) -> None:
 def build(
     out: Path,
     *,
+    seed: str,
     repeats: int = 3,
     engine: str | None = None,
     ratings: Path | None = None,
@@ -175,7 +177,7 @@ def build(
     public, scenes = out / "review", out / "scenes"
     for directory in (public, scenes):
         directory.mkdir(exist_ok=True, mode=0o700)
-    trials = plan_trials(PAIRS, seed="srstudio-limbs-review-1")
+    trials = plan_trials(PAIRS, seed=seed)
     observed = ()
     if ratings is not None:
         observed = parse_ratings(read_document(ratings, "rating"))
@@ -261,8 +263,21 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--ratings", type=Path)
     parser.add_argument("--authoring", type=Path)
+    parser.add_argument("--seed", help="private review key; defaults to $SRSTUDIO_LIMBS_REVIEW_SEED")
     args = parser.parse_args()
-    print(build(args.out, repeats=args.repeats, engine=args.engine, ratings=args.ratings, authoring=args.authoring))
+    seed = args.seed or os.environ.get("SRSTUDIO_LIMBS_REVIEW_SEED")
+    if not seed:
+        parser.error("a private review key is required: pass --seed or set SRSTUDIO_LIMBS_REVIEW_SEED")
+    print(
+        build(
+            args.out,
+            seed=seed,
+            repeats=args.repeats,
+            engine=args.engine,
+            ratings=args.ratings,
+            authoring=args.authoring,
+        )
+    )
 
 
 if __name__ == "__main__":

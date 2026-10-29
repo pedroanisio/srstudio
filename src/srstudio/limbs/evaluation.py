@@ -206,7 +206,7 @@ class Trial:
 
 
 def plan_trials(pairs: tuple[Pair, ...], *, seed: str) -> tuple[Trial, ...]:
-    """Counterbalance A/B across tasks, with deterministic shuffled task order and an external private key."""
+    """Counterbalance A/B across tasks with keyed shuffles of task order and positions; ``seed`` is the private key."""
     label(seed, "review seed")
     if not 1 <= len(pairs) <= 100 or len({p.id for p in pairs}) != len(pairs):
         raise LimbError("review needs 1..100 uniquely named task pairs")
@@ -215,16 +215,22 @@ def plan_trials(pairs: tuple[Pair, ...], *, seed: str) -> tuple[Trial, ...]:
         return hashlib.sha256((seed + "\0" + value).encode()).digest()
 
     ordered = sorted(pairs, key=lambda p: digest(p.id))
-    parity = digest("order")[0] % 2
+    # Half the trials show the candidate first; a keyed Fisher-Yates shuffle decides which, so the side
+    # cannot be predicted from the trial number. An odd count gives the keyed side one extra position.
+    extra = digest("extra")[0] % 2
+    first = [(i + extra) % 2 == 1 for i in range(len(ordered))]
+    for i in range(len(first) - 1, 0, -1):
+        j = int.from_bytes(digest(f"position:{i}"), "big") % (i + 1)
+        first[i], first[j] = first[j], first[i]
     return tuple(
         Trial(
             f"trial-{i + 1:03d}",
             p.id,
             p.task,
-            p.candidate if (i + parity) % 2 else p.baseline,
-            p.baseline if (i + parity) % 2 else p.candidate,
+            p.candidate if candidate_first else p.baseline,
+            p.baseline if candidate_first else p.candidate,
         )
-        for i, p in enumerate(ordered)
+        for i, (p, candidate_first) in enumerate(zip(ordered, first, strict=True))
     )
 
 
