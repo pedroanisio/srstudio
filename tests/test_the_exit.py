@@ -124,3 +124,13 @@ def test_the_singles_and_the_punch_in_keep_their_subjects_in_frame(data):
         q = framed(cam, p)
         assert inside(q, 60) and q[1] < data.WORDS_Y - stick.WORD_H, p  # the hand and the phone above the words
     assert inside(framed(cam, (196, ws.DASH_TOP + 8)), 40)
+
+
+def test_the_release_declares_the_cover_the_builder_hides_its_text_for():
+    sys.path.insert(0, str(EPISODES))
+    try:
+        from posts.the_exit import RELEASE
+    finally:
+        sys.path.pop(0)
+    assert "ep.hide_on_cover(" in (EPISODES / "the_exit.py").read_text()
+    assert RELEASE.cover and RELEASE.tags.recurring == ("dev", "noor")

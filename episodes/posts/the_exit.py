@@ -29,5 +29,6 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("You missed\nthe exit.", 6.8, "Stick 09", (540, 820), 1.15, place="top"),
     ),
+    cover=True,
     tags=Tags("relationships", "protagonist", "affection", recurring=("dev", "noor")),
 )
