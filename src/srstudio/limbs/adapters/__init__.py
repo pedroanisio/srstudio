@@ -102,13 +102,16 @@ class VectorAdapter:
             if (
                 self.treatment == "brush"
                 and not part.authored
+                and part.role != "skin"
                 and len(part.centerline) >= 2
                 and max(math.dist(part.centerline[0], p) for p in part.centerline) > 1e-7
             ):
                 d = _brush_path(brush.stroke(part.centerline, max(0.1, part.width), brush.EVEN))
             else:
-                d = path(points)
-            node = cv.path(group, d, fill, outline if weight else cv.clear, weight)
+                d = path(points, part.holes)
+            node = cv.path(
+                group, d, fill, outline if weight else cv.clear, weight, fillRule="evenodd" if part.holes else "nonzero"
+            )
             if self.treatment in ("vinyl", "comic") and appearance.detail:
                 a, b = part.centerline[0], part.centerline[-1]
                 if math.dist(a, b) > 2:

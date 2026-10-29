@@ -61,3 +61,24 @@ is available through `deformation="skin"`; renderer tests verify sleeve pixels a
 multiple poses and a mirrored parent. The gallery supports a planar skin mode across six actions and three
 styles. Broader actor migrations and a comparative viewer evaluation remain unverified. The original
 six-action style gallery remains separate from the prop-contact clip.
+
+## Folded-finger surfaces
+
+Projecting a curled finger can send its centerline back across itself. Offsetting that whole polyline produced
+self-crossing edges and triangular gaps at ordinary grasp controls. Finger surfaces now use the geometric
+union of tapered, round-ended phalanges. Shapely replaces bespoke polygon clipping and union code; the
+library dependency is `shapely>=2.1,<3`, with `types-shapely` in the test extra. Its NumPy dependency also
+makes the existing `fast` extra redundant, but the extra remains accepted for installation compatibility.
+
+The union returns one connected exterior plus any genuine enclosed holes. The renderer receives an even-odd
+path when holes exist. Artist contours replace both the exterior and its holes. Toon uses the validated skin
+contour for fingers while retaining its brush treatment on sleeves. The operation has explicit point-count
+and finite-coordinate validation, and geometry failures raise `LimbError`.
+
+A convex hull was rejected because it would fill the space inside a loop or a curved finger. Repairing a
+self-crossing outline after constructing it was rejected because that outline does not define the intended
+solid volume. Unioning the solid phalanges constructs the intended visible surface directly.
+
+The [Shapely manual](https://shapely.readthedocs.io/en/stable/manual.html#efficient-unions) describes the polygon
+union operation. Tests independently check edge intersections across curl and palm-turn angles, coincident
+projection, a genuinely enclosed hole and renderer fill rules.
