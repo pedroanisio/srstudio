@@ -4,13 +4,13 @@ Then smaller. That one pops. Rex sends the invoice.
 Three voices (ElevenLabs premade George as the client, heard on Fern's speaker; Matilda as Fern; Charlie as
 Rex), two shots: Fern in the meeting room, where the logo on the whiteboard grows with every request, and Rex at
 the survey desk, typing. ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate` checks what
-the events ask of the logo; :func:`dress` draws each shot's set and props (``_toon_sketch.build`` draws the rest).
+the events ask of the logo; :func:`dress` draws each shot's set and props (``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
-from srstudio import sketch, toon, toon_props
-from srstudio.sketch import Beat, Line, Sketch, Speaker
+from srstudio import scripting, sketch, toon, toon_props
+from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 1031
@@ -72,12 +72,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, hold = SCRIPT.say, SCRIPT.hold
 
 
 BEATS = (
@@ -142,11 +138,8 @@ def validate(sk: Sketch = SKETCH) -> None:
             raise sketch.SketchError(f"the logo changes at {at} s off screen: it hangs in Fern's room")
     if len(sketch.events(sk.beats, "pop")) != 1 or shadow_span(sk.beats, sk.end) is None:
         raise sketch.SketchError("the logo pops exactly once")
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the call ends exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"logo", "pop", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the call ends exactly once")
+    scripting.only_events(sk.beats, {"logo", "pop", "hangup"})
 
 
 def dress(shot) -> None:

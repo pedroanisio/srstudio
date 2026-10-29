@@ -138,6 +138,15 @@ class Style:
     def default_palette(self) -> Palette:
         return self.palettes[0]
 
+    def google_font(self) -> GoogleFont:
+        """The Google Font the style letters its text in, which ``--init`` installs; :class:`StyleError` for a style
+        without one."""
+        if self.font is None:
+            raise StyleError(f"style {self.slug!r} letters its captions as shapes and has no font")
+        if self.font.google is None:
+            raise StyleError(f"style {self.slug!r} letters in {self.font.family}, which is not a Google Font")
+        return self.font.google
+
     def palette(self, which: Palette | str | None = None) -> Palette:
         """The palette to draw in: the default, one of the style's own, or :class:`StyleError`."""
         if which is None:

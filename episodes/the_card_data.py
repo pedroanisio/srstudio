@@ -6,15 +6,15 @@ Two voices (ElevenLabs premade Matilda as Fern, Charlie as Rex), one shot per sp
 the note on the fridge asking everyone to sign the card, until the card's front is cut in full frame (a ``note:``
 event); Rex in the meeting room, setting up the farewell drinks on the board behind him. ``SKETCH`` is checked by
 :func:`srstudio.sketch.check`; :func:`validate` checks what the events ask of the props; :func:`dress` draws each
-shot's set and props (``_toon_sketch.build`` draws the rest).
+shot's set and props (``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon_props, toon_sets
-from srstudio.sketch import Beat, Line, Sketch, Speaker
+from srstudio import scripting, sketch, toon_props, toon_sets
+from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 1314
@@ -66,12 +66,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, hold = SCRIPT.say, SCRIPT.hold
 
 
 BEATS = (
@@ -100,16 +96,12 @@ SKETCH = Sketch(SLUG, TITLE, (FERN, REX), LINES, BEATS, END)
 
 def notes_by_time(beats) -> list[tuple[float, str]]:
     """The fridge note through the sketch: the first note from 0, then every ``note:`` event."""
-    return [(0.0, FIRST_NOTE)] + sketch.events(beats, "note")
+    return scripting.changes(beats, "note", FIRST_NOTE)
 
 
 def note_spans(beats, start: float, end: float) -> list[tuple[float, float, str]]:
     """The notes on the fridge between ``start`` and ``end``, each until the next one is written."""
-    notes = notes_by_time(beats)
-    ends = [at for at, _ in notes[1:]] + [end]
-    return [
-        (max(a, start), min(b, end), text) for (a, text), b in zip(notes, ends, strict=True) if a < end and b > start
-    ]
+    return scripting.spans(notes_by_time(beats), start, end)
 
 
 def inserts(beats, start: float, end: float) -> list[tuple[float, float, str]]:
@@ -135,11 +127,8 @@ def validate(sk: Sketch = SKETCH) -> None:
     texts = [text for _, text in notes]
     if len(set(texts)) != len(texts):
         raise sketch.SketchError(f"a note is written twice: {texts}")
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the sting plays exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"note", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the sting plays exactly once")
+    scripting.only_events(sk.beats, {"note", "hangup"})
 
 
 def dress(shot) -> None:

@@ -6,15 +6,15 @@ Two voices (ElevenLabs premade Alice as Pip, Bill as Bruno), one shot per speake
 clock behind him (it jumps while Pip explains) and his coffee going cold; Pip in the meeting room with the
 stand-up time on the whiteboard from the first frame. Both characters are lip-synced to their own takes.
 ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate` checks what the events ask of the
-props; :func:`dress` draws each shot's set and props (``_toon_sketch.build`` draws the rest).
+props; :func:`dress` draws each shot's set and props (``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon, toon_props
-from srstudio.sketch import Beat, Line, Sketch, Speaker
+from srstudio import scripting, sketch, toon, toon_props
+from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 1032
@@ -72,26 +72,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def part(start: float, who: str, line: int, word: int, caption: str, eyes: str, mouth: str, arms: str) -> Beat:
-    """A beat on a later word of a line, captioned with that part of it (a long line in two pills)."""
-    if caption not in LINES[line].text or LINES[line].text.split()[word] != caption.split()[0]:
-        raise sketch.SketchError(f"{caption!r} is not line {line} from word {word}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, word, "")
-
-
-def first(start: float, who: str, line: int, caption: str, eyes: str, mouth: str, arms: str) -> Beat:
-    """The first beat of a long line, captioned with its first part."""
-    if not LINES[line].text.startswith(caption):
-        raise sketch.SketchError(f"{caption!r} does not start line {line}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, 0, "")
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 
 BEATS = (
@@ -146,11 +128,8 @@ def validate(sk: Sketch = SKETCH) -> None:
     angles = [toon_props.clock_angles(time) for time in times]
     if any(b <= a for a, b in zip(angles, angles[1:], strict=False)):
         raise sketch.SketchError(f"the clock runs backwards: {times}")
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the call ends exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"clock", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the call ends exactly once")
+    scripting.only_events(sk.beats, {"clock", "hangup"})
 
 
 def dress(shot) -> None:

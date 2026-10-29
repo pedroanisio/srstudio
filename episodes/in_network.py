@@ -10,9 +10,9 @@ python3 in_network.py PROJECT --voice    # the narrated master: narration.json (
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from in_network_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, STICKERS, TINTS, dress, validate
 from instagram_posts import POSTS
+from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
 STAGING = Staging(

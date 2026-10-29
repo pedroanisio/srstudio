@@ -33,7 +33,7 @@ def measure(text: str, size: float) -> float:
 def mods():
     sys.path.insert(0, str(EPISODES))
     try:
-        build = importlib.import_module("_toon_sketch")
+        build = importlib.import_module("srstudio.toon_sketch")
         return build, {n: importlib.import_module(f"{n}_data") for n in NAMES}
     finally:
         sys.path.pop(0)

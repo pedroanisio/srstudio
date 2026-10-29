@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reply All — a Toon sketch (see reply_all_data.py for the script; the build is _toon_sketch.build).
+"""Reply All — a Toon sketch (see reply_all_data.py for the script; the build is toon_sketch.build).
 
 python3 reply_all.py PROJECT --init    # script.json, assets/poses.json and the pinned Comic Neue
 python3 reply_all.py PROJECT           # the silent master on the scripted timing
@@ -9,9 +9,9 @@ python3 reply_all.py PROJECT --voice   # the narrated master from narration.json
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from instagram_posts import POSTS
 from reply_all_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
+from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
 STAGING = Staging(

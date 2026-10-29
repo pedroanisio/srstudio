@@ -25,12 +25,12 @@ def measure(text: str, size: float) -> float:
 def mods():
     sys.path.insert(0, str(EPISODES))
     try:
-        import _toon_sketch
         import logo_bigger_data
         import quick_question_data
         import the_report_data
+        from srstudio import toon_sketch
 
-        return _toon_sketch, the_report_data, logo_bigger_data, quick_question_data
+        return toon_sketch, the_report_data, logo_bigger_data, quick_question_data
     finally:
         sys.path.pop(0)
 

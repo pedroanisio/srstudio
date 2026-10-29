@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Logo Bigger — the recording: every line of the sketch said by its ElevenLabs voice, heard back, placed at the
-speakers' own pace, with the keyboard, the phone and the sting synthesised; see _toon_sketch.record_episode.
+speakers' own pace, with the keyboard, the phone and the sting synthesised; see toon_sketch.record_episode.
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 logo_bigger_audio.py PROJECT [--ffmpeg PATH]
 
@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import sys
 
-from _toon_sketch import recorder
 from logo_bigger_data import NOTE, SEED, SKETCH, validate
+from srstudio.toon_sketch import recorder
 
 main = recorder(SKETCH, SEED, NOTE, __doc__, validate=validate)
 

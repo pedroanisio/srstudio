@@ -123,3 +123,13 @@ def test_cli_lists_styles_and_filters_the_catalog(capsys):
     assert main(["catalog", "--style", "ink", "--kind", "character"]) == 0
     rows = capsys.readouterr().out.splitlines()
     assert rows and all(" ink " in r for r in rows) and not any(" manager " in r for r in rows)
+
+
+def test_a_style_names_the_google_font_it_letters_in():
+    from srstudio import TOON
+
+    assert TOON.google_font() == TOON.font.google
+    with pytest.raises(StyleError, match="letters its captions as shapes"):
+        replace(TOON, font=None).google_font()
+    with pytest.raises(StyleError, match="not a Google Font"):
+        replace(TOON, font=replace(TOON.font, google=None)).google_font()

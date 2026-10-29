@@ -23,7 +23,9 @@ def _imports(path: Path, module: str) -> bool:
 
 # every sketch whose data module stages it with the shared Collage build, found rather than listed
 NAMES = tuple(
-    sorted(p.name.removesuffix("_data.py") for p in EPISODES.glob("*_data.py") if _imports(p, "_collage_sketch"))
+    sorted(
+        p.name.removesuffix("_data.py") for p in EPISODES.glob("*_data.py") if _imports(p, "srstudio.collage_sketch")
+    )
 )
 
 
@@ -31,7 +33,7 @@ NAMES = tuple(
 def mods():
     sys.path.insert(0, str(EPISODES))
     try:
-        builder = importlib.import_module("_collage_sketch")
+        builder = importlib.import_module("srstudio.collage_sketch")
         return builder, {n: importlib.import_module(f"{n}_data") for n in NAMES}
     finally:
         sys.path.pop(0)

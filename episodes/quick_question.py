@@ -11,9 +11,9 @@ python3 quick_question.py PROJECT --voice    # the narrated master: narration.js
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from instagram_posts import POSTS
 from quick_question_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
+from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
 STAGING = Staging(

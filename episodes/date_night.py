@@ -10,9 +10,9 @@ python3 date_night.py PROJECT --voice    # the narrated master: narration.json (
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from date_night_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
 from instagram_posts import POSTS
+from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
 STAGING = Staging(

@@ -19,10 +19,10 @@ EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 def mods():
     sys.path.insert(0, str(EPISODES))
     try:
-        import _toon_sketch
         import split_it_data
+        from srstudio import toon_sketch
 
-        return _toon_sketch, split_it_data
+        return toon_sketch, split_it_data
     finally:
         sys.path.pop(0)
 

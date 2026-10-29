@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Book Report — the recording: every line said by its ElevenLabs premade voice, heard back by speech-to-text, placed
-at the speakers' own pace, the effects synthesised; see _collage_sketch.record_episode.
+at the speakers' own pace, the effects synthesised; see collage_sketch.record_episode.
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 book_report_audio.py PROJECT [--ffmpeg PATH]
 
@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import sys
 
-from _collage_sketch import MOUTH, recorder
 from book_report_data import NOTE, STAGING
+from srstudio.collage_sketch import MOUTH, recorder
 
 main = recorder(STAGING, NOTE, __doc__, mouth=MOUTH)
 

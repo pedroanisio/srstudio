@@ -10,8 +10,8 @@ python3 whose_milk.py PROJECT --voice    # the narrated master: narration.json (
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from instagram_posts import POSTS
+from srstudio.toon_sketch import Staging, build
 from whose_milk_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
 
 validate(SKETCH)

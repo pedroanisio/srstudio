@@ -11,10 +11,9 @@ EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 @pytest.fixture
 def helpers(monkeypatch):
     monkeypatch.syspath_prepend(str(EPISODES))
-    import _collage_sketch
-    import _toon_sketch
+    from srstudio import collage_sketch, toon_sketch
 
-    return _toon_sketch, _collage_sketch
+    return toon_sketch, collage_sketch
 
 
 def test_the_toon_recorder_passes_the_sketch_seed_note_and_mouth(helpers, monkeypatch, tmp_path):

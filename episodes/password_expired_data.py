@@ -6,15 +6,15 @@ Two voices (ElevenLabs premade Bill as Bruno, Alice as Pip), one shot per speake
 phone's toasts and the passwords he wrote on notes on his laptop (HONEY1 to HONEY4); Pip in the meeting room,
 where the board says SECURITY WEEK until it shows the spreadsheet (``board:`` events, in Pip's shot). ``SKETCH``
 is checked by :func:`srstudio.sketch.check`; :func:`validate` checks what the events ask of the props; :func:`dress`
-draws each shot's set and props (``_toon_sketch.build`` draws the rest).
+draws each shot's set and props (``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon, toon_props
-from srstudio.sketch import Beat, Line, Sketch, Speaker
+from srstudio import scripting, sketch, toon, toon_props
+from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 1313
@@ -67,26 +67,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def first(start: float, who: str, line: int, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    """The first beat of a long line, captioned with its first part."""
-    if not LINES[line].text.startswith(caption):
-        raise sketch.SketchError(f"{caption!r} does not start line {line}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, 0, event)
-
-
-def part(start: float, who: str, line: int, word: int, caption: str, eyes: str, mouth: str, arms: str) -> Beat:
-    """A beat on a later word of a line, captioned with that part of it (a long line in two pills)."""
-    if not LINES[line].text.endswith(caption) or LINES[line].text.split()[word] != caption.split()[0]:
-        raise sketch.SketchError(f"{caption!r} is not line {line} from word {word}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, word, "")
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 
 BEATS = (
@@ -116,15 +98,10 @@ SKETCH = Sketch(SLUG, TITLE, (BRUNO, PIP), LINES, BEATS, END)
 
 def boards(beats) -> list[tuple[float, str]]:
     """The board behind Pip through the sketch: the first text from 0, then every ``board:`` event."""
-    return [(0.0, FIRST_BOARD)] + sketch.events(beats, "board")
+    return scripting.changes(beats, "board", FIRST_BOARD)
 
 
-def spans(changes: list[tuple[float, str]], start: float, end: float) -> list[tuple[float, float, str]]:
-    """What ``changes`` show between ``start`` and ``end``, each until the next one."""
-    ends = [at for at, _ in changes[1:]] + [end]
-    return [
-        (max(a, start), min(b, end), text) for (a, text), b in zip(changes, ends, strict=True) if a < end and b > start
-    ]
+spans = scripting.spans
 
 
 def validate(sk: Sketch = SKETCH) -> None:
@@ -143,11 +120,8 @@ def validate(sk: Sketch = SKETCH) -> None:
             raise sketch.SketchError(f"the board at {at} s changes off screen: it is in Pip's shot")
         if not 0 < len(text) <= 40:
             raise sketch.SketchError(f"the board text {text!r} at {at} s does not fit")
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the sting plays exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"toast", "board", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the sting plays exactly once")
+    scripting.only_events(sk.beats, {"toast", "board", "hangup"})
 
 
 def toasts_in(beats, app) -> list[toon_props.Toast]:

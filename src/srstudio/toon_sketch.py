@@ -23,15 +23,18 @@ from __future__ import annotations
 import json
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
 
-from srstudio import (
+from sr_core.scene import Project
+
+from . import (
     TOON,
     Episode,
     EpisodeSpec,
+    errors,
     foley,
     fonts,
     recording,
@@ -41,10 +44,11 @@ from srstudio import (
     toon,
     toon_props,
 )
-from srstudio.canvas import Canvas
-from srstudio.narration import effect_cues, manifest_duration, require_consent
-from srstudio.provider import KEY_ENV
-from srstudio.voice import MODEL, ElevenLabsClient
+from .canvas import Canvas
+from .narration import effect_cues, manifest_duration, require_consent
+from .provider import KEY_ENV
+from .staging import StagingError
+from .voice import MODEL, ElevenLabsClient
 
 TYPING_PEAK = 0.70
 TYPING_GAIN_DB = -2.0  # the keys only play between the lines
@@ -52,11 +56,8 @@ BUZZ_GAIN_DB = -4.0
 STING_GAIN_DB = -5.0
 BADGE_SIZE = 28
 CALL_ENDED = "Call ended"
+BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 PILL_MARGIN = 40  # frame pixels kept free at each side of the widest caption pill
-
-
-class StagingError(ValueError):
-    """The episode's files do not agree with its sketch."""
 
 
 @dataclass(frozen=True)
@@ -70,7 +71,7 @@ class Shot:
     front: object
     beats: Sequence[sketch.Beat]
     end: float
-    measure: Callable[[str, float], float]  # the advance width of a text at a size, in the style's font
+    measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -115,13 +116,14 @@ def fit_captions(lines: Sequence[toon.Line], measure: Callable[[str], float], wi
         raise StagingError("captions too wide for one pill: " + "; ".join(repr(t) for t in wide))
 
 
-def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
+def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
     """The episode, drawn and ready for its post and :meth:`Episode.finish`; ``--init`` writes the project files
     and exits, ``--voice`` builds from the recording."""
     root = Path(root)
+    flags = errors.flags(flags, BUILD_FLAGS)
     sk = staging.sketch
     if "--init" in flags:
-        sketch.write_project(root, sk, TOON.font.google)
+        sketch.write_project(root, sk, TOON.google_font())
         sys.exit(0)
     voiced = "--voice" in flags
     mouths: sketch.Mouths = {}
@@ -163,7 +165,10 @@ def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
     cv, t = ep.cv, ep.t
     if t.duration > sk.end or t.phrases[0].start != 0:
         raise StagingError(f"{ep.spec.dialogue} runs to {t.duration} s, the sketch to {sk.end} s: run --init again")
-    ep.scene.find("project").duration = sk.end  # the last beats may be silent and uncaptioned
+    project = ep.scene.find("project")
+    if not isinstance(project, Project):  # pragma: no cover - an Episode always writes its project
+        raise StagingError(f"{ep.spec.dialogue}: the scene has no <project>")
+    project.duration = sk.end  # the last beats may be silent and uncaptioned
     taps: tuple[float, ...] = ()
     effects = []
     manifest = root / "narration.json"
@@ -172,6 +177,8 @@ def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
             raise StagingError(f"narration.json runs {manifest_duration(manifest)} s, voiced/beats.json {sk.end} s")
         effects = effect_cues(manifest, root)
         taps = tuple(at for fx in effects if fx.id == "typing" for at in fx.taps)
+    if TOON.font is None:  # pragma: no cover - a property of the style, tested there
+        raise StagingError("the Toon style has no font to measure its captions in")
     font = (root / TOON.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
     for app in sketch.appearances(sk.beats, sk.end):

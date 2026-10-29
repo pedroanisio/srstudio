@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon_dinner, toon_props
+from srstudio import scripting, sketch, toon_dinner, toon_props
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -83,20 +83,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def part(start: float, who: str, line: int, word: int, caption: str, eyes: str, mouth: str, arms: str,
-         event: str = "") -> Beat:  # fmt: skip
-    """A beat on a later word of a line, captioned with that part of it (a long line in two pills)."""
-    if caption not in LINES[line].text or LINES[line].text.split()[word] != caption.split()[0]:
-        raise sketch.SketchError(f"{caption!r} is not line {line} from word {word}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, word, event)
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, part, hold = SCRIPT.say, SCRIPT.part, SCRIPT.hold
 
 
 BEATS = (
@@ -156,9 +144,7 @@ def validate(sk: Sketch = SKETCH) -> None:
         raise sketch.SketchError("the sting plays exactly once")
     if hangups[0][0] < max(b.start for b in sk.beats if b.spoken):
         raise sketch.SketchError("the sting comes after the last line")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"toast", "reader", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.only_events(sk.beats, {"toast", "reader", "hangup"})
 
 
 def toasts_in(beats, app) -> list[toon_props.Toast]:

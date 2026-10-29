@@ -3,13 +3,13 @@ rebranded it for Gen Alpha: it is a bowl now, and the quarterly report is a song
 Rosa has one note: play it again.
 
 Collage style (ADR 0026): Rosa and Brent in the boardroom, Flush on the BOWLHEADS stage; three ElevenLabs premade
-voices, lip-synced. ``STAGING`` is checked by :func:`_collage_sketch.check_staging`.
+voices, lip-synced. ``STAGING`` is checked by :func:`collage_sketch.check_staging`.
 """
 
 from __future__ import annotations
 
-from _collage_sketch import TINTS, Staging, make_sketch, timed, voices_note
 from srstudio import collage_sets
+from srstudio.collage_sketch import TINTS, Staging, make_sketch, timed, voices_note
 from srstudio.sketch import Line
 
 SEED = 2601

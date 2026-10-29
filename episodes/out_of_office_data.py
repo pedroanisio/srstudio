@@ -7,15 +7,15 @@ Two voices (ElevenLabs premade Alice as Pip, Bill as Bruno, as in *Quick Questio
 home at night with the tear-off calendar, the desk lamp and the plant, his phone's toasts in front; Pip in the
 meeting room with the quarter's plan on the board. ``SKETCH`` is checked by :func:`srstudio.sketch.check`;
 :func:`validate` checks what the events ask of the props; :func:`dress` draws each shot's set and props
-(``_toon_sketch.build`` draws the rest).
+(``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon_props, toon_sets
-from srstudio.sketch import Beat, Line, Sketch, Speaker
+from srstudio import scripting, sketch, toon_props, toon_sets
+from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 1072
@@ -68,12 +68,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, hold = SCRIPT.say, SCRIPT.hold
 
 
 BEATS = (
@@ -101,7 +97,7 @@ SKETCH = Sketch(SLUG, TITLE, (PIP, BRUNO), LINES, BEATS, END)
 
 def pages(beats) -> list[tuple[float, str]]:
     """The calendar through the sketch: the first page from 0, then every ``page:`` event."""
-    return [(0.0, FIRST_PAGE)] + sketch.events(beats, "page")
+    return scripting.changes(beats, "page", FIRST_PAGE)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
@@ -120,11 +116,8 @@ def validate(sk: Sketch = SKETCH) -> None:
     for at, arg in sketch.events(sk.beats, "toast"):
         if not (arg.isdigit() and int(arg) < len(TOASTS)):
             raise sketch.SketchError(f"toast {arg!r} at {at} s is not one of {len(TOASTS)} toasts")
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the call ends exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"page", "toast", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the call ends exactly once")
+    scripting.only_events(sk.beats, {"page", "toast", "hangup"})
 
 
 def toasts_in(beats, app) -> list[toon_props.Toast]:

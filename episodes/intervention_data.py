@@ -7,8 +7,8 @@ Collage style (ADR 0026): the family in the living room; ElevenLabs premade voic
 
 from __future__ import annotations
 
-from _collage_sketch import TINTS, Staging, make_sketch, timed, until, voices_note
 from srstudio import collage_sets
+from srstudio.collage_sketch import TINTS, Staging, make_sketch, timed, until, voices_note
 from srstudio.sketch import Line
 
 SEED = 2612

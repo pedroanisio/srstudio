@@ -21,18 +21,21 @@ from __future__ import annotations
 import json
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
 
-from srstudio import (
+from sr_core.scene import Project
+
+from . import (
     COLLAGE,
     Episode,
     EpisodeSpec,
     camera,
     collage,
     collage_sets,
+    errors,
     foley,
     fonts,
     recording,
@@ -41,11 +44,14 @@ from srstudio import (
     subtitles,
     toon,
 )
-from srstudio.canvas import Canvas
-from srstudio.narration import effect_cues, manifest_duration, require_consent
-from srstudio.provider import KEY_ENV
-from srstudio.voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
+from .canvas import Canvas
+from .narration import effect_cues, manifest_duration, require_consent
+from .provider import KEY_ENV
+from .scripting import hold, say
+from .staging import StagingError
+from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 
+BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 EVENTS = ("zoom", "sting", "beep", "reveal")  # reveal: no sound; a prop shows from it (see until)
 ZOOM_SCALE = 1.55
@@ -54,18 +60,6 @@ WHOOSH_GAIN_DB = -6.0
 STING_GAIN_DB = -5.0
 BEEP_GAIN_DB = -9.0
 BEEP = ((1568.0, 1568.0, 0.09), (2093.0, 2093.0, 0.11))  # Kai's headset: two short high notes
-
-
-def say(
-    lines: Sequence[sketch.Line], start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = ""
-) -> sketch.Beat:
-    """The beat that starts line ``line``, captioned with all of it, ``who`` on screen."""
-    return sketch.Beat(start, who, lines[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> sketch.Beat:
-    """A silent beat: ``who`` reacts, the caption stays (or goes, with ``""``)."""
-    return sketch.Beat(start, who, caption, eyes, mouth, arms, None, None, event)
 
 
 def _speaker(name: str, voice_id: str, voice: str, stability: float, style: float) -> sketch.Speaker:
@@ -144,10 +138,6 @@ def until(beats: Sequence[sketch.Beat], event: str, app: sketch.Appearance, befo
     return [(a, b)] if b > a else []
 
 
-class StagingError(ValueError):
-    """The episode's files do not agree with its sketch."""
-
-
 @dataclass(frozen=True)
 class Shot:
     """One appearance on screen: draw the props behind the character into ``back``, those in front into ``front``."""
@@ -158,7 +148,7 @@ class Shot:
     front: object
     beats: Sequence[sketch.Beat]
     end: float
-    measure: Callable[[str, float], float]  # the advance width of a text at a size, in the style's font
+    measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
 
 
 @dataclass(frozen=True)
@@ -195,14 +185,15 @@ def zooms(beats: Sequence[sketch.Beat], app: sketch.Appearance) -> list[float]:
     return [t for t, _ in sketch.events(beats, "zoom") if app.start <= t < app.end][:1]
 
 
-def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
+def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode:
     """The episode, drawn and ready for its post and :meth:`Episode.finish`; ``--init`` writes the project files
     and exits, ``--voice`` builds from the recording."""
     root = Path(root)
+    flags = errors.flags(flags, BUILD_FLAGS)
     check_staging(staging)
     sk = staging.sketch
     if "--init" in flags:
-        sketch.write_project(root, sk, COLLAGE.font.google)
+        sketch.write_project(root, sk, COLLAGE.google_font())
         sys.exit(0)
     voiced = "--voice" in flags
     mouths: sketch.Mouths = {}
@@ -244,13 +235,18 @@ def build(root: Path, staging: Staging, flags: set[str]) -> Episode:
     cv, t = ep.cv, ep.t
     if t.duration > sk.end or t.phrases[0].start != 0:
         raise StagingError(f"{ep.spec.dialogue} runs to {t.duration} s, the sketch to {sk.end} s: run --init again")
-    ep.scene.find("project").duration = sk.end  # the last beats may be silent and uncaptioned
+    project = ep.scene.find("project")
+    if not isinstance(project, Project):  # pragma: no cover - an Episode always writes its project
+        raise StagingError(f"{ep.spec.dialogue}: the scene has no <project>")
+    project.duration = sk.end  # the last beats may be silent and uncaptioned
     effects = []
     manifest = root / "narration.json"
     if voiced:
         if manifest_duration(manifest) != sk.end:
             raise StagingError(f"narration.json runs {manifest_duration(manifest)} s, voiced/beats.json {sk.end} s")
         effects = effect_cues(manifest, root)
+    if COLLAGE.font is None:  # pragma: no cover - a property of the style, tested there
+        raise StagingError("the Collage style has no font to measure its captions in")
     font = (root / COLLAGE.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
     for app in sketch.appearances(sk.beats, sk.end):

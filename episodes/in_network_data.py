@@ -8,14 +8,14 @@ with a tear-off calendar that jumps to January 1 at the end, Dana in a call-cent
 CALLS WAITING board that climbs while she takes her time. The claims arrive as toasts on Gil's phone (``toast:``
 events), the board's count changes on ``tick:`` events, the calendar on ``page:``. Both characters are lip-synced
 to their own takes. ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate` checks what the events
-ask of the props; :func:`dress` draws each shot's set and props (``_toon_sketch.build`` draws the rest).
+ask of the props; :func:`dress` draws each shot's set and props (``toon_sketch.build`` draws the rest).
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import sketch, toon_cast, toon_props, toon_sets
+from srstudio import scripting, sketch, toon_cast, toon_props, toon_sets
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.toon import ToonDataError
 from srstudio.voice import Voice, VoiceSettings
@@ -80,19 +80,8 @@ LINES = (
 )
 
 
-def say(start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, LINES[line].text, eyes, mouth, arms, line, 0, event)
-
-
-def part(start: float, who: str, line: int, word: int, caption: str, eyes: str, mouth: str, arms: str) -> Beat:
-    """A beat on a later word of a line, captioned with that part of it (a long line in two pills)."""
-    if caption not in LINES[line].text or LINES[line].text.split()[word] != caption.split()[0]:
-        raise sketch.SketchError(f"{caption!r} is not line {line} from word {word}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, word, "")
-
-
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+SCRIPT = scripting.Script(LINES)
+say, part, hold = SCRIPT.say, SCRIPT.part, SCRIPT.hold
 
 
 BEATS = (
@@ -123,7 +112,7 @@ SKETCH = Sketch(SLUG, TITLE, (GIL, DANA), LINES, BEATS, END)
 
 def pages(beats) -> list[tuple[float, str]]:
     """The calendar through the sketch: the first page from 0, then every ``page:`` event."""
-    return [(0.0, FIRST_PAGE)] + sketch.events(beats, "page")
+    return scripting.changes(beats, "page", FIRST_PAGE)
 
 
 def ticks(beats) -> list[tuple[float, int]]:
@@ -166,11 +155,8 @@ def validate(sk: Sketch = SKETCH) -> None:
         if who_at[at] != "dog":
             raise sketch.SketchError(f"the tick at {at} s is off screen: the board is in Dana's shot")
     ticks(sk.beats)
-    if len(sketch.events(sk.beats, "hangup")) != 1:
-        raise sketch.SketchError("the call ends exactly once")
-    unknown = {b.event.split(":")[0] for b in sk.beats if b.event} - {"toast", "page", "tick", "hangup"}
-    if unknown:
-        raise sketch.SketchError(f"unknown events {sorted(unknown)}")
+    scripting.exactly_once(sk.beats, "hangup", "the call ends exactly once")
+    scripting.only_events(sk.beats, {"toast", "page", "tick", "hangup"})
 
 
 def toasts_in(beats, app) -> list[toon_props.Toast]:

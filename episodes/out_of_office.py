@@ -10,9 +10,9 @@ python3 out_of_office.py PROJECT --voice    # the narrated master: narration.jso
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from instagram_posts import POSTS
 from out_of_office_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
+from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
 STAGING = Staging(

@@ -10,8 +10,8 @@ python3 the_report.py PROJECT --voice    # the narrated master: narration.json (
 import sys
 
 from _common import project_root
-from _toon_sketch import Staging, build
 from instagram_posts import POSTS
+from srstudio.toon_sketch import Staging, build
 from the_report_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, STICKER, TINTS, dress, validate
 
 validate(SKETCH)

@@ -291,6 +291,12 @@ is `MissingKeyError`, a provider HTTP failure `ProviderHTTPError`, and a builder
 `FlagError` before building anything (`srstudio.errors.flags`;
 [ADR 0034](docs/decisions/0034-one-error-base.md)).
 
+Every error the library raises is a `srstudio.SrstudioError` and keeps its built-in base (`ValueError` for bad
+data, `RuntimeError` for a provider failure), so `except srstudio.SrstudioError` catches them all. A missing API key
+is `MissingKeyError`, a provider HTTP failure `ProviderHTTPError`, and a builder given a flag it does not know raises
+`FlagError` before building anything (`srstudio.errors.flags`;
+[ADR 0034](docs/decisions/0034-one-error-base.md)).
+
 ### Finishing a style: `srstudio.look`
 
 A style's finish is a handful of calls with its own numbers and id prefix, never a copy of another style's helpers
@@ -1142,7 +1148,7 @@ pill). `toon_cast.sticky_note` and the `stickers=` parameter of `dog`/`frog` sti
 that follows its sigh and lean. `foley.buzz` and `foley.tones` (`STING`, `CHIME`) are the phone and the sting, as
 deterministic as the keyboard.
 
-[episodes/_toon_sketch.py](episodes/_toon_sketch.py) is the build the two sketches share: `build` draws one gated
+[srstudio.toon_sketch](src/srstudio/toon_sketch.py) is the build the Toon sketches share: `build` draws one gated
 group per appearance (set and props behind the character, the character on its poses, the desk, the props in
 front), tints the pills, refuses a caption too wide for one pill (`fit_captions`), checks that `voiced/beats.json`
 and `narration.json` agree, draws the mouths from `voiced/mouths.json` (refusing one whose end differs from the
