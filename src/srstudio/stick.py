@@ -38,13 +38,16 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from . import signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 from .soundtrack import INK_MOUTH, PhonemeStyle, phoneme_states, pose_keys
+
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 
 __all__ = [
     "StickDataError",
@@ -989,13 +992,21 @@ def _limb(cv: Canvas, parent, points: Sequence[Point], width: float):
     return shape(cv, parent, d, sw=width, stroke=cv.ink)
 
 
-def _body(cv: Canvas, parent, pose: RigPose, tie: str | None = None, apron: str | None = None) -> None:
+def _body(
+    cv: Canvas,
+    parent,
+    pose: RigPose,
+    tie: str | None = None,
+    apron: str | None = None,
+    omit_arms: frozenset[str] = frozenset(),
+) -> None:
     """Far limbs, torso (its apron, then its tie), near limbs: one stroked path each; a foot is a short run forward."""
     shoulder = (pose.neck[0] - 4, pose.neck[1] + 34)
     for i, width in ((0, LIMB_FAR), (1, LIMB)):
         knee, foot = pose.knees[i], pose.feet[i]
         _limb(cv, parent, [pose.hip, knee, foot, (foot[0] + 46, foot[1] + 4)], width)
-        _limb(cv, parent, [shoulder, pose.elbows[i], pose.hands[i]], width)
+        if ("left" if i == 0 else "right") not in omit_arms:
+            _limb(cv, parent, [shoulder, pose.elbows[i], pose.hands[i]], width)
         if i == 0:
             _limb(cv, parent, [pose.neck, pose.hip], LIMB)
             if apron is not None:
@@ -1184,6 +1195,7 @@ def rig(
     scale: float = 1.0,
     flip: bool = False,
     mouth: PhonemeStyle = INK_MOUTH,
+    limbs: tuple[LimbTrack, ...] = (),
 ):
     """The Stick style's drawn figure: ink limbs posed per key, a round head dressed by ``look``, eyes, brows and a
     phoneme mouth speaking ``phones`` (character timings relative to the shot) under the ``mouth`` model
@@ -1198,14 +1210,22 @@ def rig(
     check_look(look)
     if not (_is_number(scale) and scale > 0):
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    if limbs:
+        from .limbs.compile import LayerTargets
+        from .limbs.integration import draw_tracks, prepare_tracks
+
+        limbs = prepare_tracks(cv, limbs, end)
+    sides = frozenset(track.motion.arm.side for track in limbs)
     g = _group(cv, parent)
     if tuple(at) != (0, 0) or scale != 1 or flip:
         g.x, g.y, g.scaleX, g.scaleY = at[0], at[1], -scale if flip else scale, scale
+    behind = _group(cv, g) if limbs else None
     spans = _spans(keys, end)
     for k, a, b in spans:
         body = _group(cv, g)
-        _body(cv, body, poses[k.pose], look.tie, look.apron)
+        _body(cv, body, poses[k.pose], look.tie, look.apron, sides)
         _gate(cv, body, a, b, end)
+    limb_body = _group(cv, g) if limbs else None
     hx, hy = poses[keys[0].pose].head
     head = _group(cv, g, x=hx, y=hy)
     if len(keys) > 1:
@@ -1227,6 +1247,9 @@ def rig(
     else:
         lips.x, lips.y = keys[0].face.look[0] * 14, 44 + keys[0].face.look[1] * 8
     _mouth(cv, lips, spans, phones, end, mood, mouth)
+    if limbs:
+        front = _group(cv, g)
+        draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
     return g
 
 

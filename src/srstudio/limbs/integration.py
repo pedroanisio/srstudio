@@ -89,3 +89,30 @@ def legacy_action(style: str, pose: str, *, start: float, duration: float, **opt
     if name not in ACTIONS:
         raise LimbError(f"legacy {style} arm pose {pose!r} has no action mapping")
     return Action(name, start, duration, **options)
+
+
+def prepare_tracks(cv: Canvas, tracks: tuple[LimbTrack, ...], end: float) -> tuple[LimbTrack, ...]:
+    """Validate a character's replacement tracks, including compilation, before drawing any of its geometry."""
+    from sr_core.scene import Scene
+
+    from ..rig import Performance
+    from .math3d import number
+
+    Performance(limbs=tracks)
+    if number(end, "character end") <= 0:
+        raise LimbError("character end must be positive")
+    for track in tracks:
+        duration = track.options.duration or max((a.end for a in track.motion.actions), default=1.0)
+        if track.options.offset + duration > end + 1e-9:
+            raise LimbError("limb track exceeds the character performance duration")
+    scratch = Canvas(Scene(version="auto"), cv.palette, width=cv.width, height=cv.height, font_asset=cv.font_asset)
+    for track in tracks:
+        track.draw(
+            scratch, LayerTargets(scratch.comp, scratch.comp, scratch.comp), id=f"preflight-{track.motion.arm.side}"
+        )
+    return tuple(tracks)
+
+
+def draw_tracks(cv: Canvas, layers: LayerTargets, tracks: tuple[LimbTrack, ...], *, id: str) -> tuple[Compiled, ...]:
+    """Draw validated tracks into a character's ordered layers in its own coordinate system."""
+    return tuple(track.draw(cv, layers, id=f"{id}-{track.motion.arm.side}") for track in tracks)

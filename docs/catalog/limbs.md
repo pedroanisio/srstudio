@@ -136,3 +136,33 @@ For focused limb coverage, use the source directory as the coverage target:
 ```sh
 PYTHONPATH=src python -m pytest tests/test_limbs* --cov=src/srstudio/limbs --cov-branch
 ```
+
+## Existing style characters
+
+The following character builders accept `limbs=(track, ...)` directly:
+
+| Builder | Track camera coordinates | Replaced legacy arm |
+| --- | --- | --- |
+| `stick.rig` | Rig-pose pixel coordinates, before `at`, `scale` and `flip` | Left means far arm; right means near arm |
+| `gloss.nadia`, `gloss.gus`, `gloss.tamsin` | Person-local pixels relative to the feet | Named left or right sleeve and hand |
+| `toon_cast.figure`, `dog`, `frog`, `bear`, `rabbit` | Toon reference pixels before `fx`/`fy` | Named left or right paw and arm |
+
+Character placement, flipping, Gloss walking/falling/bouncing and Toon lean/sigh placement carry the limb
+tracks with the character. For a moving shoulder within a Stick pose sequence, author the corresponding
+motion root track; the builder does not infer a spatial torso animation from held pose drawings.
+
+Choose the track's camera origin at the desired shoulder and its scale to fit the character. Retarget arm
+width, proportions and hand topology as needed. Pass an `Appearance` matching the coat, sleeve or skin.
+`examples/limbs_cast.py` supplies concrete placements for a Stick person, the Toon dog with a mitten hand,
+and Gloss Nadia using the same pointing action. It exports each retargeted motion as JSON.
+
+The builders validate duplicate sides, duration, reach, style and compilation before drawing the character.
+A track cannot extend beyond the character's end. A single-side replacement preserves the other authored
+arm, facial expressions, speech and character details. `limbs=()` retains the existing drawing path. Toon
+also exposes `omit_arms=frozenset({"left", "right"})` on `figure_layers` and `figure_shapes` for callers that
+compose character artwork as data.
+
+```sh
+PYTHONPATH=src python examples/limbs_cast.py ../generated/limbs/cast
+../generated/bin/scene-render encode ../generated/limbs/cast/cast.scene.xml
+```

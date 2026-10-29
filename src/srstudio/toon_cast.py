@@ -28,12 +28,16 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Number
+from typing import TYPE_CHECKING
 
 from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
-from .toon import ARMS, EPSILON, EYES, LIPS, MOUTHS, Pose, ToonDataError, flat, runs, swap_frames
+from .toon import ARMS, EPSILON, EYES, LIPS, MOUTHS, REF_TOP, SCALE, Pose, ToonDataError, flat, runs, swap_frames
+
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 
 __all__ = [
     "Look",
@@ -333,34 +337,46 @@ def _limb(points: Sequence[Point], look: Look, paw: Point, toes: bool = True) ->
     return out
 
 
-def _arms(look: Look, arms: str, frame: int) -> tuple[list[Layer], list[Layer]]:
+def _arms(
+    look: Look, arms: str, frame: int, omit_arms: frozenset[str] = frozenset()
+) -> tuple[list[Layer], list[Layer]]:
     """The arms of a pose at rest: those drawn before the face and those drawn over it (paws on the mouth)."""
+    if not omit_arms <= {"left", "right"}:
+        raise ToonDataError("omitted arms must be left or right")
+
+    def limb(side: str, *args, **kwargs) -> list[Layer]:
+        return [] if side in omit_arms else _limb(*args, **kwargs)
+
     (lx, ly), (rx, ry) = SHOULDERS
     mx, my = look.mouth
     under: list[Layer] = []
     over: list[Layer] = []
     if arms == "desk" or arms == "lean":
-        under += _limb([(lx, ly), (82.0, 760.0), (124.0, 792.0)], look, (132.0, 794.0))
+        under += limb("left", [(lx, ly), (82.0, 760.0), (124.0, 792.0)], look, (132.0, 794.0))
         if arms == "desk":
-            under += _limb([(rx, ry), (288.0, 760.0), (246.0, 792.0)], look, (238.0, 794.0))
+            under += limb("right", [(rx, ry), (288.0, 760.0), (246.0, 792.0)], look, (238.0, 794.0))
         else:
-            under += _limb([(rx, ry), (330.0, 750.0), (344.0, 788.0)], look, (348.0, 792.0))
+            under += limb("right", [(rx, ry), (330.0, 750.0), (344.0, 788.0)], look, (348.0, 792.0))
     elif arms == "type":
         lift = 0.0 if frame == 0 else 9.0  # the far arm lies along the desk's edge, the near one reaches over it
-        under += _limb([(lx, ly), (110.0, 776.0), (250.0, 792.0), (366.0, 788.0 - lift)], look, (376.0, 789.0 - lift))
-        under += _limb([(rx, ry), (352.0, 742.0), (398.0, 762.0 + lift)], look, (404.0, 764.0 + lift))
+        under += limb(
+            "left", [(lx, ly), (110.0, 776.0), (250.0, 792.0), (366.0, 788.0 - lift)], look, (376.0, 789.0 - lift)
+        )
+        under += limb("right", [(rx, ry), (352.0, 742.0), (398.0, 762.0 + lift)], look, (404.0, 764.0 + lift))
     elif arms == "crossed":
-        under += _limb([(lx, ly), (120.0, 748.0), (230.0, 752.0), (282.0, 738.0)], look, (290.0, 732.0))
-        under += _limb([(rx, ry), (262.0, 760.0), (150.0, 772.0), (96.0, 758.0)], look, (86.0, 752.0))
+        under += limb("left", [(lx, ly), (120.0, 748.0), (230.0, 752.0), (282.0, 738.0)], look, (290.0, 732.0))
+        under += limb("right", [(rx, ry), (262.0, 760.0), (150.0, 772.0), (96.0, 758.0)], look, (86.0, 752.0))
     elif arms == "sigh":
-        under += _limb([(lx, ly), (58.0, 760.0), (70.0, 800.0)], look, (72.0, 806.0), toes=False)
-        under += _limb([(rx, ry), (312.0, 760.0), (300.0, 800.0)], look, (298.0, 806.0), toes=False)
+        under += limb("left", [(lx, ly), (58.0, 760.0), (70.0, 800.0)], look, (72.0, 806.0), toes=False)
+        under += limb("right", [(rx, ry), (312.0, 760.0), (300.0, 800.0)], look, (298.0, 806.0), toes=False)
     else:  # face, face2: both paws over the mouth
         spread = 26.0 if arms == "face" else 36.0
         drop = 0.0 if arms == "face" else -8.0
-        over += _limb([(lx, ly), (76.0, 700.0), (mx - spread - 18.0, my + 12.0 + drop)], look, (mx - spread, my + drop))
-        over += _limb(
-            [(rx, ry), (294.0, 700.0), (mx + spread + 18.0, my + 12.0 + drop)], look, (mx + spread, my + drop)
+        over += limb(
+            "left", [(lx, ly), (76.0, 700.0), (mx - spread - 18.0, my + 12.0 + drop)], look, (mx - spread, my + drop)
+        )
+        over += limb(
+            "right", [(rx, ry), (294.0, 700.0), (mx + spread + 18.0, my + 12.0 + drop)], look, (mx + spread, my + drop)
         )
     return under, over
 
@@ -599,8 +615,28 @@ def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, pa
     return [(brush.rotate(s, cx, cy, tilt), c) for s, c in layers]
 
 
+def _foundation(look: Look) -> list[Layer]:
+    layers: list[Layer] = []
+    for ear in look.ears:
+        layers += [(brush.rim(ear, INK), "ink"), (brush.outline(ear), look.ear or look.dark)]
+        if look.ear_inner:
+            layers.append((brush.outline(_shrink(ear, 0.55)), look.ear_inner))
+    layers += [(brush.rim(look.silhouette, INK), "ink"), (brush.outline(look.silhouette), look.coat)]
+    layers += list(look.marks)
+    if look.blush:
+        layers += _blush(look)
+    return layers
+
+
 def figure_layers(
-    look: Look, eyes: str, mouth: str, arms: str, frame: int = 0, stickers: Sequence[Layer] = ()
+    look: Look,
+    eyes: str,
+    mouth: str,
+    arms: str,
+    frame: int = 0,
+    stickers: Sequence[Layer] = (),
+    *,
+    omit_arms: frozenset[str] = frozenset(),
 ) -> tuple[list[Layer], list[Layer], list[Layer]]:
     """The character in one expression as three runs of (shape, colour) layers in draw order, reference pixels:
     everything under the mouth (ears, body, marks, blush, arms, eyes, nose, whiskers), the mouth, and everything
@@ -610,16 +646,8 @@ def figure_layers(
         raise ToonDataError(f"{look.name}: no expression {eyes!r}/{mouth!r}/{arms!r}")
     if frame not in (0, 1):
         raise ToonDataError(f"{look.name}: a typing frame is 0 or 1, got {frame!r}")
-    under_mouth: list[Layer] = []
-    for ear in look.ears:
-        under_mouth += [(brush.rim(ear, INK), "ink"), (brush.outline(ear), look.ear or look.dark)]
-        if look.ear_inner:
-            under_mouth.append((brush.outline(_shrink(ear, 0.55)), look.ear_inner))
-    under_mouth += [(brush.rim(look.silhouette, INK), "ink"), (brush.outline(look.silhouette), look.coat)]
-    under_mouth += list(look.marks)
-    if look.blush:
-        under_mouth += _blush(look)
-    under, over = _arms(look, arms, frame)
+    under_mouth = _foundation(look)
+    under, over = _arms(look, arms, frame, omit_arms)
     under_mouth += under
     under_mouth += _eye(look, look.eyes[0], eyes, 1.0) + _eye(look, look.eyes[1], eyes, -1.0)
     under_mouth += [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
@@ -630,10 +658,17 @@ def figure_layers(
 
 
 def figure_shapes(
-    look: Look, eyes: str, mouth: str, arms: str, frame: int = 0, stickers: Sequence[Layer] = ()
+    look: Look,
+    eyes: str,
+    mouth: str,
+    arms: str,
+    frame: int = 0,
+    stickers: Sequence[Layer] = (),
+    *,
+    omit_arms: frozenset[str] = frozenset(),
 ) -> list[Layer]:
     """The whole drawing of :func:`figure_layers` as one run of layers."""
-    under, mouth_layers, over = figure_layers(look, eyes, mouth, arms, frame, stickers)
+    under, mouth_layers, over = figure_layers(look, eyes, mouth, arms, frame, stickers, omit_arms=omit_arms)
     return under + mouth_layers + over
 
 
@@ -684,6 +719,17 @@ def _draw(cv: Canvas, parent, layers: Sequence[Layer]) -> None:
         flat(cv, parent, shape, {"ink": cv.ink, "white": cv.white}.get(colour, colour))
 
 
+def _limb_layer(cv: Canvas, parent, arms: str):
+    ref = cv.group(parent, cv.uid("g"), y=-REF_TOP * SCALE, scaleX=SCALE, scaleY=SCALE)
+    if arms == "lean":
+        return cv.group(
+            ref, cv.uid("g"), x=PIVOT[0], y=PIVOT[1], anchorX=PIVOT[0], anchorY=PIVOT[1], rotation=LEAN_DEGREES
+        )
+    if arms == "sigh":
+        return cv.group(ref, cv.uid("g"), y=SIGH_DROP)
+    return ref
+
+
 def figure(
     cv: Canvas,
     parent,
@@ -694,6 +740,8 @@ def figure(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
     """One group per pose run (:func:`srstudio.toon.runs`), the typing frames swapped on ``taps`` (project
     seconds). ``enter`` puts the character on from that project second: its poses count from it, and it leaves at
@@ -702,19 +750,33 @@ def figure(
     showing while closed. A look with a blink period shuts its eyes for :data:`BLINK_HOLD` at :func:`blink_times`."""
     if not (isinstance(enter, int | float) and math.isfinite(enter) and 0 <= enter < duration):
         raise ToonDataError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
+    if limbs:
+        from .limbs.compile import LayerTargets
+        from .limbs.integration import draw_tracks, prepare_tracks
+
+        limbs = prepare_tracks(cv, limbs, duration)
+    sides = frozenset(track.motion.arm.side for track in limbs)
     groups = []
     for pose, start, end in runs(poses, duration - enter):
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
-        under, mouth_layers, over = figure_layers(look, pose.eyes, pose.mouth, pose.arms, 0, stickers)
+
+        behind = _limb_layer(cv, g, pose.arms) if limbs else None
+        under, mouth_layers, over = figure_layers(look, pose.eyes, pose.mouth, pose.arms, 0, stickers, omit_arms=sides)
+        base_count = len(_foundation(look)) if limbs else 0
+        if limbs:
+            _draw(cv, g, under[:base_count])
+        limb_body = _limb_layer(cv, g, pose.arms) if limbs else None
         if pose.arms == "type":
 
-            def frame_of(parent, frame: int, eyes: str = pose.eyes, mouth: str = pose.mouth) -> None:
-                _draw(cv, parent, figure_layers(look, eyes, mouth, "type", frame)[0])
+            def frame_of(
+                parent, frame: int, eyes: str = pose.eyes, mouth: str = pose.mouth, skip: int = base_count
+            ) -> None:
+                _draw(cv, parent, figure_layers(look, eyes, mouth, "type", frame, omit_arms=sides)[0][skip:])
 
             swap_frames(cv, g, start, end, taps, frame_of)
         else:
-            _draw(cv, g, under)
+            _draw(cv, g, under[base_count:])
         keys = viseme_keys(mouths, start, end)
         if keys:
             lips = cv.group(g, cv.uid("g"))
@@ -733,6 +795,9 @@ def figure(
                 states += [(t, 1), (round(t + BLINK_HOLD, 6), 0)]
             cv.keys(shut, "opacity", states, local=False)
         _draw(cv, g, over)
+        if limbs:
+            front = _limb_layer(cv, g, pose.arms)
+            draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"))
         groups.append(g)
     return groups
 
@@ -751,8 +816,10 @@ def dog(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    return figure(cv, parent, DOG, poses, duration, taps, enter, stickers, mouths)
+    return figure(cv, parent, DOG, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
 
 
 @register(
@@ -769,8 +836,10 @@ def frog(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    return figure(cv, parent, FROG, poses, duration, taps, enter, stickers, mouths)
+    return figure(cv, parent, FROG, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
 
 
 @register(
@@ -787,8 +856,10 @@ def bear(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    return figure(cv, parent, BEAR, poses, duration, taps, enter, stickers, mouths)
+    return figure(cv, parent, BEAR, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
 
 
 @register(
@@ -805,5 +876,7 @@ def rabbit(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    return figure(cv, parent, RABBIT, poses, duration, taps, enter, stickers, mouths)
+    return figure(cv, parent, RABBIT, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
