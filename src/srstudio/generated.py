@@ -46,6 +46,10 @@ class ResolveError(SrstudioError, RuntimeError):
         self.targets = list(targets)
 
 
+class GeneratedError(SrstudioError, ValueError):
+    """A generated-media declaration, placement or dialogue.json entry that cannot be used."""
+
+
 # -- declarations -------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Generated:
@@ -65,24 +69,24 @@ class Generated:
 
     def __post_init__(self):
         if not _NCNAME.match(self.id):
-            raise ValueError(f"generated id {self.id!r} is not an XML name")
+            raise GeneratedError(f"generated id {self.id!r} is not an XML name")
         if self.kind not in KINDS:
-            raise ValueError(f"{self.id}: kind {self.kind!r} is not one of {', '.join(KINDS)}")
+            raise GeneratedError(f"{self.id}: kind {self.kind!r} is not one of {', '.join(KINDS)}")
         if not self.prompt:
-            raise ValueError(f"{self.id}: a prompt is required")
+            raise GeneratedError(f"{self.id}: a prompt is required")
         cache = PurePosixPath(self.cache)
         if cache.is_absolute():
-            raise ValueError(f"{self.id}: cache {self.cache!r} must be relative to the document")
+            raise GeneratedError(f"{self.id}: cache {self.cache!r} must be relative to the document")
         if ".." in cache.parts:
-            raise ValueError(f"{self.id}: cache {self.cache!r} must stay inside the document's folder")
+            raise GeneratedError(f"{self.id}: cache {self.cache!r} must stay inside the document's folder")
         if cache.suffix.lower() != ".wav":
-            raise ValueError(f"{self.id}: cache {self.cache!r} must be a .wav file")
+            raise GeneratedError(f"{self.id}: cache {self.cache!r} must be a .wav file")
         if self.duration is not None and not (math.isfinite(self.duration) and self.duration > 0):
-            raise ValueError(f"{self.id}: duration must be a positive number of seconds")
+            raise GeneratedError(f"{self.id}: duration must be a positive number of seconds")
         if self.kind == "sound-effect" and self.duration is None:
-            raise ValueError(f"{self.id}: a sound effect needs a duration")
+            raise GeneratedError(f"{self.id}: a sound effect needs a duration")
         if self.seed is not None and self.seed < 0:
-            raise ValueError(f"{self.id}: seed must not be negative")
+            raise GeneratedError(f"{self.id}: seed must not be negative")
 
     def declare(self, assets, sha256: str = PLACEHOLDER):
         """Adds the ``<generated>`` element to ``assets`` with ``cacheSha256=sha256``."""
@@ -119,16 +123,16 @@ class Placement:
         for name in ("start", "clip_in", "fade_in", "fade_out"):
             value = getattr(self, name)
             if not (math.isfinite(value) and value >= 0):
-                raise ValueError(f"placement: {name} must be a finite number >= 0, got {value!r}")
+                raise GeneratedError(f"placement: {name} must be a finite number >= 0, got {value!r}")
         if not math.isfinite(self.gain_db):
-            raise ValueError(f"placement: gain_db must be finite, got {self.gain_db!r}")
+            raise GeneratedError(f"placement: gain_db must be finite, got {self.gain_db!r}")
         if self.clip_out is not None:
             if not (math.isfinite(self.clip_out) and self.clip_out > self.clip_in):
-                raise ValueError(f"placement: clip_out {self.clip_out!r} must come after clip_in {self.clip_in!r}")
+                raise GeneratedError(f"placement: clip_out {self.clip_out!r} must come after clip_in {self.clip_in!r}")
             if self.fade_in + self.fade_out > self.clip_out - self.clip_in + 1e-9:
-                raise ValueError("placement: the fades are longer than the clip")
+                raise GeneratedError("placement: the fades are longer than the clip")
         if self.role not in ROLES:
-            raise ValueError(f"placement: role {self.role!r} is not one of {', '.join(ROLES)}")
+            raise GeneratedError(f"placement: role {self.role!r} is not one of {', '.join(ROLES)}")
 
     def track(self, mix, id: str, asset: str):
         """The ``<audioTrack>`` playing ``asset`` this way."""
@@ -150,11 +154,11 @@ class Placement:
 
 def _strict(cls, data: object, where: str) -> dict:
     if not isinstance(data, dict):
-        raise ValueError(f"{where}: not an object")
+        raise GeneratedError(f"{where}: not an object")
     names = {f.name for f in fields(cls)}
     unknown = set(data) - names
     if unknown:
-        raise ValueError(f"{where}: unknown field(s) {sorted(unknown)}")
+        raise GeneratedError(f"{where}: unknown field(s) {sorted(unknown)}")
     return data
 
 
@@ -168,7 +172,7 @@ class PlacedClip:
 
     def __post_init__(self):
         if not _SHA256.match(self.sha256):
-            raise ValueError(f"{self.generated.id}: sha256 {self.sha256!r} is not a hex SHA-256")
+            raise GeneratedError(f"{self.generated.id}: sha256 {self.sha256!r} is not a hex SHA-256")
 
     def to_dict(self) -> dict:
         return {"generated": asdict(self.generated), "sha256": self.sha256, "placement": asdict(self.placement)}
@@ -186,11 +190,11 @@ class PlacedClip:
 def load_clips(data: object) -> list[PlacedClip]:
     """The ``clips`` list of a ``dialogue.json``."""
     if not isinstance(data, list):
-        raise ValueError("clips: not a list")
+        raise GeneratedError("clips: not a list")
     clips = [PlacedClip.from_dict(item) for item in data]
     ids = [c.generated.id for c in clips]
     if len(set(ids)) != len(ids):
-        raise ValueError("clips: an id appears twice")
+        raise GeneratedError("clips: an id appears twice")
     return clips
 
 
@@ -213,7 +217,7 @@ def audio_document(path: Path, items: Sequence[Generated], sample_rate: int = 48
     mix.add_master()
     errors = [f for f in scene.check() if f.severity == "error"]
     if errors:
-        raise ValueError("audio document: " + "; ".join(str(f) for f in errors))
+        raise GeneratedError("audio document: " + "; ".join(str(f) for f in errors))
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(scene.to_bytes(layout="pretty"))
@@ -356,7 +360,7 @@ def _mono(path: Path) -> tuple[list[float], int]:
         rate, channels, width = w.getframerate(), w.getnchannels(), w.getsampwidth()
         raw = w.readframes(w.getnframes())
     if width != 2:
-        raise ValueError(f"{path}: only 16-bit PCM is supported")
+        raise GeneratedError(f"{path}: only 16-bit PCM is supported")
     pcm = array("h")
     pcm.frombytes(raw)
     return [sum(pcm[i : i + channels]) / channels / 32768 for i in range(0, len(pcm), channels)], rate
@@ -367,7 +371,7 @@ def trim_speech(path: Path, threshold: float = 0.004, lead: float = 0.025, tail:
     x, rate = _mono(Path(path))
     active = [i for i, v in enumerate(x) if abs(v) > threshold]
     if not active:
-        raise ValueError(f"{path}: silent, nothing to trim to")
+        raise GeneratedError(f"{path}: silent, nothing to trim to")
     a = max(0, active[0] - round(lead * rate))
     b = min(len(x), active[-1] + round(tail * rate))
     return Trim(a / rate, b / rate, max(abs(v) for v in x[a:b]))
@@ -381,7 +385,7 @@ def trim_effect(
     x, rate = _mono(Path(path))
     top = max((abs(v) for v in x), default=0.0)
     if top <= 0:
-        raise ValueError(f"{path}: silent, nothing to trim to")
+        raise GeneratedError(f"{path}: silent, nothing to trim to")
     first = next(i for i, v in enumerate(x) if abs(v) > onset * top)
     a = max(0, first - round(lead * rate))
     b = min(len(x), a + round(longest * rate))
@@ -400,5 +404,5 @@ def trim_effect(
 def gain_to_peak(peak: float, target: float) -> float:
     """The gain in dB that brings ``peak`` to ``target``."""
     if not (peak > 0 and target > 0):
-        raise ValueError(f"levels must be positive (peak {peak}, target {target})")
+        raise GeneratedError(f"levels must be positive (peak {peak}, target {target})")
     return 20 * math.log10(target / peak)

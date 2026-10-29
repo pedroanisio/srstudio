@@ -6,7 +6,13 @@ import re
 from collections.abc import Sequence
 from pathlib import Path
 
+from .errors import SrstudioError
+
 Cue = tuple[float, float, str]
+
+
+class SubtitleError(SrstudioError, ValueError):
+    """Captions asked for with an option they cannot be paged by."""
 
 
 def chunk_words(
@@ -17,7 +23,7 @@ def chunk_words(
     A page shown for less than ``min_seconds`` joins the next page, else the previous one, when the joined text
     still fits ``max_chars``; a short page with no such neighbour stays (the renderer's legibility check reports it)."""
     if not (min_seconds >= 0):
-        raise ValueError(f"min_seconds must be non-negative, got {min_seconds}")
+        raise SubtitleError(f"min_seconds must be non-negative, got {min_seconds}")
     chunks: list[list[dict]] = []
     buf: list[dict] = []
     for w in words:

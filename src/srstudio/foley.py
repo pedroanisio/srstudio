@@ -15,9 +15,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .cel import Feature
+from .errors import SrstudioError
 from .music import write_wav
 
 __all__ = [
+    "FoleyError",
     "typing_bursts",
     "taps",
     "keystrokes",
@@ -47,13 +49,17 @@ BUZZ_RATTLE = 28.0  # how fast the phone rattles on the desk, Hz
 MIN_RATE = 8000
 
 
+class FoleyError(SrstudioError, ValueError):
+    """A foley track asked for with a rate, length, level or cue it cannot be made from."""
+
+
 def typing_bursts(
     samples: Sequence[Feature], threshold: float = THRESHOLD, spans: Sequence[tuple[float, float]] | None = None
 ) -> list[float]:
     """The sample times at which the tracked point moved more than ``threshold`` pixels since the sample before,
     inside one of ``spans`` (``[start, end)``; everywhere when None): the hand typing, not the hand being raised."""
     if not (math.isfinite(threshold) and threshold > 0):
-        raise ValueError(f"threshold {threshold} must be positive")
+        raise FoleyError(f"threshold {threshold} must be positive")
     out = []
     for prev, cur in zip(samples, samples[1:], strict=False):
         if math.hypot(cur.x - prev.x, cur.y - prev.y) > threshold:
@@ -80,11 +86,11 @@ def keystrokes(
 ) -> list[float]:
     """A mono bed of ``duration`` seconds with one keystroke at each of ``times`` (see :func:`taps`)."""
     if not (isinstance(rate, int) and rate >= MIN_RATE):
-        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
     if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - KEY_TAIL for t in times)):
-        raise ValueError(f"duration {duration} must leave {KEY_TAIL} s after every keystroke")
+        raise FoleyError(f"duration {duration} must leave {KEY_TAIL} s after every keystroke")
     if not (math.isfinite(peak) and 0 < peak <= 1):
-        raise ValueError(f"peak {peak} must be in 0..1")
+        raise FoleyError(f"peak {peak} must be in 0..1")
     out = [0.0] * int(round(duration * rate))
     rng = random.Random(seed)
     for at in sorted(times):
@@ -121,13 +127,13 @@ def buzz(
     """A mono bed of ``duration`` seconds with one phone buzz at each of ``times``: a low hum shaken by the rattle
     of the phone on the desk, in two pulses with a short gap, faded in and out; seeded for the touch of noise."""
     if not (isinstance(rate, int) and rate >= MIN_RATE):
-        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
     if not (math.isfinite(length) and 0.05 <= length <= 2.0):
-        raise ValueError(f"length {length} must be within 0.05..2 s")
+        raise FoleyError(f"length {length} must be within 0.05..2 s")
     if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
-        raise ValueError(f"duration {duration} must leave {length} s after every buzz")
+        raise FoleyError(f"duration {duration} must leave {length} s after every buzz")
     if not (math.isfinite(peak) and 0 < peak <= 1):
-        raise ValueError(f"peak {peak} must be in 0..1")
+        raise FoleyError(f"peak {peak} must be in 0..1")
     out = [0.0] * int(round(duration * rate))
     rng = random.Random(seed)
     pulse = length / 2
@@ -167,13 +173,13 @@ def whoosh(
     noise through a band that sweeps up from 300 Hz to 3 kHz, swelling to its loudest as it ends, so it lands with a
     crash zoom (:func:`srstudio.camera.crash_zoom` returns the cue)."""
     if not (isinstance(rate, int) and rate >= MIN_RATE):
-        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
     if not (math.isfinite(length) and 0.05 <= length <= 2.0):
-        raise ValueError(f"length {length} must be within 0.05..2 s")
+        raise FoleyError(f"length {length} must be within 0.05..2 s")
     if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
-        raise ValueError(f"duration {duration} must leave {length:.2f} s after every cue")
+        raise FoleyError(f"duration {duration} must leave {length:.2f} s after every cue")
     if not (math.isfinite(peak) and 0 < peak <= 1):
-        raise ValueError(f"peak {peak} must be in 0..1")
+        raise FoleyError(f"peak {peak} must be in 0..1")
     rng = random.Random(seed)
     out = [0.0] * int(round(duration * rate))
     n = int(length * rate)
@@ -216,14 +222,14 @@ def tones(
     """A mono bed of ``duration`` seconds with the ``notes`` played in turn at each of ``times``: each note a soft
     tone (a sine with a touch of its octave) sliding from its start to its end frequency, faded in and out."""
     if not (isinstance(rate, int) and rate >= MIN_RATE):
-        raise ValueError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
     if not notes or any(not (20 <= a <= 8000 and 20 <= b <= 8000 and 0.02 <= n <= 3.0) for a, b, n in notes):
-        raise ValueError("notes are (start Hz, end Hz, seconds) within 20..8000 Hz and 0.02..3 s")
+        raise FoleyError("notes are (start Hz, end Hz, seconds) within 20..8000 Hz and 0.02..3 s")
     length = sum(n for _, _, n in notes)
     if not (math.isfinite(duration) and duration > 0 and all(0 <= t <= duration - length for t in times)):
-        raise ValueError(f"duration {duration} must leave {length:.2f} s after every cue")
+        raise FoleyError(f"duration {duration} must leave {length:.2f} s after every cue")
     if not (math.isfinite(peak) and 0 < peak <= 1):
-        raise ValueError(f"peak {peak} must be in 0..1")
+        raise FoleyError(f"peak {peak} must be in 0..1")
     out = [0.0] * int(round(duration * rate))
     for at in sorted(times):
         offset = 0.0
