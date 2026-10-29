@@ -4,9 +4,9 @@ The recreations arrived as packages; the episodes srstudio builds did not, so no
 :func:`pack` turns an episode project (``<slug>/<slug>.scene.xml`` and the assets it names) into
 ``<slug>-<version>.vpkg.zip`` with the scene-render packaging tool (``scenerender-vpkg``, from ``sr-core``), then
 proves the result: the package unpacks with every file matching its SHA-256, and the engine validates the unpacked
-scene, so every file it references is inside. Packing is idempotent: while the scene is unchanged the existing
-package is kept, and a changed scene gets the next patch version beside the earlier ones. A failure at any step is a
-:class:`PackageError` and leaves no package behind.
+scene, so every file it references is inside. Packing is idempotent: while the resolved files and package metadata
+are unchanged the existing package is kept; any change gets the next patch version beside the earlier ones.
+A failure is a :class:`PackageError` and leaves no package behind.
 """
 
 from __future__ import annotations
@@ -68,18 +68,37 @@ def manifest(slug: str, post: InstagramPost, *, version: str, engine_version: st
     }
 
 
-def scene_sha(path: Path) -> str:
-    """The SHA-256 that package ``path`` records for its primary scene."""
+def _manifest(path: Path) -> dict:
     try:
         with zipfile.ZipFile(path) as z:
             data = json.loads(z.read("vpkg.json"))
     except (OSError, KeyError, zipfile.BadZipFile, json.JSONDecodeError) as e:
         raise PackageError(f"{path} is not a readable zip with a vpkg.json: {e}") from None
+    if not isinstance(data, dict):
+        raise PackageError(f"{path}: vpkg.json must be an object")
+    return data
+
+
+def scene_sha(path: Path) -> str:
+    """The SHA-256 that package ``path`` records for its primary scene."""
+    data = _manifest(path)
     try:
         primary = next(s["path"] for s in data["scenes"] if s.get("role") == "primary")
         return next(f["sha256"] for f in data["files"] if f.get("path") == primary)
     except (KeyError, TypeError, StopIteration):
         raise PackageError(f"{path}: vpkg.json lists no primary scene with its SHA-256") from None
+
+
+def _contents(path: Path) -> dict:
+    """Compare the packer's complete resolved manifest, excluding release and packaging bookkeeping."""
+    data = _manifest(path)
+    try:
+        data["package"] = {k: v for k, v in data["package"].items() if k != "version"}
+    except (KeyError, AttributeError):
+        raise PackageError(f"{path}: vpkg.json has no package object") from None
+    # README.md is generated with the release version, so its bookkeeping digest changes on every candidate.
+    data.pop("packed", None)
+    return data
 
 
 def _tool(explicit: Path | str | None) -> Path:
@@ -114,8 +133,10 @@ def pack(
     engine: Path | str | None = None,
     run: Callable[..., subprocess.CompletedProcess] | None = None,
 ) -> Path:
-    """The package of episode ``project`` in ``out``: the existing one while its scene is unchanged, else a new,
-    proven ``<slug>-<next version>.vpkg.zip`` (mode 600 in a 700 folder)."""
+    """The package of ``project``: reuse the existing release only when all resolved files and metadata match.
+
+    The packer resolves the dependency graph on every call, including newly added and removed supporting files.
+    Changed content produces a proven ``<slug>-<next version>.vpkg.zip`` (mode 600 in a 700 folder)."""
     project, out = Path(project), Path(out)
     slug = project.name
     scene = project / f"{slug}.scene.xml"
@@ -127,8 +148,6 @@ def pack(
     except LayoutError as e:
         raise PackageError(f"no scene-render engine to validate the package: {e}") from None
     latest = latest_package(out, slug)
-    if latest is not None and scene_sha(latest) == sha256(scene):
-        return latest
     run = run or _run
     m = _VERSION.search(_step(run, [renderer, "--version"], "the engine did not report its version"))
     if not m:
@@ -149,6 +168,8 @@ def pack(
         _step(run, [renderer, "validate", unpacked], f"{built.name}: its unpacked scene is not valid")
         if scene_sha(built) != sha256(scene):
             raise PackageError(f"{built.name} does not hold the scene it was packed from")
+        if latest is not None and _contents(latest) == _contents(built):
+            return latest
         target = out / built.name
         built.replace(target)
         target.chmod(0o600)

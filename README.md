@@ -1397,7 +1397,9 @@ error is `InstagramPostError`, with every problem listed.
   without a package is held back like a drifted one. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
-  the engine. It is repacked, as the next patch version beside the earlier ones, only when its scene changes. each limit's failure path, the episode hook, every shipped post (each
+  the engine. Each call builds and verifies a candidate, comparing its resolved files and metadata with the latest
+  release. Changed assets, supporting files or metadata produce the next patch version; unchanged content keeps
+  the existing archive. The tests cover each limit's failure path, the episode hook, every shipped post (each
   with a thumbnail and one video), the frame selection on a synthetic video whose frames differ (first, middle and
   last frame), frames outside the video, blank frames, unreadable probes, deliveries that leave no files when the
   backdrop or the engine fails, and the gate: a fresh delivery, never delivered, a re-render (and that only it is
