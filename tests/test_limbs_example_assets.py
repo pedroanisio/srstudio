@@ -1,4 +1,4 @@
-"""Showcase fonts resolve like the library's and never silently inherit an unrelated license sidecar."""
+"""Showcase fonts resolve like the library's, ship DejaVu's full notice and never inherit an unrelated licence."""
 
 import importlib.util
 from pathlib import Path
@@ -6,11 +6,9 @@ from pathlib import Path
 import pytest
 
 from srstudio.limbs import LimbError
-from srstudio.sample import SYSTEM_FONTS
+from srstudio.sample import SYSTEM_FONTS, dejavu_license
 
 EXAMPLES = ["limbs_gallery", "limbs_contact", "limbs_cast", "limbs_bimanual"]
-# The note srstudio.sample and srstudio.interview ship beside the system DejaVu Sans Bold.
-DEJAVU_NOTE = "DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n"
 
 
 def load(name):
@@ -40,11 +38,11 @@ def test_custom_font_requires_its_own_explicit_license_before_assets_are_copied(
 
 
 @pytest.mark.parametrize("name", EXAMPLES)
-def test_system_font_ships_with_the_library_dejavu_license_note(tmp_path, name, system_font):
+def test_system_font_ships_with_the_library_dejavu_notice(tmp_path, name, system_font):
     load(name).build(tmp_path / "out", fps=2)
     assets = tmp_path / "out" / "assets"
     assert (assets / "font.ttf").read_bytes() == system_font.read_bytes()
-    assert (assets / "FONT-LICENSE.txt").read_text() == DEJAVU_NOTE
+    assert (assets / "FONT-LICENSE.txt").read_text() == dejavu_license()
 
 
 @pytest.mark.parametrize("name", EXAMPLES)

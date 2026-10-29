@@ -26,7 +26,6 @@ import math
 import os
 import random
 import re
-import shutil
 import sys
 import wave
 from collections.abc import Callable, Mapping, Sequence
@@ -48,7 +47,7 @@ from .generated import (
 )
 from .layout import LayoutError, find_engine
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
-from .sample import SYSTEM_FONTS
+from .sample import SYSTEM_FONTS, copy_dejavu
 from .song import MAX_GAIN, Singer, SongError
 from .timeline import Phrase
 from .voice import MODEL, STT_MODEL, ElevenLabsClient, Transcript, TranscriptMismatch, check_transcript, normalize_words
@@ -398,13 +397,12 @@ def build(
     for phrase in t.phrases:
         print(f"{phrase['voice_name']:>4} {phrase['start']:6.3f}-{phrase['end']:6.3f}  {phrase['text']}")
 
-    # 4. The room tone under the whole episode, and the caption face with its licence note.
+    # 4. The room tone under the whole episode, and the caption face with its licence notice.
     write_room_tone(assets / "room-tone.wav", t.duration, iv.room_tone_seed)
     font = next((f for f in SYSTEM_FONTS if f.exists()), None)
     if font is None:
         raise InterviewError("DejaVu Sans Bold not found; install fonts-dejavu-core")
-    shutil.copyfile(font, assets / "DejaVuSans-Bold.ttf")
-    (assets / "FONT-LICENSE.txt").write_text("DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n")
+    copy_dejavu(font, assets)
 
     timeline = {
         "title": iv.title,

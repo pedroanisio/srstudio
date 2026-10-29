@@ -22,11 +22,8 @@ from srstudio.limbs.compile import BakeOptions
 from srstudio.limbs.integration import LimbTrack
 from srstudio.limbs.motion import Action, Motion, Target
 from srstudio.limbs.serialization import save_motion
-from srstudio.sample import SYSTEM_FONTS
+from srstudio.sample import SYSTEM_FONTS, copy_dejavu
 from srstudio.toon import Pose
-
-# The license note srstudio.sample ships beside the system DejaVu Sans Bold; --font-license replaces it.
-DEJAVU_LICENSE = "DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n"
 
 
 def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: Path | None = None) -> Path:
@@ -39,10 +36,10 @@ def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: P
     font = font or next((p for p in SYSTEM_FONTS if p.is_file()), None)
     if font is None or not font.is_file() or (license_file is not None and not license_file.is_file()):
         raise LimbError("the cast showcase needs an existing --font and --font-license")
-    shutil.copyfile(font, assets / "font.ttf")
-    if license_file is None:
-        (assets / "FONT-LICENSE.txt").write_text(DEJAVU_LICENSE)
+    if license_file is None:  # the system DejaVu Sans Bold, with the notice its licence requires
+        copy_dejavu(font, assets, "font.ttf")
     else:
+        shutil.copyfile(font, assets / "font.ttf")
         shutil.copyfile(license_file, assets / "FONT-LICENSE.txt")
     facts = inspect_ttf(font.read_bytes())
     scene = Scene(version="auto")

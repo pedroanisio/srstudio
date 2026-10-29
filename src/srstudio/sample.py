@@ -14,6 +14,7 @@ import struct
 import wave
 from collections.abc import Sequence
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,22 @@ SYSTEM_FONTS = (
     Path("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
     Path("/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"),
 )
+# The copyright and permission notice of the DejaVu fonts (Bitstream Vera, DejaVu's changes in the public domain),
+# word for word from the Files: * stanza of Debian's fonts-dejavu-core copyright file.
+DEJAVU_LICENSE_FILE = "assets/fonts/DejaVu-LICENSE.txt"
+
+
+def dejavu_license() -> str:
+    """The notice the DejaVu licence requires in every copy of the font."""
+    return files("srstudio").joinpath(DEJAVU_LICENSE_FILE).read_text()
+
+
+def copy_dejavu(source: Path, folder: Path, name: str = "DejaVuSans-Bold.ttf") -> Path:
+    """Copy the DejaVu font ``source`` into ``folder`` as ``name``, its notice beside it as ``FONT-LICENSE.txt``."""
+    target = Path(folder) / name
+    shutil.copyfile(source, target)
+    (Path(folder) / "FONT-LICENSE.txt").write_text(dejavu_license())
+    return target
 
 
 @dataclass(frozen=True)
@@ -100,10 +117,7 @@ def write_sample_project(
     source = font or next((f for f in SYSTEM_FONTS if f.exists()), None)
     target = root / "assets" / "DejaVuSans-Bold.ttf"
     if source:
-        shutil.copyfile(source, target)
-        (root / "assets" / "FONT-LICENSE.txt").write_text(
-            "DejaVu Fonts license; see https://dejavu-fonts.github.io/License.html\n"
-        )
+        copy_dejavu(source, target.parent, target.name)
     else:
         target.write_bytes(b"\0")
     data["font_real"] = bool(source)
