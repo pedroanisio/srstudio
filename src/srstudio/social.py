@@ -468,18 +468,23 @@ def fingerprint(post: InstagramPost, video: Path, font: Path, scene: Path | None
     headline font, the cover's drawing (the document :func:`~srstudio.thumbnail.compose` lays out at ``video``'s size,
     with the sources :func:`~srstudio.thumbnail.render` gives it), the :func:`render_steps` and, when the cover is drawn
     from it, the scene document. Any change to one of them changes this digest; an edit to the code that changes none
-    of them does not. Runs no engine, ffmpeg or ffprobe. Raises :class:`CoverError` for a video whose size cannot be
-    read and :class:`~srstudio.thumbnail.ThumbnailError` for a thumbnail that cannot be laid out."""
+    of them does not. Runs no engine, ffmpeg or ffprobe. Raises :class:`CoverError` for a font that cannot be read or
+    a video whose size cannot be read, and :class:`~srstudio.thumbnail.ThumbnailError` for a thumbnail that cannot be
+    laid out."""
+    try:
+        font_bytes = Path(font).read_bytes()
+    except OSError as e:
+        raise CoverError(f"the headline font {font} cannot be read: {e.strerror or e}") from None
     cover = None
     if post.thumbnail is not None:
         width, height = video_size(video)
         document = drawing.compose(post.thumbnail, backdrop=drawing.BACKDROP_FILE, font=drawing.FONT_FILE,
-                                   font_bytes=Path(font).read_bytes(), width=width, height=height)  # fmt: skip
+                                   font_bytes=font_bytes, width=width, height=height)  # fmt: skip
         cover = hashlib.sha256(document.to_bytes()).hexdigest()
     data = {
         "text": post.text(),
         "thumbnail": asdict(post.thumbnail) if post.thumbnail is not None else None,
-        "font": _sha(font),
+        "font": hashlib.sha256(font_bytes).hexdigest(),
         "cover": cover,
         "steps": render_steps(),
     }
@@ -725,10 +730,17 @@ def migrate_manifest(items: Items, out: Path, *, font: Path, dry_run: bool = Fal
     Every other entry is kept as it was, so :func:`check_delivery` still reports it. ``render``, ``ig`` and
     ``cover`` are never changed, and nothing is drawn or delivered. The manifest is read and replaced under the
     delivery lock, in one step. ``dry_run`` returns the same plan and writes nothing, not even the lock. Raises
-    :class:`DeliveryError` for a missing manifest, one that cannot be read or one that is not version 1.0.0."""
+    :class:`DeliveryError` for a missing manifest, one that cannot be read or one that is not version 1.0.0, and for a
+    font that cannot be read: without it no entry could be proven, and a 1.1.0 manifest is never migrated again."""
     path = Path(out) / MANIFEST
     if not path.is_file():
         raise DeliveryError(f"{out} has no {MANIFEST} to migrate")
+    try:
+        Path(font).read_bytes()
+    except OSError as e:
+        raise DeliveryError(
+            f"the headline font {font} cannot be read ({e.strerror or e}); nothing is migrated"
+        ) from None
     if dry_run:
         return _plan(items, path, font)[0]
     with _locked(out):

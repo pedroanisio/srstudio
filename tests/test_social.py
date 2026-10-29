@@ -656,6 +656,21 @@ def test_a_cover_that_cannot_be_drawn_now_drifts(delivered):
     assert drift.name == "a" and "cannot be drawn" in drift.reason and "wider than" in drift.reason
 
 
+def test_a_font_that_cannot_be_read_is_drift_not_a_crash_of_the_gate(delivered, tmp_path):
+    items, out, _ = delivered
+    drift = check_delivery(items, out, font=tmp_path / "gone.ttf")
+    assert [d.name for d in drift] == ["a", "b"]
+    assert all("cannot be drawn" in d.reason and "gone.ttf" in d.reason for d in drift)
+    with pytest.raises(CoverError, match="font"):
+        fingerprint(InstagramPost(title="t", description="d"), tmp_path / "unread.mp4", tmp_path / "gone.ttf")
+
+
+def test_reading_the_font_once_keeps_every_fingerprint(delivered):
+    items, out, _ = delivered
+    entries = json.loads((out / "delivery.json").read_text())["videos"]
+    assert all(fingerprint(i.post, i.video, FONT, i.scene) == entries[name]["post"] for name, i in items.items())
+
+
 # -- the one-time migration of a 1.0.0 manifest ---------------------------------------------------------------------
 def legacy(item: Item, layout: str = LEGACY_LAYOUT_7CDAFF4) -> str:
     """The 1.0.0 post fingerprint as it was delivered: the layout code was the SHA-256 of thumbnail.py's source."""
@@ -769,6 +784,16 @@ def test_migrate_keeps_an_entry_without_a_render_or_whose_cover_cannot_be_drawn_
     assert result.migrated == ["c"]
     assert kept["a"] == f"no render at {renders / 'absent.mp4'}"
     assert kept["b"].startswith("the cover cannot be drawn now:") and "wider than" in kept["b"]
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_migrate_refuses_a_font_it_cannot_read_and_writes_nothing(old_delivery, tmp_path, dry_run):
+    """Kept for want of a font, every entry would land in a 1.1.0 manifest, which is never migrated again."""
+    items, out, _ = old_delivery
+    before = (out / MANIFEST).read_bytes()
+    with pytest.raises(DeliveryError, match="gone.ttf"):
+        migrate_manifest(items, out, font=tmp_path / "gone.ttf", dry_run=dry_run)
+    assert (out / MANIFEST).read_bytes() == before and sorted(p.name for p in out.iterdir()) == [MANIFEST]
 
 
 def test_migrate_reads_the_manifest_it_rewrites_under_the_delivery_lock(old_delivery, monkeypatch):
