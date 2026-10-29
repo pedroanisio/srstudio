@@ -163,3 +163,22 @@ def test_save_load_save_is_byte_stable_for_integer_valued_float_fields(tmp_path)
     assert first.read_bytes() == second.read_bytes()
     assert '"start": 0.0' in first.read_text()
     assert '"thumb": true' in first.read_text()
+
+
+@pytest.mark.parametrize("name", ["missing.json", "."])
+def test_unreadable_motion_paths_raise_an_io_limb_error(tmp_path, name):
+    with pytest.raises(LimbError, match="cannot read motion document") as caught:
+        load_motion(tmp_path / name)
+    assert caught.value.code == "io"
+
+
+def test_an_interrupted_save_removes_its_temporary_file_and_keeps_the_interruption(tmp_path, monkeypatch):
+    import os
+
+    def interrupted(source, target):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(os, "replace", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        save_motion(Motion(ArmProfile(), HUMAN, (Action("point", 0, 2),)), tmp_path / "motion.json")
+    assert list(tmp_path.iterdir()) == []

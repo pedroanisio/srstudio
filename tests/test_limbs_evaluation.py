@@ -244,3 +244,29 @@ def test_source_comparison_requires_two_distinct_measurements():
     one = measure("one", one_sided, repeats=1)
     with pytest.raises(LimbError, match="distinct"):
         compare_sources(one, one)
+
+
+def _generated_module(tmp_path, monkeypatch, name, source):
+    import importlib.util
+    import sys
+
+    path = tmp_path / f"{name}.py"
+    path.write_text(source)
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, name, module)  # inspect.getsource resolves functions through their module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_measure_bounds_how_many_functions_and_how_much_source_it_reads(tmp_path, monkeypatch):
+    chain = "\n".join(f"def f{i}():\n    return f{i + 1}()\n" for i in range(300)) + "\ndef f300():\n    return None\n"
+    module = _generated_module(tmp_path, monkeypatch, "limbs_measure_chain", chain)
+    with pytest.raises(LimbError, match="too many functions") as caught:
+        measure("chain", module.f0, repeats=1)
+    assert caught.value.code == "budget"
+    huge = 'def huge():\n    """' + "x" * 100001 + '"""\n'
+    module = _generated_module(tmp_path, monkeypatch, "limbs_measure_huge", huge)
+    with pytest.raises(LimbError, match="source exceeds") as caught:
+        measure("huge", module.huge, repeats=1)
+    assert caught.value.code == "budget"
