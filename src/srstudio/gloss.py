@@ -227,7 +227,7 @@ def _root(
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=-scale if flip else scale, scaleY=scale)
     if walk is not None:
         start, stop, to = walk
-        if not (math.isfinite(start) and math.isfinite(stop) and math.isfinite(to) and 0 <= start < stop <= end):
+        if not (checks.number(start) and checks.number(stop) and checks.number(to) and 0 <= start < stop <= end):
             raise GlossError(f"a walk {walk} must start and stop inside the shot (0..{end})")
         cv.keys(g, "x", [(0, at[0]), (start, at[0]), (stop, to)], kind="sine-in-out")
     if colour is not None:  # the doll's colour mirrored faintly in the glossy floor

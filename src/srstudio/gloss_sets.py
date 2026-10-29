@@ -149,7 +149,7 @@ def digits(cv: Canvas, parent, text: str, x: float, y: float, h: float, colour: 
 
 
 def _check_end(end: float) -> None:
-    if not (math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise GlossError(f"a set is drawn for more than 0 s, got {end}")
 
 
@@ -597,7 +597,7 @@ def door(
     door carried on from an earlier one), each second of ``opens`` swings the next one open, and behind the last is
     the ticket dispenser. A painted door never opens."""
     _check_end(end)
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise GlossError(f"a door's scale must be > 0, got {scale}")
     if painted and (opens or opened):
         raise GlossError("a painted door does not open")
@@ -662,7 +662,7 @@ def door(
 def ticket(cv: Canvas, parent, *, at: tuple[float, float], end: float, number: str, scale: float = 1.0):
     """A ticket centred on ``at`` showing ``number`` (digits), 300 wide at scale 1."""
     _check_end(end)
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise GlossError(f"a ticket's scale must be > 0, got {scale}")
     g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], scaleX=scale, scaleY=scale, rotation=-6)
     teeth = " ".join(f"L{-150 + 15 * i} {-80 + (8 if i % 2 else 0)}" for i in range(21))
@@ -704,7 +704,7 @@ def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes
     ``talk`` from the card's corner. The backdrop takes the style's grade, the card does not; its words show from
     ``settle`` on, once a crossfade into the notice has finished."""
     _check_end(end)
-    if not (math.isfinite(settle) and 0 <= settle < end):
+    if not (checks.number(settle) and 0 <= settle < end):
         raise GlossError(f"a notice's words settle inside the shot (0..{end}), not at {settle}")
     g = cv.group(parent, cv.uid("g"))
     back = cv.group(g, cv.uid("g"))
