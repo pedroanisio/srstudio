@@ -35,11 +35,16 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import checks
+from .errors import SrstudioError
 from .soundtrack import PhonemeStyle
 
 SPEECH_MOUTH = PhonemeStyle(spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 VOWELS = "aeiouy"
 _HOLD = "hold"  # a silent letter: the pose before it
+
+
+class LipSyncError(SrstudioError, ValueError):
+    """A lip-sync score asked of nothing to score."""
 
 
 def _plain(ch: str, style: PhonemeStyle) -> str | None:
@@ -232,7 +237,7 @@ def score(takes: Iterable[tuple[Sequence[dict], float, str]], style: PhonemeStyl
     """Score ``style`` over ``takes``: ``(phones, duration, mood)`` each, as :func:`phoneme_states` reads them."""
     takes = list(takes)
     if not takes:
-        raise ValueError("score needs takes with character timestamps, got none")
+        raise LipSyncError("score needs takes with character timestamps, got none")
     seconds, bilabials, closed, joins, snapped, changes = 0.0, 0, 0, 0, 0, 0
     half = 0.5 / style.rate
     for phones, duration, mood in takes:

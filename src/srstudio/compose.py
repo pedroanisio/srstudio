@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from .errors import MissingKeyError
+from .errors import MissingKeyError, SrstudioError
 from .voice import (
     RATE,
     SILENT_RMS,
@@ -54,6 +54,10 @@ BEAT_SIGMA = 5.0  # the beat must stand this many noise-floor units (1/sqrt(fram
 ENVELOPE_RATE = 200  # onset envelope frames a second
 MEASURABLE_BPM = (50, 250)  # the tempos the beat check reads; a song at any other tempo is never requested
 LYRIC_SLACK = 0.35  # a sung line may start / end this much outside its chunk
+
+
+class ComposeError(SrstudioError, ValueError):
+    """A chunk, plan or seed the music provider cannot be asked for; refused before any request."""
 
 
 class MusicOutputError(VoiceOutputError):
@@ -79,25 +83,25 @@ class Chunk:
 
     def __post_init__(self):
         if not 1 <= len(self.name) <= MAX_NAME or any(c in self.name for c in "[]\n"):
-            raise ValueError(f"chunk name must be 1..{MAX_NAME} characters without brackets: {self.name!r}")
+            raise ComposeError(f"chunk name must be 1..{MAX_NAME} characters without brackets: {self.name!r}")
         lo, hi = CHUNK_SECONDS
         if not (isinstance(self.seconds, (int, float)) and math.isfinite(self.seconds) and lo <= self.seconds <= hi):
-            raise ValueError(f"chunk {self.name!r}: duration must be within {lo}..{hi} s, got {self.seconds}")
+            raise ComposeError(f"chunk {self.name!r}: duration must be within {lo}..{hi} s, got {self.seconds}")
         if not self.styles or not all(isinstance(s, str) and s.strip() for s in self.styles):
-            raise ValueError(f"chunk {self.name!r}: positive styles must be non-empty strings")
+            raise ComposeError(f"chunk {self.name!r}: positive styles must be non-empty strings")
         if len(self.lines) > MAX_LINES:
-            raise ValueError(f"chunk {self.name!r}: at most {MAX_LINES} lines")
+            raise ComposeError(f"chunk {self.name!r}: at most {MAX_LINES} lines")
         for line in self.lines:
             if "\n" in line:
-                raise ValueError(f"chunk {self.name!r}: a lyric is one line: {line!r}")
+                raise ComposeError(f"chunk {self.name!r}: a lyric is one line: {line!r}")
             if not 1 <= len(line) <= MAX_CHARS:
-                raise ValueError(f"chunk {self.name!r}: a lyric line is 1..{MAX_CHARS} characters")
+                raise ComposeError(f"chunk {self.name!r}: a lyric line is 1..{MAX_CHARS} characters")
         if any(c in self.direction for c in "{}\n") or len(self.direction) > MAX_CHARS:
-            raise ValueError(
+            raise ComposeError(
                 f"chunk {self.name!r}: a direction is one line of at most {MAX_CHARS} characters, no braces"
             )
         if self.context not in CONTEXTS:
-            raise ValueError(f"chunk {self.name!r}: context must be one of {', '.join(CONTEXTS)}")
+            raise ComposeError(f"chunk {self.name!r}: context must be one of {', '.join(CONTEXTS)}")
 
     def to_dict(self) -> dict:
         return {
@@ -115,7 +119,7 @@ class Plan:
 
     def __post_init__(self):
         if not self.chunks:
-            raise ValueError("a plan needs at least one chunk")
+            raise ComposeError("a plan needs at least one chunk")
 
     @property
     def seconds(self) -> float:
@@ -322,7 +326,7 @@ class MusicClient:
 
     def compose(self, plan: Plan, seed: int, bpm: float) -> Song:
         if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed < 2**32:
-            raise ValueError(f"seed must be an integer in 0..2**32-1, got {seed!r}")
+            raise ComposeError(f"seed must be an integer in 0..2**32-1, got {seed!r}")
         _check_measurable(bpm)  # before any request: a song whose beat cannot be checked is never paid for
         payload = self.payload(plan, seed)
         digest = hashlib.sha256(json.dumps({"music": payload}, sort_keys=True).encode()).hexdigest()[:20]

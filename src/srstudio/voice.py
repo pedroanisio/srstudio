@@ -58,6 +58,10 @@ class VoiceOutputError(SrstudioError, ValueError):
     """The provider's output failed verification; it must not be used."""
 
 
+class VoiceRequestError(SrstudioError, ValueError):
+    """Voice settings or an effect request the provider cannot take; refused before any request."""
+
+
 # -- typed values ----------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Voice:
@@ -78,9 +82,9 @@ class VoiceSettings:
         for name in ("stability", "similarity_boost", "style"):
             value = getattr(self, name)
             if not 0 <= value <= 1:
-                raise ValueError(f"{name} must be within 0..1, got {value}")
+                raise VoiceRequestError(f"{name} must be within 0..1, got {value}")
         if not 0.7 <= self.speed <= 1.2:
-            raise ValueError(f"speed must be within 0.7..1.2, got {self.speed}")
+            raise VoiceRequestError(f"speed must be within 0.7..1.2, got {self.speed}")
 
 
 @dataclass(frozen=True)
@@ -614,9 +618,9 @@ class ElevenLabsClient:
         if not (
             isinstance(seconds, (int, float)) and math.isfinite(seconds) and SFX_SECONDS[0] <= seconds <= SFX_SECONDS[1]
         ):
-            raise ValueError(f"seconds must be within {SFX_SECONDS[0]}..{SFX_SECONDS[1]}, got {seconds}")
+            raise VoiceRequestError(f"seconds must be within {SFX_SECONDS[0]}..{SFX_SECONDS[1]}, got {seconds}")
         if not 0 <= prompt_influence <= 1:
-            raise ValueError(f"prompt_influence must be within 0..1, got {prompt_influence}")
+            raise VoiceRequestError(f"prompt_influence must be within 0..1, got {prompt_influence}")
         payload = {"text": text, "duration_seconds": float(seconds), "prompt_influence": prompt_influence}
         digest = hashlib.sha256(json.dumps({"sfx": payload}, sort_keys=True).encode()).hexdigest()[:20]
         prefix = self.cache / f"sfx-{digest}"
