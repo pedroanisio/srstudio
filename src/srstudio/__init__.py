@@ -21,6 +21,7 @@ from . import (  # noqa: F401  (registers builders)
     ink,
     ink_captcha,
     ink_doorbell,
+    ink_meter,
     ink_phone,
     ink_vacuum,
     layout,

@@ -233,7 +233,7 @@ INK = Style(
         policy="pinned",
     ),
     mouths={MONO.name: INK_MOUTH},
-    parts=("ink", "ink_captcha", "ink_doorbell", "ink_phone", "ink_vacuum", "subtitles"),
+    parts=("ink", "ink_captcha", "ink_doorbell", "ink_meter", "ink_phone", "ink_vacuum", "subtitles"),
     namer=shared_counter,
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn", minTextSize="2%"),
     mix=Mix(loudness="-14", bit_depth=None),
