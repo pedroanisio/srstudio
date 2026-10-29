@@ -121,11 +121,13 @@ _OTHER = {"left": "right", "right": "left"}
 class Facing:
     """How a character shows its own sides on screen; a track's ``left`` or ``right`` is always anatomical.
 
-    Motions reach outward toward +x with the right arm. A profile character (``front=False``) faces +x, so its near
-    arm is its right. A ``front`` character faces the viewer, so its right arm is on screen-left: each of its tracks
-    is reflected about its shoulder origin. ``flip`` mirrors the character's group. A profile character then faces
-    -x and its far arm is its right. A front character's tracks are mirrored back about local x = 0, so they stay on
-    its anatomical side; a builder that flips a front character keeps its centre line there.
+    Motions reach outward toward +x with the right arm and mirror a left arm's goals to -x. A profile character
+    (``front=False``) faces +x, so its near arm is its right. There x is forward, not sideways, so a left track is
+    reflected about its shoulder origin and both arms reach forward; the far arm draws behind the torso. A
+    ``front`` character faces the viewer, so its right arm is on screen-left: each of its tracks is reflected about
+    its shoulder origin. ``flip`` mirrors the character's group. A profile character then faces -x and its far arm
+    is its right. A front character's tracks are mirrored back about local x = 0, so they stay on its anatomical
+    side; a builder that flips a front character keeps its centre line there.
     """
 
     front: bool
@@ -142,17 +144,25 @@ class Facing:
     def layers(self, cv: Canvas, layers: LayerTargets, track: LimbTrack) -> LayerTargets:
         """``layers`` for one track, wrapped so its arm lands on the character's anatomical side. A profile
         character's far arm draws its body layer behind the torso, like the legacy far arm it replaces."""
+        x = track.camera.origin[0]
         if not self.front:
             if self.slot(track.motion.arm.side) == "left":
-                return LayerTargets(layers.behind, layers.behind, layers.front)
-            return layers
-        x = track.camera.origin[0]
+                layers = LayerTargets(layers.behind, layers.behind, layers.front)
+            if track.motion.arm.side == "right":
+                return layers
+            # Undo the left arm's sideways mirror, which in profile would point it backward.
+            reflect = {"x": 2 * x, "scaleX": -1}
+            return _wrapped(cv, layers, reflect)
         # Unflipped: reflect about the shoulder, x -> 2x0 - x. Flipped: that reflection followed by the mirror back
         # about the centre line, x -> x - 2x0, so the flipped group draws the arm on screen-left with no reflection.
         transform = {"x": -2 * x} if self.flip else {"x": 2 * x, "scaleX": -1}
-        return LayerTargets(
-            *(cv.group(layer, cv.uid("g"), **transform) for layer in (layers.behind, layers.body, layers.front))
-        )
+        return _wrapped(cv, layers, transform)
+
+
+def _wrapped(cv: Canvas, layers: LayerTargets, transform: dict[str, float]) -> LayerTargets:
+    return LayerTargets(
+        *(cv.group(layer, cv.uid("g"), **transform) for layer in (layers.behind, layers.body, layers.front))
+    )
 
 
 def draw_tracks(

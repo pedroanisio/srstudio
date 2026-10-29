@@ -159,3 +159,16 @@ def test_a_stick_far_arm_track_is_drawn_behind_the_torso_and_a_near_one_over_it(
         assert max(shapes) < order[torso]
     else:
         assert min(shapes) > order[torso]
+
+
+@pytest.mark.parametrize("flip", [False, True])
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_a_stick_track_on_either_side_reaches_the_way_the_figure_faces(side, flip):
+    root, _ = build("stick", flip, side)
+    (limb,) = _track_roots(root)
+    parents = _parents(root)
+    shoulder = screen(root, parents[limb], SHOULDER["stick"])
+    xs = [_centre(root, parents, e)[0] for e in limb.iter("shape") if e.get("shape") == "path"]
+    reach = sum(xs) / len(xs) - shoulder[0]
+    # In profile both arms point forward: screen-right facing right, screen-left flipped to face left.
+    assert reach < 0 if flip else reach > 0

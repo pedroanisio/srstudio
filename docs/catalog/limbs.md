@@ -154,8 +154,9 @@ character's own arm in every style, so one right-hand track drives each characte
 | `toon_cast.figure`, `dog`, `frog`, `bear`, `rabbit` | Toon reference pixels before `fx`/`fy` | The viewer | The paw and arm on screen-left |
 | `cast.Manager`, `Candidate`, `Barista`, `Customer` via `Performance(limbs=...)` | Actor-local pixels before the actor's position and scale | The viewer | The arm, hand and held prop on screen-left |
 
-Motions reach outward toward +x with the right arm. A profile Stick figure draws a track as authored; a
-flipped one mirrors it with the rest of the figure, so it points the way the figure faces. A front-facing
+Motions reach outward toward +x with the right arm and mirror a left arm's goals to -x. A profile Stick figure
+faces +x, which is forward rather than sideways, so it reflects a left track about its shoulder and both arms
+reach forward. A flipped figure mirrors its tracks with the rest of the figure, so they point the way it faces. A front-facing
 character reflects each track about its camera origin, so the right arm reaches out to screen-left. A flipped
 Gloss person mirrors its tracks back about its centre line, keeping each on its anatomical side. A Stick
 far-arm track draws behind the torso, like the legacy far arm; an `Occlusion(..., layer="front")` still brings a
