@@ -56,5 +56,8 @@ This initial implementation does not establish viewer preference or a measured c
 View-keyed artist contours are now available through `ContourCorrection` and `LimbTrack.correctives`;
 see the [usage guide](../catalog/limbs.md). The interaction compiler now depth-composites hands and
 original prop meshes. `examples/limbs_contact.py` renders a moving fingertip press and a cup that visibly
-lifts before release; motion sources and numeric QA accompany the clip. A skinning/deformation capability
-demonstration, broader actor migrations and a comparative viewer evaluation remain unverified. The original six-action style gallery remains separate from the prop-contact clip.
+lifts before release; motion sources and numeric QA accompany the clip. Explicit native sleeve skinning
+is available through `deformation="skin"`; renderer tests verify sleeve pixels at the wrist and elbow under
+multiple poses and a mirrored parent. The gallery supports a planar skin mode across six actions and three
+styles. Broader actor migrations and a comparative viewer evaluation remain unverified. The original
+six-action style gallery remains separate from the prop-contact clip.

@@ -28,3 +28,20 @@ def test_example_builds_the_same_six_actions_in_three_styles(tmp_path):
     if engine:
         result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
+
+
+def test_skin_gallery_runs_all_six_planar_actions_in_three_styles(tmp_path):
+    script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
+    spec = importlib.util.spec_from_file_location("limbs_gallery", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    path = module.build(tmp_path / "skin", fps=2, deformation="skin")
+    xml = ET.parse(path).getroot()
+    assert len(xml.findall(".//modifier[@type='skin']")) >= 3
+    report = json.loads(path.with_name("limbs-qa.json").read_text())
+    assert set(report["backends"].values()) == {"native-skin"}
+    assert report["deformation"] == "skin"
+    engine = os.environ.get("SRSTUDIO_ENGINE")
+    if engine:
+        result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr

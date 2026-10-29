@@ -27,7 +27,16 @@ from srstudio.limbs.serialization import save_motion
 from srstudio.sample import SYSTEM_FONTS
 
 
-def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: Path | None = None) -> Path:
+def build(
+    out: Path,
+    *,
+    fps: int = 24,
+    font: Path | None = None,
+    license_file: Path | None = None,
+    deformation: str = "contour",
+) -> Path:
+    if deformation not in ("contour", "skin"):
+        raise LimbError("gallery deformation must be contour or skin")
     os.umask(0o077)
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -77,27 +86,48 @@ def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: P
     names = ("point", "present", "shrug", "facepalm", "grasp", "press")
     actions = tuple(Action(name, i * 2, 2) for i, name in enumerate(names))
     actions = (Action("point", 0, 2, target=Target(Vec3(0.5, 0.22, 0.55))), *actions[1:])
+    if deformation == "skin":
+        # Native skin is planar; articulated fingers retain their spatial controls and baked representation.
+        targets = ((0.65, 0.3), (0.55, 0.3), (0.48, -0.1), (0.08, -0.28), (0.5, 0.32), (0.6, 0.4))
+        actions = tuple(
+            Action(name, i * 2, 2, target=Target(Vec3(x, y, 0)))
+            for i, (name, (x, y)) in enumerate(zip(names, targets, strict=True))
+        )
     motion = Motion(ArmProfile(), HUMAN, actions)
     save_motion(motion, out / "motion.json")
-    report = {"schema": "srstudio.limbs.gallery/1.0.0", "generatedBy": "srstudio.limbs", "styles": {}}
+    report = {
+        "schema": "srstudio.limbs.gallery/1.0.0",
+        "generatedBy": "srstudio.limbs",
+        "styles": {},
+        "deformation": deformation,
+        "backends": {},
+    }
     for i, (style, background) in enumerate((("stick", "#e7dcc7"), ("toon", "#f8e5d5"), ("gloss", "#e8dcf0"))):
         left = i * 640
         panel = cv.group(cv.comp, f"panel-{style}")
         cv.rect(panel, left + 25, 140, 590, 710, background, radius=24)
         cv.text(panel, f"label-{style}", style.upper(), left + 50, 155, 540, 65, 32, color="#382b44")
-        camera = Camera(projection="perspective", distance=5, focal=5, scale=220, origin=(left + 170, 370))
+        camera = Camera(
+            projection="orthographic" if deformation == "skin" else "perspective",
+            distance=5,
+            focal=5,
+            scale=220,
+            origin=(left + 170, 370),
+        )
         compiled = compile_motion(
             cv,
             panel,
             motion,
             id=f"arm-{style}",
-            backend="baked",
+            backend="auto" if deformation == "skin" else "baked",
+            deformation=deformation,
             style=style,
             camera=camera,
             appearance=Appearance(),
             options=BakeOptions(fps=fps),
         )
         report["styles"][style] = compiled.report.to_dict()
+        report["backends"][style] = compiled.backend
         cv.ellipse(panel, left + 158, 358, 24, 24, "#7a647c")
     for i, name in enumerate(names):
         label = cv.text(cv.comp, f"action-{i}", name.upper(), 100, 885, 1720, 70, 38, color="#32283d")
@@ -105,7 +135,13 @@ def build(out: Path, *, fps: int = 24, font: Path | None = None, license_file: P
     cv.text(
         cv.comp,
         "caption",
-        "Spatial pose, finger controls and perspective are shared. Ink, fills and shading belong to each style.",
+        (
+            "Native skin connects the sleeves. Articulated finger contours retain the shared spatial hand controls."
+            if deformation == "skin"
+            else (
+                "Spatial pose, finger controls and perspective are shared. Ink, fills and shading belong to each style."
+            )
+        ),
         100,
         970,
         1720,
@@ -128,8 +164,9 @@ def main() -> None:
     parser.add_argument("--fps", type=int, default=24, help="limb sampling rate; output remains 24 fps")
     parser.add_argument("--font", type=Path)
     parser.add_argument("--font-license", type=Path)
+    parser.add_argument("--deformation", choices=("contour", "skin"), default="contour")
     args = parser.parse_args()
-    print(build(args.out, fps=args.fps, font=args.font, license_file=args.font_license))
+    print(build(args.out, fps=args.fps, font=args.font, license_file=args.font_license, deformation=args.deformation))
 
 
 if __name__ == "__main__":
