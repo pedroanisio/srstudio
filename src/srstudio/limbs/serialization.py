@@ -84,7 +84,10 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
 
 
 def motion_dict(motion: Motion) -> dict:
-    return {"schema": SCHEMA, "generatedBy": "srstudio.limbs", "motion": asdict(motion)}
+    # Decoding through the declared field types writes 0 for a float field as 0.0, so a saved file reloads and
+    # saves again byte for byte.
+    typed: Motion = _decode(Motion, asdict(motion), "motion", [MAX_ITEMS])
+    return {"schema": SCHEMA, "generatedBy": "srstudio.limbs", "motion": asdict(typed)}
 
 
 def parse_motion(data: object) -> Motion:

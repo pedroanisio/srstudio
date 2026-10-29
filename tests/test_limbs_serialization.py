@@ -144,3 +144,22 @@ def test_a_failed_replace_removes_the_temporary_file_and_raises_an_io_limb_error
     assert caught.value.code == "io"
     assert sorted(p.name for p in tmp_path.iterdir()) == ["motion.json"]
     assert sorted(p.name for p in target.iterdir()) == ["keep"]
+
+
+def test_save_load_save_is_byte_stable_for_integer_valued_float_fields(tmp_path):
+    from srstudio.limbs.math3d import Frame, Quaternion, Vec3
+    from srstudio.limbs.motion import Contact, Target, TransformKey, TransformTrack
+
+    q = Quaternion.axis_angle(Vec3(0.3, 1, 0.2), 0.7)
+    track = TransformTrack((TransformKey(0, Frame(Vec3(1, 0, 0), q)), TransformKey(2, Frame(Vec3(1, 1, 0), q * q))))
+    motion = Motion(
+        ArmProfile(upper=1, forearm=1, width=0.2),
+        HUMAN,
+        (Action("grasp", 0, 2, target=Target(Vec3(1, 0, 0))),),
+        contacts=(Contact("c", 0.5, 1, track),),
+    )
+    first = save_motion(motion, tmp_path / "first.json")
+    second = save_motion(load_motion(first), tmp_path / "second.json")
+    assert first.read_bytes() == second.read_bytes()
+    assert '"start": 0.0' in first.read_text()
+    assert '"thumb": true' in first.read_text()
