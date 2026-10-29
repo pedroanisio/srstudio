@@ -143,12 +143,15 @@ def pack(
     if not scene.is_file():
         raise PackageError(f"{project} has no scene {scene.name} to pack")
     vpkg = _tool(tool)
+    renderer: Path | str
     try:
         renderer = find_engine(engine)
     except LayoutError as e:
-        raise PackageError(f"no scene-render engine to validate the package: {e}") from None
-    latest = latest_package(out, slug)
+        if run is None:
+            raise PackageError(f"no scene-render engine to validate the package: {e}") from None
+        renderer = engine if engine is not None else "scene-render"  # an injected runner answers for it
     run = run or _run
+    latest = latest_package(out, slug)
     m = _VERSION.search(_step(run, [renderer, "--version"], "the engine did not report its version"))
     if not m:
         raise PackageError(f"{renderer} --version printed no scene-render version")

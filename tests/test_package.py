@@ -181,6 +181,15 @@ def test_a_failing_pack_verify_or_engine_check_is_a_typed_error_and_leaves_no_pa
     assert not out.exists() or list(out.iterdir()) == []  # no package and no scratch
 
 
+def test_an_injected_runner_answers_for_the_engine_so_none_is_resolved(tmp_path, monkeypatch):
+    monkeypatch.delenv("SRSTUDIO_ENGINE", raising=False)
+    monkeypatch.setenv("PATH", str(tmp_path))  # no scene-render to find
+    runner = Runner(1)
+    with pytest.raises(package.PackageError, match="version"):
+        package.pack(project(tmp_path), tmp_path / "vpkg", post(), run=runner)
+    assert runner.calls == [["scene-render", "--version"]]
+
+
 def test_missing_tools_are_a_typed_error(tmp_path):
     folder = project(tmp_path)
     with pytest.raises(package.PackageError, match="scenerender-vpkg"):
