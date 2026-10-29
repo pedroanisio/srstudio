@@ -20,6 +20,7 @@ from . import collage, collage_sets
 from .canvas import Canvas
 from .collage import INK, _cut, _paper, draw_shapes, figure_shapes
 from .errors import SrstudioError
+from .native import NativeError
 from .registry import register
 
 if TYPE_CHECKING:  # the group shot's module imports the sketch build, which imports the package
@@ -172,6 +173,15 @@ def _check_print(places, poses, width, blur, room, crop) -> None:
         raise PhotoError(f"the crop {crop} is not inside the 1080 × 1920 frame")
 
 
+def _blur(cv: Canvas, radius: float) -> str:
+    """The print's blur of ``radius`` px: the first radius on a canvas keeps the name a single-scale print has
+    always had; another radius (a subject at another scale) gets its own effect, named by the radius."""
+    try:
+        return cv.effect("collage-photo-blur", "blur", radius=radius)
+    except NativeError:
+        return cv.effect(f"collage-photo-blur-{radius:.6g}", "blur", radius=radius)
+
+
 @register("prop", "collage-photo-print", summary="A printed photo: a still of the lineup in its room, paper border")
 def print_photo(
     cv: Canvas,
@@ -205,7 +215,7 @@ def print_photo(
         px, py = place.transform()
         who = cv.group(image, cv.uid(f"photo-{name}"), x=px, y=py, scaleX=place.scale, scaleY=place.scale)
         if name in blur:
-            cv.apply(who, cv.effect("collage-photo-blur", "blur", radius=PHOTO_BLUR / place.scale))
+            cv.apply(who, _blur(cv, PHOTO_BLUR / place.scale))
         under, mouth, over = figure_shapes(collage.LOOKS[name], *poses[name])
         for shapes in (under, mouth, over):
             draw_shapes(cv, who, shapes)
