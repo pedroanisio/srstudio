@@ -285,7 +285,6 @@
     const specimen = p.specimen
       ? `<div class="stills lead" id="specimen">${figure(p.specimen, p.title, false)}</div>`
       : `<p class="notice" id="refused">Sem desenho isolado. ${esc(p.refused)}</p>`;
-    const noStill = !p.gallery.length && !p.sheet.length ? '<p class="notice" id="no-still">Nenhum item da galeria mostra esta peça ainda.</p>' : '';
     let used;
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
     else if (!p.videos.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;
@@ -300,7 +299,7 @@
       title: p.title,
       html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
         `<div class="view-head"><h2>${esc(p.title)}</h2><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${noStill}${gallery}${sheet}</div>` +
+        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${gallery}${sheet}</div>` +
         `<aside class="side">${sheetFacts}</aside></div>` +
         `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
