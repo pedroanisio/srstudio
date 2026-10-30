@@ -10,8 +10,8 @@ The creation team and the @tuxmeme publishing side talk in one Slack channel. It
 alerts and questions. Videos never travel through it: they go to Drive `srstudio/ready-to-publish` with `outbox.json`
 and `ab.json`.
 
-State as of 2026-10-30. The bot can read the channel and post to it, when someone runs a command. Nothing listens for
-new posts yet. The publishing side confirmed on 2026-10-30 that it reads our replies and that both directions work.
+State as of 2026-10-30. A timer reads the channel every minute into a local inbox, and the bot can post when someone
+runs a command. The publishing side confirmed on 2026-10-30 that it reads our replies and that both directions work.
 
 ## What is connected
 
@@ -114,25 +114,26 @@ Their top-level posts start with `[brief]`, `[request]`, `[stats]`, `[alert]` or
 the tags and counts as `[brief]`, in thread `1793392772.746959`. For now they read the channel only when the account
 owner asks, so answers are not instant.
 
-## Getting instructions into a live session
+## The inbox
 
-Slack's official Claude options run in Anthropic's cloud, so they cannot reach this host. Three routes can:
+[`tools/slack_poll.py`](../tools/slack_poll.py) runs once a minute from the user timer `srstudio-slack-poll.timer`
+(units in [`tools/systemd/`](../tools/systemd/)), chosen by the operator on 2026-10-30. Slack's official Claude options
+run in Anthropic's cloud and cannot reach this host, and a poller needs no connection held open.
 
-- A poller on a timer, which is how the publishing side reads the channel. It calls `conversations.history` once a run,
-  follows threads through `latest_reply` and appends new posts to a local inbox file. It uses only the bot token.
-- A listener over Socket Mode, which opens a connection out to Slack and needs no public URL.
-- A custom Claude Code channel, started with `claude --dangerously-load-development-channels server:slack`. It is a
-  research preview and needs a restart of the session.
+- One `conversations.history` call a run, and `conversations.replies` only for a thread whose `latest_reply` moved, at
+  most 20 a run. The first run marks what is there as seen.
+- New posts from others are appended to `generated/slack/inbox.jsonl`, one object a line: `ts`, `thread_ts`, `user`,
+  `text`, `files`, `tag`, `request` and `edited`. The folder is mode 700 and its files 600. A post that cannot be
+  parsed becomes an `unreadable` line, and an unknown tag is no tag.
+- `request` is true for `arc4d3` only. It says the post may count as a request, not that anyone agreed to it.
+- The state is written after the inbox, so a crash can repeat a line but never lose one: skip a `ts` you have handled.
+- The poller only reads. It does not reply, does not download a file and does not act on a post. Every rule below
+  *Who the channel obeys* still holds.
+- The token is loaded from the `.env` inside the unit's command. A failed call changes nothing, and the next run
+  retries. See it with `journalctl --user -u srstudio-slack-poll.service`.
 
-None is built. A listener or poller written from the publishing side's samples needs these changes where they apply:
-
-- reply to `event.get("thread_ts", event["ts"])`, not `event["ts"]`, so a post inside a thread keeps its thread;
-- give the file download a timeout, a status check and a size limit;
-- drop repeated events by `ts`;
-- link a file's event to the message before it;
-- handle edited messages, which the sample drops;
-- limit how many replies it can send, in code;
-- parse each post into a typed schema that rejects unknown tags.
+Nothing feeds the inbox into a session by itself: a session reads the file or watches it. A user timer stops when the
+user logs out unless linger is on (`loginctl enable-linger pals`), and linger is off on this host.
 
 ## Open items
 
@@ -141,4 +142,4 @@ None is built. A listener or poller written from the publishing side's samples n
 | Remove `conversations.connect:write` | operator | nothing, it is unneeded access |
 | `chmod 600` on the `.env`, which is mode 664 today | operator | nothing, but every user on this host can read the token |
 | Confirm that `U089V1152MV`, who posted videos on 28 Oct, is the operator | operator | telling the owner's posts from others' |
-| Choose the poller, the listener or the custom channel, then build it | operator, then us | instructions arriving without someone running a read |
+| `loginctl enable-linger pals` | operator | the poller running after the user logs out |
