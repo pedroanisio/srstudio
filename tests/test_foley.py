@@ -108,7 +108,9 @@ def test_a_burst_cut_by_the_end_of_the_bed_stops_there():
     assert len(foley.bursts([0.55], 0.6, foley.SNORE, rate=8000)) == 4800
 
 
-@pytest.mark.parametrize("sound", [foley.REMOTE_CLICK, foley.SNORE, foley.ROAD, foley.CHOPPER, foley.GULL])
+@pytest.mark.parametrize(
+    "sound", [foley.REMOTE_CLICK, foley.SCRAPE, foley.SNORE, foley.ROAD, foley.CHOPPER, foley.GULL]
+)
 def test_the_named_sounds_are_sound(sound):
     assert any(foley.bursts([0.0], 0.5, sound, rate=8000))
 

@@ -32,18 +32,23 @@ __all__ = [
     "chopper",
     "dump",
     "gull",
+    "hall_chair",
     "ledge",
     "lower_third",
     "mics",
+    "missed_slip",
     "night_street",
     "no_desk",
     "paw",
     "placed",
+    "porch",
     "press_room",
     "road",
     "snores",
+    "stuck_note",
     "sofa",
     "sofa_back",
+    "van",
     "wall",
     "yard",
 ]
@@ -238,9 +243,9 @@ def _sign(cv: Canvas, g, text: str, x: float, y: float, w: float, h: float, size
     summary="A front yard on a bright day: a house, a picket fence, a YARD SALE sign and a folding table holding "
     "the room's own TV",
 )
-def yard(cv: Canvas, parent, sign: str = "YARD SALE", table: bool = True) -> None:
-    """The sky, a clapboard house at the left, the fence and hedge, the lawn, the sign at the right and, unless a
-    far sofa stands there, the ``table`` with what has been sold from the house on it."""
+def yard(cv: Canvas, parent, sign: str | None = "YARD SALE", table: bool = True) -> None:
+    """The sky, a clapboard house at the left, the fence and hedge, the lawn, the sign at the right unless ``sign`` is
+    None and, unless a far sofa stands there, the ``table`` with what has been sold from the house on it."""
     g = cv.group(parent, cv.uid("g"))
     _sky(cv, g, "toon-yard-sky", SKY_DAY)
     _cloud(cv, g, 420, 190)
@@ -255,7 +260,8 @@ def yard(cv: Canvas, parent, sign: str = "YARD SALE", table: bool = True) -> Non
         _inked(cv, g, [(x, 640), (x, 574), (x + 12, 556), (x + 24, 574), (x + 24, 640)], FENCE, FINE_W, 2)
     cv.rect(g, fx(322), fy(590), fh(280), fh(12), FENCE_SHADE, cv.ink, FINE_W / 2, radius=0)
     # the table with the TV on it, and the sign on its post behind it
-    _sign(cv, g, sign, 382, 372, 198, 104, 66)
+    if sign is not None:
+        _sign(cv, g, sign, 382, 372, 198, 104, 66)
     if not table:
         return
     _shadow(cv, g, 485, 792, 230, 12, 0.25)
@@ -423,15 +429,15 @@ def paw(
     reach: float = 300.0,
     holding: str = "remote",
     presses: Sequence[float] = (),
+    slide: float = 0.16,
 ) -> None:
     """For each ``(start, end)`` the arm comes in from the right edge (``side`` 1) at height ``y``, ``reach`` pixels
-    into the frame, holds, and leaves, with the ``remote`` or the ``note`` in its hand, jabbing forward at each of
-    ``presses``."""
+    into the frame over ``slide`` seconds, holds, and leaves, with what it is ``holding`` in its hand, jabbing forward
+    at each of ``presses``."""
     if holding not in HELD:
         raise ToonDataError(f"a paw holds one of {HELD}, not {holding!r}")
     if side not in (1.0, -1.0):
         raise ToonDataError(f"a paw comes in from the right (1) or the left (-1), not {side!r}")
-    slide = 0.16
     for start, end in spans:
         if not (checks.number(start) and checks.number(end) and 0 <= start and start + 2 * slide <= end):
             raise ToonDataError(f"a paw needs {2 * slide} s for each span, got {start!r}..{end!r}")
@@ -452,7 +458,9 @@ def paw(
             cv.rect(g, fx(tip - 84), fy(y - 18), fh(120), fh(36), REMOTE, cv.ink, FINE_W, radius=fh(8))
             cv.ellipse(g, fx(tip - 76), fy(y - 7), fh(14), fh(14), REMOTE_KEY)
         elif holding == "note":
-            cv.rect(g, fx(tip - 76), fy(y - 44), fh(88), fh(88), "#fff3a3", cv.ink, FINE_W, radius=0)
+            cv.rect(
+                g, fx(tip - 76 if side > 0 else tip + 20), fy(y - 44), fh(88), fh(88), SLIP, cv.ink, FINE_W, radius=0
+            )
         elif holding == "keys":
             _keys(cv, g, tip - 4, y + 22, start, end)
         elif holding == "torch":
@@ -642,3 +650,108 @@ def chopper(cv: Canvas, parent, start: float = 0.0, end: float = 3.0, sky: Point
         side = 1 - side
     cv.keys(sweep, "x", keys, hold=False)
     _glow(cv, sweep, cv.uid("toon-chopper-beam"), 150, 620, 300, BEAM)
+
+
+# -- a parcel that never comes --------------------------------------------------------------------------------------
+CHAIR, CHAIR_DARK = "#c0793f", "#8e5729"
+PORCH_DOOR, PORCH_TRIM, MAT = "#3f7d6e", "#fff6e6", "#8a6a4a"
+VAN, VAN_DARK, VAN_GLASS = "#f4f4f0", "#c9cbc6", "#3a4a58"
+SLIP, SLIP_EDGE, SLIP_HEAD, SLIP_INK = "#fff3a3", "#d9b84a", "#b42318", "#1a1a1a"
+SLIP_FLOOR, SLIP_BOARD, SLIP_BACK = "#a9774a", "#8a5c33", "#1c1420"
+SLIP_SLIDE = 0.7
+
+
+@register("prop", "toon-hall-chair", summary="A plain wooden chair back behind whoever sits on it")
+def hall_chair(cv: Canvas, parent) -> None:
+    g = cv.group(parent, cv.uid("g"))
+    for x in (20, 322):
+        cv.rect(g, fx(x), fy(400), fh(28), fh(420), CHAIR, cv.ink, FINE_W, radius=fh(6))
+    for y in (420, 500):
+        cv.rect(g, fx(20), fy(y), fh(330), fh(44), CHAIR, cv.ink, FINE_W, radius=fh(6))
+        _line(cv, g, [(36, y + 34), (334, y + 34)], 5.0, CHAIR_DARK)
+
+
+@register("location", "toon-porch", summary="A clapboard wall and a front door from outside, a mat at its foot")
+def porch(cv: Canvas, parent) -> None:
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, 0, 0, cv.width, cv.height, SIDING)
+    for y in range(90, 800, 40):
+        cv.rect(g, fx(-10), fy(y), fh(612), fh(5), SIDING_LINE, cv.clear, 0, radius=0)
+    cv.rect(g, fx(338), fy(250), fh(262), fh(552), PORCH_TRIM, cv.ink, INK_W, radius=0)
+    cv.rect(g, fx(362), fy(274), fh(240), fh(528), PORCH_DOOR, cv.ink, FINE_W, radius=0)
+    cv.rect(g, fx(396), fy(320), fh(170), fh(180), PORCH_DOOR, HEDGE_DARK, FINE_W, radius=0)
+    cv.ellipse(g, fx(376), fy(540), fh(22), fh(22), "#c9a23c", cv.ink, FINE_W / 2)
+    cv.rect(g, fx(350), fy(780), fh(250), fh(24), MAT, cv.ink, FINE_W / 2, radius=fh(4))
+
+
+@register("prop", "toon-van", summary="A plain white van driving away down the street, getting smaller")
+def van(cv: Canvas, parent, start: float = 0.0, end: float = 2.0, at: Point = (440.0, 660.0)) -> None:
+    """The van's back from ``start``, leaving past the frame's right as it shrinks until ``end``."""
+    if not (checks.number(start) and checks.number(end) and 0 <= start and start + 0.3 <= end):
+        raise ToonDataError(f"a van drives off over 0.3 s at least, got {start!r}..{end!r}")
+    cx, cy = fx(at[0]), fy(at[1])
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, x=cx, y=cy, anchorX=cx, anchorY=cy)
+    for prop in ("scaleX", "scaleY"):
+        cv.keys(g, prop, [(start, 1.0), (end, 0.25)], hold=False)
+    cv.keys(g, "x", [(start, cx), (end, cx + fh(90))], hold=False)
+    x, y = at
+    for wheel in (x - 62, x + 38):
+        cv.rect(g, fx(wheel), fy(y + 44), fh(26), fh(38), TIRE, cv.ink, FINE_W / 2, radius=fh(6))
+    cv.rect(g, fx(x - 84), fy(y - 92), fh(168), fh(144), VAN, cv.ink, INK_W, radius=fh(14))
+    cv.rect(g, fx(x - 66), fy(y - 74), fh(58), fh(56), VAN_GLASS, cv.ink, FINE_W, radius=fh(4))
+    cv.rect(g, fx(x + 8), fy(y - 74), fh(58), fh(56), VAN_GLASS, cv.ink, FINE_W, radius=fh(4))
+    cv.rect(g, fx(x - 84), fy(y + 26), fh(168), fh(26), VAN_DARK, cv.ink, FINE_W, radius=fh(4))
+
+
+@register("prop", "toon-missed-slip", summary="A delivery slip sliding out from under a door until it fills the frame")
+def missed_slip(cv: Canvas, parent, text: str = "Sorry we missed you.", start: float = 0.0, end: float = 1.6) -> None:
+    """From ``start`` to ``end`` the foot of a door and the floor, the slip coming out of the gap at the viewer until
+    it can be read: draw it before the ledge that signs the shot."""
+    if not text.strip() or len(text) > 40:
+        raise ToonDataError(f"a slip holds 1 to 40 characters, got {text!r}")
+    if not (checks.number(start) and checks.number(end) and 0 <= start and start + SLIP_SLIDE < end):
+        raise ToonDataError(f"a slip needs {SLIP_SLIDE} s to arrive, got {start!r}..{end!r}")
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    cv.rect(g, 0, 0, cv.width, cv.height, SLIP_FLOOR)
+    for y in range(280, 800, 110):
+        cv.rect(g, fx(-10), fy(y), fh(612), fh(5), SLIP_BOARD, cv.clear, 0, radius=0)
+    cx, cy = fx(296), fy(500)
+    slip = cv.group(g, cv.uid("g"), x=cx, y=cy, anchorX=cx, anchorY=cy)
+    for prop in ("scaleX", "scaleY"):
+        cv.keys(slip, prop, [(start, 0.2), (start + SLIP_SLIDE, 1.0)], hold=False)
+    cv.keys(slip, "y", [(start, cy - fh(330)), (start + SLIP_SLIDE, cy)], hold=False)
+    cv.rect(slip, fx(46), fy(280), fh(500), fh(440), SLIP, SLIP_EDGE, INK_W, radius=fh(10))
+    words = cv.group(slip, cv.uid("g"), start=start + SLIP_SLIDE)  # blank while the door's edge is over it
+    cv.text(words, cv.uid("slip"), text, fx(76), fy(330), int(fh(440)), int(fh(340)), 118, color=SLIP_HEAD, wrap="word")
+    cv.rect(g, fx(-10), 0, fh(612), fy(190), PORCH_DOOR, cv.ink, INK_W, radius=0)
+    cv.rect(g, fx(-10), fy(186), fh(612), fh(16), SLIP_BACK, cv.clear, 0, radius=0)
+
+
+@register("prop", "toon-stuck-note", summary="A yellow note with words on it, on someone's forehead or in their lap")
+def stuck_note(
+    cv: Canvas,
+    parent,
+    text: str = "Sorry we missed you.",
+    start: float = 0.0,
+    stuck: float | None = None,
+    at: Point = (185.0, 500.0),
+    reach: float = 350.0,
+) -> None:
+    """Shown from ``start`` and left there, tipped a little. With ``stuck`` it comes in from ``reach`` pixels to the
+    right and arrives at that second, blank until it does, so it can ride a :func:`paw`."""
+    if not text.strip() or len(text) > 40:
+        raise ToonDataError(f"a note holds 1 to 40 characters, got {text!r}")
+    if not (checks.number(start) and start >= 0) or (
+        stuck is not None and not (checks.number(stuck) and stuck > start)
+    ):
+        raise ToonDataError(f"a note goes on at a second, got {start!r}, {stuck!r}")
+    x, y = at
+    outer = cv.group(parent, cv.uid("g"), start=start)
+    if stuck is not None:
+        cv.keys(outer, "x", [(start, fh(reach)), (stuck, 0.0)], hold=False)
+    g = cv.group(outer, cv.uid("g"), x=fx(x), y=fy(y), anchorX=fx(x), anchorY=fy(y), rotation=-5)
+    cv.rect(g, fx(x - 92), fy(y - 66), fh(184), fh(132), SLIP, cv.ink, INK_W, radius=fh(6))
+    words = cv.group(g, cv.uid("g"), start=start if stuck is None else stuck)
+    cv.text(
+        words, cv.uid("note"), text, fx(x - 82), fy(y - 58), int(fh(164)), int(fh(116)), 54, color=SLIP_INK, wrap="word"
+    )

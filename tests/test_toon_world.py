@@ -207,3 +207,80 @@ def test_the_helicopter_can_light_a_group_in_front_of_the_character():
     back, front = cv.group(cv.comp, "back"), cv.group(cv.comp, "front")
     toon_world.chopper(cv, back, 0.0, 2.0, over=front)
     assert list(next(g for g in drawn(cv).iter("group") if g.get("id") == "front"))
+
+
+def test_a_paw_takes_as_long_as_it_is_told_to_arrive():
+    cv = canvas()
+    toon_world.paw(cv, cv.group(cv.comp, "g"), ((1.0, 5.0),), slide=2.0, holding="")
+    with pytest.raises(ToonDataError, match="a paw needs 4.0 s"):
+        toon_world.paw(cv, cv.group(cv.comp, "g"), ((1.0, 4.0),), slide=2.0, holding="")
+
+
+def test_a_paw_from_the_left_carries_its_note_ahead_of_the_hand():
+    def note_x(side: float) -> float:
+        cv = canvas()
+        toon_world.paw(cv, cv.group(cv.comp, "g"), ((0.0, 2.0),), side=side, reach=300.0, holding="note")
+        notes = [e for e in drawn(cv).iter() if e.get("fill") == toon_world.SLIP]
+        assert len(notes) == 1
+        return float(notes[0].get("x"))
+
+    assert note_x(-1.0) > toon_world.fx(270.0 + 20.0) - 1
+    assert note_x(1.0) < toon_world.fx(320.0)
+
+
+def test_a_yard_can_leave_its_sign_out():
+    cv = canvas()
+    toon_world.yard(cv, cv.group(cv.comp, "g"), sign=None, table=False)
+    assert "YARD SALE" not in cv.scene.to_bytes(layout="pretty").decode()
+
+
+@pytest.mark.parametrize("start, end", [(1.0, 1.1), (-1.0, 2.0), (2.0, 1.0)])
+def test_a_van_needs_time_to_leave(start, end):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="a van drives off"):
+        toon_world.van(cv, cv.group(cv.comp, "g"), start, end)
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [
+        ({"text": ""}, "1 to 40"),
+        ({"text": "x" * 41}, "1 to 40"),
+        ({"start": 1.0, "end": 1.2}, "to arrive"),
+        ({"start": -1.0, "end": 2.0}, "to arrive"),
+    ],
+)
+def test_a_slip_refuses_what_it_cannot_show(kw, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_world.missed_slip(cv, cv.group(cv.comp, "g"), **kw)
+
+
+def test_a_slip_keeps_its_words_back_until_it_has_arrived():
+    cv = canvas()
+    toon_world.missed_slip(cv, cv.group(cv.comp, "g"), "Sorry", 1.0, 3.0)
+    starts = [float(g.get("start")) for g in drawn(cv).iter("group") if g.get("start")]
+    assert 1.0 + toon_world.SLIP_SLIDE in starts
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [({"text": " "}, "1 to 40"), ({"start": -1.0}, "goes on at"), ({"start": 2.0, "stuck": 1.0}, "goes on at")],
+)
+def test_a_note_refuses_what_it_cannot_show(kw, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_world.stuck_note(cv, cv.group(cv.comp, "g"), **kw)
+
+
+def test_a_note_riding_a_paw_is_blank_until_it_lands():
+    cv = canvas()
+    toon_world.stuck_note(cv, cv.group(cv.comp, "g"), "Hi", 1.0, 3.0)
+    assert 3.0 in [float(g.get("start")) for g in drawn(cv).iter("group") if g.get("start")]
+
+
+def test_a_chair_and_a_porch_draw():
+    cv = canvas()
+    toon_world.hall_chair(cv, cv.group(cv.comp, "g"))
+    toon_world.porch(cv, cv.group(cv.comp, "g"))
+    assert len(list(drawn(cv).iter())) > 20

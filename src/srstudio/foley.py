@@ -36,6 +36,7 @@ __all__ = [
     "REMOTE_CLICK",
     "KNOCK",
     "SNORE",
+    "SCRAPE",
     "SWISH",
     "DING",
     "THUD",
@@ -321,6 +322,7 @@ RUMBLE = Burst(1.4, 700.0, attack=0.02, decay=0.9, tone_hz=60.0, tone_end_hz=45.
 ROAD = Burst(3.0, 380.0, attack=0.12, decay=4.0, tone_hz=64.0, tone_end_hz=72.0, tone=0.3, flutter_hz=7.0)
 CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.0, tone=0.4, flutter_hz=13.0)
 GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880.0, tone=1.0, flutter_hz=17.0)
+SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
 

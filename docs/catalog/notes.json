@@ -500,6 +500,14 @@
         "Cada revelação fica atrás do personagem, num balcão que guarda o cacto e o código: a pilha sobe antes do balcão, então a assinatura fica por cima (<code>toon_flat.pile</code>).",
         "O rodopio de entrada é lento o bastante para passar na checagem de flashes do motor."
       ]
+    },
+    "missed-you": {
+      "number": "T31",
+      "lede": "Entrega: hoje, das 8h às 20h. Ela levou uma cadeira até a porta. Ele levou um bilhete.",
+      "highlights": [
+        "Uma única fala, ouvida sobre o rosto dela depois que o bilhete já está colado.",
+        "Ela não pisca a não ser uma vez, no segundo dia: o <code>validate</code> recusa uma segunda piscada."
+      ]
     }
   },
   "styles": {
@@ -637,7 +645,12 @@
     "toon-laundry-pile": {"title": "Pilha de roupas"},
     "toon-tiny-drawer": {"title": "Gaveta minúscula"},
     "toon-whirl": {"title": "Rodopio"},
-    "toon-sparkles": {"title": "Brilhos de limpeza"}
+    "toon-sparkles": {"title": "Brilhos de limpeza"},
+    "toon-hall-chair": {"title": "Cadeira de espera"},
+    "toon-porch": {"title": "Porta vista de fora"},
+    "toon-van": {"title": "Van indo embora"},
+    "toon-missed-slip": {"title": "Aviso por baixo da porta"},
+    "toon-stuck-note": {"title": "Bilhete colado"}
   },
   "gallery": [
     {
@@ -4237,6 +4250,66 @@
         "at": 1.4
       },
       "text": "Estrelas de quatro pontas que piscam uma de cada vez."
+    },
+    {
+      "section": "props",
+      "name": "Cadeira de espera",
+      "parts": [
+        "toon-hall-chair"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 1.8
+      },
+      "text": "O encosto de madeira atrás de quem senta para esperar."
+    },
+    {
+      "section": "locations",
+      "name": "Porta vista de fora",
+      "parts": [
+        "toon-porch"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 3.8
+      },
+      "text": "Parede de ripas, porta verde e capacho, para quem chega ou quem espera do lado de fora."
+    },
+    {
+      "section": "props",
+      "name": "Van indo embora",
+      "parts": [
+        "toon-van"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 6.8
+      },
+      "text": "Uma van branca sem marca, vista de trás, encolhendo enquanto sai do quadro."
+    },
+    {
+      "section": "props",
+      "name": "Aviso por baixo da porta",
+      "parts": [
+        "toon-missed-slip"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 5.6
+      },
+      "text": "O papel sai da fresta da porta e cresce até poder ser lido."
+    },
+    {
+      "section": "props",
+      "name": "Bilhete colado",
+      "parts": [
+        "toon-stuck-note"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 16.0
+      },
+      "text": "Um papel amarelo com letras grandes, colado no rosto ou no colo de alguém; pode entrar na mão de um braço."
     }
   ]
 }

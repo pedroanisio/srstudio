@@ -3958,6 +3958,23 @@
         }
       ]
     },
+    "toon-hall-chair": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wooden chair back behind whoever sits on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fd7e95b7b22b51ef65c60853590c554b5255d1363a6564fbbdcc033f9dab941",
+          "rig": null
+        }
+      ]
+    },
     "toon-hamster": {
       "kind": "character",
       "style": "toon",
@@ -4191,6 +4208,23 @@
         }
       ]
     },
+    "toon-missed-slip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A delivery slip sliding under a door until it fills the frame. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "719e9fac10263295a38b8142513b638d9da1fb7b54a479f71d17951b8cab059a",
+          "rig": null
+        }
+      ]
+    },
     "toon-mug": {
       "kind": "prop",
       "style": "toon",
@@ -4340,6 +4374,23 @@
           "proof": "",
           "approval": null,
           "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
+          "rig": null
+        }
+      ]
+    },
+    "toon-porch": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A clapboard wall with a front door from outside and a mat. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "50d641a343d84cdf6b131e8d3ef9c0d17aabafb840ab6a6d5adf13ffe3441717",
           "rig": null
         }
       ]
@@ -4621,6 +4672,23 @@
         }
       ]
     },
+    "toon-stuck-note": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
+          "rig": null
+        }
+      ]
+    },
     "toon-table": {
       "kind": "prop",
       "style": "toon",
@@ -4685,6 +4753,23 @@
           "proof": "",
           "approval": null,
           "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
+        }
+      ]
+    },
+    "toon-van": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain white van driving off, shrinking. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "608e47a117b8428de7fbe7b84cfa176899faaddfdf50b54c0240e46a0c75d627",
           "rig": null
         }
       ]
