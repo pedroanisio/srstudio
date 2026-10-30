@@ -8,8 +8,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
   and reusable. Implemented in `srstudio.head_motion`, `srstudio.toon_head`, `srstudio.toon_rigs`, `tools/build_stress.py`,
   `assets/stress/`, `toon_critters.Split`, `toon_critters.torso_rig`, `Torso.under`, `sketch.write_speech` and
   `toon_sketch.Staging.heads`; `tests/test_head_motion.py`, `tests/test_toon_head.py`, `tests/test_toon_sketch_heads.py`,
-  `tests/support/spring_curve.py`. The sloth, the goat, the hamster and the inked fox have rigs; the looks of the
-  last three wait for the operator's judgement.
+  `tests/support/spring_curve.py`. The sloth, the goat, the hamster and the inked fox have rigs; the operator approved
+  the three new rigs from their proof page ("head motion approved"), 2026-10-30.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Builds on [ADR 0049](0049-toon-torso-one-smooth-body.md) (the torso) and
   [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync)
@@ -63,9 +63,12 @@ scene, and a rig comes from what any drawing supplies rather than from sloth cod
    `voiced/speech.json`, which the recording run writes beside `beats.json`: each kept take's letters, speaker and
    place. A project recorded before this needs its recording run again (cached takes cost no request). A silent
    build has no takes, so its heads only idle.
-10. **A rig is data, and the registry refuses by name.** `toon_rigs.RIGS` maps a registered part to its `HeadRig`.
-    `rig_of` raises `ToonDataError` naming the character for one with no rig, because a character asked to move and
-    drawn still would look like a choice. `toon_critters.Split` and `torso_rig` build a rig from a `Torso` with the
+10. **A rig is data, and the registry refuses by name.** `toon_rigs.RIGS` maps a registered drawing to its `HeadRig`,
+    so a rig belongs to a version of a character ([ADR 0047](0047-character-versions.md)): the fox's key is
+    `toon-fox@2`, and a writer names `heads=("fox",)`. `rig_of` resolves the version a build draws, its pin or the
+    default, and raises `ToonDataError` naming the character and version when that drawing has no rig, because a
+    character asked to move and drawn still would look like a choice. A release that pins the fox at version 1 draws
+    it flat, or is refused if it also lists the fox in `heads`. `toon_critters.Split` and `torso_rig` build a rig from a `Torso` with the
     chin, the neck top, the hand the body is drawn in and the three layers, so a `toon_torso` character takes a rig
     without touching the shared path.
 11. **A plan is one continuous performance, played a shot at a time.** The plan covers the whole sketch and
@@ -84,7 +87,8 @@ scene, and a rig comes from what any drawing supplies rather than from sloth cod
   `Split`; the seam test and the bounds test run on every entry of `RIGS` with no further code.
 - A rig's skull and trunk are a second drawing of the character, so a rig can drift from the flat look. The inked fox's
   first rig drew a collar across the chest; its proof clip caught that, and `tests/test_toon_head.py` now pins the
-  white running into the bib. Character versions pin the flat drawing, not this one.
+  white running into the bib. Character versions pin the flat drawing, not this one: a rig's own drawing has no digest
+  or immutability yet, and it should join the part-versions work.
 - The motion is seeded per character, so a character's idle noise repeats from reel to reel.
 - The glance is a 2D slide of the face over the skull. It is not a turn in depth.
 - `toon_cast.figure` now calls `_draw_mouth` and `_draw_blinks`, extracted for reuse. Digests in

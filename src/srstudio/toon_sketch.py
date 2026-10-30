@@ -109,21 +109,21 @@ class Staging:
     heads: tuple[str, ...] = ()
 
 
-def _rig(who: str) -> toon_head.HeadRig:
-    return toon_rigs.rig_of(f"toon-{who}")
+def _rig(who: str, versions: Mapping[str, int]) -> toon_head.HeadRig:
+    return toon_rigs.rig_of(sketch.part_of(who), versions)
 
 
-def check_heads(sk: sketch.Sketch, heads: Sequence[str]) -> None:
+def check_heads(sk: sketch.Sketch, heads: Sequence[str], versions: Mapping[str, int]) -> None:
     """Refuse a character in ``heads`` that has no rig, or that this sketch never shows, by name."""
     shown = {app.who for app in sketch.appearances(sk.beats, sk.end)}
     for who in heads:
-        _rig(who)
+        _rig(who, versions)
         if who not in shown:
             raise StagingError(f"heads names {who!r}, who is not in this sketch ({sorted(shown)})")
 
 
 def head_plans(
-    root: Path, sk: sketch.Sketch, heads: Sequence[str], voiced: bool
+    root: Path, sk: sketch.Sketch, heads: Sequence[str], voiced: bool, versions: Mapping[str, int]
 ) -> dict[str, tuple[toon_head.HeadRig, head_motion.HeadPlan]]:
     """The rig and the plan of each character in ``heads`` over the whole sketch: in a voiced build from the takes
     of ``voiced/speech.json``, its own lines to speak and everyone else's to hear; in a silent one, idle."""
@@ -140,7 +140,7 @@ def head_plans(
         spoken = [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
     out = {}
     for who in heads:
-        rig = _rig(who)
+        rig = _rig(who, versions)
         own = [speech for said_by, speech in spoken if said_by == who]
         heard = [speech for said_by, speech in spoken if said_by != who]
         out[who] = (rig, head_motion.plan(rig.style, own, sk.end, heard=heard))
@@ -174,7 +174,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     root = Path(root)
     flags = errors.flags(flags, BUILD_FLAGS)
     sk = staging.sketch
-    check_heads(sk, staging.heads)
+    check_heads(sk, staging.heads, staging.versions)
     if "--init" in flags:
         sketch.write_project(root, sk, TOON.google_font())
         return None
@@ -187,7 +187,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         if mouths_end != end:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
-    heads = head_plans(root, sk, staging.heads, voiced)
+    heads = head_plans(root, sk, staging.heads, voiced, staging.versions)
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,

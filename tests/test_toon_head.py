@@ -312,7 +312,7 @@ def test_an_entrance_starts_the_runs_late():
 
 
 def test_a_character_with_no_rig_is_refused_by_name():
-    with pytest.raises(ToonDataError, match="toon-cat has no head rig"):
+    with pytest.raises(ToonDataError, match="toon-cat version 1 has no head rig"):
         toon_rigs.rig_of("toon-cat")
 
 
@@ -329,7 +329,7 @@ def test_every_style_stays_inside_its_bounds_through_its_springs(rig, name):
 def test_each_character_moves_its_own_way():
     styles = {part: rig.style for part, rig in toon_rigs.RIGS.items()}
     sloth, goat, hamster = styles["toon-sloth"], styles["toon-goat"], styles["toon-hamster"]
-    fox = styles["toon-fox-inked"]
+    fox = styles["toon-fox@2"]
     assert len({s.seed for s in styles.values()}) == 4
     assert goat.head.frequency > sloth.head.frequency  # abrupt against slow
     assert goat.head.damping > sloth.head.damping  # and it stops dead
@@ -365,13 +365,13 @@ def _top_colour(layers, x: float, y: float) -> str | None:
 def test_the_fox_white_runs_from_face_to_bib_as_in_its_flat_drawing(x):
     """The operator approved a fox whose cream runs unbroken from the face into the bib. The rig closes the head under
     the chin, and that line must not read as a collar across the chest."""
-    fox = toon_rigs.rig_of("toon-fox-inked")
+    fox = toon_rigs.rig_of("toon-fox")
     for y in (696.0, 700.0, 704.0):
         assert _top_colour(fox.skull(), x, y) in (toon_inked.FOX.light, toon_inked.CREAM_SHADE)
 
 
 @pytest.mark.parametrize("x", [112.0, 258.0])
 def test_the_fox_cheek_has_no_ink_line_under_it(x):
-    fox = toon_rigs.rig_of("toon-fox-inked")
+    fox = toon_rigs.rig_of("toon-fox")
     top = next(y for y in (y / 2 for y in range(1320, 1440)) if _top_colour(fox.skull(), x, y) is None)
     assert all(_top_colour(fox.skull(), x, y) == toon_inked.FOX.coat for y in (top - 2.0, top - 4.0, top - 6.0))

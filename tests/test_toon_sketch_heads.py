@@ -12,7 +12,20 @@ from types import SimpleNamespace
 
 import pytest
 
-from srstudio import TOON, camera, craft, music, sketch, toon, toon_head, toon_rigs, toon_sketch
+from srstudio import (
+    TOON,
+    camera,
+    characters,
+    craft,
+    music,
+    registry,
+    sketch,
+    toon,
+    toon_head,
+    toon_inked,
+    toon_rigs,
+    toon_sketch,
+)
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import MODEL, Alignment, Transcript, Voice, VoiceSettings
 
@@ -120,7 +133,7 @@ def keys(node: ET.Element, prop: str) -> list[tuple[float, float]]:
 # -- asking for it -----------------------------------------------------------------------------------------------------
 def test_a_character_with_no_rig_is_refused_by_name_before_anything_is_written(tmp_path):
     sk = Sketch("heads-test", "Heads test", SPEAKERS, LINES, (Beat(0.0, "cat", "", "half", "flat", "desk"),), 2.0)
-    with pytest.raises(toon.ToonDataError, match="toon-cat has no head rig"):
+    with pytest.raises(toon.ToonDataError, match="toon-cat version 1 has no head rig"):
         toon_sketch.build(tmp_path, staged(sk, heads=("cat",)), {"--init"})
     assert list(tmp_path.iterdir()) == []
 
@@ -131,12 +144,12 @@ def test_a_character_this_sketch_never_shows_is_refused_by_name(tmp_path):
 
 
 def test_no_heads_asks_for_nothing(tmp_path):
-    assert toon_sketch.head_plans(tmp_path, SK, (), True) == {}
+    assert toon_sketch.head_plans(tmp_path, SK, (), True, {}) == {}
 
 
 def test_a_voiced_build_with_no_takes_on_file_says_to_record_again(tmp_path):
     with pytest.raises(toon_sketch.StagingError, match="record again"):
-        toon_sketch.head_plans(tmp_path, SK, BOTH, True)
+        toon_sketch.head_plans(tmp_path, SK, BOTH, True, {})
 
 
 def test_takes_from_another_length_of_sketch_are_refused(tmp_path):
@@ -147,7 +160,7 @@ def test_takes_from_another_length_of_sketch_are_refused(tmp_path):
     path.write_text(json.dumps(data))
     end = sketch.load_beats(tmp_path / "voiced" / "beats.json")[1]
     with pytest.raises(toon_sketch.StagingError, match="record again"):
-        toon_sketch.head_plans(tmp_path, Sketch("h", "H", SPEAKERS, LINES, BEATS, end), BOTH, True)
+        toon_sketch.head_plans(tmp_path, Sketch("h", "H", SPEAKERS, LINES, BEATS, end), BOTH, True, {})
 
 
 # -- each its own plan -------------------------------------------------------------------------------------------------
@@ -155,7 +168,8 @@ def test_each_character_is_planned_from_its_own_lines_and_hears_the_others(tmp_p
     recorded(tmp_path)
     beats, end = sketch.load_beats(tmp_path / "voiced" / "beats.json")
     takes, _ = sketch.load_speech(tmp_path / "voiced" / "speech.json")
-    plans = toon_sketch.head_plans(tmp_path, Sketch("h", "H", SPEAKERS, LINES, tuple(beats), end), BOTH, True)
+    sk = Sketch("h", "H", SPEAKERS, LINES, tuple(beats), end)
+    plans = toon_sketch.head_plans(tmp_path, sk, BOTH, True, {})
     sloth, goat = plans["sloth"][1], plans["goat"][1]
     assert plans["sloth"][0] is toon_rigs.rig_of("toon-sloth") and plans["goat"][0] is toon_rigs.rig_of("toon-goat")
     second = takes[1]
@@ -166,9 +180,43 @@ def test_each_character_is_planned_from_its_own_lines_and_hears_the_others(tmp_p
 
 
 def test_a_silent_build_plans_an_idle_head_for_each(tmp_path):
-    plans = toon_sketch.head_plans(tmp_path, SK, BOTH, False)
+    plans = toon_sketch.head_plans(tmp_path, SK, BOTH, False, {})
     assert plans["sloth"][1].nod.keys == ((0.0, 0.0),) and plans["sloth"][1] != plans["goat"][1]
     assert len(plans["goat"][1].idle_roll.keys) > 2
+
+
+def fox_sketch() -> Sketch:
+    speaker = Speaker("bo", Voice(role="bo", id="a1", name="Roger"), VoiceSettings(0.5, 0.75, 0.3), "fox")
+    beat = Beat(0.0, "fox", "The report is finished.", "half", "flat", "desk", 0, 0)
+    return Sketch("heads-test", "Heads test", (speaker,), (Line("bo", "The report is finished."),), (beat,), 2.0)
+
+
+def test_a_writer_names_the_fox_and_gets_the_rig_of_the_version_it_draws(tmp_path):
+    plans = toon_sketch.head_plans(tmp_path, fox_sketch(), ("fox",), False, {})
+    assert plans["fox"][0] is toon_rigs.RIGS["toon-fox@2"] is toon_inked.FOX_RIG
+    plans = toon_sketch.head_plans(tmp_path, fox_sketch(), ("fox",), False, {"toon-fox": 2})
+    assert plans["fox"][0] is toon_inked.FOX_RIG
+
+
+def test_a_pin_to_a_version_with_no_rig_is_refused_by_name_before_anything_is_written(tmp_path):
+    staging = staged(fox_sketch(), {"toon-fox": 1}, heads=("fox",))
+    with pytest.raises(toon.ToonDataError, match=r"toon-fox version 1 has no head rig.*toon-fox@2"):
+        toon_sketch.build(tmp_path, staging, {"--init"})
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_the_same_pin_draws_flat_when_the_writer_does_not_ask_for_heads(tmp_path):
+    assert toon_sketch.check_heads(fox_sketch(), (), {"toon-fox": 1}) is None
+
+
+def test_a_pin_to_a_version_that_does_not_exist_is_refused(tmp_path):
+    with pytest.raises(characters.CharacterError, match="toon-fox"):
+        toon_sketch.head_plans(tmp_path, fox_sketch(), ("fox",), False, {"toon-fox": 9})
+
+
+def test_every_rig_is_keyed_by_a_registered_drawing():
+    for part in toon_rigs.RIGS:
+        assert registry.get("character", part).name == part
 
 
 # -- through the build -------------------------------------------------------------------------------------------------
@@ -180,6 +228,22 @@ def test_only_the_characters_named_move_and_the_rest_draw_flat(pinned_fonts, tmp
     assert [rigged(shot) for shot in shots(xml)] == [True, True, True, True]
     xml = tree(toon_sketch.build(root, staged(), set()))
     assert not any(rigged(shot) for shot in shots(xml))
+
+
+def test_the_record_of_what_was_drawn_names_a_moving_character_as_well(pinned_fonts, tmp_path):
+    root = project(tmp_path / "p", pinned_fonts)
+    toon_sketch.build(root, staged(heads=("sloth",)), set())
+    assert characters.read_record(root) == {"toon-goat": 1, "toon-sloth": 1}
+
+
+def test_the_fox_moves_through_the_build_at_the_version_it_is_named_by(pinned_fonts, tmp_path):
+    root = tmp_path / "p"
+    root.mkdir()
+    shutil.copytree(pinned_fonts, root / "assets" / "fonts")
+    toon_sketch.build(root, staged(fox_sketch()), {"--init"})
+    xml = tree(toon_sketch.build(root, staged(fox_sketch(), heads=("fox",)), set()))
+    assert rigged(shots(xml)[0])  # its one shot; the groups after it are the caption's
+    assert characters.read_record(root) == {"toon-fox": 2}
 
 
 def test_a_voiced_build_keeps_lips_shots_and_camera_on_a_moving_head(pinned_fonts, tmp_path):
@@ -208,7 +272,7 @@ def test_a_character_s_timeline_runs_on_through_the_cuts(pinned_fonts, tmp_path)
     xml = tree(toon_sketch.build(root, staging, {"--voice"}))
     beats, end = sketch.load_beats(root / "voiced" / "beats.json")
     sk = Sketch("h", "H", SPEAKERS, LINES, tuple(beats), end)
-    plan = toon_sketch.head_plans(root, sk, BOTH, True)["sloth"][1]
+    plan = toon_sketch.head_plans(root, sk, BOTH, True, {})["sloth"][1]
     apps = [a for a in sketch.appearances(sk.beats, sk.end) if a.who == "sloth"]
     assert len(apps) == 2
     sloth = [s for s in shots(xml) if rigged(s)][0], [s for s in shots(xml) if rigged(s)][2]
