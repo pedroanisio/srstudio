@@ -226,7 +226,7 @@ def test_the_phone_refuses_a_hand_that_is_not_a_colour():
 def test_the_props_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert "toon_everyday" in TOON.parts
-    for name in ("toon-phone", "toon-speaker"):
+    for name in ("toon-phone", "toon-speaker", "toon-receipt"):
         assert (names[name]["kind"], names[name]["style"]) == ("prop", "toon"), name
 
 
@@ -313,3 +313,72 @@ def test_the_speaker_glows_cyan_while_it_works_and_red_on_an_error():
     glow = toon_everyday.GLOW
     assert keys(group(cv, "speaker-glow-lit"), "opacity") == [(0.0, 0.0), (1.0, glow), (3.0, 0.0), (4.0, glow)]
     assert keys(group(cv, "speaker-glow-alarm"), "opacity") == [(0.0, 0.0), (3.0, glow), (4.0, 0.0)]
+
+
+# -- the receipt -----------------------------------------------------------------------------------------------------
+ITEMS = [("Coffee", "4.50"), ("Muffin", "3.25")]
+
+
+def receipt(cv=None, items=ITEMS, **kw):
+    cv = cv or canvas()
+    return toon_everyday.receipt(cv, cv.comp, items, measure=measure, **kw)
+
+
+def test_the_receipt_letters_its_header_items_and_total_row_by_row():
+    cv = canvas()
+    receipt(cv, header="BIG MART", total=("TOTAL", "7.75"))
+    assert [layer_texts(cv, f"receipt-row-{k}") for k in range(4)] == [
+        ["BIG MART"],
+        ["Coffee", "4.50"],
+        ["Muffin", "3.25"],
+        ["TOTAL", "7.75"],
+    ]
+
+
+def test_the_paper_unrolls_from_the_slot_and_each_row_shows_as_the_paper_passes_it():
+    cv = canvas()
+    receipt(cv, header="BIG MART", total=("TOTAL", "7.75"), start=1.0, pace=0.5)
+    end = 1.0 + 4 * 0.5
+    assert keys(group(cv, "receipt-paper"), "scaleY") == [(0.0, 0.0), (1.0, 0.0), (end, 1.0)]
+    edge = keys(group(cv, "receipt-edge"), "y")
+    assert [t for t, _ in edge] == [0.0, 1.0, end] and edge[0][1] == edge[1][1] == 0.0
+    assert float(group(cv, "receipt-edge").get("y")) == edge[-1][1] > 0  # drawn where it ends
+    shows = [keys(group(cv, f"receipt-row-{k}"), "opacity") for k in range(4)]
+    assert all(s[0] == (0.0, 0.0) and s[1][1] == 1.0 for s in shows)
+    times = [s[1][0] for s in shows]
+    assert times == sorted(times) and 1.0 < times[0] and times[-1] < end
+
+
+def test_a_receipt_printed_from_the_start_shows_its_paper_whole():
+    cv = canvas()
+    receipt(cv, start=0.0, pace=0.25)
+    assert keys(group(cv, "receipt-paper"), "scaleY") == [(0.0, 0.0), (0.5, 1.0)]
+
+
+def test_a_longer_receipt_has_a_longer_footprint_and_draws_inside_it():
+    short, cv = receipt(at=(300, 330)), canvas()
+    long = receipt(cv, items=ITEMS * 8, header="BIG MART", total=("TOTAL", "62.00"), at=(300, 330), scale=1.2)
+    assert long[3] - long[1] > short[3] - short[1]
+    assert inside(drawn(cv, "receipt"), frame_box(long))
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(items=[]), "at least one"),
+        (dict(items=[("Coffee",)]), "pair"),
+        (dict(items=[("", "4.50")]), "name"),
+        (dict(items=[("Coffee", "")]), "price"),
+        (dict(items=[("Extra large oat latte", "14.50")]), "px"),
+        (dict(total=("TOTAL",)), "total"),
+        (dict(header="A very long store name indeed"), "header.*px"),
+        (dict(pace=0), "pace"),
+        (dict(pace=True), "pace"),
+        (dict(start=-1), "start"),
+        (dict(start=math.nan), "start"),
+        (dict(items=ITEMS * 30), "frame"),
+    ],
+)
+def test_the_receipt_refuses_what_it_cannot_print(kw, match):
+    with pytest.raises(ToonDataError, match=match):
+        receipt(**{"at": (300, 330), **kw})
