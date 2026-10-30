@@ -42,7 +42,7 @@ video entries and 9 styles, and the operator needs to go from a character to its
 6. **`index.html` is a shell and `catalog.json` is the content.** The shell is the frozen base page with a navigation
    bar: its sections become the home, *Pacotes* and *Motor* views, and its script runs once, the first time one of
    those routes opens. Everything else is drawn in the browser by `assets/catalog/app.js`, plain JavaScript with no
-   framework and no build step, inlined in the shell. Only the current view has `<img>` and `<video>` elements, so
+   framework and no build step, published with its stylesheet as content-addressed media. Only the current view has `<img>` and `<video>` elements, so
    only its media load.
 7. **Each item has a hash route**, such as `#/personagens/rosa`, `#/estilos/toon`, `#/videos/camera-off` and
    `#/videos?estilo=toon`. Back, forward and shared links work with no server routing, and a search is a route too.
