@@ -11,18 +11,25 @@ item names the registered parts it shows and a still cut from an episode render 
 When the notes curate that gallery, every part a rendered library episode is registered with must be shown by an
 item, so a new episode cannot leave the gallery behind.
 
-Videos are re-encoded for the web once per render (keyed by size and modification time) and embedded with the pose
-sheet as data URIs, so the page is one file that opens offline. It is written atomically with mode 600.
+The output is a site, not a file: ``index.html`` plus ``media/<content-hash>.<ext>``, served by ``srstudio serve``.
+Videos are re-encoded for the web once per render (keyed by size and modification time); they, the stills, the pose
+sheet and everything the base page embedded are files the page links to with relative URLs, and the page holds no
+data URI at all. Names follow the content, so a rebuild writes only what changed. Media are placed first and the
+index replaces the old one last, atomically, so a failed build leaves the previous site working; only then are the
+files nothing references removed. Folders are mode 700 and files 600 (ADR 0046).
 """
 
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import html
 import json
 import os
 import re
+import shutil
+import stat
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
@@ -31,7 +38,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import checks, registry
+from . import checks, digest, registry
 from .errors import SrstudioError
 from .styles import STYLES
 from .usage import Report
@@ -358,7 +365,7 @@ def _card(c: Card, media: Callable[[Path], str], poster: Callable[[Path], str] |
         f'<div class="ep-head"><div class="ep-no">{e(c.number or "·")}</div><div><h3>{e(c.title)}{tag}</h3>'
         f"<p>{e(c.lede)}</p></div></div>"
         f'<div class="ep-grid"><div><div class="phone{" sq" if c.fmt == "1:1" else ""}">'
-        f'<video controls playsinline preload="metadata"{poster_attr} src="{media(c.render)}" '
+        f'<video controls playsinline preload="none"{poster_attr} src="{media(c.render)}" '
         f'aria-label="{e(c.title)}"></video></div></div>'
         f'<div class="ep-info"><div class="facts">'
         + "".join(f'<div class="fact"><b>{e(v)}</b><span>{k}</span></div>' for v, k in facts)
@@ -510,7 +517,11 @@ _JS = """
     var lines = Array.prototype.slice.call(card.querySelectorAll('.line'));
     lines.forEach(function(b){
       b.addEventListener('click', function(){
-        video.currentTime = parseFloat(b.dataset.t); video.play().catch(function(){});
+        var t = parseFloat(b.dataset.t);
+        // nothing is preloaded: a video has no timeline before its metadata, and play() is what starts loading
+        if (video.readyState >= 1) video.currentTime = t;
+        else video.addEventListener('loadedmetadata', function(){ video.currentTime = t; }, {once: true});
+        video.play().catch(function(){});
       });
     });
     video.addEventListener('timeupdate', function(){
@@ -651,17 +662,76 @@ def inject(
 
 
 # -- media and the build ----------------------------------------------------------------------------------
+INDEX_LIMIT = 2 << 20  # bytes (measured: 1.2 MB); everything heavy is a file, so past this something is embedded
+_EXTENSIONS = {"audio/mpeg": ".mp3", "font/ttf": ".ttf", "image/jpeg": ".jpg", "image/png": ".png", "video/mp4": ".mp4"}
+_BASE64_URI = re.compile(r"\bdata:([a-z0-9.+-]+/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]*={0,2})", re.IGNORECASE)
+_ANY_URI = re.compile(r"\bdata:(?:[a-z0-9.+-]+/[a-z0-9.+-]+)?[;,][^\s\"'<>)]{0,40}", re.IGNORECASE)
+
+
+class MediaStore:
+    """The ``media/`` folder of a site: each file named by its content, so what is already there is not written
+    again. A file is hard-linked from the cache where it can be, so the site costs no second copy of the videos, and
+    copied where it cannot: another device, or a mode that is not the site's 600, which a link would have to change
+    on the cached file itself."""
+
+    def __init__(self, folder: Path) -> None:
+        self.folder = folder
+        self.kept: set[str] = set()
+        folder.mkdir(parents=True, exist_ok=True)
+        os.chmod(folder, 0o700)
+
+    def _keep(self, name: str) -> str:
+        self.kept.add(name)
+        return f"media/{name}"
+
+    def add(self, source: Path) -> str:
+        """The relative URL of ``source``, placed in the folder when it is not there yet."""
+        name = digest.sha256(source)[:32] + source.suffix.lower()
+        target = self.folder / name
+        if not target.exists() or target.stat().st_size != source.stat().st_size:
+            tmp = target.with_name(f".{name}.{os.getpid()}")
+            tmp.unlink(missing_ok=True)
+            try:
+                if stat.S_IMODE(source.stat().st_mode) != 0o600:
+                    shutil.copyfile(source, tmp)
+                else:
+                    try:
+                        os.link(source, tmp)
+                    except OSError:
+                        shutil.copyfile(source, tmp)
+                os.chmod(tmp, 0o600)
+                os.replace(tmp, target)
+            finally:
+                tmp.unlink(missing_ok=True)
+        return self._keep(name)
+
+    def add_bytes(self, data: bytes, suffix: str) -> str:
+        name = hashlib.sha256(data).hexdigest()[:32] + suffix
+        target = self.folder / name
+        if not target.exists() or target.stat().st_size != len(data):
+            fd, tmp = tempfile.mkstemp(dir=self.folder, prefix=f".{name}.")
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(data)
+                os.chmod(tmp, 0o600)
+                os.replace(tmp, target)
+            finally:
+                Path(tmp).unlink(missing_ok=True)
+        return self._keep(name)
+
+    def prune(self) -> None:
+        """Remove every file nothing referenced in this build, and what a killed build left behind."""
+        for path in self.folder.iterdir():
+            if path.is_file() and path.name not in self.kept:
+                path.unlink()
+
+
 def _run(args: Sequence[str]) -> None:
     try:
         subprocess.run(list(args), check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         err = getattr(exc, "stderr", b"") or b""
         raise CatalogError(f"{Path(args[0]).name} failed: {exc} {err.decode(errors='replace')[-400:]}") from None
-
-
-def data_uri(path: Path) -> str:
-    kind = {".mp4": "video/mp4", ".jpg": "image/jpeg", ".png": "image/png"}[path.suffix]
-    return f"data:{kind};base64," + base64.b64encode(path.read_bytes()).decode()
 
 
 def _cache(out: Path, args: Sequence[str]) -> None:
@@ -748,18 +818,58 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     return pngs
 
 
+def embedded(page: str) -> list[str]:
+    """Every data URI in ``page``, of any type or encoding."""
+    return _ANY_URI.findall(page)
+
+
+def require_no_embedded(page: str) -> None:
+    found = embedded(page)
+    if found:
+        raise CatalogError(f"the page still holds {len(found)} data URI(s), the first {found[0]!r}")
+
+
+def extract_embedded(page: str, store: MediaStore) -> str:
+    """``page`` with every base64 data URI moved into ``store``. A URL in CSS or a script's string resolves against
+    the document, so the text around the URI needs no change."""
+
+    def moved(m: re.Match[str]) -> str:
+        kind = m[1].lower()
+        if kind not in _EXTENSIONS:
+            raise CatalogError(f"the base page embeds {kind}, which has no media extension")
+        try:
+            return store.add_bytes(base64.b64decode(m[2], validate=True), _EXTENSIONS[kind])
+        except binascii.Error as exc:
+            raise CatalogError(f"the base page embeds bad base64 for {kind}: {exc}") from None
+
+    return _BASE64_URI.sub(moved, page)
+
+
+def _write_text(path: Path, text: str) -> None:
+    """Replace ``path`` in one step: a reader sees the old file or the new one, never part of it."""
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    finally:
+        Path(tmp).unlink(missing_ok=True)
+
+
 def build(
     *,
     base: Path,
     episodes: Path,
     renders: Path,
-    out: Path,
+    site: Path,
     cache: Path,
     engine: Path,
     notes: Notes | None = None,
     usage: Report | None = None,
 ) -> list[Card]:
-    """Write the page to ``out`` (file 600, a new folder 700) and return its cards."""
+    """Write the site to ``site`` (files 600, folders 700) and return its cards: media first, ``index.html`` last,
+    and only then the removal of media nothing references. A failure at any step leaves the previous site working."""
     notes = notes or Notes()
     try:
         page = Path(base).read_text(encoding="utf-8")
@@ -771,24 +881,28 @@ def build(
     try:
         cache.mkdir(parents=True, exist_ok=True)
         web = {c.render: web_video(c.render, cache) for c in cards}
-        poses = [(n, data_uri(p)) for n, p in pose_sheet(Path(engine), cache)]
+        site.mkdir(parents=True, exist_ok=True)
+        os.chmod(site, 0o700)
+        store = MediaStore(site / "media")
         renders_of = {c.slug: c.render for c in cards}
         result = inject(
-            page,
+            extract_embedded(page, store),
             cards,
             notes,
-            media=lambda r: data_uri(web[r][0]),
-            poster=lambda r: data_uri(web[r][1]),
-            poses=poses,
-            stills=lambda s: data_uri(still(renders_of[s.episode], s, cache)),
+            media=lambda r: store.add(web[r][0]),
+            poster=lambda r: store.add(web[r][1]),
+            poses=[(n, store.add(p)) for n, p in pose_sheet(Path(engine), cache)],
+            stills=lambda s: store.add(still(renders_of[s.episode], s, cache)),
             usage=usage,
         )
-        out.parent.mkdir(parents=True, exist_ok=True)  # a new folder is 700; an existing one is left as it is
-        fd, tmp = tempfile.mkstemp(dir=out.parent, prefix=f".{out.name}.")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(result)
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, out)
+        require_no_embedded(result)
+        size = len(result.encode("utf-8"))
+        if size > INDEX_LIMIT:
+            raise CatalogError(f"index.html is {size} bytes, past the bound of {INDEX_LIMIT}")
+        _write_text(site / "index.html", result)
+        store.prune()
+    except OSError as exc:
+        raise CatalogError(f"site {site}: {exc}") from None
     finally:
         os.umask(old)
     return cards

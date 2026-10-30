@@ -1,7 +1,7 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog page."""
+rebuilds the catalog site."""
 
 from __future__ import annotations
 
@@ -39,11 +39,11 @@ def main(argv=None):
     add.add_argument("--weight", type=int, default=400)
     add.add_argument("--italic", action="store_true")
     add.add_argument("--into", type=Path, required=True)
-    page = sub.add_parser("page", help="rebuild the catalog page from the episode projects, renders and registry")
+    page = sub.add_parser("page", help="rebuild the catalog site from the episode projects, renders and registry")
     page.add_argument("--base", type=Path, required=True, help="the packages catalog the page starts from")
     page.add_argument("--episodes", type=Path, required=True, help="folder of episode projects")
     page.add_argument("--renders", type=Path, required=True, help="folder holding <slug>.mp4 per project")
-    page.add_argument("--out", type=Path, required=True)
+    page.add_argument("--site", type=Path, required=True, help="the folder to write: index.html and media/")
     page.add_argument("--cache", type=Path, required=True, help="web encodes and pose renders, reused between runs")
     page.add_argument("--notes", type=Path, help="curated text per episode and style (JSON)")
     page.add_argument("--usage", type=Path, help="the parts each episode uses, from srstudio usage (JSON)")
@@ -129,7 +129,7 @@ def main(argv=None):
                 base=args.base,
                 episodes=args.episodes,
                 renders=args.renders,
-                out=args.out,
+                site=args.site,
                 cache=args.cache,
                 engine=args.engine or Path("scene-render"),
                 notes=notes,
@@ -138,7 +138,7 @@ def main(argv=None):
         except (catalog_page.CatalogError, usage.UsageError) as exc:
             print(f"srstudio page: {exc}", file=sys.stderr)
             return 2
-        print(f"{args.out}  {len(cards)} episodes: {', '.join(c.slug for c in cards)}")
+        print(f"{args.site}  {len(cards)} episodes: {', '.join(c.slug for c in cards)}")
         return 0
     if args.cmd == "usage":
         extra: dict[str, list[str]] = {}
