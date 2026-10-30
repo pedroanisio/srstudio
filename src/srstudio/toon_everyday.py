@@ -3,6 +3,8 @@ money and services, job hunting and dating.
 
 :func:`phone` is a smartphone standing on a surface or held, whose screen changes on cue: a notification that
 buzzes it, a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off.
+:func:`speaker` is a smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light
+chasing round), speaking (the ring pulsing) or an error (red).
 
 Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
 drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
@@ -14,6 +16,7 @@ project seconds, on the composition clock like the rest of the style; every refu
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -329,4 +332,113 @@ def phone(
         for t in buzzes:
             keys += [(t + dt, round(rest + fh(dx) * scale, 2)) for dt, dx in BUZZ_SHAKE if t + dt > 0]
         cv.keys(g, "x", keys, hold=False, local=False)
+    return box
+
+
+# -- the smart speaker -------------------------------------------------------------------------------------------------
+SPEAKER_STATES = ("off", "listen", "think", "speak", "error")
+RING = 6  # segments across the ring's front
+CHASE_STEP = 0.12  # seconds each segment is lit while thinking
+PULSE_STEP, PULSE_DIM = 0.2, 0.35  # seconds per half pulse while speaking, and the dim half's opacity
+MAX_END = 600.0  # seconds: the ring is keyed step by step, and a shot is never longer
+FABRIC, FABRIC_LINE, CAP, RING_DARK = "#d9d4cc", "#c4bdb2", "#2b2d35", "#4a4d57"
+LIT, ALARM = "#38bdf8", "#ef4444"
+GLOW = 0.45  # the halo's opacity round the cap while the ring is on
+WORKING = ("listen", "think", "speak")
+SPEAKER_BOX: Box = (-50.0, -146.0, 50.0, 8.0)
+Track = list[tuple[float, float]]
+
+
+def _emit(track: Track, t: float, value: float) -> None:
+    """Key ``value`` at ``t`` when it changes what the track shows; a later key at the same time replaces one."""
+    t = round(t, 6)
+    if track and track[-1][0] == t:
+        track.pop()
+    if not track or track[-1][1] != value:
+        track.append((t, value))
+
+
+def _steps(start: float, end: float, step: float) -> list[float]:
+    return [round(start + i * step, 6) for i in range(math.ceil(round((end - start) / step, 9)))]
+
+
+def _states(states: Sequence, end, what: str, names: Sequence[str]) -> list[tuple[float, str]]:
+    """``(second, state)`` pairs from 0 in rising seconds, each state one of ``names``, before ``end``."""
+    if not states:
+        raise ToonDataError(f"a {what} needs at least one state")
+    for k, pair in enumerate(states):
+        if not (isinstance(pair, tuple | list) and len(pair) == 2):
+            raise ToonDataError(f"{what} state {k}: a (second, state) pair, got {pair!r}")
+    times = _rising([t for t, _ in states], f"{what} state")
+    for k, (_, name) in enumerate(states):
+        if name not in names:
+            raise ToonDataError(f"{what} state {k}: a state is one of {list(names)}, got {name!r}")
+    if not (checks.number(end) and times[-1] < end <= MAX_END):
+        raise ToonDataError(f"a {what}'s end is after its last state ({times[-1]} s) and at most {MAX_END} s, "
+                            f"got {end!r}")  # fmt: skip
+    return [(t, name) for t, (_, name) in zip(times, states, strict=True)]
+
+
+def ring_keys(states: Sequence[tuple[float, str]], end: float) -> dict[str, list[Track]]:
+    """The opacity keys of each ring segment, ``"lit"`` (the cyan light) and ``"alarm"`` (the red one), for
+    ``states`` (``(second, state)`` from 0, each one of :data:`SPEAKER_STATES`) until ``end``."""
+    shown = _states(states, end, "speaker", SPEAKER_STATES)
+    lit: list[Track] = [[] for _ in range(RING)]
+    alarm: list[Track] = [[] for _ in range(RING)]
+    for i, (t0, name) in enumerate(shown):
+        t1 = shown[i + 1][0] if i + 1 < len(shown) else float(end)
+        for k in range(RING):
+            _emit(alarm[k], t0, 1.0 if name == "error" else 0.0)
+            _emit(lit[k], t0, 1.0 if name == "listen" else 0.0)
+        if name == "think":
+            for n, t in enumerate(_steps(t0, t1, CHASE_STEP)):
+                for k in range(RING):
+                    _emit(lit[k], t, 1.0 if n % RING == k else 0.0)
+        elif name == "speak":
+            for n, t in enumerate(_steps(t0, t1, PULSE_STEP)):
+                for k in range(RING):
+                    _emit(lit[k], t, 1.0 if n % 2 == 0 else PULSE_DIM)
+    return {"lit": lit, "alarm": alarm}
+
+
+@register(
+    "prop",
+    "toon-speaker",
+    summary="A smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light chasing "
+    "round), speaking (the ring pulsing) or an error (red)",
+)
+def speaker(
+    cv: Canvas,
+    parent,
+    states: Sequence[tuple[float, str]],
+    end: float,
+    *,
+    at: tuple[float, float] = (440, 826),
+    scale: float = 1.0,
+    id: str = "speaker",
+) -> Box:
+    """The speaker standing at reference ``at``; ``states`` are ``(second, state)`` from 0 in rising seconds, each
+    one of :data:`SPEAKER_STATES`, the last held until ``end`` (the shot's end). Returns its footprint."""
+    box = _place("speaker", at, scale, SPEAKER_BOX)
+    ring = ring_keys(states, end)
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    _ellipse(cv, g, -40, -5, 80, 10, SHADOW, 0, opacity=0.16)
+    for colour, fill, on in (("lit", LIT, WORKING), ("alarm", ALARM, ("error",))):
+        halo = cv.group(g, f"{id}-glow-{colour}")
+        track: Track = []
+        for t, name in states:
+            _emit(track, t, GLOW if name in on else 0.0)
+        cv.keys(halo, "opacity", track, local=False)
+        _ellipse(cv, halo, -48, -144, 96, 64, fill, 0)
+    _rect(cv, g, -34, -112, 68, 112, FABRIC, INK_W * 0.8, radius=16)
+    for row in (-74, -52, -30):  # the fabric's weave
+        _line(cv, g, [(-26, row), (26, row)], FINE_W * 0.5, FABRIC_LINE)
+    _rect(cv, g, -34, -130, 68, 24, CAP, INK_W * 0.8, radius=10)
+    _rect(cv, g, -32, -108, 64, 16, RING_DARK, FINE_W * 0.5, radius=5)
+    for colour, fill in (("lit", LIT), ("alarm", ALARM)):
+        for k in range(RING):
+            seg = cv.group(g, f"{id}-ring-{colour}-{k}")
+            cv.keys(seg, "opacity", ring[colour][k], local=False)
+            _rect(cv, seg, -29.5 + 10 * k, -105, 9, 10, fill, 0, radius=3)
     return box
