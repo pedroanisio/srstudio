@@ -90,3 +90,42 @@ absurdist galactic field guide, and for seven videos in it. Two constraints shap
 - A new episode in the style is two short files: its takes and stages, and a three-line build.
 - Recording runs through `srstudio.takes` with no retries: a line the speech-to-text check mishears stops the run
   and the operator decides on the rewording.
+
+## Amendment, 2026-10-30: a still opening and text that passes the strict encode
+
+- Status: accepted; implemented in `srstudio.staging.freeze`, `saga_reel.Stage.still`, `saga_reel.Entry.fade`,
+  `saga_sets.Panel.fade`, `saga_sets.finish(grain=, bloom=)` and `saga_sets.entry(legible=)`, with tests in
+  `tests/test_staging.py`, `tests/test_saga.py` and `tests/test_saga_episodes.py`; first used by S13 *The Code* and
+  S14 *Take-Home*.
+
+**Context.** The account runs a first-second test (`Tags(test="sp-hook_motion")`). Arm `a` opens on a frame where
+nothing changes for a full second; arm `b` opens on motion. A Saga shot always moves: the cast breathes and blinks,
+the sets animate their lights and stars, and the grade redraws its film grain every frame. Separately, new reels
+are encoded with `--strict`, which fails on any warning, and no shipped Saga reel passed it: the engine judges text
+contrast at the frames where a layer is most opaque, and the hologram's squash pop, its flicker strip, the bloom
+over it, the glass sheen on the Handbook entry and the crossfade into the entry each put text below the contrast
+floor there.
+
+**Decision.**
+
+- *A still shot.* `Stage(still=True)` draws a shot and then `staging.freeze`s it: every keyed property takes its
+  value at the shot's start and its keys are removed; an expression or a text animator, which cannot be held,
+  raises. The grade drops film grain for it. `check` allows it only on an effect take with no move, shake,
+  blackout or entry, so a line is never spoken over a frozen face. The hook card stays up, unchanged, over the
+  leading still takes and pops nothing until the first spoken take, the narrator's question, which it then holds.
+- *Legible text, opt-in.* `Panel(fade=True)` fades a hologram in by opacity, with no squash and no flicker over its
+  words, and the shot draws such panels above the grade so bloom never washes them. `Entry(fade=True)` cuts to the
+  Handbook entry and fades it up by its own opacity, graded without bloom and drawn without the glass sheen
+  (`entry(legible=True)`). The episodes keep a panel up at least 0.85 s before the next replaces it, the engine's
+  shortest readable text.
+- *The defaults are unchanged.* Every new switch is off by default, so the frozen published reels (ADR 0040)
+  rebuild to the same scene document; a fidelity rebuild of three of them was byte-identical.
+
+**Rejected alternatives.**
+
+- *Slow the opening with the engine's time remap.* A remapped shot still breathes and twinkles, only slower, and
+  the grain keeps moving; the first second would not be still.
+- *Make fade the default for every panel and entry.* It would change the drawing of published reels, which are
+  frozen at an accepted drawing (ADR 0040).
+- *Lower the strict findings to warnings by encoding without `--strict`.* The brief for new reels requires a clean
+  strict encode, and the findings point at frames a viewer cannot read.

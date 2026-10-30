@@ -8,7 +8,8 @@ for the rest, so a fix to a camera move or a crossfade reaches every style:
 * :func:`rig` is the camera: a framed group that moves (:class:`Move`) holding a group that shakes (:func:`shake`);
   :func:`blackout` blacks the frame out in spans;
 * :func:`crossfades` times the crossfade into a closing card, and :func:`close` draws the transitions, the engine's
-  captions and the mix of the takes and the music bed, ducked under every line.
+  captions and the mix of the takes and the music bed, ducked under every line;
+* :func:`freeze` holds a drawn shot still: every animated property at its value at the shot's start.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ __all__ = [
     "rig",
     "shake",
     "blackout",
+    "freeze",
     "crossfades",
     "close",
 ]
@@ -148,6 +150,23 @@ def blackout(cv, parent, spans: Spans):
     black = cv.rect(parent, -200, -200, cv.width + 400, cv.height + 400, "#000000")
     cv.gate(black, spans)
     return black
+
+
+def freeze(shot) -> None:
+    """Hold everything drawn in ``shot`` still, as it stands at the shot's start: each ``<animate>`` is replaced by
+    its property set to the value it has at second 0 (the first key's value, which a property also holds before its
+    first key). A text animator or an expression has no single value to keep, so either is a
+    :class:`StagingError`."""
+    for node in list(shot.iter()):
+        for child in node.elements():
+            if child.xml_name in ("textAnimator", "expression"):
+                raise StagingError(f"a frozen shot cannot hold the {child.xml_name} on {node.id!r} still")
+            if child.xml_name == "animate":
+                keys = sorted(child.elements(), key=lambda k: float(k.time))
+                at_start = [k for k in keys if float(k.time) <= 0]
+                value = (at_start[-1] if at_start else keys[0]).value
+                setattr(node, child.property, value)
+                node.remove(child)
 
 
 def crossfades(takes: Sequence[Any], closing: Callable[[str], bool], longest: float = CROSSFADE) -> dict[str, float]:

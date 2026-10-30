@@ -8,13 +8,15 @@ recording before anything is drawn:
 * every take has a stage and every stage a take;
 * locations, cast and props are the style's own;
 * a speaker is seen: on screen, on a hologram's face, or the narrator (whose Handbook glows in the corner);
-* panels, moves, blackouts and shakes fall inside their take.
+* panels, moves, blackouts and shakes fall inside their take;
+* a ``still`` shot is an effect take with no move, shake or blackout.
 
 :func:`build` draws it into an :class:`~srstudio.episode.Episode` with a shot sequence: set, cast behind the set's
-front, front, cast, props and blackout inside a camera group, the hologram over it; the hook
-(:func:`srstudio.saga_sets.hook`) over the first take; a crossfade into the entry; the engine's own word-by-word
-captions in the safe area, a line too long for one caption split at words; and the mix of the takes, effects and
-music bed, the music ducked under every line.
+front, front, cast, props and blackout inside a camera group, the hologram over it; a still shot frozen as it
+stands at its start (:func:`srstudio.staging.freeze`) and graded without grain; the hook
+(:func:`srstudio.saga_sets.hook`) over the first take, or over a still opening and the line after it; a crossfade
+into the entry; the engine's own word-by-word captions in the safe area, a line too long for one caption split at
+words; and the mix of the takes, effects and music bed, the music ducked under every line.
 """
 
 from __future__ import annotations
@@ -82,6 +84,7 @@ class Entry:
 
     title: str
     body: str
+    fade: bool = False  # cut to and faded up by its own opacity, graded without bloom or sheen (strict contrast)
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,7 @@ class Stage:
     dark: tuple[tuple[float, float], ...] = ()
     shake: tuple[tuple[float, float], ...] = ()
     entry: Entry | None = None
+    still: bool = False  # drawn as it stands at the take's start: nothing moves, no grain (a still opening)
 
 
 def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
@@ -103,6 +107,10 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
     staging.check_cover(takes, stages, SagaError)
     for take in takes:
         s, where, end = stages[take.id], f"take {take.id}", take.duration
+        if s.still and (s.entry is not None or s.move is not None or s.dark or s.shake):
+            raise SagaError(f"{where}: a shot drawn still: no move, dark, shake or typed entry")
+        if s.still and not take.is_effect:
+            raise SagaError(f"{where}: a still shot holds no line ({take.actor} speaks); stage an effect take still")
         if s.entry is not None:
             if s.set or s.cast or s.panels or s.props:
                 raise SagaError(f"{where}: the Handbook entry fills the frame alone")
@@ -141,17 +149,26 @@ def build(
     check(takes, stages)
     cv = ep.cv
     shots = ep.sequence("shots")
+    lead = next((i for i, t in enumerate(takes) if not stages[t.id].still), len(takes))
+    hooked = takes[: lead + 1]  # a still opening and the take after it, which asks the question
+    fades = staging.crossfades(takes, lambda id: (e := stages[id].entry) is not None and not e.fade)
     for take in takes:
         s, end = stages[take.id], take.duration
         g = ep.shot(shots, take)
-        saga_sets.finish(cv, g)
         speech = saga.talk(take)
         if s.entry is not None:
-            saga_sets.entry(
-                cv, g, s.entry.title, s.entry.body, end=end, font=font, talk=speech if take.actor == NARRATOR else ()
+            saga_sets.finish(cv, g, bloom=not s.entry.fade)
+            said = speech if take.actor == NARRATOR else ()
+            card = saga_sets.entry(
+                cv, g, s.entry.title, s.entry.body, end=end, font=font, talk=said, legible=s.entry.fade
             )
+            if s.entry.fade:  # cut to, then up from the dark by its own opacity: judged only once it is all there
+                cv.keys(card, "opacity", [(0.0, 0.0), (round(min(CROSSFADE, end / 2), 4), 1.0)], hold=False)
             continue
-        shaken = staging.rig(cv, g, s.move, s.shake)
+        legible = any(p.fade for p in s.panels)  # fading panels sit over the grade, which grades the world alone
+        world = cv.group(g, cv.uid("g")) if legible else g
+        saga_sets.finish(cv, world, grain=not s.still)
+        shaken = staging.rig(cv, world, s.move, s.shake)
         saga_sets.SETS[s.set](cv, shaken, end=end, **s.options)
 
         def cast(behind: bool, *, into=shaken, s=s, take=take, speech=speech, end=end) -> None:
@@ -170,12 +187,16 @@ def build(
         staging.blackout(cv, shaken, s.dark)
         if s.panels:  # over the camera, not in it: a zoom never pushes the hologram's text out of the safe area
             saga_sets.holo(cv, g, s.panels, end=end, font=font, box=s.box)
-        if take.actor == NARRATOR and take is not takes[0] and not s.panels:  # the badge sits where a hologram does
+        if take.actor == NARRATOR and take not in hooked and not s.panels:  # the badge sits where a hologram does
             saga.handbook(cv, g, at=BADGE, scale=0.5, talk=speech, end=end)
-    first = takes[0]
+        if s.still:
+            staging.freeze(g)
+    asks = hooked[-1]
+    talk = saga.talk(asks) if asks.actor == NARRATOR else []
+    if lead:  # the hook is drawn on the reel's clock: its glow waits for the question after the still opening
+        talk = [(round(t + asks.start, 4), p) for t, p in talk]
     hook_node = saga_sets.hook(
-        cv, cv.comp, hook, end=first.duration, font=font, talk=saga.talk(first) if first.actor == NARRATOR else ()
+        cv, cv.comp, hook, end=round(asks.start + asks.duration, 4) if lead else asks.duration, font=font, talk=talk
     )
-    fades = staging.crossfades(takes, lambda id: stages[id].entry is not None)
     closed = staging.close(ep, shots, takes, fades=fades, look=look, pans=PANS, duck=DUCK)
     return {"hook": hook_node, **closed}

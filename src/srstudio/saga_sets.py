@@ -62,6 +62,7 @@ INK_W = 6.0
 TONES = {"info": "#5fd4ff", "alert": "#ff5a4f", "ok": "#7ee08a", "gold": "#f2b84b"}
 HOLO_FILL = "#0d2a3a"
 HOLO_PAD = 22  # px inside the panel above the title and below the last line
+HOLO_FADE = 0.14  # s a fading panel takes to appear
 HOLO_MIN = 150  # the shortest panel, and the shortest box a hologram accepts
 FACE_W = 130  # the called face's frame
 DEPTH_BLUR = (
@@ -89,6 +90,7 @@ class Panel:
     body: str = ""
     tone: str = "info"
     face: str = ""
+    fade: bool = False  # fade in by opacity over HOLO_FADE, not pop and flicker over its words (strict contrast)
 
 
 # -- text -------------------------------------------------------------------------------------------------------------
@@ -137,9 +139,12 @@ def _pool(cv: Canvas, g, name: str, colour: str, y: float, w: float = 1000, h: f
     look.pool(cv, g, f"saga-pool-{name}", colour, (W - w) / 2, y, w, h, opacity=opacity)
 
 
-def finish(cv: Canvas, node) -> None:
-    """Grade ``node`` (a shot) with :data:`GRADE`: bloom on the lights, a vignette and film grain."""
-    look.grade(cv, node, "saga", GRADE)
+def finish(cv: Canvas, node, *, grain: bool = True, bloom: bool = True) -> None:
+    """Grade ``node`` (a shot) with :data:`GRADE`: bloom on the lights, a vignette and film grain; without
+    ``grain`` for a still shot, since the engine draws the grain anew on every frame, and without ``bloom`` under
+    words that must read at full contrast, since it spills their light onto the background."""
+    drop = {k for k, keep in (("film-grain", grain), ("bloom", bloom)) if not keep}
+    look.grade(cv, node, "saga", {k: v for k, v in GRADE.items() if k not in drop})
 
 
 def _marks(cv: Canvas, g, cactus_at: tuple[float, float], code_at: tuple[float, float], scale=0.55, colour=None):
@@ -459,7 +464,7 @@ def holo(
     """Each panel from its start to the next one's (the last to ``end``) at the top of ``box`` (x, y, w and the most
     height it may take; :data:`HOLO_BOX` by default), as tall as its wrapped title (50 px) and body (40 px), measured
     with ``font``; a face, when called, sits in a frame on the left. The first panel pops in about its centre, later
-    ones flicker on. Panels start in order inside the shot."""
+    ones flicker on; a ``fade`` panel fades in by opacity instead. Panels start in order inside the shot."""
     _check_end(end)
     if not panels:
         raise SagaError("a hologram needs at least one panel")
@@ -498,7 +503,10 @@ def holo(
             raise SagaError(f"panel {p.title!r} needs {h} px; the box gives {most}")
         pop = cv.group(g, cv.uid("g"))
         camera.anchor(pop, x + w / 2, y + h / 2, place=True)
-        if i == 0:
+        if p.fade:  # judged at full opacity, the words are measured as read, never under a flicker or squashed
+            ramp = [(0.0, 0.0), (a, 0.0)] if a > 0 else [(0.0, 0.0)]
+            cv.keys(pop, "opacity", [*ramp, (round(a + HOLO_FADE, 4), 1.0)], hold=False)
+        elif i == 0:
             keys = [(0.0, 0.06), (a, 0.06), (round(a + 0.14, 4), 1.0)] if a > 0 else [(0.0, 0.06), (0.14, 1.0)]
             cv.keys(pop, "scaleY", keys, hold=False)
         for sw, op in ((30, 0.07), (16, 0.16)):
@@ -517,8 +525,9 @@ def holo(
         if body:
             _text(cv, pop, "\n".join(body), tx, y + HOLO_PAD + 58 * len(title) + 8, tw, 48 * len(body), 40, "#fff4dc",
                   "start")  # fmt: skip
-        flicker = cv.rect(pop, x, y, w, h, tone, radius=22)
-        cv.keys(flicker, "opacity", [(0, 0), (a, 0.35), (round(a + 0.12, 4), 0)], hold=False)
+        if not p.fade:
+            flicker = cv.rect(pop, x, y, w, h, tone, radius=22)
+            cv.keys(flicker, "opacity", [(0, 0), (a, 0.35), (round(a + 0.12, 4), 0)], hold=False)
         out.append(g)
     return out
 
@@ -670,9 +679,12 @@ def hook(cv: Canvas, parent, text: str, *, end: float, font: bytes, talk: Talk =
     summary="The Handbook entry that buttons every reel: the device held up on the "
     "stars, its screen typing out the entry's title and the dry footnote",
 )
-def entry(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = ()):
+def entry(
+    cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes, talk: Talk = (), legible: bool = False
+):
     """A full-frame Handbook entry: the device as tall as its words, centred above the caption band, ``title`` in
-    gold, ``body`` typed out over the first seconds; the screen brightens while the narrator speaks."""
+    gold, ``body`` typed out over the first seconds; the screen brightens while the narrator speaks. ``legible``
+    leaves out the glass sheen laid over the words, so they keep their full contrast."""
     _check_end(end)
     t_lines, b_lines = wrap(font, title, 64, 700, 2), wrap(font, body, 50, 700, 8)
     screen_h = 40 + 50 + 76 * len(t_lines) + 24 + 60 * len(b_lines) + 50
@@ -694,7 +706,8 @@ def entry(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes,
         cv.keys(glow, "opacity", [(0, 0.7)] + [(t, 1.0 if p != "closed" else 0.7) for t, p in talk if t > 0])
     for y in range(int(sy) + 26, int(sb) - 16, 16):
         cv.rect(g, 160, y, 760, 2, "#5fd4ff", opacity=0.05)
-    cv.path(g, f"M170 {sy + 14:g} L560 {sy + 14:g} L360 {sb - 14:g} L170 {sb - 14:g} Z", "#ffffff", opacity=0.04)
+    if not legible:
+        cv.path(g, f"M170 {sy + 14:g} L560 {sy + 14:g} L360 {sb - 14:g} L170 {sb - 14:g} Z", "#ffffff", opacity=0.04)
     _text(cv, g, "THE HANDBOOK · ENTRY", 190, sy + 40, 700, 50, 34, "#5fd4ff", "start")
     _text(cv, g, "\n".join(t_lines), 190, sy + 90, 700, 76 * len(t_lines), 64, "#f2b84b", "start")
     layer = _text(
