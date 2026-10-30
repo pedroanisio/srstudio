@@ -1,4 +1,5 @@
-"""The brush: splines, strokes with pressure, outlines and rims, ellipses and the transforms; refused measures."""
+"""The brush: splines, strokes with pressure, outlines and rims, inked rims and hand-wobbled contours, ellipses and
+the transforms; refused measures."""
 
 import math
 
@@ -43,6 +44,50 @@ def test_outline_and_rim_wrap_the_same_points_the_rim_pushed_out_by_the_weight()
     assert brush.bounds(other) == pytest.approx(brush.bounds(ink), abs=1e-6)
 
 
+def circle(r: float = 50.0, n: int = 24) -> list[tuple[float, float]]:
+    return [(r * math.cos(2 * math.pi * k / n), r * math.sin(2 * math.pi * k / n)) for k in range(n)]
+
+
+def test_a_hand_presses_heavier_where_the_outline_turns_from_the_light_and_lighter_at_sharp_tips():
+    hand = brush.HAND
+    down, up = (0.0, 1.0), (0.0, -1.0)  # the default weight falls down and to the back
+    for k in range(11):
+        s = k / 10
+        assert hand.at(down, 0.0, s) > 2 * hand.at(up, 0.0, s)
+        assert hand.at(down, math.pi / 2, s) < 0.6 * hand.at(down, 0.0, s)  # a convex tip thins the line
+        assert hand.at(down, -math.pi / 2, s) == pytest.approx(hand.at(down, 0.0, s))  # a hollow does not
+        assert hand.at(up, math.pi, s) > 0  # never nothing
+    grain = {round(hand.at(down, 0.0, k / 40), 4) for k in range(41)}
+    assert len(grain) > 20  # the pressure is uneven along the way
+
+
+def test_an_inked_rim_is_heavy_at_the_bottom_thin_at_the_top_and_its_points_wind_either_way():
+    fill = brush.outline(circle())
+    ink = brush.inked(circle(), 10.0)
+    fx0, fy0, fx1, fy1 = brush.bounds(fill)
+    ix0, iy0, ix1, iy1 = brush.bounds(ink)
+    assert (len(ink) - 2) % 6 == 0
+    assert iy1 - fy1 > 2 * (fy0 - iy0) > 0  # under the circle the band is more than twice as wide as over it
+    # pushed outward whichever way the points wind (the grain runs the other way round, so not to the pixel)
+    assert brush.bounds(brush.inked(circle()[::-1], 10.0)) == pytest.approx((ix0, iy0, ix1, iy1), abs=2.0)
+    light = brush.Hand(toward=(0.0, -1.0))  # the weight can fall any way: here on the top
+    lx0, ly0, lx1, ly1 = brush.bounds(brush.inked(circle(), 10.0, light))
+    assert fy0 - ly0 > 2 * (ly1 - fy1)
+
+
+def test_a_wobbled_contour_is_dense_uneven_and_the_same_every_time():
+    smooth = brush.spline(circle(), closed=True, steps=4)
+    hand = brush.wobble(circle(), 3.0, steps=4)
+    assert len(hand) == len(smooth) == 96
+    gaps = [math.dist(a, b) for a, b in zip(hand, smooth, strict=True)]
+    assert max(gaps) <= 3.0 + 1e-6 and max(gaps) > 1.5 and len({round(g, 2) for g in gaps}) > 40
+    assert brush.wobble(circle(), 3.0, steps=4) == hand  # no randomness: a build draws the same line
+    assert brush.wobble(circle(), 3.0, steps=4, seed=1) != hand
+    assert all(math.dist(p, q) < 1e-9 for p, q in zip(brush.wobble(circle(), 0.0, steps=4), smooth, strict=True))
+    line = brush.wobble([(0.0, 0.0), (100.0, 0.0)], 2.0, closed=False, steps=10)
+    assert line[0] == pytest.approx((0.0, 0.0), abs=2.0) and len(line) == 11  # an open line keeps its ends
+
+
 def test_ellipse_shift_rotate_flip_and_bounds():
     e = brush.ellipse(50, 40, 20, 10)
     assert len(e) == 26 and brush.bounds(e) == (30, 30, 70, 50)
@@ -69,6 +114,13 @@ def test_ellipse_shift_rotate_flip_and_bounds():
         (lambda: brush.ellipse(0, 0, 0, 5), "rx must be a positive"),
         (lambda: brush.ellipse(0, 0, 5, math.inf), "ry must be a positive"),
         (lambda: brush.spline([(0, 0, 0), (1, 1)]), "not a finite point"),
+        (lambda: brush.inked([(0, 0), (1, 1)], 5), "at least 3 points"),
+        (lambda: brush.inked(SQUARE, 0), "weight must be a positive"),
+        (lambda: brush.inked(SQUARE, 5, brush.Hand(light=-1.0)), "light must be a positive"),
+        (lambda: brush.inked(SQUARE, 5, brush.Hand(toward=(0.0, 0.0))), "toward must be a direction"),
+        (lambda: brush.wobble(SQUARE, -1.0), "amount must be a non-negative"),
+        (lambda: brush.wobble(SQUARE, math.nan), "amount must be a non-negative"),
+        (lambda: brush.wobble([(0, 0)], 1.0), "at least 2 points"),
     ],
 )
 def test_bad_measures_are_refused(call, match):

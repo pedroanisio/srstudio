@@ -13,6 +13,8 @@ Everything is geometry in the caller's units (the Toon parts use reference pixel
   (:class:`Pressure`), ends rounded;
 * :func:`outline` is a smooth closed shape through points (a fill), and :func:`rim` the ink band drawn under it, the
   same shape pushed out by the line's weight;
+* :func:`inked` is a rim pressed like a hand (:class:`Hand`): heavier where the outline turns away from the light,
+  lighter at sharp tips, unevenly along the way; :func:`wobble` gives a contour a hand's small, uneven deviations;
 * :func:`ellipse`, :func:`shift`, :func:`rotate` and :func:`flip` are the small tools around them.
 
 Inputs are checked: a stroke needs two points, an outline three, a weight and a radius are positive, every
@@ -39,6 +41,10 @@ __all__ = [
     "stroke",
     "outline",
     "rim",
+    "Hand",
+    "HAND",
+    "inked",
+    "wobble",
     "ellipse",
     "shift",
     "rotate",
@@ -74,6 +80,41 @@ class Pressure:
 
 EVEN = Pressure(1.0, 1.0, 0.0, 0.08, 2.0)  # an even line with a breath in it
 TAPERED = Pressure()  # the default: thick in the middle, round tapered ends
+
+
+def _grain(s: float, phase: float = 0.0) -> float:
+    """An uneven but repeatable wave in -1..1, periodic over ``s`` in 0..1: a hand's pressure or drift."""
+    return (
+        math.sin(2 * math.pi * 7 * s + 0.3 + phase)
+        + 0.6 * math.sin(2 * math.pi * 13 * s + 1.9 + 2.3 * phase)
+        + 0.35 * math.sin(2 * math.pi * 29 * s + 4.1 + 3.7 * phase)
+    ) / 1.95
+
+
+@dataclass(frozen=True)
+class Hand:
+    """How a hand presses an ink line round a shape, as factors of its weight: ``light`` where the outline faces
+    the light and ``heavy`` where it turns away, the weight falling ``toward`` that direction (down and to the back
+    by default); a convex turn of a right angle or more thins the line by ``tips`` (a tip, where the brush lifts),
+    and ``grain`` makes the pressure uneven along the way."""
+
+    light: float = 0.45
+    heavy: float = 1.35
+    toward: Point = (0.35, 0.94)
+    tips: float = 0.65
+    grain: float = 0.18
+
+    def at(self, normal: Point, turn: float, s: float) -> float:
+        """The width factor where the outward ``normal`` points, the outline turning ``turn`` radians there
+        (positive convex), ``s`` of the way round."""
+        tx, ty = self.toward
+        facing = (normal[0] * tx + normal[1] * ty) / math.hypot(tx, ty)
+        base = self.light + (self.heavy - self.light) * (facing + 1) / 2
+        tip = 1.0 - self.tips * min(1.0, max(0.0, turn) / (math.pi / 2))
+        return max(0.08, base * tip * (1 + self.grain * _grain(s)))
+
+
+HAND = Hand()
 
 
 def _points(points: Sequence[Point], least: int, where: str) -> list[Point]:
@@ -228,6 +269,57 @@ def rim(points: Sequence[Point], weight: float, pressure: Pressure = EVEN, steps
         push = weight * pressure.at(i / n)
         poly.append((p[0] + nx * push, p[1] + ny * push))
     return _cubic(poly, 100.0)
+
+
+def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int = 6) -> Shape:
+    """The ink band under an :func:`outline` of the same points, pressed by ``hand``: pushed out by ``weight`` times
+    :meth:`Hand.at` at every point, so the line swells where the shape turns from the light and thins to almost
+    nothing at its tips, like a traced line."""
+    weight = _positive(weight, "weight")
+    _positive(hand.light, "light")
+    _positive(hand.heavy, "heavy")
+    if not (all(checks.number(v) for v in hand.toward) and math.hypot(*hand.toward) > 0):
+        raise BrushError(f"toward must be a direction, got {hand.toward!r}")
+    path = _dedupe(spline(_points(points, 3, "inked"), True, steps))
+    n = len(path)
+    area = sum(path[i][0] * path[(i + 1) % n][1] - path[(i + 1) % n][0] * path[i][1] for i in range(n))
+    sign = -1.0 if area > 0 else 1.0
+    convex = 1.0 if area > 0 else -1.0
+    reach = max(1, steps)  # the turn is measured over about one control segment either side
+    poly = []
+    for i, p in enumerate(path):
+        a, b = path[i - 1], path[(i + 1) % n]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(dx, dy) or 1.0
+        nx, ny = sign * -dy / length, sign * dx / length
+        back, ahead = path[(i - reach) % n], path[(i + reach) % n]
+        ux, uy = p[0] - back[0], p[1] - back[1]
+        vx, vy = ahead[0] - p[0], ahead[1] - p[1]
+        turn = convex * math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
+        push = weight * hand.at((nx, ny), turn, i / n)
+        poly.append((p[0] + nx * push, p[1] + ny * push))
+    return _cubic(poly, 100.0)
+
+
+def wobble(points: Sequence[Point], amount: float, closed: bool = True, steps: int = 4, seed: int = 0) -> list[Point]:
+    """Points along the spline through ``points`` (``steps`` per segment, as :func:`spline`), each moved across
+    the curve by at most ``amount``: the small uneven drift of a hand following a contour. The drift repeats for a
+    ``seed``, so a build draws the same line every time."""
+    if not (checks.number(amount) and amount >= 0):
+        raise BrushError(f"amount must be a non-negative number, got {amount!r}")
+    path = spline(_points(points, 2, "wobble"), closed, steps)
+    n = len(path)
+    out = []
+    for i, p in enumerate(path):
+        if closed:
+            a, b = path[i - 1], path[(i + 1) % n]
+        else:
+            a, b = path[max(0, i - 1)], path[min(n - 1, i + 1)]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(dx, dy) or 1.0
+        drift = amount * _grain(i / n if closed else i / max(1, n - 1), 1.618 * seed)
+        out.append((p[0] - dy / length * drift, p[1] + dx / length * drift))
+    return out
 
 
 def ellipse(cx: float, cy: float, rx: float, ry: float, tilt: float = 0.0) -> Shape:
