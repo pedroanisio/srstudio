@@ -18,7 +18,7 @@ from .errors import SrstudioError
 from .registry import register
 from .soft_props import bench as park_bench
 
-__all__ = ["CAPTIONS", "FINISH", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park"]
+__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park", "playroom"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -44,6 +44,7 @@ NIGHT, NIGHT_CLEAR = "#0B1026FB", "#0B102600"  # the engine composites in linear
 LIGHTS = ("day", "phone", "dark")
 FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
 FLICKER_STEP = 0.14  # seconds a flicker value holds
+OVER = 600  # px a room runs past the frame on every side
 
 
 class Light(NamedTuple):
@@ -62,6 +63,17 @@ class Shot(NamedTuple):
     scale: float = 1.0
     x: float = 540.0
     y: float = 960.0
+
+
+class Dim(NamedTuple):
+    """The room goes dark around (``x``, ``y``): it starts at ``start``, is dark ``fade`` seconds on and ends at
+    ``end``."""
+
+    start: float
+    fade: float
+    end: float
+    x: float = 540.0
+    y: float = 1100.0
 
 
 class SoftSetError(SrstudioError, ValueError):
@@ -220,27 +232,13 @@ def bedroom(
     """The bed: ``cast`` lies against the pillows behind the duvet, ``held`` is above the duvet, and ``lights`` and
     ``shots`` are rows from 0 in rising time. A shot cuts in on everything but the nightstand, the foreground that
     holds the signature marks."""
-    if not lights or not shots:
-        raise SoftSetError("a bedroom needs at least one light and one shot")
-    times = [row.time for row in lights], [row.time for row in shots]
-    for rows in times:
-        rising = all(b > a for a, b in zip(rows, rows[1:], strict=False))
-        if rows[0] != 0 or not all(checks.number(t) for t in rows) or not rising:
-            raise SoftSetError(f"lights and shots run from 0 in rising time, got {rows!r}")
+    if not lights:
+        raise SoftSetError("a bedroom needs at least one light")
+    _rising("lights", [row.time for row in lights])
     if any(row.state not in LIGHTS for row in lights):
         raise SoftSetError(f"a light is one of {LIGHTS}, got {[row.state for row in lights]!r}")
-    if not all(checks.number(row.scale) and row.scale > 0 for row in shots):
-        raise SoftSetError(f"a shot's scale is a positive number, got {[row.scale for row in shots]!r}")
     g = cv.group(parent, id)
-    room = cv.group(g, f"{id}-room")
-    if len(shots) > 1:
-        for prop, values in (
-            ("x", [(s.time, 540 - s.x * s.scale) for s in shots]),
-            ("y", [(s.time, 960 - s.y * s.scale) for s in shots]),
-            ("scaleX", [(s.time, s.scale) for s in shots]),
-            ("scaleY", [(s.time, s.scale) for s in shots]),
-        ):
-            cv.keys(room, prop, values)
+    room = _framed(cv, g, f"{id}-room", shots)
     cv.rect(room, 0, 0, WIDTH, HEIGHT, cv.grad("soft-bedroom-wall", [(0.0, "#E8DCC8"), (1.0, "#D9C7AE")], (0, 0, 0, 1)))
     far = look.depth(cv, room, "soft-bedroom-far", FAR_BLUR)
     cv.rect(far, 742, 118, 280, 420, "#BFDDEE", "#F5EEDF", 16, radius=8)  # the window, out of focus
@@ -263,6 +261,91 @@ def bedroom(
     signature.code(cv, front, 880, 1730, 15, color="#F3DFCF")
     _lights(cv, g, lights, id)
     return g
+
+
+@register(
+    "location",
+    "soft-playroom",
+    summary="A child's room straight on: a window of sky, a door, a rug and a toy crate in the foreground",
+)
+def playroom(
+    cv: Canvas,
+    parent,
+    *,
+    shots: Sequence[Shot] = (Shot(0.0),),
+    dim: Dim | None = None,
+    cast: Slot = None,
+    id: str = "soft-playroom",
+):
+    """The room: ``cast`` stands on the rug, ``shots`` cut in on everything but the toy crate, which holds the
+    signature marks, and ``dim`` takes the light out of the room in front of them all."""
+    if dim is not None:
+        fine = all(checks.number(v) for v in dim) and dim.start >= 0 and dim.fade > 0
+        if not fine or dim.end < dim.start + dim.fade:
+            raise SoftSetError(f"a dim starts, fades and then ends, got {dim!r}")
+    g = cv.group(parent, id)
+    room = _framed(cv, g, f"{id}-room", shots)
+    wall = cv.grad("soft-playroom-wall", [(0.0, "#F4E6C9"), (1.0, "#EFD9B4")], (0, 0, 0, 1))
+    cv.rect(room, -OVER, -OVER, WIDTH + 2 * OVER, 1660 + OVER, wall)  # a shot may frame past the room's edge
+    floor = cv.grad("soft-playroom-floor", [(0.0, "#C79A6B"), (1.0, "#B3855A")], (0, 0, 0, 1))
+    cv.rect(room, -OVER, 1660, WIDTH + 2 * OVER, 260 + OVER, floor)
+    cv.rect(room, -OVER, 1640, WIDTH + 2 * OVER, 28, "#FFFFFF", cv.ink, INK_LINE)
+    sky = cv.grad("soft-playroom-sky", [(0.0, "#6DB6E8"), (1.0, "#BFE3F5")], (0, 0, 0, 1))
+    cv.rect(room, 90, 520, 520, 500, "#FFFFFF", cv.ink, INK_LINE, radius=14)
+    cv.rect(room, 116, 546, 468, 448, sky, cv.ink, INK_LINE)
+    for cx, cy, w in ((230, 660, 150), (290, 640, 170), (350, 670, 130), (440, 830, 120), (490, 816, 130)):
+        cv.ellipse(room, cx - w / 2, cy - w / 3, w, 2 * w / 3, "#FFFFFF")
+    cv.line(room, 350, 546, 350, 994, "#FFFFFF", 14)
+    cv.rect(room, 70, 1012, 560, 26, "#FFFFFF", cv.ink, INK_LINE, radius=8)  # the sill
+    cv.rect(room, 720, 760, 310, 886, "#FFFFFF", cv.ink, INK_LINE)
+    cv.rect(room, 744, 784, 262, 862, "#C98C5C", cv.ink, INK_LINE)
+    for py in (830, 1250):
+        cv.rect(room, 782, py, 186, 360, "#B67B4E", "#8A6242", 4, radius=8)
+    cv.ellipse(room, 758, 1250, 34, 34, "#E9C766", cv.ink, INK_LINE)
+    cv.ellipse(room, 40, 1700, 1000, 190, "#7FA6C9", cv.ink, INK_LINE)
+    cv.ellipse(room, 120, 1722, 840, 146, "#A5C4DD")
+    if cast is not None:
+        cast(room)
+    front = cv.group(g, f"{id}-front")
+    cv.rect(front, -30, 1760, 240, 200, "#E2A04C", cv.ink, INK_LINE, radius=14)
+    cv.rect(front, -50, 1742, 280, 34, "#EDB768", cv.ink, INK_LINE, radius=12)
+    signature.cactus(cv, front, 92, 1752, 0.72)
+    signature.code(cv, front, 34, 1810, 15, color="#7A4A1E")
+    if dim is not None:
+        _dimmed(cv, g, dim, id)
+    return g
+
+
+def _dimmed(cv: Canvas, g, dim: Dim, id: str) -> None:
+    pool = cv.rgrad("soft-playroom-pool", [(0.0, "#131A3600"), (0.1, "#131A3600"), (0.4, "#131A36F4")])
+    night = cv.group(g, f"{id}-dim")
+    cv.gate(night, [(dim.start, dim.end)])
+    fade = cv.group(night, f"{id}-dim-fade")
+    cv.rect(fade, dim.x - 2000, dim.y - 2000, 4000, 4000, pool)
+    cv.keys(fade, "opacity", [(dim.start, 0.0), (dim.start + dim.fade, 1.0)], False)
+
+
+def _rising(name: str, times: Sequence[float]) -> None:
+    rising = all(b > a for a, b in zip(times, times[1:], strict=False))
+    if not times or times[0] != 0 or not all(checks.number(t) for t in times) or not rising:
+        raise SoftSetError(f"{name} run from 0 in rising time, got {list(times)!r}")
+
+
+def _framed(cv: Canvas, parent, id: str, shots: Sequence[Shot]):
+    """A group in ``parent`` that holds each shot until the next: a shot cuts, it never moves."""
+    _rising("shots", [row.time for row in shots])
+    if not all(checks.number(row.scale) and row.scale > 0 for row in shots):
+        raise SoftSetError(f"a shot's scale is a positive number, got {[row.scale for row in shots]!r}")
+    room = cv.group(parent, id)
+    if len(shots) > 1:
+        for prop, values in (
+            ("x", [(s.time, 540 - s.x * s.scale) for s in shots]),
+            ("y", [(s.time, 960 - s.y * s.scale) for s in shots]),
+            ("scaleX", [(s.time, s.scale) for s in shots]),
+            ("scaleY", [(s.time, s.scale) for s in shots]),
+        ):
+            cv.keys(room, prop, values)
+    return room
 
 
 def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:

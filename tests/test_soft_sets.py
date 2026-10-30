@@ -1,4 +1,4 @@
-"""Soft sets for a close shot, and what a reel in them holds: a phone that rides in the hands, canes, a time card."""
+"""Soft sets for a close shot, and what a reel in them holds: a phone in the hands, canes, a time card, a shovel."""
 
 import xml.etree.ElementTree as ET
 
@@ -41,6 +41,9 @@ def opacity_keys(group) -> list[tuple[float, float]]:
         ("location", "soft-bedroom"),
         ("prop", "soft-shovel"),
         ("prop", "soft-hive"),
+        ("location", "soft-playroom"),
+        ("prop", "soft-necktie"),
+        ("prop", "soft-briefcase"),
     ],
 )
 def test_the_parts_are_registered_for_the_soft_style(kind, name):
@@ -254,5 +257,74 @@ def test_a_clean_shovel_has_no_rust():
     ],
 )
 def test_a_shovel_or_hive_refuses_what_it_cannot_draw(call):
+    with pytest.raises(SoftPropError):
+        call(canvas())
+
+
+def test_the_playroom_keeps_its_marks_still_while_the_room_cuts_in():
+    cv = signed()
+    soft_sets.playroom(cv, cv.comp, shots=[soft_sets.Shot(0.0), soft_sets.Shot(2.0, 2.7, 300.0, 1210.0)])
+    found = groups(cv)
+    front = [g.get("id") for g in found["soft-playroom-front"].iter("group")]
+    assert "sig-cactus" in front and "sig-code" in front
+    assert not found["soft-playroom-front"].findall("animate")
+    assert {a.get("property") for a in found["soft-playroom-room"].findall("animate")} >= {"x", "y", "scaleX", "scaleY"}
+
+
+def test_the_playroom_runs_past_the_frame_for_the_widest_shot_a_reel_takes():
+    cv = signed()
+    soft_sets.playroom(cv, cv.comp)
+    room = groups(cv)["soft-playroom-room"]
+    first = next(n for n in room if n.get("shape") == "rect")
+    x, y, width = float(first.get("x")), float(first.get("y")), float(first.get("width"))
+    assert x <= -soft_sets.OVER and y <= -soft_sets.OVER and x + width >= 1080 + soft_sets.OVER
+
+
+def test_a_dim_fades_in_inside_its_gate_and_leaves_with_it():
+    cv = signed()
+    soft_sets.playroom(cv, cv.comp, dim=soft_sets.Dim(2.0, 1.5, 8.0))
+    found = groups(cv)
+    assert (8.0, 0.0) in opacity_keys(found["soft-playroom-dim"])
+    assert opacity_keys(found["soft-playroom-dim-fade"]) == [(2.0, 0.0), (3.5, 1.0)]
+
+
+def test_a_playroom_without_a_dim_has_no_dark_in_it():
+    cv = signed()
+    soft_sets.playroom(cv, cv.comp)
+    assert "soft-playroom-dim" not in groups(cv)
+
+
+@pytest.mark.parametrize(
+    "dim",
+    [
+        soft_sets.Dim(-1.0, 1.0, 5.0),
+        soft_sets.Dim(1.0, 0.0, 5.0),
+        soft_sets.Dim(1.0, 2.0, 2.5),
+        soft_sets.Dim(float("nan"), 1.0, 5.0),
+    ],
+)
+def test_a_dim_that_cannot_run_is_refused(dim):
+    cv = signed()
+    with pytest.raises(SoftSetError):
+        soft_sets.playroom(cv, cv.comp, dim=dim)
+
+
+@pytest.mark.parametrize("shots", [[], [soft_sets.Shot(1.0)], [soft_sets.Shot(0.0, -1.0)]])
+def test_a_playroom_refuses_a_shot_it_cannot_frame(shots):
+    cv = signed()
+    with pytest.raises(SoftSetError):
+        soft_sets.playroom(cv, cv.comp, shots=shots)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda cv: soft_props.necktie(cv, cv.comp, 540, 900, scale=0),
+        lambda cv: soft_props.necktie(cv, cv.comp, float("nan"), 900),
+        lambda cv: soft_props.briefcase(cv, cv.comp, 540, 900, scale=-2),
+        lambda cv: soft_props.briefcase(cv, cv.comp, 540, float("inf")),
+    ],
+)
+def test_a_necktie_or_briefcase_refuses_what_it_cannot_draw(call):
     with pytest.raises(SoftPropError):
         call(canvas())

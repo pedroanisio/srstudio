@@ -968,6 +968,19 @@ srstudio record early-night PROJECT   # the key from ELEVENLABS_API_KEY
 srstudio build early-night PROJECT && scene-render encode PROJECT/early-night.scene.xml --out-dir generated --strict
 ```
 
+## Soft style episode: *Why*
+
+Five whys to the edge of what anyone knows, in [episodes/why.py](episodes/why.py). `soft_sets.playroom` is a room straight
+on, with a window of sky and a door; its `Shot` rows cut between one fixed close-up of Pip and a close-up of Bo that comes
+in a little more each time, and `Dim` takes the light out of the room when he sits down. The first and last shots are the
+same room with the sizes swapped, with `soft_props.necktie` and
+`soft_props.briefcase`. The video is 20.0 s.
+
+```bash
+srstudio record why PROJECT   # the key from ELEVENLABS_API_KEY
+srstudio build why PROJECT && scene-render encode PROJECT/why.scene.xml --out-dir generated --strict
+```
+
 ## Cel style package: *Work Training Be Like*
 
 The fourth style comes from the silent package `mushroom-training-2.0.0` (a recreation of an Under Studio

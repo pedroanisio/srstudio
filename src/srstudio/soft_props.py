@@ -23,13 +23,15 @@ __all__ = [
     "TimeState",
     "beach_call",
     "bench",
+    "briefcase",
     "cake",
     "cane",
-    "month_view",
     "hive",
+    "month_view",
+    "necktie",
     "phone",
-    "status_badge",
     "shovel",
+    "status_badge",
     "time_card",
 ]
 
@@ -284,6 +286,35 @@ def bench(cv: Canvas, parent, x: float = 540, seat: float = 1500, *, width: floa
         cv.rect(g, left + 8, seat - 256 + k * 72, width - 16, 12, slat_dark, radius=6)
     cv.rect(g, left - 12, seat - 44, width + 24, 56, slat, ink, 4, radius=12)
     cv.rect(g, left - 12, seat + 8, width + 24, 26, slat_dark, ink, 4, radius=10)
+    return g
+
+
+@register("prop", "soft-briefcase", summary="A leather briefcase with a handle and two brass clasps, carried by it")
+def briefcase(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-briefcase"):
+    """A case 220 px wide at ``scale`` 1, its handle at (``x``, ``y``), hanging below it."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a briefcase hangs at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -44, -4, 88, 44, "#00000000", ink, 14, radius=16)
+    cv.rect(g, -44, -4, 88, 44, "#00000000", "#6B4A30", 7, radius=16)
+    cv.rect(g, -110, 28, 220, 150, "#8A5A36", ink, 5, radius=18)
+    cv.rect(g, -110, 28, 220, 54, "#9C6A42", ink, 4, radius=18)
+    for cx in (-58, 58):
+        cv.rect(g, cx - 14, 66, 28, 30, "#E9C766", ink, 4, radius=6)
+    return g
+
+
+@register("prop", "soft-necktie", summary="A striped necktie, its knot where it is placed, for a blob that means it")
+def necktie(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-necktie"):
+    """A tie 200 px long at ``scale`` 1, the middle of its knot at (``x``, ``y``)."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a necktie sits at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M -18 14 L 18 14 L 40 150 L 0 196 L -40 150 Z", "#B5483A", ink, 4)
+    cv.path(g, "M -24 58 L 24 44 M -30 104 L 32 86 M -34 150 L 38 128", stroke="#E9C766", sw=8)
+    cv.path(g, "M -30 -18 L 30 -18 L 18 18 L -18 18 Z", "#C75A4A", ink, 4)
     return g
 
 

@@ -2508,6 +2508,23 @@
         }
       ]
     },
+    "soft-briefcase": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a leather briefcase with brass clasps.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "beaea40ba4e99ceb66dd4bb60b422126708beb7f6b12c1f6325c471117b86078",
+          "rig": null
+        }
+      ]
+    },
     "soft-cake": {
       "kind": "prop",
       "style": "soft",
@@ -2678,6 +2695,23 @@
         }
       ]
     },
+    "soft-necktie": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a striped necktie, a prop placed on a character, not a part of one.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "12a3b6285b9e1c82dd3e69794bcc1d0fdea592df36ed8760b3beb3d91581faf8",
+          "rig": null
+        }
+      ]
+    },
     "soft-office": {
       "kind": "location",
       "style": "soft",
@@ -2725,6 +2759,23 @@
           "proof": "",
           "approval": null,
           "drawing": "b25c247b71e452492c4ffb652aa9730c995c84047fa4956b320c647b7b5129f6",
+          "rig": null
+        }
+      ]
+    },
+    "soft-playroom": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a child's room straight on, with a window of sky, a door and a dim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7aa048f1bda375d38c5cc908e8588ab57ad0f2509478d477178f8259509801c6",
           "rig": null
         }
       ]
