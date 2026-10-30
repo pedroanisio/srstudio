@@ -682,6 +682,35 @@ Parts added for it, in `srstudio.cutout_home`:
 These six parts are recorded `proposed`: nothing draws them by default and no release can pin them until the operator
 has approved them. `srstudio parts` shows such a part with `-` as its default.
 
+## Cutout episode in the break room: *I'm Quitting* (27)
+
+[episodes/im_quitting.py](episodes/im_quitting.py) stands the applicant at the coffee machine, already mid-rant. "That's
+it. I'm quitting. Today." His friend, eyes on his own mug: "Mm." The same shot, a new mug, a bigger plant, and the wall
+board reads 2,190 days since "today". "This time I mean it." "Mm." Twelve years in, a planner lands on the counter. "You
+said Friday." "Which Friday?" Every Friday in it is circled. "Twelve years of them." A banner, a gold watch. "Forty
+years. Thank you." He taps the mic. "That's it. I'm quitting." The same mug: "Mm."
+
+```bash
+srstudio record im-quitting PROJECT
+srstudio build im-quitting PROJECT    # PROJECT/im-quitting.scene.xml
+```
+
+Its first frame already moves (arm B of the `sp-hook_motion` test). Time passes on the props and not on the people: the
+mug, the plant and the board. The voices are Will and Eric; the captions are Noto Sans 700. Parts added for it, in
+`srstudio.cutout_office`, all recorded `proposed` until the operator has approved them:
+
+- `drip_machine` (`drip-machine`): an office coffee machine; `pours=` are spans its stream runs.
+- `office_mug` (`office-mug`): a mug in any colour, lettered by `label=` (1 to `MUG_LABEL` characters) or plain.
+- `days_board` (`days-board`): a workplace-safety style wall board; `heading=` and timed `counts=` (1 to `BOARD_CHARS`
+  characters).
+- `wall_planner` (`wall-planner`): a planner page with every Friday circled around `note=`; `months=` flips its pages.
+- `gold_watch` (`gold-watch`), `stage_mic` (`stage-mic`): a presentation watch with a `gleam=` time, a mic on a stand.
+- `party_crowd` (`party-crowd`): the backs of an audience's heads out of focus; hands clap in `claps=`.
+- `break_room` (`break-room`): a mustard wall, cupboards and a fridge out of focus, and a counter; `on_wall=`,
+  `behind_counter=` and `on_counter=` draw at those depths.
+- `office_party` (`office-party`): a dark teal function room with streamers; `banner=` hangs in focus, `stage=` draws
+  under it and `front=` nearest the lens.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

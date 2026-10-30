@@ -16,6 +16,7 @@ from . import (  # noqa: F401  (registers builders)
     collage_photo,
     collage_sets,
     cutout_home,
+    cutout_office,
     gloss,
     gloss_reel,
     gloss_sets,

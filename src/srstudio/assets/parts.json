@@ -103,6 +103,23 @@
         }
       ]
     },
+    "break-room": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1a517207a1365c64eed1860c1e026e39e0873a96522b1c1b73f45a2fb2b06d8a",
+          "rig": null
+        }
+      ]
+    },
     "building": {
       "kind": "prop",
       "style": "cutout",
@@ -880,6 +897,23 @@
         }
       ]
     },
+    "days-board": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "659735ef060136918307e69047fdddc4e17b75c628db52bf321f50cbfc41cb08",
+          "rig": null
+        }
+      ]
+    },
     "desk-printer": {
       "kind": "prop",
       "style": "cutout",
@@ -910,6 +944,23 @@
           "proof": "",
           "approval": null,
           "drawing": "2a50ffe00723ea25e6844cda2ae9e667650b8c6dd227a2e203c6505622b2f13c",
+          "rig": null
+        }
+      ]
+    },
+    "drip-machine": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14570a318f2008678051b550f2348db603dec41e2ae0d134e2e7d98fe1d0376c",
           "rig": null
         }
       ]
@@ -1182,6 +1233,23 @@
           "proof": "",
           "approval": null,
           "drawing": "7d9a8a89f73ec7e8c40df9790b7bf4c2d44386c4f494e2172a53f29e178dbb58",
+          "rig": null
+        }
+      ]
+    },
+    "gold-watch": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bdcee146dee53222def13f4d8ec8821f3ab33e8de1869c6a1dba0a919ee642fe",
           "rig": null
         }
       ]
@@ -1706,6 +1774,40 @@
         }
       ]
     },
+    "office-mug": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "066083f2131632ea97148ac9b7755059aec1e5ae9133c43967e18a1206be9d69",
+          "rig": null
+        }
+      ]
+    },
+    "office-party": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7279a650780d92ef640c7f7fc139722dc7f2b549fe47b902b83d0b19db90ec62",
+          "rig": null
+        }
+      ]
+    },
     "office-reverse": {
       "kind": "location",
       "style": "cutout",
@@ -1824,6 +1926,23 @@
           "proof": "",
           "approval": null,
           "drawing": "81e14efcff95b356fdfccc5757b4728b707d9cbbce6f4636a14e1ae2376aa589",
+          "rig": null
+        }
+      ]
+    },
+    "party-crowd": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e64e83a0e3565ba16ac63d9371d2f2f9f96eccc916eaafaa6ce7bf95d15cd22a",
           "rig": null
         }
       ]
@@ -2827,6 +2946,23 @@
           "proof": "",
           "approval": null,
           "drawing": "e92ba303fbcc094668cc57b4792ad72c54684f079a82a9a97adf761761565f62",
+          "rig": null
+        }
+      ]
+    },
+    "stage-mic": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3ea066f9123d7f5660e2419d7e27ef193a9d892818d7a9620d2939a7b009eeea",
           "rig": null
         }
       ]
@@ -4413,6 +4549,23 @@
           "proof": "",
           "approval": null,
           "drawing": "8ee4f1131674fa2e22f11f766f66ca15e9973ba4757cf3e6eb697e9eace22746",
+          "rig": null
+        }
+      ]
+    },
+    "wall-planner": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for im-quitting.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fe2c75fc37bce7bed4cc3851be700b329b595bcc0cf8931bbf5083d78c3c2f71",
           "rig": null
         }
       ]

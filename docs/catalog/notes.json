@@ -4018,6 +4018,168 @@
         ]
       },
       "text": "Prateleiras fora de foco sobre um balcão claro que toma o pé do quadro; <code>on_counter=</code> desenha sobre ele."
+    },
+    {
+      "section": "props",
+      "name": "Cafeteira de escritório",
+      "parts": [
+        "drip-machine"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 1.0,
+        "box": [
+          340,
+          900,
+          400,
+          380
+        ]
+      },
+      "text": "Cafeteira de filtro com jarra de vidro; o fio de café corre nos intervalos de <code>pours=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Caneca de escritório",
+      "parts": [
+        "office-mug"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 3.5,
+        "box": [
+          60,
+          1040,
+          340,
+          280
+        ]
+      },
+      "text": "Caneca lisa de qualquer cor, com até oito caracteres em <code>label=</code>: o tempo de casa, de seis em seis anos."
+    },
+    {
+      "section": "props",
+      "name": "Placar de dias",
+      "parts": [
+        "days-board"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 3.5,
+        "box": [
+          200,
+          70,
+          680,
+          370
+        ]
+      },
+      "text": "Quadro de parede no modo das placas de segurança do trabalho: um título e uma contagem que muda no tempo (<code>counts=</code>, até sete caracteres)."
+    },
+    {
+      "section": "props",
+      "name": "Planejador de parede",
+      "parts": [
+        "wall-planner"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 8.2,
+        "box": [
+          60,
+          230,
+          960,
+          1060
+        ]
+      },
+      "text": "Página de planejador com todas as sextas circuladas em caneta vermelha em volta de <code>note=</code>; <code>months=</code> vira as páginas."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de ouro",
+      "parts": [
+        "gold-watch"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          640,
+          780,
+          300,
+          340
+        ]
+      },
+      "text": "O relógio de presente de aposentadoria, com pulseira dourada e um brilho que atravessa o mostrador em <code>gleam=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Microfone no pedestal",
+      "parts": [
+        "stage-mic"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 12.5,
+        "box": [
+          360,
+          860,
+          360,
+          660
+        ]
+      },
+      "text": "Microfone de frente, num pedestal reto; <code>height=</code> dá a altura da cápsula."
+    },
+    {
+      "section": "props",
+      "name": "Plateia de costas",
+      "parts": [
+        "party-crowd"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          0,
+          1420,
+          1080,
+          500
+        ]
+      },
+      "text": "As nucas de uma plateia, escuras e fora de foco no pé do quadro, para a legenda correr por cima; as mãos batem palmas em <code>claps=</code>."
+    },
+    {
+      "section": "locations",
+      "name": "Copa do escritório",
+      "parts": [
+        "break-room"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 1.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede mostarda, armários e geladeira fora de foco, e um balcão no pé do quadro. <code>on_wall=</code>, <code>behind_counter=</code> e <code>on_counter=</code> desenham em cada profundidade."
+    },
+    {
+      "section": "locations",
+      "name": "Salão da despedida",
+      "parts": [
+        "office-party"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Salão azul-petróleo com serpentinas e luzinhas fora de foco e uma faixa em foco (<code>banner=</code>, até catorze caracteres). <code>stage=</code> desenha sob a faixa e <code>front=</code> o que fica mais perto da lente."
     }
   ]
 }
