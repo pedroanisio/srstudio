@@ -1395,15 +1395,19 @@ it reads heavier underneath, and leaves the paw to the character. `toon_torso.ar
 arm, the inked fox's: only where it leaves the body or lies well over it.
 Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
 
-The sloth's head can move on its own
+The sloth's, the goat's, the hamster's and the inked fox's heads can move on their own
 ([docs/decisions/0050-organic-head-motion.md](docs/decisions/0050-organic-head-motion.md)).
 [src/srstudio/head_motion.py](src/srstudio/head_motion.py) turns a `HeadStyle` and the `Speech` of a shot
 (`speech_of(alignment, at, path)`) into a `HeadPlan` with `plan(style, speeches, duration)`: spring-keyed nods on the
 accents of the line, a dip before a phrase, a two-octave idle, a breath tied to the pauses and glances, all
 deterministic and bounded by `limit(style, name)`. [src/srstudio/toon_head.py](src/srstudio/toon_head.py) draws a
-`HeadRig` (`toon_critters.SLOTH_RIG`) in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`:
-the head turns about the neck behind a body whose ruff hides the seam. It is opt-in: `toon_cast.figure` and `SLOTH`
-draw as before, and a sketch does not cast the rig yet. Word stress comes from a table built by
+`HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
+neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](src/srstudio/toon_rigs.py)
+holds the rigs, and `rig_of` refuses a character with none by name. In a sketch, one line turns it on:
+`Staging(..., heads=("sloth", "goat"))`. The build plans each named character from the takes in `voiced/speech.json`,
+its own lines to speak and the others' to hear, and plays that plan a shot at a time. It is opt-in:
+`toon_cast.figure` and the flat drawings draw as before. A `toon_torso` character gets a rig with
+`toon_critters.Split` and `torso_rig`. Word stress comes from a table built by
 [tools/build_stress.py](tools/build_stress.py) from the CMU Pronouncing Dictionary
 ([licence](src/srstudio/assets/stress/CMUDICT-LICENSE)).
 
