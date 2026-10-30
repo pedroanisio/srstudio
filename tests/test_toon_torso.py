@@ -267,5 +267,24 @@ def test_an_arm_merged_with_the_body_on_both_sides_has_no_line():
     assert toon_torso.arm_lines([(10.0, 20.0), (10.0, 150.0), (10.0, 280.0)], 16.0, narrow, even, 2.0) == []
 
 
+def test_a_body_alone_swaps_the_head_for_a_top_and_keeps_its_sides():
+    t = torso()
+    top = ((104.0, 700.0), (185.0, 690.0), (266.0, 700.0))
+    body = t.under(top)
+    start = t.contour.index(HEAD[0])
+    assert body[start : start + 3] == top
+    assert body[:start] == t.contour[:start]
+    assert body[start + 3 :] == t.contour[start + len(HEAD) :]
+    weights = t.weights(0.2, len(top))
+    assert len(weights) == len(body)
+    assert weights[start : start + 3] == (1.0, 1.0, 1.0) and set(weights[:start] + weights[start + 3 :]) == {0.2}
+
+
+@pytest.mark.parametrize("top", (((1.0, 2.0), (3.0, 4.0)), ((1.0, 2.0), (3.0, math.nan), (5.0, 6.0))))
+def test_a_body_refuses_a_top_that_is_no_line(top):
+    with pytest.raises(ToonDataError, match="top"):
+        torso().under(top)
+
+
 def test_the_module_is_reachable_from_the_package():
     assert toon_torso.Torso is Torso
