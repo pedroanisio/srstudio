@@ -47,9 +47,8 @@
     const s = styles.get(slug);
     return s ? `<span class="style-tag ${esc(s.slug)}">${esc(s.name)}</span>` : '';
   }
-  function firstStill(p) {
-    if (p.gallery.length) return p.gallery[0].still;
-    return p.sheet.length ? p.sheet[0] : null;
+  function firstStill(p) { // the part alone, drawn by the engine; a refused part has none, and says why
+    return p.specimen;
   }
   function image(src, alt, width, height) {
     return `<img src="${esc(src)}" alt="${esc(alt)}" width="${width}" height="${height}" loading="lazy" decoding="async">`;
@@ -77,11 +76,11 @@
   }
   function partCard(p) {
     const s = firstStill(p);
-    const frame = s ? image(s.src, p.title, s.width, s.height) : 'sem imagem';
+    const frame = s ? image(s.src, p.title, s.width, s.height) : esc(p.refused);
     const tags = [styleTag(p.style)];
     if (C.measured && !p.videos.length) tags.push('<span class="tag warn">não usado</span>');
-    if (!s) tags.push('<span class="tag warn">sem still</span>');
-    return `<a class="card" href="${partHref(p)}" data-part="${esc(p.name)}"><div class="frame">${frame}</div>` +
+    if (!s) tags.push('<span class="tag warn">sem desenho isolado</span>');
+    return `<a class="card" href="${partHref(p)}" data-part="${esc(p.name)}"><div class="frame specimen">${frame}</div>` +
       `<b>${esc(p.title)}</b><code>${esc(p.name)}</code>${usageLabel(p)}<div class="tags">${tags.join('')}</div></a>`;
   }
   function styleCard(s) {
@@ -204,14 +203,17 @@
     const p = parts.get(name);
     const k = KINDS[kind];
     if (!p || p.kind !== kind) return missing(`${k.one} ${name}`);
-    const gallery = p.gallery.map(g =>
+    const gallery = (p.gallery.length ? '<div class="sub">Visto em</div>' : '') + p.gallery.map(g =>
       `<div class="stills lead">${figure(g.still, g.name, true)}</div>` +
       (g.voice ? `<p>voz ${esc(g.voice)} (ElevenLabs)</p>` : '') + `<p class="note">${g.note_html}</p>` +
       (g.poses.length ? `<div class="stills">${g.poses.map(s => figure(s, `${g.name}, ${s.label}`, false)).join('')}</div>` : '')).join('');
     const sheet = p.sheet.length
       ? `<div class="sub">Folha de poses</div><div class="stills" id="pose-sheet">${p.sheet.map(s => figure(s, `${p.title}, pose ${s.label}`, false)).join('')}</div>`
       : '';
-    const noStill = !p.gallery.length && !p.sheet.length ? '<p class="notice" id="no-still">Nenhum item da galeria mostra esta peça ainda.</p>' : '';
+    const specimen = p.specimen
+      ? `<div class="stills lead" id="specimen">${figure(p.specimen, p.title, false)}</div>`
+      : `<p class="notice" id="refused">Sem desenho isolado. ${esc(p.refused)}</p>`;
+    const noStill = specimen + (!p.gallery.length && !p.sheet.length ? '<p class="notice" id="no-still">Nenhum item da galeria mostra esta peça ainda.</p>' : '');
     let used;
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
     else if (!p.videos.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;

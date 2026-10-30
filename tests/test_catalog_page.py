@@ -13,10 +13,21 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import catalog_data
+from srstudio import catalog_data, specimens
 from srstudio import catalog_page as cp
 from srstudio.cli import main
-from support.catalog import BASE, GALLERY, USAGE, item, shot, write_project
+from support.catalog import (
+    BASE,
+    GALLERY,
+    USAGE,
+    fake_poster,
+    fake_render_all,
+    item,
+    pictures,
+    shot,
+    still_of,
+    write_project,
+)  # fmt: skip
 
 
 @pytest.fixture
@@ -180,7 +191,7 @@ def test_inject_refuses_a_base_that_lost_an_anchor(tree, lost):
         cp.inject(BASE.replace(lost, "<!-- gone -->"), cards(tree), cp.Notes(), **SHELL)
 
 
-def assembled(tree, notes=None, *, usage=None, packages=(), poses=(), engine=()):
+def assembled(tree, notes=None, *, usage=None, packages=(), poses=(), engine=(), shown=None, refused=None):
     notes = notes or cp.Notes()
     return cp.assemble(
         cp.discover(*tree, notes, usage),
@@ -192,6 +203,9 @@ def assembled(tree, notes=None, *, usage=None, packages=(), poses=(), engine=())
         usage=usage,
         packages=packages,
         engine=engine,
+        pictures=pictures() if shown is None else shown,
+        refused=refused or {},
+        posters={p.slug: url(p.slug) for p in packages},
     )
 
 
@@ -218,7 +232,7 @@ def test_every_style_lists_its_videos_and_its_parts(tree):
 
 def test_a_style_note_is_curated_markup():
     notes = cp.Notes(styles={"soft": cp.StyleNote("Blob", "Pose a <i>pose</i>.")})
-    catalog = cp.assemble([], notes, media=str, poster=str, poses=[])
+    catalog = cp.assemble([], notes, media=str, poster=str, poses=[], pictures=pictures())
     soft = {s.slug: s for s in catalog.styles}["soft"]
     assert (soft.title, soft.text_html) == ("Blob", "Pose a <i>pose</i>.")
 
@@ -228,7 +242,8 @@ def test_every_registered_part_is_in_the_document_with_its_measured_videos(tree)
     parts = {p.name: p for p in catalog.parts}
     assert set(parts) == {x.name for x in cp.registry.entries()}
     assert parts["pip"].videos == ("camera-off",) and parts["juno"].videos == ()  # used, and reachable though unused
-    assert parts["juno"].title == "juno" and parts["juno"].gallery == ()  # no gallery still: not dropped either
+    assert parts["juno"].gallery == ()  # no gallery still: not dropped either
+    assert parts["pip"].specimen == still_of("pip")
 
 
 def test_a_package_is_a_video_with_facts_and_no_file(tree):
@@ -242,10 +257,80 @@ def test_a_package_is_a_video_with_facts_and_no_file(tree):
     videos = {v.slug: v for v in catalog.videos}
     honesty = videos["honesty-interview"]
     assert (honesty.source, honesty.measured, honesty.style, honesty.src) == ("package", True, "cutout", None)
+    assert honesty.poster == url("honesty-interview")  # rendered from its spec
     assert honesty.parts == ("manager", "office-wide") and honesty.title == "Honestidade"
     assert "honesty-interview" in {p.name: p for p in catalog.parts}["manager"].videos
     printer = videos["printer-recreation"]
     assert (printer.measured, printer.parts) == (False, ())  # it is a package, and the report does not cover it
+
+
+def test_a_package_without_a_poster_is_refused(tree):
+    with pytest.raises(cp.CatalogError, match="honesty-interview.*poster"):
+        cp.assemble([], cp.Notes(), media=str, poster=str, poses=[], packages=cp.packages_of(BASE), pictures=pictures())
+
+
+def test_a_part_with_neither_a_specimen_nor_a_reason_stops_the_build_by_name(tree):
+    shown = pictures()
+    del shown["juno"], shown["soft-desk"]
+    with pytest.raises(cp.CatalogError, match=r"\['juno', 'soft-desk'\]"):
+        assembled(tree, shown=shown)
+
+
+def test_a_part_with_both_a_specimen_and_a_reason_is_refused(tree):
+    with pytest.raises(cp.CatalogError, match="both"):
+        assembled(tree, refused={"juno": "Não."})
+
+
+def test_a_refused_part_says_why_and_holds_no_picture(tree):
+    shown = pictures()
+    del shown["captions"]
+    catalog = assembled(tree, shown=shown, refused={"captions": "Só existe sobre uma cena."})
+    captions = {p.name: p for p in catalog.parts}["captions"]
+    assert captions.specimen is None and captions.refused == "Só existe sobre uma cena."
+
+
+def test_every_reason_has_its_words_in_the_catalog_language():
+    assert set(cp.REFUSAL_TEXT) == set(cp.catalog_specimens.Reason)
+    assert all(cp.REFUSAL_TEXT.values())
+
+
+def test_a_part_with_no_curated_title_takes_its_registered_summary_and_a_curated_one_wins(tree, tmp_path):
+    parts = {p.name: p for p in assembled(tree, usage=USAGE).parts}
+    assert parts["juno"].title == cp.title_of(cp.registry.get("character", "juno"))
+    assert parts["juno"].title != "juno"
+    notes = gallery_notes(tmp_path)
+    curated = {p.name: p for p in assembled(tree, notes, usage=SHOWN).parts}
+    assert curated["pip"].title == "Pip"
+
+
+@pytest.mark.parametrize(
+    "summary, title",
+    [
+        ("Ava the barista: bun, apron, name tag", "Ava the barista"),
+        ("Dr. Feld, a sixties therapist with a bun and glasses who has heard everything until now", "Dr. Feld"),
+        ("The Handbook entry; dry", "The Handbook entry"),
+        ("One caption per cue: centred text across the frame at :data:`CAPTION_Y`.", "One caption per cue"),
+        ("An avocado standing on ``at``, ripe", "An avocado standing, ripe"),
+        ("The gate podium at the right, from :data:`PODIUM_X` at :data:`PODIUM_TOP`", "The gate podium at the right"),
+        ("A child's essay on ruled paper (:data:`SHEET`, centred on ``at``)", "A child's essay on ruled paper"),
+        ("A plain sign.", "A plain sign"),
+        ("Words " * 20, "Words " * 9 + "Words…"),
+    ],
+)
+def test_a_summary_becomes_a_short_title(summary, title):
+    entry = cp.registry.Entry("prop", "a-file-name", print, summary=summary)
+    assert cp.title_of(entry) == title
+
+
+def test_a_part_with_no_summary_is_named_not_shown_under_its_file_name():
+    with pytest.raises(cp.CatalogError, match="a-file-name"):
+        cp.title_of(cp.registry.Entry("prop", "a-file-name", print))
+
+
+def test_every_registered_part_has_a_title_that_is_not_its_file_name():
+    specimens.load_parts()
+    titles = {x.name: cp.title_of(x) for x in cp.registry.entries()}
+    assert not {name for name, title in titles.items() if title == name or len(title) > cp.TITLE_LIMIT + 1}
 
 
 def test_a_base_page_with_bad_scene_data_is_refused():
@@ -303,7 +388,7 @@ def test_the_pose_sheet_belongs_to_pip(tree):
 def test_an_unregistered_pip_cannot_hold_the_pose_sheet(tree, monkeypatch):
     monkeypatch.setattr(cp.registry, "entries", lambda *a: [])
     with pytest.raises(cp.CatalogError, match="pip"):
-        cp.assemble([], cp.Notes(), media=str, poster=str, poses=[("stand", url("stand", "png"))])
+        cp.assemble([], cp.Notes(), media=str, poster=str, poses=[("stand", url("stand", "png"))], pictures={})
 
 
 # -- building ---------------------------------------------------------------------------------------------
@@ -327,7 +412,7 @@ def page_args(tree, tmp_path, *, engine_path="missing-engine", base=None) -> lis
     episodes, renders = tree
     args = ["page", "--base", str(base or tmp_path / "base.html"), "--episodes", str(episodes)]
     args += ["--renders", str(renders), "--site", str(tmp_path / "site"), "--cache", str(tmp_path / "cache")]
-    return [*args, "--engine", str(engine_path)]
+    return [*args, "--engine", str(engine_path), "--packages", str(tmp_path / "packages")]
 
 
 def references(site: Path) -> set[str]:
@@ -335,7 +420,9 @@ def references(site: Path) -> set[str]:
     return set(re.findall(r"media/[0-9a-f]+\.[a-z0-9]+", text))
 
 
-def test_build_writes_a_private_site_and_reuses_its_cache(tree, tmp_path):
+def test_build_writes_a_private_site_and_reuses_its_cache(tree, tmp_path, monkeypatch):
+    monkeypatch.setattr(cp.catalog_specimens, "render_all", fake_render_all)
+    monkeypatch.setattr(cp.catalog_specimens, "poster", fake_poster)
     rendered(tree[1])
     (tmp_path / "base.html").write_text(BASE)
     args = page_args(tree, tmp_path, engine_path=engine())
@@ -374,6 +461,8 @@ def fake_media(monkeypatch, tree, tmp_path):
 
     monkeypatch.setattr(cp, "web_video", web_video)
     monkeypatch.setattr(cp, "pose_sheet", pose_sheet)
+    monkeypatch.setattr(cp.catalog_specimens, "render_all", fake_render_all)
+    monkeypatch.setattr(cp.catalog_specimens, "poster", fake_poster)
     (tmp_path / "base.html").write_text(BASE)
     return page_args(tree, tmp_path)
 
@@ -392,6 +481,54 @@ def test_a_rebuild_writes_only_what_changed_and_removes_what_is_no_longer_refere
     assert {f"media/{name}" for name in after} == references(site)  # the old router files and the partial are gone
     assert len(before) == len(after) and len(set(before) & set(after)) == len(before) - 2  # its video and poster
     assert all(before[name] == after[name] for name in set(before) & set(after))  # the rest were left alone
+
+
+def test_the_site_holds_every_specimen_and_poster_and_a_page_says_what_it_rendered(tree, tmp_path, fake_media, capsys):
+    assert main(fake_media) == 0
+    catalog = catalog_data.load(tmp_path / "site" / "catalog.json")
+    assert all(p.specimen for p in catalog.parts)
+    assert all(v.poster for v in catalog.videos if v.source == "package")
+    assert (
+        f"{len(catalog.parts)} specimens: 0 rendered, {len(catalog.parts)} cached, 0 refused" in capsys.readouterr().out
+    )
+
+
+def test_a_refused_part_reaches_the_site_with_the_words_of_its_reason(tree, tmp_path, fake_media, monkeypatch):
+    def one_refused(engine, cache, episodes):
+        shelf = fake_render_all(engine, cache, episodes)
+        done = {k: v for k, v in shelf.done.items() if k != "captions"}
+        why = cp.catalog_specimens.Refused(cp.catalog_specimens.Reason.OVERLAY, "over a shot")
+        return cp.catalog_specimens.Shelf(done, {"captions": why}, 0)
+
+    monkeypatch.setattr(cp.catalog_specimens, "render_all", one_refused)
+    assert main(fake_media) == 0
+    parts = {p.name: p for p in catalog_data.load(tmp_path / "site" / "catalog.json").parts}
+    assert parts["captions"].refused == cp.REFUSAL_TEXT[cp.catalog_specimens.Reason.OVERLAY]
+
+
+def test_a_specimen_that_fails_stops_the_page_with_its_name(tree, tmp_path, fake_media, monkeypatch, capsys):
+    def fails(engine, cache, episodes):
+        raise cp.catalog_specimens.SpecimenRenderError("1 specimens failed:\nshrub: the recipe drew nothing")
+
+    monkeypatch.setattr(cp.catalog_specimens, "render_all", fails)
+    assert main(fake_media) == 2
+    assert "shrub" in capsys.readouterr().err and not (tmp_path / "site" / "catalog.json").exists()
+
+
+def test_a_package_poster_that_fails_stops_the_page_with_its_name(tree, tmp_path, fake_media, monkeypatch, capsys):
+    def fails(packages, slug, engine, cache):
+        raise cp.catalog_specimens.SpecimenRenderError(f"package {slug}: no scene spec")
+
+    monkeypatch.setattr(cp.catalog_specimens, "poster", fails)
+    assert main(fake_media) == 2
+    assert "honesty-interview" in capsys.readouterr().err
+
+
+def test_package_posters_need_the_packages_folder(tree, tmp_path, fake_media, monkeypatch):
+    monkeypatch.delenv("SRSTUDIO_PACKAGES", raising=False)
+    args = fake_media[: fake_media.index("--packages")]
+    with pytest.raises(SystemExit):
+        main(args)
 
 
 def test_a_failed_build_leaves_the_previous_site_working(tree, tmp_path, fake_media, monkeypatch):
@@ -650,7 +787,9 @@ def test_a_gallery_without_a_usage_report_is_refused(tree, tmp_path):
 
 def test_a_gallery_needs_stills(tree, tmp_path):
     with pytest.raises(cp.CatalogError, match="stills"):
-        cp.assemble(cards(tree), gallery_notes(tmp_path), media=str, poster=str, poses=[], usage=SHOWN)
+        cp.assemble(
+            cards(tree), gallery_notes(tmp_path), media=str, poster=str, poses=[], usage=SHOWN, pictures=pictures()
+        )
 
 
 HALF_WRITER = """#!/bin/sh
