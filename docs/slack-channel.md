@@ -11,7 +11,7 @@ alerts and questions. Videos never travel through it: they go to Drive `srstudio
 and `ab.json`.
 
 State as of 2026-10-30. The bot can read the channel and post to it, when someone runs a command. Nothing listens for
-new posts yet.
+new posts yet. The publishing side confirmed on 2026-10-30 that it reads our replies and that both directions work.
 
 ## What is connected
 
@@ -116,13 +116,15 @@ owner asks, so answers are not instant.
 
 ## Getting instructions into a live session
 
-Slack's official Claude options run in Anthropic's cloud, so they cannot reach this host. Two routes can:
+Slack's official Claude options run in Anthropic's cloud, so they cannot reach this host. Three routes can:
 
+- A poller on a timer, which is how the publishing side reads the channel. It calls `conversations.history` once a run,
+  follows threads through `latest_reply` and appends new posts to a local inbox file. It needs no `xapp-` token.
 - A listener over Socket Mode, which opens a connection out to Slack and needs no public URL.
 - A custom Claude Code channel, started with `claude --dangerously-load-development-channels server:slack`. It is a
   research preview and needs a restart of the session.
 
-Neither is built. A listener written from the publishing side's sample needs these changes first:
+None is built. A listener or poller written from the publishing side's samples needs these changes where they apply:
 
 - reply to `event.get("thread_ts", event["ts"])`, not `event["ts"]`, so a post inside a thread keeps its thread;
 - give the file download a timeout, a status check and a size limit;
@@ -136,9 +138,8 @@ Neither is built. A listener written from the publishing side's sample needs the
 
 | Item | Who | Blocks |
 | --- | --- | --- |
-| Create an `xapp-` token with `connections:write` | operator | any listener |
+| Create an `xapp-` token with `connections:write` | operator | a Socket Mode listener, not a poller |
 | Remove `conversations.connect:write` | operator | nothing, it is unneeded access |
 | `chmod 600` on the `.env`, which is mode 664 today | operator | nothing, but every user on this host can read the token |
 | Confirm that `U089V1152MV`, who posted videos on 28 Oct, is the operator | operator | telling the owner's posts from others' |
-| Go-ahead for the `[hello]` post | operator | the other side confirming both directions work |
-| Choose the listener or the custom channel, then build it | operator, then us | instructions arriving without someone running a read |
+| Choose the poller, the listener or the custom channel, then build it | operator, then us | instructions arriving without someone running a read |
