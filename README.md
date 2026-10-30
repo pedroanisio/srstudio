@@ -1389,7 +1389,9 @@ Sunny, the guests and the Joy Points are the library's own.
 - **Cast**, [src/srstudio/gloss.py](src/srstudio/gloss.py): glossy vinyl peg dolls Nadia (a NEW sticker that
   peels), Gus (a wind-up key that unwinds) and Tamsin (a spring base that bounces), and Sunny, a floating orb with
   a screen face that scans and wears a tie as the manager. Faces and poses are tracks on the shot's clock; the vinyl
-  is rounded from each silhouette (`gloss.FORM`, `gloss.RIM`, `gloss.LIFT`) with gradient highlights (`gloss.haze`).
+  is rounded from each silhouette (`gloss.FORM`, `gloss.RIM`) with gradient highlights (`gloss.haze`) and seated by
+  contact shadows. `gloss.LIFT`, a soft drop shadow, is applied only by `gloss.finish(..., lift=True)`, which no
+  shipped part calls.
 - **Sets and props**, [src/srstudio/gloss_sets.py](src/srstudio/gloss_sets.py): the Plaza, the Activity Room and
   the Waiting Room (far planes softened by `DEPTH_BLUR`, lettering in strokes, a caption shade at the foot of the
   frame); the Joy Points `board` of `Card`s, the painted-on `door`, the queue `ticket`; the `hook` card and the

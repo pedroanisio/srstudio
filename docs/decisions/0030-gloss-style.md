@@ -35,8 +35,10 @@ for seven videos in it. Then: the first cut's visual polish scored 3.5 of 10, an
   as the manager. Skin tones are named looks (`SKIN`). A fallen doll lifts by `LIE` so it lies on the floor rather
   than through it. Sticker lettering counter-flips with a flipped doll so it never reads backwards.
 - **The material is a vinyl, built from the silhouette.** Each part is rounded by inner shadows (`FORM`, a pink
-  floor bounce `RIM`) and seated by a soft drop shadow (`LIFT`); highlights and contact shadows are radial
-  gradients (`haze`) or a few soft blurs, so the dolls read as toys, not flat cut-outs.
+  floor bounce `RIM`); highlights and contact shadows are radial gradients (`haze`) or a few soft blurs, so the
+  dolls read as toys, not flat cut-outs, and the contact shadows seat them on the set. A soft drop shadow (`LIFT`)
+  is available through `finish(..., lift=True)`, but no shipped part uses it: G1–G7 carry no `gloss-lift`
+  effect.
 - **Sets, `srstudio.gloss_sets`.** The Plaza, the Activity Room and the Waiting Room, each with a far plane softened
   by `DEPTH_BLUR`, scenery lettering drawn in strokes and numbers as seven-segment shapes (no font, nothing a
   camera move can carry out of the safe area), and a plum caption shade from `CAPTION_SHADE` to the foot of the
