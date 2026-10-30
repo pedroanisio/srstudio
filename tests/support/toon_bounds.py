@@ -49,9 +49,13 @@ def _boxes(node: ET.Element, m: Matrix, texts: dict[str, ET.Element]):
             yield Box(0, 0, float(asset.get("width")), float(asset.get("height"))).transformed(at)
 
 
-def drawn(cv: Canvas, group_id: str) -> Box:
-    """The frame-pixel box around everything drawn under the group ``group_id``, its own transform included."""
+def drawn(cv: Canvas, group_id: str, overrides: dict[str, dict[str, float]] | None = None) -> Box:
+    """The frame-pixel box around everything drawn under the group ``group_id``, its own transform included;
+    ``overrides`` sets group attributes first (a group as an animation takes it, ``{id: {"scaleX": 1.2}}``)."""
     root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    for g in root.iter("group"):
+        for name, value in (overrides or {}).get(g.get("id", ""), {}).items():
+            g.set(name, str(value))
     texts = {t.get("id"): t for t in root.iter("text")}
     group = next((g for g in root.iter("group") if g.get("id") == group_id), None)
     assert group is not None, f"no group {group_id!r}"
