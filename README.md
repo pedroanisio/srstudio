@@ -1335,7 +1335,8 @@ The vocabulary also has eyes and mouths past the traced set: `roll`, `teary`, `w
 `grimace`, `frown`, `tongue` and `kiss` mouths. Every brush character draws them; the traced cat refuses them by
 name (`toon.TRACED_EYES`, `TRACED_MOUTHS`). Any character, the cat included, can wear `toon.WEAR` per pose
 (`"wear": ["glasses", "sweat", "flush"]` in a poses file, `wear=` on a sketch `Beat`), drawn by
-[src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face.
+[src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face; on a head its drawing turns
+(`toon_cast.Drawing.tilt`), the items turn with it.
 
 `toon-fox-inked` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py),
 [docs/decisions/0044-inked-toon-characters.md](docs/decisions/0044-inked-toon-characters.md)) is the fox drawn
