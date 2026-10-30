@@ -35,6 +35,11 @@ def tree(cv: Canvas):
         ("graphic", "toon-key-line", toon_house.key_line),
         ("location", "toon-hallway", toon_house.hallway),
         ("prop", "toon-horse", toon_house.horse),
+        ("prop", "toon-thermostat", toon_house.thermostat),
+        ("prop", "toon-finger", toon_house.finger),
+        ("prop", "toon-vent", toon_house.vent),
+        ("location", "toon-bedroom", toon_house.bedroom),
+        ("prop", "toon-quilt", toon_house.quilt),
     ],
 )
 def test_the_parts_are_registered(kind, name, builder):
@@ -134,3 +139,106 @@ def test_a_horse_refuses_what_it_cannot_draw(kwargs, match):
     cv = canvas()
     with pytest.raises(ToonDataError, match=match):
         toon_house.horse(cv, cv.comp, **kwargs)
+
+
+READINGS = [(0.0, "68"), (1.3, "69"), (6.0, "68")]
+
+
+def test_a_thermostat_shows_each_reading_until_the_next():
+    cv = canvas()
+    toon_house.thermostat(cv, cv.comp, READINGS, 8.0)
+    root = tree(cv)
+    assert sorted(t.get("text") for t in root.iter("text")) == ["68", "68", "69"]
+    spans = [(g.get("start"), g.get("end")) for g in root.iter("group") if g.get("start") is not None]
+    assert spans == [("0", "1.3"), ("1.3", "6"), ("6", "8")]
+
+
+def test_a_still_thermostat_takes_one_reading():
+    cv = canvas()
+    toon_house.thermostat(cv, cv.comp, [(0.0, "68")])
+    assert [t.get("text") for t in tree(cv).iter("text")] == ["68"]
+
+
+@pytest.mark.parametrize(
+    ("readings", "end", "kwargs", "match"),
+    [
+        ([], 8.0, {}, "pairs"),
+        (["68"], 8.0, {}, "pairs"),
+        ([(1.0, "68")], 8.0, {}, "start at 0"),
+        (READINGS, 0.0, {}, "start at 0"),
+        ([(0.0, "68"), (9.0, "69")], 8.0, {}, "start at 0"),
+        ([(0.0, "68"), (3.0, "69"), (2.0, "70")], 8.0, {}, "readings"),
+        ([(0.0, "6")], 8.0, {}, "two digits"),
+        ([(0.0, "hot")], 8.0, {}, "two digits"),
+        ([(0.0, 68)], 8.0, {}, "two digits"),
+        ([(0.0, "68")], 8.0, {"scale": 9.0}, "scale"),
+        ([(0.0, "68")], 8.0, {"at": 3}, "reference point"),
+    ],
+)
+def test_a_thermostat_refuses_what_it_cannot_show(readings, end, kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.thermostat(cv, cv.comp, readings, end, **kwargs)
+
+
+def test_a_finger_glides_to_each_place_it_is_told():
+    cv = canvas()
+    toon_house.finger(cv, cv.comp, (300, 500), moves=[(2.0, 320, 480)], end=4.0)
+    root = tree(cv)
+    assert {a.get("property") for a in root.iter("animate")} >= {"x", "y"}
+
+
+def test_a_finger_shows_only_from_its_start_to_its_end():
+    cv = canvas()
+    toon_house.finger(cv, cv.comp, start=2.0, end=3.0)
+    group = next(g for g in tree(cv).iter("group") if g.get("id") == "finger")
+    assert (group.get("start"), group.get("end")) == ("2", "3")
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"tip": (1,)}, "reference point"),
+        ({"angle": float("nan")}, "angle"),
+        ({"start": -1.0}, "start and end"),
+        ({"moves": [(1.0, 2, 3)]}, "still finger"),
+        ({"moves": [(2.0, 2, 3), (1.0, 2, 3)], "end": 4.0}, "moves"),
+    ],
+)
+def test_a_finger_refuses_what_it_cannot_draw(kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.finger(cv, cv.comp, **kwargs)
+
+
+@pytest.mark.parametrize(("kwargs", "match"), [({"at": "x"}, "reference point"), ({"width": 300.0}, "120 to 240")])
+def test_a_vent_refuses_what_it_cannot_draw(kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.vent(cv, cv.comp, **kwargs)
+
+
+@pytest.mark.parametrize("pattern", sorted(toon_house.QUILTS))
+def test_a_quilt_carries_the_signature_marks_in_every_pattern(pattern):
+    cv = canvas(signed=True)
+    toon_house.quilt(cv, cv.comp, pattern)
+    assert signature.missing(cv.scene.to_bytes(layout="pretty")) == []
+
+
+def test_a_quilt_refuses_a_pattern_it_has_not():
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="a quilt is one of"):
+        toon_house.quilt(cv, cv.comp, "tartan")
+
+
+def test_the_hallway_can_be_plain_wall_with_no_door():
+    plain, shut = canvas(), canvas()
+    toon_house.hallway(plain, plain.comp, "none")
+    toon_house.hallway(shut, shut.comp, "shut")
+    assert len(plain.scene.to_bytes(layout="pretty")) < len(shut.scene.to_bytes(layout="pretty"))
+
+
+def test_the_bedroom_draws():
+    cv = canvas()
+    toon_house.bedroom(cv, cv.comp)
+    assert list(tree(cv).iter("group"))

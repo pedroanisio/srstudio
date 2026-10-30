@@ -13,6 +13,7 @@ key is on the composition clock. Bad input is a :class:`srstudio.toon.ToonDataEr
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 
 from . import checks, signature
@@ -28,11 +29,16 @@ __all__ = [
     "KEY_LINE_SIZE",
     "KEY_LINE_TOP",
     "LEDGES",
+    "bedroom",
+    "finger",
     "hallway",
     "horse",
     "key_line",
     "ledge",
+    "quilt",
     "rope",
+    "thermostat",
+    "vent",
 ]
 
 Point = tuple[float, float]
@@ -53,7 +59,7 @@ KEY_LINE_MARGIN = 40.0  # frame pixels left at each side
 
 WALL = (("0", "#dfe7dc"), ("0.6", "#cfdccf"), ("1", "#bccbbd"))
 WAINSCOT, WAINSCOT_LINE = "#f3efe6", "#cfc8b9"
-DOORS = ("shut", "open")
+DOORS = ("shut", "open", "none")
 DOOR_BOX = (352.0, 214.0, 566.0, 800.0)  # x0, y0, x1, y1
 DOOR_LEAF, DOOR_PANEL, DOOR_FRAME = "#3f6f73", "#4f868a", "#f3efe6"
 BRASS = "#d9b25f"
@@ -139,7 +145,8 @@ def _porch(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float) -> None:
 )
 def hallway(cv: Canvas, parent, door: str = "shut") -> None:
     """The hall wall in soft sage, its pictures at the left above the character, a dado rail, and the front door
-    (:data:`DOOR_BOX`): ``"shut"``, or ``"open"`` on the porch at night with the leaf folded back against the wall."""
+    (:data:`DOOR_BOX`): ``"shut"``, ``"open"`` on the porch at night with the leaf folded back against the wall, or
+    ``"none"``, plain wall where it would be."""
     if door not in DOORS:
         raise ToonDataError(f"a hallway's door is one of {DOORS}, got {door!r}")
     g = cv.group(parent, cv.uid("g"))
@@ -152,6 +159,8 @@ def hallway(cv: Canvas, parent, door: str = "shut") -> None:
         cv.rect(g, fx(x), fy(y), fh(w), fh(h), "#7c5a3c", cv.ink, FINE_W * 0.8, radius=fh(3))
         cv.rect(g, fx(x + 10), fy(y + 10), fh(w - 20), fh(h - 20), colour, cv.ink, FINE_W * 0.4, radius=0)
         cv.ellipse(g, fx(x + w / 2 - 12), fy(y + h / 2 - 16), fh(24), fh(24), "#fff3df", cv.ink, FINE_W * 0.4)
+    if door == "none":
+        return
     x0, y0, x1, y1 = DOOR_BOX
     cv.rect(g, fx(x0 - 16), fy(y0 - 16), fh(x1 - x0 + 32), fh(y1 - y0 + 32), DOOR_FRAME, cv.ink, INK_W * 0.8, radius=0)
     if door == "shut":
@@ -247,3 +256,152 @@ def horse(
         _line(cv, g, local([(side * 92, -62), (side * 76, 40), (side * 72, 96)]), 8.0, STRAP)
     cv.ellipse(g, fh(-12), fh(208 - 90), fh(24), fh(24), BRASS, cv.ink, FINE_W * 0.6)
     _shadow(cv, g, 0, 70 + 640, 240)
+
+
+THERMOSTAT_SIZE = 76
+THERMOSTAT_BODY, THERMOSTAT_DIAL, THERMOSTAT_INK = "#f6f2e8", "#dfe6e4", "#23303a"
+READING = re.compile(r"\d{2}")
+SLEEVE = "#4a6fa5"
+NAIL = "#fff1e6"
+GLIDE = 0.1  # seconds a finger takes between two places
+VENT, VENT_SLAT = "#e9e6dc", "#8e918f"
+BEDROOM_WALL = (("0", "#26305e"), ("0.7", "#1f2850"), ("1", "#181f42"))
+HEADBOARD, PILLOW = "#5a3f33", "#e8e4f0"
+MOON_SKY, MOON = "#0f1534", "#f4edc9"
+QUILTS = {"plum": ("#7b4a78", "#94608f"), "teal": ("#2f7277", "#46898c")}
+NIGHTSTAND, NIGHTSTAND_FRONT = "#6f4d38", "#5c3f2e"
+
+
+def _point(at: object, what: str) -> tuple[float, float]:
+    if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
+        raise ToonDataError(f"{what} is a reference point (x, y), got {at!r}")
+    return float(at[0]), float(at[1])
+
+
+@register("prop", "toon-thermostat", summary="A wall thermostat whose two-digit reading changes on cue")
+def thermostat(
+    cv: Canvas,
+    parent,
+    readings: Sequence[tuple[float, str]],
+    end: float = 0.0,
+    at: Point = (450, 440),
+    scale: float = 1.0,
+    id: str = "thermostat",
+) -> None:
+    """The dial centred on reference ``at``, showing each ``(second, two digits)`` of ``readings`` until the next one,
+    the last until ``end``. A still (``end`` 0) takes one reading at 0."""
+    if not readings or any(not (isinstance(r, tuple | list) and len(r) == 2) for r in readings):
+        raise ToonDataError(f"a thermostat needs (second, reading) pairs, got {readings!r}")
+    times = [r[0] for r in readings]
+    _rise(times, "a thermostat's readings")
+    if times[0] != 0 or (not end and len(times) > 1) or (end and times[-1] >= end):
+        raise ToonDataError(f"a thermostat's readings start at 0 and lie before its end, got {times} of {end}")
+    if any(not (isinstance(r[1], str) and READING.fullmatch(r[1])) for r in readings):
+        raise ToonDataError(f"a thermostat reads two digits, got {[r[1] for r in readings]}")
+    if not (checks.number(scale) and SCALES[0] <= scale <= SCALES[1]):
+        raise ToonDataError(f"a thermostat's scale is within {SCALES}, got {scale!r}")
+    x, y = _point(at, "a thermostat's place")
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    half, dial = fh(90), fh(72)
+    cv.rect(g, -half + fh(7), -half + fh(8), 2 * half, 2 * half, "#1b1430", cv.clear, 0, radius=fh(22), opacity=0.16)
+    cv.rect(g, -half, -half, 2 * half, 2 * half, THERMOSTAT_BODY, cv.ink, INK_W * 0.8, radius=fh(22))
+    cv.ellipse(g, -dial, -dial, 2 * dial, 2 * dial, THERMOSTAT_DIAL, cv.ink, FINE_W)
+    box_w, box_h = int(fh(120)), int(fh(70))
+    for i, (start, reading) in enumerate(readings):
+        stop = readings[i + 1][0] if i + 1 < len(readings) else end
+        shown = cv.group(g, cv.uid("g"), start=start, end=stop) if end else cv.group(g, cv.uid("g"))
+        cv.text(shown, cv.uid("reading"), reading, -box_w / 2, -box_h / 2, box_w, box_h, THERMOSTAT_SIZE,
+                color=THERMOSTAT_INK, wrap="none")  # fmt: skip
+
+
+@register("prop", "toon-finger", summary="A forearm and a pointing finger, its tip going where it is told")
+def finger(
+    cv: Canvas,
+    parent,
+    tip: Point = (345, 520),
+    angle: float = 0.0,
+    colour: str = "#d8b08c",
+    sleeve: str = SLEEVE,
+    moves: Sequence[tuple[float, float, float]] = (),
+    start: float = 0.0,
+    end: float = 0.0,
+    id: str = "finger",
+) -> None:
+    """A finger whose tip is on reference ``tip``, pointing up turned ``angle`` degrees clockwise, its forearm running
+    back out of frame. It shows from ``start`` to ``end`` (always, in a still), gliding to each ``(second, x, y)`` of
+    ``moves``."""
+    x, y = _point(tip, "a finger's tip")
+    if not checks.number(angle):
+        raise ToonDataError(f"a finger's angle is a number of degrees, got {angle!r}")
+    if not (checks.number(start) and checks.number(end) and start >= 0 and end >= 0):
+        raise ToonDataError(f"a finger's clock needs start and end >= 0, got {start}, {end}")
+    _rise([m[0] for m in moves], "a finger's moves")
+    if moves and not end:
+        raise ToonDataError("a still finger cannot move")
+    timed = {"start": start, "end": end} if end else {}
+    g = cv.group(parent, id, x=fx(x), y=fy(y), rotation=angle, **timed)
+    cv.rect(g, -fh(46), fh(180), fh(92), fh(900), sleeve, cv.ink, INK_W * 0.8, radius=fh(14))
+    cv.ellipse(g, -fh(92), fh(112), fh(62), fh(36), colour, cv.ink, INK_W * 0.8)  # the thumb, across the palm
+    cv.rect(g, -fh(62), fh(104), fh(126), fh(130), colour, cv.ink, INK_W * 0.8, radius=fh(34))
+    for k in range(3):  # the three curled fingers, side on
+        cv.rect(g, fh(4 + k * 18), fh(96 - k * 2), fh(26), fh(58), colour, cv.ink, INK_W * 0.6, radius=fh(13))
+    cv.rect(g, -fh(21), 0, fh(42), fh(150), colour, cv.ink, INK_W * 0.8, radius=fh(20))
+    cv.rect(g, -fh(19), fh(100), fh(38), fh(62), colour, cv.clear, 0, radius=0)
+    cv.ellipse(g, -fh(11), fh(6), fh(22), fh(26), NAIL, cv.ink, FINE_W * 0.4)
+    _line(cv, g, [(-14, 70 + 58), (14, 70 + 58)], 3.0)
+    if moves:
+        for axis, first, index, convert in (("x", x, 1, fx), ("y", y, 2, fy)):
+            keys, here = [(0.0, convert(first))], convert(first)
+            for move in moves:
+                keys.append((move[0], here))
+                here = convert(move[index])
+                keys.append((move[0] + GLIDE, here))
+            cv.keys(g, axis, keys, hold=False, local=False)
+
+
+@register("prop", "toon-vent", summary="A wall vent with white slats")
+def vent(cv: Canvas, parent, at: Point = (452, 470), width: float = 180.0) -> None:
+    """A vent centred on reference ``at``, ``width`` wide (120 to 240) and a little over half as tall."""
+    x, y = _point(at, "a vent's place")
+    if not (checks.number(width) and 120 <= width <= 240):
+        raise ToonDataError(f"a vent is 120 to 240 wide, got {width!r}")
+    height = round(width * 0.58, 2)
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, fx(x - width / 2), fy(y - height / 2), fh(width), fh(height), VENT, cv.ink, INK_W * 0.7, radius=fh(6))
+    for k in range(1, 6):
+        ty = y - height / 2 + k * height / 6
+        cv.rect(g, fx(x - width / 2 + 12), fy(ty - 3), fh(width - 24), fh(6), VENT_SLAT, cv.clear, 0, radius=fh(3))
+
+
+@register("location", "toon-bedroom", summary="A dark bedroom at night: a wooden headboard, a pillow, a moonlit window")
+def bedroom(cv: Canvas, parent) -> None:
+    """The wall at night, a window with the moon at the right above the pill's clearance, the headboard and the pillow
+    behind the character. :func:`quilt` goes in front of the character."""
+    g = cv.group(parent, cv.uid("g"))
+    wall = cv.grad("toon-bedroom-wall", [(float(o), c) for o, c in BEDROOM_WALL], (0, 0, 0, 1))
+    cv.rect(g, 0, 0, cv.width, cv.height, wall)
+    cv.rect(g, fx(392), fy(330), fh(170), fh(220), MOON_SKY, cv.ink, INK_W * 0.8, radius=fh(4))
+    cv.ellipse(g, fx(452), fy(372), fh(62), fh(62), MOON)
+    _line(cv, g, [(477, 330), (477, 550)], 6.0)
+    _line(cv, g, [(392, 440), (562, 440)], 6.0)
+    cv.rect(g, fx(-20), fy(330), fh(390), fh(560), HEADBOARD, cv.ink, INK_W * 0.8, radius=fh(40))
+    cv.ellipse(g, fx(-30), fy(470), fh(390), fh(330), PILLOW, cv.ink, INK_W * 0.7)
+
+
+@register("prop", "toon-quilt", summary="A patched quilt in front of the character, a nightstand signed as the desk is")
+def quilt(cv: Canvas, parent, pattern: str = "plum") -> None:
+    """A quilt up to the character's chest in one of :data:`QUILTS`, with the nightstand holding the cactus and the
+    code where the desk has them."""
+    if pattern not in QUILTS:
+        raise ToonDataError(f"a quilt is one of {sorted(QUILTS)}, got {pattern!r}")
+    base, patch = QUILTS[pattern]
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, fx(-20), fy(740), fh(540), fh(420), base, cv.ink, INK_W, radius=fh(30))
+    for row, top in enumerate(range(770, 1100, 76)):
+        for col, left in enumerate(range(0, 500, 92)):
+            if (row + col) % 2 == 0:
+                cv.rect(g, fx(left), fy(top), fh(78), fh(62), patch, cv.clear, 0, radius=fh(6))
+    cv.rect(g, fx(506), fy(838), fh(110), fh(16), NIGHTSTAND, cv.ink, FINE_W, radius=fh(3))
+    cv.rect(g, fx(516), fy(854), fh(100), fh(320), NIGHTSTAND_FRONT, cv.ink, FINE_W, radius=0)
+    signature.cactus(cv, g, fx(548), fy(838), 0.7)
+    signature.code(cv, g, fx(580), fy(866), 14, color="#b9a48f", opacity=0.9, align="end")

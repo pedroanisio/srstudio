@@ -3485,6 +3485,23 @@
         }
       ]
     },
+    "toon-bedroom": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c6f6fd89c051e81879eba754b488b3ec153d7270c9f8cbba4e45d4aeb018bd5a",
+          "rig": null
+        }
+      ]
+    },
     "toon-board-text": {
       "kind": "graphic",
       "style": "toon",
@@ -3735,6 +3752,23 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de",
+          "rig": null
+        }
+      ]
+    },
+    "toon-finger": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "05fbfc6cabc23d0bb1e68fb58099b7201cf5cfaa070b33ddfeb534af2fd4a9af",
           "rig": null
         }
       ]
@@ -4157,6 +4191,23 @@
         }
       ]
     },
+    "toon-quilt": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fb6e757544dca0f0ef35d799123042feb93f18ac6c41da161d3e8ff28988cb3b",
+          "rig": null
+        }
+      ]
+    },
     "toon-rabbit": {
       "kind": "character",
       "style": "toon",
@@ -4349,6 +4400,23 @@
         }
       ]
     },
+    "toon-thermostat": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ed82c71e3310f486e96efe462667b552e488193b3ecf66a39d9ea3b6da0f291",
+          "rig": null
+        }
+      ]
+    },
     "toon-toast": {
       "kind": "graphic",
       "style": "toon",
@@ -4362,6 +4430,23 @@
           "proof": "",
           "approval": null,
           "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
+        }
+      ]
+    },
+    "toon-vent": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "825646d11470d5f810966fefd978b0e5edf8a5f130c5d472bbc5300572dfdcd2",
           "rig": null
         }
       ]

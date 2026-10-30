@@ -583,16 +583,21 @@
     "stick-cockpit": {"title": "Painel do motorista"},
     "stick-ride": {"title": "Balanço do carro"},
     "toon-clipboard": {"title": "Prancheta"},
+    "toon-bedroom": {"title": "Quarto à noite"},
     "toon-desk-lamp": {"title": "Luminária de mesa"},
+    "toon-finger": {"title": "Mão apontando"},
     "toon-hallway": {"title": "Corredor de casa"},
     "toon-horse": {"title": "Cavalo cinza"},
     "toon-key-line": {"title": "Faixa de uma frase"},
     "toon-ledge": {"title": "Tampo assinado"},
     "toon-phone": {"title": "Smartphone"},
     "toon-plant": {"title": "Planta de folhas brilhantes"},
+    "toon-quilt": {"title": "Colcha de retalhos"},
     "toon-receipt": {"title": "Nota fiscal"},
     "toon-speaker": {"title": "Caixa inteligente"},
-    "toon-take-a-number": {"title": "Dispensador de senhas"}
+    "toon-take-a-number": {"title": "Dispensador de senhas"},
+    "toon-thermostat": {"title": "Termostato"},
+    "toon-vent": {"title": "Grelha de ventilação"}
   },
   "gallery": [
     {
@@ -3942,6 +3947,41 @@
       "parts": ["toon-key-line"],
       "shot": {"episode": "representative", "at": 0.5},
       "text": "Uma frase curta numa barra escura, abaixo do código, para ler o vídeo sem som no primeiro segundo."
+    },
+    {
+      "section": "props",
+      "name": "Termostato",
+      "parts": ["toon-thermostat"],
+      "shot": {"episode": "who-touched-it", "at": 0.5},
+      "text": "Parede, mostrador redondo e dois dígitos que mudam na hora certa. Um grau já basta."
+    },
+    {
+      "section": "props",
+      "name": "Mão apontando",
+      "parts": ["toon-finger"],
+      "shot": {"episode": "who-touched-it", "at": 0.5},
+      "text": "Antebraço, polegar, três dedos dobrados e um dedo em riste que vai aonde mandarem."
+    },
+    {
+      "section": "props",
+      "name": "Grelha de ventilação",
+      "parts": ["toon-vent"],
+      "shot": {"episode": "who-touched-it", "at": 8.7},
+      "text": "Grelha branca de parede, para quem sabe o que o ar andou fazendo."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto à noite",
+      "parts": ["toon-bedroom"],
+      "shot": {"episode": "who-touched-it", "at": 3.5},
+      "text": "Parede escura, cabeceira de madeira, travesseiro e a lua na janela."
+    },
+    {
+      "section": "props",
+      "name": "Colcha de retalhos",
+      "parts": ["toon-quilt"],
+      "shot": {"episode": "who-touched-it", "at": 3.5},
+      "text": "Colcha até o peito no lugar da mesa, com o criado-mudo levando o cacto e o código."
     }
   ]
 }
