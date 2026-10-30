@@ -50,6 +50,7 @@ from . import (  # noqa: F401  (registers builders)
     toon,
     toon_cast,
     toon_dinner,
+    toon_everyday,
     toon_props,
     toon_rooms,
     toon_sets,
