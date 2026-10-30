@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from . import brush, checks
 from .brush import Point, Shape
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Look",
+    "Drawing",
     "DOG",
     "FROG",
     "BEAR",
@@ -54,6 +55,8 @@ __all__ = [
     "INK",
     "VISEMES",
     "BLINK_HOLD",
+    "SLEEPY_PACE",
+    "SLEEPY_HOLD",
     "SHUT",
     "TEAR",
     "HEART",
@@ -82,12 +85,33 @@ SHOULDERS: tuple[Point, Point] = ((62.0, 712.0), (308.0, 712.0))
 VISEMES = ("closed", "open", "round", "teeth")  # the lip-sync mouths; closed is the pose's own mouth
 BLINK_HOLD = 0.12  # seconds the lids stay down in a blink
 BLINK_PHASE = 0.55  # the first blink of a pose comes this fraction of the period after it starts
+SLEEPY_PACE = 1.8  # sleepy eyes blink this many times slower than the look's own pace
+SLEEPY_HOLD = 0.34  # and keep their lids down this long, seconds
 SHUT = ("closed", "wince", "hearts")  # eyes with nothing to blink: no lids come down over them
 TEAR = "#8fd0f5"
 HEART = "#e2364b"
 TONGUE = "#e8798c"
 Layer = tuple[Shape, str]  # a shape and its colour: "ink" and "white" are the palette's, the rest literal
 Mouths = Sequence[tuple[float, str]]  # (project second, viseme) states, in time order
+
+
+class Drawing(Protocol):
+    """A look's own drawing in place of the shared brush parts: its body and ears at rest (with the marks, shading
+    and inner lines), one eye of each kind, the blink lids, the mouths, the visemes and an arm, every one as layers
+    in reference pixels. :func:`figure_layers` and :func:`figure` call it wherever the shared parts would draw, so
+    a look with a drawing keeps the whole contract (:mod:`srstudio.toon_inked`)."""
+
+    def foundation(self, look: Look) -> list[Layer]: ...
+
+    def eye(self, look: Look, centre: Point, kind: str, inner: float) -> list[Layer]: ...
+
+    def lids(self, look: Look) -> list[Layer]: ...
+
+    def mouth(self, look: Look, kind: str) -> list[Layer]: ...
+
+    def viseme(self, look: Look, kind: str) -> list[Layer]: ...
+
+    def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]: ...
 
 
 @dataclass(frozen=True)
@@ -98,7 +122,8 @@ class Look:
     follow the eyes, ``shine`` a highlight on each pupil, ``blush`` cheeks in that colour, ``teeth`` two front
     teeth under the mouth, ``whiskers`` three a side; ``blink`` is the seconds between blinks (0: never).
     ``mantle`` is an outline drawn behind the ears and the body in the dark coat (the hedgehog's spines), ``paw``
-    the paws' colour when not the coat (the raccoon's gloves)."""
+    the paws' colour when not the coat (the raccoon's gloves). ``drawing`` replaces the shared brush parts with the
+    look's own (:class:`Drawing`); without one the look is drawn from its fields."""
 
     name: str
     coat: str
@@ -124,6 +149,7 @@ class Look:
     blink: float = 0.0
     mantle: tuple[Point, ...] = ()
     paw: str = ""
+    drawing: Drawing | None = None
 
 
 def _mirror(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -563,6 +589,8 @@ BEAR_BROW = (
 # -- pieces ---------------------------------------------------------------------------------------------------------
 def _limb(points: Sequence[Point], look: Look, paw: Point, toes: bool = True) -> list[Layer]:
     """An arm from the shoulder to the paw: an ink stroke under a coat stroke, the paw a rimmed oval with toes."""
+    if look.drawing is not None:
+        return look.drawing.limb(points, look, paw, toes)
     out: list[Layer] = [
         (brush.stroke(points, look.limb + 2 * INK, brush.EVEN), "ink"),
         (brush.stroke(points, look.limb, brush.EVEN), look.coat),
@@ -652,6 +680,12 @@ def _brow(look: Look, centre: Point, kind: str, inner: float) -> Layer:
 
 def _eye(look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
     """One eye: ``inner`` is +1 when the nose is to the right of it, −1 when to the left."""
+    if look.drawing is not None:
+        return look.drawing.eye(look, centre, kind, inner)
+    if kind == "sleepy":  # drawn for every look by toon_critters (ADR 0045); here, not at import: it draws with this
+        from .toon_critters import shared_eye
+
+        return shared_eye(look, centre, inner)
     ex, ey = centre
     r = look.eye_r * (1.3 if kind == "shock" else 1.0)
     lid = look.lid or look.coat
@@ -745,6 +779,8 @@ def _tear(x: float, y: float, scale: float) -> tuple[Point, ...]:
 
 def _lids(look: Look) -> list[Layer]:
     """Both eyes shut for a blink: a lid over each eye and the closed line, drawn over the open eyes."""
+    if look.drawing is not None:
+        return look.drawing.lids(look)
     lid = look.lid or look.coat
     out: list[Layer] = []
     for ex, ey in look.eyes:
@@ -755,6 +791,12 @@ def _lids(look: Look) -> list[Layer]:
 
 
 def _mouth(look: Look, kind: str) -> list[Layer]:
+    if look.drawing is not None:
+        return look.drawing.mouth(look, kind)
+    if kind in ("yawn", "scream", "puff"):  # drawn for every look by toon_critters (ADR 0045)
+        from .toon_critters import shared_mouth
+
+        return shared_mouth(look, kind)
     mx, my = look.mouth
     w = look.mouth_w
     if kind == "none":
@@ -822,6 +864,8 @@ def _mouth(look: Look, kind: str) -> list[Layer]:
 
 def _viseme(look: Look, kind: str) -> list[Layer]:
     """A speaking mouth: ``open`` and ``round`` show the lips, ``teeth`` a shallow bite with a parting line."""
+    if look.drawing is not None:
+        return look.drawing.viseme(look, kind)
     mx, my = look.mouth
     w = look.mouth_w
     if kind == "open":
@@ -939,6 +983,8 @@ def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, pa
 
 
 def _foundation(look: Look) -> list[Layer]:
+    if look.drawing is not None:
+        return look.drawing.foundation(look)
     layers: list[Layer] = []
     if look.mantle:
         layers += [(brush.rim(look.mantle, INK), "ink"), (brush.outline(look.mantle), look.dark)]
@@ -988,7 +1034,8 @@ def figure_layers(
     under_mouth += [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
     if look.whiskers:
         under_mouth += _whiskers(look)
-    bare = look.teeth and mouth not in ("none", "grimace", "kiss")  # no front teeth over clenched or puckered lips
+    bare = look.teeth and mouth not in ("none", "grimace", "kiss", "scream")  # none over clenched, puckered or
+    # screaming lips (a scream shows its own row)
     over_mouth: list[Layer] = (_teeth(look) if bare else []) + worn + over + list(stickers)
     return _place(under_mouth, arms), _place(_mouth(look, mouth), arms), _place(over_mouth, arms)
 
@@ -1032,16 +1079,18 @@ def viseme_keys(mouths: Mouths, start: float, end: float) -> dict[str, list[tupl
     return {v: [(t, int(s == v)) for t, s in states] for v in VISEMES if v in used}
 
 
-def blink_times(start: float, end: float, period: float) -> list[float]:
+def blink_times(start: float, end: float, period: float, hold: float = BLINK_HOLD) -> list[float]:
     """When a character blinks through a run: every ``period`` seconds from :data:`BLINK_PHASE` of one into it,
-    never within a hold of the end; none when ``period`` is 0."""
+    never within a ``hold`` of the end; none when ``period`` is 0."""
     if not (checks.number(period) and period >= 0):
         raise ToonDataError(f"a blink period is a non-negative number of seconds, got {period!r}")
+    if not (checks.number(hold) and hold > 0):
+        raise ToonDataError(f"a blink hold is a positive number of seconds, got {hold!r}")
     if period == 0:
         return []
     out = []
     t = start + BLINK_PHASE * period
-    while t + BLINK_HOLD < end - EPSILON:
+    while t + hold < end - EPSILON:
         out.append(round(t, 6))
         t += period
     return out
@@ -1081,7 +1130,8 @@ def figure(
     seconds). ``enter`` puts the character on from that project second: its poses count from it, and it leaves at
     ``duration``. ``mouths`` is the lip-sync track, ``(project second, viseme)`` states: inside every run where a
     sound is heard the mouth becomes one layer per viseme with hold keys (:func:`viseme_keys`), the pose's own mouth
-    showing while closed. A look with a blink period shuts its eyes for :data:`BLINK_HOLD` at :func:`blink_times`."""
+    showing while closed. A look with a blink period shuts its eyes for :data:`BLINK_HOLD` at :func:`blink_times`;
+    sleepy eyes blink :data:`SLEEPY_PACE` times slower and stay shut for :data:`SLEEPY_HOLD`."""
     if not (checks.number(enter) and 0 <= enter < duration):
         raise ToonDataError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     sides: frozenset[str] = frozenset()
@@ -1130,13 +1180,15 @@ def figure(
                 cv.keys(layer, "opacity", states, local=False)
         else:
             _draw(cv, g, mouth_layers)
-        blinks = blink_times(start, end, look.blink) if pose.eyes not in SHUT else []
+        sleepy = pose.eyes == "sleepy"
+        pace, hold = (SLEEPY_PACE, SLEEPY_HOLD) if sleepy else (1.0, BLINK_HOLD)
+        blinks = blink_times(start, end, look.blink * pace, hold) if pose.eyes not in SHUT else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
             _draw(cv, shut, _place(_lids(look), pose.arms))
             states = [(start, 0)]
             for t in blinks:
-                states += [(t, 1), (round(t + BLINK_HOLD, 6), 0)]
+                states += [(t, 1), (round(t + hold, 6), 0)]
             cv.keys(shut, "opacity", states, local=False)
         _draw(cv, g, over)
         if limbs:
