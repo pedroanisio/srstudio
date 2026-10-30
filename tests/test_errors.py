@@ -47,7 +47,7 @@ def test_every_library_error_is_a_srstudio_error(name):
         ("styles.StyleError", ValueError),
         ("usage.UsageError", RuntimeError),
         ("fonts.FontError", RuntimeError),
-        ("catalog_page.CatalogError", Exception),
+        ("catalog_data.CatalogError", Exception),
         ("voice.TranscriptMismatch", ValueError),
     ],
 )
