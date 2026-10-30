@@ -123,6 +123,7 @@ CENTRE_CHAIR_LIGHT = "#56688a"
 BOARD = "#1f2430"
 BOARD_FRAME = "#9aa3b2"
 LED = "#ff4d3d"
+LED_LABEL = "#ff6655"  # the label, legible: its thin lettering measures 5.02:1 on the board as drawn (4.41:1 in LED)
 LED_DIM = "#5a2a28"
 POSTER = "#fff7e8"
 POSTER_BAND = "#f2a65a"
@@ -686,12 +687,17 @@ def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[f
     "toon-call-centre",
     summary="A call-centre cubicle: a fabric partition, a YOUR CALL MATTERS poster and a CALLS WAITING board",
 )
-def call_centre(cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0, 12),), end: float = 0.0) -> None:
+def call_centre(
+    cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0, 12),), end: float = 0.0, legible: bool = False
+) -> None:
     """The character's cubicle on a pale office wall: a flecked blue fabric partition with an aluminium cap behind
     the character, a cheerful poster above it that reads YOUR CALL MATTERS, and, where the other sets have their
     window, a dark LED board of the CALLS WAITING with a red lamp. ``waiting`` is ``(project second, count)`` from
     0, in time order, each count 0 to :data:`WAITING_MAX`; the board shows one count at a time. The lamp blinks
-    from 0 to ``end`` (still when ``end`` is 0)."""
+    from 0 to ``end`` (still when ``end`` is 0). ``legible`` letters the label in :data:`LED_LABEL`: the engine
+    measures text contrast on the glyphs as drawn, edges included, and the label's thin lettering in :data:`LED`
+    falls below 4.5:1, which fails a strict encode. Off by default, so the sets of published episodes stay as they
+    were."""
     counts = _check_waiting(waiting)
     end = _check_end(end)
     g = cv.group(parent, cv.uid("g"))
@@ -706,8 +712,8 @@ def call_centre(cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0
     # the board, in the window's place: a frame, the dark face, the label, the lamp and the count
     cv.rect(g, fx(348), fy(362), fh(250), fh(150), BOARD_FRAME, cv.ink, INK_W, radius=fh(6))
     cv.rect(g, fx(362), fy(374), fh(240), fh(126), BOARD, cv.ink, FINE_W, radius=fh(4))
-    cv.text(g, cv.uid("centre-label"), "CALLS WAITING", fx(380), fy(382), int(fh(200)), int(fh(30)), 30, color=LED,
-            align="start")  # fmt: skip
+    cv.text(g, cv.uid("centre-label"), "CALLS WAITING", fx(380), fy(382), int(fh(200)), int(fh(30)), 30,
+            color=LED_LABEL if legible else LED, align="start")  # fmt: skip
     cv.ellipse(g, fx(566), fy(386), fh(18), fh(18), LED_DIM, cv.ink, FINE_W * 0.5)
     lamp = cv.group(g, cv.uid("g"))
     _glow(cv, lamp, "toon-centre-lamp", 575, 395, 22, LED)
