@@ -568,6 +568,23 @@ moves before the first line. Parts added or extended for it:
 Like *Tip Screen*, the episode declares no engine safe area (its close-ups reframe the menu board out of frame);
 captions are placed inside x 80–920 by hand.
 
+## Cutout episode on the park bench: *Storage Full* (23)
+
+[episodes/storage_full.py](episodes/storage_full.py) puts Milo on the park bench from *Culture Fit*. A pigeon walks
+up the path and does a backflip. "No way. Do that again!" The phone: "Storage full." It offers fourteen photos of the
+same sunset ("Still full."), then the wedding video. Milo and the pigeon look at each other. "...Yes." "Recording."
+The pigeon flies off, and a message from his wife asks for the wedding video.
+
+```bash
+srstudio record storage-full PROJECT
+srstudio build storage-full PROJECT    # PROJECT/storage-full.scene.xml
+```
+
+Its first frame already moves (arm B of the `sp-hook_motion` test): the pigeon is walking in and the camera pushes in
+from the first key. It reuses `cast.pigeon` (nested in walk, flip and turn groups, the flip turning about the
+mirrored rig's body centre), `graphics.notification` holders at 2.25 times for the phone, and `locations.finish` over
+the park.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router
