@@ -44,7 +44,7 @@ def test_the_toon_recorder_keeps_the_default_mouth_when_none_is_named(helpers, m
     got = []
     monkeypatch.setattr(toon, "record_episode", lambda *a, **k: got.append(k))
     toon.recorder("SKETCH", 7, "note", "Doc")([str(tmp_path)], {})
-    assert got == [{"mouth": toon.sketch.MOUTH_STYLE, "foley_of": toon.sound_effects}]
+    assert got == [{"mouth": toon.sketch.MOUTH_STYLE, "foley_of": toon.sound_effects, "sounds": None}]
 
 
 def test_the_toon_recorder_validates_the_sketch_after_parsing_and_before_recording(helpers, monkeypatch, tmp_path):
