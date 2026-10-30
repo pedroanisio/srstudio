@@ -94,6 +94,15 @@ def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
     return [(rig.tilt + sign * swing, drop) for sign in (-1.0, 1.0) for drop in (up, down)]
 
 
+def reach(rig: HeadRig) -> HeadPlan:
+    """The head at rest, then at every corner of what ``rig``'s style can reach, a second each: what a rig's specimen
+    shows of it (:func:`srstudio.specimens.rig_digest`)."""
+    corners = _bounds(rig)
+    turns = ((0.0, 0.0), *((k + 1.0, turn - rig.tilt) for k, (turn, _) in enumerate(corners)))
+    drops = ((0.0, 0.0), *((k + 1.0, drop) for k, (_, drop) in enumerate(corners)))
+    return HeadPlan(turn=Channel(turns), nod=Channel(drops))
+
+
 def open_seam(rig: HeadRig) -> list[tuple[Point, float, float]]:
     """Where the seam opens: every ``(point, turn, drop)`` on the cover line (:data:`SEAM_ROOM` above it for a ruff),
     more than :attr:`HeadRig.free` from its ends, that the head does not reach behind with every channel at its limit.

@@ -1,5 +1,5 @@
 {
-  "schema": "2.0.0",
+  "schema": "2.1.0",
   "parts": {
     "answer-bubble": {
       "kind": "graphic",
@@ -13,7 +13,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "96dcfc0c7c7b01658e6df9ec6629c854b0e657320f78856077f22b2ed7f68375"
+          "drawing": "96dcfc0c7c7b01658e6df9ec6629c854b0e657320f78856077f22b2ed7f68375",
+          "rig": null
         }
       ]
     },
@@ -29,7 +30,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5920843945199b355a9132ad79c656c59722224e57926657c69436bbf081b1d5"
+          "drawing": "5920843945199b355a9132ad79c656c59722224e57926657c69436bbf081b1d5",
+          "rig": null
         }
       ]
     },
@@ -45,7 +47,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3a2d248e20ad4ad6ed263b9657b67c41ca2c4d3c2c30ede52b547496d5b66430"
+          "drawing": "3a2d248e20ad4ad6ed263b9657b67c41ca2c4d3c2c30ede52b547496d5b66430",
+          "rig": null
         }
       ]
     },
@@ -61,7 +64,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "6679712cebe3d8a58523268fa0d26bf9d0505d5a9dcd07871b14d904333f5a6d"
+          "drawing": "6679712cebe3d8a58523268fa0d26bf9d0505d5a9dcd07871b14d904333f5a6d",
+          "rig": null
         }
       ]
     },
@@ -77,7 +81,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "437858871f2f6fa6b8988c72aa398b5dfbbd384ab982916f470db7c18b570b1f"
+          "drawing": "437858871f2f6fa6b8988c72aa398b5dfbbd384ab982916f470db7c18b570b1f",
+          "rig": null
         }
       ]
     },
@@ -93,7 +98,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c98a709dd55bad1ccd59c3c19f3ba3178d7484bdc868d66b51b33adb1f385727"
+          "drawing": "c98a709dd55bad1ccd59c3c19f3ba3178d7484bdc868d66b51b33adb1f385727",
+          "rig": null
         }
       ]
     },
@@ -109,7 +115,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "845cf371c627eedf220f95ec367f77c0f82f6e4ed08718066cea42c17e2fdfb3"
+          "drawing": "845cf371c627eedf220f95ec367f77c0f82f6e4ed08718066cea42c17e2fdfb3",
+          "rig": null
         }
       ]
     },
@@ -125,7 +132,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a510bf04bb38e1cfa9bca6dfda118c6ff308d944813bd1b2015a989e780847df"
+          "drawing": "a510bf04bb38e1cfa9bca6dfda118c6ff308d944813bd1b2015a989e780847df",
+          "rig": null
         }
       ]
     },
@@ -141,7 +149,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "6ac2e74c7ba181faa65c28cf5cb2ab62440fee0c301cf97f8777a9de1cc468a4"
+          "drawing": "6ac2e74c7ba181faa65c28cf5cb2ab62440fee0c301cf97f8777a9de1cc468a4",
+          "rig": null
         }
       ]
     },
@@ -157,7 +166,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3577be4b61da642d351f5e07d4a4e04e7af105c9eaa6984a05ba7b335de89166"
+          "drawing": "3577be4b61da642d351f5e07d4a4e04e7af105c9eaa6984a05ba7b335de89166",
+          "rig": null
         }
       ]
     },
@@ -173,7 +183,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3a63a480aac660a7c6c053de5c6c5c3434abcc8c7ce1b44da24104cb129599de"
+          "drawing": "3a63a480aac660a7c6c053de5c6c5c3434abcc8c7ce1b44da24104cb129599de",
+          "rig": null
         }
       ]
     },
@@ -192,7 +203,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -208,7 +220,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5e099ba4cf16cc0c2f4b9c390a46b65530c566391e2afbe8aef25a1024ed7173"
+          "drawing": "5e099ba4cf16cc0c2f4b9c390a46b65530c566391e2afbe8aef25a1024ed7173",
+          "rig": null
         }
       ]
     },
@@ -227,7 +240,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -243,7 +257,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "2d48b25d02a23a248681e2ebbad2a0dd9a0f28f741107d4cab6b5c1479a679a7"
+          "drawing": "2d48b25d02a23a248681e2ebbad2a0dd9a0f28f741107d4cab6b5c1479a679a7",
+          "rig": null
         }
       ]
     },
@@ -262,7 +277,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -278,7 +294,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "62f7252c754f08cf126a7ae977f7d155468914ce72b00a36fb4e3c380589e713"
+          "drawing": "62f7252c754f08cf126a7ae977f7d155468914ce72b00a36fb4e3c380589e713",
+          "rig": null
         }
       ]
     },
@@ -294,7 +311,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c9a64a29e9b630e56842b85ec5e3eadc6d78eb35aa95be63d1b0cfec0d946951"
+          "drawing": "c9a64a29e9b630e56842b85ec5e3eadc6d78eb35aa95be63d1b0cfec0d946951",
+          "rig": null
         }
       ]
     },
@@ -310,7 +328,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "aa32023e73c2515c3a75640db581f3d7e5b4009f1e9e5322e29d592c5da3db7c"
+          "drawing": "aa32023e73c2515c3a75640db581f3d7e5b4009f1e9e5322e29d592c5da3db7c",
+          "rig": null
         }
       ]
     },
@@ -326,7 +345,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "6f9b0139a530fd6dcbb57f3dc7fc241f05e85f30c5a042b65b5afcbffd2cee14"
+          "drawing": "6f9b0139a530fd6dcbb57f3dc7fc241f05e85f30c5a042b65b5afcbffd2cee14",
+          "rig": null
         }
       ]
     },
@@ -342,7 +362,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3603f5478bd46a9047acbb1c4bf5b2534659cfe20cb5e8fb31fe52c9222302f7"
+          "drawing": "3603f5478bd46a9047acbb1c4bf5b2534659cfe20cb5e8fb31fe52c9222302f7",
+          "rig": null
         }
       ]
     },
@@ -358,7 +379,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "10befa10d7e272e959bbfb799dba54634b85c8e8d799145e57fcd99c98f6697a"
+          "drawing": "10befa10d7e272e959bbfb799dba54634b85c8e8d799145e57fcd99c98f6697a",
+          "rig": null
         }
       ]
     },
@@ -374,7 +396,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "27bc405771317ec688af7010b82157f13cd901da1ab467aec52d677b42a7c57d"
+          "drawing": "27bc405771317ec688af7010b82157f13cd901da1ab467aec52d677b42a7c57d",
+          "rig": null
         }
       ]
     },
@@ -390,7 +413,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "153ba26d872051b21fa2ea1e8621f28692a851b9194e22fff24f29ab2394f404"
+          "drawing": "153ba26d872051b21fa2ea1e8621f28692a851b9194e22fff24f29ab2394f404",
+          "rig": null
         }
       ]
     },
@@ -406,7 +430,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d5ef50c816c1d914598f07296b5c0cd84d88202019e5fd49d5200f6cc3c54bd8"
+          "drawing": "d5ef50c816c1d914598f07296b5c0cd84d88202019e5fd49d5200f6cc3c54bd8",
+          "rig": null
         }
       ]
     },
@@ -422,7 +447,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "89ff553ed7764204b0256dc04e96cc0ecb7cd006e01cdb3e854e758afce34903"
+          "drawing": "89ff553ed7764204b0256dc04e96cc0ecb7cd006e01cdb3e854e758afce34903",
+          "rig": null
         }
       ]
     },
@@ -438,7 +464,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1a2a8f5fd11a45c4df15ee11765a527838db36a08e8abe0f031da2fe950ef48f"
+          "drawing": "1a2a8f5fd11a45c4df15ee11765a527838db36a08e8abe0f031da2fe950ef48f",
+          "rig": null
         }
       ]
     },
@@ -454,7 +481,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "43b9204129f09e449095be873afc8369fac8254b12bf9127eabb5a0fe3a655ba"
+          "drawing": "43b9204129f09e449095be873afc8369fac8254b12bf9127eabb5a0fe3a655ba",
+          "rig": null
         }
       ]
     },
@@ -473,7 +501,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -489,7 +518,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "fa347cc97b162066d3e97db103d83c730862db5ed4dc18792e9946511b6d7cf0"
+          "drawing": "fa347cc97b162066d3e97db103d83c730862db5ed4dc18792e9946511b6d7cf0",
+          "rig": null
         }
       ]
     },
@@ -505,7 +535,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "726c6e3fe4acd1dc17013e59b4e97257901e2df13156fd04b5aa2c618b15ee18"
+          "drawing": "726c6e3fe4acd1dc17013e59b4e97257901e2df13156fd04b5aa2c618b15ee18",
+          "rig": null
         }
       ]
     },
@@ -521,7 +552,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f6db091d5bf3a6ed489d3d556b735693bd4083e3ecdfd6c8dbde986591e6aedf"
+          "drawing": "f6db091d5bf3a6ed489d3d556b735693bd4083e3ecdfd6c8dbde986591e6aedf",
+          "rig": null
         }
       ]
     },
@@ -537,7 +569,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bf18dfaf14562131a33cca15d89171906e4d270a7a8c35ede676a4a90c262b73"
+          "drawing": "bf18dfaf14562131a33cca15d89171906e4d270a7a8c35ede676a4a90c262b73",
+          "rig": null
         }
       ]
     },
@@ -553,7 +586,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "36be28586774c4e5d618eb2248f72ecbd5e41947d55162862760ef9a4c288f48"
+          "drawing": "36be28586774c4e5d618eb2248f72ecbd5e41947d55162862760ef9a4c288f48",
+          "rig": null
         }
       ]
     },
@@ -569,7 +603,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b5cf59f2b93e3c219a13034979556f458e01d1bfe602cbf6fdd9743bf1cc6016"
+          "drawing": "b5cf59f2b93e3c219a13034979556f458e01d1bfe602cbf6fdd9743bf1cc6016",
+          "rig": null
         }
       ]
     },
@@ -585,7 +620,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7f0bba74a49d14f6546ad5fa8e0e6ecf083621cb9f0f873662f852fc695430b8"
+          "drawing": "7f0bba74a49d14f6546ad5fa8e0e6ecf083621cb9f0f873662f852fc695430b8",
+          "rig": null
         }
       ]
     },
@@ -601,7 +637,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ece1b550babfc56861131e9c2b27cfbcd155a094780ef8b3c1c2fbd295a85b10"
+          "drawing": "ece1b550babfc56861131e9c2b27cfbcd155a094780ef8b3c1c2fbd295a85b10",
+          "rig": null
         }
       ]
     },
@@ -617,7 +654,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b151cc3a6b99858707450efe73991539b9c3b18347ec1a3cc60363fe60e33b7a"
+          "drawing": "b151cc3a6b99858707450efe73991539b9c3b18347ec1a3cc60363fe60e33b7a",
+          "rig": null
         }
       ]
     },
@@ -633,7 +671,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3485e693b774c71f788c23bea70b4d5dc33b9492cab52e354ba613142131c6ec"
+          "drawing": "3485e693b774c71f788c23bea70b4d5dc33b9492cab52e354ba613142131c6ec",
+          "rig": null
         }
       ]
     },
@@ -649,7 +688,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "cab0964b378eef11f6b4bdc6a52797f7609b7666f98bdb179c0fc6de3370b068"
+          "drawing": "cab0964b378eef11f6b4bdc6a52797f7609b7666f98bdb179c0fc6de3370b068",
+          "rig": null
         }
       ]
     },
@@ -665,7 +705,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "792f6552fe2e8739d05dfa305209db2e3857830bbc00b77b7f68423e39bc8050"
+          "drawing": "792f6552fe2e8739d05dfa305209db2e3857830bbc00b77b7f68423e39bc8050",
+          "rig": null
         }
       ]
     },
@@ -681,7 +722,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e53215318c3a483f6848b08d02e086c7ffd859632f75bae3d9236f2ac2e1a7d2"
+          "drawing": "e53215318c3a483f6848b08d02e086c7ffd859632f75bae3d9236f2ac2e1a7d2",
+          "rig": null
         }
       ]
     },
@@ -697,7 +739,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7f58757a832718206aa43b32f92e70e15e1f3940fd31e39fdd99b9aba98ce31f"
+          "drawing": "7f58757a832718206aa43b32f92e70e15e1f3940fd31e39fdd99b9aba98ce31f",
+          "rig": null
         }
       ]
     },
@@ -713,7 +756,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a9c00151db8ae009d7a1b3de9abf3e897ee427b404e692d00dca5eb42e22cc2c"
+          "drawing": "a9c00151db8ae009d7a1b3de9abf3e897ee427b404e692d00dca5eb42e22cc2c",
+          "rig": null
         }
       ]
     },
@@ -729,7 +773,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "475de6e4e0cd8ac3a472db371e56b625ffc1f6fc862d385a94530712b8b90a03"
+          "drawing": "475de6e4e0cd8ac3a472db371e56b625ffc1f6fc862d385a94530712b8b90a03",
+          "rig": null
         }
       ]
     },
@@ -745,7 +790,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d2da7460937c1d90681c3d7dc0f90294a6452a5e36dd09e41bc0d6c62f8666fc"
+          "drawing": "d2da7460937c1d90681c3d7dc0f90294a6452a5e36dd09e41bc0d6c62f8666fc",
+          "rig": null
         }
       ]
     },
@@ -761,7 +807,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "13e9d2028321404a559e4e676a2f9acd33a10cd5822744ef7ccbff815a907129"
+          "drawing": "13e9d2028321404a559e4e676a2f9acd33a10cd5822744ef7ccbff815a907129",
+          "rig": null
         }
       ]
     },
@@ -777,7 +824,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c4da5e3c906f534a14789b7f37925d67ca04dc9927161f59d3e5ffd1575ed015"
+          "drawing": "c4da5e3c906f534a14789b7f37925d67ca04dc9927161f59d3e5ffd1575ed015",
+          "rig": null
         }
       ]
     },
@@ -793,7 +841,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "31d570eda7014e54f9633afa881638df91e130f9d7c85e34a886ad991e17c7da"
+          "drawing": "31d570eda7014e54f9633afa881638df91e130f9d7c85e34a886ad991e17c7da",
+          "rig": null
         }
       ]
     },
@@ -809,7 +858,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "94d47b423be61342e40251f6d415bfa8fb9b4bf34f0af76596c73a8a15ca6272"
+          "drawing": "94d47b423be61342e40251f6d415bfa8fb9b4bf34f0af76596c73a8a15ca6272",
+          "rig": null
         }
       ]
     },
@@ -825,7 +875,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "64013870f2dd3ca53e57f8ad690d84a920ce79471387e86c7eed154b98a4fee3"
+          "drawing": "64013870f2dd3ca53e57f8ad690d84a920ce79471387e86c7eed154b98a4fee3",
+          "rig": null
         }
       ]
     },
@@ -841,7 +892,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "2a50ffe00723ea25e6844cda2ae9e667650b8c6dd227a2e203c6505622b2f13c"
+          "drawing": "2a50ffe00723ea25e6844cda2ae9e667650b8c6dd227a2e203c6505622b2f13c",
+          "rig": null
         }
       ]
     },
@@ -857,7 +909,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5d9ca9757fb2ea5168940d21afeac3a2b30cdc76db6204c73a8211905455a9c5"
+          "drawing": "5d9ca9757fb2ea5168940d21afeac3a2b30cdc76db6204c73a8211905455a9c5",
+          "rig": null
         }
       ]
     },
@@ -873,7 +926,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "06171cee48f97c08d8453de00d364286cddc41fcc4952c8efeddc23b2b50df82"
+          "drawing": "06171cee48f97c08d8453de00d364286cddc41fcc4952c8efeddc23b2b50df82",
+          "rig": null
         }
       ]
     },
@@ -889,7 +943,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "61ad9004949ab4074bb87789b8edaaaa697193f6fff6caae558f25623975c295"
+          "drawing": "61ad9004949ab4074bb87789b8edaaaa697193f6fff6caae558f25623975c295",
+          "rig": null
         }
       ]
     },
@@ -905,7 +960,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e29d5187a4c5a3bddbd08e63c931dcee68d4f7f4dd0eaaa913d5b2c98a5a8441"
+          "drawing": "e29d5187a4c5a3bddbd08e63c931dcee68d4f7f4dd0eaaa913d5b2c98a5a8441",
+          "rig": null
         }
       ]
     },
@@ -921,7 +977,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "26404ca78cf6eb96c4971350bc36100876d6aa9ed3d619f7a9fc2b1c41e621cf"
+          "drawing": "26404ca78cf6eb96c4971350bc36100876d6aa9ed3d619f7a9fc2b1c41e621cf",
+          "rig": null
         }
       ]
     },
@@ -937,7 +994,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "93cd771a587acbe1d5c8bc4702021ba7a88a4a2e3b124db8351150bf77e4d9a4"
+          "drawing": "93cd771a587acbe1d5c8bc4702021ba7a88a4a2e3b124db8351150bf77e4d9a4",
+          "rig": null
         }
       ]
     },
@@ -953,7 +1011,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ef6b0ae49bc49cc8d8433459221092cac76a8fcff8d476e94f5048b7080e41ed"
+          "drawing": "ef6b0ae49bc49cc8d8433459221092cac76a8fcff8d476e94f5048b7080e41ed",
+          "rig": null
         }
       ]
     },
@@ -969,7 +1028,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c35a2f00b246e2f784e6753ead66446d059957ce9ed238108c32938c399301a8"
+          "drawing": "c35a2f00b246e2f784e6753ead66446d059957ce9ed238108c32938c399301a8",
+          "rig": null
         }
       ]
     },
@@ -985,7 +1045,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "43f5bebd19dee8bd99bca982df6de661c4e95dd84bc97350bc46add1c0c9aedd"
+          "drawing": "43f5bebd19dee8bd99bca982df6de661c4e95dd84bc97350bc46add1c0c9aedd",
+          "rig": null
         }
       ]
     },
@@ -1001,7 +1062,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dfd750fba75842f4904724a702d28c015522fc313f80bc8d3be1cc0885e171e5"
+          "drawing": "dfd750fba75842f4904724a702d28c015522fc313f80bc8d3be1cc0885e171e5",
+          "rig": null
         }
       ]
     },
@@ -1017,7 +1079,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f497f2a30b709745c43b02ae0207fd669114f697c7e7306b0195d0c96eef4e1e"
+          "drawing": "f497f2a30b709745c43b02ae0207fd669114f697c7e7306b0195d0c96eef4e1e",
+          "rig": null
         }
       ]
     },
@@ -1033,7 +1096,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a65bff7e59ece42a3d0dd55b127ae089c200d3b927a30b6d249e34adc26825e2"
+          "drawing": "a65bff7e59ece42a3d0dd55b127ae089c200d3b927a30b6d249e34adc26825e2",
+          "rig": null
         }
       ]
     },
@@ -1049,7 +1113,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e72fbd55d175062ad3837a9b1f18ee388ef630ece9f3e1769c7fc849261f1046"
+          "drawing": "e72fbd55d175062ad3837a9b1f18ee388ef630ece9f3e1769c7fc849261f1046",
+          "rig": null
         }
       ]
     },
@@ -1065,7 +1130,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f7144e18b36fa18af09de322933e28b43d09af846f0591da078eb4afd9dff1e9"
+          "drawing": "f7144e18b36fa18af09de322933e28b43d09af846f0591da078eb4afd9dff1e9",
+          "rig": null
         }
       ]
     },
@@ -1081,7 +1147,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d5019f638a0e1ae814ad8325c616a5c7ae7c6fb58cd44a55f0345b29e731e060"
+          "drawing": "d5019f638a0e1ae814ad8325c616a5c7ae7c6fb58cd44a55f0345b29e731e060",
+          "rig": null
         }
       ]
     },
@@ -1097,7 +1164,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7d9a8a89f73ec7e8c40df9790b7bf4c2d44386c4f494e2172a53f29e178dbb58"
+          "drawing": "7d9a8a89f73ec7e8c40df9790b7bf4c2d44386c4f494e2172a53f29e178dbb58",
+          "rig": null
         }
       ]
     },
@@ -1113,7 +1181,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "adb3da2671cd487ae6922aff9e5fef7b94a3ef1f4d3fb0164cc113ba96b7baaf"
+          "drawing": "adb3da2671cd487ae6922aff9e5fef7b94a3ef1f4d3fb0164cc113ba96b7baaf",
+          "rig": null
         }
       ]
     },
@@ -1129,7 +1198,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8a9333e846757caf44a3c2b9f9fe97c85c02c72dcd654647510ca70623a6a03e"
+          "drawing": "8a9333e846757caf44a3c2b9f9fe97c85c02c72dcd654647510ca70623a6a03e",
+          "rig": null
         }
       ]
     },
@@ -1145,7 +1215,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e9a23d8e59368002dcc2f478842132fb571c8739a30ee96525aeafe106b1be6c"
+          "drawing": "e9a23d8e59368002dcc2f478842132fb571c8739a30ee96525aeafe106b1be6c",
+          "rig": null
         }
       ]
     },
@@ -1164,7 +1235,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1180,7 +1252,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bd60d81d1abfdeb009aa758fda5b16454750d5f0ae9b93ec459af133d41d76a6"
+          "drawing": "bd60d81d1abfdeb009aa758fda5b16454750d5f0ae9b93ec459af133d41d76a6",
+          "rig": null
         }
       ]
     },
@@ -1199,7 +1272,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1215,7 +1289,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f497b5952831ca479510d8238491a68b2853eff5f7f758320f99ceec5b8acfcd"
+          "drawing": "f497b5952831ca479510d8238491a68b2853eff5f7f758320f99ceec5b8acfcd",
+          "rig": null
         }
       ]
     },
@@ -1234,7 +1309,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1250,7 +1326,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b1d4b9713108c639b872e7b30808d222c09ffbd2f70bdfda3c4c87177698c154"
+          "drawing": "b1d4b9713108c639b872e7b30808d222c09ffbd2f70bdfda3c4c87177698c154",
+          "rig": null
         }
       ]
     },
@@ -1266,7 +1343,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "da9bb7f38ba7baff30157519881e1432f9fe7d29e8efa24f643cea4db0dbe4c6"
+          "drawing": "da9bb7f38ba7baff30157519881e1432f9fe7d29e8efa24f643cea4db0dbe4c6",
+          "rig": null
         }
       ]
     },
@@ -1285,7 +1363,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1301,7 +1380,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ff4f2bc04ecb92c1b32ed12c4060e91795d7c2ca1dcd5184d02045479e717caf"
+          "drawing": "ff4f2bc04ecb92c1b32ed12c4060e91795d7c2ca1dcd5184d02045479e717caf",
+          "rig": null
         }
       ]
     },
@@ -1317,7 +1397,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "82bc492bd9bbe6b373c624b10e3809bfa41414892ceb76b224959861bee84f31"
+          "drawing": "82bc492bd9bbe6b373c624b10e3809bfa41414892ceb76b224959861bee84f31",
+          "rig": null
         }
       ]
     },
@@ -1333,7 +1414,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7c1c1d4f45c7051f14e565a6141fdf0fbe6729ccdae991b22e4be47a79b3eb84"
+          "drawing": "7c1c1d4f45c7051f14e565a6141fdf0fbe6729ccdae991b22e4be47a79b3eb84",
+          "rig": null
         }
       ]
     },
@@ -1352,7 +1434,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1371,7 +1454,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1390,7 +1474,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1409,7 +1494,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1428,7 +1514,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1444,7 +1531,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "285b6f53fdf15edf306a7ebd9d07ff16c079d04f880f72336b97301865473cb1"
+          "drawing": "285b6f53fdf15edf306a7ebd9d07ff16c079d04f880f72336b97301865473cb1",
+          "rig": null
         }
       ]
     },
@@ -1460,7 +1548,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0516da7e831d5edea3c72c649b329c6196cf47082a7e4e8cab309b8bb021bf77"
+          "drawing": "0516da7e831d5edea3c72c649b329c6196cf47082a7e4e8cab309b8bb021bf77",
+          "rig": null
         }
       ]
     },
@@ -1476,7 +1565,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "2a3c3b4815998291a2e76e3a410ec45d76a83af5368d66f2592b5fc9684e74f6"
+          "drawing": "2a3c3b4815998291a2e76e3a410ec45d76a83af5368d66f2592b5fc9684e74f6",
+          "rig": null
         }
       ]
     },
@@ -1492,7 +1582,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "fe30bf56b554df333b3cb48949bd02238d9841b932399aec0bf1ca787878bf15"
+          "drawing": "fe30bf56b554df333b3cb48949bd02238d9841b932399aec0bf1ca787878bf15",
+          "rig": null
         }
       ]
     },
@@ -1508,7 +1599,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "faa279a5a63cc45433b62bc07080498ed90f1f6ab2dc5c8dbe09e7b87bd40f90"
+          "drawing": "faa279a5a63cc45433b62bc07080498ed90f1f6ab2dc5c8dbe09e7b87bd40f90",
+          "rig": null
         }
       ]
     },
@@ -1524,7 +1616,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "cec7a5961af9463a3234ea55262498b6791bc9322709804fc182e36fe957eb99"
+          "drawing": "cec7a5961af9463a3234ea55262498b6791bc9322709804fc182e36fe957eb99",
+          "rig": null
         }
       ]
     },
@@ -1540,7 +1633,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8bdde731deb70c272e6606fd78baa2d0b2ece6c67a92a766fd8e66e001c6f61d"
+          "drawing": "8bdde731deb70c272e6606fd78baa2d0b2ece6c67a92a766fd8e66e001c6f61d",
+          "rig": null
         }
       ]
     },
@@ -1556,7 +1650,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f36da43903c64bcda88545673d4d190b04651b4c6d60b35d56972846ff0e1715"
+          "drawing": "f36da43903c64bcda88545673d4d190b04651b4c6d60b35d56972846ff0e1715",
+          "rig": null
         }
       ]
     },
@@ -1572,7 +1667,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4b80e5dfa00c2a3ecb1ee3142727e643198537ad517386e27cd2506411581ac7"
+          "drawing": "4b80e5dfa00c2a3ecb1ee3142727e643198537ad517386e27cd2506411581ac7",
+          "rig": null
         }
       ]
     },
@@ -1591,7 +1687,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -1607,7 +1704,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0310f867a19247a7402afe42c80bbc3b889f55f2f0cc1135bb16fbeb6435412f"
+          "drawing": "0310f867a19247a7402afe42c80bbc3b889f55f2f0cc1135bb16fbeb6435412f",
+          "rig": null
         }
       ]
     },
@@ -1623,7 +1721,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5f1195229c30768d35a378f8d570c79a2b8a61d3856882e14bf6fefb00d3b941"
+          "drawing": "5f1195229c30768d35a378f8d570c79a2b8a61d3856882e14bf6fefb00d3b941",
+          "rig": null
         }
       ]
     },
@@ -1639,7 +1738,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1482653be12d462ef2e9711a05eb7bd80852acfcd4db245e6273bce51bb8bb39"
+          "drawing": "1482653be12d462ef2e9711a05eb7bd80852acfcd4db245e6273bce51bb8bb39",
+          "rig": null
         }
       ]
     },
@@ -1655,7 +1755,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "81e14efcff95b356fdfccc5757b4728b707d9cbbce6f4636a14e1ae2376aa589"
+          "drawing": "81e14efcff95b356fdfccc5757b4728b707d9cbbce6f4636a14e1ae2376aa589",
+          "rig": null
         }
       ]
     },
@@ -1671,7 +1772,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "82295b09585ac96507d0b1e5da0e8bf08d54f6591b1155914da45f9d051496ac"
+          "drawing": "82295b09585ac96507d0b1e5da0e8bf08d54f6591b1155914da45f9d051496ac",
+          "rig": null
         }
       ]
     },
@@ -1687,7 +1789,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "47277a3f7ff76fe1077b5a98e269beec34ece1a406bacd5c881f0c245873297a"
+          "drawing": "47277a3f7ff76fe1077b5a98e269beec34ece1a406bacd5c881f0c245873297a",
+          "rig": null
         }
       ]
     },
@@ -1703,7 +1806,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c485ecf6b4e3e8c2015827abfb7bdc75ce8baf1b78f74b96fb8caf6a0e802534"
+          "drawing": "c485ecf6b4e3e8c2015827abfb7bdc75ce8baf1b78f74b96fb8caf6a0e802534",
+          "rig": null
         }
       ]
     },
@@ -1719,7 +1823,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f20287b6fd11d5fae364ee61c9bc0fdb7e0289b9544ce45c2777590b0a1748cd"
+          "drawing": "f20287b6fd11d5fae364ee61c9bc0fdb7e0289b9544ce45c2777590b0a1748cd",
+          "rig": null
         }
       ]
     },
@@ -1735,7 +1840,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f00c38ef2a480cf5285837a685be7db031a2dae266ae2aa0f9ba505872ae910f"
+          "drawing": "f00c38ef2a480cf5285837a685be7db031a2dae266ae2aa0f9ba505872ae910f",
+          "rig": null
         }
       ]
     },
@@ -1751,7 +1857,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7e08b5891dc25d9d6d689d71f1ab394a85ea55182d25bfec0ff231126cc59f27"
+          "drawing": "7e08b5891dc25d9d6d689d71f1ab394a85ea55182d25bfec0ff231126cc59f27",
+          "rig": null
         }
       ]
     },
@@ -1767,7 +1874,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "544affcac0cec1c32ec9f58d3c847b1e05439fa3a5f532f38a1416b1325a96d2"
+          "drawing": "544affcac0cec1c32ec9f58d3c847b1e05439fa3a5f532f38a1416b1325a96d2",
+          "rig": null
         }
       ]
     },
@@ -1783,7 +1891,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8979353521cb1938f9f92ba7f9659e90f197b753075772828fdceb35b831331d"
+          "drawing": "8979353521cb1938f9f92ba7f9659e90f197b753075772828fdceb35b831331d",
+          "rig": null
         }
       ]
     },
@@ -1799,7 +1908,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "9e768ca1e497296c838578f287e226c9ace0ca030b58b9ed8b15b8399df7ec2e"
+          "drawing": "9e768ca1e497296c838578f287e226c9ace0ca030b58b9ed8b15b8399df7ec2e",
+          "rig": null
         }
       ]
     },
@@ -1815,7 +1925,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "29b5fc35afd79a00fcbe9ce4e323588a2d7ce2037db2c2a04799a8e1935173e3"
+          "drawing": "29b5fc35afd79a00fcbe9ce4e323588a2d7ce2037db2c2a04799a8e1935173e3",
+          "rig": null
         }
       ]
     },
@@ -1831,7 +1942,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0b6666ca1636252a50ec562e4604f3c147c06b3f5afd4d1b6a52cc2784008582"
+          "drawing": "0b6666ca1636252a50ec562e4604f3c147c06b3f5afd4d1b6a52cc2784008582",
+          "rig": null
         }
       ]
     },
@@ -1847,7 +1959,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1be961eea7e5dcd803679bad8d70dc68c0000d9f2d4d081f3d77aaa0e6dcb110"
+          "drawing": "1be961eea7e5dcd803679bad8d70dc68c0000d9f2d4d081f3d77aaa0e6dcb110",
+          "rig": null
         }
       ]
     },
@@ -1863,7 +1976,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "651b970640306df9c89515211acb8f2c2ecbf240aa0f2d1c840348c939bf5693"
+          "drawing": "651b970640306df9c89515211acb8f2c2ecbf240aa0f2d1c840348c939bf5693",
+          "rig": null
         }
       ]
     },
@@ -1879,7 +1993,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e531dfd9b31aa267d77db18e7a6a6fd7a10217d0ca604f02d104a3a0a05c1dca"
+          "drawing": "e531dfd9b31aa267d77db18e7a6a6fd7a10217d0ca604f02d104a3a0a05c1dca",
+          "rig": null
         }
       ]
     },
@@ -1895,7 +2010,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d7ed2b4eed71b6578ce86310d45f9921a3f031bfce4101a02b71ef0779303fd6"
+          "drawing": "d7ed2b4eed71b6578ce86310d45f9921a3f031bfce4101a02b71ef0779303fd6",
+          "rig": null
         }
       ]
     },
@@ -1911,7 +2027,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dfa81db55c8c0c8152ddf3070fdb9143fe489014e3ac3b6fe9d5e96b56f067c2"
+          "drawing": "dfa81db55c8c0c8152ddf3070fdb9143fe489014e3ac3b6fe9d5e96b56f067c2",
+          "rig": null
         }
       ]
     },
@@ -1927,7 +2044,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0d190913214561c661609fc1ae1e495f4416f8be4d97e097f8d5f8a4fd0a5533"
+          "drawing": "0d190913214561c661609fc1ae1e495f4416f8be4d97e097f8d5f8a4fd0a5533",
+          "rig": null
         }
       ]
     },
@@ -1943,7 +2061,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "017932d6e4b4b6f2b3aa0ca773ad5f6099ceb456e6577ee22f83fb586ecda6fe"
+          "drawing": "017932d6e4b4b6f2b3aa0ca773ad5f6099ceb456e6577ee22f83fb586ecda6fe",
+          "rig": null
         }
       ]
     },
@@ -1959,7 +2078,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "9cf105e165a3ccd5c07c49cc9e2feacc5021f423341af65f6f1746a332eb7d03"
+          "drawing": "9cf105e165a3ccd5c07c49cc9e2feacc5021f423341af65f6f1746a332eb7d03",
+          "rig": null
         }
       ]
     },
@@ -1975,7 +2095,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7965e0a0e4a3f851473f8c0e3ded04f2f3ec2dff34f78c0ab66076e088c0bfd3"
+          "drawing": "7965e0a0e4a3f851473f8c0e3ded04f2f3ec2dff34f78c0ab66076e088c0bfd3",
+          "rig": null
         }
       ]
     },
@@ -1991,7 +2112,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7d5727354a980028ab9ea396576b0a83dea5ec654779c4d7b6c46654ddbf42ed"
+          "drawing": "7d5727354a980028ab9ea396576b0a83dea5ec654779c4d7b6c46654ddbf42ed",
+          "rig": null
         }
       ]
     },
@@ -2007,7 +2129,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "489b0396d35bd908da2edc78f25a566f8624f2d29f4f3a372e1563894f331d09"
+          "drawing": "489b0396d35bd908da2edc78f25a566f8624f2d29f4f3a372e1563894f331d09",
+          "rig": null
         }
       ]
     },
@@ -2023,7 +2146,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "45507de4f2ba8205bd2bdb649da587195e5cc846158585a4e39340a035bcfd74"
+          "drawing": "45507de4f2ba8205bd2bdb649da587195e5cc846158585a4e39340a035bcfd74",
+          "rig": null
         }
       ]
     },
@@ -2039,7 +2163,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "185597429a43371f88806771f280ae1376265d70a45b54e6bd552515b2f57d16"
+          "drawing": "185597429a43371f88806771f280ae1376265d70a45b54e6bd552515b2f57d16",
+          "rig": null
         }
       ]
     },
@@ -2055,7 +2180,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0e58e2f2aadc1e15ea1e6422cb73dab23c131a3c9985d3892f826c09b5a27124"
+          "drawing": "0e58e2f2aadc1e15ea1e6422cb73dab23c131a3c9985d3892f826c09b5a27124",
+          "rig": null
         }
       ]
     },
@@ -2071,7 +2197,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "31dc739c049f24b563205aab50118206a051fdd4fd4a3aa490a3b8484bd257af"
+          "drawing": "31dc739c049f24b563205aab50118206a051fdd4fd4a3aa490a3b8484bd257af",
+          "rig": null
         }
       ]
     },
@@ -2087,7 +2214,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5c4a4484650514bac433277af983b1952a85df7fb223cd8e17c0ef4c7f59e639"
+          "drawing": "5c4a4484650514bac433277af983b1952a85df7fb223cd8e17c0ef4c7f59e639",
+          "rig": null
         }
       ]
     },
@@ -2103,7 +2231,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "909d0eafcfc627da0d80d00af10d7a553ddfa66c53988d2b4d50e060b69435ee"
+          "drawing": "909d0eafcfc627da0d80d00af10d7a553ddfa66c53988d2b4d50e060b69435ee",
+          "rig": null
         }
       ]
     },
@@ -2119,7 +2248,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c469b12275719cfb1857fce504a0675edec42990215385434e5fc1c3922fce3a"
+          "drawing": "c469b12275719cfb1857fce504a0675edec42990215385434e5fc1c3922fce3a",
+          "rig": null
         }
       ]
     },
@@ -2135,7 +2265,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "499f15faf8d25b79e9c47be6e23181a01dc3b00647eac1935e7577a33d6b0890"
+          "drawing": "499f15faf8d25b79e9c47be6e23181a01dc3b00647eac1935e7577a33d6b0890",
+          "rig": null
         }
       ]
     },
@@ -2151,7 +2282,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d8bf293d1c4f6f1626117cf8b315069aa1c33c133c127f9c9e8d3a5074a8fc94"
+          "drawing": "d8bf293d1c4f6f1626117cf8b315069aa1c33c133c127f9c9e8d3a5074a8fc94",
+          "rig": null
         }
       ]
     },
@@ -2167,7 +2299,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c164762d11cab1bd96271673aa8b129d7e3402f3f9afd6b120bb845c15c7c6ea"
+          "drawing": "c164762d11cab1bd96271673aa8b129d7e3402f3f9afd6b120bb845c15c7c6ea",
+          "rig": null
         }
       ]
     },
@@ -2183,7 +2316,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "9f9a7864fb55d24692bf6eeb0df2dd1490afecef8c2c2c607806409ef4fa1d6f"
+          "drawing": "9f9a7864fb55d24692bf6eeb0df2dd1490afecef8c2c2c607806409ef4fa1d6f",
+          "rig": null
         }
       ]
     },
@@ -2199,7 +2333,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "57f6c236af6ed848bcf8043275e73c231c8e920b081ef621a8c0674d4efb22d8"
+          "drawing": "57f6c236af6ed848bcf8043275e73c231c8e920b081ef621a8c0674d4efb22d8",
+          "rig": null
         }
       ]
     },
@@ -2215,7 +2350,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b7d914b0483861de6c3e200a82baf9c738e3b9c8a5af1ef642210feaba6780e6"
+          "drawing": "b7d914b0483861de6c3e200a82baf9c738e3b9c8a5af1ef642210feaba6780e6",
+          "rig": null
         }
       ]
     },
@@ -2231,7 +2367,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ccdfd1a112a206f8ac1af7f59fb245e4f26352370e558c7f03084bd1c6040068"
+          "drawing": "ccdfd1a112a206f8ac1af7f59fb245e4f26352370e558c7f03084bd1c6040068",
+          "rig": null
         }
       ]
     },
@@ -2247,7 +2384,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a3b28d0f3d51cf03275e4571f5daa1373304a4ab0e49a5b5277fcd1706dc720d"
+          "drawing": "a3b28d0f3d51cf03275e4571f5daa1373304a4ab0e49a5b5277fcd1706dc720d",
+          "rig": null
         }
       ]
     },
@@ -2263,7 +2401,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dc974a01d981d4d3290872ecff89e16542b9ee13216f1db581c61c05f76d85b3"
+          "drawing": "dc974a01d981d4d3290872ecff89e16542b9ee13216f1db581c61c05f76d85b3",
+          "rig": null
         }
       ]
     },
@@ -2279,7 +2418,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "0a995e3d16268994a5b7843c0176ab268844968c43c482a8e40594fafa666e36"
+          "drawing": "0a995e3d16268994a5b7843c0176ab268844968c43c482a8e40594fafa666e36",
+          "rig": null
         }
       ]
     },
@@ -2295,7 +2435,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "be6beea8ccbd39a09cd9561282af05d7f4c25d9f30afa9851be36c9a0831a6fe"
+          "drawing": "be6beea8ccbd39a09cd9561282af05d7f4c25d9f30afa9851be36c9a0831a6fe",
+          "rig": null
         }
       ]
     },
@@ -2311,7 +2452,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d7848d06224eeb07558d48e31b5cddf51a06c5339e50508cb20ae33cf47069ff"
+          "drawing": "d7848d06224eeb07558d48e31b5cddf51a06c5339e50508cb20ae33cf47069ff",
+          "rig": null
         }
       ]
     },
@@ -2327,7 +2469,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "63f0c5211bfa9a9b544dbcf9fc486725b6fbe51f8d9eddace0d0c947df1db3fd"
+          "drawing": "63f0c5211bfa9a9b544dbcf9fc486725b6fbe51f8d9eddace0d0c947df1db3fd",
+          "rig": null
         }
       ]
     },
@@ -2343,7 +2486,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c8e2250a6cd8d1681083374987d0f700b67ac8a5df7ad46694d0ca6126c4ac81"
+          "drawing": "c8e2250a6cd8d1681083374987d0f700b67ac8a5df7ad46694d0ca6126c4ac81",
+          "rig": null
         }
       ]
     },
@@ -2359,7 +2503,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a1b08367a7020d76965db0c40bfd0ff2d2559a69136a16e2360e31198af6bbff"
+          "drawing": "a1b08367a7020d76965db0c40bfd0ff2d2559a69136a16e2360e31198af6bbff",
+          "rig": null
         }
       ]
     },
@@ -2375,7 +2520,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7ee305eb503d8be2de5b89a829c1001f3cb6a9078b5f08120ca3a8ec5cc2bca2"
+          "drawing": "7ee305eb503d8be2de5b89a829c1001f3cb6a9078b5f08120ca3a8ec5cc2bca2",
+          "rig": null
         }
       ]
     },
@@ -2391,7 +2537,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dcd978f4719429e40f548f7cdbf2c11ca0773b7f58a79fb84ea5051e4f63c201"
+          "drawing": "dcd978f4719429e40f548f7cdbf2c11ca0773b7f58a79fb84ea5051e4f63c201",
+          "rig": null
         }
       ]
     },
@@ -2407,7 +2554,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f6a69e62a5ab4271bed07be5de9379314fb3a5dd1174bbbbaad78ef923f69549"
+          "drawing": "f6a69e62a5ab4271bed07be5de9379314fb3a5dd1174bbbbaad78ef923f69549",
+          "rig": null
         }
       ]
     },
@@ -2423,7 +2571,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "028e4bc447e9e79a2795d8868450c7d6da060550345b7b669a610e6a74637c6c"
+          "drawing": "028e4bc447e9e79a2795d8868450c7d6da060550345b7b669a610e6a74637c6c",
+          "rig": null
         }
       ]
     },
@@ -2439,7 +2588,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "9eb1b226718bda475fddb7f1d2e51d8970e90ffb911ff595ce185fc605460c18"
+          "drawing": "9eb1b226718bda475fddb7f1d2e51d8970e90ffb911ff595ce185fc605460c18",
+          "rig": null
         }
       ]
     },
@@ -2455,7 +2605,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b87dd46f804a19c30126be55aea4cebef4076e0a292d3b3921a4e708a7b782b2"
+          "drawing": "b87dd46f804a19c30126be55aea4cebef4076e0a292d3b3921a4e708a7b782b2",
+          "rig": null
         }
       ]
     },
@@ -2471,7 +2622,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "5cb3a40c5e976bb47251f1096a495d243769201b6089bb03851ab828b6095654"
+          "drawing": "5cb3a40c5e976bb47251f1096a495d243769201b6089bb03851ab828b6095654",
+          "rig": null
         }
       ]
     },
@@ -2487,7 +2639,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e77818c5807411e11e411ed77d6132d1f1828c74b8510db1d0d3da7df3949b45"
+          "drawing": "e77818c5807411e11e411ed77d6132d1f1828c74b8510db1d0d3da7df3949b45",
+          "rig": null
         }
       ]
     },
@@ -2503,7 +2656,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "9c59dd1d87f2929a97d8c09b0b69fb513f3afd23f4e418f3fe2979b93672bf1d"
+          "drawing": "9c59dd1d87f2929a97d8c09b0b69fb513f3afd23f4e418f3fe2979b93672bf1d",
+          "rig": null
         }
       ]
     },
@@ -2519,7 +2673,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d767f09aa364779830f06ea80377f16d5be070e275c844286453cc43536c77cc"
+          "drawing": "d767f09aa364779830f06ea80377f16d5be070e275c844286453cc43536c77cc",
+          "rig": null
         }
       ]
     },
@@ -2535,7 +2690,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "aefaba54d287c49165b864e608d9ab783668fcf27ba8f3bf654cbf543f483063"
+          "drawing": "aefaba54d287c49165b864e608d9ab783668fcf27ba8f3bf654cbf543f483063",
+          "rig": null
         }
       ]
     },
@@ -2551,7 +2707,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "fac54e1118c0b9f61f7b95c0f71e7dceedb0c8e2ccfd9380416b7f98acc2413d"
+          "drawing": "fac54e1118c0b9f61f7b95c0f71e7dceedb0c8e2ccfd9380416b7f98acc2413d",
+          "rig": null
         }
       ]
     },
@@ -2567,7 +2724,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e92ba303fbcc094668cc57b4792ad72c54684f079a82a9a97adf761761565f62"
+          "drawing": "e92ba303fbcc094668cc57b4792ad72c54684f079a82a9a97adf761761565f62",
+          "rig": null
         }
       ]
     },
@@ -2583,7 +2741,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "39bb88b9890d12cd3a62778796e377a76d5c74f0dc017a8b5924c2d5f4c1b8ec"
+          "drawing": "39bb88b9890d12cd3a62778796e377a76d5c74f0dc017a8b5924c2d5f4c1b8ec",
+          "rig": null
         }
       ]
     },
@@ -2599,7 +2758,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e3d7497a2a24d1b2c7f730fb9d129128c45c5fd91dc7f8a27f661efd6a2cbfc7"
+          "drawing": "e3d7497a2a24d1b2c7f730fb9d129128c45c5fd91dc7f8a27f661efd6a2cbfc7",
+          "rig": null
         }
       ]
     },
@@ -2615,7 +2775,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "51e990d999e5567153e3351fe7a907da66d0612996ded77ef3907c2819dac7cd"
+          "drawing": "51e990d999e5567153e3351fe7a907da66d0612996ded77ef3907c2819dac7cd",
+          "rig": null
         }
       ]
     },
@@ -2631,7 +2792,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bb59f9d9e2e645462344db82716c532e3d868f47664477f66776b2cecc55e507"
+          "drawing": "bb59f9d9e2e645462344db82716c532e3d868f47664477f66776b2cecc55e507",
+          "rig": null
         }
       ]
     },
@@ -2650,7 +2812,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -2666,7 +2829,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "92e0cedb7ed12b21fa177b2198ef02e55b614d0ce0b144fc91213c924cea0d34"
+          "drawing": "92e0cedb7ed12b21fa177b2198ef02e55b614d0ce0b144fc91213c924cea0d34",
+          "rig": null
         }
       ]
     },
@@ -2682,7 +2846,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1280bdfdd36001a38c200433a31d9f4acd3a349b7b44c3efc1d0f8769e4c0e74"
+          "drawing": "1280bdfdd36001a38c200433a31d9f4acd3a349b7b44c3efc1d0f8769e4c0e74",
+          "rig": null
         }
       ]
     },
@@ -2698,7 +2863,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3164e8056af3ce317cd55c7db7e4bf459f723ae3006b63b51cff79a66fad26ee"
+          "drawing": "3164e8056af3ce317cd55c7db7e4bf459f723ae3006b63b51cff79a66fad26ee",
+          "rig": null
         }
       ]
     },
@@ -2714,7 +2880,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1ff2d0711bb3372312f53ac8e03467d7d90cb9b23614fa6b8272a5ba631dc71a"
+          "drawing": "1ff2d0711bb3372312f53ac8e03467d7d90cb9b23614fa6b8272a5ba631dc71a",
+          "rig": null
         }
       ]
     },
@@ -2730,7 +2897,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "c84ecc59f9136fca08154590df93c6b92a63e2fef43916479a250e59d8c4a3d6"
+          "drawing": "c84ecc59f9136fca08154590df93c6b92a63e2fef43916479a250e59d8c4a3d6",
+          "rig": null
         }
       ]
     },
@@ -2746,7 +2914,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4cb2d2a909cd00896aaba10e44c1ab6ebba9931734efb64fe996a37e9c2ede79"
+          "drawing": "4cb2d2a909cd00896aaba10e44c1ab6ebba9931734efb64fe996a37e9c2ede79",
+          "rig": null
         }
       ]
     },
@@ -2762,7 +2931,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "42d030cc83d678f99e354fd996b7662171a5cf327bc0f024c3a3387d1f9b1e23"
+          "drawing": "42d030cc83d678f99e354fd996b7662171a5cf327bc0f024c3a3387d1f9b1e23",
+          "rig": null
         }
       ]
     },
@@ -2778,7 +2948,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7a021d3d484feb33b099a21a37997454b6c5134f6b4d78cbffb0208d37adb31a"
+          "drawing": "7a021d3d484feb33b099a21a37997454b6c5134f6b4d78cbffb0208d37adb31a",
+          "rig": null
         }
       ]
     },
@@ -2797,7 +2968,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -2813,7 +2985,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "36f7ce1d8c0213e72505b43af4cbcd2e62f89ce1bab656510a4fdb189b67dd6f"
+          "drawing": "36f7ce1d8c0213e72505b43af4cbcd2e62f89ce1bab656510a4fdb189b67dd6f",
+          "rig": null
         }
       ]
     },
@@ -2829,7 +3002,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "fd0d096087e554458b9a92df13af5f3b3494518d8f2eba69fd671df15b74ff02"
+          "drawing": "fd0d096087e554458b9a92df13af5f3b3494518d8f2eba69fd671df15b74ff02",
+          "rig": null
         }
       ]
     },
@@ -2845,7 +3019,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e735c3c41a04acd959d7fa66ddc6d5925a38efaa8d6f74612b5702098ccc57ba"
+          "drawing": "e735c3c41a04acd959d7fa66ddc6d5925a38efaa8d6f74612b5702098ccc57ba",
+          "rig": null
         }
       ]
     },
@@ -2861,7 +3036,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e28e3835110f33f41ca85480448501d985a24dc6f002050e271a8d68e316e33b"
+          "drawing": "e28e3835110f33f41ca85480448501d985a24dc6f002050e271a8d68e316e33b",
+          "rig": null
         }
       ]
     },
@@ -2877,7 +3053,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1979bfeeb1c4ea0f8719e443a7b84781d54394c23e3db5fe7e0279fb2c8a65d7"
+          "drawing": "1979bfeeb1c4ea0f8719e443a7b84781d54394c23e3db5fe7e0279fb2c8a65d7",
+          "rig": null
         }
       ]
     },
@@ -2893,7 +3070,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a94fb76b91045a3174a622b20c239bf40248e614fbb8de9f32e4549a2dd6c360"
+          "drawing": "a94fb76b91045a3174a622b20c239bf40248e614fbb8de9f32e4549a2dd6c360",
+          "rig": null
         }
       ]
     },
@@ -2909,7 +3087,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "cf67f56f3331185ecaf27e9b7481c393da078a0e3572f2a1856e9c602d4c531c"
+          "drawing": "cf67f56f3331185ecaf27e9b7481c393da078a0e3572f2a1856e9c602d4c531c",
+          "rig": null
         }
       ]
     },
@@ -2925,7 +3104,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d0037c1d181507c981f9139ca17e013052aaa7cd4ead31bffc1382890c9d7ee4"
+          "drawing": "d0037c1d181507c981f9139ca17e013052aaa7cd4ead31bffc1382890c9d7ee4",
+          "rig": null
         }
       ]
     },
@@ -2941,7 +3121,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "968b293dd44a9877c4053a115ade0a82b5f5d5e2c46e448b3131e2abccd53329"
+          "drawing": "968b293dd44a9877c4053a115ade0a82b5f5d5e2c46e448b3131e2abccd53329",
+          "rig": null
         }
       ]
     },
@@ -2957,7 +3138,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ac593d7162bc5022294b6efff706512f15da9086d2cced1cd7ee69ab31d48680"
+          "drawing": "ac593d7162bc5022294b6efff706512f15da9086d2cced1cd7ee69ab31d48680",
+          "rig": null
         }
       ]
     },
@@ -2973,7 +3155,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a658fcb421d69e68eebbd01f1f0406cf97fe083e0a532c780664d9940fd819c4"
+          "drawing": "a658fcb421d69e68eebbd01f1f0406cf97fe083e0a532c780664d9940fd819c4",
+          "rig": null
         }
       ]
     },
@@ -2992,7 +3175,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -3008,7 +3192,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "7052b8f5ec6067b8222693ce4fc724a83d3ca9f3f501d03095c5d01ee289adc2"
+          "drawing": "7052b8f5ec6067b8222693ce4fc724a83d3ca9f3f501d03095c5d01ee289adc2",
+          "rig": null
         }
       ]
     },
@@ -3024,7 +3209,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "d712b8a6c8e41c465230df6feb1e21c5e7ecb816e1fa9fcd2698cd91cc5d2ed1"
+          "drawing": "d712b8a6c8e41c465230df6feb1e21c5e7ecb816e1fa9fcd2698cd91cc5d2ed1",
+          "rig": null
         }
       ]
     },
@@ -3040,7 +3226,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "fac851dac2162e030a85807ba4ccb975ddc5a857b734f2b82c675e0faed48119"
+          "drawing": "fac851dac2162e030a85807ba4ccb975ddc5a857b734f2b82c675e0faed48119",
+          "rig": null
         }
       ]
     },
@@ -3056,7 +3243,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "e9176834f32a38ea154523e44ed66631c948dfb7b960c7cd74ff18b46ab373c1"
+          "drawing": "e9176834f32a38ea154523e44ed66631c948dfb7b960c7cd74ff18b46ab373c1",
+          "rig": null
         }
       ]
     },
@@ -3072,7 +3260,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "047adc876eff6d3ab23b769df0cb6a48f81d2fdb4f70a944082fd1b8d1602549"
+          "drawing": "047adc876eff6d3ab23b769df0cb6a48f81d2fdb4f70a944082fd1b8d1602549",
+          "rig": null
         }
       ]
     },
@@ -3088,7 +3277,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "eda9b1c754c2a2d867ca8e651ae831417f04d84b3da69c66a5548c1eb3bad7fb"
+          "drawing": "eda9b1c754c2a2d867ca8e651ae831417f04d84b3da69c66a5548c1eb3bad7fb",
+          "rig": null
         }
       ]
     },
@@ -3104,7 +3294,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "1d17eb5a31b0cd7347c5fae2bc38b84dc7de9885e1981944fad57a2f5b5f696a"
+          "drawing": "1d17eb5a31b0cd7347c5fae2bc38b84dc7de9885e1981944fad57a2f5b5f696a",
+          "rig": null
         }
       ]
     },
@@ -3123,7 +3314,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -3139,7 +3331,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "aa23c0223a057578dd98be2e8976b34b35833e2ac9c7133fd4c74901218181c2"
+          "drawing": "aa23c0223a057578dd98be2e8976b34b35833e2ac9c7133fd4c74901218181c2",
+          "rig": null
         }
       ]
     },
@@ -3155,7 +3348,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "372921b4cce6d52ebb8a76c6c4bf2b2ddad5b39ff19a168f500a3a1a43985000"
+          "drawing": "372921b4cce6d52ebb8a76c6c4bf2b2ddad5b39ff19a168f500a3a1a43985000",
+          "rig": null
         }
       ]
     },
@@ -3171,7 +3365,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "99c7967fd6f465391e0b9e87a8769388c4cf123d9be8e2ae108e191e876ca1f6"
+          "drawing": "99c7967fd6f465391e0b9e87a8769388c4cf123d9be8e2ae108e191e876ca1f6",
+          "rig": null
         }
       ]
     },
@@ -3187,7 +3382,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f0581f5e9513d65b9cb09de29f4f523dae76ead5f1d414c8602ac26e2f07ae8f"
+          "drawing": "f0581f5e9513d65b9cb09de29f4f523dae76ead5f1d414c8602ac26e2f07ae8f",
+          "rig": null
         }
       ]
     },
@@ -3203,7 +3399,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "93397c9db837b57182e6a8aabc707baf5b5b8119b84173bad2620575345eac07"
+          "drawing": "93397c9db837b57182e6a8aabc707baf5b5b8119b84173bad2620575345eac07",
+          "rig": null
         }
       ]
     },
@@ -3219,7 +3416,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "130576300fd381959803c37291cae020ab861e7284e98c42f55c58677e21a6f2"
+          "drawing": "130576300fd381959803c37291cae020ab861e7284e98c42f55c58677e21a6f2",
+          "rig": null
         }
       ]
     },
@@ -3235,7 +3433,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8bd6268fb4bf8f7b0993a09937252f34c4991a757612b5ef3e2060aeeb68c1c1"
+          "drawing": "8bd6268fb4bf8f7b0993a09937252f34c4991a757612b5ef3e2060aeeb68c1c1",
+          "rig": null
         }
       ]
     },
@@ -3251,7 +3450,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "971b982a6392ef74beb69f1c7be3a1f06d1d468844a3c2f63626bb91c5f7302f"
+          "drawing": "971b982a6392ef74beb69f1c7be3a1f06d1d468844a3c2f63626bb91c5f7302f",
+          "rig": null
         }
       ]
     },
@@ -3267,7 +3467,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dc35ce06c67dc790a6db070b2c90952a167da191a7051e0b4bbbe695f1fb390b"
+          "drawing": "dc35ce06c67dc790a6db070b2c90952a167da191a7051e0b4bbbe695f1fb390b",
+          "rig": null
         },
         {
           "number": 2,
@@ -3279,7 +3480,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "ae5eb2e48d090ef98544c02f1bc59fa44fd36957d45e8884e992fed19ada5465"
+          "drawing": "ae5eb2e48d090ef98544c02f1bc59fa44fd36957d45e8884e992fed19ada5465",
+          "rig": null
         }
       ]
     },
@@ -3295,7 +3497,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "01a89cf754d0c5381671566130da4337a25e8ed49492b50b30b9f460752ee561"
+          "drawing": "01a89cf754d0c5381671566130da4337a25e8ed49492b50b30b9f460752ee561",
+          "rig": null
         }
       ]
     },
@@ -3311,7 +3514,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b38272bb378f2dadc97713b3e006b535c85afb935fdf9172597a82f6e9adea8a"
+          "drawing": "b38272bb378f2dadc97713b3e006b535c85afb935fdf9172597a82f6e9adea8a",
+          "rig": null
         }
       ]
     },
@@ -3327,7 +3531,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "6974ca704c440e389b17fce30ff4f0ac991310d5ac5d9056803710b105a0ed5c"
+          "drawing": "6974ca704c440e389b17fce30ff4f0ac991310d5ac5d9056803710b105a0ed5c",
+          "rig": null
         }
       ]
     },
@@ -3346,7 +3551,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -3362,7 +3568,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "83697920e333945796ee0eda12e20079880e5c1e01a08eaa82dc09d64f487d33"
+          "drawing": "83697920e333945796ee0eda12e20079880e5c1e01a08eaa82dc09d64f487d33",
+          "rig": null
         }
       ]
     },
@@ -3378,7 +3585,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "64caaccc406884ea99e3c21ca59fac34c8ce019d771298c8623af3751ab8a97c"
+          "drawing": "64caaccc406884ea99e3c21ca59fac34c8ce019d771298c8623af3751ab8a97c",
+          "rig": null
         }
       ]
     },
@@ -3394,7 +3602,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4f09c05e4c3d14c01bd7b383844bf519900dfd310df282988370378edbb3acdd"
+          "drawing": "4f09c05e4c3d14c01bd7b383844bf519900dfd310df282988370378edbb3acdd",
+          "rig": null
         }
       ]
     },
@@ -3410,7 +3619,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "ec3ba8a1d84a176333ac2e3e8b756faa72f54ca5dfd2ee988da8dc7081a70bcc"
+          "drawing": "ec3ba8a1d84a176333ac2e3e8b756faa72f54ca5dfd2ee988da8dc7081a70bcc",
+          "rig": null
         }
       ]
     },
@@ -3426,7 +3636,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bcbd00b26d8079abef9fd8b35ddfe1f053a39e4fd5bc32d819ab08dc7e694d0a"
+          "drawing": "bcbd00b26d8079abef9fd8b35ddfe1f053a39e4fd5bc32d819ab08dc7e694d0a",
+          "rig": null
         }
       ]
     },
@@ -3442,7 +3653,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4879ac4de13faad771051abe60ed899119e1da9991a2a0c43ff9e48f8927cd26"
+          "drawing": "4879ac4de13faad771051abe60ed899119e1da9991a2a0c43ff9e48f8927cd26",
+          "rig": null
         }
       ]
     },
@@ -3458,7 +3670,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "62ab20d3c9e589cbac037a140f5fe05aff85804dfa464abc07c72a85352c2a64"
+          "drawing": "62ab20d3c9e589cbac037a140f5fe05aff85804dfa464abc07c72a85352c2a64",
+          "rig": null
         }
       ]
     },
@@ -3474,7 +3687,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f4a3c583edb0ed7dc42c3abc84e217ecabdf633f35dd5d51e1f5155f52246f98"
+          "drawing": "f4a3c583edb0ed7dc42c3abc84e217ecabdf633f35dd5d51e1f5155f52246f98",
+          "rig": null
         }
       ]
     },
@@ -3490,7 +3704,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f712605882c49bd9ab6bc8dc38b26d74cfb1afb8d68f8a7823dffc5bdece6272"
+          "drawing": "f712605882c49bd9ab6bc8dc38b26d74cfb1afb8d68f8a7823dffc5bdece6272",
+          "rig": null
         }
       ]
     },
@@ -3506,7 +3721,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "6afe1123373a2e36cb55b2babe7af1ea950d1e70f0656ad959be65cf4f3dd6ba"
+          "drawing": "6afe1123373a2e36cb55b2babe7af1ea950d1e70f0656ad959be65cf4f3dd6ba",
+          "rig": null
         },
         {
           "number": 2,
@@ -3518,7 +3734,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de"
+          "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de",
+          "rig": null
         }
       ]
     },
@@ -3534,7 +3751,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "482be6508fcafdaa9ce076c136f834ccbad4d7d3b64699d875939c54abf62920"
+          "drawing": "482be6508fcafdaa9ce076c136f834ccbad4d7d3b64699d875939c54abf62920",
+          "rig": null
         },
         {
           "number": 2,
@@ -3546,7 +3764,18 @@
             "date": "2026-10-30",
             "words": "approved, lets add version to the characters as we will improve then frequently"
           },
-          "drawing": "8ab9908ab06431bd0e9be199a608dbde3a29f57d788cf96c4c4be6dea5b2b4f5"
+          "drawing": "8ab9908ab06431bd0e9be199a608dbde3a29f57d788cf96c4c4be6dea5b2b4f5",
+          "rig": {
+            "date": "2026-10-30",
+            "note": "The head rig the inked fox's head rig proof showed.",
+            "status": "approved",
+            "proof": "generated/character-proofs/head-rig/index.html",
+            "approval": {
+              "date": "2026-10-30",
+              "words": "head motion approved"
+            },
+            "drawing": "58cd34f2fa682f2794190f807b9157569b884531ae0f049232baec4d39a6d4ee"
+          }
         }
       ]
     },
@@ -3562,7 +3791,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3db890f73e5fc27a435bdb43cc6ed888df897369a7b436169f6888f4a821d376"
+          "drawing": "3db890f73e5fc27a435bdb43cc6ed888df897369a7b436169f6888f4a821d376",
+          "rig": null
         },
         {
           "number": 2,
@@ -3574,7 +3804,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "9bfec33787803e36e3157934b65cf561368ceca949e7e941242de459b642f30f"
+          "drawing": "9bfec33787803e36e3157934b65cf561368ceca949e7e941242de459b642f30f",
+          "rig": null
         }
       ]
     },
@@ -3593,7 +3824,18 @@
             "date": "2026-10-30",
             "words": "all approved"
           },
-          "drawing": "4b060c63b9204d54c4bfbf71f11c5c6f0acca0e9d73db0a71146c6f8e425e7c8"
+          "drawing": "4b060c63b9204d54c4bfbf71f11c5c6f0acca0e9d73db0a71146c6f8e425e7c8",
+          "rig": {
+            "date": "2026-10-30",
+            "note": "The head rig the goat's head rig proof showed.",
+            "status": "approved",
+            "proof": "generated/character-proofs/head-rig/index.html",
+            "approval": {
+              "date": "2026-10-30",
+              "words": "head motion approved"
+            },
+            "drawing": "17f0ced80ff0f4dd86dacfbcec21f646f74864eff790e4c68aac8f1719fd183c"
+          }
         }
       ]
     },
@@ -3612,7 +3854,18 @@
             "date": "2026-10-30",
             "words": "all approved"
           },
-          "drawing": "c39ad7ff5d3650854bfde1b0bb9f81c6d3ae25f2dbbfd4f3c749f0eb1e10cd62"
+          "drawing": "c39ad7ff5d3650854bfde1b0bb9f81c6d3ae25f2dbbfd4f3c749f0eb1e10cd62",
+          "rig": {
+            "date": "2026-10-30",
+            "note": "The head rig the hamster's head rig proof showed.",
+            "status": "approved",
+            "proof": "generated/character-proofs/head-rig/index.html",
+            "approval": {
+              "date": "2026-10-30",
+              "words": "head motion approved"
+            },
+            "drawing": "8e5607119357511f83253cb3eaa5ac4fa25fa8f60dd6215fbeddaabe09b85ee6"
+          }
         }
       ]
     },
@@ -3631,7 +3884,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     },
@@ -3647,7 +3901,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a267cb64e4917325b0b37b57d05287f048511fcff6509ba3803326162fa91bae"
+          "drawing": "a267cb64e4917325b0b37b57d05287f048511fcff6509ba3803326162fa91bae",
+          "rig": null
         },
         {
           "number": 2,
@@ -3659,7 +3914,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "22ded449a17751adcb7a6c73f6fa420f1dc7e807115069d96246d04def34972d"
+          "drawing": "22ded449a17751adcb7a6c73f6fa420f1dc7e807115069d96246d04def34972d",
+          "rig": null
         }
       ]
     },
@@ -3675,7 +3931,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "66fb5d4e704aea8b5b297ad53f8d0da470504151eabbd1d4f360ae418d787581"
+          "drawing": "66fb5d4e704aea8b5b297ad53f8d0da470504151eabbd1d4f360ae418d787581",
+          "rig": null
         }
       ]
     },
@@ -3691,7 +3948,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a284fd0e37e091f34ee930cc1bfee448f445beebfe440fa2c18a06f806d161e4"
+          "drawing": "a284fd0e37e091f34ee930cc1bfee448f445beebfe440fa2c18a06f806d161e4",
+          "rig": null
         }
       ]
     },
@@ -3707,7 +3965,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4c3957a500ce6f3e65544472676c6965c294085c4811cd61dd3abbd9862024b1"
+          "drawing": "4c3957a500ce6f3e65544472676c6965c294085c4811cd61dd3abbd9862024b1",
+          "rig": null
         }
       ]
     },
@@ -3723,7 +3982,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b2e30954b09284074a80ca6be7342c1ad04f5276c32d8081657325edf949a35a"
+          "drawing": "b2e30954b09284074a80ca6be7342c1ad04f5276c32d8081657325edf949a35a",
+          "rig": null
         }
       ]
     },
@@ -3739,7 +3999,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f82e03b7061317ab309693ea6088d90676fc6e4d2f9ced9aa5ca1a3c52161549"
+          "drawing": "f82e03b7061317ab309693ea6088d90676fc6e4d2f9ced9aa5ca1a3c52161549",
+          "rig": null
         }
       ]
     },
@@ -3755,7 +4016,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bb695f58bbfdf61e0de32e079943831b8dce9432367adb50c607c3ea04eae0fc"
+          "drawing": "bb695f58bbfdf61e0de32e079943831b8dce9432367adb50c607c3ea04eae0fc",
+          "rig": null
         }
       ]
     },
@@ -3771,7 +4033,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "eed7b2a49c3ad0e75848323b2ddf5ea87f3179f3f6eca5c8da27c3214f799340"
+          "drawing": "eed7b2a49c3ad0e75848323b2ddf5ea87f3179f3f6eca5c8da27c3214f799340",
+          "rig": null
         }
       ]
     },
@@ -3787,7 +4050,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "bc9d9e427f791fe0013a70df62eb9716360d79c73e6ce08496e5a0ef81748956"
+          "drawing": "bc9d9e427f791fe0013a70df62eb9716360d79c73e6ce08496e5a0ef81748956",
+          "rig": null
         }
       ]
     },
@@ -3803,7 +4067,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a7bb776fcef7173a077dbeec31008fa089b36770d364429d7cf772ff0913591e"
+          "drawing": "a7bb776fcef7173a077dbeec31008fa089b36770d364429d7cf772ff0913591e",
+          "rig": null
         }
       ]
     },
@@ -3819,7 +4084,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "07cdef4b137276c22b272faea4fa1eb0c06af2abd280e0539fbb80827d4e8611"
+          "drawing": "07cdef4b137276c22b272faea4fa1eb0c06af2abd280e0539fbb80827d4e8611",
+          "rig": null
         }
       ]
     },
@@ -3835,7 +4101,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f51c0134560f7521bc29bcbe20fcbf6618289521fa19802456753859694ff088"
+          "drawing": "f51c0134560f7521bc29bcbe20fcbf6618289521fa19802456753859694ff088",
+          "rig": null
         },
         {
           "number": 2,
@@ -3847,7 +4114,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "df90292c7561be74df8d69f43848df89d59d64beb9ce9f9060357d570b5f67a6"
+          "drawing": "df90292c7561be74df8d69f43848df89d59d64beb9ce9f9060357d570b5f67a6",
+          "rig": null
         }
       ]
     },
@@ -3863,7 +4131,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "dd2cc20612d3c3d3310cd4357a9a6ff479adcf79bba631388a4ce11d972c3240"
+          "drawing": "dd2cc20612d3c3d3310cd4357a9a6ff479adcf79bba631388a4ce11d972c3240",
+          "rig": null
         },
         {
           "number": 2,
@@ -3875,7 +4144,8 @@
             "date": "2026-10-30",
             "words": "all the old-cast approved on v2"
           },
-          "drawing": "d7a0c78fae871b7e9d9b22de64dab088e12622e5e72e3fbaf0725764066ccd12"
+          "drawing": "d7a0c78fae871b7e9d9b22de64dab088e12622e5e72e3fbaf0725764066ccd12",
+          "rig": null
         }
       ]
     },
@@ -3891,7 +4161,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "a05915b11c497cb81e041ee26d875359af1ed2c64f9a60800953bf82176e46b0"
+          "drawing": "a05915b11c497cb81e041ee26d875359af1ed2c64f9a60800953bf82176e46b0",
+          "rig": null
         }
       ]
     },
@@ -3907,7 +4178,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f39e976375a34cfcc802ff6c7b27329339e9f9f5b40778e9f53738a2defde3cd"
+          "drawing": "f39e976375a34cfcc802ff6c7b27329339e9f9f5b40778e9f53738a2defde3cd",
+          "rig": null
         }
       ]
     },
@@ -3923,7 +4195,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "00c0f4b927cadcff5889cb313bebbd17b180fc6595afe823a57fd41507f4cc81"
+          "drawing": "00c0f4b927cadcff5889cb313bebbd17b180fc6595afe823a57fd41507f4cc81",
+          "rig": null
         }
       ]
     },
@@ -3942,7 +4215,18 @@
             "date": "2026-10-30",
             "words": "all approved"
           },
-          "drawing": "2a6b5c8fc9bcaa995eea19cfd6cf57349cde251bb4d8a8bd81c6f73d8982c507"
+          "drawing": "2a6b5c8fc9bcaa995eea19cfd6cf57349cde251bb4d8a8bd81c6f73d8982c507",
+          "rig": {
+            "date": "2026-10-30",
+            "note": "The head rig the sloth's head motion proof showed.",
+            "status": "approved",
+            "proof": "generated/character-proofs/head-motion/index.html",
+            "approval": {
+              "date": "2026-10-30",
+              "words": "head motion approved"
+            },
+            "drawing": "2c9a9314d5a2642e661b7e08b568ad9c0ee9ffa6092022cd1e5c0e8f77702fb0"
+          }
         }
       ]
     },
@@ -3958,7 +4242,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f183d6922efc0ffdb00ccdbb6aaa5b3058d49d7c4ed9e2035e5c527f6125a230"
+          "drawing": "f183d6922efc0ffdb00ccdbb6aaa5b3058d49d7c4ed9e2035e5c527f6125a230",
+          "rig": null
         }
       ]
     },
@@ -3974,7 +4259,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8a5af5ba7b9fd82d92aa4dc8ced19d775efb200b754a186e56c2bd20842f22d7"
+          "drawing": "8a5af5ba7b9fd82d92aa4dc8ced19d775efb200b754a186e56c2bd20842f22d7",
+          "rig": null
         }
       ]
     },
@@ -3990,7 +4276,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "4483160973d64d15cc28ec7b60e0a0fa73b67b2deea8a7ead038b450f6197fe8"
+          "drawing": "4483160973d64d15cc28ec7b60e0a0fa73b67b2deea8a7ead038b450f6197fe8",
+          "rig": null
         }
       ]
     },
@@ -4006,7 +4293,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00"
+          "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
         }
       ]
     },
@@ -4022,7 +4310,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "8ee4f1131674fa2e22f11f766f66ca15e9973ba4757cf3e6eb697e9eace22746"
+          "drawing": "8ee4f1131674fa2e22f11f766f66ca15e9973ba4757cf3e6eb697e9eace22746",
+          "rig": null
         }
       ]
     },
@@ -4038,7 +4327,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "b00010de87b928c73c81b207834e7c448e12b887c9e8a77433ce4fc36f456266"
+          "drawing": "b00010de87b928c73c81b207834e7c448e12b887c9e8a77433ce4fc36f456266",
+          "rig": null
         }
       ]
     },
@@ -4054,7 +4344,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": "f02b536c3e1ad5a2ab2c7c9af317bc2449476748d2a0fbe6dcfcc6f8473b8314"
+          "drawing": "f02b536c3e1ad5a2ab2c7c9af317bc2449476748d2a0fbe6dcfcc6f8473b8314",
+          "rig": null
         }
       ]
     },
@@ -4073,7 +4364,8 @@
           "status": "approved",
           "proof": "",
           "approval": null,
-          "drawing": ""
+          "drawing": "",
+          "rig": null
         }
       ]
     }

@@ -16,6 +16,7 @@ from srstudio import (
     Canvas,
     flat_counter,
     head_motion,
+    parts,
     toon,
     toon_cast,
     toon_critters,
@@ -314,6 +315,24 @@ def test_an_entrance_starts_the_runs_late():
 def test_a_character_with_no_rig_is_refused_by_name():
     with pytest.raises(ToonDataError, match="toon-cat version 1 has no head rig"):
         toon_rigs.rig_of("toon-cat")
+
+
+def test_a_rig_the_operator_has_not_approved_moves_no_reel(monkeypatch):
+    goat = parts.get("toon-goat")
+    held = replace(goat.versions[0].rig, status="proposed", approval=None)
+    table = {**parts.load(), "toon-goat": replace(goat, versions=(replace(goat.versions[0], rig=held),))}
+    monkeypatch.setattr(parts, "load", lambda: table)
+    with pytest.raises(ToonDataError, match="toon-goat version 1's head rig is not approved"):
+        toon_rigs.rig_of("toon-goat")
+
+
+def test_reach_starts_at_rest_and_visits_each_corner_of_a_rig_s_bounds():
+    rig = toon_rigs.RIGS["toon-goat"]
+    plan = toon_head.reach(rig)
+    assert plan.turn.keys[0] == (0.0, 0.0) and plan.nod.keys[0] == (0.0, 0.0)
+    assert [
+        (rig.tilt + turn, drop) for (_, turn), (_, drop) in zip(plan.turn.keys[1:], plan.nod.keys[1:], strict=True)
+    ] == (toon_head._bounds(rig))
 
 
 @EVERY_RIG

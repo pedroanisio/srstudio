@@ -5,8 +5,18 @@ from dataclasses import replace
 
 import pytest
 
-from srstudio import catalog_specimens, parts, registry, sketch, specimens, toon_inked
-from srstudio.parts import Approval, NotApprovedError, Part, PartError, Reason, Refused, UnknownVersionError, Version
+from srstudio import catalog_specimens, parts, registry, sketch, specimens, toon_inked, toon_rigs
+from srstudio.parts import (
+    Approval,
+    NotApprovedError,
+    Part,
+    PartError,
+    Reason,
+    Refused,
+    Rig,
+    UnknownVersionError,
+    Version,
+)
 
 DIGEST = "a" * 64
 WORDS = Approval("2026-10-30", "approved, lets add version to the characters as we will improve then frequently")
@@ -179,6 +189,7 @@ ENTRY = {
     "proof": "",
     "drawing": DIGEST,
     "approval": None,
+    "rig": None,
 }
 
 
@@ -237,3 +248,77 @@ def test_the_shipped_records_are_frozen():
     assert replace(v, note="Changed").note == "Changed"
     with pytest.raises(AttributeError):
         v.note = "Changed"  # type: ignore[misc]
+
+
+HEADS = Approval("2026-10-30", "head motion approved")
+
+
+def rig(**kw) -> Rig:
+    fields = {
+        "date": "2026-10-30",
+        "note": "Split at the neck",
+        "status": "approved",
+        "proof": "generated/character-proofs/head-rig/index.html",
+        "drawing": DIGEST,
+        "approval": HEADS,
+    }
+    return Rig(**{**fields, **kw})
+
+
+def test_a_version_holds_its_rig_as_a_record_of_its_own():
+    assert version(rig=rig()).rig == rig()
+    assert version().rig is None
+
+
+@pytest.mark.parametrize(
+    ("kw", "why"),
+    [
+        ({"approval": None}, "whose approval"),
+        ({"proof": ""}, "proof"),
+        ({"drawing": ""}, "drawing"),
+        ({"drawing": "abc"}, "drawing"),
+        ({"status": "accepted"}, "status"),
+        ({"date": "yesterday"}, "date"),
+        ({"note": ""}, "note"),
+        ({"status": "proposed"}, "approval"),
+    ],
+)
+def test_a_rig_cannot_claim_what_it_lacks(kw, why):
+    with pytest.raises(PartError, match=why):
+        rig(**kw)
+
+
+def test_a_proposed_rig_may_still_be_drawn():
+    assert rig(status="proposed", approval=None, drawing="", proof="").status == "proposed"
+
+
+def test_the_table_reads_a_rig_and_refuses_one_it_does_not_know(tmp_path):
+    held = {**vars(rig()), "approval": {"date": "2026-10-30", "words": "head motion approved"}}
+    assert table(tmp_path, doc(rig=held))["toon-fox"].versions[0].rig == rig()
+    with pytest.raises(PartError):
+        table(tmp_path, doc(rig={**held, "who": "me"}))
+
+
+def test_the_table_and_a_project_record_carry_their_own_schemas():
+    assert parts.TABLE_SCHEMA != parts.RECORD_SCHEMA
+
+
+def test_a_project_record_still_reads_after_the_table_s_schema_moves(tmp_path, monkeypatch):
+    parts.write_record(tmp_path, {"toon-fox": 2})
+    monkeypatch.setattr(parts, "TABLE_SCHEMA", "9.9.9")
+    assert parts.read_record(tmp_path) == {"toon-fox": 2}
+
+
+def test_every_rig_has_a_record_and_every_record_a_rig():
+    recorded = {
+        parts.part_name(name, v.number) for name, p in parts.load().items() for v in p.versions if v.rig is not None
+    }
+    assert recorded == set(toon_rigs.RIGS)
+
+
+def test_the_approved_rigs_quote_the_operator():
+    for name, number in (("toon-sloth", 1), ("toon-goat", 1), ("toon-hamster", 1), ("toon-fox", 2)):
+        held = parts.get(name).version(number).rig
+        assert held is not None and held.status == "approved"
+        assert held.approval is not None and held.approval.words == "head motion approved"
+        assert held.proof.startswith("generated/character-proofs/head-")

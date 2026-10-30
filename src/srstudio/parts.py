@@ -15,6 +15,9 @@ version.
   operator's words (:class:`Approval`). An agent never writes one without the operator's decision.
 - **Immutability.** An approved version is never revised in place: changing a look means adding a version. A test
   redraws every approved version and compares its digest.
+- **Head rigs.** A rig is a second drawing of a version (:class:`Rig`), recorded on it with the same rules. A version
+  may gain a rig once, from none to a record, because no published reel moved that head; changing an approved rig is a
+  new version of the character. A pin fixes the rig with the version, and the same test redraws it.
 - **Pins.** A release pins what it draws (:attr:`srstudio.releases.Release.parts`). Only the kinds and styles in
   :data:`ROUTED` read a pin when they build, so only they may take a second version.
 """
@@ -47,6 +50,7 @@ __all__ = [
     "PartError",
     "Reason",
     "Refused",
+    "Rig",
     "Table",
     "UnknownVersionError",
     "Version",
@@ -62,7 +66,7 @@ __all__ = [
     "write_record",
 ]
 
-TABLE_SCHEMA = "2.0.0"
+TABLE_SCHEMA = "2.1.0"
 RECORD_SCHEMA = "2.0.0"
 TABLE_FILE = "assets/parts.json"
 RECORD = "parts.json"  # in a project: what its build drew, {part: version}
@@ -129,6 +133,39 @@ class Approval:
 
 
 @dataclass(frozen=True)
+class Rig:
+    """The head rig of a version (:mod:`srstudio.toon_rigs`), a second drawing outside the version's own digest.
+    ``proof`` and ``drawing`` mean what they mean on a :class:`Version`; an approved rig has both, and an approval."""
+
+    date: str
+    note: str
+    status: str
+    proof: str
+    drawing: str
+    approval: Approval | None = None
+
+    def __post_init__(self) -> None:
+        if not _is_date(self.date):
+            raise PartError(f"a rig's date is a YYYY-MM-DD day, got {self.date!r}")
+        if not (isinstance(self.note, str) and self.note.strip() and "\n" not in self.note):
+            raise PartError(f"a rig's note is one line, got {self.note!r}")
+        if self.status not in STATUSES:
+            raise PartError(f"a rig's status is one of {STATUSES}, got {self.status!r}")
+        if self.drawing and not DIGEST.fullmatch(self.drawing):
+            raise PartError(f"a rig's drawing is a digest of 64 lowercase hex digits, got {self.drawing!r}")
+        if self.status == "proposed":
+            if self.approval is not None:
+                raise PartError("a proposed rig carries no approval")
+            return
+        if not self.drawing:
+            raise PartError("an approved rig records its drawing")
+        if not self.proof:
+            raise PartError("an approved rig needs a proof clip")
+        if self.approval is None:
+            raise PartError("an approved rig records whose approval it was")
+
+
+@dataclass(frozen=True)
 class Version:
     """One drawing of a part. ``proof`` is a local path under ``generated/``, which git does not hold, so the path is
     a pointer and not a file this repository ships. ``drawing`` is its digest: a proposed version, still being drawn,
@@ -141,6 +178,7 @@ class Version:
     proof: str
     drawing: str
     approval: Approval | None = None
+    rig: Rig | None = None
 
     def __post_init__(self) -> None:
         if isinstance(self.number, bool) or not isinstance(self.number, int) or self.number < 1:
@@ -226,13 +264,24 @@ def _fields(where: str, value: Any, required: set[str], optional: frozenset[str]
     return value
 
 
+def _approval(where: str, value: Any) -> Approval | None:
+    if value is None:
+        return None
+    words = _fields(where, value, {"date", "words"})
+    return Approval(words["date"], words["words"])
+
+
+def _rig(where: str, value: Any) -> Rig | None:
+    if value is None:
+        return None
+    fields = _fields(where, value, {"date", "note", "status", "proof", "drawing", "approval"})
+    return Rig(**{**fields, "approval": _approval(f"{where}.approval", fields["approval"])})
+
+
 def _version(where: str, value: Any) -> Version:
-    fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval"})
-    approval = fields["approval"]
-    if approval is not None:
-        words = _fields(f"{where}.approval", approval, {"date", "words"})
-        approval = Approval(words["date"], words["words"])
-    return Version(**{**fields, "approval": approval})
+    fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval", "rig"})
+    approval, rig = _approval(f"{where}.approval", fields["approval"]), _rig(f"{where}.rig", fields["rig"])
+    return Version(**{**fields, "approval": approval, "rig": rig})
 
 
 def _refused(where: str, value: Any) -> Refused | None:
