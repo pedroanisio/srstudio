@@ -5,8 +5,8 @@ Back to the [library README](../../README.md) and the [workspace README](../../.
 `srstudio page` writes the scene-render catalog as a small site, `index.html`, `catalog.json` and
 `media/<content-hash>.<ext>`, and `srstudio serve` serves it ([ADR 0046](../decisions/0046-catalog-web-app.md)). The
 page holds no data URI: every video, image, font and sound is a file it links to with a relative URL, and only the
-current view loads its media. The app is plain JavaScript in `src/srstudio/assets/catalog/`, inlined in the page, and
-it renders every view from `catalog.json`.
+current view loads its media. The app is plain JavaScript in `src/srstudio/assets/catalog/`, published as media like
+everything else, and it renders every view from `catalog.json`.
 
 ## What is where
 
