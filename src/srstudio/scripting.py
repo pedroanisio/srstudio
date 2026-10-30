@@ -16,10 +16,19 @@ __all__ = ["Script", "changes", "exactly_once", "first", "hold", "off_screen", "
 
 
 def say(
-    lines: Sequence[Line], start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = ""
+    lines: Sequence[Line],
+    start: float,
+    who: str,
+    line: int,
+    eyes: str,
+    mouth: str,
+    arms: str,
+    event: str = "",
+    *,
+    wear: tuple[str, ...] = (),
 ) -> Beat:
     """The beat that starts line ``line``, captioned with all of it."""
-    return Beat(start, who, lines[line].text, eyes, mouth, arms, line, 0, event)
+    return Beat(start, who, lines[line].text, eyes, mouth, arms, line, 0, event, wear)
 
 
 def first(
@@ -32,12 +41,14 @@ def first(
     mouth: str,
     arms: str,
     event: str = "",
+    *,
+    wear: tuple[str, ...] = (),
 ) -> Beat:
     """The first beat of a long line, captioned with its opening words."""
     words, said = caption.split(), lines[line].text.split()
     if not words or said[: len(words)] != words:
         raise SketchError(f"{caption!r} does not start line {line}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, 0, event)
+    return Beat(start, who, caption, eyes, mouth, arms, line, 0, event, wear)
 
 
 def part(
@@ -51,17 +62,29 @@ def part(
     mouth: str,
     arms: str,
     event: str = "",
+    *,
+    wear: tuple[str, ...] = (),
 ) -> Beat:
     """A beat on a later word of a line, captioned with the line's words from ``word`` on."""
     words, said = caption.split(), lines[line].text.split()
     if not words or said[word : word + len(words)] != words:
         raise SketchError(f"{caption!r} is not line {line} from word {word}")
-    return Beat(start, who, caption, eyes, mouth, arms, line, word, event)
+    return Beat(start, who, caption, eyes, mouth, arms, line, word, event, wear)
 
 
-def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
+def hold(
+    start: float,
+    who: str,
+    caption: str,
+    eyes: str,
+    mouth: str,
+    arms: str,
+    event: str = "",
+    *,
+    wear: tuple[str, ...] = (),
+) -> Beat:
     """A silent beat: ``who`` reacts, the caption stays (or goes, with ``""``)."""
-    return Beat(start, who, caption, eyes, mouth, arms, None, None, event)
+    return Beat(start, who, caption, eyes, mouth, arms, None, None, event, wear)
 
 
 @dataclass(frozen=True)
@@ -70,13 +93,34 @@ class Script:
 
     lines: Sequence[Line]
 
-    def say(self, start: float, who: str, line: int, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-        return say(self.lines, start, who, line, eyes, mouth, arms, event)
+    def say(
+        self,
+        start: float,
+        who: str,
+        line: int,
+        eyes: str,
+        mouth: str,
+        arms: str,
+        event: str = "",
+        *,
+        wear: tuple[str, ...] = (),
+    ) -> Beat:
+        return say(self.lines, start, who, line, eyes, mouth, arms, event, wear=wear)
 
     def first(
-        self, start: float, who: str, line: int, caption: str, eyes: str, mouth: str, arms: str, event: str = ""
+        self,
+        start: float,
+        who: str,
+        line: int,
+        caption: str,
+        eyes: str,
+        mouth: str,
+        arms: str,
+        event: str = "",
+        *,
+        wear: tuple[str, ...] = (),
     ) -> Beat:
-        return first(self.lines, start, who, line, caption, eyes, mouth, arms, event)
+        return first(self.lines, start, who, line, caption, eyes, mouth, arms, event, wear=wear)
 
     def part(
         self,
@@ -89,12 +133,24 @@ class Script:
         mouth: str,
         arms: str,
         event: str = "",
+        *,
+        wear: tuple[str, ...] = (),
     ) -> Beat:
-        return part(self.lines, start, who, line, word, caption, eyes, mouth, arms, event)
+        return part(self.lines, start, who, line, word, caption, eyes, mouth, arms, event, wear=wear)
 
     @staticmethod
-    def hold(start: float, who: str, caption: str, eyes: str, mouth: str, arms: str, event: str = "") -> Beat:
-        return hold(start, who, caption, eyes, mouth, arms, event)
+    def hold(
+        start: float,
+        who: str,
+        caption: str,
+        eyes: str,
+        mouth: str,
+        arms: str,
+        event: str = "",
+        *,
+        wear: tuple[str, ...] = (),
+    ) -> Beat:
+        return hold(start, who, caption, eyes, mouth, arms, event, wear=wear)
 
 
 def changes(beats: Sequence[Beat], kind: str, initial: str) -> list[tuple[float, str]]:
