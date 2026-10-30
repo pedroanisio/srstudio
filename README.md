@@ -1340,9 +1340,9 @@ name (`toon.TRACED_EYES`, `TRACED_MOUTHS`). Any character, the cat included, can
 [src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face; on a head its drawing turns
 (`toon_cast.Drawing.tilt`), the items turn with it.
 
-`toon-fox-inked` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py),
-[docs/decisions/0044-inked-toon-characters.md](docs/decisions/0044-inked-toon-characters.md)) is the fox drawn
-again the way the traced cat is drawn, beside the fox, for comparison. Its outlines are placed by hand, unmirrored, and drift like a
+Fox version 2, `toon-fox@2` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py),
+[docs/decisions/0044-inked-toon-characters.md](docs/decisions/0044-inked-toon-characters.md)), is the fox drawn
+again the way the traced cat is drawn. Its outlines are placed by hand, unmirrored, and drift like a
 hand following them (`brush.wobble`). Every ink band is pressed: heavier where the form turns from the light, thin
 at the tips, with a dry brush's grit, and broken in three to five seeded places with a nick between
 (`brush.broken`, a ragged `brush.Hand`). A few lumpy open strokes stay inside: the cheeks, the tail tip, a fluff in
@@ -1353,8 +1353,25 @@ with a crescent that starts and ends on the outline and swells into the cheek. T
 face sits off its midline with the far eye smaller, and what it wears turns with the head. Its almond eyes with an
 iris, its muzzle mouths and its visemes are drawn for its face: every `EYES` and `MOUTHS` kind is its own drawing,
 and every eye a one-off of seeded lumps (`brush.lump`), never a perfect ellipse. A `Look` takes these through its `drawing` (a `toon_cast.Drawing`), so
-the inked fox keeps the whole contract and a sketch casts it as `"fox-inked"`. Looks without a drawing are drawn
-exactly as before.
+the inked fox keeps the whole contract, and a sketch casts it as `"fox"`, at the version its release pins. Looks
+without a drawing are drawn exactly as before.
+
+### Character versions
+
+Every character has numbered versions ([docs/decisions/0047-character-versions.md](docs/decisions/0047-character-versions.md)),
+so a drawing can improve without touching a published reel. `srstudio characters` lists them, and
+[src/srstudio/assets/characters.json](src/srstudio/assets/characters.json) records each one: number, date, a note, a
+proof clip, status, approval and the digest of its drawing ([src/srstudio/specimens.py](src/srstudio/specimens.py)).
+A new reel gets the latest approved version, and a release pins what it draws:
+
+```python
+RELEASE = Release("a-new-reel", post, characters={"toon-fox": 2, "toon-bear": 1})
+```
+
+`instagram_posts.py deliver` refuses a release with no pins, and `check` reports one. A proposed version is never
+the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
+if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon reads
+pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version on any other style.
 
 A sloth, a goat and a hamster draw like the traced cat, in code
 ([docs/decisions/0045-toon-sloth-goat-hamster.md](docs/decisions/0045-toon-sloth-goat-hamster.md),

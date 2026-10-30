@@ -3,10 +3,12 @@
 import json
 import runpy
 import sys
+from pathlib import Path
 
 import pytest
 
-from srstudio import registry
+from srstudio import characters, registry
+from srstudio import usage as U
 from srstudio.cli import main
 
 PLUGIN = '''
@@ -143,3 +145,74 @@ def test_catalog_without_usage_claims_no_episodes(capsys):
     assert all("[" not in ln for ln in capsys.readouterr().out.splitlines())
     assert main(["catalog", "--json"]) == 0
     assert all("episodes" not in r for r in json.loads(capsys.readouterr().out))
+
+
+def test_characters_lists_every_version_and_the_default(capsys):
+    assert main(["characters"]) == 0
+    out = capsys.readouterr().out
+    fox = next(line for line in out.splitlines() if line.startswith("toon-fox "))
+    assert fox.split() == ["toon-fox", "toon", "2", "1,2"]
+    assert "toon-bear " in out
+
+
+def test_characters_json_is_the_table(capsys):
+    assert main(["characters", "--json"]) == 0
+    table = json.loads(capsys.readouterr().out)
+    fox = table["toon-fox"]
+    assert fox["default"] == 2 and [v["number"] for v in fox["versions"]] == [1, 2]
+    assert fox["versions"][1]["approval"]["date"] == "2026-10-30"
+    assert fox["versions"][0]["approval"] is None
+
+
+@pytest.mark.parametrize(("name", "number"), [("toon-fox", 1), ("toon-fox@2", 2)])
+def test_characters_digest_prints_what_a_new_record_needs(name, number, capsys):
+    assert main(["characters", "--digest", name]) == 0
+    assert capsys.readouterr().out.strip() == characters.get("toon-fox").version(number).drawing
+
+
+@pytest.mark.parametrize(("name", "match"), [("nobody", "no character 'nobody'"), ("toon-fox@9", "no version 9")])
+def test_characters_digest_refuses_what_it_does_not_know(name, match, capsys):
+    assert main(["characters", "--digest", name]) == 2
+    assert match in capsys.readouterr().err
+
+
+def pins_folder(tmp_path, pins: str) -> Path:
+    posts = tmp_path / "posts"
+    posts.mkdir(exist_ok=True)
+    (posts / "__init__.py").write_text("")
+    (posts / "a_b.py").write_text(
+        "from srstudio.releases import Release\nfrom srstudio.social import InstagramPost\n"
+        f'RELEASE = Release("a-b", InstagramPost(title="T", description="D."), characters={pins})\n'
+    )
+    return tmp_path
+
+
+def usage_report(tmp_path, parts) -> Path:
+    report = U.Report({"a-b": tuple(parts)})
+    return report.write(tmp_path / "usage.json")
+
+
+def test_characters_usage_passes_when_every_measured_character_is_pinned(tmp_path, capsys):
+    folder = pins_folder(tmp_path, '{"toon-bear": 1}')
+    args = ["characters", "--usage", str(usage_report(tmp_path, ["toon-bear"])), "--scripts", str(folder)]
+    assert main(args) == 0
+    assert "1 episodes measured, every character pinned" in capsys.readouterr().out
+
+
+def test_characters_usage_fails_on_a_measured_character_with_no_pin(tmp_path, capsys):
+    folder = pins_folder(tmp_path, "{}")
+    args = ["characters", "--usage", str(usage_report(tmp_path, ["toon-bear"])), "--scripts", str(folder)]
+    assert main(args) == 1
+    assert "a-b: draws toon-bear version 1 but pins nothing for it" in capsys.readouterr().out
+
+
+def test_characters_usage_refuses_a_folder_with_no_releases(tmp_path, capsys):
+    assert main(["characters", "--usage", str(usage_report(tmp_path, [])), "--scripts", str(tmp_path)]) == 2
+    assert "srstudio characters:" in capsys.readouterr().err
+
+
+def test_characters_usage_reports_an_unreadable_report(tmp_path, capsys):
+    folder = pins_folder(tmp_path, "{}")
+    (tmp_path / "bad.json").write_text("not json")
+    assert main(["characters", "--usage", str(tmp_path / "bad.json"), "--scripts", str(folder)]) == 2
+    assert "srstudio characters:" in capsys.readouterr().err
