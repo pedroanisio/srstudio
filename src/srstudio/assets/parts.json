@@ -367,6 +367,23 @@
         }
       ]
     },
+    "checkout-lane": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1893009d9cf02fc93c9f5599e9886485a00d6b8a65b01eae92e98f4e1d854a45",
+          "rig": null
+        }
+      ]
+    },
     "coffee-cup": {
       "kind": "prop",
       "style": "cutout",
@@ -948,6 +965,23 @@
         }
       ]
     },
+    "dark-eyes": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "781bd2f6a54faa2a88431154020ad3790534dc0bb0413c9887a6783110991f85",
+          "rig": null
+        }
+      ]
+    },
     "dashboard": {
       "kind": "graphic",
       "style": "cutout",
@@ -1335,6 +1369,23 @@
           "proof": "",
           "approval": null,
           "drawing": "7361078a9a278bf94455bd24415cc1159df5ed9276192fab320502d3238793ae",
+          "rig": null
+        }
+      ]
+    },
+    "hand-basket": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3d2f283c8c1154bfa682dc6c6436fb45980f9fca8647f636bd1285b14b99be64",
           "rig": null
         }
       ]
@@ -1791,6 +1842,23 @@
         }
       ]
     },
+    "kayak": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3affce5219ef2169367e4c6ea80afdcc18796edfac317b42656816235136324f",
+          "rig": null
+        }
+      ]
+    },
     "laptop": {
       "kind": "prop",
       "style": "cutout",
@@ -1825,6 +1893,40 @@
         }
       ]
     },
+    "life-ring": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0049e1c22b28dda7791712fca384c2de8c801de7c18239a3976b47ba0d88026f",
+          "rig": null
+        }
+      ]
+    },
+    "light-switch": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "76c0d3a94a37548fad61385b88e26ee0ae16436af1ef566a3aa3e3d6dfa47257",
+          "rig": null
+        }
+      ]
+    },
     "location-slate": {
       "kind": "graphic",
       "style": "cutout",
@@ -1838,6 +1940,23 @@
           "proof": "",
           "approval": null,
           "drawing": "2a3c3b4815998291a2e76e3a410ec45d76a83af5368d66f2592b5fc9684e74f6",
+          "rig": null
+        }
+      ]
+    },
+    "long-receipt": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5ba1c23caaca5d4d4d9cae18b0cbd1a59944b8e0fe48232b94a5e65266713248",
           "rig": null
         }
       ]
@@ -1994,6 +2113,23 @@
           "proof": "",
           "approval": null,
           "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "paddle": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5135ede4861b8f7e5b05f6f35aa73ffef09e6c0dff548d80d7d6dfeb26c93dd6",
           "rig": null
         }
       ]
@@ -2746,6 +2882,23 @@
         }
       ]
     },
+    "shelf-goods": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a7ee9f5c5e9685ee7b503bb356d0085d6fa20e51cde28f97c449073b7db5a995",
+          "rig": null
+        }
+      ]
+    },
     "shop-till": {
       "kind": "location",
       "style": "cutout",
@@ -2759,6 +2912,23 @@
           "proof": "",
           "approval": null,
           "drawing": "7fbfeeceb12bf0448d5c7322f4a7fd2e6d537a5e7eea0f45450f9f5572bc3528",
+          "rig": null
+        }
+      ]
+    },
+    "shopping-cart": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ac226e6f13dac7eb2811687fcce4ddca6a9ca85cbf28d847bf89d52ac6fe73c",
           "rig": null
         }
       ]
@@ -3150,6 +3320,23 @@
           "proof": "",
           "approval": null,
           "drawing": "3ea066f9123d7f5660e2419d7e27ef193a9d892818d7a9620d2939a7b009eeea",
+          "rig": null
+        }
+      ]
+    },
+    "step-ladder": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0091b3593397ec046970b6b70a1e7e09ffcee6112c4b4f47b4501a3b7dbb76a6",
           "rig": null
         }
       ]
@@ -3761,6 +3948,40 @@
         }
       ]
     },
+    "store-aisle": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b4b86daffdc1ee8a21afd720b1b10afe824be651951efad0fb55cbb6a6c81bb2",
+          "rig": null
+        }
+      ]
+    },
+    "table-lamp": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5e0f29d1bdcf142bf95ddcb454005867fa160f0660cee5a3fcf17d22e5dddef3",
+          "rig": null
+        }
+      ]
+    },
     "talking-doorbell": {
       "kind": "character",
       "style": "ink",
@@ -3842,6 +4063,23 @@
           "proof": "",
           "approval": null,
           "drawing": "130576300fd381959803c37291cae020ab861e7284e98c42f55c58677e21a6f2",
+          "rig": null
+        }
+      ]
+    },
+    "taper-candles": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-one-thing.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c01c2e9c7e3d16ee810353bf91818d68224a77890c778fa1e8445ae3daab0280",
           "rig": null
         }
       ]

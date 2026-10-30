@@ -19,6 +19,7 @@ from . import (  # noqa: F401  (registers builders)
     cutout_home,
     cutout_office,
     cutout_shop,
+    cutout_store,
     gloss,
     gloss_reel,
     gloss_sets,

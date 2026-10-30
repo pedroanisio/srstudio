@@ -755,6 +755,24 @@ approved character in the mirror, with Rosa's voice and mouth. New parts live in
 [src/srstudio/cutout_shop.py](src/srstudio/cutout_shop.py): `barbershop` draws the people inside the glass with
 `in_mirror=` and the shelf with `on_counter=`, and `barber_cape(spread=True)` is the cloth over the mirror.
 
+## Cutout episode at the store: *Just One Thing* (30)
+
+[episodes/just_one_thing.py](episodes/just_one_thing.py) is already walking when it starts, with a very small basket: "I
+only need light bulbs." The basket is a cart: a lamp, three candles, a plant. "We do need a plant." A bigger cart: a
+ladder, a kayak. "It was on sale." Bigger again: a paddle, a life ring. "That's just safety." At the till the screen
+says $412, then rolls on while the receipt runs down the frame, and Milo is proud of it. At home, in the dark, sitting
+in the kayak, a dead switch goes click, click, click, nothing for longer than is comfortable, click, and it stops on
+his eyes.
+
+```bash
+srstudio record just-one-thing PROJECT
+srstudio build just-one-thing PROJECT    # PROJECT/just-one-thing.scene.xml
+```
+
+It moves from the first frame (arm B of the `sp-hook_motion` test). New parts live in
+[src/srstudio/cutout_store.py](src/srstudio/cutout_store.py): `store_aisle` slides its shelves with `drift=`,
+`shopping_cart(contents=)` holds the goods behind its front wire, and `kayak(rider=)` seats someone in the cockpit.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router
