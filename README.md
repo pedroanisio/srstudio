@@ -1382,6 +1382,11 @@ hold of at least 1.2 s before the button, the Handbook entry last, and a staging
 | S6 | *Free Tier* | the energy that binds the galaxy, on the free plan |
 | S7 | *Open Plan* | the compactor walls closing in are a workspace upgrade |
 
+S13 *The Code* (the weapon's two-factor code went to the phone on the target planet) and S14 *Take-Home* (an
+unpaid interview task is launched as the station that rejected her) use the opt-in switches of the ADR's
+2026-10-30 amendment: a `still` opening shot that holds every frame of the first second, and `fade` panels and
+entries whose text passes the strict encode.
+
 ## Gloss style: a cheerful forever-plaza in seven episodes (G1–G7)
 
 The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
