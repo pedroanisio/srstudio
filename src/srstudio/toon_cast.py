@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from . import brush, checks
 from .brush import Point, Shape
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Look",
+    "Drawing",
     "DOG",
     "FROG",
     "BEAR",
@@ -90,6 +91,25 @@ Layer = tuple[Shape, str]  # a shape and its colour: "ink" and "white" are the p
 Mouths = Sequence[tuple[float, str]]  # (project second, viseme) states, in time order
 
 
+class Drawing(Protocol):
+    """A look's own drawing in place of the shared brush parts: its body and ears at rest (with the marks, shading
+    and inner lines), one eye of each kind, the blink lids, the mouths, the visemes and an arm, every one as layers
+    in reference pixels. :func:`figure_layers` and :func:`figure` call it wherever the shared parts would draw, so
+    a look with a drawing keeps the whole contract (:mod:`srstudio.toon_inked`)."""
+
+    def foundation(self, look: Look) -> list[Layer]: ...
+
+    def eye(self, look: Look, centre: Point, kind: str, inner: float) -> list[Layer]: ...
+
+    def lids(self, look: Look) -> list[Layer]: ...
+
+    def mouth(self, look: Look, kind: str) -> list[Layer]: ...
+
+    def viseme(self, look: Look, kind: str) -> list[Layer]: ...
+
+    def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]: ...
+
+
 @dataclass(frozen=True)
 class Look:
     """One character: its silhouette (head running into the body, closed, at rest), coat colours, where its face
@@ -98,7 +118,8 @@ class Look:
     follow the eyes, ``shine`` a highlight on each pupil, ``blush`` cheeks in that colour, ``teeth`` two front
     teeth under the mouth, ``whiskers`` three a side; ``blink`` is the seconds between blinks (0: never).
     ``mantle`` is an outline drawn behind the ears and the body in the dark coat (the hedgehog's spines), ``paw``
-    the paws' colour when not the coat (the raccoon's gloves)."""
+    the paws' colour when not the coat (the raccoon's gloves). ``drawing`` replaces the shared brush parts with the
+    look's own (:class:`Drawing`); without one the look is drawn from its fields."""
 
     name: str
     coat: str
@@ -124,6 +145,7 @@ class Look:
     blink: float = 0.0
     mantle: tuple[Point, ...] = ()
     paw: str = ""
+    drawing: Drawing | None = None
 
 
 def _mirror(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -563,6 +585,8 @@ BEAR_BROW = (
 # -- pieces ---------------------------------------------------------------------------------------------------------
 def _limb(points: Sequence[Point], look: Look, paw: Point, toes: bool = True) -> list[Layer]:
     """An arm from the shoulder to the paw: an ink stroke under a coat stroke, the paw a rimmed oval with toes."""
+    if look.drawing is not None:
+        return look.drawing.limb(points, look, paw, toes)
     out: list[Layer] = [
         (brush.stroke(points, look.limb + 2 * INK, brush.EVEN), "ink"),
         (brush.stroke(points, look.limb, brush.EVEN), look.coat),
@@ -652,6 +676,8 @@ def _brow(look: Look, centre: Point, kind: str, inner: float) -> Layer:
 
 def _eye(look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
     """One eye: ``inner`` is +1 when the nose is to the right of it, −1 when to the left."""
+    if look.drawing is not None:
+        return look.drawing.eye(look, centre, kind, inner)
     ex, ey = centre
     r = look.eye_r * (1.3 if kind == "shock" else 1.0)
     lid = look.lid or look.coat
@@ -745,6 +771,8 @@ def _tear(x: float, y: float, scale: float) -> tuple[Point, ...]:
 
 def _lids(look: Look) -> list[Layer]:
     """Both eyes shut for a blink: a lid over each eye and the closed line, drawn over the open eyes."""
+    if look.drawing is not None:
+        return look.drawing.lids(look)
     lid = look.lid or look.coat
     out: list[Layer] = []
     for ex, ey in look.eyes:
@@ -755,6 +783,8 @@ def _lids(look: Look) -> list[Layer]:
 
 
 def _mouth(look: Look, kind: str) -> list[Layer]:
+    if look.drawing is not None:
+        return look.drawing.mouth(look, kind)
     mx, my = look.mouth
     w = look.mouth_w
     if kind == "none":
@@ -822,6 +852,8 @@ def _mouth(look: Look, kind: str) -> list[Layer]:
 
 def _viseme(look: Look, kind: str) -> list[Layer]:
     """A speaking mouth: ``open`` and ``round`` show the lips, ``teeth`` a shallow bite with a parting line."""
+    if look.drawing is not None:
+        return look.drawing.viseme(look, kind)
     mx, my = look.mouth
     w = look.mouth_w
     if kind == "open":
@@ -939,6 +971,8 @@ def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, pa
 
 
 def _foundation(look: Look) -> list[Layer]:
+    if look.drawing is not None:
+        return look.drawing.foundation(look)
     layers: list[Layer] = []
     if look.mantle:
         layers += [(brush.rim(look.mantle, INK), "ink"), (brush.outline(look.mantle), look.dark)]

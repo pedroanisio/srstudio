@@ -355,7 +355,17 @@ TOON = Style(
         google=GoogleFont("Comic Neue", 700, italic=True),
     ),
     mouths={},
-    parts=("toon", "toon_cast", "toon_dinner", "toon_everyday", "toon_props", "toon_rooms", "toon_sets", "toon_wear"),
+    parts=(
+        "toon",
+        "toon_cast",
+        "toon_dinner",
+        "toon_everyday",
+        "toon_inked",
+        "toon_props",
+        "toon_rooms",
+        "toon_sets",
+        "toon_wear",
+    ),
     namer=partial(flat_counter, "k"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # the expression is pose data; a voice is narration over the captions
