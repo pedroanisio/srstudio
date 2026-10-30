@@ -1238,7 +1238,9 @@ again the way the traced cat is drawn, beside the fox, for comparison. Its outli
 hand following them (`brush.wobble`). Every ink band is pressed: heavier where the form turns from the light, thin
 at the tips, with a dry brush's grit, and broken in three to five seeded places with a nick between
 (`brush.broken`, a ragged `brush.Hand`). A few lumpy open strokes stay inside: the cheeks, the tail tip, a fluff in
-each ear, the philtrum and the paw creases. A darker coat tone shades the flank and the tail, and turns the head
+each ear, the philtrum and the paw creases. Like the cat's, its body is one contour from the ruff into the
+shoulders and flanks, and its arms leave the body inside the shoulder, slim there and widest at the forearm and
+paw, inked only where they overlap the body or leave it. A darker coat tone shades the flank and the tail, and turns the head
 with a crescent that starts and ends on the outline and swells into the cheek. The head tilts about the neck, the
 face sits off its midline with the far eye smaller, and what it wears turns with the head. Its almond eyes with an
 iris, its muzzle mouths and its visemes are drawn for its face: every `EYES` and `MOUTHS` kind is its own drawing,
@@ -1694,7 +1696,8 @@ error is `InstagramPostError`, with every problem listed.
   wear on every character and through a sketch; `tests/test_toon_inked.py` covers the inked fox (every eyes and
   mouth pair inside its corner, a face of its own for every kind and viseme, lids over open eyes, a dense, uneven,
   pressed and asymmetric contour broken in three to five places, no perfect ellipse, a head shade that tapers at
-  both ends, few open inner lines, typing, blinks, lip sync, wear turned with the head and a sketch);
+  both ends, few open inner lines, a gentle shoulder contour, arms that start inside the body, end under their paws
+  and never double the flank, typing, blinks, lip sync, wear turned with the head and a sketch);
   `tests/test_sketch.py` covers the sketch (checks and every refused inconsistency, cues with speakers,
   appearances, events, line spans, typing bursts, the placement onto a recording, the drawn cast with stickers, the
   written and reloaded files, a recording through a fake client with its manifest, and a misheard line);
