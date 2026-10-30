@@ -442,6 +442,20 @@ def test_the_inked_fox_types_speaks_and_blinks_like_the_rest():
     assert len(second.findall("group")) == 3  # the two typing frames and the blink lids
 
 
+@pytest.mark.parametrize(
+    ("eyes", "mouth"), (("sleepy", "flat"), ("half", "yawn"), ("wide", "scream"), ("half", "puff"))
+)
+def test_a_sketch_draws_the_four_kinds_every_brush_character_shares_on_the_inked_fox(eyes, mouth):
+    line = Line("a", "New phone who dis.")
+    who = Speaker("a", Voice(role="a", id="id-a", name="a"), VoiceSettings(0.5, 0.75, 0.2), "fox-inked")
+    sk = Sketch("kinds", "Kinds", (who,), (line,), (Beat(0.0, "fox-inked", line.text, eyes, mouth, "desk", 0, 0),), 2.0)
+    sketch.check(sk)
+    cv = canvas(2.0)
+    assert len(sketch.draw_cast(cv, cv.comp, sk.beats, sk.end)) == 1
+    look = toon_inked.FOX_INKED
+    assert toon_cast._eye(look, look.eyes[0], eyes, 1.0) and toon_cast._mouth(look, mouth)
+
+
 def test_a_sketch_swaps_the_inked_fox_in_by_name():
     lines = (Line("a", "New phone who dis."), Line("b", "Your bank."))
 

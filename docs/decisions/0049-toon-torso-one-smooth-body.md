@@ -5,7 +5,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0049: A Toon torso: one smooth contour over the shoulders, with the arms drawn inside it
 
 - Status: accepted; implemented 2026-10-30 (`srstudio.toon_torso`: `Torso`, `TAPER`, `UNDER`, `SPACING`, `BULGE`,
-  `CURVE_IN`; `toon_critters.drift(weights=)`, `Critter.torso`; `tests/test_toon_torso.py`,
+  `CURVE_IN`; `arm_lines`, `depth_in`; `brush.wobble(weights=)`, `Critter.torso`; `tests/test_toon_torso.py`,
   `tests/support/toon_contour.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Amends [ADR 0045](0045-toon-sloth-goat-hamster.md) (the sloth, the goat and the hamster)
@@ -36,8 +36,9 @@ any `Drawing` can use, not geometry belonging to these three.
    has a fixed least radius (`BULGE` 54 px out over a shoulder, `CURVE_IN` 48 px in under a jaw). The curvature is
    bounded by construction, so no corner can appear, whatever the numbers. A shoulder so low that no arm fits above
    the base is refused by name (`ToonDataError`).
-3. **`Torso.weights` calms the hand wobble on the shoulders and flanks.** `toon_critters.drift` takes per-point weights
-   (0 to 1). The head keeps its full wobble and fur edges, and the torso takes `CALM` (0.15) of it.
+3. **`Torso.weights` calms the hand wobble on the shoulders and flanks.** `brush.wobble` takes per-sample weights
+   (0 to 1). The head keeps its full wobble and fur edges; the torso and the two neck joins take `CALM` (0.15) of it,
+   and the body's ink is pressed with a steadier grain (`BODY_PRESS`), so a long flank does not ripple.
 4. **`Torso.arm_path` redraws a pose's arm inside the body.** The top moves under the shoulder line, half an arm's
    width inside the outline. The stroke tapers from a thin crease at the top to full width at the forearm
    (`TAPER`). The paw stays where the pose puts it, so typing still reaches the desk.
@@ -47,8 +48,13 @@ any `Drawing` can use, not geometry belonging to these three.
    - A paw raised to the face crosses in front of the neck, so only its upper arm has to clear the outline.
    - An arm reaching more than its own width past its flank, as the near arm does when typing, leaves the body on a
      gentle line from the top. An elbow pulled in behind the top would double the arm back on itself.
-5. **`Torso.limb` returns the arm's layers, the paw's position and the way it points.** The paw itself stays the
-   character's own drawing. A `Drawing.limb` calls `Torso.limb` and appends its paw.
+5. **`Torso.limb` returns the arm's layers, the paw's position and the way it points.** The arm is coat, a shade under
+   the forearm and the ink of `arm_lines`: an edge is inked where it leaves the body or lies well over it, and never
+   within `SEAM` widths inside the body along the flank, where arm and body are one form. That is the inked fox's
+   rule (ADR 0044), moved here from `toon_inked` and given the taper and weight as arguments, so both draw an arm's
+   ink with one function. The fox keeps its own arm path (`TUCK`), because its silhouette is traced by hand and is
+   not a `Torso`. The paw itself stays the character's own drawing. A `Drawing.limb` calls `Torso.limb` and appends
+   its paw.
 6. **The critters' fur strokes at the arm joints are gone,** because no joint is left to mark. Their heads keep their
    contours except for the last neck points of the sloth and the goat, moved so that the two shoulders sit within
    10 px of each other's height. Each head is tilted, and the arc from a leaning neck otherwise drops one shoulder

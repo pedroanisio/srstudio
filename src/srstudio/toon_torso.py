@@ -8,12 +8,13 @@ from a :class:`Torso` built from a few numbers under its own head contour:
 * :attr:`Torso.contour` is the whole closed outline: down each side from where the head meets the neck, out to the
   shoulder at the given slope and on down the flank to the base, every turn an arc of a fixed least radius, so the
   line leaves the head without a corner and turns no sharper than a gentle curve;
-* :meth:`Torso.weights` lets :func:`srstudio.toon_critters.drift` wobble the head's edge like a hand while the
-  shoulders and flanks stay calm;
+* :meth:`Torso.weights` lets :func:`srstudio.brush.wobble` move the head's edge like a hand while the shoulders and
+  flanks stay calm;
 * :meth:`Torso.arm_path` and :meth:`Torso.limb` draw an arm from the shared arms of a pose
   (:func:`srstudio.toon_cast._arms`): its top moved below the shoulder line and well inside the body, its elbow
   pulled in when it would poke out, the paw left where the pose puts it; the stroke tapers into the body like a
-  crease and is widest at the forearm.
+  crease and is widest at the forearm, one form with the body along the flank: :func:`arm_lines` inks its edges only
+  where they leave the body or lie well over it. The inked fox draws its arms with the same :func:`arm_lines`.
 
 Any :class:`srstudio.toon_cast.Drawing` can use it: build a torso from the head, the shoulder half-width and slope,
 the flank half-width and the arm's width, take the look's silhouette from :attr:`Torso.contour` (drifted by hand
@@ -33,10 +34,12 @@ from .brush import Point
 from .toon import ToonDataError
 from .toon_cast import CENTRE, INK, Layer
 
-__all__ = ["Torso", "TAPER", "UNDER", "SPACING", "BULGE", "CURVE_IN"]
+__all__ = ["Torso", "TAPER", "UNDER", "ARM_LINE", "SEAM", "SPACING", "BULGE", "CURVE_IN", "arm_lines", "depth_in"]
 
 TAPER = brush.Pressure(0.3, 1.0, 0.12, 0.04, 1.5)  # an arm: a thin crease into the body, the full width at the paw
 UNDER = brush.Pressure(0.35, 0.3, 0.75, 0.06, 1.2)  # the shade under a forearm: pressed in the middle
+ARM_LINE = brush.Pressure(0.3, 0.75, 0.45, 0.12, 1.6)  # an arm's ink: lifted at both ends of every run
+SEAM = 0.55  # arm widths: an arm's edge this close inside the body, running along it, merges with the body
 SPACING = 10.0  # reference pixels between the contour points down a side
 INSET = 0.5  # how far inside the outline an arm's top sits, in arm widths: its thin start well clear of the edge
 ELBOW = 0.55  # how far inside the outline an elbow is pulled, in arm widths
@@ -100,6 +103,58 @@ def _towards(heading: float, goal: float) -> float:
 def _unit(dx: float, dy: float) -> Point:
     length = math.hypot(dx, dy) or 1.0
     return dx / length, dy / length
+
+
+def depth_in(outline: Sequence[Point], p: Point) -> tuple[float, Point]:
+    """How far inside the closed ``outline`` a point is (negative outside) and the direction of the nearest edge."""
+    near, along, hit = math.inf, (1.0, 0.0), False
+    for a, b in zip(outline, (*outline[1:], outline[0]), strict=True):
+        (ax, ay), (bx, by) = a, b
+        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+        length = math.dist(a, b) or 1.0
+        t = max(0.0, min(1.0, ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / length**2))
+        d = math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay)))
+        if d < near:
+            near, along = d, ((bx - ax) / length, (by - ay) / length)
+    return (near if hit else -near), along
+
+
+def arm_lines(
+    points: Sequence[Point],
+    w: float,
+    outline: Sequence[Point],
+    taper: brush.Pressure,
+    weight: float,
+    line: brush.Pressure = ARM_LINE,
+) -> list[brush.Shape]:
+    """The ink of an arm drawn ``w`` wide with ``taper`` over a body with ``outline``: along each edge where it lies
+    outside the body (its contour), deep inside it (the overlap line) or crosses the body's edge; never where it runs
+    within :data:`SEAM` widths inside the body along the flank, where the arm and the body are one form."""
+    path = [p for k, p in enumerate(brush.spline(points, False, 8)) if k == 0 or p != points[0]]
+    lengths = [0.0]
+    for a, b in zip(path, path[1:], strict=False):
+        lengths.append(lengths[-1] + math.dist(a, b))
+    out: list[brush.Shape] = []
+    for side in (1.0, -1.0):
+        run: list[Point] = []
+        for i, (p, s) in enumerate(zip(path, lengths, strict=True)):
+            a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
+            tx, ty = b[0] - a[0], b[1] - a[1]
+            length = math.hypot(tx, ty) or 1.0
+            tx, ty = tx / length, ty / length
+            half = side * w * taper.at(s / lengths[-1]) / 2
+            edge = (p[0] - ty * half, p[1] + tx * half)
+            depth, (ax, ay) = depth_in(outline, edge)
+            if depth < 0.0 or depth > SEAM * w or abs(tx * ax + ty * ay) < 0.6:
+                run.append(edge)
+                continue
+            if len(run) >= 4:
+                out.append(brush.stroke(run, weight, line, steps=1))
+            run = []
+        if len(run) >= 4:
+            out.append(brush.stroke(run, weight, line, steps=1))
+    return out
 
 
 @dataclass(frozen=True)
@@ -188,11 +243,13 @@ class Torso:
         return tuple([*left, *self.head, *right, *bottom])
 
     def weights(self, calm: float) -> tuple[float, ...]:
-        """How much of a hand's drift each contour point takes: all of it on the head, ``calm`` (0..1) on the torso."""
+        """How much of a hand's drift each contour point takes: all of it on the head, ``calm`` (0..1) on the torso
+        and on the two neck joins, so the line leaves the head as gently as the arcs below them run."""
         if not (checks.number(calm) and 0 <= calm <= 1):
             raise ToonDataError(f"calm is a share of the drift, 0 to 1, got {calm!r}")
         before = len(self._side(-1))
-        return tuple(1.0 if before <= i < before + len(self.head) else float(calm) for i in range(len(self.contour)))
+        head = range(before + 1, before + len(self.head) - 1)
+        return tuple(1.0 if i in head else float(calm) for i in range(len(self.contour)))
 
     def edge(self, y: float, side: int) -> float:
         """The outline's x at height ``y`` on the left (``side`` -1) or right (+1), between the neck and the base."""
@@ -283,18 +340,14 @@ class Torso:
         return True
 
     def limb(self, points: Sequence[Point], paw: Point, coat: str, shade: str) -> tuple[list[Layer], Point, Point]:
-        """An arm's layers, where its paw goes and the way it points: the ink set a little low (heavier underneath),
-        the coat over it, both tapering into the body (:data:`TAPER`), and the shade along the forearm's underside.
-        The paw is the caller's to draw, at ``paw`` kept inside the body beside the shoulders (:meth:`keep`)."""
+        """An arm's layers, where its paw goes and the way it points: the coat tapering into the body (:data:`TAPER`),
+        the shade along the forearm's underside, and the ink of :func:`arm_lines`. The paw is the caller's to draw, at
+        ``paw`` kept inside the body beside the shoulders (:meth:`keep`)."""
         path = self.arm_path(points)
         w = self.arm
-        low = [(x + 0.6, y + 1.8) for x, y in path]
         under = [(x + 0.4, y + w * 0.26) for x, y in (path[1:] if len(path) > 2 else path)]
-        layers: list[Layer] = [
-            (brush.stroke(low, w + 2 * INK * 0.9, TAPER), "ink"),
-            (brush.stroke(path, w, TAPER), coat),
-            (brush.stroke(under, w * 0.4, UNDER), shade),
-        ]
+        layers: list[Layer] = [(brush.stroke(path, w, TAPER), coat), (brush.stroke(under, w * 0.4, UNDER), shade)]
+        layers += [(line, "ink") for line in arm_lines(path, w, self.contour, TAPER, INK * 1.1)]
         ax, ay = path[-2]
         at = self.keep(paw, self.arm * PAW)
         return layers, at, _unit(at[0] - ax, at[1] - ay)

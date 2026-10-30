@@ -5,7 +5,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0045: A sloth, a goat and a hamster with drawings of their own, and a yawn, a scream and puffed cheeks for every brush character
 
 - Status: accepted; implemented 2026-10-30 (`srstudio.toon_critters`: `Critter`, `SLOTH`/`GOAT`/`HAMSTER`,
-  `pressed`, `drift`, `shade`, `shared_eye`, `shared_mouth`; `toon.EYES` gains `sleepy`, `toon.MOUTHS` gains `yawn`,
+  `pressed`, `shade`, `shared_eye`, `shared_mouth`; `toon.EYES` gains `sleepy`, `toon.MOUTHS` gains `yawn`,
   `scream` and `puff`; `toon_cast.SLEEPY_PACE`/`SLEEPY_HOLD`, `blink_times(hold=)`; `tests/test_toon_critters.py`,
   `tests/support/toon_thumbnail.py`)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
@@ -58,7 +58,7 @@ and open strokes.
    visemes and limbs to it. The hook is the same one ADR 0044 adds, line for line, so the two branches merge
    without conflict there. A critter keeps an untilted face `Look` for the shared parts and carries:
    - **a dense, asymmetric outline.** Every contour is placed by hand without mirroring, at 40 points or more against
-     the fox's 14. `drift` moves it off its points by a deterministic wobble, like a hand following it.
+     the fox's 14. `brush.wobble` moves it off its points by a deterministic wobble, like a hand following it.
    - **a pressed line.** `pressed` is a closed band. It is heavier where the outline faces away from the light (the
      bottom and the back) and thinner at sharp convex turns, where a brush lifts. It also has a little deterministic
      grain. Arms are inked heavier along their underside.
@@ -107,9 +107,9 @@ other, as measured.
   vendor, and the cast would read as stickers rather than characters.
 - **Drawing the three as plain `Look`s.** They would keep the even line and the mirrored outline that the operator
   judged unpolished. The `Drawing` hook lets them draw like the cat without changing how the older cast draws.
-- **Basing on ADR 0044's branch, or growing `brush.py`.** That branch was not merged. Waiting on it, or editing the
-  shared brush, would couple two parallel changes. `pressed` and `drift` live in `toon_critters` and overlap
-  `brush.inked` and `brush.wobble` from that branch. Merging the two is a follow-up for whoever merges both.
+- **A second hand and a second wobble beside ADR 0044's.** This work started before that branch merged, with its own
+  `Press`, `drift` and band shade. Once it merged they went: `pressed` is `brush.inked` with the critters' `Hand` and a
+  per-shape `seed`, the drift is `brush.wobble` at `steps=1` with `weights`, and `shade` draws `brush.crescent`.
 - **Falling back to a traced kind on the cat** (shock for scream, half for sleepy). This silently draws something
   other than what the script asked for.
 - **A goat with a horizontal-slit pupil drawn literally.** At reel size it read as a dash and made the goat look

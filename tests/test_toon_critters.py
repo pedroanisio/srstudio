@@ -358,6 +358,22 @@ def test_a_headset_fits_the_new_heads(name):
     assert top - 16 < band[1] < top
 
 
+@pytest.mark.parametrize("name", NEW)
+def test_what_the_new_three_wear_turns_with_their_tilted_heads(name):
+    look = CRITTERS[name]
+    face = toon_wear.face_of(look)
+    assert face.tilt == look.drawing.tilt != 0.0
+    layers = toon_wear.wear_layers(face, ("glasses",))[1]
+    for k, eye in enumerate(look.eyes):  # the lenses stay on the eyes
+        x0, y0, x1, y1 = brush.bounds(layers[k][0])
+        assert math.dist(((x0 + x1) / 2, (y0 + y1) / 2), eye) < 1.5
+    (lx, ly), (rx, ry) = look.eyes
+    centre = (lx + rx) / 2, (ly + ry) / 2
+    temples = [brush.bounds(brush.rotate(layers[k][0], *centre, -face.tilt)) for k in (3, 4)]
+    assert abs(temples[0][1] - temples[1][1]) < 4.0  # the arms run level on the head, so they turn with it
+    assert abs(brush.bounds(layers[3][0])[1] - brush.bounds(layers[4][0])[1]) > 4.0
+
+
 def test_a_sketch_plays_the_new_three_by_name_with_their_signatures():
     lines = (Line("a", "Monday again."), Line("b", "WHAT."), Line("c", "Free snacks!"))
 

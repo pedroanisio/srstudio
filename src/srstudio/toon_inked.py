@@ -44,6 +44,7 @@ from .canvas import Canvas
 from .registry import register
 from .toon import LIPS, Pose, ToonDataError
 from .toon_cast import CENTRE, FINE, FOX, HEART, INK, TEAR, TONGUE, VISEMES, Layer, Look, Mouths, figure
+from .toon_torso import arm_lines, depth_in
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
@@ -63,9 +64,7 @@ BODY_HAND = brush.Hand(light=0.62, heavy=1.5, toward=(0.45, 0.89), tips=0.7, gra
 EYE_HAND = brush.Hand(light=0.35, heavy=1.55, toward=(0.0, -1.0), tips=0.6, grain=0.12)  # a heavy upper lid
 MOUTH_HAND = brush.Hand(light=0.5, heavy=1.3, toward=(0.0, 1.0), tips=0.5, grain=0.12)
 ARM_TAPER = brush.Pressure(0.45, 1.1, 0.12, 0.04, 2.0)  # slim where it leaves the body, widest at forearm and paw
-ARM_LINE = brush.Pressure(0.3, 0.75, 0.45, 0.12, 1.6)  # an arm's ink: lifted at both ends of every run
 TUCK = (0.5, 10.0)  # an arm leaves the body this far inside the shoulder: limb widths in, px down
-SEAM = 0.55  # limb widths: an arm's edge this close inside the body, running along it, merges with the body
 FUR = brush.Pressure(1.0, 0.2, 0.14, 0.16, 1.7)  # pressed at the root, lifted at the tip, unevenly
 LINE = brush.Pressure(0.95, 0.35, 0.15, 0.14, 2.3)
 GAP = 1.5  # a break in a body contour, in line weights
@@ -116,71 +115,6 @@ def _fill(points: Sequence[Point], colour: str, seed: int, amount: float = 1.0) 
 def _line(points: Sequence[Point], weight: float, seed: int, pressure: brush.Pressure = FUR) -> Layer:
     """An inner line, drifting a little off the points it was placed on."""
     return (brush.stroke(brush.wobble(points, 0.9, closed=False, steps=3, seed=seed), weight, pressure, steps=2), "ink")
-
-
-def _depth(outline: Sequence[Point], p: Point) -> tuple[float, Point]:
-    """How far inside ``outline`` the point is (negative outside) and the direction of the outline's nearest edge."""
-    near, along, hit = math.inf, (1.0, 0.0), False
-    for a, b in zip(outline, (*outline[1:], outline[0]), strict=True):
-        (ax, ay), (bx, by) = a, b
-        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
-            hit = not hit
-        length = math.dist(a, b) or 1.0
-        t = max(0.0, min(1.0, ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / length**2))
-        d = math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay)))
-        if d < near:
-            near, along = d, ((bx - ax) / length, (by - ay) / length)
-    return (near if hit else -near), along
-
-
-def _arm_lines(points: Sequence[Point], w: float, outline: Sequence[Point]) -> list[Shape]:
-    """The ink of an arm drawn ``w`` wide with :data:`ARM_TAPER` over a body with ``outline``: along each edge
-    where it lies outside the body (its contour), deep inside it (the overlap line), or crosses the body's edge;
-    never where it runs just inside the body along the flank, where the arm and the body are one form."""
-    path = [p for k, p in enumerate(brush.spline(points, False, 8)) if k == 0 or p != points[0]]
-    lengths = [0.0]
-    for a, b in zip(path, path[1:], strict=False):
-        lengths.append(lengths[-1] + math.dist(a, b))
-    out: list[Shape] = []
-    for side in (1.0, -1.0):
-        run: list[Point] = []
-        for i, (p, s) in enumerate(zip(path, lengths, strict=True)):
-            a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
-            tx, ty = b[0] - a[0], b[1] - a[1]
-            length = math.hypot(tx, ty) or 1.0
-            tx, ty = tx / length, ty / length
-            half = side * w * ARM_TAPER.at(s / lengths[-1]) / 2
-            edge = (p[0] - ty * half, p[1] + tx * half)
-            depth, (ax, ay) = _depth(outline, edge)
-            if depth < 0.0 or depth > SEAM * w or abs(tx * ax + ty * ay) < 0.6:
-                run.append(edge)
-                continue
-            if len(run) >= 4:
-                out.append(brush.stroke(run, INK * 1.1, ARM_LINE, steps=1))
-            run = []
-        if len(run) >= 4:
-            out.append(brush.stroke(run, INK * 1.1, ARM_LINE, steps=1))
-    return out
-
-
-def _crescent(outer: Sequence[Point], depth: float, inside: Point, peak: float = 0.6) -> tuple[Point, ...]:
-    """A shade that runs inside the outline along ``outer``: it starts and ends on the outline and swells to
-    ``depth`` toward ``inside``, deepest ``peak`` of the way along, so it turns the form instead of striping it."""
-    path = brush.spline(outer, steps=3)
-    along = [0.0]
-    for a, b in zip(path, path[1:], strict=False):
-        along.append(along[-1] + math.dist(a, b))
-    bend = math.log(0.5) / math.log(peak)
-    inner = []
-    for i, p in enumerate(path):
-        a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
-        dx, dy = b[0] - a[0], b[1] - a[1]
-        nx, ny = -dy / math.hypot(dx, dy), dx / math.hypot(dx, dy)
-        if nx * (inside[0] - p[0]) + ny * (inside[1] - p[1]) < 0:
-            nx, ny = -nx, -ny
-        d = depth * math.sin(math.pi * (along[i] / along[-1]) ** bend)
-        inner.append((p[0] + nx * d, p[1] + ny * d))
-    return tuple(path) + tuple(inner[-2:0:-1])
 
 
 # -- the fox's body, at rest, before the tilt ------------------------------------------------------------------------
@@ -239,7 +173,7 @@ _CHIN = (
     (146.0, 690.0), (170.0, 697.0), (196.0, 698.0), (222.0, 693.0), (238.0, 688.0), (228.0, 701.0), (208.0, 710.0),
     (184.0, 712.0), (162.0, 707.0),
 )  # fmt: skip
-_HEAD_SHADE = _crescent(_SILHOUETTE[7:14], 24.0, (185.0, 580.0))  # the crown's far side down into the cheek
+_HEAD_SHADE = brush.crescent(_SILHOUETTE[7:14], 24.0, (185.0, 580.0))  # the crown's far side down into the cheek
 _FLANK_SHADE = (
     (296.0, 714.0), (309.0, 728.0), (317.0, 756.0), (322.0, 790.0), (324.0, 826.0), (302.0, 826.0), (300.0, 792.0),
     (295.0, 758.0), (288.0, 732.0),
@@ -597,17 +531,17 @@ class Inked:
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]:
         """An arm the way the cat's are drawn: it leaves the body inside the shoulder (:data:`TUCK`), slim there and
         widest at the forearm and paw, one form with the body where it lies along the flank and inked only where it
-        overlaps the body or leaves it (:func:`_arm_lines`); and a mitten of a paw, its line broken, with curved
-        creases."""
+        overlaps the body or leaves it (:func:`srstudio.toon_torso.arm_lines`); and a mitten of a paw, its line
+        broken, with curved creases."""
         w = look.limb
         (sx, sy), *rest = points
         inward = 1.0 if sx < CENTRE else -1.0
         start = (sx + inward * TUCK[0] * w, sy + TUCK[1])
         path = [start, *rest]
-        if _depth(look.silhouette, rest[0])[0] < 0.0:  # reaching out: the upper arm hangs inside, the forearm leaves
+        if depth_in(look.silhouette, rest[0])[0] < 0.0:  # reaching out: the upper arm hangs inside, the forearm leaves
             path.insert(1, (start[0] + (rest[0][0] - start[0]) * 0.25, rest[0][1]))
         out: list[Layer] = [(brush.stroke(path, w, ARM_TAPER), look.coat)]
-        out += [(line, "ink") for line in _arm_lines(path, w, look.silhouette)]
+        out += [(line, "ink") for line in arm_lines(path, w, look.silhouette, ARM_TAPER, INK * 1.1)]
         px, py = paw
         rx, ry = w * 0.74, w * 0.52
         mitten = [
