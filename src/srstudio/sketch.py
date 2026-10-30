@@ -133,6 +133,7 @@ class Beat:
     line: int | None = None
     word: int | None = None
     event: str = ""
+    wear: tuple[str, ...] = ()  # what ``who`` wears in this beat (the cast's ``wear``)
 
     @property
     def spoken(self) -> bool:
@@ -141,8 +142,9 @@ class Beat:
 
 @dataclass(frozen=True)
 class Cast:
-    """The characters a sketch may show and the expressions they take, by name; the ``lip_synced`` ones key their
-    mouths on a viseme track. Another style's sketches pass their own; the default is :data:`TOON_CAST`."""
+    """The characters a sketch may show and the expressions they take, by name, and what they may wear; the
+    ``lip_synced`` ones key their mouths on a viseme track. Another style's sketches pass their own; the default is
+    :data:`TOON_CAST`."""
 
     name: str
     characters: tuple[str, ...]
@@ -150,6 +152,7 @@ class Cast:
     eyes: tuple[str, ...]
     mouths: tuple[str, ...]
     arms: tuple[str, ...]
+    wear: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not (self.characters and self.eyes and self.mouths and self.arms):
@@ -158,7 +161,7 @@ class Cast:
             raise SketchError(f"the {self.name} cast's lip-synced characters must be among {self.characters}")
 
 
-TOON_CAST = Cast("Toon", CHARACTERS, LIP_SYNCED, toon.EYES, toon.MOUTHS, toon.ARMS)
+TOON_CAST = Cast("Toon", CHARACTERS, LIP_SYNCED, toon.EYES, toon.MOUTHS, toon.ARMS, toon.WEAR)
 
 
 @dataclass(frozen=True)
@@ -210,6 +213,8 @@ def check(sketch: Sketch) -> None:
         known = b.who in cast.characters and b.eyes in cast.eyes and b.mouth in cast.mouths and b.arms in cast.arms
         if not known:
             raise SketchError(f"beat {i}: {b.who}/{b.eyes}/{b.mouth}/{b.arms} is not in the {cast.name} vocabulary")
+        if any(w not in cast.wear or b.wear.count(w) > 1 for w in b.wear):
+            raise SketchError(f"beat {i}: wear {b.wear} is not distinct items of the {cast.name} wear {cast.wear}")
         if (b.line is None) != (b.word is None):
             raise SketchError(f"beat {i}: line and word go together")
         if b.line is not None and b.word is not None:
@@ -247,10 +252,12 @@ def appearances(beats: Sequence[Beat], end: float) -> list[Appearance]:
     out: list[Appearance] = []
     for b, nxt in zip(beats, list(beats[1:]) + [None], strict=True):
         stop = end if nxt is None else nxt.start
-        pose = {"eyes": b.eyes, "mouth": b.mouth, "arms": b.arms}
+        pose: dict[str, Any] = {"eyes": b.eyes, "mouth": b.mouth, "arms": b.arms}
+        if b.wear:  # nothing worn writes nothing, so older poses files stay as they were
+            pose["wear"] = list(b.wear)
         if out and out[-1].who == b.who and out[-1].end == b.start:
             app = out[-1]
-            if any(app.poses[-1][k] != v for k, v in pose.items()):
+            if {k: v for k, v in app.poses[-1].items() if k != "start"} != pose:
                 app.poses.append({"start": round(b.start - app.start, 6), **pose})
             out[-1] = replace(app, end=stop)
         else:
@@ -419,16 +426,24 @@ def write_voiced(
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "script.json").write_text(json.dumps(cues(beats, end, lines), indent=2) + "\n")
     (folder / "poses.json").write_text(json.dumps(_appearance_data(beats, end), indent=2) + "\n")
-    data = {"end": end, "beats": [{f: getattr(b, f) for f in BEAT_FIELDS} for b in beats]}
+    data = {"end": end, "beats": [_beat_data(b) for b in beats]}
     (folder / "beats.json").write_text(json.dumps(data, indent=2) + "\n")
     if mouths is not None:
         track = {"end": end, "mouths": {who: [[t, v] for t, v in states] for who, states in mouths.items()}}
         (folder / "mouths.json").write_text(json.dumps(track, indent=2) + "\n")
 
 
+def _beat_data(b: Beat) -> dict[str, Any]:
+    """A placed beat for ``beats.json``: every field, and ``wear`` only when something is worn."""
+    data: dict[str, Any] = {f: getattr(b, f) for f in BEAT_FIELDS}
+    if b.wear:
+        data["wear"] = list(b.wear)
+    return data
+
+
 def load_beats(path: Path) -> tuple[list[Beat], float]:
-    """The placed beats and project end from ``voiced/beats.json``: typed, every field present and nothing else;
-    the caller runs :func:`check` on the sketch rebuilt with them."""
+    """The placed beats and project end from ``voiced/beats.json``: typed, every field present, ``wear`` when
+    something is worn, and nothing else; the caller runs :func:`check` on the sketch rebuilt with them."""
     try:
         data = json.loads(Path(path).read_text())
     except (OSError, ValueError) as exc:
@@ -440,8 +455,12 @@ def load_beats(path: Path) -> tuple[list[Beat], float]:
         raise SketchError(f"{path}: end must be a number of seconds")
     beats = []
     for i, q in enumerate(data["beats"]):
-        if not isinstance(q, dict) or set(q) != set(BEAT_FIELDS):
-            raise SketchError(f"{path} beat {i}: fields must be exactly {BEAT_FIELDS}")
+        if not isinstance(q, dict) or set(q) - {"wear"} != set(BEAT_FIELDS):
+            raise SketchError(f"{path} beat {i}: fields must be exactly {BEAT_FIELDS} and an optional wear")
+        if "wear" in q and not (
+            isinstance(q["wear"], list) and q["wear"] and all(isinstance(w, str) for w in q["wear"])
+        ):
+            raise SketchError(f"{path} beat {i}: wear is a non-empty list of names")
         if not checks.number(q["start"]):
             raise SketchError(f"{path} beat {i}: start must be a number of seconds")
         if any(not isinstance(q[f], str) for f in ("who", "caption", "eyes", "mouth", "arms", "event")):
@@ -459,6 +478,7 @@ def load_beats(path: Path) -> tuple[list[Beat], float]:
                 q["line"],
                 q["word"],
                 q["event"],
+                tuple(q.get("wear", ())),
             )
         )
     return beats, float(end)

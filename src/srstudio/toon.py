@@ -39,6 +39,7 @@ __all__ = [
     "MOUTHS",
     "TRACED_EYES",
     "TRACED_MOUTHS",
+    "WEAR",
     "ARMS",
     "BODIES",
     "Pose",
@@ -84,6 +85,7 @@ TRACED_EYES = ("wide", "half", "left", "up", "down", "side", "closed", "narrow",
 TRACED_MOUTHS = ("flat", "open", "round", "o", "drop", "grin", "wave", "smirk", "none")
 EYES = (*TRACED_EYES, "roll", "teary", "wince", "hearts")  # the brush characters draw them all; the cat, the traced
 MOUTHS = (*TRACED_MOUTHS, "grimace", "frown", "tongue", "kiss")
+WEAR = ("glasses", "sweat", "flush")  # what any character can wear per pose (:mod:`srstudio.toon_wear`)
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
 BODIES = ("desk", "type_a", "type_b", "crossed", "sigh", "lean", "face", "face2")
 ART_SCHEMA = "toon-cat/1.0.0"
@@ -129,12 +131,14 @@ def fh(h: float) -> float:
 # -- data -----------------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Pose:
-    """One expression held from ``start`` until the next pose: eyes, mouth and arms by name."""
+    """One expression held from ``start`` until the next pose: eyes, mouth and arms by name, and what is worn
+    (:data:`WEAR`)."""
 
     start: float
     eyes: str
     mouth: str
     arms: str
+    wear: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -214,16 +218,22 @@ def parse_poses(data: Any, where: str = "poses") -> list[Pose]:
     """Poses in order from 0 s, each naming an expression the rig has."""
     out: list[Pose] = []
     for i, item in enumerate(_items(data, where)):
-        rec = _record(item, f"{where}[{i}]", {"start": Number, "eyes": str, "mouth": str, "arms": str})
+        rec = _record(item, f"{where}[{i}]", {"start": Number, "eyes": str, "mouth": str, "arms": str}, {"wear": list})
         for key, allowed in (("eyes", EYES), ("mouth", MOUTHS), ("arms", ARMS)):
             if rec[key] not in allowed:
                 raise ToonDataError(f"{where}[{i}]: {key} {rec[key]!r} is not one of {allowed}")
+        wear = tuple(rec.get("wear", ()))
+        for w in wear:
+            if w not in WEAR:
+                raise ToonDataError(f"{where}[{i}]: wear {w!r} is not one of {WEAR}")
+            if wear.count(w) > 1:
+                raise ToonDataError(f"{where}[{i}]: wears {w!r} twice")
         start = float(rec["start"])
         if i == 0 and start != 0:
             raise ToonDataError(f"{where}[0]: the first pose starts at {start}, not 0")
         if out and start <= out[-1].start + EPSILON:
             raise ToonDataError(f"{where}[{i}]: start {start} is not after the pose before ({out[-1].start})")
-        out.append(Pose(start, rec["eyes"], rec["mouth"], rec["arms"]))
+        out.append(Pose(start, rec["eyes"], rec["mouth"], rec["arms"], wear))
     return out
 
 
@@ -484,6 +494,11 @@ def _face(cv: Canvas, g, eyes: Eyes, mouth: Mouth) -> None:
         flat(cv, g, s, LIPS)
 
 
+def _layers(cv: Canvas, g, layers: Sequence[tuple[Shape, str]]) -> None:
+    for shape, colour in layers:
+        flat(cv, g, shape, {"ink": cv.ink, "white": cv.white}.get(colour, colour))
+
+
 @register("character", "toon-cat", summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression")
 def cat(
     cv: Canvas, parent, poses: Sequence[Pose], duration: float, taps: Sequence[float] = (), enter: float = 0.0
@@ -491,7 +506,11 @@ def cat(
     """One group per pose run, alive from its start to its end; ``taps`` (project seconds) swap the two typing
     bodies of every typing pose that contains them. ``enter`` puts the cat on from that project second: its poses
     count from it, and it leaves at ``duration``. The cat is traced art: an expression it was not traced with
-    (outside :data:`TRACED_EYES` and :data:`TRACED_MOUTHS`) is refused by name before anything is drawn."""
+    (outside :data:`TRACED_EYES` and :data:`TRACED_MOUTHS`) is refused by name before anything is drawn. What a
+    pose wears is drawn on the traced face (:data:`srstudio.toon_wear.CAT_FACE`): a flush under the face, glasses
+    and a sweat drop over it."""
+    from .toon_wear import CAT_FACE, check, wear_layers  # here, not at import: toon_wear draws with toon_cast
+
     if any(not (checks.number(t) and t >= 0) for t in taps):
         raise ToonDataError("taps must be non-negative seconds")
     if not (checks.number(enter) and 0 <= enter < duration):
@@ -501,6 +520,7 @@ def cat(
             raise ToonDataError(f"the traced cat has no {pose.eyes!r} eyes; it was traced with {TRACED_EYES}")
         if pose.mouth not in TRACED_MOUTHS:
             raise ToonDataError(f"the traced cat has no {pose.mouth!r} mouth; it was traced with {TRACED_MOUTHS}")
+        check(pose.wear)
     drawn = art()
     groups = []
     for pose, start, end in runs(poses, duration - enter):
@@ -510,7 +530,10 @@ def cat(
             swap_frames(cv, g, start, end, taps, lambda p, f: _body(cv, p, drawn.bodies["type_b" if f else "type_a"]))
         else:
             _body(cv, g, drawn.bodies[pose.arms])
+        cheeks, worn = wear_layers(CAT_FACE, pose.wear)
+        _layers(cv, g, cheeks)
         _face(cv, g, drawn.eyes[pose.eyes], drawn.mouths[pose.mouth])
+        _layers(cv, g, worn)
         groups.append(g)
     return groups
 
