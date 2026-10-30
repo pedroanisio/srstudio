@@ -270,7 +270,7 @@ SOFT = Style(
         google=GoogleFont("Poppins", 700),
     ),
     mouths={WARM.name: SOFT_MOUTH},
-    parts=("blob", "soft_props"),
+    parts=("blob", "soft_props", "soft_sets"),
 )
 
 CEL = Style(

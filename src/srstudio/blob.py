@@ -36,6 +36,8 @@ __all__ = [
     "LIMBS",
     "ARMS",
     "EYES",
+    "held",
+    "speaking",
     "MOUTHS",
     "POSES",
     "SEAT",
@@ -1077,6 +1079,29 @@ def drawings(cues: Sequence[Cue], *, end: float, fps: float = 15) -> list[Drawin
             ox, oy = cue.x, cue.y
         before = (target, ox, oy, cue.turn, cue.flip, cue)
     return out
+
+
+def held(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 1, fps: float = 15, id: str):
+    """A group that rides between the hands through ``cues``, drawing by drawing, for a prop the character holds.
+
+    It uses the same cues, ``end``, ``scale`` and ``fps`` as the character it rides with, and is placed in the same
+    parent, so a phone stays in the hands through every in-between."""
+    checks.positive(scale, BlobError, f"a held prop's scale must be a positive number, got {scale!r}")
+    frames = drawings(cues, end=end, fps=fps)
+    g = cv.group(parent, id)
+    tips = [(d.pose.limbs["arm_l"].p3, d.pose.limbs["arm_r"].p3) for d in frames]
+    cv.keys(g, "x", [(d.time, round(scale * (a[0] + b[0]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
+    cv.keys(g, "y", [(d.time, round(scale * (a[1] + b[1]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
+    return g
+
+
+def speaking(cues: Sequence[Cue], spans: Sequence[tuple[float, float]], end: float, fps: float = 15) -> list[Cue]:
+    """``cues`` in time order, the later of two at one time winning, with the ``sing`` mouth on every hold that
+    overlaps one of ``spans`` (a character's lines), the eases :func:`settle`d: a character talks while they talk."""
+    unique = list({round(c.time, 6): c for c in sorted(cues, key=lambda c: c.time)}.values())
+    holds = zip(unique, [c.time for c in unique[1:]] + [end], strict=True)
+    voiced = [replace(c, mouth="sing") if any(a < until and c.time < b for a, b in spans) else c for c, until in holds]
+    return settle(voiced, fps)
 
 
 def mouth_track(frames: Sequence[Drawing], states: Sequence[tuple[float, str]] = ()) -> list[tuple[float, str]]:

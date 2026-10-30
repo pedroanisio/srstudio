@@ -331,3 +331,9 @@ def test_a_build_s_names_become_the_version_of_each_part():
 def test_a_build_that_drew_two_versions_of_a_part_is_refused_by_name():
     with pytest.raises(parts.PartError, match="toon-fox versions 1 and 2"):
         parts.drawn(["toon-fox", "toon-fox@2"])
+
+
+def test_a_part_with_nothing_approved_lists_with_no_default():
+    fresh = Part("desk-lamp", "prop", "cutout", (version(1, status="proposed", approval=None, drawing="", proof=""),))
+    assert fresh.default is None
+    assert Part("toon-fox", "character", "toon", (baseline(),)).default == 1

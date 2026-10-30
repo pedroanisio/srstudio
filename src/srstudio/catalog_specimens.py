@@ -240,6 +240,8 @@ RECIPES: dict[str, Recipe] = {
     "ink-phone": Recipe(part("Boss", BUBBLES)),
     "saga-holo": Recipe(typeset((saga_sets.Panel(0.0, "Ship's Log", "All systems nominal."),))),
     "soft-cake": Recipe(part("WE'LL MISS\nYOU", x=540, y=1000)),
+    "soft-cane": Recipe(part(540, 1200)),
+    "soft-time-card": Recipe(part((soft_props.TimeState("2031", 0.0, SECONDS),), (380, 800, 320, 118))),
     "stick-cockpit": Recipe(part((stick.RigKey(0, "drive"),), SECONDS)),
     "stick-laptop": Recipe(part(540, 960, title="Sent", rows=("Re: budget", "Re: lunch"), badge="40")),
     "stick-phone": Recipe(part(sender="Boss", text="One more thing...")),

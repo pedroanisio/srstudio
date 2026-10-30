@@ -2457,6 +2457,23 @@
         }
       ]
     },
+    "soft-bench": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a park bench straight on.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f3902e58211e1dfd40ab9627b52bfc38be2d7ce543ed71e5ecac91a263dce905",
+          "rig": null
+        }
+      ]
+    },
     "soft-break-room": {
       "kind": "location",
       "style": "soft",
@@ -2487,6 +2504,23 @@
           "proof": "",
           "approval": null,
           "drawing": "c8e2250a6cd8d1681083374987d0f700b67ac8a5df7ad46694d0ca6126c4ac81",
+          "rig": null
+        }
+      ]
+    },
+    "soft-cane": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a walking cane.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d174410e3ae4f5f729b04f4d3181a453f5e4e8d1a7c8d1a415da74061c830c2f",
           "rig": null
         }
       ]
@@ -2627,6 +2661,40 @@
         }
       ]
     },
+    "soft-park": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: the park straight on, with a tree and a town that grow.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "61aec9d4b3b16a3f6f01d2308ee1d985aab67cd6b7b375e286652ce87950f6fa",
+          "rig": null
+        }
+      ]
+    },
+    "soft-phone": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a phone from behind, or lit with a slot for its screen.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b25c247b71e452492c4ffb652aa9730c995c84047fa4956b320c647b7b5129f6",
+          "rig": null
+        }
+      ]
+    },
     "soft-sofa": {
       "kind": "prop",
       "style": "soft",
@@ -2691,6 +2759,23 @@
           "proof": "",
           "approval": null,
           "drawing": "aefaba54d287c49165b864e608d9ab783668fcf27ba8f3bf654cbf543f483063",
+          "rig": null
+        }
+      ]
+    },
+    "soft-time-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a card with one big changing reading.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "954ff29806792551baac650793204cb3d7eecb27b0a6df6f5e8567e5c015fa2b",
           "rig": null
         }
       ]

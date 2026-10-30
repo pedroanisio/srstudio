@@ -308,7 +308,7 @@ def _parts(args: argparse.Namespace) -> int:
             n: {
                 "kind": p.kind,
                 "style": p.style,
-                "default": p.latest().number,
+                "default": p.default,
                 "refused": {"reason": p.refused.reason.value, "detail": p.refused.detail} if p.refused else None,
                 "versions": [asdict(v) for v in p.versions],
             }
@@ -324,7 +324,7 @@ def _parts(args: argparse.Namespace) -> int:
     width = max(len(n) for n in table)
     for name, part in table.items():
         numbers = ",".join(f"{v.number}{'' if v.status == 'approved' else '?'}" for v in part.versions)
-        print(f"{name:<{width}} {part.kind:<9} {part.style:<7} {part.latest().number:<3} {numbers}")
+        print(f"{name:<{width}} {part.kind:<9} {part.style:<7} {part.default or '-':<3} {numbers}")
     return 0
 
 

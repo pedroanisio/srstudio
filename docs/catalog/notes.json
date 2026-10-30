@@ -476,6 +476,13 @@
         "Uma leitura aceita pelo operador: o reconhecimento de fala ouve \"Reel\" onde a Sunny diz \"Real\", e <code>takes.Take(heard=...)</code> registra essa única alternativa no relatório de transcrição; qualquer outra leitura ainda para a gravação.",
         "Primeiro episódio com <code>gloss_reel.LOOK</code> (ADR 0031): nenhuma legenda termina numa palavra solta e toda legenda fica ao menos 0,84 s na tela; G1–G6, já publicados, mantêm as legendas originais."
       ]
+    },
+    "hang-out": {
+      "lede": "Dois melhores amigos de calendário na mão: \"We HAVE to catch up!\". Cada um oferece março, cada ano é a semana mais doida, e a árvore atrás delas vira uma copa maior que o quadro. Em 2079, no banco, de bengala: tão bom te ver. E os dois tiram o telefone.",
+      "highlights": [
+        "Sem música: diálogo pelo <code>srstudio.interview</code>, com a folha sintetizada por <code>foley</code>.",
+        "O plano nunca muda; quem envelhece é o mundo (<code>soft_sets.park(growth=)</code>)."
+      ]
     }
   },
   "styles": {
@@ -3345,6 +3352,49 @@
         "at": 17.2
       },
       "text": "O bolo Soft (<code>soft_props.cake</code>) depois do giro: escrita de glacê na frente e outra atrás, trocadas quando o bolo gira no prato. Em The Cake (19), WE'LL MISS YOU vira BYE PIP."
+    },
+    {
+      "section": "locations",
+      "name": "Parque de frente",
+      "parts": ["soft-park"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 8.8
+      },
+      "text": "O parque Soft (<code>soft_sets.park</code>) desenhado de frente para um plano médio: cidade fora de foco, gramado, caminho e uma árvore em cinco estágios, da muda com estaca à copa maior que o quadro."
+    },
+    {
+      "section": "props",
+      "name": "Banco e bengalas",
+      "parts": [
+        "soft-bench",
+        "soft-cane"
+      ],
+      "shot": {
+        "episode": "hang-out",
+        "at": 13.0
+      },
+      "text": "O banco de praça Soft de frente (<code>soft_props.bench</code>) e as bengalas (<code>soft_props.cane</code>), em Hang Out, em 2079."
+    },
+    {
+      "section": "props",
+      "name": "Telefone na mão",
+      "parts": ["soft-phone"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 3.3
+      },
+      "text": "O telefone Soft (<code>soft_props.phone</code>): de costas nas mãos, preso a elas por <code>blob.held</code>, ou de frente com a tela acesa (<code>soft_props.month_view</code>)."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão do tempo",
+      "parts": ["soft-time-card"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 7.0
+      },
+      "text": "Um cartão branco com uma leitura grande que troca no corte (<code>soft_props.time_card</code>): o ano, a hora da noite."
     },
     {
       "section": "locations",

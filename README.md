@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props`, `soft_sets` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -938,6 +938,21 @@ trombone, cuts to Pip for his line and goes back wide. The video is 32.5 s.
 ```bash
 grep '^ELEVENLABS_API_KEY=' .env | cut -d= -f2- | SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_cake_audio.py PROJECT --key-stdin --engine scene-render
 SRSTUDIO_ENGINE=scene-render python3 episodes/the_cake.py PROJECT && scene-render encode PROJECT/the-cake.scene.xml -o "$PWD/the-cake.mp4"
+```
+
+## Soft style episode: *Hang Out*
+
+The first Soft reel with no music: [episodes/hang_out_audio.py](episodes/hang_out_audio.py) records through
+`srstudio.interview` (Juno is Laura, Pip is Will, the old lines the same voices taken slower), and the build writes its
+foley with `srstudio.foley`. [episodes/hang_out.py](episodes/hang_out.py) is staged for a close shot in `soft_sets`,
+frontal sets for a cast at about twice `blob.SCALE`: `soft_sets.park` takes `growth=`, so the tree between them goes from
+a staked sapling to a crown wider than the frame while the town rises and the two-shot never changes. Its props are
+`soft_props.phone` (held with `blob.held`, which rides a group between the hands), `soft_props.bench`, `soft_props.cane`
+and `soft_props.time_card`, whose year flips on each cut. The video is 20.7 s.
+
+```bash
+srstudio record hang-out PROJECT   # the key from ELEVENLABS_API_KEY
+srstudio build hang-out PROJECT && scene-render encode PROJECT/hang-out.scene.xml --out-dir generated --strict
 ```
 
 ## Cel style package: *Work Training Be Like*
