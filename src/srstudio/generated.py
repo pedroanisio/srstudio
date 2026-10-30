@@ -27,7 +27,7 @@ from typing import Any, Literal
 
 from sr_core.scene import Scene
 
-from . import digest
+from . import checks, digest
 from .errors import SrstudioError
 
 PLACEHOLDER = "0" * 64  # the engine's "not made yet" digest
@@ -81,7 +81,7 @@ class Generated:
             raise GeneratedError(f"{self.id}: cache {self.cache!r} must stay inside the document's folder")
         if cache.suffix.lower() != ".wav":
             raise GeneratedError(f"{self.id}: cache {self.cache!r} must be a .wav file")
-        if self.duration is not None and not (math.isfinite(self.duration) and self.duration > 0):
+        if self.duration is not None and not (checks.number(self.duration) and self.duration > 0):
             raise GeneratedError(f"{self.id}: duration must be a positive number of seconds")
         if self.kind == "sound-effect" and self.duration is None:
             raise GeneratedError(f"{self.id}: a sound effect needs a duration")
@@ -122,12 +122,12 @@ class Placement:
     def __post_init__(self):
         for name in ("start", "clip_in", "fade_in", "fade_out"):
             value = getattr(self, name)
-            if not (math.isfinite(value) and value >= 0):
+            if not (checks.number(value) and value >= 0):
                 raise GeneratedError(f"placement: {name} must be a finite number >= 0, got {value!r}")
-        if not math.isfinite(self.gain_db):
+        if not checks.number(self.gain_db):
             raise GeneratedError(f"placement: gain_db must be finite, got {self.gain_db!r}")
         if self.clip_out is not None:
-            if not (math.isfinite(self.clip_out) and self.clip_out > self.clip_in):
+            if not (checks.number(self.clip_out) and self.clip_out > self.clip_in):
                 raise GeneratedError(f"placement: clip_out {self.clip_out!r} must come after clip_in {self.clip_in!r}")
             if self.fade_in + self.fade_out > self.clip_out - self.clip_in + 1e-9:
                 raise GeneratedError("placement: the fades are longer than the clip")

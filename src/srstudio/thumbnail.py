@@ -15,7 +15,6 @@ that does not fit the width at :data:`MIN_SIZE` and a layout that leaves the gri
 from __future__ import annotations
 
 import hashlib
-import math
 import re
 import shutil
 import subprocess
@@ -26,7 +25,7 @@ from typing import Literal
 
 from sr_core.scene import Scene
 
-from . import fonts
+from . import checks, fonts
 from .canvas import Canvas, Palette
 from .errors import SrstudioError
 
@@ -99,7 +98,7 @@ class Thumbnail:
         if len(lines) > MAX_LINES:
             out.append(f"headline has {len(lines)} lines; a thumbnail holds {MAX_LINES}")
         at = self.at
-        if isinstance(at, bool) or not isinstance(at, (int, float)) or not math.isfinite(at) or at < 0:
+        if not checks.number(at) or at < 0:
             out.append(f"backdrop time must be a number of seconds >= 0, got {at!r}")
         if "\n" in self.kicker:
             out.append("kicker spans more than one line")

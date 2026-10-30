@@ -36,6 +36,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from . import checks
 from .errors import MissingKeyError, ProviderHTTPError, SrstudioError
 
 MODEL = "eleven_multilingual_v2"
@@ -124,7 +125,7 @@ class Alignment:
             for v in (a, b):
                 if isinstance(v, bool) or not isinstance(v, (int, float)):
                     raise VoiceOutputError(f"{where}: time {i} is not a number: {v!r}")
-                if not math.isfinite(v):
+                if not checks.number(v):
                     raise VoiceOutputError(f"{where}: time {i} is not finite")
                 if v < 0:
                     raise VoiceOutputError(f"{where}: time {i} is negative")
@@ -390,7 +391,7 @@ WORD_FIELDS = {"text", "start", "end", "type", "speaker_id", "logprob", "charact
 
 
 def _number(v, where):
-    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+    if not checks.number(v):
         raise VoiceOutputError(f"{where} is not a finite number: {v!r}")
     return float(v)
 
@@ -615,11 +616,9 @@ class ElevenLabsClient:
     # -- sound effects ----------------------------------------------------------------------------------
     def sound_effect(self, text: str, seconds: float, prompt_influence: float = 0.6) -> EffectClip:
         """A generated effect of ``seconds`` length, verified (decodes, audible, right length) and cached."""
-        if not (
-            isinstance(seconds, (int, float)) and math.isfinite(seconds) and SFX_SECONDS[0] <= seconds <= SFX_SECONDS[1]
-        ):
+        if not (checks.number(seconds) and SFX_SECONDS[0] <= seconds <= SFX_SECONDS[1]):
             raise VoiceRequestError(f"seconds must be within {SFX_SECONDS[0]}..{SFX_SECONDS[1]}, got {seconds}")
-        if not 0 <= prompt_influence <= 1:
+        if not (checks.number(prompt_influence) and 0 <= prompt_influence <= 1):
             raise VoiceRequestError(f"prompt_influence must be within 0..1, got {prompt_influence}")
         payload = {"text": text, "duration_seconds": float(seconds), "prompt_influence": prompt_influence}
         digest = hashlib.sha256(json.dumps({"sfx": payload}, sort_keys=True).encode()).hexdigest()[:20]

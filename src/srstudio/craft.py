@@ -22,6 +22,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from . import checks
 from .camera import SNAP
 from .errors import SrstudioError
 
@@ -175,7 +176,7 @@ def _seconds(node: ET.Element, name: str) -> float:
 
 
 def _number(value, where: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+    if not checks.number(value):
         raise CraftError(f"{where} must be a number, got {value!r}")
     return float(value)
 
@@ -235,7 +236,7 @@ def lines(project: Path) -> list[tuple[float, float]]:
 
 def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> list[tuple[float, float]]:
     """The gaps of at least ``threshold`` seconds in which no line of ``spoken`` plays."""
-    if not (math.isfinite(threshold) and threshold > 0):
+    if not (checks.number(threshold) and threshold > 0):
         raise CraftError(f"threshold {threshold} must be > 0")
     gaps: list[tuple[float, float]] = []
     heard_until: float | None = None

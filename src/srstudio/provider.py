@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import io
 import json
-import math
 import os
 import re
 import subprocess
@@ -49,6 +48,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, Literal
 
+from . import checks
 from .errors import SrstudioError
 from .voice import (
     RATE,
@@ -136,7 +136,7 @@ def parse_voice(text: str) -> VoiceSpec:
             number = float(raw)
         except ValueError:
             raise ProviderError(f"voice: {name} is not a number: {raw!r}") from None
-        if not math.isfinite(number):
+        if not checks.number(number):
             raise ProviderError(f"voice: {name} is not a finite number: {raw!r}")
         values[name] = number
     for required in ("stability", "similarity_boost", "style"):
@@ -212,7 +212,7 @@ def _number(body: Mapping, name: str, optional: bool = False) -> float | None:
     value = body.get(name)
     if value is None and optional:
         return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+    if not checks.number(value) or value < 0:
         raise ProviderError(f"request: {name} must be a finite non-negative number, got {value!r}")
     return float(value)
 
@@ -243,9 +243,7 @@ def parse_request(body: object) -> Request:
     if extra:
         raise ProviderError(f"request: timeline has unknown field(s) {sorted(extra)}")
     start = timeline.get("start")
-    if start is not None and (
-        isinstance(start, bool) or not isinstance(start, (int, float)) or not math.isfinite(start)
-    ):
+    if start is not None and not checks.number(start):
         raise ProviderError(f"request: timeline.start must be a finite number, got {start!r}")
     return Request(
         task=task,

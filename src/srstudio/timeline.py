@@ -9,12 +9,12 @@ episode a list of timed captions (``script.json``). Everything time-related in a
 from __future__ import annotations
 
 import json
-import math
 import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import checks
 from .errors import SrstudioError
 
 ROUNDING = 1e-6  # recordings store start times rounded to six decimal places
@@ -29,7 +29,7 @@ class UnknownTakeError(TimelineError, KeyError):
 
 
 def _finite(value: float, where: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+    if not checks.number(value):
         raise TimelineError(f"{where}: expected a finite number, got {value!r}")
 
 

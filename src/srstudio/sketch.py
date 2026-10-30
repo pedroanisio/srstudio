@@ -24,13 +24,12 @@ typed by :func:`load_mouths`; the brush-drawn characters (:mod:`srstudio.toon_ca
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import fonts, soundtrack, toon, toon_cast
+from . import checks, fonts, soundtrack, toon, toon_cast
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -198,7 +197,7 @@ def check(sketch: Sketch) -> None:
         raise SketchError("the first beat starts at 0")
     last_spoken, started = (-1, -1), []
     for i, b in enumerate(beats):
-        if not math.isfinite(b.start) or (i and b.start < beats[i - 1].start + MIN_STEP - 1e-9):
+        if not checks.number(b.start) or (i and b.start < beats[i - 1].start + MIN_STEP - 1e-9):
             raise SketchError(f"beat {i} at {b.start} s is held less than {MIN_STEP} s after the one before")
         known = b.who in cast.characters and b.eyes in cast.eyes and b.mouth in cast.mouths and b.arms in cast.arms
         if not known:
@@ -217,7 +216,7 @@ def check(sketch: Sketch) -> None:
                 started.append(b.line)
     if started != list(range(len(sketch.lines))):
         raise SketchError("every line needs a beat that starts it, in order")
-    if not (math.isfinite(sketch.end) and beats[-1].start < sketch.end - MIN_STEP + 1e-9):
+    if not (checks.number(sketch.end) and beats[-1].start < sketch.end - MIN_STEP + 1e-9):
         raise SketchError(f"the last beat at {beats[-1].start} s needs {MIN_STEP} s before the end {sketch.end}")
 
 
@@ -426,13 +425,13 @@ def load_beats(path: Path) -> tuple[list[Beat], float]:
     if not isinstance(data, dict) or set(data) != {"end", "beats"} or not isinstance(data["beats"], list):
         raise SketchError(f"{path}: expected an object with end and beats")
     end = data["end"]
-    if isinstance(end, bool) or not isinstance(end, int | float) or not math.isfinite(end):
+    if not checks.number(end):
         raise SketchError(f"{path}: end must be a number of seconds")
     beats = []
     for i, q in enumerate(data["beats"]):
         if not isinstance(q, dict) or set(q) != set(BEAT_FIELDS):
             raise SketchError(f"{path} beat {i}: fields must be exactly {BEAT_FIELDS}")
-        if isinstance(q["start"], bool) or not isinstance(q["start"], int | float) or not math.isfinite(q["start"]):
+        if not checks.number(q["start"]):
             raise SketchError(f"{path} beat {i}: start must be a number of seconds")
         if any(not isinstance(q[f], str) for f in ("who", "caption", "eyes", "mouth", "arms", "event")):
             raise SketchError(f"{path} beat {i}: who, caption, eyes, mouth, arms and event are strings")
@@ -466,7 +465,7 @@ def load_mouths(path: Path, cast: Cast = TOON_CAST) -> tuple[Mouths, float]:
     if not isinstance(data, dict) or set(data) != {"end", "mouths"} or not isinstance(data["mouths"], dict):
         raise SketchError(f"{path}: expected an object with end and mouths")
     end = data["end"]
-    if isinstance(end, bool) or not isinstance(end, int | float) or not (math.isfinite(end) and end > 0):
+    if not (checks.number(end) and end > 0):
         raise SketchError(f"{path}: end must be a positive number of seconds")
     out: Mouths = {}
     for who, states in data["mouths"].items():
@@ -479,7 +478,7 @@ def load_mouths(path: Path, cast: Cast = TOON_CAST) -> tuple[Mouths, float]:
             if not (isinstance(state, list) and len(state) == 2):
                 raise SketchError(f"{path} {who} state {i}: expected [second, viseme]")
             t, v = state
-            if isinstance(t, bool) or not isinstance(t, int | float) or not (math.isfinite(t) and 0 <= t <= end):
+            if not (checks.number(t) and 0 <= t <= end):
                 raise SketchError(f"{path} {who} state {i}: the second must lie within 0..{end}")
             if v not in toon_cast.VISEMES:
                 raise SketchError(f"{path} {who} state {i}: viseme {v!r} is not one of {toon_cast.VISEMES}")
@@ -498,7 +497,7 @@ def visemes(
     ``at`` (project seconds), consecutive repeats dropped, the mouth closed at the end. ``style`` reads the letters
     (:data:`srstudio.lipsync.SPEECH_MOUTH` for English spelling, closed bilabials, a lead and bridged word joins)."""
     if not (
-        math.isfinite(at) and at >= 0 and math.isfinite(clip_in) and clip_in >= 0 and math.isfinite(kept) and kept > 0
+        checks.number(at) and at >= 0 and checks.number(clip_in) and clip_in >= 0 and checks.number(kept) and kept > 0
     ):
         raise SketchError("a take is placed at a second >= 0, cut from a second >= 0, for more than 0 s")
     phones = [

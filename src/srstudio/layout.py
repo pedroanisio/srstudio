@@ -24,6 +24,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal, cast, get_args
 
+from . import checks
 from .errors import SrstudioError
 
 Enforce = Literal["off", "warn", "error"]
@@ -59,7 +60,7 @@ class Box:
     y1: float
 
     def __post_init__(self) -> None:
-        if not all(math.isfinite(v) for v in self.as_tuple()) or self.x1 < self.x0 or self.y1 < self.y0:
+        if not all(checks.number(v) for v in self.as_tuple()) or self.x1 < self.x0 or self.y1 < self.y0:
             raise RegionError(f"not a box: {self.as_tuple()}")
 
     def as_tuple(self) -> tuple[float, float, float, float]:
@@ -338,7 +339,7 @@ def _number(element: ET.Element, name: str, default: str) -> float:
         value = float(raw)
     except ValueError:
         raise LayoutError(f"shape {element.get('id')!r}: {name}={raw!r} is not a number") from None
-    if not math.isfinite(value) or value < 0:
+    if not checks.number(value) or value < 0:
         raise LayoutError(f"shape {element.get('id')!r}: {name}={raw!r} is out of range")
     return value
 
@@ -390,7 +391,7 @@ class Crossing:
 def _matrix(value: Any) -> Matrix:
     if not isinstance(value, list) or len(value) != 6:
         raise LayoutError(f"eval: a world transform is not six numbers: {value!r}")
-    if not all(isinstance(v, int | float) and not isinstance(v, bool) and math.isfinite(v) for v in value):
+    if not all(checks.number(v) for v in value):
         raise LayoutError(f"eval: a world transform is not six finite numbers: {value!r}")
     a, b, c, d, e, f = (float(v) for v in value)
     return (a, b, c, d, e, f)

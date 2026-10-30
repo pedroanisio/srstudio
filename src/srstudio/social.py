@@ -32,7 +32,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from . import digest
+from . import checks, digest
 from . import thumbnail as drawing
 from .errors import SrstudioError
 from .thumbnail import Thumbnail, ThumbnailError, render
@@ -218,7 +218,7 @@ def _spread(image: Path, ffmpeg: str) -> float:
 
 def _frame(video: Path, at: float, ffprobe: str) -> tuple[VideoInfo, int]:
     """``video``'s facts and the index of its frame on screen at ``at`` seconds, floor(at × fps)."""
-    if isinstance(at, bool) or not isinstance(at, (int, float)) or not math.isfinite(at) or at < 0:
+    if not checks.number(at) or at < 0:
         raise CoverError(f"frame time must be a number of seconds >= 0, got {at!r}")
     info = probe(video, ffprobe=ffprobe)
     index = math.floor(at * info.fps + FRAME_SLACK)

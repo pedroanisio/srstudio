@@ -22,6 +22,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Literal, get_args
 
+from . import checks
 from .errors import SrstudioError
 from .fonts import text_width
 from .layout import SafeArea
@@ -75,11 +76,11 @@ class CaptionLook:
     def __post_init__(self) -> None:
         for name in ("size", "line_height"):
             value = getattr(self, name)
-            if not (math.isfinite(value) and value > 0):
+            if not (checks.number(value) and value > 0):
                 raise NativeError(f"caption {name} must be a positive number, got {value!r}")
-        if not (math.isfinite(self.min_seconds) and self.min_seconds >= 0):
+        if not (checks.number(self.min_seconds) and self.min_seconds >= 0):
             raise NativeError(f"caption min_seconds must be zero or more seconds, got {self.min_seconds!r}")
-        if not (math.isfinite(self.stroke_width) and self.stroke_width >= 0):
+        if not (checks.number(self.stroke_width) and self.stroke_width >= 0):
             raise NativeError(f"caption stroke_width must be zero or more, got {self.stroke_width!r}")
         for name in ("max_chars", "max_lines", "max_words", "min_last"):
             value = getattr(self, name)
@@ -197,7 +198,7 @@ def _check_cues(cues: Sequence[Cue]) -> None:
     last = None
     for cue in sorted(cues, key=lambda c: c.start):
         label = f"cue {cue.text!r} at {cue.start}"
-        if not (math.isfinite(cue.start) and math.isfinite(cue.end)):
+        if not (checks.number(cue.start) and checks.number(cue.end)):
             raise NativeError(f"{label}: times must be finite")
         if cue.start < 0:
             raise NativeError(f"{label}: starts before 0")
@@ -212,7 +213,7 @@ def _check_cues(cues: Sequence[Cue]) -> None:
         for w in cue.words:
             if not w.text.strip():
                 raise NativeError(f"{label}: a word has no text")
-            if not (math.isfinite(w.start) and math.isfinite(w.end)) or w.end <= w.start:
+            if not (checks.number(w.start) and checks.number(w.end)) or w.end <= w.start:
                 raise NativeError(f"{label}: word {w.text!r} ends at {w.end}, not after it starts")
             if w.start < cue.start or w.end > cue.end:
                 raise NativeError(f"{label}: word {w.text!r} ({w.start}-{w.end}) is outside the cue")
@@ -368,7 +369,7 @@ def transition(sequence: Any, from_: str, to: str, type: str = "crossfade", dura
     (i, a0, a1), (j, b0, b1) = spans[from_], spans[to]
     if j != i + 1:
         raise NativeError(f"shot {to!r} does not follow {from_!r} in sequence {sequence.id!r}")
-    if not (math.isfinite(duration) and duration > 0):
+    if not (checks.number(duration) and duration > 0):
         raise NativeError(f"a transition duration must be positive, got {duration!r}")
     if duration > min(a1 - a0, b1 - b0):
         raise NativeError(f"a {duration} s transition is longer than shot {from_!r} or {to!r}")

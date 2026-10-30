@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,7 +11,7 @@ from typing import Any, cast
 
 from sr_core.scene import AudioMix, AudioTrack, Scene
 
-from . import digest, native, signature
+from . import checks, digest, native, signature
 from .canvas import Canvas, Palette, Signature
 from .errors import SrstudioError
 from .generated import PlacedClip, load_clips, verify
@@ -349,7 +348,7 @@ class Episode:
 
         Caption scripts keep their explicit end times. A camera cut within a spoken phrase never truncates it.
         """
-        if not (math.isfinite(lead) and lead >= 0):
+        if not (checks.number(lead) and lead >= 0):
             raise EpisodeError(f"caption lead must be finite and non-negative, got {lead}")
         out = []
         for i, p in enumerate(self.phrases):
@@ -514,7 +513,7 @@ class Episode:
             return None
         if source == "mixed":
             return self.audio_mix(track_id or "synthetic-dialogue", loud, peak, bit_depth=style.bit_depth)
-        if duck is not None and not (math.isfinite(duck) and duck < 0):
+        if duck is not None and not (checks.number(duck) and duck < 0):
             raise EpisodeError(f"duck {duck} must be a negative number of dB")
         if source == "clips":
             mix = self.generated_audio(loudness=loud, true_peak=peak, extra=extra, bit_depth=style.bit_depth)

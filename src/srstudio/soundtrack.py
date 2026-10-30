@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from . import checks
 from .errors import SrstudioError
 from .timeline import Timeline
 
@@ -214,7 +215,7 @@ class PhonemeStyle:
             )
         for name in ("lead", "min_rest"):
             value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value) or value < 0:
+            if not checks.number(value) or value < 0:
                 raise SoundtrackError(f"a phoneme style's {name} is a finite number of seconds >= 0, got {value!r}")
 
 
