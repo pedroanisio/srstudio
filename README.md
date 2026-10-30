@@ -1567,6 +1567,8 @@ is on leave) use them too; S15's desert darkens under the captions with the seco
 
 ## Gloss style: a cheerful forever-plaza in seven episodes (G1–G7)
 
+## Gloss style: a cheerful forever-plaza in eight episodes (G1–G8)
+
 The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
 narrated by a calm orb host in the deadpan of a facility announcement while a Joy Points board scores every small act
 ([docs/decisions/0030-gloss-style.md](docs/decisions/0030-gloss-style.md)). Everything is original: the Plaza,
@@ -1613,7 +1615,7 @@ some of those pixels and darkens the others, and on the light Gloss sets that av
 refused the house look (the published *Terms* fails it the same way under the current engine). A centered outline
 passed but filled the white letters in, and a plum sung word measured under 3:1 on the notice's darker floor. G1–G7
 keep the looks they shipped with. A reel that runs long can ask for its own encoder quality, `Reel(crf="20")`, over
-the series output, to keep its master under the size cap.
+the series output, to keep its master under the size cap; *Fewer Meetings* does.
 
 | # | Episode | The turn |
 |---|---|---|
@@ -1624,6 +1626,7 @@ the series output, to keep its master under the size cap.
 | G5 | *Exit* | behind the exit door is a waiting room, and waiting is the attraction |
 | G6 | *Wellness* | the manager is the same orb in a tie; wellbeing is the top priority, ranked fourth |
 | G7 | *Terms* | declining the terms is added to the terms; real is also premium |
+| G8 | *Fewer Meetings* | the meeting about fewer meetings schedules more; meetings are reduced to one, this one, and it does not end (opens still) |
 
 ## Collage style: grown-ups losing to brainrot
 
