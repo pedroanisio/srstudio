@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import CodeType
 
-from . import registry, releases
+from . import characters, registry, releases
 from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
@@ -130,6 +130,28 @@ class Report:
 
     def unused(self, kind: str | None = None) -> list[str]:
         return sorted(e.name for e in registry.entries(kind) if not self.used_by(e.name))
+
+    def pin_drift(self, pinned: Mapping[str, releases.Release]) -> list[str]:
+        """Each measured character a release does not pin at the version it drew. The delivery gate reads the record
+        a Toon build leaves; this covers every style, from the measurements (ADR 0047)."""
+        table = characters.load()
+        built = {release.builder_name: release for release in pinned.values()}  # a project can differ from its slug
+        drift = []
+        for slug, parts in self.episodes.items():
+            release = pinned.get(slug) or built.get(slug.replace("-", "_"))
+            if release is None:
+                continue
+            pins = release.characters or {}
+            for part in sorted(parts):
+                name, _, number = part.partition("@")
+                if name not in table:
+                    continue
+                drawn = int(number or 1)
+                if name not in pins:
+                    drift.append(f"{slug}: draws {name} version {drawn} but pins nothing for it")
+                elif pins[name] != drawn:
+                    drift.append(f"{slug}: draws {name} version {drawn} but pins version {pins[name]}")
+        return drift
 
     def to_dict(self) -> dict:
         parts = sorted(registry.entries(), key=lambda e: (e.kind, e.style, e.name))
