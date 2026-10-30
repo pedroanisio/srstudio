@@ -4,9 +4,11 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0044: A Toon character drawn like the traced cat, in code
 
-- Status: proposed (2026-10-30). The operator decides from the comparison sheet whether the approach goes on to the
-  raccoon and the hedgehog. Implemented for the fox: `toon_cast.Drawing`, `Look.drawing`, `toon_inked.FOX_INKED`,
-  `brush.inked`, `brush.Hand`, `brush.wobble`; `tests/test_toon_inked.py`, `tests/test_brush.py`.
+- Status: proposed (2026-10-30), amended the same day with a second pass the operator asked for after the first
+  comparison. The operator decides from the comparison sheet whether the approach goes on to the raccoon and the
+  hedgehog. Implemented for the fox: `toon_cast.Drawing` (with `tilt`), `Look.drawing`, `toon_inked.FOX_INKED`,
+  `brush.inked`, `brush.Hand` (with `ragged`), `brush.wobble`, `brush.broken`, `brush.lump`, `toon_wear.Face.tilt`;
+  `tests/test_toon_inked.py`, `tests/test_brush.py`, `tests/test_toon_wear.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0014](0014-toon-brush-characters.md) and [ADR 0041](0041-toon-cast-expressions-and-wear.md)
 - Back to the [library README](../../README.md)
@@ -49,24 +51,50 @@ replace them.
      mouth. A kind it has no drawing for is refused by name.
    - The fox (`toon_cast.FOX`) is unchanged.
    - It is cast by name in a sketch, but it is not in `toon_cast.LOOKS`, whose tests assume the shared face.
+4. **Second pass: rough and simple, like the cat.** The first pass still read as clean digital ink, with busy
+   detail. The operator asked for these changes:
+   - **Broken line.** `brush.broken` splits the pressed band into seeded pieces. Each gap is about 1.5 line weights,
+     the band tapers into it, and a nick is bitten in each piece. Every piece's inner edge sits under the fill. The
+     body breaks in four places; the ears, the tail and the paws break in three.
+   - **Grit.** `Hand.ragged` adds a fine, high-frequency grit to the band's width. It is zero by default, and every
+     existing hand draws byte-identically.
+   - **One-off eyes.** `brush.lump` is a seeded blob through a few jittered points. Every iris, pupil, shine and
+     the nose highlight is one, seeded by the part, the kind and the side (`zlib.crc32`, not `hash`). Each eye's
+     almond is jittered the same way, so no two kinds share a shape and nothing on the face is a perfect ellipse.
+   - **Lumpier inner lines.** The inner lines wobble off their points and press unevenly.
+   - **A shade that turns the head.** The head shade is a crescent. It starts and ends on the outline and swells to
+     24 px into the cheek, so it turns the head instead of striping it.
+   - **Less detail.** The second pass cut the crown parting, the chest tufts, two of the four ear fluffs and the
+     shade stroke under each arm. Six inner lines remain where there were thirteen.
+   - **Wear follows the tilt.** `Drawing.tilt` reaches `toon_wear.Face.tilt`. `wear_layers` draws the items on the
+     face levelled about the eyes' midpoint, then turns them with the head. A face with no tilt takes the old path,
+     so no other look's wear changes.
+   - **Seeded.** Every random choice is seeded, so builds stay deterministic.
 
 ## Alternatives rejected
 
 - **Polish fields on `Look`** (an iris colour, a tilt, a shade). The face drawings are what separate the cat. A
   field can place a shared template but cannot redraw it, and every new field would branch every shared part.
 - **Tracing a fox.** There is no reference reel for one. This decision tests how close code can get.
-- **Breaking the ink band into separate strokes**, as the cat's line breaks. A band under the fill keeps the fill's
-  edge organic and costs one shape. Separate strokes would multiply the shape count further, and the gaps would
-  show the coat at the edge.
+- **Breaking the ink band into separate strokes** was rejected in the first pass to save shapes. The comparison
+  showed the unbroken band read as digital, so the second pass breaks it. Each piece's inner edge stays under the
+  fill, so the fill's edge stays organic and a gap shows the coat at the outline, as a lifted brush does. It costs
+  two to three shapes per contour.
+- **Rotating every worn item about the neck.** The eyes already sit on the turned head. Turning the items about the
+  eyes' midpoint after levelling the face puts the lenses back on the eyes exactly.
 - **Random jitter.** A build must draw the same line every time, so the drift is a fixed function of the position
   along the contour and a seed.
 
 ## Consequences
 
-- A look drawn this way costs more to render. Per pose, the inked fox draws 58–77 shapes and about 2,100–2,600
-  cubic segments. The brush fox draws 29–46 shapes and 1,000–1,550 segments, and the traced cat 23–26 shapes and
-  about 500 segments.
+- A look drawn this way costs more to render. On the comparison sheet's eight poses, the second pass draws 62–73
+  shapes and 2,228–2,768 cubic segments per pose; the first pass drew 58–69 shapes and 2,086–2,562 segments. Over
+  every kind of eyes, mouth and arms, the second pass draws 54–81 shapes per pose (first pass 50–77). The broken
+  bands add shapes and the cut lines remove some. The brush fox draws 29–46 shapes and 1,028–1,550 segments, and the
+  traced cat 23–26 shapes and 493–525 segments. The engine renders every still of the sheet cleanly.
 - Every vocabulary kind needs a drawing in each inked face. A kind added to `EYES` or `MOUTHS` fails the inked
   fox's tests until it is drawn for that face.
-- A head turned by its drawing still takes `toon_wear` items about the `Look`'s face fields. The glasses stay
-  level on a tilted head.
+- A head turned by its drawing turns what it wears too. Another drawn look gets this by giving its drawing a
+  `tilt`.
+- `brush.broken`, `brush.lump` and `Hand.ragged` are general brush tools, and any character drawn in code can use
+  them.
