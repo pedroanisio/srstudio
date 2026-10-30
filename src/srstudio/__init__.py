@@ -55,6 +55,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_everyday,
     toon_head,
     toon_props,
+    toon_redrawn,
     toon_rooms,
     toon_sets,
     toon_torso,
