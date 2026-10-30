@@ -1,12 +1,18 @@
 """Toon sets, second round: the office kitchen, the home office at night, the coffee machine, the desk lamp, the
 plant and the tear-off calendar."""
 
+import hashlib
+import json
+import os
+import shutil
+import subprocess
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, TOON, Canvas, flat_counter, registry, toon, toon_sets
+from srstudio import PEACH, TOON, Canvas, flat_counter, fonts, registry, toon, toon_sets
 from srstudio.canvas import Signature
 from srstudio.toon import ToonDataError
 
@@ -366,3 +372,53 @@ def test_the_call_centre_refuses_counts_it_cannot_show(waiting, message):
     cv = canvas()
     with pytest.raises(ToonDataError, match=message):
         toon_sets.call_centre(cv, cv.comp, waiting)
+
+
+def test_a_legible_call_centre_letters_its_label_lighter_and_leaves_the_rest_as_it_was():
+    plain, legible = canvas(), canvas()
+    toon_sets.call_centre(plain, plain.comp, [(0.0, 12)])
+    toon_sets.call_centre(legible, legible.comp, [(0.0, 12)], legible=True)
+    label = {t.get("text"): t.get("color") for t in tree(legible).iter("text")}
+    assert label["CALLS WAITING"] == toon_sets.LED_LABEL != toon_sets.LED and label["12"] == toon_sets.LED
+    unchanged = canvas()
+    toon_sets.call_centre(unchanged, unchanged.comp, [(0.0, 12)], legible=False)
+    assert unchanged.scene.to_bytes() == plain.scene.to_bytes()  # off by default: published sets are unchanged
+
+
+@pytest.fixture(scope="module")
+def comic_neue() -> Path:
+    """The pinned Comic Neue of a generated Toon project (``SRSTUDIO_EPISODES``), and the engine, or skip: contrast
+    is measured on the glyphs as drawn, so the check needs the real font and a render."""
+    env, found = os.environ.get("SRSTUDIO_EPISODES"), os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    if not env or not found:
+        pytest.skip("set SRSTUDIO_EPISODES and SRSTUDIO_ENGINE to measure the label's contrast")
+    font = Path(env) / "in-network" / "assets" / "fonts" / "comic-neue-700-italic.ttf"
+    if not font.is_file():
+        pytest.skip(f"no pinned Comic Neue at {font}")
+    return font
+
+
+def contrast_findings(folder: Path, font: Path, **kw) -> tuple[int, list[dict]]:
+    """Encode the call centre strictly under the style's accessibility checks; the exit code and the findings."""
+    folder.mkdir()
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background=PEACH.background)
+    scene.add_metadata(title="call centre").add_accessibility(**TOON.accessibility)
+    cv = Canvas(scene, PEACH, font_asset="comic-neue", namer=flat_counter("k"), signature=Signature())
+    shutil.copy(font, folder / font.name)
+    cv.assets.add_font(id="comic-neue", src=font.name, family=fonts.inspect_ttf(font.read_bytes()).family,
+                       sha256=hashlib.sha256(font.read_bytes()).hexdigest())  # fmt: skip
+    toon_sets.call_centre(cv, cv.comp, [(0.0, 12)], **kw)
+    (folder / "set.scene.xml").write_bytes(scene.to_bytes(layout="pretty"))
+    engine = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    run = subprocess.run(
+        [engine, "encode", "set.scene.xml", "-o", "set.mp4", "--strict", "--report", "report.json"],
+        cwd=folder, capture_output=True, text=True,
+    )  # fmt: skip
+    return run.returncode, json.loads((folder / "report.json").read_text()).get("findings", [])
+
+
+def test_the_call_centre_label_fails_the_strict_contrast_check_unless_legible(tmp_path, comic_neue):
+    code, findings = contrast_findings(tmp_path / "plain", comic_neue)
+    assert code != 0 and [f["code"] for f in findings] == ["LEG-CONTRAST"] and findings[0]["measured"] < 4.5
+    assert contrast_findings(tmp_path / "legible", comic_neue, legible=True) == (0, [])

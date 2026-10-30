@@ -1356,7 +1356,7 @@ pixels and keyed on the composition clock. Looping motion runs from 0 to `end` (
 | `toon-plant` | a terracotta pot with five glossy leaves; `at` and `scale` | the leaves sway until `end` |
 | `toon-calendar` | a tear-off wall calendar in the clock's place | at each `(second, "OCT 28")` in `pages` the page above tears, tips and falls |
 | `toon-note-insert` | a full-frame close-up of the fridge note, lettered at 128 px so it reads on a phone | shown from `start` to `end` under a slow push |
-| `toon-call-centre` | a cubicle: a pale office wall, a flecked fabric partition, a YOUR CALL MATTERS poster, a CALLS WAITING LED board in the window's place | one count at a time from `waiting` (`(second, count)`, from 0, up to `WAITING_MAX`); the board's lamp blinks until `end` |
+| `toon-call-centre` | a cubicle: a pale office wall, a flecked fabric partition, a YOUR CALL MATTERS poster, a CALLS WAITING LED board in the window's place | one count at a time from `waiting` (`(second, count)`, from 0, up to `WAITING_MAX`); the board's lamp blinks until `end`; `legible=True` letters the label lighter (`LED_LABEL`) so it passes a strict encode's contrast check |
 
 The signature marks stay on `toon.desk`, which is in front of every Toon shot. The new sets draw neither mark, and
 the defaults of the lamp and the plant stand clear of the desk's cactus. *Whose Milk?* uses the kitchen, the coffee
