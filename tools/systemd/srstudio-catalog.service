@@ -15,6 +15,7 @@ ExecStart=%h/worskpace/.venv/bin/srstudio page \
     --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json \
     --usage generated/catalog/usage.json \
+    --releases srstudio/episodes/posts \
     --cache generated/catalog/cache \
     --engine generated/bin/scene-render \
     --packages generated/packages \

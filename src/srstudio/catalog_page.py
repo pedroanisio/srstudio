@@ -6,7 +6,7 @@ client-side app: a navigation bar, the base page's sections shown by route, and 
 from ``catalog.json``. That document (:mod:`srstudio.catalog_data`) is generated here and never hand-maintained. It
 holds one video per episode project that has a render, with its facts and lines; the six packages and any measured
 episode without a render, marked as such; every registered style; and every registered part, with the stills the
-notes curate and the videos ``srstudio usage`` measured.
+notes curate, the videos ``srstudio usage`` measured and its version history (:mod:`srstudio.catalog_versions`).
 
 Nothing about an episode is typed in here. Title, description, frame, fps and duration come from its ``.scene.xml``,
 the lines from whichever script the project has (``dialogue.json``, ``timeline.json`` or ``narration.json``) and the
@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
 
-from . import catalog_data, catalog_specimens, checks, digest, parts, registry
+from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, parts, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES, Style
 from .usage import Report
@@ -352,13 +352,6 @@ def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None =
 
 
 # -- the document -----------------------------------------------------------------------------------------
-def _versions_of(name: str) -> tuple[catalog_data.PartVersion, ...]:
-    """The versions of the part ``name`` draws one of, from the table (none for a part the table does not hold)."""
-    held = parts.load().get(name.partition("@")[0])
-    versions = held.versions if held else ()
-    return tuple(catalog_data.PartVersion(v.number, v.date, v.status, v.note) for v in versions)
-
-
 def _episodes_of(entry: registry.Entry, usage: Report | None) -> list[str]:
     """The episodes a part appears in, as measured; none are claimed without a usage report."""
     return usage.used_by(entry.name) if usage is not None else []
@@ -587,6 +580,8 @@ def assemble(
     usage: Report | None = None,
     packages: Sequence[Package] = (),
     engine: Sequence[str] = (),
+    histories: catalog_versions.Histories | None = None,
+    pinned: bool = False,
 ) -> catalog_data.Catalog:
     """The site's document, checked; :class:`CatalogError` when a registered part has neither a picture nor a reason
     in ``refused``, when the notes curate a gallery that :func:`check_gallery` refuses, that has no ``usage`` to check
@@ -623,6 +618,8 @@ def assemble(
         raise CatalogError("the pose sheet is Pip's, and no part is registered as pip")
     titles = curated_titles(notes)
     check_titles(titles)
+    histories = histories or {}
+    belongs = catalog_versions.owners(histories)
     parts = [
         catalog_data.Part(
             name=x.name,
@@ -635,7 +632,8 @@ def assemble(
             sheet=sheet if x.name == "pip" else (),
             specimen=pictures.get(x.name),
             refused=refused.get(x.name, ""),
-            versions=_versions_of(x.name),
+            versions=histories.get(x.name, ()),
+            version_of=belongs.get(x.name, ""),
         )
         for x in sorted(known.values(), key=lambda x: (x.kind, x.style or "~", x.name))
     ]
@@ -660,6 +658,7 @@ def assemble(
             styles=tuple(styles),
             videos=tuple(videos),
             parts=tuple(parts),
+            pinned=pinned,
         )
     )
 
@@ -792,6 +791,25 @@ _BASE64_URI = re.compile(r"\bdata:([a-z0-9.+-]+/[a-z0-9.+-]+);base64,([A-Za-z0-9
 _ANY_URI = re.compile(r"\bdata:(?:[a-z0-9.+-]+/[a-z0-9.+-]+)?[;,][^\s\"'<>)]{0,40}", re.IGNORECASE)
 
 
+def _place(source: Path, target: Path) -> None:
+    """``source`` at ``target``, whole or not at all, mode 600: hard-linked where it can be, so the site costs no
+    second copy, and copied where it cannot: another device, or a mode a link would have to change on the source."""
+    tmp = target.with_name(f".{target.name}.{os.getpid()}")
+    tmp.unlink(missing_ok=True)
+    try:
+        if stat.S_IMODE(source.stat().st_mode) != 0o600:
+            shutil.copyfile(source, tmp)
+        else:
+            try:
+                os.link(source, tmp)
+            except OSError:
+                shutil.copyfile(source, tmp)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, target)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 class MediaStore:
     """The ``media/`` folder of a site: each file named by its content, so what is already there is not written
     again. A file is hard-linked from the cache where it can be, so the site costs no second copy of the videos, and
@@ -813,20 +831,7 @@ class MediaStore:
         name = digest.sha256(source)[:32] + source.suffix.lower()
         target = self.folder / name
         if not target.exists() or target.stat().st_size != source.stat().st_size:
-            tmp = target.with_name(f".{name}.{os.getpid()}")
-            tmp.unlink(missing_ok=True)
-            try:
-                if stat.S_IMODE(source.stat().st_mode) != 0o600:
-                    shutil.copyfile(source, tmp)
-                else:
-                    try:
-                        os.link(source, tmp)
-                    except OSError:
-                        shutil.copyfile(source, tmp)
-                os.chmod(tmp, 0o600)
-                os.replace(tmp, target)
-            finally:
-                tmp.unlink(missing_ok=True)
+            _place(source, target)
         return self._keep(name)
 
     def add_bytes(self, data: bytes, suffix: str) -> str:
@@ -848,6 +853,61 @@ class MediaStore:
         for path in self.folder.iterdir():
             if path.is_file() and path.name not in self.kept:
                 path.unlink()
+
+
+class Proofs:
+    """The proofs a site links, which live outside it, under ``root``. A browser will not follow a ``file:`` link from
+    a served page, so a proof has to be in the site. A single file is a media file. A proof page reads the files beside
+    it, some named only by its script, so it comes with its folder, in ``proofs/<hash of the folder>/``."""
+
+    def __init__(self, root: Path, folder: Path, add: Callable[[Path], str]) -> None:
+        self.root = Path(root).resolve()
+        self.folder = folder
+        self.add = add
+        self.kept: set[str] = set()
+        self.urls: dict[str, str] = {}
+        folder.mkdir(parents=True, exist_ok=True)
+        os.chmod(folder, 0o700)
+
+    def url(self, pointer: str) -> str:
+        """The URL of the proof at ``pointer``, or "" when no such file is under the root on this machine."""
+        if pointer not in self.urls:
+            source = (self.root / pointer).resolve()
+            if not (source.is_relative_to(self.root) and source.is_file()):
+                self.urls[pointer] = ""
+            elif source.suffix.lower() == ".html":
+                self.urls[pointer] = self._page(source)
+            else:
+                self.urls[pointer] = self.add(source)
+        return self.urls[pointer]
+
+    def _page(self, page: Path) -> str:
+        key = hashlib.sha256(str(page.parent.relative_to(self.root)).encode()).hexdigest()[:16]
+        target = self.folder / key
+        target.mkdir(exist_ok=True)
+        os.chmod(target, 0o700)
+        wanted = [
+            f
+            for f in page.parent.iterdir()
+            if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in catalog_server.TYPES
+        ]
+        for f in wanted:
+            there = target / f.name
+            st = f.stat()
+            if not there.exists() or there.stat().st_size != st.st_size or there.stat().st_mtime_ns < st.st_mtime_ns:
+                _place(f, there)
+        names = {f.name for f in wanted}
+        for old in target.iterdir():
+            if old.name not in names:
+                old.unlink()
+        self.kept.add(key)
+        return f"proofs/{key}/{page.name}"
+
+    def prune(self) -> None:
+        """Remove every proof folder nothing linked in this build."""
+        for path in self.folder.iterdir():
+            if path.name not in self.kept:
+                shutil.rmtree(path)
 
 
 def _run(args: Sequence[str]) -> None:
@@ -1043,10 +1103,14 @@ def build(
     packages: Path,
     notes: Notes | None = None,
     usage: Report | None = None,
+    pins: catalog_versions.Pins | None = None,
+    table: Mapping[str, parts.Part] | None = None,
+    proof_root: Path = Path(),
 ) -> Built:
     """Write the site to ``site`` (files 600, folders 700) and say what it holds: media first, then ``catalog.json``,
     ``index.html`` last, and only then the removal of media nothing references. A failure at any step leaves the
-    previous site working."""
+    previous site working. ``pins`` is what the releases pin, None when they were not read. ``table`` is the versions
+    record, by default the one this srstudio ships, and the proofs it names are looked up under ``proof_root``."""
     notes = notes or Notes()
     try:
         page = Path(base).read_text(encoding="utf-8")
@@ -1064,6 +1128,10 @@ def build(
         renders_of = {c.slug: c.render for c in cards}
         originals = packages_of(page)
         shown = pictures_of(Path(engine), cache, episodes, store.add)
+        proofs = Proofs(proof_root, site / "proofs", store.add)
+        histories = catalog_versions.history(
+            parts.load() if table is None else table, {x.name for x in registry.entries()}, pins, proofs.url
+        )
         missing = [p.slug for p in originals if p.slug not in renders_of]
         catalog = assemble(
             cards,
@@ -1078,6 +1146,8 @@ def build(
             usage=usage,
             packages=originals,
             engine=engine_topics(page),
+            histories=histories,
+            pinned=pins is not None,
         )
         document = catalog_data.dumps(catalog)
         catalog_data.parse(json.loads(document))  # what is written is what the reader accepts
@@ -1097,6 +1167,7 @@ def build(
         _write_text(site / "catalog.json", document)
         _write_text(site / "index.html", result)
         store.prune()
+        proofs.prune()
     except OSError as exc:
         raise CatalogError(f"site {site}: {exc}") from None
     finally:

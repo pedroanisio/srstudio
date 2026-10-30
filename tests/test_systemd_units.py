@@ -29,6 +29,12 @@ def test_the_catalog_page_is_built_from_the_measured_usage():
     assert "--usage generated/catalog/usage.json" in command
 
 
+def test_the_catalog_page_reads_which_reels_pin_which_version():
+    """Without the release files the page can only say the pins were not read (ADR 0061)."""
+    unit = (UNITS / "srstudio-catalog.service").read_text()
+    assert "--releases srstudio/episodes/posts" in unit[unit.index("ExecStart=") :]
+
+
 def test_the_catalog_is_written_as_a_site_and_served_on_loopback():
     build = (UNITS / "srstudio-catalog.service").read_text()
     assert "--site generated/catalog/site" in build and "--out" not in build

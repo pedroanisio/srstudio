@@ -23,12 +23,13 @@ from typing import Any, TypeVar, Union
 from .errors import SrstudioError
 from .parts import STATUSES
 
-SCHEMA_VERSION = "1.2.0"
+SCHEMA_VERSION = "1.3.0"
 SOURCES = ("library", "package", "no-render")  # a card with a render, an original package, a project without one
 KINDS = ("character", "location", "prop", "graphic")
 VERSION_STATUSES = STATUSES
 _SEMVER = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 _MEDIA = re.compile(r"media/[0-9a-f]{32}\.[a-z0-9]+")
+_PROOF = re.compile(r"media/[0-9a-f]{32}\.[a-z0-9]+|proofs/[0-9a-f]{16}/[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 T = TypeVar("T")
 
@@ -65,11 +66,39 @@ class GalleryEntry:
 
 
 @dataclass(frozen=True)
+class Approval:
+    date: str
+    words: str  # the operator's, verbatim
+
+
+@dataclass(frozen=True)
+class VersionRig:
+    """The head rig of a version (ADR 0047), a second drawing the record keeps beside the version's own, with its own
+    approval and proof."""
+
+    date: str
+    note: str
+    status: str  # one of VERSION_STATUSES
+    approval: Approval | None = None
+    proof: str = ""  # the proof's URL in the site; "" when the file is not on this machine
+    proof_path: str = ""  # where the record says the proof is
+
+
+@dataclass(frozen=True)
 class PartVersion:
+    """One entry of a part's history. Any kind of part may have them."""
+
     number: int
     date: str
-    status: str  # one of VERSION_STATUSES
     note: str
+    status: str  # one of VERSION_STATUSES
+    default: bool  # what a new reel draws: the highest approved version, so never a proposed one
+    part: str  # the registered part that draws it; "" for a proposed version with no drawing yet
+    approval: Approval | None = None
+    proof: str = ""  # the proof's URL in the site; "" when the file is not on this machine
+    proof_path: str = ""  # where the record says the proof is
+    pins: tuple[str, ...] = ()  # the releases that pin this version, which may have no video yet
+    rig: VersionRig | None = None
 
 
 @dataclass(frozen=True)
@@ -84,7 +113,8 @@ class Part:
     sheet: tuple[Still, ...] = ()  # the pose sheet the engine renders, on Pip
     specimen: Still | None = None  # the part alone, drawn by the engine: its picture on every card
     refused: str = ""  # why it has no specimen; a part has exactly one of the two
-    versions: tuple[PartVersion, ...] = ()  # from the table of versions (:mod:`srstudio.parts`)
+    versions: tuple[PartVersion, ...] = ()  # its history, oldest first; () when it keeps none
+    version_of: str = ""  # the part whose history holds this drawing, on a later version's own entry
 
 
 @dataclass(frozen=True)
@@ -129,6 +159,7 @@ class Catalog:
     styles: tuple[Style, ...]
     videos: tuple[Video, ...]
     parts: tuple[Part, ...]
+    pinned: bool = False  # whether the release files were read, so that a version with no pins means none
 
 
 def _value(where: str, hint: Any, raw: object) -> Any:
@@ -193,7 +224,10 @@ def stills_of(part: Part) -> list[Still]:
 def media_of(catalog: Catalog) -> set[str]:
     """Every media URL the document references."""
     urls = {u for v in catalog.videos for u in (v.src, v.poster) if u}
-    return urls | {s.src for p in catalog.parts for s in stills_of(p)}
+    proofs = {
+        proof for p in catalog.parts for v in p.versions for proof in (v.proof, v.rig.proof if v.rig else "") if proof
+    }
+    return urls | proofs | {s.src for p in catalog.parts for s in stills_of(p)}
 
 
 def _check_video(v: Video, styles: set[str], parts: dict[str, Part]) -> None:
@@ -237,12 +271,6 @@ def _check_part(p: Part, styles: set[str], videos: dict[str, Video]) -> None:
         raise CatalogError(f"{where}: both a specimen and a reason for having none")
     if not p.specimen and not p.refused:
         raise CatalogError(f"{where}: neither a specimen nor a reason for having none")
-    numbers = [v.number for v in p.versions]
-    if numbers != list(range(1, len(numbers) + 1)):
-        raise CatalogError(f"{where}: versions run 1, 2, 3... without a gap, got {numbers}")
-    for v in p.versions:
-        if v.status not in VERSION_STATUSES:
-            raise CatalogError(f"{where}: version {v.number} has status {v.status!r}, not one of {VERSION_STATUSES}")
     _unique(f"{where} videos", list(p.videos))
     for slug in p.videos:
         if slug not in videos:
@@ -255,6 +283,54 @@ def _check_part(p: Part, styles: set[str], videos: dict[str, Video]) -> None:
             raise CatalogError(f"{where}: a still of {s.width}x{s.height}")
         if s.video and s.video not in videos:
             raise CatalogError(f"{where}: still from {s.video!r}, which is not in the catalog")
+
+
+def _check_rig(at: str, rig: VersionRig) -> None:
+    at = f"{at} rig"
+    if rig.status not in VERSION_STATUSES:
+        raise CatalogError(f"{at}: status {rig.status!r} is not one of {', '.join(VERSION_STATUSES)}")
+    if rig.status == "proposed" and rig.approval:
+        raise CatalogError(f"{at}: a proposed rig has no approval")
+    if rig.status == "approved" and not rig.approval:
+        raise CatalogError(f"{at}: an approved rig has the operator's approval")
+    if rig.proof and not _PROOF.fullmatch(rig.proof):
+        raise CatalogError(f"{at}: proof {rig.proof!r} is not a URL in the site")
+
+
+def _check_versions(p: Part, parts: dict[str, Part]) -> None:
+    where = f"part {p.name!r}"
+    if p.version_of:
+        history = parts.get(p.version_of)
+        if history is None:
+            raise CatalogError(f"{where}: version of {p.version_of!r}, which is not in the catalog")
+        if p.versions:
+            raise CatalogError(f"{where}: a version_of has no own versions; they belong to {p.version_of!r}")
+        if p.name not in [v.part for v in history.versions]:
+            raise CatalogError(f"{where}: {p.version_of!r} does not list it among its versions")
+    numbers = [v.number for v in p.versions]
+    if numbers != list(range(1, len(numbers) + 1)):
+        raise CatalogError(f"{where}: versions run 1, 2, 3... without a gap, got {numbers}")
+    for v in p.versions:
+        at = f"{where} version {v.number}"
+        if v.status not in VERSION_STATUSES:
+            raise CatalogError(f"{at}: status {v.status!r} is not one of {', '.join(VERSION_STATUSES)}")
+        if v.status == "proposed" and (v.approval or v.pins or v.default):
+            raise CatalogError(f"{at}: a proposed version has no approval, no pins and is never the default")
+        if v.status == "approved" and not v.part:
+            raise CatalogError(f"{at}: an approved version has a drawing")
+        if v.part and (v.part not in parts or (v.part != p.name and parts[v.part].version_of != p.name)):
+            raise CatalogError(f"{at}: part {v.part!r} is not a drawing of this part")
+        if v.proof and not _PROOF.fullmatch(v.proof):
+            raise CatalogError(f"{at}: proof {v.proof!r} is not a URL in the site")
+        _unique(f"{at} pins", list(v.pins))
+        if v.rig:
+            _check_rig(at, v.rig)
+    approved = [v for v in p.versions if v.status == "approved"]
+    defaults = [v for v in p.versions if v.default]
+    if len(defaults) != (1 if approved else 0):
+        raise CatalogError(f"{where}: {len(defaults)} default versions; it needs one default when any is approved")
+    if defaults and defaults[0] is not approved[-1]:
+        raise CatalogError(f"{where}: its default is version {defaults[0].number}, not the highest approved")
 
 
 def validate(catalog: Catalog) -> Catalog:
@@ -274,6 +350,7 @@ def validate(catalog: Catalog) -> Catalog:
         _check_video(v, styles, parts)
     for p in catalog.parts:
         _check_part(p, styles, videos)
+        _check_versions(p, parts)
     for s in catalog.styles:
         if sorted(s.videos) != sorted(v.slug for v in catalog.videos if v.style == s.slug):
             raise CatalogError(f"style {s.slug!r}: its videos are not the videos of that style")
