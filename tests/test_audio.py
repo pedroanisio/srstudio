@@ -12,16 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import CEL, CUTOUT, INK, SOFT, Episode, EpisodeSpec
+from srstudio import CEL, CUTOUT, INK, SOFT, Episode
 from srstudio.generated import PlacedClip, Placement
 from srstudio.styles import Mix
+from support.audio import clips_project, spec
 from test_cel import silent_project
 from test_generated import SPEECH, write_wav
 from test_ink_layout import takes_data
-
-
-def spec(root, **kw) -> EpisodeSpec:
-    return EpisodeSpec(slug="t", title="t", description="t", root=root, seed=1, **kw)
 
 
 def mix_of(ep: Episode) -> ET.Element | None:
@@ -137,18 +134,6 @@ def test_an_explicit_level_wins_over_the_style(project):
     ep.audio(loudness="-14", true_peak="-1")
     master = mix_of(ep).find("master")
     assert (master.get("loudness"), master.get("truePeak")) == ("-14", "-1")
-
-
-def clips_project(project, tmp_path, role="dialogue"):
-    root = tmp_path / "ep"
-    shutil.copytree(project, root)
-    wav = write_wav(root / "assets" / "generated" / "line-1.wav", [0.3 * math.sin(i / 7) for i in range(4800)])
-    clip = PlacedClip(SPEECH, hashlib.sha256(wav.read_bytes()).hexdigest(), Placement(start=0.5, role=role))
-    data = json.loads((root / "dialogue.json").read_text())
-    data["clips"] = [clip.to_dict()]
-    (root / "dialogue.json").write_text(json.dumps(data))
-    write_wav(root / "assets" / "groove.wav", [0.1] * 4800)
-    return root
 
 
 def test_the_music_ducks_under_every_spoken_track_when_asked(project, tmp_path):

@@ -4,15 +4,9 @@ floor, tipping as it lands."""
 import xml.etree.ElementTree as ET
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import OFFICE, Canvas, flat_counter, props, registry
-
-
-def canvas(font: str | None = "font") -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="30", duration=6, background=OFFICE.background)
-    return Canvas(scene, OFFICE, font_asset=font, namer=flat_counter("n"))
+from srstudio import Canvas, props, registry
+from support.pink_slip import canvas
 
 
 def xml(cv: Canvas) -> ET.Element:

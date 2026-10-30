@@ -12,41 +12,12 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import (
-    GLOSS,
-    PLASTIC,
-    STYLES,
-    VERTICAL,
-    Canvas,
-    Episode,
-    EpisodeSpec,
-    craft,
-    flat_counter,
-    gloss,
-    native,
-    registry,
-)
-from srstudio.canvas import Signature
+from srstudio import GLOSS, PLASTIC, STYLES, VERTICAL, Canvas, Episode, EpisodeSpec, craft, gloss, native, registry
 from srstudio.gloss import GlossError
-from srstudio.sample import SYSTEM_FONTS
 from srstudio.timeline import Take
+from support.gloss import FONT_FILE, D, canvas, font
 
-FONT_FILE = next((f for f in SYSTEM_FONTS if f.exists()), None)
 needs_font = pytest.mark.skipif(FONT_FILE is None, reason="DejaVu Sans Bold is required")
-D = 4.0
-
-
-def font() -> bytes:
-    assert FONT_FILE is not None
-    return FONT_FILE.read_bytes()
-
-
-def canvas(signed: bool = True) -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="24", duration=D, background=PLASTIC.background)
-    cv = Canvas(scene, PLASTIC, font_asset="f", namer=flat_counter("g"), signature=Signature() if signed else None)
-    cv.assets.add_font(id="f", src="f.ttf", family="DejaVu Sans", weight="700")
-    return cv
 
 
 def tree(cv: Canvas) -> ET.Element:

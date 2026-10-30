@@ -7,8 +7,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import DAYLIGHT, Canvas, flat_counter, registry, stick, stick_school
-
-LINES = ("My dad works from home.", "He wears a tie on top.", "Mom says he is just home.")
+from support.stick_school import LINES
 
 
 def canvas(font: str | None = "inter") -> Canvas:

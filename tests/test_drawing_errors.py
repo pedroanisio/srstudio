@@ -8,7 +8,7 @@ import pytest
 from srstudio import camera, ink, look
 from srstudio.canvas import CanvasError
 from srstudio.errors import SrstudioError
-from test_ink_layout import router_take, square_canvas
+from support.ink_layout import router_take, square_canvas
 
 
 def refused(call, error: type[Exception], match: str) -> None:

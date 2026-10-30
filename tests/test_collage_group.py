@@ -8,21 +8,13 @@ from srstudio import Canvas, collage, collage_group, sketch
 from srstudio.canvas import Signature
 from srstudio.collage_group import GroupError, Lineup, Place
 from srstudio.collage_sketch import solo, timed
+from support.collage_group import PLACES, REACTIONS
 
 LINES = (
     sketch.Line("gary", "Natural, everyone."),
     sketch.Line("rosa", "I am natural."),
     sketch.Line("gary", "Kai, headset off."),
 )
-PLACES = {"rosa": Place(540.0, 1920.0, 0.5), "gary": Place(290.0, 1860.0, 0.55), "kai": Place(800.0, 1880.0, 0.5)}
-REACTIONS = {
-    "rosa": ({"start": 0.0, "eyes": "half", "mouth": "flat", "arms": "hold"},),
-    "gary": ({"start": 0.0, "eyes": "open", "mouth": "grin", "arms": "point"},),
-    "kai": (
-        {"start": 0.0, "eyes": "side", "mouth": "flat", "arms": "down"},
-        {"start": 2.5, "eyes": "wide", "mouth": "o", "arms": "face"},
-    ),
-}
 
 
 def beats():

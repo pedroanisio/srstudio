@@ -7,9 +7,9 @@ import pytest
 
 from srstudio import stick, stick_car, stick_flat, stick_gym, stick_school, stick_shop, stick_windshield
 from srstudio.errors import SrstudioError
-from test_stick_car import canvas
-from test_stick_school import LINES
-from test_stick_shop import SCREENS
+from support.stick_car import canvas
+from support.stick_school import LINES
+from support.stick_shop import SCREENS
 
 
 def essay(**kw):

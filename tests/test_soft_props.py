@@ -3,16 +3,10 @@
 import xml.etree.ElementTree as ET
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import SOFT, WARM, Canvas, flat_counter, registry, soft_props
+from srstudio import SOFT, Canvas, registry, soft_props
 from srstudio.soft_props import BadgeState, SoftPropError
-
-
-def canvas() -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="30", duration=10.0, background=WARM.background)
-    return Canvas(scene, WARM, font_asset="caption-font", namer=flat_counter("k"))
+from support.soft_props import canvas
 
 
 def tree(cv: Canvas):

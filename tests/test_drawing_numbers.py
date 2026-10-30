@@ -9,11 +9,11 @@ from srstudio import blob, brush, camera, cel, look, props, soft_props, staging
 from srstudio.errors import SrstudioError
 from srstudio.soft_props import BadgeState
 from srstudio.staging import Move
-from test_cel import BOX
-from test_ink_layout import square_canvas
-from test_pink_slip import canvas as office_canvas
-from test_soft_props import canvas as soft_canvas
-from test_tip_tablet import canvas as cafe_canvas
+from support.cel import BOX
+from support.ink_layout import square_canvas
+from support.pink_slip import canvas as office_canvas
+from support.soft_props import canvas as soft_canvas
+from support.tip_tablet import canvas as cafe_canvas
 
 BADGE_BOX = (500, 560, 420, 92)
 

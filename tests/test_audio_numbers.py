@@ -11,9 +11,9 @@ import pytest
 from srstudio import compose, dub, foley, music, narration, song, takes
 from srstudio import interview as I
 from srstudio.cel import Feature
-from test_interview import make as interview
-from test_song import make_song
-from test_takes import BED_PLAN, script
+from support.interview import make as interview
+from support.song import make_song
+from support.takes import BED_PLAN, script
 
 BAD = [True, float("nan")]
 

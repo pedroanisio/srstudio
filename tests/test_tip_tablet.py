@@ -3,15 +3,9 @@
 import xml.etree.ElementTree as ET
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import CAFE, Canvas, flat_counter, props, registry
-
-
-def canvas(font: str | None = "font") -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="30", duration=4, background=CAFE.background)
-    return Canvas(scene, CAFE, font_asset=font, namer=flat_counter("n"))
+from srstudio import Canvas, props, registry
+from support.tip_tablet import canvas
 
 
 def xml(cv: Canvas) -> ET.Element:

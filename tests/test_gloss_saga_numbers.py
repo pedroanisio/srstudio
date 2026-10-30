@@ -9,9 +9,9 @@ from srstudio import gloss
 from srstudio import gloss_sets as gs
 from srstudio import saga_sets as ss
 from srstudio.errors import SrstudioError
-from test_gloss import FONT_FILE, D, font
-from test_gloss import canvas as gloss_canvas
-from test_saga import canvas as saga_canvas
+from support.gloss import FONT_FILE, D, font
+from support.gloss import canvas as gloss_canvas
+from support.saga import canvas as saga_canvas
 
 
 def g(fn, *args, **kw):

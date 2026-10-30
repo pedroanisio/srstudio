@@ -13,12 +13,12 @@ from srstudio.generated import Generated, Placement
 from srstudio.layout import Box
 from srstudio.native import CaptionLook, Cue
 from srstudio.voice import Alignment, ElevenLabsClient
-from test_audio import spec
-from test_generated import SQUEAK
-from test_native import canvas as native_canvas
-from test_native import shots
-from test_sketch import SK, with_beats
-from test_voice import Binary
+from support.audio import spec
+from support.generated import SQUEAK
+from support.native import canvas as native_canvas
+from support.native import shots
+from support.sketch import SK, with_beats
+from support.voice import Binary
 
 
 def captions(cues):

@@ -13,6 +13,7 @@ import subprocess
 import pytest
 
 from srstudio.voice import Alignment, ElevenLabsClient, Speech, Voice, VoiceOutputError, VoiceSettings, parse_response
+from support.voice import Binary
 
 ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is required to decode speech")
 TEXT = "In your chair."
@@ -299,17 +300,6 @@ def test_settings_are_range_checked():
 
 # -- sound effects -----------------------------------------------------------------------------------
 from srstudio.voice import Transcript, TranscriptMismatch, check_transcript, parse_transcript  # noqa: E402
-
-
-class Binary:
-    def __init__(self, audio=b"", exc=None):
-        self.audio, self.exc, self.calls = audio, exc, []
-
-    def __call__(self, url, payload, headers):
-        self.calls.append((url, payload, headers))
-        if self.exc:
-            raise self.exc
-        return self.audio, "sfx-1"
 
 
 @ffmpeg

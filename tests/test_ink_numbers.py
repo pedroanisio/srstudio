@@ -8,7 +8,7 @@ import pytest
 from srstudio import ink_doorbell, ink_meter
 from srstudio.errors import SrstudioError
 from srstudio.ink_meter import AppRow
-from test_ink_meter import canvas, take
+from support.ink_meter import canvas, take
 
 
 @pytest.mark.parametrize(

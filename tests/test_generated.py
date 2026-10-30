@@ -17,6 +17,7 @@ from fakes import ffmpeg_required, make_mp3
 from srstudio import Episode, EpisodeSpec, cast, generated, locations
 from srstudio.generated import PLACEHOLDER, Generated, PlacedClip, Placement, ResolveError
 from srstudio.soundtrack import Soundtrack
+from support.generated import SQUEAK
 
 SPEECH = Generated(
     id="line-1",
@@ -28,15 +29,6 @@ SPEECH = Generated(
     language="en",
     seed=52026,
     cache="assets/generated/line-1.wav",
-)
-SQUEAK = Generated(
-    id="squeak",
-    kind="sound-effect",
-    provider="srstudio-elevenlabs",
-    model="elevenlabs-sound-generation",
-    prompt="a chair squeak",
-    duration=1.0,
-    cache="assets/generated/squeak.wav",
 )
 
 

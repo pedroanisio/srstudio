@@ -6,21 +6,11 @@ refusals."""
 import xml.etree.ElementTree as ET
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import COLLAGE, Canvas, collage, collage_photo, collage_sets, registry
-from srstudio.canvas import Signature
+from srstudio import Canvas, collage, collage_photo, collage_sets, registry
 from srstudio.collage_group import Place
 from srstudio.collage_photo import PhotoError
-
-PLACES = {"gary": Place(230, 1800, 0.55), "kai": Place(850, 1800, 0.5), "rosa": Place(540, 1800, 0.58)}
-LAUGH = {"gary": ("wide", "o", "shrug"), "kai": ("closed", "grin", "face"), "rosa": ("closed", "grin", "hold")}
-
-
-def canvas() -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="24", duration=20.0, background="#ffe5d9")
-    return Canvas(scene, COLLAGE.palettes[0], font_asset="caption", signature=Signature())
+from support.collage_photo import LAUGH, PLACES, canvas
 
 
 def tree(cv: Canvas) -> ET.Element:

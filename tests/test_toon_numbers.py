@@ -7,7 +7,7 @@ import pytest
 
 from srstudio import toon_dinner, toon_props, toon_sets
 from srstudio.toon import ToonDataError
-from test_toon_props import canvas, measure
+from support.toon_props import canvas, measure
 
 STATES = [(0.0, "TAP CARD", "idle"), (3.0, "DECLINED", "bad")]
 

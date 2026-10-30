@@ -8,12 +8,12 @@ import pytest
 from srstudio import collage, collage_photo
 from srstudio.collage_group import Lineup, Place
 from srstudio.errors import SrstudioError
-from test_collage import D, pose
-from test_collage import canvas as collage_canvas
-from test_collage_group import PLACES as GROUP_PLACES
-from test_collage_group import REACTIONS
-from test_collage_photo import LAUGH, PLACES
-from test_collage_photo import canvas as photo_canvas
+from support.collage import D, pose
+from support.collage import canvas as collage_canvas
+from support.collage_group import PLACES as GROUP_PLACES
+from support.collage_group import REACTIONS
+from support.collage_photo import LAUGH, PLACES
+from support.collage_photo import canvas as photo_canvas
 
 LOOK = dict(name="x", summary="s", skin="#a0522d", hair="short", hair_color="#222222", top="#335577")
 

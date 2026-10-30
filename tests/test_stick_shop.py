@@ -6,6 +6,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import DAYLIGHT, Canvas, flat_counter, registry, stick, stick_shop
+from support.stick_shop import SCREENS
 
 
 def canvas(font: str | None = "inter") -> Canvas:
@@ -28,13 +29,6 @@ def gates(root: ET.Element) -> list[list[tuple[float, float]]]:
         for a in root.iter("animate")
         if a.get("property") == "opacity"
     ]
-
-
-SCREENS = (
-    stick_shop.Screen(0.0, "Place item in the bagging area"),
-    stick_shop.Screen(1.0, "Unexpected item in the bagging area", "error"),
-    stick_shop.Screen(2.0, "Employee of the month", "award", face=stick.Look(apron="#2f7d57")),
-)
 
 
 def test_the_parts_are_registered_for_the_stick_style():

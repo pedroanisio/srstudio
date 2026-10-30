@@ -9,8 +9,8 @@ from srstudio import CEL, SOFT, Episode
 from srstudio.episode import EpisodeArgumentError, EpisodeError, EpisodeFileError, SceneCheckError
 from srstudio.errors import SrstudioError
 from srstudio.soundtrack import PhonemeStyle
-from test_audio import clips_project, spec
-from test_cel import silent_project
+from support.audio import clips_project, spec
+from support.cel import silent_project
 
 
 def refused(call, error: type[EpisodeError], builtin: type[Exception], match: str) -> None:

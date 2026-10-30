@@ -7,23 +7,9 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import COLLAGE, STYLES, Canvas, collage, collage_sets, flat_counter, registry, sketch, toon
-from srstudio.canvas import Signature
-from srstudio.toon import Pose
+from support.collage import D, canvas, pose
 
-D = 6.0
 NUM = re.compile(r"-?\d+(?:\.\d+)?")
-
-
-def canvas(signed: bool = True) -> Canvas:
-    scene = Scene(version="auto")
-    scene.add_project(width=1080, height=1920, fps="24", duration=D, background=collage.PAPER.background)
-    return Canvas(
-        scene,
-        collage.PAPER,
-        font_asset="luckiest-guy",
-        namer=flat_counter("k"),
-        signature=Signature() if signed else None,
-    )
 
 
 def tree(cv: Canvas):
@@ -45,10 +31,6 @@ def points(shapes):
         values = [float(v) for v in NUM.findall(d)]
         out.extend(zip(values[0::2], values[1::2], strict=True))
     return out
-
-
-def pose(eyes="open", mouth="flat", arms="down", start=0.0) -> Pose:
-    return Pose(start, eyes, mouth, arms)
 
 
 # -- the style and the cast -------------------------------------------------------------------------------------------

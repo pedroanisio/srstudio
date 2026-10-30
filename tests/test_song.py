@@ -15,30 +15,10 @@ import pytest
 from fakes import ffmpeg_required, make_mp3
 from srstudio import song as S
 from srstudio.generated import PLACEHOLDER, Resolved, ResolveError, sha256_of
-from srstudio.music import Groove, Section
 from srstudio.voice import Transcript, Word
+from support.song import GROOVE, make_song
 
 RATE = 48000
-GROOVE = Groove(bpm=120)  # one bar = 2 s
-
-
-def make_song(**changes) -> S.Song:
-    kw: dict = dict(
-        slug="test-song",
-        title="Test Song",
-        seed=7,
-        groove=GROOVE,
-        voices={
-            "pip": S.Singer("bIHbv24MWmeRgasZH58o", "Will", {"stability": 0.3, "similarity_boost": 0.75, "style": 0.4})
-        },
-        lines=[S.Line("pip", "Sit down.", "SIT DOWN.", (0, 0)), S.Line("pip", "Work.", "WORK.", (1, 0), 1.08)],
-        sections=[Section(0, 2)],
-        effects=[S.Effect("scratch", "a record scratch", seconds=1.0, longest=0.5, peak=0.5, at=(1, 2))],
-        lines_end=GROOVE.at(2),
-        voice_note="test voices",
-    )
-    kw.update(changes)
-    return S.Song(**kw)
 
 
 def tone(path: Path, seconds: float, lead: float = 0.1, amplitude: float = 0.5) -> Path:
