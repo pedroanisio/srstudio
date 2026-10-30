@@ -22,5 +22,12 @@ RELEASE = Release(
         hashtags=("#therapy", "#creativelife", "#filmschool", "#brainrot", "#burnout", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Why are you\nhere today?", 14.8, "Collage 07", (540, 1090), 1.3),
     ),
-    characters={"collage-feld": 1, "collage-jun": 1},
+    parts={
+        "collage-feld": 1,
+        "collage-jun": 1,
+        "collage-sign": 1,
+        "collage-therapy": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

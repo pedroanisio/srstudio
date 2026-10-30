@@ -6,12 +6,17 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import characters, registry, specimens, toon, toon_cast
+from srstudio import parts, registry, specimens, toon, toon_cast
 from srstudio.canvas import Canvas, flat_counter
 from srstudio.specimens import DrawingChangedError, SpecimenError
 
 specimens.load_parts()
-APPROVED = [(name, v.number) for name, c in characters.load().items() for v in c.versions if v.status == "approved"]
+APPROVED = [
+    (name, v.number)
+    for name, p in parts.load().items()
+    for v in p.versions
+    if p.kind == "character" and not p.refused and v.status == "approved"
+]
 
 
 def drawn() -> bytes:

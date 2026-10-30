@@ -33,5 +33,15 @@ RELEASE = Release(
     cover=True,
     # its cover drawing changed after it was published; the operator froze it as published (ADR 0040)
     frozen="8b00377830d82ee599e0d92feebddd34522e102d1e10b20f3369a0dc505e2622",
-    characters={"saga-enforcer": 1, "saga-gloom": 1},
+    parts={
+        "saga-bridge": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

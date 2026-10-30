@@ -31,5 +31,14 @@ RELEASE = Release(
     ),
     scene="scene.xml",
     cover=True,
-    characters={"stick-figure": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-captions": 1,
+        "stick-figure": 1,
+        "stick-headline": 1,
+        "stick-hook": 1,
+        "stick-room": 1,
+        "stick-yard": 1,
+    },
 )

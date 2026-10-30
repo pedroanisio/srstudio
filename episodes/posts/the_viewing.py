@@ -29,5 +29,13 @@ RELEASE = Release(
         thumbnail=Thumbnail("He comes\nwith the lease.", 14.0, "Stick 05", (540, 1000), 1.0),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-murphy-bed": 1,
+        "stick-rig": 1,
+        "stick-studio-flat": 1,
+        "stick-words": 1,
+    },
 )

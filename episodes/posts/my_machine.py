@@ -27,5 +27,17 @@ RELEASE = Release(
         thumbnail=Thumbnail("Works on\nmy machine.", 0.5, "Toon 23"),
     ),
     tags=Tags("office", "protagonist", "recognition", recurring=("mia", "rex"), test="sp-hook_motion", arm="b"),
-    characters={"toon-dog": 1, "toon-rabbit": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-badge": 1,
+        "toon-captions": 1,
+        "toon-desk": 1,
+        "toon-dog": 1,
+        "toon-home": 1,
+        "toon-plant": 1,
+        "toon-rabbit": 1,
+        "toon-room": 1,
+        "toon-toast": 1,
+    },
 )

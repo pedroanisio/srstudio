@@ -29,5 +29,22 @@ RELEASE = Release(
     tags=Tags(
         "job-hunting", "other-person", "recognition", recurring=("manager", "candidate"), test="sp-hook_motion", arm="a"
     ),
-    characters={"candidate": 1, "manager": 1},
+    parts={
+        "candidate": 1,
+        "candidate-back": 1,
+        "captions": 1,
+        "chair": 1,
+        "coffee-cup": 1,
+        "laptop": 1,
+        "manager": 1,
+        "office-art": 1,
+        "office-reverse": 1,
+        "office-wide": 1,
+        "papers": 1,
+        "plant": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "water-glass": 1,
+        "woodgrain": 1,
+    },
 )

@@ -29,7 +29,7 @@ from typing import Any
 
 from sr_core.scene import Scene
 
-from . import blob, cel, characters, collage, gloss, registry, rig, stick, toon
+from . import blob, cel, collage, gloss, parts, registry, rig, stick, toon
 from .canvas import Canvas, flat_counter
 from .errors import SrstudioError
 from .timeline import Take
@@ -333,7 +333,7 @@ def fingerprint(document: bytes) -> str:
 
 def digest(name: str, number: int = 1) -> str:
     """The digest of what version ``number`` of ``name`` draws in its specimen."""
-    part = characters.part_name(name, number)
+    part = parts.part_name(name, number)
     if part not in SPECIMENS:
         raise SpecimenError(f"{part} has no specimen; add it to specimens.SPECIMENS")
     return fingerprint(SPECIMENS[part](registry.get("character", part)).scene.to_bytes(layout="pretty"))
@@ -341,7 +341,7 @@ def digest(name: str, number: int = 1) -> str:
 
 def check(name: str, number: int = 1) -> None:
     """Raises :class:`DrawingChangedError` when an approved version no longer draws what was approved."""
-    version = characters.get(name).version(number)
+    version = parts.get(name).version(number)
     if version.status == "approved" and digest(name, number) != version.drawing:
         raise DrawingChangedError(
             f"{name} version {number} is approved and immutable, and it no longer draws what was approved. "

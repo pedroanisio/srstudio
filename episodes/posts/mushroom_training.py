@@ -27,5 +27,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Work training\nbe like", 36.0, "Workplace module", (540, 700), 1.3),
     ),
-    characters={"cel-traced": 1},
+    parts={"cel-lettering": 1, "cel-room": 1, "cel-traced": 1},
 )

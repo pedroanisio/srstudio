@@ -35,5 +35,19 @@ RELEASE = Release(
     tags=Tags(
         "job-hunting", "institution", "recognition", recurring=("gloom", "juno"), test="sp-hook_motion", arm="b"
     ),  # fmt: skip
-    characters={"saga-gloom": 1, "saga-juno": 1},
+    parts={
+        "saga-cockpit": 1,
+        "saga-cockpit-console": 1,
+        "saga-cube": 1,
+        "saga-entry": 1,
+        "saga-freighter": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-juno": 1,
+        "saga-space": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

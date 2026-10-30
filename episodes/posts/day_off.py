@@ -29,5 +29,13 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Day off?\nBook it.", 19.6, "Soft 04", (600, 1000), 1.25),
     ),
-    characters={"pip": 1},
+    parts={
+        "captions": 1,
+        "pip": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-home": 1,
+        "soft-sofa": 1,
+        "soft-status-badge": 1,
+    },
 )

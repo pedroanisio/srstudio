@@ -255,7 +255,7 @@ def test_unreadable_releases_stop_the_discovery(tmp_path):
 
 def released(**pins):
     post = InstagramPost(title="T", description="D.")
-    return {"a-b": Release("a-b", post, characters=pins.get("pins"))}
+    return {"a-b": Release("a-b", post, parts=pins.get("pins"))}
 
 
 def test_every_measured_character_must_be_pinned_at_the_version_drawn():
@@ -272,7 +272,7 @@ def test_every_measured_character_must_be_pinned_at_the_version_drawn():
 
 def test_a_release_built_by_another_script_is_matched_by_its_builder():
     post = InstagramPost(title="T", description="D.")
-    release = Release("scene", post, builder="printer_recreation", characters={})
+    release = Release("scene", post, builder="printer_recreation", parts={})
     assert U.Report({"printer-recreation": ("toon-bear",)}).pin_drift({"scene": release}) == [
         "printer-recreation: draws toon-bear version 1 but pins nothing for it"
     ]

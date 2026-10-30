@@ -27,5 +27,16 @@ RELEASE = Release(
         thumbnail=Thumbnail("Prove you're\nnot a robot.", 15.0, "Ink 03", place="top"),
     ),
     cover=True,
-    characters={"doodle": 1, "talking-router": 1},
+    parts={
+        "doodle": 1,
+        "ink-captcha": 1,
+        "ink-checkbox": 1,
+        "ink-closeup": 1,
+        "ink-desk-shot": 1,
+        "ink-laptop": 1,
+        "ink-router-shot": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "talking-router": 1,
+    },
 )

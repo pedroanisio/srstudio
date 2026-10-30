@@ -35,11 +35,11 @@ from . import (
     TOON,
     Episode,
     EpisodeSpec,
-    characters,
     errors,
     foley,
     fonts,
     head_motion,
+    parts,
     recording,
     sketch,
     soundtrack,
@@ -250,7 +250,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         else:
             sketch.drawer(app.who, staging.versions)(cv, g, poses, app.end, taps, enter=app.start, **extra)
         name = sketch.part_of(app.who)
-        drawn[name] = characters.resolved(name, staging.versions)
+        drawn[name] = parts.resolved(name, staging.versions)
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
@@ -267,7 +267,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
     subtitles.write_srt(root / f"{sk.slug}.srt", [(p.start, p.end, p.caption) for p in t.phrases])
-    characters.write_record(root, drawn)
+    parts.write_record(root, drawn)
     return ep
 
 

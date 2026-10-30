@@ -31,5 +31,21 @@ RELEASE = Release(
     tags=Tags(
         "money-services", "institution", "recognition", recurring=("ava", "milo"), test="sp-hook_motion", arm="a"
     ),
-    characters={"barista": 1, "customer": 1},
+    parts={
+        "barista": 1,
+        "bean-jar": 1,
+        "cafe": 1,
+        "cafe-window": 1,
+        "captions": 1,
+        "card-reader": 1,
+        "coffee-cup": 1,
+        "customer": 1,
+        "espresso-machine": 1,
+        "menu-board": 1,
+        "pastry-stand": 1,
+        "pendant-light": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "tip-tablet": 1,
+    },
 )

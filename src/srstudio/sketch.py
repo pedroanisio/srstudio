@@ -33,7 +33,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import characters, checks, fonts, soundtrack, toon, toon_cast, toon_critters, toon_inked  # noqa: F401 - both register
+from . import checks, fonts, parts, soundtrack, toon, toon_cast, toon_critters, toon_inked  # noqa: F401 - both register
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -372,7 +372,7 @@ def part_of(who: str) -> str:
 def drawer(who: str, versions: Mapping[str, int] | None = None) -> Drawer:
     """The drawing of a sketch's character: the version ``versions`` pins, else its latest approved (ADR 0047)."""
     name = part_of(who)
-    return characters.part(name, characters.resolved(name, versions)).builder
+    return parts.drawing(name, parts.resolved(name, versions)).builder
 
 
 def draw_cast(

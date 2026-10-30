@@ -22,5 +22,12 @@ RELEASE = Release(
         hashtags=("#reboot", "#prestigetv", "#acting", "#brainrot", "#filmmaking", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Can you give\nme pain?", 13.5, "Collage 05", (540, 1240), 1.3),
     ),
-    characters={"collage-flush": 1, "collage-jun": 1},
+    parts={
+        "collage-flush": 1,
+        "collage-jun": 1,
+        "collage-sign": 1,
+        "collage-stage": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

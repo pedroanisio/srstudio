@@ -28,5 +28,15 @@ RELEASE = Release(
         thumbnail=Thumbnail("What my\ndad does", 18.6, "Stick 07", place="top"),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-classroom": 1,
+        "stick-essay": 1,
+        "stick-rig": 1,
+        "stick-teacher-desk": 1,
+        "stick-tiny-chair": 1,
+        "stick-words": 1,
+    },
 )

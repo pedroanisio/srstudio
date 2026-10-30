@@ -1356,22 +1356,26 @@ and every eye a one-off of seeded lumps (`brush.lump`), never a perfect ellipse.
 the inked fox keeps the whole contract, and a sketch casts it as `"fox"`, at the version its release pins. Looks
 without a drawing are drawn exactly as before.
 
-### Character versions
+### Part versions
 
-Every character has numbered versions ([docs/decisions/0047-character-versions.md](docs/decisions/0047-character-versions.md)),
-so a drawing can improve without touching a published reel. `srstudio characters` lists them, and
-[src/srstudio/assets/characters.json](src/srstudio/assets/characters.json) records each one: number, date, a note, a
-proof clip, status, approval and the digest of its drawing ([src/srstudio/specimens.py](src/srstudio/specimens.py)).
-A new reel gets the latest approved version, and a release pins what it draws:
+Every registered part has numbered versions: characters, locations, props and graphics
+([docs/decisions/0047-character-versions.md](docs/decisions/0047-character-versions.md)), so a drawing can improve
+without touching a published reel. `srstudio parts` lists them, and
+[src/srstudio/assets/parts.json](src/srstudio/assets/parts.json) records each one: number, date, a note, a proof clip,
+status, approval and the digest of its drawing
+([src/srstudio/catalog_specimens.py](src/srstudio/catalog_specimens.py)). A part that cannot stand alone, such as a
+caption layer or a shot with a character in it, records a typed refusal instead of a digest, and
+`srstudio parts --refused` lists those. A new reel gets the latest approved version, and a release pins what it draws:
 
 ```python
-RELEASE = Release("a-new-reel", post, characters={"toon-fox": 2, "toon-bear": 1})
+RELEASE = Release("a-new-reel", post, parts={"toon-fox": 2, "toon-bear": 1, "toon-desk": 1})
 ```
 
 `instagram_posts.py deliver` refuses a release with no pins, and `check` reports one. A proposed version is never
 the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
-if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon reads
-pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version on any other style.
+if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon's
+characters read pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version of
+anything else by name until its kind and style are in `parts.ROUTED`.
 
 A sloth, a goat and a hamster draw like the traced cat, in code
 ([docs/decisions/0045-toon-sloth-goat-hamster.md](docs/decisions/0045-toon-sloth-goat-hamster.md),

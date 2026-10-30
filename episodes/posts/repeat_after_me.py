@@ -27,5 +27,17 @@ RELEASE = Release(
         thumbnail=Thumbnail("Repeat\nafter me.", 10.8, "Stick 03", (540, 1200), 1.3),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-car": 1,
+        "stick-car-seat": 1,
+        "stick-card": 1,
+        "stick-cockpit": 1,
+        "stick-laptop": 1,
+        "stick-phone": 1,
+        "stick-ride": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
 )

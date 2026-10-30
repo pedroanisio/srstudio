@@ -30,5 +30,15 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Why is our logo\na toilet?", 16.2, "Collage 01", (540, 1090), 1.3),
     ),
-    characters={"collage-brent": 1, "collage-flush": 1, "collage-rosa": 1},
+    parts={
+        "collage-boardroom": 1,
+        "collage-brent": 1,
+        "collage-chart": 1,
+        "collage-flush": 1,
+        "collage-rosa": 1,
+        "collage-sign": 1,
+        "collage-stage": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

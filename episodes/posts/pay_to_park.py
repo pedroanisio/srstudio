@@ -31,5 +31,13 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags("everyday-tech", "institution", "recognition", recurring=("doodle",)),
-    characters={"doodle": 1, "talking-meter": 1},
+    parts={
+        "doodle": 1,
+        "ink-app-screen": 1,
+        "ink-closeup": 1,
+        "ink-kerb": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "talking-meter": 1,
+    },
 )

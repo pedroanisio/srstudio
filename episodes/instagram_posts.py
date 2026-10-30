@@ -58,7 +58,7 @@ VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug ->
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
 FROZEN = {r.video_name: r.frozen for r in RELEASES.values() if r.frozen}  # video name -> accepted drawing
 AB = {r.video_name: (r.tags.test, r.tags.arm) for r in RELEASES.values() if r.tags and r.tags.test}  # A/B arms
-PINS = {slug: r.characters or {} for slug, r in RELEASES.items()}  # project slug -> the character versions it draws
+PINS = {slug: r.parts or {} for slug, r in RELEASES.items()}  # project slug -> the character versions it draws
 
 
 def _beside(renders: Path) -> Path:

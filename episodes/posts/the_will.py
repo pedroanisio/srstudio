@@ -22,5 +22,13 @@ RELEASE = Release(
         hashtags=("#inheritance", "#family", "#grandma", "#brainrot", "#parenting", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Why wait until\nI'm dead?", 1.0, "Collage 09", (540, 1200), 1.6),
     ),
-    characters={"collage-gary": 1, "collage-kai": 1, "collage-rosa": 1},
+    parts={
+        "collage-boardroom": 1,
+        "collage-gary": 1,
+        "collage-kai": 1,
+        "collage-rosa": 1,
+        "collage-sign": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

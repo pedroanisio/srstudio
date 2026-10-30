@@ -27,5 +27,12 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Anonymous\nsurvey?", 37.0, "Employee survey", (480, 1050), 1.3),
     ),
-    characters={"toon-cat": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-captions": 1,
+        "toon-cat": 1,
+        "toon-desk": 1,
+        "toon-room": 1,
+    },
 )

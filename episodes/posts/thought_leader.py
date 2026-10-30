@@ -29,5 +29,12 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Can I read you\nmy post?", 1.0, "Collage 10", (540, 1200), 1.6),
     ),
-    characters={"collage-brent": 1, "collage-jun": 1},
+    parts={
+        "collage-brent": 1,
+        "collage-cafe": 1,
+        "collage-jun": 1,
+        "collage-sign": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

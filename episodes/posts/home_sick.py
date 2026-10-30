@@ -27,5 +27,14 @@ RELEASE = Release(
         thumbnail=Thumbnail("The resident\nis home sick.", 4.0, "Ink 07", place="top"),
     ),
     cover=True,
-    characters={"doodle": 1, "talking-doorbell": 1},
+    parts={
+        "doodle": 1,
+        "ink-doorbell-view": 1,
+        "ink-doorstep": 1,
+        "ink-phone": 1,
+        "ink-phone-shot": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "talking-doorbell": 1,
+    },
 )

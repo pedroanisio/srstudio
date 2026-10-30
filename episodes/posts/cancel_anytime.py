@@ -28,5 +28,14 @@ RELEASE = Release(
         thumbnail=Thumbnail("Cancel\nanytime*", 1.0, "Stick 06", (540, 1200), 1.3),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-gym": 1,
+        "stick-gym-counter": 1,
+        "stick-name-badge": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
 )
