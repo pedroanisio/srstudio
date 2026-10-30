@@ -470,3 +470,83 @@ def test_the_stress_table_builds_from_the_dictionary_text_byte_for_byte(tmp_path
         tool.sys.argv = ["build_stress.py", str(source), str(out)]
         tool.main()
     assert a.read_bytes() == b.read_bytes()
+
+
+# -- listening ---------------------------------------------------------------------------------------------------------
+def other() -> hm.Speech:
+    return speech("The quarterly report is finished, and everybody really loved it.", at=2.0)
+
+
+def test_nobody_else_speaking_plans_exactly_what_it_planned_before():
+    assert hm.plan(STYLE, [line()], 8.0, heard=()) == hm.plan(STYLE, [line()], 8.0)
+
+
+def test_a_listener_nods_small_at_the_end_of_the_other_s_phrases():
+    plan = hm.plan(STYLE, [], 10.0, heard=[other()])
+    alone = hm.plan(STYLE, [], 10.0)
+    assert alone.nod.keys == ((0.0, 0.0),)
+    biggest = max(abs(v) for _, v in plan.nod.keys)
+    assert 0.0 < biggest <= round(STYLE.nod_px * hm.LISTEN_SHARE, 4)
+    nuclear = [a.at + a.span for a in hm.accents(other(), STYLE) if a.nuclear]
+    assert all(min(abs(t - at) for at in nuclear) < 1.0 for t, v in plan.nod.keys if v)
+
+
+def test_a_listener_nods_on_its_own_signature_and_never_rolls_or_leans():
+    plan = hm.plan(replace(STYLE, signature="/"), [], 10.0, heard=[other()])
+    assert plan.roll.keys == ((0.0, 0.0),)
+    assert plan.lean.keys == ((0.0, 0.0),)
+    assert len(plan.nod.keys) > 1
+
+
+def test_a_listener_keeps_its_eyes_on_the_speaker_and_quiets_its_idle():
+    spoken = other()
+    start, end = spoken.words[0].start, spoken.words[-1].end
+    style = replace(STYLE, glance_every=1.0, glance_hold=0.3)
+    alone = hm.plan(style, [], 12.0)
+    plan = hm.plan(style, [], 12.0, heard=[spoken])
+    assert any(start <= t <= end for t, name in alone.gaze)
+    assert not any(start - 0.3 <= t <= end + 0.3 for t, name in plan.gaze)
+    quiet = [
+        (a, b) for (a, b), (_, c) in zip(alone.idle_roll.keys, plan.idle_roll.keys, strict=True) if abs(c) != abs(b)
+    ]
+    assert quiet and all(start - 0.3 <= t <= end + 0.3 for t, _ in quiet)
+
+
+def test_listening_leaves_the_breath_to_the_character_s_own_speech():
+    assert hm.plan(STYLE, [], 10.0, heard=[other()]).breath == hm.plan(STYLE, [], 10.0).breath
+
+
+def test_a_character_that_speaks_while_another_does_keeps_its_own_nods_and_adds_none():
+    own = speech("Absolutely not, and that is final, and I will say it again and again.", at=2.0)
+    assert hm.plan(STYLE, [own], 10.0, heard=[other()]).nod == hm.plan(STYLE, [own], 10.0).nod
+
+
+def test_a_character_that_never_nods_does_not_nod_while_listening_either():
+    assert hm.plan(replace(STYLE, nod_share=0.0), [], 10.0, heard=[other()]).nod.keys == ((0.0, 0.0),)
+
+
+def test_what_is_heard_is_checked_like_what_is_said():
+    with pytest.raises(HeadMotionError, match="past the shot"):
+        hm.plan(STYLE, [], 3.0, heard=[other()])
+
+
+# -- a shot's keys -----------------------------------------------------------------------------------------------------
+def test_a_channel_during_a_shot_keeps_its_keys_and_one_either_side():
+    channel = Channel(((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0), (4.0, 4.0)), STYLE.head)
+    assert channel.during(1.5, 2.5).keys == ((1.0, 1.0), (2.0, 2.0), (3.0, 3.0))
+    assert channel.during(2.0, 3.0).keys == ((2.0, 2.0), (3.0, 3.0))
+    assert channel.during(1.5, 2.5).spring is STYLE.head
+
+
+def test_a_shot_past_the_last_key_keeps_the_last_key():
+    assert Channel(((0.0, 0.0), (1.0, 1.0))).during(5.0, 6.0).keys == ((1.0, 1.0),)
+
+
+def test_a_plan_during_a_shot_moves_the_same_and_keeps_every_gaze_state():
+    plan = hm.plan(STYLE, [line()], 12.0)
+    shot = plan.during(3.0, 5.0)
+    assert shot.gaze == plan.gaze
+    for name in ("lean", "turn", "nod", "roll", "face_x", "idle_roll", "idle_y", "breath"):
+        kept, whole = getattr(shot, name).keys, getattr(plan, name).keys
+        assert set(kept) <= set(whole)
+        assert len(kept) <= len(whole)
