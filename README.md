@@ -1385,7 +1385,11 @@ hold of at least 1.2 s before the button, the Handbook entry last, and a staging
 S13 *The Code* (the weapon's two-factor code went to the phone on the target planet) and S14 *Take-Home* (an
 unpaid interview task is launched as the station that rejected her) use the opt-in switches of the ADR's
 2026-10-30 amendment: a `still` opening shot that holds every frame of the first second, and `fade` panels and
-entries whose text passes the strict encode.
+entries whose text passes the strict encode. S15 *Call Juno* (the smart speaker calls the dark lord instead of
+the granddaughter, and he gets mothered), S16 *Travel Notice* (the most feared man in the galaxy has his card frozen
+over a coffee and washes dishes), S17 *Typing* (from the next seat, "we need to talk", then a typing indicator; it
+is about snacks) and S18 *Friday Deploy* (one tiny fix at five on a Friday, and the only one who can roll it back
+is on leave) use them too; S15's desert darkens under the captions with the second amendment's `shade` switch.
 
 ## Gloss style: a cheerful forever-plaza in seven episodes (G1–G7)
 
