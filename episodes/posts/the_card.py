@@ -27,4 +27,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Whose card\nis this?", 0.8, "Toon 14", (470, 1130), 1.35),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

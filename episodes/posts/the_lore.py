@@ -21,4 +21,5 @@ RELEASE = Release(
         hashtags=("#parenting", "#dadlife", "#lore", "#brainrot", "#streaming", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Want to hear\nthe lore?", 9.8, "Collage 04", (540, 1090), 1.3),
     ),
+    characters={"collage-gary": 1, "collage-kai": 1},
 )

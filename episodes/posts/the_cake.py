@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("We'll miss\nyou, Pip", 17.2, "Comedy Cut 19", place="top"),
     ),
+    characters={"bo": 1, "juno": 1, "pip": 1},
 )

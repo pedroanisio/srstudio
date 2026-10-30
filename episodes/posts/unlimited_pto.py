@@ -29,4 +29,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Unlimited\nvacation?", 4.6, "Episode 13", place="top"),
     ),
     cover=True,
+    characters={"bo": 1, "pip": 1},
 )

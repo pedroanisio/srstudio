@@ -24,4 +24,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Off and\non again?", 11.0, "Ink 02", place="top"),
     ),
+    characters={"doodle": 1, "talking-router": 1},
 )

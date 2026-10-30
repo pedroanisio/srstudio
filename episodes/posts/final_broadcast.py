@@ -22,4 +22,5 @@ RELEASE = Release(
         hashtags=("#news", "#newsanchor", "#replaced", "#brainrot", "#media", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Is this my last\nbroadcast?", 1.0, "Collage 11", (540, 1200), 1.6),
     ),
+    characters={"collage-flush": 1, "collage-jun": 1, "collage-omar": 1},
 )

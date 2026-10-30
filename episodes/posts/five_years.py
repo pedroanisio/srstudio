@@ -18,4 +18,5 @@ RELEASE = Release(
         hashtags=SERIES + ("#fiveyearplan", "#executivechair"),
         thumbnail=Thumbnail("Where do you see\nyourself in 5 years?", 10.4, "The Interview · 06", (540, 560), 1.2),
     ),
+    characters={"candidate": 1, "manager": 1},
 )

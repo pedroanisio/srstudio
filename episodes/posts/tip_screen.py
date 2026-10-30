@@ -26,4 +26,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Tip me for\nordering?", 12.0, "Episode 12", place="top"),
     ),
     cover=True,
+    characters={"barista": 1, "customer": 1},
 )

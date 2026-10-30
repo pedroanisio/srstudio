@@ -27,4 +27,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Why does my\npassword expire?", 1.0, "Toon 13", (470, 1130), 1.35),
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )

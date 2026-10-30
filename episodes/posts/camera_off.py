@@ -29,4 +29,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Camera off.\nPajamas on.", 10.0, "Episode 08", (560, 1000), 1.25),
     ),
+    characters={"pip": 1},
 )

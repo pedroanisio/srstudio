@@ -35,4 +35,5 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "other-person", "tension", recurring=("rook", "juno"), test="sp-hook_motion", arm="a"
     ),  # fmt: skip
+    characters={"saga-juno": 1, "saga-rook": 1},
 )

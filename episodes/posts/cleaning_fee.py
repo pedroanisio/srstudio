@@ -30,4 +30,5 @@ RELEASE = Release(
     tags=Tags(
         "money-services", "other-person", "recognition", recurring=("fern", "rex"), test="sp-hook_motion", arm="b"
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

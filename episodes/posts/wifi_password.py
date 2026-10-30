@@ -25,4 +25,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("What's the\nWi-Fi password?", 9.0, "Comedy Cut 05", (540, 560), 1.2),
     ),
+    characters={"barista": 1, "customer": 1, "pigeon": 1},
 )

@@ -31,4 +31,5 @@ RELEASE = Release(
         thumbnail=Thumbnail('Worst time for\nan update?', 8.0, 'Saga 05', (540, 890), 1.0),
     ),
     cover=True,
+    characters={"saga-juno": 1, "saga-rook": 1},
 )

@@ -31,4 +31,5 @@ RELEASE = Release(
         thumbnail=Thumbnail('Can you feel\nthe Flow?', 8.5, 'Saga 06', (540, 890), 1.0),
     ),
     cover=True,
+    characters={"saga-juno": 1, "saga-mabel": 1},
 )
