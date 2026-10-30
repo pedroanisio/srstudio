@@ -49,6 +49,7 @@ from . import (  # noqa: F401  (registers builders)
     subtitles,
     toon,
     toon_cast,
+    toon_critters,
     toon_dinner,
     toon_everyday,
     toon_props,
