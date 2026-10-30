@@ -563,9 +563,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, pressed ink, a shade tone, a tilted head, its own pupils, heavy clawed paws.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "ae5eb2e48d090ef98544c02f1bc59fa44fd36957d45e8884e992fed19ada5465"
         }
       ]
@@ -600,9 +603,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, floppy ears over the head, pressed ink, a shade tone, a tilted head, its own eyes and paws, blinks.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de"
         }
       ]
@@ -649,9 +655,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, lids that follow its eye domes, pressed ink, a shade tone, a tilted head, level pupils, finger pads, blinks.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "9bfec33787803e36e3157934b65cf561368ceca949e7e941242de459b642f30f"
         }
       ]
@@ -706,9 +715,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, an uneven crest closed behind the head, pressed ink, a shade tone, a tilted head, beady pupils, clawed paws.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "22ded449a17751adcb7a6c73f6fa420f1dc7e807115069d96246d04def34972d"
         }
       ]
@@ -729,9 +741,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, one ear leaning out, pressed ink, a shade tone, a tilted head, tapered whiskers, its own pupils and paws.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "df90292c7561be74df8d69f43848df89d59d64beb9ce9f9060357d570b5f67a6"
         }
       ]
@@ -752,9 +767,12 @@
           "number": 2,
           "date": "2026-10-30",
           "note": "Redrawn: one smooth torso, hand-drawn mask and cheek tufts, pressed ink, a shade tone, a tilted head, its own pupils, fingered gloves.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/older-cast/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "all the old-cast approved on v2"
+          },
           "drawing": "d7a0c78fae871b7e9d9b22de64dab088e12622e5e72e3fbaf0725764066ccd12"
         }
       ]

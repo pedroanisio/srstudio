@@ -2,12 +2,12 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0052: The older brush cast drawn again, as proposed versions
+# ADR 0052: The older brush cast drawn again, as version 2
 
-- Status: proposed (2026-10-30). The drawings are version 2 of six characters, each `proposed`. The operator decides
-  each one from the proof clips (`generated/character-proofs/older-cast/index.html`); nothing is approved or merged
-  before that. Implemented: `srstudio.toon_redrawn` (`DOG`, `FROG`, `BEAR`, `RABBIT`, `RACCOON`, `HEDGEHOG`, `REDRAWN`),
-  `Critter._lid`, the six `toon-*@2` records and specimens; `tests/test_toon_redrawn.py`.
+- Status: accepted (2026-10-30). The operator approved all six from the proof clips
+  (`generated/character-proofs/older-cast/index.html`): "all the old-cast approved on v2". Implemented:
+  `srstudio.toon_redrawn` (`DOG`, `FROG`, `BEAR`, `RABBIT`, `RACCOON`, `HEDGEHOG`, `REDRAWN`), `Critter._lid`, the six
+  `toon-*@2` records and specimens; `tests/test_toon_redrawn.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0045](0045-toon-sloth-goat-hamster.md), [ADR 0047](0047-character-versions.md) and
   [ADR 0049](0049-toon-torso-one-smooth-body.md)
@@ -34,9 +34,9 @@ stay byte-identical.
    - the dog's ears hang in front of its head, not behind it;
    - the dog and the frog blink, which they never did, and gain a highlight on the pupil;
    - the rabbit's right ear leans out, and its whiskers are tapered strokes drawn with the head.
-4. **Version 2, proposed.** Each is registered as `name@2` with a recorded digest, and `status: proposed`. A proposed
-   version is no default and no pin (ADR 0047), so `toon_cast.LOOKS` and every reel keep version 1. A test holds the
-   recorded digest to what the drawing draws, so a redraw before approval cannot leave a stale one.
+4. **Version 2, proposed first.** Each was registered as `name@2` with a recorded digest and `status: proposed`, no
+   default and no pin (ADR 0047), until the operator judged it. `toon_cast.LOOKS` keeps version 1, which published
+   reels pin. A test holds the recorded digest to what the drawing draws, so a redraw cannot leave a stale one.
 5. **The frog's lids follow its eyes.** Its eyes stand proud of its head, and a box of a lid sticks out over the
    domes. `Critter._lid` is the one place a lid's shape is decided: the critters keep the plain outline, and the
    frog's `_Domed` clamps the lid to the round of the eye, sleepy eyes included.
@@ -59,5 +59,4 @@ stay byte-identical.
   critters.
 - `Critter` has one more hook, and the three approved critters draw byte-identically (their tests hold the digests).
 - The six have no `HeadRig`, so head motion (ADR 0050) stays opt-in and is refused by name for them until each gets one.
-- If the operator approves one, its record gains the approval and it becomes that character's default for new reels;
-  a character declined keeps version 1 and its proposed record is withdrawn.
+- Each is now that character's default for new reels. Published reels pin version 1 in their releases and keep it.

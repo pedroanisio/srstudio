@@ -70,7 +70,7 @@ def fox_sketch() -> Sketch:
 @pytest.mark.parametrize(("pins", "drew"), [({"toon-fox": 1}, 1), ({"toon-fox": 2}, 2), ({}, 2)])
 def test_a_build_draws_the_pinned_version_or_the_default_and_records_it(pinned_fonts, tmp_path, pins, drew):
     ep, _ = built(tmp_path, silent(fox_sketch(), versions=pins), pinned_fonts)
-    assert characters.read_record(tmp_path) == {"toon-bear": 1, "toon-fox": drew}
+    assert characters.read_record(tmp_path) == {"toon-bear": 2, "toon-fox": drew}
     expected = {1: "toon_cast", 2: "toon_inked"}[drew]
     assert sketch.drawer("fox", {"toon-fox": drew}).__module__ == f"srstudio.{expected}"
 
