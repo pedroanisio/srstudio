@@ -10,7 +10,7 @@ python3 split_it.py PROJECT --voice    # the narrated master: narration.json (sp
 import sys
 
 from _common import project_root
-from instagram_posts import POSTS
+from instagram_posts import PINS, POSTS
 from split_it_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, validate
 from srstudio import toon_dinner
 from srstudio.toon_sketch import Staging, build
@@ -24,6 +24,7 @@ STAGING = Staging(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    versions=PINS[SKETCH.slug],
     desk=toon_dinner.table,
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))

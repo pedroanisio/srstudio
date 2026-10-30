@@ -10,7 +10,7 @@ python3 on_my_way.py PROJECT --voice    # the narrated master: narration.json (o
 import sys
 
 from _common import project_root
-from instagram_posts import POSTS
+from instagram_posts import PINS, POSTS
 from on_my_way_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, no_desk, push, validate
 from srstudio.toon_sketch import Staging, build
 
@@ -23,6 +23,7 @@ STAGING = Staging(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    versions=PINS[SKETCH.slug],
     desk=no_desk,
     camera=push,
 )

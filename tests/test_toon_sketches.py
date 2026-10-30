@@ -223,7 +223,7 @@ def test_a_typing_beat_held_to_the_end_still_makes_its_keyboard_bed(mods, tmp_pa
 
 def test_the_build_refuses_a_voiced_project_whose_files_disagree(mods, tmp_path, monkeypatch):
     build, data, *_ = mods
-    staging = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress)
+    staging = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, {})
     installed = []
     monkeypatch.setattr(sketch.fonts, "install", lambda font, folder: installed.append(Path(folder)))
     assert build.build(tmp_path, staging, {"--init"}) is None  # the script, not the library, ends the process
@@ -296,8 +296,8 @@ def test_quick_question_refuses_events_its_props_cannot_do_and_lets_the_coffee_g
 
 def test_a_staging_stands_the_office_desk_in_front_unless_it_lays_another(mods):
     build, data, *_ = mods
-    assert build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress).desk is toon.desk
-    laid = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, desk=toon_dinner.table)
+    assert build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, {}).desk is toon.desk
+    laid = build.Staging(data.SKETCH, 1, "d", "a", "n", data.TINTS, data.dress, {}, desk=toon_dinner.table)
     assert laid.desk is toon_dinner.table
 
 
@@ -311,7 +311,7 @@ def test_a_voiced_build_of_the_report_plays_its_narration_and_effects_over_the_r
     root = tmp_path / "the-report"
     shutil.copytree(Path(env) / "the-report", root, ignore=shutil.ignore_patterns("*.scene.xml", "*.srt"))
     staging = build.Staging(
-        data.SKETCH, data.SEED, data.DESCRIPTION, data.ACCESSIBILITY, data.NARRATION, data.TINTS, data.dress,
+        data.SKETCH, data.SEED, data.DESCRIPTION, data.ACCESSIBILITY, data.NARRATION, data.TINTS, data.dress, {},
         stickers={"dog": data.STICKER},
     )  # fmt: skip
     ep = build.build(root, staging, {"--voice"})
