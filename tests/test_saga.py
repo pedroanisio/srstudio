@@ -220,6 +220,18 @@ def test_every_location_throws_its_far_plane_out_of_focus_and_keeps_the_signatur
         assert not any("blur" in effect_types(root, n) for n in ancestry(root, mark))
 
 
+def test_a_shaded_desert_darkens_the_caption_band_below_the_floor_and_the_default_draws_no_shade():
+    plain, shaded = canvas(), canvas()
+    sets.desert(plain, plain.comp, end=D)
+    sets.desert(shaded, shaded.comp, end=D, shade=True)
+    assert "saga-desert-shade" not in ET.tostring(tree(plain), encoding="unicode")
+    shades = [s for s in tree(shaded).iter("shape") if "saga-desert-shade" in ET.tostring(s, encoding="unicode")]
+    assert len(shades) == 1
+    rect = shades[0]
+    top, height = float(rect.get("y")), float(rect.get("height"))
+    assert sets.FLOOR - 20 <= top <= sets.FLOOR and top + height >= sets.H  # from the dune line through the frame foot
+
+
 def test_location_events_must_fall_inside_the_shot():
     cv = canvas()
     with pytest.raises(SagaError):
