@@ -673,7 +673,8 @@ def _cache(out: Path, args: Sequence[str]) -> None:
 
 
 def web_video(render: Path, cache: Path) -> tuple[Path, Path]:
-    """A 540-wide H.264 copy and a poster frame of ``render``, made once per render version."""
+    """A 540-wide H.264 copy (720 when wider than tall) and a poster frame of ``render``, made once per render
+    version."""
     st = render.stat()
     stem = cache / "video" / f"{render.stem}-{st.st_size}-{st.st_mtime_ns}"
     video, poster = stem.with_suffix(".mp4"), stem.with_suffix(".jpg")

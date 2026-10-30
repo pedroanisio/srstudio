@@ -133,3 +133,12 @@ def test_a_style_names_the_google_font_it_letters_in():
         replace(TOON, font=None).google_font()
     with pytest.raises(StyleError, match="not a Google Font"):
         replace(TOON, font=replace(TOON.font, google=None)).google_font()
+
+
+def test_every_shipped_style_is_exported_by_its_constant_name():
+    from srstudio import styles
+
+    for style in STYLES.values():
+        name = style.slug.upper()
+        assert getattr(styles, name) is style and name in styles.__all__
+    assert len(STYLES) == 9

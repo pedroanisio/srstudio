@@ -38,7 +38,7 @@ From the workspace root, first measure which parts the episodes use (see the
 
 - `--base` is the frozen page of the six packages. If it no longer has the anchors the generator writes into, the
   command stops with `srstudio page: …` and exit code 2, and the old page is left as it was.
-- `--cache` keeps the web encodes (540 px wide, 720 px for square, keyed by each render's size and modification time)
+- `--cache` keeps the web encodes (540 px wide, 720 px when the render is wider than tall, so a square Ink render is 540; keyed by each render's size and modification time)
   and the pose images (keyed by the pose list). Unchanged renders are not encoded again.
 - The page is written atomically with mode `600`.
 

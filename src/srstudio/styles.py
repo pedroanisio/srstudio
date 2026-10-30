@@ -6,8 +6,9 @@ input file, the caption font, the mouth model per palette, the palettes it may b
 modules that hold its parts. ``EpisodeSpec(style=INK)`` resolves every unset field from the style, and
 an explicit field still wins, so a script states only what is particular to its episode.
 
-Five styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``, ``0004-cel-style.md``,
-``0006-stick-style.md``):
+Nine styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``, ``0004-cel-style.md``,
+``0006-stick-style.md``, ``0010-toon-style.md``, ``0025-saga-style.md``, ``0030-gloss-style.md``,
+``0036-collage-series-bible.md``); ``srstudio styles`` lists them:
 
 * **Cutout** (:data:`CUTOUT`): flat vector shapes with soft gradients and bold outlines, like paper
   cut-outs; portrait 1080×1920 at 30 fps on the project clock; palettes ``OFFICE`` and ``CAFE``.
@@ -20,9 +21,15 @@ Five styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``
 * **Stick** (:data:`STICK`): stick figures in heavy ink, traced at 12 fps, on painted, flat-shaded sets, captions in
   white outlined text; portrait 1080×1920 at 24 fps; palette ``DAYLIGHT``. No mouth model: voice, if any, is
   narration over the captions.
+* **Toon** (:data:`TOON`): a flat cartoon in heavy ink on a gradient room, a cat whose expression swaps per cue,
+  captions in a white pill; portrait 1080×1920 at 24 fps; palette ``PEACH``.
 * **Saga** (:data:`SAGA`): a space-opera parody in heavy ink under night skies and glows, staged shot by shot from
   recorded takes (:mod:`srstudio.saga_reel`), engine-native captions in Space Grotesk; portrait 1080×1920 at 24 fps
   as a sequence of shots; palette ``VOID`` (``docs/decisions/0025-saga-style.md``).
+* **Collage** (:data:`COLLAGE`): mixed-media satire, paper cut-out people with hand-cut edges and drop shadows on
+  painted sets; portrait 1080×1920 at 24 fps; palette ``PAPER``.
+* **Gloss** (:data:`GLOSS`): glossy vinyl peg dolls in a pastel forever-plaza hosted by Sunny, a floating orb;
+  portrait 1080×1920 at 24 fps as a sequence of shots; palette ``PLASTIC``.
 """
 
 from __future__ import annotations
@@ -63,6 +70,7 @@ __all__ = [
     "STICK",
     "TOON",
     "SAGA",
+    "COLLAGE",
     "GLOSS",
     "STYLES",
     "style_of_module",
