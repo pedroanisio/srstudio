@@ -65,6 +65,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_critters,
     toon_dinner,
     toon_everyday,
+    toon_flat,
     toon_head,
     toon_house,
     toon_props,
@@ -73,6 +74,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_sets,
     toon_surgery,
     toon_torso,
+    toon_world,
 )
 from .canvas import (
     CAFE,

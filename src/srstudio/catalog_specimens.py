@@ -219,6 +219,7 @@ RECIPES: dict[str, Recipe] = {
     "stick-kitchen": Recipe(part()),
     "stick-kitchen-plan": Recipe(part()),
     "ink-phone-shot": Recipe(part("Boss", BUBBLES)),
+    "toon-lower-third": Recipe(lettered(((0.0, SECONDS, "UPDATE: SOMEONE IS 'HOME'"),))),
     # -- props ---------------------------------------------------------------------------------------------------
     "building": Recipe(part(300, 600, 480, 760)),
     "crumbs": Recipe(part(500, 900, 1100, toss=0.2, count=9)),

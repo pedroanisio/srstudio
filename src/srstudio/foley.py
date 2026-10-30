@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import random
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from . import checks
@@ -29,6 +30,21 @@ __all__ = [
     "write_buzz",
     "tones",
     "write_tones",
+    "Burst",
+    "bursts",
+    "write_bursts",
+    "REMOTE_CLICK",
+    "KNOCK",
+    "SNORE",
+    "SCRAPE",
+    "SWISH",
+    "DING",
+    "THUD",
+    "RUMBLE",
+    "ROAD",
+    "CHOPPER",
+    "GULL",
+    "PLATES",
     "STING",
     "whoosh",
     "write_whoosh",
@@ -306,3 +322,88 @@ def write_tones(
 ) -> Path:
     """The sting or chime bed for the given cue times, written to ``path``."""
     return write_wav(path, tones(times, duration, notes, rate, peak), rate)
+
+
+# -- bursts: one short sound, shaped by numbers ---------------------------------------------------------------------
+@dataclass(frozen=True)
+class Burst:
+    """One sound as numbers: ``seconds`` of noise, smoothed by a one-pole low-pass at ``low_hz``, plus a tone sliding
+    from ``tone_hz`` to ``tone_end_hz`` at ``tone`` of the level, rising over ``attack`` seconds and falling away
+    exponentially at ``decay`` (the fraction of the sound's length it takes to drop to a third), the whole shaken at
+    ``flutter_hz`` when that is set (a snore's rattle, a rotor's chop)."""
+
+    seconds: float
+    low_hz: float
+    attack: float = 0.002
+    decay: float = 0.5
+    tone_hz: float = 0.0
+    tone_end_hz: float = 0.0
+    tone: float = 0.0
+    flutter_hz: float = 0.0
+
+    def __post_init__(self) -> None:
+        if not (checks.number(self.seconds) and 0.01 <= self.seconds <= 8.0):
+            raise FoleyError(f"a burst lasts 0.01..8 s, got {self.seconds}")
+        if not (checks.number(self.low_hz) and 20 <= self.low_hz <= 20000):
+            raise FoleyError(f"a burst's low-pass is 20..20000 Hz, got {self.low_hz}")
+        if not (checks.number(self.attack) and 0 < self.attack < self.seconds):
+            raise FoleyError(f"a burst's attack is under its length, got {self.attack}")
+        if not (checks.number(self.decay) and self.decay > 0):
+            raise FoleyError(f"a burst's decay is positive, got {self.decay}")
+        if not (checks.number(self.tone) and 0 <= self.tone <= 1):
+            raise FoleyError(f"a burst's tone level is 0..1, got {self.tone}")
+        for hz in (self.tone_hz, self.tone_end_hz, self.flutter_hz):
+            if not (checks.number(hz) and 0 <= hz <= 8000):
+                raise FoleyError(f"a burst's tone and flutter are 0..8000 Hz, got {hz}")
+
+
+REMOTE_CLICK = Burst(0.03, 6000.0, attack=0.001, decay=0.25, tone_hz=2400.0, tone_end_hz=1800.0, tone=0.5)
+KNOCK = Burst(0.12, 900.0, attack=0.002, decay=0.3, tone_hz=170.0, tone_end_hz=120.0, tone=0.7)
+SNORE = Burst(1.1, 420.0, attack=0.35, decay=1.2, tone_hz=70.0, tone_end_hz=95.0, tone=0.35, flutter_hz=31.0)
+DING = Burst(0.45, 200.0, attack=0.002, decay=0.45, tone_hz=1760.0, tone_end_hz=1760.0, tone=1.0)
+THUD = Burst(0.25, 500.0, attack=0.003, decay=0.35, tone_hz=90.0, tone_end_hz=55.0, tone=0.8)
+RUMBLE = Burst(1.4, 700.0, attack=0.02, decay=0.9, tone_hz=60.0, tone_end_hz=45.0, tone=0.4, flutter_hz=11.0)
+ROAD = Burst(3.0, 380.0, attack=0.12, decay=4.0, tone_hz=64.0, tone_end_hz=72.0, tone=0.3, flutter_hz=7.0)
+CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.0, tone=0.4, flutter_hz=13.0)
+GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880.0, tone=1.0, flutter_hz=17.0)
+SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
+SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
+PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
+
+
+def bursts(
+    times: Sequence[float], duration: float, sound: Burst, rate: int = RATE, seed: int = 0, peak: float = PEAK
+) -> list[float]:
+    """A mono bed of ``duration`` seconds with ``sound`` at each of ``times``, seeded, the last one cut at the end."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0 and all(0 <= t < duration for t in times)):
+        raise FoleyError(f"duration {duration} must hold every cue, got {list(times)}")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    out = [0.0] * int(round(duration * rate))
+    rng = random.Random(seed)
+    smooth = 1.0 - math.exp(-2 * math.pi * sound.low_hz / rate)
+    total = int(sound.seconds * rate)
+    for at in sorted(times):
+        begin = int(at * rate)
+        low, phase = 0.0, 0.0
+        for k in range(min(total, len(out) - begin)):
+            t = k / rate
+            low += smooth * (rng.uniform(-1, 1) - low)
+            hz = sound.tone_hz + (sound.tone_end_hz - sound.tone_hz) * t / sound.seconds
+            phase += 2 * math.pi * hz / rate
+            shake = 0.6 + 0.4 * math.sin(2 * math.pi * sound.flutter_hz * t) if sound.flutter_hz else 1.0
+            env = min(1.0, t / sound.attack, (sound.seconds - t) / 0.01) * math.exp(-t / (sound.seconds * sound.decay))
+            out[begin + k] += env * shake * ((1 - sound.tone) * low + sound.tone * math.sin(phase))
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_bursts(
+    path: Path, times: Sequence[float], duration: float, sound: Burst, rate: int = RATE, seed: int = 0
+) -> Path:
+    """The bed of :func:`bursts`, written to ``path``."""
+    return write_wav(path, bursts(times, duration, sound, rate, seed), rate)

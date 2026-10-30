@@ -498,6 +498,38 @@
         "O <code>Why?</code> é sempre o mesmo plano fechado; o de Bo chega mais perto a cada vez (<code>Shot</code>).",
         "<code>Dim</code> tira a luz do quarto em volta dele quando ele senta."
       ]
+    },
+    "i-was-watching": {
+      "number": "T28",
+      "lede": "O Bruno dorme desde os créditos. A Mae desliga o filme. Ele estava assistindo. Ela continua clicando, e o mundo atrás do sofá vai embora.",
+      "highlights": [
+        "O plano do Bruno fica parado e o cenário troca atrás dele: sala, sala vazia, quintal, estrada, lixão (<code>toon_world.sofa</code>, com o cacto e o código no chão de cada lugar).",
+        "A TV morta no lixão fica no mesmo ponto da tela em que a TV da sala estava."
+      ]
+    },
+    "text-me": {
+      "number": "T29",
+      "lede": "Ele mora a quatro minutos. O celular morre. Seis minutos depois, a mãe dá uma coletiva ao vivo.",
+      "highlights": [
+        "A voz da mãe vem pelo viva-voz antes de ela aparecer no púlpito, com a tarja do telejornal mudando entre as duas coletivas (<code>toon_world.lower_third</code>).",
+        "Cada pessoa da multidão recebe a mensagem, lê e vai embora, uma de cada vez (<code>toon_world.night_street</code>)."
+      ]
+    },
+    "i-cleaned": {
+      "number": "T30",
+      "lede": "Ele limpou. Tudo está fora de vista. Ninguém deveria abrir nada.",
+      "highlights": [
+        "Cada revelação fica atrás do personagem, num balcão que guarda o cacto e o código: a pilha sobe antes do balcão, então a assinatura fica por cima (<code>toon_flat.pile</code>).",
+        "O rodopio de entrada é lento o bastante para passar na checagem de flashes do motor."
+      ]
+    },
+    "missed-you": {
+      "number": "T31",
+      "lede": "Entrega: hoje, das 8h às 20h. Ela levou uma cadeira até a porta. Ele levou um bilhete.",
+      "highlights": [
+        "Uma única fala, ouvida sobre o rosto dela depois que o bilhete já está colado.",
+        "Ela não pisca a não ser uma vez, no segundo dia: o <code>validate</code> recusa uma segunda piscada."
+      ]
     }
   },
   "styles": {
@@ -832,6 +864,96 @@
     },
     "toon-watering-can": {
       "title": "Regador"
+    },
+    "toon-sofa": {
+      "title": "Sofá que vai a qualquer lugar"
+    },
+    "toon-sofa-back": {
+      "title": "Encosto do sofá"
+    },
+    "toon-worktop": {
+      "title": "Balcão liso"
+    },
+    "toon-far-wall": {
+      "title": "Parede ao fundo"
+    },
+    "toon-yard": {
+      "title": "Quintal de venda de garagem"
+    },
+    "toon-road": {
+      "title": "Estrada passando"
+    },
+    "toon-dump": {
+      "title": "Lixão ao entardecer"
+    },
+    "toon-gull": {
+      "title": "Gaivota"
+    },
+    "toon-paw": {
+      "title": "Braço que entra no quadro"
+    },
+    "toon-snores": {
+      "title": "Zs do sono"
+    },
+    "toon-night-street": {
+      "title": "Rua à noite com multidão"
+    },
+    "toon-press-room": {
+      "title": "Sala de coletiva"
+    },
+    "toon-mics": {
+      "title": "Microfones no púlpito"
+    },
+    "toon-lower-third": {
+      "title": "Tarja de telejornal"
+    },
+    "toon-chopper": {
+      "title": "Helicóptero na janela"
+    },
+    "toon-flat": {
+      "title": "Apartamento impecável"
+    },
+    "toon-closet": {
+      "title": "Armário que explode"
+    },
+    "toon-oven": {
+      "title": "Forno de porta caída"
+    },
+    "toon-plates": {
+      "title": "Pratos deslizando"
+    },
+    "toon-shower": {
+      "title": "Cortina do chuveiro"
+    },
+    "toon-front-door": {
+      "title": "Porta da frente"
+    },
+    "toon-laundry-pile": {
+      "title": "Pilha de roupas"
+    },
+    "toon-tiny-drawer": {
+      "title": "Gaveta minúscula"
+    },
+    "toon-whirl": {
+      "title": "Rodopio"
+    },
+    "toon-sparkles": {
+      "title": "Brilhos de limpeza"
+    },
+    "toon-hall-chair": {
+      "title": "Cadeira de espera"
+    },
+    "toon-porch": {
+      "title": "Porta vista de fora"
+    },
+    "toon-van": {
+      "title": "Van indo embora"
+    },
+    "toon-missed-slip": {
+      "title": "Aviso por baixo da porta"
+    },
+    "toon-stuck-note": {
+      "title": "Bilhete colado"
     }
   },
   "gallery": [
@@ -3593,7 +3715,9 @@
     {
       "section": "locations",
       "name": "Quarto de criança",
-      "parts": ["soft-playroom"],
+      "parts": [
+        "soft-playroom"
+      ],
       "shot": {
         "episode": "why",
         "at": 0.5
@@ -3616,7 +3740,9 @@
     {
       "section": "locations",
       "name": "Quarto à noite",
-      "parts": ["soft-bedroom"],
+      "parts": [
+        "soft-bedroom"
+      ],
       "shot": {
         "episode": "early-night",
         "at": 0.5
@@ -3626,7 +3752,9 @@
     {
       "section": "props",
       "name": "Pá enferrujada",
-      "parts": ["soft-shovel"],
+      "parts": [
+        "soft-shovel"
+      ],
       "shot": {
         "episode": "early-night",
         "at": 2.0
@@ -3636,7 +3764,9 @@
     {
       "section": "props",
       "name": "Colmeia",
-      "parts": ["soft-hive"],
+      "parts": [
+        "soft-hive"
+      ],
       "shot": {
         "episode": "early-night",
         "at": 4.5
@@ -3646,7 +3776,9 @@
     {
       "section": "locations",
       "name": "Parque de frente",
-      "parts": ["soft-park"],
+      "parts": [
+        "soft-park"
+      ],
       "shot": {
         "episode": "hang-out",
         "at": 8.8
@@ -3669,7 +3801,9 @@
     {
       "section": "props",
       "name": "Telefone na mão",
-      "parts": ["soft-phone"],
+      "parts": [
+        "soft-phone"
+      ],
       "shot": {
         "episode": "hang-out",
         "at": 3.3
@@ -3679,7 +3813,9 @@
     {
       "section": "graphics",
       "name": "Cartão do tempo",
-      "parts": ["soft-time-card"],
+      "parts": [
+        "soft-time-card"
+      ],
       "shot": {
         "episode": "hang-out",
         "at": 7.0
@@ -5840,6 +5976,344 @@
         "at": 15.0
       },
       "text": "Placa verde de rodovia que cresce conforme o carro se aproxima."
+    },
+    {
+      "section": "props",
+      "name": "Sofá que vai a qualquer lugar",
+      "parts": [
+        "toon-sofa",
+        "toon-sofa-back"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 9.5
+      },
+      "text": "Sofá e mesinha lateral no lugar da mesa de escritório: leva o cacto e o código para a sala, o quintal, a carroceria de um caminhão ou o lixão, conforme o chão escolhido (<code>toon_world.sofa</code>)."
+    },
+    {
+      "section": "props",
+      "name": "Balcão liso",
+      "parts": [
+        "toon-worktop"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 3.8
+      },
+      "text": "Tampo simples no lugar da mesa, para quem fala em primeiro plano; assinado como a mesa."
+    },
+    {
+      "section": "locations",
+      "name": "Parede ao fundo",
+      "parts": [
+        "toon-far-wall"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 3.8
+      },
+      "text": "A parede lisa atrás do sofá pequeno, para o plano por cima do ombro."
+    },
+    {
+      "section": "locations",
+      "name": "Quintal de venda de garagem",
+      "parts": [
+        "toon-yard"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 11.5
+      },
+      "text": "Casa, cerca, céu e uma placa à mão com o texto que a esquete pedir."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada passando",
+      "parts": [
+        "toon-road"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 14.5
+      },
+      "text": "Morros, árvores e postes passam em três velocidades atrás de uma carroceria; a cabine vermelha fica à direita."
+    },
+    {
+      "section": "locations",
+      "name": "Lixão ao entardecer",
+      "parts": [
+        "toon-dump"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 17.6
+      },
+      "text": "Montes de sacos sob um céu de fim de tarde, e a TV quebrada no mesmo ponto da tela da TV da sala."
+    },
+    {
+      "section": "props",
+      "name": "Gaivota",
+      "parts": [
+        "toon-gull"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 18.8
+      },
+      "text": "Entra voando do alto à direita, pousa onde a cena pede e fica."
+    },
+    {
+      "section": "props",
+      "name": "Braço que entra no quadro",
+      "parts": [
+        "toon-paw"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 7.0
+      },
+      "text": "Um braço da cor do personagem desliza da borda segurando o controle ou um bilhete, e aperta nos momentos marcados."
+    },
+    {
+      "section": "props",
+      "name": "Zs do sono",
+      "parts": [
+        "toon-snores"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 6.5
+      },
+      "text": "Letras Z que sobem e somem a partir de quem dorme."
+    },
+    {
+      "section": "locations",
+      "name": "Rua à noite com multidão",
+      "parts": [
+        "toon-night-street"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 13.0
+      },
+      "text": "Casas escuras e uma multidão com lanternas; quem está na lista de saída recebe um balão no celular, lê e sai de cena."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de coletiva",
+      "parts": [
+        "toon-press-room"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Cortina azul, duas bandeiras lisas, palco, flashes e o selo LIVE."
+    },
+    {
+      "section": "props",
+      "name": "Microfones no púlpito",
+      "parts": [
+        "toon-mics"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Quatro microfones apontados para quem está atrás do balcão."
+    },
+    {
+      "section": "graphics",
+      "name": "Tarja de telejornal",
+      "parts": [
+        "toon-lower-third"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Uma linha curta na frente do púlpito; recusa o texto que não cabe no quadro."
+    },
+    {
+      "section": "props",
+      "name": "Helicóptero na janela",
+      "parts": [
+        "toon-chopper"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 7.0
+      },
+      "text": "Entra pelo céu da janela e paira, enquanto o holofote varre o quadro por cima do personagem."
+    },
+    {
+      "section": "locations",
+      "name": "Apartamento impecável",
+      "parts": [
+        "toon-flat"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 1.2
+      },
+      "text": "Parede clara e rodapé branco, à espera do que está escondido atrás de cada porta."
+    },
+    {
+      "section": "props",
+      "name": "Armário que explode",
+      "parts": [
+        "toon-closet"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 3.6
+      },
+      "text": "A porta voa aberta no segundo pedido e mostra o escuro de dentro."
+    },
+    {
+      "section": "props",
+      "name": "Forno de porta caída",
+      "parts": [
+        "toon-oven",
+        "toon-plates"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 6.9
+      },
+      "text": "A porta cai e os pratos saem deslizando pelo quadro, um de cada vez."
+    },
+    {
+      "section": "props",
+      "name": "Cortina do chuveiro",
+      "parts": [
+        "toon-shower"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 8.7
+      },
+      "text": "A cortina corre para o lado e mostra as lixeiras empilhadas."
+    },
+    {
+      "section": "props",
+      "name": "Porta da frente",
+      "parts": [
+        "toon-front-door"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 11.8
+      },
+      "text": "Abre para um corredor com caixas até o teto."
+    },
+    {
+      "section": "props",
+      "name": "Pilha de roupas",
+      "parts": [
+        "toon-laundry-pile"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 12.7
+      },
+      "text": "Camisas caídas que sobem por cima de quem está em cena, até o queixo ou acima da cabeça."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta minúscula",
+      "parts": [
+        "toon-tiny-drawer"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 10.5
+      },
+      "text": "Uma cômoda pequena sobre o balcão; a gaveta de cima abre e sobe uma meia."
+    },
+    {
+      "section": "props",
+      "name": "Rodopio",
+      "parts": [
+        "toon-whirl"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 0.3
+      },
+      "text": "Um borrão que atravessa o quadro com o personagem dentro; tons próximos, para não piscar."
+    },
+    {
+      "section": "props",
+      "name": "Brilhos de limpeza",
+      "parts": [
+        "toon-sparkles"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 1.4
+      },
+      "text": "Estrelas de quatro pontas que piscam uma de cada vez."
+    },
+    {
+      "section": "props",
+      "name": "Cadeira de espera",
+      "parts": [
+        "toon-hall-chair"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 1.8
+      },
+      "text": "O encosto de madeira atrás de quem senta para esperar."
+    },
+    {
+      "section": "locations",
+      "name": "Porta vista de fora",
+      "parts": [
+        "toon-porch"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 3.8
+      },
+      "text": "Parede de ripas, porta verde e capacho, para quem chega ou quem espera do lado de fora."
+    },
+    {
+      "section": "props",
+      "name": "Van indo embora",
+      "parts": [
+        "toon-van"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 6.8
+      },
+      "text": "Uma van branca sem marca, vista de trás, encolhendo enquanto sai do quadro."
+    },
+    {
+      "section": "props",
+      "name": "Aviso por baixo da porta",
+      "parts": [
+        "toon-missed-slip"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 5.6
+      },
+      "text": "O papel sai da fresta da porta e cresce até poder ser lido."
+    },
+    {
+      "section": "props",
+      "name": "Bilhete colado",
+      "parts": [
+        "toon-stuck-note"
+      ],
+      "shot": {
+        "episode": "missed-you",
+        "at": 16.0
+      },
+      "text": "Um papel amarelo com letras grandes, colado no rosto ou no colo de alguém; pode entrar na mão de um braço."
     }
   ]
 }

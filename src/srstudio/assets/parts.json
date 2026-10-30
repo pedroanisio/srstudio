@@ -6442,6 +6442,516 @@
           "rig": null
         }
       ]
+    },
+    "toon-chopper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A helicopter in the window with a searchlight sweeping the room. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "342e1392468d434fd6e31403ea346082935e852c466fdf3d617bdc9d59d0a916",
+          "rig": null
+        }
+      ]
+    },
+    "toon-closet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A closet door that bursts open. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b0fa65e4cb441f02299ce2316d782a9c31deb5e2b6cb05eb22845f120ab1ab3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-dump": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A dump at dusk with a dead television. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2fe8978ed0f698e79d650705a4d5c701dd592a04947a8ae72e3610c7722ebcb5",
+          "rig": null
+        }
+      ]
+    },
+    "toon-far-wall": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wall behind a far figure. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7dcf134f6b9dba89fdab326a9b4bbcac3a8dcb14957fed415eec4e4792e0ef85",
+          "rig": null
+        }
+      ]
+    },
+    "toon-flat": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shared flat's pale wall, spotless. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ddba45abdcb86e4a6f5f4c0884fdea90290a35af1792c9db7b34325b9a218aee",
+          "rig": null
+        }
+      ]
+    },
+    "toon-front-door": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front door on a hall stacked to the ceiling. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8302d3477d4d9e26beb6faca34140d8b51e3f3151fe39dccc616da90a351733d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-gull": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A gull that flies in and lands. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3174cec37764391d4a6d83e0b9e3a0b541341e48d7a825e0936d35e5dcb3304c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-hall-chair": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wooden chair back behind whoever sits on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fd7e95b7b22b51ef65c60853590c554b5255d1363a6564fbbdcc033f9dab941",
+          "rig": null
+        }
+      ]
+    },
+    "toon-laundry-pile": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A heap of shirts that rises over whoever is in shot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a32347be0c41dd51ab18679d1416ab4f6b1d28a7f3ae197276de7f7fba9681ef",
+          "rig": null
+        }
+      ]
+    },
+    "toon-worktop": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain counter top in the desk's place. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a086734b6bbc964b0c6ef7c323224dc14e915af9b4b11550d355d4d6003918fe",
+          "rig": null
+        }
+      ]
+    },
+    "toon-lower-third": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A news strap across the lectern's front. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "07339dc6610ddc948e6ea88bfb33861514f61b403d82e13000b2900a118f49a9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-mics": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A bunch of microphones on a lectern. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "78947401661f47c9c84f73bdca8e7372649c715b28e40da21db19fad3a097161",
+          "rig": null
+        }
+      ]
+    },
+    "toon-missed-slip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A delivery slip sliding under a door until it fills the frame. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "719e9fac10263295a38b8142513b638d9da1fb7b54a479f71d17951b8cab059a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-street": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A night street of dark houses with a crowd that gets a message and walks away. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2303e31d9dbc27339fc70564e08496673c5472d7c1ac2d9633a0ed7e5ebdc73e",
+          "rig": null
+        }
+      ]
+    },
+    "toon-oven": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An oven whose door drops open. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "195e824f373d0cc7934881976a9e163a8013db120258134a80d27d38dc8ffd7e",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paw": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An arm that slides in holding something. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0bf9f08a3ccbe941648a1b41c4f6a194111f47c4593922e025c30d809d3b8abe",
+          "rig": null
+        }
+      ]
+    },
+    "toon-plates": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Plates sliding out of an oven across the frame. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
+          "rig": null
+        }
+      ]
+    },
+    "toon-porch": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A clapboard wall with a front door from outside and a mat. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "50d641a343d84cdf6b131e8d3ef9c0d17aabafb840ab6a6d5adf13ffe3441717",
+          "rig": null
+        }
+      ]
+    },
+    "toon-press-room": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4e4fc84b489f66d06eb9f6f866ee17f321509a8f749dcb7d1447506121ecf4ac",
+          "rig": null
+        }
+      ]
+    },
+    "toon-road": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A road passing behind a flatbed. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9f22f548ed35a29885344cb431de156302b962464bf0f188ee2e22043d1c403",
+          "rig": null
+        }
+      ]
+    },
+    "toon-shower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shower curtain pulled back on a stack of bins. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
+          "rig": null
+        }
+      ]
+    },
+    "toon-snores": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Zs that rise from a sleeper. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dfbf779c846e4a0568551715372e2a7bdf5922982c7f7beee4201532cf980504",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A sofa and side table that carry the character and the marks anywhere. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1a772a5ccd97110f214a49f244ad3c26760c74c0c92e95ec2f852a6ae7e6ffe0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa-back": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The sofa seen from behind, for a far figure. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "124302cfe52fdbe12ee6d8708d9a83cde99b7cd4712485e22ea98f9f4969de6f",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sparkles": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Four-pointed glints on a clean room. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f189256a7e2b9cbc43cf00b62ced821f6bd2847962907941bab8c4a1b0c3f97",
+          "rig": null
+        }
+      ]
+    },
+    "toon-stuck-note": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tiny-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A tiny chest whose top drawer opens on one sock. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6b35a7603e68613e5519cf4d4e3b1015402b01bb3eadd0b46d6d6063f5c04e78",
+          "rig": null
+        }
+      ]
+    },
+    "toon-van": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain white van driving off, shrinking. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "608e47a117b8428de7fbe7b84cfa176899faaddfdf50b54c0240e46a0c75d627",
+          "rig": null
+        }
+      ]
+    },
+    "toon-whirl": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A spinning blur a character whirls in on. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "72618b7c94bbf74ca17ae02c8ba291f819e8a80dafa2cba4c92890e434c84417",
+          "rig": null
+        }
+      ]
+    },
+    "toon-yard": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front yard with a fence and a sign. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "500b993400a4570b42aea219562c225762f4eaa43e45d80fd936937ba0493c00",
+          "rig": null
+        }
+      ]
     }
   }
 }
