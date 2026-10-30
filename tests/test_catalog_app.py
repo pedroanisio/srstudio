@@ -418,6 +418,90 @@ def test_the_pose_sheet_the_registry_and_the_usage_lists_are_reachable(page, ori
     assert "take-home" in page.locator("#lib-usage").inner_text()
 
 
+@pytest.fixture
+def clipboard(browser):
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 900}, permissions=["clipboard-read", "clipboard-write"]
+    )
+    tab = context.new_page()
+    errors: list[str] = []
+    tab.on("pageerror", lambda exc: errors.append(str(exc)))
+    yield tab
+    context.close()
+    assert errors == []
+
+
+def copied(tab, button) -> str:
+    """Click a copy button and read what reached the clipboard, once the page has confirmed it."""
+    button.click()
+    tab.wait_for_selector("#copied:not([hidden])")
+    return tab.evaluate("navigator.clipboard.readText()")
+
+
+def test_a_part_copies_its_name_title_and_summary(clipboard, origin, site):
+    part = next(p for p in json.loads((site / "catalog.json").read_text())["parts"] if p["name"] == "soft-desk")
+    go(clipboard, origin, "#/objetos/soft-desk")
+    assert copied(clipboard, clipboard.locator(".ficha .copy")) == "soft-desk"
+    assert copied(clipboard, clipboard.locator(".view-head h2 .copy")) == part["title"]
+    assert copied(clipboard, clipboard.locator(".view-head .lede .copy")) == part["summary"]
+
+
+def test_a_video_copies_its_slug_one_line_or_the_whole_script_without_touching_the_player(clipboard, origin):
+    go(clipboard, origin, "#/videos/camera-off")
+    assert copied(clipboard, clipboard.locator(".ficha .copy").first) == "camera-off"
+    line = clipboard.locator(".line-row", has_text="Second line.").locator(".copy")
+    assert copied(clipboard, line) == "Second line."
+    assert clipboard.evaluate("document.querySelector('video').paused")  # copying a line does not seek or play
+    assert copied(clipboard, clipboard.locator(".sub .copy")) == "boss: First line.\n[call chime]\npip: Second line."
+
+
+def test_a_sound_effect_has_no_copy_of_its_own_and_stays_in_the_script_in_brackets(clipboard, origin):
+    go(clipboard, origin, "#/videos/the-router")
+    assert clipboard.locator(".line-row", has_text="[BEEP]").locator(".copy").count() == 0
+    lines = copied(clipboard, clipboard.locator(".sub .copy")).splitlines()
+    assert "[BEEP]" in lines  # already bracketed, not twice
+
+
+def test_a_list_row_copies_the_name_and_stays_on_its_page(clipboard, origin):
+    go(clipboard, origin, "#/videos?ver=lista")
+    route = clipboard.evaluate("location.hash")
+    assert copied(clipboard, clipboard.locator("tr[data-video='the-router'] .copy")) == "the-router"
+    assert clipboard.evaluate("location.hash") == route
+
+
+def test_the_registry_copies_a_name_and_a_card_stays_one_link(clipboard, origin):
+    go(clipboard, origin, "#/registro")
+    assert copied(clipboard, clipboard.locator(".lib-registry .copy").first)
+    go(clipboard, origin, "#/objetos")
+    clipboard.wait_for_selector("#index .card")
+    assert clipboard.locator(".card button").count() == 0  # a button inside a link is invalid HTML
+
+
+def test_a_copy_works_without_the_clipboard_api_as_on_plain_http(page, origin):
+    page.add_init_script(
+        """Object.defineProperty(navigator, 'clipboard', {value: undefined});
+        document.execCommand = c => { window.written = document.activeElement.value; return c === 'copy'; };"""
+    )
+    go(page, origin, "#/objetos/soft-desk")
+    page.locator(".ficha .copy").click()
+    page.wait_for_selector("#copied:not([hidden])")
+    assert page.evaluate("window.written") == "soft-desk"
+    assert page.locator("#copied").inner_text().startswith("Copiado")
+    assert page.locator("textarea").count() == 0
+
+
+def test_a_copy_that_fails_says_so(page, origin):
+    page.add_init_script(
+        """Object.defineProperty(navigator, 'clipboard', {value: undefined});
+        document.execCommand = () => false;"""
+    )
+    go(page, origin, "#/objetos/soft-desk")
+    page.locator(".ficha .copy").click()
+    page.wait_for_selector("#copied:not([hidden])")
+    assert page.locator("#copied").inner_text() == "Não foi possível copiar."
+    assert page.locator(".ficha .copy.done").count() == 0
+
+
 @pytest.mark.parametrize("route", ["#/nada", "#/videos/nada", "#/personagens/nada", "#/objetos/pip", "#/estilos/nada"])
 def test_an_unknown_route_says_so(page, origin, route):
     go(page, origin, route)

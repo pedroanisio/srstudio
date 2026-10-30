@@ -52,6 +52,18 @@
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const videoCount = n => plural(n, 'vídeo', 'vídeos');
   const slugLink = s => encodeURIComponent(s);
+  const COPY_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" ' +
+    'aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-1h-8v8h1"/></svg>';
+  const copyButton = (text, what) =>
+    `<button type="button" class="copy" data-copy="${esc(text)}" title="Copiar ${esc(what)}" ` +
+    `aria-label="Copiar ${esc(what)}">${COPY_ICON}</button>`;
+  const named = (name, what = 'nome') => `<span class="named"><code>${esc(name)}</code>${copyButton(name, what)}</span>`;
+  function plainText(markup) {
+    const holder = document.createElement('template');
+    holder.innerHTML = markup;
+    return holder.content.textContent;
+  }
+  const script = lines => lines.map(x => x.sfx ? `[${x.text.replace(/^\[|\]$/g, '')}]` : `${x.who}: ${x.text}`).join('\n');
   const partHref = p => `#/${KINDS[p.kind].route}/${slugLink(p.name)}`;
   const videoHref = v => `#/videos/${slugLink(v.slug)}`;
   const styleHref = s => `#/estilos/${slugLink(s.slug)}`;
@@ -109,14 +121,14 @@
     `<td class="pic${kind}">${src ? image(src, alt, width, height) : ''}</td>`;
   function videoRow(v) {
     return `<tr class="row" data-video="${esc(v.slug)}">${thumb(v.poster, v.title, v.width, v.height)}` +
-      `<td><a href="${videoHref(v)}"><b>${esc(v.title)}</b></a><code>${esc(v.slug)}</code></td>` +
+      `<td><a href="${videoHref(v)}"><b>${esc(v.title)}</b></a>${named(v.slug)}</td>` +
       `<td>${styleTag(v.style)}${videoTags(v)}</td><td>${esc(v.number)}</td><td>${esc(v.format)}</td>` +
       `<td class="num">${v.duration ? seconds(v.duration) : '—'}</td><td class="num">${v.parts.length}</td></tr>`;
   }
   function partRow(p) {
     const s = p.specimen;
     return `<tr class="row" data-part="${esc(p.name)}">${s ? thumb(s.src, p.title, s.width, s.height, ' specimen') : thumb()}` +
-      `<td><a href="${partHref(p)}"><b>${esc(p.title)}</b></a><code>${esc(p.name)}</code></td>` +
+      `<td><a href="${partHref(p)}"><b>${esc(p.title)}</b></a>${named(p.name)}</td>` +
       `<td>${styleTag(p.style)}</td><td class="num">${C.measured ? p.videos.length : '—'}</td>` +
       `<td class="summary">${esc(p.summary)}${p.refused ? `<small>${esc(p.refused)}</small>` : ''}</td></tr>`;
   }
@@ -235,9 +247,10 @@
     const spoken = v.lines.filter(x => !x.sfx);
     const voices = [...new Set(v.lines.map(x => x.voice).filter(Boolean))].sort().join(', ') || '—';
     const rows = v.lines.map(x =>
-      `<button type="button" class="line" data-t="${x.t.toFixed(3)}"><span class="t">${clock(x.t)}</span>` +
+      `<div class="line-row"><button type="button" class="line" data-t="${x.t.toFixed(3)}"><span class="t">${clock(x.t)}</span>` +
       `<span class="who">${esc(x.who)}<small>${esc(x.voice)}</small></span>` +
-      `<span class="txt">${x.sfx ? `<span class="sfx">${esc(x.text)}</span>` : esc(x.text)}</span></button>`).join('');
+      `<span class="txt">${x.sfx ? `<span class="sfx">${esc(x.text)}</span>` : esc(x.text)}</span></button>` +
+      `${x.sfx ? '' : copyButton(x.text, 'fala')}</div>`).join('');
     const ratio = v.width && v.height ? ` style="aspect-ratio:${v.width}/${v.height}"` : '';
     let player;
     if (v.src) {
@@ -248,21 +261,21 @@
     } else {
       player = '<p class="notice">Este projeto não tem render, então não há vídeo para tocar.</p>';
     }
-    const highlights = v.highlights_html.length ? `<ul class="hl">${v.highlights_html.map(h => `<li>${h}</li>`).join('')}</ul>` : '';
+    const highlights = v.highlights_html.length ? `<ul class="hl">${v.highlights_html.map(h => `<li>${h}${copyButton(plainText(h), 'destaque')}</li>`).join('')}</ul>` : '';
     const used = v.measured
       ? (v.parts.length ? groupedParts(v.parts) : '<p class="notice">A medição não encontrou peças registradas neste vídeo.</p>')
       : '<p class="notice" id="not-measured">Não medido: <code>srstudio usage</code> não reconstruiu este episódio, então não se sabe que peças ele usa.</p>';
     const sheet = ficha([
-      ['Estilo', styleLink(v.style)], ['Número', esc(v.number)], ['Duração', v.duration ? seconds(v.duration) : '—'],
+      ['Nome', named(v.slug)], ['Estilo', styleLink(v.style)], ['Número', esc(v.number)], ['Duração', v.duration ? seconds(v.duration) : '—'],
       ['Formato', esc(v.format || '—')], ['Quadros', v.fps ? `${v.fps} fps` : '—'], ['Falas', spoken.length],
       ['Efeitos', v.effects], ['Vozes', esc(voices)],
     ]);
     return {
       title: v.title,
       html: `<article class="detail" data-video="${esc(v.slug)}">${crumbs('#/videos', 'Vídeos', v.title)}` +
-        `<div class="view-head"><h2>${esc(v.title)}</h2><div class="tags">${styleTag(v.style)}${videoTags(v)}</div>` +
-        `<p class="lede">${esc(v.lede)}</p></div><div class="detail-grid video"><div class="player-col">${player}</div>` +
-        `<div class="ep-info">${highlights}` + (rows ? `<div class="sub">Falas (${v.lines.length})</div><div class="dialog lib-dialog">${rows}</div>` : '') +
+        `<div class="view-head"><h2>${esc(v.title)}${copyButton(v.title, 'título')}</h2><div class="tags">${styleTag(v.style)}${videoTags(v)}</div>` +
+        `<p class="lede">${esc(v.lede)}${copyButton(v.lede, 'descrição')}</p></div><div class="detail-grid video"><div class="player-col">${player}</div>` +
+        `<div class="ep-info">${highlights}` + (rows ? `<div class="sub">Falas (${v.lines.length})${copyButton(script(v.lines), 'roteiro')}</div><div class="dialog lib-dialog">${rows}</div>` : '') +
         `</div><aside class="side">${sheet}<section class="used">${used}</section></aside></div></article>`,
     };
   }
@@ -277,7 +290,7 @@
     if (!p || p.kind !== kind) return missing(`${k.one} ${name}`);
     const gallery = (p.gallery.length ? '<div class="sub">Visto em</div>' : '') + p.gallery.map(g =>
       `<div class="stills lead">${figure(g.still, g.name, true)}</div>` +
-      (g.voice ? `<p>voz ${esc(g.voice)} (ElevenLabs)</p>` : '') + `<p class="note">${g.note_html}</p>` +
+      (g.voice ? `<p>voz ${esc(g.voice)} (ElevenLabs)</p>` : '') + `<p class="note">${g.note_html}${copyButton(plainText(g.note_html), 'nota')}</p>` +
       (g.poses.length ? `<div class="stills">${g.poses.map(s => figure(s, `${g.name}, ${s.label}`, false)).join('')}</div>` : '')).join('');
     const sheet = p.sheet.length
       ? `<div class="sub">Folha de poses</div><div class="stills" id="pose-sheet">${p.sheet.map(s => figure(s, `${p.title}, pose ${s.label}`, false)).join('')}</div>`
@@ -291,15 +304,15 @@
     else used = grid(p.videos.map(slug => videoCard(videos.get(slug))), 'part-videos') + unmeasuredNote();
     const voices = p.gallery.map(g => g.voice).filter(Boolean);
     const sheetFacts = ficha([
-      ['Tipo', k.one], ['Estilo', styleLink(p.style) || 'Compartilhada'], ['Nome', `<code>${esc(p.name)}</code>`],
+      ['Tipo', k.one], ['Estilo', styleLink(p.style) || 'Compartilhada'], ['Nome', named(p.name)],
       ['Aparece em', C.measured ? videoCount(p.videos.length) : 'não medido'],
       ['Voz', esc([...new Set(voices)].join(', '))],
     ]);
     return {
       title: p.title,
       html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
-        `<div class="view-head"><h2>${esc(p.title)}</h2><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${gallery}${sheet}</div>` +
+        `<div class="view-head"><h2>${esc(p.title)}${copyButton(p.title, 'título')}</h2><div class="tags">${styleTag(p.style)}</div>` +
+        `<p class="lede">${esc(p.summary)}${copyButton(p.summary, 'descrição')}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${gallery}${sheet}</div>` +
         `<aside class="side">${sheetFacts}</aside></div>` +
         `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
@@ -322,7 +335,8 @@
     return {
       title: s.name,
       html: `<article class="detail" data-style="${esc(s.slug)}">${crumbs('#/estilos', 'Estilos', s.name)}<div class="view-head">` +
-        `<h2>${esc(s.name)}</h2><b>${esc(s.title)}</b><p class="lede">${s.text_html}</p>` +
+        `<h2>${esc(s.name)}${copyButton(s.name, 'nome')}</h2><b>${esc(s.title)}</b>` +
+        `<p class="lede">${s.text_html}${copyButton(plainText(s.text_html), 'descrição')}</p>` +
         (s.text_html === esc(s.summary) ? '' : `<p class="aside">${esc(s.summary)}</p>`) + '</div>' +
         `<nav class="tabs" aria-label="Conteúdo do estilo">${tabs.join('')}</nav>${body}</article>`,
     };
@@ -331,17 +345,17 @@
   // -- the registry and the usage lists -------------------------------------------------------------------
   function viewRegistry() {
     const rows = [...C.parts].sort((a, b) => a.name < b.name ? -1 : 1).map(p =>
-      `<tr><td><a href="${partHref(p)}"><code>${esc(p.name)}</code></a></td>` +
+      `<tr><td><a href="${partHref(p)}"><code>${esc(p.name)}</code></a>${copyButton(p.name, 'nome')}</td>` +
       `<td>${esc(styles.has(p.style) ? styles.get(p.style).name : 'todos')}</td><td>${KINDS[p.kind].one}</td>` +
       `<td>${esc(p.summary)}</td><td class="num">${p.videos.length}</td></tr>`).join('');
     const blocks = Object.entries(KINDS).map(([kind, k]) => {
       const all = C.parts.filter(p => p.kind === kind);
       const used = all.filter(p => p.videos.length);
       const unused = all.filter(p => !p.videos.length);
-      const item = p => `<li><a href="${partHref(p)}"><code>${esc(p.name)}</code></a> <small>${esc(p.summary)}</small></li>`;
+      const item = p => `<li><a href="${partHref(p)}"><code>${esc(p.name)}</code></a>${copyButton(p.name, 'nome')} <small>${esc(p.summary)}</small></li>`;
       return `<div class="lib-usage-kind" id="usage-${kind}"><h3>${k.label}</h3>` +
         `<p><b>${used.length}</b> usados · <b>${unused.length}</b> não usados</p><ul>` +
-        used.map(p => `<li><a href="${partHref(p)}"><code>${esc(p.name)}</code></a> <small>${esc(p.videos.join(', '))}</small></li>`).join('') +
+        used.map(p => `<li><a href="${partHref(p)}"><code>${esc(p.name)}</code></a>${copyButton(p.name, 'nome')} <small>${esc(p.videos.join(', '))}</small></li>`).join('') +
         `</ul><p><b>Não usados</b></p><ul>${unused.map(item).join('') || '<li>nenhum</li>'}</ul></div>`;
     }).join('');
     const measured = C.videos.filter(v => v.measured).map(v => esc(v.slug)).join(', ');
@@ -507,6 +521,49 @@
 
   document.addEventListener('click', event => {
     if (event.target.closest && event.target.closest('a[href^="#/"]')) fresh = true;
+  });
+
+  // The clipboard API needs a secure context, which loopback is and a forwarded plain http host may not be. The older
+  // command works anywhere a click does; when it too refuses, the page says so rather than seeming to have copied.
+  async function writeClipboard(text) {
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // refused by the browser: the older command below may still work
+      }
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const done = document.execCommand('copy');
+    area.remove();
+    return done;
+  }
+  const notice = document.createElement('div');
+  notice.id = 'copied';
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
+  document.body.appendChild(notice);
+  let hideNotice = 0;
+  app.addEventListener('click', async event => {
+    const button = event.target.closest('.copy');
+    if (!button) return;
+    const done = await writeClipboard(button.dataset.copy);
+    button.focus();
+    button.classList.toggle('done', done);
+    notice.textContent = done ? 'Copiado.' : 'Não foi possível copiar.';
+    notice.hidden = false;
+    clearTimeout(hideNotice);
+    hideNotice = setTimeout(() => {
+      notice.hidden = true;
+      button.classList.remove('done');
+    }, 1800);
   });
   window.addEventListener('hashchange', () => {
     scrolled.set(current, window.scrollY);
