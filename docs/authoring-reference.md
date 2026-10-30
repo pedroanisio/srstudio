@@ -2056,6 +2056,10 @@ error is `InstagramPostError`, with every problem listed.
   into `--fonts` and pinned there (`generated/fonts`); the deliveries live in `generated/renders/ig/`. With
   `SRSTUDIO_RENDERS` and `SRSTUDIO_FONTS` set, the test suite runs `check` against the real delivery, so a
   re-render without a new delivery fails the quality gate.
+- **Doubled captions.** `deliver` refuses a video being delivered when two caption layers at one height overlap, so
+  no frame shows two lines stacked on one band (`craft.doubled_captions`, `releases.doubled_captions`). Videos already
+  published are not read: they are frozen. `Episode.spoken_captions(tail=, lead=)` times each caption to its phrase
+  and cuts it where the next phrase starts, so lines spoken close together never share the band.
 - **Outbox and packages** ([ADR 0024](../docs/decisions/0024-every-video-ships-its-package.md)).
   `python3 episodes/publish_drive.py` stages every video that passes the gate in `generated/outbox/<video name>/`
   (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
