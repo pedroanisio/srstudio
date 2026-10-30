@@ -3910,6 +3910,74 @@
         ]
       },
       "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto à noite",
+      "parts": [
+        "collage-bedroom"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 23.0
+      },
+      "text": "Quarto escuro com janela de lua cheia e prateleira do cacto em roxo; o casal come cereal seco na cama, em Anything's Fine."
+    },
+    {
+      "section": "props",
+      "name": "Comida de papel",
+      "parts": [
+        "collage-food"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 8.5,
+        "box": [
+          680,
+          980,
+          400,
+          420
+        ]
+      },
+      "text": "Taco, sushi, sopa e pizza recortados em papel. Voam até o Gary, que recusa e rebate cada um (Anything's Fine)."
+    },
+    {
+      "section": "props",
+      "name": "Celular grande e relógio",
+      "parts": [
+        "collage-phone",
+        "collage-alarm-clock"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 13.3,
+        "box": [
+          160,
+          540,
+          760,
+          1290
+        ]
+      },
+      "text": "Celular de papel com a tela como um grupo em que a cena escreve, e o relógio de dígitos vermelhos que salta de 7:42 para 11:40 (Anything's Fine)."
+    },
+    {
+      "section": "props",
+      "name": "Edredom e caixa de cereal",
+      "parts": [
+        "collage-duvet",
+        "collage-cereal-box"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 23.0,
+        "box": [
+          0,
+          1360,
+          1080,
+          560
+        ]
+      },
+      "text": "A frente do edredom, em que os bustos sentados afundam, e uma caixa de cereal sem marca entre os dois (Anything's Fine)."
     }
   ]
 }
