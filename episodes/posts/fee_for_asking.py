@@ -33,5 +33,12 @@ RELEASE = Release(
     tags=Tags(
         "money-services", "institution", "recognition", recurring=("deb", "brent"), test="sp-hook_motion", arm="a"
     ),
-    characters={"collage-brent": 1, "collage-deb": 1},
+    parts={
+        "collage-boardroom": 1,
+        "collage-brent": 1,
+        "collage-deb": 1,
+        "collage-sign": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

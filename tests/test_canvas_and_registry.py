@@ -36,7 +36,8 @@ def test_path_defaults_and_gradient_cache():
     assert CAFE.ink != OFFICE.ink
 
 
-def test_registry_lists_the_shipped_parts_and_new_ones():
+def test_registry_lists_the_shipped_parts_and_new_ones(monkeypatch):
+    monkeypatch.setitem(registry._REGISTRY, "prop", dict(registry._REGISTRY["prop"]))  # registered for this test only
     names = {(e.kind, e.name) for e in registry.entries()}
     assert {
         ("character", "manager"),

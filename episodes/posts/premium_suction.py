@@ -26,5 +26,15 @@ RELEASE = Release(
         thumbnail=Thumbnail("Your free trial\nhas ended.", 2.6, "Ink 06", place="top"),
     ),
     cover=True,
-    characters={"doodle": 1, "talking-vacuum": 1},
+    parts={
+        "doodle": 1,
+        "ink-closeup": 1,
+        "ink-floor-map": 1,
+        "ink-phone": 1,
+        "ink-phone-shot": 1,
+        "ink-vacuum-shot": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "talking-vacuum": 1,
+    },
 )

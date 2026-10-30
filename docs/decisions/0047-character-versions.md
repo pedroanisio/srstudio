@@ -2,12 +2,14 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0047: Every character has numbered versions, and a reel pins the ones it draws
+# ADR 0047: Every part has numbered versions, and a reel pins the ones it draws
 
-- Status: accepted (2026-10-30). Implemented: `srstudio.characters`, `srstudio.specimens`,
-  `assets/characters.json`, `Release.characters`, `releases.unpinned`, `usage.Report.pin_drift`, `sketch.drawer`,
-  `toon_sketch.Staging.versions`, `srstudio characters`; `tests/test_characters.py`, `tests/test_specimens.py`,
-  `tests/test_releases.py`, `tests/test_social.py`, `tests/test_usage.py`, `tests/test_cli.py`.
+- Status: accepted (2026-10-30), amended the same day to cover every kind of part (see the amendment below; the
+  decisions keep the names they had when written). Implemented: `srstudio.parts`, `srstudio.specimens`,
+  `srstudio.catalog_specimens`, `assets/parts.json`, `Release.parts`, `releases.unpinned`,
+  `usage.Report.pin_drift`, `sketch.drawer`, `toon_sketch.Staging.versions`, `srstudio parts`; `tests/test_parts.py`,
+  `tests/test_specimens.py`, `tests/test_catalog_specimens.py`, `tests/test_releases.py`, `tests/test_social.py`,
+  `tests/test_usage.py`, `tests/test_cli.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0044](0044-inked-toon-characters.md), and takes its digest from
   [ADR 0037](0037-the-cover-fingerprint-is-the-drawing.md)
@@ -90,3 +92,34 @@ nothing stopped an edit to a drawing a reel depends on, other than the rebuild p
   of `toon_sketch.build` draws version 1 by code and leaves no record, so only its pins and the digest cover it.
 - A project built before records has no `characters.json`. The gate then has only its pins to read, and the rebuild
   proof covers it.
+
+## Amendment (2026-10-30): every kind of part
+
+The operator asked "the catalog will hold the versions of the elements ?" and the answer was yes, for every kind of
+part, not only characters.
+
+1. **One record per registered part.** `assets/parts.json` (schema 2.0.0) replaces `assets/characters.json` and holds
+   245 parts: 100 props, 61 locations, 50 characters and 34 graphics, each with the fields and rules above plus its
+   `kind`. `srstudio.characters` became `srstudio.parts`, `Character` became `Part`, `Release.characters` became
+   `Release.parts`, and `srstudio characters` became `srstudio parts`. No alias is kept: a table named for characters
+   that holds locations would mislead, and no built project held a record to migrate.
+2. **A release pins every part it draws.** All 109 releases were migrated in one commit, 1,160 pins in all, from
+   `srstudio usage` measured on the commit before this change. Every character pin they held survived unchanged.
+3. **A digest comes from the catalog's recipes.** `catalog_specimens.digest` draws a location, a prop or a graphic
+   through the recipe its catalog picture uses, so each part has one drawing and no second recipe. The fingerprint
+   classifies what those parts draw: masks, blends, expressions and text animators. An expression's body and a text
+   asset's letters count, and a font asset does not. Parts lettered from a project's font or traced data need that
+   project, so their redraw test runs where `SRSTUDIO_EPISODES` is set, as the catalog's own tests do.
+4. **A part with no drawing of its own records why.** `Part.refused` holds a typed `Reason` and one line, and such a
+   part has no digest: 21 parts (10 locations, 5 graphics, 4 props, 2 characters), the same 21 the catalog refuses.
+   Their reasons are 10 `character-shot`, 7 `overlay`, 2 `placeholder`, 1 `worn` and 1 `motion`. `stick-figure` and
+   `cel-traced` had digests of placeholder data, which said nothing about their characters, so those were dropped. A
+   refused part is still pinned, and `srstudio parts --refused` lists them.
+5. **A second version is refused by name until it is routed.** `parts.ROUTED` holds `(kind, style)` pairs and starts
+   with Toon's characters. No build reads a pin for a prop or a location yet, so a second version of one would draw
+   for every reel.
+6. **Version 1 of a part no reel has drawn says so.** Seven parts were in the library when versions began and no reel
+   had drawn them: `toon-clipboard`, `toon-counter`, `toon-lounge`, `toon-phone`, `toon-receipt`, `toon-speaker` and
+   `toon-take-a-number`. Their notes say that, and they are `approved` like every other version 1, so a new reel may
+   use them. `approved` on a version 1 means the baseline a reel may pin, not a look the operator judged.
+

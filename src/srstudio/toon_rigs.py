@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from types import MappingProxyType
 
-from . import characters
+from . import parts
 from .toon import ToonDataError
 from .toon_critters import GOAT_RIG, HAMSTER_RIG, SLOTH_RIG
 from .toon_head import HeadRig
@@ -29,8 +29,8 @@ RIGS: Mapping[str, HeadRig] = MappingProxyType(
 def rig_of(name: str, versions: Mapping[str, int] | None = None) -> HeadRig:
     """The rig of the drawing a build draws of the character ``name``: the version ``versions`` pins, else its
     default. A version with no rig is a :class:`srstudio.toon.ToonDataError` naming it."""
-    number = characters.resolved(name, versions)
-    rig = RIGS.get(characters.part_name(name, number))
+    number = parts.resolved(name, versions)
+    rig = RIGS.get(parts.part_name(name, number))
     if rig is None:
         raise ToonDataError(
             f"{name} version {number} has no head rig, so it cannot move its head; the rigged are {sorted(RIGS)}"

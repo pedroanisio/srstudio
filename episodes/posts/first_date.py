@@ -22,5 +22,14 @@ RELEASE = Release(
         hashtags=("#firstdate", "#dating", "#datinglife", "#brainrot", "#parenting", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("First date.\nWhat do you do?", 9.3, "Collage 03", (540, 1090), 1.3),
     ),
-    characters={"collage-deb": 1, "collage-jun": 1, "collage-kai": 1},
+    parts={
+        "collage-cafe": 1,
+        "collage-deb": 1,
+        "collage-jun": 1,
+        "collage-kai": 1,
+        "collage-living-room": 1,
+        "collage-tv": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

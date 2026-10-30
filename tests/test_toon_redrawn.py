@@ -11,8 +11,8 @@ from srstudio import (
     PEACH,
     Canvas,
     brush,
-    characters,
     flat_counter,
+    parts,
     registry,
     sketch,
     specimens,
@@ -47,11 +47,11 @@ def test_the_six_are_exactly_the_older_cast_but_the_fox():
 @pytest.mark.parametrize("name", NAMES)
 def test_each_is_version_2_approved_in_the_operator_s_words_with_its_proof(name):
     part = sketch.part_of(name)
-    character = characters.get(part)
+    character = parts.get(part)
     assert [v.number for v in character.versions] == [1, 2]
     v = character.version(2)
     assert v.status == "approved"
-    assert v.approval == characters.Approval("2026-10-30", "all the old-cast approved on v2")
+    assert v.approval == parts.Approval("2026-10-30", "all the old-cast approved on v2")
     assert v.proof == "generated/character-proofs/older-cast/index.html"
     assert character.version(1).status == "approved"
 
@@ -59,9 +59,9 @@ def test_each_is_version_2_approved_in_the_operator_s_words_with_its_proof(name)
 @pytest.mark.parametrize("name", NAMES)
 def test_a_new_reel_draws_version_2_and_a_pin_keeps_version_1(name):
     part = sketch.part_of(name)
-    assert characters.latest(part).number == 2
-    assert characters.resolved(part) == 2
-    assert characters.resolved(part, {part: 1}) == 1
+    assert parts.latest(part).number == 2
+    assert parts.resolved(part) == 2
+    assert parts.resolved(part, {part: 1}) == 1
     assert sketch.drawer(name, {}) is getattr(toon_redrawn, name)
     assert sketch.drawer(name, {part: 2}) is getattr(toon_redrawn, name)
 
@@ -76,14 +76,14 @@ def test_version_1_still_draws_the_old_look(name):
 @pytest.mark.parametrize("name", NAMES)
 def test_the_version_is_registered_as_a_part_of_its_own(name):
     part = sketch.part_of(name)
-    entry = characters.part(part, 2)
+    entry = parts.drawing(part, 2)
     assert entry.name == f"{part}@2" and entry.builder is getattr(toon_redrawn, name)
 
 
 @pytest.mark.parametrize("name", NAMES)
 def test_its_recorded_digest_is_what_it_draws(name):
     part = sketch.part_of(name)
-    assert characters.get(part).version(2).drawing == specimens.digest(part, 2)
+    assert parts.get(part).version(2).drawing == specimens.digest(part, 2)
     assert specimens.SPECIMENS[f"{part}@2"] is specimens.SPECIMENS["toon-sloth"]  # the newer kinds are part of it
 
 

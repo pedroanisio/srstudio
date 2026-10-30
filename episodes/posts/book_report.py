@@ -21,5 +21,12 @@ RELEASE = Release(
         hashtags=("#parenting", "#homework", "#schoollife", "#brainrot", "#dadlife", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("A book report\nabout a toilet?", 16.8, "Collage 02", (540, 1090), 1.3),
     ),
-    characters={"collage-gary": 1, "collage-priya": 1},
+    parts={
+        "collage-classroom": 1,
+        "collage-gary": 1,
+        "collage-priya": 1,
+        "collage-sign": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

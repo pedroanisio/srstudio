@@ -28,5 +28,16 @@ RELEASE = Release(
     ),
     video="Printer_Recreation",
     builder="printer_recreation",
-    characters={"doodle": 1, "talking-printer": 1},
+    parts={
+        "doodle": 1,
+        "ink-closeup": 1,
+        "ink-desk": 1,
+        "ink-desk-shot": 1,
+        "ink-laptop": 1,
+        "ink-printer-shot": 1,
+        "ink-wide": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "talking-printer": 1,
+    },
 )

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, characters, craft, sketch, toon_sketch
+from srstudio import TOON, camera, craft, parts, sketch, toon_sketch
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -70,7 +70,7 @@ def fox_sketch() -> Sketch:
 @pytest.mark.parametrize(("pins", "drew"), [({"toon-fox": 1}, 1), ({"toon-fox": 2}, 2), ({}, 2)])
 def test_a_build_draws_the_pinned_version_or_the_default_and_records_it(pinned_fonts, tmp_path, pins, drew):
     ep, _ = built(tmp_path, silent(fox_sketch(), versions=pins), pinned_fonts)
-    assert characters.read_record(tmp_path) == {"toon-bear": 2, "toon-fox": drew}
+    assert parts.read_record(tmp_path) == {"toon-bear": 2, "toon-fox": drew}
     expected = {1: "toon_cast", 2: "toon_inked"}[drew]
     assert sketch.drawer("fox", {"toon-fox": drew}).__module__ == f"srstudio.{expected}"
 
@@ -86,7 +86,7 @@ def test_a_pin_changes_what_a_build_draws(pinned_fonts, tmp_path):
 
 
 def test_a_build_refuses_a_pin_it_cannot_draw(pinned_fonts, tmp_path):
-    with pytest.raises(characters.UnknownVersionError, match="toon-fox has no version 9"):
+    with pytest.raises(parts.UnknownVersionError, match="toon-fox has no version 9"):
         built(tmp_path, silent(fox_sketch(), versions={"toon-fox": 9}), pinned_fonts)
 
 

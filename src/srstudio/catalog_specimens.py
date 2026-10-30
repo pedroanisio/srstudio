@@ -18,12 +18,12 @@ are named by the digest of the drawing (:func:`key`), so a part that did not cha
 
 from __future__ import annotations
 
-import enum
 import hashlib
 import inspect
 import re
 import shutil
 import subprocess
+import tempfile
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -40,6 +40,7 @@ from . import (
     gloss_sets,
     ink_meter,
     ink_phone,
+    parts,
     registry,
     saga_sets,
     soft_props,
@@ -52,6 +53,7 @@ from . import (
 from .canvas import Canvas, Signature
 from .errors import SrstudioError
 from .fonts import text_width
+from .parts import Reason, Refused
 from .styles import CUTOUT, STYLES, Style
 from .timeline import Take
 
@@ -73,22 +75,6 @@ _VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 
 class SpecimenRenderError(SrstudioError):
     """A part with no recipe and no refusal, a recipe that drew nothing, or a render that failed."""
-
-
-class Reason(enum.Enum):
-    """Why a part has no specimen."""
-
-    OVERLAY = "overlay"  # lettering or a flash laid over a shot: alone it is that shot's layer on nothing
-    MOTION = "motion"  # a move applied to another node: it draws nothing of its own
-    WORN = "worn"  # exists only on a character's look
-    CHARACTER_SHOT = "character-shot"  # a shot of a character, with no way to draw it with nobody in it
-    PLACEHOLDER = "placeholder"  # the shared character specimen draws placeholder data, not the character
-
-
-@dataclass(frozen=True)
-class Refused:
-    reason: Reason
-    detail: str
 
 
 @dataclass(frozen=True)
@@ -404,14 +390,34 @@ def document(entry: registry.Entry, recipe: Recipe, font: bytes | None, episodes
 
 def drawing_of(entry: registry.Entry, document: bytes) -> str:
     """What a part's file depends on. A character's digest is :func:`srstudio.specimens.fingerprint`, which holds the
-    drawing and nothing around it (a font is not drawing, and that digest does not classify one); anything else
-    takes its document, whose ids come from a fresh counter per part."""
-    if entry.kind != "character":
-        return hashlib.sha256(document).hexdigest()
-    root = ET.fromstring(document)
-    for assets in root.findall("assets"):
-        root.remove(assets)
-    return specimens.fingerprint(ET.tostring(root))
+    drawing and nothing around it; anything else takes its document, so a new font renders it again."""
+    return hashlib.sha256(document).hexdigest() if entry.kind != "character" else specimens.fingerprint(document)
+
+
+def digest(name: str, number: int, episodes: Path) -> str:
+    """The digest of what version ``number`` of ``name`` draws: what ``parts.json`` records for it. A character needs
+    nothing but its specimen; another part is drawn by its recipe, with its style's font and its project's data."""
+    registered = parts.part_name(name, number)
+    part = parts.get(name)
+    if part.refused:
+        raise SpecimenRenderError(f"{name} is refused ({part.refused.reason.value}), so it has no digest")
+    if part.kind == "character":
+        return specimens.digest(name, number)
+    entry = registry.get(part.kind, registered)
+    with tempfile.TemporaryDirectory() as work:
+        built = document(entry, recipe_of(entry), font_of(style_of(entry), episodes), episodes, Path(work))
+    return specimens.fingerprint(built)
+
+
+def check(plan_: Plan) -> None:
+    """Raises :class:`srstudio.specimens.DrawingChangedError` when an approved part no longer draws what it did."""
+    name, _, number = plan_.entry.name.partition("@")
+    version = parts.get(name).version(int(number or 1))
+    if version.status == "approved" and specimens.fingerprint(plan_.document) != version.drawing:
+        raise specimens.DrawingChangedError(
+            f"{name} version {version.number} is approved and immutable, and it no longer draws what was approved. "
+            f"Restore its drawing and add a version: an approved look is never revised in place"
+        )
 
 
 def key(entry: registry.Entry, drawing: str, at: float) -> str:

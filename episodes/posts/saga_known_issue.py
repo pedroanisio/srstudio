@@ -32,5 +32,17 @@ RELEASE = Release(
         thumbnail=Thumbnail('Why does the cube\nhave a hole?', 13.0, 'Saga 01', (540, 890), 1.0),
     ),
     cover=True,
-    characters={"saga-enforcer": 1, "saga-gloom": 1},
+    parts={
+        "saga-bridge": 1,
+        "saga-cube": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-space": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

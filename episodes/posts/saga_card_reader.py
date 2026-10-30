@@ -23,5 +23,16 @@ RELEASE = Release(
         thumbnail=Thumbnail('What does a\nsmuggler fear?', 8.5, 'Saga 04', (540, 890), 1.0),
     ),
     cover=True,
-    characters={"saga-droid": 1, "saga-rook": 1},
+    parts={
+        "saga-cantina": 1,
+        "saga-cantina-bar": 1,
+        "saga-droid": 1,
+        "saga-entry": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-rook": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

@@ -31,5 +31,16 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags("relationships", "protagonist", "affection", recurring=("dev", "noor")),
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-car": 1,
+        "stick-card": 1,
+        "stick-phone": 1,
+        "stick-ride": 1,
+        "stick-rig": 1,
+        "stick-windshield": 1,
+        "stick-windshield-dash": 1,
+        "stick-words": 1,
+    },
 )

@@ -24,8 +24,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from .characters import CharacterError, pin, read_record
 from .errors import SrstudioError
+from .parts import PartError, pin, read_record
 from .social import COVER_VARIANT, Drift, InstagramPost, Item
 
 __all__ = ["Release", "ReleaseError", "Tags", "grandfathered", "load", "items", "unpinned"]
@@ -101,8 +101,8 @@ class Release:
     cover than the one delivered: the publish gate takes its delivery as current at that drawing and no other, and
     never delivers it again (ADR 0040). ``style`` is the name of the episode's style
     (:attr:`srstudio.styles.Style.name`): the caption gate holds a new reel to that style's approved looks
-    (ADR 0048); a release published before the gate needs none. ``characters`` pins the version of every character
-    it draws, by registered name: ``None`` while the reel is being written, when it draws each character's default,
+    (ADR 0048); a release published before the gate needs none. ``parts`` pins the version of every part it
+    draws, by registered name: ``None`` while the reel is being written, when it draws each part's default,
     and refused at delivery (:func:`unpinned`), so a shipped reel never changes when a new version is approved
     (ADR 0047)."""
 
@@ -115,7 +115,7 @@ class Release:
     tags: Tags | None = None
     frozen: str = ""
     style: str = ""
-    characters: Mapping[str, int] | None = None
+    parts: Mapping[str, int] | None = None
 
     def __post_init__(self) -> None:
         if not SLUG.fullmatch(self.slug):
@@ -132,18 +132,18 @@ class Release:
             raise ReleaseError(f"{self.slug}: tags is a {type(self.tags).__name__}, not Tags")
         if self.frozen and not FINGERPRINT.fullmatch(self.frozen):
             raise ReleaseError(f"{self.slug}: frozen {self.frozen!r} is not a cover fingerprint (64 lowercase hex)")
-        if self.characters is not None:
-            self._check_pins(self.characters)
+        if self.parts is not None:
+            self._check_pins(self.parts)
 
     def _check_pins(self, pins: Mapping[str, int]) -> None:
         if not isinstance(pins, Mapping):
-            raise ReleaseError(f"{self.slug}: characters maps a character to its version, got {pins!r}")
+            raise ReleaseError(f"{self.slug}: parts maps a part to its version, got {pins!r}")
         for name, number in pins.items():
             if isinstance(number, bool) or not isinstance(number, int):
                 raise ReleaseError(f"{self.slug}: {name}'s pin {number!r} is not a version number")
             try:
                 pin(name, number)
-            except CharacterError as exc:
+            except PartError as exc:
                 raise ReleaseError(f"{self.slug}: {exc}") from None
 
     @property
@@ -167,13 +167,13 @@ class Release:
 
 def _pin_drift(release: Release, drawn: Mapping[str, int] | None) -> list[str]:
     """Why ``release`` may not ship, given what its build drew (``None``: a project built before records)."""
-    if release.characters is None:
+    if release.parts is None:
         if drawn:
-            return [f"pins no character versions; add characters={dict(sorted(drawn.items()))!r}"]
-        return ["pins no character versions; add characters={...} with what it draws, {} if it draws none"]
+            return [f"pins no part versions; add parts={dict(sorted(drawn.items()))!r}"]
+        return ["pins no part versions; add parts={...} with what it draws, {} if it draws none"]
     reasons = []
     for name, number in sorted((drawn or {}).items()):
-        pinned = release.characters.get(name)
+        pinned = release.parts.get(name)
         if pinned is None:
             reasons.append(f"its build drew {name} version {number}, which it does not pin")
         elif pinned != number:
@@ -188,7 +188,7 @@ def unpinned(releases: Mapping[str, Release], episodes: Path) -> list[Drift]:
     for release in releases.values():
         try:
             reasons = _pin_drift(release, read_record(Path(episodes) / release.slug))
-        except CharacterError as exc:
+        except PartError as exc:
             reasons = [str(exc)]
         drift.extend(Drift(release.video_name, reason) for reason in reasons)
     return drift

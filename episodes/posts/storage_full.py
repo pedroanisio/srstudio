@@ -31,5 +31,19 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "protagonist", "embarrassment", recurring=("milo", "pigeon"), test="sp-hook_motion", arm="b"
     ),
-    characters={"customer": 1, "pigeon": 1},
+    parts={
+        "bench": 1,
+        "building": 1,
+        "captions": 1,
+        "coffee-cup": 1,
+        "customer": 1,
+        "notification": 1,
+        "park": 1,
+        "park-sign": 1,
+        "pigeon": 1,
+        "shrub": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "tree": 1,
+    },
 )

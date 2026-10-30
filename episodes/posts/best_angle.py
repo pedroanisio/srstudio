@@ -24,5 +24,14 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "other-person", "embarrassment", recurring=("rosa", "gary"), test="sp-hook_motion", arm="b"
     ),
-    characters={"collage-flush": 1, "collage-gary": 1, "collage-rosa": 1},
+    parts={
+        "collage-boardroom": 1,
+        "collage-call-buttons": 1,
+        "collage-flush": 1,
+        "collage-gary": 1,
+        "collage-living-room": 1,
+        "collage-rosa": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

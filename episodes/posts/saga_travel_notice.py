@@ -26,5 +26,16 @@ RELEASE = Release(
     tags=Tags(
         "money-services", "institution", "embarrassment", recurring=("gloom", "droid"), test="sp-hook_motion", arm="b"
     ),  # fmt: skip
-    characters={"saga-droid": 1, "saga-gloom": 1},
+    parts={
+        "saga-cantina": 1,
+        "saga-cantina-bar": 1,
+        "saga-droid": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

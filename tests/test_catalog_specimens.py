@@ -3,13 +3,15 @@
 import os
 import shutil
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from srstudio import catalog_specimens as cs
-from srstudio import registry, specimens, usage
+from srstudio import parts, registry, specimens, usage
+from srstudio.specimens import DrawingChangedError
 from srstudio.styles import STYLES
 
 specimens.load_parts()
@@ -198,3 +200,41 @@ def test_an_engine_failure_names_the_package(tmp_path):
     fails.chmod(0o700)
     with pytest.raises(cs.SpecimenRenderError, match="wifi.*nope"):
         cs.poster(tmp_path, "wifi", fails, tmp_path / "cache")
+
+
+OTHERS = [
+    n
+    for n, p in parts.load().items()
+    if p.kind != "character" and not p.refused and p.versions[-1].status == "approved"
+]
+
+
+@pytest.fixture(scope="module")
+def planned(tmp_path_factory) -> dict[str, cs.Plan]:
+    plans, _ = cs.plan(EPISODES, tmp_path_factory.mktemp("work"))
+    return {p.entry.name: p for p in plans}
+
+
+@needs_projects
+@pytest.mark.parametrize("name", OTHERS)
+def test_an_approved_part_of_any_kind_still_draws_what_was_approved(name, planned):
+    cs.check(planned[name])
+
+
+@needs_projects
+def test_a_changed_part_fails_and_says_to_add_a_version(planned):
+    plan_ = planned["coffee-cup"]
+    changed = replace(plan_, document=plan_.document.replace(b'fill="#', b'fill="#1', 1))
+    with pytest.raises(DrawingChangedError, match="coffee-cup version 1 is approved.*add a version"):
+        cs.check(changed)
+
+
+@needs_projects
+def test_the_digest_of_a_part_is_what_its_record_holds():
+    assert cs.digest("coffee-cup", 1, EPISODES) == parts.get("coffee-cup").version(1).drawing
+    assert cs.digest("toon-fox", 2, EPISODES) == parts.get("toon-fox").version(2).drawing
+
+
+def test_a_refused_part_has_no_digest_to_ask_for():
+    with pytest.raises(cs.SpecimenRenderError, match=r"captions is refused \(overlay\)"):
+        cs.digest("captions", 1, EPISODES)

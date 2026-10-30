@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, characters, sketch, social, thumbnail
+from srstudio import Episode, EpisodeSpec, parts, sketch, social, thumbnail
 from srstudio.releases import Release
 from srstudio.social import (
     CAPTION_LIMIT,
@@ -869,7 +869,7 @@ def test_every_episode_script_ships_its_post():
 
 def test_every_shipped_release_pins_its_characters():
     posts = shipped_posts()
-    assert [slug for slug, r in posts.RELEASES.items() if r.characters is None] == []
+    assert [slug for slug, r in posts.RELEASES.items() if r.parts is None] == []
 
 
 def toon_scripts() -> list[Path]:
@@ -892,7 +892,7 @@ def test_a_toon_sketch_pins_every_character_it_shows(script):
     finally:
         sys.path.pop(0)
     shown = {sketch.part_of(beat.who) for beat in sk.beats}
-    assert shown <= set(posts.RELEASES[sk.slug].characters)
+    assert shown <= set(posts.RELEASES[sk.slug].parts)
 
 
 def test_a_toon_reel_outside_the_sketch_builder_stays_on_version_one():
@@ -900,9 +900,9 @@ def test_a_toon_reel_outside_the_sketch_builder_stays_on_version_one():
     posts = shipped_posts()
     routed = {p.stem for p in toon_scripts()}
     outside = {
-        r.builder_name: r.characters
+        r.builder_name: r.parts
         for r in posts.RELEASES.values()
-        if r.builder_name not in routed and any(characters.get(n).style == "toon" for n in r.characters)
+        if r.builder_name not in routed and any(parts.get(n).style == "toon" for n in r.parts)
     }
     assert set(outside) == {"employee_survey"}
     assert all(number == 1 for pins in outside.values() for number in pins.values())
@@ -926,7 +926,7 @@ def test_the_check_gate_reports_a_release_with_a_missing_pin(monkeypatch, tmp_pa
     posts = shipped_posts()
     renders = unpinned_release(posts, monkeypatch, tmp_path)
     drift = posts.check_all(renders / "ig", renders, fonts_dir=tmp_path)
-    assert [d.name for d in drift] == ["New_Reel"] and "pins no character versions" in drift[0].reason
+    assert [d.name for d in drift] == ["New_Reel"] and "pins no part versions" in drift[0].reason
 
 
 def test_the_deliver_gate_refuses_a_release_with_a_missing_pin_before_it_writes(monkeypatch, tmp_path):
@@ -937,10 +937,10 @@ def test_the_deliver_gate_refuses_a_release_with_a_missing_pin_before_it_writes(
         raise AssertionError("a release with a missing pin reached publish")
 
     monkeypatch.setattr(posts, "publish", wrote)
-    with pytest.raises(DeliveryError, match="New_Reel: pins no character versions"):
+    with pytest.raises(DeliveryError, match="New_Reel: pins no part versions"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
     args = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
-    with pytest.raises(SystemExit, match="deliver: New_Reel: pins no character versions"):
+    with pytest.raises(SystemExit, match="deliver: New_Reel: pins no part versions"):
         posts.main(args)
 
 

@@ -34,5 +34,14 @@ RELEASE = Release(
         test="sp-hook_motion",
         arm="b",
     ),
-    characters={"candidate": 1, "manager": 1, "rosa": 1},
+    parts={
+        "candidate": 1,
+        "captions": 1,
+        "elevator": 1,
+        "manager": 1,
+        "parcel": 1,
+        "rosa": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

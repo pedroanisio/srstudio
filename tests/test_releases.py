@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import characters, releases
+from srstudio import parts, releases
 from srstudio.releases import Release, ReleaseError
 from srstudio.social import InstagramPost, Item
 from srstudio.thumbnail import Thumbnail
@@ -210,63 +210,63 @@ def test_a_release_refuses_tags_of_the_wrong_type():
 
 
 def test_a_release_pins_the_character_versions_it_draws():
-    assert Release("a-b", POST).characters is None  # a reel being written has no pins yet
-    pinned = Release("a-b", POST, characters={"toon-fox": 2, "toon-bear": 1})
-    assert pinned.characters == {"toon-fox": 2, "toon-bear": 1}
-    assert Release("a-b", POST, characters={}).characters == {}  # it draws no character
+    assert Release("a-b", POST).parts is None  # a reel being written has no pins yet
+    pinned = Release("a-b", POST, parts={"toon-fox": 2, "toon-bear": 1})
+    assert pinned.parts == {"toon-fox": 2, "toon-bear": 1}
+    assert Release("a-b", POST, parts={}).parts == {}  # it draws no character
 
 
 @pytest.mark.parametrize(
     ("pins", "match"),
     [
-        ({"nobody": 1}, "a-b: no character 'nobody'"),
+        ({"nobody": 1}, "a-b: no part 'nobody'"),
         ({"toon-fox": 3}, "a-b: toon-fox has no version 3; it has 1, 2"),
         ({"toon-fox": True}, "a-b: toon-fox's pin True is not a version number"),
         ({"toon-fox": "2"}, "a-b: toon-fox's pin '2' is not a version number"),
-        (["toon-fox"], "a-b: characters maps a character to its version"),
+        (["toon-fox"], "a-b: parts maps a part to its version"),
     ],
 )
 def test_a_release_refuses_a_pin_that_is_not_a_version(pins, match):
     with pytest.raises(ReleaseError, match=match):
-        Release("a-b", POST, characters=pins)
+        Release("a-b", POST, parts=pins)
 
 
 def test_a_release_refuses_to_pin_an_unapproved_version(monkeypatch):
-    fox = characters.get("toon-fox")
+    fox = parts.get("toon-fox")
     proposed = replace(fox.versions[-1], number=3, status="proposed", approval=None)
-    table = {**characters.load(), "toon-fox": replace(fox, versions=(*fox.versions, proposed))}
-    monkeypatch.setattr(characters, "load", lambda: table)
+    table = {**parts.load(), "toon-fox": replace(fox, versions=(*fox.versions, proposed))}
+    monkeypatch.setattr(parts, "load", lambda: table)
     with pytest.raises(ReleaseError, match="a-b: toon-fox version 3 is proposed"):
-        Release("a-b", POST, characters={"toon-fox": 3})
+        Release("a-b", POST, parts={"toon-fox": 3})
 
 
 def built(tmp_path: Path, drawn: dict[str, int] | None) -> Path:
     (tmp_path / "a-b").mkdir()
     if drawn is not None:
-        characters.write_record(tmp_path / "a-b", drawn)
+        parts.write_record(tmp_path / "a-b", drawn)
     return tmp_path
 
 
 def test_a_release_without_pins_is_refused_whatever_it_draws(tmp_path):
     drift = releases.unpinned({"a-b": Release("a-b", POST)}, built(tmp_path, None))
     assert [(d.name, d.reason) for d in drift] == [
-        ("a-b", "pins no character versions; add characters={...} with what it draws, {} if it draws none")
+        ("a-b", "pins no part versions; add parts={...} with what it draws, {} if it draws none")
     ]
 
 
 def test_the_refusal_gives_the_pin_a_built_reel_needs(tmp_path):
     drift = releases.unpinned({"a-b": Release("a-b", POST)}, built(tmp_path, {"toon-fox": 2, "toon-bear": 1}))
-    assert [d.reason for d in drift] == ["pins no character versions; add characters={'toon-bear': 1, 'toon-fox': 2}"]
+    assert [d.reason for d in drift] == ["pins no part versions; add parts={'toon-bear': 1, 'toon-fox': 2}"]
 
 
 def test_a_pin_must_cover_what_the_build_drew(tmp_path):
-    pinned = Release("a-b", POST, characters={"toon-bear": 1})
+    pinned = Release("a-b", POST, parts={"toon-bear": 1})
     drift = releases.unpinned({"a-b": pinned}, built(tmp_path, {"toon-bear": 1, "toon-fox": 2}))
     assert [d.reason for d in drift] == ["its build drew toon-fox version 2, which it does not pin"]
 
 
 def test_a_build_of_another_version_than_the_pin_is_refused(tmp_path):
-    pinned = Release("a-b", POST, characters={"toon-fox": 1})
+    pinned = Release("a-b", POST, parts={"toon-fox": 1})
     drift = releases.unpinned({"a-b": pinned}, built(tmp_path, {"toon-fox": 2}))
     assert [d.reason for d in drift] == ["its build drew toon-fox version 2 but it pins version 1; rebuild it"]
 
@@ -277,13 +277,13 @@ def test_a_release_named_by_its_video_is_reported_by_its_video(tmp_path):
 
 
 def test_pins_that_match_the_build_or_a_project_with_no_record_pass(tmp_path):
-    pinned = Release("a-b", POST, characters={"toon-fox": 2, "toon-bear": 1})
+    pinned = Release("a-b", POST, parts={"toon-fox": 2, "toon-bear": 1})
     assert releases.unpinned({"a-b": pinned}, built(tmp_path, {"toon-fox": 2})) == []
-    assert releases.unpinned({"c-d": Release("c-d", POST, characters={})}, tmp_path) == []
+    assert releases.unpinned({"c-d": Release("c-d", POST, parts={})}, tmp_path) == []
 
 
 def test_a_record_that_cannot_be_read_is_reported_not_passed(tmp_path):
     root = built(tmp_path, None)
-    (root / "a-b" / characters.RECORD).write_text("not json")
-    drift = releases.unpinned({"a-b": Release("a-b", POST, characters={})}, root)
-    assert len(drift) == 1 and "characters.json" in drift[0].reason
+    (root / "a-b" / parts.RECORD).write_text("not json")
+    drift = releases.unpinned({"a-b": Release("a-b", POST, parts={})}, root)
+    assert len(drift) == 1 and "parts.json" in drift[0].reason

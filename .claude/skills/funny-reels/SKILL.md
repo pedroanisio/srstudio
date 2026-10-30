@@ -372,20 +372,21 @@ them fresh each time:
 | Which styles exist, and what is each good at? | `srstudio styles` (frame, clock, palettes, parts, description) |
 | Which characters, locations, props, graphics exist? | `srstudio catalog`, or `srstudio catalog --json` for facts and tags |
 | Which parts do episodes really use, and which are unused? | `srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json`, with the `--arg` options the README's usage command passes (ADR 0017; it rebuilds every episode on a copy) |
-| Which versions does each character have? | `srstudio characters` (name, style, default, every version; `?` marks a proposed one) |
+| Which versions does each part have? | `srstudio parts` (name, kind, style, default, every version; `?` marks a proposed one); `--refused` lists the parts with no drawing of their own |
 | What does each part look like? | the catalog site: `srstudio serve ../generated/catalog/site`, then open `http://127.0.0.1:8765/` |
 | What is already planned? | `docs/backlog/` |
 
 Pick the style whose description fits the joke, not the one used last.
 
-## Character versions
+## Part versions
 
-Every character has numbered versions (ADR 0047). A new reel draws each character's latest approved version by
-default, and asks for an older one by pinning it in its release: `characters={"<registered name>": 1}`. Pass
-`versions=PINS[SKETCH.slug]` to a Toon `Staging`.
+Every registered part has numbered versions (ADR 0047), of every kind. A new reel draws each part's latest approved
+version by default, and asks for an older one by pinning it in its release: `parts={"<registered name>": 1}`. Pass
+`versions=PINS[SKETCH.slug]` to a Toon `Staging`. Only Toon's characters take a second version today; any other part
+is refused by name until its kind and style are in `parts.ROUTED`.
 
-To improve a drawing, add a version: a record in `assets/characters.json`, the drawing registered as `<name>@<N>`, a
-specimen entry, and its digest from `srstudio characters --digest <name>@<N>`. An approved look is never revised in
+To improve a drawing, add a version: a record in `assets/parts.json`, the drawing registered as `<name>@<N>`, a
+specimen entry or recipe, and its digest from `srstudio parts --digest <name>@<N>`. An approved look is never revised in
 place; a test fails if one changes, and the fix is a new version, not a new digest. A new version stays `proposed`
 until the operator has seen its proof clip. Never set `approved` or write `approval` yourself: only the operator's
 decision does that, and the record quotes their words.
@@ -513,7 +514,7 @@ it in `srstudio catalog` without this file changing.
 8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
    `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`) and its
    `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test). Pin
-   every character it draws with `characters={...}`, or `{}` if it draws none: `deliver` refuses a release without
+   every part it draws with `parts={...}`, or `{}` if it draws none: `deliver` refuses a release without
    pins and `check` reports it, and each prints the pin to add for a Toon build. Rebuild after changing a pin.
    Deliver only once your branch is merged into develop, from the workspace root with the main checkout's code,
    never from a branch or worktree: any write to `generated/renders/ig` fires the `srstudio-drive` unit, which

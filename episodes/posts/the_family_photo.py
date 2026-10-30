@@ -23,5 +23,17 @@ RELEASE = Release(
         thumbnail=Thumbnail("Everyone,\nbe natural.", 10.6, "Collage 13", (560, 1380), 1.5, place="top"),
     ),
     tags=Tags("family", "protagonist", "embarrassment", recurring=("gary", "rosa", "kai")),
-    characters={"collage-gary": 1, "collage-kai": 1, "collage-rosa": 1},
+    parts={
+        "collage-flash": 1,
+        "collage-gary": 1,
+        "collage-kai": 1,
+        "collage-living-room": 1,
+        "collage-phone-timer": 1,
+        "collage-photo-print": 1,
+        "collage-rosa": 1,
+        "collage-sofa": 1,
+        "collage-viewfinder": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )
