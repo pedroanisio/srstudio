@@ -26,7 +26,8 @@ module draws in code (:class:`Inked`, a :class:`srstudio.toon_cast.Drawing`):
 
 :data:`FOX_INKED` is a :class:`srstudio.toon_cast.Look` with this drawing, so it keeps the brush characters'
 contract (every expression and arms, typing frames, blinks, lip sync, wear, :func:`srstudio.toon_cast.figure_shapes`
-as data) and a sketch swaps it in by name (``"fox-inked"``). The fox (:data:`srstudio.toon_cast.FOX`) is unchanged.
+as data). It is the fox's version 2 (ADR 0047), the default for new reels; the fox of
+:data:`srstudio.toon_cast.FOX` is version 1 and stays as it is.
 """
 
 from __future__ import annotations
@@ -665,7 +666,7 @@ FOX_INKED = Look(
 
 @register(
     "character",
-    "toon-fox-inked",
+    "toon-fox@2",
     summary="The fox drawn like the traced cat: pressed uneven ink, open fur lines, a shade tone, a tilted head, "
     "its own almond eyes and muzzle mouths; the whole brush contract",
 )

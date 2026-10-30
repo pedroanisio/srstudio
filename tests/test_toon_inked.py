@@ -35,9 +35,10 @@ def test_the_inked_fox_joins_the_cast_beside_the_fox():
     assert INKED.coat == toon_cast.FOX.coat and INKED.paw == toon_cast.FOX.paw  # the same fox, drawn again
     assert toon_cast.FOX.drawing is None and all(look.drawing is None for look in toon_cast.LOOKS.values())
     assert "fox-inked" not in toon_cast.LOOKS  # LOOKS share the brush face; the inked fox draws its own
-    assert sketch.DRAWERS["fox-inked"] is toon_inked.fox_inked and sketch.DRAWERS["fox"] is toon_cast.fox
-    assert "fox-inked" in sketch.CHARACTERS and "fox-inked" in sketch.LIP_SYNCED
-    entry = {e["name"]: e for e in registry.catalog(style="toon")}["toon-fox-inked"]
+    assert sketch.drawer("fox", {"toon-fox": 2}) is toon_inked.fox_inked
+    assert sketch.drawer("fox", {"toon-fox": 1}) is toon_cast.fox
+    assert "fox" in sketch.LIP_SYNCED
+    entry = {e["name"]: e for e in registry.catalog(style="toon")}["toon-fox@2"]
     assert entry["kind"] == "character"
 
 
@@ -449,12 +450,13 @@ def test_a_sketch_swaps_the_inked_fox_in_by_name():
         return Speaker(name, Voice(role=name, id=f"id-{name}", name=name), VoiceSettings(0.5, 0.75, 0.2), who)
 
     beats = (
-        Beat(0.0, "fox-inked", lines[0].text, "roll", "smirk", "type", 0, 0, wear=("glasses",)),
-        Beat(2.0, "fox", lines[1].text, "hearts", "grimace", "crossed", 1, 0),
+        Beat(0.0, "fox", lines[0].text, "roll", "smirk", "type", 0, 0, wear=("glasses",)),
+        Beat(2.0, "bear", lines[1].text, "hearts", "grimace", "crossed", 1, 0),
     )
-    sk = Sketch("inked", "Inked", (speaker("a", "fox-inked"), speaker("b", "fox")), lines, beats, 4.0)
+    sk = Sketch("inked", "Inked", (speaker("a", "fox"), speaker("b", "bear")), lines, beats, 4.0)
     sketch.check(sk)
     cv = canvas(4.0)
-    groups = sketch.draw_cast(cv, cv.comp, sk.beats, sk.end, mouths={"fox-inked": [(0.2, "open"), (0.5, "closed")]})
+    mouths = {"fox": [(0.2, "open"), (0.5, "closed")]}
+    groups = sketch.draw_cast(cv, cv.comp, sk.beats, sk.end, mouths=mouths, versions={"toon-fox": 2})
     assert len(groups) == 2
     assert [(g.get("start"), g.get("end")) for g in runs_of(cv)] == [("0", "2"), ("2", "4")]

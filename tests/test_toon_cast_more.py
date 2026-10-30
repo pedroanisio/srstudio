@@ -86,7 +86,7 @@ def test_the_three_join_the_cast_by_name():
     for name, const in NEW.items():
         look = getattr(toon_cast, const)
         assert toon_cast.LOOKS[name] is look and look.name == name
-        assert sketch.DRAWERS[name] is getattr(toon_cast, name)
+        assert sketch.drawer(name, {sketch.part_of(name): 1}) is getattr(toon_cast, name)
         assert name in sketch.CHARACTERS and name in sketch.LIP_SYNCED and name in sketch.TOON_CAST.characters
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     for name in NEW:
@@ -209,7 +209,8 @@ def test_a_sketch_plays_the_new_three_by_name():
     )
     sketch.check(sk)
     cv = canvas(6.0)
-    groups = sketch.draw_cast(cv, cv.comp, sk.beats, sk.end, mouths={"fox": [(0.2, "open"), (0.5, "closed")]})
+    mouths = {"fox": [(0.2, "open"), (0.5, "closed")]}
+    groups = sketch.draw_cast(cv, cv.comp, sk.beats, sk.end, mouths=mouths, versions={"toon-fox": 1})
     assert len(groups) == 3
     assert [(g.get("start"), g.get("end")) for g in runs_of(cv)] == [("0", "2"), ("2", "4"), ("4", "6")]
 

@@ -1,0 +1,321 @@
+"""One specimen per family of characters, and the digest of what it draws (ADR 0047, after ADR 0037).
+
+An approved drawing must never change, so each one is redrawn and compared. A specimen puts a character through its
+public contract once, every kind of expression shown once: no product of kinds and characters. The kinds are fixed
+here, not read from the style, so a new kind for new characters moves nobody's digest.
+
+The digest (:func:`fingerprint`) holds the drawing and nothing around it, so a change to the engine, to sr-core's
+output or to how ids are handed out cannot say "add a version" when no drawing changed:
+
+- only ``<composition>`` counts, with each definition it uses (an effect, a gradient) in place of its name;
+- ids are dropped, attributes are sorted, numbers are compared by value;
+- a group that draws nothing and moves nothing is dissolved into its parent.
+
+Order stays: what is drawn over what is the drawing. An attribute or element not classified in :data:`DRAWN` or
+:data:`IGNORED` raises :class:`SpecimenError`, so a new one is decided once, not guessed at.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import importlib
+import json
+import pkgutil
+import re
+import xml.etree.ElementTree as ET
+from collections.abc import Callable, Iterable
+from typing import Any
+
+from sr_core.scene import Scene
+
+from . import blob, cel, characters, collage, gloss, registry, rig, stick, toon
+from .canvas import Canvas, flat_counter
+from .errors import SrstudioError
+from .timeline import Take
+
+__all__ = [
+    "ARMS",
+    "DRAWN",
+    "EYES",
+    "IGNORED",
+    "MOUTHS",
+    "SPECIMENS",
+    "WEAR",
+    "DrawingChangedError",
+    "SpecimenError",
+    "check",
+    "digest",
+    "fingerprint",
+    "load_parts",
+]
+
+PLACE = frozenset({"x", "y", "scaleX", "scaleY", "rotation", "opacity", "anchorX", "anchorY", "start", "end"})
+PAINT = frozenset({"fill", "fillRule", "stroke", "strokeWidth", "strokeCap", "strokeJoin", "opacity"})
+GRADIENT = frozenset({"interpolationSpace", "x1", "y1", "x2", "y2", "cx", "cy", "r"})
+LETTERS = frozenset({"text", "size", "color", "align", "verticalAlign", "lineHeight", "wrap", "width", "height"})
+DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the drawing
+    "group": PLACE | {"effects"},
+    "shape": PLACE | PAINT | {"shape", "path", "width", "height", "radius"},
+    "layer": frozenset({"asset", "x", "y"}),
+    "animate": frozenset({"property", "defaultInterpolation", "timeBase"}),
+    "key": frozenset({"time", "value"}),
+    "effect": frozenset({"type", "intensity", "radius", "color", "offsetX", "offsetY"}),
+    "linearGradient": GRADIENT,
+    "radialGradient": GRADIENT,
+    "stop": frozenset({"color", "offset"}),
+    "text": LETTERS | {"fontAsset"},
+}
+IGNORED = frozenset({"id"})  # an id says nothing about what is drawn
+
+
+class SpecimenError(SrstudioError, ValueError):
+    """A specimen document holds something :data:`DRAWN` has not classified, or a character has no specimen."""
+
+
+class DrawingChangedError(SrstudioError, ValueError):
+    """An approved version no longer draws what was approved."""
+
+
+# The fixed kinds of a specimen: the vocabulary as it stood when versions began, kept here so growing it moves nothing.
+EYES = ("wide", "half", "left", "up", "down", "side", "closed", "narrow", "shock", "roll", "teary", "wince", "hearts")
+MOUTHS = ("flat", "open", "round", "o", "drop", "grin", "wave", "smirk", "none", "grimace", "frown", "tongue", "kiss")
+TRACED_EYES = EYES[:9]
+TRACED_MOUTHS = MOUTHS[:9]
+ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
+WEAR = ("glasses", "sweat", "flush")
+PAPER_EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
+PAPER_MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
+PAPER_ARMS = ("down", "point", "shrug", "hold", "face", "fist")
+VISEMES = ("closed", "open", "round", "teeth")
+STEP = 0.5
+HOLD = 4.0  # seconds a specimen without a timeline of kinds runs for
+FEET = (540.0, 1700.0)
+
+
+def _stage(style: str, seconds: float) -> Canvas:
+    from .styles import STYLES
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=seconds, background="#ffffff")
+    return Canvas(scene, STYLES[style].palettes[0], font_asset="caption", namer=flat_counter("n"))
+
+
+def _track(kinds: Iterable[str], step: float = STEP) -> list[tuple[float, str]]:
+    return [(i * step, kind) for i, kind in enumerate(kinds)]
+
+
+def _poses(eyes: tuple[str, ...], mouths: tuple[str, ...], arms: tuple[str, ...], wear: tuple[str, ...] = ()):
+    worn: tuple[tuple[str, ...], ...] = ((), *((w,) for w in wear))
+    return [
+        toon.Pose(i * STEP, eyes[i % len(eyes)], mouths[i % len(mouths)], arms[i % len(arms)], worn[i % len(worn)])
+        for i in range(max(len(eyes), len(mouths), len(arms)))
+    ]
+
+
+def _taps(poses) -> tuple[float, ...]:
+    return tuple(p.start + STEP / 2 for p in poses if p.arms == "type")
+
+
+def _traced_toon(entry: registry.Entry) -> Canvas:
+    poses = _poses(TRACED_EYES, TRACED_MOUTHS, ("desk", "type"), WEAR)
+    seconds = len(poses) * STEP
+    cv = _stage("toon", seconds)
+    entry(cv, cv.comp, poses, seconds, _taps(poses))
+    return cv
+
+
+def _brush_toon(entry: registry.Entry) -> Canvas:
+    poses = _poses(EYES, MOUTHS, ARMS, WEAR)
+    seconds = len(poses) * STEP
+    cv = _stage("toon", seconds)
+    entry(cv, cv.comp, poses, seconds, _taps(poses), mouths=_track(VISEMES))
+    return cv
+
+
+def _paper(entry: registry.Entry) -> Canvas:
+    poses = _poses(PAPER_EYES, PAPER_MOUTHS, PAPER_ARMS)
+    seconds = len(poses) * STEP
+    cv = _stage("collage", seconds)
+    entry(cv, cv.comp, poses, seconds, (), mouths=_track(VISEMES))
+    return cv
+
+
+def _guest(entry: registry.Entry) -> Canvas:
+    cv = _stage("gloss", HOLD)
+    if entry.name == "gloss-sunny":
+        entry(cv, cv.comp, at=FEET, talk=_track(VISEMES), face=_track(gloss.HOST_FACES), end=HOLD)
+    else:
+        entry(cv, cv.comp, at=FEET, talk=_track(VISEMES), face=_track(gloss.FACES), pose=_track(gloss.POSES), end=HOLD)
+    return cv
+
+
+def _space(entry: registry.Entry) -> Canvas:
+    cv = _stage("saga", HOLD)
+    entry(cv, cv.comp, at=FEET, talk=_track(VISEMES), end=HOLD)
+    return cv
+
+
+def _blob(entry: registry.Entry) -> Canvas:
+    poses, eyes, mouths = tuple(blob.POSES), tuple(blob.EYES), tuple(blob.MOUTHS)
+    count = max(len(poses), len(eyes), len(mouths))
+    cues = [
+        blob.Cue(i * STEP, poses[i % len(poses)], eyes[i % len(eyes)], mouths[i % len(mouths)]) for i in range(count)
+    ]
+    seconds = count * STEP
+    cv = _stage("soft", seconds)
+    entry(cv, cv.comp, cues, end=seconds, x=FEET[0], y=FEET[1], mouth_states=_track(("rest", "open")))
+    return cv
+
+
+def _actor(entry: registry.Entry) -> Canvas:
+    cv = _stage("cutout", HOLD)
+    perf = rig.Performance(mouth=_track(("closed", "open")), blinks=[(1.0, 1.1)], nods=[(0.0, 0.0), (1.0, 3.0)])
+    entry(cv).build(cv.comp, FEET[0], FEET[1], 1.0, perf)
+    return cv
+
+
+def _pigeon(entry: registry.Entry) -> Canvas:
+    cv = _stage("cutout", HOLD)
+    entry(cv, cv.comp, nods=[(0.0, 0.0), (1.0, 8.0)])
+    return cv
+
+
+def _inked(entry: registry.Entry) -> Canvas:
+    cv = _stage("ink", HOLD)
+    phones = tuple({"c": c, "start": i * 0.25, "end": (i + 1) * 0.25} for i, c in enumerate("hello"))
+    take = Take("01", entry.name, "shot", "Hello.", 0.0, HOLD, phones=phones, speech_duration=1.25)
+    entry(cv, cv.comp, take, FEET[0], FEET[1])
+    return cv
+
+
+def _traced_stick(entry: registry.Entry) -> Canvas:
+    plate = stick.Plate("#111111", "M 0 0 L 10 0 L 10 10 Z")
+    cv = _stage("stick", 1.0)
+    room, yard = stick.parse_poses(
+        [
+            {"start": 0.0, "end": 0.5, "shot": "room", "legs": [[520.0, 470.0], [540.0, 500.0]],
+             "head": [{"fill": plate.fill, "path": plate.path}], "ink": []},
+            {"start": 0.5, "end": 1.0, "shot": "yard", "cx": 200.0, "cy": 820.0, "angle": -4.5,
+             "centers": [[460.0, 830.0]], "head": [{"fill": plate.fill, "path": plate.path}],
+             "body": [{"fill": plate.fill, "path": plate.path}]},
+        ]
+    )  # fmt: skip
+    entry(cv, cv.comp, [room, yard], [stick.Badge(stick.Icon((430.0, 834.0), (plate,)), "#70a599", 47, -5.0)], 1.0)
+    return cv
+
+
+def _stick_rig(entry: registry.Entry) -> Canvas:
+    poses = tuple(stick.SEATED)
+    seconds = len(poses) * STEP
+    cv = _stage("stick", seconds)
+    keys = [stick.RigKey(i * STEP, pose) for i, pose in enumerate(poses)]
+    phones = tuple({"c": c, "start": i * 0.1, "end": (i + 1) * 0.1} for i, c in enumerate("hello"))
+    entry(cv, cv.comp, keys, seconds, phones=phones, blinks=(0.25,))
+    return cv
+
+
+def _traced_cel(entry: registry.Entry) -> Canvas:
+    cv = _stage("cel", 1.0)
+    drawings = {"a": (cel.Fill("#111111", "M 0 0 L 10 0 L 10 10 Z"),), "b": (cel.Fill("#222222", "M 0 0 L 20 0 Z"),)}
+    entry(cv, cv.comp, [cel.Run("a", 0.0, 0.5), cel.Run("b", 0.5, 1.0)], drawings)
+    return cv
+
+
+TOON_BRUSH = ("dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog")
+SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
+    "toon-cat": _traced_toon,
+    **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
+    "toon-fox@2": _brush_toon,
+    **{f"collage-{name}": _paper for name in collage.LOOKS},
+    **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
+    **{f"saga-{name}": _space for name in ("gloom", "enforcer", "droid", "juno", "rook", "mabel")},
+    **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
+    **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
+    "pigeon": _pigeon,
+    "doodle": _inked,
+    **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
+    "stick-figure": _traced_stick,
+    "stick-rig": _stick_rig,
+    "cel-traced": _traced_cel,
+}
+
+
+def load_parts() -> None:
+    """Import every module of the library, so the registry holds every drawing."""
+    import srstudio
+
+    for module in pkgutil.iter_modules(srstudio.__path__):
+        if module.name != "__main__":
+            importlib.import_module(f"srstudio.{module.name}")
+
+
+_REFERENCE = re.compile(r"url\(#(.+)\)")
+_NUMBER = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def _number(text: str) -> str:
+    value = f"{float(text):.6f}".rstrip("0").rstrip(".")
+    return "0" if value in ("", "-0") else value
+
+
+def _value(attribute: str, value: str) -> str:
+    if attribute == "path":
+        return _NUMBER.sub(lambda m: _number(m.group()), value)
+    return _number(value) if _NUMBER.fullmatch(value) else value
+
+
+def _node(element: ET.Element, defined: dict[str, ET.Element]) -> list[Any]:
+    if element.tag not in DRAWN:
+        raise SpecimenError(f"<{element.tag}> is not classified; add it to specimens.DRAWN")
+    attributes: dict[str, object] = {}
+    for key, value in element.attrib.items():
+        if key in IGNORED:
+            continue
+        if key not in DRAWN[element.tag]:
+            raise SpecimenError(f"{element.tag}@{key} is not classified; add it to specimens.DRAWN or IGNORED")
+        reference = _REFERENCE.fullmatch(value)
+        tokens = [reference.group(1)] if reference else value.split()
+        if tokens and all(token in defined for token in tokens):
+            attributes[key] = [_node(defined[token], defined) for token in tokens]
+        else:
+            attributes[key] = _value(key, value)
+    children: list[object] = []
+    for child in element:
+        node = _node(child, defined)
+        children.extend(node[2] if node[0] == "group" and not node[1] else [node])
+    return [element.tag, dict(sorted(attributes.items())), children]
+
+
+def fingerprint(document: bytes) -> str:
+    """The digest of the drawing in a scene document: see the module's notes for what it holds."""
+    root = ET.fromstring(document)
+    composition = root.find("composition")
+    if composition is None:
+        raise SpecimenError("a scene document with no composition draws nothing")
+    inside = {id(e) for e in composition.iter()}
+    defined = {e.attrib["id"]: e for e in root.iter() if "id" in e.attrib and id(e) not in inside}
+    drawing = [_node(child, defined) for child in composition]
+    while len(drawing) == 1 and drawing[0][0] == "group" and not drawing[0][1]:
+        drawing = drawing[0][2]
+    flat: list[object] = []
+    for node in drawing:
+        flat.extend(node[2] if node[0] == "group" and not node[1] else [node])
+    return hashlib.sha256(json.dumps(flat, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
+
+
+def digest(name: str, number: int = 1) -> str:
+    """The digest of what version ``number`` of ``name`` draws in its specimen."""
+    part = characters.part_name(name, number)
+    if part not in SPECIMENS:
+        raise SpecimenError(f"{part} has no specimen; add it to specimens.SPECIMENS")
+    return fingerprint(SPECIMENS[part](registry.get("character", part)).scene.to_bytes(layout="pretty"))
+
+
+def check(name: str, number: int = 1) -> None:
+    """Raises :class:`DrawingChangedError` when an approved version no longer draws what was approved."""
+    version = characters.get(name).version(number)
+    if version.status == "approved" and digest(name, number) != version.drawing:
+        raise DrawingChangedError(
+            f"{name} version {number} is approved and immutable, and it no longer draws what was approved. "
+            f"Restore its drawing and add a version: an approved look is never revised in place"
+        )
