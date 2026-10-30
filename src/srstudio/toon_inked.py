@@ -9,6 +9,9 @@ module draws in code (:class:`Inked`, a :class:`srstudio.toon_cast.Drawing`):
   back), thins at the tips, carries a dry brush's grit, and breaks in three to five seeded places with a nick
   between, where a hand lifts the brush (:func:`srstudio.brush.broken`); limbs and inner lines taper into their
   joins;
+* **one body, arms inside it**: the contour runs from the ruff into the shoulders and flanks in one gentle curve;
+  an arm leaves the body inside the shoulder, slim there and widest at the forearm and paw, and is inked only where
+  it overlaps the body or leaves it (:meth:`Inked.limb`), never along the flank;
 * **few inner lines, left open**: the cheeks, the tail tip, a fluff in each ear, the philtrum and the
   paw creases are tapered strokes, not closed shapes (:meth:`Inked.details`), each a little lumpy;
 * **a slight head tilt and an off-centre face**: the head turns about the neck, fading to nothing at the shoulders,
@@ -59,7 +62,10 @@ SHIFT = 13.0  # the face sits this far toward the far (right) side
 BODY_HAND = brush.Hand(light=0.62, heavy=1.5, toward=(0.45, 0.89), tips=0.7, grain=0.22, ragged=0.16)
 EYE_HAND = brush.Hand(light=0.35, heavy=1.55, toward=(0.0, -1.0), tips=0.6, grain=0.12)  # a heavy upper lid
 MOUTH_HAND = brush.Hand(light=0.5, heavy=1.3, toward=(0.0, 1.0), tips=0.5, grain=0.12)
-ARM_INK = brush.Pressure(0.9, 1.12, 0.06, 0.14, 3.3)
+ARM_TAPER = brush.Pressure(0.45, 1.1, 0.12, 0.04, 2.0)  # slim where it leaves the body, widest at forearm and paw
+ARM_LINE = brush.Pressure(0.3, 0.75, 0.45, 0.12, 1.6)  # an arm's ink: lifted at both ends of every run
+TUCK = (0.5, 10.0)  # an arm leaves the body this far inside the shoulder: limb widths in, px down
+SEAM = 0.55  # limb widths: an arm's edge this close inside the body, running along it, merges with the body
 FUR = brush.Pressure(1.0, 0.2, 0.14, 0.16, 1.7)  # pressed at the root, lifted at the tip, unevenly
 LINE = brush.Pressure(0.95, 0.35, 0.15, 0.14, 2.3)
 GAP = 1.5  # a break in a body contour, in line weights
@@ -112,6 +118,51 @@ def _line(points: Sequence[Point], weight: float, seed: int, pressure: brush.Pre
     return (brush.stroke(brush.wobble(points, 0.9, closed=False, steps=3, seed=seed), weight, pressure, steps=2), "ink")
 
 
+def _depth(outline: Sequence[Point], p: Point) -> tuple[float, Point]:
+    """How far inside ``outline`` the point is (negative outside) and the direction of the outline's nearest edge."""
+    near, along, hit = math.inf, (1.0, 0.0), False
+    for a, b in zip(outline, (*outline[1:], outline[0]), strict=True):
+        (ax, ay), (bx, by) = a, b
+        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+        length = math.dist(a, b) or 1.0
+        t = max(0.0, min(1.0, ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / length**2))
+        d = math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay)))
+        if d < near:
+            near, along = d, ((bx - ax) / length, (by - ay) / length)
+    return (near if hit else -near), along
+
+
+def _arm_lines(points: Sequence[Point], w: float, outline: Sequence[Point]) -> list[Shape]:
+    """The ink of an arm drawn ``w`` wide with :data:`ARM_TAPER` over a body with ``outline``: along each edge
+    where it lies outside the body (its contour), deep inside it (the overlap line), or crosses the body's edge;
+    never where it runs just inside the body along the flank, where the arm and the body are one form."""
+    path = [p for k, p in enumerate(brush.spline(points, False, 8)) if k == 0 or p != points[0]]
+    lengths = [0.0]
+    for a, b in zip(path, path[1:], strict=False):
+        lengths.append(lengths[-1] + math.dist(a, b))
+    out: list[Shape] = []
+    for side in (1.0, -1.0):
+        run: list[Point] = []
+        for i, (p, s) in enumerate(zip(path, lengths, strict=True)):
+            a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
+            tx, ty = b[0] - a[0], b[1] - a[1]
+            length = math.hypot(tx, ty) or 1.0
+            tx, ty = tx / length, ty / length
+            half = side * w * ARM_TAPER.at(s / lengths[-1]) / 2
+            edge = (p[0] - ty * half, p[1] + tx * half)
+            depth, (ax, ay) = _depth(outline, edge)
+            if depth < 0.0 or depth > SEAM * w or abs(tx * ax + ty * ay) < 0.6:
+                run.append(edge)
+                continue
+            if len(run) >= 4:
+                out.append(brush.stroke(run, INK * 1.1, ARM_LINE, steps=1))
+            run = []
+        if len(run) >= 4:
+            out.append(brush.stroke(run, INK * 1.1, ARM_LINE, steps=1))
+    return out
+
+
 def _crescent(outer: Sequence[Point], depth: float, inside: Point, peak: float = 0.6) -> tuple[Point, ...]:
     """A shade that runs inside the outline along ``outer``: it starts and ends on the outline and swells to
     ``depth`` toward ``inside``, deepest ``peak`` of the way along, so it turns the form instead of striping it."""
@@ -136,13 +187,13 @@ def _crescent(outer: Sequence[Point], depth: float, inside: Point, peak: float =
 _SILHOUETTE = (
     (96.0, 520.0), (108.0, 503.0), (126.0, 492.0), (148.0, 485.0), (170.0, 482.0), (190.0, 481.0), (210.0, 483.0),
     (232.0, 488.0), (252.0, 497.0), (268.0, 510.0), (279.0, 527.0), (287.0, 548.0), (293.0, 570.0), (300.0, 590.0),
-    (312.0, 598.0), (334.0, 606.0), (316.0, 616.0), (330.0, 632.0), (309.0, 636.0), (316.0, 652.0), (295.0, 652.0),
-    (284.0, 664.0), (270.0, 676.0), (268.0, 688.0), (290.0, 698.0), (307.0, 710.0), (318.0, 730.0), (325.0, 758.0),
+    (312.0, 598.0), (334.0, 606.0), (316.0, 616.0), (330.0, 632.0), (309.0, 636.0), (316.0, 652.0), (306.0, 664.0),
+    (304.0, 680.0), (306.0, 689.0), (309.0, 697.0), (312.0, 706.0), (315.0, 714.0), (320.0, 734.0), (325.0, 758.0),
     (329.0, 792.0), (331.0, 830.0), (262.0, 833.0), (110.0, 832.0), (40.0, 830.0), (42.0, 792.0), (47.0, 756.0),
-    (55.0, 729.0), (69.0, 709.0), (87.0, 697.0), (104.0, 689.0), (106.0, 677.0), (84.0, 670.0), (62.0, 672.0),
-    (76.0, 656.0), (46.0, 651.0), (64.0, 637.0), (33.0, 624.0), (58.0, 613.0), (41.0, 598.0), (66.0, 592.0),
+    (52.0, 734.0), (57.0, 715.0), (59.0, 706.0), (62.0, 698.0), (65.0, 682.0), (67.0, 674.0), (70.0, 666.0),
+    (46.0, 651.0), (64.0, 637.0), (33.0, 624.0), (58.0, 613.0), (41.0, 598.0), (66.0, 592.0),
     (74.0, 572.0), (80.0, 551.0), (87.0, 534.0),
-)  # fmt: skip
+)  # the ruff runs into the shoulders and the flanks in one gentle curve, with no notch for the arms  # fmt: skip
 _EARS = (
     (  # the near ear, standing
         (100.0, 542.0), (88.0, 508.0), (74.0, 474.0), (61.0, 441.0), (51.0, 412.0), (46.0, 393.0), (59.0, 396.0),
@@ -544,13 +595,19 @@ class Inked:
         return self._turn(out, look.mouth)
 
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]:
-        """An arm with a hand's pressure: an uneven ink stroke under the coat, and a mitten of a paw, its line
-        broken, with curved creases."""
+        """An arm the way the cat's are drawn: it leaves the body inside the shoulder (:data:`TUCK`), slim there and
+        widest at the forearm and paw, one form with the body where it lies along the flank and inked only where it
+        overlaps the body or leaves it (:func:`_arm_lines`); and a mitten of a paw, its line broken, with curved
+        creases."""
         w = look.limb
-        out: list[Layer] = [
-            (brush.stroke(points, w + 2 * INK, ARM_INK), "ink"),
-            (brush.stroke(points, w, brush.EVEN), look.coat),
-        ]
+        (sx, sy), *rest = points
+        inward = 1.0 if sx < CENTRE else -1.0
+        start = (sx + inward * TUCK[0] * w, sy + TUCK[1])
+        path = [start, *rest]
+        if _depth(look.silhouette, rest[0])[0] < 0.0:  # reaching out: the upper arm hangs inside, the forearm leaves
+            path.insert(1, (start[0] + (rest[0][0] - start[0]) * 0.25, rest[0][1]))
+        out: list[Layer] = [(brush.stroke(path, w, ARM_TAPER), look.coat)]
+        out += [(line, "ink") for line in _arm_lines(path, w, look.silhouette)]
         px, py = paw
         rx, ry = w * 0.74, w * 0.52
         mitten = [
