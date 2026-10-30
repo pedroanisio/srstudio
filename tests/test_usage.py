@@ -11,6 +11,8 @@ import pytest
 
 from srstudio import Episode, EpisodeSpec, blob, locations, registry
 from srstudio import usage as U
+from srstudio.releases import Release
+from srstudio.social import InstagramPost
 
 
 def episode(project) -> Episode:
@@ -249,3 +251,28 @@ def test_unreadable_releases_stop_the_discovery(tmp_path):
     (tmp_path / "episodes").mkdir()
     with pytest.raises(U.UsageError, match="RELEASE"):
         U.discover(tmp_path / "episodes", None, scripts)
+
+
+def released(**pins):
+    post = InstagramPost(title="T", description="D.")
+    return {"a-b": Release("a-b", post, characters=pins.get("pins"))}
+
+
+def test_every_measured_character_must_be_pinned_at_the_version_drawn():
+    report = U.Report({"a-b": ("toon-bear", "toon-fox@2", "desk"), "not-released": ("toon-cat",)})
+    assert report.pin_drift(released(pins={"toon-bear": 1, "toon-fox": 2})) == []
+    assert report.pin_drift(released(pins={"toon-bear": 1, "toon-fox": 1})) == [
+        "a-b: draws toon-fox version 2 but pins version 1"
+    ]
+    assert report.pin_drift(released()) == [
+        "a-b: draws toon-bear version 1 but pins nothing for it",
+        "a-b: draws toon-fox version 2 but pins nothing for it",
+    ]
+
+
+def test_a_release_built_by_another_script_is_matched_by_its_builder():
+    post = InstagramPost(title="T", description="D.")
+    release = Release("scene", post, builder="printer_recreation", characters={})
+    assert U.Report({"printer-recreation": ("toon-bear",)}).pin_drift({"scene": release}) == [
+        "printer-recreation: draws toon-bear version 1 but pins nothing for it"
+    ]

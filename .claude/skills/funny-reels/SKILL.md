@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.13.0
-changelog: "1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.14.0
+changelog: "1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -362,10 +362,23 @@ them fresh each time:
 | Which styles exist, and what is each good at? | `srstudio styles` (frame, clock, palettes, parts, description) |
 | Which characters, locations, props, graphics exist? | `srstudio catalog`, or `srstudio catalog --json` for facts and tags |
 | Which parts do episodes really use, and which are unused? | `srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json`, with the `--arg` options the README's usage command passes (ADR 0017; it rebuilds every episode on a copy) |
+| Which versions does each character have? | `srstudio characters` (name, style, default, every version; `?` marks a proposed one) |
 | What does each part look like? | the catalog site: `srstudio serve ../generated/catalog/site`, then open `http://127.0.0.1:8765/` |
 | What is already planned? | `docs/backlog/` |
 
 Pick the style whose description fits the joke, not the one used last.
+
+## Character versions
+
+Every character has numbered versions (ADR 0047). A new reel draws each character's latest approved version by
+default, and asks for an older one by pinning it in its release: `characters={"<registered name>": 1}`. Pass
+`versions=PINS[SKETCH.slug]` to a Toon `Staging`.
+
+To improve a drawing, add a version: a record in `assets/characters.json`, the drawing registered as `<name>@<N>`, a
+specimen entry, and its digest from `srstudio characters --digest <name>@<N>`. An approved look is never revised in
+place; a test fails if one changes, and the fix is a new version, not a new digest. A new version stays `proposed`
+until the operator has seen its proof clip. Never set `approved` or write `approval` yourself: only the operator's
+decision does that, and the record quotes their words.
 
 ## Character diversity
 
@@ -489,7 +502,9 @@ it in `srstudio catalog` without this file changing.
    calls has a gallery item in `docs/catalog/notes.json`; cut the still, look at it, then add the item.
 8. **Instagram delivery.** Add `episodes/posts/<slug with underscores>.py` defining `RELEASE`, a
    `srstudio.releases.Release` with the `InstagramPost` (title, description, credit, `Thumbnail`) and its
-   `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test).
+   `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test). Pin
+   every character it draws with `characters={...}`, or `{}` if it draws none: `deliver` refuses a release without
+   pins and `check` reports it, and each prints the pin to add for a Toon build. Rebuild after changing a pin.
    Deliver only once your branch is merged into develop, from the workspace root with the main checkout's code,
    never from a branch or worktree: any write to `generated/renders/ig` fires the `srstudio-drive` unit, which
    checks and uploads with the main checkout's code and releases:
