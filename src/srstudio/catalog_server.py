@@ -45,7 +45,7 @@ class ServeError(SrstudioError):
     """A site that cannot be served."""
 
 
-class Unsatisfiable(Exception):
+class Unsatisfiable(SrstudioError):
     """A byte range that is bad or lies past the end: the 416 case."""
 
 
