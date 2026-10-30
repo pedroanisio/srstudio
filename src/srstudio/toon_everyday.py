@@ -1,5 +1,5 @@
 """Toon everyday props: the things adult life happens through, in the Toon line, for sketches about everyday tech,
-money and services, job hunting and dating.
+money and services, job hunting and dating (ADR 0042).
 
 :func:`phone` is a smartphone standing on a surface or held, whose screen changes on cue: a notification that
 buzzes it, a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off.
