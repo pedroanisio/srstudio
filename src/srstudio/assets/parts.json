@@ -3590,6 +3590,23 @@
         }
       ]
     },
+    "toon-chopper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A helicopter in the window with a searchlight sweeping the room. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "342e1392468d434fd6e31403ea346082935e852c466fdf3d617bdc9d59d0a916",
+          "rig": null
+        }
+      ]
+    },
     "toon-clipboard": {
       "kind": "prop",
       "style": "toon",
@@ -4055,6 +4072,23 @@
         }
       ]
     },
+    "toon-lower-third": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A news strap across the lectern's front. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "07339dc6610ddc948e6ea88bfb33861514f61b403d82e13000b2900a118f49a9",
+          "rig": null
+        }
+      ]
+    },
     "toon-meeting": {
       "kind": "location",
       "style": "toon",
@@ -4072,6 +4106,23 @@
         }
       ]
     },
+    "toon-mics": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A bunch of microphones on a lectern. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "78947401661f47c9c84f73bdca8e7372649c715b28e40da21db19fad3a097161",
+          "rig": null
+        }
+      ]
+    },
     "toon-mug": {
       "kind": "prop",
       "style": "toon",
@@ -4085,6 +4136,23 @@
           "proof": "",
           "approval": null,
           "drawing": "bb695f58bbfdf61e0de32e079943831b8dce9432367adb50c607c3ea04eae0fc",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-street": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A night street of dark houses with a crowd that gets a message and walks away. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2303e31d9dbc27339fc70564e08496673c5472d7c1ac2d9633a0ed7e5ebdc73e",
           "rig": null
         }
       ]
@@ -4170,6 +4238,23 @@
           "proof": "",
           "approval": null,
           "drawing": "07cdef4b137276c22b272faea4fa1eb0c06af2abd280e0539fbb80827d4e8611",
+          "rig": null
+        }
+      ]
+    },
+    "toon-press-room": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4e4fc84b489f66d06eb9f6f866ee17f321509a8f749dcb7d1447506121ecf4ac",
           "rig": null
         }
       ]

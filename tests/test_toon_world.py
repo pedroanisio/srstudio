@@ -162,3 +162,48 @@ def test_a_still_lounge_keys_no_router_light():
     toon_rooms.lounge(blinking, blinking.group(blinking.comp, "g"), end=3.0)
     toon_rooms.lounge(still, still.group(still.comp, "g"), end=3.0, blink=False)
     assert len(list(drawn(still).iter("key"))) < len(list(drawn(blinking).iter("key")))
+
+
+def test_the_street_refuses_more_leavers_than_figures_and_a_late_leaver():
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="cannot leave"):
+        toon_world.night_street(cv, cv.group(cv.comp, "g"), [1.0] * (len(toon_world.CROWD) + 1), 6.0)
+    with pytest.raises(ToonDataError, match="to leave before"):
+        toon_world.night_street(cv, cv.group(cv.comp, "g"), [5.9], 6.0)
+
+
+def test_a_leaver_reads_before_it_walks_and_stays_gone():
+    cv = canvas()
+    toon_world.night_street(cv, cv.group(cv.comp, "g"), [1.0], 6.0)
+    root = drawn(cv)
+    assert sum(1 for g in root.iter("group") if g.get("end")) == 2
+    moved = [a for a in root.iter("animate") if a.get("property") == "x"]
+    assert len(moved) == 1 and float(next(moved[0].iter("key")).get("time")) == pytest.approx(1.0 + toon_world.READ)
+
+
+def test_a_flash_goes_at_each_listed_time():
+    cv = canvas()
+    toon_world.press_room(cv, cv.group(cv.comp, "g"), (1.0, 2.0))
+    assert [float(g.get("start")) for g in drawn(cv).iter("group") if g.get("start")] == [1.0, 2.0]
+
+
+def test_a_lower_third_refuses_text_that_does_not_fit_or_is_blank():
+    cv = canvas()
+    g = cv.group(cv.comp, "g")
+    with pytest.raises(ToonDataError, match="lower third"):
+        toon_world.lower_third(cv, g, [(0.0, 1.0, "   ")], lambda t, s: 10.0)
+    with pytest.raises(ToonDataError, match="lower third"):
+        toon_world.lower_third(cv, g, [(0.0, 1.0, "wide")], lambda t, s: float(cv.width))
+
+
+def test_a_helicopter_needs_a_second():
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="needs a second"):
+        toon_world.chopper(cv, cv.group(cv.comp, "g"), 1.0, 1.5)
+
+
+def test_the_helicopter_can_light_a_group_in_front_of_the_character():
+    cv = canvas()
+    back, front = cv.group(cv.comp, "back"), cv.group(cv.comp, "front")
+    toon_world.chopper(cv, back, 0.0, 2.0, over=front)
+    assert list(next(g for g in drawn(cv).iter("group") if g.get("id") == "front"))

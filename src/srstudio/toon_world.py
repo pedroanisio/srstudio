@@ -27,13 +27,19 @@ __all__ = [
     "GROUNDS",
     "GULL_FLIGHT",
     "HEAD_TOP",
+    "LEAVE",
     "RoadLayers",
+    "chopper",
     "dump",
     "gull",
     "ledge",
+    "lower_third",
+    "mics",
+    "night_street",
     "no_desk",
     "paw",
     "placed",
+    "press_room",
     "road",
     "snores",
     "sofa",
@@ -73,6 +79,9 @@ TV_DEAD, TV_FACE_DEAD, CRACK = "#15161c", "#262a33", "#c8d6e6"
 GULL_WHITE, GULL_GREY, GULL_BEAK, GULL_LEG = "#fbfbf8", "#a9b2bd", "#f0b429", "#e98a3c"
 REMOTE, REMOTE_KEY = "#23252b", "#e2483d"
 SNORE_INK = "#ffffff"
+HELD = ("remote", "note", "keys", "torch", "")
+KEY_METAL, KEY_BRASS, TORCH, TORCH_GLOW = "#c3cad3", "#e0b13e", "#3b3f4a", "#ffe680"
+KEY_SWING, KEY_PERIOD = 14.0, 0.5  # degrees each way, seconds a swing
 SNORE_RISE = 90.0  # how far a Z rises, reference pixels
 SNORE_EVERY = 0.7  # seconds between Zs
 
@@ -418,8 +427,8 @@ def paw(
     """For each ``(start, end)`` the arm comes in from the right edge (``side`` 1) at height ``y``, ``reach`` pixels
     into the frame, holds, and leaves, with the ``remote`` or the ``note`` in its hand, jabbing forward at each of
     ``presses``."""
-    if holding not in ("remote", "note", ""):
-        raise ToonDataError(f"a paw holds a remote, a note or nothing, not {holding!r}")
+    if holding not in HELD:
+        raise ToonDataError(f"a paw holds one of {HELD}, not {holding!r}")
     if side not in (1.0, -1.0):
         raise ToonDataError(f"a paw comes in from the right (1) or the left (-1), not {side!r}")
     slide = 0.16
@@ -444,6 +453,32 @@ def paw(
             cv.ellipse(g, fx(tip - 76), fy(y - 7), fh(14), fh(14), REMOTE_KEY)
         elif holding == "note":
             cv.rect(g, fx(tip - 76), fy(y - 44), fh(88), fh(88), "#fff3a3", cv.ink, FINE_W, radius=0)
+        elif holding == "keys":
+            _keys(cv, g, tip - 4, y + 22, start, end)
+        elif holding == "torch":
+            _torch(cv, g, tip, y)
+
+
+def _keys(cv: Canvas, g, x: float, y: float, start: float, end: float) -> None:
+    """A ring of keys hanging from ``(x, y)``, swinging from the first frame of its span."""
+    swing = cv.group(g, cv.uid("g"), x=fx(x), y=fy(y), anchorX=fx(x), anchorY=fy(y))
+    keys: list[tuple[float, float]] = []
+    t = start
+    while t < end:
+        keys += [(round(t, 3), -KEY_SWING), (round(t + KEY_PERIOD / 2, 3), KEY_SWING)]
+        t += KEY_PERIOD
+    cv.keys(swing, "rotation", keys, hold=False)
+    cv.ellipse(swing, fx(x - 22), fy(y), fh(44), fh(44), cv.clear, KEY_METAL, fh(7))
+    for dx, length, colour in ((-16, 72, KEY_METAL), (6, 88, KEY_BRASS), (20, 60, KEY_METAL)):
+        cv.rect(swing, fx(x + dx - 6), fy(y + 40), fh(12), fh(length), colour, cv.ink, FINE_W * 0.6, radius=fh(4))
+        cv.ellipse(swing, fx(x + dx - 13), fy(y + 30), fh(26), fh(26), colour, cv.ink, FINE_W * 0.6)
+
+
+def _torch(cv: Canvas, g, x: float, y: float) -> None:
+    """A flashlight aimed at the viewer: a barrel in the hand and the lens's glare."""
+    _glow(cv, g, cv.uid("toon-torch-glare"), x - 70, y, 110, TORCH_GLOW)
+    cv.rect(g, fx(x - 70), fy(y - 22), fh(96), fh(44), TORCH, cv.ink, FINE_W, radius=fh(8))
+    cv.ellipse(g, fx(x - 92), fy(y - 34), fh(44), fh(68), "#fff7c8", cv.ink, FINE_W)
 
 
 def _stroke(points: Sequence[Point], width: float):
@@ -471,3 +506,139 @@ def snores(
             cv.keys(z, "x", [(t, 0.0), (stop, fh(26))], hold=False)
             cv.keys(z, "opacity", [(t, 0.0), (t + 0.15, 1.0), (stop - 0.25, 1.0), (stop, 0.0)], hold=False)
             t += SNORE_EVERY
+
+
+# -- the night a mother calls it in ---------------------------------------------------------------------------------
+STREET_SKY = (("0", "#0f1630"), ("0.6", "#232c55"), ("1", "#3b3a63"))
+STREET_HOUSE, STREET_WINDOW, STREET_KERB, STREET_ROAD = "#1c2342", "#f7cf67", "#3a3f5c", "#2a2e45"
+FIGURE, FIGURE_LIGHT = "#10142a", "#ffe680"
+CROWD: tuple[Point, ...] = ((30, 700), (338, 716), (392, 690), (446, 716), (500, 690), (554, 716), (368, 660))
+READ, WALK = 0.85, 0.3  # seconds a figure reads its phone, then takes to walk out of the street
+LEAVE = READ + WALK
+BACKDROP, BACKDROP_LIGHT, STAGE = "#27407a", "#35549a", "#1e2c52"
+FLAG_RED, FLAG_PALE = "#c8473f", "#eef1f7"
+LIVE_RED, THIRD_BG, THIRD_TEXT = "#d92c2c", "#fbfbf8", "#17203a"
+FLASH = 0.09  # seconds a press camera's flash lasts
+THIRD_TOP, THIRD_H = 906.0, 76.0  # on the lectern's front, under its top and over its code
+ROTOR, HULL, BEAM = "#0d1020", "#171b33", "#fff3b0"
+
+
+@register(
+    "location", "toon-night-street", summary="A night street of dark houses; a crowd holds its lights and walks away"
+)
+def night_street(cv: Canvas, parent, leave: Sequence[float] = (), end: float = 4.0, said: str = "home") -> None:
+    """Houses against the night and the street's crowd, each figure with its light; the figures named by ``leave``
+    (seconds, left to right, as many as it lists) get ``said`` on their phones and walk out."""
+    if len(leave) > len(CROWD):
+        raise ToonDataError(f"the street holds {len(CROWD)} figures, {len(leave)} cannot leave")
+    if any(not (checks.number(t) and 0 <= t and t + LEAVE <= end) for t in leave):
+        raise ToonDataError(f"a figure needs {LEAVE} s to leave before {end!r}: {leave!r}")
+    g = cv.group(parent, cv.uid("g"))
+    _sky(cv, g, "toon-street-sky", STREET_SKY)
+    for hx, hy, w, h in ((-20, 470, 220, 250), (215, 420, 190, 300), (420, 480, 210, 240)):
+        cv.rect(g, fx(hx), fy(hy), fh(w), fh(h), STREET_HOUSE, cv.ink, FINE_W, radius=0)
+        for wx in (hx + 40, hx + 120):
+            cv.rect(g, fx(wx), fy(hy + 60), fh(44), fh(56), STREET_WINDOW, cv.ink, FINE_W / 2, radius=0, opacity=0.8)
+    cv.rect(g, fx(-10), fy(716), fh(612), fh(30), STREET_KERB, cv.clear, 0, radius=0)
+    cv.rect(g, fx(-10), fy(746), fh(612), fh(400), STREET_ROAD, cv.clear, 0, radius=0)
+    for i, (x, y) in enumerate(CROWD):
+        gone = leave[i] if i < len(leave) else None
+        figure = cv.group(g, cv.uid("g"), end=None if gone is None else gone + LEAVE)
+        cv.ellipse(figure, fx(x - 19), fy(y - 96), fh(38), fh(38), FIGURE, cv.ink, FINE_W / 2)
+        cv.rect(figure, fx(x - 25), fy(y - 60), fh(50), fh(90), FIGURE, cv.ink, FINE_W / 2, radius=fh(16))
+        cv.ellipse(figure, fx(x + 12), fy(y - 44), fh(22), fh(22), FIGURE_LIGHT)
+        if gone is not None:
+            way = -fh(620) if x < 296 else fh(620)
+            cv.keys(figure, "x", [(gone + READ, 0.0), (gone + LEAVE, way)], hold=False)
+            lit = cv.group(figure, cv.uid("g"), start=gone, end=gone + READ)
+            left, top = min(max(x - 44, 4), 500), y - 152 - (i % 3) * 52
+            cv.rect(lit, fx(left), fy(top), fh(88), fh(44), "#ffffff", cv.ink, FINE_W / 2, radius=fh(14))
+            cv.text(
+                lit,
+                cv.uid("ping"),
+                said,
+                fx(left),
+                fy(top + 2),
+                int(fh(88)),
+                int(fh(40)),
+                40,
+                color="#000000",
+                wrap="none",
+            )
+
+
+@register("location", "toon-press-room", summary="A press conference: curtain, flags, stage, flashes, a LIVE bug")
+def press_room(cv: Canvas, parent, flashes: Sequence[float] = (), live: bool = True) -> None:
+    """A briefing room's curtain with two plain flags and, at each of ``flashes``, a press camera firing."""
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, 0, 0, cv.width, cv.height, BACKDROP)
+    for x in range(12, 600, 62):
+        cv.rect(g, fx(x), 0, fh(22), cv.height, BACKDROP_LIGHT, opacity=0.5)
+    for x in (28, 512):
+        cv.rect(g, fx(x), fy(350), fh(8), fh(470), POST, cv.ink, FINE_W / 2, radius=0)
+        cv.rect(g, fx(x + 8), fy(362), fh(62), fh(150), FLAG_RED, cv.ink, FINE_W, radius=0)
+        cv.rect(g, fx(x + 8), fy(412), fh(62), fh(50), FLAG_PALE, cv.ink, FINE_W / 2, radius=0)
+    cv.rect(g, fx(-10), fy(800), fh(612), fh(340), STAGE, cv.clear, 0, radius=0)
+    if live:
+        cv.rect(g, fx(452), fy(116), fh(112), fh(42), LIVE_RED, cv.ink, FINE_W / 2, radius=fh(6))
+        cv.text(g, cv.uid("live"), "LIVE", fx(452), fy(118), int(fh(112)), int(fh(38)), 44, color=cv.white)
+    for i, t in enumerate(flashes):
+        x = 60 + (i * 197) % 470
+        y = 560 + (i * 83) % 200
+        pop = cv.group(g, cv.uid("g"), start=t, end=t + FLASH)
+        cv.ellipse(pop, fx(x - 70), fy(y - 70), fh(140), fh(140), "#ffffff", opacity=0.85)
+
+
+@register("prop", "toon-mics", summary="A bunch of microphones on the lectern, aimed at whoever stands behind it")
+def mics(cv: Canvas, parent, x: float = 185.0, top: float = 730.0) -> None:
+    g = cv.group(parent, cv.uid("g"))
+    for dx, colour in ((-70, "#3a3f4b"), (-24, "#c8473f"), (24, "#2f6bb0"), (70, "#3a3f4b")):
+        _line(cv, g, [(x + dx * 1.2, 812), (x + dx, top + 34)], 7.0, "#23252b")
+        cv.rect(g, fx(x + dx - 16), fy(top), fh(32), fh(50), colour, cv.ink, FINE_W, radius=fh(12))
+
+
+@register(
+    "graphic", "toon-lower-third", summary="A news strap on the lectern's front, its text changing at given times"
+)
+def lower_third(
+    cv: Canvas, parent, spans: Sequence[tuple[float, float, str]], measure: Callable[..., float], size: int = 40
+) -> None:
+    """Each ``(start, end, text)`` is one strap across the frame."""
+    for start, end, text in spans:
+        if not text.strip() or measure(text, size) > cv.width * 0.86:
+            raise ToonDataError(f"a lower third holds one short line that fits the frame, not {text!r}")
+        g = cv.group(parent, cv.uid("g"), start=start, end=end)
+        cv.rect(g, fx(-10), fy(THIRD_TOP), fh(612), fh(THIRD_H), THIRD_BG, cv.ink, FINE_W, radius=0)
+        cv.rect(g, fx(-10), fy(THIRD_TOP), fh(26), fh(THIRD_H), LIVE_RED, cv.clear, 0, radius=0)
+        cv.text(g, cv.uid("strap"), text, fx(26), fy(THIRD_TOP + 6), int(fh(556)), int(fh(THIRD_H - 12)), size,
+                color=THIRD_TEXT, wrap="none")  # fmt: skip
+
+
+@register("prop", "toon-chopper", summary="A helicopter in the window with a searchlight that sweeps the room")
+def chopper(cv: Canvas, parent, start: float = 0.0, end: float = 3.0, sky: Point = (480.0, 400.0), over=None) -> None:
+    """From ``start`` it flies in to hover at ``sky``, rotor flickering; a pale patch sweeps the frame until ``end``,
+    in ``over`` (a group in front of the character) when there is one."""
+    if not (checks.number(start) and checks.number(end) and 0 <= start and start + 1.0 <= end):
+        raise ToonDataError(f"a helicopter needs a second from {start!r} to {end!r}")
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    craft = cv.group(g, cv.uid("g"))
+    cv.keys(craft, "x", [(start, fh(320)), (start + 0.6, 0.0)], hold=False)
+    x, y = sky
+    cv.ellipse(craft, fx(x - 52), fy(y - 22), fh(104), fh(50), HULL, cv.ink, FINE_W)
+    cv.rect(craft, fx(x + 44), fy(y - 8), fh(84), fh(12), HULL, cv.ink, FINE_W / 2, radius=0)
+    cv.rect(craft, fx(x - 8), fy(y - 38), fh(16), fh(18), ROTOR, cv.clear, 0, radius=0)
+    blade = cv.group(craft, cv.uid("g"), x=fx(x), y=fy(y - 40), anchorX=fx(x), anchorY=fy(y - 40))
+    t, keys = start, []
+    while t < end:
+        keys += [(round(t, 3), 1.0), (round(t + 0.05, 3), 0.25)]
+        t += 0.1
+    cv.keys(blade, "scaleX", keys)
+    cv.rect(blade, fx(x - 110), fy(y - 44), fh(220), fh(7), ROTOR, cv.clear, 0, radius=fh(3))
+    sweep = cv.group(cv.group(over if over is not None else parent, cv.uid("g"), start=start, end=end), cv.uid("g"))
+    t, keys, side = start, [], 0
+    while t < end:
+        keys.append((round(t, 3), fh(-40 if side else 300)))
+        t += 0.8
+        side = 1 - side
+    cv.keys(sweep, "x", keys, hold=False)
+    _glow(cv, sweep, cv.uid("toon-chopper-beam"), 150, 620, 300, BEAM)

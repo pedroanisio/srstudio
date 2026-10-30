@@ -484,6 +484,14 @@
         "O plano do Bruno fica parado e o cenário troca atrás dele: sala, sala vazia, quintal, estrada, lixão (<code>toon_world.sofa</code>, com o cacto e o código no chão de cada lugar).",
         "A TV morta no lixão fica no mesmo ponto da tela em que a TV da sala estava."
       ]
+    },
+    "text-me": {
+      "number": "T29",
+      "lede": "Ele mora a quatro minutos. O celular morre. Seis minutos depois, a mãe dá uma coletiva ao vivo.",
+      "highlights": [
+        "A voz da mãe vem pelo viva-voz antes de ela aparecer no púlpito, com a tarja do telejornal mudando entre as duas coletivas (<code>toon_world.lower_third</code>).",
+        "Cada pessoa da multidão recebe a mensagem, lê e vai embora, uma de cada vez (<code>toon_world.night_street</code>)."
+      ]
     }
   },
   "styles": {
@@ -606,7 +614,12 @@
     "toon-dump": {"title": "Lixão ao entardecer"},
     "toon-gull": {"title": "Gaivota"},
     "toon-paw": {"title": "Braço que entra no quadro"},
-    "toon-snores": {"title": "Zs do sono"}
+    "toon-snores": {"title": "Zs do sono"},
+    "toon-night-street": {"title": "Rua à noite com multidão"},
+    "toon-press-room": {"title": "Sala de coletiva"},
+    "toon-mics": {"title": "Microfones no púlpito"},
+    "toon-lower-third": {"title": "Tarja de telejornal"},
+    "toon-chopper": {"title": "Helicóptero na janela"}
   },
   "gallery": [
     {
@@ -4037,6 +4050,66 @@
         "at": 6.5
       },
       "text": "Letras Z que sobem e somem a partir de quem dorme."
+    },
+    {
+      "section": "locations",
+      "name": "Rua à noite com multidão",
+      "parts": [
+        "toon-night-street"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 13.0
+      },
+      "text": "Casas escuras e uma multidão com lanternas; quem está na lista de saída recebe um balão no celular, lê e sai de cena."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de coletiva",
+      "parts": [
+        "toon-press-room"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Cortina azul, duas bandeiras lisas, palco, flashes e o selo LIVE."
+    },
+    {
+      "section": "props",
+      "name": "Microfones no púlpito",
+      "parts": [
+        "toon-mics"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Quatro microfones apontados para quem está atrás do balcão."
+    },
+    {
+      "section": "graphics",
+      "name": "Tarja de telejornal",
+      "parts": [
+        "toon-lower-third"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 8.2
+      },
+      "text": "Uma linha curta na frente do púlpito; recusa o texto que não cabe no quadro."
+    },
+    {
+      "section": "props",
+      "name": "Helicóptero na janela",
+      "parts": [
+        "toon-chopper"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 7.0
+      },
+      "text": "Entra pelo céu da janela e paira, enquanto o holofote varre o quadro por cima do personagem."
     }
   ]
 }
