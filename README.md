@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_critters`, `toon_dinner`, `toon_everyday`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1246,6 +1246,18 @@ and every eye a one-off of seeded lumps (`brush.lump`), never a perfect ellipse.
 the inked fox keeps the whole contract and a sketch casts it as `"fox-inked"`. Looks without a drawing are drawn
 exactly as before.
 
+A sloth, a goat and a hamster draw like the traced cat, in code
+([docs/decisions/0045-toon-sloth-goat-hamster.md](docs/decisions/0045-toon-sloth-goat-hamster.md),
+[src/srstudio/toon_critters.py](src/srstudio/toon_critters.py)): `toon-sloth` (olive, droopy, a pale face with dark
+stripes down from the eyes, long ivory claws, a slow blink), `toon-goat` (lilac, wiry, swept horns, sideways ears, a
+long muzzle and beard, bar pupils) and `toon-hamster` (pink, round, cheek pouches, a creamy belly, tiny paws held up).
+Each is a `Critter`, a `toon_cast.Drawing` the look routes its foundation, face and limbs to: a dense hand-placed
+outline with a pressed line (`pressed`, heavier at the bottom and back, thinning at sharp turns), open tapered fur
+strokes, one shade tone along the edges away from the light (`shade`) and a head tilted about the neck. Each has
+its own signature: the sloth's yawn, the goat's scream, the hamster's puffed pouches. Every brush character also
+draws the new `sleepy` eyes (heavy lids, blinked slower: `SLEEPY_PACE`, `SLEEPY_HOLD`) and `yawn`, `scream` and
+`puff` mouths (`shared_eye`, `shared_mouth`); the traced cat refuses them by name.
+
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 
 The coworkers' episodes are short comedies written as data and cut between the two characters
@@ -1691,10 +1703,14 @@ error is `InstagramPostError`, with every problem listed.
   registry entries;
   `tests/test_toon_cast_more.py`, `tests/test_toon_expressions.py` and `tests/test_toon_wear.py` cover the fox,
   the raccoon and the hedgehog (thumbnail heads, coats, builds), the new expressions with the cat's refusal, and the
-  wear on every character and through a sketch; `tests/test_toon_inked.py` covers the inked fox (every eyes and
+  wear on every character and through a sketch;
+  `tests/test_toon_inked.py` covers the inked fox (every eyes and
   mouth pair inside its corner, a face of its own for every kind and viseme, lids over open eyes, a dense, uneven,
   pressed and asymmetric contour broken in three to five places, no perfect ellipse, a head shade that tapers at
   both ends, few open inner lines, typing, blinks, lip sync, wear turned with the head and a sketch);
+  `tests/test_toon_critters.py` covers the sloth, the goat and the hamster (the whole contract, thumbnail heads
+  against everyone, coats, builds, the pressed line, tilt, shade and signatures), the new kinds on every brush
+  character with the cat's refusal, the slower sleepy blink and the older cast drawing byte for byte as before;
   `tests/test_sketch.py` covers the sketch (checks and every refused inconsistency, cues with speakers,
   appearances, events, line spans, typing bursts, the placement onto a recording, the drawn cast with stickers, the
   written and reloaded files, a recording through a fake client with its manifest, and a misheard line);
