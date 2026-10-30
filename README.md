@@ -1360,7 +1360,7 @@ without a drawing are drawn exactly as before.
 
 Every registered part has numbered versions: characters, locations, props and graphics
 ([docs/decisions/0047-character-versions.md](docs/decisions/0047-character-versions.md)), so a drawing can improve
-without touching a published reel. `srstudio parts` lists them, and
+without touching a published reel. `srstudio parts` lists them, a part's page in the catalog shows them, and
 [src/srstudio/assets/parts.json](src/srstudio/assets/parts.json) records each one: number, date, a note, a proof clip,
 status, approval and the digest of its drawing
 ([src/srstudio/catalog_specimens.py](src/srstudio/catalog_specimens.py)). A part that cannot stand alone, such as a

@@ -17,6 +17,7 @@
     pacotes: ['#episodios', '#elenco', '#usado', '#comparativo'],
     motor: ['#motor', '#pipeline', '#audio'],
   };
+  const VERSION_STATUS = {approved: 'aprovada', proposed: 'proposta'};
   const NONE = 'nenhum'; // the filter value for "no style"
   const byTitle = (a, b) => a.title.localeCompare(b.title, 'pt');
   const VIDEO_SORTS = {
@@ -124,6 +125,17 @@
       `<td><a href="${videoHref(v)}"><b>${esc(v.title)}</b></a>${named(v.slug)}</td>` +
       `<td>${styleTag(v.style)}${videoTags(v)}</td><td>${esc(v.number)}</td><td>${esc(v.format)}</td>` +
       `<td class="num">${v.duration ? seconds(v.duration) : '—'}</td><td class="num">${v.parts.length}</td></tr>`;
+  }
+  function versionsOf(p) {
+    if (!p.versions.length) return '';
+    const base = p.name.split('@')[0];
+    const rows = p.versions.map(v => {
+      const name = v.number === 1 ? base : `${base}@${v.number}`, other = parts.get(name);
+      const number = other && name !== p.name ? `<a href="${partHref(other)}">${v.number}</a>` : `${v.number}`;
+      return `<tr><td class="num">${number}</td><td>${esc(v.date)}</td><td>${VERSION_STATUS[v.status]}</td><td>${esc(v.note)}</td></tr>`;
+    }).join('');
+    return '<div class="sub">Versões</div><table class="rows" id="versions"><thead><tr><th>Versão</th><th>Data</th>' +
+      `<th>Situação</th><th>Nota</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
   function partRow(p) {
     const s = p.specimen;
@@ -298,6 +310,7 @@
     const specimen = p.specimen
       ? `<div class="stills lead" id="specimen">${figure(p.specimen, p.title, false)}</div>`
       : `<p class="notice" id="refused">Sem desenho isolado. ${esc(p.refused)}</p>`;
+    const versions = versionsOf(p);
     let used;
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
     else if (!p.videos.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;
@@ -312,7 +325,7 @@
       title: p.title,
       html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
         `<div class="view-head"><h2>${esc(p.title)}${copyButton(p.title, 'título')}</h2><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}${copyButton(p.summary, 'descrição')}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${gallery}${sheet}</div>` +
+        `<p class="lede">${esc(p.summary)}${copyButton(p.summary, 'descrição')}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${versions}${gallery}${sheet}</div>` +
         `<aside class="side">${sheetFacts}</aside></div>` +
         `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
