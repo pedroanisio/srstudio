@@ -346,3 +346,32 @@ def test_a_second_glance_at_another_rig_keeps_the_rig_s_look():
 
 def test_the_modules_are_reachable_from_the_package():
     assert srstudio.head_motion is head_motion and srstudio.toon_head is toon_head
+
+
+def _top_colour(layers, x: float, y: float) -> str | None:
+    """The colour on top at a reference point: the last layer whose polygon holds it."""
+    for shape, colour in reversed(list(layers)):
+        points = list(zip(shape[0::2], shape[1::2], strict=True))
+        crossings = sum(
+            (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0)
+            for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1], strict=True)
+        )
+        if crossings % 2:
+            return colour
+    return None
+
+
+@pytest.mark.parametrize("x", [150.0, 185.0, 220.0])
+def test_the_fox_white_runs_from_face_to_bib_as_in_its_flat_drawing(x):
+    """The operator approved a fox whose cream runs unbroken from the face into the bib. The rig closes the head under
+    the chin, and that line must not read as a collar across the chest."""
+    fox = toon_rigs.rig_of("toon-fox-inked")
+    for y in (696.0, 700.0, 704.0):
+        assert _top_colour(fox.skull(), x, y) in (toon_inked.FOX.light, toon_inked.CREAM_SHADE)
+
+
+@pytest.mark.parametrize("x", [112.0, 258.0])
+def test_the_fox_cheek_has_no_ink_line_under_it(x):
+    fox = toon_rigs.rig_of("toon-fox-inked")
+    top = next(y for y in (y / 2 for y in range(1320, 1440)) if _top_colour(fox.skull(), x, y) is None)
+    assert all(_top_colour(fox.skull(), x, y) == toon_inked.FOX.coat for y in (top - 2.0, top - 4.0, top - 6.0))
