@@ -122,12 +122,34 @@ def test_every_section_of_the_navigation_renders(page, origin, site):
     assert len(cards(page)) == len(catalog["videos"])
 
 
-def test_the_home_view_loads_no_image_and_the_base_script_waits_for_its_route(page, origin):
+def test_the_sidebar_stays_in_view_and_counts_every_section(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    go(page, origin, "#/videos")
+    page.wait_for_selector("#index .card")
+    count = "href => document.querySelector(`.nav-links a[href='${href}']`).dataset.count"
+    assert page.evaluate(count, "#/videos") == str(len(catalog["videos"]))
+    assert page.evaluate(count, "#/personagens") == str(sum(p["kind"] == "character" for p in catalog["parts"]))
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    assert page.locator("#nav").evaluate("n => n.getBoundingClientRect().top") == 0
+    assert page.locator("#nav").evaluate("n => n.getBoundingClientRect().height") == 900
+
+
+def test_the_home_view_is_a_dashboard_and_the_base_script_waits_for_its_route(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
     go(page, origin, "#/")
     page.wait_for_selector(".tiles-nav")
-    assert page.locator(".hero").is_visible() and page.locator("#motor").is_hidden()
-    assert page.evaluate("document.querySelectorAll('img, video').length") == 0
+    assert page.locator(".hero").is_hidden() and page.locator("#motor").is_hidden()
+    assert page.locator(".style-table tbody tr").count() == len(catalog["styles"])
+    assert page.locator(".usage-bar").count() == 4
+    assert page.locator("#app .specs .spec").count() > 0
+    assert page.evaluate("document.querySelectorAll('video').length") == 0
+    assert page.evaluate("document.querySelectorAll('img').length") <= len(catalog["styles"])  # one poster per style
     assert page.evaluate("window.baseRuns") is None
+    go(page, origin, "#/")
+    page.locator(".style-table a[href='#/videos?estilo=soft']").click()
+    page.wait_for_function("document.querySelectorAll('#index .card').length === 1")
+    nav(page, "Visão geral")
+    page.wait_for_selector(".tiles-nav")
     nav(page, "Motor")
     assert page.locator("#motor").is_visible() and page.locator(".hero").is_hidden()
     assert page.evaluate("window.baseRuns") == 1
@@ -183,6 +205,68 @@ def test_the_style_filter_narrows_the_index_and_is_a_link(page, origin):
     go(page, origin, "#/personagens?estilo=soft")
     page.wait_for_selector("#index .card")
     assert "pip" in cards(page) and "manager" not in cards(page)
+
+
+def test_a_filter_shows_its_count_and_keeps_the_sort_and_the_view(page, origin):
+    go(page, origin, "#/videos?ordem=titulo&ver=lista")
+    page.wait_for_selector("#index .row")
+    chip = page.locator(".filters a", has_text="Soft")
+    assert chip.locator("small").inner_text() == "1"
+    assert chip.get_attribute("href") == "#/videos?ordem=titulo&ver=lista&estilo=soft"
+
+
+def test_the_list_view_is_a_table_and_a_link(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    go(page, origin, "#/videos")
+    page.wait_for_selector("#index .card")
+    page.locator(".seg a:text-is('Lista')").click()
+    page.wait_for_selector("#index tr.row")
+    assert page.locator("#index tr.row").count() == len(catalog["videos"])
+    assert page.evaluate("location.hash") == "#/videos?ver=lista"
+    page.locator("#index tr.row[data-video='camera-off'] a").first.click()
+    page.wait_for_selector("article[data-video='camera-off']")
+
+
+def test_the_sort_orders_the_index(page, origin):
+    go(page, origin, "#/videos")
+    page.wait_for_selector("#index .card")
+    page.locator("#sort").select_option(label="Título")
+    page.wait_for_function("location.hash === '#/videos?ordem=titulo'")
+    page.wait_for_selector("#index .card")
+    titles = page.eval_on_selector_all("#index .card b", "els => els.map(e => e.textContent)")
+    assert titles == sorted(titles, key=str.lower)
+
+
+def test_the_usage_filter_narrows_parts(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    go(page, origin, "#/personagens?uso=nao")
+    page.wait_for_selector("#index .card")
+    unused = {p["name"] for p in catalog["parts"] if p["kind"] == "character" and not p["videos"]}
+    assert set(cards(page)) == unused
+    assert page.locator(".seg a[aria-current='true']", has_text="Sem uso").count() == 1
+
+
+def test_a_style_opens_in_tabs(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    soft = next(s for s in catalog["styles"] if s["slug"] == "soft")
+    go(page, origin, "#/estilos/soft")
+    page.wait_for_selector("#style-videos .card")
+    assert page.locator(".tabs a[aria-current='true']").inner_text().startswith("Vídeos")
+    page.locator(".tabs a[href='#/estilos/soft?aba=personagens']").click()
+    page.wait_for_selector("#style-parts .card")
+    assert page.locator("#style-videos").count() == 0
+    own = [n for n in soft["parts"] if next(p for p in catalog["parts"] if p["name"] == n)["kind"] == "character"]
+    assert cards(page, "#style-parts") == own
+
+
+def test_a_video_and_a_part_show_a_data_sheet(page, origin):
+    go(page, origin, "#/videos/camera-off")
+    sheet = page.wait_for_selector(".ficha").inner_text()
+    assert "Duração" in sheet and "4,0 s" in sheet
+    assert page.locator(".crumbs a[href='#/videos']").count() == 1
+    go(page, origin, "#/personagens/pip")
+    sheet = page.wait_for_selector(".ficha").inner_text()
+    assert "pip" in sheet and "Aparece em" in sheet
 
 
 def test_the_search_finds_by_name_across_sections_ignoring_accents(page, origin):

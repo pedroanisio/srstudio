@@ -731,3 +731,15 @@ def test_page_reports_an_unreadable_usage_report_as_an_error(tree, tmp_path, cap
     args += ["--site", str(tmp_path / "site"), "--cache", str(tmp_path / "c"), "--usage", str(bad)]
     assert main(args) == 2
     assert "schema" in capsys.readouterr().err and not (tmp_path / "site").exists()
+
+
+@pytest.mark.parametrize(
+    "docstring, shown",
+    [
+        ("Centred at :data:`CAPTION_Y` by default", "Centred at CAPTION_Y by default"),
+        ("See :func:`srstudio.word_cues`, then ``at``", "See srstudio.word_cues, then at"),
+        ("One line with no markup", "One line with no markup"),
+    ],
+)
+def test_a_part_summary_shows_no_docstring_markup(docstring, shown):
+    assert cp.plain(docstring) == shown

@@ -13,11 +13,23 @@
   };
   const KIND_OF_ROUTE = Object.fromEntries(Object.entries(KINDS).map(([kind, k]) => [k.route, kind]));
   const BASE_SECTIONS = {
-    '': ['.hero', 'footer'],
+    '': ['footer'],
     pacotes: ['#episodios', '#elenco', '#usado', '#comparativo'],
     motor: ['#motor', '#pipeline', '#audio'],
   };
   const NONE = 'nenhum'; // the filter value for "no style"
+  const byTitle = (a, b) => a.title.localeCompare(b.title, 'pt');
+  const VIDEO_SORTS = {
+    '': {label: 'Catálogo'},
+    titulo: {label: 'Título', by: byTitle},
+    duracao: {label: 'Mais longos', by: (a, b) => b.duration - a.duration},
+    pecas: {label: 'Mais peças', by: (a, b) => b.parts.length - a.parts.length},
+  };
+  const PART_SORTS = {
+    '': {label: 'Catálogo'},
+    titulo: {label: 'Título', by: byTitle},
+    uso: {label: 'Mais usados', by: (a, b) => b.videos.length - a.videos.length},
+  };
 
   const app = document.getElementById('app');
   const base = document.getElementById('base');
@@ -35,6 +47,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
   const seconds = t => t.toFixed(1).replace('.', ',') + ' s';
+  const minutes = t => `${Math.round(t / 60)} min`;
   const clock = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const videoCount = n => plural(n, 'vídeo', 'vídeos');
@@ -91,52 +104,105 @@
       `<b>${esc(s.name)}</b><small>${videoCount(s.videos.length)} · ${plural(s.parts.length, 'peça', 'peças')}</small></a>`;
   }
   const grid = (cards, id) => `<div class="grid"${id ? ` id="${id}"` : ''}>${cards.join('')}</div>`;
+  function table(heads, rows, id) {
+    const th = heads.map(h => `<th${h.num ? ' class="num"' : ''}>${esc(h.label || '')}</th>`).join('');
+    return `<div class="tbl"${id ? ` id="${id}"` : ''}><table class="rows"><thead><tr>${th}</tr></thead>` +
+      `<tbody>${rows.join('')}</tbody></table></div>`;
+  }
+  const thumb = (src, alt, width, height) => `<td class="pic">${src ? image(src, alt, width, height) : ''}</td>`;
+  function videoRow(v) {
+    return `<tr class="row" data-video="${esc(v.slug)}">${thumb(v.poster, v.title, v.width, v.height)}` +
+      `<td><a href="${videoHref(v)}"><b>${esc(v.title)}</b></a><code>${esc(v.slug)}</code></td>` +
+      `<td>${styleTag(v.style)}${videoTags(v)}</td><td>${esc(v.number)}</td><td>${esc(v.format)}</td>` +
+      `<td class="num">${v.duration ? seconds(v.duration) : '—'}</td><td class="num">${v.parts.length}</td></tr>`;
+  }
+  function partRow(p) {
+    const s = firstStill(p);
+    return `<tr class="row" data-part="${esc(p.name)}">${s ? thumb(s.src, p.title, s.width, s.height) : thumb()}` +
+      `<td><a href="${partHref(p)}"><b>${esc(p.title)}</b></a><code>${esc(p.name)}</code></td>` +
+      `<td>${styleTag(p.style)}</td><td class="num">${C.measured ? p.videos.length : '—'}</td>` +
+      `<td class="summary">${esc(p.summary)}</td></tr>`;
+  }
+  const VIDEO_HEADS = [{}, {label: 'Vídeo'}, {label: 'Estilo'}, {label: 'Nº'}, {label: 'Formato'},
+    {label: 'Duração', num: true}, {label: 'Peças', num: true}];
+  const PART_HEADS = [{}, {label: 'Peça'}, {label: 'Estilo'}, {label: 'Vídeos', num: true}, {label: 'Resumo'}];
 
   // -- the indexes ----------------------------------------------------------------------------------------
-  function filters(route, items, chosen, noneLabel) {
-    const present = new Set(items.map(x => x.style));
-    const link = (value, label) => {
-      const href = value ? `#/${route}?estilo=${encodeURIComponent(value)}` : `#/${route}`;
-      return `<a href="${href}" aria-current="${chosen === value}">${esc(label)}</a>`;
-    };
-    const chips = [link('', 'Todos')];
-    C.styles.filter(s => present.has(s.slug)).forEach(s => chips.push(link(s.slug, s.name)));
-    if (present.has('')) chips.push(link(NONE, noneLabel));
+  function query(params, change) {
+    const next = new URLSearchParams(params);
+    Object.entries(change).forEach(([key, value]) => (value ? next.set(key, value) : next.delete(key)));
+    const text = next.toString();
+    return text ? `?${text}` : '';
+  }
+  function filters(route, items, params, noneLabel) {
+    const value = params.get('estilo') || '';
+    const link = (slug, label, n) =>
+      `<a href="#/${route}${query(params, {estilo: slug})}" aria-current="${value === slug}">${esc(label)}<small>${n}</small></a>`;
+    const of = slug => items.filter(x => x.style === slug).length;
+    const chips = [link('', 'Todos', items.length)];
+    C.styles.filter(s => of(s.slug)).forEach(s => chips.push(link(s.slug, s.name, of(s.slug))));
+    if (of('')) chips.push(link(NONE, noneLabel, of('')));
     return `<div class="filters" aria-label="Filtrar por estilo">${chips.join('')}</div>`;
+  }
+  function segmented(route, params, key, options, label) {
+    const value = params.get(key) || '';
+    const links = options.map(([option, text]) =>
+      `<a href="#/${route}${query(params, {[key]: option})}" aria-current="${value === option}">${esc(text)}</a>`);
+    return `<div class="seg" role="group" aria-label="${esc(label)}">${links.join('')}</div>`;
+  }
+  function sorter(route, params, sorts) {
+    const value = params.get('ordem') || '';
+    const options = Object.entries(sorts).map(([key, sort]) =>
+      `<option value="#/${route}${query(params, {ordem: key})}"${key === value ? ' selected' : ''}>${esc(sort.label)}</option>`);
+    return `<label class="sort">Ordenar <select id="sort">${options.join('')}</select></label>`;
   }
   const chosen = (items, value) =>
     value ? items.filter(x => x.style === (value === NONE ? '' : value)) : items;
+  function sorted(items, sorts, params) {
+    const sort = sorts[params.get('ordem') || ''];
+    return sort && sort.by ? [...items].sort(sort.by) : items;
+  }
+  const VIEWS = [['', 'Grade'], ['lista', 'Lista']];
 
   function head(title, lede) {
     return `<div class="view-head"><h2>${esc(title)}</h2>${lede ? `<p class="lede">${lede}</p>` : ''}</div>`;
   }
+  function toolbar(filter, tools) {
+    return `<div class="toolbar">${filter}<div class="tools">${tools.join('')}</div></div>`;
+  }
   function viewVideos(id, params) {
     if (id) return viewVideo(id);
-    const value = params.get('estilo') || '';
-    const shown = chosen(C.videos, value);
-    const lede = `${videoCount(shown.length)} de ${C.videos.length}. Clique para abrir o player, as falas e as peças.`;
+    const shown = sorted(chosen(C.videos, params.get('estilo') || ''), VIDEO_SORTS, params);
+    const body = params.get('ver') === 'lista'
+      ? table(VIDEO_HEADS, shown.map(videoRow), 'index')
+      : grid(shown.map(videoCard), 'index');
     return {
       title: 'Vídeos',
-      html: head('Vídeos', esc(lede)) + filters('videos', C.videos, value, 'Sem estilo') +
-        grid(shown.map(videoCard), 'index'),
+      html: head('Vídeos', esc(shown.length === C.videos.length ? videoCount(shown.length) : `${shown.length} de ${C.videos.length}`)) +
+        toolbar(filters('videos', C.videos, params, 'Sem estilo'),
+          [sorter('videos', params, VIDEO_SORTS), segmented('videos', params, 'ver', VIEWS, 'Exibição')]) + body,
     };
   }
   function viewParts(kind, id, params) {
     if (id) return viewPart(kind, id);
     const k = KINDS[kind];
     const all = C.parts.filter(p => p.kind === kind);
-    const value = params.get('estilo') || '';
-    const shown = chosen(all, value);
-    const unused = all.filter(p => !p.videos.length).length;
-    const lede = `${shown.length} de ${all.length}` + (C.measured ? `; ${unused} sem uso medido.` : '.');
+    const use = params.get('uso') || '';
+    const used = {'': () => true, sim: p => p.videos.length, nao: p => !p.videos.length}[use] || (() => true);
+    const shown = sorted(chosen(all, params.get('estilo') || '').filter(used), PART_SORTS, params);
+    const body = params.get('ver') === 'lista'
+      ? table(PART_HEADS, shown.map(partRow), 'index')
+      : grid(shown.map(partCard), 'index');
+    const tools = [sorter(k.route, params, PART_SORTS), segmented(k.route, params, 'ver', VIEWS, 'Exibição')];
+    if (C.measured) tools.unshift(segmented(k.route, params, 'uso', [['', 'Todos'], ['sim', 'Usados'], ['nao', 'Sem uso']], 'Uso'));
     return {
       title: k.label,
-      html: head(k.label, esc(lede)) + filters(k.route, all, value, 'Compartilhadas') +
-        grid(shown.map(partCard), 'index'),
+      html: head(k.label, esc(shown.length === all.length ? `${all.length} no total` : `${shown.length} de ${all.length}`)) +
+        toolbar(filters(k.route, all, params, 'Compartilhadas'), tools) + body,
     };
   }
-  function viewStyles(id) {
-    if (id) return viewStyle(id);
+  function viewStyles(id, params) {
+    if (id) return viewStyle(id, params);
     return {title: 'Estilos', html: head('Estilos', `${C.styles.length} estilos nomeados.`) + grid(C.styles.map(styleCard), 'index')};
   }
 
@@ -153,6 +219,16 @@
       return `<div class="sub">${k.label} (${own.length})</div><div class="pills">${pills.join('')}</div>`;
     }).join('');
   }
+  const crumbs = (href, label, title) =>
+    `<nav class="crumbs" aria-label="Caminho"><a href="${href}">${esc(label)}</a><span>/</span><span>${esc(title)}</span></nav>`;
+  function ficha(rows) {
+    const items = rows.filter(([, value]) => value !== '').map(([key, value]) => `<dt>${esc(key)}</dt><dd>${value}</dd>`);
+    return `<dl class="ficha">${items.join('')}</dl>`;
+  }
+  function styleLink(slug) {
+    const s = styles.get(slug);
+    return s ? `<a href="${styleHref(s)}" data-style-link="${esc(s.slug)}">${esc(s.name)}</a>` : '';
+  }
   function unmeasuredNote() {
     return C.unmeasured.length ? `<p class="notice">Não medidos: ${C.unmeasured.map(esc).join(', ')}. Eles podem usar peças que esta lista não mostra.</p>` : '';
   }
@@ -161,10 +237,6 @@
     if (!v) return missing(`O vídeo ${slug}`);
     const spoken = v.lines.filter(x => !x.sfx);
     const voices = [...new Set(v.lines.map(x => x.voice).filter(Boolean))].sort().join(', ') || '—';
-    const facts = [
-      [v.duration ? seconds(v.duration) : '—', 'duração'], [v.format || '—', 'formato'],
-      [v.fps ? `${v.fps} fps` : '—', 'quadros'], [spoken.length, 'falas'], [v.effects, 'efeitos'], [voices, 'vozes'],
-    ].map(([value, key]) => `<div class="fact"><b>${esc(value)}</b><span>${key}</span></div>`).join('');
     const rows = v.lines.map(x =>
       `<button type="button" class="line" data-t="${x.t.toFixed(3)}"><span class="t">${clock(x.t)}</span>` +
       `<span class="who">${esc(x.who)}<small>${esc(x.voice)}</small></span>` +
@@ -183,21 +255,23 @@
     const used = v.measured
       ? (v.parts.length ? groupedParts(v.parts) : '<p class="notice">A medição não encontrou peças registradas neste vídeo.</p>')
       : '<p class="notice" id="not-measured">Não medido: <code>srstudio usage</code> não reconstruiu este episódio, então não se sabe que peças ele usa.</p>';
-    const style = styles.get(v.style);
+    const sheet = ficha([
+      ['Estilo', styleLink(v.style)], ['Número', esc(v.number)], ['Duração', v.duration ? seconds(v.duration) : '—'],
+      ['Formato', esc(v.format || '—')], ['Quadros', v.fps ? `${v.fps} fps` : '—'], ['Falas', spoken.length],
+      ['Efeitos', v.effects], ['Vozes', esc(voices)],
+    ]);
     return {
       title: v.title,
-      html: `<article class="detail" data-video="${esc(v.slug)}"><div class="view-head"><a href="#/videos">Vídeos</a>` +
-        `<h2>${esc(v.title)}</h2><div class="tags">${styleTag(v.style)}${videoTags(v)}</div>` +
-        `<p class="lede">${esc(v.lede)}</p>` +
-        (style ? `<a href="${styleHref(style)}" data-style-link="${esc(style.slug)}">Estilo ${esc(style.name)}</a>` : '') +
-        `</div><div class="detail-grid"><div>${player}</div><div class="ep-info"><div class="facts">${facts}</div>${highlights}` +
-        (rows ? `<div class="dialog lib-dialog">${rows}</div>` : '') +
-        `</div></div><section class="used">${used}</section></article>`,
+      html: `<article class="detail" data-video="${esc(v.slug)}">${crumbs('#/videos', 'Vídeos', v.title)}` +
+        `<div class="view-head"><h2>${esc(v.title)}</h2><div class="tags">${styleTag(v.style)}${videoTags(v)}</div>` +
+        `<p class="lede">${esc(v.lede)}</p></div><div class="detail-grid video"><div class="player-col">${player}</div>` +
+        `<div class="ep-info">${highlights}` + (rows ? `<div class="sub">Falas (${v.lines.length})</div><div class="dialog lib-dialog">${rows}</div>` : '') +
+        `</div><aside class="side">${sheet}<section class="used">${used}</section></aside></div></article>`,
     };
   }
   function figure(s, alt, lead) {
-    const from = s.video && videos.has(s.video) ? ` · <a href="${videoHref(videos.get(s.video))}">${esc(videos.get(s.video).title)}</a>` : '';
-    const caption = [esc(s.label)].filter(Boolean).join('') + (lead ? from : '');
+    const from = s.video && videos.has(s.video) ? `<a href="${videoHref(videos.get(s.video))}">${esc(videos.get(s.video).title)}</a>` : '';
+    const caption = [esc(s.label), lead ? from : ''].filter(Boolean).join(' · ');
     return `<figure>${image(s.src, alt, s.width, s.height)}${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
   }
   function viewPart(kind, name) {
@@ -216,38 +290,51 @@
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
     else if (!p.videos.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;
     else used = grid(p.videos.map(slug => videoCard(videos.get(slug))), 'part-videos') + unmeasuredNote();
+    const voices = p.gallery.map(g => g.voice).filter(Boolean);
+    const sheetFacts = ficha([
+      ['Tipo', k.one], ['Estilo', styleLink(p.style) || 'Compartilhada'], ['Nome', `<code>${esc(p.name)}</code>`],
+      ['Aparece em', C.measured ? videoCount(p.videos.length) : 'não medido'],
+      ['Voz', esc([...new Set(voices)].join(', '))],
+    ]);
     return {
       title: p.title,
-      html: `<article class="detail" data-part="${esc(p.name)}"><div class="view-head"><a href="#/${k.route}">${k.label}</a>` +
-        `<h2>${esc(p.title)}</h2><code>${esc(p.name)}</code><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}</p></div>${noStill}${gallery}${sheet}` +
-        `<div class="sub">Aparece em ${C.measured ? videoCount(p.videos.length) : ''}</div>${used}</article>`,
+      html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
+        `<div class="view-head"><h2>${esc(p.title)}</h2><div class="tags">${styleTag(p.style)}</div>` +
+        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${noStill}${gallery}${sheet}</div>` +
+        `<aside class="side">${sheetFacts}</aside></div>` +
+        `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
   }
-  function viewStyle(slug) {
+  function viewStyle(slug, params) {
     const s = styles.get(slug);
     if (!s) return missing(`O estilo ${slug}`);
-    const byKind = Object.entries(KINDS).map(([kind, k]) => {
-      const own = s.parts.map(n => parts.get(n)).filter(p => p.kind === kind);
-      return own.length ? `<div class="sub">${k.label} (${own.length})</div>${grid(own.map(partCard))}` : '';
-    }).join('');
+    const tab = params.get('aba') || '';
+    const ownOf = kind => s.parts.map(n => parts.get(n)).filter(p => p.kind === kind);
+    const link = (value, label, n) =>
+      `<a href="${styleHref(s)}${query(new URLSearchParams(), {aba: value})}" aria-current="${tab === value}">${esc(label)}<small>${n}</small></a>`;
+    const tabs = [link('', 'Vídeos', s.videos.length)];
+    Object.values(KINDS).forEach(k => {
+      const n = ownOf(KIND_OF_ROUTE[k.route]).length;
+      if (n) tabs.push(link(k.route, k.label, n));
+    });
+    const body = KIND_OF_ROUTE[tab]
+      ? grid(ownOf(KIND_OF_ROUTE[tab]).map(partCard), 'style-parts')
+      : grid(s.videos.map(v => videoCard(videos.get(v))), 'style-videos');
     return {
       title: s.name,
-      html: `<article class="detail" data-style="${esc(s.slug)}"><div class="view-head"><a href="#/estilos">Estilos</a>` +
+      html: `<article class="detail" data-style="${esc(s.slug)}">${crumbs('#/estilos', 'Estilos', s.name)}<div class="view-head">` +
         `<h2>${esc(s.name)}</h2><b>${esc(s.title)}</b><p class="lede">${s.text_html}</p>` +
-        (s.text_html === esc(s.summary) ? '' : `<p>${esc(s.summary)}</p>`) + '</div>' +
-        `<div class="sub">Vídeos (${s.videos.length})</div>${grid(s.videos.map(v => videoCard(videos.get(v))), 'style-videos')}` +
-        byKind + '</article>',
+        (s.text_html === esc(s.summary) ? '' : `<p class="aside">${esc(s.summary)}</p>`) + '</div>' +
+        `<nav class="tabs" aria-label="Conteúdo do estilo">${tabs.join('')}</nav>${body}</article>`,
     };
   }
 
   // -- the registry and the usage lists -------------------------------------------------------------------
   function viewRegistry() {
-    const links = names => names.map(n => `<a href="#/videos/${slugLink(n)}">${esc(n)}</a>`).join(', ') || '—';
     const rows = [...C.parts].sort((a, b) => a.name < b.name ? -1 : 1).map(p =>
       `<tr><td><a href="${partHref(p)}"><code>${esc(p.name)}</code></a></td>` +
       `<td>${esc(styles.has(p.style) ? styles.get(p.style).name : 'todos')}</td><td>${KINDS[p.kind].one}</td>` +
-      `<td>${esc(p.summary)}</td><td>${links(p.videos)}</td></tr>`).join('');
+      `<td>${esc(p.summary)}</td><td class="num">${p.videos.length}</td></tr>`).join('');
     const blocks = Object.entries(KINDS).map(([kind, k]) => {
       const all = C.parts.filter(p => p.kind === kind);
       const used = all.filter(p => p.videos.length);
@@ -268,7 +355,7 @@
       title: 'Registro',
       html: head('Registro de peças', `${C.parts.length} peças registradas.`) +
         `<div class="tbl"><table class="lib-registry"><thead><tr><th>Peça</th><th>Estilo</th><th>Tipo</th><th>Resumo</th>` +
-        `<th>Episódios</th></tr></thead><tbody>${rows}</tbody></table></div>${usage}`,
+        `<th class="num">Vídeos</th></tr></thead><tbody>${rows}</tbody></table></div>${usage}`,
     };
   }
 
@@ -296,16 +383,55 @@
     };
   }
 
+  function styleRow(s) {
+    const v = s.videos.map(slug => videos.get(slug)).find(x => x.poster);
+    const count = kind => s.parts.filter(n => parts.get(n).kind === kind).length;
+    const cell = (route, n) => `<td class="num"><a href="#/${route}?estilo=${esc(s.slug)}">${n || '—'}</a></td>`;
+    const time = s.videos.reduce((t, slug) => t + videos.get(slug).duration, 0);
+    return `<tr>${v ? thumb(v.poster, s.name, v.width, v.height) : thumb()}` +
+      `<td><a href="${styleHref(s)}"><b>${esc(s.name)}</b></a>${s.title === s.name ? '' : `<small>${esc(s.title)}</small>`}</td>` +
+      cell('videos', s.videos.length) + Object.entries(KINDS).map(([kind, k]) => cell(k.route, count(kind))).join('') +
+      `<td class="num">${minutes(time)}</td></tr>`;
+  }
+  function usageBar([kind, k]) {
+    const all = C.parts.filter(p => p.kind === kind);
+    const used = all.filter(p => p.videos.length).length;
+    const share = all.length ? Math.round(100 * used / all.length) : 0;
+    return `<div class="usage-bar"><a href="#/${k.route}">${k.label}</a><span class="usage-n">${used} de ${all.length}</span>` +
+      `<div class="bar" role="img" aria-label="${used} de ${all.length} ${k.label} usados"><i style="width:${share}%"></i></div>` +
+      (used < all.length ? `<a class="usage-gap" href="#/${k.route}?uso=nao">${all.length - used} sem uso</a>` : '') + '</div>';
+  }
+  function attention() {
+    const noRender = C.videos.filter(v => v.source === 'no-render');
+    const noStill = C.parts.filter(p => !firstStill(p));
+    const line = (label, items) => (items.length
+      ? `<details><summary>${esc(label)} <b>${items.length}</b></summary><div class="pills">${items.join('')}</div></details>` : '');
+    const body = [
+      line('Vídeos sem render', noRender.map(v => `<a href="${videoHref(v)}">${esc(v.slug)}</a>`)),
+      line('Vídeos não medidos', C.unmeasured.map(slug => `<a href="#/videos/${slugLink(slug)}">${esc(slug)}</a>`)),
+      line('Peças sem imagem', noStill.map(p => `<a href="${partHref(p)}">${esc(p.name)}</a>`)),
+    ].join('');
+    return body ? `<section class="panel"><h3>Pendências</h3>${body}</section>` : '';
+  }
   function viewHome() {
-    const count = kind => C.parts.filter(p => p.kind === kind).length;
+    const total = C.videos.reduce((t, v) => t + v.duration, 0);
+    const used = C.parts.filter(p => p.videos.length).length;
     const tiles = [
-      ['#/estilos', C.styles.length, 'Estilos'], ['#/personagens', count('character'), 'Personagens'],
-      ['#/locacoes', count('location'), 'Locações'], ['#/objetos', count('prop'), 'Objetos'],
-      ['#/graficos', count('graphic'), 'Gráficos'], ['#/videos', C.videos.length, 'Vídeos'],
-      ['#/pacotes', C.videos.filter(v => v.source === 'package').length, 'Pacotes'],
-      ['#/registro', C.parts.length, 'Registro de peças'], ['#/motor', C.engine.length, 'Temas do motor'],
+      ['#/videos', C.videos.length, 'Vídeos'], ['#/videos?ordem=duracao', minutes(total), 'De vídeo'],
+      ['#/estilos', C.styles.length, 'Estilos'], ['#/registro', C.parts.length, 'Peças registradas'],
+      ['#/registro', `${Math.round(100 * used / C.parts.length)} %`, 'Peças em uso'],
     ];
-    return {title: '', html: `<div class="tiles-nav">${tiles.map(([href, n, label]) => `<a href="${href}"><b>${n}</b><span>${label}</span></a>`).join('')}</div>`};
+    const heads = [{}, {label: 'Estilo'}, {label: 'Vídeos', num: true},
+      ...Object.values(KINDS).map(k => ({label: k.label, num: true})), {label: 'Duração', num: true}];
+    const specs = document.querySelector('.hero .specs');
+    return {
+      title: '',
+      html: head('Visão geral', '') +
+        `<div class="tiles-nav">${tiles.map(([href, n, label]) => `<a href="${href}"><b>${n}</b><span>${label}</span></a>`).join('')}</div>` +
+        `<div class="home-grid"><section class="panel style-table"><h3>Estilos</h3>${table(heads, C.styles.map(styleRow))}</section>` +
+        `<div class="home-side"><section class="panel"><h3>Uso da biblioteca</h3>${Object.entries(KINDS).map(usageBar).join('')}</section>${attention()}</div></div>` +
+        (specs ? `<section class="panel"><h3>Especificações</h3>${specs.outerHTML}</section>` : ''),
+    };
   }
 
   // -- the router -----------------------------------------------------------------------------------------
@@ -323,7 +449,7 @@
     const {section, id, params} = route;
     if (section === '') return viewHome();
     if (section === 'videos') return viewVideos(id, params);
-    if (section === 'estilos') return viewStyles(id);
+    if (section === 'estilos') return viewStyles(id, params);
     if (section === 'registro') return viewRegistry();
     if (section === 'busca') return viewSearch(id);
     if (section === 'pacotes') return {title: 'Pacotes', html: ''};
@@ -344,6 +470,15 @@
       baseRan = true;
       window.srstudioBase();
     }
+  }
+  function countSections() {
+    const count = {'#/estilos': C.styles.length, '#/videos': C.videos.length, '#/registro': C.parts.length,
+      '#/pacotes': C.videos.filter(v => v.source === 'package').length, '#/motor': C.engine.length};
+    Object.entries(KINDS).forEach(([kind, k]) => { count[`#/${k.route}`] = C.parts.filter(p => p.kind === kind).length; });
+    document.querySelectorAll('.nav-links a').forEach(a => {
+      const n = count[a.getAttribute('href')];
+      if (n !== undefined) a.dataset.count = n;
+    });
   }
   function render() {
     const route = parseHash();
@@ -397,6 +532,10 @@
     }
   });
 
+  app.addEventListener('change', event => {
+    if (event.target.id === 'sort') location.hash = event.target.value;
+  });
+
   // A line seeks its video. With nothing preloaded a video has no timeline before its metadata, so the seek waits for
   // it; play() is what starts the loading. Clicks in a row each queue a seek, in order, so the last one stands.
   app.addEventListener('click', event => {
@@ -433,6 +572,7 @@
       videos = new Map(C.videos.map(v => [v.slug, v]));
       parts = new Map(C.parts.map(p => [p.name, p]));
       styles = new Map(C.styles.map(s => [s.slug, s]));
+      countSections();
       render();
       afterRender();
     })

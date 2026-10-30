@@ -99,3 +99,21 @@ video entries and 9 styles, and the operator needs to go from a character to its
   choice and it is bounded by the view, not by the size of the catalog.
 - `generated/catalog/site` must stay on the same device as the cache for the hard links to save space; otherwise it
   costs a copy and nothing else.
+
+## Addendum, 2026-10-30: an application shell
+
+The first version kept the old page's reading order: a banner, prose cards per style, then a row of numbers. It served
+the files correctly but read as a long document with a menu on top, and the operator's review was "this is not looking
+like a webapp" and "improve the data/information disposition". The shell now is a fixed sidebar with a count per
+section, and the banner never shows.
+
+- The home view is a dashboard: headline numbers, one table comparing the styles (each number links to that filtered
+  index), the share of each kind of part in use, and what is pending.
+- Every index has one toolbar: style filter with counts, sort, use, grid or list. All of it lives in the route, so a
+  view is a link, as the style filter already was.
+- Details share one layout: path, title, content, and a data sheet. A style opens in tabs instead of one long page.
+
+Rejected: a client framework, because hash routes over `catalog.json` already give every view, and ADR 0046's reason
+for plain JavaScript stands; and removing the banner from the base page, because its numbers still feed the dashboard's
+specifications and the base stays the one source for the packages. The home view now loads one poster per style,
+bounded by the number of styles, where it used to load no image.

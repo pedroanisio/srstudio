@@ -220,6 +220,11 @@ class Card:
     size: tuple[int, int] = (1080, 1920)  # the frame, in pixels
 
 
+def plain(docstring: str) -> str:
+    """A docstring's first line as a reader sees it: Sphinx roles and literals reduced to the name they mark."""
+    return re.sub(r"``(.+?)``", r"\1", re.sub(r":[a-z]+:`[~.]*([^`]+)`", r"\1", docstring))
+
+
 def _format(width: int, height: int) -> str:
     return "1:1" if width == height else ("9:16" if height > width else "16:9")
 
@@ -536,7 +541,7 @@ def assemble(
             kind=x.kind,
             title=shown[x.name][0].name if x.name in shown else x.name,
             style=x.style,
-            summary=x.summary,
+            summary=plain(x.summary),
             videos=tuple(_episodes_of(x, usage)),
             gallery=tuple(shown.get(x.name, ())),
             sheet=sheet if x.name == "pip" else (),
@@ -585,18 +590,21 @@ _ANCHORS = {
 
 _NAV = """<nav id="nav" aria-label="Seções do catálogo">
   <a class="nav-home" href="#/">Catálogo</a>
+  <input id="search" type="search" placeholder="Buscar por nome" aria-label="Buscar por nome" autocomplete="off">
   <div class="nav-links">
+    <a href="#/">Visão geral</a>
+    <span class="nav-label">Biblioteca</span>
     <a href="#/estilos">Estilos</a>
+    <a href="#/videos">Vídeos</a>
     <a href="#/personagens">Personagens</a>
     <a href="#/locacoes">Locações</a>
     <a href="#/objetos">Objetos</a>
     <a href="#/graficos">Gráficos</a>
-    <a href="#/videos">Vídeos</a>
-    <a href="#/motor">Motor</a>
-    <a href="#/pacotes">Pacotes</a>
+    <span class="nav-label">Referência</span>
     <a href="#/registro">Registro</a>
+    <a href="#/pacotes">Pacotes</a>
+    <a href="#/motor">Motor</a>
   </div>
-  <input id="search" type="search" placeholder="Buscar por nome" aria-label="Buscar por nome" autocomplete="off">
 </nav>
 """
 
