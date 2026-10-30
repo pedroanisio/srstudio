@@ -54,7 +54,8 @@ Every one of them keeps the same rules, enforced when it is drawn, not only in t
    widths of the style's font): one line or as many as the box holds, each line no wider than the box. A receipt
    row fits its name and price side by side. A form's value fits the room its measured label leaves. Sizes are 24 px
    or more, and `scale` is at least 0.9, so the smallest lettering stays at or over the engine's legibility floor
-   (`ink_meter.LEGIBLE_PX`, 21.6 px).
+   (`ink_meter.LEGIBLE_PX`, 21.6 px). The speaker carries no lettering, so its floor is 0.5 (`SPEAKER_SCALES`), small
+   enough to stand on a shelf.
 4. **States from 0, rising.** States are `(second, …)` from 0 in strictly rising seconds, on the composition
    clock, one shown at a time. Looping motion (the speaker's chase and pulse) is keyed step by step up to the
    shot's end, which is bounded (`MAX_END`), so the number of keys is bounded too.
@@ -86,9 +87,9 @@ footprint holds everything its prop draws.
   `test_the_signature_box_holds_both_marks_on_the_desk_and_on_the_table` until `SIGNATURE_BOX` follows.
 - The lit rooms of ADR 0043 (`toon_rooms`, built alongside on `feat/toon-rooms`) draw their own smart speaker on
   the lounge shelf and a TAKE A NUMBER sign and NOW SERVING board on the service counter, fixed in the set. The
-  placeable versions are `speaker` and `take_a_number`, so the rooms should call them rather than draw a second
-  version of each object. Two things are settled when they merge. The shelf speaker is about a third of this
-  speaker's width, below `SCALES[0]`; that floor exists for lettering, and the speaker has none. The counter's board
-  takes its colour from the room's light cues, which `take_a_number` does not.
+  placeable speaker is `speaker`, so the rooms call it once both are merged rather than draw a second
+  version of the speaker. At 0.5 this speaker is as wide as the shelf's (34 px), and the lounge gets its states. The
+  counter's wall board stays part of that set: the room's light cues colour it, and a wall board is a different object
+  from the portable dispenser on a pole.
 - A sketch maps its own events to states (`reader:` events become card-reader screens in *Split It*). The props
   take plain states and know nothing of a sketch's beats.
