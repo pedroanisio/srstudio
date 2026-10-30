@@ -418,10 +418,9 @@ def _keys(c: Card) -> set[str]:
     return {c.slug, c.number} - {""}
 
 
-def check_gallery(gallery: Sequence[GalleryItem], cards: Sequence[Card], usage: Report | None = None) -> None:
-    """Every item shows registered parts in a still that exists; every part a rendered library episode uses (as
-    measured in ``usage``, else as registered) is shown. :class:`CatalogError` names the first item or part that is
-    not."""
+def check_gallery(gallery: Sequence[GalleryItem], cards: Sequence[Card], usage: Report) -> None:
+    """Every item shows registered parts in a still that exists; every part a rendered library episode uses, as
+    measured in ``usage``, is shown. :class:`CatalogError` names the first item or part that is not."""
     known = {x.name: x for x in registry.entries()}
     by_slug = {c.slug: c for c in cards}
     for g in gallery:
@@ -559,9 +558,14 @@ def inject(
     usage: Report | None = None,
 ) -> str:
     """The base page with the library's part added; :class:`CatalogError` when the base lost an anchor, or when
-    the notes curate a gallery that :func:`check_gallery` refuses or that has no ``stills`` to show."""
+    the notes curate a gallery that :func:`check_gallery` refuses, that has no ``usage`` to check its coverage
+    against or no ``stills`` to show."""
     check_base(page)
     if notes.gallery is not None:
+        if usage is None:
+            raise CatalogError(
+                "the notes curate a gallery, and its coverage check needs a usage report (srstudio usage; --usage)"
+            )
         check_gallery(notes.gallery, cards, usage)
         if stills is None:
             raise CatalogError("the notes curate a gallery but no stills were given to show it")

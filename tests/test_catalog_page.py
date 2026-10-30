@@ -355,7 +355,7 @@ def stills(s: cp.Shot) -> str:
 def test_the_galleries_are_injected_after_the_base_hosts(tree, tmp_path):
     notes = gallery_notes(tmp_path)
     numbered = cp.Notes(episodes={"camera-off": cp.EpisodeNote(number="08")}, gallery=notes.gallery)
-    page = cp.inject(BASE, cp.discover(*tree, numbered), numbered, media=str, poses=[], stills=stills)
+    page = cp.inject(BASE, cp.discover(*tree, numbered), numbered, media=str, poses=[], stills=stills, usage=SHOWN)
     cast = page.index('<div class="cast lib-gal" id="lib-cast">')
     assert (
         page.index('<div class="cast" id="cast"></div>') < cast < page.index('<div class="locs lib-gal" id="lib-locs">')
@@ -396,9 +396,15 @@ def test_the_gallery_is_checked_against_the_registry_and_the_renders(tree, tmp_p
         cp.inject(BASE, cards(tree), notes, media=str, poses=[], stills=stills, usage=SHOWN)
 
 
+def test_a_gallery_without_a_usage_report_is_refused(tree, tmp_path):
+    # its coverage check counts the parts the rendered episodes use, which only a usage report measures
+    with pytest.raises(cp.CatalogError, match="usage report"):
+        cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[], stills=stills)
+
+
 def test_a_gallery_needs_stills(tree, tmp_path):
     with pytest.raises(cp.CatalogError, match="stills"):
-        cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[])
+        cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[], usage=SHOWN)
 
 
 HALF_WRITER = """#!/bin/sh

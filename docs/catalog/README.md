@@ -32,8 +32,9 @@ From the workspace root, first measure which parts the episodes use (see the
     --out catalogo-scene-render.html
 ```
 
-- `--usage` is the report `srstudio usage` writes (schema `1.0.0`). With it, the registry table's episodes, the
-  gallery chips and the gallery check below use the measured usage instead of the hand-declared `episodes=`. A report
+- `--usage` is the report `srstudio usage` writes (schema `1.0.0`). The registry table's episodes, the gallery
+  chips and the gallery check below come from it; without it no part is claimed by any episode. Notes with a
+  gallery need it: the build stops with exit code 2 without one, since the gallery check could not fail. A report
   that cannot be read stops the build with exit code 2.
 
 - `--base` is the frozen page of the six packages. If it no longer has the anchors the generator writes into, the
@@ -75,8 +76,7 @@ When the notes have a gallery, the build also stops when:
 - a still's episode has no render;
 - a still's time is past the end;
 - a box leaves the frame;
-- a part that a rendered library episode is registered with (by slug or number), or with `--usage` a part its build
-  calls, is shown by no item.
+- a part that a rendered library episode's build calls, as `--usage` measured it, is shown by no item.
 
 So a new episode cannot leave the gallery out of date.
 
