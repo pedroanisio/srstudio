@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, Canvas, brush, flat_counter, registry, sketch, toon, toon_cast, toon_inked
+from srstudio import PEACH, Canvas, brush, flat_counter, registry, sketch, toon, toon_cast, toon_inked, toon_wear
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -73,7 +73,7 @@ def test_every_expression_is_drawn_inside_the_character_s_corner(eyes, mouth, ar
             brush.bounds(rest[0][0])[1] + toon_cast.SIGH_DROP, abs=0.01
         )
     if arms == "lean":  # the turn is clockwise about the hips: the shoulders and the head swing right
-        assert brush.bounds(body(layers)[0])[0] > brush.bounds(body(rest)[0])[0]
+        assert span(body(layers)[0])[0] > span(body(rest)[0])[0]
     assert toon_cast.figure_shapes(INKED, eyes, mouth, arms) == layers  # the same drawing every build
 
 
@@ -133,16 +133,35 @@ def test_the_blink_lids_cover_each_open_eye_even_a_shocked_one():
             ), f"the lid leaves the {kind} eye at {centre} showing"
 
 
-def body(layers: list) -> tuple[brush.Shape, brush.Shape]:
-    """The body's ink band and fill: the largest coloured shape and the ink drawn just before it."""
+def span(shapes: list[brush.Shape]) -> tuple[float, float, float, float]:
+    boxes = [brush.bounds(s) for s in shapes]
+    return min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)
+
+
+def inked_runs(layers: list) -> list[tuple[list[brush.Shape], int]]:
+    """Every coloured fill drawn straight over ink, with the run of ink pieces (its band) just before it."""
+    out = []
+    for i, (_, c) in enumerate(layers):
+        if c in ("ink", "white") or i == 0 or layers[i - 1][1] != "ink":
+            continue
+        k = i
+        while k > 0 and layers[k - 1][1] == "ink":
+            k -= 1
+        out.append(([s for s, _ in layers[k:i]], i))
+    return out
+
+
+def body(layers: list) -> tuple[list[brush.Shape], brush.Shape]:
+    """The body's ink band (its pieces) and fill: the largest coloured shape and the ink drawn just before it."""
 
     def area(shape: brush.Shape) -> float:
         x0, y0, x1, y1 = brush.bounds(shape)
         return (x1 - x0) * (y1 - y0)
 
     i = max((i for i, (_, c) in enumerate(layers) if c not in ("ink", "white")), key=lambda i: area(layers[i][0]))
-    assert layers[i - 1][1] == "ink"
-    return layers[i - 1][0], layers[i][0]
+    band = [band for band, at in inked_runs(layers) if at == i]
+    assert band
+    return band[0], layers[i][0]
 
 
 def inflections(shape: brush.Shape) -> int:
@@ -163,10 +182,11 @@ def test_the_contour_is_dense_pressed_and_asymmetric_like_the_traced_cat():
     body_ink, fill = body(DRAWING.foundation(INKED))
     _, fox_fill = body(toon_cast.figure_shapes(toon_cast.FOX, "wide", "flat", "desk"))
     assert inflections(fill) > 2 * inflections(fox_fill)  # an uneven contour, not a smooth one
-    # heavier at the back (right, away from the light) than over the crown, measured against the fill it rims
-    ix0, iy0, ix1, _ = brush.bounds(body_ink)
-    fx0, fy0, fx1, _ = brush.bounds(fill)
-    assert ix1 - fx1 > 1.5 * (fy0 - iy0) > 0
+    # heavier underneath and at the back (away from the light) than over the crown, measured against the fill it
+    # rims; the back's extreme is the ruff's sharp tip, where the brush lifts, so the bottom carries the full weight
+    ix0, iy0, ix1, iy1 = span(body_ink)
+    fx0, fy0, fx1, fy1 = brush.bounds(fill)
+    assert iy1 - fy1 > 2 * (fy0 - iy0) > 0 and ix1 - fx1 > fy0 - iy0
     # not mirror-symmetric: the outline flipped about the axis lands away from itself
     points = INKED.silhouette
     flipped = [(2 * toon_cast.CENTRE - x, y) for x, y in points]
@@ -179,10 +199,64 @@ def test_the_contour_is_dense_pressed_and_asymmetric_like_the_traced_cat():
     assert (lx + rx) / 2 - midline >= 4.0 and INKED.mouth[0] - midline >= 4.0
 
 
+def test_the_ink_band_breaks_where_a_hand_lifts_the_brush():
+    runs = inked_runs(DRAWING.foundation(INKED))
+    assert len(runs) >= 4  # the tail, both ears and the body
+    assert all(3 <= len(band) <= 5 for band, _ in runs)
+    assert len(body(DRAWING.foundation(INKED))[0]) >= 4
+    paw = DRAWING.limb([(100.0, 700.0), (120.0, 740.0), (150.0, 770.0)], INKED, (150.0, 770.0), True)
+    mitten = [band for band, at in inked_runs(paw) if paw[at][1] == INKED.paw]
+    assert len(mitten) == 1 and 3 <= len(mitten[0]) <= 5
+    assert DRAWING.foundation(INKED) == DRAWING.foundation(INKED)  # seeded: the same breaks every build
+
+
+def test_no_eye_nose_or_shine_is_a_perfect_ellipse_and_every_eye_is_a_one_off():
+    for eyes, mouth, arms in SAMPLE:
+        assert not [c for s, c in toon_cast.figure_shapes(INKED, eyes, mouth, arms) if len(s) == 26], (eyes, mouth)
+    assert all(len(s) != 26 for s in INKED.nose)
+    (lx, ly), (rx, ry) = INKED.eyes
+
+    def white(kind: str, centre: tuple[float, float], inner: float) -> brush.Shape:
+        (shape,) = [s for s, c in DRAWING.eye(INKED, centre, kind, inner) if c == "white"][:1]
+        x0, y0, _, _ = brush.bounds(shape)
+        return brush.shift(shape, -x0, -y0)
+
+    level = ("wide", "half", "left", "up", "down", "side", "narrow", "roll", "teary")
+    assert len({white(k, (lx, ly), 1.0) for k in level}) == len(level)  # each kind drawn once, by hand
+
+
+def test_the_head_shade_turns_the_form_tapering_at_both_ends():
+    head = [s for s, c in DRAWING.foundation(INKED) if c == toon_inked.SHADE and brush.bounds(s)[1] < 560]
+    assert len(head) == 1
+    points = [(head[0][i], head[0][i + 1]) for i in range(0, len(head[0]) - 1, 6)]
+    outline = INKED.silhouette
+    edges = list(zip(outline, outline[1:] + outline[:1], strict=True))
+    starts = [0.0]
+    for a, b in edges:
+        starts.append(starts[-1] + math.dist(a, b))
+
+    def place(p: tuple[float, float]) -> tuple[float, float]:
+        """How far along the silhouette the point sits, and how far inside it."""
+        best = (math.inf, 0.0)
+        for (a, b), s0 in zip(edges, starts, strict=False):
+            (ax, ay), (bx, by) = a, b
+            t = max(0.0, min(1.0, ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / math.dist(a, b) ** 2))
+            best = min(best, (math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay))), s0 + t * math.dist(a, b)))
+        return best[1], best[0]
+
+    placed = [place(p) for p in points]
+    first, last = min(s for s, _ in placed), max(s for s, _ in placed)
+    deepest = max(d for _, d in placed)
+    ends = [d for s, d in placed if s < first + 0.08 * (last - first) or s > last - 0.08 * (last - first)]
+    assert deepest >= 18.0  # it swells into the cheek
+    assert ends and max(ends) < 0.5 * deepest  # and thins to the outline at both ends, where a stripe stays full
+
+
 def test_inner_lines_stay_open_and_a_shade_tone_turns_the_forms():
     base = DRAWING.foundation(INKED)
     strokes = DRAWING.details(INKED)
-    assert len(strokes) >= 8 and all(layer in base for layer in strokes)
+    # few, chosen lines: the operator's second pass cut the crown parting, the chest tufts and two ear fluffs
+    assert 5 <= len(strokes) <= 7 and all(layer in base for layer in strokes)
     assert all(c == "ink" for _, c in strokes)
     shades = [s for s, c in base if c == toon_inked.SHADE]
     assert len(shades) >= 2
@@ -192,6 +266,10 @@ def test_inner_lines_stay_open_and_a_shade_tone_turns_the_forms():
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
     assert lightness(INKED.dark) < lightness(toon_inked.SHADE) < lightness(INKED.coat)
+
+
+def test_glasses_turn_with_the_tilted_head():
+    assert toon_wear.face_of(INKED).tilt == toon_inked.TILT
 
 
 def test_the_two_typing_frames_differ_only_in_the_arms():
