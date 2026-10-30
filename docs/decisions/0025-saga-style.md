@@ -129,3 +129,25 @@ floor there.
   frozen at an accepted drawing (ADR 0040).
 - *Lower the strict findings to warnings by encoding without `--strict`.* The brief for new reels requires a clean
   strict encode, and the findings point at frames a viewer cannot read.
+
+## Amendment, 2026-10-30: a desert that darkens under the captions
+
+**Context.** Saga captions are white with a dark outline and sit in the band below the floor line. On the desert
+the band is sunlit sand, and a strict encode of S15 *Call Juno* failed the caption contrast check (LEG-CONTRAST,
+1.01:1 against the 4.5:1 floor) the moment Elder Mabel spoke at home.
+
+**Decision.** `saga_sets.desert(..., shade=True)` lays a dusk gradient (`DESERT_SHADE`) over the dune from just
+above the floor line to the frame's foot, transparent at its top edge and nearly opaque by the caption band, so the
+captions read and the horizon, the hut and both signature marks stay as drawn. A stage asks for it with
+`Stage("desert", {"shade": True}, ...)`. A test proves the default draws no shade and the shaded desert draws
+exactly one, spanning the band below the floor line.
+
+**Rejected alternatives.**
+
+- *Shade the desert by default.* It changes the drawing of every published reel set on the desert (*Group Chat*,
+  *Free Tier*, *Moving Day* and *On Hold*), frozen at an accepted drawing (ADR 0040); with the switch off, a
+  fidelity rebuild of *Moving Day* is identical.
+- *Give Saga captions a box behind them.* It changes every set and every frozen reel's caption look to fix one
+  location, and a box over the floor hides the cast's feet and contact shadows.
+- *Restage the desert scenes elsewhere.* The premise needs Elder Mabel at home; the location is the joke's
+  setting, not a choice to make for the captions.
