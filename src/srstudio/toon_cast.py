@@ -962,11 +962,14 @@ def figure_layers(
     stickers: Sequence[Layer] = (),
     *,
     omit_arms: frozenset[str] = frozenset(),
+    wear: Sequence[str] = (),
 ) -> tuple[list[Layer], list[Layer], list[Layer]]:
     """The character in one expression as three runs of (shape, colour) layers in draw order, reference pixels:
     everything under the mouth (ears, body, marks, blush, arms, eyes, nose, whiskers), the mouth, and everything
     over it (the front teeth, paws on the face, ``stickers`` such as a note on the forehead). ``frame`` is the
-    typing frame (0 or 1) for ``arms == "type"``. The runs are already moved for the arms (:func:`_place`)."""
+    typing frame (0 or 1) for ``arms == "type"``. What is ``wear``-ing (:mod:`srstudio.toon_wear`) goes on the
+    cheeks under the nose, or over the face under the paws. The runs are already moved for the arms
+    (:func:`_place`)."""
     if eyes not in EYES or mouth not in MOUTHS or arms not in ARMS:
         raise ToonDataError(f"{look.name}: no expression {eyes!r}/{mouth!r}/{arms!r}")
     if frame not in (0, 1):
@@ -975,11 +978,18 @@ def figure_layers(
     under, over = _arms(look, arms, frame, omit_arms)
     under_mouth += under
     under_mouth += _eye(look, look.eyes[0], eyes, 1.0) + _eye(look, look.eyes[1], eyes, -1.0)
+    cheeks: list[Layer] = []
+    worn: list[Layer] = []
+    if wear:
+        from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with this module
+
+        cheeks, worn = wear_layers(face_of(look), wear)
+    under_mouth += cheeks
     under_mouth += [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
     if look.whiskers:
         under_mouth += _whiskers(look)
     bare = look.teeth and mouth not in ("none", "grimace", "kiss")  # no front teeth over clenched or puckered lips
-    over_mouth: list[Layer] = (_teeth(look) if bare else []) + over + list(stickers)
+    over_mouth: list[Layer] = (_teeth(look) if bare else []) + worn + over + list(stickers)
     return _place(under_mouth, arms), _place(_mouth(look, mouth), arms), _place(over_mouth, arms)
 
 
@@ -992,9 +1002,10 @@ def figure_shapes(
     stickers: Sequence[Layer] = (),
     *,
     omit_arms: frozenset[str] = frozenset(),
+    wear: Sequence[str] = (),
 ) -> list[Layer]:
     """The whole drawing of :func:`figure_layers` as one run of layers."""
-    under, mouth_layers, over = figure_layers(look, eyes, mouth, arms, frame, stickers, omit_arms=omit_arms)
+    under, mouth_layers, over = figure_layers(look, eyes, mouth, arms, frame, stickers, omit_arms=omit_arms, wear=wear)
     return under + mouth_layers + over
 
 
@@ -1087,7 +1098,9 @@ def figure(
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
 
         behind = _limb_layer(cv, g, pose.arms) if limbs else None
-        under, mouth_layers, over = figure_layers(look, pose.eyes, pose.mouth, pose.arms, 0, stickers, omit_arms=sides)
+        under, mouth_layers, over = figure_layers(
+            look, pose.eyes, pose.mouth, pose.arms, 0, stickers, omit_arms=sides, wear=pose.wear
+        )
         base_count = len(_foundation(look)) if limbs else 0
         if limbs:
             _draw(cv, g, under[:base_count])
@@ -1095,9 +1108,15 @@ def figure(
         if pose.arms == "type":
 
             def frame_of(
-                parent, frame: int, eyes: str = pose.eyes, mouth: str = pose.mouth, skip: int = base_count
+                parent,
+                frame: int,
+                eyes: str = pose.eyes,
+                mouth: str = pose.mouth,
+                skip: int = base_count,
+                wear: tuple[str, ...] = pose.wear,
             ) -> None:
-                _draw(cv, parent, figure_layers(look, eyes, mouth, "type", frame, omit_arms=sides)[0][skip:])
+                layers = figure_layers(look, eyes, mouth, "type", frame, omit_arms=sides, wear=wear)[0]
+                _draw(cv, parent, layers[skip:])
 
             swap_frames(cv, g, start, end, taps, frame_of)
         else:
