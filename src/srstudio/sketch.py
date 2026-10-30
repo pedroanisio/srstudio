@@ -68,8 +68,16 @@ __all__ = [
     "manifest",
 ]
 
-CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit")
-LIP_SYNCED = ("dog", "frog", "bear", "rabbit")  # the brush-drawn characters, whose mouths follow a viseme track
+CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog")
+LIP_SYNCED = (
+    "dog",
+    "frog",
+    "bear",
+    "rabbit",
+    "fox",
+    "raccoon",
+    "hedgehog",
+)  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
@@ -341,6 +349,9 @@ DRAWERS: dict[str, Drawer] = {
     "frog": toon_cast.frog,
     "bear": toon_cast.bear,
     "rabbit": toon_cast.rabbit,
+    "fox": toon_cast.fox,
+    "raccoon": toon_cast.raccoon,
+    "hedgehog": toon_cast.hedgehog,
 }
 
 
