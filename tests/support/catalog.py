@@ -1,9 +1,12 @@
 """What the catalog tests share: a base page, an episode project, a gallery and a usage report."""
 
+import hashlib
 import json
 from pathlib import Path
 
 from srstudio import catalog_page as cp
+from srstudio import catalog_specimens as specimens
+from srstudio import registry
 
 SCENE = """<?xml version="1.0" encoding="UTF-8"?>
 <scene version="1.1">
@@ -138,3 +141,33 @@ USAGE = cp.Report(
         "honesty-interview": ("manager", "office-wide"),  # a package episode: no card, not in the gallery
     }
 )
+
+
+def still_of(name: str) -> cp.Still:
+    return cp.Still(f"media/{hashlib.sha256(name.encode()).hexdigest()[:32]}.png", 480, 480)
+
+
+def pictures() -> dict[str, cp.Still]:
+    """A specimen for every registered part, so a test of the document needs no engine."""
+    return {x.name: still_of(x.name) for x in registry.entries()}
+
+
+def fake_render_all(engine: Path, cache: Path, episodes: Path) -> specimens.Shelf:
+    """Every part with a small file of its own, and nothing rendered."""
+    folder = Path(cache) / "specimens"
+    folder.mkdir(parents=True, exist_ok=True)
+    done = {}
+    for x in registry.entries():
+        png = folder / f"{x.name}.png"
+        if not png.exists():
+            png.write_bytes(f"specimen {x.name}".encode())
+        done[x.name] = specimens.Specimen(x.name, png, 480, 480)
+    return specimens.Shelf(done, {}, 0)
+
+
+def fake_poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
+    Path(cache).mkdir(parents=True, exist_ok=True)
+    out = Path(cache) / f"package-{slug}.jpg"
+    if not out.exists():
+        out.write_bytes(f"poster {slug}".encode())
+    return out

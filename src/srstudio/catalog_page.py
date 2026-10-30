@@ -16,6 +16,11 @@ still cut from an episode render (a time and an optional crop box). When the not
 rendered library episode is registered with must be shown by an item, so a new episode cannot leave the gallery
 behind.
 
+A part's picture comes from its own definition, not from the notes or a reel: every registered part is drawn alone by
+the engine (:mod:`srstudio.catalog_specimens`), so a part added to the registry shows in the next build, titled from
+its registered summary (:func:`title_of`) until the notes name it. A part that cannot stand alone carries the reason,
+and one with neither stops the build by name. Each package's poster is likewise rendered from its scene spec.
+
 Videos are re-encoded for the web once per render (keyed by size and modification time). They, the stills, the pose
 sheet, the app and everything the base page embedded are files with relative URLs, and neither the page nor the
 document holds a data URI. Names follow the content, so a rebuild writes only what changed. Media are placed first,
@@ -38,12 +43,12 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
 
-from . import catalog_data, checks, digest, registry
+from . import catalog_data, catalog_specimens, checks, digest, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES
 from .usage import Report
@@ -473,8 +478,10 @@ def _video_of_card(c: Card, media: Callable[[Path], str], poster: Callable[[Path
     )
 
 
-def _video_elsewhere(slug: str, package: Package | None, usage: Report | None) -> catalog_data.Video:
-    """A video with no file on the site: a package, or a project usage knows of that has no render."""
+def _video_elsewhere(
+    slug: str, package: Package | None, usage: Report | None, poster: str | None
+) -> catalog_data.Video:
+    """A video with no render on the site: a package, with the poster of its spec, or a project usage knows of."""
     measured = usage is not None and slug in usage.episodes
     return catalog_data.Video(
         slug=slug,
@@ -492,7 +499,28 @@ def _video_elsewhere(slug: str, package: Package | None, usage: Report | None) -
         width=package.width if package else 0,
         height=package.height if package else 0,
         effects=0,
+        poster=poster,
     )
+
+
+TITLE_LIMIT = 60
+_REFERENCE = re.compile(r"[\s,]*\b(?:at|on|of|in|by|from|to|for|with)?\s*(?::[a-z]+:`[^`]*`|``[^`]*``)")  # to code
+_CLAUSE = re.compile(r"(?<=\w{3})\.(?:\s|$)|[:;]\s|\s[—–]\s|\s\(")
+
+
+def title_of(entry: registry.Entry) -> str:
+    """What a part with no curated title is called: the first clause of its registered summary, the only display text
+    an entry offers. No name is invented, so a part the summary does not name reads as its description."""
+    text = _REFERENCE.sub("", entry.summary).strip()
+    if not text:
+        raise CatalogError(f"{entry.kind} {entry.name} has no summary or docstring to title it with")
+    title = _CLAUSE.split(text, maxsplit=1)[0].strip()
+    if len(title) <= TITLE_LIMIT:
+        return title
+    if ", " in title and len(head := title.split(", ")[0]) <= TITLE_LIMIT:
+        return head
+    words = title[: TITLE_LIMIT + 1].rsplit(" ", 1)[0]
+    return f"{words.rstrip(' ,')}…"
 
 
 def assemble(
@@ -502,15 +530,23 @@ def assemble(
     media: Callable[[Path], str],
     poster: Callable[[Path], str],
     poses: Sequence[tuple[str, str]],
+    pictures: Mapping[str, Still],
+    refused: Mapping[str, str] | None = None,
+    posters: Mapping[str, str] | None = None,
     stills: Callable[[Shot], str] | None = None,
     usage: Report | None = None,
     packages: Sequence[Package] = (),
     engine: Sequence[str] = (),
 ) -> catalog_data.Catalog:
-    """The site's document, checked; :class:`CatalogError` when the notes curate a gallery that
-    :func:`check_gallery` refuses, that has no ``usage`` to check its coverage against or no ``stills`` to show, or
-    when ``usage`` names a part the registry no longer has."""
+    """The site's document, checked; :class:`CatalogError` when a registered part has neither a picture nor a reason
+    in ``refused``, when the notes curate a gallery that :func:`check_gallery` refuses, that has no ``usage`` to check
+    its coverage against or no ``stills`` to show, or when ``usage`` names a part the registry no longer has."""
     known = {x.name: x for x in registry.entries()}
+    refused = refused or {}
+    posters = posters or {}
+    unaccounted = sorted(set(known) - set(pictures) - set(refused))
+    if unaccounted:
+        raise CatalogError(f"registered parts with neither a specimen nor a typed reason: {unaccounted}")
     if usage is not None:
         stale = sorted({p for parts in usage.episodes.values() for p in parts} - set(known))
         if stale:
@@ -531,7 +567,7 @@ def assemble(
     elsewhere = [*by_package, *(usage.episodes if usage else ()), *(usage.unmeasured if usage else ())]
     for slug in dict.fromkeys(elsewhere):
         if slug not in by_slug:
-            videos.append(_video_elsewhere(slug, by_package.get(slug), usage))
+            videos.append(_video_elsewhere(slug, by_package.get(slug), usage, posters.get(slug)))
     sheet = tuple(Still(src=uri, width=POSE_SIZE[0], height=POSE_SIZE[1], label=name) for name, uri in poses)
     if sheet and "pip" not in known:
         raise CatalogError("the pose sheet is Pip's, and no part is registered as pip")
@@ -539,12 +575,14 @@ def assemble(
         catalog_data.Part(
             name=x.name,
             kind=x.kind,
-            title=shown[x.name][0].name if x.name in shown else x.name,
+            title=shown[x.name][0].name if x.name in shown else title_of(x),
             style=x.style,
             summary=plain(x.summary),
             videos=tuple(_episodes_of(x, usage)),
             gallery=tuple(shown.get(x.name, ())),
             sheet=sheet if x.name == "pip" else (),
+            specimen=pictures.get(x.name),
+            refused=refused.get(x.name, ""),
         )
         for x in sorted(known.values(), key=lambda x: (x.kind, x.style or "~", x.name))
     ]
@@ -837,6 +875,48 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     return pngs
 
 
+REFUSAL_TEXT = {
+    catalog_specimens.Reason.OVERLAY: "Só existe sobre uma cena: é uma camada, sem desenho próprio.",
+    catalog_specimens.Reason.MOTION: "É um movimento aplicado a outra peça, sem desenho próprio.",
+    catalog_specimens.Reason.WORN: "Só existe vestido em um personagem.",
+    catalog_specimens.Reason.CHARACTER_SHOT: "O plano já traz um personagem: não existe vazio.",
+    catalog_specimens.Reason.PLACEHOLDER: "Só desenha com os traços de um projeto; sozinho, não há personagem.",
+}
+
+
+@dataclass(frozen=True)
+class Pictures:
+    """The cards' pictures, in the site: what a build hands :func:`assemble`, and the counts it reports."""
+
+    stills: dict[str, Still]
+    refused: dict[str, str]
+    made: int
+
+
+def pictures_of(engine: Path, cache: Path, episodes: Path, add: Callable[[Path], str]) -> Pictures:
+    """Every registered part drawn alone, each file placed by ``add``. A part the library cannot draw stops the build,
+    by name."""
+    try:
+        shelf = catalog_specimens.render_all(engine, cache, episodes)
+    except catalog_specimens.SpecimenRenderError as exc:
+        raise CatalogError(str(exc)) from None
+    return Pictures(
+        {n: Still(src=add(s.png), width=s.width, height=s.height) for n, s in shelf.done.items()},
+        {n: REFUSAL_TEXT[why.reason] for n, why in shelf.refused.items()},
+        shelf.made,
+    )
+
+
+def posters_of(
+    slugs: Sequence[str], folder: Path, engine: Path, cache: Path, add: Callable[[Path], str]
+) -> dict[str, str]:
+    """One poster per package, rendered from its spec. A package that has none stops the build, by name."""
+    try:
+        return {slug: add(catalog_specimens.poster(folder, slug, engine, cache)) for slug in slugs}
+    except catalog_specimens.SpecimenRenderError as exc:
+        raise CatalogError(str(exc)) from None
+
+
 def embedded(page: str) -> list[str]:
     """Every data URI in ``page``, of any type or encoding."""
     return _ANY_URI.findall(page)
@@ -876,6 +956,12 @@ def _write_text(path: Path, text: str) -> None:
         Path(tmp).unlink(missing_ok=True)
 
 
+@dataclass(frozen=True)
+class Built:
+    cards: list[Card]
+    pictures: Pictures
+
+
 def build(
     *,
     base: Path,
@@ -884,10 +970,11 @@ def build(
     site: Path,
     cache: Path,
     engine: Path,
+    packages: Path,
     notes: Notes | None = None,
     usage: Report | None = None,
-) -> list[Card]:
-    """Write the site to ``site`` (files 600, folders 700) and return its cards: media first, then ``catalog.json``,
+) -> Built:
+    """Write the site to ``site`` (files 600, folders 700) and say what it holds: media first, then ``catalog.json``,
     ``index.html`` last, and only then the removal of media nothing references. A failure at any step leaves the
     previous site working."""
     notes = notes or Notes()
@@ -905,15 +992,21 @@ def build(
         os.chmod(site, 0o700)
         store = MediaStore(site / "media")
         renders_of = {c.slug: c.render for c in cards}
+        originals = packages_of(page)
+        shown = pictures_of(Path(engine), cache, episodes, store.add)
+        missing = [p.slug for p in originals if p.slug not in renders_of]
         catalog = assemble(
             cards,
             notes,
             media=lambda r: store.add(web[r][0]),
             poster=lambda r: store.add(web[r][1]),
             poses=[(n, store.add(p)) for n, p in pose_sheet(Path(engine), cache)],
+            pictures=shown.stills,
+            refused=shown.refused,
+            posters=posters_of(missing, Path(packages), Path(engine), cache, store.add),
             stills=lambda s: store.add(still(renders_of[s.episode], s, cache)),
             usage=usage,
-            packages=packages_of(page),
+            packages=originals,
             engine=engine_topics(page),
         )
         document = catalog_data.dumps(catalog)
@@ -938,4 +1031,4 @@ def build(
         raise CatalogError(f"site {site}: {exc}") from None
     finally:
         os.umask(old)
-    return cards
+    return Built(cards, shown)

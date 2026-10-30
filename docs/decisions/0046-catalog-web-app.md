@@ -50,7 +50,7 @@ video entries and 9 styles, and the operator needs to go from a character to its
    dataclasses, versioned by `schema_version`; a reader rejects unknown fields and checks what types cannot express,
    such as references that do not resolve. Which videos use a part comes only from the measured `usage.json`. The
    build stops when the report names a part that is not registered, so stale usage is never shown as fact.
-9. **What is missing is said.** A part with no still, a part measured unused, and an episode the report could not
+9. **What is missing is said.** A part with no specimen (ADR 0051), a part measured unused, and an episode the report could not
    measure each carry a visible mark. The six packages are entries in *Vídeos* marked `pacote`, linking to their
    players; a measured project with no render is listed and says so.
 

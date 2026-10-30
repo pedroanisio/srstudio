@@ -17,5 +17,6 @@ ExecStart=%h/worskpace/.venv/bin/srstudio page \
     --usage generated/catalog/usage.json \
     --cache generated/catalog/cache \
     --engine generated/bin/scene-render \
+    --packages generated/packages \
     --site generated/catalog/site
 Environment=SRSTUDIO_PACKAGES=%h/worskpace/generated/packages

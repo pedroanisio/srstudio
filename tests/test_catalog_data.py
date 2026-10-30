@@ -9,12 +9,13 @@ from srstudio import catalog_data as cd
 
 HASH = "0123456789abcdef0123456789abcdef"
 VIDEO, POSTER, IMAGE = f"media/{HASH}.mp4", f"media/{HASH}.jpg", f"media/{HASH[::-1]}.jpg"
+SPECIMEN = f"media/{HASH}.png"
 
 
 def document() -> dict:
     """The smallest catalog that uses every kind of reference."""
     return {
-        "schema_version": "1.0.0",
+        "schema_version": cd.SCHEMA_VERSION,
         "measured": True,
         "unmeasured": ["take-home"],
         "engine": ["Simulação física"],
@@ -31,16 +32,20 @@ def document() -> dict:
             {"slug": "take-home", "title": "Take Home", "number": "", "lede": "", "highlights_html": [], "style": "",
              "source": "library", "measured": False, "parts": [], "format": "9:16", "fps": 30.0, "duration": 5.0,
              "width": 1080, "height": 1920, "effects": 0, "src": VIDEO, "poster": POSTER, "lines": []},
+            {"slug": "wifi", "title": "Wi-Fi", "number": "05", "lede": "", "highlights_html": [], "style": "",
+             "source": "package", "measured": False, "parts": [], "format": "9:16", "fps": 30.0, "duration": 5.0,
+             "width": 1080, "height": 1920, "effects": 0, "poster": POSTER, "lines": []},
         ],
         "parts": [
             {"name": "pip", "kind": "character", "title": "Pip", "style": "soft", "summary": "The blob.",
-             "videos": ["camera-off"],
+             "videos": ["camera-off"], "specimen": {"src": SPECIMEN, "width": 480, "height": 480},
              "gallery": [{"name": "Pip", "note_html": "O <i>blob</i>.", "voice": "Will",
                           "still": {"src": IMAGE, "width": 300, "height": 400, "label": "", "video": "camera-off"},
                           "poses": [{"src": IMAGE, "width": 200, "height": 200, "label": "dança",
                                      "video": "camera-off"}]}],
              "sheet": [{"src": IMAGE, "width": 300, "height": 320, "label": "stand", "video": ""}]},
-            {"name": "juno", "kind": "character", "title": "juno", "style": "", "summary": "Unused.", "videos": []},
+            {"name": "juno", "kind": "character", "title": "juno", "style": "", "summary": "Unused.", "videos": [],
+             "refused": "Só existe sobre uma cena."},
         ],
     }  # fmt: skip
 
@@ -53,7 +58,9 @@ def test_a_document_parses_into_typed_values():
     pip = catalog.parts[0]
     assert pip.gallery[0].poses[0].label == "dança" and pip.sheet[0].video == ""
     assert catalog.parts[1].gallery == () and catalog.parts[1].sheet == ()  # optional fields take their default
-    assert cd.media_of(catalog) == {VIDEO, POSTER, IMAGE}
+    assert cd.media_of(catalog) == {VIDEO, POSTER, IMAGE, SPECIMEN}
+    assert pip.specimen == cd.Still(SPECIMEN, 480, 480) and not pip.refused
+    assert catalog.parts[1].specimen is None and catalog.parts[1].refused == "Só existe sobre uma cena."
 
 
 def test_a_document_survives_the_round_trip_byte_for_byte():
@@ -146,6 +153,14 @@ def test_a_document_that_is_not_an_object_is_refused():
         (sets(["videos", 0, "src"], "../../secret.mp4"), "media/"),
         (sets(["videos", 0, "poster"], "http://example.com/x.jpg"), "media/"),
         (sets(["videos", 0, "source"], "package"), "no file"),
+        (sets(["videos", 2, "poster"], None), "package video needs its poster"),
+        (sets(["videos", 2, "src"], VIDEO), "no file"),
+        (sets(["videos", 2, "poster"], "../poster.jpg"), "media/"),
+        (sets(["videos", 2, "source"], "no-render"), "no file"),
+        (deletes(["parts", 0, "specimen"]), "neither a specimen nor a reason"),
+        (sets(["parts", 1, "refused"], ""), "neither a specimen nor a reason"),
+        (sets(["parts", 0, "refused"], "Não."), "both a specimen and a reason"),
+        (sets(["parts", 0, "specimen", "src"], "http://example.com/x.png"), "media/"),
         (sets(["videos", 1, "parts"], ["pip"]), "not measured|cannot claim"),
         (sets(["videos", 0, "duration"], -1), "negative"),
         (sets(["videos", 0, "lines", 0, "t"], -0.1), "before the start"),
@@ -166,9 +181,9 @@ def test_load_checks_that_the_media_sit_beside_the_document(tmp_path):
     path.write_text(cd.dumps(cd.parse(document())), encoding="utf-8")
     with pytest.raises(cd.CatalogError, match="missing"):
         cd.load(path)
-    for url in (VIDEO, POSTER, IMAGE):
+    for url in (VIDEO, POSTER, IMAGE, SPECIMEN):
         (tmp_path / url).write_bytes(b"x")
-    assert cd.load(path).schema_version == "1.0.0"
+    assert cd.load(path).schema_version == cd.SCHEMA_VERSION
 
 
 def test_an_unreadable_document_is_refused(tmp_path):

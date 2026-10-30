@@ -60,10 +60,6 @@
     const s = styles.get(slug);
     return s ? `<span class="style-tag ${esc(s.slug)}">${esc(s.name)}</span>` : '';
   }
-  function firstStill(p) {
-    if (p.gallery.length) return p.gallery[0].still;
-    return p.sheet.length ? p.sheet[0] : null;
-  }
   function image(src, alt, width, height) {
     return `<img src="${esc(src)}" alt="${esc(alt)}" width="${width}" height="${height}" loading="lazy" decoding="async">`;
   }
@@ -89,12 +85,12 @@
     return `<small>${videoCount(p.videos.length)}</small>`;
   }
   function partCard(p) {
-    const s = firstStill(p);
-    const frame = s ? image(s.src, p.title, s.width, s.height) : 'sem imagem';
+    const s = p.specimen; // the part alone, drawn by the engine; a refused part has none, and says why
+    const frame = s ? image(s.src, p.title, s.width, s.height) : esc(p.refused);
     const tags = [styleTag(p.style)];
     if (C.measured && !p.videos.length) tags.push('<span class="tag warn">não usado</span>');
-    if (!s) tags.push('<span class="tag warn">sem still</span>');
-    return `<a class="card" href="${partHref(p)}" data-part="${esc(p.name)}"><div class="frame">${frame}</div>` +
+    if (!s) tags.push('<span class="tag warn">sem desenho isolado</span>');
+    return `<a class="card" href="${partHref(p)}" data-part="${esc(p.name)}"><div class="frame specimen">${frame}</div>` +
       `<b>${esc(p.title)}</b><code>${esc(p.name)}</code>${usageLabel(p)}<div class="tags">${tags.join('')}</div></a>`;
   }
   function styleCard(s) {
@@ -109,7 +105,8 @@
     return `<div class="tbl"${id ? ` id="${id}"` : ''}><table class="rows"><thead><tr>${th}</tr></thead>` +
       `<tbody>${rows.join('')}</tbody></table></div>`;
   }
-  const thumb = (src, alt, width, height) => `<td class="pic">${src ? image(src, alt, width, height) : ''}</td>`;
+  const thumb = (src, alt, width, height, kind = '') =>
+    `<td class="pic${kind}">${src ? image(src, alt, width, height) : ''}</td>`;
   function videoRow(v) {
     return `<tr class="row" data-video="${esc(v.slug)}">${thumb(v.poster, v.title, v.width, v.height)}` +
       `<td><a href="${videoHref(v)}"><b>${esc(v.title)}</b></a><code>${esc(v.slug)}</code></td>` +
@@ -117,11 +114,11 @@
       `<td class="num">${v.duration ? seconds(v.duration) : '—'}</td><td class="num">${v.parts.length}</td></tr>`;
   }
   function partRow(p) {
-    const s = firstStill(p);
-    return `<tr class="row" data-part="${esc(p.name)}">${s ? thumb(s.src, p.title, s.width, s.height) : thumb()}` +
+    const s = p.specimen;
+    return `<tr class="row" data-part="${esc(p.name)}">${s ? thumb(s.src, p.title, s.width, s.height, ' specimen') : thumb()}` +
       `<td><a href="${partHref(p)}"><b>${esc(p.title)}</b></a><code>${esc(p.name)}</code></td>` +
       `<td>${styleTag(p.style)}</td><td class="num">${C.measured ? p.videos.length : '—'}</td>` +
-      `<td class="summary">${esc(p.summary)}</td></tr>`;
+      `<td class="summary">${esc(p.summary)}${p.refused ? `<small>${esc(p.refused)}</small>` : ''}</td></tr>`;
   }
   const VIDEO_HEADS = [{}, {label: 'Vídeo'}, {label: 'Estilo'}, {label: 'Nº'}, {label: 'Formato'},
     {label: 'Duração', num: true}, {label: 'Peças', num: true}];
@@ -278,13 +275,16 @@
     const p = parts.get(name);
     const k = KINDS[kind];
     if (!p || p.kind !== kind) return missing(`${k.one} ${name}`);
-    const gallery = p.gallery.map(g =>
+    const gallery = (p.gallery.length ? '<div class="sub">Visto em</div>' : '') + p.gallery.map(g =>
       `<div class="stills lead">${figure(g.still, g.name, true)}</div>` +
       (g.voice ? `<p>voz ${esc(g.voice)} (ElevenLabs)</p>` : '') + `<p class="note">${g.note_html}</p>` +
       (g.poses.length ? `<div class="stills">${g.poses.map(s => figure(s, `${g.name}, ${s.label}`, false)).join('')}</div>` : '')).join('');
     const sheet = p.sheet.length
       ? `<div class="sub">Folha de poses</div><div class="stills" id="pose-sheet">${p.sheet.map(s => figure(s, `${p.title}, pose ${s.label}`, false)).join('')}</div>`
       : '';
+    const specimen = p.specimen
+      ? `<div class="stills lead" id="specimen">${figure(p.specimen, p.title, false)}</div>`
+      : `<p class="notice" id="refused">Sem desenho isolado. ${esc(p.refused)}</p>`;
     const noStill = !p.gallery.length && !p.sheet.length ? '<p class="notice" id="no-still">Nenhum item da galeria mostra esta peça ainda.</p>' : '';
     let used;
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
@@ -300,7 +300,7 @@
       title: p.title,
       html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
         `<div class="view-head"><h2>${esc(p.title)}</h2><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${noStill}${gallery}${sheet}</div>` +
+        `<p class="lede">${esc(p.summary)}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${noStill}${gallery}${sheet}</div>` +
         `<aside class="side">${sheetFacts}</aside></div>` +
         `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
@@ -403,13 +403,13 @@
   }
   function attention() {
     const noRender = C.videos.filter(v => v.source === 'no-render');
-    const noStill = C.parts.filter(p => !firstStill(p));
+    const refused = C.parts.filter(p => p.refused);
     const line = (label, items) => (items.length
       ? `<details><summary>${esc(label)} <b>${items.length}</b></summary><div class="pills">${items.join('')}</div></details>` : '');
     const body = [
       line('Vídeos sem render', noRender.map(v => `<a href="${videoHref(v)}">${esc(v.slug)}</a>`)),
       line('Vídeos não medidos', C.unmeasured.map(slug => `<a href="#/videos/${slugLink(slug)}">${esc(slug)}</a>`)),
-      line('Peças sem imagem', noStill.map(p => `<a href="${partHref(p)}">${esc(p.name)}</a>`)),
+      line('Peças sem desenho isolado', refused.map(p => `<a href="${partHref(p)}">${esc(p.name)}</a>`)),
     ].join('');
     return body ? `<section class="panel"><h3>Pendências</h3>${body}</section>` : '';
   }
