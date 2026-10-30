@@ -90,3 +90,26 @@ def test_a_depth_that_is_not_a_positive_radius_is_refused(bad):
 def test_an_instanced_office_cannot_blur_a_shared_room():
     with pytest.raises(locations.LocationError, match="depth"):
         locations.office_wide(_canvas(), None, instanced=True, depth=2.0)
+
+
+def children_ids(cv, group_id: str) -> list[str]:
+    root = ET.fromstring(cv.scene.to_bytes())
+    group = next(g for g in root.iter() if g.get("id") == group_id)
+    return [c.get("id") for c in group]
+
+
+def test_someone_in_the_hallway_stands_behind_the_doors_and_in_front_of_the_hallway():
+    cv = elevator_canvas()
+    locations.elevator(cv, cv.comp, riders=lambda g: cv.group(g, "cast"), hallway=lambda g: cv.group(g, "waiting"),
+                       depth=2.0)  # fmt: skip
+    order = children_ids(cv, "location-elevator")
+    assert order.index("waiting") < order.index("location-elevator-doors") < order.index("cast")
+    assert "waiting" not in ids_under(blurred(cv))  # the one in the hallway is in focus; the hallway is not
+    assert [f for f in cv.scene.check() if f.severity == "error"] == []
+
+
+def test_an_empty_hallway_draws_the_same_bytes_as_before():
+    a, b = elevator_canvas(), elevator_canvas()
+    locations.elevator(a, a.comp)
+    locations.elevator(b, b.comp, hallway=None)
+    assert a.scene.to_bytes() == b.scene.to_bytes()

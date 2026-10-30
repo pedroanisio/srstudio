@@ -889,3 +889,29 @@ def pink_slip(
     if name is not None:
         cv.text(g, cv.uid("pink-slip-name"), name, -w / 2 + 8, -h / 2 + 50, w - 16, 40, 30, ink, weight="700")
     return g
+
+
+PARCEL_LABEL = 12  # characters an address label holds
+
+
+@register("prop", "parcel", summary="A taped cardboard parcel with an address label, held against a chest or set down")
+def parcel(cv: Canvas, parent, x, y, *, label: str | None = None, scale: float = 1.0, id: str = "parcel"):
+    """A parcel whose box centre is (``x``, ``y``); ``label`` letters its address label (1 to :data:`PARCEL_LABEL`
+    characters), ``None`` leaves the label blank."""
+    if label is not None:
+        if not (isinstance(label, str) and label.strip() and len(label) <= PARCEL_LABEL):
+            raise PropError(f"a label has 1 to {PARCEL_LABEL} characters, got {label!r}")
+        cv.require_font("the parcel's address label is set in it")
+    if not (checks.number(scale) and scale > 0):
+        raise PropError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -120, -80, 240, 160, "#C99A62", ink, 4, radius=6)
+    cv.rect(g, -120, -80, 240, 26, "#B5864F", ink, 3, radius=6)  # the top flap, in the light
+    cv.rect(g, -14, -80, 28, 160, "#E2C48E", opacity=0.85)  # the tape
+    cv.rect(g, 4, -10, 104, 64, "#FBF8EF", ink, 2.5, radius=4)
+    for k in range(3):
+        cv.line(g, 14, 30 + 8 * k, 96, 30 + 8 * k, "#B9B2A4", 2)
+    if label is not None:
+        cv.text(g, f"{id}-label", label, 8, -6, 96, 30, 18, "#2C2A26")
+    return g

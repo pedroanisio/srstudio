@@ -617,6 +617,32 @@ DejaVu. The picture script gives its `EpisodeSpec` the matching fields with `**i
 which reads the pin and never downloads. Without `font=`, the caption face is DejaVu Sans Bold as before, and every
 published interview project rebuilds byte for byte.
 
+## Cutout episode in the elevator: *Neighbor Names* (25)
+
+[episodes/neighbor_names.py](episodes/neighbor_names.py) puts the applicant from *Five Years* in the elevator with
+Rosa, his neighbor of seven years, whose name he never learned. "Morning!" "Morning... you!" "Seven years in this
+building, huh?" "Seven years!" "Can I ask you something I should know by now?" "Anything, dear." "Where did you get
+that cardigan?" "I made it." Her name is stitched on it; his parcel's label says DEV 7C. The doors open on a third
+neighbor: "Morning, Linda! Morning, Steve!" The doors shut. "Steve." "Linda."
+
+```bash
+srstudio record neighbor-names PROJECT
+srstudio build neighbor-names PROJECT    # PROJECT/neighbor-names.scene.xml
+```
+
+Its first frame already moves (arm B of the `sp-hook_motion` test): the greeting is under way, his hand up and her
+lean toward him, with no camera move. The voices are Lily (Rosa), Will and Eric; the captions are Noto Sans 700 (`interview.NOTO_SANS_BOLD`). Parts added or extended for it:
+
+- `cast.Rosa` (`rosa`): an office-family actor with a grey bob, round glasses and a terracotta cardigan whose pocket
+  has her name stitched over it (`stitch=`, 1 to `Rosa.STITCH` characters, default ROSA; `None` draws no text).
+- `props.parcel` (`parcel`): a taped cardboard box with an address label, lettered by `label=` (1 to `PARCEL_LABEL`
+  characters) or left blank.
+- `locations.elevator(hallway=)`: a slot drawn in the hallway behind the doors and in focus, for someone waiting
+  there while they are open; `depth=` blurs the hallway itself. Without either, the elevator is the shipped one.
+
+The episode declares no engine safe area, as *Cup Fee* does: each close-up reframes the other rider's lettering out of
+frame, which the SA01 text check refuses; captions are placed inside x 80–920 by hand.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

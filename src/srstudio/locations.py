@@ -588,6 +588,7 @@ def elevator(
     lit: int | None = None,
     going: str = "up",
     depth: float | None = None,
+    hallway: Slot = None,
 ):
     """A cab seen from inside, the doors on the back wall: ``riders`` stand in front of them facing the camera
     (office actors with ``legs="standing"`` at :func:`elevator_stand_y`), and ``on_floor`` draws in front of the
@@ -595,7 +596,8 @@ def elevator(
     next; ``doors`` are ``(open, shut)`` spans, each door sliding :data:`DOOR_W` behind the wall over
     :data:`DOOR_SLIDE` seconds onto the hallway; ``lit`` lights a floor's button (1 to :data:`BUTTONS`); ``going``
     points the display's arrow ``"up"`` (the default) or ``"down"``; ``depth`` blurs the hallway seen through the
-    doorway by that many px (its cactus, the cab and the riders stay sharp)."""
+    doorway by that many px (its cactus, the cab and the riders stay sharp); ``hallway`` draws in the hallway, in
+    focus, behind the doors (someone waiting there, seen while they are open)."""
     _check_depth(depth)
     _check_floors(floors)
     _check_doors(doors)
@@ -628,6 +630,7 @@ def elevator(
     cv.path(hall, f"M{DOOR_X + 72} {DOOR_TOP + 250} L{DOOR_X + 110} {DOOR_TOP + 180} L{DOOR_X + 168} {DOOR_TOP + 250}Z",
             "#9DB7A5", ink, 2)  # fmt: skip
     signature.cactus(cv, g, DOOR_X + 300, base - 120, 0.5)  # on the hallway floor, seen when the doors open
+    _call(hallway, g)
     # the doors, then the wall around them, so an open door slides behind it
     leaves = cv.group(g, f"{id}-doors")
     for name, x0, sign in (("left", DOOR_X, -1), ("right", DOOR_X + DOOR_W, 1)):
