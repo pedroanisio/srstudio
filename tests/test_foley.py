@@ -150,3 +150,12 @@ def test_write_bursts_writes_a_wav(tmp_path):
     path = foley.write_bursts(tmp_path / "k.wav", [0.0], 0.2, foley.KNOCK, rate=8000)
     with wave.open(str(path)) as w:
         assert w.getframerate() == 8000 and w.getnframes() == 1600
+
+
+def test_a_name_means_one_sound_a_phones_ding_stays_two_tones_and_the_bell_is_a_burst():
+    assert all(len(note) == 3 for note in foley.DING)
+    assert isinstance(foley.BELL, foley.Burst)
+
+
+def test_no_sound_is_exported_twice():
+    assert len(foley.__all__) == len(set(foley.__all__))

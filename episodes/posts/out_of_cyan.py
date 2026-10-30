@@ -21,7 +21,6 @@ RELEASE = Release(
         "everyday-tech", "institution", "tension", recurring=("rosa",), test="sp-hook_motion", arm="a", recipient="a"
     ),  # fmt: skip
     style="Cutout",
-    parts={"captions": 1, "card-reader": 1, "papers": 1, "rosa": 1, "signature-cactus": 1, "signature-code": 1},
     parts={
         "captions": 1,
         "card-reader": 1,

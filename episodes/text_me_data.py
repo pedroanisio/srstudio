@@ -232,5 +232,5 @@ def sounds(beats, end: float) -> list[Sound]:
         Sound("knock", foley.KNOCK, (knock, knock + 0.2, knock + 0.4), 0.0),
         Sound("chopper", foley.CHOPPER, (named["chopper"],), -8.0),
         Sound("sent", foley.REMOTE_CLICK, (sent,), -2.0),
-        Sound("ding", foley.DING, tuple(dings(beats)), -6.0),
+        Sound("ding", foley.BELL, tuple(dings(beats)), -6.0),
     ]

@@ -26,7 +26,6 @@ RELEASE = Release(
     style="Soft",
     # soft-bedroom, soft-hive, soft-phone, soft-shovel and soft-time-card join these at version 1
     # once the operator decides them: a release cannot pin a proposed version, so the pin check refuses this reel.
-    parts={"bo": 1, "captions": 1, "juno": 1, "signature-cactus": 1, "signature-code": 1},
     tags=Tags(
         territory="everyday-tech",
         cause="protagonist",

@@ -27,7 +27,6 @@ RELEASE = Release(
     style="Soft",
     # soft-briefcase, soft-necktie and soft-playroom join these at version 1 once the operator decides them: a release
     # cannot pin a proposed version, so until then the delivery pin check refuses this reel.
-    parts={"bo": 1, "captions": 1, "pip": 1, "signature-cactus": 1, "signature-code": 1},
     tags=Tags(
         territory="family",
         cause="other-person",

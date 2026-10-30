@@ -21,7 +21,6 @@ RELEASE = Release(
         "office", "other-person", "recognition", test="sp-hook_motion", arm="b", recipient="b", to="work friend"
     ),  # fmt: skip
     style="Cutout",
-    parts={"candidate": 1, "captions": 1, "manager": 1, "plant": 1, "signature-cactus": 1, "signature-code": 1},
     parts={
         "break-room": 1,
         "candidate": 1,

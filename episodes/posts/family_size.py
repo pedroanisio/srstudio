@@ -31,7 +31,6 @@ RELEASE = Release(
         recipient="a",
     ),
     style="Collage",
-    parts={"collage-brent": 1, "collage-rosa": 1, "collage-sign": 1, "signature-cactus": 1, "signature-code": 1},
     parts={
         "collage-brent": 1,
         "collage-certificate": 1,

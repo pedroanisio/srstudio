@@ -189,5 +189,5 @@ def sounds(beats, end: float) -> list[Sound]:
         Sound("plates", foley.PLATES, tuple(round(oven + i * PLATE_STEP, 3) for i in range(PLATES)), -6.0),
         Sound("curtain", foley.SWISH, (event(beats, "pull"),), -8.0),
         Sound("drawer", foley.KNOCK, (drawer,), -4.0),
-        Sound("ding", foley.DING, (drawer + 0.3,), -10.0),
+        Sound("ding", foley.BELL, (drawer + 0.3,), -10.0),
     ]

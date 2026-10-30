@@ -30,7 +30,6 @@ RELEASE = Release(
     ),
     tags=Tags("family", "other-person", "affection", test="sp-hook_motion", arm="a", recipient="b", to="family"),
     style="Toon",
-    parts={"signature-cactus": 1, "signature-code": 1, "toon-captions": 1, "toon-goat": 1, "toon-hedgehog": 2},
     parts={
         "signature-cactus": 1,
         "signature-code": 1,

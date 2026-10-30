@@ -19,7 +19,6 @@ RELEASE = Release(
     cover=True,
     tags=Tags("office", "protagonist", "recognition", test="sp-hook_motion", arm="a", recipient="b", to="work friend"),
     style="Stick",
-    parts={"signature-cactus": 1, "signature-code": 1, "stick-card": 1, "stick-rig": 1, "stick-words": 1},
     parts={
         "signature-cactus": 1,
         "signature-code": 1,

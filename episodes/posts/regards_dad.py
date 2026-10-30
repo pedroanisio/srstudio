@@ -32,7 +32,6 @@ RELEASE = Release(
         to="family",
     ),
     style="Collage",
-    parts={"collage-gary": 1, "collage-kai": 1, "collage-priya": 1, "signature-cactus": 1, "signature-code": 1},
     parts={
         "collage-arm": 1,
         "collage-bubble": 1,

@@ -398,8 +398,8 @@ def _picture(cv: Canvas, g, name: str, colour: str) -> None:
 def _lounge_shelf(
     cv: Canvas, g, blink: float, speaker: Sequence[tuple[float, str]], end: float, blink_from: float = 0.0
 ) -> None:
-    """The shelf above the pill: the router with its antennas and lights, blinking from ``blink_from`` until ``blink``, the
-    speaker."""
+    """The shelf above the pill: the router with its antennas and lights, blinking from ``blink_from`` until
+    ``blink``, the speaker."""
     _inked(cv, g, [(372, 190), (572, 190), (572, 200), (372, 200)], SHELF, FINE_W / 2)
     for x in (392, 552):
         _line(cv, g, [(x, 200), (x, 214)], 5.0)
