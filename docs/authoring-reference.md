@@ -1571,6 +1571,74 @@ and every eye a one-off of seeded lumps (`brush.lump`), never a perfect ellipse.
 the inked fox keeps the whole contract, and a sketch casts it as `"fox"`, at the version its release pins. Looks
 without a drawing are drawn exactly as before.
 
+### Part versions
+
+Every registered part has numbered versions: characters, locations, props and graphics
+([docs/decisions/0047-character-versions.md](decisions/0047-character-versions.md)), so a drawing can improve
+without touching a published reel. `srstudio parts` lists them, a part's page in the catalog shows them, and
+[src/srstudio/assets/parts.json](../src/srstudio/assets/parts.json) records each one: number, date, a note, a proof clip,
+status, approval and the digest of its drawing
+([src/srstudio/catalog_specimens.py](../src/srstudio/catalog_specimens.py)). A part that cannot stand alone, such as a
+caption layer or a shot with a character in it, records a typed refusal instead of a digest, and
+`srstudio parts --refused` lists those. A new reel gets the latest approved version, and a release pins what it draws:
+
+```python
+RELEASE = Release("a-new-reel", post, parts={"toon-fox": 2, "toon-bear": 1, "toon-desk": 1})
+```
+
+`srstudio build` leaves what it drew in the project's `parts.json`. `instagram_posts.py deliver` refuses a release with
+no pins, a video with no such record and a build that drew anything its pins do not say, and `check` reports the
+first and the last. A proposed version is never
+the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
+if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon's
+characters read pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version of
+anything else by name until its kind and style are in `parts.ROUTED`. A head rig is a second drawing, recorded on its
+version with the same fields and rules, so changing an approved rig means adding a version of the character.
+
+Version 2 of the dog, the frog, the bear, the rabbit, the raccoon and the hedgehog is the default for new reels
+([docs/decisions/0052-older-cast-version-2.md](decisions/0052-older-cast-version-2.md),
+[src/srstudio/toon_redrawn.py](../src/srstudio/toon_redrawn.py)): each keeps its colours and what it is known by, and
+is drawn again with one smooth torso, pressed ink, a shade tone, a tilted head and its own pupils and paws. Published
+reels pin version 1 and keep it.
+
+A sloth, a goat and a hamster draw like the traced cat, in code
+([docs/decisions/0045-toon-sloth-goat-hamster.md](decisions/0045-toon-sloth-goat-hamster.md),
+[src/srstudio/toon_critters.py](../src/srstudio/toon_critters.py)): `toon-sloth` (olive, droopy, a pale face with dark
+stripes down from the eyes, long ivory claws, a slow blink), `toon-goat` (lilac, wiry, swept horns, sideways ears, a
+long muzzle and beard, bar pupils) and `toon-hamster` (pink, round, cheek pouches, a creamy belly, tiny paws held up).
+Each is a `Critter`, a `toon_cast.Drawing` the look routes its foundation, face and limbs to: a dense hand-placed
+outline with a pressed line (`pressed`, heavier at the bottom and back, thinning at sharp turns), open tapered fur
+strokes, one shade tone along the edges away from the light (`shade`) and a head tilted about the neck. Each has
+its own signature: the sloth's yawn, the goat's scream, the hamster's puffed pouches. Every brush character also
+draws the new `sleepy` eyes (heavy lids, blinked slower: `SLEEPY_PACE`, `SLEEPY_HOLD`) and `yawn`, `scream` and
+`puff` mouths (`shared_eye`, `shared_mouth`); the traced cat refuses them by name.
+
+A critter's body and arms come from a `Torso`
+([docs/decisions/0049-toon-torso-one-smooth-body.md](decisions/0049-toon-torso-one-smooth-body.md),
+[src/srstudio/toon_torso.py](../src/srstudio/toon_torso.py)). `Torso(head, shoulder, slope, flank, arm)` builds one
+smooth outline under a head contour: fixed-radius arcs from the neck over the shoulder and down the flank, so it
+cannot make a corner. `Torso.weights` calms `brush.wobble` on that line. `Torso.limb(points, paw, coat, shade)` redraws
+a pose's arm inside the body, a wedge from a thin crease at the top to full width at the forearm, its ink set low so
+it reads heavier underneath, and leaves the paw to the character. `toon_torso.arm_lines` is the other way to ink an
+arm, the inked fox's: only where it leaves the body or lies well over it.
+Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
+
+The sloth's, the goat's, the hamster's and the inked fox's heads can move on their own
+([docs/decisions/0050-organic-head-motion.md](decisions/0050-organic-head-motion.md)).
+[src/srstudio/head_motion.py](../src/srstudio/head_motion.py) turns a `HeadStyle` and the `Speech` of a shot
+(`speech_of(alignment, at, path)`) into a `HeadPlan` with `plan(style, speeches, duration)`: spring-keyed nods on the
+accents of the line, a dip before a phrase, a two-octave idle, a breath tied to the pauses and glances, all
+deterministic and bounded by `limit(style, name)`. [src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
+`HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
+neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](../src/srstudio/toon_rigs.py)
+holds the rigs, and `rig_of` refuses a character with none by name. In a sketch, one line turns it on:
+`Staging(..., heads=("sloth", "goat"))`. The build plans each named character from the takes in `voiced/speech.json`,
+its own lines to speak and the others' to hear, and plays that plan a shot at a time. It is opt-in:
+`toon_cast.figure` and the flat drawings draw as before. A `toon_torso` character gets a rig with
+`toon_critters.Split` and `torso_rig`. Word stress comes from a table built by
+[tools/build_stress.py](../tools/build_stress.py) from the CMU Pronouncing Dictionary
+([licence](../src/srstudio/assets/stress/CMUDICT-LICENSE)).
+
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 
 The coworkers' episodes are short comedies written as data and cut between the two characters

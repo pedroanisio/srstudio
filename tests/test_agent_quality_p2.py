@@ -65,7 +65,7 @@ def test_successful_specimen_check_verifies_current_replacement(monkeypatch):
     versions = tuple(replace(v, drawing='0' * 64) if v.number == 2 else v for v in character.versions)
     changed_table = {**parts.load(), 'toon-fox': replace(character, versions=versions)}
     with monkeypatch.context() as context:
-        context.setattr(characters, 'load', lambda: changed_table)
+        context.setattr(parts, 'load', lambda: changed_table)
         with pytest.raises(parts.UnverifiedBuilderError):
             parts.pin('toon-fox', 2)
     monkeypatch.setattr(registry.get('character', 'toon-fox@2'), 'builder', lambda: None)

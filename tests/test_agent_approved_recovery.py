@@ -62,9 +62,13 @@ def version_doc(field, value):
         'proof': '',
         'drawing': 'a' * 64,
         'approval': None,
+        'rig': None,
     }
     v[field] = value
-    return {'schema': parts.SCHEMA, 'characters': {'toon-fox': {'style': 'toon', 'versions': [v]}}}
+    return {
+        'schema': parts.TABLE_SCHEMA,
+        'parts': {'toon-fox': {'kind': 'character', 'style': 'toon', 'refused': None, 'versions': [v]}},
+    }
 
 
 @pytest.mark.parametrize(

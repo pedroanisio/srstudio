@@ -317,7 +317,7 @@ def _refused(where: str, value: Any) -> Refused | None:
 
 
 def read(path: str | Path) -> dict[str, Part]:
-    """The table at ``path``, typed; anything it does not know raises :class:`CharacterError`."""
+    """The table at ``path``, typed; anything it does not know raises :class:`PartError`."""
     try:
         doc = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:

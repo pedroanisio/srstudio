@@ -89,7 +89,7 @@ def test_missing_record_remains_legacy_but_directory_blocks_release(tmp_path):
     (project / 'parts.json').mkdir()
     with pytest.raises(PartError, match='parts.json'):
         parts.read_record(project)
-    drift = releases.unpinned({'a-b': releases.Release('a-b', POST, characters={})}, tmp_path)
+    drift = releases.unpinned({'a-b': releases.Release('a-b', POST, parts={})}, tmp_path)
     assert len(drift) == 1 and 'parts.json' in drift[0].reason
 
 
