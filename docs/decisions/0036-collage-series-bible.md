@@ -89,6 +89,30 @@ card in the same commit.
 A release's `Tags.recurring` uses these short names: `gary`, `rosa` and `kai` are `collage.LOOKS` keys, `dev` and
 `noor` are `COUPLE` keys, and `doodle` names the Ink human.
 
+### The still opening, the camera-safe zoom and the call buttons (2026-10-30)
+
+- **A still first second.** The reel batch of 2026-10-30 tests a still first second against a moving one
+  (`releases.Tags(test="sp-hook_motion", arm="a")`). A Collage shot is never still: the figure breathes and blinks,
+  and the paper grain (`film-grain`) is drawn afresh every frame. `Staging.still` makes the first shot a still: it
+  draws no grain, and `Staging.opening` (by default `collage_sketch.stilled`) draws its cast with
+  `collage.figure(still=True)`, which keys no breath, blink or lip sync. `collage_sketch.check_still` refuses a
+  still opening that is not one silent shot, without caption or event, ending on a cut no earlier than `still`.
+  The build checks it on the scripted and on the voiced beats. Grain-free for one second is the price; keying the
+  grain's amount was rejected because the grain is one shared effect definition.
+- **A zoom keeps the signature.** `collage_sets.zoom_pivot(set, face, scale)` returns the face when a zoom on it
+  keeps the whole signature box in frame, otherwise the nearest pivot that does. A set whose shelf is on the right
+  needs the figure moved right in its shots for the zoom to land on the face.
+- **A smaller master.** The paper grain changes every frame, so a Collage master at the published rate factor (17)
+  runs to 40–58 MB, and still to 29–35 MB at a rate factor of 25. `Staging.bitrate` sets the video's average
+  bitrate, encoded in two passes, so a master's size follows its length; the batch of 2026-10-30 sets 5.8 Mbit/s
+  (17.6 MB for 23.5 s) to stay under the posting job's 20 MB. Rejected: a higher rate factor alone, which did not
+  bound the size; and a one-pass cap (`maxBitrate`, 5 Mbit/s), which starved the first keyframe, so a still opening
+  sharpened frame by frame and drifted 0.55–0.75 from its first frame, failing the still arm's limit of 0.5, where
+  two passes hold it at 0.09–0.46. The default is the rate factor alone, so every published reel rebuilds byte for
+  byte.
+- **Video calls.** `collage_sets.call_buttons` draws a call's mute, hang-up and camera buttons, without lettering,
+  so a shot reads as the far side of a video call.
+
 ## Rejected alternatives
 
 - **A group-shot build loop of its own.** It would duplicate `collage_sketch.build` (the shots, zooms and

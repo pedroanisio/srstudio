@@ -1164,11 +1164,14 @@ def figure(
     enter: float = 0.0,
     stickers: Sequence[Any] = (),
     mouths: Mouths = (),
+    still: bool = False,
 ) -> list:
     """One group per pose run, on from project second ``enter`` until ``duration``. ``mouths`` is the lip-sync
     track (``(project second, viseme)``): the mouth becomes one layer per viseme with hold keys inside each run, the
     pose's own mouth showing while closed. The eyes shut for :data:`srstudio.toon_cast.BLINK_HOLD` at the look's
-    pace. ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast types on no keyboard."""
+    pace. A ``still`` figure keys nothing: no breath, no blink and the pose's own mouth, for an opening whose
+    picture must not change (ADR 0036). ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast
+    types on no keyboard."""
     if not (checks.number(enter) and 0 <= enter < duration):
         raise CollageError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     groups = []
@@ -1176,10 +1179,11 @@ def figure(
         start, end = round(start + enter, 6), round(end + enter, 6)
         g = cv.group(parent, cv.uid("g"), start=start, end=end)
         cv.apply(g, cv.effect("collage-figure-shadow", "drop-shadow", **FIGURE_SHADOW))
-        _breathe(cv, g, start, end)
+        if not still:
+            _breathe(cv, g, start, end)
         under, mouth_shapes, over = figure_shapes(look, pose.eyes, pose.mouth, pose.arms)
         draw_shapes(cv, g, under)
-        keys = viseme_keys(mouths, start, end)
+        keys = {} if still else viseme_keys(mouths, start, end)
         if keys:
             lips = cv.group(g, cv.uid("g"))
             for viseme, states in keys.items():
@@ -1188,7 +1192,7 @@ def figure(
                 cv.keys(layer, "opacity", states, local=False)
         else:
             draw_shapes(cv, g, mouth_shapes)
-        blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" else []
+        blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" and not still else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
             draw_shapes(cv, shut, lid_shapes(look))
@@ -1214,8 +1218,9 @@ def _drawer(look: Look) -> Drawer:
         enter: float = 0.0,
         stickers: Sequence[Any] = (),
         mouths: Mouths = (),
+        still: bool = False,
     ) -> list:
-        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths)
+        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still)
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary

@@ -32,6 +32,7 @@ from . import (
     Episode,
     EpisodeSpec,
     camera,
+    checks,
     collage,
     collage_sets,
     errors,
@@ -165,6 +166,14 @@ CastDrawer = Callable[[Canvas, object, sketch.Appearance, sketch.Mouths], collag
 Casting = Callable[[Sequence[sketch.Beat], float], CastDrawer]
 
 
+def stilled(cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
+    """The cast of a still opening: the appearance's character alone in its first pose, keying nothing (no breath,
+    blink or lip sync, :func:`srstudio.collage.figure`'s ``still``); returns its face."""
+    poses = collage.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
+    collage.DRAWERS[app.who](cv, parent, poses[:1], app.end, (), enter=app.start, still=True)
+    return collage.face(collage.LOOKS[app.who])
+
+
 def alone(beats: Sequence[sketch.Beat], end: float) -> CastDrawer:
     """The default casting: every shot is the speaker alone (:func:`solo`), whatever the beats."""
     return solo
@@ -185,6 +194,30 @@ class Staging:
     # who is drawn in each shot, made from the beats the build draws (scripted or voiced), whose times differ;
     # a srstudio.collage_group.Lineup made from them puts several on one set
     cast: Casting = alone
+    # the seconds the first shot holds still (the sp-hook_motion test's arm a, ADR 0036): that shot draws no grain,
+    # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
+    still: float = 0.0
+    opening: CastDrawer = stilled
+    # the master's average video bits per second, encoded in two passes: 0, the rate factor alone, for every published
+    # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
+    # the first pass lets the encoder spend little on a still opening without blurring it
+    bitrate: int = 0
+
+
+def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
+    """A still opening is one silent shot that lasts at least ``still`` seconds and ends on a cut: its first beat
+    has no line, caption or event, and the next beat, on another character, starts no earlier than ``still``."""
+    if not (checks.number(still) and still >= 0):
+        raise StagingError(f"{name}: still {still!r} must be a non-negative number of seconds")
+    if still == 0:
+        return
+    first = beats[0]
+    if first.line is not None or first.caption or first.event:
+        raise StagingError(f"{name}: a still opening is a silent beat, without a caption or an event")
+    if len(beats) < 2 or beats[1].who == first.who:
+        raise StagingError(f"{name}: a still opening ends on a cut to another character")
+    if beats[1].start < still:
+        raise StagingError(f"{name}: the opening holds still {still} s, but its next beat starts at {beats[1].start} s")
 
 
 def check_staging(staging: Staging) -> None:
@@ -200,6 +233,9 @@ def check_staging(staging: Staging) -> None:
     odd = sorted({b.event.split(":")[0] for b in sk.beats if b.event} - set(EVENTS))
     if odd:
         raise StagingError(f"{sk.slug}: unknown events {odd}; one of {EVENTS}")
+    check_still(sk.beats, staging.still, sk.slug)
+    if not (type(staging.bitrate) is int and staging.bitrate >= 0):
+        raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
 
 
 def zooms(beats: Sequence[sketch.Beat], app: sketch.Appearance) -> list[float]:
@@ -226,6 +262,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         if mouths_end != end:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
+    check_still(sk.beats, staging.still, sk.slug)
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
@@ -246,6 +283,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
                 faststart=True,
                 report="qa/render-report.json",
                 **(dict(audioCodec="aac", audioBitrate="192000") if voiced else {}),
+                **(dict(bitrate=str(staging.bitrate), twoPass=True) if staging.bitrate else {}),
             ),
             accessibility=dict(
                 description=staging.accessibility
@@ -255,7 +293,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         )
     )
     cv, t = ep.cv, ep.t
-    if t.duration > sk.end or t.phrases[0].start != 0:
+    spoken = next(b.start for b in sk.beats if b.caption)  # 0 but after a still opening
+    if t.duration > sk.end or t.phrases[0].start != spoken:
         raise StagingError(f"{ep.spec.dialogue} runs to {t.duration} s, the sketch to {sk.end} s: run --init again")
     project = ep.scene.find("project")
     if not isinstance(project, Project):  # pragma: no cover - an Episode always writes its project
@@ -274,10 +313,12 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     cast = staging.cast(sk.beats, sk.end)
     for app in sketch.appearances(sk.beats, sk.end):
         g = cv.group(ep.comp, cv.uid("g"), start=app.start, end=app.end)
-        cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
+        opening = app.start < staging.still  # the grain is drawn afresh every frame: a still shot goes without it
+        if not opening:
+            cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
         collage_sets.SETS[staging.sets[app.who]](cv, g)
         back = cv.group(g, cv.uid("g"))
-        face = cast(cv, g, app, mouths)
+        face = (staging.opening if opening else cast)(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
         for at in zooms(sk.beats, app):

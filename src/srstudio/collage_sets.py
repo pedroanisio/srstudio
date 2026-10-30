@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from . import signature
+from . import checks, signature
 from .canvas import Canvas
-from .collage import INK, LOOKS, CollageError, _cut, _paper, _ring, draw_shapes, figure_shapes
+from .collage import INK, LOOKS, CollageError, Point, _cut, _paper, _ring, draw_shapes, figure_shapes
 from .registry import register
 
 __all__ = [
@@ -33,6 +33,9 @@ __all__ = [
     "sign",
     "chart",
     "tv",
+    "call_buttons",
+    "marks_box",
+    "zoom_pivot",
 ]
 
 CACTUS_HEIGHT = 152.0  # signature.cactus at scale 1
@@ -88,6 +91,39 @@ def signature_box(name: str) -> tuple[float, float, float, float]:
     return x, SILL_Y - CACTUS_HEIGHT * CACTUS_SCALE, x + width, SILL_Y + SHELF_DEPTH
 
 
+CACTUS_X = 70.0  # the cactus stands this far into its shelf
+CACTUS_HALF = 44.0  # signature.cactus reaches this far either side at scale 1, its shadow included
+CODE_INSET = 12.0  # the code ends this far before the shelf's right end
+ZOOM_MARGIN = 12.0  # frame pixels a zoomed signature keeps from the frame's edge
+
+
+def marks_box(name: str) -> tuple[float, float, float, float]:
+    """Where a set's two marks are (x0, y0, x1, y1): from the cactus's left to the code's end, from the cactus's
+    top to the shelf's front; the bare ends of the shelf are outside it."""
+    x, width = SHELVES[name] if name in SHELVES else (0.0, 0.0)
+    _, y0, _, y1 = signature_box(name)
+    return x + CACTUS_X - CACTUS_HALF * CACTUS_SCALE, y0, x + width - CODE_INSET, y1
+
+
+def zoom_pivot(name: str, face: Point, scale: float, width: float = 1080.0, height: float = 1920.0) -> Point:
+    """Where a zoom by ``scale`` onto ``face`` pivots on set ``name`` so that both signature marks, cactus and code
+    (:func:`marks_box`), stay at least :data:`ZOOM_MARGIN` inside the frame: the face itself when it already does,
+    otherwise the point nearest to it that does. :class:`CollageError` when no pivot can keep them in frame at that
+    scale."""
+    if not (checks.number(scale) and scale > 1):
+        raise CollageError(f"a zoom scales up: got {scale!r}")
+    x0, y0, x1, y1 = marks_box(name)
+    k = scale - 1
+    pivot = []
+    for v, lo_edge, hi_edge, size in ((face[0], x0, x1, width), (face[1], y0, y1, height)):
+        lo = (hi_edge * scale - size + ZOOM_MARGIN) / k  # the far side of the box stays in
+        hi = (lo_edge * scale - ZOOM_MARGIN) / k  # the near side of the box stays in
+        if lo > hi:
+            raise CollageError(f"{name}: no zoom by {scale} keeps its signature in frame")
+        pivot.append(min(max(v, lo), hi))
+    return pivot[0], pivot[1]
+
+
 def _shelf(cv: Canvas, g, name: str, colour: str) -> None:
     """A paper shelf under the signature, with the cactus on it and the code on its edge."""
     x, width = SHELVES[name]
@@ -103,8 +139,8 @@ def _shelf(cv: Canvas, g, name: str, colour: str) -> None:
             colour,
         ),
     )
-    signature.cactus(cv, g, x + 70, SILL_Y, CACTUS_SCALE)
-    signature.code(cv, g, x + width - 12, SILL_Y + 5, CODE_HEIGHT, color="#fffaf0", opacity=0.85, align="end")
+    signature.cactus(cv, g, x + CACTUS_X, SILL_Y, CACTUS_SCALE)
+    signature.code(cv, g, x + width - CODE_INSET, SILL_Y + 5, CODE_HEIGHT, color="#fffaf0", opacity=0.85, align="end")
 
 
 def _frame(cv: Canvas, g, key: str, x: float, y: float, w: float, h: float, fill: str, border: str = "#6b4f3a") -> None:
@@ -454,3 +490,65 @@ def tv(cv: Canvas, parent, x: float, y: float, w: float) -> object:
         ),
     )
     return g
+
+
+HANG_UP = "#e63946"  # the red of the button that ends a call
+CALL_GREY = "#5c5f66"
+CALL_Y = 1560.0  # the buttons' centre line: over the figure's chest, above the reel's bottom bar
+CALL_R = 58.0
+CALL_STEP = 190.0
+CALL_BOX = (540.0 - CALL_STEP - CALL_R, CALL_Y - CALL_R, 540.0 + CALL_STEP + CALL_R, CALL_Y + CALL_R)
+
+
+@register(
+    "prop",
+    "collage-call-buttons",
+    summary="A video call's buttons over the picture: mute and camera in grey, the red hang-up between them",
+)
+def call_buttons(cv: Canvas, parent) -> object:
+    """Three paper buttons across :data:`CALL_BOX`: what turns a shot into the other side of a video call. No
+    lettering, so nothing on them is measured by the safe-area check."""
+    g = cv.group(parent, cv.uid("g"))
+    for i, (dx, fill) in enumerate(((-CALL_STEP, CALL_GREY), (0.0, HANG_UP), (CALL_STEP, CALL_GREY))):
+        cx = 540.0 + dx
+        draw_shapes(cv, g, _paper(_ring(f"call-{i}", cx, CALL_Y, CALL_R, CALL_R), fill))
+    mx, my = 540.0 - CALL_STEP, CALL_Y
+    # the microphone: a capsule on a stand
+    draw_shapes(cv, g, [(_capsule(mx - 13, my - 34, 26, 44), "#fffaf0", None, 0.0, 1.0)])
+    cv.line(g, mx, my + 14, mx, my + 30, "#fffaf0", 6)
+    cv.line(g, mx - 16, my + 30, mx + 16, my + 30, "#fffaf0", 6)
+    # the handset, lying down: the hang-up
+    draw_shapes(cv, g, [(_capsule(540.0 - 36, CALL_Y - 9, 72, 22), "#fffaf0", None, 0.0, 1.0)])
+    # the camera: a body and its lens
+    cx = 540.0 + CALL_STEP
+    draw_shapes(cv, g, [(_capsule(cx - 32, CALL_Y - 20, 46, 40, r=8), "#fffaf0", None, 0.0, 1.0)])
+    draw_shapes(
+        cv,
+        g,
+        [
+            (
+                _poly_closed(
+                    [(cx + 16, CALL_Y - 4), (cx + 34, CALL_Y - 16), (cx + 34, CALL_Y + 16), (cx + 16, CALL_Y + 4)]
+                ),
+                "#fffaf0",
+                None,
+                0.0,
+                1.0,
+            )
+        ],
+    )
+    return g
+
+
+def _poly_closed(points: Sequence[Point]) -> str:
+    return "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in points) + " Z"
+
+
+def _capsule(x: float, y: float, w: float, h: float, r: float | None = None) -> str:
+    """A rounded rectangle as path data, its corner radius ``r`` (half the short side by default)."""
+    r = min(w, h) / 2 if r is None else r
+    return (
+        f"M {x + r:.1f} {y:.1f} H {x + w - r:.1f} A {r:.1f} {r:.1f} 0 0 1 {x + w:.1f} {y + r:.1f} "
+        f"V {y + h - r:.1f} A {r:.1f} {r:.1f} 0 0 1 {x + w - r:.1f} {y + h:.1f} H {x + r:.1f} "
+        f"A {r:.1f} {r:.1f} 0 0 1 {x:.1f} {y + h - r:.1f} V {y + r:.1f} A {r:.1f} {r:.1f} 0 0 1 {x + r:.1f} {y:.1f} Z"
+    )

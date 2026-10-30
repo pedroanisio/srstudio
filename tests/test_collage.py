@@ -339,3 +339,69 @@ def test_the_bathroom_is_a_registered_set_with_a_shelf_for_the_signature():
     assert entry.kind == "location" and entry.style == "collage"
     x0, y0, x1, y1 = collage_sets.signature_box("bathroom")
     assert 0 <= x0 < x1 <= 1080 and y1 < collage.FIGURE_BOX[1] + 400
+
+
+# -- the still opening, the zoom pivot and the call buttons -----------------------------------------------------------
+def test_a_still_figure_holds_its_pose_without_breath_blink_or_lips():
+    mouths = [(0.0, "closed"), (0.4, "open"), (0.9, "closed")]
+    cv = canvas()
+    groups = collage.figure(cv, cv.comp, collage.LOOKS["priya"], [pose()], D, mouths=mouths, still=True)
+    assert len(groups) == 1 and list(groups[0].effects) == ["collage-figure-shadow"]
+    assert not list(tree(cv).iter("animate"))  # nothing changes: the sp-hook_motion test's still first second
+    cv = canvas()
+    collage.DRAWERS["gary"](cv, cv.comp, [pose()], D, (), enter=0.0, mouths=mouths, still=True)
+    assert not list(tree(cv).iter("animate"))
+    cv = canvas()
+    collage.DRAWERS["gary"](cv, cv.comp, [pose()], D, (), enter=0.0, mouths=mouths)
+    assert list(tree(cv).iter("animate"))  # the default still breathes, blinks and talks
+
+
+def _on_screen(v: float, pivot: float, scale: float) -> float:
+    return pivot + (v - pivot) * scale
+
+
+@pytest.mark.parametrize("name", list(collage_sets.SETS))
+@pytest.mark.parametrize("scale", [1.3, 1.55])
+def test_a_zoom_pivot_keeps_the_whole_signature_in_frame(name, scale):
+    face = collage.face(collage.LOOKS["gary"])
+    px, py = collage_sets.zoom_pivot(name, face, scale)
+    x0, y0, x1, y1 = collage_sets.marks_box(name)
+    sx0, sy0, sx1, sy1 = collage_sets.signature_box(name)
+    assert sx0 < x0 < x1 < sx1 and (sy0, sy1) == (y0, y1)  # the marks, without the shelf's bare ends
+    m = collage_sets.ZOOM_MARGIN
+    assert _on_screen(x0, px, scale) >= m - 1e-6 and _on_screen(x1, px, scale) <= 1080 - m + 1e-6
+    assert _on_screen(y0, py, scale) >= m - 1e-6 and _on_screen(y1, py, scale) <= 1920 - m + 1e-6
+    assert py == face[1]  # every shelf sits high enough that a zoom on a face keeps it vertically
+
+
+def test_a_zoom_pivot_is_the_face_when_the_face_already_keeps_the_signature():
+    face = collage.face(collage.LOOKS["rosa"])
+    assert collage_sets.zoom_pivot("therapy", face, 1.55) == face  # the shelf is above the head
+    left = collage_sets.zoom_pivot("living-room", face, 1.55)
+    right = collage_sets.zoom_pivot("cafe", face, 1.55)
+    assert left[0] < face[0] < right[0]  # it moves towards the shelf only as far as it must
+
+
+@pytest.mark.parametrize("scale", [1.0, 0.5, float("nan"), 9.0])
+def test_a_zoom_pivot_refuses_a_scale_the_signature_cannot_survive(scale):
+    with pytest.raises(collage.CollageError, match="zoom"):
+        collage_sets.zoom_pivot("cafe", collage.face(collage.LOOKS["gary"]), scale)
+
+
+def test_the_marks_box_needs_a_known_set():
+    with pytest.raises(collage.CollageError, match="no set"):
+        collage_sets.marks_box("moon")
+
+
+def test_the_call_buttons_sit_in_the_frame_below_the_figure_and_clear_of_every_signature():
+    cv = canvas()
+    collage_sets.call_buttons(cv, cv.comp)
+    x0, y0, x1, y1 = collage_sets.CALL_BOX
+    assert 0 < x0 < x1 < 1080 and collage.FIGURE_BOX[1] < y0 < y1 < 1920
+    for name in collage_sets.SETS:
+        sx0, sy0, sx1, sy1 = collage_sets.signature_box(name)
+        assert y0 > sy1 or x1 < sx0 or x0 > sx1, name
+    reds = [p for p in tree(cv).iter("shape") if p.get("fill") == collage_sets.HANG_UP]
+    assert reds  # the red hang-up button between the two grey ones
+    assert not list(tree(cv).iter("text"))  # no lettering: nothing for the safe-area check to measure
+    assert registry.get("prop", "collage-call-buttons") is not None
