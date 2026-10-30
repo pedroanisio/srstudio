@@ -14,8 +14,8 @@ from sr_core.scene import Scene, SchemaValueError
 
 from srstudio import VERTICAL, Timeline, native
 from srstudio.native import CaptionLook, Cue, NativeError, Word
+from support.ink_layout import takes_data
 from support.native import FONT, canvas, shots
-from test_ink_layout import takes_data
 
 
 def root(scene: Scene) -> ET.Element:

@@ -4,34 +4,17 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import shutil
 import sys
-import wave
 from pathlib import Path
 
 import pytest
 
-from fakes import ffmpeg_required, make_mp3
+from fakes import ffmpeg_required
 from srstudio import song as S
 from srstudio.generated import PLACEHOLDER, Resolved, ResolveError, sha256_of
 from srstudio.voice import Transcript, Word
-from support.song import GROOVE, make_song
-
-RATE = 48000
-
-
-def tone(path: Path, seconds: float, lead: float = 0.1, amplitude: float = 0.5) -> Path:
-    """``lead`` seconds of silence, then ``seconds`` of tone, then 0.1 s of silence."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    n_lead, n_on, n_tail = round(lead * RATE), round(seconds * RATE), round(0.1 * RATE)
-    samples = [0.0] * n_lead + [amplitude * math.sin(i * 0.05) for i in range(n_on)] + [0.0] * n_tail
-    with wave.open(str(path), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(RATE)
-        w.writeframes(b"".join(round(s * 32767).to_bytes(2, "little", signed=True) for s in samples))
-    return path
+from support.song import GROOVE, engine, make_song, tone
 
 
 def pins_for(tmp_path: Path, song: S.Song, speech: dict[int, float]) -> dict[str, Resolved]:
@@ -127,26 +110,6 @@ def test_a_line_that_runs_into_the_next_stops_the_build_instead_of_overlapping(t
         S.place(song, pins_for(tmp_path, song, {0: 2.2, 1: 0.4}))
     with pytest.raises(S.SongError, match="line 2"):  # the last line is bounded by lines_end
         S.place(song, pins_for(tmp_path, song, {0: 0.5, 1: 2.2}))
-
-
-# -- the build, through the engine and a fake ElevenLabs ---------------------------------------------------------
-def engine() -> Path:
-    found = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
-    if not found or not Path(found).exists():
-        pytest.skip("set SRSTUDIO_ENGINE to a scene-render binary")
-    return Path(found)
-
-
-@pytest.fixture
-def fake_env(tmp_path):
-    if shutil.which("ffmpeg") is None:
-        pytest.skip("ffmpeg is required")
-    assert make_mp3(tmp_path / "tone.mp3")
-    return {
-        "SR_PROVIDER_SRSTUDIO_ELEVENLABS": f"{sys.executable} {Path(__file__).parent / 'fake_provider.py'}",
-        "FAKE_MP3": str(tmp_path / "tone.mp3"),
-        "FAKE_LOG": str(tmp_path / "calls.log"),
-    }
 
 
 class FakeFont:

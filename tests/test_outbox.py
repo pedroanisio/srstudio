@@ -11,8 +11,8 @@ import pytest
 from srstudio.outbox import MANIFEST, NO_PACKAGE, Bundle, OutboxError, latest_package, push, ready, stage
 from srstudio.social import MANIFEST as DELIVERY
 from srstudio.social import Item, fingerprint, publish
-from test_package import project
-from test_social import FONT, engine, post, tall
+from support.package import project
+from support.social import FONT, engine, post, tall
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 

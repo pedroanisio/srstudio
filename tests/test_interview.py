@@ -16,7 +16,7 @@ from srstudio.provider import parse_voice
 from srstudio.timeline import Phrase
 from srstudio.voice import ElevenLabsClient, parse_transcript
 from support.interview import ERIC, WILL, make
-from test_song import engine, fake_env, tone  # noqa: F401  (fake_env is a fixture)
+from support.song import engine, tone
 
 
 def back_to_back(speech, effect) -> I.Schedule:
@@ -210,7 +210,7 @@ def test_a_near_silent_line_stops_the_build_instead_of_being_boosted(tmp_path):
 
 # -- the build, through the engine and a fake ElevenLabs ---------------------------------------------------------
 @ffmpeg_required
-def test_build_resolves_hears_places_and_writes_the_dialogue(tmp_path, fake_env):  # noqa: F811
+def test_build_resolves_hears_places_and_writes_the_dialogue(tmp_path, fake_env):
     iv = make(lines=[I.Spoken("manager", "Sit down.", "Sit down."), I.Spoken("candidate", "Sit down.", "Sit.")])
     root = tmp_path / "project"
     out = I.build(
@@ -243,7 +243,7 @@ def test_build_resolves_hears_places_and_writes_the_dialogue(tmp_path, fake_env)
 
 
 @ffmpeg_required
-def test_build_stops_when_a_line_is_misheard(tmp_path, fake_env):  # noqa: F811
+def test_build_stops_when_a_line_is_misheard(tmp_path, fake_env):
     iv = make(lines=[I.Spoken("manager", "Sit down.", "x"), I.Spoken("candidate", "Sit down.", "x")], effects=[])
     root = tmp_path / "project"
     with pytest.raises(ResolveError, match="heard"):

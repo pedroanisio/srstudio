@@ -16,9 +16,9 @@ from srstudio import CEL, CUTOUT, INK, SOFT, Episode
 from srstudio.generated import PlacedClip, Placement
 from srstudio.styles import Mix
 from support.audio import clips_project, spec
-from test_cel import silent_project
-from test_generated import SPEECH, write_wav
-from test_ink_layout import takes_data
+from support.cel import silent_project
+from support.generated import SPEECH, write_wav
+from support.ink_layout import takes_data
 
 
 def mix_of(ep: Episode) -> ET.Element | None:

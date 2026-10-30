@@ -4,7 +4,6 @@ import fcntl
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 from dataclasses import asdict
@@ -13,7 +12,6 @@ from pathlib import Path
 import pytest
 
 from srstudio import Episode, EpisodeSpec, social, thumbnail
-from srstudio.sample import SYSTEM_FONTS
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -39,9 +37,9 @@ from srstudio.social import (
     video_size,
 )
 from srstudio.thumbnail import Thumbnail
+from support.social import FONT, engine, post, tall, video
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
-FONT = next(f for f in SYSTEM_FONTS if f.exists())  # DejaVu Sans Bold, the fixture font
 
 GOOD = InstagramPost(
     title="Greatest weakness? Honesty.",
@@ -116,22 +114,6 @@ def test_an_episode_hides_its_burned_in_text_in_the_cover_variant(project, tmp_p
         ep.hide_on_cover(card)
 
 
-def needs_ffmpeg():
-    if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
-        pytest.skip("needs ffmpeg and ffprobe")
-
-
-def video(path: Path, *, seconds: float = 1, fps: int = 10, size: str = "64x112", lum: str = "X*2+N*10") -> Path:
-    """A small lossless video whose frame n has a horizontal ramp brightened by 10 per frame (or ``lum``)."""
-    needs_ffmpeg()
-    subprocess.run(
-        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"nullsrc=s={size}:r={fps}:d={seconds}",
-         "-vf", f"geq=lum='{lum}':cb=128:cr=128", "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv420p", str(path)],
-        check=True,
-    )  # fmt: skip
-    return path
-
-
 def mean_luma(image: Path) -> float:
     raw = subprocess.run(
         ["ffmpeg", "-v", "error", "-i", str(image), "-vf", "format=gray", "-f", "rawvideo", "-"],
@@ -180,22 +162,6 @@ def test_a_blank_frame_is_refused(tmp_path):
     with pytest.raises(CoverError, match="blank"):
         take_frame(flat, 0.2, tmp_path / "f.png")
     assert sorted(p.name for p in tmp_path.iterdir()) == ["flat.mp4"]
-
-
-def engine() -> str:
-    found = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
-    if not found:
-        pytest.skip("needs SRSTUDIO_ENGINE")
-    return found
-
-
-def tall(path: Path, lum: str = "X/3+Y/5+N*10") -> Path:
-    """A portrait clip big enough for a headline in the fixture font."""
-    return video(path, seconds=1, fps=4, size="540x960", lum=lum)
-
-
-def post(headline: str = "Hi", at: float = 0.3, **kw) -> InstagramPost:
-    return InstagramPost(title="t", description="d", thumbnail=Thumbnail(headline, at, kicker="K"), **kw)
 
 
 def test_deliver_writes_the_caption_and_the_designed_cover_together(tmp_path):

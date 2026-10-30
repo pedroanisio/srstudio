@@ -10,7 +10,7 @@ from sr_core.scene import Scene
 from srstudio import CAFE, Canvas, Signature, cast, locations, props, registry, signature
 from srstudio.errors import SrstudioError
 from srstudio.rig import Performance
-from test_signature import TODAY, _canvas
+from support.signature import TODAY, _canvas
 
 
 def canvas():

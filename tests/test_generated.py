@@ -7,7 +7,6 @@ import math
 import os
 import shutil
 import sys
-import wave
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -17,19 +16,7 @@ from fakes import ffmpeg_required, make_mp3
 from srstudio import Episode, EpisodeSpec, cast, generated, locations
 from srstudio.generated import PLACEHOLDER, Generated, PlacedClip, Placement, ResolveError
 from srstudio.soundtrack import Soundtrack
-from support.generated import SQUEAK
-
-SPEECH = Generated(
-    id="line-1",
-    kind="speech",
-    provider="srstudio-elevenlabs",
-    model="eleven_multilingual_v2",
-    prompt="In your chair.",
-    voice="bIHbv24MWmeRgasZH58o?stability=0.42&similarity_boost=0.75&style=0.24&speed=1.0&use_speaker_boost=true",
-    language="en",
-    seed=52026,
-    cache="assets/generated/line-1.wav",
-)
+from support.generated import SPEECH, SQUEAK, write_wav
 
 
 def engine() -> Path:
@@ -37,16 +24,6 @@ def engine() -> Path:
     if not found or not Path(found).exists():
         pytest.skip("set SRSTUDIO_ENGINE to a scene-render binary")
     return Path(found)
-
-
-def write_wav(path: Path, samples: list[float], rate: int = 48000) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with wave.open(str(path), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(rate)
-        w.writeframes(b"".join(int(max(-1, min(1, s)) * 32767).to_bytes(2, "little", signed=True) for s in samples))
-    return path
 
 
 # -- declarations -----------------------------------------------------------------------------------------

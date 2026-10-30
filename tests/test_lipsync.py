@@ -197,7 +197,7 @@ def test_the_command_scores_the_takes_of_timelines_with_both_mouths(tmp_path, ca
     import json
 
     from srstudio import cli
-    from test_ink_layout import takes_data
+    from support.ink_layout import takes_data
 
     path = tmp_path / "timeline.json"
     path.write_text(json.dumps(takes_data()))

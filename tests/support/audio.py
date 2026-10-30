@@ -9,7 +9,7 @@ import shutil
 
 from srstudio import EpisodeSpec
 from srstudio.generated import PlacedClip, Placement
-from test_generated import SPEECH, write_wav
+from support.generated import SPEECH, write_wav
 
 
 def spec(root, **kw) -> EpisodeSpec:

@@ -1,9 +1,11 @@
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
 
+from fakes import make_mp3
 from srstudio.sample import Line, write_sample_project
 
 LINES = [
@@ -38,3 +40,15 @@ def scene_render() -> Path:
     if not found or not Path(found).is_file():
         pytest.skip("runs the scene-render engine: set SRSTUDIO_ENGINE to a scene-render binary")
     return Path(found)
+
+
+@pytest.fixture
+def fake_env(tmp_path):
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("ffmpeg is required")
+    assert make_mp3(tmp_path / "tone.mp3")
+    return {
+        "SR_PROVIDER_SRSTUDIO_ELEVENLABS": f"{sys.executable} {Path(__file__).parent / 'fake_provider.py'}",
+        "FAKE_MP3": str(tmp_path / "tone.mp3"),
+        "FAKE_LOG": str(tmp_path / "calls.log"),
+    }

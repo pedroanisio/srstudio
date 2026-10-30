@@ -6,25 +6,15 @@ import wave
 import zipfile
 
 import pytest
-from sr_core.scene import Scene, read, write
+from sr_core.scene import read, write
 
-from srstudio import Canvas, package
+from srstudio import package
 from srstudio.social import InstagramPost
+from support.package import project
 
 
 def post(title: str = "Five Years") -> InstagramPost:
     return InstagramPost(title=title, description="An interview that goes wrong.\n\nSecond paragraph.", credit="")
-
-
-def project(root, slug="demo", width=1080):
-    folder = root / "episodes" / slug
-    folder.mkdir(parents=True)
-    scene = Scene(version="auto")
-    scene.add_project(width=width, height=1920, fps="30", duration=2, background="#FFFFFF")
-    cv = Canvas(scene)
-    cv.group(cv.comp, "x")
-    (folder / f"{slug}.scene.xml").write_bytes(scene.to_bytes())
-    return folder
 
 
 def manifest(zip_path):

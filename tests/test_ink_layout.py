@@ -20,74 +20,7 @@ from srstudio import (
     shared_counter,
     subtitles,
 )
-from support.ink_layout import phones, router_take, square_canvas
-
-WORDS = [
-    {"text": "Okay.", "start": 0.02, "end": 0.54},
-    {"text": "Come", "start": 0.72, "end": 0.79},
-    {"text": "on.", "start": 0.86, "end": 1.35},
-    {"text": "Come", "start": 1.49, "end": 1.56},
-    {"text": "on!", "start": 1.62, "end": 2.03},
-]
-
-
-def takes_data():
-    return {
-        "duration": 6.0,
-        "tempo_adjustment": 1.0,
-        "items": [
-            {
-                "id": "01",
-                "actor": "human",
-                "shot": "desk",
-                "text": "Okay. Come on. Come on!",
-                "mood": "impatient",
-                "start": 0,
-                "duration": 2.1,
-                "speech_duration": 2.03,
-                "audio": "audio/conform-01.wav",
-                "words": WORDS,
-                "phones": phones("okay come on come on"),
-            },
-            {
-                "id": "02",
-                "actor": "sfx",
-                "shot": "printer",
-                "text": "[PRINTER WHIRRS]",
-                "seconds": 1.35,
-                "start": 2.1,
-                "duration": 1.35,
-                "speech_duration": 0,
-                "audio": "audio/printer-02.wav",
-            },
-            {
-                "id": "03",
-                "actor": "printer",
-                "shot": "printer-close",
-                "text": "Magenta!",
-                "mood": "smug",
-                "start": 3.45,
-                "duration": 1.2,
-                "speech_duration": 1.1,
-                "audio": "audio/conform-03.wav",
-                "words": [{"text": "Magenta!", "start": 0.05, "end": 1.0}],
-                "phones": phones("magenta!"),
-            },
-            {
-                "id": "04",
-                "actor": "human",
-                "shot": "human",
-                "text": "Aaargh!",
-                "mood": "scream",
-                "start": 4.65,
-                "duration": 1.35,
-                "speech_duration": 0.9,
-                "audio": "audio/conform-04.wav",
-                "words": [{"text": "Aaargh!", "start": 0.05, "end": 0.9}],
-                "phones": phones("aaargh!"),
-            },
-        ],
-    }
+from support.ink_layout import WORDS, phones, router_take, square_canvas, takes_data
 
 
 @pytest.fixture

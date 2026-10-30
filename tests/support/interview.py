@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from srstudio import interview as I
 from srstudio.song import Singer
-from test_song import engine, fake_env, tone  # noqa: F401  (fake_env is a fixture)
 
 WILL = Singer("bIHbv24MWmeRgasZH58o", "Will", {"stability": 0.4, "similarity_boost": 0.75, "style": 0.2})
 
