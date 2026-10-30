@@ -81,8 +81,11 @@ class Shot:
 @dataclass(frozen=True)
 class Staging:
     """What an episode adds to its sketch: how each shot is dressed, the pill tints per speaker, the stickers on
-    a character, its words for the metadata and what stands in front of the character (the office desk unless a
-    dinner, say, lays a table instead)."""
+    a character, its words for the metadata, what stands in front of the character (the office desk unless a
+    dinner, say, lays a table instead) and, optionally, a ``camera`` that moves each shot: it is called with the
+    dressed :class:`Shot` (its beats are the ones drawn, scripted or voiced) and the shot's group (set, character,
+    desk and props; the captions stay still), which is then named ``shot-NNN`` (its order) so
+    :mod:`srstudio.craft` counts its moves as camera."""
 
     sketch: sketch.Sketch
     seed: int
@@ -94,6 +97,7 @@ class Staging:
     stickers: Mapping[str, Sequence[tuple]] = field(default_factory=dict)
     desk: Callable[[Canvas, object], None] = toon.desk
     lit: bool = False  # each shot gets a light layer between the character and the desk (ADR 0043)
+    camera: Callable[[Shot, object], None] | None = None
 
 
 def badge_spans(
@@ -164,7 +168,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         )
     )
     cv, t = ep.cv, ep.t
-    if t.duration > sk.end or t.phrases[0].start != 0:
+    cues = sketch.cues(sk.beats, sk.end, sk.lines)
+    first = cues[0]["start"] if cues else 0.0  # 0, or later after a still, uncaptioned opening
+    if t.duration > sk.end or t.phrases[0].start != first:
         raise StagingError(f"{ep.spec.dialogue} runs to {t.duration} s, the sketch to {sk.end} s: run --init again")
     project = ep.scene.find("project")
     if not isinstance(project, Project):  # pragma: no cover - an Episode always writes its project
@@ -182,8 +188,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         raise StagingError("the Toon style has no font to measure its captions in")
     font = (root / TOON.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
-    for app in sketch.appearances(sk.beats, sk.end):
-        g = cv.group(ep.comp, cv.uid("g"), start=app.start, end=app.end)
+    for n, app in enumerate(sketch.appearances(sk.beats, sk.end), 1):
+        g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
@@ -191,7 +197,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure, light))
+        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light)
+        staging.dress(shot)
+        if staging.camera is not None:
+            staging.camera(shot, g)
     lines = toon.load_script(root / ep.spec.dialogue)
     fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
     toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)

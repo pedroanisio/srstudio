@@ -1311,6 +1311,14 @@ screen on `reader:` events: DECLINED for him, APPROVED for her. Her payment, his
 punchline, what it is for (half her salad) arrive on her phone as `toast:` events; the button is his last toast,
 "Same place Friday?".
 
+Two more staging options serve the opening A/B test (a still first second against a moving one). A sketch may open
+on a silent, uncaptioned beat and caption its first line later: the build checks the caption script against the
+sketch's first cue, not against second 0, so a still opening holds the frame unchanged until the first word. And
+`Staging(camera=)` moves each shot: it is called with the dressed `Shot` (its beats are the ones drawn, scripted or
+voiced) and the shot's group (set, character, desk and props; the captions stay still), and the group is named
+`shot-NNN` so `srstudio craft` counts its moves as camera. Without it, shots keep their anonymous ids and every earlier sketch
+rebuilds byte-identical.
+
 ### Toon dinner: the restaurant, the table, the dishes and the card reader
 
 `srstudio.toon_dinner` draws the restaurant set in the Toon line. `restaurant(cv, parent, special=(dish, price))`
