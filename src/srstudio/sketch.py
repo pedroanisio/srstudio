@@ -33,7 +33,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import characters, checks, fonts, soundtrack, toon, toon_cast, toon_critters, toon_inked  # noqa: F401 - both register
+from . import characters, checks, fonts, soundtrack, toon, toon_cast, toon_critters, toon_inked, toon_redrawn  # noqa: F401 - they register
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont

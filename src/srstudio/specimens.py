@@ -232,11 +232,13 @@ def _traced_cel(entry: registry.Entry) -> Canvas:
 
 
 TOON_BRUSH = ("dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog")
+TOON_REDRAWN = ("dog", "frog", "bear", "rabbit", "raccoon", "hedgehog")
 SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-cat": _traced_toon,
     **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
     "toon-fox@2": _newer_toon,
     **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster"), _newer_toon),
+    **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
     **{f"collage-{name}": _paper for name in collage.LOOKS},
     **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
     **{f"saga-{name}": _space for name in ("gloom", "enforcer", "droid", "juno", "rook", "mabel")},

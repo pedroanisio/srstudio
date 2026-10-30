@@ -363,6 +363,7 @@ TOON = Style(
         "toon_everyday",
         "toon_inked",
         "toon_props",
+        "toon_redrawn",
         "toon_rooms",
         "toon_sets",
         "toon_wear",
