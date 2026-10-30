@@ -4,7 +4,7 @@ drawer, opened in terror: one sock, and relief. The front door opens, the hall c
 landlord. From under the pile: I cleaned.
 
 Two voices (ElevenLabs premade Will as the raccoon, Jessica as the hedgehog); the landlord does not speak. It opens on
-movement (the ``sp-hook_motion`` test's arm B): a whirl crosses the frame from the first frame and he is in it. Each
+movement (the ``sp-hook_motion`` test's arm B): a whirl slides to a stop from the first frame and he is in it. Each
 reveal stands behind a character on a counter that holds the signature and the tiny drawer; :func:`dress` draws the
 pile before the counter, so the marks stay on top. ``SKETCH`` is checked by :func:`srstudio.sketch.check`;
 :func:`validate` checks what the events ask of the props; :func:`push` shakes the shots the pile lands in and
@@ -49,6 +49,7 @@ COUNTER = ("#fbfbf8", "#dfe5ec", "#7f8a96")
 STAGES = ("closet", "oven", "shower", "drawer", "door")
 SPARKLES = ((420.0, 400.0), (540.0, 580.0), (470.0, 720.0), (360.0, 520.0))
 WHIRLED = 0.7
+WHIRL_TRAVEL = 40.0  # a short slide: he is inside the blur from the first frame, not beside it
 PLATES, PLATE_STEP = 5, 0.22  # slow enough not to flash
 BURY_LEAD = 0.35  # seconds from the bury beat to the pile's rise
 END = 15.2
@@ -138,7 +139,7 @@ def _proud(shot) -> None:
     toon_flat.closet(cv, shot.back, burst + 0.15)
     if app.start < burst:
         toon_flat.sparkles(cv, shot.back, WHIRLED, app.end, SPARKLES)
-        toon_flat.whirl(cv, shot.front, 0.0, WHIRLED)
+        toon_flat.whirl(cv, shot.front, 0.0, WHIRLED, travel=WHIRL_TRAVEL)
     elif app.start < burst + 0.2 < app.end:
         toon_flat.pile(cv, shot.front, CHIN, burst + 0.2, shot.end)
     else:

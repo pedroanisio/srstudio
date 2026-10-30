@@ -206,13 +206,17 @@ def tiny_drawer(cv: Canvas, parent, at: float = 1.0, end: float = 4.0, x: float 
 
 
 @register("prop", "toon-whirl", summary="A spinning blur that a character whirls in on, gone at a given second")
-def whirl(cv: Canvas, parent, start: float = 0.0, end: float = 0.7, at: Point = (185.0, 640.0)) -> None:
-    """A blur crossing the frame from the right to ``at`` over the span, spinning, wide enough to hide who is in it."""
+def whirl(
+    cv: Canvas, parent, start: float = 0.0, end: float = 0.7, at: Point = (185.0, 640.0), travel: float = 300.0
+) -> None:
+    """A blur arriving ``travel`` from the right at ``at`` over the span, spinning, wide enough to hide who is in it."""
     if not (checks.number(start) and checks.number(end) and 0 <= start and start + 0.2 <= end):
         raise ToonDataError(f"a whirl spins from {start!r} to {end!r}, 0.2 s at least")
+    if not (checks.number(travel) and travel >= 0):
+        raise ToonDataError(f"a whirl travels a finite distance from the right, got {travel!r}")
     cx, cy = fx(at[0]), fy(at[1])
     g = cv.group(parent, cv.uid("g"), start=start, end=end)
-    cv.keys(g, "x", [(start, fh(300)), (start + (end - start) * 0.7, 0.0)], hold=False)
+    cv.keys(g, "x", [(start, fh(travel)), (start + (end - start) * 0.7, 0.0)], hold=False)
     spin = cv.group(g, cv.uid("g"), x=cx, y=cy, anchorX=cx, anchorY=cy)
     cv.keys(spin, "rotation", [(start, 0.0), (end, 540.0)], hold=False)
     w, h = fh(330), fh(460)

@@ -108,6 +108,27 @@ def test_a_whirl_refuses_a_span_it_cannot_spin_in(start, end):
         toon_flat.whirl(cv, cv.group(cv.comp, "g"), start, end)
 
 
+@pytest.mark.parametrize("travel", [-1.0, float("nan"), "far"])
+def test_a_whirl_refuses_a_travel_it_cannot_cross(travel):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="a whirl travels"):
+        toon_flat.whirl(cv, cv.group(cv.comp, "g"), 0.0, 0.7, travel=travel)
+
+
+def test_a_whirl_starts_as_far_off_as_its_travel():
+    cv = canvas()
+    toon_flat.whirl(cv, cv.group(cv.comp, "g"), 0.0, 0.7, travel=0.0)
+    (keys,) = keyed(cv, "x")
+    assert keys[0][1] == keys[-1][1]
+
+
+def test_a_whirl_crosses_the_frame_unless_told_otherwise():
+    cv = canvas()
+    toon_flat.whirl(cv, cv.group(cv.comp, "g"), 0.0, 0.7)
+    (keys,) = keyed(cv, "x")
+    assert keys[0][1] > keys[-1][1]
+
+
 def test_a_whirl_is_slow_and_close_in_tone_so_it_does_not_flash():
     cv = canvas()
     toon_flat.whirl(cv, cv.group(cv.comp, "g"), 0.0, 0.7)

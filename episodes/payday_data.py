@@ -129,17 +129,18 @@ def dress(shot) -> None:
     bills, cheer = dings[1:-1], dings[-1]
     broke = _moment(beats, "broke")
     reach, bite = _moment(beats, "treat"), events(beats, "crunch")[0][0]
+    close = events(beats, "zoom")[0][0]  # the zoom crops the phone, so its lettering ends on the cut in
     collage_everyday.confetti(cv, shot.back, 0.0, reach, turn=bills[2])
     step = broke / TICKS  # the phone comes up on the counter's first second, clear of the punch
     held = _gated(cv, front, step, app.end)
     collage_everyday.phone(cv, held, **PHONE, screen="#fffaf0")
     left, top = INSIDE
-    for a, b, money in zip([step, *bills], [*bills, app.end], [START, *(b for _, b in BILLS)], strict=True):
+    for a, b, money in zip([step, *bills], [*bills, close], [START, *(b for _, b in BILLS)], strict=True):
         colour = RED if money == BILLS[-1][1] else collage.INK
         collage_sets.sign(cv, _gated(cv, front, a, b), money, left + 14, top + 150, 350, 130, size=60, color=colour)
-    collage_sets.sign(cv, held, "BALANCE", left + 84, top + 80, 210, 60, size=36)
+    collage_sets.sign(cv, _gated(cv, front, step, close), "BALANCE", left + 84, top + 80, 210, 60, size=36)
     for n in range(1, TICKS + 1):
-        a, b = n * step, app.end if n == TICKS else (n + 1) * step
+        a, b = n * step, close if n == TICKS else (n + 1) * step
         collage_sets.sign(cv, _gated(cv, front, a, b), f"PAID 0:{n:02d} AGO", left + 34, top + 310, 310, 66, size=36)
     for (text, _), at in zip(BILLS, bills, strict=True):
         _bill(cv, front, text, at)
