@@ -476,6 +476,28 @@
         "Uma leitura aceita pelo operador: o reconhecimento de fala ouve \"Reel\" onde a Sunny diz \"Real\", e <code>takes.Take(heard=...)</code> registra essa única alternativa no relatório de transcrição; qualquer outra leitura ainda para a gravação.",
         "Primeiro episódio com <code>gloss_reel.LOOK</code> (ADR 0031): nenhuma legenda termina numa palavra solta e toda legenda fica ao menos 0,84 s na tela; G1–G6, já publicados, mantêm as legendas originais."
       ]
+    },
+    "hang-out": {
+      "lede": "Dois melhores amigos de calendário na mão: \"We HAVE to catch up!\". Cada um oferece março, cada ano é a semana mais doida, e a árvore atrás delas vira uma copa maior que o quadro. Em 2079, no banco, de bengala: tão bom te ver. E os dois tiram o telefone.",
+      "highlights": [
+        "Sem música: diálogo pelo <code>srstudio.interview</code>, com a folha sintetizada por <code>foley</code>.",
+        "O plano nunca muda; quem envelhece é o mundo (<code>soft_sets.park(growth=)</code>)."
+      ]
+    },
+    "early-night": {
+      "lede": "Um narrador anuncia: hoje, cama às dez. O cartão de hora dispara: 11:40, um homem restaura uma pá enferrujada; 1:15, apicultores da Bulgária; 2:30, ela já tem opiniões. 3:47, ela explica lixamento para ninguém. O telefone desce, o quarto apaga, e o despertador toca sobre um olho.",
+      "highlights": [
+        "O quarto vira de claro a escuro por linhas de <code>Light</code>: um círculo de luz que treme em volta do telefone, breu, dia.",
+        "As linhas de <code>Shot</code> cortam para dentro do quarto e deixam o criado-mudo no lugar, com as marcas de assinatura no último quadro."
+      ]
+    },
+    "why": {
+      "lede": "Pip pergunta por que o céu é azul. Cada resposta de Bo é mais curta que a anterior, até ele sentar no chão: ninguém sabe, a gente só levantou um dia e fez. Pip dá um tapinha no ombro dele. Depois volta, alto, de gravata e pasta, para falar da hora de dormir.",
+      "highlights": [
+        "O primeiro e o último plano são o mesmo quarto com os tamanhos trocados.",
+        "O <code>Why?</code> é sempre o mesmo plano fechado; o de Bo chega mais perto a cada vez (<code>Shot</code>).",
+        "<code>Dim</code> tira a luz do quarto em volta dele quando ele senta."
+      ]
     }
   },
   "styles": {
@@ -3567,6 +3589,102 @@
         "at": 17.2
       },
       "text": "O bolo Soft (<code>soft_props.cake</code>) depois do giro: escrita de glacê na frente e outra atrás, trocadas quando o bolo gira no prato. Em The Cake (19), WE'LL MISS YOU vira BYE PIP."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto de criança",
+      "parts": ["soft-playroom"],
+      "shot": {
+        "episode": "why",
+        "at": 0.5
+      },
+      "text": "O quarto de frente (<code>soft_sets.playroom</code>): uma janela de céu, uma porta, um tapete e o caixote em primeiro plano com as marcas de assinatura."
+    },
+    {
+      "section": "props",
+      "name": "Gravata e pasta",
+      "parts": [
+        "soft-necktie",
+        "soft-briefcase"
+      ],
+      "shot": {
+        "episode": "why",
+        "at": 17.5
+      },
+      "text": "A gravata listrada (<code>soft_props.necktie</code>) e a pasta de couro (<code>soft_props.briefcase</code>), para quem quer falar da hora de dormir."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto à noite",
+      "parts": ["soft-bedroom"],
+      "shot": {
+        "episode": "early-night",
+        "at": 0.5
+      },
+      "text": "A cama vista dos pés (<code>soft_sets.bedroom</code>): cabeceira, travesseiros, edredom e criado-mudo, com o telefone como única luz."
+    },
+    {
+      "section": "props",
+      "name": "Pá enferrujada",
+      "parts": ["soft-shovel"],
+      "shot": {
+        "episode": "early-night",
+        "at": 2.0
+      },
+      "text": "A pá de jardim Soft (<code>soft_props.shovel</code>), enferrujada até que se peça o contrário, na tela de Juno às 11:40."
+    },
+    {
+      "section": "props",
+      "name": "Colmeia",
+      "parts": ["soft-hive"],
+      "shot": {
+        "episode": "early-night",
+        "at": 4.5
+      },
+      "text": "A colmeia pintada Soft (<code>soft_props.hive</code>), em um documentário sobre apicultores da Bulgária."
+    },
+    {
+      "section": "locations",
+      "name": "Parque de frente",
+      "parts": ["soft-park"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 8.8
+      },
+      "text": "O parque Soft (<code>soft_sets.park</code>) desenhado de frente para um plano médio: cidade fora de foco, gramado, caminho e uma árvore em cinco estágios, da muda com estaca à copa maior que o quadro."
+    },
+    {
+      "section": "props",
+      "name": "Banco e bengalas",
+      "parts": [
+        "soft-bench",
+        "soft-cane"
+      ],
+      "shot": {
+        "episode": "hang-out",
+        "at": 13.0
+      },
+      "text": "O banco de praça Soft de frente (<code>soft_props.bench</code>) e as bengalas (<code>soft_props.cane</code>), em Hang Out, em 2079."
+    },
+    {
+      "section": "props",
+      "name": "Telefone na mão",
+      "parts": ["soft-phone"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 3.3
+      },
+      "text": "O telefone Soft (<code>soft_props.phone</code>): de costas nas mãos, preso a elas por <code>blob.held</code>, ou de frente com a tela acesa (<code>soft_props.month_view</code>)."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão do tempo",
+      "parts": ["soft-time-card"],
+      "shot": {
+        "episode": "hang-out",
+        "at": 7.0
+      },
+      "text": "Um cartão branco com uma leitura grande que troca no corte (<code>soft_props.time_card</code>): o ano, a hora da noite."
     },
     {
       "section": "locations",

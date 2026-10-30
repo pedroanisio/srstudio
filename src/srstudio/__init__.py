@@ -44,6 +44,7 @@ from . import (  # noqa: F401  (registers builders)
     saga_sets,
     signature,
     soft_props,
+    soft_sets,
     stick,
     stick_airport,
     stick_car,

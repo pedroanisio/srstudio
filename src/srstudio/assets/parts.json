@@ -3392,6 +3392,40 @@
         }
       ]
     },
+    "soft-bedroom": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a bed seen from its foot, where a phone can be the only light.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a08d01b64655c89b361a159976e8499d3aff2e4b50f24d0564a38eb23d86d42e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bench": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a park bench straight on.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f3902e58211e1dfd40ab9627b52bfc38be2d7ce543ed71e5ecac91a263dce905",
+          "rig": null
+        }
+      ]
+    },
     "soft-break-room": {
       "kind": "location",
       "style": "soft",
@@ -3409,6 +3443,23 @@
         }
       ]
     },
+    "soft-briefcase": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a leather briefcase with brass clasps.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "beaea40ba4e99ceb66dd4bb60b422126708beb7f6b12c1f6325c471117b86078",
+          "rig": null
+        }
+      ]
+    },
     "soft-cake": {
       "kind": "prop",
       "style": "soft",
@@ -3422,6 +3473,23 @@
           "proof": "",
           "approval": null,
           "drawing": "c8e2250a6cd8d1681083374987d0f700b67ac8a5df7ad46694d0ca6126c4ac81",
+          "rig": null
+        }
+      ]
+    },
+    "soft-cane": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a walking cane.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d174410e3ae4f5f729b04f4d3181a453f5e4e8d1a7c8d1a415da74061c830c2f",
           "rig": null
         }
       ]
@@ -3494,6 +3562,23 @@
         }
       ]
     },
+    "soft-hive": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a painted wooden beehive on legs.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "45a90e4e48674e605bcf543a41ed1c9cb960f34ecdbcb8abde746db58fcc2936",
+          "rig": null
+        }
+      ]
+    },
     "soft-home": {
       "kind": "location",
       "style": "soft",
@@ -3545,6 +3630,23 @@
         }
       ]
     },
+    "soft-necktie": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a striped necktie, a prop placed on a character, not a part of one.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "12a3b6285b9e1c82dd3e69794bcc1d0fdea592df36ed8760b3beb3d91581faf8",
+          "rig": null
+        }
+      ]
+    },
     "soft-office": {
       "kind": "location",
       "style": "soft",
@@ -3558,6 +3660,74 @@
           "proof": "",
           "approval": null,
           "drawing": "5cb3a40c5e976bb47251f1096a495d243769201b6089bb03851ab828b6095654",
+          "rig": null
+        }
+      ]
+    },
+    "soft-park": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: the park straight on, with a tree and a town that grow.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "61aec9d4b3b16a3f6f01d2308ee1d985aab67cd6b7b375e286652ce87950f6fa",
+          "rig": null
+        }
+      ]
+    },
+    "soft-phone": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a phone from behind, or lit with a slot for its screen.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b25c247b71e452492c4ffb652aa9730c995c84047fa4956b320c647b7b5129f6",
+          "rig": null
+        }
+      ]
+    },
+    "soft-playroom": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for why: a child's room straight on, with a window of sky, a door and a dim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7aa048f1bda375d38c5cc908e8588ab57ad0f2509478d477178f8259509801c6",
+          "rig": null
+        }
+      ]
+    },
+    "soft-shovel": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a garden shovel, rusty until asked otherwise.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dee80f3e0c550b4b1c2c37ce465e5911e9ef1fc6296fd532eabf7046642f6a66",
           "rig": null
         }
       ]
@@ -3626,6 +3796,23 @@
           "proof": "",
           "approval": null,
           "drawing": "aefaba54d287c49165b864e608d9ab783668fcf27ba8f3bf654cbf543f483063",
+          "rig": null
+        }
+      ]
+    },
+    "soft-time-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for hang-out: a card with one big changing reading.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "954ff29806792551baac650793204cb3d7eecb27b0a6df6f5e8567e5c015fa2b",
           "rig": null
         }
       ]

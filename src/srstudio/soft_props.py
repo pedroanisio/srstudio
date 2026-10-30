@@ -17,7 +17,23 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["BadgeState", "SoftPropError", "beach_call", "cake", "status_badge"]
+__all__ = [
+    "BadgeState",
+    "SoftPropError",
+    "TimeState",
+    "beach_call",
+    "bench",
+    "briefcase",
+    "cake",
+    "cane",
+    "hive",
+    "month_view",
+    "necktie",
+    "phone",
+    "shovel",
+    "status_badge",
+    "time_card",
+]
 
 _NAME = re.compile(r"^[a-z][a-z0-9-]*$")
 _COLOUR = re.compile(r"^#[0-9A-Fa-f]{6}$")
@@ -246,4 +262,230 @@ def cake(
         rear = cv.group(iced, f"{id}-back")
         cv.keys(rear, "opacity", [(0, 0), (edge, 1)])
         cv.text(rear, f"{id}-back-text", back, -116, -136, 232, 84, CAKE_SIZE, color=letter)
+    return g
+
+
+@register(
+    "prop",
+    "soft-bench",
+    summary="A park bench seen straight on: green slats, a seat and two iron ends, wide enough for two at a close shot",
+)
+def bench(cv: Canvas, parent, x: float = 540, seat: float = 1500, *, width: float = 980, id: str = "soft-bench"):
+    """The bench, centred on ``x`` with its seat's front edge at ``seat``: ``width`` px wide, its back rising 300 px."""
+    if not (checks.number(x) and checks.number(seat) and checks.number(width) and width > 0):
+        raise SoftPropError(f"a bench stands at a finite place with a positive width, got {x!r}, {seat!r}, {width!r}")
+    ink = cv.ink
+    slat, slat_dark, iron = "#5E8F76", "#487460", "#3A3F44"
+    left = x - width / 2
+    g = cv.group(parent, id)
+    cv.ellipse(g, left - 10, seat + 196, width + 20, 44, ink, opacity=0.13)  # its shadow on the path
+    for side in (0.05, 0.95):
+        cv.rect(g, left + side * width - 16, seat - 310, 32, 520, iron, ink, 4, radius=10)
+    for k in range(3):
+        cv.rect(g, left, seat - 300 + k * 72, width, 58, slat, ink, 4, radius=10)
+        cv.rect(g, left + 8, seat - 256 + k * 72, width - 16, 12, slat_dark, radius=6)
+    cv.rect(g, left - 12, seat - 44, width + 24, 56, slat, ink, 4, radius=12)
+    cv.rect(g, left - 12, seat + 8, width + 24, 26, slat_dark, ink, 4, radius=10)
+    return g
+
+
+@register("prop", "soft-briefcase", summary="A leather briefcase with a handle and two brass clasps, carried by it")
+def briefcase(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-briefcase"):
+    """A case 220 px wide at ``scale`` 1, its handle at (``x``, ``y``), hanging below it."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a briefcase hangs at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -44, -4, 88, 44, "#00000000", ink, 14, radius=16)
+    cv.rect(g, -44, -4, 88, 44, "#00000000", "#6B4A30", 7, radius=16)
+    cv.rect(g, -110, 28, 220, 150, "#8A5A36", ink, 5, radius=18)
+    cv.rect(g, -110, 28, 220, 54, "#9C6A42", ink, 4, radius=18)
+    for cx in (-58, 58):
+        cv.rect(g, cx - 14, 66, 28, 30, "#E9C766", ink, 4, radius=6)
+    return g
+
+
+@register("prop", "soft-necktie", summary="A striped necktie, its knot where it is placed, for a blob that means it")
+def necktie(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-necktie"):
+    """A tie 200 px long at ``scale`` 1, the middle of its knot at (``x``, ``y``)."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a necktie sits at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M -18 14 L 18 14 L 40 150 L 0 196 L -40 150 Z", "#B5483A", ink, 4)
+    cv.path(g, "M -24 58 L 24 44 M -30 104 L 32 86 M -34 150 L 38 128", stroke="#E9C766", sw=8)
+    cv.path(g, "M -30 -18 L 30 -18 L 18 18 L -18 18 Z", "#C75A4A", ink, 4)
+    return g
+
+
+@register("prop", "soft-shovel", summary="A garden shovel with a D grip, its blade rusty until asked otherwise")
+def shovel(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    scale: float = 1,
+    angle: float = 0,
+    rust: bool = True,
+    id: str = "soft-shovel",
+):
+    """A shovel 620 px long at ``scale`` 1, its balance at (``x``, ``y``), the grip up at ``angle`` 0."""
+    if not (checks.number(x) and checks.number(y) and checks.number(angle) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a shovel stands at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, rotation=angle, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -44, -320, 88, 76, "#00000000", ink, 22)  # the D grip
+    cv.ellipse(g, -44, -320, 88, 76, "#00000000", "#A5713F", 13)
+    cv.rect(g, -12, -250, 24, 370, "#A5713F", ink, 4, radius=6)
+    cv.path(g, "M -82 110 Q 0 88 82 110 L 76 216 Q 44 276 0 300 Q -44 276 -76 216 Z", "#A9B3BA", ink, 5)
+    cv.rect(g, -20, 86, 40, 62, "#7F8A92", ink, 4, radius=8)
+    if rust:
+        patches = cv.group(g, f"{id}-rust")
+        for px, py, w, h, color in (
+            (-68, 130, 74, 56, "#A4552D"),
+            (6, 118, 66, 44, "#B5653A"),
+            (-30, 186, 92, 62, "#8C4524"),
+            (-16, 246, 40, 34, "#A4552D"),
+        ):
+            cv.ellipse(patches, px, py, w, h, color)
+    return g
+
+
+@register("prop", "soft-hive", summary="A painted wooden beehive on legs: two boxes, a flat roof and an entrance slot")
+def hive(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-hive"):
+    """A hive 260 px wide and 340 px tall at ``scale`` 1, standing with its feet at (``x``, ``y``)."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a hive stands at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    for lx in (-96, 72):
+        cv.rect(g, lx, -44, 24, 44, "#8A6242", ink, 4)
+    cv.rect(g, -120, -176, 240, 134, "#F2D27A", ink, 5, radius=6)
+    cv.rect(g, -120, -300, 240, 126, "#E9A85C", ink, 5, radius=6)
+    cv.rect(g, -130, -340, 260, 42, "#6F8FA8", ink, 5, radius=8)
+    cv.rect(g, -56, -78, 112, 16, "#2B2320", radius=8)  # the way in
+    for ly in (-146, -270):
+        cv.line(g, -70, ly, 70, ly, "#B9823F", 6)
+    return g
+
+
+@register("prop", "soft-cane", summary="A walking cane with a crook handle and a rubber foot, leaning as placed")
+def cane(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    height: float = 560,
+    lean: float = 0,
+    flip: bool = False,
+    id: str = "soft-cane",
+):
+    """A cane with its foot at (``x``, ``y``), ``height`` px tall, leaning ``lean`` degrees; ``flip`` turns the crook
+    to the left."""
+    if not (checks.number(x) and checks.number(y) and checks.number(lean) and checks.number(height) and height > 0):
+        raise SoftPropError(f"a cane stands at a finite place with a positive height, got {x!r}, {y!r}, {height!r}")
+    g = cv.group(parent, id, x=x, y=y, rotation=lean, scaleX=-1 if flip else 1)
+    d = f"M 0 0 L 0 {-height + 40:g} Q 0 {-height:g} 44 {-height:g} Q 88 {-height:g} 88 {-height + 46:g}"
+    cv.path(g, d, stroke=cv.ink, sw=28)
+    cv.path(g, d, stroke="#A5713F", sw=20)
+    cv.rect(g, -14, -26, 28, 32, "#3A3F44", cv.ink, 4, radius=6)
+    return g
+
+
+@register(
+    "prop",
+    "soft-phone",
+    summary="A phone held up: from behind a dark back with a lens, or from the front a lit screen with a slot for what "
+    "it shows; two thumbs grip it when asked",
+)
+def phone(
+    cv: Canvas,
+    parent,
+    *,
+    x: float = 0,
+    y: float = 0,
+    scale: float = 1,
+    screen: Callable[[object], object] | None = None,
+    id: str = "soft-phone",
+):
+    """A phone 150 x 300 px at ``scale`` 1, centred on (``x``, ``y``). Without ``screen`` it shows its back; with it,
+    ``screen(group)`` draws in a box from (-65, -130) to (65, 130) over the lit glass."""
+    if not (checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a phone's scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -75, -150, 150, 300, "#23262C", ink, 4, radius=26)
+    if screen is None:
+        cv.rect(g, -58, -132, 52, 66, "#34383F", radius=14)
+        cv.ellipse(g, -46, -124, 26, 26, "#14161A", "#5A6068", 3)
+        cv.ellipse(g, -40, -94, 18, 18, "#14161A", "#5A6068", 2)
+        cv.line(g, 60, -120, 60, 80, "#3B4048", 4)  # the light along its edge
+        return g
+    cv.rect(g, -65, -130, 130, 260, "#FFFFFF", radius=14)
+    screen(g)
+    return g
+
+
+def month_view(cv: Canvas, g, month: str, year: str, *, stamp: str = "", id: str = "soft-month") -> None:
+    """What a phone's ``screen`` shows of a calendar: the month and the year over a grid of days, and, with ``stamp``, a
+    red bar across every week of it."""
+    cv.text(g, f"{id}-month", month, -60, -122, 120, 34, 26, color=cv.ink)
+    cv.text(g, f"{id}-year", year, -60, -90, 120, 26, 20, color="#6E777D")
+    for row in range(5):
+        for col in range(7):
+            cv.ellipse(g, -56 + col * 16.4, -52 + row * 34, 14, 14, "#D9DDE1")
+    if stamp:
+        for row in range(5):
+            cv.rect(g, -60, -56 + row * 34, 120, 22, "#E0503F", radius=6)
+        cv.text(g, f"{id}-stamp", stamp, -60, -22 + 34 - 34, 120, 22, 18, color="#FFFFFF")
+
+
+@dataclass(frozen=True)
+class TimeState:
+    """One reading of a time card: its ``label`` (a year, a clock) and the span it shows for, in project seconds."""
+
+    label: str
+    start: float
+    end: float
+
+
+MAX_TIME = 8  # characters a time card holds at its size
+
+
+@register(
+    "graphic",
+    "soft-time-card",
+    summary="A white card with a dark outline and one big reading that changes on the cut: a year, the time of night",
+)
+def time_card(
+    cv: Canvas,
+    parent,
+    states: Sequence[TimeState],
+    box: tuple[float, float, float, float],
+    *,
+    size: float = 92,
+    id: str = "soft-time-card",
+):
+    """A card in ``box`` (x, y, width, height) showing each state's ``label`` in its span, one at a time."""
+    if not states:
+        raise SoftPropError("a time card needs at least one state")
+    if len(box) != 4 or not all(checks.number(v) for v in box) or box[2] <= 0 or box[3] <= 0:
+        raise SoftPropError(f"a time card's box is (x, y, width, height) with a positive size, got {box!r}")
+    last = 0.0
+    for s in states:
+        if not (checks.number(s.start) and checks.number(s.end) and last <= s.start < s.end):
+            raise SoftPropError(f"time card states run in order and apart, got {list(states)!r}")
+        if not s.label.strip() or len(s.label) > MAX_TIME:
+            raise SoftPropError(f"a time card reads 1 to {MAX_TIME} characters, got {s.label!r}")
+        last = s.end
+    x, y, w, h = box
+    g = cv.group(parent, id)
+    cv.gate(g, [(s.start, s.end) for s in states])
+    cv.rect(g, x, y, w, h, cv.white, cv.ink, 6, radius=min(h / 2, 28))
+    for k, s in enumerate(states):
+        reading = cv.group(g, f"{id}-{k + 1}")
+        cv.gate(reading, [(s.start, s.end)])
+        cv.text(reading, f"{id}-{k + 1}-text", s.label, x, y, w, h, size, color=cv.ink)
     return g
