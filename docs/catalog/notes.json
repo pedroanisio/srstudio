@@ -4288,6 +4288,96 @@
         ]
       },
       "text": "Parede ardósia e um pôster fora de foco, uma parede de vidro para a sala ao lado (<code>next_room=</code>) atrás da persiana, e a mesa no pé do quadro."
+    },
+    {
+      "section": "locations",
+      "name": "A barbearia, vista no espelho",
+      "parts": [
+        "barbershop"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          40,
+          50,
+          1000,
+          1380
+        ]
+      },
+      "text": "Um espelho largo com a sala refletida atrás, a tabela colada no vidro e uma prateleira de ferramentas embaixo. Quem senta aparece dentro do espelho."
+    },
+    {
+      "section": "props",
+      "name": "A capa de barbeiro",
+      "parts": [
+        "barber-cape"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 10.9,
+        "box": [
+          80,
+          840,
+          720,
+          420
+        ]
+      },
+      "text": "Capa risca de giz, amarrada no pescoço. Aberta, vira um pano que cobre o espelho inteiro."
+    },
+    {
+      "section": "props",
+      "name": "O aparador de cerca viva",
+      "parts": [
+        "hedge-trimmer"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          190,
+          1200,
+          600,
+          170
+        ]
+      },
+      "text": "Barra dentada longa e motor vermelho, deitado na prateleira da barbearia como se fosse tesoura."
+    },
+    {
+      "section": "props",
+      "name": "O cortador de grama",
+      "parts": [
+        "lawnmower"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          640,
+          900,
+          350,
+          330
+        ]
+      },
+      "text": "Cortador verde de empurrar, visto de lado, com o cabo para um lado ou para o outro."
+    },
+    {
+      "section": "props",
+      "name": "Mechas caindo na lente",
+      "parts": [
+        "hair-fall"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 6.45,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Feixes de fios fora de foco que atravessam o quadro de cima a baixo, um depois do outro, cada um na sua hora."
     }
   ]
 }

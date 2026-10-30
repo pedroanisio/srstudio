@@ -18,6 +18,7 @@ from . import (  # noqa: F401  (registers builders)
     cutout_hiring,
     cutout_home,
     cutout_office,
+    cutout_shop,
     gloss,
     gloss_reel,
     gloss_sets,

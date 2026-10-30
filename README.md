@@ -737,6 +737,24 @@ Parts added for it, in `srstudio.cutout_hiring`, all recorded `proposed` until t
 - `hiring_office` (`hiring-office`): a slate wall and a poster out of focus, a glass wall onto `next_room=` behind the
   blind, a desk; `behind_desk=` and `on_desk=` draw at those depths.
 
+## Cutout episode at the barber's: *Just a Trim* (29)
+
+[episodes/just_a_trim.py](episodes/just_a_trim.py) opens on Rosa in a barber's mirror, a lawnmower parked behind her and
+a hedge trimmer on the shelf. "Just a trim, please." "Sure." A cape covers the mirror; a hedge trimmer is heard, then a
+lawnmower. The barber steps in front of the glass: "Bit off the sides?" Hair falls past the lens in sheets. "...Sure."
+The engine stops, the cloth drops, and the head in the mirror is not hers. Two seconds of nothing. "How's that?" The
+face wobbles. "Love it." The card reader shows the cut, $22, then the tip, $30, and it stops there.
+
+```bash
+srstudio record just-a-trim PROJECT
+srstudio build just-a-trim PROJECT    # PROJECT/just-a-trim.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). Nobody's hair is redrawn: the cut is another
+approved character in the mirror, with Rosa's voice and mouth. New parts live in
+[src/srstudio/cutout_shop.py](src/srstudio/cutout_shop.py): `barbershop` draws the people inside the glass with
+`in_mirror=` and the shelf with `on_counter=`, and `barber_cape(spread=True)` is the cloth over the mirror.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

@@ -18,6 +18,40 @@
         }
       ]
     },
+    "barber-cape": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-a-trim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fe50d1caeb09b0b9b88fb06e4f177deac3f6f8f094a91627a49ddbb5522a2bfd",
+          "rig": null
+        }
+      ]
+    },
+    "barbershop": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-a-trim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fb31a8accb5d193faf3147b4924b4683f49c812a9a2340aa2f2f8c7feca59046",
+          "rig": null
+        }
+      ]
+    },
     "barista": {
       "kind": "character",
       "style": "cutout",
@@ -1288,6 +1322,40 @@
         }
       ]
     },
+    "hair-fall": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-a-trim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7361078a9a278bf94455bd24415cc1159df5ed9276192fab320502d3238793ae",
+          "rig": null
+        }
+      ]
+    },
+    "hedge-trimmer": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-a-trim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fc5727b6f5637f21e510bca661680f60c4a869a4687cb30b9fc23183db81bdf1",
+          "rig": null
+        }
+      ]
+    },
     "hiring-office": {
       "kind": "location",
       "style": "cutout",
@@ -1736,6 +1804,23 @@
           "proof": "",
           "approval": null,
           "drawing": "0516da7e831d5edea3c72c649b329c6196cf47082a7e4e8cab309b8bb021bf77",
+          "rig": null
+        }
+      ]
+    },
+    "lawnmower": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for just-a-trim.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c42a8234b01898933bfff58bf33f1005ba25a3f697a5f4dfc07c39348733efe9",
           "rig": null
         }
       ]
