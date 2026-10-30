@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_props`, `toon_sets` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_props`, `toon_rooms`, `toon_sets` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1347,6 +1347,37 @@ machine and the note insert.
 `toon_cast.headset(look, mic=True)` (`toon-headset`) fits a headset to any brush-drawn look from its silhouette: a
 band just over the crown, ear cups at eye height and a boom to a mic beside the mouth. It is a list of layers, like
 `toon_cast.sticky_note`, passed to the figure with `stickers=` so it leans and sighs with the character.
+
+### Toon rooms: a living room at night and a service counter, lit over time
+
+[src/srstudio/toon_rooms.py](src/srstudio/toon_rooms.py) adds two backdrops whose light a sketch drives
+([ADR 0043](docs/decisions/0043-lit-toon-rooms.md)). Each room has a main light and a screen. A light runs through
+cues `(second, state)` from 0. The states are:
+
+- `on` and `off`;
+- `flicker`, a stutter that repeats until the next cue;
+- `dim`, a fade to `DIM` over `FADE` seconds.
+
+A screen's cue may also name a colour from `SCREEN_COLOURS` (blue, white, red, green, amber, purple). The colour holds
+until a cue changes it. Cues are plain data:
+
+```python
+toon_rooms.dress(shot, "lounge", {"lamp": [[0, "on"], [4.5, "flicker"]], "tv": [[0, "on", "blue"], [3, "on", "red"]]})
+```
+
+The light shows on the sources themselves, in the set behind the character. It also reaches the character: a sketch
+built with `Staging(lit=True)` gets a light layer in every shot, between the character and the desk. In that layer, a
+shade multiplies the frame darker as the main light goes down, and glows add each light's colour over the
+character's side of the frame. The desk, with the signature on it, is drawn after the light layer, so no light state
+changes it. Tests render each state and compare the signature's pixels.
+
+| Part | What it is | Lights and motion |
+|---|---|---|
+| `toon-lounge` | deep teal striped wall, a shelf above the pill with a router and a smart speaker, a floor lamp at the left, a wall TV over a media console, a plum sofa behind the character | `lamp` (main) and `tv` (screen, default blue); the router's lights blink until `end` |
+| `toon-counter` | mint wall and wainscot, ceiling tiles with two fluorescent fixtures, a TAKE A NUMBER sign with its dispenser, a NOW SERVING board, an orange plastic chair | `tubes` (main) and `board` (screen, default red); the board shows one ticket at a time from `serving=` (`(second, "A17")`, from 0) |
+
+`toon_rooms.ROOMS` names each room's lights, its defaults and the boxes its objects keep clear of the figure, the pill
+and the desk. `toon_rooms.stage(cv, back, light, name, lights, end)` draws a room outside a sketch.
 
 ## Saga style: a space-opera parody in seven episodes (S1–S7)
 

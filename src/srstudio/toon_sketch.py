@@ -71,6 +71,7 @@ class Shot:
     beats: Sequence[sketch.Beat]
     end: float
     measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
+    light: object | None = None  # a lit staging's light layer, between the character and the desk (ADR 0043)
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -92,6 +93,7 @@ class Staging:
     dress: Callable[[Shot], None]
     stickers: Mapping[str, Sequence[tuple]] = field(default_factory=dict)
     desk: Callable[[Canvas, object], None] = toon.desk
+    lit: bool = False  # each shot gets a light layer between the character and the desk (ADR 0043)
 
 
 def badge_spans(
@@ -186,9 +188,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
         sketch.DRAWERS[app.who](cv, g, poses, app.end, taps, enter=app.start, **extra)
+        light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
+        staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure, light))
     lines = toon.load_script(root / ep.spec.dialogue)
     fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
     toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
