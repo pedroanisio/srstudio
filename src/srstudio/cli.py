@@ -57,6 +57,10 @@ def main(argv=None):
     page.add_argument("--notes", type=Path, help="curated text per episode and style (JSON)")
     page.add_argument("--usage", type=Path, help="the parts each episode uses, from srstudio usage (JSON)")
     page.add_argument("--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render"))
+    packages = os.environ.get("SRSTUDIO_PACKAGES")
+    page.add_argument(
+        "--packages", type=Path, default=packages, required=not packages, help="folder of <name>-<version> packages"
+    )
     web = sub.add_parser("serve", help="serve a catalog site, read-only, with the byte ranges video seeking needs")
     web.add_argument("site", type=Path, help="the folder srstudio page --site wrote")
     web.add_argument("--host", default=catalog_server.HOST, help="there is no authentication: keep it on loopback")
@@ -140,20 +144,23 @@ def main(argv=None):
         try:
             notes = catalog_page.load_notes(args.notes) if args.notes else None
             measured = usage.Report.read(args.usage) if args.usage else None
-            cards = catalog_page.build(
+            built = catalog_page.build(
                 base=args.base,
                 episodes=args.episodes,
                 renders=args.renders,
                 site=args.site,
                 cache=args.cache,
                 engine=args.engine or Path("scene-render"),
+                packages=args.packages,
                 notes=notes,
                 usage=measured,
             )
         except (catalog_page.CatalogError, usage.UsageError) as exc:
             print(f"srstudio page: {exc}", file=sys.stderr)
             return 2
-        print(f"{args.site}  {len(cards)} episodes: {', '.join(c.slug for c in cards)}")
+        print(f"{args.site}  {len(built.cards)} episodes: {', '.join(c.slug for c in built.cards)}")
+        drawn, made = len(built.pictures.stills), built.pictures.made
+        print(f"{drawn} specimens: {made} rendered, {drawn - made} cached, {len(built.pictures.refused)} refused")
         return 0
     if args.cmd == "serve":
         try:

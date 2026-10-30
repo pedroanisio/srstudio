@@ -17,7 +17,7 @@ The navigation has a search box that finds names across all sections, and each v
 | `#/` | The opening of the base page: its summary, style cards and footer, with counts. |
 | `#/estilos`, `#/estilos/<slug>` | Every style: description, videos and parts. |
 | `#/personagens`, `#/locacoes`, `#/objetos`, `#/graficos` | The parts of each kind: name, image, video count. `?estilo=<slug>` filters by style, `?estilo=nenhum` lists the shared parts. |
-| `#/personagens/<name>` (same for the other kinds) | The stills and text of a part and every video it appears in. Pip also shows the pose sheet. |
+| `#/personagens/<name>` (same for the other kinds) | The part alone, then its reel stills under *Visto em*, its text and every video it appears in. Pip also shows the pose sheet. |
 | `#/videos`, `#/videos?estilo=<slug>` | Every video, filterable by style. |
 | `#/videos/<slug>` | Player, facts, lines that seek the video, the style and every part. |
 | `#/pacotes`, `#/pacotes/<id>` | The six packages with their players, inventories and comparison. |
@@ -29,16 +29,22 @@ The navigation has a search box that finds names across all sections, and each v
 
 - **Videos**: every project in `--episodes` that has a `<slug>.scene.xml` and a render `<slug>.mp4` in `--renders`.
   The title, description, frame, fps and duration come from the scene. The lines come from the project's
-  `dialogue.json`, `timeline.json` or `narration.json`. The six packages are entries too, marked `pacote`, and so is a
-  measured project with no render. The style comes from the measured usage.
+  `dialogue.json`, `timeline.json` or `narration.json`. The six packages are entries too, marked `pacote`, each with a
+  poster the engine renders from its scene spec, and so is a measured project with no render. The style comes from the
+  measured usage.
 - **Styles**: every registered style, with the text of the notes, or its registered summary when it has none.
-- **Parts**: every registered part with its style, kind and summary, the stills the notes curate, and the videos
-  `--usage` measured.
+- **Parts**: every registered part with its style, kind and summary, its specimen, the stills the notes curate, and
+  the videos `--usage` measured.
 
-Marks say what is missing. A part with no still says so, a part no video uses is marked *não usado*, and an episode
+A specimen is the part alone, drawn by its own builder through the engine (ADR 0051), so a new part shows in the next
+build with no note and no reel, titled from its registered summary until the notes name it. A part that cannot stand
+alone has no specimen and says why; a registered part with neither stops the build. To add one, draw it with a recipe
+in `catalog_specimens.RECIPES` when its builder needs data of its own, or give it a typed `REFUSED` reason.
+
+Marks say what is missing. A part no video uses is marked *não usado*, and an episode
 the usage report could not measure says *Não medido* instead of showing as using nothing.
 
-The document is defined by `srstudio.catalog_data` (`schema_version` `1.0.0`). `catalog_data.load` rejects unknown
+The document is defined by `srstudio.catalog_data` (`schema_version` `1.1.0`). `catalog_data.load` rejects unknown
 fields, unresolved references and missing media.
 
 ## Running it
@@ -54,7 +60,7 @@ From the workspace root, first measure which parts the episodes use (see the
     --base generated/catalog/packages-base.html \
     --episodes generated/episodes --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json --usage generated/catalog/usage.json \
-    --cache generated/catalog/cache --engine generated/bin/scene-render \
+    --cache generated/catalog/cache --engine generated/bin/scene-render --packages generated/packages \
     --site generated/catalog/site
 .venv/bin/srstudio serve generated/catalog/site   # http://127.0.0.1:8765/
 ```
@@ -68,10 +74,14 @@ from disk is not supported.
   measured. Notes with a gallery need it: the build stops with exit code 2 without one, since the gallery check could
   not fail. A report that cannot be read, or that names a part no longer registered, stops the build with exit code 2.
 
+- `--packages` is the folder of `<name>-<version>` packages, or `SRSTUDIO_PACKAGES`. Each package's poster is rendered
+  from its scene spec; packages are only read.
 - `--base` is the frozen page of the six packages. If it no longer has the anchors the generator writes into, the
   command stops with `srstudio page: …` and exit code 2, and the old page is left as it was.
 - `--cache` keeps the web encodes (540 px wide, 720 px when the render is wider than tall, so a square Ink render is 540; keyed by each render's size and modification time)
-  and the pose images (keyed by the pose list). Unchanged renders are not encoded again.
+  and the pose images (keyed by the pose list). Unchanged renders are not encoded again. It also keeps the specimens
+  (keyed by each part's drawing) and the package posters (keyed by spec, moment and package version), so a rebuild
+  renders only the parts that changed. `srstudio page` prints how many it rendered, took from the cache and refused.
 - `--site` is written with folders `700` and files `600`. Media are named by their content, so a rebuild writes only
   what changed. They are hard-linked from the cache where possible and copied otherwise. Media go first, then
   `catalog.json`, and `index.html` is replaced last, so a failed build leaves the previous site working. Files nothing references are

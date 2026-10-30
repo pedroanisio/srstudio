@@ -83,6 +83,7 @@ table.rows td small, table.rows td code{ display:block; padding:0; background:no
 table.rows .num, .lib-registry .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap }
 table.rows .pic{ width:42px; padding-right:0 }
 table.rows .pic img{ display:block; width:42px; height:54px; object-fit:cover; border-radius:4px; background:var(--surface-2) }
+table.rows .pic.specimen img{ object-fit:contain; background:#E7E4DD }
 table.rows .summary{ color:var(--muted); font-size:.82rem; max-width:52ch }
 .lib-registry thead th{ position:sticky; top:0; background:var(--surface) }
 .lib-registry{ font-size:.86rem }
@@ -98,6 +99,9 @@ table.rows .summary{ color:var(--muted); font-size:.82rem; max-width:52ch }
 .frame{ aspect-ratio:3/4; border-radius:6px; overflow:hidden; background:var(--surface-2); display:grid; place-items:center;
   color:var(--muted); font-size:.78rem; text-align:center; padding:0 }
 .frame img{ width:100%; height:100%; display:block; object-fit:cover }
+.frame.specimen{ padding:0 10px }
+.frame.specimen:has(img){ padding:0 }
+.frame.specimen img{ object-fit:contain; background:#E7E4DD }
 .tags{ display:flex; flex-wrap:wrap; gap:4px }
 .tag{ font-family:var(--font-mono); font-size:.66rem; padding:1px 6px; border-radius:4px; background:var(--chip) }
 .tag.warn{ background:none; border:1px dashed var(--muted); color:var(--muted) }

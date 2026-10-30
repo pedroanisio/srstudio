@@ -22,7 +22,7 @@ from typing import Any, TypeVar, Union
 
 from .errors import SrstudioError
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 SOURCES = ("library", "package", "no-render")  # a card with a render, an original package, a project without one
 KINDS = ("character", "location", "prop", "graphic")
 _SEMVER = re.compile(r"(\d+)\.(\d+)\.(\d+)")
@@ -66,12 +66,14 @@ class GalleryEntry:
 class Part:
     name: str  # the registered name: unique across kinds, and the part's route
     kind: str
-    title: str  # the gallery's name for it, or the registered name when no item shows it
+    title: str  # the gallery's name for it, or a title from its registered summary when no item shows it
     style: str  # "" for a part shared by every style
     summary: str
     videos: tuple[str, ...]  # measured
     gallery: tuple[GalleryEntry, ...] = ()
     sheet: tuple[Still, ...] = ()  # the pose sheet the engine renders, on Pip
+    specimen: Still | None = None  # the part alone, drawn by the engine: its picture on every card
+    refused: str = ""  # why it has no specimen; a part has exactly one of the two
 
 
 @dataclass(frozen=True)
@@ -173,7 +175,8 @@ def _media(where: str, url: str) -> str:
 
 
 def stills_of(part: Part) -> list[Still]:
-    return [s for g in part.gallery for s in (g.still, *g.poses)] + list(part.sheet)
+    own = [part.specimen] if part.specimen else []
+    return own + [s for g in part.gallery for s in (g.still, *g.poses)] + list(part.sheet)
 
 
 def media_of(catalog: Catalog) -> set[str]:
@@ -197,8 +200,12 @@ def _check_video(v: Video, styles: set[str], parts: dict[str, Part]) -> None:
             raise CatalogError(f"{where}: a library video needs its src and poster")
         _media(where, v.src)
         _media(where, v.poster)
-    elif v.src or v.poster:
+    elif v.src or (v.poster and v.source != "package"):
         raise CatalogError(f"{where}: a {v.source} video has no file on this site")
+    elif v.source == "package":
+        if not v.poster:
+            raise CatalogError(f"{where}: a package video needs its poster")
+        _media(where, v.poster)
     if not v.measured and v.parts:
         raise CatalogError(f"{where}: it was not measured, so it cannot claim parts")
     _unique(f"{where} parts", list(v.parts))
@@ -215,6 +222,10 @@ def _check_part(p: Part, styles: set[str], videos: dict[str, Video]) -> None:
         raise CatalogError(f"{where}: kind {p.kind!r} is not one of {', '.join(KINDS)}")
     if p.style and p.style not in styles:
         raise CatalogError(f"{where}: style {p.style!r} is not in the catalog")
+    if p.specimen and p.refused:
+        raise CatalogError(f"{where}: both a specimen and a reason for having none")
+    if not p.specimen and not p.refused:
+        raise CatalogError(f"{where}: neither a specimen nor a reason for having none")
     _unique(f"{where} videos", list(p.videos))
     for slug in p.videos:
         if slug not in videos:

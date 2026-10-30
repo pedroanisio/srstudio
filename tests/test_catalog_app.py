@@ -14,6 +14,7 @@ import pytest
 
 from srstudio import catalog_page as cp
 from srstudio import catalog_server as server
+from srstudio import catalog_specimens as specimens
 from support import catalog as fx
 
 sync_api = pytest.importorskip("playwright.sync_api")
@@ -54,11 +55,22 @@ def site(tmp_path_factory) -> Path:
         patch.setattr(cp, "web_video", lambda render, cache: (video, poster))
         patch.setattr(cp, "still", lambda render, shot, cache: poster)
         patch.setattr(cp, "pose_sheet", lambda engine, cache: [("stand", poster)])
+        patch.setattr(cp.catalog_specimens, "render_all", lambda engine, cache, episodes: shelf(poster))
+        patch.setattr(cp.catalog_specimens, "poster", lambda packages, slug, engine, cache: poster)
         cp.build(
             base=base, episodes=episodes, renders=renders, site=root / "site", cache=cache, engine=Path("unused"),
-            notes=cp.load_notes(notes), usage=report,
+            packages=Path("unused"), notes=cp.load_notes(notes), usage=report,
         )  # fmt: skip
     return root / "site"
+
+
+def shelf(picture: Path) -> specimens.Shelf:
+    """Every part drawn but the captions, which say why they are not."""
+    done = {
+        x.name: specimens.Specimen(x.name, picture, 480, 480) for x in cp.registry.entries() if x.name != "captions"
+    }
+    why = specimens.Refused(specimens.Reason.OVERLAY, "burned captions over a shot")
+    return specimens.Shelf(done, {"captions": why}, 0)
 
 
 @pytest.fixture(scope="module")
@@ -316,6 +328,66 @@ def test_a_line_seeks_a_video_that_has_not_loaded(page, origin):
 def test_an_unmeasured_episode_says_so(page, origin, slug):
     go(page, origin, f"#/videos/{slug}")
     assert "Não medido" in page.wait_for_selector("#not-measured").inner_text()
+
+
+def test_a_card_shows_the_part_itself_and_a_refused_part_says_why(page, origin):
+    go(page, origin, "#/personagens")
+    card = page.wait_for_selector("#index .card[data-part='juno']")
+    picture = card.query_selector(".frame.specimen img")
+    assert picture and picture.get_attribute("src").startswith("media/")  # juno is in no reel and no gallery
+    assert "sem imagem" not in card.inner_text() and "sem still" not in card.inner_text()
+    assert card.query_selector("b").inner_text() != "juno"
+    go(page, origin, "#/graficos")
+    refused = page.wait_for_selector("#index .card[data-part='captions']")
+    assert not refused.query_selector("img")
+    assert cp.REFUSAL_TEXT[specimens.Reason.OVERLAY] in refused.inner_text()
+
+
+def test_the_part_page_opens_with_the_specimen_and_keeps_the_reel_stills_under_seen_in(page, origin):
+    go(page, origin, "#/personagens/pip")
+    article = page.wait_for_selector("article[data-part='pip']")
+    assert article.query_selector("#specimen img")
+    assert article.evaluate("""a => {
+        const seen = [...a.querySelectorAll('.sub')].find(s => s.textContent === 'Visto em');
+        const specimen = a.querySelector('#specimen'), still = a.querySelector('.stills.lead:not(#specimen)');
+        return specimen.compareDocumentPosition(seen) & 4 && seen.compareDocumentPosition(still) & 4;
+    }""")
+
+
+def test_a_refused_part_page_says_why(page, origin):
+    go(page, origin, "#/graficos/captions")
+    assert cp.REFUSAL_TEXT[specimens.Reason.OVERLAY] in page.wait_for_selector("#refused").inner_text()
+
+
+def test_a_list_row_shows_the_part_itself_whole_and_a_refused_row_says_why(page, origin):
+    go(page, origin, "#/personagens?ver=lista")
+    picture = page.wait_for_selector("#index tr.row[data-part='juno'] .pic.specimen img")
+    assert picture.evaluate("i => getComputedStyle(i).objectFit") == "contain"  # a square is not cropped to the cell
+    go(page, origin, "#/graficos?ver=lista")
+    refused = page.wait_for_selector("#index tr.row[data-part='captions']")
+    assert not refused.query_selector("img")
+    assert cp.REFUSAL_TEXT[specimens.Reason.OVERLAY] in refused.inner_text()
+
+
+def test_a_card_never_crops_a_specimen(page, origin):
+    go(page, origin, "#/personagens")
+    picture = page.wait_for_selector("#index .card[data-part='juno'] .frame img")
+    assert picture.evaluate("i => getComputedStyle(i).objectFit") == "contain"
+
+
+def test_the_dashboard_counts_the_refused_parts_and_no_part_is_without_a_picture_or_a_reason(page, origin):
+    go(page, origin, "#/")
+    pending = page.wait_for_selector("details:has-text('Peças sem desenho isolado')")
+    assert pending.query_selector("a[href='#/graficos/captions']")
+    assert page.locator("details:has-text('Peças sem imagem')").count() == 0
+
+
+def test_a_package_film_shows_the_poster_of_its_spec_and_keeps_its_player(page, origin):
+    go(page, origin, "#/videos/honesty-interview")
+    page.wait_for_selector("article a[href='#/pacotes/honesty-interview']")
+    go(page, origin, "#/videos")
+    card = page.wait_for_selector("#index .card[data-video='honesty-interview']")
+    assert card.query_selector(".frame img") and "pacote em SVG" not in card.inner_text()
 
 
 def test_marks_on_what_has_no_video_or_no_still(page, origin):
