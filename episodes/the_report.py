@@ -10,7 +10,7 @@ python3 the_report.py PROJECT --voice    # the narrated master: narration.json (
 import sys
 
 from _common import project_root
-from instagram_posts import POSTS
+from instagram_posts import PINS, POSTS
 from srstudio.toon_sketch import Staging, build
 from the_report_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, STICKER, TINTS, dress, validate
 
@@ -23,6 +23,7 @@ STAGING = Staging(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    versions=PINS[SKETCH.slug],
     stickers={"dog": STICKER},
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))

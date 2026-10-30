@@ -11,7 +11,7 @@ import sys
 
 from _common import project_root
 from cleaning_fee_data import ACCESSIBILITY, DESCRIPTION, NARRATION, SEED, SKETCH, TINTS, dress, push, validate
-from instagram_posts import POSTS
+from instagram_posts import PINS, POSTS
 from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
@@ -23,6 +23,7 @@ STAGING = Staging(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    versions=PINS[SKETCH.slug],
     camera=push,
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
