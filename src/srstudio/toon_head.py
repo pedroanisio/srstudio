@@ -1,5 +1,5 @@
 """A Toon head that moves on its own (ADR 0050): the figure drawn in nested groups instead of flat layers, the head
-rotating about the neck behind a body whose ruff covers the seam, played from a :class:`srstudio.head_motion.HeadPlan`.
+rotating about the neck with the seam hidden, played from a :class:`srstudio.head_motion.HeadPlan`.
 
 The nesting is outermost first, each group carrying one kind of motion, so no property has two sources:
 
@@ -8,20 +8,26 @@ The nesting is outermost first, each group carrying one kind of motion, so no pr
   neck, ``nod`` (a roll about the neck and a drop), ``idle`` (the wander), ``lift`` (the breath's rise);
 * inside it the skull, then ``face``, which slides over the skull: further than the skull on a nod and sideways on a
   glance, the way a turned head foreshortens;
-* the body with its arms comes after the head chain, its ruff over the seam, then anything held in front of the face.
+* the body with its arms goes over the head chain, its top hiding the seam (a ruff), or under it, with the head's own
+  chin hiding the seam (:attr:`HeadRig.head_over`); anything held in front of the face comes last.
 
-A :class:`HeadRig` supplies the three drawings. Nothing here changes :func:`srstudio.toon_cast.figure`: a character
-moves its head only when a script draws it through :func:`figure`.
+A :class:`HeadRig` holds what any drawing supplies: the head contour, the neck pivot, what covers the seam, the three
+drawings and a :class:`srstudio.head_motion.HeadStyle`. :func:`open_seam` measures a rig at the bounds of its style; a
+drawing that can glance has ``looking`` (:class:`Glancing`). Nothing here changes :func:`srstudio.toon_cast.figure`: a
+character moves its head only when a script draws it through :func:`figure`, which a sketch does when its staging
+names the character in ``heads`` (:mod:`srstudio.toon_rigs`).
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import Protocol, runtime_checkable
 
+from . import brush
 from .canvas import Canvas
-from .head_motion import GAZES, Channel, HeadMotionError, HeadPlan, HeadStyle
+from .head_motion import GAZES, Channel, HeadMotionError, HeadPlan, HeadStyle, limit
 from .toon import Pose, ToonDataError, fh, fx, fy, runs, swap_frames
 from .toon_cast import (
     PIVOT,
@@ -40,34 +46,74 @@ from .toon_cast import (
     _teeth,
     _whiskers,
 )
+from .toon_torso import depth_in
 
-__all__ = ["FACE_SLIDE", "HeadRig", "figure", "gaze_states"]
+__all__ = ["FACE_SLIDE", "Glancing", "HeadRig", "figure", "gaze_states", "open_seam"]
 
 FACE_SLIDE = 0.8  # how much further than the skull the face drops on a nod
+SEAM_ROOM = 2.0  # how far above a seam cover's line a head must still be behind it, reference pixels
 _PUPIL_FREE = frozenset({"hearts", "wince", *SHUT})  # eyes with no pupil to move
 
 
 @runtime_checkable
-class _Pupils(Protocol):
-    """A drawing that draws its own pupils, so a glance can move them."""
+class Glancing(Protocol):
+    """A drawing that can look away: ``looking`` is the same drawing with its pupils ``dx`` and ``dy`` eye radii off."""
 
-    pupil: Callable[..., list[Layer]]
+    def looking(self, dx: float, dy: float) -> Glancing: ...
 
 
 @dataclass(frozen=True)
 class HeadRig:
-    """A character split at the neck. ``look`` is its look with an untilted head and a drawing whose pupils can move;
-    ``skull`` draws the head closed under the chin, ``face`` what slides over it, ``trunk`` the body with a top that
-    hides the seam. ``neck`` is where the head turns, ``tilt`` how it sits at rest (degrees clockwise), ``style`` how
-    it moves."""
+    """A character split at the neck, from what its drawing supplies. ``look`` is its look with an untilted head and a
+    :class:`Glancing` drawing. ``head`` is the head's closed contour and ``neck`` where it turns, ``tilt`` how it sits
+    at rest (degrees clockwise), ``style`` how it moves. ``skull`` draws the head, ``face`` what slides over it,
+    ``trunk`` the body. ``cover`` is the top of that body, the line that hides the seam: drawn over the head as a ruff,
+    or, with ``head_over``, hidden itself behind the head, whose chin lies over the body. ``free`` is how far from each
+    end of ``cover`` the seam need not stay shut (the corners where a head may part from the shoulders)."""
 
     look: Look
     neck: Point
     tilt: float
+    head: tuple[Point, ...]
+    cover: tuple[Point, ...]
     skull: Callable[[], Sequence[Layer]]
     face: Callable[[], Sequence[Layer]]
     trunk: Callable[[], Sequence[Layer]]
     style: HeadStyle
+    head_over: bool = False
+    free: float = 0.0
+
+
+def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
+    """The turns (degrees, the rest tilt included) and drops (reference pixels) at the corners of what ``rig``'s style
+    can reach."""
+    style = rig.style
+    swing = limit(style, "turn") + limit(style, "roll") + limit(style, "idle_roll")
+    down = limit(style, "nod") + limit(style, "idle_y")
+    up = -(style.breath_px + limit(style, "idle_y"))
+    return [(rig.tilt + sign * swing, drop) for sign in (-1.0, 1.0) for drop in (up, down)]
+
+
+def open_seam(rig: HeadRig) -> list[tuple[Point, float, float]]:
+    """Where the seam opens: every ``(point, turn, drop)`` on the cover line (:data:`SEAM_ROOM` above it for a ruff),
+    more than :attr:`HeadRig.free` from its ends, that the head does not reach behind with every channel at its limit.
+    Empty is a rig that holds."""
+    room = 0.0 if rig.head_over else SEAM_ROOM
+    line = [(x, y - room) for x, y in brush.spline(rig.cover, False, 4)]
+    ends = (rig.cover[0], rig.cover[-1])
+    kept = [p for p in line if min(math.dist(p, end) for end in ends) >= rig.free]
+    out = []
+    for turn, drop in _bounds(rig):
+        a = math.radians(-turn)
+        for p in kept:
+            dx, dy = p[0] - rig.neck[0], p[1] - drop - rig.neck[1]
+            back = (
+                rig.neck[0] + dx * math.cos(a) - dy * math.sin(a),
+                rig.neck[1] + dx * math.sin(a) + dy * math.cos(a),
+            )
+            if depth_in(rig.head, back)[0] < 0.0:
+                out.append((p, turn, drop))
+    return out
 
 
 def gaze_states(gaze: Sequence[tuple[float, str]], start: float, end: float) -> dict[str, list[tuple[float, int]]]:
@@ -91,16 +137,10 @@ def gaze_states(gaze: Sequence[tuple[float, str]], start: float, end: float) -> 
 def _gazing(look: Look, name: str) -> Look:
     """``look`` with its pupils moved the way ``name`` looks."""
     drawing = look.drawing
-    if not isinstance(drawing, _Pupils):
-        raise ToonDataError(f"{look.name}: only a drawing with pupils of its own can glance")
+    if not isinstance(drawing, Glancing):
+        raise ToonDataError(f"{look.name}: only a drawing that can move its own pupils can glance")
     dx, dy = GAZES[name]
-    r = look.eye_r
-    base = drawing.pupil
-
-    def pupil(face: Look, x: float, y: float, size: float) -> list[Layer]:
-        return base(face, x + dx * r, y + dy * r, size)
-
-    return replace(look, drawing=replace(cast(Any, drawing), pupil=pupil))
+    return replace(look, drawing=drawing.looking(dx, dy))
 
 
 def _animate(cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, base: float = 0.0) -> None:
@@ -158,6 +198,7 @@ def figure(
     _animate(cv, lean, "rotation", plan.lean)
     breath = cv.group(lean, cv.uid("breath"), **seat)
     _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+    trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
     turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
     _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
     nod = cv.group(turn, cv.uid("nod"), **neck)
@@ -172,7 +213,7 @@ def figure(
     face = cv.group(lift, cv.uid("face"))
     _animate(cv, face, "x", plan.face_x, fh(1.0))
     _animate(cv, face, "y", plan.nod, fh(FACE_SLIDE))
-    trunk = cv.group(breath, cv.uid("trunk"))
+    trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
     front = cv.group(breath, cv.uid("front"))
 
     for pose, start, end in runs(poses, duration - enter):
@@ -184,7 +225,8 @@ def figure(
         _draw(cv, g, _place(list(rig.face()), arms))
         _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
         cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
-        _draw(cv, g, _place(cheeks + (_whiskers(look) if look.whiskers else []), arms))
+        nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
+        _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
         _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
         _draw_blinks(cv, g, look, pose, start, end)
         bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")

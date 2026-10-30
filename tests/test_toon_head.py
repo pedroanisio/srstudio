@@ -1,5 +1,6 @@
-"""The Toon figure in nested groups (ADR 0050): a head that turns about its neck behind a body whose ruff hides the
-seam, one kind of motion per group, and the flat figure every published reel was drawn with left byte for byte."""
+"""The Toon figure in nested groups (ADR 0050): a head that turns about its neck with its seam hidden, one kind of
+motion per group, every rig run through the same checks, and the flat figure every published reel was drawn with left
+byte for byte."""
 
 import hashlib
 import math
@@ -10,11 +11,21 @@ import pytest
 from sr_core.scene import Scene
 
 import srstudio
-from srstudio import PEACH, Canvas, flat_counter, head_motion, toon_cast, toon_critters, toon_head
+from srstudio import (
+    PEACH,
+    Canvas,
+    flat_counter,
+    head_motion,
+    toon,
+    toon_cast,
+    toon_critters,
+    toon_head,
+    toon_inked,
+    toon_rigs,
+)
 from srstudio.head_motion import HeadMotionError, HeadPlan, limit
 from srstudio.toon import Pose, ToonDataError, fh, fx, fy
 from support.spring_curve import sample
-from support.toon_contour import inside
 
 RIG = toon_critters.SLOTH_RIG
 STYLE = toon_critters.SLOTH_MOTION
@@ -31,7 +42,9 @@ PINS = {
     "sloth": "711eec1f46d89602b625549f1a0ae92f56548561c1f41a54b3228415ab4936e0",
     "dog": "71a10718403490ee97635a2c8faecccb1fa0b83f2ef1b693a2b08cd1ee52cd7e",
 }
+RIGGED_SLOTH_PIN = "c0c168af21f402d1c4b4e9cfb366ae9f5771964d6bd5f619278d2bcc0df670c6"  # the approved clips' rig
 HEAD_TOP = 170.0  # reference pixels from the neck to the crown
+EVERY_RIG = pytest.mark.parametrize("rig", list(toon_rigs.RIGS.values()), ids=list(toon_rigs.RIGS))
 
 
 def stage() -> tuple[Scene, Canvas]:
@@ -137,36 +150,25 @@ def test_the_face_slides_further_than_the_skull_on_a_nod():
 
 
 # -- the seam ----------------------------------------------------------------------------------------------------------
-def _posed(point, degrees, drop):
-    """A reference point of the head with the head turned ``degrees`` about the neck and moved down ``drop``."""
-    a = math.radians(degrees)
-    dx, dy = point[0] - RIG.neck[0], point[1] - RIG.neck[1]
-    return RIG.neck[0] + dx * math.cos(a) - dy * math.sin(a), RIG.neck[1] + dx * math.sin(a) + dy * math.cos(a) + drop
+def test_the_approved_sloth_rig_draws_the_same_scene():
+    speech = head_motion.Speech(1.0, head_motion.words_of(_take(), 1.0), (-20.0,) * 300)
+    scene, cv = stage()
+    plan = head_motion.plan(STYLE, [speech], 8.0)
+    toon_head.figure(cv, cv.comp, RIG, POSES, 8.0, plan, mouths=MOUTHS, taps=TAPS, stickers=[RIG.skull()[0]])
+    assert hashlib.sha256(scene.to_bytes(layout="pretty")).hexdigest() == RIGGED_SLOTH_PIN
 
 
-def _shape_of(layers, index: int = 0):
-    return layers[index][0]
+@EVERY_RIG
+def test_the_seam_stays_shut_with_the_head_at_every_bound(rig):
+    assert toon_head.open_seam(rig) == []
 
 
-def _ruff_y(x: float) -> float:
-    ruff = toon_critters._SLOTH_RUFF
-    for a, b in zip(ruff, ruff[1:], strict=False):
-        if min(a[0], b[0]) <= x <= max(a[0], b[0]) and a[0] != b[0]:
-            return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])
-    raise AssertionError(x)
-
-
-@pytest.mark.parametrize("sign", (-1.0, 1.0))
-@pytest.mark.parametrize("name", ("up", "down"))
-def test_the_ruff_covers_the_seam_with_the_head_at_every_bound(sign, name):
-    swing = limit(STYLE, "turn") + limit(STYLE, "roll") + limit(STYLE, "idle_roll")
-    drop = limit(STYLE, "nod") + STYLE.idle_px if name == "down" else -(STYLE.breath_px + STYLE.idle_px)
-    outline = _shape_of(toon_critters._sloth_skull())
-    undo = RIG.tilt + sign * swing
-    for x in range(100, 271, 5):
-        over_ruff = (x, _ruff_y(x) - 2.0)  # just above the ruff line, on the screen: the head must be behind it
-        back = _posed((over_ruff[0], over_ruff[1] - drop), -undo, 0.0)
-        assert inside(outline, *back), (x, undo, drop)
+def test_a_rig_whose_head_cannot_reach_its_cover_is_found_out():
+    short = replace(RIG, head=tuple((x, y - 60.0) for x, y in RIG.head))
+    assert {point for point, _, _ in toon_head.open_seam(short)}
+    assert toon_head.open_seam(replace(short, free=1000.0)) == []
+    over = replace(RIG, head_over=True, free=0.0, cover=((185.0, 900.0), (190.0, 900.0), (195.0, 900.0)))
+    assert toon_head.open_seam(over)
 
 
 def test_the_head_stays_inside_its_bounds_with_every_channel_at_the_limit():
@@ -230,11 +232,59 @@ def test_a_look_with_no_drawing_of_its_own_cannot_glance():
         toon_head._gazing(toon_cast.DOG, "left")
 
 
+@EVERY_RIG
+def test_every_rig_moves_its_eyes_when_it_glances(rig):
+    def eyes(name):
+        look = toon_head._gazing(rig.look, name)
+        return toon_cast._eye(look, look.eyes[0], "half", 1.0)
+
+    assert eyes("left") != eyes("ahead") != eyes("right")
+
+
+def test_a_fox_s_glance_stays_inside_its_almond_and_changes_nothing_at_rest():
+    assert toon_inked.FOX_INK.glance == (0.0, 0.0)
+    fox = toon_inked.FOX_RIG.look.drawing
+    assert fox.looking(-0.42, 0.04)._iris("left")[0] == -toon_inked.GLANCE_ROOM
+    assert fox.looking(0.42, 0.04)._iris("wide") == (0.42, pytest.approx(0.06))
+    assert fox._iris("left") == toon_inked._LOOK["left"]
+
+
 # -- the poses ---------------------------------------------------------------------------------------------------------
-def test_every_pose_kind_draws_through_the_head_rig():
-    root = drawn(mouths=MOUTHS, taps=TAPS, stickers=[toon_critters._sloth_skull()[0]])
+@EVERY_RIG
+def test_every_pose_kind_draws_through_every_rig(rig):
+    root = drawn(mouths=MOUTHS, taps=TAPS, rig=rig, stickers=[rig.skull()[0]])
     for name, count in (("skull", 5), ("face", 5), ("trunk", 5)):
         assert len(group(root, name).findall("group")) == count
+
+
+@EVERY_RIG
+def test_every_rig_has_the_whole_vocabulary(rig):
+    for eyes in toon.EYES:
+        for mouth in toon.MOUTHS:
+            drawn_mouth = toon_cast._mouth(rig.look, mouth)
+            assert isinstance(drawn_mouth, list)
+        assert toon_cast._eye(rig.look, rig.look.eyes[0], eyes, 1.0) is not None
+    for arms in toon.ARMS:
+        assert toon_cast._arms(rig.look, arms, 0)
+
+
+@pytest.mark.parametrize("rig", [r for r in toon_rigs.RIGS.values() if r.head_over], ids=lambda r: r.look.name)
+def test_a_head_over_the_body_comes_after_the_trunk(rig):
+    breath = list(group(drawn(rig=rig), "breath"))
+    names = [node.get("id").split("-")[0] for node in breath if node.tag == "group"]
+    assert names == ["trunk", "turn", "front"]
+
+
+def test_a_ruff_over_the_head_comes_after_it():
+    names = [node.get("id").split("-")[0] for node in group(drawn(), "breath") if node.tag == "group"]
+    assert names == ["turn", "trunk", "front"]
+
+
+def test_a_look_with_its_own_nose_keeps_it_on_the_face():
+    fox = toon_inked.FOX_RIG
+    assert len(fox.look.nose) == 2
+    plain = len(group(drawn(rig=replace(fox, look=replace(fox.look, nose=()))), "face").findall(".//shape"))
+    assert len(group(drawn(rig=fox), "face").findall(".//shape")) == plain + 2 * 5
 
 
 def test_something_held_in_front_goes_over_the_face():
@@ -259,6 +309,35 @@ def test_an_entrance_starts_the_runs_late():
     root = drawn(poses=[Pose(0.0, "half", "flat", "desk")], enter=1.5)
     assert group(root, "skull").find("group").get("start") == "1.5"
     assert group(root, "trunk").find("group").get("end") == "8"
+
+
+def test_a_character_with_no_rig_is_refused_by_name():
+    with pytest.raises(ToonDataError, match="toon-cat has no head rig"):
+        toon_rigs.rig_of("toon-cat")
+
+
+@EVERY_RIG
+@pytest.mark.parametrize("name", head_motion.CHANNELS)
+def test_every_style_stays_inside_its_bounds_through_its_springs(rig, name):
+    style = rig.style
+    words = head_motion.words_of(_take(), 1.0)
+    plan = head_motion.plan(style, [head_motion.Speech(1.0, words, (-20.0,) * 300)], 8.0)
+    channel = getattr(plan, name)
+    assert max(abs(sample(channel, k / 100.0)) for k in range(800)) <= limit(style, name) + 1e-6
+
+
+def test_each_character_moves_its_own_way():
+    styles = {part: rig.style for part, rig in toon_rigs.RIGS.items()}
+    sloth, goat, hamster = styles["toon-sloth"], styles["toon-goat"], styles["toon-hamster"]
+    fox = styles["toon-fox-inked"]
+    assert len({s.seed for s in styles.values()}) == 4
+    assert goat.head.frequency > sloth.head.frequency  # abrupt against slow
+    assert goat.head.damping > sloth.head.damping  # and it stops dead
+    assert hamster.nod_px < min(s.nod_px for s in (sloth, goat, fox))  # small
+    assert hamster.idle_hz > max(s.idle_hz for s in (sloth, goat, fox))  # and quick
+    assert hamster.breath_period < min(s.breath_period for s in (sloth, goat, fox))
+    assert fox.nod_roll > fox.nod_px / 3  # more a cock of the head than a nod
+    assert fox.glance_face < goat.glance_face and fox.glance_hold > goat.glance_hold  # the eyes do the work
 
 
 def test_a_second_glance_at_another_rig_keeps_the_rig_s_look():
