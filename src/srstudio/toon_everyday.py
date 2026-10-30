@@ -31,7 +31,35 @@ from .registry import register
 from .toon import CAPTION_H, CAPTION_TOP, FINE_W, INK_W, REF_TOP, REF_W, SCALE, ToonDataError, fh, fx, fy
 from .toon_props import BUZZ_SHAKE
 
-__all__ = ["BUZZ_REACH", "FILL_TIME", "SCALES", "SCREENS", "SIGNATURE_BOX", "Screen", "phone"]
+__all__ = [
+    "BUZZ_REACH",
+    "CHASE_STEP",
+    "FILL_TIME",
+    "GLOW",
+    "MAX_END",
+    "MAX_FIELDS",
+    "NUMBER_MAX",
+    "PACE_MAX",
+    "PULSE_DIM",
+    "PULSE_STEP",
+    "RING",
+    "SCALES",
+    "SCREENS",
+    "SERVING_LABEL",
+    "SIGNATURE_BOX",
+    "SPEAKER_STATES",
+    "STAMP_POP",
+    "STAMP_TILT",
+    "STAMP_TONES",
+    "Field",
+    "Screen",
+    "clipboard",
+    "phone",
+    "receipt",
+    "ring_keys",
+    "speaker",
+    "take_a_number",
+]
 
 Box = tuple[float, float, float, float]  # x0, y0, x1, y1 in reference pixels
 Measure = Callable[[str, float], float]  # the advance width of a text at a size, in frame pixels
