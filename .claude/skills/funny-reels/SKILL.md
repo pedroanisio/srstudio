@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.12.0
-changelog: "1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.13.0
+changelog: "1.13.0: a parody's cast is checked against the famous designs (silhouette, headgear, colours, signature props); a retired design is pinned by the reels drawn with it, never by a new reel (ADR 0025 cast designs). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -409,7 +409,10 @@ it in `srstudio catalog` without this file changing.
    For a **new style**, and above all a parody of a show or genre, first write a short series bible in the style's
    ADR: the world, the cast with one working trait each, the recurring devices (a host, a board, an end card), and
    the comic engine in one sentence (what the setup always is, what the turn always is). Parody the genre's tropes
-   in your own words and drawings; no franchise names, characters, designs, logos, catchphrases or music. Every
+   in your own words and drawings; no franchise names, characters, designs, logos, catchphrases or music. Check
+   every cast design against the famous designs it parodies and against the genre's best-known villains and
+   soldiers: silhouette, headgear, colour scheme and signature props. A design whose source a viewer could name is
+   redrawn before any reel uses it, and the operator approves the new look from a side-by-side sheet. Every
    episode script is then checked against the bible before it is scored.
 3. **Reuse first.** Build from registered parts and the shared pipelines: `srstudio.sketch` (Toon two-handers:
    speakers, lines, beats, `check`; the Toon and Collage builders are `srstudio.toon_sketch` and
@@ -546,13 +549,15 @@ look, the signature marks, a character's traits), and vary the joke underneath i
 - Edit a file another session owns without asking it (`ListAgents`, `SendMessage`); commit only your own paths.
 - Commit unless the operator asked; never lower a gate or skip a test to pass.
 - Make a character's identity the punchline, or depict a real person or brand.
-- Echo a franchise (its names, characters, designs, logos, catchphrases or music) or build a joke on a reference a
-  newcomer would not get.
+- Echo a franchise (its names, characters, designs, silhouettes, colour schemes, logos, catchphrases or music) or
+  build a joke on a reference a newcomer would not get.
 - Let a signature mark carry a plot beat except through `signature.cactus(act=)` or a location's `cactus=` slot,
   with exactly one `sig-cactus` in every shot (ADR 0039).
 - Change a shipped default (a mouth style, a style's frame or palette) for a new episode: it breaks the fidelity
   tests and the rebuilds of videos already delivered. Add an option and leave the default alone; prove a refactor
-  with a byte-identical rebuild.
+  with a byte-identical rebuild. The one exception is a design the operator retires: the new design becomes the
+  default only when every reel drawn with the old one pins it by name (as the Saga reels pin their cast design,
+  ADR 0025) and all of them rebuild byte-identical. Never pin a retired design in a new reel.
 
 ## Keeping this skill true
 
