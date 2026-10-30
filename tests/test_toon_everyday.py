@@ -223,7 +223,93 @@ def test_the_phone_refuses_a_hand_that_is_not_a_colour():
         phone(at=(300, 800), hand="blue")
 
 
-def test_the_phone_is_registered_with_the_toon_style():
+def test_the_props_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert "toon_everyday" in TOON.parts
-    assert (names["toon-phone"]["kind"], names["toon-phone"]["style"]) == ("prop", "toon")
+    for name in ("toon-phone", "toon-speaker"):
+        assert (names[name]["kind"], names[name]["style"]) == ("prop", "toon"), name
+
+
+# -- the smart speaker -----------------------------------------------------------------------------------------------
+N = toon_everyday.RING
+STEP, PULSE, DIM = toon_everyday.CHASE_STEP, toon_everyday.PULSE_STEP, toon_everyday.PULSE_DIM
+
+
+def test_the_ring_is_dark_off_lit_listening_and_red_on_an_error():
+    ring = toon_everyday.ring_keys([(0.0, "off"), (1.0, "listen"), (2.0, "error"), (3.0, "off")], 4.0)
+    assert ring["lit"] == [[(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)]] * N
+    assert ring["alarm"] == [[(0.0, 0.0), (2.0, 1.0), (3.0, 0.0)]] * N
+
+
+def test_thinking_chases_one_segment_round_the_ring_until_the_next_state():
+    ring = toon_everyday.ring_keys([(0.0, "think"), (1.0, "off")], 2.0)
+    steps = [round(i * STEP, 6) for i in range(math.ceil(1.0 / STEP))]
+    for k in range(N):
+        on = [t for i, t in enumerate(steps) if i % N == k]
+        expected = [(0.0, 1.0 if k == 0 else 0.0)]
+        for t in on:
+            if t > 0:
+                expected.append((t, 1.0))
+            nxt = round(t + STEP, 6)
+            expected.append((min(nxt, 1.0), 0.0))
+        assert ring["lit"][k] == expected, k
+    assert ring["alarm"] == [[(0.0, 0.0)]] * N
+
+
+def test_speaking_pulses_the_whole_ring_to_the_end_of_the_shot():
+    ring = toon_everyday.ring_keys([(0.0, "off"), (1.0, "speak")], 1.0 + 4 * PULSE)
+    pulse = [
+        (1.0, 1.0),
+        (round(1.0 + PULSE, 6), DIM),
+        (round(1.0 + 2 * PULSE, 6), 1.0),
+        (round(1.0 + 3 * PULSE, 6), DIM),
+    ]
+    assert ring["lit"] == [[(0.0, 0.0), *pulse]] * N
+
+
+def speaker(cv=None, states=((0.0, "listen"),), end=4.0, **kw):
+    cv = cv or canvas()
+    return toon_everyday.speaker(cv, cv.comp, states, end, **kw)
+
+
+def test_each_ring_segment_is_keyed_and_the_speaker_draws_inside_its_footprint():
+    cv = canvas()
+    box = speaker(cv, [(0.0, "think"), (1.0, "speak"), (2.0, "error")], 3.0, at=(440, 826), scale=1.5)
+    ring = toon_everyday.ring_keys([(0.0, "think"), (1.0, "speak"), (2.0, "error")], 3.0)
+    for colour in ("lit", "alarm"):
+        for k in range(N):
+            assert keys(group(cv, f"speaker-ring-{colour}-{k}"), "opacity") == ring[colour][k]
+    assert inside(drawn(cv, "speaker"), frame_box(box))
+
+
+@pytest.mark.parametrize(
+    ("states", "end", "match"),
+    [
+        ([], 2.0, "at least one"),
+        ([(0.0, "sing")], 2.0, "state"),
+        ([(0.5, "off")], 2.0, "from 0"),
+        ([(0.0, "off"), (0.0, "listen")], 2.0, "rising"),
+        ([(True, "off")], 2.0, "second"),
+        ([("off",)], 2.0, "pair"),
+        ([(0.0, "off"), (2.0, "listen")], 2.0, "end"),
+        ([(0.0, "off")], True, "end"),
+        ([(0.0, "off")], toon_everyday.MAX_END + 1, "end"),
+    ],
+)
+def test_the_speaker_refuses_states_it_cannot_show(states, end, match):
+    with pytest.raises(ToonDataError, match=match):
+        speaker(states=states, end=end, at=(300, 826))
+
+
+def test_the_speaker_is_placed_by_the_same_rules():
+    with pytest.raises(ToonDataError, match="signature"):
+        speaker(at=(520, 826))
+
+
+def test_the_speaker_glows_cyan_while_it_works_and_red_on_an_error():
+    cv = canvas()
+    states = [(0.0, "off"), (1.0, "listen"), (2.0, "think"), (3.0, "error"), (4.0, "speak")]
+    speaker(cv, states, 5.0, at=(300, 826))
+    glow = toon_everyday.GLOW
+    assert keys(group(cv, "speaker-glow-lit"), "opacity") == [(0.0, 0.0), (1.0, glow), (3.0, 0.0), (4.0, glow)]
+    assert keys(group(cv, "speaker-glow-alarm"), "opacity") == [(0.0, 0.0), (3.0, glow), (4.0, 0.0)]
