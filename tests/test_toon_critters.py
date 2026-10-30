@@ -11,7 +11,7 @@ from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, brush, flat_counter, registry, sketch, toon, toon_cast, toon_critters, toon_wear
 from srstudio.sketch import Beat, Line, Sketch, Speaker
-from srstudio.toon import ToonDataError
+from srstudio.toon import Pose, ToonDataError
 from srstudio.voice import Voice, VoiceSettings
 from support.toon_contour import bends, inside, points, sharpest
 from support.toon_thumbnail import apart, lab, silhouette_rest, thumbnail
@@ -358,6 +358,22 @@ def test_a_headset_fits_the_new_heads(name):
     assert top - 16 < band[1] < top
 
 
+@pytest.mark.parametrize("name", NEW)
+def test_what_the_new_three_wear_turns_with_their_tilted_heads(name):
+    look = CRITTERS[name]
+    face = toon_wear.face_of(look)
+    assert face.tilt == look.drawing.tilt != 0.0
+    layers = toon_wear.wear_layers(face, ("glasses",))[1]
+    for k, eye in enumerate(look.eyes):  # the lenses stay on the eyes
+        x0, y0, x1, y1 = brush.bounds(layers[k][0])
+        assert math.dist(((x0 + x1) / 2, (y0 + y1) / 2), eye) < 1.5
+    (lx, ly), (rx, ry) = look.eyes
+    centre = (lx + rx) / 2, (ly + ry) / 2
+    temples = [brush.bounds(brush.rotate(layers[k][0], *centre, -face.tilt)) for k in (3, 4)]
+    assert abs(temples[0][1] - temples[1][1]) < 4.0  # the arms run level on the head, so they turn with it
+    assert abs(brush.bounds(layers[3][0])[1] - brush.bounds(layers[4][0])[1]) > 4.0
+
+
 def test_a_sketch_plays_the_new_three_by_name_with_their_signatures():
     lines = (Line("a", "Monday again."), Line("b", "WHAT."), Line("c", "Free snacks!"))
 
@@ -560,3 +576,37 @@ def test_typing_still_reaches_the_laptop_and_resting_paws_the_desk(name):
             assert any(b[0] <= px <= b[2] and b[1] <= py <= b[3] for b in boxes), (name, frame, px, py)
     under, _ = toon_cast._arms(look, "desk", 0)
     assert max(brush.bounds(s)[3] for s, _ in under) >= 794.0
+
+
+APPROVED = {  # scene digests of the drawing the operator approved on 2026-10-30, ADR 0049: wedge arms, band shade
+    "sloth": "6714deb01199165da68327abceece793f2e9de6158d25d9af121362c3648ffc4",
+    "goat": "9536f085a35b64e23fae091d41af7abbf51df69268674bcc89e1db39bf565c32",
+    "hamster": "5309b9315bb91993dde800d61b3c7a1a113818bd2a0186ba1431b69b73f3461a",
+}
+
+
+@pytest.mark.parametrize("name", sorted(APPROVED))
+def test_the_three_are_drawn_as_the_operator_approved_them(name):
+    poses = [
+        Pose(0.0, "sleepy", "flat", "desk"),
+        Pose(1.0, "half", "smirk", "type"),
+        Pose(2.0, "wide", "yawn", "sigh"),
+        Pose(3.0, "shock", "scream", "lean"),
+        Pose(4.0, "wince", "puff", "face"),
+        Pose(5.0, "hearts", "kiss", "face2"),
+    ]
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=6.0, background=PEACH.background)
+    cv = Canvas(scene, PEACH, font_asset=None, namer=flat_counter("k"))
+    toon_cast.figure(cv, cv.comp, toon_critters.CRITTERS[name], poses, 6.0, (1.2, 1.4, 1.9))
+    assert hashlib.sha256(scene.to_bytes(layout="pretty")).hexdigest() == APPROVED[name]
+
+
+def test_drifted_is_a_wobble_rounded_for_the_control_points_and_refuses_the_wrong_weights():
+    ring = [(100 + 50 * math.cos(2 * math.pi * k / 16), 100 + 50 * math.sin(2 * math.pi * k / 16)) for k in range(16)]
+    assert toon_critters.drifted(ring, 1.3, 1.0) == toon_critters.drifted(ring, 1.3, 1.0, (1.0,) * 16)
+    assert toon_critters.drifted(ring, 1.3, 1.0, (0.0,) * 16) == tuple((round(x, 2), round(y, 2)) for x, y in ring)
+    with pytest.raises(brush.BrushError):
+        toon_critters.drifted(ring, 1.3, 1.0, (1.0,) * 15)
+    with pytest.raises(brush.BrushError):
+        toon_critters.drifted(ring, 1.3, 1.0, (1.0,) * 15 + (-1.0,))

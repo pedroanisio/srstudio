@@ -5,7 +5,7 @@ import math
 
 import pytest
 
-from srstudio import brush, toon_cast, toon_critters, toon_torso
+from srstudio import brush, toon_cast, toon_torso
 from srstudio.toon import ToonDataError
 from srstudio.toon_torso import Torso
 from support.toon_contour import bends, inside, points, sharpest, sides
@@ -117,20 +117,10 @@ def test_the_torso_is_calmer_than_the_head_under_a_hand_s_drift():
     assert set(weights[:start] + weights[start + len(HEAD) :]) == {0.2}
     with pytest.raises(ToonDataError):
         t.weights(1.5)
-    calm = toon_critters.drift(t.contour, 2.0, 3.0, weights)
+    calm = brush.wobble(t.contour, 2.0, steps=1, seed=3, weights=weights)
     moved = [math.dist(a, b) for a, b in zip(calm, t.contour, strict=True)]
     assert max(moved[:start]) <= 0.2 * 2.0 + 0.01
     assert max(moved[start : start + len(HEAD)]) > 0.2 * 2.0 + 0.2
-
-
-def test_drift_without_weights_is_the_old_drift_and_refuses_the_wrong_count():
-    ring = [(100 + 50 * math.cos(2 * math.pi * k / 16), 100 + 50 * math.sin(2 * math.pi * k / 16)) for k in range(16)]
-    assert toon_critters.drift(ring, 1.3, 1.0) == toon_critters.drift(ring, 1.3, 1.0, (1.0,) * 16)
-    assert toon_critters.drift(ring, 1.3, 1.0, (0.0,) * 16) == tuple((round(x, 2), round(y, 2)) for x, y in ring)
-    with pytest.raises(brush.BrushError):
-        toon_critters.drift(ring, 1.3, 1.0, (1.0,) * 15)
-    with pytest.raises(brush.BrushError):
-        toon_critters.drift(ring, 1.3, 1.0, (1.0,) * 15 + (-1.0,))
 
 
 # -- the arm -----------------------------------------------------------------------------------------------------------
@@ -245,6 +235,36 @@ def test_an_arm_tapers_into_the_body_and_is_widest_toward_the_paw():
     line = brush.spline(drawn, False, 8)
     assert across(line[0], line[3]) < t.arm * 0.45  # a thin start, like a crease into the body
     assert across(line[-1], line[-4]) > t.arm * 0.9  # a full forearm at the wrist
+
+
+@pytest.mark.parametrize("build", BUILDS)
+def test_arm_lines_ink_an_arm_over_the_body_and_never_along_the_flank(build):
+    t = torso(build)
+    inks = toon_torso.arm_lines(t.arm_path(DESK), t.arm, t.contour, toon_torso.TAPER, 2.0)
+    assert inks  # the edge across the chest is a line
+    assert len(inks) < 4  # lifted, not a closed outline
+    assert not any(0 < toon_torso.depth_in(t.contour, p)[0] < 4.0 for shape in inks for p in points(shape)[::4])
+
+
+def test_depth_in_is_how_far_inside_and_the_way_of_the_nearest_edge():
+    square = ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0))
+    depth, way = toon_torso.depth_in(square, (30.0, 50.0))
+    assert (depth, way) == (pytest.approx(30.0), pytest.approx((0.0, -1.0)))
+    assert toon_torso.depth_in(square, (-20.0, 50.0))[0] == pytest.approx(-20.0)
+
+
+def test_arm_lines_leave_out_an_edge_running_just_inside_the_body():
+    tall = ((0.0, 0.0), (100.0, 0.0), (100.0, 300.0), (0.0, 300.0))
+    along = [(20.0, 20.0), (20.0, 150.0), (20.0, 280.0)]  # inside the left edge, its left edge merged with the body
+    lines = toon_torso.arm_lines(along, 30.0, tall, brush.Pressure(1.0, 1.0, 0.0, 0.0, 1.0), 2.0)
+    assert len(lines) == 1
+    assert all(p[0] > 20.0 for p in points(lines[0]))
+
+
+def test_an_arm_merged_with_the_body_on_both_sides_has_no_line():
+    narrow = ((0.0, 0.0), (20.0, 0.0), (20.0, 300.0), (0.0, 300.0))
+    even = brush.Pressure(1.0, 1.0, 0.0, 0.0, 1.0)
+    assert toon_torso.arm_lines([(10.0, 20.0), (10.0, 150.0), (10.0, 280.0)], 16.0, narrow, even, 2.0) == []
 
 
 def test_the_module_is_reachable_from_the_package():

@@ -75,6 +75,62 @@ def test_an_inked_rim_is_heavy_at_the_bottom_thin_at_the_top_and_its_points_wind
     assert fy0 - ly0 > 2 * (ly1 - fy1)
 
 
+def test_an_inked_rim_takes_a_seed_so_two_shapes_do_not_share_their_grain():
+    assert brush.inked(circle(), 10.0, seed=0.0) == brush.inked(circle(), 10.0)
+    assert brush.inked(circle(), 10.0, seed=3.0) != brush.inked(circle(), 10.0)
+    assert brush.inked(circle(), 10.0, seed=3.0) == brush.inked(circle(), 10.0, seed=3.0)
+
+
+def test_a_hand_and_a_wobble_take_a_wave_of_their_own():
+    slow = brush.Wave(((3, 1.0, 0.2, 1.0), (5, 0.5, 1.1, 2.0)), 1.5)
+    assert all(-1.0 <= slow.at(k / 200, 0.7) <= 1.0 for k in range(201))
+    assert brush.inked(circle(), 10.0, brush.Hand(wave=slow)) != brush.inked(circle(), 10.0)
+    assert brush.wobble(circle(), 3.0, steps=1, seed=2, wave=slow) != brush.wobble(circle(), 3.0, steps=1, seed=2)
+    assert brush.wobble(circle(), 3.0, steps=1, seed=2, wave=brush.GRAIN) == brush.wobble(
+        circle(), 3.0, steps=1, seed=2
+    )
+
+
+def test_a_wobble_can_be_calmed_point_by_point():
+    ring = circle()
+    full = brush.wobble(ring, 3.0, steps=1, seed=2)
+    assert brush.wobble(ring, 3.0, steps=1, seed=2, weights=(1.0,) * len(ring)) == full
+    calm = brush.wobble(ring, 3.0, steps=1, seed=2, weights=(0.0,) * len(ring))
+    assert all(math.dist(p, q) < 1e-9 for p, q in zip(calm, ring, strict=True))
+    half = brush.wobble(ring, 3.0, steps=1, seed=2, weights=(0.5,) * len(ring))
+    for near, far, rest in zip(half, full, ring, strict=True):
+        assert math.dist(near, rest) == pytest.approx(math.dist(far, rest) / 2, abs=1e-9)
+
+
+@pytest.mark.parametrize("weights", ((1.0, 1.0), (1.0, 1.0, 1.0, 2.0), (1.0, 1.0, 1.0, math.nan)))
+def test_a_wobble_refuses_weights_that_are_not_one_share_per_sample(weights):
+    with pytest.raises(brush.BrushError, match="weights"):
+        brush.wobble(SQUARE, 1.0, steps=1, weights=weights)
+
+
+def test_a_crescent_starts_and_ends_on_its_edge_and_swells_toward_the_inside():
+    edge = [(100.0, 0.0), (70.7, 70.7), (0.0, 100.0)]
+    shape = brush.crescent(edge, 20.0, (0.0, 0.0))
+    assert shape[0] == edge[0]
+    path = brush.spline(edge, steps=3)
+    assert shape[len(path) - 1] == edge[-1]
+    deepest = min(math.hypot(x, y) for x, y in shape)
+    assert 75.0 < deepest < 85.0
+    assert all(math.hypot(x, y) < 106.0 for x, y in shape)
+
+
+def test_facing_gives_every_sample_of_a_contour_its_outward_normal_either_way_round():
+    for ring in (circle(), circle()[::-1]):
+        for (x, y), (nx, ny) in brush.facing(ring, 4):
+            assert x * nx + y * ny > 0
+            assert math.hypot(nx, ny) == pytest.approx(1.0)
+
+
+def test_facing_needs_a_closed_contour():
+    with pytest.raises(brush.BrushError, match="at least 3 points"):
+        brush.facing([(0.0, 0.0), (1.0, 1.0)], 4)
+
+
 def test_a_wobbled_contour_is_dense_uneven_and_the_same_every_time():
     smooth = brush.spline(circle(), closed=True, steps=4)
     hand = brush.wobble(circle(), 3.0, steps=4)
