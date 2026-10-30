@@ -3978,6 +3978,74 @@
         ]
       },
       "text": "A frente do edredom, em que os bustos sentados afundam, e uma caixa de cereal sem marca entre os dois (Anything's Fine)."
+    },
+    {
+      "section": "locations",
+      "name": "Corredor do supermercado",
+      "parts": [
+        "collage-supermarket"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 6.2
+      },
+      "text": "Corredor de prateleiras cheias de pacotes sem marca, sob luz fria; a Rosa abre sacos cada vez maiores em Family Size."
+    },
+    {
+      "section": "props",
+      "name": "Saco de batata e batata",
+      "parts": [
+        "collage-chip-bag",
+        "collage-chip"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 0.6,
+        "box": [
+          320,
+          500,
+          720,
+          900
+        ]
+      },
+      "text": "Saco estufado de papel com rótulo próprio, que murcha quando a cena o escala, e a batata inteira, pela metade ou em farelo (Family Size)."
+    },
+    {
+      "section": "props",
+      "name": "Certificado e foto",
+      "parts": [
+        "collage-certificate",
+        "collage-snapshot"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 11.8,
+        "box": [
+          300,
+          1400,
+          700,
+          520
+        ]
+      },
+      "text": "Certificado com selo vermelho para meia batata e, no saco seguinte, só a foto de uma batata (Family Size)."
+    },
+    {
+      "section": "props",
+      "name": "Rajada de ar",
+      "parts": [
+        "collage-gust"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 3.5,
+        "box": [
+          100,
+          900,
+          800,
+          500
+        ]
+      },
+      "text": "Traços de ar correndo de um ponto a outro: o saco esvaziando no rosto da Rosa por três segundos (Family Size)."
     }
   ]
 }
