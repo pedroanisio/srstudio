@@ -51,7 +51,7 @@ from pathlib import Path
 
 from . import catalog_data, catalog_specimens, checks, digest, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
-from .styles import STYLES
+from .styles import STYLES, Style
 from .usage import Report
 
 NOTES_SCHEMA = "1.2.0"
@@ -700,6 +700,27 @@ def check_base(page: str) -> None:
         raise CatalogError(f"the base page lost its anchor(s) {missing}; it is not the packages catalog")
 
 
+def _luminance(colour: str) -> float:
+    """The relative luminance of a ``#rrggbb`` colour, as WCAG defines it."""
+    channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = (c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _style_tag(style: Style) -> str:
+    """The rule colouring a style's tag: its stage colour, lettered in whichever of its ink and paper has the higher
+    contrast ratio against it, since a dark stage such as Saga's has a dark ink too."""
+    palette = style.palettes[0]
+    background = palette.background or palette.shade
+    ground = _luminance(background)
+    text = max(
+        palette.ink,
+        palette.white,
+        key=lambda c: (max(_luminance(c), ground) + 0.05) / (min(_luminance(c), ground) + 0.05),
+    )
+    return f".style-tag.{style.slug}{{ background:{background}; color:{text} }}\n"
+
+
 def inject(page: str, cards: Sequence[Card], notes: Notes, *, stylesheet: str, script: str) -> str:
     """The base page as the app's shell: its hero brought up to date, the navigation and the app's host added, and
     its own script held back until a route needs it, since it builds six SVG players and every package still.
@@ -707,11 +728,7 @@ def inject(page: str, cards: Sequence[Card], notes: Notes, *, stylesheet: str, s
     check_base(page)
     e = html.escape
     new_styles = [s for s in STYLES.values() if f'class="style-tag {s.slug}"' not in page]
-    css = "".join(
-        f".style-tag.{s.slug}{{ background:{s.palettes[0].background or s.palettes[0].shade}; "
-        f"color:{s.palettes[0].ink} }}\n"
-        for s in new_styles
-    )
+    css = "".join(_style_tag(s) for s in new_styles)
     page = page.replace(_ANCHORS["style"], css + _ANCHORS["style"], 1)
     page = page.replace(_ANCHORS["head"], f'<link rel="stylesheet" href="{stylesheet}">\n' + _ANCHORS["head"], 1)
     style_cards = "".join(

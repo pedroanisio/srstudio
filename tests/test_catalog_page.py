@@ -182,6 +182,20 @@ def test_inject_makes_the_base_page_the_shell_of_the_app(tree):
     assert page.rstrip().endswith("</html>")
 
 
+def test_every_style_tag_can_be_read(tree):
+    def luminance(colour):
+        channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        r, g, b = (c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    page = cp.inject(BASE, cards(tree), cp.Notes(), **SHELL)
+    tags = re.findall(r"\.style-tag\.(\w+)\{ background:(#\w{6}); color:(#\w{6}) \}", page)
+    assert {slug for slug, _, _ in tags} >= {"saga", "soft", "stick"}
+    for slug, background, text in tags:
+        light, dark = sorted((luminance(background), luminance(text)), reverse=True)
+        assert (light + 0.05) / (dark + 0.05) >= 4.5, slug  # flat letters on a flat fill: the ratio is the measure
+
+
 def test_the_shell_holds_no_media_and_runs_the_base_script_only_when_asked(tree):
     page = cp.inject(BASE, cards(tree), cp.Notes(), **SHELL)
     assert "<video" not in page and "<img" not in page  # the app renders them, a view at a time
