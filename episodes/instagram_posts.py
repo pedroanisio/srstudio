@@ -155,7 +155,8 @@ def main(argv: list[str] | None = None) -> int:
             print(d)
         if FROZEN:
             print(f"frozen at an accepted drawing (ADR 0040): {', '.join(sorted(FROZEN))}")
-        print(f"{len(POSTS)} videos, {len(drift)} drifted" if drift else f"{len(POSTS)} videos, delivery current")
+        drifted = len({d.name for d in drift})  # a video can drift in more than one way
+        print(f"{len(POSTS)} videos, {drifted} drifted" if drift else f"{len(POSTS)} videos, delivery current")
         return 1 if drift else 0
     if not args.engine:
         parser.error("no engine: pass --engine or set SRSTUDIO_ENGINE")
