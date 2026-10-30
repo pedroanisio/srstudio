@@ -9,13 +9,19 @@ Every character stands with its feet centred on ``at`` (frame pixels), about :da
 breathes on a slow bob. Faces speak from the take's character timestamps (:func:`talk`, through
 :func:`srstudio.lipsync.phoneme_states` with :data:`SAGA_MOUTH`):
 
-* the unmasked (Juno, Rook, Mabel) swap one of five mouths (:data:`VISEMES`) per sample and blink;
-* the masked (Lord Gloom, the enforcers, the service droid) light their visor, or the droid its mouth bar, while
-  they speak, so the viewer always sees who is talking.
+* the unmasked (Lord Gloom, the enforcers, Juno, Rook, Mabel) swap one of five mouths (:data:`VISEMES`) per sample
+  and blink; an enforcer's headset mic light also lights while he speaks;
+* the masked (the service droid) light its mouth bar while it speaks, so the viewer always sees who is talking.
 
-Each trait does something in a gag: Gloom's visor is the only light on a dark bridge, an enforcer's stripe tells
-Seven from Gary, the droid's face is a screen, Mabel leans on her cane, Rook's stubble greys with every bad
-decision. Looks are named (:data:`SKIN`), never ad-hoc colours.
+Each trait does something in a gag: Gloom's chain of office and ringed hat outrank everyone in the room and his
+scowl never lifts, an enforcer's hard hat tells Seven (teal) from Gary (orange), the droid's face is a screen,
+Mabel leans on her cane, Rook's stubble greys with every bad decision. Looks are named (:data:`SKIN`), never ad-hoc
+colours.
+
+The cast has two designs (:data:`DESIGNS`). Design 2, the default (:data:`DESIGN`), is the series' own Gloom, a
+towering bureaucrat-tyrant, and its own enforcers, short round workers in hard hats. Design 1 is the cast as first
+drawn, a dark lord in a visor helmet and enforcers in white armour, which echoed a famous franchise too closely; it
+is kept, unchanged, only for the reels drawn with it, which pin it (ADR 0025, amendment of 2026-10-30).
 """
 
 from __future__ import annotations
@@ -37,19 +43,26 @@ __all__ = [
     "SKIN",
     "CAST",
     "MASKED",
+    "MASKED_BY_DESIGN",
+    "DESIGNS",
+    "DESIGN",
     "VISEMES",
     "HEIGHT",
     "SagaError",
     "talk",
     "check_talk",
     "gloom",
-    "enforcer",
+    "trooper",
+    "gloom_classic",
+    "enforcer_classic",
     "droid",
     "juno",
     "rook",
     "mabel",
     "handbook",
     "DRAWERS",
+    "CLASSIC_DRAWERS",
+    "BY_DESIGN",
     "draw",
 ]
 
@@ -68,7 +81,11 @@ BOB = 2.4  # seconds of one breath
 BOB_RISE = 5.0  # pixels the body rises on a breath
 BLINK_EVERY = 3.1
 CAST = ("gloom", "seven", "gary", "juno", "rook", "mabel", "droid")
-MASKED = ("gloom", "seven", "gary", "droid")
+MASKED = (
+    "droid",
+)  # who speaks by a light, not a mouth, in the current design; design 1 masked Gloom and the enforcers
+DESIGNS = (1, 2)  # the cast designs: 1 as first drawn (S1 to S18), 2 the series' own Gloom and enforcers (ADR 0025)
+DESIGN = 2  # the cast design a reel draws unless it pins another
 
 Talk = Sequence[tuple[float, str]]
 
@@ -121,10 +138,11 @@ def _eyes(cv: Canvas, parent, cx: float, cy: float, gap: float, end: float, *, i
     _blinks(cv, eyes, end)
 
 
-def _mouth_shape(cv: Canvas, parent, pose: str, cx: float, cy: float, w: float):
+def _mouth_shape(cv: Canvas, parent, pose: str, cx: float, cy: float, w: float, sulk: bool = False):
     dark, tongue = "#3a1216", "#d9646a"
-    if pose == "closed":
-        return cv.path(parent, f"M{cx - w / 2:g} {cy:g} Q{cx:g} {cy + 8:g} {cx + w / 2:g} {cy:g}", sw=5)
+    if pose == "closed":  # a small smile, or with ``sulk`` the turned-down mouth of a man who is never pleased
+        return cv.path(parent, f"M{cx - w / 2:g} {cy:g} Q{cx:g} {cy + (-10 if sulk else 8):g} {cx + w / 2:g} {cy:g}",
+                       sw=5)  # fmt: skip
     g = cv.group(parent, cv.uid("g"))
     if pose == "round":
         cv.ellipse(g, cx - w * 0.2, cy - w * 0.2, w * 0.4, w * 0.4, dark, cv.ink, 4)
@@ -138,17 +156,18 @@ def _mouth_shape(cv: Canvas, parent, pose: str, cx: float, cy: float, w: float):
     return g
 
 
-def _mouth(cv: Canvas, parent, cx: float, cy: float, w: float, states: Talk) -> None:
-    """A mouth that swaps poses on the talk states (hold keys); closed and still without any."""
+def _mouth(cv: Canvas, parent, cx: float, cy: float, w: float, states: Talk, sulk: bool = False) -> None:
+    """A mouth that swaps poses on the talk states (hold keys); closed and still without any; ``sulk`` turns the
+    closed mouth down."""
     check_talk(states)
     if not states:
-        _mouth_shape(cv, parent, "closed", cx, cy, w)
+        _mouth_shape(cv, parent, "closed", cx, cy, w, sulk)
         return
     track = list(states) if states[0][0] == 0 else [(0.0, "closed"), *states]
     for pose in VISEMES:
         if not any(p == pose for _, p in track):
             continue
-        node = _mouth_shape(cv, parent, pose, cx, cy, w)
+        node = _mouth_shape(cv, parent, pose, cx, cy, w, sulk)
         keys, shown = [], None
         for t, p in track:
             on = 1 if p == pose else 0
@@ -218,14 +237,14 @@ def _arms(cv: Canvas, g, sleeve: str, hand: str, *, reach: float = 0) -> None:
 @register(
     "character",
     "saga-gloom",
-    summary="Lord Gloom: black horned armour, a cape and a red visor slit that lights while he speaks; middle "
-    "management with a planet budget",
-    tags=("masked", "villain", "middle-aged"),
+    summary="Lord Gloom, first design (design=1, kept for the reels drawn with it, S1 to S18): black horned armour, "
+    "a cape and a red visor slit that lights while he speaks; new reels draw saga-gloom-2",
+    tags=("masked", "villain", "middle-aged", "retired-design"),
 )
-def gloom(
+def gloom_classic(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
 ):
-    """Lord Gloom of the Directorate, feet at ``at``; his visor follows ``talk``."""
+    """Lord Gloom as first drawn (design 1), feet at ``at``; his visor follows ``talk``."""
     rig.check_place(scale, end, SagaError)
     g = _root(cv, parent, at, scale, flip, end)
     armour, edge, cape = "#15161c", "#3a3f52", "#3b1d3f"
@@ -254,11 +273,11 @@ def gloom(
 @register(
     "character",
     "saga-enforcer",
-    summary="A Directorate enforcer in white armour with a black visor band whose mic light blinks as he speaks; "
-    "the shoulder stripe names him (Seven teal, Gary orange)",
-    tags=("masked", "worker"),
+    summary="A Directorate enforcer, first design (design=1, kept for the reels drawn with it, S1 to S18): white "
+    "armour with a black visor band and a mic light; new reels draw saga-enforcer-2",
+    tags=("masked", "worker", "retired-design"),
 )
-def enforcer(
+def enforcer_classic(
     cv: Canvas,
     parent,
     *,
@@ -269,7 +288,8 @@ def enforcer(
     end: float,
     stripe: str = "#2fb5a9",
 ):
-    """An enforcer, feet at ``at``; ``stripe`` is his shoulder colour, his mic light follows ``talk``."""
+    """An enforcer as first drawn (design 1), feet at ``at``; ``stripe`` is his shoulder colour, his mic light
+    follows ``talk``."""
     rig.check_place(scale, end, SagaError)
     g = _root(cv, parent, at, scale, flip, end)
     white, joint = "#eef0f2", "#9aa3ad"
@@ -332,6 +352,139 @@ def droid(
     _glow(cv, cv.rect(head, -46, -486, 92, 20, teal, radius=10), talk, rest=0.0)
     cv.line(head, 0, -650, 0, -700, cv.ink, 5)
     cv.ellipse(head, -12, -716, 24, 24, "#ff5a4f", cv.ink, 4)
+    return g
+
+
+@register(
+    "character",
+    "saga-gloom-2",
+    summary="Lord Gloom, Grand Comptroller of the Directorate (design 2, the default): a towering bureaucrat-tyrant "
+    "in a floor-length robe, a wide ochre shoulder yoke, a brass chain of office with the Directorate seal and a "
+    "headdress of three stepped tiers, like a stack of in-trays, over a jowly, heavy-lidded, sulking face that "
+    "speaks; middle management with a planet budget",
+    tags=("villain", "middle-aged", "lip-synced"),
+)
+def gloom(
+    cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
+):
+    """Lord Gloom (design 2), feet at ``at``, speaking ``talk`` with his own mouth under a scowling brow."""
+    rig.check_place(scale, end, SagaError)
+    g = _root(cv, parent, at, scale, flip, end)
+    robe, trim, yoke, brass, skin = "#33264a", "#4c3b6b", "#c98b2e", "#e0b54a", SKIN["fair"]
+    for x in (-74, 18):  # shoes under the hem
+        cv.path(g, f"M{x} -12 L{x + 50} -12 Q{x + 74} -10 {x + 74} 4 L{x - 6} 4 Z", "#14161f", cv.ink, 4)
+    cv.path(g, "M-116 -440 L116 -440 L140 -8 Q0 6 -140 -8 Z", robe, cv.ink, INK_W)  # a floor-length column
+    _torso_light(cv, g, 116, 140, -440, -8)
+    cv.path(g, "M0 -430 L0 -14", stroke=trim, sw=6)
+    for y in (-250, -180, -110, -40):
+        cv.ellipse(g, -9, y - 9, 18, 18, brass, cv.ink, 3)
+    _arms(cv, g, robe, skin)
+    for side in (-1, 1):  # brass cuffs
+        cv.rect(g, 112 * side - 30, -262, 60, 14, brass, cv.ink, 3, radius=5)
+    cv.rect(g, -36, -476, 72, 44, skin, cv.ink, INK_W)  # the neck, under the yoke
+    cv.path(g, "M-200 -404 L-150 -476 L150 -476 L200 -404 Q0 -380 -200 -404 Z", yoke, cv.ink, INK_W)
+    cv.path(g, "M40 -476 L150 -476 L200 -404 Q120 -392 40 -388 Z", cv.ink, opacity=SHADE)
+    cv.path(g, "M-150 -468 L-192 -410", stroke=RIM, sw=5, opacity=0.6)
+    cv.path(g, "M-190 -406 Q0 -384 190 -406", stroke=brass, sw=5)
+    for x in (-150, -100, 100, 150):  # studs along the yoke's hem
+        cv.ellipse(g, x - 7, -414 + abs(x) * 0.04, 14, 14, brass, cv.ink, 2)
+    cv.path(g, "M-96 -402 Q-62 -326 0 -318 Q62 -326 96 -402", stroke=cv.ink, sw=15)  # the chain of office
+    cv.path(g, "M-96 -402 Q-62 -326 0 -318 Q62 -326 96 -402", stroke=brass, sw=8)
+    cv.ellipse(g, -36, -336, 72, 72, brass, cv.ink, 5)  # the Directorate seal
+    cv.ellipse(g, -22, -322, 44, 44, "#b8862f", cv.ink, 3)
+    cv.ellipse(g, -9, -309, 18, 18, brass)
+    cv.path(g, "M-24 -296 Q0 -306 24 -304", stroke=cv.ink, sw=3)
+    head = cv.group(g, cv.uid("g"))
+    for side in (-1, 1):
+        cv.ellipse(head, 92 * side - 14, -560, 28, 42, skin, cv.ink, 5)
+    jowls = "M-78 -600 Q0 -622 78 -600 Q100 -540 98 -496 Q94 -446 0 -442 Q-94 -446 -98 -496 Q-100 -540 -78 -600 Z"
+    cv.path(head, jowls, skin, cv.ink, INK_W)
+    _head_light(cv, head, 0, -532, 98, 90)
+    for side in (-1, 1):
+        cv.ellipse(head, 54 * side - 22, -500, 44, 24, "#e0707a", opacity=0.3)  # a pompous flush
+        cv.path(head, f"M{70 * side} -500 Q{66 * side} -470 {46 * side} -458", stroke=cv.ink, sw=4, opacity=0.45)
+    _eyes(cv, head, 0, -548, 36, end)
+    for side in (-1, 1):  # heavy lids, lower on the inner side: he looks down on everyone
+        ex = 36 * side
+        inner, outer = ex - 20 * side, ex + 20 * side
+        cv.path(head, f"M{outer} -574 L{inner} -574 L{inner} -550 L{outer} -558 Z", skin)
+        cv.line(head, outer, -558, inner, -550, cv.ink, 5)
+    brow = "#2a1d18"
+    cv.path(head, "M-76 -592 L-14 -574 L-16 -560 L-76 -578 Z", brow, cv.ink, 3)  # a scowl that never lifts
+    cv.path(head, "M76 -592 L14 -574 L16 -560 L76 -578 Z", brow, cv.ink, 3)
+    cv.path(head, "M-6 -534 Q-18 -508 0 -504 Q14 -506 10 -516", stroke=cv.ink, sw=4)
+    _mouth(cv, head, 0, -476, 50, talk, sulk=True)
+    for top, half, h in ((-628, 94, 30), (-664, 72, 36), (-700, 50, 36)):  # the headdress: three stepped tiers
+        cv.rect(head, -half, top, 2 * half, h, robe, cv.ink, INK_W, radius=4)
+        cv.rect(head, half * 0.25, top + 3, half * 0.75 - 3, h - 6, cv.ink, opacity=SHADE)
+        cv.line(head, -half + 8, top + h - 7, half - 8, top + h - 7, brass, 5)
+    cv.path(head, "M-88 -598 L-88 -624 M-66 -634 L-66 -660 M-44 -670 L-44 -696", stroke=RIM, sw=5, opacity=0.6)
+    cv.ellipse(head, -14, -698, 28, 28, brass, cv.ink, 3)  # the seal again, on the top tier
+    return g
+
+
+@register(
+    "character",
+    "saga-enforcer-2",
+    summary="A Directorate enforcer (design 2, the default): a short, round rank-and-file in a padded olive work "
+    "suit and a lime hi-vis vest with reflective bands, stubby boots and big work mitts, a round hard hat in his "
+    "colour (Seven teal, Gary orange) and a headset whose mic light blinks as he speaks",
+    tags=("worker", "lip-synced"),
+)
+def trooper(
+    cv: Canvas,
+    parent,
+    *,
+    at: tuple[float, float],
+    scale: float = 1.0,
+    flip: bool = False,
+    talk: Talk = (),
+    end: float,
+    stripe: str = "#2fb5a9",
+):
+    """An enforcer (design 2), feet at ``at``; ``stripe`` colours his hard hat, he speaks ``talk`` and his mic
+    light follows it."""
+    rig.check_place(scale, end, SagaError)
+    g = _root(cv, parent, at, scale, flip, end)
+    suit, vest, band, boot, mitt, skin = "#5f6b45", "#c6d43f", "#e9eef0", "#2a2e36", "#c79a5b", SKIN["brown"]
+    for x in (-82, 22):  # stubby legs, big boots
+        cv.rect(g, x, -150, 60, 130, suit, cv.ink, INK_W, radius=22)
+        cv.rect(g, x + 38, -144, 16, 118, cv.ink, radius=8, opacity=SHADE)
+        cv.path(g, f"M{x - 12} -40 L{x + 56} -40 Q{x + 92} -36 {x + 92} -8 L{x + 92} 0 L{x - 14} 0 Z", boot, cv.ink,
+                INK_W)  # fmt: skip
+    for side in (-1, 1):  # short sleeves to big mitts
+        d = f"M{120 * side} -410 Q{182 * side} -350 {176 * side} -262"
+        cv.path(g, d, stroke=cv.ink, sw=64)
+        cv.path(g, d, stroke=suit, sw=50)
+    cv.ellipse(g, -150, -470, 300, 350, suit, cv.ink, INK_W)  # the round padded body
+    cv.path(g, "M-118 -430 Q-150 -300 -120 -170 Q0 -130 120 -170 Q150 -300 118 -430 Q60 -400 0 -398 Q-60 -400 "
+            "-118 -430 Z", vest, cv.ink, INK_W)  # fmt: skip
+    for y in (-330, -250):
+        cv.path(g, f"M-134 {y} Q0 {y + 20} 134 {y}", stroke=cv.ink, sw=24)
+        cv.path(g, f"M-134 {y} Q0 {y + 20} 134 {y}", stroke=band, sw=15)
+    cv.path(g, "M40 -462 Q150 -420 150 -295 Q150 -170 40 -126 Q112 -295 40 -462 Z", cv.ink, opacity=SHADE)
+    cv.path(g, "M-122 -420 Q-150 -300 -128 -190", stroke=RIM, sw=5, opacity=0.6)
+    for side in (-1, 1):
+        cv.ellipse(g, 176 * side - 36, -300, 72, 66, mitt, cv.ink, INK_W)
+        cv.ellipse(g, 176 * side - 20, -290, 22, 16, "#ffffff", opacity=0.3)
+    head = cv.group(g, cv.uid("g"))
+    for side in (-1, 1):
+        cv.ellipse(head, 98 * side - 16, -520, 32, 44, skin, cv.ink, 5)
+    cv.ellipse(head, -100, -600, 200, 196, skin, cv.ink, INK_W)
+    _head_light(cv, head, 0, -502, 100, 98)
+    for side in (-1, 1):
+        cv.ellipse(head, 52 * side - 20, -462, 40, 22, "#e0707a", opacity=0.22)
+    _eyes(cv, head, 0, -500, 34, end)
+    cv.path(head, "M-4 -488 Q-14 -466 4 -462", stroke=cv.ink, sw=4)
+    _mouth(cv, head, 0, -436, 52, talk)
+    cv.path(head, "M-112 -540 Q-112 -652 0 -654 Q112 -652 112 -540 Z", stripe, cv.ink, INK_W)  # the hard hat
+    cv.path(head, "M0 -652 L0 -546", stroke="#ffffff", sw=14, opacity=0.25)
+    cv.path(head, "M30 -648 Q112 -640 112 -540 L30 -540 Z", cv.ink, opacity=SHADE)
+    cv.path(head, "M-100 -560 Q-100 -626 -40 -644", stroke=RIM, sw=5, opacity=0.6)
+    cv.rect(head, -130, -552, 260, 22, stripe, cv.ink, 4, radius=10)
+    cv.ellipse(head, 82, -506, 36, 52, boot, cv.ink, 4)  # the headset
+    cv.path(head, "M104 -476 Q96 -426 52 -426", stroke=cv.ink, sw=6)
+    _glow(cv, cv.ellipse(head, 32, -436, 20, 20, "#5fd4ff", cv.ink, 3), talk, rest=0.2)
     return g
 
 
@@ -552,19 +705,30 @@ _RELAX = (
 )
 
 Drawer = Callable[..., Any]
-DRAWERS: dict[str, Drawer] = {
+GARY = "#f08a24"  # Gary is Seven in orange: his shoulder stripe (design 1), his hard hat (design 2)
+DRAWERS: dict[str, Drawer] = {  # the cast as new reels draw it (design 2)
     "gloom": gloom,
-    "seven": enforcer,
-    "gary": lambda cv, parent, **kw: enforcer(cv, parent, stripe="#f08a24", **kw),
+    "seven": trooper,
+    "gary": lambda cv, parent, **kw: trooper(cv, parent, stripe=GARY, **kw),
     "juno": juno,
     "rook": rook,
     "mabel": mabel,
     "droid": droid,
 }
+CLASSIC_DRAWERS: dict[str, Drawer] = {  # the cast as first drawn (design 1), kept for the reels drawn with it
+    **DRAWERS,
+    "gloom": gloom_classic,
+    "seven": enforcer_classic,
+    "gary": lambda cv, parent, **kw: enforcer_classic(cv, parent, stripe=GARY, **kw),
+}
+BY_DESIGN: dict[int, dict[str, Drawer]] = {1: CLASSIC_DRAWERS, 2: DRAWERS}
+MASKED_BY_DESIGN: dict[int, tuple[str, ...]] = {1: ("gloom", "seven", "gary", "droid"), 2: MASKED}
 
 
-def draw(cv: Canvas, parent, who: str, **kw):
-    """Draw cast member ``who`` (one of :data:`CAST`)."""
-    if who not in DRAWERS:
+def draw(cv: Canvas, parent, who: str, *, design: int = DESIGN, **kw):
+    """Draw cast member ``who`` (one of :data:`CAST`) as cast design ``design`` draws it (:data:`DESIGNS`)."""
+    if design not in BY_DESIGN:
+        raise SagaError(f"cast design {design!r} is not one of {DESIGNS}")
+    if who not in CAST:
         raise SagaError(f"{who!r} is not in the Saga cast {CAST}")
-    return DRAWERS[who](cv, parent, **kw)
+    return BY_DESIGN[design][who](cv, parent, **kw)

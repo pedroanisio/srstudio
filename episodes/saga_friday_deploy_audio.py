@@ -89,6 +89,7 @@ REEL = Reel(
     takes=TAKES,
     hook="When is the worst time to change anything on a starship?",
     stages=stages,
+    design=1,  # drawn with the first cast design; published or delivered so, kept as drawn (ADR 0025)
 )
 
 if __name__ == "__main__":

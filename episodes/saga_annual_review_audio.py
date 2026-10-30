@@ -76,6 +76,7 @@ REEL = Reel(
     takes=TAKES,
     hook="Why do the Directorate's enforcers never hit anything?",
     stages=stages,
+    design=1,  # drawn with the first cast design; published or delivered so, kept as drawn (ADR 0025)
 )
 
 if __name__ == "__main__":

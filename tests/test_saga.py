@@ -58,7 +58,16 @@ def test_saga_is_a_registered_portrait_sequence_style_with_its_own_palette_and_m
 def test_every_saga_part_is_registered_under_the_style():
     entries = {e.name: e for e in registry.entries() if e.style == "saga"}
     want = {
-        "character": {"saga-gloom", "saga-enforcer", "saga-droid", "saga-juno", "saga-rook", "saga-mabel"},
+        "character": {
+            "saga-gloom",
+            "saga-enforcer",
+            "saga-gloom-2",
+            "saga-enforcer-2",
+            "saga-droid",
+            "saga-juno",
+            "saga-rook",
+            "saga-mabel",
+        },
         "location": {
             "saga-space",
             "saga-bridge",
@@ -95,14 +104,17 @@ def test_talk_states_out_of_order_or_unknown_are_refused(bad):
 
 
 # -- the cast ---------------------------------------------------------------------------------------------------------
-@pytest.mark.parametrize("who", saga.CAST)
-def test_every_cast_member_draws_and_keys_its_speech(who):
+EVERYONE = [(design, who) for design in saga.DESIGNS for who in saga.CAST]
+
+
+@pytest.mark.parametrize(("design", "who"), EVERYONE)
+def test_every_cast_member_draws_and_keys_its_speech_in_every_design(design, who):
     cv = canvas()
     states = [(0.0, "closed"), (0.2, "open"), (0.5, "round"), (0.8, "closed")]
-    saga.draw(cv, cv.comp, who, at=(540, 1500), talk=states, end=D)
+    saga.draw(cv, cv.comp, who, at=(540, 1500), talk=states, end=D, design=design)
     animated = {a.get("property") for a in tree(cv).iter("animate")}
     assert {"y", "opacity"} <= animated  # the breath, and the mouth or the visor
-    if who not in saga.MASKED:
+    if who not in saga.MASKED_BY_DESIGN[design]:
         assert "scaleY" in animated  # blinks
 
 
@@ -119,10 +131,10 @@ def ancestry(root: ET.Element, node: ET.Element) -> list[ET.Element]:
     return chain
 
 
-@pytest.mark.parametrize("who", saga.CAST)
-def test_every_cast_member_is_lit_with_form_shading_and_a_lift_off_the_set(who):
+@pytest.mark.parametrize(("design", "who"), EVERYONE)
+def test_every_cast_member_is_lit_with_form_shading_and_a_lift_off_the_set(design, who):
     cv = canvas()
-    saga.draw(cv, cv.comp, who, at=(540, 1500), end=D)
+    saga.draw(cv, cv.comp, who, at=(540, 1500), end=D, design=design)
     root = tree(cv)
     (figure,) = [g for g in root.find(".//composition") if g.tag == "group"]
     assert {"inner-shadow", "drop-shadow"} <= effect_types(root, figure)
@@ -137,10 +149,10 @@ def pivots_stay_put(cv: Canvas) -> None:
             ), g.attrib
 
 
-@pytest.mark.parametrize("who", saga.CAST)
-def test_every_pivoted_group_stays_where_it_was_drawn_so_eyes_blink_on_the_face_not_at_the_feet(who):
+@pytest.mark.parametrize(("design", "who"), EVERYONE)
+def test_every_pivoted_group_stays_where_it_was_drawn_so_eyes_blink_on_the_face_not_at_the_feet(design, who):
     cv = canvas()
-    saga.draw(cv, cv.comp, who, at=(540, 1280), end=D)
+    saga.draw(cv, cv.comp, who, at=(540, 1280), end=D, design=design)
     pivots_stay_put(cv)
 
 
@@ -166,13 +178,70 @@ def test_an_unmasked_mouth_shows_exactly_one_pose_at_a_time():
 
 def test_a_visor_lights_while_its_character_speaks():
     cv = canvas()
-    saga.gloom(cv, cv.comp, at=(540, 1500), talk=[(0.0, "closed"), (0.3, "open"), (0.9, "closed")], end=D)
+    saga.gloom_classic(cv, cv.comp, at=(540, 1500), talk=[(0.0, "closed"), (0.3, "open"), (0.9, "closed")], end=D)
     (visor,) = [a for a in tree(cv).iter("animate") if a.get("property") == "opacity"]
     assert [(float(k.get("time")), float(k.get("value"))) for k in visor.iter("key")] == [
         (0.0, 0.35),
         (0.3, 1.0),
         (0.9, 0.35),
     ]
+
+
+def drawn(who: str, **kw) -> bytes:
+    cv = canvas()
+    saga.draw(cv, cv.comp, who, at=(540, 1270), end=D, **kw)
+    return cv.scene.to_bytes()
+
+
+def fills(xml: bytes) -> set[str]:
+    return {e.get("fill", "").lower() for e in ET.fromstring(xml).iter()} - {""}
+
+
+def test_a_reel_draws_the_series_own_cast_by_default_and_design_1_draws_the_cast_as_first_drawn():
+    assert saga.DESIGNS == (1, 2) and saga.DESIGN == 2
+    for who in saga.CAST:
+        assert drawn(who) == drawn(who, design=2)
+    changed = [who for who in saga.CAST if drawn(who, design=1) != drawn(who, design=2)]
+    assert changed == ["gloom", "seven", "gary"]  # the others are drawn alike in both designs
+    cv = canvas()
+    saga.gloom_classic(cv, cv.comp, at=(540, 1270), end=D)
+    assert drawn("gloom", design=1) == cv.scene.to_bytes()
+
+
+def test_an_unknown_cast_design_is_refused():
+    with pytest.raises(SagaError, match="cast design 3"):
+        drawn("gloom", design=3)
+
+
+def test_the_series_own_gloom_and_enforcers_speak_with_a_mouth_under_no_visor_and_wear_no_white_armour():
+    visor, armour, black = "#ff3b30", "#eef0f2", "#15161c"  # design 1's visor glow, white plate and black armour
+    states = [(0.0, "closed"), (0.2, "open"), (0.5, "teeth"), (0.8, "closed")]
+    for who in ("gloom", "seven", "gary"):
+        assert who not in saga.MASKED
+        xml = drawn(who, talk=states)
+        assert not {visor, armour, black} & fills(xml), who
+        root = ET.fromstring(xml)
+        tracks = [a for a in root.iter("animate") if a.get("property") == "opacity"]
+        assert len(tracks) >= 3, who  # closed, open and teeth mouths (and an enforcer's mic light)
+    assert {visor, black} <= fills(drawn("gloom", design=1))
+    assert armour in fills(drawn("seven", design=1))
+
+
+def test_seven_and_gary_differ_only_by_their_colour_in_both_designs():
+    for design, hat in ((1, "#2fb5a9"), (2, "#2fb5a9")):
+        seven, gary = fills(drawn("seven", design=design)), fills(drawn("gary", design=design))
+        assert seven - gary == {hat} and gary - seven == {saga.GARY}
+
+
+@needs_font
+def test_a_hologram_draws_the_called_face_in_the_cast_design_it_is_given():
+    def holo(**kw) -> bytes:
+        cv = canvas()
+        sets.holo(cv, cv.comp, [Panel(0, "CALL", face="gloom")], end=D, font=font(), **kw)
+        return cv.scene.to_bytes()
+
+    assert holo() == holo(design=2) != holo(design=1)
+    assert "#ff3b30" in fills(holo(design=1)) and "#ff3b30" not in fills(holo())
 
 
 def test_a_cast_member_needs_a_size_a_length_and_a_named_look():
@@ -781,3 +850,23 @@ def test_a_character_is_placed_at_a_numeric_scale_for_a_numeric_shot(scale, end)
     cv = canvas()
     with pytest.raises(SagaError, match="scale must be > 0|more than 0 s"):
         saga.juno(cv, cv.comp, at=(540, 1500), scale=scale, end=end)
+
+
+@needs_font
+def test_a_reel_draws_its_cast_and_its_called_faces_in_the_design_it_pins_and_refuses_an_unknown_one(tmp_path):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path)
+    seen = (Place("juno", 300), Place("seven", 760))
+    called = {**GOOD, "02": Stage("bridge", cast=seen, panels=(Panel(0, "CALL", face="gloom"),))}
+
+    def built(**kw) -> set[str]:
+        ep = episode(tmp_path)
+        reel.build(ep, called, hook="Why is there a hole?", font=font(), **kw)
+        return fills(ep.cv.scene.to_bytes())
+
+    visor, armour = "#ff3b30", "#eef0f2"
+    assert {visor, armour} <= built(design=1)
+    assert not {visor, armour} & built()
+    with pytest.raises(SagaError, match="cast design 0"):
+        built(design=0)

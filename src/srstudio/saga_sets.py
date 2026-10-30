@@ -466,11 +466,13 @@ def holo(
     end: float,
     font: bytes,
     box: tuple[float, float, float, float] | None = None,
+    design: int = saga.DESIGN,
 ) -> list:
     """Each panel from its start to the next one's (the last to ``end``) at the top of ``box`` (x, y, w and the most
     height it may take; :data:`HOLO_BOX` by default), as tall as its wrapped title (50 px) and body (40 px), measured
-    with ``font``; a face, when called, sits in a frame on the left. The first panel pops in about its centre, later
-    ones flicker on; a ``fade`` panel fades in by opacity instead. Panels start in order inside the shot."""
+    with ``font``; a face, when called, sits in a frame on the left, drawn in cast design ``design``. The first panel
+    pops in about its centre, later ones flicker on; a ``fade`` panel fades in by opacity instead. Panels start in
+    order inside the shot."""
     _check_end(end)
     if not panels:
         raise SagaError("a hologram needs at least one panel")
@@ -526,7 +528,7 @@ def holo(
             fh = h - 2 * HOLO_PAD
             cv.rect(frame, x + 36, y + HOLO_PAD, FACE_W, fh, "#081820", tone, 4, radius=14)
             saga.draw(cv, frame, p.face, at=(x + 36 + FACE_W / 2, y + HOLO_PAD + fh - 8), scale=(fh - 24) / 740,
-                      end=end)  # fmt: skip
+                      end=end, design=design)  # fmt: skip
         _text(cv, pop, "\n".join(title), tx, y + HOLO_PAD, tw, 58 * len(title), 50, tone, "start")
         if body:
             _text(cv, pop, "\n".join(body), tx, y + HOLO_PAD + 58 * len(title) + 8, tw, 48 * len(body), 40, "#fff4dc",

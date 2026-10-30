@@ -94,6 +94,7 @@ REEL = Reel(
     takes=TAKES,
     hook="How hard is it to get hired by the Directorate?",
     stages=stages,
+    design=1,  # drawn with the first cast design; published or delivered so, kept as drawn (ADR 0025)
 )
 
 if __name__ == "__main__":

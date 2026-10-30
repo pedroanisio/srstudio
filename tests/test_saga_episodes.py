@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import releases, saga_reel
+from srstudio import releases, saga, saga_reel
 from srstudio.saga import SagaError
 from srstudio.timeline import Take
 
@@ -59,6 +59,16 @@ def test_the_reels_are_numbered_in_order_with_distinct_saga_slugs():
     assert len({r.slug for r in reels}) == len(REELS) and all(r.slug.startswith("saga-") for r in reels)
     for n in REELS:
         assert (EPISODES / f"saga_{n}.py").read_text().count(f"from saga_{n}_audio import REEL") == 1
+
+
+FIRST_DESIGN = {f"S{n}" for n in range(1, 19)}  # drawn, and published or delivered, with the first cast design
+
+
+def test_only_the_reels_drawn_with_the_first_cast_pin_it_and_every_later_reel_draws_the_series_own(reel):
+    if reel.number in FIRST_DESIGN:
+        assert reel.design == 1 and reel.staging() == {"design": 1}
+    else:
+        assert reel.design == saga.DESIGN == 2, f"{reel.slug}: a new reel draws the current cast; do not pin design 1"
 
 
 def test_the_script_is_well_formed_before_anything_is_requested(reel):

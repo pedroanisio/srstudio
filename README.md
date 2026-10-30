@@ -1422,10 +1422,18 @@ The galaxy's grandeur is the setup; the turn is that it runs on the systems the 
 deadpan field guide, the *Handbook*, gets the last word ([docs/decisions/0025-saga-style.md](docs/decisions/0025-saga-style.md)).
 Everything is original: no franchise names, characters, crawl or theme.
 
-- **Cast**, [src/srstudio/saga.py](src/srstudio/saga.py): Lord Gloom (a visor whose red glow is the mouth),
-  Enforcer Seven and Gary (helmets with a mic light), Juno, Rook and Elder Mabel (visemes and blinks; Mabel has
-  glasses and a cane), and a bar droid whose smile bar glows. Each figure is lit from the upper left: an inner
-  shadow and a soft drop shadow (`saga.FORM`, `saga.LIFT`), drawn shadow sides, a gold rim and a contact shadow.
+- **Cast**, [src/srstudio/saga.py](src/srstudio/saga.py): Lord Gloom, Grand Comptroller of the Directorate (a
+  towering bureaucrat-tyrant: a floor-length robe, a wide ochre shoulder yoke, a brass chain of office and a
+  headdress of three stepped tiers over a jowly, heavy-lidded, sulking face), Enforcers Seven and Gary (short, round
+  rank-and-file in padded work suits, hi-vis vests and hard hats, teal for Seven and orange for Gary, with a headset
+  mic light), Juno, Rook and Elder Mabel (Mabel has glasses and a cane), and a bar droid whose smile bar glows.
+  Everyone but the droid speaks with visemes and blinks. Each figure is lit from the upper left: an inner shadow and
+  a soft drop shadow (`saga.FORM`, `saga.LIFT`), drawn shadow sides, a gold rim and a contact shadow.
+- **Cast designs**: that Gloom and those enforcers are cast design 2, the default (`saga.DESIGN`). Design 1, the cast
+  as first drawn (a dark lord in a visor helmet and cape, enforcers in white armour with a black visor), echoed a
+  famous franchise too closely and is retired: only S1 to S18, drawn and delivered with it, pin `design=1` on
+  their `Reel`, and `tests/test_saga_episodes.py` refuses the pin on any later reel. Draw the current cast; never
+  copy the pin into a new episode.
 - **Sets and props**, [src/srstudio/saga_sets.py](src/srstudio/saga_sets.py): space, bridge, cantina (with its bar
   as a front layer), desert, cockpit (with its console) and trash compactor; the hologram `holo`, the battle cube,
   a freighter, a fighter, a pebble; the hook card and the Handbook `entry`. Each location blurs its far plane by

@@ -141,10 +141,19 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
 
 
 def build(
-    ep: Any, stages: Mapping[str, Stage], *, hook: str, font: bytes, look: native.CaptionLook = native.CAPTION_LOOK
+    ep: Any,
+    stages: Mapping[str, Stage],
+    *,
+    hook: str,
+    font: bytes,
+    look: native.CaptionLook = native.CAPTION_LOOK,
+    design: int = saga.DESIGN,
 ) -> dict[str, Any]:
-    """Draw every take of ``ep`` as staged, the hook over the first take, the captions and the mix; returns the
-    hook and caption nodes (``ep.hide_on_cover`` takes them) and the mix."""
+    """Draw every take of ``ep`` as staged, the cast in cast design ``design`` (:data:`srstudio.saga.DESIGNS`), the
+    hook over the first take, the captions and the mix; returns the hook and caption nodes (``ep.hide_on_cover``
+    takes them) and the mix."""
+    if design not in saga.DESIGNS:
+        raise SagaError(f"cast design {design!r} is not one of {saga.DESIGNS}")
     takes = ep.takes
     check(takes, stages)
     cv = ep.cv
@@ -176,7 +185,8 @@ def build(
                 if p.behind == behind:
                     said = speech if take.actor == p.who else ()
                     y = p.y if p.y is not None else saga_sets.BEHIND[s.set] if p.behind else saga_sets.FLOOR
-                    saga.draw(cv, into, p.who, at=(p.x, y), scale=p.scale, flip=p.flip, talk=said, end=end)
+                    saga.draw(cv, into, p.who, at=(p.x, y), scale=p.scale, flip=p.flip, talk=said, end=end,
+                              design=design)  # fmt: skip
 
         cast(True)
         if s.set in saga_sets.FRONTS:
@@ -186,7 +196,7 @@ def build(
             saga_sets.PROPS[prop.name](cv, shaken, at=(prop.x, prop.y), end=end, **prop.options)
         staging.blackout(cv, shaken, s.dark)
         if s.panels:  # over the camera, not in it: a zoom never pushes the hologram's text out of the safe area
-            saga_sets.holo(cv, g, s.panels, end=end, font=font, box=s.box)
+            saga_sets.holo(cv, g, s.panels, end=end, font=font, box=s.box, design=design)
         if take.actor == NARRATOR and take not in hooked and not s.panels:  # the badge sits where a hologram does
             saga.handbook(cv, g, at=BADGE, scale=0.5, talk=speech, end=end)
         if s.still:

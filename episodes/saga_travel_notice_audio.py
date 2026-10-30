@@ -95,6 +95,7 @@ REEL = Reel(
     takes=TAKES,
     hook="Can the most feared man in the galaxy buy a coffee?",
     stages=stages,
+    design=1,  # drawn with the first cast design; published or delivered so, kept as drawn (ADR 0025)
 )
 
 if __name__ == "__main__":

@@ -151,3 +151,59 @@ exactly one, spanning the band below the floor line.
   location, and a box over the floor hides the cast's feet and contact shadows.
 - *Restage the desert scenes elsewhere.* The premise needs Elder Mabel at home; the location is the joke's
   setting, not a choice to make for the captions.
+
+## Amendment, 2026-10-30: the series' own Gloom and enforcers (cast design 2)
+
+**Context.** Every reel also goes to YouTube. The operator judged that Lord Gloom (a full-face black helmet with a
+red visor slit, a cape and a lit chest control box) and the enforcers (white plate armour with a black visor band)
+read as echoes of a famous franchise's villain and soldiers, which the originality constraint above excludes. The
+reels already made keep their drawing: S1 to S12 are published and frozen (ADR 0040), and S13 to S18 ship as
+delivered.
+
+**Decision.**
+
+- *Two new designs, kept in their roles.* Lord Gloom becomes the Directorate's Grand Comptroller, a towering
+  bureaucrat-tyrant: a floor-length robe in dark aubergine, a wide flat ochre shoulder yoke studded in brass, a
+  mayor's brass chain of office with the Directorate seal, and a headdress of three stepped tiers, like a stack of
+  in-trays, over a jowly face with heavy lids, a fixed scowl and a mouth that turns down when it is shut. He speaks
+  with a mouth and blinks, so the gags where he is mothered or humbled play on his face. The enforcers become
+  short, round rank-and-file workers: a padded olive work suit, a lime hi-vis vest with reflective bands, stubby
+  boots, work mitts, a round hard hat in their colour (Seven teal, Gary orange) and a headset whose mic light lights
+  while they speak, over a face that speaks and blinks. The droid, Juno, Rook and Mabel are unchanged.
+- *A versioned cast, the new one the default.* `saga.DESIGNS = (1, 2)` and `saga.DESIGN = 2`. `saga.draw` takes
+  `design=` (design 1 maps Gloom, Seven and Gary to `gloom_classic` and `enforcer_classic`, the first drawings
+  byte for byte); `saga_sets.holo` draws a called face in the design it is given; `saga_reel.build` takes `design=`
+  and refuses an unknown one. The episode harness passes a reel's own builder options through `Reel.staging()`
+  (`srstudio.series`, empty by default), and the Saga `Reel` adds `design`, default `saga.DESIGN`.
+- *The made reels pin the first design.* S1 to S18 set `design=1` on their `Reel`; a test refuses that pin on any
+  later reel, so a writer who copies an old episode gets the new cast. The registry keeps `saga-gloom` and
+  `saga-enforcer` on the first drawings, which the published reels use and the catalog shows, and registers the new
+  ones as `saga-gloom-2` and `saga-enforcer-2`.
+- *Proof.* Every published Saga reel and S13 to S18 rebuild byte-identical from their generated projects, inside
+  the library-wide rebuild of every episode project.
+- *The look is the operator's call.* A side-by-side sheet, old above new at the same scale on the bridge and in the
+  cantina, goes to the operator; no reel uses design 2 until it is approved.
+
+**The resemblance, checked.** Against the famous villain: no helmet, mask, visor, cape, chest box, black armour or
+breathing; Gloom shows a face and stands in a robe and a stepped hat. Against the famous soldiers: no white plate,
+no black visor; the enforcers are short, round, olive and lime and wear hard hats. Against the genre's other
+well-known villains: no high fan collar, bald pate or goatee (the pulp emperor), no hood (the robed emperor), no
+horns, spikes or skull. What remains generic is the trope itself, a pompous overlord in ceremonial dress and his
+uniformed staff; the stepped headdress and chain of office are the closest thing to a borrowed signal, and they come
+from civic regalia, not from a franchise. The round, cheerful workers in a single uniform recall the genre of
+cartoon henchmen; they wear human faces, hard hats and hi-vis, not goggles or overalls on a yellow body.
+
+**Rejected alternatives.**
+
+- *Redraw in place, with no pin.* Every published and delivered Saga reel would rebuild differently, breaking the
+  frozen releases (ADR 0040) and the rebuild proof.
+- *New cast names (say `comptroller`) for the new designs, with `gloom` left as it was.* The default would stay the
+  retired design: any writer who reaches for `gloom`, or copies an old episode, would draw the franchise echo again.
+- *Pin by slug or number inside the library (a list of the reels that keep design 1).* It would tie the library to
+  episode files and hide the choice from the episode that makes it; the pin belongs on the `Reel`, where a test can
+  hold it to the reels that were drawn with design 1.
+- *Rename the registry entries (`saga-gloom` to the new drawing).* The catalog's measured usage and its gallery
+  item name `saga-gloom` for the published reels, which draw the first design; renaming would make the catalog show
+  the old drawing under the new design's name until it is measured again.
+- *A design option on every `Place`.* Eighteen episode files would repeat it on every placed figure, and a panel
+  face would still need its own; the cast design is one choice per reel.

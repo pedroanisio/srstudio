@@ -20,8 +20,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from srstudio import SAGA, saga_reel, series, takes
+from srstudio import SAGA, saga, saga_reel, series, takes
 from srstudio.compose import Chunk, Plan
 from srstudio.native import CaptionLook
 from srstudio.series import effect, line, record, word_at
@@ -103,9 +104,15 @@ SERIES = series.Series(
 
 @dataclass(frozen=True)
 class Reel(series.Reel):
-    """One Saga episode: its slug and number, the takes, the hook, and its staging from the recorded takes."""
+    """One Saga episode: its slug and number, the takes, the hook, its staging from the recorded takes and the cast
+    design it draws (:data:`srstudio.saga.DESIGN` unless pinned: the reels S1 to S18 pin ``design=1``, the cast as
+    they were drawn; ADR 0025, amendment of 2026-10-30)."""
 
+    design: int = saga.DESIGN
     series = SERIES
+
+    def staging(self) -> dict[str, Any]:
+        return {"design": self.design}
 
 
 def build(reel: Reel, file: str) -> Path:
