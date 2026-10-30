@@ -111,6 +111,32 @@ def test_a_toast_slides_in_shakes_with_the_buzz_and_holds_to_its_end():
             toon_props.toasts(canvas(), cv.comp, [bad])
 
 
+def test_a_gated_toast_letters_its_card_only_once_the_card_has_landed_on_frame():
+    items = [toon_props.Toast(1.0, 3.0, "Rex", "THE REPORT. 9 AM."), toon_props.Toast(4.0, 6.0, "Fern", "??")]
+    cv = canvas()
+    toon_props.toasts(cv, cv.comp, items, gated=True)
+    cards = [g for g in tree(cv).find("composition").findall("group") if g.get("start")]
+    for toast, card in zip(items, cards, strict=True):
+        (lettering,) = [g for g in card.iter("group") if g.findall("layer")]
+        landed = toast.start + toon_props.TOAST_SLIDE
+        assert (float(lettering.get("start")), float(lettering.get("end"))) == (landed, toast.end)
+        assert keys_of(next(a for a in card.iter("animate") if a.get("property") == "x"))[1] == (landed, 0)
+    assert toon_props.TOAST_X + toon_props.TOAST_W <= toon.REF_W  # landed, the card is wholly on frame
+    plain, gated = canvas(), canvas()
+    toon_props.toasts(plain, plain.comp, items)
+    toon_props.toasts(gated, gated.comp, items, gated=False)
+    assert gated.scene.to_bytes() == plain.scene.to_bytes()  # ungated by default: published toasts are unchanged
+
+
+def test_a_gated_toast_lasts_long_enough_for_its_lettering_to_be_read():
+    least = toon_props.TOAST_SLIDE + toon_props.TOAST_READ
+    cv = canvas()
+    toon_props.toasts(cv, cv.comp, [toon_props.Toast(1.0, 1.0 + least, "Rex", "??")], gated=True)
+    with pytest.raises(toon.ToonDataError, match=f"toast 0: gated, it lasts at least {least} s"):
+        toon_props.toasts(cv, cv.comp, [toon_props.Toast(1.0, 1.0 + least - 0.01, "Rex", "??")], gated=True)
+    toon_props.toasts(cv, cv.comp, [toon_props.Toast(1.0, 1.5, "Rex", "??")])  # ungated, as before
+
+
 def test_board_text_is_marker_blue_inside_the_board_and_may_be_timed():
     cv = canvas()
     toon_props.board_text(cv, cv.comp, "LOGO v1", start=1.0, end=3.0)
