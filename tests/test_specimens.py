@@ -166,3 +166,53 @@ def test_every_character_has_a_specimen_and_one_family_each():
     names = {e.name for e in registry.entries("character")}
     assert names == set(specimens.SPECIMENS)
     assert len(set(specimens.SPECIMENS.values())) <= 13
+
+
+def _scene(body: str, assets: str = "") -> bytes:
+    return f'<scene><assets>{assets}</assets><composition id="c">{body}</composition></scene>'.encode()
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        ('<linearGradient id="g" units="px"/>', '<linearGradient id="g" units="pct"/>'),
+        ('<group x="1" width="10"/>', '<group x="1" width="20"/>'),
+        ('<group x="1" height="10"/>', '<group x="1" height="20"/>'),
+        ('<group x="1" blend="multiply"/>', '<group x="1" blend="screen"/>'),
+        ('<group x="1" isolate="true"/>', '<group x="1" isolate="false"/>'),
+        ('<group x="1" motionBlur="true"/>', '<group x="1" motionBlur="false"/>'),
+        ('<group x="1" shutterAngle="90"/>', '<group x="1" shutterAngle="180"/>'),
+        ('<shape shape="path" dash="4"/>', '<shape shape="path" dash="8"/>'),
+        ('<effect type="a" threshold="1"/>', '<effect type="a" threshold="2"/>'),
+        ('<effect type="a" amount="1"/>', '<effect type="a" amount="2"/>'),
+        ('<effect type="a" seed="1"/>', '<effect type="a" seed="2"/>'),
+        ('<effect type="a" size="1"/>', '<effect type="a" size="2"/>'),
+        ('<effect type="a" softness="1"/>', '<effect type="a" softness="2"/>'),
+        ('<mask type="alpha" x="1"/>', '<mask type="alpha" x="2"/>'),
+        ('<mask type="alpha" y="1" width="2" height="3"/>', '<mask type="alpha" y="1" width="2" height="4"/>'),
+        ('<mask type="alpha" path="M0 0"/>', '<mask type="alpha" path="M0 1"/>'),
+        ('<mask type="alpha" invert="true"/>', '<mask type="alpha" invert="false"/>'),
+        ('<textAnimator preset="a"/>', '<textAnimator preset="b"/>'),
+        ('<textAnimator preset="a" presetStart="1"/>', '<textAnimator preset="a" presetStart="2"/>'),
+        ('<textAnimator preset="a" presetDuration="1"/>', '<textAnimator preset="a" presetDuration="2"/>'),
+        ('<expression property="x">sin(time)</expression>', '<expression property="y">sin(time)</expression>'),
+        ('<expression property="x">sin(time)</expression>', '<expression property="x">cos(time)</expression>'),
+        ('<text id="t" weight="400"/>', '<text id="t" weight="700"/>'),
+        ('<text id="t" maxLines="1"/>', '<text id="t" maxLines="2"/>'),
+        ('<text id="t" overflow="clip"/>', '<text id="t" overflow="ellipsis"/>'),
+        ('<text id="t" strokeColor="#000"/>', '<text id="t" strokeColor="#111"/>'),
+        ('<text id="t" strokePosition="in"/>', '<text id="t" strokePosition="out"/>'),
+        ('<text id="t" strokeWidth="1"/>', '<text id="t" strokeWidth="2"/>'),
+    ],
+)
+def test_what_the_other_kinds_of_part_draw_is_in_the_digest(a, b):
+    assert specimens.fingerprint(_scene(a)) != specimens.fingerprint(_scene(b))
+
+
+def test_the_letters_of_a_text_asset_are_in_the_digest_and_its_font_is_not():
+    def scene(words, font):
+        text = f'<text id="t" text="{words}" fontAsset="f"/>'
+        return _scene('<layer asset="t" x="1"/>', f'<font id="f" src="{font}" sha256="ab"/>{text}')
+
+    assert specimens.fingerprint(scene("Hello", "a.ttf")) != specimens.fingerprint(scene("Hullo", "a.ttf"))
+    assert specimens.fingerprint(scene("Hello", "a.ttf")) == specimens.fingerprint(scene("Hello", "b.ttf"))
