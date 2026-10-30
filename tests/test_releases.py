@@ -287,3 +287,15 @@ def test_a_record_that_cannot_be_read_is_reported_not_passed(tmp_path):
     (root / "a-b" / parts.RECORD).write_text("not json")
     drift = releases.unpinned({"a-b": Release("a-b", POST, parts={})}, root)
     assert len(drift) == 1 and "parts.json" in drift[0].reason
+
+
+def test_a_published_project_with_no_record_passes_while_it_is_not_being_delivered(tmp_path):
+    assert releases.unpinned({"a-b": Release("a-b", POST, parts={})}, built(tmp_path, None)) == []
+
+
+def test_a_release_being_delivered_needs_the_record_of_its_build(tmp_path):
+    pinned = Release("a-b", POST, video="Other_Name", parts={"toon-fox": 2})
+    drift = releases.unpinned({"a-b": pinned}, built(tmp_path, None), delivering={"Other_Name"})
+    assert [d.name for d in drift] == ["Other_Name"] and "srstudio build" in drift[0].reason
+    parts.write_record(tmp_path / "a-b", {"toon-fox": 2})
+    assert releases.unpinned({"a-b": pinned}, tmp_path, delivering={"Other_Name"}) == []

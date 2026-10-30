@@ -9,7 +9,7 @@ import types
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, blob, locations, registry
+from srstudio import Episode, EpisodeSpec, blob, locations, parts, registry, specimens
 from srstudio import usage as U
 from srstudio.releases import Release
 from srstudio.social import InstagramPost
@@ -276,3 +276,30 @@ def test_a_release_built_by_another_script_is_matched_by_its_builder():
     assert U.Report({"printer-recreation": ("toon-bear",)}).pin_drift({"scene": release}) == [
         "printer-recreation: draws toon-bear version 1 but pins nothing for it"
     ]
+
+
+def test_a_recorded_build_leaves_what_it_drew(project, tmp_path):
+    ep = episode(project)
+    with U.recorded(tmp_path):
+        locations.reception(ep.cv, ep.comp)
+    assert {"reception": 1, "reception-counter": 1, "slat-wall": 1}.items() <= parts.read_record(tmp_path).items()
+
+
+def test_a_failed_build_leaves_no_record_of_an_older_one(tmp_path):
+    parts.write_record(tmp_path, {"toon-fox": 1})
+    with pytest.raises(RuntimeError), U.recorded(tmp_path):
+        raise RuntimeError("the build stopped")
+    assert parts.read_record(tmp_path) is None
+
+
+@pytest.mark.parametrize(("code", "recorded"), [(0, True), (None, True), (3, False)])
+def test_a_script_that_exits_is_recorded_only_if_it_succeeded(tmp_path, code, recorded):
+    with pytest.raises(SystemExit), U.recorded(tmp_path):
+        sys.exit(code)
+    assert (parts.read_record(tmp_path) is not None) == recorded
+
+
+def test_a_character_moving_its_head_counts_as_the_part_its_rig_belongs_to():
+    with U.trace() as used:
+        specimens.rig_digest("toon-fox", 2)
+    assert "toon-fox@2" in used and "toon-fox" not in used

@@ -3,7 +3,9 @@
 Hand-written declarations of the episodes that use a part drift as episodes are added (ADR 0017, ADR 0032).
 :func:`trace` records instead every registered builder that runs: it matches the code objects of each builder (a
 function, or the methods a class part defines itself) under a profiler hook, so a call counts however it is
-reached (a module attribute, an imported name, the registry, or another part drawing it). :func:`measure` runs each
+reached (a module attribute, an imported name, the registry, or another part drawing it). A character moving its
+head is drawn by :func:`srstudio.toon_head.figure` from its rig, so that call counts for the part the rig belongs to.
+:func:`measure` runs each
 episode script on a copy of its project in a fresh interpreter (:func:`probe`) and gathers a :class:`Report`: the
 parts each episode used, and with the registry, the parts no episode uses. ``srstudio usage`` writes it as JSON.
 """
@@ -25,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import CodeType
 
-from . import parts, registry, releases
+from . import parts, registry, releases, toon_head, toon_rigs
 from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
@@ -72,12 +74,15 @@ def _called(frame, parts: Sequence[tuple[str, tuple[object, ...]]]) -> str | Non
 def trace() -> Iterator[set[str]]:
     """The names of the registered parts called inside the block (the set fills as they run)."""
     codes, used = _codes(), set()
+    rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
     previous = sys.getprofile()
 
     def hook(frame, event, arg):
         if event == "call":
             parts = codes.get(frame.f_code)
             name = _called(frame, parts) if parts else None
+            if frame.f_code is toon_head.figure.__code__:
+                name = rigged.get(id(frame.f_locals["rig"]))
             if name is not None:
                 used.add(name)
 
@@ -86,6 +91,22 @@ def trace() -> Iterator[set[str]]:
         yield used
     finally:
         sys.setprofile(previous)
+
+
+@contextmanager
+def recorded(project: Path) -> Iterator[None]:
+    """Trace the build in the block and leave what it drew in ``project``, for the delivery gate
+    (:func:`srstudio.parts.write_record`). A build that fails leaves no record: an older one would no longer say what
+    the project holds."""
+    (Path(project) / parts.RECORD).unlink(missing_ok=True)
+    with trace() as used:
+        try:
+            yield
+        except SystemExit as stop:
+            if stop.code in (None, 0):
+                parts.write_record(project, parts.drawn(used))
+            raise
+        parts.write_record(project, parts.drawn(used))
 
 
 def _probe_here(script: Path, project: Path, args: Sequence[str], out: Path) -> None:

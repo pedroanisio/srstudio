@@ -18,6 +18,8 @@ version.
 - **Head rigs.** A rig is a second drawing of a version (:class:`Rig`), recorded on it with the same rules. A version
   may gain a rig once, from none to a record, because no published reel moved that head; changing an approved rig is a
   new version of the character. A pin fixes the rig with the version, and the same test redraws it.
+- **Records.** ``srstudio build`` leaves what it drew in the project (:func:`write_record`, through
+  :func:`srstudio.usage.recorded`), and a delivery compares that with the release's pins.
 - **Pins.** A release pins what it draws (:attr:`srstudio.releases.Release.parts`). Only the kinds and styles in
   :data:`ROUTED` read a pin when they build, so only they may take a second version.
 """
@@ -27,7 +29,7 @@ from __future__ import annotations
 import enum
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
@@ -55,6 +57,7 @@ __all__ = [
     "UnknownVersionError",
     "Version",
     "drawing",
+    "drawn",
     "get",
     "latest",
     "load",
@@ -354,9 +357,21 @@ def resolved(name: str, pins: Mapping[str, int] | None = None) -> int:
     return get(name).latest().number if number is None else get(name).pinned(number).number
 
 
-def write_record(project: Path, drawn: Mapping[str, int]) -> None:
+def drawn(names: Iterable[str]) -> dict[str, int]:
+    """The version of each part among the registered ``names`` a build called: a release pins one, so a build that
+    drew two versions of a part is refused by name."""
+    versions: dict[str, int] = {}
+    for called in sorted(names):
+        name, _, number = called.partition("@")
+        found = int(number or 1)
+        if versions.setdefault(name, found) != found:
+            raise PartError(f"a build drew {name} versions {versions[name]} and {found}; a release pins one")
+    return versions
+
+
+def write_record(project: Path, versions: Mapping[str, int]) -> None:
     """What a build drew, for the delivery gate to compare with its release's pins."""
-    doc = {"schema": RECORD_SCHEMA, "parts": dict(sorted(drawn.items()))}
+    doc = {"schema": RECORD_SCHEMA, "parts": dict(sorted(versions.items()))}
     (Path(project) / RECORD).write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
 
 
@@ -369,9 +384,9 @@ def read_record(project: Path) -> dict[str, int] | None:
         top = _fields(str(path), json.loads(path.read_text(encoding="utf-8")), {"schema", "parts"})
     except ValueError as exc:
         raise PartError(f"{path}: {exc}") from None
-    drawn = top["parts"]
-    if top["schema"] != RECORD_SCHEMA or not isinstance(drawn, dict):
+    versions = top["parts"]
+    if top["schema"] != RECORD_SCHEMA or not isinstance(versions, dict):
         raise PartError(f"{path}: not a {RECORD_SCHEMA} record of what a build drew")
-    if not all(isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) for k, v in drawn.items()):
+    if not all(isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) for k, v in versions.items()):
         raise PartError(f"{path}: a record maps a part to a version number")
-    return drawn
+    return versions

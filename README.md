@@ -1371,7 +1371,9 @@ caption layer or a shot with a character in it, records a typed refusal instead 
 RELEASE = Release("a-new-reel", post, parts={"toon-fox": 2, "toon-bear": 1, "toon-desk": 1})
 ```
 
-`instagram_posts.py deliver` refuses a release with no pins, and `check` reports one. A proposed version is never
+`srstudio build` leaves what it drew in the project's `parts.json`. `instagram_posts.py deliver` refuses a release with
+no pins, a video with no such record and a build that drew anything its pins do not say, and `check` reports the
+first and the last. A proposed version is never
 the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
 if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon's
 characters read pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version of

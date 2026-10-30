@@ -20,7 +20,7 @@ import importlib.util
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -181,13 +181,17 @@ def _pin_drift(release: Release, drawn: Mapping[str, int] | None) -> list[str]:
     return reasons
 
 
-def unpinned(releases: Mapping[str, Release], episodes: Path) -> list[Drift]:
+def unpinned(releases: Mapping[str, Release], episodes: Path, delivering: Collection[str] = ()) -> list[Drift]:
     """Every way a release would ship without pinning what it draws, against the record its build left in
-    ``<episodes>/<slug>/``. It reads files only, so the publish gate stays free of the engine (ADR 0047)."""
+    ``<episodes>/<slug>/``. A published project holds no record, so a video needs one only while it is ``delivering``.
+    It reads files only, so the publish gate stays free of the engine (ADR 0047)."""
     drift: list[Drift] = []
     for release in releases.values():
         try:
-            reasons = _pin_drift(release, read_record(Path(episodes) / release.slug))
+            drawn = read_record(Path(episodes) / release.slug)
+            reasons = _pin_drift(release, drawn)
+            if drawn is None and release.parts is not None and release.video_name in delivering:
+                reasons = [f"no record of what its build drew; build it with srstudio build {release.slug} PROJECT"]
         except PartError as exc:
             reasons = [str(exc)]
         drift.extend(Drift(release.video_name, reason) for reason in reasons)
