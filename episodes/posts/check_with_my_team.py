@@ -31,4 +31,5 @@ RELEASE = Release(
     ),
     scene="scene.xml",
     cover=True,
+    characters={"stick-figure": 1},
 )

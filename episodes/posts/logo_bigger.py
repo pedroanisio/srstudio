@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Can you make\nit bigger?", 16.5, "Toon 04", (700, 950), 1.2),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

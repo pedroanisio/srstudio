@@ -26,4 +26,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("He works\nfor crumbs.", 17.75, "Episode 14", (560, 820), 1.1, place="bottom"),
     ),
     cover=True,
+    characters={"customer": 1, "manager": 1, "pigeon": 1},
 )

@@ -28,4 +28,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Am I being\nfired?", 1.0, "Comedy Cut 20", place="top"),
     ),
     cover=True,
+    characters={"candidate": 1, "manager": 1, "pigeon": 1},
 )

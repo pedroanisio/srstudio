@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Whose milk\nis this?", 0.8, "Toon 06", (470, 1130), 1.35),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

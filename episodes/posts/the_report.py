@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("It's on your\nforehead.", 27.5, "Toon 03", (330, 1000), 1.4),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

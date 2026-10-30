@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Works on\nmy machine.", 0.5, "Toon 23"),
     ),
     tags=Tags("office", "protagonist", "recognition", recurring=("mia", "rex"), test="sp-hook_motion", arm="b"),
+    characters={"toon-dog": 1, "toon-rabbit": 1},
 )

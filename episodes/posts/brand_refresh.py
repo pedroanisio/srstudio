@@ -30,4 +30,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Why is our logo\na toilet?", 16.2, "Collage 01", (540, 1090), 1.3),
     ),
+    characters={"collage-brent": 1, "collage-flush": 1, "collage-rosa": 1},
 )

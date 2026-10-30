@@ -34,4 +34,5 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags("job-hunting", "other-person", "recognition", recurring=("cactus", "interviewer", "ava", "milo")),
+    characters={"barista": 1, "candidate": 1, "customer": 1, "manager": 1, "pigeon": 1},
 )

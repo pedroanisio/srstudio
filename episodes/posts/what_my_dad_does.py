@@ -28,4 +28,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("What my\ndad does", 18.6, "Stick 07", place="top"),
     ),
     cover=True,
+    characters={"stick-rig": 1},
 )

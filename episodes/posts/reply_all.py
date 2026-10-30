@@ -18,4 +18,5 @@ RELEASE = Release(
         hashtags=("#replyall", "#email", "#meetings", "#officehumor", "#workcomedy", "#animatedshorts", "#lipsync"),
         thumbnail=Thumbnail("Did you just\nreply all?", 0.8, "Toon 17", (470, 1130), 1.35),
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )
