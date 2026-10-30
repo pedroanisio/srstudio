@@ -95,7 +95,11 @@ class Drawing(Protocol):
     """A look's own drawing in place of the shared brush parts: its body and ears at rest (with the marks, shading
     and inner lines), one eye of each kind, the blink lids, the mouths, the visemes and an arm, every one as layers
     in reference pixels. :func:`figure_layers` and :func:`figure` call it wherever the shared parts would draw, so
-    a look with a drawing keeps the whole contract (:mod:`srstudio.toon_inked`)."""
+    a look with a drawing keeps the whole contract (:mod:`srstudio.toon_inked`). ``tilt`` is how many degrees
+    clockwise the drawing turns the head, so what the look wears turns with it (:mod:`srstudio.toon_wear`)."""
+
+    @property
+    def tilt(self) -> float: ...
 
     def foundation(self, look: Look) -> list[Layer]: ...
 

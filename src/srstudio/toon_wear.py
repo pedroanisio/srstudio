@@ -5,7 +5,9 @@ character (:func:`face_of` its :class:`~srstudio.toon_cast.Look`) and the traced
 from its art) wear the same things. :func:`wear_layers` gives two runs of layers: what goes under the mouth, nose
 and whiskers (the flush on the cheeks, clear of a blink's lids) and what goes over the face (the glasses, kept on
 over the lids, and the sweat drop), under any paws raised to the face. The items draw in :data:`WEAR` order
-whatever order a pose lists them in; an unknown item or one listed twice is refused (:class:`ToonDataError`).
+whatever order a pose lists them in; an unknown item or one listed twice is refused (:class:`ToonDataError`). On a
+head drawn turned (a :class:`Face` with a ``tilt``, from a look's :class:`~srstudio.toon_cast.Drawing`) the items
+turn with it.
 """
 
 from __future__ import annotations
@@ -29,12 +31,14 @@ GLASS_AIR = 0.18  # the room between an eye's rim and its lens, in eye radii; a 
 
 @dataclass(frozen=True)
 class Face:
-    """Where a face is: the two eye centres (left first), the eye radius, the mouth's centre and width."""
+    """Where a face is: the two eye centres (left first), the eye radius, the mouth's centre and width, and how
+    many degrees the head is turned clockwise (the eyes and the mouth already placed on the turned head)."""
 
     eyes: tuple[Point, Point]
     eye_r: float
     mouth: Point
     mouth_w: float
+    tilt: float = 0.0
 
 
 # measured from assets/toon/cat.json: the centres of the "wide" eye whites and of the "flat" mouth's ink
@@ -42,7 +46,8 @@ CAT_FACE = Face(((166.0, 586.8), (253.7, 586.9)), 22.2, (203.5, 629.4), 58.0)
 
 
 def face_of(look: Look) -> Face:
-    return Face(look.eyes, look.eye_r, look.mouth, look.mouth_w)
+    tilt = look.drawing.tilt if look.drawing is not None else 0.0
+    return Face(look.eyes, look.eye_r, look.mouth, look.mouth_w, tilt)
 
 
 def check(items: Sequence[str]) -> None:
@@ -100,6 +105,19 @@ def _flush(face: Face) -> list[Layer]:
 def wear_layers(face: Face, items: Sequence[str]) -> tuple[list[Layer], list[Layer]]:
     """The ``items`` worn on ``face`` as (under the mouth, over the face) runs of layers, reference pixels."""
     check(items)
+    if face.tilt:  # drawn on the head levelled about the eyes' midpoint, then turned with it
+        (lx, ly), (rx, ry) = face.eyes
+        cx, cy = (lx + rx) / 2, (ly + ry) / 2
+        c, s = math.cos(math.radians(-face.tilt)), math.sin(math.radians(-face.tilt))
+
+        def level(p: Point) -> Point:
+            return cx + (p[0] - cx) * c - (p[1] - cy) * s, cy + (p[0] - cx) * s + (p[1] - cy) * c
+
+        flat = Face((level(face.eyes[0]), level(face.eyes[1])), face.eye_r, level(face.mouth), face.mouth_w)
+        under, over = wear_layers(flat, items)
+        return [(brush.rotate(sh, cx, cy, face.tilt), col) for sh, col in under], [
+            (brush.rotate(sh, cx, cy, face.tilt), col) for sh, col in over
+        ]
     under = _flush(face) if "flush" in items else []
     over = (_glasses(face) if "glasses" in items else []) + (_sweat(face) if "sweat" in items else [])
     return under, over
