@@ -89,6 +89,7 @@ class Reel:
     hook: str
     stages: Callable[[Sequence[Any]], Mapping[str, Any]]
     captions: native.CaptionLook | None = None  # None: the series' caption look
+    still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
     series: ClassVar[Series | None] = None
 
     def _series(self) -> Series:
@@ -118,6 +119,7 @@ class Reel:
             "composed with the ElevenLabs Music API.",
             bed=s.bed,
             font=s.font,
+            still=self.still,
         )
 
 

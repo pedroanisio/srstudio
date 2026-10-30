@@ -158,3 +158,49 @@ def test_require_font_refuses_a_silent_canvas_with_the_callers_error_and_words()
     assert isinstance(caught.value, SrstudioError) and isinstance(caught.value, ValueError)
     with pytest.raises(StyleError, match="^this canvas has no caption font; the Stick style captions in its font$"):
         cv.require_font("the Stick style captions in its font", StyleError)
+
+
+def keys_on(cv: Canvas, id: str) -> dict[str, list[tuple[float, str]]]:
+    root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    return {
+        a.get("property"): [(float(k.get("time")), k.get("value")) for k in a.findall("key")]
+        for a in root.find(f".//group[@id='{id}']").findall("animate")
+    }
+
+
+def test_a_frozen_drawing_holds_every_key_at_its_value_on_the_first_frame():
+    """A still opening (the sp-hook_motion test's arm A) draws its shot as it stands at 0 s: nothing moves."""
+    cv = fresh()
+    g = cv.group(cv.comp, "g")
+    with cv.frozen():
+        cv.keys(g, "y", [(0.6, -8), (0, 0), (1.2, 0)], hold=False)  # a hover from rest
+        cv.keys(g, "x", [(0.4, 30), (0.9, 60)])  # a move that starts later: its first value holds until then
+        cv.keys(g, "rotation", [(-0.5, 5), (0, 9), (0.8, 2)], kind="sine-in-out")
+        cv.gate(g, [(0.3, 2.0)])  # shown later: hidden at 0
+        cv.pop_in(g, 0.0)
+    assert keys_on(cv, "g") == {
+        "y": [(0.0, "0")],
+        "x": [(0.0, "30")],
+        "rotation": [(0.0, "9")],
+        "opacity": [(0.0, "0")],
+        "scaleX": [(0.0, "0.92")],
+        "scaleY": [(0.0, "0.92")],
+    }
+    h = cv.group(cv.comp, "h")
+    cv.keys(h, "y", [(0, 0), (0.6, -8)], hold=False)  # outside the block the clock runs again
+    assert keys_on(cv, "h") == {"y": [(0.0, "0"), (0.6, "-8")]}
+
+
+def test_a_frozen_drawing_refuses_what_it_cannot_hold_still():
+    cv = fresh()
+    g = cv.group(cv.comp, "g")
+    with cv.frozen():
+        with pytest.raises(CanvasError, match="frozen"):
+            cv.expression(g, "y", "2*Math.sin(time)")
+        with pytest.raises(CanvasError, match="frozen"):
+            cv.keys(g, "y", [(-0.5, 0), (0.5, 10)], hold=False)  # between two keys at 0 s: a value it would invent
+        cv.font_asset = "caption-font"
+        layer = cv.text(g, "t", "Hi", 0, 0, 200, 80, 40)
+        with pytest.raises(CanvasError, match="frozen"):
+            cv.animate_text(layer, "typewriter", presetStart=0.3)
+    assert keys_on(cv, "g") == {}  # nothing refused was half drawn

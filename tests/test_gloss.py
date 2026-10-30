@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -499,6 +500,7 @@ def write_project(root: Path, takes: list[Take] | None = None) -> None:
             "start": t.start,
             "duration": t.duration,
             "audio": f"audio/take-{t.id}.wav",
+            **t.extra,
         }
         if not t.is_effect:
             item.update(speech_duration=t.duration - 0.2, words=list(t.words), phones=list(t.phones), mood="calm")
@@ -570,6 +572,68 @@ def test_a_reel_builds_with_the_hook_the_board_the_notice_crossfade_captions_and
         pytest.skip("set SRSTUDIO_ENGINE to a scene-render binary")
     check = subprocess.run([str(Path(found).resolve()), "validate", str(out)], capture_output=True, text=True)
     assert check.returncode == 0, check.stdout + check.stderr
+
+
+def still_takes(lead: float = 1.0) -> list[Take]:
+    """The staging takes recorded with a still opening: silence inside the first take, its words ``lead`` later."""
+    first, *rest = staging_takes()
+    later = lambda marks: tuple({**m, "start": m["start"] + lead, "end": m["end"] + lead} for m in marks)  # noqa: E731
+    first = replace(first, duration=first.duration + lead, words=later(first.words), phones=later(first.phones),
+                    extra={"still": lead})  # fmt: skip
+    return [first, *(replace(t, start=round(t.start + lead, 3)) for t in rest)]
+
+
+def keyed(node: ET.Element) -> list[list[float]]:
+    return [[float(k.get("time")) for k in a.iter("key")] for a in node.iter("animate")]
+
+
+@needs_font
+def test_a_still_opening_holds_the_first_shot_and_the_hook_on_their_first_frame_until_the_first_word(tmp_path):
+    """The sp-hook_motion test's arm A: a first take that opens on a second of silence shows its shot and the hook
+    held still, every key at its 0 s value, then the same shot running, with the voice and the captions."""
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path, still_takes())
+    ep = episode(tmp_path)
+    first = Stage("plaza", cast=(Place("nadia", 540),), cards=(Card(1.2, "Held a door", points=2),),
+                  move=Move("push", 1.0, 1.1, 540, 900, until=2.5))  # fmt: skip
+    made = reel.build(ep, {**GOOD, "01": first}, hook="Where is the exit?", font=font())
+    out = ep.finish(tmp_path / "gloss-test.scene.xml", tmp_path / "qa" / "sdk.json", strict=False)
+    root = ET.fromstring(out.read_bytes())
+    shot = root.find(".//group[@id='shot-01']")
+    held, live = list(shot)
+    assert held.get("id") == "gloss-still-01" and opacity_at(held, 0.96) == 1 and opacity_at(held, 1.0) == 0
+    assert opacity_at(live, 0.96) == 0 and opacity_at(live, 1.0) == 1
+    hook = root.find(f".//group[@id='{made['hook'].id}']")
+    held_hook, live_hook = list(hook)
+    assert opacity_at(held_hook, 0.96) == 1 and opacity_at(held_hook, 1.0) == 0 and opacity_at(live_hook, 1.0) == 1
+    for still in (held, held_hook):  # past the gate that hides it at 1 s, nothing inside it is keyed after 0 s
+        assert all(times == [0.0] for times in keyed(still)[1:]) and len(keyed(still)) > 3
+    assert any(len(times) > 1 for times in keyed(live))  # the shot runs once the still opening is over
+    cues = [float(c.get("start")) for c in root.iter("cue")]
+    assert cues and min(cues) >= 1.0  # no caption before the first word
+    found = shutil.which("scene-render") or __import__("os").environ.get("SRSTUDIO_ENGINE")
+    if not found or not Path(found).exists():
+        pytest.skip("set SRSTUDIO_ENGINE to a scene-render binary")
+    check = subprocess.run([str(Path(found).resolve()), "validate", str(out)], capture_output=True, text=True)
+    assert check.returncode == 0, check.stdout + check.stderr
+
+
+@needs_font
+def test_a_still_opening_is_refused_on_the_notice_or_with_the_shot_moving_inside_it(tmp_path):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path, still_takes())
+    for first, match in [
+        (Stage(notice=Notice("Orientation", "Day one.")), "still opening"),
+        (Stage("plaza", cast=(Place("nadia", 540),), cards=(Card(0.4, "Early"),)), "still opening"),
+        (Stage("plaza", cast=(Place("nadia", 540),), move=Move("crash", 0.5, 1.3, 540, 900)), "still opening"),
+        (Stage("plaza", cast=(Place("nadia", 540, pose=((0.3, "shrug"),)),)), "still opening"),
+    ]:
+        ep = episode(tmp_path)
+        with pytest.raises(GlossError, match=match):
+            reel.build(ep, {**GOOD, "01": first}, hook="Why?", font=font())
+        assert not list(ET.fromstring(ep.cv.scene.to_bytes()).iter("sequence"))
 
 
 def test_reel_captions_leave_no_lone_last_word_and_stay_up_long_enough_to_read():

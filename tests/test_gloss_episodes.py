@@ -1,4 +1,4 @@
-"""The seven Gloss reels (ADR 0030): each script is well formed and speakable, and each staging fits a recording
+"""The Gloss reels (ADR 0030): each script is well formed and speakable, and each staging fits a recording
 of it before any request is made (the drawing itself is tested in test_gloss.py)."""
 
 from __future__ import annotations
@@ -51,7 +51,12 @@ def recorded(reel, rate: float = SECONDS_A_WORD) -> list[Take]:
             length = words[-1]["end"] + 0.05
         phones = tuple({"c": c, "start": 0.05 + i * 0.06, "end": 0.11 + i * 0.06} for i, c in enumerate(t.text.lower()))
         duration = round(length + t.hold, 3)
-        out.append(Take(t.id, t.actor, "", t.text, round(start, 3), duration, words=words, phones=phones))
+        extra = {}
+        if reel.still and not out:  # the recording puts a still opening inside the first take, as silence
+            words = tuple({**w, "start": w["start"] + reel.still, "end": w["end"] + reel.still} for w in words)
+            phones = tuple({**q, "start": q["start"] + reel.still, "end": q["end"] + reel.still} for q in phones)
+            duration, extra = round(duration + reel.still, 3), {"still": reel.still}
+        out.append(Take(t.id, t.actor, "", t.text, round(start, 3), duration, words=words, phones=phones, extra=extra))
         start += duration
     return out
 
@@ -112,7 +117,9 @@ def test_the_punchline_is_held_at_least_a_beat_and_a_bit(reel):
 @pytest.mark.parametrize("rate", [SECONDS_A_WORD, 0.25, 0.5])
 def test_the_staging_fits_the_recording_at_any_reasonable_pace(reel, rate):
     takes = recorded(reel, rate)
-    gloss_reel.check(takes, reel.stages(takes))
+    stages = reel.stages(takes)
+    gloss_reel.check(takes, stages)
+    assert gloss_reel.still_opening(takes[0], stages[takes[0].id]) == reel.still  # held still until the first word
 
 
 def test_a_recording_that_lost_a_take_is_refused_before_drawing(reel):

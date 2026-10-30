@@ -48,6 +48,7 @@ from .narration import (
     require_consent,
     schedule,
     sha256_of,
+    wav_seconds,
     words_from_alignment,
 )
 from .provider import KEY_ENV
@@ -73,6 +74,7 @@ FONT = ("Inter-Bold.ttf", "font-license.txt")  # the Stick style's caption font 
 VOICE_PEAK = 0.80  # every line is levelled to this peak; the master's loudness pass does the rest
 SPEECH_LEAD, SPEECH_TAIL = 0.04, 0.08  # kept around the first and last audible sample
 EFFECT = "sfx"  # the actor of an effect take
+STILL_MAX = 3.0  # the longest still opening a script may ask for, in seconds
 
 
 class TakesError(SrstudioError, ValueError):
@@ -131,6 +133,7 @@ class Script:
     fps: int = 24
     language: str = "en-US"
     font: tuple[str, str] = FONT  # the caption font file and its licence, copied into the project by main
+    still: float = 0.0  # seconds of silence opening the first take: a still opening (sp-hook_motion arm A)
 
     def settings_for(self, take: Take) -> VoiceSettings:
         base = self.settings[take.actor]
@@ -149,6 +152,8 @@ class Script:
             raise TakesError(f"{self.title}: font is (font file, licence file), got {self.font!r}")
         if isinstance(self.fps, bool) or not isinstance(self.fps, int) or self.fps <= 0:
             raise TakesError(f"{self.title}: fps must be a positive integer, got {self.fps!r}")
+        if not (checks.number(self.still) and 0 <= self.still <= STILL_MAX):
+            raise TakesError(f"{self.title}: still must be 0 to {STILL_MAX} seconds, got {self.still!r}")
         ids = [take.id for take in self.takes]
         if ids != sorted(ids) or len(set(ids)) != len(ids):
             raise TakesError(f"take ids must be unique and in order, got {ids}")
@@ -256,6 +261,30 @@ def _speech(script: Script, take: Take, spoken: SpokenLine, audio: Path, ffmpeg:
     return item, dst
 
 
+def _still(made: dict, dst: Path, seconds: float, ffmpeg: str) -> dict:
+    """The first take opened by ``seconds`` of silence: the pause is inside the take (a timeline runs contiguous
+    from zero), so its clip, words, phones, speech and length move later by ``seconds``; ``still`` records it."""
+    before = wav_seconds(dst)
+    held = dst.with_name(dst.stem + ".still.wav")
+    delay = f"adelay=delays={round(seconds * RATE)}S:all=1"
+    subprocess.run([ffmpeg, "-y", "-v", "error", "-i", str(dst), "-af", delay, "-c:a", "pcm_s16le", str(held)],
+                   check=True)  # fmt: skip
+    held.replace(dst)
+    if abs(wav_seconds(dst) - before - seconds) > 1 / RATE:
+        raise TakesError(f"{dst.name}: the still opening should add {seconds} s, the clip lasts {wav_seconds(dst)} s")
+
+    def later(marks: list[dict]) -> list[dict]:
+        return [{**m, "start": round(m["start"] + seconds, 6), "end": round(m["end"] + seconds, 6)} for m in marks]
+
+    out = dict(made, duration=round(made["duration"] + seconds, 6), still=seconds)
+    if made["speech_duration"]:
+        out["speech_duration"] = round(made["speech_duration"] + seconds, 6)
+    for key in ("words", "phones"):
+        if key in made:
+            out[key] = later(made[key])
+    return out
+
+
 def _bed(bed: Bed, client: Client, compose: Compose, root: Path, duration: float, ffmpeg: str) -> dict:
     """Compose the bed, hear that it has no words, check it lasts the episode and cut it to the episode's length."""
     try:
@@ -328,6 +357,8 @@ def record(
                 failures.append(f"take {take.id}: {exc}")
                 continue
             made, dst = _speech(script, take, spoken, audio, ffmpeg)
+        if script.still and take is script.takes[0]:
+            made = _still(made, dst, script.still, ffmpeg)
         item.update(made, audio=f"audio/{dst.name}", sha256=sha256_of(dst))
         items.append(item)
     report = {"recognizer": f"ElevenLabs {STT_MODEL}", "lines": heard, "passed": not failures}
