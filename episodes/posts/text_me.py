@@ -18,7 +18,7 @@ RELEASE = Release(
         thumbnail=Thumbnail("Text me when\nyou get home.", 8.2, "Toon 29", (500, 900), 1.1, place="top"),
     ),
     tags=Tags("family", "other-person", "affection", test="sp-hook_motion", arm="b", recipient="b", to="family"),
-    style="toon",
+    style="Toon",
     parts={
         "signature-cactus": 1,
         "signature-code": 1,

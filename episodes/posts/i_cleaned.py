@@ -19,7 +19,7 @@ RELEASE = Release(
     tags=Tags(
         "relationships", "other-person", "recognition", test="sp-hook_motion", arm="b", recipient="b", to="roommate"
     ),
-    style="toon",
+    style="Toon",
     parts={
         "signature-cactus": 1,
         "signature-code": 1,

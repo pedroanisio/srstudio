@@ -17,7 +17,7 @@ RELEASE = Release(
         thumbnail=Thumbnail("Sorry we missed you.", 16.0, "Toon 31"),
     ),
     tags=Tags("money-services", "institution", "triumph", test="sp-hook_motion", arm="b", recipient="a"),
-    style="toon",
+    style="Toon",
     parts={
         "signature-cactus": 1,
         "signature-code": 1,

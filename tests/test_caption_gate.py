@@ -343,9 +343,10 @@ def test_every_published_release_is_grandfathered_or_gated_and_the_list_is_close
     assert {"gloss-notifications", "gloss-fewer-meetings", "gloss-terms"} <= set(posts.GRANDFATHERED)
     digest = hashlib.sha256("\n".join(sorted(posts.GRANDFATHERED)).encode()).hexdigest()
     assert digest == GRANDFATHERED_SHA256
+    styles = {look.style for look in caption_gate.LOOKS}
     for slug, release in posts.RELEASES.items():
         if slug not in posts.GRANDFATHERED:
-            assert release.style, f"{slug} is new: declare its style"
+            assert release.style in styles, f"{slug} is new: declare a style with a caption look, not {release.style!r}"
 
 
 def test_the_deliver_path_refuses_a_new_reel_before_writing_anything(tmp_path, monkeypatch):

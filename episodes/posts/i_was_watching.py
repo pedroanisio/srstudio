@@ -28,7 +28,7 @@ RELEASE = Release(
         recipient="b",
         to="partner",
     ),
-    style="toon",
+    style="Toon",
     parts={
         "signature-cactus": 1,
         "signature-code": 1,
