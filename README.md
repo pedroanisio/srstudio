@@ -1565,10 +1565,6 @@ over a coffee and washes dishes), S17 *Typing* (from the next seat, "we need to 
 is about snacks) and S18 *Friday Deploy* (one tiny fix at five on a Friday, and the only one who can roll it back
 is on leave) use them too; S15's desert darkens under the captions with the second amendment's `shade` switch.
 
-## Gloss style: a cheerful forever-plaza in seven episodes (G1–G7)
-
-## Gloss style: a cheerful forever-plaza in eight episodes (G1–G8)
-
 ## Gloss style: a cheerful forever-plaza in nine episodes (G1–G9)
 
 The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
