@@ -14,6 +14,8 @@ keys for the engine's own curves, deterministic and bounded.
 * **Idle.** Two octaves of hashed 1-D gradient noise, ducked while speaking, and a breath taken in the pauses and let
   out across the phrases, or an uneven slow cycle in silence.
 * **Glances.** The eyes jump on hold keys; the head follows late through its spring and comes back.
+* **Listening.** What another character says is ``heard``: the listener's eyes stay on them, its idle quiets, and it
+  gives a small nod of its own signature at the end of their phrases (:func:`listening`).
 
 No draw comes from a global generator or the clock: :func:`hash_unit` hashes the seed, a channel name and an ordinal,
 so one channel never shifts another. The head-drawing side is :mod:`srstudio.toon_head`.
@@ -43,6 +45,7 @@ __all__ = [
     "DUCK",
     "GAZES",
     "INTENSIFIER_GAIN",
+    "LISTEN_SHARE",
     "LOUD_RATE",
     "Accent",
     "Channel",
@@ -58,6 +61,7 @@ __all__ = [
     "fbm",
     "hash_unit",
     "limit",
+    "listening",
     "nods",
     "noise",
     "plan",
@@ -73,6 +77,8 @@ LOUD_RATE = 100  # loudness samples a second
 PAUSE = 0.25  # the silence, in seconds, that starts a new breath
 DUCK = 0.4  # how much of the idle wander is left while speaking
 INTENSIFIER_GAIN = 1.5  # how much bigger a nod on an intensifier is
+LISTEN_SHARE = 0.35  # how big a listener's nod is, as a share of a full nod
+LISTEN_LAG = 0.15  # how long after the other's accent the listener's nod starts
 AVERT_BACK = 0.1  # how long before a line's first word the eyes are back
 AVERT = 0.7  # how long before a line's first word they leave
 ANTICIPATE = 0.08  # seconds of the small opposite move before a nod
@@ -174,6 +180,14 @@ class Channel:
             raise HeadMotionError(f"a channel's keys are finite, got {self.keys!r}")
         if any(b[0] <= a[0] for a, b in zip(self.keys, self.keys[1:], strict=False)):
             raise HeadMotionError(f"a channel's key times rise, got {self.keys!r}")
+
+    def during(self, start: float, end: float) -> Channel:
+        """The keys a shot from ``start`` to ``end`` plays: those inside it and one either side, so each shot of a
+        sketch carries its own stretch of the timeline and a value is the same on both sides of a cut."""
+        before = [key for key in self.keys if key[0] <= start][-1:]
+        inside = [key for key in self.keys if start < key[0] < end]
+        after = [key for key in self.keys if key[0] >= end][:1]
+        return replace(self, keys=(*before, *inside, *after))
 
 
 @dataclass(frozen=True)
@@ -455,6 +469,21 @@ def nods(speech: Speech, style: HeadStyle, index: int = 0) -> list[Nod]:
     return out
 
 
+def listening(speech: Speech, style: HeadStyle, index: int, busy: Sequence[tuple[float, float]] = ()) -> list[Nod]:
+    """The nods of a character hearing ``speech``: about :attr:`HeadStyle.nod_share` of the phrase ends, each
+    :data:`LISTEN_SHARE` of a full nod in its own signature, just after the accent the news is on; none that would
+    fall while it is ``busy`` speaking itself."""
+    out: list[Nod] = []
+    for k, accent in enumerate(a for a in accents(speech, style) if a.nuclear):
+        at = round(accent.at + accent.span + LISTEN_LAG, 6)
+        kept = hash_unit(style.seed, f"listen/{index}", k) < style.nod_share
+        talking = any(a - style.min_gap <= at <= b + style.min_gap for a, b in busy)
+        if kept and not talking and (not out or at - out[-1].at >= style.min_gap):
+            span = min(NOD_SPAN[1], max(NOD_SPAN[0], accent.span))
+            out.append(Nod(accent.word.text, style.signature, at, span, style.nod_px * LISTEN_SHARE))
+    return out
+
+
 def dips(speech: Speech) -> list[float]:
     """The word starts that follow a pause, where the head dips before it rises into the phrase."""
     return [start for start, _ in _breaths(speech)]
@@ -642,6 +671,11 @@ class HeadPlan:
         """A head that does not move: the same drawing with no keys."""
         return cls()
 
+    def during(self, start: float, end: float) -> HeadPlan:
+        """This plan's keys for a shot from ``start`` to ``end`` (:meth:`Channel.during`); the gaze stays whole, its
+        runs cut by :func:`srstudio.toon_head.gaze_states`."""
+        return replace(self, **{name: getattr(self, name).during(start, end) for name in CHANNELS})
+
 
 def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> None:
     if not (_finite(duration) and duration > 0):
@@ -656,14 +690,19 @@ def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> Non
                 raise HeadMotionError(f"speech runs to {last!r}, past the shot's {duration!r} s")
 
 
-def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> HeadPlan:
-    """The head's motion over a shot of ``duration`` seconds with these takes, the same every build."""
+def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float, heard: Sequence[Speech] = ()) -> HeadPlan:
+    """The head's motion over a shot of ``duration`` seconds with these takes, the same every build; ``heard`` is what
+    the others say meanwhile (:func:`listening`)."""
     _check(style, speeches, duration)
+    _check(style, heard, duration)
     spans = [span for speech in speeches for span in _breaths(speech)]
+    busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
     nodded = [nod for k, speech in enumerate(speeches) for nod in nods(speech, style, k)]
     dipped = [t - _DIP_LEAD for speech in speeches for t in dips(speech)]
     moves = [_Move(max(0.0, t), _DIP, style.nod_px * _DIP_SHARE) for t in dipped]
     moves += [_Move(n.at, _shape(n.kind, n.span), n.amplitude) for n in nodded]
+    nodding = [nod for k, speech in enumerate(heard) for nod in listening(speech, style, k, spans)]
+    moves += [_Move(n.at, _shape(n.kind, n.span), n.amplitude) for n in nodding]
     rolls = [
         _Move(
             n.at,
@@ -678,7 +717,7 @@ def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> HeadP
         up = min(0.7, (end - start) * 0.8)
         leans.append((start, up, end, 0.9, value))
         trails.append((start + 0.1, 0.25, start + 0.35, 0.65, -style.follow * value))
-    looks = _gaze(style, speeches, spans, duration)
+    looks = _gaze(style, speeches, busy, duration)
     lag = 0.08  # the eyes go first
     turned, slid = [], []
     for on, off, name in looks:
@@ -692,8 +731,8 @@ def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> HeadP
         nod=Channel(_chain(moves, style.head, duration), style.head),
         roll=Channel(_chain(rolls, style.head, duration), style.head),
         face_x=Channel(_trapezoids(slid, duration), style.settle),
-        idle_roll=Channel(_noise_keys(style, "idle_roll", style.idle_roll, spans, duration), curve="catmull-rom"),
-        idle_y=Channel(_noise_keys(style, "idle_y", style.idle_px, spans, duration), curve="catmull-rom"),
+        idle_roll=Channel(_noise_keys(style, "idle_roll", style.idle_roll, busy, duration), curve="catmull-rom"),
+        idle_y=Channel(_noise_keys(style, "idle_y", style.idle_px, busy, duration), curve="catmull-rom"),
         breath=Channel(_breath_keys(style, spans, duration), curve="sine-in-out"),
         gaze=tuple(gaze),
     )
