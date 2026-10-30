@@ -46,6 +46,7 @@ BADGE_BG = "#1b1b2a"
 BADGE_DOT = "#ff3b30"
 TOAST_W, TOAST_H, TOAST_X, TOAST_Y = 240, 88, 340, 372  # the card, reference pixels: in the sky, under the badge
 TOAST_SLIDE = 0.25  # seconds it slides in
+TOAST_READ = 0.875  # a gated toast's lettering shows at least the engine's minDisplayTime (0.8333 s) and a frame
 BUZZ_SHAKE = ((0.0, 0), (0.04, -6), (0.08, 6), (0.12, -5), (0.16, 5), (0.2, -3), (0.24, 0))  # x, relative
 BOARD_BOX = (352, 290, 292, 400)  # the writable white inside the frame
 BOARD_SEEN = REF_W - 14  # the board's writable part ends here on screen (reference px), a margin before the edge
@@ -171,20 +172,27 @@ def notes(cv: Canvas, parent, texts: Sequence[str], size: int = 26) -> None:
 
 
 @register("graphic", "toon-toast", summary="A phone notification that buzzes in over the window")
-def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28) -> None:
-    """Each toast slides in from the right, shakes with the buzz and holds until its end."""
+def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28, gated: bool = False) -> None:
+    """Each toast slides in from the right, shakes with the buzz and holds until its end. ``gated`` letters the card
+    only once it has landed wholly on frame: lettering drawn off frame measures 1:1 in the engine's contrast check,
+    which fails a strict encode. Off by default, so the toasts of published episodes stay as they were."""
     for i, t in enumerate(items):
         if not (checks.number(t.start) and checks.number(t.end) and 0 <= t.start < t.end):
             raise ToonDataError(f"toast {i}: needs 0 <= start < end")
         if not t.sender.strip() or not t.text.strip() or len(t.text) > 24 or len(t.sender) > 12:
             raise ToonDataError(f"toast {i}: a sender (at most 12 characters) and a text (at most 24)")
+        if gated and t.end - t.start < TOAST_SLIDE + TOAST_READ:
+            raise ToonDataError(
+                f"toast {i}: gated, it lasts at least {TOAST_SLIDE + TOAST_READ} s, got {t.start}-{t.end}"
+            )
     for t in items:
         g = cv.group(parent, cv.uid("g"), start=t.start, end=t.end)
         card = cv.group(g, cv.uid("g"))
         cv.rect(card, fx(TOAST_X), fy(TOAST_Y), fh(TOAST_W), fh(TOAST_H), TOAST_BG, cv.ink, FINE_W, radius=18)
         cv.ellipse(card, fx(TOAST_X + 14), fy(TOAST_Y + 14), fh(12), fh(12), TOAST_DOT)
+        letters = cv.group(card, cv.uid("g"), start=t.start + TOAST_SLIDE, end=t.end) if gated else card
         cv.text(
-            card,
+            letters,
             cv.uid("toast"),
             t.sender.upper(),
             fx(TOAST_X + 34),
@@ -197,7 +205,7 @@ def toasts(cv: Canvas, parent, items: Sequence[Toast], size: int = 28) -> None:
             wrap="none",
         )
         cv.text(
-            card,
+            letters,
             cv.uid("toast"),
             t.text,
             fx(TOAST_X + 14),

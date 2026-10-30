@@ -1321,7 +1321,8 @@ project).
 the style's reference pixels: `toon-meeting` (a mint room with a whiteboard where the window was), `toon-mug`
 (steam in the spans asked), `toon-clock` (hour and minute hands that jump to each `(second, "HH:MM")`),
 `toon-notes` (up to four sticky notes lettered on the laptop lid), `toon-toast` (a phone notification that slides
-in and shakes with the buzz), `toon-board-text`, `toon-logo` (a sun that scales about its centre to each asked
+in and shakes with the buzz; `gated=True` letters the card only once it has landed, so a camera push never leaves
+its lettering wholly off frame, where the strict encode's contrast check fails it), `toon-board-text`, `toon-logo` (a sun that scales about its centre to each asked
 size over 0.3 s, `scale_keys`, with a drop shadow through a span) and `toon-badge` (the call status under the
 pill). `toon_cast.sticky_note` and the `stickers=` parameter of `dog`/`frog` stick a note on a character's forehead
 that follows its sigh and lean. `foley.buzz` and `foley.tones` (`STING`, `CHIME`) are the phone and the sting, as
