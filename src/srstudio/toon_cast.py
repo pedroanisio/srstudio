@@ -1,4 +1,5 @@
-"""More Toon characters, drawn with the brush: a dog, a frog, a bear and a rabbit at the cat's desk.
+"""More Toon characters, drawn with the brush: a dog, a frog, a bear, a rabbit, a fox, a raccoon and a hedgehog at
+the cat's desk.
 
 The Toon cat is traced from its reference; these four are drawn in code with :mod:`srstudio.brush`, in the same
 reference pixels (:func:`srstudio.toon.fx`/``fy``), with the same vocabulary of expressions (:data:`EYES`,
@@ -9,8 +10,9 @@ Every line is a filled brush shape, never a stroke: the ink band under the body 
 as tapered strokes in ink under strokes in the coat colour, lids as coat-coloured shapes with an inked edge. What
 differs per character is a :class:`Look`: the silhouette, the coat colours, where the eyes and the mouth sit, the
 parts only it has (the dog's floppy ears, snout and nose; the frog's eye bumps, belly, nostrils and spots; the
-bear's round ears and muzzle; the rabbit's tall ears, whiskers and front teeth) and its polish: eyebrows that follow
-the eyes, a highlight on each pupil, blushing cheeks and blinks at its own pace.
+bear's round ears and muzzle; the rabbit's tall ears, whiskers and front teeth; the fox's tall ears and white cheek
+tufts; the raccoon's mask, white-rimmed ears and dark gloves; the hedgehog's spines) and its polish: eyebrows that
+follow the eyes, a highlight on each pupil, blushing cheeks and blinks at its own pace.
 
 **Lip sync.** A character speaks through :data:`VISEMES`: ``closed`` is the pose's own mouth (a smirk stays a
 smirk between syllables), ``open``, ``round`` and ``teeth`` replace it while a sound is heard. :func:`figure` takes
@@ -19,7 +21,8 @@ voice's character timestamps) and draws the mouth as one layer per viseme with h
 the lips move while the expression holds.
 
 :func:`figure_shapes` is the whole drawing as data (shape, colour) in reference pixels, so a test can measure it
-without a canvas; :func:`dog`, :func:`frog`, :func:`bear` and :func:`rabbit` put it on one.
+without a canvas; :func:`dog`, :func:`frog`, :func:`bear`, :func:`rabbit`, :func:`fox`, :func:`raccoon` and
+:func:`hedgehog` put it on one.
 """
 
 from __future__ import annotations
@@ -44,6 +47,9 @@ __all__ = [
     "FROG",
     "BEAR",
     "RABBIT",
+    "FOX",
+    "RACCOON",
+    "HEDGEHOG",
     "LOOKS",
     "INK",
     "VISEMES",
@@ -57,6 +63,9 @@ __all__ = [
     "frog",
     "bear",
     "rabbit",
+    "fox",
+    "raccoon",
+    "hedgehog",
 ]
 
 INK = 5.5  # the brush's weight: the reference's line, reference pixels
@@ -79,7 +88,9 @@ class Look:
     is, and its polish. ``ears`` are drawn behind the body, ``marks`` (light patches, spots) over it, both at rest;
     ``ear`` and ``ear_inner`` colour the ears (the dark coat and nothing by default). ``brows`` adds eyebrows that
     follow the eyes, ``shine`` a highlight on each pupil, ``blush`` cheeks in that colour, ``teeth`` two front
-    teeth under the mouth, ``whiskers`` three a side; ``blink`` is the seconds between blinks (0: never)."""
+    teeth under the mouth, ``whiskers`` three a side; ``blink`` is the seconds between blinks (0: never).
+    ``mantle`` is an outline drawn behind the ears and the body in the dark coat (the hedgehog's spines), ``paw``
+    the paws' colour when not the coat (the raccoon's gloves)."""
 
     name: str
     coat: str
@@ -103,6 +114,8 @@ class Look:
     teeth: bool = False
     whiskers: bool = False
     blink: float = 0.0
+    mantle: tuple[Point, ...] = ()
+    paw: str = ""
 
 
 def _mirror(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -314,7 +327,226 @@ RABBIT = Look(
     whiskers=True,
     blink=2.6,
 )
-LOOKS = {"dog": DOG, "frog": FROG, "bear": BEAR, "rabbit": RABBIT}
+_FOX_EAR = ((96.0, 546.0), (76.0, 496.0), (56.0, 440.0), (44.0, 402.0), (80.0, 410.0), (128.0, 446.0), (166.0, 488.0))
+FOX = Look(
+    name="fox",
+    coat="#e2672c",
+    dark="#a8461b",
+    light="#fff4e8",
+    silhouette=(
+        (104.0, 504.0),
+        (142.0, 488.0),
+        (185.0, 484.0),
+        (228.0, 488.0),
+        (266.0, 504.0),
+        (290.0, 544.0),
+        (306.0, 588.0),
+        (338.0, 622.0),
+        (300.0, 634.0),
+        (322.0, 652.0),
+        (276.0, 662.0),
+        (256.0, 680.0),
+        (306.0, 704.0),
+        (326.0, 760.0),
+        (330.0, 830.0),
+        (40.0, 830.0),
+        (44.0, 760.0),
+        (64.0, 704.0),
+        (114.0, 680.0),
+        (94.0, 662.0),
+        (48.0, 652.0),
+        (70.0, 634.0),
+        (32.0, 622.0),
+        (64.0, 588.0),
+        (80.0, 544.0),
+    ),
+    eyes=((150.0, 566.0), (220.0, 566.0)),
+    eye_r=17.0,
+    mouth=(185.0, 646.0),
+    mouth_w=40.0,
+    limb=30.0,
+    ears=(_FOX_EAR, _mirror(_FOX_EAR)),
+    marks=(
+        (  # the white cheeks and chin, tufted at the sides, the mouth on them
+            brush.outline(
+                [
+                    (62.0, 624.0),
+                    (100.0, 608.0),
+                    (142.0, 604.0),
+                    (185.0, 620.0),
+                    (228.0, 604.0),
+                    (270.0, 608.0),
+                    (308.0, 624.0),
+                    (286.0, 646.0),
+                    (250.0, 670.0),
+                    (185.0, 684.0),
+                    (120.0, 670.0),
+                    (84.0, 646.0),
+                ]
+            ),
+            "#fff4e8",
+        ),
+        (brush.ellipse(185.0, 764.0, 66.0, 60.0), "#fff4e8"),
+    ),
+    nose=(brush.ellipse(185.0, 622.0, 12.0, 8.5), brush.ellipse(180.0, 619.0, 3.5, 2.2)),
+    ear="#e2672c",
+    ear_inner="#fff4e8",
+    brows=True,
+    shine=True,
+    blink=3.8,
+    paw="#5a2e1e",
+)
+
+_RACCOON_EAR = ((122.0, 500.0), (116.0, 462.0), (126.0, 432.0), (148.0, 428.0), (166.0, 450.0), (170.0, 486.0))
+RACCOON_MASK = "#33373c"
+RACCOON = Look(
+    name="raccoon",
+    coat="#8f969e",
+    dark="#5b6168",
+    light="#eceae4",
+    silhouette=(
+        (118.0, 502.0),
+        (150.0, 486.0),
+        (185.0, 482.0),
+        (220.0, 486.0),
+        (252.0, 502.0),
+        (280.0, 534.0),
+        (302.0, 568.0),
+        (330.0, 596.0),
+        (316.0, 606.0),
+        (352.0, 622.0),
+        (328.0, 634.0),
+        (360.0, 652.0),
+        (318.0, 660.0),
+        (300.0, 670.0),
+        (328.0, 700.0),
+        (348.0, 760.0),
+        (352.0, 830.0),
+        (18.0, 830.0),
+        (22.0, 760.0),
+        (42.0, 700.0),
+        (70.0, 670.0),
+        (52.0, 660.0),
+        (10.0, 652.0),
+        (42.0, 634.0),
+        (18.0, 622.0),
+        (54.0, 606.0),
+        (40.0, 596.0),
+        (68.0, 568.0),
+        (90.0, 534.0),
+    ),
+    eyes=((146.0, 572.0), (224.0, 572.0)),
+    eye_r=18.0,
+    mouth=(185.0, 652.0),
+    mouth_w=46.0,
+    limb=38.0,
+    ears=(_RACCOON_EAR, _mirror(_RACCOON_EAR)),
+    marks=(
+        (  # the pale muzzle and cheeks under the mask
+            brush.outline(
+                [
+                    (68.0, 610.0),
+                    (108.0, 598.0),
+                    (185.0, 606.0),
+                    (262.0, 598.0),
+                    (302.0, 610.0),
+                    (304.0, 640.0),
+                    (270.0, 668.0),
+                    (185.0, 680.0),
+                    (100.0, 668.0),
+                    (66.0, 640.0),
+                ]
+            ),
+            "#eceae4",
+        ),
+        (  # the bandit's mask across both eyes, dipping at the nose
+            brush.outline(
+                [
+                    (78.0, 566.0),
+                    (104.0, 546.0),
+                    (148.0, 548.0),
+                    (185.0, 566.0),
+                    (222.0, 548.0),
+                    (266.0, 546.0),
+                    (292.0, 566.0),
+                    (292.0, 600.0),
+                    (258.0, 608.0),
+                    (214.0, 596.0),
+                    (185.0, 602.0),
+                    (156.0, 596.0),
+                    (112.0, 608.0),
+                    (78.0, 600.0),
+                ]
+            ),
+            RACCOON_MASK,
+        ),
+        (brush.ellipse(185.0, 762.0, 92.0, 68.0), "#b9bec4"),
+    ),
+    nose=(brush.ellipse(185.0, 618.0, 15.0, 10.0), brush.ellipse(179.0, 614.0, 4.0, 2.5)),
+    lid=RACCOON_MASK,
+    ear="#eceae4",
+    ear_inner="#4b5158",
+    shine=True,
+    blink=3.0,
+    paw="#25282c",
+)
+
+
+def _spines(cx: float, cy: float, n: int) -> tuple[Point, ...]:
+    """A crest of ``n`` spines round the head from lower left to lower right, longest over the crown and short at the
+    sides, closed behind the shoulders."""
+    out: list[Point] = []
+    for k in range(2 * n + 1):
+        angle = math.radians(200.0 - 220.0 * k / (2 * n))
+        up = math.sin(angle)  # 1 over the crown, below 0 under the sides
+        r = 118.0 + 72.0 * max(up, 0.0) ** 1.5 if k % 2 else 100.0 + 8.0 * up
+        out.append((round(cx + r * math.cos(angle), 2), round(cy - r * math.sin(angle), 2)))
+    return (*out, (300.0, 700.0), (70.0, 700.0))
+
+
+HEDGEHOG = Look(
+    name="hedgehog",
+    coat="#e8c79c",
+    dark="#6a4a3c",
+    light="#f7e6cc",
+    silhouette=(
+        (98.0, 546.0),
+        (132.0, 520.0),
+        (185.0, 512.0),
+        (238.0, 520.0),
+        (272.0, 546.0),
+        (290.0, 588.0),
+        (292.0, 628.0),
+        (280.0, 658.0),
+        (262.0, 680.0),
+        (304.0, 706.0),
+        (326.0, 764.0),
+        (330.0, 830.0),
+        (40.0, 830.0),
+        (44.0, 764.0),
+        (66.0, 706.0),
+        (108.0, 680.0),
+        (90.0, 658.0),
+        (78.0, 628.0),
+        (80.0, 588.0),
+    ),
+    eyes=((154.0, 592.0), (216.0, 592.0)),
+    eye_r=13.0,
+    mouth=(185.0, 652.0),
+    mouth_w=34.0,
+    limb=28.0,
+    ears=(_ring(104.0, 548.0, 16.0), _mirror(_ring(104.0, 548.0, 16.0))),
+    marks=((brush.ellipse(185.0, 636.0, 44.0, 30.0), "#f7e6cc"), (brush.ellipse(185.0, 764.0, 82.0, 64.0), "#f7e6cc")),
+    nose=(brush.ellipse(185.0, 624.0, 12.0, 10.0), brush.ellipse(181.0, 620.0, 3.5, 2.5)),
+    ear="#e8c79c",
+    ear_inner="#d99a86",
+    brows=True,
+    shine=True,
+    blush="#f2a0a0",
+    blink=2.2,
+    mantle=_spines(185.0, 612.0, 11),
+)
+LOOKS = {"dog": DOG, "frog": FROG, "bear": BEAR, "rabbit": RABBIT, "fox": FOX, "raccoon": RACCOON, "hedgehog": HEDGEHOG}
 BEAR_BROW = (
     24  # the index of the bear's left brow in figure_shapes(BEAR, ..., "desk"): after ears, body, marks, blush, arms
 )
@@ -327,7 +559,7 @@ def _limb(points: Sequence[Point], look: Look, paw: Point, toes: bool = True) ->
         (brush.stroke(points, look.limb + 2 * INK, brush.EVEN), "ink"),
         (brush.stroke(points, look.limb, brush.EVEN), look.coat),
         (brush.ellipse(paw[0], paw[1], look.limb * 0.72 + INK, look.limb * 0.5 + INK), "ink"),
-        (brush.ellipse(paw[0], paw[1], look.limb * 0.72, look.limb * 0.5), look.coat),
+        (brush.ellipse(paw[0], paw[1], look.limb * 0.72, look.limb * 0.5), look.paw or look.coat),
     ]
     if toes:
         for dx in (-look.limb * 0.22, look.limb * 0.22):
@@ -616,6 +848,8 @@ def sticky_note(cx: float, cy: float, size: float = 44.0, tilt: float = -8.0, pa
 
 def _foundation(look: Look) -> list[Layer]:
     layers: list[Layer] = []
+    if look.mantle:
+        layers += [(brush.rim(look.mantle, INK), "ink"), (brush.outline(look.mantle), look.dark)]
     for ear in look.ears:
         layers += [(brush.rim(ear, INK), "ink"), (brush.outline(ear), look.ear or look.dark)]
         if look.ear_inner:
@@ -878,3 +1112,63 @@ def rabbit(
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
     return figure(cv, parent, RABBIT, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
+
+
+@register(
+    "character",
+    "toon-fox",
+    summary="A slender red fox at the desk: tall ears, white cheek tufts and chin, dark paws, blinks and lip sync",
+)
+def fox(
+    cv: Canvas,
+    parent,
+    poses: Sequence[Pose],
+    duration: float,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
+) -> list:
+    return figure(cv, parent, FOX, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
+
+
+@register(
+    "character",
+    "toon-raccoon",
+    summary="A stout grey raccoon at the desk: a bandit's mask, white-rimmed ears, dark gloves, blinks and lip sync",
+)
+def raccoon(
+    cv: Canvas,
+    parent,
+    poses: Sequence[Pose],
+    duration: float,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
+) -> list:
+    return figure(cv, parent, RACCOON, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
+
+
+@register(
+    "character",
+    "toon-hedgehog",
+    summary="A small hedgehog at the desk: a crown of dark spines, beady eyes, a button nose, blinks and lip sync",
+)
+def hedgehog(
+    cv: Canvas,
+    parent,
+    poses: Sequence[Pose],
+    duration: float,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
+) -> list:
+    return figure(cv, parent, HEDGEHOG, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
