@@ -218,3 +218,28 @@ def test_a_reel_captions_in_its_series_look_unless_it_names_its_own(project):
     assert CALLS["stage"]["look"] is tidy
     own = native.CaptionLook(min_last=3)
     assert dataclasses.replace(tidy_reel, captions=own).look() is own
+
+
+def test_a_reel_passes_its_series_own_staging_options_to_the_builder_and_a_plain_reel_passes_none(project):
+    seen: dict = {}
+
+    def designed(ep, stages, *, hook, font, look=native.CAPTION_LOOK, design=2):
+        seen["design"] = design
+        return {"hook": "hook-node", "captions": "captions-node"}
+
+    @dataclass(frozen=True)
+    class DesignedReel(Reel):
+        design: int = 2
+        series = dataclasses.replace(SERIES, stage=designed)
+
+        def staging(self):
+            return {"design": self.design}
+
+    plain = reel()
+    assert plain.staging() == {}
+    fields = {f: getattr(plain, f) for f in ("slug", "number", "title", "description", "accessible", "takes", "hook",
+                                             "stages")}  # fmt: skip
+    series.build(DesignedReel(**fields, design=1), "unused.py", argv=["demo.py", str(project)])
+    assert seen["design"] == 1
+    series.build(DesignedReel(**fields), "unused.py", argv=["demo.py", str(project)])
+    assert seen["design"] == 2

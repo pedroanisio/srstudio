@@ -100,6 +100,11 @@ class Reel:
         """The reel's caption look: its own, else its series'."""
         return self.captions if self.captions is not None else self._series().captions
 
+    def staging(self) -> Mapping[str, Any]:
+        """Options the series' reel builder takes besides the stages, hook, font and look: none here; a series'
+        reel subclass adds its own (the Saga reel its cast design)."""
+        return {}
+
     def script(self) -> Script:
         """The recording script: only the voices its lines use, credited by name."""
         s = self._series()
@@ -175,7 +180,7 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
     if ep.spec.font is None:
         raise SeriesError(f"reel {reel.slug!r}: the {s.style.name} style draws no text, so it has no caption font")
     font = (root / ep.spec.font).read_bytes()
-    made = s.stage(ep, reel.stages(ep.takes), hook=reel.hook, font=font, look=reel.look())
+    made = s.stage(ep, reel.stages(ep.takes), hook=reel.hook, font=font, look=reel.look(), **reel.staging())
     ep.hide_on_cover(made["hook"], made["captions"])
     if posts and reel.slug in posts:
         ep.instagram(posts[reel.slug])
