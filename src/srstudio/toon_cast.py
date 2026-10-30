@@ -54,6 +54,10 @@ __all__ = [
     "INK",
     "VISEMES",
     "BLINK_HOLD",
+    "SHUT",
+    "TEAR",
+    "HEART",
+    "TONGUE",
     "figure_layers",
     "figure_shapes",
     "viseme_keys",
@@ -78,6 +82,10 @@ SHOULDERS: tuple[Point, Point] = ((62.0, 712.0), (308.0, 712.0))
 VISEMES = ("closed", "open", "round", "teeth")  # the lip-sync mouths; closed is the pose's own mouth
 BLINK_HOLD = 0.12  # seconds the lids stay down in a blink
 BLINK_PHASE = 0.55  # the first blink of a pose comes this fraction of the period after it starts
+SHUT = ("closed", "wince", "hearts")  # eyes with nothing to blink: no lids come down over them
+TEAR = "#8fd0f5"
+HEART = "#e2364b"
+TONGUE = "#e8798c"
 Layer = tuple[Shape, str]  # a shape and its colour: "ink" and "white" are the palette's, the rest literal
 Mouths = Sequence[tuple[float, str]]  # (project second, viseme) states, in time order
 
@@ -613,15 +621,29 @@ def _arms(
 
 
 def _brow(look: Look, centre: Point, kind: str, inner: float) -> Layer:
-    """An eyebrow over one eye: raised for surprise, flat and low when tired, angled down toward the nose in anger."""
+    """An eyebrow over one eye: raised for surprise, flat and low when tired, angled down toward the nose in anger,
+    up toward it in pain."""
     ex, ey = centre
     r = look.eye_r
-    lift = {"wide": 12.0, "shock": 22.0, "up": 18.0, "half": 6.0, "down": 4.0, "side": 8.0, "left": 10.0}
+    lift = {
+        "wide": 12.0,
+        "shock": 22.0,
+        "up": 18.0,
+        "half": 6.0,
+        "down": 4.0,
+        "side": 8.0,
+        "left": 10.0,
+        "teary": 10.0,
+        "wince": 4.0,
+        "hearts": 12.0,
+    }
     y = ey - r - INK - lift.get(kind, 7.0)
     outer, inside = ex - inner * r * 1.05, ex + inner * r * 0.9
     if kind == "narrow":  # the inner end comes down: a frown
         points = [(outer, y - 5.0), (inside, y + 9.0)]
-    elif kind in ("shock", "up", "wide"):  # an arch
+    elif kind in ("teary", "wince"):  # the inner end goes up: hurt
+        points = [(outer, y + 4.0), (inside, y - 8.0)]
+    elif kind in ("shock", "up", "wide", "hearts"):  # an arch
         points = [(outer, y + 2.0), (ex, y - 4.0), (inside, y + 2.0)]
     else:
         points = [(outer, y), (inside, y + (2.0 if kind == "down" else 0.0))]
@@ -636,6 +658,12 @@ def _eye(look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
     out: list[Layer] = [_brow(look, centre, kind, inner)] if look.brows else []
     if kind == "closed":
         return out + [(brush.stroke([(ex - r, ey + 1.0), (ex, ey + 7.0), (ex + r, ey + 1.0)], INK), "ink")]
+    if kind == "wince":  # squeezed shut: a chevron pointing at the nose
+        tip, back = ex + inner * 0.75 * r, ex - inner * 0.9 * r
+        return out + [(brush.stroke([(back, ey - 0.65 * r), (tip, ey), (back, ey + 0.65 * r)], INK), "ink")]
+    if kind == "hearts":
+        heart = _heart(ex, ey, r * 1.25)
+        return out + [(brush.rim(heart, INK), "ink"), (brush.outline(heart), HEART)]
     out.append((brush.ellipse(ex, ey, r + INK, r + INK), "ink"))
     out.append((brush.ellipse(ex, ey, r, r), "white"))
     pupil = {
@@ -647,8 +675,10 @@ def _eye(look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
         "side": (0.5, 0.12),
         "narrow": (0.0, 0.15),
         "shock": (0.0, 0.0),
+        "roll": (0.42, -0.5),  # up and the same way for both eyes
+        "teary": (0.0, 0.05),
     }[kind]
-    size = r * (0.14 if kind == "shock" else 0.28)
+    size = r * {"shock": 0.14, "teary": 0.38}.get(kind, 0.28)
     lids = {"half": 0.5, "down": 0.3, "side": 0.45}  # a straight lid, this far down the eye
     if kind in lids:
         y = ey - r + 2 * r * lids[kind]
@@ -676,11 +706,41 @@ def _eye(look: Look, centre: Point, kind: str, inner: float) -> list[Layer]:
             )
         )
         out.append((brush.stroke([(outer, y_out), (inside, y_in)], INK), "ink"))
+    elif kind == "roll":  # a lower lid risen to the middle: the bored half of an eye roll
+        y = ey + 0.3 * r
+        out.append(
+            (brush.outline([(ex - r - INK - 1, y), (ex + r + INK + 1, y), (ex + r + INK + 1, ey + r + INK + 1),
+                            (ex - r - INK - 1, ey + r + INK + 1)]), lid)
+        )  # fmt: skip
+        out.append((brush.stroke([(ex - r - 2.0, y), (ex, y - 1.5), (ex + r + 2.0, y)], INK), "ink"))
     px, py = ex + pupil[0] * r, ey + pupil[1] * r
     out.append((brush.ellipse(px, py, size, size * 1.15), "ink"))
+    if kind == "teary":  # glistening whatever the look's polish, and a tear at the outer corner
+        out.append((brush.ellipse(px - size * 0.35, py - size * 0.4, size * 0.36, size * 0.36), "white"))
+        out.append((brush.ellipse(px + size * 0.4, py + size * 0.4, size * 0.18, size * 0.18), "white"))
+        tear = _tear(ex - inner * 0.75 * r, ey + r + INK + 4.0, r / 17.0)
+        return out + [(brush.rim(tear, FINE), "ink"), (brush.outline(tear), TEAR)]
     if look.shine:
         out.append((brush.ellipse(px - size * 0.35, py - size * 0.45, size * 0.3, size * 0.3), "white"))
     return out
+
+
+def _heart(cx: float, cy: float, size: float) -> tuple[Point, ...]:
+    """A heart about ``2 * size`` across, centred on (``cx``, ``cy``): the classic curve, notched at the top."""
+    s = size / 16.0
+    out = []
+    for k in range(20):
+        t = 2 * math.pi * k / 20
+        x = 16.0 * math.sin(t) ** 3
+        y = -(13.0 * math.cos(t) - 5.0 * math.cos(2 * t) - 2.0 * math.cos(3 * t) - math.cos(4 * t))
+        out.append((round(cx + x * s, 2), round(cy + (y - 2.5) * s, 2)))
+    return tuple(out)
+
+
+def _tear(x: float, y: float, scale: float) -> tuple[Point, ...]:
+    """A drop hanging from (``x``, ``y``), pointed at the top."""
+    drop = ((0.0, 0.0), (5.0, 9.0), (6.5, 15.0), (0.0, 20.0), (-6.5, 15.0), (-5.0, 9.0))
+    return tuple((round(x + dx * scale, 2), round(y + dy * scale, 2)) for dx, dy in drop)
 
 
 def _lids(look: Look) -> list[Layer]:
@@ -724,6 +784,38 @@ def _mouth(look: Look, kind: str) -> list[Layer]:
     if kind == "wave":
         pts = [(mx - w / 2, my), (mx - w / 4, my - 5.0), (mx, my), (mx + w / 4, my + 5.0), (mx + w / 2, my)]
         return [(brush.stroke(pts, INK * 0.8), "ink")]
+    if kind == "grimace":  # clenched teeth, wider than the mouth
+        hw = w * 0.58
+        box = [(mx - hw, my - 9.0), (mx + hw, my - 9.0), (mx + hw, my + 9.0), (mx - hw, my + 9.0)]
+        out: list[Layer] = [
+            (brush.rim(box, INK * 0.8, brush.EVEN, steps=3), "ink"),
+            (brush.outline(box, steps=3), "white"),
+        ]
+        out.append((brush.stroke([(mx - hw + 2.0, my), (mx + hw - 2.0, my)], FINE * 0.7, brush.EVEN, steps=3), "ink"))
+        for k in (-1.0, 0.0, 1.0):
+            x = mx + k * hw / 2
+            out.append((brush.stroke([(x, my - 8.0), (x, my + 8.0)], FINE * 0.7, brush.EVEN, steps=3), "ink"))
+        return out
+    if kind == "frown":
+        return [(brush.stroke([(mx - w / 2, my + 6.0), (mx, my - 6.0), (mx + w / 2, my + 6.0)], INK * 0.9), "ink")]
+    if kind == "tongue":  # a smile with the tongue out under one side
+        tw = w * 0.36
+        tongue = [
+            (mx - 2.0, my + 2.0),
+            (mx + tw, my + 2.0),
+            (mx + tw, my + 15.0),
+            (mx + tw / 2 + 1.0, my + 22.0),
+            (mx - 2.0, my + 15.0),
+        ]
+        return [
+            (brush.rim(tongue, FINE), "ink"),
+            (brush.outline(tongue), TONGUE),
+            (brush.stroke([(mx + tw / 2 + 1.0, my + 6.0), (mx + tw / 2 + 1.0, my + 13.0)], FINE * 0.6), "ink"),
+            (brush.stroke([(mx - w / 2, my - 3.0), (mx, my + 5.0), (mx + w / 2, my - 3.0)], INK), "ink"),
+        ]
+    if kind == "kiss":  # a pucker
+        pts = [(mx - 3.0, my - 9.0), (mx + 5.0, my - 5.0), (mx, my), (mx + 5.0, my + 5.0), (mx - 3.0, my + 9.0)]
+        return [(brush.stroke(pts, INK * 0.85), "ink")]
     # smirk
     return [(brush.stroke([(mx - w / 4, my + 2.0), (mx + w / 6, my), (mx + w / 2, my - 8.0)], INK), "ink")]
 
@@ -886,7 +978,8 @@ def figure_layers(
     under_mouth += [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
     if look.whiskers:
         under_mouth += _whiskers(look)
-    over_mouth: list[Layer] = (_teeth(look) if look.teeth and mouth != "none" else []) + over + list(stickers)
+    bare = look.teeth and mouth not in ("none", "grimace", "kiss")  # no front teeth over clenched or puckered lips
+    over_mouth: list[Layer] = (_teeth(look) if bare else []) + over + list(stickers)
     return _place(under_mouth, arms), _place(_mouth(look, mouth), arms), _place(over_mouth, arms)
 
 
@@ -1018,7 +1111,7 @@ def figure(
                 cv.keys(layer, "opacity", states, local=False)
         else:
             _draw(cv, g, mouth_layers)
-        blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" else []
+        blinks = blink_times(start, end, look.blink) if pose.eyes not in SHUT else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
             _draw(cv, shut, _place(_lids(look), pose.arms))
