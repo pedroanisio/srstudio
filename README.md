@@ -1838,7 +1838,8 @@ error is `InstagramPostError`, with every problem listed.
   (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
   without a package is held back like a drifted one. A video whose release is in an A/B test
   (`releases.Tags(test=, arm=)`) is staged with an `ab.json` (`{"test": ..., "arm": ...}`) that the posting job
-  reads, hashed in `outbox.json` like every staged file. A recreation ships the package it was received with
+  reads, hashed in `outbox.json` like every staged file. The recipient test rides in the same file: `recipient=` is
+  its arm, and arm `b` adds `to=`, who the viewer sends it to, from `releases.RECIPIENTS`. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
   the engine. Each call builds and verifies a candidate, comparing its resolved files and metadata with the latest

@@ -29,6 +29,7 @@ from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
 __all__ = [
     "AB_NAME",
+    "Arm",
     "MANIFEST",
     "MANIFEST_VERSION",
     "NO_PACKAGE",
@@ -41,7 +42,7 @@ __all__ = [
 ]
 
 MANIFEST = "outbox.json"
-AB_NAME = "ab.json"  # beside a video in an A/B test: {"test": ..., "arm": ...}, read by the posting job
+AB_NAME = "ab.json"  # beside a video in an A/B test: an :class:`Arm`'s document, read by the posting job
 MANIFEST_VERSION = "1.0.0"
 NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package"
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -54,13 +55,28 @@ class OutboxError(SrstudioError, ValueError):
 
 
 @dataclass(frozen=True)
+class Arm:
+    """What a reel's ``ab.json`` says: the first-second ``test`` and its ``arm``, and, in the recipient test, its
+    ``recipient`` arm and who arm ``b`` is written ``to``."""
+
+    test: str
+    arm: str
+    recipient: str = ""
+    to: str = ""
+
+    def document(self) -> dict[str, str]:
+        extra = {"recipient": self.recipient, "to": self.to}
+        return {"test": self.test, "arm": self.arm} | {key: value for key, value in extra.items() if value}
+
+
+@dataclass(frozen=True)
 class Bundle:
     """One video ready to publish: its folder name in the outbox, the files that go in it, video first, and the
-    ``(test, arm)`` of the A/B test it is in, if any."""
+    :class:`Arm` of the A/B tests it is in, if any."""
 
     name: str
     files: tuple[Path, ...]
-    ab: tuple[str, str] | None = None
+    ab: Arm | None = None
 
 
 def latest_package(folder: Path, slug: str) -> Path | None:
@@ -81,7 +97,7 @@ def ready(
     font: Path,
     packages: Mapping[str, Path] | None = None,
     frozen: Mapping[str, str] | None = None,
-    ab: Mapping[str, tuple[str, str]] | None = None,
+    ab: Mapping[str, Arm] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
@@ -115,16 +131,22 @@ def ready(
     return bundles, drift
 
 
-def _arms(items: Items, ab: Mapping[str, tuple[str, str]] | None) -> dict[str, tuple[str, str]]:
+def _arms(items: Items, ab: Mapping[str, Arm] | None) -> dict[str, Arm]:
     ab = dict(ab or {})
     unknown = sorted(set(ab) - set(items))
     if unknown:
         raise OutboxError(f"an A/B arm is named for a video that is not published: {', '.join(unknown)}")
-    for name, (test, arm) in sorted(ab.items()):
-        if not test:
+    for name, chosen in sorted(ab.items()):
+        if not chosen.test:
             raise OutboxError(f"{name}: an A/B arm needs its test")
-        if arm not in ARMS:
-            raise OutboxError(f"{name}: arm {arm!r} is not one of {', '.join(ARMS)}")
+        if chosen.arm not in ARMS:
+            raise OutboxError(f"{name}: arm {chosen.arm!r} is not one of {', '.join(ARMS)}")
+        if chosen.recipient and chosen.recipient not in ARMS:
+            raise OutboxError(f"{name}: recipient {chosen.recipient!r} is not one of {', '.join(ARMS)}")
+        if (chosen.recipient == "b") != bool(chosen.to):
+            raise OutboxError(
+                f"{name}: recipient {chosen.recipient!r}, to {chosen.to!r}: arm b, and only it, names who"
+            )
     return ab
 
 
@@ -179,7 +201,7 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
                     raise OutboxError(f"{source} changed while it was staged")
             if b.ab is not None:
                 arm = target / AB_NAME
-                arm.write_text(json.dumps({"test": b.ab[0], "arm": b.ab[1]}) + "\n")
+                arm.write_text(json.dumps(b.ab.document()) + "\n")
                 arm.chmod(0o600)
                 hashes[AB_NAME] = digest.sha256(arm)
             videos[b.name] = hashes

@@ -299,3 +299,28 @@ def test_a_release_being_delivered_needs_the_record_of_its_build(tmp_path):
     assert [d.name for d in drift] == ["Other_Name"] and "srstudio build" in drift[0].reason
     parts.write_record(tmp_path / "a-b", {"toon-fox": 2})
     assert releases.unpinned({"a-b": pinned}, tmp_path, delivering={"Other_Name"}) == []
+
+
+def test_a_reel_carries_the_recipient_test_beside_the_first_second_test():
+    plain = releases.Tags("family", "other-person", "recognition", test="sp-hook_motion", arm="a", recipient="a")
+    written = releases.Tags(
+        "family", "other-person", "recognition", test="sp-hook_motion", arm="b", recipient="b", to="best friend"
+    )
+    assert (plain.recipient, plain.to) == ("a", "")
+    assert (written.recipient, written.to) == ("b", "best friend")
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        ({"test": "sp-hook_motion", "arm": "a", "recipient": "c"}, "recipient"),
+        ({"recipient": "a"}, "first-second"),
+        ({"test": "sp-hook_motion", "arm": "a", "recipient": "b"}, "names who"),
+        ({"test": "sp-hook_motion", "arm": "a", "recipient": "a", "to": "family"}, "names who"),
+        ({"test": "sp-hook_motion", "arm": "a", "to": "family"}, "names who"),
+        ({"test": "sp-hook_motion", "arm": "a", "recipient": "b", "to": "sister"}, "to 'sister'"),
+    ],
+)
+def test_the_recipient_test_is_refused_when_incomplete(kw, match):
+    with pytest.raises(releases.ReleaseError, match=match):
+        releases.Tags("family", "other-person", "recognition", **kw)

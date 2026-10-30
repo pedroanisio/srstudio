@@ -49,6 +49,7 @@ CAUSES = ("institution", "other-person", "protagonist")
 EMOTIONS = ("recognition", "embarrassment", "tension", "relief", "affection", "triumph")
 TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion")  # sp-: the posting job's own test ids
 ARMS = ("a", "b")
+RECIPIENTS = ("partner", "family", "best friend", "roommate", "work friend")  # who arm b of the recipient test is for
 
 
 class ReleaseError(SrstudioError, ValueError):
@@ -60,7 +61,9 @@ class Tags:
     """What the account's analytics compare across episodes: the ``territory`` the premise comes from, the
     ``cause`` of the problem (an institution, another person or the protagonist), the ``emotion`` it leaves, the
     ``recurring`` characters it brings back (their registered short names), and, for an episode in a running A/B
-    test, the ``test`` and its ``arm``. Every value comes from a closed set, so the tags can be counted."""
+    test, the ``test`` and its ``arm``. The recipient test runs beside the first-second test in the same ``ab.json``:
+    ``recipient`` is its arm, and arm ``b`` names who the viewer sends it ``to``. Every value comes from a closed set,
+    so the tags can be counted."""
 
     territory: str
     cause: str
@@ -68,6 +71,8 @@ class Tags:
     recurring: tuple[str, ...] = ()
     test: str = ""
     arm: str = ""
+    recipient: str = ""
+    to: str = ""
 
     def __post_init__(self) -> None:
         for field, value, allowed in (
@@ -89,6 +94,16 @@ class Tags:
             raise ReleaseError(f"test {self.test!r} and arm {self.arm!r}: an A/B test needs both or neither")
         if self.arm and self.arm not in ARMS:
             raise ReleaseError(f"arm {self.arm!r} is not one of {', '.join(ARMS)}")
+        if self.recipient and self.recipient not in ARMS:
+            raise ReleaseError(f"recipient {self.recipient!r} is not one of {', '.join(ARMS)}")
+        if self.recipient and not self.test:
+            raise ReleaseError(
+                "the recipient test rides on the first-second test: a reel without test and arm drops both"
+            )
+        if (self.recipient == "b") != bool(self.to):
+            raise ReleaseError(f"recipient {self.recipient!r} and to {self.to!r}: arm b, and only arm b, names who")
+        if self.to and self.to not in RECIPIENTS:
+            raise ReleaseError(f"to {self.to!r} is not one of {', '.join(RECIPIENTS)}")
 
 
 @dataclass(frozen=True)
