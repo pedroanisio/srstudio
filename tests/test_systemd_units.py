@@ -27,3 +27,12 @@ def test_the_catalog_page_is_built_from_the_measured_usage():
     unit = (UNITS / "srstudio-catalog.service").read_text()
     command = unit[unit.index("ExecStart=") :].split("\nEnvironment=")[0]
     assert "--usage generated/catalog/usage.json" in command
+
+
+def test_the_catalog_is_written_as_a_site_and_served_on_loopback():
+    build = (UNITS / "srstudio-catalog.service").read_text()
+    assert "--site generated/catalog/site" in build and "--out" not in build
+    web = (UNITS / "srstudio-catalog-web.service").read_text()
+    command = next(line for line in web.splitlines() if line.startswith("ExecStart="))
+    assert command.endswith("serve generated/catalog/site --host 127.0.0.1 --port 8765")
+    assert "Restart=on-failure" in web

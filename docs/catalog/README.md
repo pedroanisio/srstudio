@@ -1,8 +1,10 @@
-# The catalog page
+# The catalog site
 
 Back to the [library README](../../README.md) and the [workspace README](../../../README.md).
 
-`srstudio page` writes the scene-render catalog, a single self-contained HTML file with every video and image embedded.
+`srstudio page` writes the scene-render catalog as a small site, `index.html` plus `media/<content-hash>.<ext>`, and
+`srstudio serve` serves it ([ADR 0046](../decisions/0046-catalog-web-app.md)). The page holds no data URI: every video,
+image, font and sound is a file it links to with a relative URL, and nothing heavy loads until it is asked for.
 The page is the six original packages followed by *Parte 2: Os episódios novos da biblioteca*, which is rebuilt from
 disk on every run:
 
@@ -29,8 +31,13 @@ From the workspace root, first measure which parts the episodes use (see the
     --episodes generated/episodes --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json --usage generated/catalog/usage.json \
     --cache generated/catalog/cache --engine generated/bin/scene-render \
-    --out catalogo-scene-render.html
+    --site generated/catalog/site
+.venv/bin/srstudio serve generated/catalog/site   # http://127.0.0.1:8765/
 ```
+
+`srstudio serve SITE [--host 127.0.0.1] [--port 8765]` is read-only and has no authentication, so it binds to
+loopback unless told otherwise. It answers the byte ranges a browser needs to seek a video. Opening `index.html`
+from disk is not supported.
 
 - `--usage` is the report `srstudio usage` writes (schema `1.0.0`). The registry table's episodes, the gallery
   chips and the gallery check below come from it; without it no part is claimed by any episode. Notes with a
@@ -41,7 +48,10 @@ From the workspace root, first measure which parts the episodes use (see the
   command stops with `srstudio page: …` and exit code 2, and the old page is left as it was.
 - `--cache` keeps the web encodes (540 px wide, 720 px when the render is wider than tall, so a square Ink render is 540; keyed by each render's size and modification time)
   and the pose images (keyed by the pose list). Unchanged renders are not encoded again.
-- The page is written atomically with mode `600`.
+- `--site` is written with folders `700` and files `600`. Media are named by their content, so a rebuild writes only
+  what changed. They are hard-linked from the cache where possible and copied otherwise. Media go first and
+  `index.html` is replaced last, so a failed build leaves the previous site working. Files nothing references are
+  removed only after that. The build stops if the page would hold a data URI or pass `INDEX_LIMIT`.
 
 ## Notes
 
@@ -90,11 +100,12 @@ changes:
 - `notes.json`;
 - the base page.
 
-The service first waits until no render has changed for 15 s, checking at most 60 times. Install it once:
+The service first waits until no render has changed for 15 s, checking at most 60 times. A second unit,
+`srstudio-catalog-web.service`, keeps `srstudio serve` running on `127.0.0.1:8765`. Install them once:
 
 ```bash
 cd srstudio/tools/systemd
-systemctl --user link "$PWD/srstudio-catalog.path" "$PWD/srstudio-catalog.service"
-systemctl --user enable --now srstudio-catalog.path
+systemctl --user link "$PWD/srstudio-catalog.path" "$PWD/srstudio-catalog.service" "$PWD/srstudio-catalog-web.service"
+systemctl --user enable --now srstudio-catalog.path srstudio-catalog-web.service
 journalctl --user -u srstudio-catalog.service   # each rebuild and its episode list
 ```
