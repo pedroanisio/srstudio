@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.13.0
-changelog: "1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.15.0
+changelog: "1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -296,6 +296,16 @@ Then act the beats with it:
 
 - **Listening.** Give the listener their own beat when a line lands on them: a look away, a narrowing, a pose that
   changes. A face held still is a choice (deadpan, the awkward pause), written down as one, never the default.
+- **Heads.** In a Toon sketch, `heads=("sloth", "goat")` in `Staging` moves those characters' heads through the whole
+  reel: nods on their own words, smaller nods on the other's, glances and breath. It is off unless you name them,
+  and a character with no rig is refused by name (`toon_rigs.RIGS` lists who has one). Each rig has its own signature
+  in its `HeadStyle`, so choose the cast with it in mind. It needs the recording run's `voiced/speech.json`: a project
+  recorded before this records again, which costs nothing with cached takes. Heads do not replace acting, so still
+  give the listener a beat when a line lands. Reels already published stay as they are.
+- **A new rig.** A character joins by supplying a skull, a face, a trunk, its head contour, neck pivot and tilt, what
+  covers the seam and a `HeadStyle`, then an entry in `toon_rigs.RIGS`; a `toon_torso` character gets most of it from
+  `toon_critters.Split`. The seam and bounds tests then run on it. Look at a rendered clip beside the flat drawing:
+  the rig is a second drawing, and it can drift (the fox's first rig had a collar).
 - **Hesitation and anticipation.** Before a big pose or a hard line, add a small opposite move or a held breath:
   eyes away, the arms still, then the line. Soft's rig has this as `blob.cue` (anticipation) and `blob.settle`
   (overshoot and rest); other rigs get it from a short beat with its own pose.
