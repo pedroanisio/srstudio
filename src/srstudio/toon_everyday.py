@@ -7,7 +7,8 @@ buzzes it, a code or password prompt, a dating profile, a declined payment, a lo
 chasing round), speaking (the ring pulsing) or an error (red). :func:`receipt` hangs from a printer's slot and
 unrolls, its rows of items and prices showing as the paper passes them; a longer receipt is a longer strip.
 :func:`take_a_number` is the deli-counter dispenser on its pole, a ticket sticking out of it, under a NOW SERVING
-display whose number changes on cue.
+display whose number changes on cue. :func:`clipboard` holds a printed form (a job application, a sign-in sheet):
+its title, labelled rows whose handwritten values are filled in on cue, and a stamp that lands across it.
 
 Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
 drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
@@ -618,4 +619,135 @@ def take_a_number(
         n = cv.group(g, f"{id}-serving-{k}")
         _shown(cv, n, t0, times[k + 1] if k + 1 < len(times) else None)
         NUMBER_SLOT.draw(cv, n, text, "display-text")
+    return box
+
+
+# -- the clipboard -----------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Field:
+    """A row of the form: its printed ``label`` and the ``value`` written in by hand at ``at`` (project seconds);
+    an empty value leaves the row blank."""
+
+    label: str
+    value: str = ""
+    at: float = 0.0
+
+
+BOARD, CLIP, PEN = "#b07b4f", "#c9cdd3", "#1e40af"
+FORM_X, FORM_W = -64.0, 128.0  # the lettering's width on the paper, reference units
+TITLE_SLOT = Slot(FORM_X, -214, FORM_W, 28, 30)
+FIRST_ROW, ROW_PITCH, ROW_H = -178.0, 30.0, 28.0
+LABEL_SIZE, VALUE_SIZE = 24, 26
+LABEL_GAP = 4.0  # reference units between a label and its value
+MAX_FIELDS = 5  # the rows the paper holds
+STAMP_TONES = {"bad": "#c62828", "good": "#1f7a3a"}
+STAMP_TILT = -12.0  # degrees
+STAMP_POP, STAMP_LAND = 1.2, 0.12  # the stamp's scale as it lands, and the seconds it takes to settle
+STAMP_AT = (0.0, -110.0)  # its centre on the paper
+STAMP_SLOT = Slot(-54, -27, 108, 46, 36)  # raised: capitals sit low in the face's line box
+CLIPBOARD_BOX: Box = (-92.0, -246.0, 92.0, 8.0)
+
+
+def _fields(fields: Sequence[Field], measure: Measure) -> list[tuple[Slot, Slot]]:
+    """Each field's label and value boxes, the value starting after its measured label."""
+    if not fields:
+        raise ToonDataError("a clipboard form needs at least one field")
+    if len(fields) > MAX_FIELDS:
+        raise ToonDataError(f"a clipboard form holds at most {MAX_FIELDS} fields, got {len(fields)}")
+    out = []
+    for k, f in enumerate(fields):
+        what = f"clipboard field {k}"
+        if not isinstance(f, Field):
+            raise ToonDataError(f"{what}: a clipboard field is a Field, got {f!r}")
+        y = FIRST_ROW + k * ROW_PITCH
+        label = Slot(FORM_X, y, FORM_W, ROW_H, LABEL_SIZE, align="start")
+        label.fit(measure, f.label, f"{what}: the label")
+        x = FORM_X + measure(f.label, LABEL_SIZE) / SCALE + LABEL_GAP
+        value = Slot(x, y, FORM_X + FORM_W - x, ROW_H, VALUE_SIZE, PEN, align="start")
+        if not isinstance(f.value, str):
+            raise ToonDataError(f"{what}: the value is text, got {f.value!r}")
+        if f.value:
+            value.fit(measure, f.value, f"{what}: the value")
+        if not (checks.number(f.at) and f.at >= 0):
+            raise ToonDataError(f"{what}: the value is written at a second >= 0, got {f.at!r}")
+        out.append((label, value))
+    return out
+
+
+def _stamp(stamp, measure: Measure) -> tuple[float, str, str] | None:
+    if stamp is None:
+        return None
+    if not (isinstance(stamp, tuple | list) and len(stamp) == 3):
+        raise ToonDataError(f"a clipboard stamp is (second, text, tone), got {stamp!r}")
+    t, text, tone = stamp
+    if not (checks.number(t) and t >= 0):
+        raise ToonDataError(f"the clipboard stamp lands at a second >= 0, got {t!r}")
+    if tone not in STAMP_TONES:
+        raise ToonDataError(f"the clipboard stamp's tone is one of {sorted(STAMP_TONES)}, got {tone!r}")
+    return float(t), STAMP_SLOT.fit(measure, text, "the clipboard stamp text"), tone
+
+
+@register(
+    "prop",
+    "toon-clipboard",
+    summary="A clipboard holding a printed form (a job application, a sign-in sheet): its title, labelled rows "
+    "whose handwritten values are filled in on cue, and a REJECTED or HIRED stamp that lands across it",
+)
+def clipboard(
+    cv: Canvas,
+    parent,
+    title: str,
+    fields: Sequence[Field],
+    *,
+    measure: Measure,
+    stamp: tuple[float, str, str] | None = None,
+    at: tuple[float, float] = (420, 826),
+    scale: float = 1.0,
+    hand: str | None = None,
+    id: str = "clipboard",
+) -> Box:
+    """The clipboard standing at reference ``at`` (propped, with a contact shadow, or held: ``hand`` is the
+    holder's ``#rrggbb`` colour, a thumb over its left edge): the form's ``title``, up to :data:`MAX_FIELDS` rows
+    (:class:`Field`) whose values are written in on cue, and the ``stamp`` (``(second, text, tone)``, the tone one
+    of :data:`STAMP_TONES`) landing across the form. Returns its footprint."""
+    box = _place("clipboard", at, scale, CLIPBOARD_BOX)
+    TITLE_SLOT.fit(measure, title, "the clipboard title")
+    rows = _fields(fields, measure)
+    landing = _stamp(stamp, measure)
+    if hand is not None and not (isinstance(hand, str) and _HEX.fullmatch(hand)):
+        raise ToonDataError(f"a clipboard's hand is a #rrggbb colour, got {hand!r}")
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    if hand is None:
+        _ellipse(cv, g, -84, -6, 168, 12, SHADOW, 0, opacity=0.16)
+    _rect(cv, g, -80, -232, 160, 232, BOARD, INK_W * 0.8, radius=8)
+    form = cv.group(g, f"{id}-form")
+    _rect(cv, form, -70, -220, 140, 210, PAPER, FINE_W * 0.5)
+    TITLE_SLOT.draw(cv, form, title, "form-text")
+    _line(cv, form, [(FORM_X, -184), (FORM_X + FORM_W, -184)], FINE_W * 0.5, PAPER_RULE)
+    for f, (label, value) in zip(fields, rows, strict=True):
+        label.draw(cv, form, f.label, "form-text")
+        _line(cv, form, [(value.x, value.y + ROW_H - 3), (FORM_X + FORM_W, value.y + ROW_H - 3)], FINE_W * 0.4,
+              PAPER_RULE)  # fmt: skip
+    for k, (f, (_, value)) in enumerate(zip(fields, rows, strict=True)):
+        if f.value:
+            v = cv.group(g, f"{id}-value-{k}")
+            _shown(cv, v, float(f.at), None)
+            value.draw(cv, v, f.value, "form-text")
+    _rect(cv, g, -30, -242, 60, 24, CLIP, INK_W * 0.6, radius=6)
+    _rect(cv, g, -16, -236, 32, 6, PRINTER, 0, radius=3)
+    if landing is not None:
+        t, text, tone = landing
+        colour = STAMP_TONES[tone]
+        st = cv.group(g, f"{id}-stamp", x=fh(STAMP_AT[0]), y=fh(STAMP_AT[1]), rotation=STAMP_TILT)
+        _shown(cv, st, t, None)
+        if t > 0:
+            for axis in ("scaleX", "scaleY"):
+                cv.keys(st, axis, [(0.0, STAMP_POP), (t, STAMP_POP), (t + STAMP_LAND, 1.0)], hold=False, local=False)
+        cv.rect(st, fh(-62), fh(-24), fh(124), fh(48), cv.clear, colour, 6.0, radius=fh(6))
+        Slot(STAMP_SLOT.x, STAMP_SLOT.y, STAMP_SLOT.w, STAMP_SLOT.h, STAMP_SLOT.size, colour).draw(
+            cv, st, text, "stamp-text"
+        )
+    if hand is not None:
+        _ellipse(cv, g, -89, -130, 24, 40, hand, FINE_W)
     return box

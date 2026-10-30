@@ -35,10 +35,6 @@ def group(cv: Canvas, gid: str):
     return next(g for g in tree(cv).iter("group") if g.get("id") == gid)
 
 
-def texts(node) -> list[str]:
-    return [t.get("text") for t in node.iter("text")]
-
-
 def layer_texts(cv: Canvas, gid: str) -> list[str]:
     """The texts the layers under group ``gid`` show, in drawing order."""
     assets = {t.get("id"): t.get("text") for t in tree(cv).iter("text")}
@@ -226,7 +222,7 @@ def test_the_phone_refuses_a_hand_that_is_not_a_colour():
 def test_the_props_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert "toon_everyday" in TOON.parts
-    for name in ("toon-phone", "toon-speaker", "toon-receipt", "toon-take-a-number"):
+    for name in ("toon-phone", "toon-speaker", "toon-receipt", "toon-take-a-number", "toon-clipboard"):
         assert (names[name]["kind"], names[name]["style"]) == ("prop", "toon"), name
 
 
@@ -434,3 +430,79 @@ def test_take_a_number_draws_inside_its_footprint():
 def test_take_a_number_refuses_what_its_display_and_ticket_cannot_show(kw, match):
     with pytest.raises(ToonDataError, match=match):
         take_a_number(**{"at": (300, 826), **kw})
+
+
+# -- the clipboard ---------------------------------------------------------------------------------------------------
+Field = toon_everyday.Field
+FIELDS = [Field("Name", "Rex"), Field("Exp.", "15 yrs", 1.0), Field("Salary", "", 0.0)]
+
+
+def clipboard(cv=None, title="APPLICATION", fields=FIELDS, **kw):
+    cv = cv or canvas()
+    return toon_everyday.clipboard(cv, cv.comp, title, fields, measure=measure, **kw)
+
+
+def test_the_form_prints_its_title_and_labels_and_each_value_is_written_in_at_its_second():
+    cv = canvas()
+    clipboard(cv, at=(300, 826))
+    assert layer_texts(cv, "clipboard-form") == ["APPLICATION", "Name", "Exp.", "Salary"]
+    assert layer_texts(cv, "clipboard-value-0") == ["Rex"]
+    assert keys(group(cv, "clipboard-value-0"), "opacity") == [(0.0, 1.0)]
+    assert layer_texts(cv, "clipboard-value-1") == ["15 yrs"]
+    assert keys(group(cv, "clipboard-value-1"), "opacity") == [(0.0, 0.0), (1.0, 1.0)]
+    assert not [g for g in tree(cv).iter("group") if g.get("id") == "clipboard-value-2"]  # left blank
+
+
+def test_the_stamp_lands_at_its_second_with_a_pop_in_its_tone():
+    cv = canvas()
+    clipboard(cv, stamp=(3.0, "REJECTED", "bad"), at=(300, 826))
+    stamp = group(cv, "clipboard-stamp")
+    assert float(stamp.get("rotation")) == toon_everyday.STAMP_TILT
+    assert keys(stamp, "opacity") == [(0.0, 0.0), (3.0, 1.0)]
+    pop = toon_everyday.STAMP_POP
+    assert keys(stamp, "scaleX") == keys(stamp, "scaleY") == [(0.0, pop), (3.0, pop), (3.12, 1.0)]
+    assert layer_texts(cv, "clipboard-stamp") == ["REJECTED"]
+    assert {s.get("stroke") for s in stamp.iter("shape")} == {toon_everyday.STAMP_TONES["bad"]}
+
+
+def test_a_stamp_from_the_start_is_simply_there():
+    cv = canvas()
+    clipboard(cv, stamp=(0.0, "HIRED", "good"), at=(300, 826))
+    stamp = group(cv, "clipboard-stamp")
+    assert keys(stamp, "opacity") == [(0.0, 1.0)] and not stamp.findall("animate[@property='scaleX']")
+
+
+@pytest.mark.parametrize("hand", [None, "#60a7fb"])
+def test_the_clipboard_draws_inside_its_footprint_even_at_the_height_of_the_pop(hand):
+    cv = canvas()
+    fields = [Field("Name", "Rex"), Field("Exp.", "15 yrs"), Field("Salary", "Yes"), Field("Start", "Now"),
+              Field("Refs", "Mom")]  # fmt: skip
+    box = clipboard(cv, fields=fields, stamp=(2.0, "REJECTED", "bad"), at=(300, 826), scale=1.3, hand=hand)
+    assert inside(drawn(cv, "clipboard"), frame_box(box))
+    pop = toon_everyday.STAMP_POP  # the stamp as it lands
+    assert inside(drawn(cv, "clipboard", {"clipboard-stamp": {"scaleX": pop, "scaleY": pop}}), frame_box(box))
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(title=""), "title"),
+        (dict(title="APPLICATION FOR EMPLOYMENT"), "title.*px"),
+        (dict(fields=[]), "at least one"),
+        (dict(fields=[Field("Row", "x")] * (toon_everyday.MAX_FIELDS + 1)), "at most"),
+        (dict(fields=[("Name", "Rex")]), "Field"),
+        (dict(fields=[Field("", "Rex")]), "label"),
+        (dict(fields=[Field("Name", "Bartholomew Jr.")]), "value.*px"),
+        (dict(fields=[Field("Name", "Rex\nJr.")]), "value"),
+        (dict(fields=[Field("Name", "Rex", True)]), "second"),
+        (dict(fields=[Field("Name", "Rex", -1)]), "second"),
+        (dict(stamp=(1.0, "NO")), "stamp"),
+        (dict(stamp=(1.0, "NO", "meh")), "tone"),
+        (dict(stamp=(True, "NO", "bad")), "stamp.*second"),
+        (dict(stamp=(1.0, "ABSOLUTELY NOT", "bad")), "stamp.*px"),
+        (dict(hand="skin"), "hand"),
+    ],
+)
+def test_the_clipboard_refuses_a_form_it_cannot_letter(kw, match):
+    with pytest.raises(ToonDataError, match=match):
+        clipboard(**{"at": (300, 826), **kw})
