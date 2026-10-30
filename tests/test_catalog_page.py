@@ -1,7 +1,9 @@
 """``srstudio.catalog_page``: the catalog page rebuilt from the episode projects, their renders and the registry."""
 
+import base64
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -231,38 +233,219 @@ def engine() -> Path:
     return Path(found).resolve()
 
 
-def test_build_writes_a_private_standalone_page_and_reuses_its_cache(tree, tmp_path):
-    episodes, renders = tree
+def rendered(renders: Path) -> None:
     for slug in ("camera-off", "the-router", "mushroom-training"):
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=108x192:rate=10:duration=1",
              "-pix_fmt", "yuv420p", str(renders / f"{slug}.mp4")],
             check=True,
         )  # fmt: skip
-    base = tmp_path / "base.html"
-    base.write_text(BASE)
-    out = tmp_path / "site" / "catalog.html"
-    cache = tmp_path / "cache"
-    args = ["page", "--base", str(base), "--episodes", str(episodes), "--renders", str(renders)]
-    args += ["--out", str(out), "--cache", str(cache), "--engine", str(engine())]
+
+
+def page_args(tree, tmp_path, *, engine_path="missing-engine", base=None) -> list[str]:
+    episodes, renders = tree
+    args = ["page", "--base", str(base or tmp_path / "base.html"), "--episodes", str(episodes)]
+    args += ["--renders", str(renders), "--site", str(tmp_path / "site"), "--cache", str(tmp_path / "cache")]
+    return [*args, "--engine", str(engine_path)]
+
+
+def references(site: Path) -> set[str]:
+    return set(re.findall(r"media/[0-9a-f]+\.[a-z0-9]+", (site / "index.html").read_text()))
+
+
+def test_build_writes_a_private_site_and_reuses_its_cache(tree, tmp_path):
+    rendered(tree[1])
+    (tmp_path / "base.html").write_text(BASE)
+    args = page_args(tree, tmp_path, engine_path=engine())
     assert main(args) == 0
-    page = out.read_text()
-    assert page.count("data:video/mp4;base64,") == 3 and page.count("data:image/png;base64,") >= 18
-    assert stat.S_IMODE(out.stat().st_mode) == 0o600 and stat.S_IMODE(out.parent.stat().st_mode) == 0o700
+    site, cache = tmp_path / "site", tmp_path / "cache"
+    page = (site / "index.html").read_text()
+    assert not cp.embedded(page)  # no data URI of any kind
+    assert page.count('preload="none"') == 3 and page.count("<video") == 3 and page.count(' poster="media/') == 3
+    assert page.count('loading="lazy"') >= 18
+    assert {f"media/{p.name}" for p in (site / "media").iterdir()} == references(site)
+    assert {p.suffix for p in (site / "media").iterdir()} == {".mp4", ".jpg", ".png"}
+    for path in [site / "index.html", *(site / "media").iterdir()]:
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    for folder in (site, site / "media"):
+        assert stat.S_IMODE(folder.stat().st_mode) == 0o700
     cached = {p.name: p.stat().st_mtime_ns for p in cache.rglob("*") if p.is_file()}
     assert main(args) == 0
     assert {p.name: p.stat().st_mtime_ns for p in cache.rglob("*") if p.is_file()} == cached  # nothing re-encoded
 
 
-def test_page_reports_a_bad_base_as_an_error(tree, tmp_path, capsys):
-    episodes, renders = tree
-    base = tmp_path / "base.html"
-    base.write_text("<html></html>")
-    args = ["page", "--base", str(base), "--episodes", str(episodes), "--renders", str(renders)]
-    args += ["--out", str(tmp_path / "o.html"), "--cache", str(tmp_path / "c"), "--engine", "missing-engine"]
-    assert main(args) == 2
+@pytest.fixture
+def fake_media(monkeypatch, tree, tmp_path):
+    """Encoders replaced by small files with distinct contents, so a build needs neither ffmpeg nor the engine."""
+
+    def web_video(render: Path, cache: Path) -> tuple[Path, Path]:
+        cache.mkdir(parents=True, exist_ok=True)
+        video, poster = cache / f"{render.stem}.mp4", cache / f"{render.stem}.jpg"
+        video.write_bytes(f"video {render.stem} ".encode() + render.read_bytes())
+        poster.write_bytes(f"poster {render.stem} ".encode() + render.read_bytes())
+        return video, poster
+
+    def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
+        png = cache / "stand.png"
+        png.write_bytes(b"pose")
+        return [("stand", png)]
+
+    monkeypatch.setattr(cp, "web_video", web_video)
+    monkeypatch.setattr(cp, "pose_sheet", pose_sheet)
+    (tmp_path / "base.html").write_text(BASE)
+    return page_args(tree, tmp_path)
+
+
+def test_a_rebuild_writes_only_what_changed_and_removes_what_is_no_longer_referenced(tree, tmp_path, fake_media):
+    site = tmp_path / "site"
+    assert main(fake_media) == 0
+    before = {p.name: p.stat().st_ino for p in (site / "media").iterdir()}
+    (site / "media" / ".abandoned.mp4.123").write_bytes(b"a partial write of a killed build")
+    (tree[1] / "the-router.mp4").write_bytes(b"a new render")
+    assert main(fake_media) == 0
+    after = {p.name: p.stat().st_ino for p in (site / "media").iterdir()}
+    assert {f"media/{name}" for name in after} == references(site)  # the old router files and the partial are gone
+    assert len(before) == len(after) and len(set(before) & set(after)) == len(before) - 2  # its video and poster
+    assert all(before[name] == after[name] for name in set(before) & set(after))  # the rest were left alone
+
+
+def test_a_failed_build_leaves_the_previous_site_working(tree, tmp_path, fake_media, monkeypatch):
+    site = tmp_path / "site"
+    assert main(fake_media) == 0
+    page = (site / "index.html").read_text()
+    (tree[1] / "the-router.mp4").write_bytes(b"a new render")
+
+    def no_space(*_args):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(cp.os, "replace", no_space)  # the first thing that fails is placing a media file
+    assert main(fake_media) == 2
+    monkeypatch.undo()
+    assert (site / "index.html").read_text() == page
+    assert all((site / ref).exists() for ref in references(site))
+
+
+def test_the_index_is_replaced_last_and_what_it_needs_is_removed_only_after(tree, tmp_path, fake_media, monkeypatch):
+    site = tmp_path / "site"
+    assert main(fake_media) == 0
+    page = (site / "index.html").read_text()
+    (tree[1] / "the-router.mp4").write_bytes(b"a new render")
+
+    def fail(*_args):
+        raise cp.CatalogError("the index could not be written")
+
+    monkeypatch.setattr(cp, "_write_text", fail)
+    assert main(fake_media) == 2
+    assert (site / "index.html").read_text() == page
+    assert all((site / ref).exists() for ref in references(site))  # the old site's media were not pruned
+
+
+def test_a_file_at_the_site_path_is_reported(tree, tmp_path, fake_media, capsys):
+    (tmp_path / "site").write_text("in the way")
+    assert main(fake_media) == 2
     assert "srstudio page:" in capsys.readouterr().err
-    assert not (tmp_path / "o.html").exists()
+
+
+def test_an_index_past_its_bound_is_refused(tree, tmp_path, fake_media, monkeypatch, capsys):
+    monkeypatch.setattr(cp, "INDEX_LIMIT", 100)
+    assert main(fake_media) == 2
+    assert "bytes" in capsys.readouterr().err and not (tmp_path / "site" / "index.html").exists()
+
+
+def test_the_single_file_mode_is_gone(tree, tmp_path):
+    with pytest.raises(SystemExit) as exit_:
+        main([*page_args(tree, tmp_path)[:-4], "--out", str(tmp_path / "o.html"), "--cache", str(tmp_path / "c")])
+    assert exit_.value.code == 2
+
+
+def test_page_reports_a_bad_base_as_an_error(tree, tmp_path, capsys):
+    (tmp_path / "base.html").write_text("<html></html>")
+    assert main(page_args(tree, tmp_path)) == 2
+    assert "srstudio page:" in capsys.readouterr().err
+    assert not (tmp_path / "site").exists()
+
+
+# -- media ------------------------------------------------------------------------------------------------
+def test_media_are_named_by_their_content_and_linked_from_the_cache(tmp_path):
+    source = tmp_path / "cached.MP4"
+    source.write_bytes(b"bytes")
+    source.chmod(0o600)
+    store = cp.MediaStore(tmp_path / "media")
+    url = store.add(source)
+    assert re.fullmatch(r"media/[0-9a-f]{32}\.mp4", url)
+    assert (tmp_path / url).read_bytes() == b"bytes" and (tmp_path / url).stat().st_ino == source.stat().st_ino
+    twin = tmp_path / "twin.mp4"
+    twin.write_bytes(b"bytes")
+    assert store.add(twin) == url  # same content, same name
+
+
+def test_a_cache_file_on_another_device_is_copied(tmp_path, monkeypatch):
+    source = tmp_path / "cached.jpg"
+    source.write_bytes(b"bytes")
+    source.chmod(0o600)
+
+    def cross_device(*_args):
+        raise OSError(18, "Invalid cross-device link")
+
+    monkeypatch.setattr(cp.os, "link", cross_device)
+    url = cp.MediaStore(tmp_path / "media").add(source)
+    copied = tmp_path / url
+    assert copied.read_bytes() == b"bytes" and copied.stat().st_ino != source.stat().st_ino
+    assert stat.S_IMODE(copied.stat().st_mode) == 0o600
+
+
+def test_a_cache_file_with_another_mode_is_copied_so_the_cache_is_only_read(tmp_path):
+    source = tmp_path / "cached.jpg"
+    source.write_bytes(b"bytes")
+    source.chmod(0o644)
+    copied = tmp_path / cp.MediaStore(tmp_path / "media").add(source)
+    assert stat.S_IMODE(copied.stat().st_mode) == 0o600 and stat.S_IMODE(source.stat().st_mode) == 0o644
+
+
+def test_a_damaged_media_file_is_rewritten(tmp_path):
+    source = tmp_path / "cached.jpg"
+    source.write_bytes(b"bytes")
+    store = cp.MediaStore(tmp_path / "media")
+    target = tmp_path / store.add(source)
+    target.unlink()
+    target.write_bytes(b"by")
+    assert (tmp_path / store.add(source)).read_bytes() == b"bytes"
+
+
+def test_the_uris_of_the_base_page_become_media_files(tmp_path):
+    font, song = base64.b64encode(b"font bytes").decode(), base64.b64encode(b"song bytes").decode()
+    page = f"""<style>@font-face{{ src:url("data:font/ttf;base64,{font}") format("truetype") }}</style>
+<script>const A = {{"one": "data:audio/mpeg;base64,{song}", "two": "data:audio/mpeg;base64,{song}"}};</script>
+<p>metadata: kept, and so is data: alone in prose</p>"""
+    store = cp.MediaStore(tmp_path / "media")
+    out = cp.extract_embedded(page, store)
+    assert not cp.embedded(out) and "metadata: kept" in out
+    fonts = re.findall(r'url\("(media/[0-9a-f]+\.ttf)"\)', out)
+    songs = re.findall(r'"(media/[0-9a-f]+\.mp3)"', out)
+    assert len(fonts) == 1 and len(songs) == 2 and songs[0] == songs[1]
+    assert (tmp_path / fonts[0]).read_bytes() == b"font bytes" and (tmp_path / songs[0]).read_bytes() == b"song bytes"
+
+
+@pytest.mark.parametrize(
+    "uri, match",
+    [
+        ("data:application/x-unknown;base64,AAAA", "application/x-unknown"),  # no extension to serve it under
+        ("data:font/ttf;base64,AAAAA", "base64"),  # a bad length
+    ],
+)
+def test_a_base_page_uri_that_cannot_become_a_file_is_refused(tmp_path, uri, match):
+    with pytest.raises(cp.CatalogError, match=match):
+        cp.extract_embedded(f'<a href="{uri}">', cp.MediaStore(tmp_path / "media"))
+
+
+@pytest.mark.parametrize(
+    "uri",
+    ["data:image/svg+xml,%3Csvg%3E", "data:text/plain;charset=utf-8,hello", "DATA:IMAGE/PNG;base64,AAAA", "data:,x"],
+)
+def test_a_uri_of_any_other_form_still_counts_as_embedded(tmp_path, uri):
+    assert cp.embedded(f'<img src="{uri}">')
+    with pytest.raises(cp.CatalogError, match="data URI"):
+        cp.require_no_embedded(f'<img src="{uri}">')
 
 
 # -- the galleries ----------------------------------------------------------------------------------------
@@ -524,6 +707,6 @@ def test_page_reports_an_unreadable_usage_report_as_an_error(tree, tmp_path, cap
     bad = tmp_path / "usage.json"
     bad.write_text(json.dumps({"schema": "0.1.0"}))
     args = ["page", "--base", str(tmp_path / "base.html"), "--episodes", str(episodes), "--renders", str(renders)]
-    args += ["--out", str(tmp_path / "o.html"), "--cache", str(tmp_path / "c"), "--usage", str(bad)]
+    args += ["--site", str(tmp_path / "site"), "--cache", str(tmp_path / "c"), "--usage", str(bad)]
     assert main(args) == 2
-    assert "schema" in capsys.readouterr().err and not (tmp_path / "o.html").exists()
+    assert "schema" in capsys.readouterr().err and not (tmp_path / "site").exists()
