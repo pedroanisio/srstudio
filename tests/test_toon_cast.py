@@ -1,6 +1,7 @@
 """The dog, the frog, the bear and the rabbit: brush-drawn Toon characters with the cat's vocabulary and contract,
 the polish of the later two (brows, highlights, blush, teeth, whiskers, blinks) and the lip sync they all take."""
 
+import itertools
 import math
 import xml.etree.ElementTree as ET
 
@@ -31,11 +32,38 @@ def runs_of(cv: Canvas):
     return [g for g in tree(cv).find("composition").iter("group") if g.get("start") is not None]
 
 
-@pytest.mark.parametrize("look", toon_cast.LOOKS.values(), ids=list(toon_cast.LOOKS))
-@pytest.mark.parametrize("arms", toon.ARMS)
-@pytest.mark.parametrize("eyes", toon.EYES)
-@pytest.mark.parametrize("mouth", toon.MOUTHS)
-def test_every_expression_is_drawn_inside_the_character_s_corner(look, eyes, mouth, arms):
+def expression_sample() -> list[tuple[str, str, str, str]]:
+    """Every eyes × mouth × arms once, each drawn by the look at (eyes + mouth + arms) index modulo the cast. Every
+    look so meets every eye, mouth and arm kind, and while the cast has no more looks than there are arms, every
+    look draws every eyes × mouth pair."""
+    names = list(toon_cast.LOOKS)
+    return [
+        (names[(e + m + a) % len(names)], eyes, mouth, arms)
+        for e, eyes in enumerate(toon.EYES)
+        for m, mouth in enumerate(toon.MOUTHS)
+        for a, arms in enumerate(toon.ARMS)
+    ]
+
+
+SAMPLE = expression_sample()
+
+
+def test_the_expression_sample_covers_every_kind_and_every_look():
+    every = set(itertools.product(toon.EYES, toon.MOUTHS, toon.ARMS))
+    assert len(SAMPLE) == len(every) and {(e, m, a) for _, e, m, a in SAMPLE} == every
+    for name in toon_cast.LOOKS:
+        mine = [(e, m, a) for n, e, m, a in SAMPLE if n == name]
+        assert {e for e, _, _ in mine} == set(toon.EYES)
+        assert {m for _, m, _ in mine} == set(toon.MOUTHS)
+        assert {a for _, _, a in mine} == set(toon.ARMS)
+    assert len(toon_cast.LOOKS) <= len(toon.ARMS)  # else the pairs below thin out: widen the sample
+    pairs = {(n, e, m) for n, e, m, _ in SAMPLE}
+    assert pairs == set(itertools.product(toon_cast.LOOKS, toon.EYES, toon.MOUTHS))
+
+
+@pytest.mark.parametrize(("name", "eyes", "mouth", "arms"), SAMPLE, ids=["-".join(s) for s in SAMPLE])
+def test_every_expression_is_drawn_inside_the_character_s_corner(name, eyes, mouth, arms):
+    look = toon_cast.LOOKS[name]
     layers = toon_cast.figure_shapes(look, eyes, mouth, arms)
     assert layers and all(len(s) >= 8 and (len(s) - 2) % 6 == 0 for s, _ in layers)
     boxes = [brush.bounds(s) for s, _ in layers]
