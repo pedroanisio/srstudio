@@ -63,6 +63,7 @@ TONES = {"info": "#5fd4ff", "alert": "#ff5a4f", "ok": "#7ee08a", "gold": "#f2b84
 HOLO_FILL = "#0d2a3a"
 HOLO_PAD = 22  # px inside the panel above the title and below the last line
 HOLO_FADE = 0.14  # s a fading panel takes to appear
+DESERT_SHADE = [(0, "#2a1d4a00"), (0.06, "#2a1d4acc"), (1, "#2a1d4ae6")]  # the desert's dusk under the captions
 HOLO_MIN = 150  # the shortest panel, and the shortest box a hologram accepts
 FACE_W = 130  # the called face's frame
 DEPTH_BLUR = (
@@ -294,8 +295,9 @@ def cantina_front(cv: Canvas, parent, *, end: float) -> None:
     summary="A desert world at sunset: two suns, layered dunes, a domed hut with "
     "a potted cactus at its door and a dew-collecting tower",
 )
-def desert(cv: Canvas, parent, *, end: float) -> None:
-    """The desert outside the hut; the cast stands on the near dune at :data:`FLOOR`."""
+def desert(cv: Canvas, parent, *, end: float, shade: bool = False) -> None:
+    """The desert outside the hut; the cast stands on the near dune at :data:`FLOOR`. With ``shade`` the dune below
+    the floor line darkens to dusk (:data:`DESERT_SHADE`), so white captions over the bright sand stay readable."""
     _check_end(end)
     g = cv.group(parent, cv.uid("g"))
     far = _far(cv, g)
@@ -313,6 +315,10 @@ def desert(cv: Canvas, parent, *, end: float) -> None:
         cv.path(g, f"M{x0} {y} Q{x0 + 260} {y - 34} {x0 + 520} {y} T{x0 + 1040} {y} T{x0 + 1560} {y}",
                 stroke="#b8783e", sw=5, opacity=0.55)  # fmt: skip
     _pool(cv, g, "desert", "#fff0c0", FLOOR - 70, opacity=0.3)
+    if shade:
+        top = FLOOR - 10
+        paint = cv.grad("saga-desert-shade", DESERT_SHADE, (0, 0, 0, 1))
+        cv.rect(g, 0, top, W, H - top, paint)
     hut = cv.group(g, cv.uid("g"), x=40, y=1150)
     cv.path(hut, "M0 0 Q140 -260 280 0 Z", "#e6c79a", cv.ink, INK_W)
     cv.path(hut, "M100 0 L100 -80 Q140 -120 180 -80 L180 0 Z", "#3a2a1e", cv.ink, 5)
