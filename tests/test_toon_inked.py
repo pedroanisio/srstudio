@@ -14,7 +14,7 @@ from srstudio.voice import Voice, VoiceSettings
 
 INKED = toon_inked.FOX_INKED
 DRAWING = toon_inked.FOX_INK
-# the kinds feat/toon-critters adds to the vocabulary (ADR 0045), drawn for this face ahead of it
+# the kinds the sloth, goat and hamster add to the vocabulary, drawn for this face ahead of it
 EYE_KINDS = tuple(dict.fromkeys((*toon.EYES, "sleepy")))
 MOUTH_KINDS = tuple(dict.fromkeys((*toon.MOUTHS, "yawn", "scream", "puff")))
 
