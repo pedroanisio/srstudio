@@ -493,7 +493,10 @@ def _clip(root: Path, q: Mapping[str, object], where: str) -> None:
 
 
 def _manifest(path: Path) -> dict:
-    data = json.loads(Path(path).read_text())
+    try:
+        data = json.loads(Path(path).read_text())
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise NarrationError(f"{path}: cannot read narration manifest: {exc}") from exc
     if not isinstance(data, dict):
         raise NarrationError(f"{path}: expected an object")
     return data

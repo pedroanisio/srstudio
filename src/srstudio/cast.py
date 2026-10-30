@@ -7,6 +7,7 @@ subclass or on a plain ``fn(cv, parent, ...)``.
 
 from __future__ import annotations
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -15,6 +16,49 @@ from .rig import Actor, Performance
 
 class CastError(SrstudioError, ValueError):
     """An actor was asked for a pose it does not draw."""
+
+
+def _pairs(value: object, name: str, *, spans: bool = False) -> None:
+    if not isinstance(value, (list, tuple)):
+        raise CastError(f"{name}: expected a sequence of pairs")
+    for pair in value:
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            raise CastError(f"{name}: expected pairs of finite numbers")
+        if not (checks.number(pair[0]) and checks.number(pair[1]) and pair[0] >= 0):
+            raise CastError(f"{name}: expected a non-negative time and a finite value")
+        if spans and pair[1] < pair[0]:
+            raise CastError(f"{name}: span end must be at or after start")
+
+
+def _options(perf: Performance, allowed: frozenset[str]) -> None:
+    unknown = set(perf.extras) - allowed
+    if unknown:
+        raise CastError(
+            f"unknown performance option(s) {', '.join(sorted(unknown))}; known: {', '.join(sorted(allowed))}"
+        )
+    for name in ("forearm", "pupils"):
+        if name in perf.extras and perf.extras[name] is not None:
+            _pairs(perf.extras[name], name)
+    if "brows" in perf.extras and perf.extras["brows"] is not None:
+        brows = perf.extras["brows"]
+        if not isinstance(brows, (list, tuple)) or len(brows) != 2:
+            raise CastError("brows: expected left and right key sequences")
+        for side in brows:
+            _pairs(side, "brows")
+    if "pointing" in perf.extras and perf.extras["pointing"] is not None:
+        _pairs(perf.extras["pointing"], "pointing", spans=True)
+    if "facepalm" in perf.extras and perf.extras["facepalm"] is not None:
+        _pairs([perf.extras["facepalm"]], "facepalm", spans=True)
+    if "held_cup" in perf.extras and perf.extras["held_cup"] is not None:
+        _pairs(perf.extras["held_cup"], "held_cup", spans=True)
+    if "hide_right_arm_at" in perf.extras and perf.extras["hide_right_arm_at"] is not None:
+        checks.non_negative(
+            perf.extras["hide_right_arm_at"], CastError, "hide_right_arm_at: expected a finite time >= 0"
+        )
+    if "skin" in perf.extras and (not isinstance(perf.extras["skin"], str) or not perf.extras["skin"]):
+        raise CastError("skin: expected a nonempty colour string")
+    if "name" in perf.extras and perf.extras["name"] is not None and not isinstance(perf.extras["name"], str):
+        raise CastError("name: expected badge text or None")
 
 
 class OfficeActor(Actor):
@@ -31,6 +75,15 @@ class OfficeActor(Actor):
     eye_xs = (-37, 31)
     LEGS = ("seated", "standing")
     STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
+    extra_options = frozenset({"arms", "legs"})
+
+    def validate_performance(self, perf: Performance) -> None:
+        _options(perf, self.extra_options)
+        if perf.extras.get("arms", "static") not in ("static", "articulated"):
+            raise CastError("arms: expected 'static' or 'articulated'")
+        legs = perf.extras.get("legs")
+        if legs is not None and legs not in self.LEGS:
+            raise CastError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
 
     def draw_body(self, g, perf: Performance):
         cv, ink, white, clear = self.cv, self.cv.ink, self.cv.white, self.cv.clear
@@ -96,12 +149,22 @@ class OfficeActor(Actor):
             self.cv.path(closed, f"M{x - 12} -20 Q{x} -9 {x + 12} -20", stroke=self.cv.ink, sw=3.8)
 
 
-@register("character", "manager", summary="The interviewer: glasses-free, receding hairline, raised brows, facepalm")
+@register(
+    "character",
+    "manager",
+    summary="The interviewer: glasses-free, receding hairline, raised brows, facepalm",
+    examples=(
+        'from srstudio import get\n'
+        'actor = get("character", "manager")(ep.cv)\n'
+        'node = ep.perform(actor, ep.comp, 540, 800, 1.0, mouth=[(0, "rest")])',
+    ),
+)
 class Manager(OfficeActor):
     """extras: ``brows`` = (left_keys, right_keys) rotation; ``pupils`` = y keys;
     ``hide_right_arm_at`` = time; ``facepalm`` = (start, end)."""
 
     role = "manager"
+    extra_options = OfficeActor.extra_options | {"brows", "pupils", "hide_right_arm_at", "facepalm"}
     bottom = 312
     eye_xs = (-37, 31)
 
@@ -166,6 +229,7 @@ class Candidate(OfficeActor):
     """extras: ``forearm`` = rotation keys at the elbow; ``pointing`` = spans the raised finger shows."""
 
     role = "candidate"
+    extra_options = OfficeActor.extra_options | {"forearm", "pointing"}
     bottom = 330
     eye_xs = (-32, 37)
 
@@ -213,6 +277,7 @@ class Rosa(OfficeActor):
     (default ROSA); ``None`` stitches nothing and draws no text layer."""
 
     role = "rosa"
+    extra_options = OfficeActor.extra_options | {"stitch"}
     bottom = 312
     eye_xs = (-34, 36)
     STITCH = 6
@@ -260,12 +325,16 @@ class Rosa(OfficeActor):
 class CafeActor(Actor):
     """The café family: skin tone, wardrobe, round blink arcs; tag ``role-cafe`` or ``role-park``.
 
-    extras: ``seated`` (park bench), ``skin`` colour override.
+    extras: ``skin`` colour override. ``seated`` is a constructor argument.
     """
 
     mouth_stroke = 3.5
     supports_limbs = True
     skin = "#F1D0AA"
+    extra_options = frozenset({"skin"})
+
+    def validate_performance(self, perf: Performance) -> None:
+        _options(perf, self.extra_options)
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
         role = role or self.role
@@ -296,6 +365,7 @@ class Barista(CafeActor):
     """extras: ``name`` on the badge (default AVA)."""
 
     role = "barista"
+    extra_options = CafeActor.extra_options | {"name"}
     skin = "#C28A65"
 
     def draw_body(self, g, perf):
@@ -355,6 +425,7 @@ class Customer(CafeActor):
     """extras: ``held_cup`` = spans the takeaway cup is in hand (standing only; seated always holds it)."""
 
     role = "customer"
+    extra_options = CafeActor.extra_options | {"held_cup"}
     skin = "#F1D0AA"
 
     def draw_body(self, g, perf):

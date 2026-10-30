@@ -42,6 +42,7 @@ __all__ = [
     "NotApprovedError",
     "Table",
     "UnknownVersionError",
+    "UnverifiedBuilderError",
     "Version",
     "get",
     "latest",
@@ -73,6 +74,10 @@ class UnknownVersionError(CharacterError):
 
 class NotApprovedError(CharacterError):
     """A version asked for as a default or a pin that the operator has not approved."""
+
+
+class UnverifiedBuilderError(CharacterError):
+    """A replacement builder cannot be treated as the approved drawing without verification."""
 
 
 def _is_date(value: object) -> bool:
@@ -118,17 +123,21 @@ class Version:
             raise CharacterError(f"{where}: its date is a YYYY-MM-DD day, got {self.date!r}")
         if not (isinstance(self.note, str) and self.note.strip() and "\n" not in self.note):
             raise CharacterError(f"{where}: its note is one line, got {self.note!r}")
-        if self.status not in STATUSES:
+        if not isinstance(self.status, str) or self.status not in STATUSES:
             raise CharacterError(f"{where}: its status is one of {STATUSES}, got {self.status!r}")
-        if self.drawing and not DIGEST.fullmatch(self.drawing):
+        if not isinstance(self.proof, str):
+            raise CharacterError(f"{where}: proof must be a string, got {self.proof!r}")
+        if not isinstance(self.drawing, str) or (self.drawing and not DIGEST.fullmatch(self.drawing)):
             raise CharacterError(f"{where}: its drawing is a digest of 64 lowercase hex digits, got {self.drawing!r}")
+        if self.approval is not None and not isinstance(self.approval, Approval):
+            raise CharacterError(f"{where}: approval must be an Approval or None")
         if self.status == "proposed":
             if self.approval is not None:
                 raise CharacterError(f"{where}: a proposed version carries no approval")
             return
         if not self.drawing:
             raise CharacterError(f"{where}: an approved version records its drawing")
-        if self.number > 1 and not self.proof:
+        if self.number > 1 and not self.proof.strip():
             raise CharacterError(f"{where}: an approved version above 1 needs a proof clip")
         if self.number > 1 and self.approval is None:
             raise CharacterError(f"{where}: an approved version above 1 records whose approval it was")
@@ -187,12 +196,15 @@ def _fields(where: str, value: Any, required: set[str], optional: frozenset[str]
 
 
 def _version(where: str, value: Any) -> Version:
-    fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval"})
-    approval = fields["approval"]
-    if approval is not None:
-        words = _fields(f"{where}.approval", approval, {"date", "words"})
-        approval = Approval(words["date"], words["words"])
-    return Version(**{**fields, "approval": approval})
+    try:
+        fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval"})
+        approval = fields["approval"]
+        if approval is not None:
+            words = _fields(f"{where}.approval", approval, {"date", "words"})
+            approval = Approval(words["date"], words["words"])
+        return Version(**{**fields, "approval": approval})
+    except CharacterError as exc:
+        raise CharacterError(f"{where}: {exc}") from exc
 
 
 def read(path: str | Path) -> dict[str, Character]:
@@ -233,8 +245,24 @@ def latest(name: str) -> Version:
     return get(name).latest()
 
 
+def _approved_entry(name: str, number: int) -> registry.Entry:
+    part = part_name(name, number)
+    try:
+        entry = registry.get("character", part)
+    except registry.NotRegisteredError as exc:
+        raise CharacterError(f"{name} version {number}: drawing {part!r} is not registered") from exc
+    if registry._unverified(entry):
+        raise UnverifiedBuilderError(
+            f"{name} version {number}: registered builder is unverified; use specimens.check to compare "
+            "the drawing, or characters.part(..., allow_unverified=True) for proof work"
+        )
+    return entry
+
+
 def pin(name: str, number: int) -> Version:
-    return get(name).pinned(number)
+    version = get(name).pinned(number)
+    _approved_entry(name, version.number)
+    return version
 
 
 def part_name(name: str, number: int) -> str:
@@ -242,17 +270,20 @@ def part_name(name: str, number: int) -> str:
     return name if number == 1 else f"{name}@{number}"
 
 
-def part(name: str, number: int | None = None) -> registry.Entry:
-    """The drawing of version ``number`` of ``name`` (any status, for its proof), or of its default."""
+def part(name: str, number: int | None = None, *, allow_unverified: bool = False) -> registry.Entry:
+    """A version's drawing, or the latest approved drawing; opt in to unverified replacements for proof work."""
     character = get(name)
     chosen = character.latest() if number is None else character.version(number)
+    if chosen.status == "approved" and not allow_unverified:
+        return _approved_entry(name, chosen.number)
     return registry.get("character", part_name(name, chosen.number))
 
 
 def resolved(name: str, pins: Mapping[str, int] | None = None) -> int:
     """The version a build draws: its pin, else the character's default."""
     number = (pins or {}).get(name)
-    return get(name).latest().number if number is None else get(name).pinned(number).number
+    chosen = get(name).latest().number if number is None else number
+    return pin(name, chosen).number
 
 
 def write_record(project: Path, drawn: Mapping[str, int]) -> None:
@@ -264,12 +295,14 @@ def write_record(project: Path, drawn: Mapping[str, int]) -> None:
 def read_record(project: Path) -> dict[str, int] | None:
     """What the build in ``project`` drew, or None for a project built before records (a published one)."""
     path = Path(project) / RECORD
-    if not path.is_file():
-        return None
     try:
         top = _fields(str(path), json.loads(path.read_text(encoding="utf-8")), {"schema", "characters"})
-    except ValueError as exc:
-        raise CharacterError(f"{path}: {exc}") from None
+    except FileNotFoundError as exc:
+        if not path.is_symlink():
+            return None
+        raise CharacterError(f"{path}: {exc}") from exc
+    except (OSError, ValueError) as exc:
+        raise CharacterError(f"{path}: {exc}") from exc
     drawn = top["characters"]
     if top["schema"] != SCHEMA or not isinstance(drawn, dict):
         raise CharacterError(f"{path}: not a {SCHEMA} record of what a build drew")

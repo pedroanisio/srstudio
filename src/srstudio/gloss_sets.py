@@ -13,7 +13,7 @@ with :func:`wrap`, which refuses a text that does not fit its box, so no letteri
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -734,5 +734,5 @@ def notice(cv: Canvas, parent, title: str, body: str, *, end: float, font: bytes
     return g
 
 
-SETS = {"plaza": plaza, "activity": activity, "waiting": waiting}
-PROPS = {"door": door, "ticket": ticket}
+SETS: dict[str, Callable[..., Any]] = {"plaza": plaza, "activity": activity, "waiting": waiting}
+PROPS: dict[str, Callable[..., Any]] = {"door": door, "ticket": ticket}

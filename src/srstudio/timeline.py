@@ -28,6 +28,38 @@ class UnknownTakeError(TimelineError, KeyError):
     """The timeline has no take with that id."""
 
 
+def _record(value: object, where: str, required: tuple[str, ...]) -> dict:
+    if not isinstance(value, dict):
+        raise TimelineError(f"{where}: expected an object")
+    for name in required:
+        if name not in value:
+            raise TimelineError(f"{where}.{name}: required field is missing")
+    return value
+
+
+def _rows(value: object, where: str, required: tuple[str, ...]) -> list[dict]:
+    if not isinstance(value, (list, tuple)):
+        raise TimelineError(f"{where}: expected a list or tuple")
+    return [_record(item, f"{where} {i}", required) for i, item in enumerate(value)]
+
+
+def _text(value: object, where: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise TimelineError(f"{where}: expected a nonempty string")
+    return value
+
+
+def _number(value: object, where: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise TimelineError(f"{where}: expected a finite number, got {value!r}")
+    try:
+        result = float(value)
+    except (ValueError, OverflowError) as exc:
+        raise TimelineError(f"{where}: expected a finite number, got {value!r}") from exc
+    _finite(result, where)
+    return result
+
+
 def _finite(value: float, where: str) -> None:
     if not checks.number(value):
         raise TimelineError(f"{where}: expected a finite number, got {value!r}")
@@ -175,42 +207,59 @@ class Timeline:
     @classmethod
     def load(cls, path: str | Path) -> Timeline:
         path = Path(path)
-        data = json.loads(path.read_text())
+        try:
+            data = json.loads(path.read_text())
+        except OSError as exc:
+            raise TimelineError(f"{path}: cannot read timeline: {exc}") from exc
+        except (json.JSONDecodeError, UnicodeError) as exc:
+            raise TimelineError(f"{path}: invalid timeline JSON: {exc}") from exc
         return cls.from_dict(data, root=path.parent)
 
     @classmethod
     def from_dict(cls, data: dict | list, root: Path | None = None) -> Timeline:
         if isinstance(data, list):
             return cls.from_captions(data, root)
+        data = _record(data, "timeline", ("duration",))
         if "items" in data and "phrases" not in data:
             return cls.from_takes(data, root)
+        data = _record(data, "timeline", ("phrases",))
+        phrase_rows = _rows(data["phrases"], "phrases", ("role", "text", "start", "end"))
+        cut_rows = _rows(data.get("camera_cuts", []), "camera_cuts", ("time", "angle"))
+        effect_rows = _rows(data.get("sound_effects", []), "sound_effects", ("name", "start"))
         phrases = [
             Phrase(
                 index=i,
-                role=p["role"],
-                text=p["text"],
-                caption=p.get("caption", p["text"]),
-                start=float(p["start"]),
-                end=float(p["end"]),
+                role=_text(p["role"], f"phrase {i}.role"),
+                text=_text(p["text"], f"phrase {i}.text"),
+                caption=_text(p.get("caption", p["text"]), f"phrase {i}.caption"),
+                start=_number(p["start"], f"phrase {i}.start"),
+                end=_number(p["end"], f"phrase {i}.end"),
                 voice=p.get("voice", ""),
                 voice_name=p.get("voice_name", ""),
-                speed=float(p.get("speed", 1.0)),
+                speed=_number(p.get("speed", 1.0), f"phrase {i}.speed"),
                 timing_file=p.get("timing_file"),
-                trim_seconds=float(p.get("trim_seconds", 0.0)),
+                trim_seconds=_number(p.get("trim_seconds", 0.0), f"phrase {i}.trim_seconds"),
             )
-            for i, p in enumerate(data["phrases"])
+            for i, p in enumerate(phrase_rows)
         ]
-        cuts = [Cut(float(c["time"]), c["angle"]) for c in data.get("camera_cuts", [])]
+        cuts = [
+            Cut(_number(c["time"], f"camera_cuts {i}.time"), _text(c["angle"], f"camera_cuts {i}.angle"))
+            for i, c in enumerate(cut_rows)
+        ]
         sfx = [
-            SoundEffect(s["name"], float(s["start"]), float(s.get("duration", 0)))
-            for s in data.get("sound_effects", [])
+            SoundEffect(
+                s["name"],
+                _number(s["start"], f"sound_effects {i}.start"),
+                _number(s.get("duration", 0), f"sound_effects {i}.duration"),
+            )
+            for i, s in enumerate(effect_rows)
         ]
-        beats = {k: float(v) for k, v in data.items() if k.endswith(("_start", "_end")) and isinstance(v, (int, float))}
+        beats = {k: _number(v, f"beat {k}") for k, v in data.items() if k.endswith(("_start", "_end"))}
         meta = {
             k: v for k, v in data.items() if k not in ("phrases", "camera_cuts", "sound_effects") and k not in beats
         }
         return cls(
-            duration=float(data["duration"]),
+            duration=_number(data["duration"], "duration"),
             phrases=phrases,
             cuts=cuts,
             sound_effects=sfx,
@@ -225,6 +274,8 @@ class Timeline:
 
         Pauses belong in a take's duration; gaps or overlaps would desynchronise sequential picture from audio.
         """
+        data = _record(data, "timeline", ("duration", "items"))
+        take_rows = _rows(data["items"], "items", ("id", "actor", "shot", "text", "start", "duration"))
         known = {
             "id",
             "actor",
@@ -238,22 +289,27 @@ class Timeline:
             "words",
             "phones",
         }
+        for i, q in enumerate(take_rows):
+            if not isinstance(q["id"], (str, int)) or isinstance(q["id"], bool) or not str(q["id"]).strip():
+                raise TimelineError(f"take {i}.id: expected a nonempty string or integer")
+            if not isinstance(q["shot"], str):
+                raise TimelineError(f"take {i}.shot: expected a string")
         takes = [
             Take(
                 id=str(q["id"]),
-                actor=q["actor"],
+                actor=_text(q["actor"], f"take {i}.actor"),
                 shot=q["shot"],
-                text=q["text"],
-                start=float(q["start"]),
-                duration=float(q["duration"]),
+                text=_text(q["text"], f"take {i}.text"),
+                start=_number(q["start"], f"take {i}.start"),
+                duration=_number(q["duration"], f"take {i}.duration"),
                 mood=q.get("mood", ""),
-                speech_duration=float(q.get("speech_duration", 0.0)),
+                speech_duration=_number(q.get("speech_duration", 0.0), f"take {i}.speech_duration"),
                 audio=q.get("audio"),
-                words=tuple(q.get("words", ())),
-                phones=tuple(q.get("phones", ())),
+                words=tuple(_rows(q.get("words", []), f"take {i}.words", ("start", "end"))),
+                phones=tuple(_rows(q.get("phones", []), f"take {i}.phones", ("start", "end"))),
                 extra={k: v for k, v in q.items() if k not in known},
             )
-            for q in data["items"]
+            for i, q in enumerate(take_rows)
         ]
         phrases = [
             Phrase(index=i, role=t.actor, text=t.text, caption=t.text, start=t.start, end=t.end)
@@ -264,7 +320,7 @@ class Timeline:
         sfx = [SoundEffect(t.text, t.start, t.duration) for t in takes if t.is_effect]
         meta = {k: v for k, v in data.items() if k != "items"}
         return cls(
-            duration=float(data["duration"]),
+            duration=_number(data["duration"], "duration"),
             phrases=phrases,
             cuts=cuts,
             sound_effects=sfx,
@@ -281,17 +337,19 @@ class Timeline:
         if not items:
             raise TimelineError("a caption script needs at least one caption")
         phrases: list[Phrase] = []
-        for i, q in enumerate(items):
-            if not isinstance(q, dict) or not {"start", "end", "text"} <= set(q):
-                raise TimelineError(f"caption {i}: expected an object with start, end and text")
-            start, end = float(q["start"]), float(q["end"])
+        for i, q in enumerate(_rows(items, "caption", ("start", "end", "text"))):
+            start = _number(q["start"], f"caption {i}.start")
+            end = _number(q["end"], f"caption {i}.end")
             if end <= start:
                 raise TimelineError(f"caption {i}: end {end} must come after start {start}")
             if phrases and start < phrases[-1].end - 1e-9:
                 raise TimelineError(f"caption {i}: overlaps the caption before it ({phrases[-1].end} > {start})")
-            text = str(q["text"])
-            caption = q.get("caption") or text.replace("...", "")
-            phrases.append(Phrase(index=i, role="caption", text=text, caption=str(caption), start=start, end=end))
+            text = _text(q["text"], f"caption {i}.text")
+            supplied_caption = q.get("caption")
+            if supplied_caption is not None and not isinstance(supplied_caption, str):
+                raise TimelineError(f"caption {i}.caption: expected a string or None")
+            caption = supplied_caption or text.replace("...", "")
+            phrases.append(Phrase(index=i, role="caption", text=text, caption=caption, start=start, end=end))
         return cls(duration=phrases[-1].end, phrases=phrases, cuts=[], sound_effects=[], root=root)
 
     def take(self, id: str) -> Take:
@@ -335,12 +393,16 @@ class Timeline:
         return self.cuts[i].time
 
     # -- shots ------------------------------------------------------------------------------
-    def shots(self, angles: Iterable[str] | Callable[[str], bool]) -> list[tuple[float, float]]:
+    def shots(self, angles: str | Iterable[str] | Callable[[str], bool]) -> list[tuple[float, float]]:
         """The intervals a camera setup is on screen, from consecutive cuts whose angle matches.
 
-        ``angles`` is a set of angle names or a predicate; adjacent matching cuts merge.
+        ``angles`` is one angle name, an iterable of names or a predicate; adjacent matching cuts merge.
         """
-        match = angles if callable(angles) else (lambda a, s=set(angles): a in s)
+        if callable(angles):
+            match = angles
+        else:
+            names = {angles} if isinstance(angles, str) else set(angles)
+            match = names.__contains__
         out: list[tuple[float, float]] = []
         for i, cut in enumerate(self.cuts):
             if not match(cut.angle):
@@ -359,11 +421,32 @@ class Timeline:
         p = phrase if isinstance(phrase, Phrase) else self.phrases[phrase]
         if not p.timing_file or self.root is None:
             raise TimelineError(f"phrase {p.index} has no timing file")
-        provider = json.loads((self.root / p.timing_file).read_text())
-        alignment = provider.get("normalized_alignment") or provider["alignment"]
-        text = "".join(alignment["characters"]).lower()
-        found = re.search(rf"(?<![\w'’]){re.escape(word.lower())}(?![\w'’])", text)
+        path = self.root / p.timing_file
+        where = f"phrase {p.index} timing file {path}"
+        try:
+            provider = json.loads(path.read_text())
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise TimelineError(f"{where}: cannot read alignment: {exc}") from exc
+        if not isinstance(provider, dict):
+            raise TimelineError(f"{where}: expected an object")
+        alignment = provider.get("normalized_alignment") or provider.get("alignment")
+        if not isinstance(alignment, dict):
+            raise TimelineError(f"{where}: expected an alignment object")
+        chars = alignment.get("characters")
+        times = alignment.get("character_start_times_seconds")
+        if (
+            not isinstance(chars, list)
+            or not all(isinstance(c, str) and len(c) == 1 for c in chars)
+            or not isinstance(times, list)
+            or len(times) != len(chars)
+        ):
+            raise TimelineError(f"{where}: characters and character_start_times_seconds must be equally sized arrays")
+        parsed = [_number(value, f"{where}: character time {i}") for i, value in enumerate(times)]
+        if any(value < 0 for value in parsed) or any(b < a for a, b in zip(parsed, parsed[1:], strict=False)):
+            raise TimelineError(f"{where}: character times must be non-negative and ordered")
+        text = "".join(chars)
+        found = re.search(rf"(?<![\w'’]){re.escape(word)}(?![\w'’])", text, re.IGNORECASE)
         if found is None:
             raise TimelineError(f"phrase {p.index}: no word {word!r} in {text!r}")
         index = found.start()
-        return p.start + alignment["character_start_times_seconds"][index] - p.trim_seconds
+        return p.start + parsed[index] - p.trim_seconds

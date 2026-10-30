@@ -68,12 +68,18 @@ class Generated:
     license: str | None = None
 
     def __post_init__(self):
-        if not _NCNAME.match(self.id):
+        if not isinstance(self.id, str) or not _NCNAME.fullmatch(self.id):
             raise GeneratedError(f"generated id {self.id!r} is not an XML name")
         if self.kind not in KINDS:
             raise GeneratedError(f"{self.id}: kind {self.kind!r} is not one of {', '.join(KINDS)}")
-        if not self.prompt:
-            raise GeneratedError(f"{self.id}: a prompt is required")
+        for name in ("provider", "model", "prompt", "cache"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise GeneratedError(f"{self.id}: {name} must be a nonempty string")
+        for name in ("voice", "language", "license"):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, str):
+                raise GeneratedError(f"{self.id}: {name} must be a string or None")
         cache = PurePosixPath(self.cache)
         if cache.is_absolute():
             raise GeneratedError(f"{self.id}: cache {self.cache!r} must be relative to the document")
@@ -85,8 +91,8 @@ class Generated:
             raise GeneratedError(f"{self.id}: duration must be a positive number of seconds")
         if self.kind == "sound-effect" and self.duration is None:
             raise GeneratedError(f"{self.id}: a sound effect needs a duration")
-        if self.seed is not None and self.seed < 0:
-            raise GeneratedError(f"{self.id}: seed must not be negative")
+        if self.seed is not None and (isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0):
+            raise GeneratedError(f"{self.id}: seed must be a non-negative integer")
 
     def declare(self, assets, sha256: str = PLACEHOLDER):
         """Adds the ``<generated>`` element to ``assets`` with ``cacheSha256=sha256``."""
@@ -133,6 +139,8 @@ class Placement:
                 raise GeneratedError("placement: the fades are longer than the clip")
         if self.role not in ROLES:
             raise GeneratedError(f"placement: role {self.role!r} is not one of {', '.join(ROLES)}")
+        if self.language is not None and not isinstance(self.language, str):
+            raise GeneratedError("placement: language must be a string or None")
 
     def track(self, mix, id: str, asset: str):
         """The ``<audioTrack>`` playing ``asset`` this way."""
@@ -176,7 +184,7 @@ class PlacedClip:
     placement: Placement
 
     def __post_init__(self):
-        if not _SHA256.match(self.sha256):
+        if not isinstance(self.sha256, str) or not _SHA256.fullmatch(self.sha256):
             raise GeneratedError(f"{self.generated.id}: sha256 {self.sha256!r} is not a hex SHA-256")
 
     def to_dict(self) -> dict:
@@ -196,7 +204,12 @@ def load_clips(data: object) -> list[PlacedClip]:
     """The ``clips`` list of a ``dialogue.json``."""
     if not isinstance(data, list):
         raise GeneratedError("clips: not a list")
-    clips = [PlacedClip.from_dict(item) for item in data]
+    clips = []
+    for i, item in enumerate(data):
+        try:
+            clips.append(PlacedClip.from_dict(item))
+        except GeneratedError as exc:
+            raise GeneratedError(f"clip {i}: {exc}") from exc
     ids = [c.generated.id for c in clips]
     if len(set(ids)) != len(ids):
         raise GeneratedError("clips: an id appears twice")

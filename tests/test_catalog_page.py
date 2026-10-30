@@ -944,6 +944,7 @@ def test_page_reports_an_unreadable_usage_report_as_an_error(tree, tmp_path, cap
     bad.write_text(json.dumps({"schema": "0.1.0"}))
     args = ["page", "--base", str(tmp_path / "base.html"), "--episodes", str(episodes), "--renders", str(renders)]
     args += ["--site", str(tmp_path / "site"), "--cache", str(tmp_path / "c"), "--usage", str(bad)]
+    args += ["--packages", str(tmp_path / "packages")]
     assert main(args) == 2
     assert "schema" in capsys.readouterr().err and not (tmp_path / "site").exists()
 

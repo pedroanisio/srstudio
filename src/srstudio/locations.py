@@ -80,7 +80,18 @@ def _office_desk_front(cv: Canvas, g, p, cactus: Slot = None):
     props.laptop(cv, g)
 
 
-@register("location", "office-wide", summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back")
+@register(
+    "location",
+    "office-wide",
+    summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back",
+    examples=(
+        'from srstudio import cast, get\n'
+        'location = ep.setup(\n'
+        '    get("location", "office-wide"), [(0, ep.t.duration)],\n'
+        '    at_desk=lambda group: ep.perform(cast.Manager(ep.cv), group, 560, 724, 1.45),\n'
+        ')',
+    ),
+)
 def office_wide(
     cv: Canvas,
     parent,
@@ -104,7 +115,7 @@ def office_wide(
         raise LocationError("an instanced office shares its room with every angle; blur its depth inline")
     p = props.office_paints(cv)
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
     if instanced:
         cv.instance(g, f"{id}-room", _office_room_symbol(cv))
@@ -143,7 +154,7 @@ def office_desk(
     _refuse_instanced_hand_off(instanced, cactus)
     p = props.office_paints(cv)
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     if instanced:
         cv.instance(g, f"{id}-room", _office_room_symbol(cv))
@@ -180,7 +191,7 @@ def office_reverse(
     p = props.office_paints(cv)
     ink = cv.ink
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
     far = _far(cv, g, depth)
     cv.rect(far, 0, 0, 1080, 1920, p["warm_wall"])
@@ -218,7 +229,16 @@ MENU_CHARS = 14  # the most characters a line of the café's menu board holds at
 
 
 @register(
-    "location", "cafe", summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter"
+    "location",
+    "cafe",
+    summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter",
+    examples=(
+        'from srstudio import cast, get\n'
+        'location = ep.setup(\n'
+        '    get("location", "cafe"), [(0, ep.t.duration)],\n'
+        '    at_counter=lambda group: ep.perform(cast.Customer(ep.cv), group, 270, 1035, 1.53),\n'
+        ')',
+    ),
 )
 def cafe(
     cv: Canvas,
@@ -243,7 +263,7 @@ def cafe(
     p = props.cafe_paints(cv)
     ink = cv.ink
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
     cv.rect(g, -1200, -1700, 3500, 3600, p["cream"])
     cv.rect(g, -1200, 1320, 3500, 1500, "#D4B390")
@@ -316,7 +336,7 @@ def park(
         raise LocationError(f"sign_lettering is True or False, got {sign_lettering!r}")
     p = props.cafe_paints(cv)
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
     cv.rect(g, 0, 0, 1080, 1920, p["sky"])
     for xx, yy, ww, hh in [(0, 380, 130, 320), (160, 445, 160, 255), (780, 398, 170, 302), (963, 350, 170, 350)]:
@@ -376,7 +396,7 @@ def conference_room(
     ``speaker_talk`` lights the speakerphone in the spans a caller speaks (:func:`props.speakerphone`)."""
     ink = cv.ink
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     wall = cv.grad("conference-wall", [(0, "#C3CED2"), (0.5, "#E6EBE9"), (1, "#CCD5D7")], (0, 0, 1, 0.15))
     carpet = cv.grad("conference-carpet", [(0, "#56636A"), (1, "#3F4A50")], (0, 0, 0, 1))
@@ -457,7 +477,7 @@ def reception(
     """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`."""
     ink = cv.ink
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     wall = cv.grad("reception-wall", [(0, "#EDE5D8"), (1, "#D8CCBB")], (0, 0, 0, 1))
     floor = cv.grad("reception-floor", [(0, "#BFB4A3"), (0.3, "#DDD5C8"), (1, "#EAE4DA")], (0, 0, 0, 1))
@@ -608,7 +628,7 @@ def elevator(
     ink = cv.ink
     left, top, right, base = ELEVATOR_BACK
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     steel = cv.grad("elevator-steel", [(0, "#AEB6BA"), (0.5, "#D5DADB"), (1, "#A3ABAF")], (0, 0, 1, 0))
     side = cv.grad("elevator-side", [(0, "#8E979C"), (1, "#B9C0C2")], (0, 0, 1, 0))

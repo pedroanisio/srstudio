@@ -16,6 +16,7 @@ from typing import Any, Literal
 from sr_core.scene import Scene
 
 from . import checks
+from ._counter import Counter
 from .errors import SrstudioError
 from .native import NativeError
 
@@ -67,24 +68,12 @@ class Signature:
 
 def shared_counter(start: int = 0) -> Callable[[str], str]:
     """An id namer with one counter for every prefix: ``g1, p2, e3, txt4``..."""
-    count = [start]
-
-    def name(prefix: str) -> str:
-        count[0] += 1
-        return f"{prefix}{count[0]}"
-
-    return name
+    return Counter(None, start)
 
 
 def flat_counter(prefix: str = "v", start: int = 0) -> Callable[[str], str]:
     """An id namer with one counter and one prefix for every node, whatever the caller asks: ``v1, v2, v3``..."""
-    count = [start]
-
-    def name(_asked: str) -> str:
-        count[0] += 1
-        return f"{prefix}{count[0]}"
-
-    return name
+    return Counter(prefix, start)
 
 
 Keys = Sequence[tuple[float, float | int | str]]

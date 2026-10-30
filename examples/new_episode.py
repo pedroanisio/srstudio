@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A new episode from existing parts, plus one new prop and one new location registered on the fly.
 
-    python3 examples/new_episode.py [OUT_DIR]
+    python3 examples/new_episode.py [OUT_DIR] [--font /path/to/DejaVuSans-Bold.ttf]
 
 It writes a synthetic project (dialogue, tone-burst soundtrack, font) and builds ``coffee-review.scene.xml``:
 Ava the barista interviews the candidate at the café counter, then the manager reacts in the office.
@@ -9,27 +9,42 @@ Ava the barista interviews the candidate at the café counter, then the manager 
 
 from __future__ import annotations
 
-import sys
+import argparse
 from pathlib import Path
 
 from srstudio import CAFE, CAFE_MOUTH, Episode, EpisodeSpec, cast, graphics, locations, register
-from srstudio.sample import Line, write_sample_project
+from srstudio.sample import Line, SampleError, write_sample_project
 
-OUT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent / "out" / "coffee-review"
-write_sample_project(
-    OUT,
-    [
-        Line("barista", "Describe your ideal workplace.", 1.4),
-        Line("candidate", "Somewhere with free coffee.", 1.3),
-        Line("barista", "This is a job interview, not a café.", 1.6),
-        Line("candidate", "Then why is the coffee so good?", 1.5),
-    ],
-    angles=["cafe-wide", "customer", "barista", "customer"],
-)
+parser = argparse.ArgumentParser(description="Build the coffee-review sample episode.")
+parser.add_argument("out_dir", type=Path, nargs="?", default=Path(__file__).resolve().parent / "out" / "coffee-review")
+parser.add_argument("--font", type=Path, help="DejaVu Sans Bold .ttf when it is not installed in a standard location")
+parser.add_argument("--overwrite", action="store_true", help="replace existing sample project and episode artifacts")
+args = parser.parse_args()
+OUT = args.out_dir.resolve()
+if not args.overwrite:
+    for name in ("coffee-review.scene.xml", "sdk-validation.json"):
+        target = OUT / name
+        if target.exists() or target.is_symlink():
+            parser.exit(2, f"{parser.prog}: {target}: already exists; pass --overwrite to replace it\n")
+try:
+    write_sample_project(
+        OUT,
+        [
+            Line("barista", "Describe your ideal workplace.", 1.4),
+            Line("candidate", "Somewhere with free coffee.", 1.3),
+            Line("barista", "This is a job interview, not a café.", 1.6),
+            Line("candidate", "Then why is the coffee so good?", 1.5),
+        ],
+        angles=["cafe-wide", "customer", "barista", "customer"],
+        font=args.font,
+        overwrite=args.overwrite,
+    )
+except SampleError as exc:
+    parser.exit(2, f"{parser.prog}: {exc}\n")
 
 
 # -- extending: a new prop and a new location, registered so ``srstudio catalog`` lists them --------
-@register("prop", "tip_jar", summary="A glass tip jar with a hand-written label", episodes=("example",))
+@register("prop", "tip_jar", summary="A glass tip jar with a hand-written label")
 def tip_jar(cv, parent, x, y, scale=1.0):
     g = cv.group(parent, cv.uid("tip-jar"), x=x, y=y, scaleX=scale, scaleY=scale)
     cv.rect(g, -40, -90, 80, 100, radius=10, fill="#DDEAF2", stroke=cv.ink, sw=3, opacity=0.9)
@@ -39,9 +54,7 @@ def tip_jar(cv, parent, x, y, scale=1.0):
     return g
 
 
-@register(
-    "location", "cafe_with_tips", summary="The café counter with a tip jar beside the register", episodes=("example",)
-)
+@register("location", "cafe_with_tips", summary="The café counter with a tip jar beside the register")
 def cafe_with_tips(cv, parent, behind_counter=None, at_counter=None, shots=None, id="location-cafe-tips"):
     def on_counter(g):
         tip_jar(cv, g, 905, 1190, 1.1)

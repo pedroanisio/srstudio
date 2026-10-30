@@ -21,7 +21,12 @@ def _part_id(instance: str, default: str, name: str, *, own: bool = False) -> st
     return name if own or instance == default else f"{instance}-{name}"
 
 
-@register("graphic", "episode-slate", summary="Episode number badge and title, fading in and out in the first second")
+@register(
+    "graphic",
+    "episode-slate",
+    summary="Episode number badge and title, fading in and out in the first second",
+    examples=('from srstudio import get\nslate = get("graphic", "episode-slate")(ep.cv, ep.comp, "01", "HELLO")',),
+)
 def episode_slate(
     cv: Canvas,
     parent,
@@ -434,32 +439,50 @@ def captions(
 
     ``highlights[name]`` = [(text, is_highlighted), ...] splits a line into spans. ``color`` is the text,
     ``stroke`` its outline; ``shadow=None`` draws no drop shadow (dark text on a light stage)."""
-    highlights = highlights or {}
-    layers = []
-    for start, end, text, name in specs:
-        kw = dict(
-            width=width,
-            height=height,
-            size=str(size),
-            fontAsset=cv.font_asset,
-            color=color,
-            align="center",
-            verticalAlign="middle",
-            lineHeight=line_height,
-            strokeColor=stroke,
-            strokeWidth=stroke_width,
-            strokePosition="outside",
-        )
-        if shadow:
-            kw.update(shadowColor=shadow, shadowOffsetY=2, shadowBlur=1)
-        if weight:
-            kw["weight"] = weight
-        asset = cv.assets.add_text(id=name, **kw)
-        if name in highlights:
-            for part, lit in highlights[name]:
-                span = asset.add_span(color=highlight_color) if lit else asset.add_span()
-                span.content = part
-        else:
-            asset.text = text
-        layers.append(cv.comp.add_layer(id=f"{name}{layer_suffix}", asset=name, x=x, y=y, start=start, end=end))
-    return layers
+    if not specs:
+        return []
+    original_assets = cv._assets
+    assets = cv.assets
+    old_texts = {id(node) for node in assets.find_all("text")}
+    old_layers = {id(node) for node in cv.comp.find_all("layer")}
+    try:
+        highlights = highlights or {}
+        layers = []
+        for start, end, text, name in specs:
+            kw = dict(
+                width=width,
+                height=height,
+                size=str(size),
+                fontAsset=cv.font_asset,
+                color=color,
+                align="center",
+                verticalAlign="middle",
+                lineHeight=line_height,
+                strokeColor=stroke,
+                strokeWidth=stroke_width,
+                strokePosition="outside",
+            )
+            if shadow:
+                kw.update(shadowColor=shadow, shadowOffsetY=2, shadowBlur=1)
+            if weight:
+                kw["weight"] = weight
+            asset = cv.assets.add_text(id=name, **kw)
+            if name in highlights:
+                for part, lit in highlights[name]:
+                    span = asset.add_span(color=highlight_color) if lit else asset.add_span()
+                    span.content = part
+            else:
+                asset.text = text
+            layers.append(cv.comp.add_layer(id=f"{name}{layer_suffix}", asset=name, x=x, y=y, start=start, end=end))
+        return layers
+    except Exception:
+        for layer in cv.comp.find_all("layer"):
+            if id(layer) not in old_layers:
+                cv.comp.remove(layer)
+        for asset in assets.find_all("text"):
+            if id(asset) not in old_texts:
+                assets.remove(asset)
+        if original_assets is None:
+            cv.scene.remove(assets)
+            cv._assets = None
+        raise

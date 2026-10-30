@@ -8,6 +8,7 @@ pose at each frame follows the RMS amplitude of the dialogue track while a role 
 from __future__ import annotations
 
 import math
+import struct
 import wave
 from array import array
 from collections.abc import Callable, Iterable, Sequence
@@ -35,15 +36,101 @@ class SoundtrackError(SrstudioError, ValueError):
     """A clip the mix cannot read, or a mouth style it cannot follow."""
 
 
+def validate_wav(path: Path) -> None:
+    """Check WAV structure and supported format tags without decoding or loading samples."""
+    try:
+        with path.open("rb") as source:
+            header = source.read(12)
+            if len(header) != 12 or header[:4] not in (b"RIFF", b"RF64") or header[8:] != b"WAVE":
+                raise ValueError("expected a RIFF or RF64 WAVE header")
+            size = source.seek(0, 2)
+            source.seek(12)
+            rf64 = header[:4] == b"RF64"
+            table: dict[bytes, list[int]] = {}
+            first_data_size = None
+            if rf64:
+                if struct.unpack_from("<I", header, 4)[0] != 0xFFFFFFFF:
+                    raise ValueError("invalid RF64 size marker")
+                ds_header = source.read(8)
+                if len(ds_header) != 8:
+                    raise ValueError("missing RF64 ds64 chunk")
+                name, ds_length = struct.unpack("<4sI", ds_header)
+                if name != b"ds64" or ds_length < 28 or source.tell() + ds_length > size:
+                    raise ValueError("missing or truncated RF64 ds64 chunk")
+                riff_size, first_data_size, _, count = struct.unpack("<QQQI", source.read(28))
+                if count > (ds_length - 28) // 12:
+                    raise ValueError("truncated RF64 ds64 table")
+                for _ in range(count):
+                    key, length = struct.unpack("<4sQ", source.read(12))
+                    table.setdefault(key, []).append(length)
+                limit = riff_size + 8
+            else:
+                limit = struct.unpack_from("<I", header, 4)[0] + 8
+            if limit > size or limit < 12:
+                raise ValueError("truncated WAV container")
+            source.seek(12)
+            fmt = None
+            data_sizes = []
+            while source.tell() < limit:
+                chunk = source.read(8)
+                if len(chunk) != 8:
+                    raise ValueError("truncated chunk header")
+                name, length = struct.unpack("<4sI", chunk)
+                if length == 0xFFFFFFFF and rf64:
+                    if name == b"data" and first_data_size is not None:
+                        length, first_data_size = first_data_size, None
+                    elif table.get(name):
+                        length = table[name].pop(0)
+                    else:
+                        raise ValueError(f"missing RF64 size for {name!r} chunk")
+                end = source.tell() + length
+                if end > limit:
+                    raise ValueError(f"truncated {name!r} chunk")
+                if name == b"fmt ":
+                    if length < 16:
+                        raise ValueError("invalid fmt chunk")
+                    fmt = struct.unpack("<HHIIHH", source.read(16))
+                    if fmt[0] == 0xFFFE:
+                        extension = source.read(min(length - 16, 24))
+                        if len(extension) < 24 or struct.unpack_from("<H", extension)[0] < 22:
+                            raise ValueError("invalid extensible WAV format")
+                        subtype = extension[8:24]
+                        if subtype[2:] != bytes.fromhex("000000001000800000aa00389b71"):
+                            raise ValueError("unsupported extensible WAV encoding; convert to PCM or IEEE float")
+                        encoding = struct.unpack_from("<H", subtype)[0]
+                        if encoding not in (1, 3):
+                            raise ValueError("unsupported extensible WAV encoding; convert to PCM or IEEE float")
+                elif name == b"data":
+                    data_sizes.append(length)
+                source.seek(end + (length % 2))
+            if fmt is None or not data_sizes:
+                raise ValueError("missing fmt or data chunk")
+            encoding, channels, rate, _, alignment, bits = fmt
+            if not encoding or not channels or not rate or not alignment or not bits:
+                raise ValueError("invalid audio format")
+            if encoding not in (1, 3, 6, 7, 0xFFFE):
+                raise ValueError(f"unsupported WAV encoding 0x{encoding:04x}; convert to PCM or IEEE float")
+            if any(length % alignment for length in data_sizes):
+                raise ValueError("truncated audio frame")
+    except (OSError, ValueError, struct.error) as exc:
+        raise SoundtrackError(f"{path}: cannot read WAV: {exc}") from exc
+
+
 def _read_mono(path: Path) -> tuple[Any, int]:
     """A 16-bit PCM WAV as mono floats in -1..1 (a numpy array when available), and its rate."""
-    with wave.open(str(path), "rb") as wav:
-        rate = wav.getframerate()
-        channels = wav.getnchannels()
-        width = wav.getsampwidth()
-        raw = wav.readframes(wav.getnframes())
+    try:
+        with wave.open(str(path), "rb") as wav:
+            rate = wav.getframerate()
+            channels = wav.getnchannels()
+            width = wav.getsampwidth()
+            frames = wav.getnframes()
+            raw = wav.readframes(frames)
+    except (OSError, EOFError, wave.Error) as exc:
+        raise SoundtrackError(f"{path}: cannot read PCM WAV: {exc}") from exc
     if width != 2:
         raise SoundtrackError(f"{path}: only 16-bit PCM is supported")
+    if len(raw) != frames * channels * width:
+        raise SoundtrackError(f"{path}: truncated PCM WAV data")
     if _np is not None:
         return _np.frombuffer(raw, dtype=_np.int16).astype(float).reshape(-1, channels).mean(1) / 32768, rate
     samples = array("h")

@@ -325,10 +325,20 @@ def digest(name: str, number: int = 1) -> str:
 
 
 def check(name: str, number: int = 1) -> None:
-    """Raises :class:`DrawingChangedError` when an approved version no longer draws what was approved."""
+    """Check an approved drawing and verify its current registered builder for this process."""
     version = characters.get(name).version(number)
-    if version.status == "approved" and digest(name, number) != version.drawing:
+    if version.status != "approved":
+        return
+    entry = registry.get("character", characters.part_name(name, number))
+    builder = entry.builder
+    entry._verified_builder = None
+    entry._verified_drawing = None
+    if digest(name, number) != version.drawing:
         raise DrawingChangedError(
             f"{name} version {number} is approved and immutable, and it no longer draws what was approved. "
             f"Restore its drawing and add a version: an approved look is never revised in place"
         )
+    if registry.get("character", characters.part_name(name, number)) is not entry or entry.builder is not builder:
+        raise SpecimenError(f"{name} version {number}: registered builder changed during specimen check; retry")
+    entry._verified_builder = builder
+    entry._verified_drawing = version.drawing

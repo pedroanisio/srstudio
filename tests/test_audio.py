@@ -45,7 +45,10 @@ def test_one_mixed_file_plays_as_the_dialogue_track(project):
 
 
 def test_takes_each_bring_their_own_audio_at_the_takes_start(tmp_path):
-    (tmp_path / "timeline.json").write_text(json.dumps(takes_data()))
+    data = takes_data()
+    (tmp_path / "timeline.json").write_text(json.dumps(data))
+    for item in data["items"]:
+        write_wav(tmp_path / item["audio"], [0.0] * 100)
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "hand.ttf").write_bytes(b"\0")
     kw = dict(style=INK, font="assets/hand.ttf")

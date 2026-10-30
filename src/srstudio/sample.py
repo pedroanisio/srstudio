@@ -1,22 +1,34 @@
 """A synthetic project for tests and examples: ``dialogue.json``, a tone-burst WAV and the caption font.
 
 The WAV carries a sine burst inside every phrase, so amplitude-driven mouths have something to chew
-on without a TTS call. The font is DejaVu Sans Bold from the system when present (the shipped
-episodes use the same face); otherwise a placeholder file is written and ``font_real`` is False.
+on without a TTS call. The font is DejaVu Sans Bold from the system (the shipped episodes use the same
+face), or a supplied font file. A missing or invalid font is refused before writing the project.
 """
 
 from __future__ import annotations
 
 import json
 import math
+import os
 import shutil
 import struct
+import tempfile
 import wave
 from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
+
+from . import checks
+from .errors import SrstudioError
+from .fonts import FontError, inspect_ttf
+from .timeline import Timeline, TimelineError
+
+
+class SampleError(SrstudioError, ValueError):
+    """A sample project cannot be built with the supplied inputs."""
+
 
 SYSTEM_FONTS = (
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
@@ -36,7 +48,8 @@ def dejavu_license() -> str:
 def copy_dejavu(source: Path, folder: Path, name: str = "DejaVuSans-Bold.ttf") -> Path:
     """Copy the DejaVu font ``source`` into ``folder`` as ``name``, its notice beside it as ``FONT-LICENSE.txt``."""
     target = Path(folder) / name
-    shutil.copyfile(source, target)
+    if not (target.exists() and Path(source).samefile(target)):
+        shutil.copyfile(source, target)
     (Path(folder) / "FONT-LICENSE.txt").write_text(dejavu_license(), encoding="utf-8")
     return target
 
@@ -77,10 +90,47 @@ def write_sample_project(
     reaction_after_last: float = 0.25,
     end_card_after_last: float = 1.2,
     font: Path | None = None,
+    overwrite: bool = False,
 ) -> dict:
-    """Write a project under ``root`` and return the dialogue data (also written as JSON)."""
-    root = Path(root)
-    (root / "assets").mkdir(parents=True, exist_ok=True)
+    """Write a synthetic project and return its dialogue data; existing artifacts require ``overwrite=True``."""
+    source = Path(font) if font is not None else next((f for f in SYSTEM_FONTS if f.is_file()), None)
+    if source is None:
+        raise SampleError(
+            "DejaVu Sans Bold is required: install DejaVu fonts or pass font=Path('/path/to/DejaVuSans-Bold.ttf')"
+        )
+    try:
+        facts = inspect_ttf(source.read_bytes())
+    except (OSError, FontError) as exc:
+        raise SampleError(f"{source}: cannot use this font; supply a valid TrueType file with font=: {exc}") from exc
+    if facts.family != "DejaVu Sans" or facts.weight != 700 or facts.italic:
+        raise SampleError(f"{source}: expected upright DejaVu Sans weight 700, got {facts}")
+    if not lines:
+        raise SampleError("lines: at least one line is required")
+    if angles is not None and len(angles) != len(lines):
+        raise SampleError(f"angles: expected {len(lines)} names, got {len(angles)}")
+    if angles is not None:
+        for i, angle in enumerate(angles):
+            if not isinstance(angle, str) or not angle.strip():
+                raise SampleError(f"angles {i}: expected a nonempty string")
+    for name, value, positive in (
+        ("lead", lead, False),
+        ("tail", tail, True),
+        ("reaction_after_last", reaction_after_last, False),
+        ("end_card_after_last", end_card_after_last, False),
+    ):
+        if not checks.number(value) or (value <= 0 if positive else value < 0):
+            raise SampleError(f"{name}: expected a finite {'positive' if positive else 'non-negative'} number")
+    for i, line in enumerate(lines):
+        if not isinstance(line.role, str) or not line.role.strip():
+            raise SampleError(f"line {i}.role: expected a nonempty string")
+        if not isinstance(line.text, str) or not line.text.strip():
+            raise SampleError(f"line {i}.text: expected a nonempty string")
+        if line.caption is not None and (not isinstance(line.caption, str) or not line.caption.strip()):
+            raise SampleError(f"line {i}.caption: expected a nonempty string or None")
+        if not checks.number(line.seconds) or line.seconds <= 0:
+            raise SampleError(f"line {i}.seconds: expected a finite positive number")
+        if not checks.number(line.gap) or line.gap < 0:
+            raise SampleError(f"line {i}.gap: expected a finite non-negative number")
     t = lead
     phrases: list[dict[str, Any]] = []
     cuts: list[dict[str, Any]] = []
@@ -97,7 +147,7 @@ def write_sample_project(
         cuts.append(
             {
                 "time": 0 if i == 0 else round(t - 0.06, 6),
-                "angle": angles[i] if angles else ("wide" if i % 2 == 0 else "close"),
+                "angle": angles[i] if angles is not None else ("wide" if i % 2 == 0 else "close"),
             }
         )
         t += line.seconds + line.gap
@@ -111,14 +161,72 @@ def write_sample_project(
         "camera_cuts": cuts,
         "reaction_start": round(last_end + reaction_after_last, 6),
         "end_card_start": round(last_end + end_card_after_last, 6),
+        "font_real": True,
     }
-    (root / "dialogue.json").write_text(json.dumps(data, indent=2) + "\n")
-    write_wav(root / "assets" / "dialogue.wav", [(p["start"], p["end"]) for p in phrases], data["duration"])
-    source = font or next((f for f in SYSTEM_FONTS if f.exists()), None)
-    target = root / "assets" / "DejaVuSans-Bold.ttf"
-    if source:
-        copy_dejavu(source, target.parent, target.name)
-    else:
-        target.write_bytes(b"\0")
-    data["font_real"] = bool(source)
+    try:
+        Timeline.from_dict(data)
+    except TimelineError as exc:
+        raise SampleError(f"sample timeline: {exc}") from exc
+    root = Path(root)
+    artifacts = (
+        Path("dialogue.json"),
+        Path("assets/dialogue.wav"),
+        Path("assets/DejaVuSans-Bold.ttf"),
+        Path("assets/FONT-LICENSE.txt"),
+    )
+    for relative in artifacts:
+        target = root / relative
+        if target.is_dir():
+            raise SampleError(f"{target}: expected a file, found a directory")
+        if not overwrite and (target.exists() or target.is_symlink()):
+            raise SampleError(f"{target}: already exists; pass overwrite=True to replace sample artifacts")
+    try:
+        root.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=".srstudio-sample-", dir=root.parent) as temporary:
+            stage = Path(temporary) / "project"
+            (stage / "assets").mkdir(parents=True)
+            (stage / "dialogue.json").write_text(json.dumps(data, indent=2) + "\n")
+            write_wav(stage / "assets" / "dialogue.wav", [(p["start"], p["end"]) for p in phrases], data["duration"])
+            copy_dejavu(source, stage / "assets")
+            root.mkdir(parents=True, exist_ok=True)
+            (root / "assets").mkdir(parents=True, exist_ok=True)
+            backups = Path(temporary) / "backups"
+            backups.mkdir()
+            installed: list[tuple[Path, Path | None]] = []
+            try:
+                for i, relative in enumerate(artifacts):
+                    target = root / relative
+                    if not overwrite:
+                        try:
+                            os.link(stage / relative, target)
+                        except FileExistsError as exc:
+                            raise FileExistsError(
+                                f"{target}: already exists; pass overwrite=True to replace sample artifacts"
+                            ) from exc
+                        installed.append((target, None))
+                        continue
+                    backup = backups / str(i) if target.exists() or target.is_symlink() else None
+                    if backup is not None:
+                        os.replace(target, backup)
+                    try:
+                        os.replace(stage / relative, target)
+                    except OSError:
+                        if backup is not None:
+                            os.replace(backup, target)
+                        raise
+                    installed.append((target, backup))
+            except OSError:
+                for target, backup in reversed(installed):
+                    if backup is None:
+                        if overwrite:
+                            target.unlink(missing_ok=True)
+                        elif target.exists() and os.path.samestat(
+                            target.lstat(), (stage / target.relative_to(root)).stat()
+                        ):
+                            target.unlink()
+                    else:
+                        os.replace(backup, target)
+                raise
+    except OSError as exc:
+        raise SampleError(f"{root}: cannot write sample project: {exc}") from exc
     return data

@@ -16,13 +16,21 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from sr_core.scene import Composition, Group
+from sr_core.scene import Sequence as SceneSequence
+
 from . import checks
 from .canvas import Canvas, Keys
+from .errors import SrstudioError
 from .soundtrack import pose_keys
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
 Span = tuple[float, float]
+
+
+class RigError(SrstudioError, ValueError):
+    """A rig animation setting cannot produce a valid performance."""
 
 
 @dataclass
@@ -67,12 +75,20 @@ class Actor(ABC):
         self.mouths: dict = {}
 
     # -- public -----------------------------------------------------------------------------
-    def build(self, parent, x: float, y: float, scale: float = 1.0, perf: Performance | None = None):
+    def build(
+        self,
+        parent: Composition | Group | SceneSequence,
+        x: float,
+        y: float,
+        scale: float = 1.0,
+        perf: Performance | None = None,
+    ) -> Group:
         perf = perf or Performance()
         if perf.limbs and not self.supports_limbs:
             from .limbs.errors import LimbError
 
             raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
+        self.validate_performance(perf)
         cv = self.cv
         self.group = g = cv.group(parent, self.tag, x=x, y=y, scaleX=scale, scaleY=scale)
         behind = cv.group(g, f"{self.tag}-limbs-behind") if perf.limbs else None
@@ -93,9 +109,9 @@ class Actor(ABC):
         else:
             cv.gate(closed, [])
         self.mouths = self.draw_mouths(head)
-        if perf.mouth:
-            for name, shape in self.mouths.items():
-                cv.keys(shape, "opacity", pose_keys(perf.mouth, name))
+        states = perf.mouth or ((0.0, "rest"),)
+        for name, shape in self.mouths.items():
+            cv.keys(shape, "opacity", pose_keys(states, name))
         self.after_head(g, perf)
         if perf.limbs:
             from .limbs.compile import LayerTargets
@@ -121,6 +137,10 @@ class Actor(ABC):
         return Facing(front=True).slots(tuple(perf.limbs))
 
     # -- hooks ----------------------------------------------------------------------------------
+    def validate_performance(self, perf: Performance) -> None:
+        """Validate rig-specific extras before drawing; custom rigs may define their own contract."""
+        return None
+
     @property
     def tag_base(self) -> str:
         """Prefix of the inner ids: ``manager`` for ``manager-character``, else the tag itself."""
@@ -178,6 +198,9 @@ def blinks(cv: Canvas, eyes, end: float, *, period: float, phase: float, skip_em
     """``eyes`` close for a blink every ``period`` seconds from ``phase`` while a whole blink fits before ``end``.
     A shot too short for one keys nothing with ``skip_empty``, and holds the eyes open with a single key without
     it."""
+    checks.positive(period, RigError, f"blink period must be finite and > 0, got {period!r}")
+    checks.non_negative(end, RigError, f"blink end must be finite and >= 0, got {end!r}")
+    checks.non_negative(phase, RigError, f"blink phase must be finite and >= 0, got {phase!r}")
     keys: list[tuple[float, float]] = [(0, 1)]
     t = phase
     while t + 0.16 < end:
