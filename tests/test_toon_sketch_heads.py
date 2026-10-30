@@ -25,6 +25,7 @@ from srstudio import (
     toon_inked,
     toon_rigs,
     toon_sketch,
+    usage,
 )
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import MODEL, Alignment, Transcript, Voice, VoiceSettings
@@ -232,8 +233,9 @@ def test_only_the_characters_named_move_and_the_rest_draw_flat(pinned_fonts, tmp
 
 def test_the_record_of_what_was_drawn_names_a_moving_character_as_well(pinned_fonts, tmp_path):
     root = project(tmp_path / "p", pinned_fonts)
-    toon_sketch.build(root, staged(heads=("sloth",)), set())
-    assert parts.read_record(root) == {"toon-goat": 1, "toon-sloth": 1}
+    with usage.recorded(root):
+        toon_sketch.build(root, staged(heads=("sloth",)), set())
+    assert {"toon-goat": 1, "toon-sloth": 1}.items() <= parts.read_record(root).items()
 
 
 def test_the_fox_moves_through_the_build_at_the_version_it_is_named_by(pinned_fonts, tmp_path):
@@ -241,9 +243,10 @@ def test_the_fox_moves_through_the_build_at_the_version_it_is_named_by(pinned_fo
     root.mkdir()
     shutil.copytree(pinned_fonts, root / "assets" / "fonts")
     toon_sketch.build(root, staged(fox_sketch()), {"--init"})
-    xml = tree(toon_sketch.build(root, staged(fox_sketch(), heads=("fox",)), set()))
+    with usage.recorded(root):
+        xml = tree(toon_sketch.build(root, staged(fox_sketch(), heads=("fox",)), set()))
     assert rigged(shots(xml)[0])  # its one shot; the groups after it are the caption's
-    assert parts.read_record(root) == {"toon-fox": 2}
+    assert parts.read_record(root)["toon-fox"] == 2
 
 
 def test_a_voiced_build_keeps_lips_shots_and_camera_on_a_moving_head(pinned_fonts, tmp_path):

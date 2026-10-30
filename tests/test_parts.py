@@ -322,3 +322,12 @@ def test_the_approved_rigs_quote_the_operator():
         assert held is not None and held.status == "approved"
         assert held.approval is not None and held.approval.words == "head motion approved"
         assert held.proof.startswith("generated/character-proofs/head-")
+
+
+def test_a_build_s_names_become_the_version_of_each_part():
+    assert parts.drawn(["toon-fox@2", "toon-desk", "toon-bear"]) == {"toon-bear": 1, "toon-desk": 1, "toon-fox": 2}
+
+
+def test_a_build_that_drew_two_versions_of_a_part_is_refused_by_name():
+    with pytest.raises(parts.PartError, match="toon-fox versions 1 and 2"):
+        parts.drawn(["toon-fox", "toon-fox@2"])

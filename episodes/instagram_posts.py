@@ -83,6 +83,14 @@ def caption_drift(renders: Path, *, episodes: Path | None = None, only: list[str
     return caption_gate.check_releases(RELEASES, Path(renders), episodes, grandfathered=GRANDFATHERED, only=only)
 
 
+def _delivering(out: Path, renders: Path, font: Path, only: list[str] | None) -> set[str]:
+    """The videos a delivery would write: those named, else those that drifted, or all if the manifest is unreadable."""
+    if only:
+        return set(only)
+    stale = {d.name for d in check_delivery(items(renders), out, font=font, frozen=FROZEN)}
+    return {r.video_name for r in RELEASES.values()} if "*" in stale else stale
+
+
 def write_all(
     out: Path, renders: Path, *, fonts_dir: Path, engine: str | Path, only: list[str] | None = None
 ) -> list[Path]:
@@ -93,7 +101,7 @@ def write_all(
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
     chosen = {slug: r for slug, r in RELEASES.items() if not only or r.video_name in only}
-    unpinned = releases.unpinned(chosen, _beside(renders))
+    unpinned = releases.unpinned(chosen, _beside(renders), _delivering(out, renders, font_file(fonts_dir), only))
     if unpinned:
         raise DeliveryError("; ".join(map(str, unpinned)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)

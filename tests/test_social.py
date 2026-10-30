@@ -25,6 +25,7 @@ from srstudio.social import (
     MANIFEST_VERSION,
     CoverError,
     DeliveryError,
+    Drift,
     InstagramPost,
     InstagramPostError,
     Item,
@@ -949,6 +950,35 @@ def test_delivering_one_video_answers_only_for_its_own_pins(monkeypatch, tmp_pat
     renders = unpinned_release(posts, monkeypatch, tmp_path)
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: [])
     assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="e", only=["Other"]) == []
+
+
+def test_the_deliver_gate_refuses_a_stale_video_whose_build_left_no_record(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    post = next(iter(posts.POSTS.values()))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("New_Reel", "never delivered")])
+    with pytest.raises(DeliveryError, match="New_Reel: no record of what its build drew"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
+
+
+def test_the_deliver_gate_leaves_a_current_published_video_with_no_record_alone(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    post = next(iter(posts.POSTS.values()))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: [])
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine") == []
+
+
+def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    post = next(iter(posts.POSTS.values()))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("*", "unreadable")])
+    with pytest.raises(DeliveryError, match="New_Reel: no record of what its build drew"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
 
 
 def test_the_published_delivery_has_not_drifted():
