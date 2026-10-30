@@ -438,13 +438,14 @@ def test_a_split_outline_is_read_as_the_outline_of_the_track(tmp_path):
     assert caption_gate.band_of(split_scene_file(tmp_path, width=3), WHITE_LOOK) is None
 
 
-def test_the_proposed_gloss_look_is_recorded_with_its_proof_and_does_not_pass_until_the_operator_approves_it():
+def test_the_gloss_look_is_recorded_with_its_proof_and_the_operators_approval():
     gloss = [look for look in caption_gate.LOOKS if look.style == "Gloss"]
     assert [look.name for look in gloss] == ["white-split-outline"]
     (look,) = gloss
     assert (look.fills, look.active, look.stroke) == (("#FFFFFF",), "#F4D492", "#121415")
     assert look.proof == "generated/character-proofs/gloss-captions/index.html"
-    assert not look.approved
+    assert look.approved
+    assert look.approval is not None and look.approval.by == "operator"
 
 
 def test_the_gloss_look_for_new_reels_is_the_house_look_with_its_outline_split():

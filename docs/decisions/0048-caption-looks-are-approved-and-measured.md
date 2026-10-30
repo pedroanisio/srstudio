@@ -7,7 +7,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 - Status: accepted and implemented for the gate, 2026-10-30 (`srstudio.caption_gate`, `episodes/posts/_grandfathered.py`,
   `Release.style`, `CaptionLook.published`, `episodes/instagram_posts.py`, `tests/test_caption_gate.py`); corrects
   [ADR 0031](0031-shared-look-and-caption-primitives.md). The new Gloss look (`gloss_reel.LOOK_SPLIT`,
-  `CaptionLook.outline`) is proposed until the operator approves it from its proof
+  `CaptionLook.outline`) was approved by the operator from its proof on 2026-10-30
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
@@ -138,8 +138,8 @@ gives one, a new reel in this look is refused by name, and the proof is what the
 ## Consequences
 
 - A new reel's release declares `style=` and its scene wears an approved look, or it cannot be delivered.
-- Gloss has a proposed look and no approved one: until the operator approves `white-split-outline`, no new Gloss reel
-  passes. Approving it is one `Approval` on its record.
+- Gloss's `white-split-outline` was proposed until the operator approved it on 2026-10-30, and no new Gloss reel could
+  pass before that. A later look follows the same path: proposed, proof, one `Approval` on its record.
 - A split outline adds one text asset and one layer to a cue, and a look with `outline="layer"` needs the canvas it
   draws on, so `native_captions` passes it.
 - `instagram_posts.py check` decodes a second of video per second of each reel not grandfathered, a few seconds each.
