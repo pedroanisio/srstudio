@@ -284,6 +284,20 @@ def test_each_ring_segment_is_keyed_and_the_speaker_draws_inside_its_footprint()
     assert inside(drawn(cv, "speaker"), frame_box(box))
 
 
+def test_the_speaker_has_no_lettering_so_it_scales_down_to_a_shelf_ornament():
+    low = toon_everyday.SPEAKER_SCALES[0]
+    assert low < toon_everyday.SCALES[0]
+    cv = canvas()
+    box = speaker(cv, at=(440, 400), scale=low)
+    assert box[2] - box[0] == pytest.approx(low * 100)
+    assert inside(drawn(cv, "speaker"), frame_box(box))
+    for scale in (low - 0.01, toon_everyday.SPEAKER_SCALES[1] + 0.01):
+        with pytest.raises(ToonDataError, match=f"speaker's scale is between {low}"):
+            speaker(at=(440, 826), scale=scale)
+    with pytest.raises(ToonDataError, match="phone's scale"):
+        phone(at=(300, 800), scale=low)
+
+
 @pytest.mark.parametrize(
     ("states", "end", "match"),
     [
