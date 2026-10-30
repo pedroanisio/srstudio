@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_props`, `toon_rooms`, `toon_sets` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_props`, `toon_rooms`, `toon_sets` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1466,6 +1466,25 @@ changes it. Tests render each state and compare the signature's pixels.
 
 `toon_rooms.ROOMS` names each room's lights, its defaults and the boxes its objects keep clear of the figure, the pill
 and the desk. `toon_rooms.stage(cv, back, light, name, lights, end)` draws a room outside a sketch.
+
+### Toon everyday props: the phone, the speaker, the receipt, the queue and the form
+
+[src/srstudio/toon_everyday.py](src/srstudio/toon_everyday.py) adds five props for everyday tech, money and
+services, job search and dating ([ADR 0042](docs/decisions/0042-toon-everyday-props.md)). Each stands at `at`
+(reference pixels) and `scale` (0.9 to 2.0), takes states keyed from 0 in rising seconds, and returns its
+footprint. A footprint that leaves the frame, enters the caption band or touches `SIGNATURE_BOX`, the desk's
+signature marks, raises `ToonDataError`, as does text that does not fit its box in the style's font (`measure=`,
+the sketch's `Shot.measure`).
+
+| Part | What it is | Motion |
+|---|---|---|
+| `toon-phone` | a phone, held (`hand=`) or set down, with typed `Screen`s: `notify`, `code`, `profile`, `declined`, `loading`, `off` | one screen at a time; a notification buzzes the phone; the loading bar fills to `fill` |
+| `toon-speaker` | a smart speaker with a light ring and a halo | `off`, `listen`, `think` (a light chasing round), `speak` (pulsing), `error` (red), until `end` |
+| `toon-receipt` | a receipt strip under a printer slot: a header, `(name, price)` rows, a total | unrolls from `start` at `pace` seconds a row; each row shows as the paper passes it |
+| `toon-take-a-number` | a ticket dispenser on a pole under a NOW SERVING display, the customer's `ticket` in it | the display changes at each `(second, number)` |
+| `toon-clipboard` | a form on a clipboard: a title and up to five `Field(label, value, at)` rows | each value is written in at its second; a `(second, text, tone)` stamp lands with a pop |
+
+No episode draws them yet, so the catalog's notes need no gallery item for them.
 
 ## Saga style: a space-opera parody in seven episodes (S1–S7)
 
