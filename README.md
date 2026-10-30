@@ -539,6 +539,35 @@ is reframed with only its own camera angles. Parts added or extended for it:
 The episode declares no engine safe area, as *Culture Fit* does, because the park sign's lettering sits right of
 x 920; captions and cards are placed inside x 80–920 by hand.
 
+## Cutout episode at the café counter: *Cup Fee* (22)
+
+[episodes/cup_fee.py](episodes/cup_fee.py) brings Ava and Milo back to the café. "One black coffee. Three bucks."
+Then a fee for the cup, the lid fee, a service fee ("for serving you") and, when Milo offers cash, a cash fee, each
+a beep and a higher total on the card reader. "How much is the actual coffee?" "Oh, the coffee's free." "Then what
+are the three bucks for?" "The coffee fee." The tip tablet from *Tip Screen* swivels round to him.
+
+```bash
+srstudio record cup-fee PROJECT   # srstudio.interview: resolve, speech check, timing
+srstudio build cup-fee PROJECT    # PROJECT/cup-fee.scene.xml
+```
+
+The dialogue (Jessica and Liam, as in *Tip Screen*), four beeps and the swivel are an `Interview`; `schedule` lands
+each beep 0.05 s after the line naming its fee and holds 1.3 s before "Oh, the coffee's free." Its first second is
+still (arm A of the `sp-hook_motion` test): the two-shot keeps the espresso machine's steam out of frame and nothing
+moves before the first line. Parts added or extended for it:
+
+- `props.card_reader` (`card-reader`): a counter-top card terminal whose screen shows `readings=((time, amount,
+  label), ...)`, a big amount (up to `READER_AMOUNT` characters) over a small label (up to `READER_LABEL`), each held
+  until the next. The first reading is at 0 and still; each later one pops in about the screen's middle.
+- `locations.cafe(menu=(coffee, pastry, footer))` letters the menu board's three lines under its title (up to
+  `MENU_CHARS` each); without it the board is the shipped one, byte for byte.
+- `locations.finish(cv, parent)`: an opt-in Cutout grade (`locations.FINISH`: a warm vignette and a soft bloom, no
+  grain and no blur) on a group the episode draws its sets into, so camera moves stay inside it. A set drawn without
+  it is unchanged.
+
+Like *Tip Screen*, the episode declares no engine safe area (its close-ups reframe the menu board out of frame);
+captions are placed inside x 80–920 by hand.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

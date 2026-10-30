@@ -164,6 +164,23 @@ def office_reverse(
     return g
 
 
+FINISH: dict[str, dict[str, float | str]] = {  # the opt-in Cutout grade: warm corners and a soft lift on the lamps
+    "vignette": dict(amount=0.24, radius=0.95, softness=0.8, color="#3b2a1e"),
+    "bloom": dict(threshold=0.9, radius=18, intensity=0.18),
+}
+
+
+def finish(cv: Canvas, parent, id: str = "cutout-finish"):
+    """A group in ``parent`` graded by :data:`FINISH`, for an episode to draw its sets into (camera moves stay
+    inside it, so the grade holds still on the frame). Opt-in: a set drawn without it is unchanged. No grain, so a
+    still opening stays still; no blur, so the signature marks stay sharp."""
+    g = cv.group(parent, id)
+    return cv.apply(g, *(cv.effect(f"cutout-{kind}", kind, **attrs) for kind, attrs in FINISH.items()))
+
+
+MENU_CHARS = 14  # the most characters a line of the café's menu board holds at its size
+
+
 @register(
     "location", "cafe", summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter"
 )
@@ -176,7 +193,17 @@ def cafe(
     id="location-cafe",
     shots=None,
     cactus: Slot = None,
+    *,
+    menu: tuple[str, str, str] | None = None,
 ):
+    """``menu`` letters the board's three lines under its title (the two prices and the footer, each 1 to
+    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte."""
+    if menu is not None and not (
+        isinstance(menu, tuple)
+        and len(menu) == 3
+        and all(isinstance(line, str) and 0 < len(line.strip()) and len(line) <= MENU_CHARS for line in menu)
+    ):
+        raise LocationError(f"menu is a tuple of three lines of 1 to {MENU_CHARS} characters, got {menu!r}")
     p = props.cafe_paints(cv)
     ink = cv.ink
     g = cv.group(parent, id)
@@ -192,7 +219,20 @@ def cafe(
     for xx in range(-500, 1701, 110):
         cv.line(g, xx, 865, xx, 1255, "#C9C6AC", 2)
     cv.rect(g, -500, 1012, 2200, 22, "#946642", ink, 3)
-    props.menu_board(cv, g)
+    if menu is None:
+        props.menu_board(cv, g)
+    else:
+        coffee, pastry, footer = menu
+        props.menu_board(
+            cv,
+            g,
+            items=(
+                ("menu-title", "CAFÉ", 343, 90, 67, "#F3DCA4"),
+                ("menu-coffee", coffee, 458, 67, 34, "#F5EBD5"),
+                ("menu-pastry", pastry, 534, 67, 34, "#F5EBD5"),
+                ("menu-wifi", footer, 634, 61, 31, "#A9CBB8"),
+            ),
+        )
     signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
     props.cafe_window(cv, g)
     for xx in [300, 850]:
