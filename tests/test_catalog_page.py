@@ -1,6 +1,8 @@
 """``srstudio.catalog_page``: the catalog page rebuilt from the episode projects, their renders and the registry."""
 
 import base64
+import dataclasses
+import hashlib
 import json
 import os
 import re
@@ -11,73 +13,10 @@ from pathlib import Path
 
 import pytest
 
+from srstudio import catalog_data
 from srstudio import catalog_page as cp
 from srstudio.cli import main
-
-SCENE = """<?xml version="1.0" encoding="UTF-8"?>
-<scene version="1.1">
-  <project width="{w}" height="{h}" fps="{fps}" duration="{dur}" seed="1" background="#000000"/>
-  <metadata title="{title}" description="{desc}" generator="test"/>
-</scene>
-"""
-
-BASE = """<!doctype html>
-<html lang="pt-BR"><head><style>
-.a{ color:red }
-</style></head><body>
-<div class="eyebrow">scene-render · sr-core · srstudio · AudioForge · 6 pacotes .vpkg</div>
-<p class="lede">Seis curtas reconstruídos, com <b>Cutout</b> e <b>Ink</b>.</p>
-<div class="styles">
-        <div class="style-card"><span class="style-tag cutout">Cutout</span><b>Recorte</b></div>
-        <div class="style-card"><span class="style-tag ink">Ink</span><b>Traço</b></div>
-      </div>
-    </div>
-    <div class="specs" aria-label="Especificações comuns">
-      <div class="spec"><b>95,7 s</b><span>6 episódios</span></div>
-    </div>
-<section id="episodios"><div class="eyebrow">Parte 1</div></section>
-<section id="elenco"><div class="eyebrow">Parte 2</div>
-<p class="lede">Tudo que aparece nos seis vídeos, recortado do próprio desenho.</p>
-  <div class="cast" id="cast"></div>
-  <div class="locs" id="locs"></div>
-  <div class="props" id="props"></div>
-  <div class="props" id="graphics"></div>
-</section>
-<section id="usado"><div class="eyebrow">Parte 3</div></section>
-<footer>
-  <p>Fontes: os seis pacotes.</p>
-</footer>
-</body>
-</html>
-"""
-
-
-def write_project(root: Path, slug: str, *, kind: str = "dialogue", w=1080, h=1920, fps=30, dur=4.0) -> Path:
-    p = root / slug
-    p.mkdir(parents=True)
-    (p / f"{slug}.scene.xml").write_text(
-        SCENE.format(w=w, h=h, fps=fps, dur=dur, title=f"{slug} title", desc=f"About {slug} &amp; more")
-    )
-    (p / f"{slug}.audio.scene.xml").write_text("<scene/>")  # the audio document is not the episode
-    if kind == "dialogue":
-        data = {
-            "phrases": [
-                {"role": "pip", "voice_name": "Will", "text": "Second line.", "start": 2.0},
-                {"role": "boss", "voice_name": "Eric", "text": "First line.", "start": 0.5},
-            ],
-            "sound_effects": [{"name": "call-chime", "start": 1.0, "duration": 0.5}],
-        }
-    elif kind == "timeline":
-        data = {
-            "items": [
-                {"actor": "human", "voice_name": "Chris", "text": "Load!", "start": 0.0},
-                {"actor": "sfx", "text": "[BEEP]", "start": 1.0},
-            ]
-        }
-    else:
-        data = {"items": [{"text": "This module will take forty-five minutes.", "start": 0.08}]}
-    (p / f"{kind if kind != 'narration' else 'narration'}.json").write_text(json.dumps(data))
-    return p
+from support.catalog import BASE, GALLERY, USAGE, item, shot, write_project
 
 
 @pytest.fixture
@@ -204,25 +143,167 @@ def cards(tree):
     return cp.discover(episodes, renders, cp.Notes())
 
 
-def test_inject_adds_the_library_section_style_cards_and_figures(tree):
-    page = cp.inject(BASE, cards(tree), cp.Notes(), media=lambda p: p.name, poses=[("stand", "stand.png")])
-    assert '<section id="biblioteca">' in page and page.index('id="biblioteca"') < page.index('id="elenco"')
-    assert '<div class="eyebrow">Parte 2</div>' in page and '<div class="eyebrow">Parte 4</div>' in page
-    assert page.count('<div class="eyebrow">Parte 3</div>') == 1
-    for slug in ("camera-off", "the-router", "mushroom-training"):
-        assert f'id="lib-{slug}"' in page and f'src="{slug}.mp4"' in page
+def url(seed: object, ext: str = "jpg") -> str:
+    return f"media/{hashlib.sha256(str(seed).encode()).hexdigest()[:32]}.{ext}"
+
+
+SHELL = {"stylesheet": url("css", "css"), "script": url("js", "js")}
+
+
+def test_inject_makes_the_base_page_the_shell_of_the_app(tree):
+    page = cp.inject(BASE, cards(tree), cp.Notes(), **SHELL)
+    for label in ("Estilos", "Personagens", "Locações", "Objetos", "Gráficos", "Vídeos", "Motor"):
+        assert f">{label}</a>" in page  # the labels stay in Portuguese, as the page is
+    assert page.index('<nav id="nav"') < page.index('<div class="wrap" id="base">') < page.index('<main id="app"')
+    assert page.index('<main id="app"') < page.index("<footer>")
+    assert f'<link rel="stylesheet" href="{SHELL["stylesheet"]}">' in page
+    assert f'<script src="{SHELL["script"]}" defer></script>' in page
     assert 'class="style-tag soft"' in page and 'class="style-tag cel"' in page  # every registered style
     assert page.count('class="style-tag cutout">Cutout</span><b>Recorte') == 1  # cards already there are kept
     assert "3 episódios novos" in page and "<b>9</b><span>estilos" in page
     assert f"<b>{len(cp.registry.entries())}</b><span>peças registradas" in page  # fills the ninth spec cell
-    assert 'alt="Pip, pose stand"' in page and "pip" in page  # pose sheet and the registry table
-    assert "About camera-off &amp; more" in page  # escaped once
-    assert page.rstrip().endswith("</html>") and "lib-dialog" in page
+    assert page.rstrip().endswith("</html>")
 
 
-def test_inject_refuses_a_base_that_lost_an_anchor(tree):
+def test_the_shell_holds_no_media_and_runs_the_base_script_only_when_asked(tree):
+    page = cp.inject(BASE, cards(tree), cp.Notes(), **SHELL)
+    assert "<video" not in page and "<img" not in page  # the app renders them, a view at a time
+    assert "window.srstudioBase = (function(){" in page and "});\n</script>" in page
+    assert "})();\n</script>" not in page  # defined, not called
+
+
+@pytest.mark.parametrize(
+    "lost", ['<div class="wrap">', "<footer>", "(function(){\n'use strict';", "})();\n</script>", "const ENGINE = ["]
+)
+def test_inject_refuses_a_base_that_lost_an_anchor(tree, lost):
     with pytest.raises(cp.CatalogError, match="anchor"):
-        cp.inject(BASE.replace('<section id="elenco">', "<section>"), cards(tree), cp.Notes(), media=str, poses=[])
+        cp.inject(BASE.replace(lost, "<!-- gone -->"), cards(tree), cp.Notes(), **SHELL)
+
+
+def assembled(tree, notes=None, *, usage=None, packages=(), poses=(), engine=()):
+    notes = notes or cp.Notes()
+    return cp.assemble(
+        cp.discover(*tree, notes, usage),
+        notes,
+        media=lambda r: url(r.name, "mp4"),
+        poster=lambda r: url(r.name),
+        poses=poses,
+        stills=lambda s: url(f"{s.episode}@{s.at:g}"),
+        usage=usage,
+        packages=packages,
+        engine=engine,
+    )
+
+
+def test_a_video_is_built_from_its_project_and_its_measured_parts(tree):
+    catalog = assembled(tree, usage=USAGE)
+    video = {v.slug: v for v in catalog.videos}["camera-off"]
+    assert (video.title, video.lede, video.format, video.width) == (
+        "camera-off title", "About camera-off & more", "9:16", 1080,
+    )  # fmt: skip
+    assert video.source == "library" and video.measured and video.style == "soft"
+    assert video.parts == USAGE.episodes["camera-off"]
+    assert video.src == url("camera-off.mp4", "mp4") and video.poster == url("camera-off.mp4")
+    assert [x.t for x in video.lines] == [0.5, 1.0, 2.0] and video.effects == 1
+
+
+def test_every_style_lists_its_videos_and_its_parts(tree):
+    catalog = assembled(tree, usage=USAGE)
+    assert [s.slug for s in catalog.styles] == list(cp.STYLES)
+    soft = {s.slug: s for s in catalog.styles}["soft"]
+    assert soft.videos == ("camera-off",)
+    assert set(soft.parts) == {x.name for x in cp.registry.entries() if x.style == "soft"}
+    assert soft.text_html == cp.html.escape(cp.STYLES["soft"].summary)  # no note: the registered summary, escaped
+
+
+def test_a_style_note_is_curated_markup():
+    notes = cp.Notes(styles={"soft": cp.StyleNote("Blob", "Pose a <i>pose</i>.")})
+    catalog = cp.assemble([], notes, media=str, poster=str, poses=[])
+    soft = {s.slug: s for s in catalog.styles}["soft"]
+    assert (soft.title, soft.text_html) == ("Blob", "Pose a <i>pose</i>.")
+
+
+def test_every_registered_part_is_in_the_document_with_its_measured_videos(tree):
+    catalog = assembled(tree, usage=USAGE)
+    parts = {p.name: p for p in catalog.parts}
+    assert set(parts) == {x.name for x in cp.registry.entries()}
+    assert parts["pip"].videos == ("camera-off",) and parts["juno"].videos == ()  # used, and reachable though unused
+    assert parts["juno"].title == "juno" and parts["juno"].gallery == ()  # no gallery still: not dropped either
+
+
+def test_a_package_is_a_video_with_facts_and_no_file(tree):
+    packages = cp.packages_of(BASE)
+    assert [(p.slug, p.number, p.title, p.fmt) for p in packages] == [
+        ("honesty-interview", "01", "Honestidade", "9:16"),
+        ("printer-recreation", "06", "A impressora", "1:1"),
+    ]
+    assert packages[1].lede == "O estilo d'Ink."
+    catalog = assembled(tree, usage=USAGE, packages=packages)
+    videos = {v.slug: v for v in catalog.videos}
+    honesty = videos["honesty-interview"]
+    assert (honesty.source, honesty.measured, honesty.style, honesty.src) == ("package", True, "cutout", None)
+    assert honesty.parts == ("manager", "office-wide") and honesty.title == "Honestidade"
+    assert "honesty-interview" in {p.name: p for p in catalog.parts}["manager"].videos
+    printer = videos["printer-recreation"]
+    assert (printer.measured, printer.parts) == (False, ())  # it is a package, and the report does not cover it
+
+
+def test_a_base_page_with_bad_scene_data_is_refused():
+    page = '<script id="scenes-data" type="application/json">[{"id": "x"}]</script>'
+    with pytest.raises(cp.CatalogError, match="scene data"):
+        cp.packages_of(page)
+    assert cp.packages_of("<html></html>") == []
+
+
+def test_the_engine_inventory_is_read_for_the_search():
+    assert cp.engine_topics(BASE) == ("Animação e tempo", "Simulação física")
+    assert cp.engine_topics("<html></html>") == ()
+
+
+def test_a_measured_episode_with_no_card_is_kept_and_marked(tree):
+    catalog = assembled(tree, usage=USAGE)
+    honesty = {v.slug: v for v in catalog.videos}["honesty-interview"]  # no package data given here
+    assert (honesty.source, honesty.measured, honesty.src) == ("no-render", True, None)
+
+
+def test_an_unmeasured_episode_says_so_and_does_not_show_as_using_nothing(tree):
+    report = cp.Report({"camera-off": USAGE.episodes["camera-off"]}, ("the-router", "the-code"))
+    catalog = assembled(tree, usage=report)
+    videos = {v.slug: v for v in catalog.videos}
+    assert catalog.unmeasured == ("the-router", "the-code") and catalog.measured
+    assert (videos["the-router"].source, videos["the-router"].measured) == ("library", False)
+    assert (videos["the-code"].source, videos["the-code"].measured) == ("no-render", False)  # a project, no render
+
+
+def test_a_card_the_report_never_mentions_is_not_measured(tree):
+    partial = cp.Report({"camera-off": USAGE.episodes["camera-off"]})
+    videos = {v.slug: v for v in assembled(tree, usage=partial).videos}
+    assert (videos["the-router"].measured, videos["the-router"].parts, videos["the-router"].style) == (False, (), "")
+
+
+def test_without_a_report_nothing_is_claimed(tree):
+    catalog = assembled(tree)
+    assert catalog.measured is False and all(not v.measured and not v.parts for v in catalog.videos)
+    assert all(not p.videos for p in catalog.parts)
+
+
+def test_a_report_naming_a_part_the_registry_lost_is_refused(tree):
+    stale = cp.Report({"camera-off": ("pip", "a-removed-part")})
+    with pytest.raises(cp.CatalogError, match="a-removed-part"):
+        assembled(tree, usage=stale)
+
+
+def test_the_pose_sheet_belongs_to_pip(tree):
+    catalog = assembled(tree, poses=[("stand", url("stand", "png"))])
+    pip = {p.name: p for p in catalog.parts}["pip"]
+    assert pip.sheet == (cp.Still(url("stand", "png"), 300, 320, "stand"),)
+    assert sum(1 for p in catalog.parts if p.sheet) == 1
+
+
+def test_an_unregistered_pip_cannot_hold_the_pose_sheet(tree, monkeypatch):
+    monkeypatch.setattr(cp.registry, "entries", lambda *a: [])
+    with pytest.raises(cp.CatalogError, match="pip"):
+        cp.assemble([], cp.Notes(), media=str, poster=str, poses=[("stand", url("stand", "png"))])
 
 
 # -- building ---------------------------------------------------------------------------------------------
@@ -250,7 +331,8 @@ def page_args(tree, tmp_path, *, engine_path="missing-engine", base=None) -> lis
 
 
 def references(site: Path) -> set[str]:
-    return set(re.findall(r"media/[0-9a-f]+\.[a-z0-9]+", (site / "index.html").read_text()))
+    text = (site / "index.html").read_text() + (site / "catalog.json").read_text()
+    return set(re.findall(r"media/[0-9a-f]+\.[a-z0-9]+", text))
 
 
 def test_build_writes_a_private_site_and_reuses_its_cache(tree, tmp_path):
@@ -259,13 +341,13 @@ def test_build_writes_a_private_site_and_reuses_its_cache(tree, tmp_path):
     args = page_args(tree, tmp_path, engine_path=engine())
     assert main(args) == 0
     site, cache = tmp_path / "site", tmp_path / "cache"
-    page = (site / "index.html").read_text()
-    assert not cp.embedded(page)  # no data URI of any kind
-    assert page.count('preload="none"') == 3 and page.count("<video") == 3 and page.count(' poster="media/') == 3
-    assert page.count('loading="lazy"') >= 18
+    page, document = (site / "index.html").read_text(), (site / "catalog.json").read_text()
+    assert not cp.embedded(page) and not cp.embedded(document)  # no data URI of any kind
+    catalog = catalog_data.load(site / "catalog.json")  # strict, and every media file it names is there
+    assert sum(1 for v in catalog.videos if v.src) == 3
     assert {f"media/{p.name}" for p in (site / "media").iterdir()} == references(site)
-    assert {p.suffix for p in (site / "media").iterdir()} == {".mp4", ".jpg", ".png"}
-    for path in [site / "index.html", *(site / "media").iterdir()]:
+    assert {p.suffix for p in (site / "media").iterdir()} == {".mp4", ".jpg", ".png", ".js", ".css"}
+    for path in [site / "index.html", site / "catalog.json", *(site / "media").iterdir()]:
         assert stat.S_IMODE(path.stat().st_mode) == 0o600
     for folder in (site, site / "media"):
         assert stat.S_IMODE(folder.stat().st_mode) == 0o700
@@ -299,6 +381,9 @@ def fake_media(monkeypatch, tree, tmp_path):
 def test_a_rebuild_writes_only_what_changed_and_removes_what_is_no_longer_referenced(tree, tmp_path, fake_media):
     site = tmp_path / "site"
     assert main(fake_media) == 0
+    document = (site / "catalog.json").read_bytes()
+    assert main(fake_media) == 0
+    assert (site / "catalog.json").read_bytes() == document  # a rebuild of the same inputs is the same document
     before = {p.name: p.stat().st_ino for p in (site / "media").iterdir()}
     (site / "media" / ".abandoned.mp4.123").write_bytes(b"a partial write of a killed build")
     (tree[1] / "the-router.mp4").write_bytes(b"a new render")
@@ -329,15 +414,19 @@ def test_the_index_is_replaced_last_and_what_it_needs_is_removed_only_after(tree
     site = tmp_path / "site"
     assert main(fake_media) == 0
     page = (site / "index.html").read_text()
+    old = references(site)
     (tree[1] / "the-router.mp4").write_bytes(b"a new render")
+    write = cp._write_text
 
-    def fail(*_args):
-        raise cp.CatalogError("the index could not be written")
+    def fail_on_the_index(path, text):
+        if path.name == "index.html":
+            raise cp.CatalogError("the index could not be written")
+        write(path, text)
 
-    monkeypatch.setattr(cp, "_write_text", fail)
+    monkeypatch.setattr(cp, "_write_text", fail_on_the_index)
     assert main(fake_media) == 2
     assert (site / "index.html").read_text() == page
-    assert all((site / ref).exists() for ref in references(site))  # the old site's media were not pruned
+    assert all((site / ref).exists() for ref in old | references(site))  # nothing of the old site was pruned
 
 
 def test_a_file_at_the_site_path_is_reported(tree, tmp_path, fake_media, capsys):
@@ -412,6 +501,17 @@ def test_a_damaged_media_file_is_rewritten(tmp_path):
     assert (tmp_path / store.add(source)).read_bytes() == b"bytes"
 
 
+def test_a_document_or_page_with_a_data_uri_is_never_written(tree, tmp_path, fake_media, monkeypatch):
+    real = cp.registry.entries
+
+    def embedded_summary(*args):
+        return [dataclasses.replace(x, summary="data:image/png;base64,AAAA") for x in real(*args)]
+
+    monkeypatch.setattr(cp.registry, "entries", embedded_summary)
+    assert main(fake_media) == 2
+    assert not (tmp_path / "site" / "catalog.json").exists() and not (tmp_path / "site" / "index.html").exists()
+
+
 def test_the_uris_of_the_base_page_become_media_files(tmp_path):
     font, song = base64.b64encode(b"font bytes").decode(), base64.b64encode(b"song bytes").decode()
     page = f"""<style>@font-face{{ src:url("data:font/ttf;base64,{font}") format("truetype") }}</style>
@@ -449,26 +549,6 @@ def test_a_uri_of_any_other_form_still_counts_as_embedded(tmp_path, uri):
 
 
 # -- the galleries ----------------------------------------------------------------------------------------
-def shot(episode="camera-off", at=1.0, box=None):
-    return {"episode": episode, "at": at, **({"box": box} if box else {})}
-
-
-GALLERY = [  # covers every part the tree's three episodes are registered with
-    {"section": "cast", "name": "Pip", "parts": ["pip"], "voice": "Will", "text": "O <i>blob</i>.",
-     "shot": shot(box=[0, 0, 300, 400]), "poses": [{"label": "dança", "shot": shot(at=2.0, box=[0, 0, 200, 200])}]},
-    {"section": "cast", "name": "O roteador", "parts": ["talking-router", "ink-hand"], "text": "Fala.",
-     "shot": shot("the-router")},
-    {"section": "locations", "name": "Escritório & casa", "parts": ["soft-office"], "text": "Mesa.", "shot": shot()},
-    {"section": "locations", "name": "Prateleira", "parts": ["ink-router-shot", "ink-router-wide"], "text": "Muro.",
-     "shot": shot("the-router", 0.5)},
-    {"section": "cast", "name": "Cogumelo", "parts": ["cel-traced"], "text": "Traçado.",
-     "shot": shot("mushroom-training")},
-    {"section": "locations", "name": "Sala", "parts": ["cel-room"], "text": "Piso.", "shot": shot("mushroom-training")},
-    {"section": "graphics", "name": "Letreiro", "parts": ["cel-lettering"], "text": "Caixa.",
-     "shot": shot("mushroom-training", 0.2, [0, 0, 1080, 300])},
-]  # fmt: skip
-
-
 def gallery_notes(tmp_path, gallery=GALLERY, schema="1.1.0") -> cp.Notes:
     path = tmp_path / "notes.json"
     path.write_text(json.dumps({"schema": schema, "episodes": {}, "styles": {}, "gallery": gallery}))
@@ -489,10 +569,6 @@ def write_notes(tmp_path, doc) -> Path:
     path = tmp_path / "doc.json"
     path.write_text(json.dumps(doc))
     return path
-
-
-def item(**changes):
-    return {**GALLERY[0], **changes}
 
 
 @pytest.mark.parametrize(
@@ -531,35 +607,22 @@ def test_a_gallery_needs_schema_1_1_and_a_list(tmp_path):
         gallery_notes(tmp_path, gallery={"cast": []})
 
 
-def stills(s: cp.Shot) -> str:
-    return f"{s.episode}@{s.at:g}.jpg"
-
-
-def test_the_galleries_are_injected_after_the_base_hosts(tree, tmp_path):
+def test_a_gallery_item_reaches_every_part_it_shows(tree, tmp_path):
     notes = gallery_notes(tmp_path)
-    numbered = cp.Notes(episodes={"camera-off": cp.EpisodeNote(number="08")}, gallery=notes.gallery)
-    page = cp.inject(BASE, cp.discover(*tree, numbered), numbered, media=str, poses=[], stills=stills, usage=SHOWN)
-    cast = page.index('<div class="cast lib-gal" id="lib-cast">')
-    assert (
-        page.index('<div class="cast" id="cast"></div>') < cast < page.index('<div class="locs lib-gal" id="lib-locs">')
-    )
-    assert page.index('<div class="props" id="graphics"></div>') < page.index(
-        '<div class="props lib-gal" id="lib-graphics">'
-    )
-    pip = page[cast : page.index("</p>", cast)]
-    assert '<img src="camera-off@1.jpg" alt="Pip"' in pip and "<span>voz Will (ElevenLabs)</span>" in pip
-    assert '<span class="chip on">08</span>' in pip  # the episode's number, the slug when it has none
-    assert "O <i>blob</i>." in pip  # curated text is markup, as in the episode highlights
-    assert '<img src="camera-off@2.jpg" alt="Pip, dança"' in page and "<small>dança</small>" in page
-    assert "<h3>Escritório &amp; casa</h3>" in page
-    assert '<span class="chip on">the-router</span>' in page
-    assert 'style="aspect-ratio:1080/300"' in page  # a crop keeps its own shape
-    assert "nos seis vídeos originais e nos 3 episódios da biblioteca" in page
+    catalog = assembled(tree, notes, usage=SHOWN)
+    parts = {p.name: p for p in catalog.parts}
+    pip = parts["pip"]
+    assert (pip.title, pip.gallery[0].voice) == ("Pip", "Will")
+    assert pip.gallery[0].note_html == "O <i>blob</i>."  # curated text is markup, as in the episode highlights
+    assert pip.gallery[0].still == cp.Still(url("camera-off@1"), 300, 400, "", "camera-off")
+    assert pip.gallery[0].poses == (cp.Still(url("camera-off@2"), 200, 200, "dança", "camera-off"),)
+    assert parts["talking-router"].gallery == parts["ink-hand"].gallery and parts["ink-hand"].title == "O roteador"
+    assert parts["cel-lettering"].gallery[0].still.height == 300  # a crop keeps its own shape
+    assert parts["soft-office"].gallery[0].still.width == 1080  # a whole frame has the episode's
 
 
-def test_without_a_curated_gallery_the_base_galleries_are_left_alone(tree):
-    page = cp.inject(BASE, cards(tree), cp.Notes(), media=str, poses=[])
-    assert "lib-gal\"" not in page and "Tudo que aparece nos seis vídeos, recortado" in page
+def test_without_a_curated_gallery_no_part_has_a_still(tree):
+    assert all(not p.gallery for p in assembled(tree).parts)
 
 
 @pytest.mark.parametrize(
@@ -576,18 +639,18 @@ def test_without_a_curated_gallery_the_base_galleries_are_left_alone(tree):
 def test_the_gallery_is_checked_against_the_registry_and_the_renders(tree, tmp_path, change, match):
     notes = gallery_notes(tmp_path, change(list(GALLERY)))
     with pytest.raises(cp.CatalogError, match=match):
-        cp.inject(BASE, cards(tree), notes, media=str, poses=[], stills=stills, usage=SHOWN)
+        assembled(tree, notes, usage=SHOWN)
 
 
 def test_a_gallery_without_a_usage_report_is_refused(tree, tmp_path):
     # its coverage check counts the parts the rendered episodes use, which only a usage report measures
     with pytest.raises(cp.CatalogError, match="usage report"):
-        cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[], stills=stills)
+        assembled(tree, gallery_notes(tmp_path))
 
 
 def test_a_gallery_needs_stills(tree, tmp_path):
     with pytest.raises(cp.CatalogError, match="stills"):
-        cp.inject(BASE, cards(tree), gallery_notes(tmp_path), media=str, poses=[], usage=SHOWN)
+        cp.assemble(cards(tree), gallery_notes(tmp_path), media=str, poster=str, poses=[], usage=SHOWN)
 
 
 HALF_WRITER = """#!/bin/sh
@@ -648,58 +711,16 @@ def test_a_still_is_cut_from_the_render_once(tmp_path):
 
 
 # -- measured usage ---------------------------------------------------------------------------------------
-USAGE = cp.Report(
-    {
-        "camera-off": ("pip", "soft-office", "soft-desk"),
-        "the-router": ("talking-router", "ink-hand", "ink-router-shot", "ink-router-wide"),
-        "mushroom-training": ("cel-traced", "cel-room", "cel-lettering"),
-        "honesty-interview": ("manager", "office-wide"),  # a package episode: no card, not in the gallery
-    }
-)
-
-
 # the measured usage less soft-desk: every part it names is shown by an item of GALLERY
 SHOWN = cp.Report({slug: tuple(p for p in parts if p != "soft-desk") for slug, parts in USAGE.episodes.items()})
-
-
-def test_the_registry_table_and_the_usage_lists_come_from_the_measured_usage(tree):
-    page = cp.inject(BASE, cards(tree), cp.Notes(), media=str, poses=[], usage=USAGE)
-    table = page[page.index('<table class="lib-registry">') : page.index("</table>")]
-    assert "<td><code>soft-desk</code></td>" in table
-    row = table[table.index("<code>soft-desk</code>") :]
-    assert row[: row.index("</tr>")].endswith("<td>camera-off</td>")  # declared nowhere, measured in camera-off
-    juno = table[table.index("<code>juno</code>") :]
-    assert juno[: juno.index("</tr>")].endswith("<td>—</td>")
-
-    def block(kind):
-        start = page.index(f'id="usage-{kind}"')
-        return page[start : page.index("</div>", start)]
-
-    chars = block("character")
-    used, unused = chars.split("Não usados")
-    assert "Personagens" in chars and "<b>4</b> usados" in chars  # pip, talking-router, cel-traced, manager
-    assert "<code>manager</code> <small>honesty-interview</small>" in used and "<code>juno</code>" in unused
-    assert "<code>pip</code>" in used and "<code>pip</code>" not in unused
-    assert f"<b>{len(cp.registry.entries('character')) - 4}</b> não usados" in chars
-    assert "<code>soft-desk</code> <small>camera-off</small>" in block("prop") and "Locações" in block("location")
-    assert 'id="usage-graphic"' not in page  # characters, locations and props
-
-
-def test_without_usage_the_table_claims_no_episodes_and_no_list_is_added(tree):
-    page = cp.inject(BASE, cards(tree), cp.Notes(), media=str, poses=[])
-    assert 'id="lib-usage"' not in page
-    table = page[page.index('<table class="lib-registry">') : page.index("</table>")]
-    row = table[table.index("<code>pip</code>") :]
-    assert row[: row.index("</tr>")].endswith("<td>—</td>")
 
 
 def test_with_usage_the_gallery_must_show_every_part_a_rendered_episode_uses(tree, tmp_path):
     notes = gallery_notes(tmp_path)
     with pytest.raises(cp.CatalogError, match="soft-desk"):  # measured in camera-off, shown by no item
-        cp.inject(BASE, cards(tree), notes, media=str, poses=[], stills=stills, usage=USAGE)
+        assembled(tree, notes, usage=USAGE)
     covered = gallery_notes(tmp_path, [*GALLERY, item(name="Mesa", parts=["soft-desk"])])
-    page = cp.inject(BASE, cards(tree), covered, media=str, poses=[], stills=stills, usage=USAGE)
-    assert 'id="lib-usage"' in page  # manager (honesty-interview, no card) needs no gallery item
+    assert assembled(tree, covered, usage=USAGE).measured  # manager (honesty-interview, no card) needs no gallery item
 
 
 def test_page_reports_an_unreadable_usage_report_as_an_error(tree, tmp_path, capsys):
