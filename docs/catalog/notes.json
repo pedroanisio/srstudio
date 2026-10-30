@@ -3618,6 +3618,212 @@
         "at": 8.6
       },
       "text": "A cabine vista de dentro: portas que abrem para o corredor (<code>doors=</code>), mostrador de sete segmentos (<code>floors=</code>), painel com o botão aceso (<code>lit=</code>) e corrimãos."
+    },
+    {
+      "section": "cast",
+      "name": "Rosa, a vizinha",
+      "parts": [
+        "rosa"
+      ],
+      "voice": "Lily",
+      "shot": {
+        "episode": "neighbor-names",
+        "at": 8.5,
+        "box": [
+          180,
+          380,
+          720,
+          900
+        ]
+      },
+      "text": "Vizinha da família do escritório: cabelo grisalho em chanel, óculos redondos e cardigã terracota com o nome bordado no bolso (<code>stitch=</code>, até seis caracteres; <code>None</code> não borda nada). Divide o elevador com o vizinho da encomenda há sete anos em Neighbor Names."
+    },
+    {
+      "section": "props",
+      "name": "Encomenda",
+      "parts": [
+        "parcel"
+      ],
+      "shot": {
+        "episode": "neighbor-names",
+        "at": 3.7,
+        "box": [
+          200,
+          780,
+          560,
+          470
+        ]
+      },
+      "text": "Caixa de papelão com fita e etiqueta de endereço (<code>label=</code>, até doze caracteres; <code>None</code> deixa a etiqueta em branco), segura contra o peito ou pousada no chão: DEV 7C."
+    },
+    {
+      "section": "cast",
+      "name": "Parquímetro falante",
+      "parts": [
+        "talking-meter"
+      ],
+      "voice": "Laura",
+      "shot": {
+        "episode": "pay-to-park",
+        "at": 17.5,
+        "box": [
+          300,
+          190,
+          480,
+          890
+        ]
+      },
+      "text": "O parquímetro do Ink que fala: luzes correm sobre o visor enquanto ele fala, a leitura do visor muda na hora dada (<code>display=</code>) e a fenda das moedas está tapada por um adesivo SCAN TO PAY (Pay to Park)."
+    },
+    {
+      "section": "locations",
+      "name": "Calçada",
+      "parts": [
+        "ink-kerb"
+      ],
+      "shot": {
+        "episode": "pay-to-park",
+        "at": 0.5
+      },
+      "text": "A calçada e a rua de lado: o doodle, o parquímetro falante e o carro estacionado. O guincho ergue o carro e vai embora com ele na hora dada (<code>tow=</code>); com <code>close=True</code>, o parquímetro sozinho, de perto."
+    },
+    {
+      "section": "graphics",
+      "name": "App de estacionamento",
+      "parts": [
+        "ink-app-screen"
+      ],
+      "shot": {
+        "episode": "pay-to-park",
+        "at": 12.5
+      },
+      "text": "O app no celular seguro na mão: barra de título, linhas de formulário que chegam e ganham um visto uma a uma (ou viram TAKEN), uma barra de progresso que enche e cinco estrelas que acendem em sequência."
+    },
+    {
+      "section": "locations",
+      "name": "Carro visto do capô",
+      "parts": [
+        "stick-windshield"
+      ],
+      "shot": {
+        "episode": "the-exit",
+        "at": 8.5
+      },
+      "text": "A cabine pelo para-brisa: céu acima do teto, retrovisor, vidro traseiro com a estrada se afastando (<code>speed=</code>; 0 para o carro parado), banco de trás e os dois bancos da frente, um boneco em cada."
+    },
+    {
+      "section": "props",
+      "name": "Painel e volante",
+      "parts": [
+        "stick-windshield-dash"
+      ],
+      "shot": {
+        "episode": "the-exit",
+        "at": 8.5,
+        "box": [
+          0,
+          820,
+          1080,
+          680
+        ]
+      },
+      "text": "A camada entre a câmera e o casal: volante diante do motorista, painel de lado a lado e o celular no suporte entre os bancos, que vibra nos tempos de <code>buzz=</code> e vai de face para baixo no painel em <code>down=</code>; por cima, o reflexo no vidro, os limpadores e o capô."
+    },
+    {
+      "section": "props",
+      "name": "Botões da chamada",
+      "parts": [
+        "collage-call-buttons"
+      ],
+      "shot": {
+        "episode": "best-angle",
+        "at": 11.5,
+        "box": [
+          250,
+          1450,
+          580,
+          220
+        ]
+      },
+      "text": "Três botões de papel sobre a imagem, microfone e câmera em cinza e o vermelho de desligar no meio: o que faz de um plano o outro lado de uma videochamada (Best Angle)."
+    },
+    {
+      "section": "props",
+      "name": "Celular no timer",
+      "parts": [
+        "collage-phone-timer"
+      ],
+      "shot": {
+        "episode": "the-family-photo",
+        "at": 0.5,
+        "box": [
+          480,
+          1100,
+          600,
+          820
+        ]
+      },
+      "text": "Celular de pé sobre três livros de papel, virado para a sala, com o timer da câmera contando."
+    },
+    {
+      "section": "graphics",
+      "name": "Visor da câmera",
+      "parts": [
+        "collage-viewfinder"
+      ],
+      "shot": {
+        "episode": "the-family-photo",
+        "at": 9.5
+      },
+      "text": "O plano visto pelo celular: cantoneiras brancas nos cantos e um disco de papel com a contagem regressiva, desenhado sob a legenda e sobre as cabeças; o disco sai com o último dígito."
+    },
+    {
+      "section": "props",
+      "name": "Sofá de papel",
+      "parts": [
+        "collage-sofa"
+      ],
+      "shot": {
+        "episode": "the-family-photo",
+        "at": 9.5,
+        "box": [
+          0,
+          1100,
+          1080,
+          700
+        ]
+      },
+      "text": "A frente do sofá da sala de estar, assento, costuras e braços em papel recortado; na frente de quem posa sentado, esconde onde os bustos terminam."
+    },
+    {
+      "section": "graphics",
+      "name": "Flash",
+      "parts": [
+        "collage-flash"
+      ],
+      "shot": {
+        "episode": "the-family-photo",
+        "at": 12.72
+      },
+      "text": "O flash da câmera: o quadro inteiro branco num instante, mantido e depois esmaecendo até a sala voltar."
+    },
+    {
+      "section": "props",
+      "name": "Foto impressa",
+      "parts": [
+        "collage-photo-print"
+      ],
+      "shot": {
+        "episode": "the-family-photo",
+        "at": 15.0,
+        "box": [
+          60,
+          460,
+          960,
+          900
+        ]
+      },
+      "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
     }
   ]
 }
