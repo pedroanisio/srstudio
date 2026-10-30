@@ -499,6 +499,36 @@ def test_the_site_holds_every_specimen_and_poster_and_a_page_says_what_it_render
     )
 
 
+def test_the_site_holds_each_character_s_versions_pins_and_proof(tree, tmp_path, fake_media):
+    work = tmp_path / "work"
+    proof = work / "generated" / "character-proofs" / "fox" / "fox-proof.mp4"
+    proof.parent.mkdir(parents=True)
+    proof.write_bytes(b"the proof")
+    posts = tmp_path / "posts"
+    posts.mkdir()
+    (posts / "__init__.py").write_text("")
+    (posts / "camera_off.py").write_text(
+        "from srstudio.releases import Release\nfrom srstudio.social import InstagramPost\n"
+        'RELEASE = Release("camera-off", InstagramPost(title="T", description="D."), characters={"toon-fox": 2})\n'
+    )
+    assert main([*fake_media, "--releases", str(posts), "--proof-root", str(work)]) == 0
+    catalog = catalog_data.load(tmp_path / "site" / "catalog.json")
+    parts = {p.name: p for p in catalog.parts}
+    first, second = parts["toon-fox"].versions
+    assert catalog.pinned and (first.pins, second.pins) == ((), ("camera-off",))
+    assert (first.default, second.default, second.part) == (False, True, "toon-fox@2")
+    assert (tmp_path / "site" / second.proof).read_bytes() == b"the proof"
+    assert parts["toon-fox@2"].version_of == "toon-fox" and len(parts) == len(cp.registry.entries())
+
+
+def test_without_the_release_files_the_document_says_pins_were_not_read(tree, tmp_path, fake_media):
+    assert main(fake_media) == 0
+    catalog = catalog_data.load(tmp_path / "site" / "catalog.json")
+    fox = {p.name: p for p in catalog.parts}["toon-fox"]
+    assert not catalog.pinned and not any(v.pins for v in fox.versions)
+    assert all(not v.proof for v in fox.versions) and fox.versions[1].proof_path  # that proof is not under the cwd
+
+
 def test_a_refused_part_reaches_the_site_with_the_words_of_its_reason(tree, tmp_path, fake_media, monkeypatch):
     def one_refused(engine, cache, episodes):
         shelf = fake_render_all(engine, cache, episodes)

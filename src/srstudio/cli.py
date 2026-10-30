@@ -16,7 +16,19 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from . import catalog_page, catalog_server, characters, craft, fonts, lipsync, registry, releases, specimens, usage
+from . import (
+    catalog_page,
+    catalog_server,
+    catalog_versions,
+    characters,
+    craft,
+    fonts,
+    lipsync,
+    registry,
+    releases,
+    specimens,
+    usage,
+)
 from .episode import SceneCheckError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
@@ -56,6 +68,10 @@ def main(argv=None):
     page.add_argument("--cache", type=Path, required=True, help="web encodes and pose renders, reused between runs")
     page.add_argument("--notes", type=Path, help="curated text per episode and style (JSON)")
     page.add_argument("--usage", type=Path, help="the parts each episode uses, from srstudio usage (JSON)")
+    page.add_argument("--releases", type=Path, help="folder of release files: which reels pin which version")
+    page.add_argument(
+        "--proof-root", type=Path, default=Path(), help="the folder that version records' proof paths start from"
+    )
     page.add_argument("--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render"))
     packages = os.environ.get("SRSTUDIO_PACKAGES")
     page.add_argument(
@@ -144,6 +160,7 @@ def main(argv=None):
         try:
             notes = catalog_page.load_notes(args.notes) if args.notes else None
             measured = usage.Report.read(args.usage) if args.usage else None
+            pins = catalog_versions.read_pins(args.releases) if args.releases else None
             built = catalog_page.build(
                 base=args.base,
                 episodes=args.episodes,
@@ -154,6 +171,8 @@ def main(argv=None):
                 packages=args.packages,
                 notes=notes,
                 usage=measured,
+                pins=pins,
+                proof_root=args.proof_root,
             )
         except (catalog_page.CatalogError, usage.UsageError) as exc:
             print(f"srstudio page: {exc}", file=sys.stderr)
