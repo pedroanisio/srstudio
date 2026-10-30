@@ -1,0 +1,332 @@
+"""Toon everyday props: the things adult life happens through, in the Toon line, for sketches about everyday tech,
+money and services, job hunting and dating.
+
+:func:`phone` is a smartphone standing on a surface or held, whose screen changes on cue: a notification that
+buzzes it, a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off.
+
+Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
+drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
+its whole life (motion included). A placement whose footprint leaves the frame, enters the caption band or touches
+the signature marks on the desk (:data:`SIGNATURE_BOX`) is refused, and so is a text its box does not hold, measured
+in the style's font by the ``measure`` the sketch build passes (``Shot.measure``). States are keyed from 0 in rising
+project seconds, on the composition clock like the rest of the style; every refusal is a :class:`ToonDataError`.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+
+from . import checks
+from .canvas import Align, Canvas
+from .registry import register
+from .toon import CAPTION_H, CAPTION_TOP, FINE_W, INK_W, REF_TOP, REF_W, SCALE, ToonDataError, fh, fx, fy
+from .toon_props import BUZZ_SHAKE
+
+__all__ = ["BUZZ_REACH", "FILL_TIME", "SCALES", "SCREENS", "SIGNATURE_BOX", "Screen", "phone"]
+
+Box = tuple[float, float, float, float]  # x0, y0, x1, y1 in reference pixels
+Measure = Callable[[str, float], float]  # the advance width of a text at a size, in frame pixels
+
+# The marks toon.desk (and toon_dinner.table, its stand-in) draws: the cactus at the right end of the top and the code
+# on the front panel below it, with a margin. Measured from the drawn marks by the tests.
+SIGNATURE_BOX: Box = (526.0, 766.0, 586.0, 880.0)
+CAPTION_BAND: Box = (0.0, float(CAPTION_TOP), float(REF_W), float(CAPTION_TOP + CAPTION_H))
+FRAME: Box = (0.0, float(REF_TOP), float(REF_W), REF_TOP + 1920 / SCALE)
+SCALES = (0.9, 2.0)  # the smallest lettering (24 px) stays over the engine's legibility floor (21.6 px) at 0.9
+LEADING = 1.12  # the line height Canvas.text sets
+SHADOW = "#1b1430"
+SCREEN_INK = "#1b1b2a"
+GOOD, BAD = "#34c759", "#e5484d"
+_HEX = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+# -- the rules every prop keeps ---------------------------------------------------------------------------------------
+def _overlaps(a: Box, b: Box) -> bool:
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+def _place(what: str, at, scale, local: Box) -> Box:
+    """The reference footprint of a prop whose ``local`` box (reference units about its point) stands at ``at``,
+    drawn ``scale`` times; refused off the frame, in the caption band or over the signature marks."""
+    if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
+        raise ToonDataError(f"a {what} stands at a reference point (x, y), got {at!r}")
+    if not (checks.number(scale) and SCALES[0] <= scale <= SCALES[1]):
+        raise ToonDataError(f"a {what}'s scale is between {SCALES[0]} and {SCALES[1]}, got {scale!r}")
+    x, y = at
+    box = (x + scale * local[0], y + scale * local[1], x + scale * local[2], y + scale * local[3])
+    shown = tuple(round(v, 1) for v in box)
+    if box[0] < FRAME[0] or box[1] < FRAME[1] or box[2] > FRAME[2] or box[3] > FRAME[3]:
+        raise ToonDataError(
+            f"a {what} at {tuple(at)} spans {shown}, leaving the frame {tuple(round(v, 1) for v in FRAME)}"
+        )
+    if _overlaps(box, CAPTION_BAND):
+        raise ToonDataError(f"a {what} at {tuple(at)} spans {shown}, into the caption band {CAPTION_BAND[1:4:2]}")
+    if _overlaps(box, SIGNATURE_BOX):
+        raise ToonDataError(f"a {what} at {tuple(at)} spans {shown}, over the signature marks {SIGNATURE_BOX}")
+    return box
+
+
+def _rising(times: Sequence, what: str, gap: float = 0.0) -> list[float]:
+    """``times`` as floats: numbers from 0, each more than ``gap`` after the one before (at least ``gap`` apart)."""
+    out: list[float] = []
+    for k, t in enumerate(times):
+        if not checks.number(t) or t < 0:
+            raise ToonDataError(f"{what} {k}: a second is a number >= 0, got {t!r}")
+        if k == 0 and t != 0:
+            raise ToonDataError(f"{what}s start from 0; the first is at {t}")
+        if k and t <= out[-1]:
+            raise ToonDataError(f"{what}s need rising seconds: {t} after {out[-1]}")
+        if k and t - out[-1] < gap:
+            raise ToonDataError(f"{what}s are at least {gap} s apart: {t} after {out[-1]}")
+        out.append(float(t))
+    return out
+
+
+@dataclass(frozen=True)
+class Slot:
+    """A text box in reference units about a prop's point, and the lettering in it."""
+
+    x: float
+    y: float
+    w: float
+    h: float
+    size: int
+    color: str = SCREEN_INK
+    align: Align = "center"
+
+    def fit(self, measure: Measure, text, what: str) -> str:
+        """``text`` when it is a non-empty string whose every line fits the box's width and whose lines fit its
+        height, measured as the engine sets it; :class:`ToonDataError` otherwise."""
+        if not isinstance(text, str) or not text.strip():
+            raise ToonDataError(f"{what} is a non-empty text, got {text!r}")
+        lines = text.split("\n")
+        room = int(fh(self.h)) // (self.size * LEADING)
+        if len(lines) > room:
+            raise ToonDataError(f"{what} {text!r} takes {len(lines)} lines; its box holds {room:.0f}")
+        for line in lines:
+            need = measure(line, self.size)
+            if need > int(fh(self.w)):
+                raise ToonDataError(f"{what} {text!r} needs {need:.0f} px; its box gives {int(fh(self.w))}")
+        return text
+
+    def draw(self, cv: Canvas, parent, text: str, prefix: str) -> None:
+        cv.text(parent, cv.uid(prefix), text, fh(self.x), fh(self.y), int(fh(self.w)), int(fh(self.h)), self.size,
+                color=self.color, align=self.align, wrap="none")  # fmt: skip
+
+
+def _shown(cv: Canvas, node, start: float, end: float | None) -> None:
+    """``node`` on screen from ``start`` until ``end`` (held to the end of the shot when ``None``)."""
+    keys = [(0.0, 1.0 if start == 0 else 0.0)] + ([(start, 1.0)] if start > 0 else [])
+    if end is not None:
+        keys.append((end, 0.0))
+    cv.keys(node, "opacity", keys, local=False)
+
+
+def _rect(cv: Canvas, g, x, y, w, h, fill, sw: float = FINE_W, radius: float = 0, **kw):
+    return cv.rect(g, fh(x), fh(y), fh(w), fh(h), fill, cv.ink if sw else cv.clear, sw, radius=fh(radius), **kw)
+
+
+def _ellipse(cv: Canvas, g, x, y, w, h, fill, sw: float = FINE_W, **kw):
+    return cv.ellipse(g, fh(x), fh(y), fh(w), fh(h), fill, cv.ink if sw else cv.clear, sw, **kw)
+
+
+def _line(cv: Canvas, g, points: Sequence[tuple[float, float]], sw: float, stroke: str | None = None, fill=None):
+    d = "M " + " L ".join(f"{fh(x):g} {fh(y):g}" for x, y in points)
+    return cv.path(g, d, cv.clear if fill is None else fill, cv.ink if stroke is None else stroke, sw)
+
+
+# -- the phone ---------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Screen:
+    """What the phone shows from ``at`` (project seconds) until the next screen: a :data:`SCREENS` ``kind`` and the
+    fields that kind letters (see :data:`SCREENS`); ``fill`` is how full a ``loading`` bar gets (0 to 1)."""
+
+    at: float
+    kind: str
+    title: str = ""
+    text: str = ""
+    note: str = ""
+    fill: float = 1.0
+
+
+PHONE_W, PHONE_H = 120, 236  # the body, reference units, standing on its point
+SCREEN_BOX = (-52.0, -222.0, 104.0, 206.0)  # x, y, w, h inside the bezel
+BUZZ_REACH = 6.0  # reference units the buzz moves the phone sideways, at scale 1
+FILL_TIME = 2.0  # seconds the last screen's loading bar takes to fill
+BUZZ_GAP = BUZZ_SHAKE[-1][0]  # screens are at least one buzz apart
+PHONE_BODY, PHONE_EDGE = "#2b2d35", "#4a4d57"
+WALLPAPER = "#3d5a99"
+SCREEN_BG = {"off": SCREEN_INK, "notify": WALLPAPER, "code": "#f4f6fb", "profile": "#ffffff",
+             "declined": "#fff1f0", "loading": "#f4f6fb"}  # fmt: skip
+# The fields each kind letters, in drawing order, and their boxes; the first ones listed are required.
+SCREENS: dict[str, dict[str, Slot]] = {
+    "off": {},
+    "notify": {
+        "note": Slot(-48, -206, 96, 34, 50, "#ffffff"),  # the lock screen's clock
+        "title": Slot(-36, -148, 82, 22, 24, align="start"),  # the sender
+        "text": Slot(-46, -124, 92, 30, 24, align="start"),
+    },
+    "code": {
+        "title": Slot(-48, -200, 96, 30, 28),
+        "text": Slot(-44, -160, 88, 40, 34),  # what is typed in the field
+        "note": Slot(-48, -112, 96, 28, 24, BAD),  # the error under it
+    },
+    "profile": {
+        "title": Slot(-46, -116, 92, 26, 28, align="start"),  # name, age
+        "text": Slot(-46, -88, 92, 42, 24, align="start"),  # the bio, two lines
+    },
+    "declined": {
+        "title": Slot(-48, -206, 96, 34, 36),  # the amount
+        "text": Slot(-48, -112, 96, 30, 30, BAD),
+        "note": Slot(-48, -78, 96, 28, 24),  # the merchant
+    },
+    "loading": {
+        "title": Slot(-48, -170, 96, 30, 28),
+        "text": Slot(-48, -110, 96, 28, 24),  # under the bar
+    },
+}
+UPPER = {("notify", "title")}  # lettered in capitals, and measured so
+REQUIRED = {"off": (), "notify": ("title", "text"), "code": ("title", "text"), "profile": ("title",),
+            "declined": ("title", "text"), "loading": ("title",)}  # fmt: skip
+PHONE_BOX: Box = (-72.0 - BUZZ_REACH, -PHONE_H - 4.0, 72.0 + BUZZ_REACH, 8.0)
+
+
+def _screens(screens: Sequence[Screen], measure: Measure) -> list[Screen]:
+    if not screens:
+        raise ToonDataError("a phone needs at least one screen")
+    for k, s in enumerate(screens):
+        if not isinstance(s, Screen):
+            raise ToonDataError(f"phone screen {k}: a phone screen is a Screen, got {s!r}")
+    _rising([s.at for s in screens], "phone screen", BUZZ_GAP)
+    for k, s in enumerate(screens):
+        if s.kind not in SCREENS:
+            raise ToonDataError(f"phone screen {k}: the kind is one of {sorted(SCREENS)}, got {s.kind!r}")
+        slots = SCREENS[s.kind]
+        for name in ("title", "text", "note"):
+            value = getattr(s, name)
+            what = f"phone screen {k}: a {s.kind} screen's {name}"
+            if name not in slots:
+                if value != "":
+                    raise ToonDataError(f"{what} is not drawn; leave it empty, got {value!r}")
+            elif value != "" or name in REQUIRED[s.kind]:
+                upper = (s.kind, name) in UPPER and isinstance(value, str)
+                slots[name].fit(measure, value.upper() if upper else value, what)
+        if s.kind == "loading":
+            if not (checks.number(s.fill) and 0 <= s.fill <= 1):
+                raise ToonDataError(f"phone screen {k}: a loading bar's fill is 0 to 1, got {s.fill!r}")
+        elif s.fill != 1.0 or isinstance(s.fill, bool):
+            raise ToonDataError(f"phone screen {k}: a {s.kind} screen has no bar to fill, got fill={s.fill!r}")
+    return list(screens)
+
+
+def _photo(cv: Canvas, g) -> None:
+    """The profile's picture: a pink backdrop and a head-and-shoulders silhouette."""
+    _rect(cv, g, -48, -216, 96, 98, "#ffd6e0", FINE_W * 0.5, radius=10)
+    _line(cv, g, [(-30, -118), (-28, -138), (-14, -148), (14, -148), (28, -138), (30, -118)], FINE_W * 0.5,
+          fill="#f08aa6")  # fmt: skip
+    _ellipse(cv, g, -18, -194, 36, 40, "#f08aa6", FINE_W * 0.5)
+
+
+def _buttons(cv: Canvas, g) -> None:
+    """Pass and like under the profile: a red cross and a green heart in white circles."""
+    for cx, colour in ((-24, BAD), (24, GOOD)):
+        _ellipse(cv, g, cx - 11, -41, 22, 22, "#ffffff", FINE_W * 0.5)
+        if cx < 0:
+            _line(cv, g, [(cx - 5, -35), (cx + 5, -25)], 4.0, colour)
+            _line(cv, g, [(cx + 5, -35), (cx - 5, -25)], 4.0, colour)
+        else:
+            heart = (f"M {fh(cx):g} {fh(-24):g} C {fh(cx - 9):g} {fh(-30):g} {fh(cx - 7):g} {fh(-38):g} "
+                     f"{fh(cx):g} {fh(-34):g} C {fh(cx + 7):g} {fh(-38):g} {fh(cx + 9):g} {fh(-30):g} "
+                     f"{fh(cx):g} {fh(-24):g} Z")  # fmt: skip
+            cv.path(g, heart, colour, cv.clear, 0)
+
+
+def _screen(cv: Canvas, g, gid: str, s: Screen, fill_until: float) -> None:
+    x, y, w, h = SCREEN_BOX
+    _rect(cv, g, x, y, w, h, SCREEN_BG[s.kind], 0, radius=10)
+    slots = SCREENS[s.kind]
+    if s.kind == "notify":
+        if s.note:
+            slots["note"].draw(cv, g, s.note, "phone-text")
+        _rect(cv, g, -50, -150, 100, 60, "#ffffff", FINE_W * 0.5, radius=10)
+        _ellipse(cv, g, -46, -142, 8, 8, GOOD, 0)
+        slots["title"].draw(cv, g, s.title.upper(), "phone-text")
+        slots["text"].draw(cv, g, s.text, "phone-text")
+    elif s.kind == "code":
+        slots["title"].draw(cv, g, s.title, "phone-text")
+        _rect(cv, g, -44, -160, 88, 40, "#ffffff", FINE_W * 0.5, radius=8)
+        slots["text"].draw(cv, g, s.text, "phone-text")
+        if s.note:
+            slots["note"].draw(cv, g, s.note, "phone-text")
+    elif s.kind == "profile":
+        _photo(cv, g)
+        slots["title"].draw(cv, g, s.title, "phone-text")
+        if s.text:
+            slots["text"].draw(cv, g, s.text, "phone-text")
+        _buttons(cv, g)
+    elif s.kind == "declined":
+        slots["title"].draw(cv, g, s.title, "phone-text")
+        _ellipse(cv, g, -24, -166, 48, 48, BAD, FINE_W * 0.5)
+        _line(cv, g, [(-10, -152), (10, -132)], 6.0, "#ffffff")
+        _line(cv, g, [(10, -152), (-10, -132)], 6.0, "#ffffff")
+        slots["text"].draw(cv, g, s.text, "phone-text")
+        if s.note:
+            slots["note"].draw(cv, g, s.note, "phone-text")
+    elif s.kind == "loading":
+        slots["title"].draw(cv, g, s.title, "phone-text")
+        _rect(cv, g, -44, -132, 88, 14, "#d6dae3", FINE_W * 0.5, radius=7)
+        bar = cv.group(g, f"{gid}-bar", anchorX=fh(-44), x=fh(-44))
+        _rect(cv, bar, -44, -132, 88, 14, "#2f80ed", 0, radius=7)
+        cv.keys(bar, "scaleX", [(0.0, 0.0), *([(s.at, 0.0)] if s.at > 0 else []), (fill_until, s.fill)],
+                hold=False, local=False)  # fmt: skip
+        if s.text:
+            slots["text"].draw(cv, g, s.text, "phone-text")
+
+
+@register(
+    "prop",
+    "toon-phone",
+    summary="A smartphone standing on a surface or held, whose screen changes on cue: a notification that buzzes it, "
+    "a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off",
+)
+def phone(
+    cv: Canvas,
+    parent,
+    screens: Sequence[Screen],
+    *,
+    measure: Measure,
+    at: tuple[float, float] = (300, 820),
+    scale: float = 1.0,
+    hand: str | None = None,
+    id: str = "phone",
+) -> Box:
+    """The phone with its base at reference ``at``: standing with a contact shadow, or held (``hand``, a ``#rrggbb``
+    colour: the holder's thumb over its left edge); ``screens`` from 0 in rising seconds, at least one buzz apart,
+    one shown at a time. Returns its footprint."""
+    box = _place("phone", at, scale, PHONE_BOX)
+    shown = _screens(screens, measure)
+    if hand is not None and not (isinstance(hand, str) and _HEX.fullmatch(hand)):
+        raise ToonDataError(f"a phone's hand is a #rrggbb colour, got {hand!r}")
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    if hand is None:
+        _ellipse(cv, g, -62, -6, 124, 12, SHADOW, 0, opacity=0.16)
+    _rect(cv, g, -PHONE_W / 2, -PHONE_H, PHONE_W, PHONE_H, PHONE_BODY, INK_W * 0.8, radius=18)
+    _rect(cv, g, -14, -230, 28, 4, PHONE_EDGE, 0, radius=2)  # the earpiece
+    for k, s in enumerate(shown):
+        nxt = shown[k + 1].at if k + 1 < len(shown) else None
+        sg = cv.group(g, f"{id}-screen-{k}")
+        _shown(cv, sg, s.at, nxt)
+        _screen(cv, sg, f"{id}-screen-{k}", s, s.at + FILL_TIME if nxt is None else nxt)
+    if hand is not None:
+        _ellipse(cv, g, -68, -96, 22, 36, hand, FINE_W)
+    buzzes = [s.at for s in shown if s.kind == "notify"]
+    if buzzes:
+        rest = fx(x)
+        keys = [(0.0, rest)]
+        for t in buzzes:
+            keys += [(t + dt, round(rest + fh(dx) * scale, 2)) for dt, dx in BUZZ_SHAKE if t + dt > 0]
+        cv.keys(g, "x", keys, hold=False, local=False)
+    return box
