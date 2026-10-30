@@ -18,7 +18,7 @@ walking and the camera already pushing in. The voices: Liam (Milo, as in the caf
 
 from __future__ import annotations
 
-from srstudio.interview import Interview, Schedule, Sound, Spoken, Timing, main
+from srstudio.interview import NOTO_SANS_BOLD, Interview, Schedule, Sound, Spoken, Timing, main
 from srstudio.song import Singer
 
 SEED = 23041
@@ -80,6 +80,7 @@ INTERVIEW = Interview(
     reaction_after=0.45,  # the message read out, then Milo's look into the lens
     reaction_hold=1.50,
     end_card=0.0,  # no card: his look is the last frame
+    font=NOTO_SANS_BOLD,  # the batch's caption face (Google Fonts), pinned under assets/fonts
 )
 FLIP = 1.20  # the backflip starts: the pigeon has walked up the path and stopped
 FLIP_LENGTH = 0.50
