@@ -1391,7 +1391,7 @@ and the desk. `toon_rooms.stage(cv, back, light, name, lights, end)` draws a roo
 
 [src/srstudio/toon_everyday.py](src/srstudio/toon_everyday.py) adds five props for everyday tech, money and
 services, job search and dating ([ADR 0042](docs/decisions/0042-toon-everyday-props.md)). Each stands at `at`
-(reference pixels) and `scale` (0.9 to 2.0), takes states keyed from 0 in rising seconds, and returns its
+(reference pixels) and `scale` (0.9 to 2.0; the speaker, which carries no lettering, from 0.5), takes states keyed from 0 in rising seconds, and returns its
 footprint. A footprint that leaves the frame, enters the caption band or touches `SIGNATURE_BOX`, the desk's
 signature marks, raises `ToonDataError`, as does text that does not fit its box in the style's font (`measure=`,
 the sketch's `Shot.measure`).

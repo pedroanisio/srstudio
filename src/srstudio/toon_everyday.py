@@ -47,6 +47,7 @@ __all__ = [
     "SCREENS",
     "SERVING_LABEL",
     "SIGNATURE_BOX",
+    "SPEAKER_SCALES",
     "SPEAKER_STATES",
     "STAMP_POP",
     "STAMP_TILT",
@@ -82,13 +83,13 @@ def _overlaps(a: Box, b: Box) -> bool:
     return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
 
 
-def _place(what: str, at, scale, local: Box) -> Box:
+def _place(what: str, at, scale, local: Box, scales: tuple[float, float] = SCALES) -> Box:
     """The reference footprint of a prop whose ``local`` box (reference units about its point) stands at ``at``,
-    drawn ``scale`` times; refused off the frame, in the caption band or over the signature marks."""
+    drawn ``scale`` times within ``scales``; refused off the frame, in the caption band or over the signature marks."""
     if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
         raise ToonDataError(f"a {what} stands at a reference point (x, y), got {at!r}")
-    if not (checks.number(scale) and SCALES[0] <= scale <= SCALES[1]):
-        raise ToonDataError(f"a {what}'s scale is between {SCALES[0]} and {SCALES[1]}, got {scale!r}")
+    if not (checks.number(scale) and scales[0] <= scale <= scales[1]):
+        raise ToonDataError(f"a {what}'s scale is between {scales[0]} and {scales[1]}, got {scale!r}")
     x, y = at
     box = (x + scale * local[0], y + scale * local[1], x + scale * local[2], y + scale * local[3])
     shown = tuple(round(v, 1) for v in box)
@@ -378,6 +379,7 @@ LIT, ALARM = "#38bdf8", "#ef4444"
 GLOW = 0.45  # the halo's opacity round the cap while the ring is on
 WORKING = ("listen", "think", "speak")
 SPEAKER_BOX: Box = (-50.0, -146.0, 50.0, 8.0)
+SPEAKER_SCALES = (0.5, SCALES[1])  # no lettering, so no legibility floor: at 0.5 it is a shelf ornament 34 px wide
 Track = list[tuple[float, float]]
 
 
@@ -450,8 +452,9 @@ def speaker(
     id: str = "speaker",
 ) -> Box:
     """The speaker standing at reference ``at``; ``states`` are ``(second, state)`` from 0 in rising seconds, each
-    one of :data:`SPEAKER_STATES`, the last held until ``end`` (the shot's end). Returns its footprint."""
-    box = _place("speaker", at, scale, SPEAKER_BOX)
+    one of :data:`SPEAKER_STATES`, the last held until ``end`` (the shot's end); ``scale`` is within
+    :data:`SPEAKER_SCALES`. Returns its footprint."""
+    box = _place("speaker", at, scale, SPEAKER_BOX, SPEAKER_SCALES)
     ring = ring_keys(states, end)
     x, y = at
     g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
