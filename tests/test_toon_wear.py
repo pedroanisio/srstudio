@@ -81,6 +81,27 @@ def test_glasses_frame_each_eye_without_the_lenses_touching(name):
     assert any(c == "white" for _, c in over)  # a glint on the glass
 
 
+def test_worn_items_turn_with_a_tilted_head_and_sit_level_on_a_level_one():
+    level = toon_wear.Face(((100.0, 600.0), (200.0, 600.0)), 18.0, (150.0, 650.0), 40.0)
+    assert level.tilt == 0.0 and toon_wear.face_of(toon_cast.FOX).tilt == 0.0
+    tilt, (cx, cy) = -6.0, (150.0, 600.0)
+
+    def turned(p: tuple[float, float]) -> tuple[float, float]:
+        x0, y0, *_ = brush.rotate((*p, *p, *p, *p), cx, cy, tilt)
+        return x0, y0
+
+    tilted = toon_wear.Face((turned(level.eyes[0]), turned(level.eyes[1])), 18.0, turned(level.mouth), 40.0, tilt)
+    for items in (("glasses",), ("sweat",), ("flush",)):
+        under, over = toon_wear.wear_layers(level, items)
+        want = [(brush.rotate(s, cx, cy, tilt), c) for s, c in under + over]
+        under, over = toon_wear.wear_layers(tilted, items)
+        got = under + over
+        assert [c for _, c in got] == [c for _, c in want] and [len(s) for s, _ in got] == [len(s) for s, _ in want]
+        assert all(
+            abs(a - b) < 0.05 for (s, _), (t, _) in zip(got, want, strict=True) for a, b in zip(s, t, strict=True)
+        )
+
+
 def test_a_sweat_drop_runs_down_the_temple_and_a_flush_sits_on_the_cheeks_below_the_lids():
     look = toon_cast.FOX
     (lx, ly), (rx, ry) = look.eyes
