@@ -307,6 +307,16 @@ def test_the_handbook_entry_is_as_tall_as_its_words_and_sits_above_the_caption_b
 
 
 @needs_font
+def test_a_legible_entry_draws_no_glass_sheen_over_its_words():
+    def sheens(**kw) -> int:
+        cv = canvas()
+        sets.entry(cv, cv.comp, "Holes", "They are bad.", end=D, font=font(), **kw)
+        return sum(1 for p in tree(cv).iter("shape") if p.get("fill") == "#ffffff" and p.get("opacity") == "0.04")
+
+    assert sheens() == 1 and sheens(legible=True) == 0
+
+
+@needs_font
 def test_the_hologram_is_as_tall_as_what_it_says_and_ends_above_the_cast_heads():
     def height(*panels: Panel) -> float:
         cv = canvas()
@@ -351,6 +361,19 @@ def test_the_hologram_pops_in_about_its_own_centre_and_draws_nothing_below_itsel
     assert pops and float(next(pops[0].iter("key")).get("value")) < 0.2
 
 
+def test_a_fading_panel_fades_in_by_opacity_with_no_flicker_or_squash_over_its_text():
+    cv = canvas()
+    sets.holo(cv, cv.comp, (Panel(0, "SKIP?", fade=True), Panel(1.0, "NO.", tone="alert", fade=True)), end=D,
+              font=font())  # fmt: skip
+    animated = list(tree(cv).iter("animate"))
+    assert not [a for a in animated if a.get("property") == "scaleY"]  # no squash: the text keeps its shape
+    fades = [[(float(k.get("time")), float(k.get("value"))) for k in a.iter("key")] for a in animated
+             if a.get("property") == "opacity" and len(list(a.iter("key"))) > 1]  # fmt: skip
+    ramps = [f for f in fades if f[-1] == (round(f[-2][0] + sets.HOLO_FADE, 4), 1.0)]
+    assert [r[-2] for r in ramps] == [(0.0, 0.0), (1.0, 0.0)]  # each from its own start, from nothing
+    assert len(fades) == 4  # two gates and two fades, and no flicker drawn over the words
+
+
 # -- staging ----------------------------------------------------------------------------------------------------------
 def staging_takes() -> list[Take]:
     return [
@@ -386,6 +409,11 @@ GOOD = {
         ({"03": Stage(entry=Entry("a", "b"), move=Move("crash", 0.1, 1.4, 540, 600))}, "no move"),
         ({"03": Stage(entry=Entry("a", "b"), dark=((0.1, 0.2),))}, "no move"),
         ({"03": Stage(entry=Entry("a", "b"), shake=((0.1, 0.2),))}, "no move"),
+        ({"02": Stage("desert", cast=(Place("juno", 540),), still=True)}, "still shot holds no line"),
+        ({"03": Stage("desert", still=True, move=Move("crash", 0.1, 1.4, 540, 600))}, "still: no move"),
+        ({"03": Stage("desert", still=True, shake=((0.1, 0.2),))}, "still: no move"),
+        ({"03": Stage("desert", still=True, dark=((0.1, 0.2),))}, "still: no move"),
+        ({"03": Stage(entry=Entry("a", "b"), still=True)}, "still: no move"),
     ],
 )
 def test_staging_that_does_not_fit_the_recording_is_refused(change, message):
@@ -398,6 +426,10 @@ def test_staging_that_does_not_fit_the_recording_is_refused(change, message):
 def test_a_speaker_on_a_hologram_face_counts_as_seen():
     stages = {**GOOD, "02": Stage("compactor", panels=(Panel(0, "Facilities", face="juno"),))}
     reel.check(staging_takes(), stages)
+
+
+def test_an_effect_take_may_be_staged_still():
+    reel.check(staging_takes(), {**GOOD, "03": Stage("desert", cast=(Place("juno", 540),), still=True)})
 
 
 # -- a reel, built and checked by the engine --------------------------------------------------------------------------
@@ -536,6 +568,92 @@ def test_the_hologram_stays_out_of_the_camera_so_a_zoom_never_pushes_its_text_ou
     (body,) = [t.get("id") for t in parents if t.tag == "text" and t.get("text") == "Seems bad?"]
     layers = [n for n in parents if n.tag == "layer" and n.get("asset") == body]
     assert layers and not any(moved(n) for n in layers)
+
+
+def still_opening() -> list[Take]:
+    return [
+        Take("01", "sfx", "", "[HUM]", 0.0, 1.2),
+        take("02", "narrator", "Why is it?", 1.2, 1.5),
+        take("03", "juno", "I know.", 2.7, 1.5),
+    ]
+
+
+BRIDGE = (Place("gloom", 330), Place("juno", 760, flip=True))
+STILL = {
+    "01": Stage("bridge", cast=BRIDGE, props=(Prop("cube", 540, 600),), still=True),
+    "02": Stage("bridge", cast=BRIDGE),
+    "03": Stage("desert", cast=(Place("juno", 540),)),
+}
+
+
+@needs_font
+def test_a_fading_entry_cuts_in_and_fades_up_by_its_own_opacity_under_a_grade_without_bloom(tmp_path):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path)
+    ep = episode(tmp_path)
+    reel.build(ep, {**GOOD, "03": Stage(entry=Entry("Holes", "They are bad.", fade=True))}, hook="Why?", font=font())
+    out = ep.finish(tmp_path / "saga-test.scene.xml", tmp_path / "qa" / "sdk.json", strict=False)
+    root = ET.fromstring(out.read_bytes())
+    (shot,) = [g for g in root.iter("group") if g.get("id") == "shot-03"]
+    (card,) = [g for g in shot if g.tag == "group"]
+    (fade,) = [a for a in card if a.tag == "animate" and a.get("property") == "opacity"]
+    keys = [(float(k.get("time")), float(k.get("value"))) for k in fade.iter("key")]
+    assert keys == [(0.0, 0.0), (reel.CROSSFADE, 1.0)]  # judged only once it is all there
+    assert not list(root.iter("transition"))  # nothing fades out over it: the shot before cuts
+    assert effect_types(root, shot) == {"vignette", "film-grain"}  # bloom would spill light around its words
+    assert not [p for p in card.iter("shape") if p.get("fill") == "#ffffff" and p.get("opacity") == "0.04"]
+
+
+@needs_font
+def test_fading_panels_sit_over_the_grade_while_the_set_and_cast_under_them_are_graded(tmp_path):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path)
+    ep = episode(tmp_path)
+    shown = Stage("desert", cast=(Place("juno", 540),), panels=(Panel(0, "SKIP?", "Seems bad.", fade=True),))
+    reel.build(ep, {**GOOD, "02": shown}, hook="Why?", font=font())
+    out = ep.finish(tmp_path / "saga-test.scene.xml", tmp_path / "qa" / "sdk.json", strict=False)
+    root = ET.fromstring(out.read_bytes())
+    (body,) = [t.get("id") for t in root.iter("text") if t.get("text") == "Seems bad."]
+    (layer,) = [n for n in root.iter("layer") if n.get("asset") == body]
+    assert not any("bloom" in effect_types(root, n) for n in ancestry(root, layer) if n.get("effects"))
+    (shot,) = [g for g in root.iter("group") if g.get("id") == "shot-02"]
+    graded = [g for g in shot.iter("group") if "bloom" in effect_types(root, g)]
+    assert graded and "bloom" not in effect_types(root, shot)  # the world inside the shot carries the grade
+
+
+@needs_font
+def test_a_still_shot_draws_nothing_that_moves_and_no_grain(tmp_path):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    write_project(tmp_path, still_opening())
+    ep = episode(tmp_path)
+    reel.build(ep, STILL, hook="Why is it?", font=font())
+    out = ep.finish(tmp_path / "saga-test.scene.xml", tmp_path / "qa" / "sdk.json", strict=False)
+    root = ET.fromstring(out.read_bytes())
+    shots = {g.get("id"): g for g in root.iter("group") if (g.get("id") or "").startswith("shot-")}
+    assert not list(shots["shot-01"].iter("animate")) and list(shots["shot-02"].iter("animate"))
+    assert effect_types(root, shots["shot-01"]) == {"bloom", "vignette"}  # grain is drawn anew every frame
+    assert {"bloom", "vignette", "film-grain"} <= effect_types(root, shots["shot-02"])
+
+
+@needs_font
+def test_the_hook_holds_over_a_still_opening_and_the_question_after_it(tmp_path, monkeypatch):
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg writes the test takes")
+    takes = still_opening()
+    write_project(tmp_path, takes)
+    drawn: list[object] = []
+    real = saga.handbook
+    monkeypatch.setattr(saga, "handbook", lambda *a, **k: drawn.append(k) or real(*a, **k))
+    made = reel.build(episode(tmp_path), STILL, hook="Why is it?", font=font())
+    assert len(drawn) == 1  # the hook's own; the question under the hook draws no second badge
+    talk = drawn[0]["talk"]
+    assert talk and min(t for t, _ in talk) >= takes[1].start  # the hook's screen glows when the question is asked
+    (gate,) = [a for a in made["hook"].elements() if a.xml_name == "animate"]
+    keys = [(float(k.time), float(k.value)) for k in gate.elements()]
+    assert keys[-1] == (round(takes[1].start + takes[1].duration, 4), 0.0)  # shut when the question's take ends
 
 
 def contrast(a: str, b: str) -> float:

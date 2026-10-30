@@ -179,6 +179,37 @@ def test_a_blackout_covers_the_frame_only_in_its_spans_and_is_absent_without_spa
     assert (black.x, black.y, black.width, black.height) == (-200, -200, 1480, 2320)
 
 
+# -- freezing ---------------------------------------------------------------------------------------------------------
+def test_a_frozen_shot_holds_every_animated_property_at_its_value_at_the_shot_start():
+    cv = canvas()
+    shot = cv.group(cv.comp, "shot")
+    breath = cv.group(shot, "breath")
+    cv.keys(breath, "y", [(0, 0), (1.2, -5), (2.4, 0)], kind="sine-in-out")
+    late = cv.group(shot, "late")
+    cv.keys(late, "opacity", [(0.6, 0.2), (1.4, 1)])  # before its first key, a property holds that key's value
+    gated = cv.group(shot, "gated")
+    cv.gate(gated, [(0.5, 1.0)])
+    staging.freeze(shot)
+    root = ET.fromstring(cv.scene.to_bytes())
+    assert not list(root.iter("animate"))
+    found = {n.get("id"): n for n in root.iter() if n.get("id") in ("breath", "late", "gated")}
+    assert float(found["breath"].get("y")) == 0 and float(found["late"].get("opacity")) == 0.2
+    assert float(found["gated"].get("opacity")) == 0  # a gate shut at the start keeps it hidden
+
+
+def test_a_shot_with_a_text_animator_or_an_expression_cannot_be_frozen():
+    cv = canvas()
+    shot = cv.group(cv.comp, "shot")
+    cv.animate_text(cv.text(shot, "t", "Typed", 0, 0, 200, 60, 40), "typewriter", presetStart=0.2)
+    with pytest.raises(StagingError, match="textAnimator"):
+        staging.freeze(shot)
+    cv = canvas()
+    shot = cv.group(cv.comp, "shot")
+    cv.expression(cv.group(shot, "g"), "x", "time * 10")
+    with pytest.raises(StagingError, match="expression"):
+        staging.freeze(shot)
+
+
 # -- closing ----------------------------------------------------------------------------------------------------------
 def test_the_closing_card_is_crossfaded_into_at_most_half_of_either_shot():
     takes = [take("01", 2.0), take("02", 0.4), take("03", 3.0), take("04", 2.0)]
