@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-import test_catalog_page as fx
 from srstudio import catalog_page as cp
 from srstudio import catalog_server as server
+from support import catalog as fx
 
 sync_api = pytest.importorskip("playwright.sync_api")
 
