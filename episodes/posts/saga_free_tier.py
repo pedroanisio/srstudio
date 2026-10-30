@@ -31,5 +31,16 @@ RELEASE = Release(
         thumbnail=Thumbnail('Can you feel\nthe Flow?', 8.5, 'Saga 06', (540, 890), 1.0),
     ),
     cover=True,
-    characters={"saga-juno": 1, "saga-mabel": 1},
+    parts={
+        "saga-desert": 1,
+        "saga-entry": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-juno": 1,
+        "saga-mabel": 1,
+        "saga-pebble": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

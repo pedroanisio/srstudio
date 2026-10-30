@@ -22,5 +22,16 @@ RELEASE = Release(
         thumbnail=Thumbnail('Juno. I am\nyour father.', 4.5, 'Saga 03', (540, 890), 1.0),
     ),
     cover=True,
-    characters={"saga-enforcer": 1, "saga-gloom": 1, "saga-juno": 1},
+    parts={
+        "saga-desert": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-juno": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

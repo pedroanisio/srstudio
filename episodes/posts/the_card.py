@@ -27,5 +27,16 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Whose card\nis this?", 0.8, "Toon 14", (470, 1130), 1.35),
     ),
-    characters={"toon-dog": 1, "toon-frog": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-board-text": 1,
+        "toon-captions": 1,
+        "toon-desk": 1,
+        "toon-dog": 1,
+        "toon-frog": 1,
+        "toon-kitchen": 1,
+        "toon-meeting": 1,
+        "toon-note-insert": 1,
+    },
 )

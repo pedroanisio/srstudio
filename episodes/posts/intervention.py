@@ -22,5 +22,13 @@ RELEASE = Release(
         hashtags=("#intervention", "#bingewatching", "#dadlife", "#brainrot", "#family", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Do you know why\nwe're all here?", 1.0, "Collage 12", (540, 1200), 1.6),
     ),
-    characters={"collage-deb": 1, "collage-gary": 1, "collage-kai": 1},
+    parts={
+        "collage-deb": 1,
+        "collage-gary": 1,
+        "collage-kai": 1,
+        "collage-living-room": 1,
+        "collage-sign": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

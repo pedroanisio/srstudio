@@ -28,5 +28,16 @@ RELEASE = Release(
         thumbnail=Thumbnail("Is Group 9\nboarding yet?", 1.0, "Stick 08", place="top"),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-armrests": 1,
+        "stick-cabin": 1,
+        "stick-card": 1,
+        "stick-carry-on": 1,
+        "stick-gate": 1,
+        "stick-gate-podium": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
 )

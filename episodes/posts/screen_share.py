@@ -26,5 +26,13 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Can everyone\nsee my screen?", 2.2, "Stick 02", (380, 900), 2.2),
     ),
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-call": 1,
+        "stick-captions": 1,
+        "stick-card": 1,
+        "stick-rig": 1,
+        "stick-room": 1,
+    },
 )

@@ -31,5 +31,17 @@ RELEASE = Release(
         thumbnail=Thumbnail('Why are the walls\nclosing in?', 14.0, 'Saga 07', (540, 890), 1.0),
     ),
     cover=True,
-    characters={"saga-droid": 1, "saga-enforcer": 1, "saga-juno": 1, "saga-rook": 1},
+    parts={
+        "saga-compactor": 1,
+        "saga-droid": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-juno": 1,
+        "saga-rook": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

@@ -26,5 +26,17 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Can you make\nit bigger?", 16.5, "Toon 04", (700, 950), 1.2),
     ),
-    characters={"toon-dog": 1, "toon-frog": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-badge": 1,
+        "toon-board-text": 1,
+        "toon-captions": 1,
+        "toon-desk": 1,
+        "toon-dog": 1,
+        "toon-frog": 1,
+        "toon-logo": 1,
+        "toon-meeting": 1,
+        "toon-room": 1,
+    },
 )

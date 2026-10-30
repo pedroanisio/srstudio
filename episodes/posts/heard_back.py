@@ -28,5 +28,17 @@ RELEASE = Release(
         thumbnail=Thumbnail("This is going\nreally well", 1.0, "Toon 21"),
     ),
     tags=Tags("job-hunting", "institution", "recognition", recurring=("dana", "otto"), test="sp-hook_motion", arm="b"),
-    characters={"toon-bear": 1, "toon-dog": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-bear": 1,
+        "toon-board-text": 1,
+        "toon-captions": 1,
+        "toon-desk": 1,
+        "toon-dog": 1,
+        "toon-meeting": 1,
+        "toon-mug": 1,
+        "toon-room": 1,
+        "toon-toast": 1,
+    },
 )

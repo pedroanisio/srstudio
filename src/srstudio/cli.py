@@ -1,7 +1,7 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog site, ``srstudio serve`` serves it, and ``srstudio characters`` lists the character versions
+rebuilds the catalog site, ``srstudio serve`` serves it, and ``srstudio parts`` lists the part versions
 and checks the pins."""
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from . import catalog_page, catalog_server, characters, craft, fonts, lipsync, registry, releases, specimens, usage
+from . import catalog_page, catalog_server, catalog_specimens, craft, fonts, lipsync, parts, registry, releases, usage
 from .episode import SceneCheckError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
@@ -32,13 +32,18 @@ def main(argv=None):
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
     cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
-    versions = sub.add_parser("characters", help="list each character's versions, print a digest, check the pins")
+    versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
     versions.add_argument("--digest", metavar="NAME[@N]", help="the digest of a drawing, for its version record")
-    versions.add_argument(
-        "--usage", type=Path, help="a report from srstudio usage: is every measured character pinned?"
-    )
+    versions.add_argument("--usage", type=Path, help="a report from srstudio usage: is every measured part pinned?")
+    versions.add_argument("--refused", action="store_true", help="the parts with no drawing of their own, and why")
     versions.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
+    versions.add_argument(
+        "--episodes",
+        type=Path,
+        default=Path(os.environ.get("SRSTUDIO_EPISODES") or "generated/episodes"),
+        help="folder of projects, for a part's font and traced data",
+    )
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -96,8 +101,8 @@ def main(argv=None):
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
     args = parser.parse_args(argv)
-    if args.cmd == "characters":
-        return _characters(args)
+    if args.cmd == "parts":
+        return _parts(args)
     if args.cmd == "catalog":
         for mod in args.plugins:
             importlib.import_module(mod)
@@ -275,36 +280,47 @@ def main(argv=None):
         return 0
 
 
-def _characters(args: argparse.Namespace) -> int:
+def _parts(args: argparse.Namespace) -> int:
     try:
         if args.digest:
             name, _, number = args.digest.partition("@")
-            version = characters.get(name).version(int(number or 1))
-            print(specimens.digest(name, version.number))
+            version = parts.get(name).version(int(number or 1))
+            print(catalog_specimens.digest(name, version.number, args.episodes))
             return 0
         if args.usage:
             measured = usage.Report.read(args.usage)
             drift = measured.pin_drift(releases.load(args.scripts / "posts"))
             for line in drift:
                 print(line)
-            verdict = f"{len(drift)} pins off" if drift else "every character pinned"
+            verdict = f"{len(drift)} pins off" if drift else "every part pinned"
             print(f"{len(measured.episodes)} episodes measured, {verdict}")
             return 1 if drift else 0
-    except (ValueError, usage.UsageError) as exc:
-        print(f"srstudio characters: {exc}", file=sys.stderr)
+    except (ValueError, usage.UsageError, catalog_specimens.SpecimenRenderError) as exc:
+        print(f"srstudio parts: {exc}", file=sys.stderr)
         return 2
-    table = characters.load()
+    table = parts.load()
     if args.json:
         data = {
-            n: {"style": c.style, "default": c.latest().number, "versions": [asdict(v) for v in c.versions]}
-            for n, c in table.items()
+            n: {
+                "kind": p.kind,
+                "style": p.style,
+                "default": p.latest().number,
+                "refused": {"reason": p.refused.reason.value, "detail": p.refused.detail} if p.refused else None,
+                "versions": [asdict(v) for v in p.versions],
+            }
+            for n, p in table.items()
         }
         print(json.dumps(data, indent=2, ensure_ascii=False))
         return 0
+    if args.refused:
+        for name, part in table.items():
+            if part.refused:
+                print(f"{name}: {part.refused.reason.value}: {part.refused.detail}")
+        return 0
     width = max(len(n) for n in table)
-    for name, character in table.items():
-        numbers = ",".join(f"{v.number}{'' if v.status == 'approved' else '?'}" for v in character.versions)
-        print(f"{name:<{width}} {character.style:<7} {character.latest().number:<3} {numbers}")
+    for name, part in table.items():
+        numbers = ",".join(f"{v.number}{'' if v.status == 'approved' else '?'}" for v in part.versions)
+        print(f"{name:<{width}} {part.kind:<9} {part.style:<7} {part.latest().number:<3} {numbers}")
     return 0
 
 

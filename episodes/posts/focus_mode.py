@@ -25,5 +25,14 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Shake it\nto the beat!", 10.0, "Episode 07", (620, 1000), 1.3),
     ),
-    characters={"pip": 1},
+    parts={
+        "captions": 1,
+        "pip": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-chair": 1,
+        "soft-desk": 1,
+        "soft-laptop": 1,
+        "soft-office": 1,
+    },
 )

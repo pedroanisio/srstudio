@@ -29,5 +29,16 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "institution", "embarrassment", recurring=("bruno", "mae"), test="sp-hook_motion", arm="a"
     ),
-    characters={"toon-bear": 1, "toon-rabbit": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-badge": 1,
+        "toon-bear": 1,
+        "toon-captions": 1,
+        "toon-coffee-machine": 1,
+        "toon-desk": 1,
+        "toon-kitchen": 1,
+        "toon-rabbit": 1,
+        "toon-toast": 1,
+    },
 )

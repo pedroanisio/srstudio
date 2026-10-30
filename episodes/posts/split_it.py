@@ -25,5 +25,16 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Split it\nevenly?", 1.2, "Toon 10", (470, 1130), 1.35),
     ),
-    characters={"toon-bear": 1, "toon-rabbit": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-bear": 1,
+        "toon-captions": 1,
+        "toon-card-reader": 1,
+        "toon-dishes": 1,
+        "toon-rabbit": 1,
+        "toon-restaurant": 1,
+        "toon-table": 1,
+        "toon-toast": 1,
+    },
 )

@@ -28,5 +28,15 @@ RELEASE = Release(
         thumbnail=Thumbnail("Employee of\nthe month.", 24.3, "Stick 04", (540, 1200), 1.3),
     ),
     cover=True,
-    characters={"stick-rig": 1},
+    parts={
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-avocado": 1,
+        "stick-card": 1,
+        "stick-checkout": 1,
+        "stick-kiosk": 1,
+        "stick-name-badge": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
 )

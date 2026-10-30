@@ -31,5 +31,16 @@ RELEASE = Release(
         test="sp-hook_motion",
         arm="a",
     ),
-    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
+    parts={
+        "gloss-activity": 1,
+        "gloss-board": 1,
+        "gloss-gus": 1,
+        "gloss-hook": 1,
+        "gloss-nadia": 1,
+        "gloss-notice": 1,
+        "gloss-sunny": 1,
+        "gloss-tamsin": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

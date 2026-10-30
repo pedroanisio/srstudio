@@ -362,7 +362,7 @@ def test_the_deliver_path_refuses_a_new_reel_before_writing_anything(tmp_path, m
 def test_the_check_path_reports_a_new_reel(tmp_path, monkeypatch):
     posts = _instagram_posts()
     project(tmp_path, "new-reel", fill="#FFEEDD")
-    release = Release("new-reel", POST, style="Saga", characters={})
+    release = Release("new-reel", POST, style="Saga", parts={})
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "font_file", lambda folder: folder)

@@ -40,5 +40,16 @@ RELEASE = Release(
         test="sp-hook_motion",
         arm="a",
     ),  # fmt: skip
-    characters={"saga-enforcer": 1, "saga-gloom": 1, "saga-rook": 1},
+    parts={
+        "saga-bridge": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-holo": 1,
+        "saga-hook": 1,
+        "saga-rook": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

@@ -15,9 +15,9 @@ import pytest
 from srstudio import (
     TOON,
     camera,
-    characters,
     craft,
     music,
+    parts,
     registry,
     sketch,
     toon,
@@ -210,7 +210,7 @@ def test_the_same_pin_draws_flat_when_the_writer_does_not_ask_for_heads(tmp_path
 
 
 def test_a_pin_to_a_version_that_does_not_exist_is_refused(tmp_path):
-    with pytest.raises(characters.CharacterError, match="toon-fox"):
+    with pytest.raises(parts.PartError, match="toon-fox"):
         toon_sketch.head_plans(tmp_path, fox_sketch(), ("fox",), False, {"toon-fox": 9})
 
 
@@ -233,7 +233,7 @@ def test_only_the_characters_named_move_and_the_rest_draw_flat(pinned_fonts, tmp
 def test_the_record_of_what_was_drawn_names_a_moving_character_as_well(pinned_fonts, tmp_path):
     root = project(tmp_path / "p", pinned_fonts)
     toon_sketch.build(root, staged(heads=("sloth",)), set())
-    assert characters.read_record(root) == {"toon-goat": 1, "toon-sloth": 1}
+    assert parts.read_record(root) == {"toon-goat": 1, "toon-sloth": 1}
 
 
 def test_the_fox_moves_through_the_build_at_the_version_it_is_named_by(pinned_fonts, tmp_path):
@@ -243,7 +243,7 @@ def test_the_fox_moves_through_the_build_at_the_version_it_is_named_by(pinned_fo
     toon_sketch.build(root, staged(fox_sketch()), {"--init"})
     xml = tree(toon_sketch.build(root, staged(fox_sketch(), heads=("fox",)), set()))
     assert rigged(shots(xml)[0])  # its one shot; the groups after it are the caption's
-    assert characters.read_record(root) == {"toon-fox": 2}
+    assert parts.read_record(root) == {"toon-fox": 2}
 
 
 def test_a_voiced_build_keeps_lips_shots_and_camera_on_a_moving_head(pinned_fonts, tmp_path):

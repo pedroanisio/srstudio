@@ -26,5 +26,14 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("The lamp\nhas recordings.", 6.0, "Episode 17", (540, 900), 1.0),
     ),
-    characters={"juno": 1, "pip": 1},
+    parts={
+        "captions": 1,
+        "juno": 1,
+        "pip": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-home": 1,
+        "soft-sofa": 1,
+        "soft-status-badge": 1,
+    },
 )

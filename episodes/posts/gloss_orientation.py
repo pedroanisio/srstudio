@@ -23,5 +23,17 @@ RELEASE = Release(
         thumbnail=Thumbnail("Where is\nthe exit?", 15.0, "Gloss 01", (540, 960), 1.0),
     ),
     cover=True,
-    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
+    parts={
+        "gloss-board": 1,
+        "gloss-door": 1,
+        "gloss-gus": 1,
+        "gloss-hook": 1,
+        "gloss-nadia": 1,
+        "gloss-notice": 1,
+        "gloss-plaza": 1,
+        "gloss-sunny": 1,
+        "gloss-tamsin": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

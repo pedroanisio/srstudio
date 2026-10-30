@@ -8,7 +8,7 @@ way the critters are (:mod:`srstudio.toon_critters`): a :class:`~srstudio.toon_c
 unmirrored head, one smooth :class:`~srstudio.toon_torso.Torso` from the neck to the flank with the arms inside it,
 pressed ink, a shade tone, open inner strokes, a tilted head, and pupils and paws of its own.
 
-Each is registered as ``name@2`` and approved (:mod:`srstudio.characters`): a new reel draws it by default, and every
+Each is registered as ``name@2`` and approved (:mod:`srstudio.parts`): a new reel draws it by default, and every
 reel keeps the drawing it pins. :data:`srstudio.toon_cast.LOOKS` still holds version 1, unchanged.
 """
 
