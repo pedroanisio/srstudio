@@ -5711,6 +5711,550 @@
           "rig": null
         }
       ]
+    },
+    "stick-arm-cast": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "88f6a472812ce6e29b8b73c38729d26f007005bb4b972ba7e3cb1eb2ec8b00ba",
+          "rig": null
+        }
+      ]
+    },
+    "stick-coffee-corner": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "986a621ce009ca69681fabd8c7cfedf941885d9bcc301ecd5e255be4bd91c994",
+          "rig": null
+        }
+      ]
+    },
+    "stick-coffee-counter": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9ec3a28a395672cc29281c1b01c6a1676a0e44af01211a2731b88b0403c405b1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-door-lock": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d149e03a92966ef6e29ee0b2259cb285fe15b2f213ca15f0be55f744e21c51b5",
+          "rig": null
+        }
+      ]
+    },
+    "stick-entrance": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8b31b640539fdb77cd94fd84f35fb84d230ce93fa95f59ecbc66d89e7e552cf7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-flames": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b5b288f9d07ac56b98fbce1bfeb4a9ad615ccdd28add205f1e4204a0d99bfba",
+          "rig": null
+        }
+      ]
+    },
+    "stick-fridge-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fa9625a9da3338f52480c0ddeb93fe5d2cd4c1408dd176536b1bf3cfada17344",
+          "rig": null
+        }
+      ]
+    },
+    "stick-from-above": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d102edae24db04e507d10cce4d83803122f73912fd31e4d7b3404e099eab816d",
+          "rig": null
+        }
+      ]
+    },
+    "stick-glass-door": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "58f2f69790aca034327fc402c4c8149a704fd228438d41f33d96292ee8a8b553",
+          "rig": null
+        }
+      ]
+    },
+    "stick-handset": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2fe0efeeb0ad09bab01e61fccb8e7f047720b59419a1dde5bcea0477f43459d7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-home-street": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1ec37de0efebe7dad82f5ead11d2d34bf58e517d5c1a40129c23d3e0638a7c53",
+          "rig": null
+        }
+      ]
+    },
+    "stick-key": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ba85dd011ce045484953f46ad5fd4bf6a4084a94c3bb42544a30131422b45701",
+          "rig": null
+        }
+      ]
+    },
+    "stick-kitchen": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "07842f0e2c9e5085a760cadfd90723bc02b8d9835faab8196d2931caaca4c822",
+          "rig": null
+        }
+      ]
+    },
+    "stick-kitchen-plan": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c555368f368d226425709926d836677175b83488cd7b7a2b94677dd69dae5bc8",
+          "rig": null
+        }
+      ]
+    },
+    "stick-marathon": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9c448e51c44d2ad66fd3015a36b11fe34648cff92e25d6fdbc591847ae752464",
+          "rig": null
+        }
+      ]
+    },
+    "stick-meteor": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c2542644a8793515db85da5b997d9ce74e7def11aeb682b2eaf6efcba5f7078a",
+          "rig": null
+        }
+      ]
+    },
+    "stick-mug": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bc144d3950c226198f8ab57fa8ab3df87815858ca0a729437a3e617404b8a124",
+          "rig": null
+        }
+      ]
+    },
+    "stick-neck-brace": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ee4e4c93600b1532bc693d2fad3e6fedde160456a6e50626095142b950b988c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-parrot": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3802f5721e5e7a7e771b65f87234b4e405764a6a504107105b0ebc56ac70c14d",
+          "rig": null
+        }
+      ]
+    },
+    "stick-reply-screen": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "451746167f64bca3a280b6b9585721b31ddf7d8a6dc20f425322d96d6bbf9627",
+          "rig": null
+        }
+      ]
+    },
+    "stick-road-ahead": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5b7aa153c345c300602d7402e501f408127497859e0f51d6b6736011dc814640",
+          "rig": null
+        }
+      ]
+    },
+    "stick-road-plan": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6b27ffde2cb08b52a92a83760485988582bfd6c5b33df6e382c0e5048ffb6c87",
+          "rig": null
+        }
+      ]
+    },
+    "stick-road-sign": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6d55fd23ab076f0bf1eb072289d32c1d00bf4b8f4bbed188273807004dfd3206",
+          "rig": null
+        }
+      ]
+    },
+    "stick-safe-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "916a41c61a1d2005a82ba20d60ea5fba483d138c4532410f13842aa84adf02e0",
+          "rig": null
+        }
+      ]
+    },
+    "stick-side-car": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "aa747f320a894e66e5e256058805a7b1888a565fcec36bad9ab342d3c749cfc7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-snow-cap": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c5f461df691038f7e3b5a9fbab0cf79f41e77a5e7b5115f35b41f20d245f08f2",
+          "rig": null
+        }
+      ]
+    },
+    "stick-stove-knob": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e6a7a8ebd23f7659971d9e2b2d7ec848601884b1bd67a50d5671f846208a6ae6",
+          "rig": null
+        }
+      ]
+    },
+    "stick-street-lens": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "639a4435d84700b82884a711e57983df746ce2dd436dadd8eba42782607b8623",
+          "rig": null
+        }
+      ]
+    },
+    "stick-suitcases": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "035dbecf94b620ac325e8b123b0da2ffb2974bf1f8dd3470f0efb394141c4304",
+          "rig": null
+        }
+      ]
+    },
+    "stick-table": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "085b0fe6d281585f9e1806f1845690fe9fc1498186bbaabfd8412428d166ea6d",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tombstone": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0811ba3cac4eed80cbe5d78eadb03a8abc1e66ab3786230e371e6487c19be887",
+          "rig": null
+        }
+      ]
+    },
+    "stick-top-car": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e511128127e63d7559bd41a38f4ca405c8c3b740ef21cf05c13457bef7354e1e",
+          "rig": null
+        }
+      ]
     }
   }
 }

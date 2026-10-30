@@ -5338,6 +5338,390 @@
         ]
       },
       "text": "Boia branca com quatro faixas vermelhas."
+    },
+    {
+      "section": "locations",
+      "name": "Saguão de entrada",
+      "parts": [
+        "stick-entrance"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 5.0
+      },
+      "text": "O saguão com a porta de vidro aberta para a rua: o relógio de parede, o sol no chão, a prateleira com o cacto e um caminho que some ao longe. A rua escurece, neva e amanhece no tempo do plano."
+    },
+    {
+      "section": "locations",
+      "name": "Rua na teleobjetiva",
+      "parts": [
+        "stick-street-lens"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 2.0
+      },
+      "text": "A mesma rua vista de perto, com as casas desfocadas: serve para mostrar quem corre sem abrir um plano geral."
+    },
+    {
+      "section": "props",
+      "name": "Porta de vidro",
+      "parts": [
+        "stick-glass-door"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 16.0
+      },
+      "text": "Porta de vidro na dobradiça, segurada pela maçaneta, que fecha em quatro quadros desenhados."
+    },
+    {
+      "section": "props",
+      "name": "Neve acumulada",
+      "parts": [
+        "stick-snow-cap"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 12.0
+      },
+      "text": "Montinho de neve em três tamanhos, para pousar em quem ficou parado tempo demais."
+    },
+    {
+      "section": "props",
+      "name": "Maratona ao longe",
+      "parts": [
+        "stick-marathon"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 12.0
+      },
+      "text": "Fileira de corredores em silhueta que atravessa o fim da rua, cada um no próprio passo."
+    },
+    {
+      "section": "locations",
+      "name": "Cozinha",
+      "parts": [
+        "stick-kitchen"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 1.5
+      },
+      "text": "A cozinha com janela de cortinas, geladeira fechada e, sem explicação, um cofre na parede."
+    },
+    {
+      "section": "props",
+      "name": "Mesa da cozinha",
+      "parts": [
+        "stick-table"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 1.5
+      },
+      "text": "Mesa de madeira desenhada à parte, para correr por trás e pela frente dela, ou sentar em cima."
+    },
+    {
+      "section": "props",
+      "name": "Geladeira aberta",
+      "parts": [
+        "stick-fridge-open"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 11.0
+      },
+      "text": "A geladeira iluminada, com prateleiras e a porta aberta para a câmera, sobre a fechada."
+    },
+    {
+      "section": "props",
+      "name": "Cofre aberto",
+      "parts": [
+        "stick-safe-open"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 12.0
+      },
+      "text": "O cofre de parede com a porta aberta e o interior escuro, sobre o fechado."
+    },
+    {
+      "section": "props",
+      "name": "Celular na mão",
+      "parts": [
+        "stick-handset"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 1.5
+      },
+      "text": "Um celular que cabe na mão do boneco, em qualquer cor de capa, com a tela acesa ou apagada."
+    },
+    {
+      "section": "props",
+      "name": "Chave pequena",
+      "parts": [
+        "stick-key"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 13.0
+      },
+      "text": "Chavinha de latão, do tamanho exato de engolir."
+    },
+    {
+      "section": "props",
+      "name": "Mensagem em tela cheia",
+      "parts": [
+        "stick-reply-screen"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 16.0
+      },
+      "text": "A conversa ocupa o quadro inteiro: o que foi enviado e a resposta enorme embaixo."
+    },
+    {
+      "section": "locations",
+      "name": "Cozinha vista de cima",
+      "parts": [
+        "stick-kitchen-plan"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 8.5
+      },
+      "text": "A mesma cozinha reta de cima: piso e tampo da mesa, para correr em volta dela."
+    },
+    {
+      "section": "props",
+      "name": "Boneco visto de cima",
+      "parts": [
+        "stick-from-above"
+      ],
+      "shot": {
+        "episode": "take-my-phone",
+        "at": 8.5
+      },
+      "text": "O boneco visto de cima: pés que alternam, ombros, braços à frente, cabeça com cabelo, e um celular se precisar."
+    },
+    {
+      "section": "locations",
+      "name": "Canto do café",
+      "parts": [
+        "stick-coffee-corner"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "O canto do café do escritório: parede, piso e uma janela alta para a cidade, entre as duas pessoas."
+    },
+    {
+      "section": "props",
+      "name": "Balcão com cafeteira",
+      "parts": [
+        "stick-coffee-counter"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "Balcão desenhado à frente dos bonecos, com a cafeteira no meio."
+    },
+    {
+      "section": "props",
+      "name": "Caneca",
+      "parts": [
+        "stick-mug"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "A caneca na mão, no balcão ou na boca."
+    },
+    {
+      "section": "props",
+      "name": "Gesso no braço",
+      "parts": [
+        "stick-arm-cast"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "Gesso do cotovelo à mão, sobre qualquer braço."
+    },
+    {
+      "section": "props",
+      "name": "Colar cervical",
+      "parts": [
+        "stick-neck-brace"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 9.0
+      },
+      "text": "Colar de espuma sob o queixo."
+    },
+    {
+      "section": "props",
+      "name": "Papagaio",
+      "parts": [
+        "stick-parrot"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 9.0
+      },
+      "text": "Papagaio verde de ombro, olhando para qualquer lado."
+    },
+    {
+      "section": "props",
+      "name": "Chamas",
+      "parts": [
+        "stick-flames"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 11.0
+      },
+      "text": "Um fogo pequeno, em dois desenhos que se alternam devagar."
+    },
+    {
+      "section": "props",
+      "name": "Lápide",
+      "parts": [
+        "stick-tombstone"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 13.0
+      },
+      "text": "Lápide atrás do balcão, com o epitáfio que a cena pedir."
+    },
+    {
+      "section": "props",
+      "name": "Meteoro",
+      "parts": [
+        "stick-meteor"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 16.5
+      },
+      "text": "Meteoro que desce atrás dos prédios, visto só pela janela, e o clarão que fica."
+    },
+    {
+      "section": "locations",
+      "name": "Rua de casa",
+      "parts": [
+        "stick-home-street"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 5.5
+      },
+      "text": "A casa vista do meio-fio, com gramado, janela e uma árvore que cresce: é assim que os anos aparecem."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada vista de cima",
+      "parts": [
+        "stick-road-plan"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 4.5
+      },
+      "text": "A estrada reta de cima, com uma marca de pneu para cada retorno anterior."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada à frente",
+      "parts": [
+        "stick-road-ahead"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 15.0
+      },
+      "text": "A estrada aberta do ponto de vista de quem dirige."
+    },
+    {
+      "section": "props",
+      "name": "Carro de lado",
+      "parts": [
+        "stick-side-car"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 5.5
+      },
+      "text": "O carro carregado, de lado, com as férias no bagageiro do teto."
+    },
+    {
+      "section": "props",
+      "name": "Malas",
+      "parts": [
+        "stick-suitcases"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 1.5
+      },
+      "text": "Duas malas e um travesseiro empilhados no banco de trás."
+    },
+    {
+      "section": "props",
+      "name": "Carro visto de cima",
+      "parts": [
+        "stick-top-car"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 4.5
+      },
+      "text": "O carro de cima, para o retorno."
+    },
+    {
+      "section": "props",
+      "name": "Botão do fogão",
+      "parts": [
+        "stick-stove-knob"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 6.8
+      },
+      "text": "O quadro inteiro é a frente do fogão, com um único botão enorme em OFF."
+    },
+    {
+      "section": "props",
+      "name": "Fechadura da porta",
+      "parts": [
+        "stick-door-lock"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 11.0
+      },
+      "text": "O quadro inteiro é a porta da frente, com a tranca passada."
+    },
+    {
+      "section": "props",
+      "name": "Placa da estrada",
+      "parts": [
+        "stick-road-sign"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 15.0
+      },
+      "text": "Placa verde de rodovia que cresce conforme o carro se aproxima."
     }
   ]
 }

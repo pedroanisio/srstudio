@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_door`, `stick_flat`, `stick_gym`, `stick_home`, `stick_office`, `stick_school`, `stick_shop`, `stick_street`, `stick_windshield` (the reel builder is `stick_reel`) | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1373,6 +1373,56 @@ The word captions sit at `WORDS_Y`, over the hood.
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_exit_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
 python3 episodes/the_exit.py PROJECT     # the-exit.scene.xml + SRT, 17.792 s
 ```
+
+### An original Stick episode at a door: *Hold the Door* (R10)
+
+[episodes/hold_the_door.py](episodes/hold_the_door.py): Dev holds the door for a stranger far too far away, so the
+stranger has to jog for it. Others overtake him, day turns to night, snow settles, a marathon passes. Years later the
+stranger is three steps away when Dev's arm gives out.
+
+The set is `srstudio.stick_door`:
+
+- `stick-entrance`: the lobby and the street through its doorway, with a wall clock that runs and a street that
+  darkens over the shot; `stick-street-lens` is the same street on a long lens, for close work on a runner.
+- `stick-glass-door`: the pane on its hinge, held, swinging shut, or `closed`.
+- `stick-snow-cap` and `stick-marathon`: snow in three sizes, and the silhouettes past the end of the street.
+- `HOLD` and `JOG`: the poses of the arm that tires and of a run, with `shaking()` and `jogger()`; `on_path()`,
+  `approach()` and `through()` put a figure on the path and behind the doorway.
+
+`srstudio.stick_reel` holds what a recorded Stick reel repeats: `spec()`, the spoken `words()` and `close()`.
+
+### An original Stick episode in a kitchen: *Take My Phone* (R11)
+
+[episodes/take_my_phone.py](episodes/take_my_phone.py): she hands her friend her phone and tells her not to let her
+text him. Twenty seconds later she wants it back. The friend runs, sits on it, freezes it, locks it up and swallows
+the key. She has already lifted the friend's own phone.
+
+The set is `srstudio.stick_home`: `stick-kitchen` with its fridge and wall safe, `stick-table` drawn apart so figures
+pass behind and in front of it, `stick-fridge-open` and `stick-safe-open` over the shut ones, `stick-handset` and
+`stick-key` for the hands, `stick-reply-screen` for a message that takes the whole frame, and `POSES` for the argument.
+The chase is `stick-kitchen-plan` and `stick-from-above`, straight down: two full figures crossing the frame again and
+again fail the flash check, because each head's outline sweeps the same pixels more than three times a second.
+
+### An original Stick episode at the coffee machine: *Good, You* (R12)
+
+[episodes/good_you.py](episodes/good_you.py): "How was your weekend?" "Good, you?" "Good." Every Monday, through a
+cast, a neck brace, a parrot, a small fire and a headstone, and through the Friday a meteor lands outside the window.
+Repeated lines are one recording, so the deadpan cannot drift.
+
+The set is `srstudio.stick_office`: `stick-coffee-corner` with its window on the city, `stick-coffee-counter` in front
+of the figures, and what the weeks leave: `stick-arm-cast`, `stick-neck-brace`, `stick-parrot`, `stick-flames` and
+`stick-tombstone`, placed by `on_figure()`, with `stick-mug` and `stick-meteor` in the window's `view()`.
+
+### An original Stick episode on the road: *The Stove* (R13)
+
+[episodes/the_stove.py](episodes/the_stove.py): Dev and Noor leave for the airport and turn back for the stove, for
+the door, and for an iron they do not own. The sign says Airport 2. The neighbour ages, the tree grows, the children
+grow up in the window, and in the last car she asks about the stove.
+
+The car is `stick_windshield`, moving from the first frame. The rest is `srstudio.stick_street`: `stick-home-street`
+with a tree that grows and a window (`in_window()`, `window_frame()`), `stick-side-car`, `stick-road-plan` and
+`stick-top-car` for a U-turn from above with a skid mark for each one before it, `stick-stove-knob` and
+`stick-door-lock` for what they came back to check, `stick-road-ahead` and `stick-road-sign`, and `stick-suitcases`.
 
 ## Toon style package: *Anonymous Employee Survey*
 
