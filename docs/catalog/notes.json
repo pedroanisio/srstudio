@@ -3910,6 +3910,114 @@
         ]
       },
       "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
+    },
+    {
+      "section": "props",
+      "name": "Impressora de mesa",
+      "parts": [
+        "desk-printer"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 5.0,
+        "box": [
+          0,
+          900,
+          1080,
+          700
+        ]
+      },
+      "text": "Impressora doméstica vista de frente: o visor mostra leituras no tempo (<code>lcd=</code>, até dezesseis caracteres), ela treme nos intervalos de <code>whirs=</code> e as folhas de <code>sheets=</code> deslizam para a bandeja. LOW ON CYAN, para imprimir uma página preta."
+    },
+    {
+      "section": "props",
+      "name": "Bilhete de resgate",
+      "parts": [
+        "ransom-note"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 7.5,
+        "box": [
+          60,
+          120,
+          960,
+          1120
+        ]
+      },
+      "text": "Folha com a exigência em letras recortadas de revista, cada uma no seu retalho, sorteado por <code>seed=</code> (<code>lines=</code>, até doze caracteres por linha)."
+    },
+    {
+      "section": "props",
+      "name": "Foto de refém",
+      "parts": [
+        "hostage-photo"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 17.0,
+        "box": [
+          240,
+          720,
+          640,
+          700
+        ]
+      },
+      "text": "Foto instantânea de uma folha de papel amarrada a uma cadeira, sob uma lâmpada só, presa com fita."
+    },
+    {
+      "section": "props",
+      "name": "Sacolinha de papel",
+      "parts": [
+        "paper-bag"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 9.0,
+        "box": [
+          680,
+          700,
+          340,
+          430
+        ]
+      },
+      "text": "Sacola de papel pardo muito pequena, com alças de barbante: o que sobra de sessenta e quatro dólares."
+    },
+    {
+      "section": "locations",
+      "name": "Escritório da Rosa",
+      "parts": [
+        "home-study"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 0.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede sálvia, janela com cortina e estante fora de foco; a mesa toma o pé do quadro. <code>behind_desk=</code> desenha quem senta atrás dela e <code>on_desk=</code> o que fica à frente."
+    },
+    {
+      "section": "locations",
+      "name": "Caixa da loja",
+      "parts": [
+        "shop-till"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 9.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Prateleiras fora de foco sobre um balcão claro que toma o pé do quadro; <code>on_counter=</code> desenha sobre ele."
     }
   ]
 }

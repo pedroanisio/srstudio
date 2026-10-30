@@ -880,6 +880,23 @@
         }
       ]
     },
+    "desk-printer": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "800014142c26cbb44680728dd3af63f8cd76e18628a301e1fda5fa31c270a45f",
+          "rig": null
+        }
+      ]
+    },
     "doodle": {
       "kind": "character",
       "style": "ink",
@@ -1165,6 +1182,40 @@
           "proof": "",
           "approval": null,
           "drawing": "7d9a8a89f73ec7e8c40df9790b7bf4c2d44386c4f494e2172a53f29e178dbb58",
+          "rig": null
+        }
+      ]
+    },
+    "home-study": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f6809f99dd9a5865baa3068a9088f69b19f4dfa2eb2f4675f0ce348f00111d12",
+          "rig": null
+        }
+      ]
+    },
+    "hostage-photo": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "325c3e736f80424c62e0964283585036ed66b9c619ff120d151feff202b8250b",
           "rig": null
         }
       ]
@@ -1692,6 +1743,23 @@
         }
       ]
     },
+    "paper-bag": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ef14eaa484126313b1260b1a9966ba90b70a382a9bb55e5997959f98767735be",
+          "rig": null
+        }
+      ]
+    },
     "papers": {
       "kind": "prop",
       "style": "cutout",
@@ -1892,6 +1960,23 @@
           "proof": "",
           "approval": null,
           "drawing": "8979353521cb1938f9f92ba7f9659e90f197b753075772828fdceb35b831331d",
+          "rig": null
+        }
+      ]
+    },
+    "ransom-note": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8019064581a193bb920109e132b5f7e2a725facf427ae2c3abe891c5ef958a16",
           "rig": null
         }
       ]
@@ -2351,6 +2436,23 @@
           "proof": "",
           "approval": null,
           "drawing": "b7d914b0483861de6c3e200a82baf9c738e3b9c8a5af1ef642210feaba6780e6",
+          "rig": null
+        }
+      ]
+    },
+    "shop-till": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for out-of-cyan.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fbfeeceb12bf0448d5c7322f4a7fd2e6d537a5e7eea0f45450f9f5572bc3528",
           "rig": null
         }
       ]

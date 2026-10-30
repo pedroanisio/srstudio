@@ -645,6 +645,43 @@ lean toward him, with no camera move. The voices are Lily (Rosa), Will and Eric;
 The episode declares no engine safe area, as *Cup Fee* does: each close-up reframes the other rider's lettering out of
 frame, which the SA01 text check refuses; captions are placed inside x 80–920 by hand.
 
+## Cutout episode at the home printer: *Out of Cyan* (26)
+
+[episodes/out_of_cyan.py](episodes/out_of_cyan.py) sits Rosa at her desk with one black page to print and a printer
+that reads LOW ON CYAN. "It's black and white." It answers in pages: a ransom note in cut-out letters, WE HAVE YOUR
+DOCUMENT, then BRING CYAN. COME ALONE. She pays $64 at a shop till, and it wants OFFICIAL CYAN. She pays $89, and it
+wants the magenta too, with an instant photo of her page tied to a chair. "Don't hurt it." She pays $98. The display
+says THANK YOU, and her black page comes out blue.
+
+```bash
+srstudio record out-of-cyan PROJECT
+srstudio build out-of-cyan PROJECT    # PROJECT/out-of-cyan.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). The voice is Lily (Rosa); the printer never
+speaks, and the long gaps between her lines are its whirs and pages, not silence. The captions are Noto Sans 700.
+
+Rosa's card, for this and every later appearance:
+
+- **wants**: to be treated with basic courtesy, by neighbours and by machines;
+- **flaw**: she is too polite to refuse anything that asks nicely or threatens nicely;
+- **habit**: she answers a demand with "dear" and then meets it.
+
+Parts added for it, in `srstudio.cutout_home`:
+
+- `desk_printer` (`desk-printer`): a home printer from the front; `lcd=` is timed readings of 1 to `LCD_CHARS`
+  characters, `whirs=` are spans it rattles, `sheets=` slide out into its tray.
+- `ransom_note` (`ransom-note`): a sheet whose `lines=` (1 to `NOTE_LINE` characters) are cut from magazines, each
+  letter on a seeded scrap.
+- `hostage_photo` (`hostage-photo`): an instant photo of a sheet of paper tied to a chair under one bulb.
+- `paper_bag` (`paper-bag`): a very small carrier bag.
+- `home_study` (`home-study`): a sage study with a window and an out-of-focus bookshelf; `behind_desk=` draws whoever
+  sits there and `on_desk=` what stands in front of them. `desk_top` is the same desk from above, for inserts.
+- `shop_till` (`shop-till`): out-of-focus shelves over a pale counter; `on_counter=` draws on it.
+
+These six parts are recorded `proposed`: nothing draws them by default and no release can pin them until the operator
+has approved them. `srstudio parts` shows such a part with `-` as its default.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router
