@@ -358,6 +358,7 @@ TOON = Style(
     parts=(
         "toon",
         "toon_cast",
+        "toon_critters",
         "toon_dinner",
         "toon_everyday",
         "toon_inked",

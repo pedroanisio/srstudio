@@ -83,8 +83,8 @@ Number = (int, float)
 
 TRACED_EYES = ("wide", "half", "left", "up", "down", "side", "closed", "narrow", "shock")  # what cat.json holds
 TRACED_MOUTHS = ("flat", "open", "round", "o", "drop", "grin", "wave", "smirk", "none")
-EYES = (*TRACED_EYES, "roll", "teary", "wince", "hearts")  # the brush characters draw them all; the cat, the traced
-MOUTHS = (*TRACED_MOUTHS, "grimace", "frown", "tongue", "kiss")
+EYES = (*TRACED_EYES, "roll", "teary", "wince", "hearts", "sleepy")  # the brush characters draw them all; the cat,
+MOUTHS = (*TRACED_MOUTHS, "grimace", "frown", "tongue", "kiss", "yawn", "scream", "puff")  # the traced ones only
 WEAR = ("glasses", "sweat", "flush")  # what any character can wear per pose (:mod:`srstudio.toon_wear`)
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
 BODIES = ("desk", "type_a", "type_b", "crossed", "sigh", "lean", "face", "face2")
