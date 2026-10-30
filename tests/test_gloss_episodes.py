@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib
 import re
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -18,8 +19,10 @@ EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 REELS = tuple(
     sorted(p.name.removeprefix("gloss_").removesuffix("_audio.py") for p in EPISODES.glob("gloss_*_audio.py"))
 )
-# G1-G6 were published with the native caption look and keep it; every later reel reads with gloss_reel.LOOK
+# G1-G6 were published with the native caption look and G7 with gloss_reel.LOOK, and they keep them; every later reel
+# reads with gloss_reel.LOOK_INK, solid dark letters
 PUBLISHED_WITH_NATIVE_LOOK = {"orientation", "joy_points", "trust_fall", "feedback", "exit", "wellness"}
+PUBLISHED_WITH_GLOSS_LOOK = {"terms"}
 SECONDS_A_WORD = 0.35  # a calm speaking rate for the synthetic recording
 
 
@@ -75,8 +78,14 @@ def test_published_reels_keep_the_caption_look_they_shipped_with_and_new_reels_r
 
     looks = {n: load(n).look() for n in REELS}
     assert {n for n, look in looks.items() if look is native.CAPTION_LOOK} == PUBLISHED_WITH_NATIVE_LOOK
-    assert all(looks[n] is gloss_reel.LOOK for n in set(REELS) - PUBLISHED_WITH_NATIVE_LOOK)
-    assert looks["terms"] is gloss_reel.LOOK
+    assert {n for n, look in looks.items() if look is gloss_reel.LOOK} == PUBLISHED_WITH_GLOSS_LOOK
+    published = PUBLISHED_WITH_NATIVE_LOOK | PUBLISHED_WITH_GLOSS_LOOK
+    assert all(looks[n] is gloss_reel.LOOK_INK for n in set(REELS) - published)
+    ink, house = gloss_reel.LOOK_INK, gloss_reel.LOOK  # the lines wrap and hold as in LOOK; only the letters change
+    plain = dict(color=house.color, active=house.active, stroke=house.stroke, stroke_width=house.stroke_width)
+    assert replace(ink, **plain) == house
+    assert ink.color == ink.active == ink.stroke == house.stroke  # one dark tone, the sung word too
+    assert 0 < ink.stroke_width < house.stroke_width  # outlined in its own color, thinly
 
 
 def test_every_reel_is_a_gloss_series_reel_staged_by_the_gloss_reel_builder(reel):

@@ -190,6 +190,23 @@ def test_build_passes_the_reels_caption_look_and_its_post(project):
     assert FakeEpisode.made[-1].posted == "the-post"
 
 
+def test_a_reel_can_encode_at_its_own_crf_over_the_series_output(project):
+    series.build(reel(crf="21"), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.output_options == {**OUTPUT, "crf": "21"}
+    assert OUTPUT.get("crf") != "21"  # the series' own output is left as it is
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.output_options == OUTPUT
+
+
+@pytest.mark.parametrize("crf", ["", "52", "-1", "18.5", "eighteen", 20, None, True])
+def test_a_crf_the_encoder_cannot_take_is_refused(crf):
+    if crf is None:
+        assert reel(crf=None).crf is None  # None: the series' crf
+        return
+    with pytest.raises(SeriesError, match="crf"):
+        reel(crf=crf)
+
+
 def test_build_without_a_project_argument_builds_beside_the_episode_file(project):
     out = series.build(reel(), str(project / "demo.py"), argv=["demo.py"])
     assert out == project / "demo-reel.scene.xml"

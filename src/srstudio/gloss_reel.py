@@ -22,7 +22,7 @@ their first frame until the first word (:func:`still_opening`).
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from . import checks, craft, gloss, gloss_sets, native, staging
@@ -30,14 +30,21 @@ from .gloss import HOST, GlossError, Track, Walk
 from .gloss_sets import Card
 from .staging import Move
 
-__all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "still_opening", "build", "DUCK", "MUSIC_GAIN",
-           "BADGE"]  # fmt: skip
+__all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "still_opening", "build", "DUCK", "LOOK",
+           "LOOK_INK", "MUSIC_GAIN", "BADGE"]  # fmt: skip
 
 DUCK = -9.0  # dB the music drops under a line
 HUSH = -12.0  # dB more it drops through a pause between lines, so the beat before a punchline is quiet, not muzak
 HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise again for the next
 # no lone last word, every caption readable (ADR 0031); for new reels, as published ones keep the house look
 LOOK = native.CaptionLook(min_last=2, min_seconds=0.84)
+INK = "#121415"  # the Gloss outline color, the letters of LOOK_INK
+# from G8 on: the same lines in solid dark letters, outlined only in their own color (2 px, which keeps the
+# descenders inside the caption block the safe area is checked on). The engine's contrast check compares the pixels a
+# caption changes most with the set behind them; a white letter in a dark outline lightens some of them and darkens the
+# others, which on the light Gloss sets averages to 1.00:1, and a plum sung word is under 3:1 on the notice's floor.
+# G7 keeps LOOK, as published
+LOOK_INK = replace(LOOK, color=INK, active=INK, stroke=INK, stroke_width=2)
 MUSIC_GAIN = -17.0
 BADGE = (150, 330)  # where Sunny speaks from when it is not in the shot
 PANS = {"sunny": 0.0, "nadia": -0.05, "gus": 0.06, "tamsin": 0.04}
