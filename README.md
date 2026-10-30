@@ -607,6 +607,16 @@ shadow falling down and to the right, and every angle is drawn into `locations.f
   marks stay sharp. `locations.elevator(depth=)` does the same for the hallway through the doorway, its cactus kept
   sharp. Without `depth` each set is the shipped one, byte for byte; an instanced office refuses it.
 
+## Interview episodes with a Google caption face
+
+An `Interview` takes an opt-in `font=GoogleFont(...)` (for example `interview.NOTO_SANS_BOLD`, Noto Sans 700, close
+to DejaVu Sans Bold's width). The record step then installs that face with `srstudio.fonts.install` into
+`PROJECT/assets/fonts` (pinned in `fonts.lock.json`, its licence beside it) before any clip is requested, and copies
+no DejaVu file; a face that will not install stops the record with an `InterviewError` instead of falling back to
+DejaVu. The picture script gives its `EpisodeSpec` the matching fields with `**interview.spec_font(face, root)`,
+which reads the pin and never downloads. Without `font=`, the caption face is DejaVu Sans Bold as before, and every
+published interview project rebuilds byte for byte.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router
