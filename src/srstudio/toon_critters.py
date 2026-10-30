@@ -58,10 +58,15 @@ __all__ = [
     "shared_eye",
     "shared_mouth",
     "Critter",
+    "Split",
+    "torso_rig",
     "SLOTH",
     "GOAT",
     "HAMSTER",
     "CRITTERS",
+    "SLOTH_RIG",
+    "GOAT_RIG",
+    "HAMSTER_RIG",
     "SLOTH_STRIPE",
     "GOAT_HORN",
     "sloth",
@@ -410,11 +415,93 @@ class Critter:
     def viseme(self, look: Look, kind: str) -> list[Layer]:
         return self.turn(_viseme(self.face, kind))
 
+    def looking(self, dx: float, dy: float) -> Critter:
+        """This drawing with its pupils ``dx`` and ``dy`` eye radii off (:class:`srstudio.toon_head.Glancing`)."""
+        r = self.face.eye_r
+        base = self.pupil
+
+        def pupil(face: Look, x: float, y: float, size: float) -> list[Layer]:
+            return base(face, x + dx * r, y + dy * r, size)
+
+        return replace(self, pupil=pupil)
+
+    def rig(self, split: Split, style: HeadStyle, free: float = 0.0) -> HeadRig:
+        """This critter split at its neck (:func:`torso_rig`): its look untilted, the tilt carried by the head."""
+        look = replace(self, tilt=0.0).look()
+        return torso_rig(look, self.torso, self.neck, self.tilt, (self.face.coat, self.shade), split, style, free)
+
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]:
         """An arm inside the body (:meth:`srstudio.toon_torso.Torso.limb`): a thin crease out of the body widening
         to the forearm, inked heavier underneath, the shade along its underside, then the critter's paw."""
         layers, at, way = self.torso.limb(points, paw, look.coat, self.shade)
         return layers + self.paw(look, at, way, toes)
+
+
+@dataclass(frozen=True)
+class Split:
+    """What a :class:`~srstudio.toon_torso.Torso` character supplies beyond its torso to move its head (ADR 0050).
+    ``chin`` closes the torso's head from its right neck join round to its left, ``top`` is the body's top from its
+    left neck join to its right; ``hand`` is the amount and the seed of the drift on both outlines. ``back`` draws what
+    is behind the head's outline (ears, horns), ``skull`` what stays on the head, ``face`` what slides over it,
+    ``trunk`` what sits on the body. With ``head_over`` the body goes under the head and ``top`` runs up behind the
+    head; without it, the body goes over the head and ``top`` is a ruff."""
+
+    chin: tuple[Point, ...]
+    top: tuple[Point, ...]
+    hand: tuple[float, float]
+    skull: Callable[[], Sequence[Layer]]
+    face: Callable[[], Sequence[Layer]]
+    trunk: Callable[[], Sequence[Layer]]
+    back: Callable[[], Sequence[Layer]] = tuple
+    head_over: bool = False
+
+
+def torso_rig(
+    look: Look,
+    torso: Torso,
+    neck: Point,
+    tilt: float,
+    colours: tuple[str, str],
+    split: Split,
+    style: HeadStyle,
+    free: float = 0.0,
+) -> HeadRig:
+    """A :class:`HeadRig` for any drawing with a torso: the outlines drawn the critters' way, in ``colours`` (coat,
+    shade). ``look`` is the look with an untilted head."""
+    coat, shading = colours
+    amount, seed = split.hand
+    head = (*torso.head, *split.chin)
+
+    def outlined(contour: tuple[Point, ...], weights: tuple[float, ...] | None = None) -> list[Layer]:
+        drawn = drifted(contour, amount, seed, weights)
+        fill: list[Layer] = [(pressed(drawn, INK * 1.05, seed=seed), "ink"), (brush.outline(drawn, steps=3), coat)]
+        return fill + shade(drawn, 22.0, shading)
+
+    @lru_cache(maxsize=1)
+    def skull() -> tuple[Layer, ...]:
+        return (*split.back(), *outlined(head), *split.skull())
+
+    @lru_cache(maxsize=1)
+    def face() -> tuple[Layer, ...]:
+        return tuple(split.face())
+
+    @lru_cache(maxsize=1)
+    def trunk() -> tuple[Layer, ...]:
+        return (*outlined(torso.under(split.top), torso.weights(CALM, len(split.top))), *split.trunk())
+
+    return HeadRig(
+        look=look,
+        neck=neck,
+        tilt=tilt,
+        head=head,
+        cover=split.top,
+        skull=skull,
+        face=face,
+        trunk=trunk,
+        style=style,
+        head_over=split.head_over,
+        free=free,
+    )
 
 
 def _pressed_paw(look: Look, paw: Point, rx: float, ry: float, colour: str, seed: float) -> list[Layer]:
@@ -503,37 +590,20 @@ _SLOTH_RUFF_SHADE = tuple((x, y + 13.0) for x, y in _SLOTH_CHIN_SHADE)
 _SLOTH_RUFF_FUR = (((112.0, 690.0), (116.0, 702.0)), ((262.0, 690.0), (258.0, 702.0)))
 
 
-@lru_cache(maxsize=1)
-def _sloth_skull() -> tuple[Layer, ...]:
-    """The sloth's head alone, closed under the chin behind the ruff, with its crown and cheek fur."""
-    head = drifted((*_SLOTH_HEAD, *_SLOTH_CHIN), 1.3, 1.0)
-    layers = [(pressed(head, INK * 1.05, seed=1.0), "ink"), (brush.outline(head, steps=3), _SLOTH_COAT)]
-    layers += shade(head, 22.0, SLOTH_SHADE)
-    layers += [_fur(points) for points in _SLOTH_FUR[:7]]
-    return tuple(layers)
+def _sloth_cover() -> list[Layer]:
+    """What sits on the sloth's body: the belly, the ruff's shade and the chest fur."""
+    layers = [_fill(_SLOTH_BELLY, SLOTH_BELLY, 2.0), _fill(_SLOTH_RUFF_SHADE, SLOTH_SHADE, 3.0)]
+    return layers + [_fur(points) for points in (*_SLOTH_FUR[8:11], *_SLOTH_RUFF_FUR)]
 
 
-@lru_cache(maxsize=1)
-def _sloth_features() -> tuple[Layer, ...]:
+def _sloth_features() -> list[Layer]:
     """What slides across the sloth's head when it turns: the pale face, its stripes, the chin line and the nose."""
     layers: list[Layer] = [_fill(_SLOTH_DISC, _SLOTH_LIGHT, 4.0, amount=1.0)]
     layers += [_fill(stripe, SLOTH_STRIPE, 5.0 + k, amount=0.6) for k, stripe in enumerate(_SLOTH_STRIPES)]
     layers += [_fur(_SLOTH_FUR[7]), _fur(_SLOTH_FUR[11])]
     layers += [(pressed(_SLOTH_NOSE, FINE, seed=7.0), "ink"), (brush.outline(_SLOTH_NOSE, steps=3), SLOTH_NOSE)]
     layers.append((brush.ellipse(181.0, 604.0, 3.6, 2.2, -10.0), "white"))
-    return tuple(layers)
-
-
-@lru_cache(maxsize=1)
-def _sloth_trunk() -> tuple[Layer, ...]:
-    """The sloth's body with the ruff along its top, drawn over the head."""
-    body = drifted(_SLOTH_TORSO.under(_SLOTH_RUFF), 1.3, 1.0, _SLOTH_TORSO.weights(CALM, len(_SLOTH_RUFF)))
-    layers = [(pressed(body, INK * 1.05, seed=1.0), "ink"), (brush.outline(body, steps=3), _SLOTH_COAT)]
-    layers += shade(body, 22.0, SLOTH_SHADE)
-    layers.append(_fill(_SLOTH_BELLY, SLOTH_BELLY, 2.0))
-    layers.append(_fill(_SLOTH_RUFF_SHADE, SLOTH_SHADE, 3.0))
-    layers += [_fur(points) for points in (*_SLOTH_FUR[8:11], *_SLOTH_RUFF_FUR)]
-    return tuple(layers)
+    return layers
 
 
 def _sloth_mouths(face: Look, kind: str) -> list[Layer] | None:
@@ -613,14 +683,17 @@ SLOTH_MOTION = HeadStyle(  # slow, heavy, late: a low spring, a slow shift for i
     glance_every=4.5,
     glance_hold=1.3,
 )
-SLOTH_RIG = HeadRig(
-    look=replace(SLOTH_CRITTER, tilt=0.0).look(),
-    neck=SLOTH_CRITTER.neck,
-    tilt=SLOTH_CRITTER.tilt,
-    skull=_sloth_skull,
-    face=_sloth_features,
-    trunk=_sloth_trunk,
-    style=SLOTH_MOTION,
+SLOTH_RIG = SLOTH_CRITTER.rig(
+    Split(
+        chin=_SLOTH_CHIN,
+        top=_SLOTH_RUFF,
+        hand=(1.3, 1.0),
+        skull=lambda: [_fur(points) for points in _SLOTH_FUR[:7]],
+        face=_sloth_features,
+        trunk=_sloth_cover,
+    ),
+    SLOTH_MOTION,
+    free=25.0,
 )
 
 
@@ -781,6 +854,76 @@ GOAT_CRITTER = Critter(
     torso=_GOAT_TORSO,
 )
 GOAT = GOAT_CRITTER.look()
+GOAT_MOTION = HeadStyle(  # abrupt: a stiff spring that stops dead, long stares between sudden moves
+    seed=2046,
+    signature="^",
+    nod_px=9.0,
+    nod_roll=1.2,
+    head=Spring(4.5, 0.95),
+    settle=Spring(3.0, 0.95),
+    body=Spring(2.0, 1.0),
+    min_gap=0.7,
+    loud_range=8.0,
+    lean=0.8,
+    idle_roll=0.9,
+    idle_px=0.5,
+    idle_hz=0.12,
+    breath_period=4.2,
+    glance_every=3.2,
+    glance_hold=0.7,
+    glance_turn=3.0,
+    glance_face=7.0,
+)
+_GOAT_CHIN = ((227.0, 684.0), (212.0, 699.0), (185.0, 705.0), (158.0, 699.0), (145.0, 688.0))
+_GOAT_NECK_TOP = ((140.0, 676.0), (152.0, 656.0), (168.0, 642.0), (204.0, 640.0), (218.0, 652.0), (232.0, 670.0))
+
+
+def _goat_back() -> list[Layer]:
+    """The goat's horns and ears, behind its head."""
+    out: list[Layer] = []
+    for k, horn in enumerate(_GOAT_HORNS):
+        out += _inked(horn, GOAT_HORN, 10.0 + k, weight=INK * 0.95, amount=0.6)
+    for k, ear in enumerate(_GOAT_EARS):
+        out += [
+            *_inked(ear, _GOAT_COAT, 12.0 + k, amount=0.6),
+            _fill(_GOAT_EAR_INNER[k], GOAT_EAR, 14.0 + k, amount=0.4),
+        ]
+    return out
+
+
+def _goat_skull() -> list[Layer]:
+    """The horns' ridges and the fur on the goat's head."""
+    return [_fur(points, FINE * 0.95, LINE) for points in _GOAT_RIDGES] + [
+        _fur(points) for points in (*_GOAT_FUR[:4], *_GOAT_FUR[8:10])
+    ]
+
+
+def _goat_face() -> list[Layer]:
+    """What slides across the goat's head: the muzzle, the nostrils and the beard over the chest."""
+    layers = [_fill(_GOAT_MUZZLE, _GOAT_LIGHT, 18.0, amount=0.8)]
+    layers += _inked(_GOAT_BEARD, _GOAT_LIGHT, 19.0, weight=INK * 0.85, amount=0.5)
+    return layers + [_fur(points) for points in _GOAT_FUR[4:8]]
+
+
+def _goat_chest() -> list[Layer]:
+    """What sits on the goat's body: the shadow under the chin and the chest fur."""
+    return [_fill(_GOAT_CHIN_SHADE, GOAT_SHADE, 17.0), *(_fur(points) for points in _GOAT_FUR[10:])]
+
+
+GOAT_RIG = GOAT_CRITTER.rig(
+    Split(
+        chin=_GOAT_CHIN,
+        top=_GOAT_NECK_TOP,
+        hand=(1.2, 16.0),
+        back=_goat_back,
+        skull=_goat_skull,
+        face=_goat_face,
+        trunk=_goat_chest,
+        head_over=True,
+    ),
+    GOAT_MOTION,
+    free=18.0,
+)
 
 
 # -- the hamster -------------------------------------------------------------------------------------------------------
@@ -934,6 +1077,84 @@ HAMSTER_CRITTER = Critter(
     torso=_HAMSTER_TORSO,
 )
 HAMSTER = HAMSTER_CRITTER.look()
+HAMSTER_MOTION = HeadStyle(  # quick and small: a fast light spring that bobs past rest, little breaths, darting eyes
+    seed=3047,
+    signature="~",
+    nod_px=4.5,
+    nod_roll=1.0,
+    head=Spring(4.0, 0.6, 0.08),
+    settle=Spring(3.0, 0.7),
+    body=Spring(2.5, 0.9),
+    min_gap=0.3,
+    lean=0.5,
+    idle_roll=0.9,
+    idle_px=0.8,
+    idle_hz=0.5,
+    breath_period=1.8,
+    breath_px=1.5,
+    glance_every=2.0,
+    glance_hold=0.45,
+    glance_turn=1.2,
+    glance_face=4.0,
+)
+_HAMSTER_CHIN = ((306.0, 688.0), (268.0, 692.0), (226.0, 694.0), (185.0, 695.0), (144.0, 694.0), (102.0, 692.0),
+                 (62.0, 690.0))  # fmt: skip
+_HAMSTER_CHIN_SOFT = ((296.0, 672.0), (250.0, 676.0), (185.0, 678.0), (120.0, 676.0), (72.0, 672.0), (78.0, 706.0),
+                      (120.0, 704.0), (185.0, 703.0), (250.0, 704.0), (290.0, 706.0))  # fmt: skip
+_HAMSTER_NECK_TOP = ((54.0, 694.0), (82.0, 668.0), (120.0, 652.0), (185.0, 648.0), (250.0, 652.0), (298.0, 664.0),
+                     (312.0, 686.0))  # fmt: skip
+
+
+def _hamster_back() -> list[Layer]:
+    """The hamster's ears, behind its head."""
+    out: list[Layer] = []
+    for k, ear in enumerate(_HAMSTER_EARS):
+        out += [
+            *_inked(ear, _HAMSTER_COAT, 30.0 + k, amount=0.5),
+            _fill(_HAMSTER_EAR_INNER[k], HAMSTER_EAR, 32.0 + k, amount=0.3),
+        ]
+    return out
+
+
+def _hamster_skull() -> list[Layer]:
+    """The chin's line coated over, head and body one mass as in the flat drawing, and the fur on the crown and ears."""
+    layers = [(brush.outline(_HAMSTER_CHIN_SOFT, steps=3), _HAMSTER_COAT)]
+    return layers + [_fur(points) for points in (*_HAMSTER_FUR[:3], *_HAMSTER_FUR[5:7])]
+
+
+def _hamster_face() -> list[Layer]:
+    """What slides across the hamster's head: the pouches, muzzle, blush, whiskers and nose."""
+    layers = [_fill(pouch, _HAMSTER_LIGHT, 36.0 + k) for k, pouch in enumerate(_HAMSTER_POUCHES)]
+    layers.append(_fill(_HAMSTER_MUZZLE, _HAMSTER_LIGHT, 38.0))
+    layers += [
+        (brush.ellipse(98.0, 658.0, 13.0, 7.5, -8.0), HAMSTER_BLUSH),
+        (brush.ellipse(274.0, 656.0, 13.0, 7.5, 8.0), HAMSTER_BLUSH),
+    ]
+    layers += [_fur(points) for points in (*_HAMSTER_FUR[3:5], *_HAMSTER_FUR[10:])]
+    layers += [(pressed(_HAMSTER_NOSE, FINE, seed=39.0), "ink"), (brush.outline(_HAMSTER_NOSE, steps=2), HAMSTER_NOSE)]
+    layers.append((brush.ellipse(183.0, 632.0, 2.4, 1.5), "white"))
+    return layers
+
+
+def _hamster_belly() -> list[Layer]:
+    """What sits on the hamster's body: the belly and its fur."""
+    return [_fill(_HAMSTER_BELLY, _HAMSTER_LIGHT, 35.0), *(_fur(points) for points in _HAMSTER_FUR[7:10])]
+
+
+HAMSTER_RIG = HAMSTER_CRITTER.rig(
+    Split(
+        chin=_HAMSTER_CHIN,
+        top=_HAMSTER_NECK_TOP,
+        hand=(1.1, 34.0),
+        back=_hamster_back,
+        skull=_hamster_skull,
+        face=_hamster_face,
+        trunk=_hamster_belly,
+        head_over=True,
+    ),
+    HAMSTER_MOTION,
+    free=34.0,
+)
 CRITTERS = {"sloth": SLOTH, "goat": GOAT, "hamster": HAMSTER}
 
 

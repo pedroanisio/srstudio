@@ -35,21 +35,36 @@ import math
 import random
 import zlib
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
+from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import LIPS, Pose, ToonDataError
 from .toon_cast import CENTRE, FINE, FOX, HEART, INK, TEAR, TONGUE, VISEMES, Layer, Look, Mouths, figure
+from .toon_head import HeadRig
 from .toon_torso import arm_lines, depth_in
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
 
-__all__ = ["SHADE", "CREAM_SHADE", "IRIS", "INSIDE", "TILT", "Inked", "FOX_INK", "FOX_INKED", "fox_inked"]
+__all__ = [
+    "SHADE",
+    "CREAM_SHADE",
+    "IRIS",
+    "INSIDE",
+    "TILT",
+    "Inked",
+    "FOX_INK",
+    "FOX_INKED",
+    "FOX_MOTION",
+    "FOX_RIG",
+    "fox_inked",
+]
 
 SHADE = "#c2501f"  # the coat where the forms turn away from the light
 CREAM_SHADE = "#ead2bd"  # the white under the chin
@@ -68,6 +83,7 @@ TUCK = (0.5, 10.0)  # an arm leaves the body this far inside the shoulder: limb 
 FUR = brush.Pressure(1.0, 0.2, 0.14, 0.16, 1.7)  # pressed at the root, lifted at the tip, unevenly
 LINE = brush.Pressure(0.95, 0.35, 0.15, 0.14, 2.3)
 GAP = 1.5  # a break in a body contour, in line weights
+GLANCE_ROOM = 0.42  # eye radii an iris may be moved by a glance before it leaves the almond
 
 
 def _tilt(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -195,6 +211,14 @@ EYES_AT: tuple[Point, Point] = ((150.0, 566.0), (222.0, 564.0))
 MOUTH_AT: Point = (185.0, 648.0)
 
 
+def _muzzle() -> list[Point]:
+    """The white of the face: the muzzle follows the face; the ruff stays inside the outline it runs along."""
+    return [
+        (x + SHIFT, y) if 140.0 < x < 236.0 else (185.0 + (x - 185.0) * 0.92 + SHIFT / 2, 640.0 + (y - 640.0) * 0.96)
+        for x, y in _MASK
+    ]
+
+
 def _fox_base() -> tuple[tuple[Layer, ...], tuple[Layer, ...]]:
     """The fox at rest without arms or face (tail, ears, body, shade, white, inner lines) and its inner lines."""
     light, dark = FOX.light, FOX.paw
@@ -209,13 +233,8 @@ def _fox_base() -> tuple[tuple[Layer, ...], tuple[Layer, ...]]:
     layers += _inked_fill(_tilt(_SILHOUETTE), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
     layers.append(_fill(_tilt(_HEAD_SHADE), SHADE, seed=11, amount=0.8))
     layers.append(_fill(_FLANK_SHADE, SHADE, seed=12, amount=0.8))
-    # the muzzle follows the face; the ruff stays inside the outline it runs along
-    mask = [
-        (x + SHIFT, y) if 140.0 < x < 236.0 else (185.0 + (x - 185.0) * 0.92 + SHIFT / 2, 640.0 + (y - 640.0) * 0.96)
-        for x, y in _MASK
-    ]
     layers.append(_fill(_BIB, light, seed=13))
-    layers.append(_fill(_tilt(mask), light, seed=14, amount=1.2))
+    layers.append(_fill(_tilt(_muzzle()), light, seed=14, amount=1.2))
     layers.append(_fill(_tilt(_CHIN), CREAM_SHADE, seed=15, amount=0.8))
     nose_x, nose_y = _face([NOSE_AT])[0]
     strokes: list[Layer] = [_line(_tilt(s), FINE * 1.1, 20 + k) for k, s in enumerate(_EAR_FLUFF)]
@@ -301,6 +320,19 @@ class Inked:
     sizes: tuple[float, float]
     iris: str
     inside: str
+    glance: Point = (0.0, 0.0)  # the iris this many eye radii off where the kind of eye puts it
+
+    def looking(self, dx: float, dy: float) -> Inked:
+        """This drawing with its irises ``dx`` and ``dy`` eye radii off (:class:`srstudio.toon_head.Glancing`)."""
+        return replace(self, glance=(dx, dy))
+
+    def _iris(self, kind: str) -> Point:
+        """Where the iris of ``kind`` looks, a glance moving it no further than the almond has room for."""
+        dx, dv = _LOOK[kind]
+        if self.glance == (0.0, 0.0):
+            return dx, dv
+        room = GLANCE_ROOM
+        return max(-room, min(room, dx + self.glance[0])), max(-room, min(room, dv + self.glance[1]))
 
     def foundation(self, look: Look) -> list[Layer]:
         return list(self.base)
@@ -354,7 +386,7 @@ class Inked:
         rng = random.Random(_seed("almond", kind, side))  # no two eyes drawn alike
         almond = [at(u + rng.uniform(-0.07, 0.07), v * stretch + rng.uniform(-0.07, 0.07), scale) for u, v in ALMOND]
         out += [(brush.inked(almond, INK, EYE_HAND), "ink"), (brush.outline(almond), "white")]
-        dx, dv = _LOOK[kind]
+        dx, dv = self._iris(kind)
         ix, iy = ex + dx * r, ey + dv * r
         if kind == "shock":  # a pinpoint: no iris to see
             out.append((lump(ix, iy, 0.17 * r, 0.2 * r, "pupil", 0.14), "ink"))
@@ -594,6 +626,99 @@ FOX_INKED = Look(
     blink=FOX.blink,
     paw=FOX.paw,
     drawing=FOX_INK,
+)
+
+
+FOX_MOTION = HeadStyle(  # sly: more cock of the head than nod, and the eyes go long before the head does
+    seed=4048,
+    signature="~",
+    nod_px=6.0,
+    nod_roll=2.6,
+    head=Spring(2.2, 0.6, 0.1),
+    settle=Spring(1.1, 0.7),
+    body=Spring(1.2, 0.9),
+    min_gap=0.5,
+    lean=1.0,
+    idle_roll=1.6,
+    idle_px=0.9,
+    idle_hz=0.18,
+    breath_period=4.6,
+    glance_every=3.0,
+    glance_hold=1.6,
+    glance_turn=1.8,
+    glance_face=3.0,
+    avert=0.7,
+)
+_HEAD = (*_SILHOUETTE[41:], *_SILHOUETTE[:21])  # from the left of the neck over the crown to the right, ruff and all
+_JAW = ((286.0, 678.0), (262.0, 688.0), (232.0, 698.0), (200.0, 704.0), (170.0, 704.0), (138.0, 698.0),
+        (108.0, 688.0), (84.0, 676.0))  # fmt: skip
+_BODY_TOP = ((86.0, 655.0), (130.0, 632.0), (185.0, 624.0), (232.0, 640.0), (250.0, 664.0))
+
+
+def _shifted(points: Sequence[Point]) -> list[Point]:
+    return [(x + SHIFT, y) for x, y in points]
+
+
+@lru_cache(maxsize=1)
+def _fox_skull() -> tuple[Layer, ...]:
+    """The head alone, ruff and ears, closed under the chin, untilted: the rig turns it."""
+    layers: list[Layer] = []
+    for k, ear in enumerate(_EARS):
+        layers += _inked_fill(ear, FOX.coat, INK, seed=4 + k)
+        layers.append(_fill(_EAR_INNER[k], FOX.light, seed=6 + k, amount=0.8))
+        layers.append(_fill(_EAR_TIPS[k], FOX.paw, seed=8 + k, amount=0.4))
+    layers += _inked_fill((*_HEAD, *_JAW), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
+    layers.append(_fill(_HEAD_SHADE, SHADE, seed=11, amount=0.8))
+    layers += [_line(s, FINE * 1.1, 20 + k) for k, s in enumerate(_EAR_FLUFF)]
+    layers += [_line(s, FINE * 1.25, 30 + k) for k, s in enumerate(_HEAD_STROKES)]
+    return tuple(layers)
+
+
+@lru_cache(maxsize=1)
+def _fox_face() -> tuple[Layer, ...]:
+    """What slides across the head: the white of the face and the philtrum."""
+    nose_x, nose_y = _shifted([NOSE_AT])[0]
+    philtrum = [(nose_x, nose_y + 8.0), (nose_x + 0.8, nose_y + 18.0)]
+    return (_fill(_muzzle(), FOX.light, seed=14, amount=1.2), _line(philtrum, FINE * 1.2, 50, LINE))
+
+
+@lru_cache(maxsize=1)
+def _fox_trunk() -> tuple[Layer, ...]:
+    """The tail and the body, its top run up behind the head, the bib and the shadow under the chin."""
+    layers = _inked_fill(_TAIL, FOX.coat, INK, seed=1)
+    layers.append(_fill(_TAIL_SHADE, SHADE, seed=2, amount=0.6))
+    layers.append(_fill(_TAIL_TIP, FOX.light, seed=3, amount=0.5))
+    layers += _inked_fill((*_SILHOUETTE[21:41], *_BODY_TOP), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
+    layers.append(_fill(_FLANK_SHADE, SHADE, seed=12, amount=0.8))
+    layers.append(_fill(_BIB, FOX.light, seed=13))
+    layers.append(_fill(_CHIN, CREAM_SHADE, seed=15, amount=0.8))
+    layers += [_line(s, FINE * 1.15, 40 + k) for k, s in enumerate(_BODY_STROKES)]
+    return tuple(layers)
+
+
+FOX_RIG = HeadRig(
+    look=replace(
+        FOX_INKED,
+        eyes=(_shifted([EYES_AT[0]])[0], _shifted([EYES_AT[1]])[0]),
+        mouth=_shifted([MOUTH_AT])[0],
+        nose=(
+            brush.outline(_shifted([(NOSE_AT[0] + x, NOSE_AT[1] + y) for x, y in _NOSE])),
+            brush.lump(
+                NOSE_AT[0] + SHIFT - 4.0, NOSE_AT[1] - 4.0, 3.6, 2.0, 0.2, seed=_seed("nose"), tilt=-12.0, points=6
+            ),
+        ),
+        drawing=Inked((), (), 0.0, FOX_INK.sizes, IRIS, INSIDE),
+    ),
+    neck=NECK,
+    tilt=TILT,
+    head=(*_HEAD, *_JAW),
+    cover=(_SILHOUETTE[40], *_BODY_TOP, _SILHOUETTE[21]),
+    skull=_fox_skull,
+    face=_fox_face,
+    trunk=_fox_trunk,
+    style=FOX_MOTION,
+    head_over=True,
+    free=45.0,
 )
 
 
