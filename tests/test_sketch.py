@@ -206,6 +206,79 @@ def test_voiced_mouths_round_trip_and_bad_files_are_refused(tmp_path):
         sketch.load_mouths(tmp_path / "missing.json")
 
 
+# -- the takes a head moves on -----------------------------------------------------------------------------------------
+def test_record_writes_every_take_as_the_project_plays_it(tmp_path):
+    rec = sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    takes, end = sketch.load_speech(tmp_path / "voiced" / "speech.json")
+    assert end == rec.end
+    assert [t.id for t in takes] == [q["id"] for q in rec.items]
+    assert [t.at for t in takes] == [q["start"] for q in rec.items]
+    assert [t.kept for t in takes] == [q["duration"] for q in rec.items]
+    assert [t.who for t in takes] == [
+        {s.name: s.character for s in SPEAKERS}[line.speaker] for line in SK.lines
+    ]  # the boss off screen has no character and is heard all the same
+    assert None in [t.who for t in takes]
+    for take, line in zip(takes, SK.lines, strict=True):
+        assert take.alignment.text == line.text
+        assert take.alignment.starts[0] == pytest.approx(0.0, abs=0.06)  # measured from the conformed file
+        assert take.alignment.ends[-1] <= take.kept
+
+
+def test_a_take_keeps_only_what_is_left_of_it_after_the_trim():
+    full = Alignment(tuple("abcd"), (0.1, 0.5, 0.9, 1.3), (0.5, 0.9, 1.3, 1.7))
+    take = sketch.kept_take("01", "dog", full, 2.0, 0.3, 0.8)
+    assert take.alignment.characters == ("a", "b", "c")
+    assert take.alignment.starts == pytest.approx((0.0, 0.2, 0.6))
+    assert take.alignment.ends == pytest.approx((0.2, 0.6, 0.8))
+    assert (take.at, take.kept, take.who, take.id) == (2.0, 0.8, "dog", "01")
+
+
+def test_voiced_speech_round_trips_and_bad_files_are_refused(tmp_path):
+    good = {"id": "01", "who": "dog", "at": 0.5, "kept": 1.0, "characters": ["a", "b"], "starts": [0.0, 0.2],
+            "ends": [0.2, 0.4]}  # fmt: skip
+    path = tmp_path / "speech.json"
+    takes = [sketch.Take("01", "dog", 0.5, 1.0, Alignment(("a", "b"), (0.0, 0.2), (0.2, 0.4)))]
+    sketch.write_speech(tmp_path, takes, 9.0)
+    assert sketch.load_speech(tmp_path / "voiced" / "speech.json") == (takes, 9.0)
+
+    def doc(end=9.0, **change) -> str:
+        return json.dumps({"end": end, "takes": [good | change]})
+
+    second = good | {"id": "02", "at": 0.1}
+    for text, match in (
+        ("nope", "speech.json"),
+        ('{"takes": []}', "end and takes"),
+        ('{"end": 9, "takes": {}}', "end and takes"),
+        ('{"end": 9, "takes": [], "more": 1}', "end and takes"),
+        (doc(end=0), "end must be"),
+        (doc(end=True), "end must be"),
+        (json.dumps({"end": 9, "takes": ["x"]}), "take 0"),
+        (json.dumps({"end": 9, "takes": [good | {"pitch": 1}]}), "take 0"),
+        (json.dumps({"end": 9, "takes": [{"id": "01"}]}), "take 0"),
+        (doc(id="1"), "id"),
+        (doc(id=1), "id"),
+        (doc(who="gary"), "gary"),
+        (doc(at=-1.0), "at"),
+        (doc(at="1"), "at"),
+        (doc(at=8.5), "past the end"),
+        (doc(kept=0), "kept"),
+        (doc(characters=["a"]), "one start and end per character"),
+        (doc(characters=["a", 1]), "characters"),
+        (doc(characters="ab"), "characters"),
+        (doc(starts=[0.2, 0.0]), "rise"),
+        (doc(starts=["0", 0.2]), "rise"),
+        (doc(ends=[0.2, 1.4]), "inside the take"),
+        (doc(ends=[0.2, 0.1]), "inside the take"),
+        (json.dumps({"end": 9, "takes": [good, second]}), "time order"),
+        (json.dumps({"end": 9, "takes": [good, good | {"at": 1.0}]}), "twice"),
+    ):
+        path.write_text(text)
+        with pytest.raises(sketch.SketchError, match=match):
+            sketch.load_speech(path)
+    with pytest.raises(sketch.SketchError, match="missing.json"):
+        sketch.load_speech(tmp_path / "missing.json")
+
+
 def true_() -> bool:
     return True
 
