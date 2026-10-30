@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 import random
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -742,4 +742,9 @@ SETS = {
     "compactor": compactor,
 }
 FRONTS = {"cantina": cantina_front, "cockpit": cockpit_front}
-PROPS = {"cube": cube_station, "freighter": freighter, "fighter": fighter, "pebble": pebble}
+PROPS: dict[str, Callable[..., Any]] = {
+    "cube": cube_station,
+    "freighter": freighter,
+    "fighter": fighter,
+    "pebble": pebble,
+}

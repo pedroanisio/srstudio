@@ -23,6 +23,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Literal, get_args
 
 from . import checks
+from ._transaction import scene_transaction
 from .errors import SrstudioError
 from .fonts import text_width
 from .layout import SafeArea
@@ -320,80 +321,81 @@ def caption_track(
     ``both`` does both; either needs the ``output``. ``font_data`` (the bytes of the caption font) measures every
     wrapped line against the room it has. A look with ``outline="layer"`` needs a ``safe_area`` and the ``canvas`` it
     draws the outline on. Nothing is added when a check fails."""
-    if mode not in get_args(Mode):
-        raise NativeError(f"caption mode must be one of {get_args(Mode)}, not {mode!r}")
-    if font_asset is None:
-        raise NativeError("a caption track needs a font asset; set EpisodeSpec.font")
-    if output is None and mode != "burn":
-        raise NativeError(f"a {mode} caption track needs the output it is written beside")
-    if look.outline == "layer" and canvas is None:
-        raise NativeError("a split caption outline needs the canvas to draw it on")
-    if look.outline == "layer" and safe_area is None:
-        raise NativeError("a split caption outline lines up with the track in the safe area; give it one")
-    _check_cues(cues)
-    place: dict[str, str] = {}
-    room = width * 0.85
-    if safe_area is not None:
-        region = safe_area.region(width, height)
-        room = region.x1 - region.x0
-        if look.block > region.y1 - region.y0:
-            raise NativeError(f"the caption block ({look.block:.0f} px) is taller than the safe area")
-        place = dict(
-            x=_percent((region.x0 + region.x1) / 2 / width),
-            y=_percent((region.y1 - look.block) / height),
-            width=_percent(room / width),
-            safeArea=safe_area.id,
-        )
-    if font_data is not None:
-        _check_fit(cues, look, font_data, room)
+    with scene_transaction(scene, canvas):
+        if mode not in get_args(Mode):
+            raise NativeError(f"caption mode must be one of {get_args(Mode)}, not {mode!r}")
+        if font_asset is None:
+            raise NativeError("a caption track needs a font asset; set EpisodeSpec.font")
+        if output is None and mode != "burn":
+            raise NativeError(f"a {mode} caption track needs the output it is written beside")
+        if look.outline == "layer" and canvas is None:
+            raise NativeError("a split caption outline needs the canvas to draw it on")
+        if look.outline == "layer" and safe_area is None:
+            raise NativeError("a split caption outline lines up with the track in the safe area; give it one")
+        _check_cues(cues)
+        place: dict[str, str] = {}
+        room = width * 0.85
+        if safe_area is not None:
+            region = safe_area.region(width, height)
+            room = region.x1 - region.x0
+            if look.block > region.y1 - region.y0:
+                raise NativeError(f"the caption block ({look.block:.0f} px) is taller than the safe area")
+            place = dict(
+                x=_percent((region.x0 + region.x1) / 2 / width),
+                y=_percent((region.y1 - look.block) / height),
+                width=_percent(room / width),
+                safeArea=safe_area.id,
+            )
+        if font_data is not None:
+            _check_fit(cues, look, font_data, room)
 
-    track_kw: dict[str, Any] = dict(
-        id=id,
-        language=language,
-        preset=look.preset,
-        mode=mode,
-        style=f"{id}-text",
-        activeStyle=f"{id}-active",
-        maxCharsPerLine=look.max_chars,
-        maxLines=look.max_lines,
-        **place,
-    )
-    if look.max_words is not None:
-        track_kw["maxWordsPerLine"] = look.max_words
-    captions = scene.find("captions")
-    fresh = captions is None
-    if captions is None:
-        captions = scene.add_captions()
-    try:
-        track = captions.add_captionTrack(**track_kw)
-    except Exception:  # a preset the schema does not know: leave the document as it was
-        if fresh:
-            scene.remove(captions)
-        raise
-    styles = scene.find("styles") or scene.add_styles()
-    base_kw: dict[str, Any] = dict(
-        fontAsset=font_asset, size=look.size, weight=look.weight, color=look.color, lineHeight=look.line_height
-    )
-    if look.outline == "stroke":
-        base_kw.update(strokeColor=look.stroke, strokeWidth=look.stroke_width, strokePosition="outside")
-    if look.upper:
-        base_kw["textTransform"] = "uppercase"
-    styles.add_textStyle(id=f"{id}-text", **base_kw)
-    styles.add_textStyle(id=f"{id}-active", basedOn=f"{id}-text", color=look.active)
-    for cue in sorted(cues, key=lambda c: c.start):
-        element = track.add_cue(start=round(cue.start, 6), end=round(cue.end, 6), text=cue.text)
-        for w in cue.words:
-            element.add_word(start=round(w.start, 6), end=round(w.end, 6), text=w.text)
-    if output is not None and mode in ("burn", "both"):
-        output.burnCaptions = id
-    if output is not None and mode in ("sidecar", "both"):
-        output.captions = id
-    if look.outline == "layer":
-        # centred where the track's rounded percents centre the letters; a text box is whole pixels
-        wide = math.ceil(float(place["width"][:-1]) / 100 * width)
-        left = float(place["x"][:-1]) / 100 * width - wide / 2
-        _outline_layers(canvas, cues, look, (left, float(place["y"][:-1]) / 100 * height, wide), id)
-    return track
+        track_kw: dict[str, Any] = dict(
+            id=id,
+            language=language,
+            preset=look.preset,
+            mode=mode,
+            style=f"{id}-text",
+            activeStyle=f"{id}-active",
+            maxCharsPerLine=look.max_chars,
+            maxLines=look.max_lines,
+            **place,
+        )
+        if look.max_words is not None:
+            track_kw["maxWordsPerLine"] = look.max_words
+        captions = scene.find("captions")
+        fresh = captions is None
+        if captions is None:
+            captions = scene.add_captions()
+        try:
+            track = captions.add_captionTrack(**track_kw)
+        except Exception:  # a preset the schema does not know: leave the document as it was
+            if fresh:
+                scene.remove(captions)
+            raise
+        styles = scene.find("styles") or scene.add_styles()
+        base_kw: dict[str, Any] = dict(
+            fontAsset=font_asset, size=look.size, weight=look.weight, color=look.color, lineHeight=look.line_height
+        )
+        if look.outline == "stroke":
+            base_kw.update(strokeColor=look.stroke, strokeWidth=look.stroke_width, strokePosition="outside")
+        if look.upper:
+            base_kw["textTransform"] = "uppercase"
+        styles.add_textStyle(id=f"{id}-text", **base_kw)
+        styles.add_textStyle(id=f"{id}-active", basedOn=f"{id}-text", color=look.active)
+        for cue in sorted(cues, key=lambda c: c.start):
+            element = track.add_cue(start=round(cue.start, 6), end=round(cue.end, 6), text=cue.text)
+            for w in cue.words:
+                element.add_word(start=round(w.start, 6), end=round(w.end, 6), text=w.text)
+        if output is not None and mode in ("burn", "both"):
+            output.burnCaptions = id
+        if output is not None and mode in ("sidecar", "both"):
+            output.captions = id
+        if look.outline == "layer":
+            # centred where the track's rounded percents centre the letters; a text box is whole pixels
+            wide = math.ceil(float(place["width"][:-1]) / 100 * width)
+            left = float(place["x"][:-1]) / 100 * width - wide / 2
+            _outline_layers(canvas, cues, look, (left, float(place["y"][:-1]) / 100 * height, wide), id)
+        return track
 
 
 # -- transitions ----------------------------------------------------------------------------------------------------

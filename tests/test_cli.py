@@ -68,9 +68,9 @@ def test_catalog_imports_plugins_before_listing(isolated, capsys):
     assert line.endswith("A badge registered by a plugin")
 
 
-def test_catalog_with_an_unknown_plugin_fails_loudly(isolated):
-    with pytest.raises(ModuleNotFoundError):
-        main(["catalog", "--plugins", "plugin_does_not_exist"])
+def test_catalog_with_an_unknown_plugin_fails_loudly(isolated, capsys):
+    assert main(["catalog", "--plugins", "plugin_does_not_exist"]) == 2
+    assert "plugin_does_not_exist" in capsys.readouterr().err
 
 
 def test_build_runs_a_script_with_its_root_and_sibling_helpers(isolated):

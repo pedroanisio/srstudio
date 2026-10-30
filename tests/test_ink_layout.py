@@ -25,7 +25,12 @@ from support.ink_layout import WORDS, phones, router_take, square_canvas, takes_
 
 @pytest.fixture
 def square_project(tmp_path):
-    (tmp_path / "timeline.json").write_text(json.dumps(takes_data()))
+    from support.generated import write_wav
+
+    data = takes_data()
+    (tmp_path / "timeline.json").write_text(json.dumps(data))
+    for item in data["items"]:
+        write_wav(tmp_path / item["audio"], [0.0] * 100)
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "hand.ttf").write_bytes(b"\0")
     return tmp_path
@@ -297,7 +302,12 @@ def router_takes_data():
 
 
 def test_router_episode_builds_and_validates(tmp_path):
-    (tmp_path / "timeline.json").write_text(json.dumps(router_takes_data()))
+    from support.generated import write_wav
+
+    data = router_takes_data()
+    (tmp_path / "timeline.json").write_text(json.dumps(data))
+    for item in data["items"]:
+        write_wav(tmp_path / item["audio"], [0.0] * 100)
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "hand.ttf").write_bytes(b"\0")
     ep = Episode(

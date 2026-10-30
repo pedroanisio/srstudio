@@ -91,10 +91,10 @@ def test_copy_dejavu_writes_the_font_and_the_full_notice_beside_it(tmp_path):
     assert (assets / "FONT-LICENSE.txt").read_text(encoding="utf-8") == sample.dejavu_license()
 
 
-def test_the_sample_project_ships_the_full_notice_with_its_font(tmp_path, monkeypatch):
+def test_the_sample_project_ships_the_full_notice_with_its_font(tmp_path, monkeypatch, project):
     font = tmp_path / "system" / "DejaVuSans-Bold.ttf"
     font.parent.mkdir()
-    font.write_bytes(b"glyphs")
+    font.write_bytes((project / "assets" / "DejaVuSans-Bold.ttf").read_bytes())
     monkeypatch.setattr(sample, "SYSTEM_FONTS", (font,))
     data = sample.write_sample_project(tmp_path / "project", [sample.Line("A", "Hello there.")])
     assert data["font_real"]

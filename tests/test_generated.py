@@ -199,7 +199,8 @@ def test_episode_plays_pinned_clips_and_moves_mouths_from_them(project, tmp_path
     path = ep.finish(tmp_path / "gen.scene.xml")
     root_el = ET.parse(path).getroot()
     (asset,) = list(root_el.iter("generated"))
-    assert asset.get("cacheSha256") == sha and asset.get("cache") == SPEECH.cache
+    assert asset.get("cacheSha256") == sha
+    assert (path.parent / asset.get("cache")).resolve() == (root / SPEECH.cache).resolve()
     (track,) = [t for t in root_el.iter("audioTrack") if t.get("asset") == "line-1"]
     assert float(track.get("start")) == 0.62 and float(track.get("clipOut")) == 1.0 and track.get("role") == "dialogue"
     assert not [a for a in root_el.iter("audio") if a.get("id") == "dialogue"]

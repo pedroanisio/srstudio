@@ -55,6 +55,7 @@ __all__ = [
     "Rig",
     "Table",
     "UnknownVersionError",
+    "UnverifiedBuilderError",
     "Version",
     "drawing",
     "drawn",
@@ -112,6 +113,10 @@ class Refused:
             raise PartError(f"a refusal's reason is a Reason, got {self.reason!r}")
         if not (isinstance(self.detail, str) and self.detail.strip() and "\n" not in self.detail):
             raise PartError(f"a refusal's detail is one line, got {self.detail!r}")
+
+
+class UnverifiedBuilderError(PartError):
+    """A replacement builder cannot be treated as the approved drawing without verification."""
 
 
 def _is_date(value: object) -> bool:
@@ -191,15 +196,19 @@ class Version:
             raise PartError(f"{where}: its date is a YYYY-MM-DD day, got {self.date!r}")
         if not (isinstance(self.note, str) and self.note.strip() and "\n" not in self.note):
             raise PartError(f"{where}: its note is one line, got {self.note!r}")
-        if self.status not in STATUSES:
+        if not isinstance(self.status, str) or self.status not in STATUSES:
             raise PartError(f"{where}: its status is one of {STATUSES}, got {self.status!r}")
-        if self.drawing and not DIGEST.fullmatch(self.drawing):
+        if not isinstance(self.proof, str):
+            raise PartError(f"{where}: proof must be a string, got {self.proof!r}")
+        if not isinstance(self.drawing, str) or (self.drawing and not DIGEST.fullmatch(self.drawing)):
             raise PartError(f"{where}: its drawing is a digest of 64 lowercase hex digits, got {self.drawing!r}")
+        if self.approval is not None and not isinstance(self.approval, Approval):
+            raise PartError(f"{where}: approval must be an Approval or None")
         if self.status == "proposed":
             if self.approval is not None:
                 raise PartError(f"{where}: a proposed version carries no approval")
             return
-        if self.number > 1 and not self.proof:
+        if self.number > 1 and not self.proof.strip():
             raise PartError(f"{where}: an approved version above 1 needs a proof clip")
         if self.number > 1 and self.approval is None:
             raise PartError(f"{where}: an approved version above 1 records whose approval it was")
@@ -289,9 +298,12 @@ def _rig(where: str, value: Any) -> Rig | None:
 
 
 def _version(where: str, value: Any) -> Version:
-    fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval", "rig"})
-    approval, rig = _approval(f"{where}.approval", fields["approval"]), _rig(f"{where}.rig", fields["rig"])
-    return Version(**{**fields, "approval": approval, "rig": rig})
+    try:
+        fields = _fields(where, value, {"number", "date", "note", "status", "proof", "drawing", "approval", "rig"})
+        approval, rig = _approval(f"{where}.approval", fields["approval"]), _rig(f"{where}.rig", fields["rig"])
+        return Version(**{**fields, "approval": approval, "rig": rig})
+    except PartError as exc:
+        raise PartError(f"{where}: {exc}") from exc
 
 
 def _refused(where: str, value: Any) -> Refused | None:
@@ -342,8 +354,24 @@ def latest(name: str) -> Version:
     return get(name).latest()
 
 
+def _approved_entry(name: str, number: int) -> registry.Entry:
+    kind, drawn_as = get(name).kind, part_name(name, number)
+    try:
+        entry = registry.get(kind, drawn_as)
+    except registry.NotRegisteredError as exc:
+        raise PartError(f"{name} version {number}: drawing {drawn_as!r} is not registered") from exc
+    if registry._unverified(entry):
+        raise UnverifiedBuilderError(
+            f"{name} version {number}: registered builder is unverified; use specimens.check to compare "
+            "the drawing, or parts.drawing(..., allow_unverified=True) for proof work"
+        )
+    return entry
+
+
 def pin(name: str, number: int) -> Version:
-    return get(name).pinned(number)
+    version = get(name).pinned(number)
+    _approved_entry(name, version.number)
+    return version
 
 
 def part_name(name: str, number: int) -> str:
@@ -351,17 +379,20 @@ def part_name(name: str, number: int) -> str:
     return name if number == 1 else f"{name}@{number}"
 
 
-def drawing(name: str, number: int | None = None) -> registry.Entry:
-    """The drawing of version ``number`` of ``name`` (any status, for its proof), or of its default."""
+def drawing(name: str, number: int | None = None, *, allow_unverified: bool = False) -> registry.Entry:
+    """A version's drawing, or the latest approved drawing; opt in to unverified replacements for proof work."""
     part = get(name)
     chosen = part.latest() if number is None else part.version(number)
+    if chosen.status == "approved" and not allow_unverified:
+        return _approved_entry(name, chosen.number)
     return registry.get(part.kind, part_name(name, chosen.number))
 
 
 def resolved(name: str, pins: Mapping[str, int] | None = None) -> int:
     """The version a build draws: its pin, else the part's default."""
     number = (pins or {}).get(name)
-    return get(name).latest().number if number is None else get(name).pinned(number).number
+    chosen = get(name).latest().number if number is None else number
+    return pin(name, chosen).number
 
 
 def drawn(names: Iterable[str]) -> dict[str, int]:
@@ -385,12 +416,14 @@ def write_record(project: Path, versions: Mapping[str, int]) -> None:
 def read_record(project: Path) -> dict[str, int] | None:
     """What the build in ``project`` drew, or None for a project built before records (a published one)."""
     path = Path(project) / RECORD
-    if not path.is_file():
-        return None
     try:
         top = _fields(str(path), json.loads(path.read_text(encoding="utf-8")), {"schema", "parts"})
-    except ValueError as exc:
-        raise PartError(f"{path}: {exc}") from None
+    except FileNotFoundError as exc:
+        if not path.is_symlink():
+            return None
+        raise PartError(f"{path}: {exc}") from exc
+    except (OSError, ValueError) as exc:
+        raise PartError(f"{path}: {exc}") from exc
     versions = top["parts"]
     if top["schema"] != RECORD_SCHEMA or not isinstance(versions, dict):
         raise PartError(f"{path}: not a {RECORD_SCHEMA} record of what a build drew")

@@ -4,15 +4,22 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
+from urllib.parse import quote
 
-from sr_core.scene import AudioMix, AudioTrack, Scene
+from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group, Layer, Scene
+from sr_core.scene import Sequence as SceneSequence
+from sr_core.scene._runtime import _attr_specs
 
 from . import checks, digest, native, signature
-from .canvas import Canvas, Palette, Signature
+from ._transaction import scene_transaction
+from .canvas import Canvas, Keys, Palette, Signature
 from .errors import SrstudioError
 from .generated import PlacedClip, load_clips, verify
 from .graphics import captions as _captions
@@ -20,9 +27,12 @@ from .layout import Crossing, SafeArea, check_overlays, find_engine
 from .narration import narration_cues
 from .rig import Actor, Performance
 from .social import InstagramPost
-from .soundtrack import MouthStyle, PhonemeStyle, Soundtrack, mouth_states
+from .soundtrack import MouthStyle, PhonemeStyle, Soundtrack, mouth_states, validate_wav
 from .styles import CUTOUT, Style
-from .timeline import Timeline
+from .timeline import Phrase, Take, Timeline
+
+if TYPE_CHECKING:
+    from .limbs.integration import LimbTrack
 
 sha256 = digest.sha256
 
@@ -57,6 +67,91 @@ class _FromStyle:
 
 
 FROM_STYLE: Any = _FromStyle()
+
+
+class _MixDefault:
+    def __repr__(self) -> str:
+        return "DEFAULT"
+
+
+_MIX_DEFAULT = _MixDefault()
+
+
+class _StyleNamer:
+    """A callable spec default that can create an independent counter for each episode."""
+
+    def __init__(self, factory: Callable[[], Callable[[str], str]]):
+        self.factory = factory
+        self._name = factory()
+
+    def __call__(self, prefix: str) -> str:
+        return self._name(prefix)
+
+    def fresh(self) -> Callable[[str], str]:
+        return self.factory()
+
+
+def _document_at(scene: Scene, root: Path, destination: Path) -> bytes:
+    """Rebase input URIs for a document written outside its project directory."""
+    if root.resolve() == destination.resolve():
+        return scene.to_bytes(layout="pretty")
+    prefix = quote(Path(os.path.relpath(root.resolve(), destination.resolve())).as_posix(), safe="/")
+    changed = []
+    try:
+        for node in scene.iter():
+            for name, attr in _attr_specs(type(node)).items():
+                value = node._attrs.get(name)
+                if (
+                    attr.spec != "xs:anyURI"
+                    or name in ("path", "uri", "report")
+                    or not value
+                    or value.startswith(("/", "#"))
+                    or re.match(r"^[A-Za-z][A-Za-z0-9+.-]+:", value)
+                ):
+                    continue
+                changed.append((node, name, value))
+                node._attrs[name] = f"{prefix}/{value}"
+        return scene.to_bytes(layout="pretty")
+    finally:
+        for node, name, value in changed:
+            node._attrs[name] = value
+
+
+_AudioMethod = TypeVar("_AudioMethod", bound=Callable[..., Any])
+
+
+def _audio_transaction(method: _AudioMethod) -> _AudioMethod:
+    """Restore scene nodes and episode/canvas state if assembly fails."""
+
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        missing = object()
+        state = {
+            name: getattr(self, name, missing)
+            for name in ("_mix", "_master", "_master_kw", "track", "_cover_written", "_cover_variant")
+        }
+        lists = {name: (getattr(self, name), getattr(self, name).copy()) for name in ("caption_specs", "_cover_hidden")}
+        if state["_master_kw"] is not missing:
+            state["_master_kw"] = state["_master_kw"].copy()
+        cast_state = self.cast.copy()
+        try:
+            with scene_transaction(self.scene, self.cv):
+                return method(self, *args, **kwargs)
+        except Exception:
+            for name, value in state.items():
+                if value is missing:
+                    if hasattr(self, name):
+                        delattr(self, name)
+                else:
+                    setattr(self, name, value)
+            for name, (original, contents) in lists.items():
+                original[:] = contents
+                setattr(self, name, original)
+            self.cast.clear()
+            self.cast.update(cast_state)
+            raise
+
+    return cast(_AudioMethod, wrapped)
 
 
 @dataclass
@@ -137,7 +232,7 @@ class EpisodeSpec:
         if self.mouth_style is FROM_STYLE:
             self.mouth_style = None if st.silent else st.mouth(self.palette)
         if self.namer is FROM_STYLE:
-            self.namer = st.namer() if st.namer else None
+            self.namer = _StyleNamer(st.namer) if st.namer else None
         if st.accessibility or self.accessibility:
             self.accessibility = {**st.accessibility, **(self.accessibility or {})}
 
@@ -196,13 +291,14 @@ class Episode:
             font_asset=spec.font_id,
             width=spec.width,
             height=spec.height,
-            namer=spec.namer,
+            namer=spec.namer.fresh() if isinstance(spec.namer, _StyleNamer) else spec.namer,
             local_time=spec.local_time,
             signature=Signature(spec.signature_code) if spec.signature else None,
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
-        self._cover_written = False
+        self._cover_written = 0
+        self._cover_variant: Any = None
         # Shot-sequence layouts add the font first and their audio per take; the interview family mixes one file.
         if spec.audio:
             audio_kw = dict(id="dialogue", src=spec.audio, sha256=sha256(self.root / spec.audio))
@@ -243,31 +339,32 @@ class Episode:
 
     # -- shortcuts ----------------------------------------------------------------------------
     @property
-    def comp(self):
+    def comp(self) -> Composition:
         return self.cv.comp
 
     @property
-    def phrases(self):
+    def phrases(self) -> list[Phrase]:
         return self.t.phrases
 
-    def P(self, i: int):
+    def P(self, i: int) -> Phrase:
         return self.t.phrases[i]
 
     @property
-    def takes(self):
+    def takes(self) -> list[Take]:
         return self.t.takes
 
     # -- shot sequences -------------------------------------------------------------------------------
-    def sequence(self, id: str = "shots"):
+    def sequence(self, id: str = "shots") -> SceneSequence:
         """A ``<sequence>`` whose children play one after another; see :meth:`shot`."""
         return self.comp.add_sequence(id=id)
 
-    def shot(self, sequence, take, id: str | None = None, **kw):
+    def shot(self, sequence: SceneSequence, take: Take, id: str | None = None, **kw: Any) -> Group:
         """One take's group in a sequence, as long as the take; animations inside run on its clock."""
         return sequence.add_group(id=id or f"shot-{take.id}", end=take.duration, **kw)
 
     # -- camera setups --------------------------------------------------------------------------
-    def setup(self, builder, shots: Sequence[tuple[float, float]], **slots):
+    @_audio_transaction
+    def setup(self, builder: Callable[..., Group], shots: Sequence[tuple[float, float]], **slots: Any) -> Group:
         """A location gated to its shots: ``ep.setup(locations.office_wide, shots, at_desk=...)``.
 
         ``builder`` receives ``shots`` and gates its root group before drawing into it."""
@@ -280,7 +377,7 @@ class Episode:
         smile: Sequence[tuple[float, float]] = (),
         style: MouthStyle | None = None,
         speaking: Sequence[tuple[float, float]] | None = None,
-    ):
+    ) -> list[tuple[float, str]]:
         model = style or self.spec.mouth_style
         if model is None:
             raise EpisodeArgumentError(
@@ -296,8 +393,20 @@ class Episode:
         return mouth_states(self.track, self.t, role, self.spec.fps, smile=smile, style=model, speaking=speaking)
 
     def perform(
-        self, actor: Actor, parent, x, y, scale, *, mouth=None, smile=(), blinks=(), nods=(), limbs=(), **extras
-    ):
+        self,
+        actor: Actor,
+        parent: Composition | Group | SceneSequence,
+        x: float,
+        y: float,
+        scale: float,
+        *,
+        mouth: Sequence[tuple[float, str]] | None = None,
+        smile: Sequence[tuple[float, float]] = (),
+        blinks: Sequence[tuple[float, float]] = (),
+        nods: Keys = (),
+        limbs: Sequence[LimbTrack] = (),
+        **extras: Any,
+    ) -> Group:
         """Build ``actor`` with a performance assembled from keyword arguments."""
         states = mouth if mouth is not None else self.mouth(actor.role, smile=smile)
         perf = Performance(mouth=states, blinks=list(blinks), nods=list(nods), extras=extras, limbs=limbs)
@@ -306,11 +415,12 @@ class Episode:
         return node
 
     # -- captions, mix, markers -----------------------------------------------------------------------
-    def captions(self, specs: Sequence[tuple[float, float, str, str]] | None = None, **style):
+    def captions(self, specs: Sequence[tuple[float, float, str, str]] | None = None, **style: Any) -> list[Layer]:
         """Caption layers for ``specs`` (default: one per phrase, ending on the next cut)."""
         specs = list(specs) if specs is not None else self.default_captions()
+        layers = _captions(self.cv, specs, **style)
         self.caption_specs.extend(specs)
-        return _captions(self.cv, specs, **style)
+        return layers
 
     def native_captions(
         self,
@@ -319,7 +429,7 @@ class Episode:
         look: native.CaptionLook = native.CAPTION_LOOK,
         mode: native.Mode = "burn",
         id: str = "captions",
-    ):
+    ) -> CaptionTrack:
         """The engine's own caption track (:func:`srstudio.native.caption_track`): ``cues`` default to the words
         of the spoken takes, else one per phrase; placed in the spec's safe area, every wrapped line measured with
         the episode font, burned into the main output (``mode="sidecar"`` writes a WebVTT beside it instead)."""
@@ -344,7 +454,7 @@ class Episode:
         self.caption_specs.extend((c.start, c.end, c.text, f"{id}-{i + 1}") for i, c in enumerate(cues))
         return track
 
-    def default_captions(self, lead: float = 0.06, name="dialogue-{n}"):
+    def default_captions(self, lead: float = 0.06, name: str = "dialogue-{n}") -> list[tuple[float, float, str, str]]:
         """Lead each phrase, hold until the next caption or a cut after speech, and end on reaction/duration.
 
         Caption scripts keep their explicit end times. A camera cut within a spoken phrase never truncates it.
@@ -365,24 +475,47 @@ class Episode:
 
     def mix(
         self,
-        loudness="-16",
-        true_peak="-1.5",
-        bit_depth: str | None = "24",
-        sample_rate=48000,
-        channels=2,
+        loudness: str | None = None,
+        true_peak: str | None = None,
+        bit_depth: str | None | _MixDefault = _MIX_DEFAULT,
+        sample_rate: int | None = None,
+        channels: int | None = None,
         master_first: bool = True,
-    ):
+    ) -> AudioMix:
         """The ``<audioMix>`` with its master, created once; tracks are added with :meth:`add_track`.
 
+        Explicit settings update an existing mix and master; omitted settings preserve them. The initial
+        defaults are -16 LUFS, -1.5 dBTP, 24-bit, 48000 Hz and stereo. ``bit_depth=None`` removes the bit depth.
         ``master_first=False`` leaves the master to :meth:`master`, after the tracks (the interview family)."""
         if self._mix is None:
-            kw = dict(sampleRate=sample_rate, channels=channels)
-            if bit_depth:
-                kw["bitDepth"] = bit_depth
+            depth = "24" if isinstance(bit_depth, _MixDefault) else bit_depth
+            kw: dict[str, Any] = dict(
+                sampleRate=sample_rate if sample_rate is not None else 48000,
+                channels=channels if channels is not None else 2,
+            )
+            if depth:
+                kw["bitDepth"] = depth
             self._mix = self.scene.add_audioMix(**kw)
-            self._master_kw = dict(normalize="integrated", loudness=loudness, truePeak=true_peak, limiter=True)
+            self._master_kw = dict(
+                normalize="integrated",
+                loudness=loudness if loudness is not None else "-16",
+                truePeak=true_peak if true_peak is not None else "-1.5",
+                limiter=True,
+            )
             if master_first:
                 self.master()
+        else:
+            if sample_rate is not None:
+                self._mix.sampleRate = sample_rate
+            if channels is not None:
+                self._mix.channels = channels
+            if not isinstance(bit_depth, _MixDefault):
+                self._mix.bitDepth = cast(Literal["16", "24", "32"] | None, bit_depth)
+            for attribute, value in (("loudness", loudness), ("truePeak", true_peak)):
+                if value is not None:
+                    self._master_kw[attribute] = value
+                    if getattr(self, "_master", None) is not None:
+                        setattr(self._master, attribute, value)
         return self._mix
 
     def master(self):
@@ -400,6 +533,7 @@ class Episode:
         self.master()
         return mix
 
+    @_audio_transaction
     def generated_audio(
         self,
         clips: Sequence[PlacedClip] | None = None,
@@ -434,6 +568,7 @@ class Episode:
         self.track = Soundtrack.from_clips(placed, self.t.duration, rate=int(mix.sampleRate or 48000))
         return mix
 
+    @_audio_transaction
     def take_audio(
         self,
         take,
@@ -445,6 +580,13 @@ class Episode:
         **track_kw,
     ):
         """A take's own audio asset and mix track at the take's start (shot-sequence layouts)."""
+        if not isinstance(take.audio, str) or not take.audio.strip():
+            raise EpisodeFileError(f"take {take.id}: audio path is missing")
+        audio_path = self.root / take.audio
+        if not audio_path.is_file():
+            raise EpisodeFileError(f"take {take.id}: audio file {audio_path} is missing or not a file")
+        if audio_path.suffix.lower() == ".wav":
+            validate_wav(audio_path)
         aid = id or f"audio-{take.id}"
         lang = None if take.is_effect else (language or self.spec.language)
         self.cv.assets.add_audio(id=aid, src=take.audio, **({"language": lang} if lang else {}))
@@ -470,6 +612,7 @@ class Episode:
             return "mixed"
         return "silent"
 
+    @_audio_transaction
     def audio(
         self,
         *,
@@ -533,6 +676,7 @@ class Episode:
             self.add_track(f"track-{asset_id}", asset_id, **track_kw)
         return _duck(mix, duck) if duck is not None else mix
 
+    @_audio_transaction
     def markers(self, specs=None, name="marker-{name}", extra: Sequence[tuple[str, float, str]] = ()):
         markers = self.scene.add_markers()
         for start, end, text, nm in specs if specs is not None else self.caption_specs:
@@ -577,29 +721,38 @@ class Episode:
     def finish(self, out: Path | None = None, report: Path | None = None, strict: bool = True) -> Path:
         """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path; a check that finds an
         error (with ``strict``, any finding) is a :class:`SceneCheckError` and writes no scene."""
-        if self._cover_hidden and not self._cover_written:
-            from .social import COVER_VARIANT
-
-            variant = self.scene.add_parameters().add_variant(id=COVER_VARIANT, label="cover backdrop, no burned text")
-            for target, prop, value in self._cover_hidden:
-                variant.add_override(target=target, property=prop, value=value)
-            self._cover_written = True
-        findings = self.check()
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"
         report = Path(report) if report else out.with_name("sdk-validation.json")
+        if out.resolve() == report.resolve() or (out.exists() and report.exists() and out.samefile(report)):
+            raise EpisodeArgumentError("scene output and validation report must be different files")
+        if len(self._cover_hidden) > self._cover_written:
+            from .social import COVER_VARIANT
+
+            if self._cover_variant is None:
+                self._cover_variant = self.scene.add_parameters().add_variant(
+                    id=COVER_VARIANT, label="cover backdrop, no burned text"
+                )
+            for target, prop, value in self._cover_hidden[self._cover_written :]:
+                self._cover_variant.add_override(target=target, property=prop, value=value)
+            self._cover_written = len(self._cover_hidden)
+        findings = self.check()
         report.parent.mkdir(parents=True, exist_ok=True)
-        report.write_text(
-            json.dumps([{"severity": f.severity, "code": f.code, "message": str(f)} for f in findings], indent=2) + "\n"
-        )
+        report_rows = [{"severity": f.severity, "code": f.code, "message": str(f)} for f in findings]
         errors = [f for f in findings if f.severity == "error"]
         if errors or (strict and findings):
+            report.write_text(json.dumps(report_rows, indent=2) + "\n")
             raise SceneCheckError(findings)
-        document = self.scene.to_bytes(layout="pretty")
+        document = _document_at(self.scene, self.root, out.parent)
         if self.cv.signature is not None and (absent := signature.missing(document)):
-            raise signature.SignatureError(
+            error = signature.SignatureError(
                 f"{self.spec.slug} is signed but its document has no {', '.join(absent)}: every location must draw "
                 "both marks (ADR 0001), or the episode passes signature=False because its package predates them"
             )
+            report_rows.append({"severity": "error", "code": "srstudio:signature", "message": str(error)})
+            report.write_text(json.dumps(report_rows, indent=2) + "\n")
+            raise error
+        report.write_text(json.dumps(report_rows, indent=2) + "\n")
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_bytes(document)
         print(
             f"{out.name}: {document.count(b'<shape ')} shapes, {document.count(b'<group ')} groups, "

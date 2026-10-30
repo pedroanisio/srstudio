@@ -1478,7 +1478,7 @@ def laptop(cv: Canvas, parent, id: str = "soft-laptop"):
 )
 def office(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-office"):
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     chair(cv, g, _part(id, "soft-office", "chair", "soft-chair"))
     desk(cv, g, _part(id, "soft-office", "desk", "soft-desk"))
@@ -1635,7 +1635,7 @@ def home(
             raise BlobError(f"lamp_talk spans are (start, end) in order from 0, apart; got {list(lamp_talk)}")
         last = end
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     _poly(
         cv,
@@ -2000,7 +2000,7 @@ def meeting_room(
 ):
     """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`."""
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     _shell(cv, g, id, MEETING, tiles=False)
     decor = cv.group(g, f"{id}-decor")
@@ -2268,7 +2268,7 @@ def _pendant(cv: Canvas, g, light, x: float, y: float, floor_y: float) -> None:
 )
 def break_room(cv: Canvas, parent, *, shots: Sequence[tuple[float, float]] | None = None, id: str = "soft-break-room"):
     g = cv.group(parent, id)
-    if shots:
+    if shots is not None:
         cv.gate(g, shots)
     _shell(cv, g, id, BREAK, tiles=True)
     decor = cv.group(g, f"{id}-decor")

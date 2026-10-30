@@ -17,22 +17,54 @@ from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
 
+from sr_core.scene import SchemaValueError
+
 from . import catalog_page, catalog_server, catalog_specimens, craft, fonts, lipsync, parts, registry, releases, usage
 from .episode import SceneCheckError
+from .errors import SrstudioError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .timeline import Timeline
 
 
+def _load_plugins(modules, command: str) -> bool:
+    for module in modules:
+        try:
+            importlib.import_module(module)
+        except ImportError as exc:
+            print(f"srstudio {command}: cannot import plugin {module!r}: {exc}", file=sys.stderr)
+            return False
+    return True
+
+
+def _version_text(info: registry.CharacterVersionDetails | None) -> str:
+    if info is None:
+        return ""
+    default = info["default_name"] or "none approved"
+    status = info["status"]
+    record = f", record: {info['record_status']}" if status == "unverified" else ""
+    default_status = f" ({info['default_status']})" if info["default_status"] in ("unverified", "unavailable") else ""
+    return f"version {info['version']} ({status}{record}); default: {default}{default_status}"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="srstudio")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    cat = sub.add_parser("catalog", help="list registered characters, locations, props and graphics")
+    cat = sub.add_parser(
+        "catalog",
+        help="list registered characters, locations, props and graphics",
+        epilog="Use srstudio inspect KIND NAME for a part's signature, callback slots and usage examples.",
+    )
     cat.add_argument("--kind", choices=registry.KINDS)
     cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
     cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
+    detail = sub.add_parser("inspect", help="show a part's signature, callback slots, documentation and usage")
+    detail.add_argument("kind", choices=registry.KINDS)
+    detail.add_argument("name")
+    detail.add_argument("--json", action="store_true")
+    detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
     versions.add_argument("--digest", metavar="NAME[@N]", help="the digest of a drawing, for its version record")
@@ -102,11 +134,35 @@ def main(argv=None):
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
     args = parser.parse_args(argv)
+    if args.cmd == "inspect":
+        if not _load_plugins(args.plugins, "inspect"):
+            return 2
+        try:
+            info = registry.describe(args.kind, args.name)
+        except (registry.RegistryError, registry.NotRegisteredError) as exc:
+            print(f"srstudio inspect: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(info, indent=2, ensure_ascii=False))
+            return 0
+        print(f"{info['kind']} {info['name']} ({info['style'] or 'any'}): {info['summary']}")
+        if version := _version_text(info["character_version"]):
+            print(f"Character: {version}")
+        print(f"Module: {info['module']}")
+        print(f"Signature: {info['signature']}")
+        print(f"Callback slots (receive the parent group): {', '.join(info['slots']) or 'none'}")
+        print(f"Call template: {info['call_template']}")
+        print(f"  part = srstudio.get({info['kind']!r}, {info['name']!r}); supply the named arguments above.")
+        if info['documentation']:
+            print(f"\n{info['documentation']}")
+        for example in info['examples']:
+            print(f"\nExample (ep is an existing Episode):\n{example}")
+        return 0
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
-        for mod in args.plugins:
-            importlib.import_module(mod)
+        if not _load_plugins(args.plugins, "catalog"):
+            return 2
         try:
             measured = usage.Report.read(args.usage) if args.usage else None
         except usage.UsageError as exc:
@@ -122,7 +178,9 @@ def main(argv=None):
         width = max((len(e.name) for e in rows), default=4)
         for e in rows:
             eps = f"  [{','.join(measured.used_by(e.name)) or '-'}]" if measured is not None else ""
-            print(f"{e.kind:<10} {e.style or 'any':<7} {e.name:<{width}}{eps}  {e.summary}")
+            version = _version_text(registry._character_version(e))
+            suffix = f"  ({version})" if version else ""
+            print(f"{e.kind:<10} {e.style or 'any':<7} {e.name:<{width}}{eps}  {e.summary}{suffix}")
         return 0
     if args.cmd == "styles":
         if args.json:
@@ -280,6 +338,9 @@ def main(argv=None):
                     runpy.run_module(script, run_name="__main__")
         except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
+            return 1
+        except (SrstudioError, SchemaValueError) as exc:
+            print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
 
