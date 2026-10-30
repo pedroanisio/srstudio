@@ -70,6 +70,10 @@ replace them.
      face levelled about the eyes' midpoint, then turns them with the head. A face with no tilt takes the old path,
      so no other look's wear changes.
    - **Seeded.** Every random choice is seeded, so builds stay deterministic.
+   - **The critters' kinds.** `sleepy` eyes and the `yawn`, `scream` and `puff` mouths, which ADR 0045 adds to the
+     vocabulary, are drawn for this face, not delegated to the shared drawings. Those use perfect ellipses and an
+     even line, so delegating would break the inked face. A kind the face has no drawing for is still refused by
+     name, never drawn by a silent fallback.
 
 ## Alternatives rejected
 

@@ -14,6 +14,9 @@ from srstudio.voice import Voice, VoiceSettings
 
 INKED = toon_inked.FOX_INKED
 DRAWING = toon_inked.FOX_INK
+# the kinds feat/toon-critters adds to the vocabulary (ADR 0045), drawn for this face ahead of it
+EYE_KINDS = tuple(dict.fromkeys((*toon.EYES, "sleepy")))
+MOUTH_KINDS = tuple(dict.fromkeys((*toon.MOUTHS, "yawn", "scream", "puff")))
 
 
 def canvas(duration: float) -> Canvas:
@@ -77,27 +80,30 @@ def test_every_expression_is_drawn_inside_the_character_s_corner(eyes, mouth, ar
     assert toon_cast.figure_shapes(INKED, eyes, mouth, arms) == layers  # the same drawing every build
 
 
-@pytest.mark.parametrize("kind", toon.EYES)
+@pytest.mark.parametrize("kind", EYE_KINDS)
 def test_every_eye_is_drawn_for_this_face_not_the_shared_template(kind):
     plain = dataclasses.replace(INKED, drawing=None)
     left, right = INKED.eyes
     own = DRAWING.eye(INKED, left, kind, 1.0)
-    assert own and own != toon_cast.figure_layers(plain, kind, "flat", "desk")[0][-len(own) :]
-    assert all(DRAWING.eye(INKED, left, other, 1.0) != own for other in toon.EYES if other != kind)
+    assert own
+    if kind in toon.EYES:  # the shared template draws a kind once the vocabulary has it
+        assert own != toon_cast.figure_layers(plain, kind, "flat", "desk")[0][-len(own) :]
+    assert all(DRAWING.eye(INKED, left, other, 1.0) != own for other in EYE_KINDS if other != kind)
     # the face is off-centre and tilted: the far eye is not the near one mirrored
     mirrored = [(brush.flip(s, (left[0] + right[0]) / 2), c) for s, c in DRAWING.eye(INKED, right, kind, -1.0)]
     assert mirrored != own
 
 
-@pytest.mark.parametrize("kind", toon.MOUTHS)
+@pytest.mark.parametrize("kind", MOUTH_KINDS)
 def test_every_mouth_is_drawn_for_this_face(kind):
     own = DRAWING.mouth(INKED, kind)
     if kind == "none":
         assert own == []
         return
-    shared = toon_cast.figure_layers(dataclasses.replace(INKED, drawing=None), "wide", kind, "desk")[1]
-    assert own and own != shared
-    assert all(DRAWING.mouth(INKED, other) != own for other in toon.MOUTHS if other != kind)
+    assert own and all(len(s) != 26 for s, _ in own)  # no perfect ellipse
+    if kind in toon.MOUTHS:  # the shared template draws a kind once the vocabulary has it
+        assert own != toon_cast.figure_layers(dataclasses.replace(INKED, drawing=None), "wide", kind, "desk")[1]
+    assert all(DRAWING.mouth(INKED, other) != own for other in MOUTH_KINDS if other != kind)
     mx, my = INKED.mouth
     for shape, _ in own:  # on the muzzle, under the nose
         x0, y0, x1, y1 = brush.bounds(shape)
@@ -112,6 +118,39 @@ def test_every_viseme_is_drawn_for_this_face(kind):
     assert all(mx - 40 < brush.bounds(s)[0] and brush.bounds(s)[3] < my + 40 for s, _ in own)
     with pytest.raises(toon.ToonDataError, match="no viseme"):
         DRAWING.viseme(INKED, "shout")
+
+
+def test_sleepy_eyes_hang_a_heavy_lid_past_the_middle_over_a_low_iris():
+    left = INKED.eyes[0]
+    sleepy = DRAWING.eye(INKED, left, "sleepy", 1.0)
+    lid = [brush.bounds(s) for s, c in sleepy if c == INKED.coat]
+    iris = [brush.bounds(s) for s, c in sleepy if c == toon_inked.IRIS]
+    assert len(lid) == 1 and len(iris) == 1 and all(len(s) != 26 for s, _ in sleepy)
+    assert lid[0][3] > left[1] + 0.1 * INKED.eye_r  # down past the middle of the eye
+    wide_iris = [brush.bounds(s) for s, c in DRAWING.eye(INKED, left, "wide", 1.0) if c == toon_inked.IRIS][0]
+    assert (iris[0][1] + iris[0][3]) / 2 > (wide_iris[1] + wide_iris[3]) / 2 + 3  # the gaze dropped
+    assert len([c for _, c in sleepy if c == "ink"]) > len(
+        [c for _, c in DRAWING.eye(INKED, left, "half", 1.0) if c == "ink"]
+    )
+
+
+def test_a_yawn_drops_the_jaw_a_scream_bares_teeth_and_a_puff_closes_between_cheeks():
+    mx, my = INKED.mouth
+    yawn, scream, puff = (DRAWING.mouth(INKED, k) for k in ("yawn", "scream", "puff"))
+    span_of = lambda layers: (  # noqa: E731
+        min(brush.bounds(s)[0] for s, _ in layers), min(brush.bounds(s)[1] for s, _ in layers),
+        max(brush.bounds(s)[2] for s, _ in layers), max(brush.bounds(s)[3] for s, _ in layers),
+    )  # fmt: skip
+    o = span_of(DRAWING.mouth(INKED, "o"))
+    y0, y1 = span_of(yawn)[1], span_of(yawn)[3]
+    assert y1 - y0 > 1.6 * (o[3] - o[1])  # the jaw dropped, much taller than an "o"
+    assert {toon_inked.INSIDE, toon_cast.TONGUE} <= {c for _, c in yawn} and "white" not in {c for _, c in yawn}
+    sx0, _, sx1, _ = span_of(scream)
+    assert sx1 - sx0 > 1.2 * (span_of(yawn)[2] - span_of(yawn)[0])  # wider than the yawn
+    assert {toon_inked.INSIDE, toon_cast.TONGUE, "white"} <= {c for _, c in scream}  # teeth and tongue showing
+    assert toon_inked.INSIDE not in {c for _, c in puff}  # closed
+    px0, _, px1, _ = span_of(puff)
+    assert px0 < mx - 0.6 * INKED.mouth_w and px1 > mx + 0.6 * INKED.mouth_w  # the cheeks blown out past the mouth
 
 
 def test_a_kind_the_face_was_not_drawn_with_is_refused_by_name():
