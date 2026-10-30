@@ -1,7 +1,7 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog site."""
+rebuilds the catalog site and ``srstudio serve`` serves it."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import catalog_page, craft, fonts, lipsync, registry, releases, usage
+from . import catalog_page, catalog_server, craft, fonts, lipsync, registry, releases, usage
 from .episode import SceneCheckError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
@@ -48,6 +48,10 @@ def main(argv=None):
     page.add_argument("--notes", type=Path, help="curated text per episode and style (JSON)")
     page.add_argument("--usage", type=Path, help="the parts each episode uses, from srstudio usage (JSON)")
     page.add_argument("--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render"))
+    web = sub.add_parser("serve", help="serve a catalog site, read-only, with the byte ranges video seeking needs")
+    web.add_argument("site", type=Path, help="the folder srstudio page --site wrote")
+    web.add_argument("--host", default=catalog_server.HOST, help="there is no authentication: keep it on loopback")
+    web.add_argument("--port", type=int, default=catalog_server.PORT)
     use = sub.add_parser("usage", help="build every episode on a copy and record the registered parts it uses")
     use.add_argument("--episodes", type=Path, required=True, help="folder of episode projects")
     use.add_argument("--packages", type=Path, help="folder of extracted packages (<name>-<version>/project)")
@@ -139,6 +143,13 @@ def main(argv=None):
             print(f"srstudio page: {exc}", file=sys.stderr)
             return 2
         print(f"{args.site}  {len(cards)} episodes: {', '.join(c.slug for c in cards)}")
+        return 0
+    if args.cmd == "serve":
+        try:
+            catalog_server.serve(args.site, args.host, args.port)
+        except (catalog_server.ServeError, OSError) as exc:
+            print(f"srstudio serve: {exc}", file=sys.stderr)
+            return 2
         return 0
     if args.cmd == "usage":
         extra: dict[str, list[str]] = {}
