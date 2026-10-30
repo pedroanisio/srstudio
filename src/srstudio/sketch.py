@@ -19,11 +19,15 @@ text by :mod:`srstudio.voice`) become a viseme track per on-screen character (:f
 :func:`srstudio.soundtrack.phoneme_states`): ``(project second, viseme)`` states sampled at :data:`VISEME_RATE` Hz
 over the kept part of the take, closed outside it. The track is written to ``voiced/mouths.json`` and read back
 typed by :func:`load_mouths`; the brush-drawn characters (:mod:`srstudio.toon_cast`) key their mouths on it.
+
+**Head motion.** The same timestamps, cut to what was kept (:func:`kept_take`), are written to ``voiced/speech.json``
+and read back typed by :func:`load_speech`: what :mod:`srstudio.toon_sketch` plans a moving head from (ADR 0050).
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -46,6 +50,7 @@ __all__ = [
     "Sketch",
     "Appearance",
     "Recorded",
+    "Take",
     "Cast",
     "TOON_CAST",
     "CHARACTERS",
@@ -62,6 +67,9 @@ __all__ = [
     "load_beats",
     "extend_track",
     "load_mouths",
+    "kept_take",
+    "write_speech",
+    "load_speech",
     "visemes",
     "record",
     "effect",
@@ -108,6 +116,7 @@ SPEECH_LEAD, SPEECH_TAIL = 0.03, 0.06
 BEAT_FIELDS = ("start", "who", "caption", "eyes", "mouth", "arms", "line", "word", "event")
 VISEME_RATE = 12  # viseme samples per second of speech
 MOUTH_STYLE = soundtrack.PhonemeStyle(rate=VISEME_RATE, round_letters="ouw")
+_TAKE_FIELDS = frozenset(("id", "who", "at", "kept", "characters", "starts", "ends"))
 VISEME_OF = {"closed": "closed", "open": "open", "round": "round", "teeth": "teeth", "shout": "open"}
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
@@ -590,6 +599,95 @@ def _appearance_data(beats: Sequence[Beat], end: float) -> list[dict]:
 
 
 # -- recording --------------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Take:
+    """One line as the project plays it: ``audio/vo-<id>.wav`` starts at project second ``at`` and lasts ``kept``, said
+    by the character ``who`` (``None`` for a voice off screen), its letters timed from the start of that file."""
+
+    id: str
+    who: str | None
+    at: float
+    kept: float
+    alignment: Alignment
+
+
+def kept_take(id: str, who: str | None, alignment: Alignment, at: float, clip_in: float, kept: float) -> Take:
+    """The take cut from ``clip_in`` for ``kept`` seconds: the letters that start inside the cut, timed from it."""
+    timed = [
+        (c, max(0.0, a - clip_in), max(0.0, min(kept, b - clip_in)))
+        for c, a, b in zip(alignment.characters, alignment.starts, alignment.ends, strict=True)
+        if a - clip_in < kept
+    ]
+    letters = tuple(c for c, _, _ in timed)
+    starts = tuple(round(a, 6) for _, a, _ in timed)
+    return Take(id, who, at, kept, Alignment(letters, starts, tuple(round(b, 6) for _, _, b in timed)))
+
+
+def write_speech(root: Path, takes: Sequence[Take], end: float) -> None:
+    """``voiced/speech.json``: every kept take, what a moving head is planned from (see :func:`load_speech`)."""
+    folder = Path(root) / "voiced"
+    folder.mkdir(parents=True, exist_ok=True)
+    data = [
+        {"id": t.id, "who": t.who, "at": t.at, "kept": t.kept, "characters": list(t.alignment.characters),
+         "starts": list(t.alignment.starts), "ends": list(t.alignment.ends)}
+        for t in takes
+    ]  # fmt: skip
+    (folder / "speech.json").write_text(json.dumps({"end": end, "takes": data}, indent=2) + "\n")
+
+
+def _take_data(path: Path, i: int, data: Any, end: float, cast: Cast) -> Take:
+    where = f"{path} take {i}"
+    if not (isinstance(data, dict) and set(data) == _TAKE_FIELDS):
+        raise SketchError(f"{where}: expected exactly the fields {sorted(_TAKE_FIELDS)}")
+    take, who, at, kept = data["id"], data["who"], data["at"], data["kept"]
+    letters, starts, ends = data["characters"], data["starts"], data["ends"]
+    if not (isinstance(take, str) and re.fullmatch(r"\d{2,}", take)):
+        raise SketchError(f"{where}: id {take!r} is two or more digits")
+    if who is not None and who not in cast.characters:
+        raise SketchError(f"{where}: who {who!r} is not one of {cast.characters}")
+    if not (checks.number(at) and at >= 0):
+        raise SketchError(f"{where}: at must be a second >= 0")
+    if not (checks.number(kept) and kept > 0):
+        raise SketchError(f"{where}: kept must be a positive number of seconds")
+    if at + kept > end:
+        raise SketchError(f"{where}: runs past the end of the project ({end} s)")
+    if not (isinstance(letters, list) and all(isinstance(c, str) for c in letters)):
+        raise SketchError(f"{where}: characters must be a list of strings")
+    if not (isinstance(starts, list) and isinstance(ends, list) and len(starts) == len(ends) == len(letters)):
+        raise SketchError(f"{where}: one start and end per character")
+    if not all(checks.number(t) for t in starts) or any(b < a for a, b in zip(starts, starts[1:], strict=False)):
+        raise SketchError(f"{where}: starts must be seconds that rise")
+    if not all(checks.number(b) and a <= b <= kept for a, b in zip(starts, ends, strict=True)) or (
+        starts and starts[0] < 0
+    ):
+        raise SketchError(f"{where}: every letter ends after it starts, inside the take")
+    alignment = Alignment(tuple(letters), tuple(float(t) for t in starts), tuple(float(t) for t in ends))
+    return Take(take, who, float(at), float(kept), alignment)
+
+
+def load_speech(path: Path, cast: Cast = TOON_CAST) -> tuple[list[Take], float]:
+    """The takes and the project end from ``voiced/speech.json``: typed, no field more or fewer, every take inside the
+    project and in time order, every id once, every letter's time inside its take."""
+    try:
+        data = json.loads(Path(path).read_text())
+    except (OSError, ValueError) as exc:
+        raise SketchError(f"{path}: {exc}") from None
+    if not (isinstance(data, dict) and set(data) == {"end", "takes"} and isinstance(data["takes"], list)):
+        raise SketchError(f"{path}: expected an object with end and takes")
+    end = data["end"]
+    if not (checks.number(end) and end > 0):
+        raise SketchError(f"{path}: end must be a positive number of seconds")
+    takes = [_take_data(path, i, take, float(end), cast) for i, take in enumerate(data["takes"])]
+    for a, b in zip(takes, takes[1:], strict=False):
+        if b.at < a.at:
+            raise SketchError(f"{path}: takes {a.id} and {b.id} are out of time order")
+    ids = [t.id for t in takes]
+    twice = sorted({i for i in ids if ids.count(i) > 1})
+    if twice:
+        raise SketchError(f"{path}: take {twice[0]} is listed twice")
+    return takes, float(end)
+
+
 class _Client(Protocol):
     def synthesize(self, text: str, voice: Voice, settings: VoiceSettings) -> Any: ...
 
@@ -621,8 +719,8 @@ def record(
     mouth: soundtrack.PhonemeStyle = MOUTH_STYLE,
 ) -> Recorded:
     """Every line said by its speaker's voice (cached by the client), trimmed, placed at its own pace, heard back
-    and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and the viseme tracks, read with ``mouth``,
-    written under ``voiced/``.
+    and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and, under ``voiced/``, the viseme tracks, read
+    with ``mouth``, and the kept takes (:func:`load_speech`).
     :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried)."""
     check(sketch)
     root = Path(root)
@@ -641,7 +739,7 @@ def record(
         spoken = client.synthesize(line.text, speaker.voice, speaker.settings)
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
     placed, needed = plan_relaxed(plan, [trim.clip_out - trim.clip_in for _, trim in takes])
-    items, heard, failures, word_starts = [], [], [], []
+    items, heard, failures, word_starts, kept_takes = [], [], [], [], []
     lip_synced = sketch.cast.lip_synced
     mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}
     for line, slot, (spoken, trim), at in zip(sketch.lines, plan, takes, placed, strict=True):
@@ -662,6 +760,7 @@ def record(
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
+        kept_takes.append(kept_take(slot.id, played, spoken.alignment, round(at.start, 6), trim.clip_in, kept))
         if played is not None and played in mouths:
             extend_track(mouths[played], visemes(spoken.alignment, at.start, trim.clip_in, kept, style=mouth), slot.id)
         items.append(
@@ -688,6 +787,7 @@ def record(
     beats = place(sketch, word_starts, [p.end for p in placed])
     end = round(max(needed, beats[-1].start + TAIL_AFTER_LAST), 6)
     write_voiced(root, beats, end, sketch.lines, mouths)
+    write_speech(root, kept_takes, end)
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
 
 
