@@ -1229,8 +1229,9 @@ name (`toon.TRACED_EYES`, `TRACED_MOUTHS`). Any character, the cat included, can
 (`"wear": ["glasses", "sweat", "flush"]` in a poses file, `wear=` on a sketch `Beat`), drawn by
 [src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face.
 
-`toon-fox-inked` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py)) is the fox drawn again the way the
-traced cat is drawn, beside the fox, for comparison. Its outlines are placed by hand, unmirrored, and drift like a
+`toon-fox-inked` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py),
+[docs/decisions/0044-inked-toon-characters.md](docs/decisions/0044-inked-toon-characters.md)) is the fox drawn
+again the way the traced cat is drawn, beside the fox, for comparison. Its outlines are placed by hand, unmirrored, and drift like a
 hand following them (`brush.wobble`). Every ink band is pressed: heavier where the form turns from the light and
 thin at the tips (`brush.inked`, a `brush.Hand`). Fur on the crown, cheeks, chest and tail tip, ear fluff, the
 philtrum and the paw creases are open tapered strokes. A darker coat tone shades the back of the head, the flank,
