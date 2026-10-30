@@ -652,6 +652,12 @@ FOX_MOTION = HeadStyle(  # sly: more cock of the head than nod, and the eyes go 
 _HEAD = (*_SILHOUETTE[41:], *_SILHOUETTE[:21])  # from the left of the neck over the crown to the right, ruff and all
 _JAW = ((286.0, 678.0), (262.0, 688.0), (232.0, 698.0), (200.0, 704.0), (170.0, 704.0), (138.0, 698.0),
         (108.0, 688.0), (84.0, 676.0))  # fmt: skip
+_JAW_FUR = ((100.0, 672.0), (138.0, 688.0), (170.0, 698.0), (200.0, 698.0), (232.0, 692.0), (270.0, 672.0),
+            (280.0, 688.0), (236.0, 708.0), (200.0, 713.0), (170.0, 713.0), (134.0, 708.0), (92.0, 688.0))  # fmt: skip
+_JAW_WHITE = (
+    (128.0, 672.0), (156.0, 680.0), (185.0, 684.0), (214.0, 684.0), (244.0, 672.0), (252.0, 690.0), (236.0, 706.0),
+    (210.0, 713.0), (185.0, 715.0), (158.0, 712.0), (132.0, 704.0), (120.0, 690.0),
+)  # fmt: skip
 _BODY_TOP = ((86.0, 655.0), (130.0, 632.0), (185.0, 624.0), (232.0, 640.0), (250.0, 664.0))
 
 
@@ -661,13 +667,17 @@ def _shifted(points: Sequence[Point]) -> list[Point]:
 
 @lru_cache(maxsize=1)
 def _fox_skull() -> tuple[Layer, ...]:
-    """The head alone, ruff and ears, closed under the chin, untilted: the rig turns it."""
+    """The head alone, ruff and ears, closed under the chin and the line there coated over so the white and the coat
+    run on into the body as in the flat drawing, with the shadow under the chin, untilted: the rig turns it."""
     layers: list[Layer] = []
     for k, ear in enumerate(_EARS):
         layers += _inked_fill(ear, FOX.coat, INK, seed=4 + k)
         layers.append(_fill(_EAR_INNER[k], FOX.light, seed=6 + k, amount=0.8))
         layers.append(_fill(_EAR_TIPS[k], FOX.paw, seed=8 + k, amount=0.4))
     layers += _inked_fill((*_HEAD, *_JAW), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
+    layers.append(_fill(_JAW_FUR, FOX.coat, seed=16, amount=0.6))  # the line under the chin, coated over
+    layers.append(_fill(_JAW_WHITE, FOX.light, seed=17, amount=0.6))  # the white of the face runs into the bib
+    layers.append(_fill(_CHIN, CREAM_SHADE, seed=15, amount=0.8))
     layers.append(_fill(_HEAD_SHADE, SHADE, seed=11, amount=0.8))
     layers += [_line(s, FINE * 1.1, 20 + k) for k, s in enumerate(_EAR_FLUFF)]
     layers += [_line(s, FINE * 1.25, 30 + k) for k, s in enumerate(_HEAD_STROKES)]
@@ -684,14 +694,13 @@ def _fox_face() -> tuple[Layer, ...]:
 
 @lru_cache(maxsize=1)
 def _fox_trunk() -> tuple[Layer, ...]:
-    """The tail and the body, its top run up behind the head, the bib and the shadow under the chin."""
+    """The tail and the body, its top run up behind the head, and the bib."""
     layers = _inked_fill(_TAIL, FOX.coat, INK, seed=1)
     layers.append(_fill(_TAIL_SHADE, SHADE, seed=2, amount=0.6))
     layers.append(_fill(_TAIL_TIP, FOX.light, seed=3, amount=0.5))
     layers += _inked_fill((*_SILHOUETTE[21:41], *_BODY_TOP), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
     layers.append(_fill(_FLANK_SHADE, SHADE, seed=12, amount=0.8))
     layers.append(_fill(_BIB, FOX.light, seed=13))
-    layers.append(_fill(_CHIN, CREAM_SHADE, seed=15, amount=0.8))
     layers += [_line(s, FINE * 1.15, 40 + k) for k, s in enumerate(_BODY_STROKES)]
     return tuple(layers)
 
