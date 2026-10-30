@@ -193,3 +193,104 @@ def test_an_unreadable_document_is_refused(tmp_path):
         cd.load(path)
     with pytest.raises(cd.CatalogError, match="missing"):
         cd.load(tmp_path / "missing.json")
+
+
+# -- versions ---------------------------------------------------------------------------------------------
+PROOF = "proofs/0123456789abcdef/index.html"
+
+
+def version(number, **fields) -> dict:
+    return {"number": number, "date": "2026-10-30", "note": "Traced.", "status": "approved", "default": False,
+            "part": "pip", **fields}  # fmt: skip
+
+
+def versioned() -> dict:
+    """Pip with an old version, its default, and a proposed one that has no drawing yet."""
+    doc = document()
+    doc["pinned"] = True
+    doc["styles"][0]["parts"] = ["pip", "pip@2"]
+    pip = doc["parts"][0]
+    pip["versions"] = [
+        version(1, pins=["camera-off"]),
+        version(2, part="pip@2", default=True, proof=PROOF, proof_path="generated/proofs/pip/index.html",
+                approval={"date": "2026-10-30", "words": "approved"}, pins=["not-rendered-yet"]),
+        version(3, status="proposed", part="", proof_path="generated/proofs/gone.mp4"),
+    ]  # fmt: skip
+    doc["parts"].insert(1, {"name": "pip@2", "kind": "character", "title": "Pip 2", "style": "soft",
+                            "summary": "The blob, inked.", "videos": [], "version_of": "pip",
+                            "specimen": {"src": SPECIMEN, "width": 480, "height": 480}})  # fmt: skip
+    return doc
+
+
+def test_a_part_carries_its_versions_and_each_version_part_names_its_part():
+    catalog = cd.parse(versioned())
+    pip, inked = catalog.parts[0], catalog.parts[1]
+    assert catalog.pinned and [v.number for v in pip.versions] == [1, 2, 3]
+    assert inked.version_of == "pip" and inked.versions == ()
+    old, current, proposed = pip.versions
+    assert (old.default, current.default, proposed.default) == (False, True, False)
+    assert current.approval == cd.Approval("2026-10-30", "approved") and proposed.approval is None
+    assert old.pins == ("camera-off",) and proposed.proof == "" and proposed.proof_path
+    assert PROOF in cd.media_of(catalog)
+    assert cd.parse(document()).parts[0].versions == () and not cd.parse(document()).pinned
+
+
+def test_a_document_with_versions_survives_the_round_trip_byte_for_byte():
+    text = cd.dumps(cd.parse(versioned()))
+    assert cd.dumps(cd.parse(json.loads(text))) == text
+
+
+@pytest.mark.parametrize(
+    "change, match",
+    [
+        (sets(["parts", 0, "versions", 0, "colour"], "red"), "unknown"),
+        (sets(["parts", 0, "versions", 2, "number"], 4), "1, 2, 3"),
+        (sets(["parts", 0, "versions", 0, "status"], "draft"), "status"),
+        (sets(["parts", 0, "versions", 0, "default"], True), "one default"),
+        (sets(["parts", 0, "versions", 1, "default"], False), "one default"),
+        (sets(["parts", 0, "versions", 2, "default"], True), "one default|proposed"),
+        (sets(["parts", 0, "versions", 2, "approval"], {"date": "2026-10-30", "words": "yes"}), "proposed"),
+        (sets(["parts", 0, "versions", 2, "pins"], ["camera-off"]), "proposed"),
+        (sets(["parts", 0, "versions", 1, "part"], ""), "drawing"),
+        (sets(["parts", 0, "versions", 1, "part"], "ghost"), "ghost"),
+        (sets(["parts", 0, "versions", 1, "part"], "juno"), "juno"),
+        (sets(["parts", 0, "versions", 1, "proof"], "../secret.mp4"), "proof"),
+        (sets(["parts", 0, "versions", 1, "proof"], "proofs/0123456789abcdef/../../x"), "proof"),
+        (sets(["parts", 2, "version_of"], "ghost"), "ghost"),
+        (sets(["parts", 2, "version_of"], "pip"), "list it"),
+        (sets(["parts", 1, "versions"], [version(1, part="pip@2", default=True)]), "version_of|own versions"),
+        (sets(["parts", 0, "versions", 0, "pins"], ["camera-off", "camera-off"]), "twice"),
+    ],
+)
+def test_versions_that_break_a_rule_are_refused(change, match):
+    doc = versioned()
+    change(doc)
+    with pytest.raises(cd.CatalogError, match=match):
+        cd.parse(doc)
+
+
+def test_the_default_is_the_highest_approved_version():
+    doc = versioned()
+    doc["parts"][0]["versions"][0]["default"] = True
+    doc["parts"][0]["versions"][1]["default"] = False
+    with pytest.raises(cd.CatalogError, match="highest approved"):
+        cd.parse(doc)
+
+
+def test_a_part_with_only_a_proposed_version_has_no_default():
+    doc = document()
+    doc["parts"][0]["versions"] = [version(1, status="proposed")]
+    assert not cd.parse(doc).parts[0].versions[0].default
+
+
+def test_load_checks_that_a_proof_sits_beside_the_document(tmp_path):
+    path = tmp_path / "catalog.json"
+    path.write_text(cd.dumps(cd.parse(versioned())), encoding="utf-8")
+    for url in (VIDEO, POSTER, IMAGE, SPECIMEN):
+        (tmp_path / url).parent.mkdir(exist_ok=True)
+        (tmp_path / url).write_bytes(b"x")
+    with pytest.raises(cd.CatalogError, match="missing"):
+        cd.load(path)
+    (tmp_path / PROOF).parent.mkdir(parents=True)
+    (tmp_path / PROOF).write_bytes(b"x")
+    assert cd.load(path).pinned
