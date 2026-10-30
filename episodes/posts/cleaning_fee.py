@@ -25,7 +25,7 @@ RELEASE = Release(
             "#comedyshorts",
             "#cartoon",
         ),
-        thumbnail=Thumbnail("Cleaning fee: $150.\nNow repaint the fence.", 1.0, "Toon 19"),
+        thumbnail=Thumbnail("Cleaning fee: $150.\nNow repaint\nthe fence.", 1.0, "Toon 19"),
     ),
     tags=Tags(
         "money-services", "other-person", "recognition", recurring=("fern", "rex"), test="sp-hook_motion", arm="b"
