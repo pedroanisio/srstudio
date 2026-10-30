@@ -9,6 +9,7 @@ output or to how ids are handed out cannot say "add a version" when no drawing c
 
 - only ``<composition>`` counts, with each definition it uses (an effect, a gradient) in place of its name;
 - ids are dropped, attributes are sorted, numbers are compared by value;
+- a text asset's letters count and a font does not: a font is not drawing, and what it shapes is placed already;
 - a group that draws nothing and moves nothing is dissolved into its parent.
 
 Order stays: what is drawn over what is the drawing. An attribute or element not classified in :data:`DRAWN` or
@@ -52,20 +53,30 @@ __all__ = [
 PLACE = frozenset({"x", "y", "scaleX", "scaleY", "rotation", "opacity", "anchorX", "anchorY", "start", "end"})
 PAINT = frozenset({"fill", "fillRule", "stroke", "strokeWidth", "strokeCap", "strokeJoin", "opacity"})
 GRADIENT = frozenset({"interpolationSpace", "x1", "y1", "x2", "y2", "cx", "cy", "r"})
-LETTERS = frozenset({"text", "size", "color", "align", "verticalAlign", "lineHeight", "wrap", "width", "height"})
+LETTERS = frozenset(
+    {"text", "size", "color", "align", "verticalAlign", "lineHeight", "wrap", "width", "height", "weight", "maxLines"}
+    | {"overflow", "strokeColor", "strokePosition", "strokeWidth"}
+)
 DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the drawing
-    "group": PLACE | {"effects"},
-    "shape": PLACE | PAINT | {"shape", "path", "width", "height", "radius"},
+    "group": PLACE | {"effects", "width", "height", "blend", "isolate", "motionBlur", "shutterAngle"},
+    "shape": PLACE | PAINT | {"shape", "path", "width", "height", "radius", "dash", "effects"},
     "layer": frozenset({"asset", "x", "y"}),
     "animate": frozenset({"property", "defaultInterpolation", "timeBase"}),
     "key": frozenset({"time", "value"}),
-    "effect": frozenset({"type", "intensity", "radius", "color", "offsetX", "offsetY"}),
-    "linearGradient": GRADIENT,
+    "effect": frozenset(
+        {"type", "intensity", "radius", "color", "offsetX", "offsetY"}
+        | {"threshold", "amount", "seed", "size", "softness"}
+    ),
+    "expression": frozenset({"property"}),
+    "mask": frozenset({"type", "x", "y", "width", "height", "path", "invert"}),
+    "textAnimator": frozenset({"preset", "presetStart", "presetDuration"}),
+    "linearGradient": GRADIENT | {"units"},
     "radialGradient": GRADIENT,
     "stop": frozenset({"color", "offset"}),
     "text": LETTERS | {"fontAsset"},
 }
 IGNORED = frozenset({"id"})  # an id says nothing about what is drawn
+UNDRAWN_ASSETS = frozenset({"font"})  # an asset that is not drawing: what it shapes is in the document already
 
 
 class SpecimenError(SrstudioError, ValueError):
@@ -290,6 +301,8 @@ def _node(element: ET.Element, defined: dict[str, ET.Element]) -> list[Any]:
             attributes[key] = [_node(defined[token], defined) for token in tokens]
         else:
             attributes[key] = _value(key, value)
+    if element.tag == "expression":
+        attributes["body"] = (element.text or "").strip()
     children: list[object] = []
     for child in element:
         node = _node(child, defined)
@@ -304,7 +317,11 @@ def fingerprint(document: bytes) -> str:
     if composition is None:
         raise SpecimenError("a scene document with no composition draws nothing")
     inside = {id(e) for e in composition.iter()}
-    defined = {e.attrib["id"]: e for e in root.iter() if "id" in e.attrib and id(e) not in inside}
+    defined = {
+        e.attrib["id"]: e
+        for e in root.iter()
+        if "id" in e.attrib and id(e) not in inside and e.tag not in UNDRAWN_ASSETS
+    }
     drawing = [_node(child, defined) for child in composition]
     while len(drawing) == 1 and drawing[0][0] == "group" and not drawing[0][1]:
         drawing = drawing[0][2]
