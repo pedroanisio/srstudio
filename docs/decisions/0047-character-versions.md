@@ -144,4 +144,7 @@ part, not only characters.
      published project was built before records and stays as it is.
    - A character moving its head is drawn by `toon_head.figure` from its rig and not through its registered builder, so
      the trace counts that call for the part the rig belongs to.
+9. **A part's page lists its versions.** The catalog holds them, as the operator asked: `catalog_data.Part.versions`
+   (catalog schema 1.2.0) carries each version's number, date, status and note from the table, and the page links the
+   other versions that have a drawing of their own.
 

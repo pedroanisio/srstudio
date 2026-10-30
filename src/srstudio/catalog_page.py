@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from pathlib import Path
 
-from . import catalog_data, catalog_specimens, checks, digest, registry
+from . import catalog_data, catalog_specimens, checks, digest, parts, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES, Style
 from .usage import Report
@@ -352,6 +352,13 @@ def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None =
 
 
 # -- the document -----------------------------------------------------------------------------------------
+def _versions_of(name: str) -> tuple[catalog_data.PartVersion, ...]:
+    """The versions of the part ``name`` draws one of, from the table (none for a part the table does not hold)."""
+    held = parts.load().get(name.partition("@")[0])
+    versions = held.versions if held else ()
+    return tuple(catalog_data.PartVersion(v.number, v.date, v.status, v.note) for v in versions)
+
+
 def _episodes_of(entry: registry.Entry, usage: Report | None) -> list[str]:
     """The episodes a part appears in, as measured; none are claimed without a usage report."""
     return usage.used_by(entry.name) if usage is not None else []
@@ -628,6 +635,7 @@ def assemble(
             sheet=sheet if x.name == "pip" else (),
             specimen=pictures.get(x.name),
             refused=refused.get(x.name, ""),
+            versions=_versions_of(x.name),
         )
         for x in sorted(known.values(), key=lambda x: (x.kind, x.style or "~", x.name))
     ]

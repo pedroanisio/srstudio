@@ -359,6 +359,15 @@ def test_a_refused_part_page_says_why(page, origin):
     assert cp.REFUSAL_TEXT[specimens.Reason.OVERLAY] in page.wait_for_selector("#refused").inner_text()
 
 
+def test_a_part_page_lists_its_versions_and_links_each_drawing(page, origin):
+    go(page, origin, "#/personagens/toon-fox")
+    versions = page.wait_for_selector("#versions")
+    rows = versions.query_selector_all("tbody tr")
+    assert len(rows) == 2 and "aprovada" in rows[1].inner_text()
+    assert rows[1].query_selector("a").get_attribute("href").endswith("toon-fox%402")
+    assert rows[0].query_selector("a") is None  # the page's own version needs no link
+
+
 def test_a_list_row_shows_the_part_itself_whole_and_a_refused_row_says_why(page, origin):
     go(page, origin, "#/personagens?ver=lista")
     picture = page.wait_for_selector("#index tr.row[data-part='juno'] .pic.specimen img")

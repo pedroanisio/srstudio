@@ -21,10 +21,12 @@ from pathlib import Path
 from typing import Any, TypeVar, Union
 
 from .errors import SrstudioError
+from .parts import STATUSES
 
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"
 SOURCES = ("library", "package", "no-render")  # a card with a render, an original package, a project without one
 KINDS = ("character", "location", "prop", "graphic")
+VERSION_STATUSES = STATUSES
 _SEMVER = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 _MEDIA = re.compile(r"media/[0-9a-f]{32}\.[a-z0-9]+")
 
@@ -63,6 +65,14 @@ class GalleryEntry:
 
 
 @dataclass(frozen=True)
+class PartVersion:
+    number: int
+    date: str
+    status: str  # one of VERSION_STATUSES
+    note: str
+
+
+@dataclass(frozen=True)
 class Part:
     name: str  # the registered name: unique across kinds, and the part's route
     kind: str
@@ -74,6 +84,7 @@ class Part:
     sheet: tuple[Still, ...] = ()  # the pose sheet the engine renders, on Pip
     specimen: Still | None = None  # the part alone, drawn by the engine: its picture on every card
     refused: str = ""  # why it has no specimen; a part has exactly one of the two
+    versions: tuple[PartVersion, ...] = ()  # from the table of versions (:mod:`srstudio.parts`)
 
 
 @dataclass(frozen=True)
@@ -226,6 +237,12 @@ def _check_part(p: Part, styles: set[str], videos: dict[str, Video]) -> None:
         raise CatalogError(f"{where}: both a specimen and a reason for having none")
     if not p.specimen and not p.refused:
         raise CatalogError(f"{where}: neither a specimen nor a reason for having none")
+    numbers = [v.number for v in p.versions]
+    if numbers != list(range(1, len(numbers) + 1)):
+        raise CatalogError(f"{where}: versions run 1, 2, 3... without a gap, got {numbers}")
+    for v in p.versions:
+        if v.status not in VERSION_STATUSES:
+            raise CatalogError(f"{where}: version {v.number} has status {v.status!r}, not one of {VERSION_STATUSES}")
     _unique(f"{where} videos", list(p.videos))
     for slug in p.videos:
         if slug not in videos:

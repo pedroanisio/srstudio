@@ -50,6 +50,30 @@ def document() -> dict:
     }  # fmt: skip
 
 
+def test_a_part_carries_its_versions():
+    doc = document()
+    doc["parts"][0]["versions"] = [
+        {"number": 1, "date": "2026-10-30", "status": "approved", "note": "As it stood."},
+        {"number": 2, "date": "2026-10-31", "status": "proposed", "note": "Redrawn."},
+    ]
+    held = cd.parse(doc).parts[0].versions
+    assert [(v.number, v.status) for v in held] == [(1, "approved"), (2, "proposed")]
+
+
+@pytest.mark.parametrize(
+    ("versions", "match"),
+    [
+        ([{"number": 2, "date": "2026-10-30", "status": "approved", "note": "N."}], "versions run 1, 2, 3"),
+        ([{"number": 1, "date": "2026-10-30", "status": "drafted", "note": "N."}], "status 'drafted'"),
+    ],
+)
+def test_a_version_the_table_could_not_hold_is_refused(versions, match):
+    doc = document()
+    doc["parts"][0]["versions"] = versions
+    with pytest.raises(cd.CatalogError, match=match):
+        cd.parse(doc)
+
+
 def test_a_document_parses_into_typed_values():
     catalog = cd.parse(document())
     assert isinstance(catalog, cd.Catalog) and catalog.styles[0].videos == ("camera-off",)
