@@ -584,6 +584,7 @@
     "stick-ride": {"title": "Balanço do carro"},
     "toon-clipboard": {"title": "Prancheta"},
     "toon-bedroom": {"title": "Quarto à noite"},
+    "toon-day-card": {"title": "Cartão dos dias"},
     "toon-desk-lamp": {"title": "Luminária de mesa"},
     "toon-finger": {"title": "Mão apontando"},
     "toon-hallway": {"title": "Corredor de casa"},
@@ -595,9 +596,11 @@
     "toon-quilt": {"title": "Colcha de retalhos"},
     "toon-receipt": {"title": "Nota fiscal"},
     "toon-speaker": {"title": "Caixa inteligente"},
+    "toon-sink": {"title": "Pia com a panela de molho"},
     "toon-take-a-number": {"title": "Dispensador de senhas"},
     "toon-thermostat": {"title": "Termostato"},
-    "toon-vent": {"title": "Grelha de ventilação"}
+    "toon-vent": {"title": "Grelha de ventilação"},
+    "toon-watering-can": {"title": "Regador"}
   },
   "gallery": [
     {
@@ -3982,6 +3985,27 @@
       "parts": ["toon-quilt"],
       "shot": {"episode": "who-touched-it", "at": 3.5},
       "text": "Colcha até o peito no lugar da mesa, com o criado-mudo levando o cacto e o código."
+    },
+    {
+      "section": "props",
+      "name": "Pia com a panela de molho",
+      "parts": ["toon-sink"],
+      "shot": {"episode": "its-soaking", "at": 8.9},
+      "text": "Bancada vista de cima, pia de aço e uma panela que, com o tempo, cria película, planta, caixa de correio e um sapinho que acena."
+    },
+    {
+      "section": "props",
+      "name": "Cartão dos dias",
+      "parts": ["toon-day-card"],
+      "shot": {"episode": "its-soaking", "at": 8.9},
+      "text": "Cartão preso na geladeira, cabeçalho DAY e o número que sobe a cada corte."
+    },
+    {
+      "section": "props",
+      "name": "Regador",
+      "parts": ["toon-watering-can"],
+      "shot": {"episode": "its-soaking", "at": 10.9},
+      "text": "Regador inclinado numa luva escura, com as gotas caindo enquanto rega."
     }
   ]
 }

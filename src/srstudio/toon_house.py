@@ -20,7 +20,7 @@ from . import checks, signature
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
-from .toon_sets import _glow, _inked, _line, _shadow
+from .toon_sets import _glow, _inked, _line, _shadow, cycle_keys
 
 __all__ = [
     "DOORS",
@@ -29,7 +29,9 @@ __all__ = [
     "KEY_LINE_SIZE",
     "KEY_LINE_TOP",
     "LEDGES",
+    "SOAK_STAGES",
     "bedroom",
+    "day_card",
     "finger",
     "hallway",
     "horse",
@@ -37,8 +39,10 @@ __all__ = [
     "ledge",
     "quilt",
     "rope",
+    "sink",
     "thermostat",
     "vent",
+    "watering_can",
 ]
 
 Point = tuple[float, float]
@@ -405,3 +409,152 @@ def quilt(cv: Canvas, parent, pattern: str = "plum") -> None:
     cv.rect(g, fx(516), fy(854), fh(100), fh(320), NIGHTSTAND_FRONT, cv.ink, FINE_W, radius=0)
     signature.cactus(cv, g, fx(548), fy(838), 0.7)
     signature.code(cv, g, fx(580), fy(866), 14, color="#b9a48f", opacity=0.9, align="end")
+
+
+SOAK_STAGES = ("skin", "plant", "mail", "frog")  # what a pan grows, each staying once it has come
+COUNTER_TOP, COUNTER_EDGE, CODE_SHADE = "#e6dfcf", "#cfc6b2", "#9a917f"
+SINK_RIM, SINK_BOWL = "#c4ccd3", "#7f8a94"
+PAN, PAN_RIM, PAN_HANDLE = "#2b2d33", "#454852", "#1f2026"
+WATER, SCUM, SCUM_LINE = "#9fb3b0", "#b7a678", "#8f7f52"
+LEAF, LEAF_DARK, STEM = "#5cae5a", "#3f8a48", "#3f7a3e"
+MAILBOX, MAILBOX_FLAG, ENVELOPE = "#3d6fb0", "#d8413a", "#fbf7ec"
+TINY_FROG, TINY_FROG_DARK = "#7cc35a", "#4f9440"
+WAVE_PERIOD = 0.5  # seconds per wave of the tiny frog's arm
+DAY_INK, DAY_HEAD, DAY_PAPER = "#23303a", "#b92f2a", "#fffdf7"
+DAY_SIZE = 96
+CAN, CAN_DARK, DROP = "#3f8f8f", "#2c6c6e", "#8fcbe8"
+DROP_FALL, DROP_EVERY = 118.0, 0.36
+
+
+@register("prop", "toon-sink", summary="A counter seen from above with a sink, a pan left in it and what the pan grows")
+def sink(cv: Canvas, parent, stages: Sequence[tuple[float, str]] = (), end: float = 0.0, id: str = "sink") -> None:
+    """In front of the character in the desk's place, signed as it is: a pale counter, a steel sink and a pan in dirty
+    water. Each ``(second, stage)`` of ``stages``, in the order of :data:`SOAK_STAGES`, comes and stays until ``end``;
+    in a still (``end`` 0) every stage named shows."""
+    names = [stage[1] for stage in stages]
+    if any(n not in SOAK_STAGES for n in names) or names != [n for n in SOAK_STAGES if n in names]:
+        raise ToonDataError(f"a pan's stages come in the order {SOAK_STAGES}, each once, got {names}")
+    _rise([stage[0] for stage in stages], "a pan's stages")
+    if end and stages and stages[-1][0] >= end:
+        raise ToonDataError(f"a pan's stages lie before its end, got {stages[-1][0]} of {end}")
+    g = cv.group(parent, id)
+    cv.rect(g, fx(-10), fy(LEDGE_TOP), fh(612), fh(340), COUNTER_TOP, cv.clear, 0, radius=0)
+    cv.rect(g, fx(-10), fy(LEDGE_TOP), fh(612), fh(14), cv.ink, cv.clear, 0, radius=0)
+    cv.ellipse(g, fx(28), fy(838), fh(476), fh(230), SINK_RIM, cv.ink, INK_W)
+    cv.ellipse(g, fx(50), fy(852), fh(432), fh(198), SINK_BOWL, cv.ink, FINE_W)
+    _line(cv, g, [(396, 968), (520, 1026)], 30.0, PAN_HANDLE)
+    cv.ellipse(g, fx(112), fy(866), fh(296), fh(150), PAN, cv.ink, INK_W * 0.8)
+    cv.ellipse(g, fx(128), fy(876), fh(264), fh(126), WATER, PAN_RIM, FINE_W)
+    for i, (x0, x1, y) in enumerate(((176, 248, 912), (280, 356, 952), (196, 262, 972))):
+        _line(cv, g, [(x0, y), ((x0 + x1) / 2, y + 5), (x1, y)], 3.0, PAN_RIM, 0.45 + 0.1 * i)
+    signature.cactus(cv, g, fx(548), fy(838), 0.7)
+    signature.code(cv, g, fx(580), fy(866), 14, color=CODE_SHADE, opacity=0.9, align="end")
+    drawers = {"skin": _skin, "plant": _sprout, "mail": _mailbox, "frog": _tiny_frog}
+    for start, name in stages:
+        layer = cv.group(g, f"{id}-{name}", start=start, end=end) if end else cv.group(g, f"{id}-{name}")
+        drawers[name](cv, layer, start, end)
+
+
+def _skin(cv: Canvas, g, start: float, end: float) -> None:
+    cv.ellipse(g, fx(130), fy(878), fh(260), fh(122), SCUM, opacity=0.92)
+    for x0, y0, x1, y1 in ((168, 906, 262, 914), (272, 924, 362, 918), (178, 958, 280, 966), (232, 936, 328, 944)):
+        _line(cv, g, [(x0, y0), ((x0 + x1) / 2, y0 + 7), (x1, y1)], 3.5, SCUM_LINE)
+
+
+def _sprout(cv: Canvas, g, start: float, end: float) -> None:
+    _line(cv, g, [(214, 948), (208, 896), (224, 846)], 8.0, STEM)
+    for x, y, w, h, colour in ((150, 842, 66, 40, LEAF), (222, 806, 72, 44, LEAF), (172, 884, 44, 26, LEAF_DARK)):
+        cv.ellipse(g, fx(x), fy(y), fh(w), fh(h), colour, cv.ink, FINE_W)
+
+
+def _mailbox(cv: Canvas, g, start: float, end: float) -> None:
+    cv.rect(g, fx(322), fy(868), fh(12), fh(92), "#8a6a4a", cv.ink, FINE_W, radius=fh(2))
+    cv.rect(g, fx(280), fy(816), fh(98), fh(58), MAILBOX, cv.ink, INK_W * 0.6, radius=fh(24))
+    cv.rect(g, fx(262), fy(830), fh(62), fh(32), ENVELOPE, cv.ink, FINE_W, radius=fh(2))
+    _line(cv, g, [(262, 830), (293, 848), (324, 830)], 2.5)
+    cv.rect(g, fx(372), fy(806), fh(8), fh(36), MAILBOX_FLAG, cv.ink, FINE_W * 0.6, radius=0)
+    cv.rect(g, fx(372), fy(806), fh(26), fh(16), MAILBOX_FLAG, cv.ink, FINE_W * 0.6, radius=0)
+
+
+def _tiny_frog(cv: Canvas, g, start: float, end: float) -> None:
+    cx, cy = 270.0, 950.0
+    cv.ellipse(g, fx(cx - 34), fy(cy - 18), fh(68), fh(46), TINY_FROG, cv.ink, INK_W * 0.6)
+    for side in (-1, 1):
+        cv.ellipse(g, fx(cx + side * 18 - 11), fy(cy - 32), fh(22), fh(22), "#fffdf7", cv.ink, FINE_W)
+        cv.ellipse(g, fx(cx + side * 18 - 4), fy(cy - 26), fh(8), fh(10), "#20140d")
+    _line(cv, g, [(cx - 14, cy + 6), (cx, cy + 12), (cx + 14, cy + 6)], 3.0)
+    x, y = fx(cx + 30), fy(cy)
+    arm = cv.group(g, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+    _line(cv, arm, [(cx + 30, cy), (cx + 46, cy - 24), (cx + 54, cy - 44)], 9.0, TINY_FROG_DARK)
+    cv.ellipse(arm, fx(cx + 46), fy(cy - 56), fh(16), fh(16), TINY_FROG, cv.ink, FINE_W)
+    if end:
+        cv.keys(arm, "rotation", cycle_keys([(0.0, -18.0), (WAVE_PERIOD / 2, 18.0)], WAVE_PERIOD, start, end),
+                hold=False, local=False)  # fmt: skip
+
+
+@register("prop", "toon-day-card", summary="A tear-off card on the fridge counting days on cue")
+def day_card(
+    cv: Canvas,
+    parent,
+    days: Sequence[tuple[float, int]],
+    end: float = 0.0,
+    at: Point = (500, 470),
+    id: str = "day-card",
+) -> None:
+    """A card centred on reference ``at`` headed DAY, showing each ``(second, day)`` of ``days`` (1 to 999) until the
+    next, the last until ``end``. A still (``end`` 0) takes one day at 0."""
+    if not days or any(not (isinstance(d, tuple | list) and len(d) == 2) for d in days):
+        raise ToonDataError(f"a day card needs (second, day) pairs, got {days!r}")
+    times = [d[0] for d in days]
+    _rise(times, "a day card's days")
+    if times[0] != 0 or (not end and len(times) > 1) or (end and times[-1] >= end):
+        raise ToonDataError(f"a day card's days start at 0 and lie before its end, got {times} of {end}")
+    if any(isinstance(d[1], bool) or not isinstance(d[1], int) or not 1 <= d[1] <= 999 for d in days):
+        raise ToonDataError(f"a day is a whole number from 1 to 999, got {[d[1] for d in days]}")
+    x, y = _point(at, "a day card's place")
+    g = cv.group(parent, id, x=fx(x), y=fy(y))
+    w, h, head = fh(150), fh(176), fh(52)
+    cv.rect(g, -w / 2 + fh(6), -h / 2 + fh(7), w, h, "#1b1430", cv.clear, 0, radius=fh(8), opacity=0.18)
+    cv.rect(g, -w / 2, -h / 2, w, h, DAY_PAPER, cv.ink, INK_W * 0.8, radius=fh(8))
+    cv.rect(g, -w / 2, -h / 2, w, head, DAY_HEAD, cv.ink, INK_W * 0.8, radius=fh(8))
+    cv.text(g, cv.uid("day-head"), "DAY", -w / 2, -h / 2, int(w), int(head), 52, color="#ffffff", wrap="none")
+    for i, (start, day) in enumerate(days):
+        stop = days[i + 1][0] if i + 1 < len(days) else end
+        shown = cv.group(g, cv.uid("g"), start=start, end=stop) if end else cv.group(g, cv.uid("g"))
+        cv.text(shown, cv.uid("day"), str(day), -w / 2, -h / 2 + head, int(w), int(h - head), DAY_SIZE, color=DAY_INK,
+                wrap="none")  # fmt: skip
+
+
+@register("prop", "toon-watering-can", summary="A watering can in a dark glove, pouring")
+def watering_can(
+    cv: Canvas,
+    parent,
+    at: Point = (388, 690),
+    start: float = 0.0,
+    end: float = 0.0,
+    pour: float = 0.0,
+    id: str = "watering-can",
+) -> None:
+    """A can with its spout's rose near reference ``at``, tipped down and to the left, shown from ``start`` to ``end``
+    (always, in a still), its drops falling from ``pour``."""
+    x, y = _point(at, "a watering can's place")
+    if not (checks.number(start) and checks.number(end) and checks.number(pour) and min(start, end, pour) >= 0):
+        raise ToonDataError(f"a watering can's clock needs times >= 0, got {start}, {end}, {pour}")
+    if end and not start <= pour < end:
+        raise ToonDataError(f"a watering can pours within its time, got {pour} of {start}..{end}")
+    timed = {"start": start, "end": end} if end else {}
+    outer = cv.group(parent, id, **timed)
+    g = cv.group(outer, cv.uid("g"), x=fx(x), y=fy(y), rotation=-16)
+    _line(cv, g, [(0, 70 + 2), (96, 70 + 46)], 20.0, CAN_DARK)
+    cv.rect(g, fh(84), fh(10), fh(150), fh(120), CAN, cv.ink, INK_W * 0.8, radius=fh(14))
+    cv.rect(g, -fh(14), -fh(18), fh(22), fh(44), CAN_DARK, cv.ink, FINE_W, radius=fh(4))
+    cv.ellipse(g, fh(124), -fh(44), fh(84), fh(84), cv.clear, cv.ink, INK_W * 0.8)
+    cv.ellipse(g, fh(190), fh(30), fh(62), fh(66), "#2e2a33", cv.ink, FINE_W)
+    if not end:
+        return
+    for k in range(3):
+        px = fx(x - 14 + k * 11)
+        drop = cv.group(outer, cv.uid("g"), x=px, y=fy(y + 20), start=pour, end=end)
+        cv.ellipse(drop, -fh(5), -fh(7), fh(10), fh(14), DROP, cv.ink, FINE_W * 0.3)
+        fall = [(0.0, fy(y + 20)), (DROP_EVERY * 0.9, fy(y + 20 + DROP_FALL))]
+        cv.keys(drop, "y", cycle_keys(fall, DROP_EVERY, pour, end, phase=k * 0.11), hold=False, local=False)

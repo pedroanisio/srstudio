@@ -3675,6 +3675,23 @@
         }
       ]
     },
+    "toon-day-card": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c8b33040f59660a483f3a26493971b413c083bb7a107c4704f0789e14f759f77",
+          "rig": null
+        }
+      ]
+    },
     "toon-desk": {
       "kind": "location",
       "style": "toon",
@@ -4319,6 +4336,23 @@
         }
       ]
     },
+    "toon-sink": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f389110f91bb0d57203734e54ad23106264b1686ec125780f0812a7d4078879",
+          "rig": null
+        }
+      ]
+    },
     "toon-sloth": {
       "kind": "character",
       "style": "toon",
@@ -4447,6 +4481,23 @@
           "proof": "",
           "approval": null,
           "drawing": "825646d11470d5f810966fefd978b0e5edf8a5f130c5d472bbc5300572dfdcd2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-watering-can": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4554b59dfea06acc7f4f9056c543b2452779259db9198a4b2f10c81e87658e85",
           "rig": null
         }
       ]

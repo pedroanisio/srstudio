@@ -258,6 +258,8 @@ RECIPES: dict[str, Recipe] = {
         lettered("Form 7", (toon_everyday.Field("Name", "Rex"), toon_everyday.Field("Date", "Today")))),
     "toon-key-line": Recipe(lettered("Say what you mean.", 0.0, SECONDS)),
     "toon-thermostat": Recipe(part(((0.0, "68"),))),
+    "toon-day-card": Recipe(part(((0.0, 41),))),
+    "toon-sink": Recipe(part(((0.0, "skin"), (0.1, "plant"), (0.2, "mail"), (0.3, "frog")))),
     "toon-clock": Recipe(part(((0.0, "09:00"),))),
     "toon-notes": Recipe(part(("REPORT!", "9 AM", "DO NOT", "FORGET"))),
     "toon-note-insert": Recipe(part("IT MOVED.", 0.0, SECONDS)),

@@ -40,6 +40,9 @@ def tree(cv: Canvas):
         ("prop", "toon-vent", toon_house.vent),
         ("location", "toon-bedroom", toon_house.bedroom),
         ("prop", "toon-quilt", toon_house.quilt),
+        ("prop", "toon-sink", toon_house.sink),
+        ("prop", "toon-day-card", toon_house.day_card),
+        ("prop", "toon-watering-can", toon_house.watering_can),
     ],
 )
 def test_the_parts_are_registered(kind, name, builder):
@@ -242,3 +245,95 @@ def test_the_bedroom_draws():
     cv = canvas()
     toon_house.bedroom(cv, cv.comp)
     assert list(tree(cv).iter("group"))
+
+
+@pytest.mark.parametrize(
+    "stages", [(), ((1.0, "skin"),), ((1.0, "skin"), (2.0, "plant"), (3.0, "mail"), (4.0, "frog"))]
+)
+def test_a_sink_carries_the_signature_marks_at_every_stage(stages):
+    cv = canvas(signed=True)
+    toon_house.sink(cv, cv.comp, stages, 8.0)
+    assert signature.missing(cv.scene.to_bytes(layout="pretty")) == []
+
+
+def test_each_stage_of_a_pan_comes_at_its_second_and_stays():
+    cv = canvas()
+    toon_house.sink(cv, cv.comp, [(1.0, "skin"), (4.0, "frog")], 8.0)
+    starts = {g.get("id"): (g.get("start"), g.get("end")) for g in tree(cv).iter("group") if g.get("start")}
+    assert starts == {"sink-skin": ("1", "8"), "sink-frog": ("4", "8")}
+
+
+def test_the_tiny_frog_waves_only_in_a_timed_sink():
+    moving, still = canvas(), canvas()
+    toon_house.sink(moving, moving.comp, [(1.0, "frog")], 8.0)
+    toon_house.sink(still, still.comp, [(0.0, "frog")])
+    assert [a.get("property") for a in tree(moving).iter("animate")] == ["rotation"]
+    assert list(tree(still).iter("animate")) == []
+
+
+@pytest.mark.parametrize(
+    ("stages", "end", "match"),
+    [
+        ([(1.0, "moss")], 8.0, "stages come in the order"),
+        ([(1.0, "frog"), (2.0, "skin")], 8.0, "stages come in the order"),
+        ([(1.0, "skin"), (2.0, "skin")], 8.0, "stages come in the order"),
+        ([(2.0, "skin"), (1.0, "plant")], 8.0, "stages"),
+        ([(9.0, "skin")], 8.0, "before its end"),
+    ],
+)
+def test_a_sink_refuses_stages_a_pan_cannot_grow(stages, end, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.sink(cv, cv.comp, stages, end)
+
+
+def test_a_day_card_shows_each_day_until_the_next():
+    cv = canvas()
+    toon_house.day_card(cv, cv.comp, [(0.0, 1), (3.0, 60)], 8.0)
+    assert sorted(t.get("text") for t in tree(cv).iter("text")) == ["1", "60", "DAY"]
+
+
+@pytest.mark.parametrize(
+    ("days", "end", "match"),
+    [
+        ([], 8.0, "pairs"),
+        ([(1.0, 1)], 8.0, "start at 0"),
+        ([(0.0, 1), (9.0, 2)], 8.0, "start at 0"),
+        ([(0.0, 1), (1.0, 2)], 0.0, "start at 0"),
+        ([(0.0, 0)], 8.0, "1 to 999"),
+        ([(0.0, 1000)], 8.0, "1 to 999"),
+        ([(0.0, True)], 8.0, "1 to 999"),
+        ([(0.0, "1")], 8.0, "1 to 999"),
+    ],
+)
+def test_a_day_card_refuses_days_it_cannot_show(days, end, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.day_card(cv, cv.comp, days, end)
+
+
+def test_a_watering_can_drips_only_while_it_pours():
+    cv = canvas()
+    toon_house.watering_can(cv, cv.comp, start=1.0, end=4.0, pour=2.0)
+    falling = [g for g in tree(cv).iter("group") if g.find("animate") is not None]
+    assert len(falling) == 3 and all(g.get("start") == "2" for g in falling)
+
+
+def test_a_still_watering_can_has_no_drops():
+    cv = canvas()
+    toon_house.watering_can(cv, cv.comp)
+    assert list(tree(cv).iter("animate")) == []
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"at": "x"}, "reference point"),
+        ({"start": -1.0}, "times >= 0"),
+        ({"start": 1.0, "end": 4.0, "pour": 5.0}, "pours within"),
+    ],
+)
+def test_a_watering_can_refuses_what_it_cannot_draw(kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.watering_can(cv, cv.comp, **kwargs)
