@@ -1101,6 +1101,23 @@
         }
       ]
     },
+    "collage-thumb": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9b0d51442759c52f207fb4127ec1a7d5a12dc78f0aa1b4600fdc0062192a2186",
+          "rig": null
+        }
+      ]
+    },
     "collage-tv": {
       "kind": "prop",
       "style": "collage",

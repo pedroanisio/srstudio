@@ -237,6 +237,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-duvet": Recipe(part()),
     "collage-tablecloth": Recipe(part()),
     "collage-salt-shaker": Recipe(part(540, 1080, 320)),
+    "collage-thumb": Recipe(part(540, 1080, 420)),
     "collage-chip-bag": Recipe(part(540, 960, 460, 620, "FAMILY SIZE")),
     "collage-chip": Recipe(part(540, 960)),
     "collage-certificate": Recipe(part("AUTHENTIC", 260, 760, 560, 400, size=64)),

@@ -43,6 +43,7 @@ def body(cv: Canvas) -> bytes:
         "collage-arm",
         "collage-bedroom",
         "collage-supermarket",
+        "collage-thumb",
         "collage-dining-room",
         "collage-bus-stop",
     ],
@@ -113,6 +114,13 @@ def test_a_bubble_of_mine_is_green_and_theirs_grey():
     collage_everyday.bubble(mine, mine.comp, "yes", 0, 0, 300, 120, size=50, mine=True)
     collage_everyday.bubble(theirs, theirs.comp, "yes", 0, 0, 300, 120, size=50)
     assert b"#c9f2c7" in body(mine) and b"#c9f2c7" not in body(theirs)
+
+
+def test_a_thumb_refuses_a_size_it_cannot_draw():
+    cv = canvas()
+    collage_everyday.thumb(cv, cv.comp, 100, 100, 200)
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.thumb(cv, cv.comp, 100, 100, -1)
 
 
 def test_lettering_takes_whole_pixels():

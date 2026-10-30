@@ -42,6 +42,7 @@ __all__ = [
     "salt_shaker",
     "snapshot",
     "tablecloth",
+    "thumb",
 ]
 
 BED_TOP = 1610.0  # the duvet's top edge: what is below it is hidden
@@ -152,6 +153,20 @@ def bubble(
     draw_shapes(cv, g, [(collage._poly(tail), fill, INK, collage.EDGE, 1.0)])
     cv.rect(g, 0, 0, w, h, fill, INK, collage.EDGE, radius=30)
     _letter(cv, g, "bubble", text, 26, 0, w - 52, h, size, color=INK, align="start")
+    return g
+
+
+@register("prop", "collage-thumb", summary="A paper thumbs-up, the size of a message, drawn rather than typed")
+def thumb(cv: Canvas, parent, x: float, y: float, size: float = 170.0) -> object:
+    """A thumbs-up ``size`` tall, centred on ``x, y``."""
+    k = round(_size(size, "a thumb's size") / 170.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k)
+    fist = [(-52, -14), (74, -14), (82, 76), (-52, 84)]
+    digit = [(-34, -14), (-32, -70), (-14, -92), (14, -84), (16, -14)]
+    draw_shapes(cv, g, _paper(_cut("thumb-digit", digit, 2), "#f2c14e"))
+    draw_shapes(cv, g, _paper(_cut("thumb-fist", fist, 2), "#f2c14e"))
+    for y0 in (14, 40, 64):
+        cv.line(g, 18, y0, 76, y0, INK, 4)
     return g
 
 

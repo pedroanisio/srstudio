@@ -1744,7 +1744,7 @@ a singing porcelain toilet. The style is decided in
 - **Everyday props**, [src/srstudio/collage_everyday.py](src/srstudio/collage_everyday.py): food, a phone with a
   screen the scene writes on, message bubbles, a bedside clock, a cereal box, a duvet and a tablecloth, a salt
   shaker, chip bags and chips, a certificate, a snapshot, a gust of air, walking bills, confetti that can turn and
-  fall back up, an arm on its own, and `chew`, which keeps a mouth working while a character eats.
+  fall back up, an arm on its own, a thumbs-up, and `chew`, which keeps a mouth working while a character eats.
 - **A change of room and the extra sounds**: `Staging.setting` picks a shot's set from the beats (a reel that moves
   from the sofa to the bed), and rows can start on a later word of a line, `(line, word, caption)`. Beats also take
   `swat`, `ding`, `crunch` and `hiss:<seconds>`, written by `sound_effects` from `srstudio.foley`.
