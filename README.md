@@ -110,7 +110,7 @@ the style is not drawn in is a `StyleError`. The names and the reasoning are in
 [docs/decisions/0010-toon-style.md](docs/decisions/0010-toon-style.md),
 [docs/decisions/0025-saga-style.md](docs/decisions/0025-saga-style.md),
 [docs/decisions/0030-gloss-style.md](docs/decisions/0030-gloss-style.md) and
-[docs/decisions/0036-collage-series-bible.md](docs/decisions/0036-collage-series-bible.md); `srstudio styles` lists
+[docs/decisions/0026-collage-style.md](docs/decisions/0026-collage-style.md); `srstudio styles` lists
 all nine. The table compares the first seven; Collage and Gloss are described in their own sections below.
 
 | | **Cutout** — `CUTOUT` (default) | **Ink** — `INK` | **Soft** — `SOFT` | **Cel** — `CEL` | **Stick** — `STICK` | **Toon** — `TOON` | **Saga** — `SAGA` |
@@ -1424,7 +1424,8 @@ hook question first, a hold of at least 1.2 s before the button, the Plaza notic
 ## Collage style: grown-ups losing to brainrot
 
 Paper cut-out people on painted sets give up their dignity to *BOWLHEADS*, an invented kids' show starring Flush,
-a singing porcelain toilet. The series bible (the world, the family at its centre and a card per character) is
+a singing porcelain toilet. The style is decided in
+[docs/decisions/0026-collage-style.md](docs/decisions/0026-collage-style.md). The series bible (the world, the family at its centre and a card per character) is
 [docs/decisions/0036-collage-series-bible.md](docs/decisions/0036-collage-series-bible.md).
 
 - **Cast and sets**, [src/srstudio/collage.py](src/srstudio/collage.py) and

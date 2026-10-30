@@ -8,7 +8,7 @@ an explicit field still wins, so a script states only what is particular to its 
 
 Nine styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``, ``0004-cel-style.md``,
 ``0006-stick-style.md``, ``0010-toon-style.md``, ``0025-saga-style.md``, ``0030-gloss-style.md``,
-``0036-collage-series-bible.md``); ``srstudio styles`` lists them:
+``0026-collage-style.md``); ``srstudio styles`` lists them:
 
 * **Cutout** (:data:`CUTOUT`): flat vector shapes with soft gradients and bold outlines, like paper
   cut-outs; portrait 1080×1920 at 30 fps on the project clock; palettes ``OFFICE`` and ``CAFE``.
@@ -27,7 +27,8 @@ Nine styles ship (``docs/decisions/0002-style-names.md``, ``0003-soft-style.md``
   recorded takes (:mod:`srstudio.saga_reel`), engine-native captions in Space Grotesk; portrait 1080×1920 at 24 fps
   as a sequence of shots; palette ``VOID`` (``docs/decisions/0025-saga-style.md``).
 * **Collage** (:data:`COLLAGE`): mixed-media satire, paper cut-out people with hand-cut edges and drop shadows on
-  painted sets; portrait 1080×1920 at 24 fps; palette ``PAPER``.
+  painted sets; portrait 1080×1920 at 24 fps; palette ``PAPER``; its cast and world are the series bible
+  (``docs/decisions/0036-collage-series-bible.md``).
 * **Gloss** (:data:`GLOSS`): glossy vinyl peg dolls in a pastel forever-plaza hosted by Sunny, a floating orb;
   portrait 1080×1920 at 24 fps as a sequence of shots; palette ``PLASTIC``.
 """
