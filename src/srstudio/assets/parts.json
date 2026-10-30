@@ -333,6 +333,40 @@
         }
       ]
     },
+    "collage-alarm-clock": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c4cb69729bddbe3cafbdff861ebf61cb68a34b70d1af677284b00cdb72a07e3f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-arm": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5d9279cb388fa9bfc3501dc7a028d555fefc9377d43ff948ff5598d6a9502c86",
+          "rig": null
+        }
+      ]
+    },
     "collage-bathroom": {
       "kind": "location",
       "style": "collage",
@@ -346,6 +380,40 @@
           "proof": "",
           "approval": null,
           "drawing": "6f9b0139a530fd6dcbb57f3dc7fc241f05e85f30c5a042b65b5afcbffd2cee14",
+          "rig": null
+        }
+      ]
+    },
+    "collage-bedroom": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "89e9b95df7ed888e38092773f35809da334b5f7ec1dc1e76454abdb69c5eb0db",
+          "rig": null
+        }
+      ]
+    },
+    "collage-bill": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "70c4fd47ac6a1a47ececdfd1911e7ebe1222fa4b1013bdd5895462e0de034079",
           "rig": null
         }
       ]
@@ -384,6 +452,40 @@
         }
       ]
     },
+    "collage-bubble": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6df27677904aa52fc2773e46da2ef78396d5a762262ae2b6c248a055a4b25a5a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-bus-stop": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5c44e6adabd5421f8ba3b041a62dcc472f2a04f8b2ff8913f37725024f8b7adf",
+          "rig": null
+        }
+      ]
+    },
     "collage-cafe": {
       "kind": "location",
       "style": "collage",
@@ -418,6 +520,40 @@
         }
       ]
     },
+    "collage-cereal-box": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5f9ac76fc02ceaa200e3f1e2fc979ff70d4075ebe8b2b940734efe73c765bc48",
+          "rig": null
+        }
+      ]
+    },
+    "collage-certificate": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2d307dbc74985bcc01ed759f9300d5b750217191ffc5aa9408ca2674e40b7c64",
+          "rig": null
+        }
+      ]
+    },
     "collage-chart": {
       "kind": "prop",
       "style": "collage",
@@ -431,6 +567,40 @@
           "proof": "",
           "approval": null,
           "drawing": "d5ef50c816c1d914598f07296b5c0cd84d88202019e5fd49d5200f6cc3c54bd8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-chip": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5bf349e2440f4d26507668d40d6f8fd592075d50447f0e692459fec302abfa1f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-chip-bag": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "87b12c3d6ae5a1a82eb47749eb73b6f548c5561d65bbb5a2dc1a53e882bfd4f4",
           "rig": null
         }
       ]
@@ -452,6 +622,23 @@
         }
       ]
     },
+    "collage-confetti": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "77d4d4aea67339c99e02c5bd436acc1c7fb442c4c0e702abc4852c7dba8f5d04",
+          "rig": null
+        }
+      ]
+    },
     "collage-deb": {
       "kind": "character",
       "style": "collage",
@@ -465,6 +652,40 @@
           "proof": "",
           "approval": null,
           "drawing": "1a2a8f5fd11a45c4df15ee11765a527838db36a08e8abe0f031da2fe950ef48f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-dining-room": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "58cec27c2e1a6afdb257b093c2339a6147793b6cb999b636939c0fc8fb5fdbc6",
+          "rig": null
+        }
+      ]
+    },
+    "collage-duvet": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dadc306b00933489e2baca65fc24cb3611235d735463d040d05358cb30523b82",
           "rig": null
         }
       ]
@@ -523,6 +744,23 @@
         }
       ]
     },
+    "collage-food": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6b470529b568338f0c68b70d489ec4eebbdba4c45e8eb9d7792847265a014404",
+          "rig": null
+        }
+      ]
+    },
     "collage-gary": {
       "kind": "character",
       "style": "collage",
@@ -536,6 +774,23 @@
           "proof": "",
           "approval": null,
           "drawing": "726c6e3fe4acd1dc17013e59b4e97257901e2df13156fd04b5aa2c618b15ee18",
+          "rig": null
+        }
+      ]
+    },
+    "collage-gust": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "11b80b11608bbd4c56d62dbd4337aaa8565eed4346747c6416d4462d7ab88ebe",
           "rig": null
         }
       ]
@@ -625,6 +880,23 @@
         }
       ]
     },
+    "collage-phone": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f56294bd1201639053b57a955ad2fccf4585ab3af2040ed8449405be68edd697",
+          "rig": null
+        }
+      ]
+    },
     "collage-phone-timer": {
       "kind": "prop",
       "style": "collage",
@@ -693,6 +965,23 @@
         }
       ]
     },
+    "collage-salt-shaker": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7746b89cca0083d5d6569d5eebb0378a219a6244f32b9cce93d0d59e9c86d6c0",
+          "rig": null
+        }
+      ]
+    },
     "collage-sign": {
       "kind": "prop",
       "style": "collage",
@@ -706,6 +995,23 @@
           "proof": "",
           "approval": null,
           "drawing": "792f6552fe2e8739d05dfa305209db2e3857830bbc00b77b7f68423e39bc8050",
+          "rig": null
+        }
+      ]
+    },
+    "collage-snapshot": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "97531b66381e477ddc49c8fca23c1795c5d0a871b0b06df015358823fafa98ac",
           "rig": null
         }
       ]
@@ -740,6 +1046,40 @@
           "proof": "",
           "approval": null,
           "drawing": "7f58757a832718206aa43b32f92e70e15e1f3940fd31e39fdd99b9aba98ce31f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-supermarket": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bad365c74fcb641204e691590300605f2d067823c179edf1733d0953c7e99718",
+          "rig": null
+        }
+      ]
+    },
+    "collage-tablecloth": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for the broad batch.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "55bd5cdbcf4b3e5aad2048ceec97a55767edb07b0f228fcbe26acda488703ec5",
           "rig": null
         }
       ]

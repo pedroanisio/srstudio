@@ -247,6 +247,13 @@ class Part:
             raise NotApprovedError(f"{self.name} has no approved version")
         return approved[-1]
 
+    @property
+    def default(self) -> int | None:
+        """The number of :meth:`latest`, or None while nothing is approved: a listing shows such a part, a reel
+        cannot default to it."""
+        approved = [v.number for v in self.versions if v.status == "approved"]
+        return approved[-1] if approved else None
+
     def pinned(self, number: int) -> Version:
         """``number`` as a release may pin it: it exists and it is approved."""
         v = self.version(number)

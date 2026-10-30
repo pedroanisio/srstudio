@@ -206,7 +206,7 @@ def test_no_prop_covers_the_signature_on_its_set(mods, name, monkeypatch):
         placed.clear()
         g = cv.group(cv.comp, cv.uid("g"))
         st.dress(builder.Shot(cv, app, g, g, st.sketch.beats, st.sketch.end, lambda text, size: 10.0 * len(text)))
-        sx0, sy0, sx1, sy1 = collage_sets.signature_box(st.sets[app.who])
+        sx0, sy0, sx1, sy1 = collage_sets.signature_box(st.set_of(st.sketch.beats, app))
         for kind, (x0, y0, x1, y1) in placed:
             m = TILT_MARGIN
             clear = x1 + m <= sx0 or x0 - m >= sx1 or y1 + m <= sy0 or y0 - m >= sy1
@@ -279,3 +279,54 @@ def test_the_family_photo_zoom_keeps_the_whole_signature_in_frame(mods):
     assert all(0 <= x <= 1080 and 0 <= y <= 1920 for x, y in corners), corners  # cactus and label both in frame
     fx, _ = collage.face(collage.LOOKS[app.who])
     assert 0 < px + (fx - px) * k <= 720  # the face stays in frame, its headset's far cup clear of the edge
+
+
+def _small(mods, name="the_lore"):
+    return mods[1][name].STAGING
+
+
+def test_a_staging_can_change_rooms_and_refuses_an_unknown_one(mods):
+    builder, _ = mods
+    st = _small(mods)
+    app = sketch.appearances(st.sketch.beats, st.sketch.end)[0]
+    assert st.set_of(st.sketch.beats, app) == st.sets[app.who]
+    moved = replace(st, setting=lambda beats, a: "bedroom")
+    assert moved.set_of(st.sketch.beats, app) == "bedroom"
+    builder.check_staging(moved)
+    with pytest.raises(builder.StagingError, match="unknown set"):
+        builder.check_staging(replace(st, setting=lambda beats, a: "moon"))
+
+
+def test_a_hiss_says_for_how_long(mods):
+    builder, _ = mods
+    st = _small(mods)
+    beats = list(st.sketch.beats)
+    beats[1] = replace(beats[1], event="hiss:soon")
+    with pytest.raises(builder.StagingError, match="hiss"):
+        builder.check_staging(replace(st, sketch=replace(st.sketch, beats=tuple(beats))))
+
+
+def test_the_new_events_write_their_sounds(mods, tmp_path):
+    builder, _ = mods
+    beats = [
+        sketch.Beat(0.0, "gary", "", "open", "flat", "down", event="swat"),
+        sketch.Beat(0.5, "gary", "", "open", "flat", "down", event="ding"),
+        sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="crunch"),
+        sketch.Beat(2.0, "gary", "", "open", "flat", "down", event="hiss:0.5"),
+    ]
+    effects = builder.sound_effects(beats, 3.0, tmp_path, 7)
+    assert [e["id"] for e in effects] == ["swat", "ding", "crunch", "hiss-0"]
+    assert all((tmp_path / e["audio"]).is_file() for e in effects)
+
+
+def test_a_row_can_start_on_a_later_word_of_a_line(mods):
+    builder, _ = mods
+    lines = (sketch.Line("priya", "Tacos? Sushi?"),)
+    beats, _ = builder.timed(
+        lines,
+        (
+            (0.5, "gary", (0, 0, "Tacos?"), "open", "flat", "down"),
+            (0.5, "gary", (0, 1, "Sushi?"), "open", "flat", "fist"),
+        ),
+    )
+    assert [(b.word, b.caption) for b in beats] == [(0, "Tacos?"), (1, "Sushi?")]

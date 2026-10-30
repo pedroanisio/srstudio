@@ -47,14 +47,16 @@ from . import (
 from .canvas import Canvas
 from .narration import effect_cues, manifest_duration, require_consent
 from .provider import KEY_ENV
-from .scripting import hold, say
+from .scripting import hold, part, say
+from .sketch import Appearance, Beat
 from .staging import StagingError
 from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
-# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash")
+# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
+# play on their beat; hiss:<seconds> lets the air out of something for that long
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
 WHOOSH_GAIN_DB = -6.0
@@ -63,6 +65,12 @@ BEEP_GAIN_DB = -9.0
 SHUTTER = (0.0, 0.085)  # a shutter: the mirror up, then down, as two clicks
 SHUTTER_GAIN_DB = -4.0
 BEEP = ((1568.0, 1568.0, 0.09), (2093.0, 2093.0, 0.11))  # Kai's headset: two short high notes
+SWAT_GAIN_DB = -7.0
+SWAT = 0.12  # seconds of a swat's whoosh: it lands on its beat
+DING_GAIN_DB = -8.0
+HISS_GAIN_DB = -9.0
+CRUNCH_GAIN_DB = -6.0
+CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
 def _speaker(name: str, voice_id: str, voice: str, stability: float, style: float) -> sketch.Speaker:
@@ -118,16 +126,18 @@ MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.
 
 def timed(lines: Sequence[sketch.Line], rows: Sequence[tuple], tail: float = 1.2) -> tuple[list[sketch.Beat], float]:
     """Beats on the scripted clock from rows ``(seconds held, who, line or caption, eyes, mouth, arms[, event])``:
-    an ``int`` starts that line, a ``str`` is a silent beat with that caption (``""`` for none). Returns the beats
-    and the end, ``tail`` after the last one starts."""
+    an ``int`` starts that line, a ``(line, word, caption)`` is a beat on that word of it, a ``str`` is a silent beat
+    with that caption (``""`` for none). Returns the beats and the end, ``tail`` after the last one starts."""
     beats, at = [], 0.0
     for held, who, what, eyes, mouth, arms, *event in rows:
         ev = event[0] if event else ""
-        beats.append(
-            say(lines, at, who, what, eyes, mouth, arms, ev)
-            if isinstance(what, int)
-            else hold(at, who, what, eyes, mouth, arms, ev)
-        )
+        if isinstance(what, tuple):
+            line, word, caption = what
+            beats.append(part(lines, at, who, line, word, caption, eyes, mouth, arms, ev))
+        elif isinstance(what, int):
+            beats.append(say(lines, at, who, what, eyes, mouth, arms, ev))
+        else:
+            beats.append(hold(at, who, what, eyes, mouth, arms, ev))
         at = round(at + held, 6)
     return beats, round(beats[-1].start + tail, 6)
 
@@ -198,10 +208,17 @@ class Staging:
     # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
     still: float = 0.0
     opening: CastDrawer = stilled
+    # the set of a shot, from the beats the build draws and its appearance, for a reel that changes rooms; a name of
+    # collage_sets.SETS. None keeps every character on its ``sets`` entry
+    setting: Callable[[Sequence[Beat], Appearance], str] | None = None
     # the master's average video bits per second, encoded in two passes: 0, the rate factor alone, for every published
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
+
+    def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
+        """The set this appearance plays on."""
+        return self.sets[app.who] if self.setting is None else self.setting(beats, app)
 
 
 def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
@@ -233,6 +250,12 @@ def check_staging(staging: Staging) -> None:
     odd = sorted({b.event.split(":")[0] for b in sk.beats if b.event} - set(EVENTS))
     if odd:
         raise StagingError(f"{sk.slug}: unknown events {odd}; one of {EVENTS}")
+    for at, seconds in sketch.events(sk.beats, "hiss"):
+        if not (seconds.replace(".", "", 1).isdigit() and float(seconds) > 0):
+            raise StagingError(f"{sk.slug}: the hiss at {at} s runs for hiss:<seconds>, got {seconds!r}")
+    for app in sketch.appearances(sk.beats, sk.end):
+        if staging.set_of(sk.beats, app) not in collage_sets.SETS:
+            raise StagingError(f"{sk.slug}: unknown set for {app.who} at {app.start} s")
     check_still(sk.beats, staging.still, sk.slug)
     if not (type(staging.bitrate) is int and staging.bitrate >= 0):
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
@@ -316,7 +339,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         opening = app.start < staging.still  # the grain is drawn afresh every frame: a still shot goes without it
         if not opening:
             cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
-        collage_sets.SETS[staging.sets[app.who]](cv, g)
+        collage_sets.SETS[staging.set_of(sk.beats, app)](cv, g)
         back = cv.group(g, cv.uid("g"))
         face = (staging.opening if opening else cast)(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
@@ -338,7 +361,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 # -- the recording run ------------------------------------------------------------------------------------------------
 def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
-    shutter on ``flash``."""
+    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, chewing on ``crunch``
+    and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -361,6 +385,23 @@ def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: in
         clicks = sorted(at + d for at in flashes for d in SHUTTER)
         shutter = foley.write_typing(audio / "shutter.wav", clicks, end, seed=seed)
         out.append(sketch.effect("shutter", 0.0, SHUTTER_GAIN_DB, root, shutter))
+    swats = [at for at, _ in sketch.events(beats, "swat")]
+    if swats:
+        cues = [max(0.0, round(at - SWAT, 6)) for at in swats]
+        swat = foley.write_whoosh(audio / "swat.wav", cues, end, length=SWAT, seed=seed)
+        out.append(sketch.effect("swat", 0.0, SWAT_GAIN_DB, root, swat))
+    dings = [at for at, _ in sketch.events(beats, "ding")]
+    if dings:
+        ding = foley.write_tones(audio / "ding.wav", dings, end, notes=foley.DING)
+        out.append(sketch.effect("ding", 0.0, DING_GAIN_DB, root, ding))
+    bites = [at for at, _ in sketch.events(beats, "crunch")]
+    if bites:
+        clicks = sorted(at + d for at in bites for d in CRUNCH)
+        crunch = foley.write_typing(audio / "crunch.wav", clicks, end, seed=seed)
+        out.append(sketch.effect("crunch", 0.0, CRUNCH_GAIN_DB, root, crunch))
+    for i, (at, seconds) in enumerate(sketch.events(beats, "hiss")):
+        hiss = foley.write_air(audio / f"hiss-{i}.wav", [at], end, min(float(seconds), end - at), seed=seed + i)
+        out.append(sketch.effect(f"hiss-{i}", 0.0, HISS_GAIN_DB, root, hiss))
     return out
 
 
