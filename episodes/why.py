@@ -152,7 +152,7 @@ soft_sets.playroom(cv, graded, shots=shots, dim=Dim(FLOOR + 0.2, 1.6, DOOR, 700.
 CUTS = [*WHYS, FLOOR, P[9].start, DOOR]
 speech = {"pip": [], "bo": []}
 for i, p in enumerate(P):
-    until = P[i + 1].start - 0.02 if i + 1 < len(P) else DURATION
+    until = P[i + 1].start - 0.05 if i + 1 < len(P) else DURATION
     after = [c for c in CUTS if c > p.start + 0.05]
     cut = min(after) if after else DURATION
     start = 0.0 if i == 0 else max(0.0, p.start - 0.05)  # the question is on the held frame, a second early

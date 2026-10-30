@@ -344,13 +344,15 @@ def finger(
         raise ToonDataError("a still finger cannot move")
     timed = {"start": start, "end": end} if end else {}
     g = cv.group(parent, id, x=fx(x), y=fy(y), rotation=angle, **timed)
-    cv.rect(g, -fh(46), fh(180), fh(92), fh(900), sleeve, cv.ink, INK_W * 0.8, radius=fh(14))
-    cv.ellipse(g, -fh(92), fh(112), fh(62), fh(36), colour, cv.ink, INK_W * 0.8)  # the thumb, across the palm
-    cv.rect(g, -fh(62), fh(104), fh(126), fh(130), colour, cv.ink, INK_W * 0.8, radius=fh(34))
+    # the index is the hand's outer edge, the other fingers curled beside it and the thumb across them: a pointing
+    # finger never rises from the middle of the hand
+    cv.rect(g, -fh(8), fh(180), fh(92), fh(900), sleeve, cv.ink, INK_W * 0.8, radius=fh(14))
+    cv.rect(g, -fh(24), fh(104), fh(126), fh(130), colour, cv.ink, INK_W * 0.8, radius=fh(34))
     for k in range(3):  # the three curled fingers, side on
-        cv.rect(g, fh(4 + k * 18), fh(96 - k * 2), fh(26), fh(58), colour, cv.ink, INK_W * 0.6, radius=fh(13))
+        cv.rect(g, fh(22 + k * 20), fh(96 + k * 2), fh(28), fh(58), colour, cv.ink, INK_W * 0.6, radius=fh(13))
     cv.rect(g, -fh(21), 0, fh(42), fh(150), colour, cv.ink, INK_W * 0.8, radius=fh(20))
     cv.rect(g, -fh(19), fh(100), fh(38), fh(62), colour, cv.clear, 0, radius=0)
+    cv.ellipse(g, fh(-4), fh(160), fh(92), fh(38), colour, cv.ink, INK_W * 0.8)  # the thumb, across the curled fingers
     cv.ellipse(g, -fh(11), fh(6), fh(22), fh(26), NAIL, cv.ink, FINE_W * 0.4)
     _line(cv, g, [(-14, 70 + 58), (14, 70 + 58)], 3.0)
     if moves:

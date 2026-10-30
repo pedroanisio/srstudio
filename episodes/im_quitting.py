@@ -199,8 +199,7 @@ cutout_office.office_party(
     cv, finish, stage=friend_close, banner="40 YEARS", id="location-office-party-close", shots=spans["friend"]
 )
 
-specs = [(max(p.start - 0.05, 0.0), p.end + 0.25, p.caption, f"dialogue-{i + 1}") for i, p in enumerate(t.phrases)]
-spoken = ep.captions(specs, x=80, y=1420, width=920, size=60)
+spoken = ep.captions(ep.spoken_captions(tail=0.25), x=80, y=1420, width=920, size=60)
 ep.hide_on_cover(*spoken)
 ep.markers(extra=[("marker-board", SIX, "Day 2,190"), ("marker-mic", TAP, "He taps the mic")])
 ep.instagram(POSTS["im-quitting"])

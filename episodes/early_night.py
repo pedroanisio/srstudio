@@ -222,7 +222,7 @@ soft_props.time_card(
 CUTS = [ELEVEN, ONE, TWO, COMMENT, FOUR, DOWN, ALARM]
 spoken = {"narrator": [], "juno": []}
 for i, p in enumerate(P):
-    until = P[i + 1].start - 0.02 if i + 1 < len(P) else ALARM
+    until = P[i + 1].start - 0.05 if i + 1 < len(P) else ALARM
     cut = min(c for c in CUTS if c > p.start)  # a line's caption leaves with its shot
     spoken[p.role].append((max(0.0, p.start - 0.05), min(until, cut, p.end + 0.5), p.caption, f"caption-{i + 1}"))
 ep.captions(spoken["narrator"], **{**soft_sets.CAPTIONS, "color": "#2F5D8C"})

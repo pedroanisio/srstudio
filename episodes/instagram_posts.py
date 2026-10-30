@@ -99,15 +99,19 @@ def write_all(
     out: Path, renders: Path, *, fonts_dir: Path, engine: str | Path, only: list[str] | None = None
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
-    folders written. A video the caption gate refuses, or a release that does not pin what it draws, is a
-    :class:`DeliveryError` before anything is written."""
+    folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
+    print over each other, is a :class:`DeliveryError` before anything is written."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
     chosen = {slug: r for slug, r in RELEASES.items() if not only or r.video_name in only}
-    unpinned = releases.unpinned(chosen, _beside(renders), _delivering(out, renders, font_file(fonts_dir), only))
-    if unpinned:
-        raise DeliveryError("; ".join(map(str, unpinned)))
+    delivering = _delivering(out, renders, font_file(fonts_dir), only)
+    refused = [
+        *releases.unpinned(chosen, _beside(renders), delivering),
+        *releases.doubled_captions(chosen, _beside(renders), delivering),
+    ]
+    if refused:
+        raise DeliveryError("; ".join(map(str, refused)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
 
 

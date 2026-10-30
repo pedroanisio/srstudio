@@ -26,6 +26,8 @@ from . import checks
 from .camera import SNAP
 from .errors import SrstudioError
 
+DOUBLED = 0.001  # seconds of shared band below any frame, so a rounded time is not an overlap
+
 __all__ = [
     "SCHEMA",
     "CUT",
@@ -36,6 +38,7 @@ __all__ = [
     "Move",
     "Pause",
     "Craft",
+    "doubled_captions",
     "moves",
     "lines",
     "pauses",
@@ -136,6 +139,29 @@ def moves(document: bytes) -> list[Move]:
                      bool(CAMERA.fullmatch(gid)))
             )  # fmt: skip
     return sorted(found, key=lambda m: (m.start, m.group))
+
+
+def doubled_captions(document: bytes) -> list[str]:
+    """Each pair of captions that share a band at once, by name: for a few frames both lines print over each other,
+    and a caption gate that reads pixels at a line's middle never sees it."""
+    try:
+        root = ET.fromstring(document)
+    except ET.ParseError as e:
+        raise CraftError(f"not a scene document: {e}") from None
+    layers = [
+        (_seconds(n, "start"), _seconds(n, "end"), n.get("y"), n.get("id", ""))
+        for n in root.iter()
+        if n.tag.rpartition("}")[2] == "layer" and n.get("id", "").endswith("-caption") and n.get("start")
+    ]
+    bands: dict[str | None, list[tuple[float, float, str]]] = {}
+    for start, end, band, name in sorted(layers, key=lambda layer: (layer[0], layer[1])):
+        bands.setdefault(band, []).append((start, end, name))
+    return [
+        f"{a[2]} and {b[2]} share the band for {a[1] - b[0]:.2f} s"
+        for held in bands.values()
+        for a, b in zip(held, held[1:], strict=False)
+        if a[1] > b[0] + DOUBLED
+    ]
 
 
 def _sequence_shifts(root: ET.Element) -> dict[ET.Element, float]:

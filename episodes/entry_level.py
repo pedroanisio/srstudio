@@ -159,8 +159,7 @@ applicant("tech", tech)
 applicant("door", door)
 applicant("crib", lambda g: cutout_hiring.crib(cv, g, 540, 1400, rattles=((RATTLE[0], L[7].end),), scale=1.05))
 
-specs = [(max(p.start - 0.05, 0.0), p.end + 0.2, p.caption, f"dialogue-{i + 1}") for i, p in enumerate(t.phrases)]
-spoken = ep.captions(specs, x=80, y=1420, width=920, size=60)
+spoken = ep.captions(ep.spoken_captions(), x=80, y=1420, width=920, size=60)
 ep.hide_on_cover(*spoken)
 ep.markers(
     extra=[("marker-toddler", spans["toddler"][0][0], "The second applicant"), ("marker-blind", SNAP, "The blind")]

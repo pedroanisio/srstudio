@@ -304,3 +304,23 @@ def test_the_command_folds_groups_that_make_the_same_move_into_one_line(tmp_path
     assert out.count("push") == 1 and "k1 +2 more" in out
     assert main(["craft", str(root), "--json"]) == 0
     assert len(json.loads(capsys.readouterr().out)[0]["moves"]) == 3  # the data keeps every group
+
+
+def caption_layers(*layers):
+    body = "".join(f'<layer id="{i}-caption" start="{a}" end="{b}" y="{y}" asset="{i}"/>' for i, a, b, y in layers)
+    return f"<scene>{body}</scene>".encode()
+
+
+def test_two_captions_in_one_band_at_once_are_named():
+    found = craft.doubled_captions(caption_layers(("a", 1.0, 2.1, 1420), ("b", 2.0, 3.0, 1420)))
+    assert found == ["a-caption and b-caption share the band for 0.10 s"]
+
+
+def test_captions_that_meet_or_sit_in_other_bands_are_not_doubled():
+    assert craft.doubled_captions(caption_layers(("a", 1.0, 2.0, 1420), ("b", 2.0, 3.0, 1420))) == []
+    assert craft.doubled_captions(caption_layers(("a", 1.0, 2.5, 300), ("b", 2.0, 3.0, 1420))) == []
+
+
+def test_doubled_captions_refuse_what_is_not_a_scene():
+    with pytest.raises(craft.CraftError, match="not a scene"):
+        craft.doubled_captions(b"<scene")

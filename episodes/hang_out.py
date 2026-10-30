@@ -162,7 +162,7 @@ for name, x, stamp in (("left", 270, ""), ("right", 730, "AWAY")):
 CUTS = [*YEARS, BENCH, LAST]
 specs = []
 for i, p in enumerate(P):
-    until = P[i + 1].start - 0.02 if i + 1 < len(P) else LAST
+    until = P[i + 1].start - 0.05 if i + 1 < len(P) else LAST
     cut = min(c for c in CUTS if c > p.start)  # a line's caption leaves with its shot
     specs.append((max(0.0, p.start - 0.05), min(until, cut, p.end + 0.7), p.caption, f"caption-{i + 1}"))
 ep.captions(specs, **soft_sets.CAPTIONS)

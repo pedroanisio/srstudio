@@ -24,11 +24,12 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import craft
 from .errors import SrstudioError
 from .parts import PartError, pin, read_record
 from .social import COVER_VARIANT, Drift, InstagramPost, Item
 
-__all__ = ["Release", "ReleaseError", "Tags", "grandfathered", "load", "items", "unpinned"]
+__all__ = ["Release", "ReleaseError", "Tags", "doubled_captions", "grandfathered", "load", "items", "unpinned"]
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -210,6 +211,17 @@ def unpinned(releases: Mapping[str, Release], episodes: Path, delivering: Collec
         except PartError as exc:
             reasons = [str(exc)]
         drift.extend(Drift(release.video_name, reason) for reason in reasons)
+    return drift
+
+
+def doubled_captions(releases: Mapping[str, Release], episodes: Path, delivering: Collection[str]) -> list[Drift]:
+    """Every pair of captions that print over each other in a video being delivered; a published video is frozen and
+    a project with no scene has nothing to read."""
+    drift: list[Drift] = []
+    for release in releases.values():
+        scene = Path(episodes) / release.slug / release.scene_file
+        if release.video_name in delivering and scene.is_file():
+            drift.extend(Drift(release.video_name, why) for why in craft.doubled_captions(scene.read_bytes()))
     return drift
 
 

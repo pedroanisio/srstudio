@@ -473,6 +473,21 @@ class Episode:
             out.append((max(0.0, p.start - lead), end, p.caption, name.format(n=i + 1)))
         return out
 
+    def spoken_captions(
+        self, tail: float = 0.2, lead: float = 0.05, name: str = "dialogue-{n}"
+    ) -> list[tuple[float, float, str, str]]:
+        """Each phrase's caption, from ``lead`` before it to ``tail`` after it, cut where the next one starts: two
+        lines never share the band, however close they are spoken."""
+        if not (checks.number(lead) and checks.number(tail) and lead >= 0 and tail >= 0):
+            raise EpisodeError(f"caption lead and tail must be finite and non-negative, got {lead}, {tail}")
+        out = []
+        for i, p in enumerate(self.phrases):
+            end = p.end + tail
+            if i + 1 < len(self.phrases):
+                end = min(end, self.phrases[i + 1].start - lead)
+            out.append((max(0.0, p.start - lead), end, p.caption, name.format(n=i + 1)))
+        return out
+
     def mix(
         self,
         loudness: str | None = None,

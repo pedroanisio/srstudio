@@ -324,3 +324,23 @@ def test_a_reel_carries_the_recipient_test_beside_the_first_second_test():
 def test_the_recipient_test_is_refused_when_incomplete(kw, match):
     with pytest.raises(releases.ReleaseError, match=match):
         releases.Tags("family", "other-person", "recognition", **kw)
+
+
+def test_a_delivery_is_told_which_captions_print_over_each_other(tmp_path):
+    release = Release("a-b", POST)
+    project = tmp_path / "a-b"
+    project.mkdir()
+    (project / "a-b.scene.xml").write_text(
+        '<scene><layer id="x-caption" start="1" end="2.2" y="9"/>'
+        '<layer id="y-caption" start="2" end="3" y="9"/></scene>'
+    )
+    drift = releases.doubled_captions({"a-b": release}, tmp_path, {"a-b"})
+    assert [(d.name, d.reason) for d in drift] == [("a-b", "x-caption and y-caption share the band for 0.20 s")]
+
+
+def test_a_published_video_is_not_read_for_doubled_captions(tmp_path):
+    assert releases.doubled_captions({"a-b": Release("a-b", POST)}, tmp_path, {"a-b"}) == []
+    project = tmp_path / "a-b"
+    project.mkdir()
+    (project / "a-b.scene.xml").write_text("<scene")
+    assert releases.doubled_captions({"a-b": Release("a-b", POST)}, tmp_path, ()) == []

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from srstudio import CAFE, CAFE_MOUTH, Episode, EpisodeSpec, camera, cast, graphics, locations
-from srstudio.episode import SceneCheckError
+from srstudio.episode import EpisodeError, SceneCheckError
 from srstudio.errors import SrstudioError
 from support.build import office_episode
 
@@ -121,3 +121,17 @@ def test_caption_scripts_keep_their_own_windows(project, tmp_path):
     (project / "script.json").write_text(json.dumps(items))
     ep = Episode(EpisodeSpec(slug="captions", title="t", description="t", root=project, seed=1, dialogue="script.json"))
     assert [(a, b) for a, b, _, _ in ep.default_captions(lead=0)] == [(0, 1), (2, 3)]
+
+
+def test_spoken_captions_end_before_the_next_one_starts(project):
+    ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
+    specs = ep.spoken_captions(tail=100.0, lead=0.05)
+    assert all(a[1] <= b[0] for a, b in zip(specs, specs[1:], strict=False))
+    assert specs[-1][1] == ep.phrases[-1].end + 100.0
+    assert [s[3] for s in specs[:2]] == ["dialogue-1", "dialogue-2"]
+
+
+def test_spoken_captions_refuse_a_negative_tail(project):
+    ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
+    with pytest.raises(EpisodeError, match="lead and tail"):
+        ep.spoken_captions(tail=-1.0)

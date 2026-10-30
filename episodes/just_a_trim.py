@@ -124,8 +124,7 @@ cv.rect(till, -10, 1160, 1100, 800, "#F4EFE0", cv.ink, 4)
 look.pool(cv, till, "till-contact", "#2A2018CC", 170, 1190, 740, 60, opacity=0.5)
 props.card_reader(cv, till, 540, 1230, scale=2.6, readings=((0, "$22.00", "TRIM"), (PAID, "$30.00", "TIP")))
 
-specs = [(max(p.start - 0.05, 0.0), p.end + 0.2, p.caption, f"dialogue-{i + 1}") for i, p in enumerate(t.phrases)]
-spoken = ep.captions(specs, x=80, y=1420, width=920, size=60)
+spoken = ep.captions(ep.spoken_captions(), x=80, y=1420, width=920, size=60)
 ep.hide_on_cover(*spoken)
 ep.markers(extra=[("marker-mirror", UNCOVER, "The mirror"), ("marker-tip", PAID, "The tip")])
 ep.instagram(POSTS["just-a-trim"])
