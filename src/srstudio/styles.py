@@ -320,6 +320,7 @@ STICK = Style(
         "stick",
         "stick_airport",
         "stick_car",
+        "stick_door",
         "stick_flat",
         "stick_gym",
         "stick_school",

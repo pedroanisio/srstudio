@@ -234,6 +234,7 @@ def test_the_style_value(tmp_path):
         "stick",
         "stick_airport",
         "stick_car",
+        "stick_door",
         "stick_flat",
         "stick_gym",
         "stick_school",
@@ -277,6 +278,11 @@ def test_the_style_value(tmp_path):
         "stick-armrests",
         "stick-windshield",
         "stick-windshield-dash",
+        "stick-entrance",
+        "stick-street-lens",
+        "stick-glass-door",
+        "stick-snow-cap",
+        "stick-marathon",
     }
 
 

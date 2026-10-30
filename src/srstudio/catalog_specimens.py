@@ -210,6 +210,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-car": Recipe(part(SECONDS)),
     "stick-gym": Recipe(part(SECONDS)),
     "stick-windshield": Recipe(part(SECONDS)),
+    "stick-entrance": Recipe(part(SECONDS)),
+    "stick-street-lens": Recipe(part(SECONDS)),
     "ink-phone-shot": Recipe(part("Boss", BUBBLES)),
     # -- props ---------------------------------------------------------------------------------------------------
     "building": Recipe(part(300, 600, 480, 760)),
@@ -248,6 +250,9 @@ RECIPES: dict[str, Recipe] = {
     "stick-kiosk": Recipe(part((stick_shop.Screen(0.0, "Place item in the bagging area"),), SECONDS)),
     "stick-name-badge": Recipe(part(540, 960, "DEV", "Employee of the month")),
     "stick-windshield-dash": Recipe(part(SECONDS)),
+    "stick-glass-door": Recipe(part(SECONDS)),
+    "stick-snow-cap": Recipe(part(540, 960, 2)),
+    "stick-marathon": Recipe(part(SECONDS)),
     "toon-dishes": Recipe(part((("salad", 380), ("water", 470), ("check", 540)))),
     "toon-card-reader": Recipe(part(((0.0, "TAP CARD", "idle"),))),
     "toon-phone": Recipe(lettered(PHONE_SCREENS)),

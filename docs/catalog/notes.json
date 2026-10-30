@@ -3910,6 +3910,66 @@
         ]
       },
       "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
+    },
+    {
+      "section": "locations",
+      "name": "Saguão de entrada",
+      "parts": [
+        "stick-entrance"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 5.0
+      },
+      "text": "O saguão com a porta de vidro aberta para a rua: o relógio de parede, o sol no chão, a prateleira com o cacto e um caminho que some ao longe. A rua escurece, neva e amanhece no tempo do plano."
+    },
+    {
+      "section": "locations",
+      "name": "Rua na teleobjetiva",
+      "parts": [
+        "stick-street-lens"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 2.0
+      },
+      "text": "A mesma rua vista de perto, com as casas desfocadas: serve para mostrar quem corre sem abrir um plano geral."
+    },
+    {
+      "section": "props",
+      "name": "Porta de vidro",
+      "parts": [
+        "stick-glass-door"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 16.0
+      },
+      "text": "Porta de vidro na dobradiça, segurada pela maçaneta, que fecha em quatro quadros desenhados."
+    },
+    {
+      "section": "props",
+      "name": "Neve acumulada",
+      "parts": [
+        "stick-snow-cap"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 12.0
+      },
+      "text": "Montinho de neve em três tamanhos, para pousar em quem ficou parado tempo demais."
+    },
+    {
+      "section": "props",
+      "name": "Maratona ao longe",
+      "parts": [
+        "stick-marathon"
+      ],
+      "shot": {
+        "episode": "hold-the-door",
+        "at": 12.0
+      },
+      "text": "Fileira de corredores em silhueta que atravessa o fim da rua, cada um no próprio passo."
     }
   ]
 }

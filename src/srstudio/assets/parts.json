@@ -2936,6 +2936,23 @@
         }
       ]
     },
+    "stick-entrance": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8b31b640539fdb77cd94fd84f35fb84d230ce93fa95f59ecbc66d89e7e552cf7",
+          "rig": null
+        }
+      ]
+    },
     "stick-essay": {
       "kind": "graphic",
       "style": "stick",
@@ -3003,6 +3020,23 @@
           "proof": "",
           "approval": null,
           "drawing": "fd0d096087e554458b9a92df13af5f3b3494518d8f2eba69fd671df15b74ff02",
+          "rig": null
+        }
+      ]
+    },
+    "stick-glass-door": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "58f2f69790aca034327fc402c4c8149a704fd228438d41f33d96292ee8a8b553",
           "rig": null
         }
       ]
@@ -3109,6 +3143,23 @@
         }
       ]
     },
+    "stick-marathon": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9c448e51c44d2ad66fd3015a36b11fe34648cff92e25d6fdbc591847ae752464",
+          "rig": null
+        }
+      ]
+    },
     "stick-murphy-bed": {
       "kind": "prop",
       "style": "stick",
@@ -3210,6 +3261,40 @@
           "proof": "",
           "approval": null,
           "drawing": "d712b8a6c8e41c465230df6feb1e21c5e7ecb816e1fa9fcd2698cd91cc5d2ed1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-snow-cap": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c5f461df691038f7e3b5a9fbab0cf79f41e77a5e7b5115f35b41f20d245f08f2",
+          "rig": null
+        }
+      ]
+    },
+    "stick-street-lens": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "639a4435d84700b82884a711e57983df746ce2dd436dadd8eba42782607b8623",
           "rig": null
         }
       ]

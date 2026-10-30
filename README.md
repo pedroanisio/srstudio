@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_door`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` (the reel builder is `stick_reel`) | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1245,6 +1245,23 @@ The word captions sit at `WORDS_Y`, over the hood.
 SRSTUDIO_ALLOW_CLOUD=1 python3 episodes/the_exit_audio.py PROJECT --font FONT_DIR   # takes, bed, timeline.json
 python3 episodes/the_exit.py PROJECT     # the-exit.scene.xml + SRT, 17.792 s
 ```
+
+### An original Stick episode at a door: *Hold the Door* (R10)
+
+[episodes/hold_the_door.py](episodes/hold_the_door.py): Dev holds the door for a stranger far too far away, so the
+stranger has to jog for it. Others overtake him, day turns to night, snow settles, a marathon passes. Years later the
+stranger is three steps away when Dev's arm gives out.
+
+The set is `srstudio.stick_door`:
+
+- `stick-entrance`: the lobby and the street through its doorway, with a wall clock that runs and a street that
+  darkens over the shot; `stick-street-lens` is the same street on a long lens, for close work on a runner.
+- `stick-glass-door`: the pane on its hinge, held, swinging shut, or `closed`.
+- `stick-snow-cap` and `stick-marathon`: snow in three sizes, and the silhouettes past the end of the street.
+- `HOLD` and `JOG`: the poses of the arm that tires and of a run, with `shaking()` and `jogger()`; `on_path()`,
+  `approach()` and `through()` put a figure on the path and behind the doorway.
+
+`srstudio.stick_reel` holds what a recorded Stick reel repeats: `spec()`, the spoken `words()` and `close()`.
 
 ## Toon style package: *Anonymous Employee Survey*
 
