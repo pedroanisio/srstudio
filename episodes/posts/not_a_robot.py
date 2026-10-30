@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Prove you're\nnot a robot.", 15.0, "Ink 03", place="top"),
     ),
     cover=True,
+    characters={"doodle": 1, "talking-router": 1},
 )

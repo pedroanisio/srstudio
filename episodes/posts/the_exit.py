@@ -31,4 +31,5 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags("relationships", "protagonist", "affection", recurring=("dev", "noor")),
+    characters={"stick-rig": 1},
 )

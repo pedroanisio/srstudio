@@ -31,4 +31,5 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags("everyday-tech", "institution", "recognition", recurring=("doodle",)),
+    characters={"doodle": 1, "talking-meter": 1},
 )

@@ -33,4 +33,5 @@ RELEASE = Release(
     cover=True,
     # its cover drawing changed after it was published; the operator froze it as published (ADR 0040)
     frozen="d51dd66b70617ad161789a85c5bf7559a8a223aecb9857a1f14e2a7bf5cffe59",
+    characters={"saga-droid": 1, "saga-gloom": 1},
 )

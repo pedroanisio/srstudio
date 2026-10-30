@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Points for\nmore points", 15.8, "Gloss 02", (540, 960), 1.0),
     ),
     cover=True,
+    characters={"gloss-gus": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
 )

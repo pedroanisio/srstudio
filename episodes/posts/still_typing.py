@@ -29,4 +29,5 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "protagonist", "embarrassment", recurring=("brock", "mia"), test="sp-hook_motion", arm="a"
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )

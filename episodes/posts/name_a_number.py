@@ -29,4 +29,5 @@ RELEASE = Release(
     tags=Tags(
         "job-hunting", "other-person", "recognition", recurring=("manager", "candidate"), test="sp-hook_motion", arm="a"
     ),
+    characters={"candidate": 1, "manager": 1},
 )

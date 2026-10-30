@@ -29,4 +29,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Day off?\nBook it.", 19.6, "Soft 04", (600, 1000), 1.25),
     ),
+    characters={"pip": 1},
 )

@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Someone has to\nbe the culture.", 19.2, "Episode 15", place="bottom"),
     ),
     cover=True,
+    characters={"bo": 1, "pip": 1},
 )

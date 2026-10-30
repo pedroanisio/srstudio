@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Who is\ncatching me?", 7.6, "Gloss 03", (540, 960), 1.0),
     ),
     cover=True,
+    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1},
 )

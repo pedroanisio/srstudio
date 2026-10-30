@@ -30,4 +30,5 @@ RELEASE = Release(
         test="sp-hook_motion",
         arm="b",
     ),
+    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
 )

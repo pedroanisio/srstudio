@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Is a broken arm\ncovered?", 0.8, "Toon 09", (500, 1181), 1.3),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )
