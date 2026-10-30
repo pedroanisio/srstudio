@@ -515,11 +515,15 @@
     "saga-rook": {"title": "Rook"},
     "juno": {"title": "Juno, a colega"},
     "stick-rig": {"title": "O boneco articulado"},
+    "toon-bib-insert": {"title": "Babador em close"},
+    "toon-dental-lamp": {"title": "Refletor de dentista"},
+    "toon-dental-tray": {"title": "Bandeja de instrumentos"},
     "toon-fox": {"title": "A raposa"},
     "toon-fox@2": {"title": "A raposa de contorno"},
     "toon-goat": {"title": "A cabra lilás"},
     "toon-hamster": {"title": "O hamster"},
     "toon-hedgehog": {"title": "O ouriço"},
+    "toon-probe": {"title": "Sonda"},
     "toon-raccoon": {"title": "O guaxinim"},
     "toon-sloth": {"title": "A preguiça"},
     "answer-bubble": {"title": "Número da resposta"},
@@ -597,8 +601,10 @@
     "toon-receipt": {"title": "Nota fiscal"},
     "toon-speaker": {"title": "Caixa inteligente"},
     "toon-sink": {"title": "Pia com a panela de molho"},
+    "toon-surgery": {"title": "Consultório de dentista"},
     "toon-take-a-number": {"title": "Dispensador de senhas"},
     "toon-thermostat": {"title": "Termostato"},
+    "toon-tooth-photo": {"title": "Foto do dente"},
     "toon-vent": {"title": "Grelha de ventilação"},
     "toon-watering-can": {"title": "Regador"}
   },
@@ -4006,6 +4012,48 @@
       "parts": ["toon-watering-can"],
       "shot": {"episode": "its-soaking", "at": 10.9},
       "text": "Regador inclinado numa luva escura, com as gotas caindo enquanto rega."
+    },
+    {
+      "section": "locations",
+      "name": "Consultório de dentista",
+      "parts": ["toon-surgery"],
+      "shot": {"episode": "do-you-floss", "at": 5.0},
+      "text": "Azulejo claro até a faixa verde, com o encosto da cadeira e a caixa de raio-X, ou o outro lado com armários de vidro e potes."
+    },
+    {
+      "section": "props",
+      "name": "Refletor de dentista",
+      "parts": ["toon-dental-lamp"],
+      "shot": {"episode": "do-you-floss", "at": 0.6},
+      "text": "Refletor num braço longo que balança desde o primeiro quadro, com uma pata no aro."
+    },
+    {
+      "section": "props",
+      "name": "Bandeja de instrumentos",
+      "parts": ["toon-dental-tray"],
+      "shot": {"episode": "do-you-floss", "at": 0.6},
+      "text": "Bandeja de aço com espelho, sonda e dois rolinhos de algodão."
+    },
+    {
+      "section": "props",
+      "name": "Foto do dente",
+      "parts": ["toon-tooth-photo"],
+      "shot": {"episode": "do-you-floss", "at": 8.6},
+      "text": "Foto de um único dente manchado, que entra deslizando pela direita."
+    },
+    {
+      "section": "props",
+      "name": "Sonda",
+      "parts": ["toon-probe"],
+      "shot": {"episode": "do-you-floss", "at": 9.3},
+      "text": "Sonda de aço que entra de uma vez até a ponta, para uma cutucada."
+    },
+    {
+      "section": "props",
+      "name": "Babador em close",
+      "parts": ["toon-bib-insert"],
+      "shot": {"episode": "do-you-floss", "at": 10.2},
+      "text": "Quadro inteiro: o papel do babador, a corrente, e uma gota de sangue que cai e fica."
     }
   ]
 }

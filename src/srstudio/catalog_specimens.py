@@ -260,6 +260,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-thermostat": Recipe(part(((0.0, "68"),))),
     "toon-day-card": Recipe(part(((0.0, 41),))),
     "toon-sink": Recipe(part(((0.0, "skin"), (0.1, "plant"), (0.2, "mail"), (0.3, "frog")))),
+    "toon-bib-insert": Recipe(part(0.0, SECONDS)),
     "toon-clock": Recipe(part(((0.0, "09:00"),))),
     "toon-notes": Recipe(part(("REPORT!", "9 AM", "DO NOT", "FORGET"))),
     "toon-note-insert": Recipe(part("IT MOVED.", 0.0, SECONDS)),
