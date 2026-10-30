@@ -59,6 +59,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_rooms,
     toon_sets,
     toon_torso,
+    toon_world,
 )
 from .canvas import (
     CAFE,

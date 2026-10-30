@@ -3739,6 +3739,40 @@
         }
       ]
     },
+    "toon-dump": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A dump at dusk with a dead television. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2fe8978ed0f698e79d650705a4d5c701dd592a04947a8ae72e3610c7722ebcb5",
+          "rig": null
+        }
+      ]
+    },
+    "toon-far-wall": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wall behind a far figure. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7dcf134f6b9dba89fdab326a9b4bbcac3a8dcb14957fed415eec4e4792e0ef85",
+          "rig": null
+        }
+      ]
+    },
     "toon-fox": {
       "kind": "character",
       "style": "toon",
@@ -3836,6 +3870,23 @@
             },
             "drawing": "17f0ced80ff0f4dd86dacfbcec21f646f74864eff790e4c68aac8f1719fd183c"
           }
+        }
+      ]
+    },
+    "toon-gull": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A gull that flies in and lands. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3174cec37764391d4a6d83e0b9e3a0b541341e48d7a825e0936d35e5dcb3304c",
+          "rig": null
         }
       ]
     },
@@ -3953,6 +4004,23 @@
         }
       ]
     },
+    "toon-ledge": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain counter top in the desk's place. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a086734b6bbc964b0c6ef7c323224dc14e915af9b4b11550d355d4d6003918fe",
+          "rig": null
+        }
+      ]
+    },
     "toon-logo": {
       "kind": "graphic",
       "style": "toon",
@@ -4051,6 +4119,23 @@
           "proof": "",
           "approval": null,
           "drawing": "bc9d9e427f791fe0013a70df62eb9716360d79c73e6ce08496e5a0ef81748956",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paw": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An arm that slides in holding something. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0bf9f08a3ccbe941648a1b41c4f6a194111f47c4593922e025c30d809d3b8abe",
           "rig": null
         }
       ]
@@ -4183,6 +4268,23 @@
         }
       ]
     },
+    "toon-road": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A road passing behind a flatbed. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9f22f548ed35a29885344cb431de156302b962464bf0f188ee2e22043d1c403",
+          "rig": null
+        }
+      ]
+    },
     "toon-room": {
       "kind": "location",
       "style": "toon",
@@ -4227,6 +4329,57 @@
             },
             "drawing": "2c9a9314d5a2642e661b7e08b568ad9c0ee9ffa6092022cd1e5c0e8f77702fb0"
           }
+        }
+      ]
+    },
+    "toon-snores": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Zs that rise from a sleeper. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dfbf779c846e4a0568551715372e2a7bdf5922982c7f7beee4201532cf980504",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A sofa and side table that carry the character and the marks anywhere. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1a772a5ccd97110f214a49f244ad3c26760c74c0c92e95ec2f852a6ae7e6ffe0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa-back": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The sofa seen from behind, for a far figure. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "124302cfe52fdbe12ee6d8708d9a83cde99b7cd4712485e22ea98f9f4969de6f",
+          "rig": null
         }
       ]
     },
@@ -4294,6 +4447,23 @@
           "proof": "",
           "approval": null,
           "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
+        }
+      ]
+    },
+    "toon-yard": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front yard with a fence and a sign. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "500b993400a4570b42aea219562c225762f4eaa43e45d80fd936937ba0493c00",
           "rig": null
         }
       ]

@@ -92,3 +92,59 @@ def test_a_sting_plays_its_notes_in_turn_and_a_chime_is_a_different_tune(tmp_pat
         foley.tones([1.5], 2.0, rate=8000)
     with pytest.raises(ValueError, match="notes are"):
         foley.tones([0.5], 2.0, [(10.0, 10.0, 0.1)], rate=8000)
+
+
+def test_a_burst_is_seeded_levelled_and_lands_on_its_cues():
+    sound = foley.Burst(0.05, 2000.0, tone_hz=400.0, tone_end_hz=300.0, tone=0.5)
+    a = foley.bursts([0.1, 0.4], 0.6, sound, rate=8000, seed=3)
+    assert a == foley.bursts([0.4, 0.1], 0.6, sound, rate=8000, seed=3) and a != foley.bursts(
+        [0.1, 0.4], 0.6, sound, rate=8000, seed=4
+    )
+    assert len(a) == 4800 and max(abs(v) for v in a) == pytest.approx(foley.PEAK)
+    assert not any(a[:800]) and any(a[800:840]) and not any(a[1200:3200]) and any(a[3200:3240])
+
+
+def test_a_burst_cut_by_the_end_of_the_bed_stops_there():
+    assert len(foley.bursts([0.55], 0.6, foley.SNORE, rate=8000)) == 4800
+
+
+@pytest.mark.parametrize("sound", [foley.REMOTE_CLICK, foley.SNORE, foley.ROAD, foley.CHOPPER, foley.GULL])
+def test_the_named_sounds_are_sound(sound):
+    assert any(foley.bursts([0.0], 0.5, sound, rate=8000))
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [
+        ({"seconds": 0.0, "low_hz": 100.0}, "lasts"),
+        ({"seconds": 1.0, "low_hz": 1.0}, "low-pass"),
+        ({"seconds": 1.0, "low_hz": 100.0, "attack": 2.0}, "attack"),
+        ({"seconds": 1.0, "low_hz": 100.0, "decay": 0.0}, "decay"),
+        ({"seconds": 1.0, "low_hz": 100.0, "tone": 2.0}, "tone level"),
+        ({"seconds": 1.0, "low_hz": 100.0, "flutter_hz": -1.0}, "flutter"),
+    ],
+)
+def test_a_burst_refuses_numbers_it_cannot_sound(kw, match):
+    with pytest.raises(foley.FoleyError, match=match):
+        foley.Burst(**kw)
+
+
+@pytest.mark.parametrize(
+    "args, match", [(([2.0], 1.0, foley.KNOCK), "every cue"), (([0.0], 0.0, foley.KNOCK), "every cue")]
+)
+def test_bursts_refuse_a_cue_the_bed_does_not_hold(args, match):
+    with pytest.raises(foley.FoleyError, match=match):
+        foley.bursts(*args)
+
+
+def test_bursts_refuse_a_rate_or_a_peak_out_of_range():
+    with pytest.raises(foley.FoleyError, match="rate"):
+        foley.bursts([0.0], 1.0, foley.KNOCK, rate=10)
+    with pytest.raises(foley.FoleyError, match="peak"):
+        foley.bursts([0.0], 1.0, foley.KNOCK, peak=2.0)
+
+
+def test_write_bursts_writes_a_wav(tmp_path):
+    path = foley.write_bursts(tmp_path / "k.wav", [0.0], 0.2, foley.KNOCK, rate=8000)
+    with wave.open(str(path)) as w:
+        assert w.getframerate() == 8000 and w.getnframes() == 1600

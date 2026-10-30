@@ -77,6 +77,7 @@ class Shot:
     end: float
     measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
     light: object | None = None  # a lit staging's light layer, between the character and the desk (ADR 0043)
+    versions: Mapping[str, int] = field(default_factory=dict)  # the pins, for a further character drawn in the shot
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -250,7 +251,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light)
+        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions)
         staging.dress(shot)
         if staging.camera is not None:
             staging.camera(shot, g)
@@ -267,11 +268,30 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 
 
 # -- the recording run ------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Sound:
+    """A sound a sketch adds to the keys, the buzz and the sting: ``sound`` at every ``at`` project second, on the
+    track ``id``, at ``gain_db``."""
+
+    id: str
+    sound: foley.Burst
+    at: tuple[float, ...]
+    gain_db: float = -4.0
+
+
+Sounds = Callable[[Sequence[sketch.Beat], float], Sequence[Sound]]  # the sketch's own sounds, from the placed beats
+
+
 def sound_effects(
-    beats: Sequence[sketch.Beat], end: float, speech: Sequence[tuple[float, float]], root: Path, seed: int
+    beats: Sequence[sketch.Beat],
+    end: float,
+    speech: Sequence[tuple[float, float]],
+    root: Path,
+    seed: int,
+    sounds: Sounds | None = None,
 ) -> list[dict]:
     """The manifest's effects: the keyboard in the typing beats between the lines (its taps swap the frames), a
-    buzz under every ``toast`` event and the sting on ``hangup``."""
+    buzz under every ``toast`` event, the sting on ``hangup``, and what ``sounds`` asks of the placed beats."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     taps = foley.taps(sketch.typing_bursts(beats, end, speech), seed=seed, until=end - foley.KEY_TAIL)
@@ -285,6 +305,10 @@ def sound_effects(
     if stings:
         sting = foley.write_tones(audio / "sting.wav", stings, end)
         out.append(sketch.effect("sting", 0.0, STING_GAIN_DB, root, sting))
+    for fx in sounds(beats, end) if sounds is not None else ():
+        if fx.at:
+            path = foley.write_bursts(audio / f"{fx.id}.wav", fx.at, end, fx.sound, seed=seed)
+            out.append(sketch.effect(fx.id, 0.0, fx.gain_db, root, path))
     return out
 
 
@@ -296,17 +320,18 @@ def record_episode(
     seed: int,
     note: str,
     mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
+    sounds: Sounds | None = None,
 ) -> dict:
     """Record the sketch under ``root`` (only with ``SRSTUDIO_ALLOW_CLOUD=1``; the key from the environment, never
     written), synthesise its effects and write ``narration.json``; returns the manifest. ``mouth`` reads the takes'
-    letters into the characters' viseme tracks (``voiced/mouths.json``)."""
+    letters into the characters' viseme tracks (``voiced/mouths.json``); ``sounds`` adds the sketch's own foley."""
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     require_consent(env)
     root = Path(root)
     key = env.get(KEY_ENV, "")
     client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=seed)
     rec = sketch.record(sk, root, client, key=key, ffmpeg=ffmpeg, mouth=mouth)
-    effects = sound_effects(rec.beats, rec.end, rec.speech, root, seed)
+    effects = sound_effects(rec.beats, rec.end, rec.speech, root, seed, sounds)
     manifest = sketch.manifest(sk, rec, effects, MODEL, note)
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     for q in rec.items:
@@ -323,15 +348,16 @@ def recorder(
     doc: str | None,
     mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
     validate: Callable[[sketch.Sketch], object] | None = None,
+    sounds: Sounds | None = None,
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
-    once the arguments are parsed, before anything is recorded."""
+    once the arguments are parsed, before anything is recorded; ``sounds`` adds the sketch's own foley."""
 
     def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
         if validate is not None:
             validate(sk)
-        return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth)
+        return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, sounds=sounds)
 
     def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
         return recording.main(record, doc, argv, env)

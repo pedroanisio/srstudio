@@ -476,6 +476,14 @@
         "Uma leitura aceita pelo operador: o reconhecimento de fala ouve \"Reel\" onde a Sunny diz \"Real\", e <code>takes.Take(heard=...)</code> registra essa única alternativa no relatório de transcrição; qualquer outra leitura ainda para a gravação.",
         "Primeiro episódio com <code>gloss_reel.LOOK</code> (ADR 0031): nenhuma legenda termina numa palavra solta e toda legenda fica ao menos 0,84 s na tela; G1–G6, já publicados, mantêm as legendas originais."
       ]
+    },
+    "i-was-watching": {
+      "number": "T28",
+      "lede": "O Bruno dorme desde os créditos. A Mae desliga o filme. Ele estava assistindo. Ela continua clicando, e o mundo atrás do sofá vai embora.",
+      "highlights": [
+        "O plano do Bruno fica parado e o cenário troca atrás dele: sala, sala vazia, quintal, estrada, lixão (<code>toon_world.sofa</code>, com o cacto e o código no chão de cada lugar).",
+        "A TV morta no lixão fica no mesmo ponto da tela em que a TV da sala estava."
+      ]
     }
   },
   "styles": {
@@ -588,7 +596,17 @@
     "toon-plant": {"title": "Planta de folhas brilhantes"},
     "toon-receipt": {"title": "Nota fiscal"},
     "toon-speaker": {"title": "Caixa inteligente"},
-    "toon-take-a-number": {"title": "Dispensador de senhas"}
+    "toon-take-a-number": {"title": "Dispensador de senhas"},
+    "toon-sofa": {"title": "Sofá que vai a qualquer lugar"},
+    "toon-sofa-back": {"title": "Encosto do sofá"},
+    "toon-ledge": {"title": "Balcão liso"},
+    "toon-far-wall": {"title": "Parede ao fundo"},
+    "toon-yard": {"title": "Quintal de venda de garagem"},
+    "toon-road": {"title": "Estrada passando"},
+    "toon-dump": {"title": "Lixão ao entardecer"},
+    "toon-gull": {"title": "Gaivota"},
+    "toon-paw": {"title": "Braço que entra no quadro"},
+    "toon-snores": {"title": "Zs do sono"}
   },
   "gallery": [
     {
@@ -3910,6 +3928,115 @@
         ]
       },
       "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
+    },
+    {
+      "section": "props",
+      "name": "Sofá que vai a qualquer lugar",
+      "parts": [
+        "toon-sofa",
+        "toon-sofa-back"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 9.5
+      },
+      "text": "Sofá e mesinha lateral no lugar da mesa de escritório: leva o cacto e o código para a sala, o quintal, a carroceria de um caminhão ou o lixão, conforme o chão escolhido (<code>toon_world.sofa</code>)."
+    },
+    {
+      "section": "props",
+      "name": "Balcão liso",
+      "parts": [
+        "toon-ledge"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 3.8
+      },
+      "text": "Tampo simples no lugar da mesa, para quem fala em primeiro plano; assinado como a mesa."
+    },
+    {
+      "section": "locations",
+      "name": "Parede ao fundo",
+      "parts": [
+        "toon-far-wall"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 3.8
+      },
+      "text": "A parede lisa atrás do sofá pequeno, para o plano por cima do ombro."
+    },
+    {
+      "section": "locations",
+      "name": "Quintal de venda de garagem",
+      "parts": [
+        "toon-yard"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 11.5
+      },
+      "text": "Casa, cerca, céu e uma placa à mão com o texto que a esquete pedir."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada passando",
+      "parts": [
+        "toon-road"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 14.5
+      },
+      "text": "Morros, árvores e postes passam em três velocidades atrás de uma carroceria; a cabine vermelha fica à direita."
+    },
+    {
+      "section": "locations",
+      "name": "Lixão ao entardecer",
+      "parts": [
+        "toon-dump"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 17.6
+      },
+      "text": "Montes de sacos sob um céu de fim de tarde, e a TV quebrada no mesmo ponto da tela da TV da sala."
+    },
+    {
+      "section": "props",
+      "name": "Gaivota",
+      "parts": [
+        "toon-gull"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 18.8
+      },
+      "text": "Entra voando do alto à direita, pousa onde a cena pede e fica."
+    },
+    {
+      "section": "props",
+      "name": "Braço que entra no quadro",
+      "parts": [
+        "toon-paw"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 7.0
+      },
+      "text": "Um braço da cor do personagem desliza da borda segurando o controle ou um bilhete, e aperta nos momentos marcados."
+    },
+    {
+      "section": "props",
+      "name": "Zs do sono",
+      "parts": [
+        "toon-snores"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 6.5
+      },
+      "text": "Letras Z que sobem e somem a partir de quem dorme."
     }
   ]
 }
