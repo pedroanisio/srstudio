@@ -143,6 +143,19 @@ table.rows .summary{ color:var(--muted); font-size:.82rem; max-width:52ch }
 .stills figure{ margin:0; display:grid; gap:4px; min-width:0 }
 .stills img{ width:100%; height:auto; display:block; border-radius:6px; background:var(--surface-2) }
 .stills.lead{ grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) }
+#versions{ display:grid; gap:10px }
+.version{ display:grid; gap:14px; padding:12px; border:1px solid var(--line); border-radius:8px; min-width:0 }
+.version.pictured{ grid-template-columns:minmax(0,150px) minmax(0,1fr) }
+.version.current{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) }
+.version .stills{ grid-template-columns:minmax(0,1fr) }
+.version .stills img{ object-fit:contain; background:#E7E4DD }
+.version-facts{ display:grid; gap:6px; align-content:start; min-width:0 }
+.version-facts h3{ margin:0; font-size:1rem }
+.version-facts p{ margin:0; overflow-wrap:anywhere }
+.version-facts small{ color:var(--muted) }
+.version .pins, .version-facts .aside{ display:grid; gap:4px; color:var(--muted); font-size:.88rem }
+.tag.default{ background:var(--accent); color:var(--ink) }
+@media(max-width:520px){ .version.pictured{ grid-template-columns:minmax(0,1fr) } }
 .stills figcaption{ font-size:.78rem; color:var(--muted) }
 
 .lib-usage{ display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)) }
