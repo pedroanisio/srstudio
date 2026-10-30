@@ -26,7 +26,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import brush, checks
+from . import brush, checks, toon_everyday
 from .canvas import Canvas
 from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
@@ -43,6 +43,8 @@ __all__ = [
     "FLICKER",
     "FLICKER_PERIOD",
     "SHADE_MAX",
+    "LOUNGE_SPEAKER",
+    "LOUNGE_SPEAKER_SCALE",
     "parse_lights",
     "level_keys",
     "colour_spans",
@@ -76,7 +78,9 @@ NIGHT_SHADE = "#262a52"
 SHELF = "#c48a5a"
 ROUTER = "#2b2f38"
 ROUTER_LED, ROUTER_LED_OFF = "#5cff8a", "#1c4a2e"
-SPEAKER, SPEAKER_RING = "#4a4f5c", "#7fd3ff"
+LOUNGE_SPEAKER = (537.0, 190.0)  # the smart speaker (toon_everyday.speaker) stands on the shelf's right end
+LOUNGE_SPEAKER_SCALE = 0.5
+STILL_RING = min(toon_everyday.CHASE_STEP, toon_everyday.PULSE_STEP)  # a still speaker shows its ring's first step
 LAMP_POLE = "#3a3a46"
 LAMP_SHADE, LAMP_SHADE_LIT = "#c9b78f", "#ffe7a8"
 LAMP_LIGHT = "#ffb85c"
@@ -284,23 +288,41 @@ def _layer(cv: Canvas, parent, light):
     "location",
     "toon-lounge",
     summary="A living room at night, lit over time: a floor lamp, a wall TV whose glow changes colour, a sofa, a "
-    "router that blinks (ADR 0043)",
+    "router that blinks, a smart speaker (ADR 0043)",
 )
-def lounge(cv: Canvas, parent, lights: Mapping[str, Any] | None = None, end: float = 0.0, *, light=None):
-    """A deep teal wall at night with faint stripes; a shelf above the pill with a router whose lights blink and a
-    smart speaker; a floor lamp at the left (its shade above the character, its pole behind the sofa); a wall TV
-    at the right above a media console; the sofa's back behind the character. ``lights`` keys the ``lamp`` and
-    the ``tv`` (:func:`parse_lights`). The light layer goes into ``light`` (the shot's, between the character and
-    the desk), else into a group drawn over the set. Returns the cues."""
+def lounge(
+    cv: Canvas,
+    parent,
+    lights: Mapping[str, Any] | None = None,
+    end: float = 0.0,
+    *,
+    light=None,
+    speaker: Sequence[tuple[float, str]] = ((0.0, "off"),),
+):
+    """A deep teal wall at night with faint stripes; a shelf above the pill with a router whose lights blink and the
+    library's smart speaker (:func:`srstudio.toon_everyday.speaker`), whose ring follows ``speaker`` (``(second,
+    state)`` from 0; a still takes one state at 0); a floor lamp at the left (its shade above the character, its
+    pole behind the sofa); a wall TV at the right above a media console; the sofa's back behind the character.
+    ``lights`` keys the ``lamp`` and the ``tv`` (:func:`parse_lights`). The light layer goes into ``light`` (the
+    shot's, between the character and the desk), else into a group drawn over the set. Returns the cues."""
     cues = parse_lights("lounge", lights, end)
     end = float(end)
+    if not end and not (
+        isinstance(speaker, Sequence)
+        and len(speaker) == 1
+        and isinstance(speaker[0], Sequence)
+        and len(speaker[0]) == 2
+        and speaker[0][0] == 0
+    ):
+        raise ToonDataError(f"a still lounge's speaker holds one state at 0, got {speaker!r}")
+    toon_everyday.ring_keys(speaker, end or STILL_RING)  # refuse bad states before drawing
     lamp, tv = level_keys(cues["lamp"], end), level_keys(cues["tv"], end)
     g = cv.group(parent, cv.uid("g"))
     wall = cv.grad("toon-lounge-wall", [(float(o), c) for o, c in LOUNGE_WALL], (0, 0, 0, 1))
     cv.rect(g, 0, 0, cv.width, cv.height, wall)
     for x in range(24, 592, 48):
         cv.rect(g, fx(x), 0, fh(6), cv.height, STRIPE, opacity=0.3)
-    _lounge_shelf(cv, g, end)
+    _lounge_shelf(cv, g, end, speaker)
     # the floor lamp: the pole runs down behind the sofa; the shade lights up with its level, a glow round it
     _line(cv, g, [(88, 396), (88, 820)], 7.0, LAMP_POLE)
     _glow(cv, _level(cv, g, lamp), "toon-lounge-lamp", 88, 380, 150, LAMP_LIGHT)
@@ -344,7 +366,7 @@ def _picture(cv: Canvas, g, name: str, colour: str) -> None:
     cv.rect(g, fx(392), fy(342), fh(186), fh(114), paint, radius=fh(3))
 
 
-def _lounge_shelf(cv: Canvas, g, end: float) -> None:
+def _lounge_shelf(cv: Canvas, g, end: float, speaker: Sequence[tuple[float, str]]) -> None:
     """The shelf above the pill: the router with its antennas and blinking lights, the smart speaker."""
     _inked(cv, g, [(372, 190), (572, 190), (572, 200), (372, 200)], SHELF, FINE_W / 2)
     for x in (392, 552):
@@ -360,8 +382,8 @@ def _lounge_shelf(cv: Canvas, g, end: float) -> None:
         if end:
             pattern = [(0.0, 1.0), (ROUTER_BLINK * 0.4, 0.15)]
             cv.keys(led, "opacity", cycle_keys(pattern, ROUTER_BLINK, 0.0, end, phase=0.23 * i))
-    cv.rect(g, fx(520), fy(146), fh(34), fh(44), SPEAKER, cv.ink, FINE_W, radius=fh(10))
-    cv.ellipse(g, fx(522), fy(142), fh(30), fh(9), SPEAKER_RING, cv.ink, FINE_W / 2)
+    toon_everyday.speaker(cv, g, speaker, end or STILL_RING, at=LOUNGE_SPEAKER, scale=LOUNGE_SPEAKER_SCALE,
+                          id=cv.uid("speaker"))  # fmt: skip
 
 
 # -- the service counter --------------------------------------------------------------------------------------------
@@ -482,6 +504,7 @@ ROOMS: dict[str, Room] = {
         "tv",
         {"lamp": ((0, "on"),), "tv": ((0, "on", "blue"),)},
         {"lamp": (26, 318, 150, 396), "tv": (380, 330, 590, 468), "shelf": (372, 100, 572, 214)},
+        frozenset({"speaker"}),
     ),
     "counter": Room(
         "counter",

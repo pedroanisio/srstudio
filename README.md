@@ -1391,7 +1391,7 @@ changes it. Tests render each state and compare the signature's pixels.
 
 | Part | What it is | Lights and motion |
 |---|---|---|
-| `toon-lounge` | deep teal striped wall, a shelf above the pill with a router and a smart speaker, a floor lamp at the left, a wall TV over a media console, a plum sofa behind the character | `lamp` (main) and `tv` (screen, default blue); the router's lights blink until `end` |
+| `toon-lounge` | deep teal striped wall, a shelf above the pill with a router and the library's smart speaker (`toon-speaker` at scale 0.5), a floor lamp at the left, a wall TV over a media console, a plum sofa behind the character | `lamp` (main) and `tv` (screen, default blue); the router's lights blink until `end`; the speaker's ring follows `speaker=` (`(second, state)`, default off) |
 | `toon-counter` | mint wall and wainscot, ceiling tiles with two fluorescent fixtures, a TAKE A NUMBER sign with its dispenser, a NOW SERVING board, an orange plastic chair | `tubes` (main) and `board` (screen, default red); the board shows one ticket at a time from `serving=` (`(second, "A17")`, from 0) |
 
 `toon_rooms.ROOMS` names each room's lights, its defaults and the boxes its objects keep clear of the figure, the pill
