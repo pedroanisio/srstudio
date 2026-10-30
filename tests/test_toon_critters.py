@@ -250,7 +250,7 @@ def test_the_three_join_the_cast_by_name():
         look = CRITTERS[name]
         assert look.name == name and getattr(toon_critters, name.upper()) is look
         assert isinstance(look.drawing, toon_critters.Critter)
-        assert sketch.DRAWERS[name] is getattr(toon_critters, name)
+        assert sketch.drawer(name) is getattr(toon_critters, name)
         assert name in sketch.CHARACTERS and name in sketch.LIP_SYNCED and name in sketch.TOON_CAST.characters
         assert names[f"toon-{name}"]["kind"] == "character"
     assert all(look.drawing is None for look in toon_cast.LOOKS.values())  # the older cast draws from its fields
