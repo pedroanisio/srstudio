@@ -1197,9 +1197,11 @@ scene-render encode PROJECT/employee-survey.scene.xml -o /abs/path/employee-surv
 [src/srstudio/brush.py](src/srstudio/brush.py) is a hand-inked brush for characters drawn in code: `spline`
 (Catmull-Rom through the points, open or closed), `stroke` (a band whose width follows a `Pressure` profile with a
 swell and a slow wobble, round caps), `outline` (a closed fill) and `rim` (the fill pushed outward by the ink
-weight, whichever way the points wind), `ellipse`, and `shift`/`rotate`/`flip`/`bounds`. Every result is a closed
-cubic `Shape` the Toon parts fill flat with `toon.flat`, so a figure is a stack of filled layers (ink rim, coat,
-markings, limbs, face) and never a stroked path. [src/srstudio/toon_cast.py](src/srstudio/toon_cast.py) draws two
+weight, whichever way the points wind), `inked` (a rim pressed by a `Hand`: heavier where the outline turns from
+the light, thin at sharp tips, uneven along the way), `wobble` (a contour's small, repeatable hand drift),
+`ellipse`, and `shift`/`rotate`/`flip`/`bounds`. Every result is a closed cubic `Shape` the Toon parts fill flat
+with `toon.flat`, so a figure is a stack of filled layers (ink rim, coat, markings, limbs, face) and never a stroked
+path. [src/srstudio/toon_cast.py](src/srstudio/toon_cast.py) draws two
 coworkers for the cat's desk with the cat's vocabulary and contract: `toon-dog` (orange coat, drop ears, a light
 muzzle and a black nose) and `toon-frog` (green, a pale belly, three spots, eyes on the bumps of its head, a wide
 mouth). A `Look` holds the coat colours, the silhouette, the eye and mouth placement and the markings;
