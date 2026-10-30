@@ -151,3 +151,17 @@ table.rows .summary{ color:var(--muted); font-size:.82rem; max-width:52ch }
 .lib-usage li{ margin:2px 0; overflow-wrap:anywhere }
 .lib-registry td:nth-child(-n+3){ white-space:nowrap }
 .lib-registry td:nth-child(4){ overflow-wrap:anywhere; min-width:24ch }
+
+.copy{ display:inline-grid; place-items:center; width:24px; height:24px; margin-left:4px; padding:0; border:0; border-radius:6px;
+  background:none; color:var(--muted); cursor:pointer; vertical-align:middle; flex:none }
+.copy:hover{ background:var(--surface-2); color:inherit }
+.copy:focus-visible{ outline:2px solid var(--accent); outline-offset:1px }
+.copy.done{ color:var(--accent) }
+.named{ display:flex; align-items:center; min-width:0 }
+.named code{ min-width:0; overflow-wrap:anywhere }
+table.rows td .named code{ display:inline }
+.ficha .named{ justify-content:flex-end }
+.line-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center }
+#copied{ position:fixed; right:16px; bottom:16px; z-index:50; padding:8px 12px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface-2); font-size:.85rem }
+#copied[hidden]{ display:none }
