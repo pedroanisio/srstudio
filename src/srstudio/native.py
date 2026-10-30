@@ -72,6 +72,7 @@ class CaptionLook:
     upper: bool = False
     min_last: int = 1  # the fewest words a cue's last line may hold; more than 1 splits orphaned cues in two
     min_seconds: float = 0.0  # the shortest a cue is shown: held into the silence after it (engine minimum 0.8333)
+    published: bool = False  # a look only reels published with it keep; it draws nothing and new reels never set it
 
     def __post_init__(self) -> None:
         for name in ("size", "line_height"):
@@ -82,6 +83,12 @@ class CaptionLook:
             raise NativeError(f"caption min_seconds must be zero or more seconds, got {self.min_seconds!r}")
         if not (checks.number(self.stroke_width) and self.stroke_width >= 0):
             raise NativeError(f"caption stroke_width must be zero or more, got {self.stroke_width!r}")
+        if (
+            self.stroke_width
+            and not self.published
+            and self.stroke.upper() in (self.color.upper(), self.active.upper())
+        ):
+            raise NativeError(f"a caption stroke in the letters' own colour {self.stroke} closes their counters")
         for name in ("max_chars", "max_lines", "max_words", "min_last"):
             value = getattr(self, name)
             if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 1):

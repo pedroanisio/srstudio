@@ -83,7 +83,10 @@ each style and stays reusable and extensible, and then to fix what it found, tes
 - The engine still reports caption contrast below 4.5:1 on some Saga frames (down to 1.00:1). Its measure
   (`contrast_of` in scene-render `sr-gpu/src/render_access.rs`) averages every pixel the caption changed, so the
   white fill and the dark outline of the caption cancel over a mid-tone backdrop; the frames read clearly. This
-  is an engine measurement limit for outlined text, not a caption defect, and is left to the engine.
+  is an engine measurement limit for outlined text, not a caption defect.
+  Corrected by [ADR 0048](0048-caption-looks-are-approved-and-measured.md): "left to the engine" was the wrong
+  disposition. The reading was left standing, a later reel treated it as a verdict on the letters, and a worse look
+  shipped to satisfy it. ADR 0048 records why the 1.00:1 says nothing about a stroked caption and what replaced it.
 - `min_last`, `min_seconds` and the tail re-cut are opt-in: the house look (`CAPTION_LOOK`) is unchanged, so the
   captions of every other delivered video rebuild byte-identical.
 

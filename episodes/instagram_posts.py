@@ -35,7 +35,7 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import fonts, releases
+from srstudio import caption_gate, fonts, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -52,6 +52,7 @@ from srstudio.social import (
 THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two big lines fit a portrait cover
 
 RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file per episode: posts/<slug>.py
+GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
@@ -72,17 +73,27 @@ def font_file(folder: Path) -> Path:
     return fonts.install(THUMBNAIL_FONT, folder).path
 
 
+def caption_drift(renders: Path, *, episodes: Path | None = None, only: list[str] | None = None) -> list[Drift]:
+    """What the caption gate (ADR 0048) finds on every release not grandfathered, or on the ``only`` videos."""
+    episodes = Path(episodes) if episodes is not None else Path(renders).resolve().parent / "episodes"
+    return caption_gate.check_releases(RELEASES, Path(renders), episodes, grandfathered=GRANDFATHERED, only=only)
+
+
 def write_all(
     out: Path, renders: Path, *, fonts_dir: Path, engine: str | Path, only: list[str] | None = None
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
-    folders written."""
+    folders written. A video the caption gate refuses is a :class:`DeliveryError` before anything is written."""
+    refused = caption_drift(renders, only=only)
+    if refused:
+        raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
 
 
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     """Every drift between ``out`` and delivering every post from ``renders`` now."""
-    return check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
+    drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
+    return drift + caption_drift(renders)
 
 
 def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:

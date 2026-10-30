@@ -39,12 +39,10 @@ HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise agai
 # no lone last word, every caption readable (ADR 0031); for new reels, as published ones keep the house look
 LOOK = native.CaptionLook(min_last=2, min_seconds=0.84)
 INK = "#121415"  # the Gloss outline color, the letters of LOOK_INK
-# from G8 on: the same lines in solid dark letters, outlined only in their own color (2 px, which keeps the
-# descenders inside the caption block the safe area is checked on). The engine's contrast check compares the pixels a
-# caption changes most with the set behind them; a white letter in a dark outline lightens some of them and darkens the
-# others, which on the light Gloss sets averages to 1.00:1, and a plum sung word is under 3:1 on the notice's floor.
-# G7 keeps LOOK, as published
-LOOK_INK = replace(LOOK, color=INK, active=INK, stroke=INK, stroke_width=2)
+# the look G8 and G9 were published in, kept only so that they stay as published: solid dark letters outlined in their
+# own color. Rejected for every other reel (ADR 0048): the stroke shuts the counters of the rounded bold face. G7 keeps
+# LOOK, as published
+LOOK_INK = replace(LOOK, color=INK, active=INK, stroke=INK, stroke_width=2, published=True)
 MUSIC_GAIN = -17.0
 BADGE = (150, 330)  # where Sunny speaks from when it is not in the shot
 PANS = {"sunny": 0.0, "nadia": -0.05, "gus": 0.06, "tamsin": 0.04}
