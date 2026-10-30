@@ -6,7 +6,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 - Status: accepted and implemented for the gate, 2026-10-30 (`srstudio.caption_gate`, `episodes/posts/_grandfathered.py`,
   `Release.style`, `CaptionLook.published`, `episodes/instagram_posts.py`, `tests/test_caption_gate.py`); corrects
-  [ADR 0031](0031-shared-look-and-caption-primitives.md)
+  [ADR 0031](0031-shared-look-and-caption-primitives.md). The new Gloss look (`gloss_reel.LOOK_SPLIT`,
+  `CaptionLook.outline`) is proposed until the operator approves it from its proof
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
@@ -78,8 +79,50 @@ fall under the minimum:
 The minimum sits between the worst passing reel and the black ones. Collage is the closest: its heavy lettering has
 small counters, and it reads on its pale pill, so 0.025 is the bound that passes it and fails G8 and G9.
 
+## The new Gloss look
+
+The look the operator wants back is the house one: white letters, a dark outline, a gold sung word. The strict encode
+has to pass it honestly, so the check must compare white with ink, which is the route ADR 0012 took for Stick: the
+outline gets its own layer.
+
+`native.CaptionLook(outline="layer")` keeps the white track, without its stroke, and draws the outline as text layers
+under it, one to a cue, timed to the cue. Each layer is set in the same face, size, wrap and box as the track, so the
+ink sits exactly behind the letters. The layers sit in a group marked `isolate`, for a reason the engine sets:
+
+| Route tried on G9 | Strict contrast | Why |
+| --- | --- | --- |
+| Stroked track (the house look) | 1.00:1, refused | fill and outline averaged |
+| Two burned tracks, ink under white | 1.00:1, refused | the deferred probe hides every caption track at once, so it still sees both, averaged |
+| Ink text layers at the root, under the track | 1.00:1 on the layer | the layer's inline probe reads its "after" from the final frame, which holds the burned white |
+| Ink text layers in an isolated group | passes, no findings | the layer is measured with and without its node: ink against the floor |
+
+The isolated group is not a way round the check. Both pairs are measured, white against ink and ink against the floor,
+and either can fail. A cover variant hides the group with the track, and `Episode.hide_on_cover` writes that override.
+With white letters back, `gloss_sets._caption_shade` works for them again, as it was built to.
+
+**Proof on all nine Gloss sets.** Each reel was rebuilt in the look in scratch and encoded with `--strict`. No finding
+on any of the nine names the captions or the outline. Six exit 0. `gloss-joy-points`, `gloss-terms` and
+`gloss-wellness` exit 1 on other text, their notice cards, up for under 0.83 s (and one card on joy-points
+at 2.20:1 to 2.50:1): that text is in those published sets and nothing here changed it.
+
+| Reel | Black | Split outline |
+| --- | --- | --- |
+| G9 *gloss-notifications* | 0.0164 | 0.0606 |
+| G8 *gloss-fewer-meetings* | 0.0146 | 0.0665 |
+| G1–G7, against their published 0.0598 – 0.0754 | | 0.0592 – 0.0744 |
+
+The proof is `generated/character-proofs/gloss-captions/index.html`: the same lines, black and white, on the palest
+and darkest tiles of both reels. The record in `caption_gate.LOOKS` carries no `Approval`, so until the operator
+gives one, a new reel in this look is refused by name, and the proof is what the operator judges it on.
+
 ## Rejected alternatives
 
+- **A second burned track for the outline.** Rejected: it still reads 1.00:1, as the table shows, and the engine hides
+  both tracks together.
+- **A caption box or a fill behind the letters.** Rejected: the engine has none, and a panel would change the house
+  look the operator asked for.
+- **Karaoke drawn by text layers, with no track at all.** Rejected: it gives up the native track, its sidecar and its
+  timing for no gain over the outline layer.
 - **Keeping the black look for new reels.** Rejected for the reasons above: it answers the measurement, not the
   reader, and the operator could not read it.
 - **A contrast ratio on the frames.** Rejected: 7.01:1 and 6.25:1 on the two reels that fail. A control that passes
@@ -95,7 +138,10 @@ small counters, and it reads on its pale pill, so 0.025 is the bound that passes
 ## Consequences
 
 - A new reel's release declares `style=` and its scene wears an approved look, or it cannot be delivered.
-- Gloss has no approved look in this record: until the operator approves one, no new Gloss reel passes.
+- Gloss has a proposed look and no approved one: until the operator approves `white-split-outline`, no new Gloss reel
+  passes. Approving it is one `Approval` on its record.
+- A split outline adds one text asset and one layer to a cue, and a look with `outline="layer"` needs the canvas it
+  draws on, so `native_captions` passes it.
 - `instagram_posts.py check` decodes a second of video per second of each reel not grandfathered, a few seconds each.
 - A new style records its look, with the operator's approval, before its first reel ships.
 - A releases branch that adds a reel after this list was closed must declare its style.

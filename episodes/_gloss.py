@@ -10,7 +10,7 @@ its staging as a function of the recorded takes), ``gloss_<name>.py`` builds it.
 confirmed by name, nothing retried); the music bed is one composition shared by the series, heard for words and cut
 to each episode. The harness is :mod:`srstudio.series` (ADR 0031): the build stages the recorded takes through
 :func:`srstudio.gloss_reel.build`, which checks the staging against the recording before it draws anything. The
-published reels keep the looks they shipped in; a new reel wears an approved Gloss look (ADR 0048).
+published reels keep the looks they shipped in; a new reel names ``gloss_reel.LOOK_SPLIT``, once approved (ADR 0048).
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 gloss_<name>_audio.py PROJECT --font DIR   # takes, bed, timeline.json
     python3 gloss_<name>.py PROJECT                                          # → PROJECT/<slug>.scene.xml
@@ -84,7 +84,7 @@ OUTPUT = dict(
 
 SERIES = series.Series(
     style=GLOSS, voices=VOICES, settings=SETTINGS, font=FONT, output=OUTPUT, stage=gloss_reel.build, bed=BED
-)  # the house caption look: the published reels keep it, later ones name gloss_reel.LOOK
+)  # the house caption look: the published reels keep it, later ones name gloss_reel.LOOK_SPLIT
 
 
 @dataclass(frozen=True)

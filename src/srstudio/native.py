@@ -29,6 +29,7 @@ from .layout import SafeArea
 from .timeline import Phrase, Take
 
 Mode = Literal["burn", "sidecar", "both"]
+Outline = Literal["stroke", "layer"]
 
 
 class NativeError(SrstudioError, ValueError):
@@ -73,6 +74,7 @@ class CaptionLook:
     min_last: int = 1  # the fewest words a cue's last line may hold; more than 1 splits orphaned cues in two
     min_seconds: float = 0.0  # the shortest a cue is shown: held into the silence after it (engine minimum 0.8333)
     published: bool = False  # a look only reels published with it keep; it draws nothing and new reels never set it
+    outline: Outline = "stroke"  # "layer": the stroke drawn as ink text under unstroked burned letters (ADR 0048)
 
     def __post_init__(self) -> None:
         for name in ("size", "line_height"):
@@ -89,6 +91,8 @@ class CaptionLook:
             and self.stroke.upper() in (self.color.upper(), self.active.upper())
         ):
             raise NativeError(f"a caption stroke in the letters' own colour {self.stroke} closes their counters")
+        if self.outline not in get_args(Outline):
+            raise NativeError(f"caption outline must be one of {get_args(Outline)}, not {self.outline!r}")
         for name in ("max_chars", "max_lines", "max_words", "min_last"):
             value = getattr(self, name)
             if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 1):
@@ -258,6 +262,41 @@ def _percent(value: float) -> str:
     return f"{math.floor(value * 10000) / 100:g}%"
 
 
+def _outline_layers(canvas: Any, cues: Sequence[Cue], look: CaptionLook, box: tuple[float, float, int], id: str) -> Any:
+    """The outline of each cue as ink text under the burned letters, in an isolated group named ``<id>-outline``.
+
+    The engine's contrast check hides every caption track at once and averages what changed, so an outline on the
+    track, or on a second track, cancels against the letters (ADR 0012, ADR 0048). As text in the picture it is
+    backdrop to the burned letters, which are measured white against ink. The group's isolation makes the engine
+    measure the outline with and without itself, as ink against the set: without it, the burned letters drawn over
+    the outline's probe count as the outline's own pixels and it reads 1:1."""
+    x, y, width = box
+    parent = canvas.group(canvas.comp, f"{id}-outline", isolate=True)
+    for i, cue in enumerate(sorted(cues, key=lambda c: c.start), 1):
+        text = cue.text.upper() if look.upper else cue.text
+        name = f"{id}-outline-{i}"
+        canvas.assets.add_text(
+            id=name,
+            text="\n".join(wrap(text, look.max_chars, look.max_words)),
+            width=width,
+            height=math.ceil(look.block),
+            size=look.size,
+            fontAsset=canvas.font_asset,
+            weight=look.weight,
+            color=look.stroke,
+            lineHeight=look.line_height,
+            align="center",
+            verticalAlign="top",
+            wrap="none",
+            strokeColor=look.stroke,
+            strokeWidth=look.stroke_width,
+            strokePosition="outside",
+        )
+        shown = canvas.group(parent, f"{name}-shown", start=round(cue.start, 6), end=round(cue.end, 6))
+        shown.add_layer(id=f"{name}-layer", asset=name, x=x, y=y)
+    return parent
+
+
 def caption_track(
     scene: Any,
     cues: Sequence[Cue],
@@ -272,19 +311,25 @@ def caption_track(
     id: str = "captions",
     language: str = "en-US",
     font_data: bytes | None = None,
+    canvas: Any = None,
 ):
     """Add the caption track ``id`` showing ``cues`` and return it.
 
     With a ``safe_area`` the track is centred on it and its last line sits on its bottom edge; without one it keeps
     the engine's placement. ``mode`` ``burn`` draws it into ``output``, ``sidecar`` writes it beside the video,
     ``both`` does both; either needs the ``output``. ``font_data`` (the bytes of the caption font) measures every
-    wrapped line against the room it has. Nothing is added when a check fails."""
+    wrapped line against the room it has. A look with ``outline="layer"`` needs a ``safe_area`` and the ``canvas`` it
+    draws the outline on. Nothing is added when a check fails."""
     if mode not in get_args(Mode):
         raise NativeError(f"caption mode must be one of {get_args(Mode)}, not {mode!r}")
     if font_asset is None:
         raise NativeError("a caption track needs a font asset; set EpisodeSpec.font")
     if output is None and mode != "burn":
         raise NativeError(f"a {mode} caption track needs the output it is written beside")
+    if look.outline == "layer" and canvas is None:
+        raise NativeError("a split caption outline needs the canvas to draw it on")
+    if look.outline == "layer" and safe_area is None:
+        raise NativeError("a split caption outline lines up with the track in the safe area; give it one")
     _check_cues(cues)
     place: dict[str, str] = {}
     room = width * 0.85
@@ -327,15 +372,10 @@ def caption_track(
         raise
     styles = scene.find("styles") or scene.add_styles()
     base_kw: dict[str, Any] = dict(
-        fontAsset=font_asset,
-        size=look.size,
-        weight=look.weight,
-        color=look.color,
-        lineHeight=look.line_height,
-        strokeColor=look.stroke,
-        strokeWidth=look.stroke_width,
-        strokePosition="outside",
+        fontAsset=font_asset, size=look.size, weight=look.weight, color=look.color, lineHeight=look.line_height
     )
+    if look.outline == "stroke":
+        base_kw.update(strokeColor=look.stroke, strokeWidth=look.stroke_width, strokePosition="outside")
     if look.upper:
         base_kw["textTransform"] = "uppercase"
     styles.add_textStyle(id=f"{id}-text", **base_kw)
@@ -348,6 +388,11 @@ def caption_track(
         output.burnCaptions = id
     if output is not None and mode in ("sidecar", "both"):
         output.captions = id
+    if look.outline == "layer":
+        # centred where the track's rounded percents centre the letters; a text box is whole pixels
+        wide = math.ceil(float(place["width"][:-1]) / 100 * width)
+        left = float(place["x"][:-1]) / 100 * width - wide / 2
+        _outline_layers(canvas, cues, look, (left, float(place["y"][:-1]) / 100 * height, wide), id)
     return track
 
 

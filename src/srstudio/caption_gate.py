@@ -142,6 +142,8 @@ LOOKS: tuple[ApprovedLook, ...] = (
                  "generated/renders/the-lore.mp4", _shipped("the-lore")),
     ApprovedLook("Cutout", "white-outlined", ("#FFFFFF",), "#F4D492", "#121415", 8, (1100, 1500),
                  "generated/renders/the-cactus.mp4", _shipped("the-cactus")),
+    ApprovedLook("Gloss", "white-split-outline", ("#FFFFFF",), "#F4D492", "#121415", 8, (1200, 1500),
+                 "generated/character-proofs/gloss-captions/index.html"),
     ApprovedLook("Ink", "ink-on-paper", ("#282828",), None, None, 0, (60, 120),
                  "generated/renders/the-router.mp4", _shipped("the-router")),
     ApprovedLook("Saga", "white-outlined", ("#FFFFFF",), "#F4D492", "#121415", 8, (1200, 1500),
@@ -370,6 +372,11 @@ def track_look(root: ET.Element, track: ET.Element) -> TrackLook:
     if style is None or project is None:
         raise CaptionGateError(f"caption track {track.get('id')} has no style or the scene no project")
     stroke, width = style.get("strokeColor"), _number(style.get("strokeWidth"))
+    if not (stroke and width):  # a split outline (ADR 0048): ink text under the burned letters, the track's own stroke
+        prefix = f"{track.get('id')}-outline-"
+        split = next((t for t in root.iter("text") if t.get("id", "").startswith(prefix)), None)
+        if split is not None:
+            stroke, width = split.get("strokeColor"), _number(split.get("strokeWidth"))
     size, leading = _number(style.get("size"), 1), _number(style.get("lineHeight"), 1)
     y = track.get("y", "75%")
     height = _number(project.get("height"))
