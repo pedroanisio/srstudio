@@ -31,13 +31,16 @@ from .gloss_sets import Card
 from .staging import Move
 
 __all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "still_opening", "build", "DUCK", "LOOK",
-           "LOOK_INK", "MUSIC_GAIN", "BADGE"]  # fmt: skip
+           "LOOK_INK", "LOOK_SPLIT", "MUSIC_GAIN", "BADGE"]  # fmt: skip
 
 DUCK = -9.0  # dB the music drops under a line
 HUSH = -12.0  # dB more it drops through a pause between lines, so the beat before a punchline is quiet, not muzak
 HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise again for the next
-# no lone last word, every caption readable (ADR 0031); for new reels, as published ones keep the house look
+# no lone last word, every caption readable (ADR 0031); kept for the reels published in it
 LOOK = native.CaptionLook(min_last=2, min_seconds=0.84)
+# for new reels: LOOK with its outline a layer under the letters, so the strict check compares white with ink, not
+# with the mean of white and ink (ADR 0048). Proposed: no new Gloss reel ships until the operator approves it
+LOOK_SPLIT = replace(LOOK, outline="layer")
 INK = "#121415"  # the Gloss outline color, the letters of LOOK_INK
 # the look G8 and G9 were published in, kept only so that they stay as published: solid dark letters outlined in their
 # own color. Rejected for every other reel (ADR 0048): the stroke shuts the counters of the rounded bold face. G7 keeps

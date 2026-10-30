@@ -412,3 +412,45 @@ def test_the_measure_fails_the_black_masters_and_passes_the_white_and_toon_ones(
         pytest.skip(f"{slug} is not built here")
     look = next((lk for lk in caption_gate.LOOKS if lk.style == style), None)
     assert caption_gate.measure_reel(scene, video, look).passes is passes
+
+
+# -- the split outline --------------------------------------------------------------------------------------------
+def split_scene_file(tmp_path, stroke="#121415", width=8):
+    scene = NATIVE_SCENE.format(fill="#FFFFFF", active="#F4D492", stroke="", width=0)
+    scene = scene.replace(' strokeColor="" strokeWidth="0"', "").replace(
+        "<composition/>",
+        f"""<assets><text id="captions-outline-1" text="Hi" width="800" height="130" size="50" color="{stroke}"
+        strokeColor="{stroke}" strokeWidth="{width}"/></assets>
+        <composition><group id="captions-outline" isolate="true"><group id="c1" start="0" end="1">
+        <layer id="captions-outline-1-layer" asset="captions-outline-1" x="100" y="150"/></group></group>
+        </composition>""",
+    )
+    path = tmp_path / "split.scene.xml"
+    path.write_text(scene)
+    return path
+
+
+def test_a_split_outline_is_read_as_the_outline_of_the_track(tmp_path):
+    assert caption_gate.band_of(split_scene_file(tmp_path), WHITE_LOOK) == caption_gate.band_of(
+        native_scene(tmp_path), WHITE_LOOK
+    )
+    assert caption_gate.band_of(split_scene_file(tmp_path, stroke="#FF0000"), WHITE_LOOK) is None
+    assert caption_gate.band_of(split_scene_file(tmp_path, width=3), WHITE_LOOK) is None
+
+
+def test_the_proposed_gloss_look_is_recorded_with_its_proof_and_does_not_pass_until_the_operator_approves_it():
+    gloss = [look for look in caption_gate.LOOKS if look.style == "Gloss"]
+    assert [look.name for look in gloss] == ["white-split-outline"]
+    (look,) = gloss
+    assert (look.fills, look.active, look.stroke) == (("#FFFFFF",), "#F4D492", "#121415")
+    assert look.proof == "generated/character-proofs/gloss-captions/index.html"
+    assert not look.approved
+
+
+def test_the_gloss_look_for_new_reels_is_the_house_look_with_its_outline_split():
+    from dataclasses import replace
+
+    from srstudio import gloss_reel
+
+    assert gloss_reel.LOOK_SPLIT.outline == "layer" and not gloss_reel.LOOK_SPLIT.published
+    assert replace(gloss_reel.LOOK_SPLIT, outline="stroke") == gloss_reel.LOOK

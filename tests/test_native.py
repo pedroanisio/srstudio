@@ -3,6 +3,7 @@ built by the library instead of drawn by hand."""
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -400,6 +401,23 @@ def test_native_captions_hidden_on_the_cover_leave_its_still_clean_and_the_video
     assert any(sung) and not any(cover)
 
 
+def test_a_split_outline_hides_on_the_cover_with_its_track(tmp_path):
+    ep = takes_episode(tmp_path)
+    shots = ep.sequence()
+    for take in ep.takes:
+        ep.shot(shots, take)
+    look = CaptionLook(outline="layer", stroke="#FF00FF", min_seconds=0.84)
+    ep.hide_on_cover(ep.native_captions(look=look))
+    out = ep.finish(tmp_path / "scene.xml")
+    doc = out.read_text(encoding="utf-8")
+    assert '<override target="captions-outline" property="visible" value="false"/>' in doc
+    region = VERTICAL.region(ep.spec.width, ep.spec.height)
+    box = (int(region.x0), int(region.y0), int(region.x1), int(region.y1))
+    shown = [near(p, look.stroke) for p in pixels(*frame(out, 4.4), box)]
+    cover = [near(p, look.stroke) for p in pixels(*frame(out, 4.4, "cover"), box)]
+    assert any(shown) and not any(cover)
+
+
 # -- the feature map --------------------------------------------------------------------------------------------------
 def test_the_engine_feature_map_names_real_apis_and_real_tests():
     import importlib
@@ -438,3 +456,125 @@ def test_a_shot_end_is_its_length_so_a_transition_fits_shots_after_the_first():
     native.transition(seq, "shot-b", "shot-c", "crossfade", duration=0.3)
     with pytest.raises(NativeError, match="longer"):
         native.transition(seq, "shot-a", "shot-b", "crossfade", duration=1.6)
+
+
+# -- the split outline (ADR 0048) --------------------------------------------------------------------------------------
+SPLIT = CaptionLook(outline="layer", min_seconds=0.84)
+
+
+def split_scene():
+    scene, cv, output = canvas()
+    native.caption_track(scene, CUES, look=SPLIT, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080,
+                         height=1920, output=output, canvas=cv)  # fmt: skip
+    return scene, cv, output
+
+
+def test_a_split_outline_leaves_the_burned_letters_unstroked_and_draws_the_outline_as_ink_text_under_them():
+    scene, _, _ = split_scene()
+    doc = root(scene)
+    styles = {s.get("id"): s for s in doc.iterfind("styles/textStyle")}
+    assert styles["captions-text"].get("color") == "#FFFFFF"
+    assert styles["captions-text"].get("strokeColor") is None and styles["captions-text"].get("strokeWidth") is None
+    assert styles["captions-active"].get("color") == "#F4D492"
+    outline = [g for g in doc.iter("group") if g.get("id") == "captions-outline"]
+    assert len(outline) == 1 and outline[0].get("isolate") == "true"
+    texts = {t.get("id"): t for t in doc.iter("text")}
+    assert [t.get("text") for t in texts.values()] == ["Where do you see", "In your chair."]
+    for text in texts.values():
+        assert text.get("color") == text.get("strokeColor") == "#121415"
+        assert text.get("strokeWidth") == "8" and text.get("strokePosition") == "outside"
+        assert text.get("align") == "center" and text.get("verticalAlign") == "top" and text.get("wrap") == "none"
+        assert text.get("fontAsset") == "caption-font" and text.get("weight") == "700"
+    timed = outline[0].findall("group")
+    assert [(g.get("start"), g.get("end")) for g in timed] == [("0.2", "1.8"), ("2", "3.6")]
+
+
+def test_the_outline_stands_exactly_where_the_track_places_its_letters():
+    scene, _, _ = split_scene()
+    doc = root(scene)
+    track = doc.find("captions/captionTrack")
+    layers = [layer for layer in doc.iter("layer") if layer.get("id", "").startswith("captions-outline")]
+    top = float(track.get("y").removesuffix("%")) / 100 * 1920
+    middle = float(track.get("x").removesuffix("%")) / 100 * 1080
+    room = float(track.get("width").removesuffix("%")) / 100 * 1080
+    texts = {t.get("id"): t for t in doc.iter("text")}
+    for layer in layers:
+        assert float(layer.get("y")) == pytest.approx(top)
+        wide = float(texts[layer.get("asset")].get("width"))
+        assert float(layer.get("x")) + wide / 2 == pytest.approx(middle)
+        assert wide == pytest.approx(room, abs=1)
+
+
+def test_the_outline_wraps_and_shouts_as_the_track_does():
+    scene, cv, output = canvas()
+    cue = Cue(0, 2, "one two three four five six seven", ())
+    look = CaptionLook(outline="layer", max_chars=14, upper=True)
+    native.caption_track(scene, [cue], look=look, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080,
+                         height=1920, output=output, canvas=cv)  # fmt: skip
+    (text,) = root(scene).iter("text")
+    assert text.get("text") == "ONE TWO THREE\nFOUR FIVE SIX\nSEVEN"
+
+
+def test_a_split_outline_needs_the_canvas_it_draws_on_and_the_safe_area_it_lines_up_in():
+    scene, cv, output = canvas()
+    with pytest.raises(NativeError, match="canvas"):
+        native.caption_track(scene, CUES, look=SPLIT, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080,
+                             height=1920, output=output)  # fmt: skip
+    with pytest.raises(NativeError, match="safe area"):
+        native.caption_track(scene, CUES, look=SPLIT, font_asset=cv.font_asset, safe_area=None, width=1080,
+                             height=1920, output=output, canvas=cv)  # fmt: skip
+    assert scene.find("captions") is None
+
+
+def test_an_unknown_outline_is_refused():
+    with pytest.raises(NativeError, match="outline"):
+        CaptionLook(outline="glow")
+
+
+def test_a_stroked_look_draws_exactly_what_it_drew():
+    scene, cv, output = canvas()
+    native.caption_track(scene, CUES, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080, height=1920,
+                         output=output, canvas=cv)  # fmt: skip
+    doc = root(scene)
+    assert doc.find(".//group[@id='captions-outline']") is None and not list(doc.iter("text"))
+    assert doc.find("styles/textStyle").get("strokeWidth") == "8"
+
+
+def _midtone_scene(tmp_path: Path, look: CaptionLook) -> Path:
+    scene, cv, output = canvas()
+    cv.comp.add_shape(id="floor", shape="rect", width=1080, height=1920, fill="#A89BC0")
+    scene.add_metadata(title="Floor").add_accessibility(description="A mid-tone floor.", contrastCheck="error")
+    cue = Cue(0.0, 3.0, "Where do you see", (Word("Where", 0, 1), Word("do", 1, 2), Word("you", 2, 2.5),
+                                            Word("see", 2.5, 3)))  # fmt: skip
+    native.caption_track(scene, [cue], look=look, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080,
+                         height=1920, output=output, canvas=cv)  # fmt: skip
+    shutil.copy(FONT, tmp_path / FONT.name)
+    path = tmp_path / "floor.scene.xml"
+    path.write_bytes(scene.to_bytes())
+    return path
+
+
+def test_the_strict_check_refuses_the_stroked_white_look_on_a_midtone_floor_and_passes_the_split_one(tmp_path):
+    """The engine averages a stroke with the fill it surrounds and reads 1:1; split, it compares white with ink."""
+    binary = engine()
+    encode = [str(binary), "encode", "--strict", "--start", "0", "--end", "2"]
+    stroked = subprocess.run([*encode, "-o", "s.mp4", str(_midtone_scene(tmp_path, CaptionLook()))], cwd=tmp_path,
+                             capture_output=True, text=True)  # fmt: skip
+    assert stroked.returncode != 0 and "contrastCheck: captions" in stroked.stdout + stroked.stderr
+    split = subprocess.run([*encode, "-o", "p.mp4", str(_midtone_scene(tmp_path, SPLIT))], cwd=tmp_path,
+                           capture_output=True, text=True)  # fmt: skip
+    assert split.returncode == 0, split.stdout + split.stderr
+
+
+def test_the_engine_breaks_the_lines_where_the_outline_does(tmp_path):
+    binary = engine()
+    scene, cv, output = canvas()
+    cues = [Cue(0, 2, "Would you like to turn on notifications?", ()), Cue(2, 4, "No thank you.", ())]
+    native.caption_track(scene, cues, look=SPLIT, font_asset=cv.font_asset, safe_area=VERTICAL, width=1080,
+                         height=1920, output=output, canvas=cv)  # fmt: skip
+    shutil.copy(FONT, tmp_path / FONT.name)
+    path = tmp_path / "pages.scene.xml"
+    path.write_bytes(scene.to_bytes())
+    dump = subprocess.run([str(binary), "captions", str(path)], capture_output=True, text=True, check=True).stdout
+    pages = json.loads(dump)["tracks"][0]["pages"]
+    assert [p["text"] for p in pages] == [t.get("text") for t in root(scene).iter("text")]

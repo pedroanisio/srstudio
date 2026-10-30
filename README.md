@@ -1608,7 +1608,10 @@ captions, markers and craft checks read.
 
 **Captions.** G8 and G9 were published in `gloss_reel.LOOK_INK`, solid dark letters outlined in their own color, and
 keep it because published reels are frozen. That look is rejected for every other reel: the stroke closes the letters'
-counters ([ADR 0048](docs/decisions/0048-caption-looks-are-approved-and-measured.md)). A reel that runs long can ask for its own encoder quality, `Reel(crf="20")`, over
+counters ([ADR 0048](docs/decisions/0048-caption-looks-are-approved-and-measured.md)). New reels name
+`gloss_reel.LOOK_SPLIT`: the house white letters and gold sung word, with the dark outline a layer under them so the
+engine's contrast check compares white with ink. It is proposed, and no new Gloss reel ships until the operator
+approves it from the proof in `generated/character-proofs/gloss-captions/`. A reel that runs long can ask for its own encoder quality, `Reel(crf="20")`, over
 the series output, to keep its master under the size cap; *Fewer Meetings* does.
 
 | # | Episode | The turn |

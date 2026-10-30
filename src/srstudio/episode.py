@@ -339,6 +339,7 @@ class Episode:
             id=id,
             language=self.spec.language,
             font_data=font.read_bytes() if font is not None else None,
+            canvas=self.cv,
         )
         self.caption_specs.extend((c.start, c.end, c.text, f"{id}-{i + 1}") for i, c in enumerate(cues))
         return track
@@ -567,6 +568,9 @@ class Episode:
                 raise EpisodeError(f"{node.id} is already hidden on the cover")
             if node.xml_name == "captionTrack":  # a caption track has no visibility: on the cover it goes to a sidecar
                 self._cover_hidden.append((node.id, "mode", "sidecar"))
+                outline = f"{node.id}-outline"  # a split outline is in the picture, so it hides as a node does
+                if any(getattr(g, "id", None) == outline for g in self.cv.comp.find_all("group")):
+                    self._cover_hidden.append((outline, "visible", "false"))
             else:
                 self._cover_hidden.append((node.id, "visible", "false"))
 

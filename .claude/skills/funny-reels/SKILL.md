@@ -431,7 +431,8 @@ it in `srstudio catalog` without this file changing.
    must wear a look `caption_gate.LOOKS` records with an approval, or `deliver` refuses it. A new look goes to the
    operator as a rendered proof first; never fake a record's approval, and never answer the engine's contrast check
    by changing the letters (a stroke in the letters' own colour is refused). Read a 1.00:1 on a stroked caption as
-   the measurement's limit, and split the outline.
+   the measurement's limit, and split the outline: `native.CaptionLook(outline="layer")` draws it as layers under
+   the track, and `gloss_reel.LOOK_SPLIT` is Gloss's, proposed until the operator approves it.
    **Shared helpers** (ADR 0035): set text with `look.text`, and get the caption font with `Canvas.require_font`,
    which refuses a silent canvas with your error. A talking character takes its mouth states from `lipsync.talk`
    and checks a mouth or pose track with `lipsync.check_track`; a rigged character is placed with
