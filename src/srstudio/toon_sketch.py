@@ -12,7 +12,9 @@ narrated build reads the placed beats from ``voiced/beats.json`` (typed by :func
 and checked again as a sketch), takes its duration and effects from ``narration.json`` (hashes and fields checked
 by :mod:`srstudio.narration`) and refuses any mismatch between the two; the brush-drawn characters key their
 mouths on the viseme tracks of ``voiced/mouths.json`` (typed by :func:`srstudio.sketch.load_mouths`, its end
-checked against the beats). :func:`record_episode` is the
+checked against the beats). A character the staging names in ``heads`` moves its head (ADR 0050): :func:`head_plans`
+plans it from the takes of ``voiced/speech.json`` (typed by :func:`srstudio.sketch.load_speech`), its own lines and
+what the others say, and it is drawn through :func:`srstudio.toon_head.figure`. :func:`record_episode` is the
 ElevenLabs run: :func:`srstudio.sketch.record` (one request per line, speech-to-text check, voices confirmed by
 name), then the keyboard between the lines, a phone buzz on every ``toast`` event and the sting on ``hangup``,
 all synthesised deterministically by :mod:`srstudio.foley`.
@@ -37,12 +39,15 @@ from . import (
     errors,
     foley,
     fonts,
+    head_motion,
     recording,
     sketch,
     soundtrack,
     subtitles,
     toon,
+    toon_head,
     toon_props,
+    toon_rigs,
 )
 from .canvas import Canvas
 from .narration import effect_cues, manifest_duration, require_consent
@@ -86,7 +91,8 @@ class Staging:
     dinner, say, lays a table instead) and, optionally, a ``camera`` that moves each shot: it is called with the
     dressed :class:`Shot` (its beats are the ones drawn, scripted or voiced) and the shot's group (set, character,
     desk and props; the captions stay still), which is then named ``shot-NNN`` (its order) so
-    :mod:`srstudio.craft` counts its moves as camera."""
+    :mod:`srstudio.craft` counts its moves as camera. ``heads`` names the characters that move their heads
+    (:mod:`srstudio.toon_rigs`); everyone else is drawn flat."""
 
     sketch: sketch.Sketch
     seed: int
@@ -100,6 +106,45 @@ class Staging:
     desk: Callable[[Canvas, object], None] = toon.desk
     lit: bool = False  # each shot gets a light layer between the character and the desk (ADR 0043)
     camera: Callable[[Shot, object], None] | None = None
+    heads: tuple[str, ...] = ()
+
+
+def _rig(who: str) -> toon_head.HeadRig:
+    return toon_rigs.rig_of(f"toon-{who}")
+
+
+def check_heads(sk: sketch.Sketch, heads: Sequence[str]) -> None:
+    """Refuse a character in ``heads`` that has no rig, or that this sketch never shows, by name."""
+    shown = {app.who for app in sketch.appearances(sk.beats, sk.end)}
+    for who in heads:
+        _rig(who)
+        if who not in shown:
+            raise StagingError(f"heads names {who!r}, who is not in this sketch ({sorted(shown)})")
+
+
+def head_plans(
+    root: Path, sk: sketch.Sketch, heads: Sequence[str], voiced: bool
+) -> dict[str, tuple[toon_head.HeadRig, head_motion.HeadPlan]]:
+    """The rig and the plan of each character in ``heads`` over the whole sketch: in a voiced build from the takes
+    of ``voiced/speech.json``, its own lines to speak and everyone else's to hear; in a silent one, idle."""
+    if not heads:
+        return {}
+    spoken: list[tuple[str | None, head_motion.Speech]] = []
+    path = root / "voiced" / "speech.json"
+    if voiced:
+        if not path.is_file():
+            raise StagingError(f"heads need {path}, written by the recording run: record again")
+        takes, end = sketch.load_speech(path, sk.cast)
+        if end != sk.end:
+            raise StagingError(f"voiced/speech.json runs {end} s, voiced/beats.json {sk.end} s: record again")
+        spoken = [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
+    out = {}
+    for who in heads:
+        rig = _rig(who)
+        own = [speech for said_by, speech in spoken if said_by == who]
+        heard = [speech for said_by, speech in spoken if said_by != who]
+        out[who] = (rig, head_motion.plan(rig.style, own, sk.end, heard=heard))
+    return out
 
 
 def badge_spans(
@@ -129,6 +174,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     root = Path(root)
     flags = errors.flags(flags, BUILD_FLAGS)
     sk = staging.sketch
+    check_heads(sk, staging.heads)
     if "--init" in flags:
         sketch.write_project(root, sk, TOON.google_font())
         return None
@@ -141,6 +187,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         if mouths_end != end:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
+    heads = head_plans(root, sk, staging.heads, voiced)
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
@@ -196,7 +243,12 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
-        sketch.drawer(app.who, staging.versions)(cv, g, poses, app.end, taps, enter=app.start, **extra)
+        if app.who in heads:
+            rig, plan = heads[app.who]
+            shot_plan = plan.during(app.start, app.end)
+            toon_head.figure(cv, g, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
+        else:
+            sketch.drawer(app.who, staging.versions)(cv, g, poses, app.end, taps, enter=app.start, **extra)
         name = sketch.part_of(app.who)
         drawn[name] = characters.resolved(name, staging.versions)
         light = cv.group(g, cv.uid("g")) if staging.lit else None
