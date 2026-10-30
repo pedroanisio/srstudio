@@ -84,5 +84,11 @@ footprint holds everything its prop draws.
 - The module draws nothing in any existing episode: every published episode rebuilds byte-identical.
 - The marks' box is pinned by measurement: moving the cactus or the code on the desk or the table fails
   `test_the_signature_box_holds_both_marks_on_the_desk_and_on_the_table` until `SIGNATURE_BOX` follows.
+- The lit rooms of ADR 0043 (`toon_rooms`, built alongside on `feat/toon-rooms`) draw their own smart speaker on
+  the lounge shelf and a TAKE A NUMBER sign and NOW SERVING board on the service counter, fixed in the set. The
+  placeable versions are `speaker` and `take_a_number`, so the rooms should call them rather than draw a second
+  version of each object. Two things are settled when they merge. The shelf speaker is about a third of this
+  speaker's width, below `SCALES[0]`; that floor exists for lettering, and the speaker has none. The counter's board
+  takes its colour from the room's light cues, which `take_a_number` does not.
 - A sketch maps its own events to states (`reader:` events become card-reader screens in *Split It*). The props
   take plain states and know nothing of a sketch's beats.
