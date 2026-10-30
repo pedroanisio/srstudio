@@ -2,20 +2,44 @@
 
 Back to the [library README](../../README.md) and the [workspace README](../../../README.md).
 
-`srstudio page` writes the scene-render catalog as a small site, `index.html` plus `media/<content-hash>.<ext>`, and
-`srstudio serve` serves it ([ADR 0046](../decisions/0046-catalog-web-app.md)). The page holds no data URI: every video,
-image, font and sound is a file it links to with a relative URL, and nothing heavy loads until it is asked for.
-The page is the six original packages followed by *Parte 2: Os episódios novos da biblioteca*, which is rebuilt from
-disk on every run:
+`srstudio page` writes the scene-render catalog as a small site, `index.html`, `catalog.json` and
+`media/<content-hash>.<ext>`, and `srstudio serve` serves it ([ADR 0046](../decisions/0046-catalog-web-app.md)). The
+page holds no data URI: every video, image, font and sound is a file it links to with a relative URL, and only the
+current view loads its media. The app is plain JavaScript in `src/srstudio/assets/catalog/`, inlined in the page, and
+it renders every view from `catalog.json`.
 
-- **Episodes**: every project in `--episodes` that has a `<slug>.scene.xml` and a render `<slug>.mp4` in `--renders`.
+## What is where
+
+The navigation has a search box that finds names across all sections, and each view is a link. Back and forward work.
+
+| Route | What it shows |
+|---|---|
+| `#/` | The opening of the base page: its summary, style cards and footer, with counts. |
+| `#/estilos`, `#/estilos/<slug>` | Every style: description, videos and parts. |
+| `#/personagens`, `#/locacoes`, `#/objetos`, `#/graficos` | The parts of each kind: name, image, video count. `?estilo=<slug>` filters by style, `?estilo=nenhum` lists the shared parts. |
+| `#/personagens/<name>` (same for the other kinds) | The stills and text of a part and every video it appears in. Pip also shows the pose sheet. |
+| `#/videos`, `#/videos?estilo=<slug>` | Every video, filterable by style. |
+| `#/videos/<slug>` | Player, facts, lines that seek the video, the style and every part. |
+| `#/pacotes`, `#/pacotes/<id>` | The six packages with their players, inventories and comparison. |
+| `#/motor` | The engine inventory, the pipeline and AudioForge. |
+| `#/registro` | The parts registry and the used and unused lists. |
+| `#/busca/<text>` | The search results. |
+
+`catalog.json` is built from these sources, and it is never edited by hand:
+
+- **Videos**: every project in `--episodes` that has a `<slug>.scene.xml` and a render `<slug>.mp4` in `--renders`.
   The title, description, frame, fps and duration come from the scene. The lines come from the project's
-  `dialogue.json`, `timeline.json` or `narration.json`. The style comes from the parts registry.
-- **Styles**: one card for each registered style the base page does not already describe.
-- **Pip's poses**: the Soft character drawn by the engine in every pose.
-- **Registry**: every registered part with its style, kind, summary and episodes.
-- **Used and unused parts** (with `--usage`): the characters, locations and props, each with the episodes that use
-  it, then the ones no episode uses.
+  `dialogue.json`, `timeline.json` or `narration.json`. The six packages are entries too, marked `pacote`, and so is a
+  measured project with no render. The style comes from the measured usage.
+- **Styles**: every registered style, with the text of the notes, or its registered summary when it has none.
+- **Parts**: every registered part with its style, kind and summary, the stills the notes curate, and the videos
+  `--usage` measured.
+
+Marks say what is missing. A part with no still says so, a part no video uses is marked *não usado*, and an episode
+the usage report could not measure says *Não medido* instead of showing as using nothing.
+
+The document is defined by `srstudio.catalog_data` (`schema_version` `1.0.0`). `catalog_data.load` rejects unknown
+fields, unresolved references and missing media.
 
 ## Running it
 
@@ -39,18 +63,18 @@ From the workspace root, first measure which parts the episodes use (see the
 loopback unless told otherwise. It answers the byte ranges a browser needs to seek a video. Opening `index.html`
 from disk is not supported.
 
-- `--usage` is the report `srstudio usage` writes (schema `1.0.0`). The registry table's episodes, the gallery
-  chips and the gallery check below come from it; without it no part is claimed by any episode. Notes with a
-  gallery need it: the build stops with exit code 2 without one, since the gallery check could not fail. A report
-  that cannot be read stops the build with exit code 2.
+- `--usage` is the report `srstudio usage` writes (schema `1.0.0`). Each part's videos, each video's parts and the
+  gallery check below come from it; without it no part is claimed by any video and every video is marked as not
+  measured. Notes with a gallery need it: the build stops with exit code 2 without one, since the gallery check could
+  not fail. A report that cannot be read, or that names a part no longer registered, stops the build with exit code 2.
 
 - `--base` is the frozen page of the six packages. If it no longer has the anchors the generator writes into, the
   command stops with `srstudio page: …` and exit code 2, and the old page is left as it was.
 - `--cache` keeps the web encodes (540 px wide, 720 px when the render is wider than tall, so a square Ink render is 540; keyed by each render's size and modification time)
   and the pose images (keyed by the pose list). Unchanged renders are not encoded again.
 - `--site` is written with folders `700` and files `600`. Media are named by their content, so a rebuild writes only
-  what changed. They are hard-linked from the cache where possible and copied otherwise. Media go first and
-  `index.html` is replaced last, so a failed build leaves the previous site working. Files nothing references are
+  what changed. They are hard-linked from the cache where possible and copied otherwise. Media go first, then
+  `catalog.json`, and `index.html` is replaced last, so a failed build leaves the previous site working. Files nothing references are
   removed only after that. The build stops if the page would hold a data URI or pass `INDEX_LIMIT`.
 
 ## Notes
@@ -73,12 +97,10 @@ is still read, without a gallery): an unknown field, a missing field or a wrong 
 }
 ```
 
-The gallery fills Part 3, *Elenco, locações e props*. The six packages' cards come from the base page, and the
-library's cards follow them in each grid. `section` is `cast`, `locations`, `props` or `graphics`. `parts` names the
-registered parts the item shows. `shot` is a still cut from `generated/renders/<episode>.mp4` at `at` seconds,
+The gallery fills the detail view of each part it names; the cards of the six packages stay under `#/pacotes`.
+`section` is `cast`, `locations`, `props` or `graphics`. `parts` names the registered parts the item shows. `shot` is a still cut from `generated/renders/<episode>.mp4` at `at` seconds,
 cropped to `box` (`[x, y, w, h]` in frame pixels) when one is given; it is at most 480 px wide and cached like the
-web encodes. Only the cast takes `poses`. The chips are the numbers of the library episodes the parts are
-registered for, plus the episodes the stills come from.
+web encodes. Only the cast takes `poses`.
 
 When the notes have a gallery, the build also stops when:
 
