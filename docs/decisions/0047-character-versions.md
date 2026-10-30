@@ -6,8 +6,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 - Status: accepted (2026-10-30), amended the same day to cover every kind of part (see the amendment below; the
   decisions keep the names they had when written). Implemented: `srstudio.parts`, `srstudio.specimens`,
-  `srstudio.catalog_specimens`, `assets/parts.json`, `Release.parts`, `releases.unpinned`,
-  `usage.Report.pin_drift`, `sketch.drawer`, `toon_sketch.Staging.versions`, `srstudio parts`; `tests/test_parts.py`,
+  `srstudio.catalog_specimens`, `assets/parts.json`, `parts.Rig`, `toon_rigs.rig_of`, `toon_head.reach`,
+  `Release.parts`, `releases.unpinned`, `usage.Report.pin_drift`, `sketch.drawer`, `toon_sketch.Staging.versions`, `srstudio parts`; `tests/test_parts.py`,
   `tests/test_specimens.py`, `tests/test_catalog_specimens.py`, `tests/test_releases.py`, `tests/test_social.py`,
   `tests/test_usage.py`, `tests/test_cli.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
@@ -122,4 +122,15 @@ part, not only characters.
    had drawn them: `toon-clipboard`, `toon-counter`, `toon-lounge`, `toon-phone`, `toon-receipt`, `toon-speaker` and
    `toon-take-a-number`. Their notes say that, and they are `approved` like every other version 1, so a new reel may
    use them. `approved` on a version 1 means the baseline a reel may pin, not a look the operator judged.
-
+7. **A head rig is a record on its version.** The rig is a second drawing, so the digest of a version cannot hold it,
+   and the head only moves in reels newer than that digest. `Version.rig` is null or a typed `Rig` with the date, the
+   note, the status, the proof, the digest and the approval a version has, and that moved the table to schema 2.1.0.
+   The table and a project's record now carry separate constants, `TABLE_SCHEMA` and `RECORD_SCHEMA`, because a record
+   holds no rig and stays at 2.0.0.
+   - A rig may be added to an approved version once, from null to a record, because no published reel moved that
+     head. Any change to an approved rig is a new version of the character.
+   - `specimens.rig_digest` draws a rig through every kind a face has, at rest and at each corner of what its style
+     can reach (`toon_head.reach`), and the redraw test covers approved rigs as it covers versions.
+   - `toon_rigs.rig_of` refuses a rig the operator has not approved, so a proposed rig moves no reel.
+   - The sloth, the goat, the hamster and fox version 2 carry approved rigs that quote the operator's "head motion
+     approved".

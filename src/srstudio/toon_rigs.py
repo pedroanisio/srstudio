@@ -28,11 +28,15 @@ RIGS: Mapping[str, HeadRig] = MappingProxyType(
 
 def rig_of(name: str, versions: Mapping[str, int] | None = None) -> HeadRig:
     """The rig of the drawing a build draws of the character ``name``: the version ``versions`` pins, else its
-    default. A version with no rig is a :class:`srstudio.toon.ToonDataError` naming it."""
+    default. A version with no rig, or with one the operator has not approved, is a
+    :class:`srstudio.toon.ToonDataError` naming it."""
     number = parts.resolved(name, versions)
     rig = RIGS.get(parts.part_name(name, number))
     if rig is None:
         raise ToonDataError(
             f"{name} version {number} has no head rig, so it cannot move its head; the rigged are {sorted(RIGS)}"
         )
+    held = parts.get(name).version(number).rig
+    if held is None or held.status != "approved":
+        raise ToonDataError(f"{name} version {number}'s head rig is not approved, so a reel cannot move its head")
     return rig

@@ -1375,7 +1375,8 @@ RELEASE = Release("a-new-reel", post, parts={"toon-fox": 2, "toon-bear": 1, "too
 the default and cannot be pinned. An approved drawing is never revised in place: a test redraws every one and fails
 if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon's
 characters read pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version of
-anything else by name until its kind and style are in `parts.ROUTED`.
+anything else by name until its kind and style are in `parts.ROUTED`. A head rig is a second drawing, recorded on its
+version with the same fields and rules, so changing an approved rig means adding a version of the character.
 
 Version 2 of the dog, the frog, the bear, the rabbit, the raccoon and the hedgehog is the default for new reels
 ([docs/decisions/0052-older-cast-version-2.md](docs/decisions/0052-older-cast-version-2.md),

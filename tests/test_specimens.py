@@ -2,11 +2,12 @@
 
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import parts, registry, specimens, toon, toon_cast
+from srstudio import parts, registry, specimens, toon, toon_cast, toon_rigs
 from srstudio.canvas import Canvas, flat_counter
 from srstudio.specimens import DrawingChangedError, SpecimenError
 
@@ -221,3 +222,34 @@ def test_the_letters_of_a_text_asset_are_in_the_digest_and_its_font_is_not():
 
     assert specimens.fingerprint(scene("Hello", "a.ttf")) != specimens.fingerprint(scene("Hullo", "a.ttf"))
     assert specimens.fingerprint(scene("Hello", "a.ttf")) == specimens.fingerprint(scene("Hello", "b.ttf"))
+
+
+RIGGED = [
+    (name, v.number) for name, p in parts.load().items() for v in p.versions if v.rig and v.rig.status == "approved"
+]
+
+
+@pytest.mark.parametrize(("name", "number"), RIGGED, ids=[f"{n}@{v}" for n, v in RIGGED])
+def test_an_approved_rig_never_changes(name, number):
+    specimens.check_rig(name, number)
+
+
+def test_a_changed_rig_fails_and_says_a_new_version(monkeypatch):
+    monkeypatch.setattr(specimens, "rig_digest", lambda *a: "0" * 64)
+    with pytest.raises(DrawingChangedError, match="toon-goat version 1's head rig is approved.*add a version"):
+        specimens.check_rig("toon-goat")
+
+
+def test_a_version_with_no_rig_has_nothing_to_redraw():
+    specimens.check_rig("toon-bear")
+    with pytest.raises(SpecimenError, match="toon-bear version 1 has no head rig"):
+        specimens.rig_digest("toon-bear")
+
+
+def test_a_rig_s_digest_holds_the_drawing_and_its_reach(monkeypatch):
+    before = specimens.rig_digest("toon-goat")
+    assert before != parts.get("toon-goat").version(1).drawing
+    assert specimens.rig_digest("toon-goat") == before
+    rig = toon_rigs.RIGS["toon-goat"]
+    monkeypatch.setattr(toon_rigs, "RIGS", {**toon_rigs.RIGS, "toon-goat": replace(rig, tilt=rig.tilt + 3.0)})
+    assert specimens.rig_digest("toon-goat") != before
