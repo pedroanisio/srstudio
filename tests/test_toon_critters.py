@@ -13,6 +13,7 @@ from srstudio import PEACH, Canvas, brush, flat_counter, registry, sketch, toon,
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.toon import ToonDataError
 from srstudio.voice import Voice, VoiceSettings
+from support.toon_contour import bends, inside, points, sharpest
 from support.toon_thumbnail import apart, lab, silhouette_rest, thumbnail
 
 CRITTERS = toon_critters.CRITTERS
@@ -503,3 +504,59 @@ def test_a_pose_draws_a_reasonable_number_of_shapes(name):
     look = CRITTERS[name]
     count = len(toon_cast.figure_shapes(look, "wide", "flat", "desk"))
     assert 50 <= count <= 90
+
+
+# -- the shoulders: one smooth body with the arms inside it (ADR 0046) -------------------------------------------------
+def _body_rim(look):
+    inks = [s for s, c in toon_cast._foundation(look) if c == "ink"]
+    return max(
+        inks, key=lambda s: (brush.bounds(s)[2] - brush.bounds(s)[0]) * (brush.bounds(s)[3] - brush.bounds(s)[1])
+    )
+
+
+@pytest.mark.parametrize("name", NEW)
+def test_the_arms_sit_inside_the_body_with_nothing_above_or_outside_the_shoulders(name):
+    look = CRITTERS[name]
+    torso = look.drawing.torso
+    body = brush.outline(look.silhouette, steps=3)
+    level = max(y for _, y in torso.shoulders)
+    (left, _), (right, _) = torso.shoulders
+    for arms in toon.ARMS:
+        for frame in (0, 1) if arms == "type" else (0,):
+            under, over = toon_cast._arms(look, arms, frame)
+            assert under + over, arms
+            for shape, _ in under + over:
+                for x, y in points(shape):
+                    in_front = bool(over) and left < x < right  # a paw raised to the mouth crosses the neck
+                    assert inside(body, x, y) or y > level or in_front, f"{name} {arms}/{frame} at {(x, y)}"
+
+
+@pytest.mark.parametrize("name", NEW)
+def test_the_body_runs_from_neck_to_flank_with_no_corner_sharper_than_a_gentle_curve(name):
+    look = CRITTERS[name]
+    torso = look.drawing.torso
+    top = max(torso.head[0][1], torso.head[-1][1]) + 2.0
+    for shape in (_body_rim(look), brush.outline(look.silhouette, steps=3)):  # the ink band and the coat
+        out, inward = sharpest(shape, top, torso.base - 15.0)
+        assert out <= 10.0 and inward <= 15.0, (name, out, inward)  # degrees per 8 px: radii of 46 and 31 px
+        for run in bends(shape, top, torso.base - 15.0).values():  # no lumps: in at the neck, out at the shoulder
+            signs = [b > 0 for b in run if abs(b) > 3.5]  # the pressed ink breathes a little under that
+            assert sum(1 for a, b in zip(signs, signs[1:], strict=False) if a != b) <= 1, name
+
+
+@pytest.mark.parametrize("look", toon_critters.CRITTERS.values(), ids=toon_critters.CRITTERS)
+def test_the_two_shoulders_sit_at_about_the_same_height(look):
+    (_, left), (_, right) = look.drawing.torso.shoulders
+    assert abs(left - right) <= 10.0  # a head tilted about the neck must not drop one shoulder and lift the other
+
+
+@pytest.mark.parametrize("name", NEW)
+def test_typing_still_reaches_the_laptop_and_resting_paws_the_desk(name):
+    look = CRITTERS[name]
+    for frame, lift in ((0, 0.0), (1, 9.0)):
+        under, _ = toon_cast._arms(look, "type", frame)
+        boxes = [brush.bounds(s) for s, _ in under]
+        for px, py in ((376.0, 789.0 - lift), (404.0, 764.0 + lift)):
+            assert any(b[0] <= px <= b[2] and b[1] <= py <= b[3] for b in boxes), (name, frame, px, py)
+    under, _ = toon_cast._arms(look, "desk", 0)
+    assert max(brush.bounds(s)[3] for s, _ in under) >= 794.0

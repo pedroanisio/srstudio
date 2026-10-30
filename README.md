@@ -1239,6 +1239,14 @@ its own signature: the sloth's yawn, the goat's scream, the hamster's puffed pou
 draws the new `sleepy` eyes (heavy lids, blinked slower: `SLEEPY_PACE`, `SLEEPY_HOLD`) and `yawn`, `scream` and
 `puff` mouths (`shared_eye`, `shared_mouth`); the traced cat refuses them by name.
 
+A critter's body and arms come from a `Torso`
+([docs/decisions/0046-toon-torso-one-smooth-body.md](docs/decisions/0046-toon-torso-one-smooth-body.md),
+[src/srstudio/toon_torso.py](src/srstudio/toon_torso.py)). `Torso(head, shoulder, slope, flank, arm)` builds one
+smooth outline under a head contour: fixed-radius arcs from the neck over the shoulder and down the flank, so it
+cannot make a corner. `Torso.weights` calms `drift` on that line. `Torso.limb(points, paw, coat, shade)` redraws a
+pose's arm inside the body, a thin crease at the top and full width at the forearm, and leaves the paw to the
+character. Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
+
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 
 The coworkers' episodes are short comedies written as data and cut between the two characters

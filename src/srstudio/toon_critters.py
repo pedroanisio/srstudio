@@ -42,6 +42,7 @@ from .canvas import Canvas
 from .registry import register
 from .toon import Pose
 from .toon_cast import CENTRE, FINE, INK, TONGUE, Layer, Look, Mouths, _brow, _eye, _mouth, _viseme, figure
+from .toon_torso import Torso
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
@@ -71,7 +72,7 @@ THROAT = "#5b1f2c"  # inside a wide-open mouth
 LIGHT_FROM: Point = (-0.7, -0.71)  # the light comes from the upper left: edges facing away from it are shaded
 FUR = brush.Pressure(1.0, 0.18, 0.12, 0.06, 1.0)  # an inner stroke: pressed at the root, lifted at the tip
 LINE = brush.Pressure(0.35, 0.3, 0.75, 0.06, 1.2)  # a line pressed in the middle, tapered at both ends
-ARM = brush.Pressure(0.7, 1.05, 0.12, 0.1, 2.6)  # an arm's ink: light into the shoulder, pressed toward the paw
+CALM = 0.15  # the share of a hand's drift the shoulders and flanks take: the head's edge wobbles, the torso runs smooth
 CLAW = brush.Pressure(1.0, 0.16, 0.0, 0.0, 1.0)
 
 
@@ -155,18 +156,23 @@ def pressed(points: Sequence[Point], weight: float, press: Press = PRESS, steps:
     return brush.outline(out, steps=1)
 
 
-def drift(points: Sequence[Point], amount: float, seed: float) -> tuple[Point, ...]:
+def drift(
+    points: Sequence[Point], amount: float, seed: float, weights: Sequence[float] | None = None
+) -> tuple[Point, ...]:
     """The control points of a closed contour each moved across it by at most ``amount``: a hand's small uneven
-    drift, the same for a ``seed`` every build."""
+    drift, the same for a ``seed`` every build. ``weights`` (one per point, 0..1) calm the drift where a line must
+    stay smooth, such as the shoulders of a torso (:meth:`srstudio.toon_torso.Torso.weights`)."""
     if not (checks.number(amount) and amount >= 0):
         raise brush.BrushError(f"amount must be a non-negative number, got {amount!r}")
     n = len(points)
+    if weights is not None and (len(weights) != n or not all(checks.number(w) and 0 <= w <= 1 for w in weights)):
+        raise brush.BrushError(f"drift weights are one share in 0..1 per point ({n}), got {weights!r}")
     out = []
     for i, (x, y) in enumerate(points):
         a, b = points[i - 1], points[(i + 1) % n]
         dx, dy = b[0] - a[0], b[1] - a[1]
         length = math.hypot(dx, dy) or 1.0
-        move = amount * _grain(i / n, seed)
+        move = amount * _grain(i / n, seed) * (1.0 if weights is None else weights[i])
         out.append((round(x - dy / length * move, 2), round(y + dx / length * move, 2)))
     return tuple(out)
 
@@ -356,7 +362,8 @@ class Critter:
     drawing: where the shared brush parts draw a kind the critter does not draw itself. ``parts`` gives the body at
     rest, untilted, as layers flagged when they are inner strokes; ``tilt`` turns the head about ``neck`` (degrees
     clockwise, fading to nothing over ``fade`` px toward the shoulders). ``pupil`` draws a pupil, ``mouths`` the
-    mouths it draws for its own face, ``paw`` the end of an arm."""
+    mouths it draws for its own face, ``paw`` the end of an arm. ``torso`` is the body under the head (ADR 0046):
+    the face's silhouette is its contour, and the arms are drawn inside it (:meth:`Torso.limb`)."""
 
     name: str
     face: Look
@@ -368,6 +375,7 @@ class Critter:
     pupil: Pupil
     mouths: Callable[[Look, str], list[Layer] | None]
     paw: Callable[[Look, Point, Point, bool], list[Layer]]
+    torso: Torso
     lid_press: Press = EYE_PRESS
 
     def _turn(self, x: float, y: float) -> Point:
@@ -490,20 +498,10 @@ class Critter:
         return self.turn(_viseme(self.face, kind))
 
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]:
-        """An arm: the ink band set low (heavier under the arm) and light into the shoulder, the coat over it, the
-        shade along its underside from the elbow, then the critter's paw."""
-        w = look.limb
-        low = [(x + 0.6, y + 1.8) for x, y in points]
-        under = [(x + 0.4, y + w * 0.26) for x, y in (points[1:] if len(points) > 2 else points)]
-        out: list[Layer] = [
-            (brush.stroke(low, w + 2 * INK * 0.9, ARM), "ink"),
-            (brush.stroke(points, w, brush.EVEN), look.coat),
-            (brush.stroke(under, w * 0.4, LINE), self.shade),
-        ]
-        ax, ay = points[-2]
-        dx, dy = paw[0] - ax, paw[1] - ay
-        length = math.hypot(dx, dy) or 1.0
-        return out + self.paw(look, paw, (dx / length, dy / length), toes)
+        """An arm inside the body (:meth:`srstudio.toon_torso.Torso.limb`): a thin crease out of the body widening
+        to the forearm, inked heavier underneath, the shade along its underside, then the critter's paw."""
+        layers, at, way = self.torso.limb(points, paw, look.coat, self.shade)
+        return layers + self.paw(look, at, way, toes)
 
 
 def _pressed_paw(look: Look, paw: Point, rx: float, ry: float, colour: str, seed: float) -> list[Layer]:
@@ -517,18 +515,17 @@ SLOTH_SHADE = "#6b6e3c"
 SLOTH_BELLY = "#a3a46d"
 SLOTH_NOSE = "#3a2a20"
 SLOTH_CLAW = "#efe4c6"
-_SLOTH_BODY = (
-    (30.0, 830.0), (31.0, 800.0), (35.0, 768.0), (42.0, 742.0), (52.0, 722.0), (66.0, 706.0), (75.0, 690.0),
-    (77.0, 672.0), (68.0, 664.0), (81.0, 652.0), (82.0, 636.0), (79.0, 624.0), (88.0, 612.0), (90.0, 588.0),
-    (87.0, 574.0), (95.0, 566.0), (98.0, 546.0), (93.0, 534.0), (106.0, 528.0), (111.0, 512.0), (111.0, 497.0),
-    (123.0, 503.0), (128.0, 487.0), (138.0, 490.0), (147.0, 470.0), (159.0, 482.0), (167.0, 466.0), (176.0, 474.0),
-    (188.0, 457.0), (191.0, 432.0), (199.0, 414.0), (208.0, 408.0), (207.0, 424.0), (216.0, 432.0), (213.0, 448.0),
-    (197.0, 472.0), (210.0, 463.0), (219.0, 478.0), (234.0, 471.0), (239.0, 486.0), (251.0, 486.0),
+_SLOTH_HEAD = (  # the sloth's head from the left of its neck over the crown to the right, the fur tufts and all
+    (75.0, 690.0), (77.0, 672.0), (68.0, 664.0), (81.0, 652.0), (82.0, 636.0), (79.0, 624.0), (88.0, 612.0),
+    (90.0, 588.0), (87.0, 574.0), (95.0, 566.0), (98.0, 546.0), (93.0, 534.0), (106.0, 528.0), (111.0, 512.0),
+    (111.0, 497.0), (123.0, 503.0), (128.0, 487.0), (138.0, 490.0), (147.0, 470.0), (159.0, 482.0), (167.0, 466.0),
+    (176.0, 474.0), (188.0, 457.0), (191.0, 432.0), (199.0, 414.0), (208.0, 408.0), (207.0, 424.0), (216.0, 432.0),
+    (213.0, 448.0), (197.0, 472.0), (210.0, 463.0), (219.0, 478.0), (234.0, 471.0), (239.0, 486.0), (251.0, 486.0),
     (253.0, 501.0), (264.0, 510.0), (267.0, 525.0), (275.0, 534.0), (274.0, 547.0), (279.0, 566.0), (282.0, 590.0),
-    (288.0, 604.0), (284.0, 616.0), (288.0, 638.0), (300.0, 650.0), (291.0, 659.0), (292.0, 676.0), (300.0, 690.0),
-    (314.0, 704.0), (326.0, 722.0), (335.0, 744.0), (340.0, 772.0), (342.0, 800.0), (342.0, 830.0), (260.0, 832.0),
-    (110.0, 832.0),
+    (288.0, 604.0), (284.0, 616.0), (288.0, 638.0), (300.0, 650.0), (291.0, 659.0), (298.0, 676.0), (300.0, 690.0),
 )  # fmt: skip
+_SLOTH_TORSO = Torso(_SLOTH_HEAD, shoulder=150.0, slope=35.0, flank=156.0, arm=30.0)
+_SLOTH_BODY = _SLOTH_TORSO.contour
 _SLOTH_DISC = (
     (111.0, 600.0), (115.0, 572.0), (128.0, 550.0), (149.0, 538.0), (170.0, 544.0), (185.0, 553.0), (202.0, 542.0),
     (223.0, 536.0), (243.0, 548.0), (256.0, 570.0), (262.0, 600.0), (260.0, 631.0), (247.0, 655.0), (220.0, 670.0),
@@ -558,14 +555,12 @@ _SLOTH_FUR = (
     ((148.0, 730.0), (153.0, 744.0)),  # the chest
     ((210.0, 733.0), (206.0, 747.0)),
     ((180.0, 758.0), (183.0, 772.0)),
-    ((96.0, 716.0), (104.0, 738.0), (106.0, 760.0)),  # where the arms meet the body
-    ((280.0, 718.0), (272.0, 742.0)),
     ((185.0, 620.0), (185.0, 629.0)),  # the philtrum
 )
 
 
 def _sloth_parts() -> list[tuple[Layer, bool]]:
-    body = drift(_SLOTH_BODY, 1.3, 1.0)
+    body = drift(_SLOTH_BODY, 1.3, 1.0, _SLOTH_TORSO.weights(CALM))
     out: list[tuple[Layer, bool]] = [
         ((pressed(body, INK * 1.05, seed=1.0), "ink"), False),
         ((brush.outline(body, steps=3), _SLOTH_COAT), False),
@@ -641,6 +636,7 @@ SLOTH_CRITTER = Critter(
     pupil=_round_pupil,
     mouths=_sloth_mouths,
     paw=_sloth_paw,
+    torso=_SLOTH_TORSO,
 )
 SLOTH = SLOTH_CRITTER.look()
 
@@ -653,16 +649,15 @@ GOAT_HOOF = "#4b3f5f"
 GOAT_IRIS = "#e8b84a"
 _GOAT_COAT = "#a48ccc"
 _GOAT_LIGHT = "#f2ebdc"
-_GOAT_BODY = (
-    (44.0, 830.0), (46.0, 796.0), (51.0, 764.0), (60.0, 738.0), (74.0, 718.0), (94.0, 706.0), (118.0, 698.0),
-    (140.0, 692.0), (146.0, 684.0), (140.0, 676.0), (143.0, 666.0), (136.0, 648.0), (130.0, 626.0), (124.0, 604.0),
-    (117.0, 582.0), (112.0, 562.0), (109.0, 542.0), (112.0, 522.0), (118.0, 504.0), (130.0, 488.0), (146.0, 477.0),
-    (163.0, 470.0), (174.0, 468.0), (181.0, 455.0), (190.0, 466.0), (204.0, 469.0), (222.0, 476.0), (238.0, 487.0),
-    (250.0, 502.0), (257.0, 520.0), (261.0, 540.0), (259.0, 562.0), (253.0, 584.0), (248.0, 600.0), (256.0, 611.0),
-    (244.0, 618.0), (239.0, 634.0), (234.0, 652.0), (229.0, 670.0), (226.0, 686.0), (242.0, 694.0), (266.0, 700.0),
-    (290.0, 710.0), (308.0, 724.0), (320.0, 744.0), (328.0, 770.0), (331.0, 798.0), (332.0, 830.0), (250.0, 833.0),
-    (120.0, 832.0),
+_GOAT_HEAD = (  # the goat's head from under the left jaw over the horns' roots to under the right jaw
+    (140.0, 676.0), (143.0, 666.0), (136.0, 648.0), (130.0, 626.0), (124.0, 604.0), (117.0, 582.0), (112.0, 562.0),
+    (109.0, 542.0), (112.0, 522.0), (118.0, 504.0), (130.0, 488.0), (146.0, 477.0), (163.0, 470.0), (174.0, 468.0),
+    (181.0, 455.0), (190.0, 466.0), (204.0, 469.0), (222.0, 476.0), (238.0, 487.0), (250.0, 502.0), (257.0, 520.0),
+    (261.0, 540.0), (259.0, 562.0), (253.0, 584.0), (248.0, 600.0), (256.0, 611.0), (244.0, 618.0), (239.0, 634.0),
+    (233.0, 652.0), (232.0, 670.0),
 )  # fmt: skip
+_GOAT_TORSO = Torso(_GOAT_HEAD, shoulder=150.0, slope=22.0, flank=146.0, arm=26.0)
+_GOAT_BODY = _GOAT_TORSO.contour
 _GOAT_EARS = (
     ((118.0, 548.0), (101.0, 551.0), (83.0, 560.0), (66.0, 572.0), (56.0, 582.0), (65.0, 587.0), (84.0, 584.0),
      (104.0, 577.0), (118.0, 568.0)),
@@ -705,8 +700,6 @@ _GOAT_FUR = (
     ((192.0, 700.0), (190.0, 713.0)),
     ((104.0, 568.0), (80.0, 574.0)),  # the ear creases
     ((266.0, 560.0), (292.0, 562.0)),
-    ((94.0, 716.0), (101.0, 738.0), (103.0, 758.0)),  # where the arms meet the body
-    ((278.0, 716.0), (271.0, 740.0)),
     ((150.0, 742.0), (156.0, 756.0)),  # the chest
     ((218.0, 748.0), (214.0, 762.0)),
 )
@@ -719,7 +712,7 @@ def _goat_parts() -> list[tuple[Layer, bool]]:
     for k, ear in enumerate(_GOAT_EARS):
         out += [(layer, False) for layer in _inked(ear, _GOAT_COAT, 12.0 + k, amount=0.6)]
         out.append((_fill(_GOAT_EAR_INNER[k], GOAT_EAR, 14.0 + k, amount=0.4), False))
-    body = drift(_GOAT_BODY, 1.2, 16.0)
+    body = drift(_GOAT_BODY, 1.2, 16.0, _GOAT_TORSO.weights(CALM))
     out += [((pressed(body, INK * 1.05, seed=16.0), "ink"), False), ((brush.outline(body, steps=3), _GOAT_COAT), False)]
     layers: list[Layer] = shade(body, 22.0, GOAT_SHADE)
     layers.append(_fill(_GOAT_CHIN_SHADE, GOAT_SHADE, 17.0))
@@ -802,6 +795,7 @@ GOAT_CRITTER = Critter(
     pupil=_goat_pupil,
     mouths=_goat_mouths,
     paw=_goat_paw,
+    torso=_GOAT_TORSO,
 )
 GOAT = GOAT_CRITTER.look()
 
@@ -813,14 +807,15 @@ HAMSTER_NOSE = "#e2667f"
 HAMSTER_BLUSH = "#f58f9b"
 _HAMSTER_COAT = "#f4a09c"
 _HAMSTER_LIGHT = "#fff3e2"
-_HAMSTER_BODY = (
-    (44.0, 830.0), (44.0, 800.0), (46.0, 770.0), (50.0, 742.0), (54.0, 717.0), (55.0, 698.0), (52.0, 679.0),
-    (43.0, 672.0), (49.0, 666.0), (47.0, 654.0), (50.0, 644.0), (56.0, 630.0), (63.0, 617.0), (74.0, 600.0),
-    (88.0, 584.0), (104.0, 572.0), (124.0, 561.0), (146.0, 553.0), (166.0, 548.0), (179.0, 548.0), (184.0, 540.0),
-    (192.0, 548.0), (206.0, 548.0), (226.0, 552.0), (248.0, 559.0), (268.0, 570.0), (284.0, 584.0), (296.0, 600.0),
-    (305.0, 617.0), (312.0, 633.0), (316.0, 650.0), (322.0, 658.0), (316.0, 667.0), (312.0, 686.0), (310.0, 703.0),
-    (314.0, 722.0), (320.0, 750.0), (324.0, 780.0), (326.0, 806.0), (326.0, 830.0), (250.0, 833.0), (120.0, 832.0),
+_HAMSTER_HEAD = (  # the hamster's head from the left of its neck over the pouches and the crown to the right
+    (54.0, 694.0), (52.0, 679.0), (43.0, 672.0), (49.0, 666.0), (47.0, 654.0), (50.0, 644.0), (56.0, 630.0),
+    (63.0, 617.0), (74.0, 600.0), (88.0, 584.0), (104.0, 572.0), (124.0, 561.0), (146.0, 553.0), (166.0, 548.0),
+    (179.0, 548.0), (184.0, 540.0), (192.0, 548.0), (206.0, 548.0), (226.0, 552.0), (248.0, 559.0), (268.0, 570.0),
+    (284.0, 584.0), (296.0, 600.0), (305.0, 617.0), (312.0, 633.0), (316.0, 650.0), (322.0, 658.0), (316.0, 667.0),
+    (312.0, 686.0),
 )  # fmt: skip
+_HAMSTER_TORSO = Torso(_HAMSTER_HEAD, shoulder=136.0, slope=60.0, flank=141.0, arm=22.0)
+_HAMSTER_BODY = _HAMSTER_TORSO.contour
 _HAMSTER_EARS = (
     ((90.0, 558.0), (94.0, 545.0), (106.0, 539.0), (122.0, 541.0), (132.0, 550.0), (130.0, 562.0), (116.0, 572.0),
      (98.0, 570.0)),
@@ -853,8 +848,6 @@ _HAMSTER_FUR = (
     ((166.0, 742.0), (170.0, 755.0)),  # the belly
     ((204.0, 746.0), (200.0, 759.0)),
     ((184.0, 770.0), (186.0, 782.0)),
-    ((84.0, 720.0), (90.0, 744.0), (90.0, 764.0)),  # where the arms meet the body
-    ((288.0, 722.0), (282.0, 746.0)),
     ((146.0, 640.0), (118.0, 635.0)),  # whiskers
     ((146.0, 647.0), (116.0, 649.0)),
     ((224.0, 640.0), (253.0, 633.0)),
@@ -867,7 +860,7 @@ def _hamster_parts() -> list[tuple[Layer, bool]]:
     for k, ear in enumerate(_HAMSTER_EARS):
         out += [(layer, False) for layer in _inked(ear, _HAMSTER_COAT, 30.0 + k, amount=0.5)]
         out.append((_fill(_HAMSTER_EAR_INNER[k], HAMSTER_EAR, 32.0 + k, amount=0.3), False))
-    body = drift(_HAMSTER_BODY, 1.1, 34.0)
+    body = drift(_HAMSTER_BODY, 1.1, 34.0, _HAMSTER_TORSO.weights(CALM))
     out += [
         ((pressed(body, INK * 1.05, seed=34.0), "ink"), False),
         ((brush.outline(body, steps=3), _HAMSTER_COAT), False),
@@ -955,6 +948,7 @@ HAMSTER_CRITTER = Critter(
     pupil=_bead_pupil,
     mouths=_hamster_mouths,
     paw=_hamster_paw,
+    torso=_HAMSTER_TORSO,
 )
 HAMSTER = HAMSTER_CRITTER.look()
 CRITTERS = {"sloth": SLOTH, "goat": GOAT, "hamster": HAMSTER}
