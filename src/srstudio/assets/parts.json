@@ -846,6 +846,40 @@
         }
       ]
     },
+    "crayon-cv": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d5288ec8ae0d9a4f98a005b188501f42cdc7bd35d3bf65fbca771ab1d17c0798",
+          "rig": null
+        }
+      ]
+    },
+    "crib": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ac2c387eb05f14f0905c239e0690704baec23b13fdfa422a05a40f579ec6bd0c",
+          "rig": null
+        }
+      ]
+    },
     "crumbs": {
       "kind": "prop",
       "style": "cutout",
@@ -1254,6 +1288,23 @@
         }
       ]
     },
+    "hiring-office": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "74f81e93b4596dfd823fac19af1e1d3de2df13a6f95f87b6003ddef3f5d1dc16",
+          "rig": null
+        }
+      ]
+    },
     "home-study": {
       "kind": "location",
       "style": "cutout",
@@ -1638,6 +1689,23 @@
         }
       ]
     },
+    "job-ad": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "78f1788f9fa01180e783d3fa25220fb28c4983f9e0d9710837ce3ba1433cd265",
+          "rig": null
+        }
+      ]
+    },
     "juno": {
       "kind": "character",
       "style": "soft",
@@ -1858,6 +1926,23 @@
           "proof": "",
           "approval": null,
           "drawing": "ef14eaa484126313b1260b1a9966ba90b70a382a9bb55e5997959f98767735be",
+          "rig": null
+        }
+      ]
+    },
+    "paper-hat": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "40abd1979a5cfb8387d7004ee6243ccebcdaa63eaf7f90518f7504c9eb64228e",
           "rig": null
         }
       ]
@@ -2147,6 +2232,23 @@
           "proof": "",
           "approval": null,
           "drawing": "0b6666ca1636252a50ec562e4604f3c147c06b3f5afd4d1b6a52cc2784008582",
+          "rig": null
+        }
+      ]
+    },
+    "roller-blind": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawing, for entry-level.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8f4a72ce08feafc0ba2cdf53a39b09fbdf3fbea58768f2f2decacf73e7cdae88",
           "rig": null
         }
       ]

@@ -711,6 +711,32 @@ mug, the plant and the board. The voices are Will and Eric; the captions are Not
 - `office_party` (`office-party`): a dark teal function room with streamers; `banner=` hangs in focus, `stage=` draws
   under it and `front=` nearest the lens.
 
+## Cutout episode in the hiring office: *Entry Level* (28)
+
+[episodes/entry_level.py](episodes/entry_level.py) opens on an interviewer and the ad on his desk: ENTRY LEVEL, 10 YEARS'
+EXPERIENCE. "It's entry level, so just ten years." "I'm 22." "Have you tried starting earlier?" The desk bell brings a
+crayon CV with small shoes swinging under it: "Been in the role since nursery." "Promising." Milo: "This software came
+out in 2024." "We need twenty years in it." A crib, a CV over its rail: "I've been networking since the womb."
+"Overqualified. We'd lose you." "Who actually got it?" The blind snaps up on Rosa at a desk in a paper hat that says
+TRAINEE. "She's still on probation."
+
+```bash
+srstudio record entry-level PROJECT
+srstudio build entry-level PROJECT    # PROJECT/entry-level.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). The toddler and the baby are heard, in grown men's
+voices (Brian and George), and never drawn. The other voices are Eric, Will and Liam; the captions are Noto Sans 700.
+Parts added for it, in `srstudio.cutout_hiring`, all recorded `proposed` until the operator has approved them:
+
+- `job_ad` (`job-ad`): a printed advert standing on a desk; `heading=` and two `lines=` of 1 to `AD_LINE` characters.
+- `crayon_cv` (`crayon-cv`): a CV in crayon with a clip-on tie, two small hands on it and shoes under it; `swings=`.
+- `crib` (`crib`): a slatted crib and mobile with a CV over the rail; `rattles=` shakes the rattle.
+- `paper_hat` (`paper-hat`): a folded paper hat lettered by `label=` (1 to `HAT_LABEL` characters).
+- `roller_blind` (`roller-blind`): a blind that snaps up at `snap=`, its cord dipping first.
+- `hiring_office` (`hiring-office`): a slate wall and a poster out of focus, a glass wall onto `next_room=` behind the
+  blind, a desk; `behind_desk=` and `on_desk=` draw at those depths.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

@@ -4180,6 +4180,114 @@
         ]
       },
       "text": "Salão azul-petróleo com serpentinas e luzinhas fora de foco e uma faixa em foco (<code>banner=</code>, até catorze caracteres). <code>stage=</code> desenha sob a faixa e <code>front=</code> o que fica mais perto da lente."
+    },
+    {
+      "section": "props",
+      "name": "Anúncio de emprego",
+      "parts": [
+        "job-ad"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          180,
+          1000,
+          720,
+          420
+        ]
+      },
+      "text": "Anúncio impresso, em pé na mesa, com um título pequeno sobre duas linhas grandes (<code>lines=</code>, até 24 caracteres): vaga de entrada, dez anos de experiência."
+    },
+    {
+      "section": "props",
+      "name": "Currículo de giz de cera",
+      "parts": [
+        "crayon-cv"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 7.0,
+        "box": [
+          200,
+          600,
+          680,
+          780
+        ]
+      },
+      "text": "Quem segura este currículo nunca aparece: gravata de clipe, duas mãozinhas nas bordas e sapatos que balançam embaixo nos intervalos de <code>swings=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Berço",
+      "parts": [
+        "crib"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 14.5,
+        "box": [
+          60,
+          520,
+          960,
+          900
+        ]
+      },
+      "text": "Berço de grades com móbile, o ocupante escondido, um currículo enganchado na grade e um chocalho que sacode em <code>rattles=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Chapéu de papel",
+      "parts": [
+        "paper-hat"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 22.5,
+        "box": [
+          280,
+          300,
+          520,
+          420
+        ]
+      },
+      "text": "Chapéu dobrado de uma folha, com a faixa escrita em <code>label=</code> (até oito caracteres): TRAINEE."
+    },
+    {
+      "section": "props",
+      "name": "Persiana de rolo",
+      "parts": [
+        "roller-blind"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          560,
+          200,
+          520,
+          800
+        ]
+      },
+      "text": "Persiana de rolo sobre uma janela interna; em <code>snap=</code> ela sobe de uma vez, e a cordinha desce um pouco antes."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de contratação",
+      "parts": [
+        "hiring-office"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede ardósia e um pôster fora de foco, uma parede de vidro para a sala ao lado (<code>next_room=</code>) atrás da persiana, e a mesa no pé do quadro."
     }
   ]
 }
