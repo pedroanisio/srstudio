@@ -418,7 +418,7 @@ def test_a_lit_sketch_draws_its_light_between_the_character_and_the_desk(tmp_pat
     }
     staging = toon_sketch.Staging(
         data.SKETCH, data.SEED, data.DESCRIPTION, data.ACCESSIBILITY, data.NARRATION, data.TINTS,
-        lambda shot: toon_rooms.dress(shot, "lounge", lights), stickers={"dog": data.STICKER}, lit=True,
+        lambda shot: toon_rooms.dress(shot, "lounge", lights), {}, stickers={"dog": data.STICKER}, lit=True,
     )  # fmt: skip
     ep = toon_sketch.build(root, staging, {"--voice"})
     comp = tree(ep.cv).find("composition")
