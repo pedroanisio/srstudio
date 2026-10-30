@@ -4635,6 +4635,709 @@
         ]
       },
       "text": "Braço solto que entra pela borda do quadro; o Gary digita com um dedo só (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Impressora de mesa",
+      "parts": [
+        "desk-printer"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 5.0,
+        "box": [
+          0,
+          900,
+          1080,
+          700
+        ]
+      },
+      "text": "Impressora doméstica vista de frente: o visor mostra leituras no tempo (<code>lcd=</code>, até dezesseis caracteres), ela treme nos intervalos de <code>whirs=</code> e as folhas de <code>sheets=</code> deslizam para a bandeja. LOW ON CYAN, para imprimir uma página preta."
+    },
+    {
+      "section": "props",
+      "name": "Bilhete de resgate",
+      "parts": [
+        "ransom-note"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 7.5,
+        "box": [
+          60,
+          120,
+          960,
+          1120
+        ]
+      },
+      "text": "Folha com a exigência em letras recortadas de revista, cada uma no seu retalho, sorteado por <code>seed=</code> (<code>lines=</code>, até doze caracteres por linha)."
+    },
+    {
+      "section": "props",
+      "name": "Foto de refém",
+      "parts": [
+        "hostage-photo"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 17.0,
+        "box": [
+          240,
+          720,
+          640,
+          700
+        ]
+      },
+      "text": "Foto instantânea de uma folha de papel amarrada a uma cadeira, sob uma lâmpada só, presa com fita."
+    },
+    {
+      "section": "props",
+      "name": "Sacolinha de papel",
+      "parts": [
+        "paper-bag"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 9.0,
+        "box": [
+          680,
+          700,
+          340,
+          430
+        ]
+      },
+      "text": "Sacola de papel pardo muito pequena, com alças de barbante: o que sobra de sessenta e quatro dólares."
+    },
+    {
+      "section": "locations",
+      "name": "Escritório da Rosa",
+      "parts": [
+        "home-study"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 0.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede sálvia, janela com cortina e estante fora de foco; a mesa toma o pé do quadro. <code>behind_desk=</code> desenha quem senta atrás dela e <code>on_desk=</code> o que fica à frente."
+    },
+    {
+      "section": "locations",
+      "name": "Caixa da loja",
+      "parts": [
+        "shop-till"
+      ],
+      "shot": {
+        "episode": "out-of-cyan",
+        "at": 9.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Prateleiras fora de foco sobre um balcão claro que toma o pé do quadro; <code>on_counter=</code> desenha sobre ele."
+    },
+    {
+      "section": "props",
+      "name": "Cafeteira de escritório",
+      "parts": [
+        "drip-machine"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 1.0,
+        "box": [
+          340,
+          900,
+          400,
+          380
+        ]
+      },
+      "text": "Cafeteira de filtro com jarra de vidro; o fio de café corre nos intervalos de <code>pours=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Caneca de escritório",
+      "parts": [
+        "office-mug"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 3.5,
+        "box": [
+          60,
+          1040,
+          340,
+          280
+        ]
+      },
+      "text": "Caneca lisa de qualquer cor, com até oito caracteres em <code>label=</code>: o tempo de casa, de seis em seis anos."
+    },
+    {
+      "section": "props",
+      "name": "Placar de dias",
+      "parts": [
+        "days-board"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 3.5,
+        "box": [
+          200,
+          70,
+          680,
+          370
+        ]
+      },
+      "text": "Quadro de parede no modo das placas de segurança do trabalho: um título e uma contagem que muda no tempo (<code>counts=</code>, até sete caracteres)."
+    },
+    {
+      "section": "props",
+      "name": "Planejador de parede",
+      "parts": [
+        "wall-planner"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 8.2,
+        "box": [
+          60,
+          230,
+          960,
+          1060
+        ]
+      },
+      "text": "Página de planejador com todas as sextas circuladas em caneta vermelha em volta de <code>note=</code>; <code>months=</code> vira as páginas."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de ouro",
+      "parts": [
+        "gold-watch"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          640,
+          780,
+          300,
+          340
+        ]
+      },
+      "text": "O relógio de presente de aposentadoria, com pulseira dourada e um brilho que atravessa o mostrador em <code>gleam=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Microfone no pedestal",
+      "parts": [
+        "stage-mic"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 12.5,
+        "box": [
+          360,
+          860,
+          360,
+          660
+        ]
+      },
+      "text": "Microfone de frente, num pedestal reto; <code>height=</code> dá a altura da cápsula."
+    },
+    {
+      "section": "props",
+      "name": "Plateia de costas",
+      "parts": [
+        "party-crowd"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          0,
+          1420,
+          1080,
+          500
+        ]
+      },
+      "text": "As nucas de uma plateia, escuras e fora de foco no pé do quadro, para a legenda correr por cima; as mãos batem palmas em <code>claps=</code>."
+    },
+    {
+      "section": "locations",
+      "name": "Copa do escritório",
+      "parts": [
+        "break-room"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 1.0,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede mostarda, armários e geladeira fora de foco, e um balcão no pé do quadro. <code>on_wall=</code>, <code>behind_counter=</code> e <code>on_counter=</code> desenham em cada profundidade."
+    },
+    {
+      "section": "locations",
+      "name": "Salão da despedida",
+      "parts": [
+        "office-party"
+      ],
+      "shot": {
+        "episode": "im-quitting",
+        "at": 10.6,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Salão azul-petróleo com serpentinas e luzinhas fora de foco e uma faixa em foco (<code>banner=</code>, até catorze caracteres). <code>stage=</code> desenha sob a faixa e <code>front=</code> o que fica mais perto da lente."
+    },
+    {
+      "section": "props",
+      "name": "Anúncio de emprego",
+      "parts": [
+        "job-ad"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          180,
+          1000,
+          720,
+          420
+        ]
+      },
+      "text": "Anúncio impresso, em pé na mesa, com um título pequeno sobre duas linhas grandes (<code>lines=</code>, até 24 caracteres): vaga de entrada, dez anos de experiência."
+    },
+    {
+      "section": "props",
+      "name": "Currículo de giz de cera",
+      "parts": [
+        "crayon-cv"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 7.0,
+        "box": [
+          200,
+          600,
+          680,
+          780
+        ]
+      },
+      "text": "Quem segura este currículo nunca aparece: gravata de clipe, duas mãozinhas nas bordas e sapatos que balançam embaixo nos intervalos de <code>swings=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Berço",
+      "parts": [
+        "crib"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 14.5,
+        "box": [
+          60,
+          520,
+          960,
+          900
+        ]
+      },
+      "text": "Berço de grades com móbile, o ocupante escondido, um currículo enganchado na grade e um chocalho que sacode em <code>rattles=</code>."
+    },
+    {
+      "section": "props",
+      "name": "Chapéu de papel",
+      "parts": [
+        "paper-hat"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 22.5,
+        "box": [
+          280,
+          300,
+          520,
+          420
+        ]
+      },
+      "text": "Chapéu dobrado de uma folha, com a faixa escrita em <code>label=</code> (até oito caracteres): TRAINEE."
+    },
+    {
+      "section": "props",
+      "name": "Persiana de rolo",
+      "parts": [
+        "roller-blind"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          560,
+          200,
+          520,
+          800
+        ]
+      },
+      "text": "Persiana de rolo sobre uma janela interna; em <code>snap=</code> ela sobe de uma vez, e a cordinha desce um pouco antes."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de contratação",
+      "parts": [
+        "hiring-office"
+      ],
+      "shot": {
+        "episode": "entry-level",
+        "at": 0.5,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Parede ardósia e um pôster fora de foco, uma parede de vidro para a sala ao lado (<code>next_room=</code>) atrás da persiana, e a mesa no pé do quadro."
+    },
+    {
+      "section": "locations",
+      "name": "A barbearia, vista no espelho",
+      "parts": [
+        "barbershop"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          40,
+          50,
+          1000,
+          1380
+        ]
+      },
+      "text": "Um espelho largo com a sala refletida atrás, a tabela colada no vidro e uma prateleira de ferramentas embaixo. Quem senta aparece dentro do espelho."
+    },
+    {
+      "section": "props",
+      "name": "A capa de barbeiro",
+      "parts": [
+        "barber-cape"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 10.9,
+        "box": [
+          80,
+          840,
+          720,
+          420
+        ]
+      },
+      "text": "Capa risca de giz, amarrada no pescoço. Aberta, vira um pano que cobre o espelho inteiro."
+    },
+    {
+      "section": "props",
+      "name": "O aparador de cerca viva",
+      "parts": [
+        "hedge-trimmer"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          190,
+          1200,
+          600,
+          170
+        ]
+      },
+      "text": "Barra dentada longa e motor vermelho, deitado na prateleira da barbearia como se fosse tesoura."
+    },
+    {
+      "section": "props",
+      "name": "O cortador de grama",
+      "parts": [
+        "lawnmower"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 0.5,
+        "box": [
+          640,
+          900,
+          350,
+          330
+        ]
+      },
+      "text": "Cortador verde de empurrar, visto de lado, com o cabo para um lado ou para o outro."
+    },
+    {
+      "section": "props",
+      "name": "Mechas caindo na lente",
+      "parts": [
+        "hair-fall"
+      ],
+      "shot": {
+        "episode": "just-a-trim",
+        "at": 6.45,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Feixes de fios fora de foco que atravessam o quadro de cima a baixo, um depois do outro, cada um na sua hora."
+    },
+    {
+      "section": "locations",
+      "name": "Corredor de loja grande",
+      "parts": [
+        "store-aisle",
+        "shelf-goods"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 0.5,
+        "box": [
+          0,
+          0,
+          1080,
+          1920
+        ]
+      },
+      "text": "Prateleiras longas fora de foco que deslizam atrás de quem anda (<code>drift=</code>), piso claro e o lugar de quem está mais perto da lente em <code>front=</code>."
+    },
+    {
+      "section": "props",
+      "name": "A cestinha",
+      "parts": [
+        "hand-basket"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 0.5,
+        "box": [
+          660,
+          1040,
+          240,
+          260
+        ]
+      },
+      "text": "Cesta de arame vermelha, pequena, com alça. Fica melhor pendurada na mão."
+    },
+    {
+      "section": "props",
+      "name": "O carrinho de compras",
+      "parts": [
+        "shopping-cart"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 2.6,
+        "box": [
+          190,
+          800,
+          700,
+          620
+        ]
+      },
+      "text": "Carrinho de arame visto de frente, com a compra dentro (<code>contents=</code>) e a grade da frente por cima."
+    },
+    {
+      "section": "props",
+      "name": "O abajur",
+      "parts": [
+        "table-lamp"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 2.6,
+        "box": [
+          230,
+          900,
+          240,
+          330
+        ]
+      },
+      "text": "Abajur de mesa com cúpula plissada amarela."
+    },
+    {
+      "section": "props",
+      "name": "As velas",
+      "parts": [
+        "taper-candles"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 2.6,
+        "box": [
+          440,
+          920,
+          200,
+          310
+        ]
+      },
+      "text": "Três velas altas amarradas com um barbante vermelho."
+    },
+    {
+      "section": "props",
+      "name": "A escada dobrável",
+      "parts": [
+        "step-ladder"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 4.2,
+        "box": [
+          640,
+          300,
+          260,
+          900
+        ]
+      },
+      "text": "Escada de alumínio fechada, com quatro degraus e a altura que precisar."
+    },
+    {
+      "section": "props",
+      "name": "O caiaque",
+      "parts": [
+        "kayak"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 4.2,
+        "box": [
+          300,
+          0,
+          700,
+          1300
+        ]
+      },
+      "text": "Caiaque amarelo visto de lado, com o cockpit aberto. <code>rider=</code> desenha quem senta entre o cockpit e o costado."
+    },
+    {
+      "section": "props",
+      "name": "Olhos no escuro",
+      "parts": [
+        "dark-eyes"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 13.9,
+        "box": [
+          140,
+          560,
+          800,
+          400
+        ]
+      },
+      "text": "Dois olhos brancos que piscam e olham de lado, por cima de qualquer escuridão."
+    },
+    {
+      "section": "props",
+      "name": "O interruptor",
+      "parts": [
+        "light-switch"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 10.2,
+        "box": [
+          30,
+          620,
+          220,
+          280
+        ]
+      },
+      "text": "Interruptor de parede cuja tecla vira a cada clique, mesmo sem acender nada."
+    },
+    {
+      "section": "props",
+      "name": "O recibo sem fim",
+      "parts": [
+        "long-receipt"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 7.2,
+        "box": [
+          640,
+          1200,
+          300,
+          720
+        ]
+      },
+      "text": "Recibo que sai da máquina e continua descendo pelo quadro enquanto o total sobe."
+    },
+    {
+      "section": "props",
+      "name": "O caixa com esteira",
+      "parts": [
+        "checkout-lane"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 7.2,
+        "box": [
+          0,
+          1180,
+          1080,
+          740
+        ]
+      },
+      "text": "Balcão de caixa no pé do quadro, com a esteira preta correndo."
+    },
+    {
+      "section": "props",
+      "name": "O remo duplo",
+      "parts": [
+        "paddle"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 5.8,
+        "box": [
+          300,
+          140,
+          420,
+          1040
+        ]
+      },
+      "text": "Remo de caiaque com duas pás laranja e cabo preto, do comprimento que precisar."
+    },
+    {
+      "section": "props",
+      "name": "A boia salva-vidas",
+      "parts": [
+        "life-ring"
+      ],
+      "shot": {
+        "episode": "just-one-thing",
+        "at": 5.8,
+        "box": [
+          370,
+          790,
+          380,
+          380
+        ]
+      },
+      "text": "Boia branca com quatro faixas vermelhas."
     }
   ]
 }

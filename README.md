@@ -645,6 +645,134 @@ lean toward him, with no camera move. The voices are Lily (Rosa), Will and Eric;
 The episode declares no engine safe area, as *Cup Fee* does: each close-up reframes the other rider's lettering out of
 frame, which the SA01 text check refuses; captions are placed inside x 80–920 by hand.
 
+## Cutout episode at the home printer: *Out of Cyan* (26)
+
+[episodes/out_of_cyan.py](episodes/out_of_cyan.py) sits Rosa at her desk with one black page to print and a printer
+that reads LOW ON CYAN. "It's black and white." It answers in pages: a ransom note in cut-out letters, WE HAVE YOUR
+DOCUMENT, then BRING CYAN. COME ALONE. She pays $64 at a shop till, and it wants OFFICIAL CYAN. She pays $89, and it
+wants the magenta too, with an instant photo of her page tied to a chair. "Don't hurt it." She pays $98. The display
+says THANK YOU, and her black page comes out blue.
+
+```bash
+srstudio record out-of-cyan PROJECT
+srstudio build out-of-cyan PROJECT    # PROJECT/out-of-cyan.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). The voice is Lily (Rosa); the printer never
+speaks, and the long gaps between her lines are its whirs and pages, not silence. The captions are Noto Sans 700.
+
+Rosa's card, for this and every later appearance:
+
+- **wants**: to be treated with basic courtesy, by neighbours and by machines;
+- **flaw**: she is too polite to refuse anything that asks nicely or threatens nicely;
+- **habit**: she answers a demand with "dear" and then meets it.
+
+Parts added for it, in `srstudio.cutout_home`:
+
+- `desk_printer` (`desk-printer`): a home printer from the front; `lcd=` is timed readings of 1 to `LCD_CHARS`
+  characters, `whirs=` are spans it rattles, `sheets=` slide out into its tray.
+- `ransom_note` (`ransom-note`): a sheet whose `lines=` (1 to `NOTE_LINE` characters) are cut from magazines, each
+  letter on a seeded scrap.
+- `hostage_photo` (`hostage-photo`): an instant photo of a sheet of paper tied to a chair under one bulb.
+- `paper_bag` (`paper-bag`): a very small carrier bag.
+- `home_study` (`home-study`): a sage study with a window and an out-of-focus bookshelf; `behind_desk=` draws whoever
+  sits there and `on_desk=` what stands in front of them. `desk_top` is the same desk from above, for inserts.
+- `shop_till` (`shop-till`): out-of-focus shelves over a pale counter; `on_counter=` draws on it.
+
+These six parts are recorded `proposed`: nothing draws them by default and no release can pin them until the operator
+has approved them. `srstudio parts` shows such a part with `-` as its default.
+
+## Cutout episode in the break room: *I'm Quitting* (27)
+
+[episodes/im_quitting.py](episodes/im_quitting.py) stands the applicant at the coffee machine, already mid-rant. "That's
+it. I'm quitting. Today." His friend, eyes on his own mug: "Mm." The same shot, a new mug, a bigger plant, and the wall
+board reads 2,190 days since "today". "This time I mean it." "Mm." Twelve years in, a planner lands on the counter. "You
+said Friday." "Which Friday?" Every Friday in it is circled. "Twelve years of them." A banner, a gold watch. "Forty
+years. Thank you." He taps the mic. "That's it. I'm quitting." The same mug: "Mm."
+
+```bash
+srstudio record im-quitting PROJECT
+srstudio build im-quitting PROJECT    # PROJECT/im-quitting.scene.xml
+```
+
+Its first frame already moves (arm B of the `sp-hook_motion` test). Time passes on the props and not on the people: the
+mug, the plant and the board. The voices are Will and Eric; the captions are Noto Sans 700. Parts added for it, in
+`srstudio.cutout_office`, all recorded `proposed` until the operator has approved them:
+
+- `drip_machine` (`drip-machine`): an office coffee machine; `pours=` are spans its stream runs.
+- `office_mug` (`office-mug`): a mug in any colour, lettered by `label=` (1 to `MUG_LABEL` characters) or plain.
+- `days_board` (`days-board`): a workplace-safety style wall board; `heading=` and timed `counts=` (1 to `BOARD_CHARS`
+  characters).
+- `wall_planner` (`wall-planner`): a planner page with every Friday circled around `note=`; `months=` flips its pages.
+- `gold_watch` (`gold-watch`), `stage_mic` (`stage-mic`): a presentation watch with a `gleam=` time, a mic on a stand.
+- `party_crowd` (`party-crowd`): the backs of an audience's heads out of focus; hands clap in `claps=`.
+- `break_room` (`break-room`): a mustard wall, cupboards and a fridge out of focus, and a counter; `on_wall=`,
+  `behind_counter=` and `on_counter=` draw at those depths.
+- `office_party` (`office-party`): a dark teal function room with streamers; `banner=` hangs in focus, `stage=` draws
+  under it and `front=` nearest the lens.
+
+## Cutout episode in the hiring office: *Entry Level* (28)
+
+[episodes/entry_level.py](episodes/entry_level.py) opens on an interviewer and the ad on his desk: ENTRY LEVEL, 10 YEARS'
+EXPERIENCE. "It's entry level, so just ten years." "I'm 22." "Have you tried starting earlier?" The desk bell brings a
+crayon CV with small shoes swinging under it: "Been in the role since nursery." "Promising." Milo: "This software came
+out in 2024." "We need twenty years in it." A crib, a CV over its rail: "I've been networking since the womb."
+"Overqualified. We'd lose you." "Who actually got it?" The blind snaps up on Rosa at a desk in a paper hat that says
+TRAINEE. "She's still on probation."
+
+```bash
+srstudio record entry-level PROJECT
+srstudio build entry-level PROJECT    # PROJECT/entry-level.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). The toddler and the baby are heard, in grown men's
+voices (Brian and George), and never drawn. The other voices are Eric, Will and Liam; the captions are Noto Sans 700.
+Parts added for it, in `srstudio.cutout_hiring`, all recorded `proposed` until the operator has approved them:
+
+- `job_ad` (`job-ad`): a printed advert standing on a desk; `heading=` and two `lines=` of 1 to `AD_LINE` characters.
+- `crayon_cv` (`crayon-cv`): a CV in crayon with a clip-on tie, two small hands on it and shoes under it; `swings=`.
+- `crib` (`crib`): a slatted crib and mobile with a CV over the rail; `rattles=` shakes the rattle.
+- `paper_hat` (`paper-hat`): a folded paper hat lettered by `label=` (1 to `HAT_LABEL` characters).
+- `roller_blind` (`roller-blind`): a blind that snaps up at `snap=`, its cord dipping first.
+- `hiring_office` (`hiring-office`): a slate wall and a poster out of focus, a glass wall onto `next_room=` behind the
+  blind, a desk; `behind_desk=` and `on_desk=` draw at those depths.
+
+## Cutout episode at the barber's: *Just a Trim* (29)
+
+[episodes/just_a_trim.py](episodes/just_a_trim.py) opens on Rosa in a barber's mirror, a lawnmower parked behind her and
+a hedge trimmer on the shelf. "Just a trim, please." "Sure." A cape covers the mirror; a hedge trimmer is heard, then a
+lawnmower. The barber steps in front of the glass: "Bit off the sides?" Hair falls past the lens in sheets. "...Sure."
+The engine stops, the cloth drops, and the head in the mirror is not hers. Two seconds of nothing. "How's that?" The
+face wobbles. "Love it." The card reader shows the cut, $22, then the tip, $30, and it stops there.
+
+```bash
+srstudio record just-a-trim PROJECT
+srstudio build just-a-trim PROJECT    # PROJECT/just-a-trim.scene.xml
+```
+
+Its first second is a held frame (arm A of the `sp-hook_motion` test). Nobody's hair is redrawn: the cut is another
+approved character in the mirror, with Rosa's voice and mouth. New parts live in
+[src/srstudio/cutout_shop.py](src/srstudio/cutout_shop.py): `barbershop` draws the people inside the glass with
+`in_mirror=` and the shelf with `on_counter=`, and `barber_cape(spread=True)` is the cloth over the mirror.
+
+## Cutout episode at the store: *Just One Thing* (30)
+
+[episodes/just_one_thing.py](episodes/just_one_thing.py) is already walking when it starts, with a very small basket: "I
+only need light bulbs." The basket is a cart: a lamp, three candles, a plant. "We do need a plant." A bigger cart: a
+ladder, a kayak. "It was on sale." Bigger again: a paddle, a life ring. "That's just safety." At the till the screen
+says $412, then rolls on while the receipt runs down the frame, and Milo is proud of it. At home, in the dark, sitting
+in the kayak, a dead switch goes click, click, click, nothing for longer than is comfortable, click, and it stops on
+his eyes.
+
+```bash
+srstudio record just-one-thing PROJECT
+srstudio build just-one-thing PROJECT    # PROJECT/just-one-thing.scene.xml
+```
+
+It moves from the first frame (arm B of the `sp-hook_motion` test). New parts live in
+[src/srstudio/cutout_store.py](src/srstudio/cutout_store.py): `store_aisle` slides its shelves with `drift=`,
+`shopping_cart(contents=)` holds the goods behind its front wire, and `kayak(rider=)` seats someone in the cockpit.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

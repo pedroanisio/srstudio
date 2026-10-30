@@ -185,6 +185,17 @@ def test_parts_json_is_the_table(capsys):
     assert fox["versions"][0]["approval"] is None
 
 
+def test_parts_lists_a_part_with_nothing_approved_and_no_default(capsys, monkeypatch):
+    fresh = parts.Version(1, "2026-10-30", "First drawing.", "proposed", "", "")
+    table = {"desk-lamp": parts.Part("desk-lamp", "prop", "cutout", (fresh,))}
+    monkeypatch.setattr(parts, "load", lambda: table)
+    assert main(["parts"]) == 0
+    listed = capsys.readouterr().out.split()
+    assert listed == ["desk-lamp", "prop", "cutout", "-", "1?"]
+    assert main(["parts", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["desk-lamp"]["default"] is None
+
+
 @pytest.mark.parametrize(("name", "number"), [("toon-fox", 1), ("toon-fox@2", 2)])
 def test_parts_digest_prints_what_a_new_record_needs(name, number, capsys):
     assert main(["parts", "--digest", name]) == 0
