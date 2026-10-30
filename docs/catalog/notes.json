@@ -2414,6 +2414,18 @@
       "text": "O tablet que vira para o cliente: “Add a tip”, três porcentagens e o “no tip” que quase não se lê; um toque acende a opção."
     },
     {
+      "section": "props",
+      "name": "Leitor de cartão",
+      "parts": [
+        "card-reader"
+      ],
+      "shot": {
+        "episode": "cup-fee",
+        "at": 14.3
+      },
+      "text": "A maquininha no balcão: o total grande, a linha da taxa embaixo, e cada nova taxa entra com um pulo."
+    },
+    {
       "section": "locations",
       "name": "Café",
       "parts": [

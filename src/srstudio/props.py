@@ -776,6 +776,64 @@ def tip_tablet(
     return g
 
 
+READER_SCREEN = (230, 150)  # the card reader's screen, at scale 1
+READER_AMOUNT = 8  # the most characters an amount holds ("$1000.00")
+READER_LABEL = 16  # the most characters the line under it holds
+
+
+@register(
+    "prop",
+    "card-reader",
+    summary="A counter-top card reader whose screen shows a running total and the line it was added for",
+)
+def card_reader(cv: Canvas, parent, x, y, *, readings: tuple[tuple[float, str, str], ...], scale: float = 1.0):
+    """A card terminal whose foot stands on (``x``, ``y``), its screen toward the viewer. Each reading ``(time,
+    amount, label)`` shows a big ``amount`` (1 to :data:`READER_AMOUNT` characters) over a small ``label`` (at
+    most :data:`READER_LABEL`) from its time until the next. The first reading is at 0 and is still; each later one
+    pops in, so the total visibly climbs."""
+    cv.require_font("the card reader's screen is set in it")
+    times = [t for t, _, _ in readings]
+    if (
+        not readings
+        or not all(checks.number(t) for t in times)
+        or times[0] != 0
+        or any(b <= a for a, b in zip(times, times[1:], strict=False))
+    ):
+        raise PropError(f"readings start at 0 and rise strictly, got {times!r}")
+    for _, amount, label in readings:
+        if not amount.strip() or len(amount) > READER_AMOUNT:
+            raise PropError(f"an amount has 1 to {READER_AMOUNT} characters, got {amount!r}")
+        if len(label) > READER_LABEL:
+            raise PropError(f"a label has at most {READER_LABEL} characters, got {label!r}")
+    if not (checks.number(scale) and scale > 0):
+        raise PropError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    w, h = READER_SCREEN
+    g = cv.group(parent, cv.uid("card-reader"), x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -w / 2 - 10, -14, w + 20, 24, "#5C4D3E", opacity=0.2)  # the contact shadow on the counter
+    body_h = h + 150
+    cv.rect(g, -w / 2 - 18, -body_h, w + 36, body_h, "#30353D", ink, 4, radius=22)
+    cv.rect(g, -w / 2 - 8, -body_h + 8, 10, body_h - 30, "#4A515B", radius=5)  # the lit edge, from the café's left
+    top = -body_h + 18
+    cv.rect(g, -w / 2, top, w, h, "#E9F3EC", ink, 3, radius=10)
+    for row in range(2):  # the keypad
+        for col in range(3):
+            cv.rect(g, -w / 2 + 22 + col * 68, top + h + 22 + row * 52, 50, 36, "#5B636E", ink, 2, radius=8)
+    for k, (t, amount, label) in enumerate(readings):
+        shown = cv.group(g, cv.uid("reader-reading"))
+        if k + 1 < len(readings):
+            cv.gate(shown, [(t, readings[k + 1][0])])
+        elif k:
+            cv.keys(shown, "opacity", [(0.0, 0), (t, 1)])
+        if k:  # a later reading pops in about the screen's middle
+            shown = cv.group(shown, cv.uid("reader-pop"), anchorX=0, anchorY=top + h / 2, x=0, y=top + h / 2)
+            cv.pop_in(shown, t, from_=0.9, over=1.06)
+        cv.text(shown, cv.uid("reader-amount"), amount, -w / 2, top + 14, w, 80, 62, "#1D4D38", weight="700")
+        if label:
+            cv.text(shown, cv.uid("reader-label"), label, -w / 2, top + 96, w, 40, 26, ink)
+    return g
+
+
 SLIP_CHARS = 10  # the most letters the envelope's name line holds
 SLIP_FALL = 0.28  # seconds from the drop to the floor
 SLIP_SIZE = (150, 96)  # the envelope's width and height
