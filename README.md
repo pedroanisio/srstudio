@@ -1569,6 +1569,8 @@ is on leave) use them too; S15's desert darkens under the captions with the seco
 
 ## Gloss style: a cheerful forever-plaza in eight episodes (G1–G8)
 
+## Gloss style: a cheerful forever-plaza in nine episodes (G1–G9)
+
 The relentless cheer is the setup; the turn is that it is a system you cannot leave, only rate, score and wait in,
 narrated by a calm orb host in the deadpan of a facility announcement while a Joy Points board scores every small act
 ([docs/decisions/0030-gloss-style.md](docs/decisions/0030-gloss-style.md)). Everything is original: the Plaza,
@@ -1627,6 +1629,7 @@ the series output, to keep its master under the size cap; *Fewer Meetings* does.
 | G6 | *Wellness* | the manager is the same orb in a tie; wellbeing is the top priority, ranked fourth |
 | G7 | *Terms* | declining the terms is added to the terms; real is also premium |
 | G8 | *Fewer Meetings* | the meeting about fewer meetings schedules more; meetings are reduced to one, this one, and it does not end (opens still) |
+| G9 | *Notifications* | saying no to notifications is a notification; turning them off is coming soon, and you will be notified |
 
 ## Collage style: grown-ups losing to brainrot
 
