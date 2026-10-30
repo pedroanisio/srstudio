@@ -27,7 +27,7 @@ from pathlib import Path
 from .errors import SrstudioError
 from .social import COVER_VARIANT, InstagramPost, Item
 
-__all__ = ["Release", "ReleaseError", "Tags", "load", "items"]
+__all__ = ["Release", "ReleaseError", "Tags", "grandfathered", "load", "items"]
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -98,7 +98,9 @@ class Release:
     of the episode's build script when it is not the slug with underscores. ``frozen`` is the cover fingerprint
     (:func:`~srstudio.social.fingerprint`) the operator accepted for a published video whose post now draws another
     cover than the one delivered: the publish gate takes its delivery as current at that drawing and no other, and
-    never delivers it again (ADR 0040)."""
+    never delivers it again (ADR 0040). ``style`` is the name of the episode's style
+    (:attr:`srstudio.styles.Style.name`): the caption gate holds a new reel to that style's approved looks
+    (ADR 0048); a release published before the gate needs none."""
 
     slug: str
     post: InstagramPost
@@ -108,6 +110,7 @@ class Release:
     builder: str = ""
     tags: Tags | None = None
     frozen: str = ""
+    style: str = ""
 
     def __post_init__(self) -> None:
         if not SLUG.fullmatch(self.slug):
@@ -188,6 +191,16 @@ def load(folder: Path) -> dict[str, Release]:
         videos[release.video_name] = release.slug
         found[release.slug] = release
     return dict(sorted(found.items()))
+
+
+def grandfathered(folder: Path) -> frozenset[str]:
+    """The closed list of ``folder``'s ``_grandfathered`` module: the slugs published before the caption gate
+    (ADR 0048)."""
+    folder = Path(folder).resolve()
+    try:
+        return frozenset(importlib.import_module(f"{_package(folder)}._grandfathered").SLUGS)
+    except (ImportError, AttributeError) as exc:
+        raise ReleaseError(f"{folder} holds no _grandfathered list of SLUGS: {exc}") from exc
 
 
 def _has_cover_variant(scene: Path) -> bool:

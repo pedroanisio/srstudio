@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.12.1
-changelog: "1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.13.0
+changelog: "1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -427,6 +427,11 @@ it in `srstudio catalog` without this file changing.
    its picture with `srstudio.look` and stages with `srstudio.staging` (ADR 0031). Never copy another style's
    `*_sets`, `*_reel` or `episodes/_<style>.py`. A new series opts into readable captions,
    `native.CaptionLook(min_last=2, min_seconds=0.84)`: no lone last word, and every cue held long enough to read.
+   **Caption looks are approved per style** (ADR 0048): a release declares `style=` (its style's name), and its scene
+   must wear a look `caption_gate.LOOKS` records with an approval, or `deliver` refuses it. A new look goes to the
+   operator as a rendered proof first; never fake a record's approval, and never answer the engine's contrast check
+   by changing the letters (a stroke in the letters' own colour is refused). Read a 1.00:1 on a stroked caption as
+   the measurement's limit, and split the outline.
    **Shared helpers** (ADR 0035): set text with `look.text`, and get the caption font with `Canvas.require_font`,
    which refuses a silent canvas with your error. A talking character takes its mouth states from `lipsync.talk`
    and checks a mouth or pose track with `lipsync.check_track`; a rigged character is placed with
@@ -501,7 +506,9 @@ it in `srstudio catalog` without this file changing.
    deliver it again with `--only`; for another video, stop and tell the operator. Never re-deliver another video
    to clear it, never freeze a release yourself (`releases.Release(frozen=)` is the operator's decision), and
    never run `migrate` or extend `social.LEGACY_LAYOUTS` (a one-time conversion and a closed set, ADR 0037). Always deliver with `--only`, repeated for each of your videos: a bare
-   `deliver` re-delivers every drifted video, published ones included, which breaks the frozen rule. Open
+   `deliver` re-delivers every drifted video, published ones included, which breaks the frozen rule. The caption
+   gate runs in both commands on every reel not in the closed `posts/_grandfathered.py`: it reports a counter ratio
+   under `caption_gate.MIN_COUNTERS` (letters closing up), and a new reel never joins that list. Open
    `cover.jpg` and look: a zoom that crops a card, or a frame caught mid-caption-fade, leaves a ghost.
    Credit voices as ElevenLabs premade voices and music as "composed with ElevenLabs Music"; credit a reference
    creator when the format is adapted.
