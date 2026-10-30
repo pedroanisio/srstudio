@@ -202,6 +202,58 @@ class Candidate(OfficeActor):
             self.cv.ellipse(eyes, x - 6, -26, 12, 15, self.cv.ink)
 
 
+@register(
+    "character",
+    "rosa",
+    summary="Rosa the neighbour: grey bob, round glasses, a cardigan with her name stitched on its pocket",
+)
+class Rosa(OfficeActor):
+    """An office-family actor (white face, ink line, ``legs`` and ``arms`` as :class:`OfficeActor`) in a blouse and
+    a terracotta cardigan. extras: ``stitch`` = the name stitched over her pocket, 1 to :data:`STITCH` characters
+    (default ROSA); ``None`` stitches nothing and draws no text layer."""
+
+    role = "rosa"
+    bottom = 312
+    eye_xs = (-34, 36)
+    STITCH = 6
+    CARDIGAN = "#B4574A"
+
+    def build(self, parent, x: float, y: float, scale: float = 1.0, perf: Performance | None = None):
+        stitch = (perf or Performance()).extras.get("stitch", "ROSA")
+        if stitch is not None and not (isinstance(stitch, str) and stitch.strip() and len(stitch) <= self.STITCH):
+            raise CastError(f"the stitch is 1 to {self.STITCH} characters or None, got {stitch!r}")
+        return super().build(parent, x, y, scale, perf)
+
+    def draw_body(self, g, perf):
+        super().draw_body(g, perf)
+        cv, ink, b = self.cv, self.cv.ink, self.bottom
+        cv.path(g, "M-16 119 L16 119 L6 210 L-6 210Z", "#F4EEE2", ink, 3)  # the blouse, over the shirt's tie
+        cv.path(g, f"M-64 {b} L-68 154 Q-69 124 -39 120 L-16 119 L-6 214 L-4 {b}Z", self.CARDIGAN, ink, 4)
+        cv.path(g, f"M64 {b} L68 154 Q68 126 38 120 L16 119 L6 214 L4 {b}Z", self.CARDIGAN, ink, 4)
+        cv.path(g, "M-58 160 Q-50 150 -40 146", stroke="#D98576", sw=4, opacity=0.8)  # the lit shoulder
+        for yy in (236, 268, 300):
+            cv.ellipse(g, -13, yy - 5, 10, 10, "#F1D9A8", ink, 1.5)
+        cv.rect(g, 14, 238, 46, 40, "#9C4539", ink, 2.5, radius=5)  # the pocket
+        stitch = perf.extras.get("stitch", "ROSA")
+        if stitch is not None:
+            cv.text(g, f"{self.tag_base}-stitch", stitch, 10, 214, 56, 22, 15, "#FBE7C6")
+
+    def draw_head(self, head, perf):
+        super().draw_head(head, perf)
+        cv, ink = self.cv, self.cv.ink
+        cv.path(head, "M-108 22 Q-124 -118 0 -118 Q124 -118 108 22 Q98 30 86 22 Q92 -54 34 -78 Q-30 -60 -88 -40 "
+                      "Q-92 0 -86 22 Q-98 30 -108 22Z", "#C8CBD1", ink, 4.5)  # fmt: skip  # the bob and its fringe
+        cv.path(head, "M-60 -98 Q-20 -112 30 -102", stroke="#E6E8EC", sw=5, opacity=0.8)
+        cv.path(head, "M-50 -40 Q-34 -48 -18 -42 M22 -42 Q38 -49 54 -41", stroke=ink, sw=3.6)
+
+    def draw_eyes(self, eyes, perf):
+        cv, ink = self.cv, self.cv.ink
+        for x in self.eye_xs:
+            cv.ellipse(eyes, x - 6, -27, 12, 15, ink)
+            cv.ellipse(eyes, x - 24, -40, 48, 44, cv.clear, ink, 3.2)  # round glasses
+        cv.path(eyes, "M-10 -20 Q1 -27 12 -20", stroke=ink, sw=3)
+
+
 # ---------------------------------------------------------------- café cast
 
 
