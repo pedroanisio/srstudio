@@ -22,4 +22,18 @@ RELEASE = Release(
     ),  # fmt: skip
     style="Cutout",
     parts={"captions": 1, "card-reader": 1, "papers": 1, "rosa": 1, "signature-cactus": 1, "signature-code": 1},
+    parts={
+        "captions": 1,
+        "card-reader": 1,
+        "desk-printer": 1,
+        "home-study": 1,
+        "hostage-photo": 1,
+        "paper-bag": 1,
+        "papers": 1,
+        "ransom-note": 1,
+        "rosa": 1,
+        "shop-till": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

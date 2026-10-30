@@ -41,9 +41,16 @@ RELEASE = Release(
     parts={
         "signature-cactus": 1,
         "signature-code": 1,
+        "toon-bib-insert": 1,
         "toon-captions": 1,
         "toon-clipboard": 1,
+        "toon-dental-lamp": 1,
+        "toon-dental-tray": 1,
         "toon-dog": 2,
         "toon-frog": 2,
+        "toon-ledge": 1,
+        "toon-probe": 1,
+        "toon-surgery": 1,
+        "toon-tooth-photo": 1,
     },
 )

@@ -22,4 +22,21 @@ RELEASE = Release(
     ),  # fmt: skip
     style="Cutout",
     parts={"candidate": 1, "captions": 1, "manager": 1, "plant": 1, "signature-cactus": 1, "signature-code": 1},
+    parts={
+        "break-room": 1,
+        "candidate": 1,
+        "captions": 1,
+        "days-board": 1,
+        "drip-machine": 1,
+        "gold-watch": 1,
+        "manager": 1,
+        "office-mug": 1,
+        "office-party": 1,
+        "party-crowd": 1,
+        "plant": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stage-mic": 1,
+        "wall-planner": 1,
+    },
 )

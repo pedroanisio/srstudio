@@ -36,4 +36,16 @@ RELEASE = Release(
         arm="b",
         recipient="a",
     ),
+    parts={
+        "bo": 1,
+        "captions": 1,
+        "juno": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-bedroom": 1,
+        "soft-hive": 1,
+        "soft-phone": 1,
+        "soft-shovel": 1,
+        "soft-time-card": 1,
+    },
 )

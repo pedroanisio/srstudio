@@ -27,9 +27,14 @@ RELEASE = Release(
     ),  # fmt: skip
     style="Cutout",
     parts={
+        "barber-cape": 1,
+        "barbershop": 1,
         "barista": 1,
         "captions": 1,
         "card-reader": 1,
+        "hair-fall": 1,
+        "hedge-trimmer": 1,
+        "lawnmower": 1,
         "manager": 1,
         "rosa": 1,
         "signature-cactus": 1,

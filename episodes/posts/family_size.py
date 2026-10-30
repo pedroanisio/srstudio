@@ -32,4 +32,17 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={"collage-brent": 1, "collage-rosa": 1, "collage-sign": 1, "signature-cactus": 1, "signature-code": 1},
+    parts={
+        "collage-brent": 1,
+        "collage-certificate": 1,
+        "collage-chip": 1,
+        "collage-chip-bag": 1,
+        "collage-gust": 1,
+        "collage-rosa": 1,
+        "collage-sign": 1,
+        "collage-snapshot": 1,
+        "collage-supermarket": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
 )

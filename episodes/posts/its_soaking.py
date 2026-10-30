@@ -37,9 +37,12 @@ RELEASE = Release(
         "signature-code": 1,
         "toon-captions": 1,
         "toon-clipboard": 1,
+        "toon-day-card": 1,
         "toon-kitchen": 1,
         "toon-rabbit": 2,
         "toon-raccoon": 2,
+        "toon-sink": 1,
         "toon-sloth": 1,
+        "toon-watering-can": 1,
     },
 )

@@ -27,9 +27,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-a-trim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fe50d1caeb09b0b9b88fb06e4f177deac3f6f8f094a91627a49ddbb5522a2bfd",
           "rig": null
         }
@@ -44,9 +47,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-a-trim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fb31a8accb5d193faf3147b4924b4683f49c812a9a2340aa2f2f8c7feca59046",
           "rig": null
         }
@@ -146,9 +152,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "1a517207a1365c64eed1860c1e026e39e0873a96522b1c1b73f45a2fb2b06d8a",
           "rig": null
         }
@@ -376,9 +385,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "1893009d9cf02fc93c9f5599e9886485a00d6b8a65b01eae92e98f4e1d854a45",
           "rig": null
         }
@@ -410,9 +422,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c4cb69729bddbe3cafbdff861ebf61cb68a34b70d1af677284b00cdb72a07e3f",
           "rig": null
         }
@@ -427,9 +442,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5d9279cb388fa9bfc3501dc7a028d555fefc9377d43ff948ff5598d6a9502c86",
           "rig": null
         }
@@ -461,9 +479,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "89e9b95df7ed888e38092773f35809da334b5f7ec1dc1e76454abdb69c5eb0db",
           "rig": null
         }
@@ -478,9 +499,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "70c4fd47ac6a1a47ececdfd1911e7ebe1222fa4b1013bdd5895462e0de034079",
           "rig": null
         }
@@ -529,9 +553,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "6df27677904aa52fc2773e46da2ef78396d5a762262ae2b6c248a055a4b25a5a",
           "rig": null
         }
@@ -546,9 +573,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5c44e6adabd5421f8ba3b041a62dcc472f2a04f8b2ff8913f37725024f8b7adf",
           "rig": null
         }
@@ -597,9 +627,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5f9ac76fc02ceaa200e3f1e2fc979ff70d4075ebe8b2b940734efe73c765bc48",
           "rig": null
         }
@@ -614,9 +647,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2d307dbc74985bcc01ed759f9300d5b750217191ffc5aa9408ca2674e40b7c64",
           "rig": null
         }
@@ -648,9 +684,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5bf349e2440f4d26507668d40d6f8fd592075d50447f0e692459fec302abfa1f",
           "rig": null
         }
@@ -665,9 +704,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "87b12c3d6ae5a1a82eb47749eb73b6f548c5561d65bbb5a2dc1a53e882bfd4f4",
           "rig": null
         }
@@ -699,9 +741,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "77d4d4aea67339c99e02c5bd436acc1c7fb442c4c0e702abc4852c7dba8f5d04",
           "rig": null
         }
@@ -733,9 +778,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "58cec27c2e1a6afdb257b093c2339a6147793b6cb999b636939c0fc8fb5fdbc6",
           "rig": null
         }
@@ -750,9 +798,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "dadc306b00933489e2baca65fc24cb3611235d735463d040d05358cb30523b82",
           "rig": null
         }
@@ -821,9 +872,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "6b470529b568338f0c68b70d489ec4eebbdba4c45e8eb9d7792847265a014404",
           "rig": null
         }
@@ -855,9 +909,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "11b80b11608bbd4c56d62dbd4337aaa8565eed4346747c6416d4462d7ab88ebe",
           "rig": null
         }
@@ -957,9 +1014,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "f56294bd1201639053b57a955ad2fccf4585ab3af2040ed8449405be68edd697",
           "rig": null
         }
@@ -1042,9 +1102,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7746b89cca0083d5d6569d5eebb0378a219a6244f32b9cce93d0d59e9c86d6c0",
           "rig": null
         }
@@ -1076,9 +1139,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "97531b66381e477ddc49c8fca23c1795c5d0a871b0b06df015358823fafa98ac",
           "rig": null
         }
@@ -1127,9 +1193,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "bad365c74fcb641204e691590300605f2d067823c179edf1733d0953c7e99718",
           "rig": null
         }
@@ -1144,9 +1213,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "55bd5cdbcf4b3e5aad2048ceec97a55767edb07b0f228fcbe26acda488703ec5",
           "rig": null
         }
@@ -1178,9 +1250,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for the broad batch.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "9b0d51442759c52f207fb4127ec1a7d5a12dc78f0aa1b4600fdc0062192a2186",
           "rig": null
         }
@@ -1263,9 +1338,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "d5288ec8ae0d9a4f98a005b188501f42cdc7bd35d3bf65fbca771ab1d17c0798",
           "rig": null
         }
@@ -1280,9 +1358,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ac2c387eb05f14f0905c239e0690704baec23b13fdfa422a05a40f579ec6bd0c",
           "rig": null
         }
@@ -1331,9 +1412,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "781bd2f6a54faa2a88431154020ad3790534dc0bb0413c9887a6783110991f85",
           "rig": null
         }
@@ -1365,9 +1449,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "659735ef060136918307e69047fdddc4e17b75c628db52bf321f50cbfc41cb08",
           "rig": null
         }
@@ -1382,9 +1469,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "800014142c26cbb44680728dd3af63f8cd76e18628a301e1fda5fa31c270a45f",
           "rig": null
         }
@@ -1416,9 +1506,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "14570a318f2008678051b550f2348db603dec41e2ae0d134e2e7d98fe1d0376c",
           "rig": null
         }
@@ -1705,9 +1798,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "bdcee146dee53222def13f4d8ec8821f3ab33e8de1869c6a1dba0a919ee642fe",
           "rig": null
         }
@@ -1722,9 +1818,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-a-trim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7361078a9a278bf94455bd24415cc1159df5ed9276192fab320502d3238793ae",
           "rig": null
         }
@@ -1739,9 +1838,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "3d2f283c8c1154bfa682dc6c6436fb45980f9fca8647f636bd1285b14b99be64",
           "rig": null
         }
@@ -1756,9 +1858,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-a-trim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fc5727b6f5637f21e510bca661680f60c4a869a4687cb30b9fc23183db81bdf1",
           "rig": null
         }
@@ -1773,9 +1878,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "74f81e93b4596dfd823fac19af1e1d3de2df13a6f95f87b6003ddef3f5d1dc16",
           "rig": null
         }
@@ -1790,9 +1898,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "f6809f99dd9a5865baa3068a9088f69b19f4dfa2eb2f4675f0ce348f00111d12",
           "rig": null
         }
@@ -1807,9 +1918,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "325c3e736f80424c62e0964283585036ed66b9c619ff120d151feff202b8250b",
           "rig": null
         }
@@ -2174,9 +2288,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "78f1788f9fa01180e783d3fa25220fb28c4983f9e0d9710837ce3ba1433cd265",
           "rig": null
         }
@@ -2208,9 +2325,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "3affce5219ef2169367e4c6ea80afdcc18796edfac317b42656816235136324f",
           "rig": null
         }
@@ -2242,9 +2362,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-a-trim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c42a8234b01898933bfff58bf33f1005ba25a3f697a5f4dfc07c39348733efe9",
           "rig": null
         }
@@ -2259,9 +2382,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0049e1c22b28dda7791712fca384c2de8c801de7c18239a3976b47ba0d88026f",
           "rig": null
         }
@@ -2276,9 +2402,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "76c0d3a94a37548fad61385b88e26ee0ae16436af1ef566a3aa3e3d6dfa47257",
           "rig": null
         }
@@ -2310,9 +2439,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5ba1c23caaca5d4d4d9cae18b0cbd1a59944b8e0fe48232b94a5e65266713248",
           "rig": null
         }
@@ -2412,9 +2544,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "066083f2131632ea97148ac9b7755059aec1e5ae9133c43967e18a1206be9d69",
           "rig": null
         }
@@ -2429,9 +2564,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7279a650780d92ef640c7f7fc139722dc7f2b549fe47b902b83d0b19db90ec62",
           "rig": null
         }
@@ -2483,9 +2621,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5135ede4861b8f7e5b05f6f35aa73ffef09e6c0dff548d80d7d6dfeb26c93dd6",
           "rig": null
         }
@@ -2500,9 +2641,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ef14eaa484126313b1260b1a9966ba90b70a382a9bb55e5997959f98767735be",
           "rig": null
         }
@@ -2517,9 +2661,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "40abd1979a5cfb8387d7004ee6243ccebcdaa63eaf7f90518f7504c9eb64228e",
           "rig": null
         }
@@ -2602,9 +2749,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e64e83a0e3565ba16ac63d9371d2f2f9f96eccc916eaafaa6ce7bf95d15cd22a",
           "rig": null
         }
@@ -2755,9 +2905,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "8019064581a193bb920109e132b5f7e2a725facf427ae2c3abe891c5ef958a16",
           "rig": null
         }
@@ -2823,9 +2976,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for entry-level.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "8f4a72ce08feafc0ba2cdf53a39b09fbdf3fbea58768f2f2decacf73e7cdae88",
           "rig": null
         }
@@ -3248,9 +3404,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "a7ee9f5c5e9685ee7b503bb356d0085d6fa20e51cde28f97c449073b7db5a995",
           "rig": null
         }
@@ -3265,9 +3424,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for out-of-cyan.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7fbfeeceb12bf0448d5c7322f4a7fd2e6d537a5e7eea0f45450f9f5572bc3528",
           "rig": null
         }
@@ -3282,9 +3444,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2ac226e6f13dac7eb2811687fcce4ddca6a9ca85cbf28d847bf89d52ac6fe73c",
           "rig": null
         }
@@ -3401,9 +3566,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for early-night: a bed seen from its foot, where a phone can be the only light.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "a08d01b64655c89b361a159976e8499d3aff2e4b50f24d0564a38eb23d86d42e",
           "rig": null
         }
@@ -3418,9 +3586,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for hang-out: a park bench straight on.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "f3902e58211e1dfd40ab9627b52bfc38be2d7ce543ed71e5ecac91a263dce905",
           "rig": null
         }
@@ -3452,9 +3623,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for why: a leather briefcase with brass clasps.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "beaea40ba4e99ceb66dd4bb60b422126708beb7f6b12c1f6325c471117b86078",
           "rig": null
         }
@@ -3486,9 +3660,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for hang-out: a walking cane.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "d174410e3ae4f5f729b04f4d3181a453f5e4e8d1a7c8d1a415da74061c830c2f",
           "rig": null
         }
@@ -3571,9 +3748,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for early-night: a painted wooden beehive on legs.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "45a90e4e48674e605bcf543a41ed1c9cb960f34ecdbcb8abde746db58fcc2936",
           "rig": null
         }
@@ -3639,9 +3819,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for why: a striped necktie, a prop placed on a character, not a part of one.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "12a3b6285b9e1c82dd3e69794bcc1d0fdea592df36ed8760b3beb3d91581faf8",
           "rig": null
         }
@@ -3673,9 +3856,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for hang-out: the park straight on, with a tree and a town that grow.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "61aec9d4b3b16a3f6f01d2308ee1d985aab67cd6b7b375e286652ce87950f6fa",
           "rig": null
         }
@@ -3690,9 +3876,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for hang-out: a phone from behind, or lit with a slot for its screen.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "b25c247b71e452492c4ffb652aa9730c995c84047fa4956b320c647b7b5129f6",
           "rig": null
         }
@@ -3707,9 +3896,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for why: a child's room straight on, with a window of sky, a door and a dim.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7aa048f1bda375d38c5cc908e8588ab57ad0f2509478d477178f8259509801c6",
           "rig": null
         }
@@ -3724,9 +3916,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for early-night: a garden shovel, rusty until asked otherwise.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "dee80f3e0c550b4b1c2c37ce465e5911e9ef1fc6296fd532eabf7046642f6a66",
           "rig": null
         }
@@ -3809,9 +4004,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "New for hang-out: a card with one big changing reading.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "954ff29806792551baac650793204cb3d7eecb27b0a6df6f5e8567e5c015fa2b",
           "rig": null
         }
@@ -3860,9 +4058,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "3ea066f9123d7f5660e2419d7e27ef193a9d892818d7a9620d2939a7b009eeea",
           "rig": null
         }
@@ -3877,9 +4078,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0091b3593397ec046970b6b70a1e7e09ffcee6112c4b4f47b4501a3b7dbb76a6",
           "rig": null
         }
@@ -4501,9 +4705,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "b4b86daffdc1ee8a21afd720b1b10afe824be651951efad0fb55cbb6a6c81bb2",
           "rig": null
         }
@@ -4518,9 +4725,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5e0f29d1bdcf142bf95ddcb454005867fa160f0660cee5a3fcf17d22e5dddef3",
           "rig": null
         }
@@ -4620,9 +4830,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for just-one-thing.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c01c2e9c7e3d16ee810353bf91818d68224a77890c778fa1e8445ae3daab0280",
           "rig": null
         }
@@ -4700,10 +4913,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Who Touched It.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c6f6fd89c051e81879eba754b488b3ec153d7270c9f8cbba4e45d4aeb018bd5a",
           "rig": null
         }
@@ -4717,10 +4933,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "479f730ad5484a4b6c302e6a8fd5c24865091c4af404604a5be30910ba8130e7",
           "rig": null
         }
@@ -4907,10 +5126,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for It's Soaking.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c8b33040f59660a483f3a26493971b413c083bb7a107c4704f0789e14f759f77",
           "rig": null
         }
@@ -4924,10 +5146,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "a98eba7085d01f701abccc4f4d8eee606c15f065a988a364ea72ed2a7aa78757",
           "rig": null
         }
@@ -4941,10 +5166,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ffb563891efb3a62f6b070c80dacd401cfbc6975a35f50be81eec26c41062a75",
           "rig": null
         }
@@ -5039,10 +5267,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Who Touched It.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "05fbfc6cabc23d0bb1e68fb58099b7201cf5cfaa070b33ddfeb534af2fd4a9af",
           "rig": null
         }
@@ -5156,10 +5387,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Representative; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Representative.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c983f15b99fdbe93be4ac253970ea927b28297d6a68ab065e844ef3d8ae0e295",
           "rig": null
         }
@@ -5270,10 +5504,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Representative; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Representative.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e73fafe5d42636e68872c0fa05c8954dfe0c2cebdd87e0242804ba03e16d0ad1",
           "rig": null
         }
@@ -5287,10 +5524,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Representative; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Representative.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "054e23def8ed6830166abfe550c925cd58b866e4dfb2152f14e7574422b62825",
           "rig": null
         }
@@ -5321,10 +5561,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Representative; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Representative.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "226c74801d7a50827ee3771a3b919eb7094cb22056df8833fd7e500aa55181d3",
           "rig": null
         }
@@ -5474,10 +5717,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "86cd9646f9fcc8184c9f45627e283e1fc7ddf7ba4cef1338cfb3bfcf431e24aa",
           "rig": null
         }
@@ -5491,10 +5737,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Who Touched It.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fb6e757544dca0f0ef35d799123042feb93f18ac6c41da161d3e8ff28988cb3b",
           "rig": null
         }
@@ -5619,10 +5868,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for It's Soaking.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "4f389110f91bb0d57203734e54ad23106264b1686ec125780f0812a7d4078879",
           "rig": null
         }
@@ -5683,10 +5935,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "482b92c135b7de51f7ab76e240afa18a19873c8fbe931f38b4d64da008e974a8",
           "rig": null
         }
@@ -5734,10 +5989,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Who Touched It.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2ed82c71e3310f486e96efe462667b552e488193b3ecf66a39d9ea3b6da0f291",
           "rig": null
         }
@@ -5768,10 +6026,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Do You Floss.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e1a3feeaf633f40d0842b2269376784398c16644b11b0d62da4f9a854a973e86",
           "rig": null
         }
@@ -5785,10 +6046,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for Who Touched It.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "825646d11470d5f810966fefd978b0e5edf8a5f130c5d472bbc5300572dfdcd2",
           "rig": null
         }
@@ -5802,10 +6066,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "First drawn for It's Soaking.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "4554b59dfea06acc7f4f9056c543b2452779259db9198a4b2f10c81e87658e85",
           "rig": null
         }
@@ -5837,9 +6104,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawing, for im-quitting.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fe2c75fc37bce7bed4cc3851be700b329b595bcc0cf8931bbf5083d78c3c2f71",
           "rig": null
         }
@@ -5908,9 +6178,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "88f6a472812ce6e29b8b73c38729d26f007005bb4b972ba7e3cb1eb2ec8b00ba",
           "rig": null
         }
@@ -5925,9 +6198,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "986a621ce009ca69681fabd8c7cfedf941885d9bcc301ecd5e255be4bd91c994",
           "rig": null
         }
@@ -5942,9 +6218,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "9ec3a28a395672cc29281c1b01c6a1676a0e44af01211a2731b88b0403c405b1",
           "rig": null
         }
@@ -5959,9 +6238,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "d149e03a92966ef6e29ee0b2259cb285fe15b2f213ca15f0be55f744e21c51b5",
           "rig": null
         }
@@ -5976,9 +6258,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for hold-the-door.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "8b31b640539fdb77cd94fd84f35fb84d230ce93fa95f59ecbc66d89e7e552cf7",
           "rig": null
         }
@@ -5993,9 +6278,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0b5b288f9d07ac56b98fbce1bfeb4a9ad615ccdd28add205f1e4204a0d99bfba",
           "rig": null
         }
@@ -6010,9 +6298,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "fa9625a9da3338f52480c0ddeb93fe5d2cd4c1408dd176536b1bf3cfada17344",
           "rig": null
         }
@@ -6027,9 +6318,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "d102edae24db04e507d10cce4d83803122f73912fd31e4d7b3404e099eab816d",
           "rig": null
         }
@@ -6044,9 +6338,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for hold-the-door.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "58f2f69790aca034327fc402c4c8149a704fd228438d41f33d96292ee8a8b553",
           "rig": null
         }
@@ -6061,9 +6358,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2fe0efeeb0ad09bab01e61fccb8e7f047720b59419a1dde5bcea0477f43459d7",
           "rig": null
         }
@@ -6078,9 +6378,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "1ec37de0efebe7dad82f5ead11d2d34bf58e517d5c1a40129c23d3e0638a7c53",
           "rig": null
         }
@@ -6095,9 +6398,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ba85dd011ce045484953f46ad5fd4bf6a4084a94c3bb42544a30131422b45701",
           "rig": null
         }
@@ -6112,9 +6418,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "07842f0e2c9e5085a760cadfd90723bc02b8d9835faab8196d2931caaca4c822",
           "rig": null
         }
@@ -6129,9 +6438,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c555368f368d226425709926d836677175b83488cd7b7a2b94677dd69dae5bc8",
           "rig": null
         }
@@ -6146,9 +6458,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for hold-the-door.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "9c448e51c44d2ad66fd3015a36b11fe34648cff92e25d6fdbc591847ae752464",
           "rig": null
         }
@@ -6163,9 +6478,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c2542644a8793515db85da5b997d9ce74e7def11aeb682b2eaf6efcba5f7078a",
           "rig": null
         }
@@ -6180,9 +6498,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "bc144d3950c226198f8ab57fa8ab3df87815858ca0a729437a3e617404b8a124",
           "rig": null
         }
@@ -6197,9 +6518,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ee4e4c93600b1532bc693d2fad3e6fedde160456a6e50626095142b950b988c4",
           "rig": null
         }
@@ -6214,9 +6538,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "3802f5721e5e7a7e771b65f87234b4e405764a6a504107105b0ebc56ac70c14d",
           "rig": null
         }
@@ -6231,9 +6558,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "451746167f64bca3a280b6b9585721b31ddf7d8a6dc20f425322d96d6bbf9627",
           "rig": null
         }
@@ -6248,9 +6578,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "5b7aa153c345c300602d7402e501f408127497859e0f51d6b6736011dc814640",
           "rig": null
         }
@@ -6265,9 +6598,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "6b27ffde2cb08b52a92a83760485988582bfd6c5b33df6e382c0e5048ffb6c87",
           "rig": null
         }
@@ -6282,9 +6618,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "6d55fd23ab076f0bf1eb072289d32c1d00bf4b8f4bbed188273807004dfd3206",
           "rig": null
         }
@@ -6299,9 +6638,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "916a41c61a1d2005a82ba20d60ea5fba483d138c4532410f13842aa84adf02e0",
           "rig": null
         }
@@ -6316,9 +6658,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "aa747f320a894e66e5e256058805a7b1888a565fcec36bad9ab342d3c749cfc7",
           "rig": null
         }
@@ -6333,9 +6678,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for hold-the-door.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "c5f461df691038f7e3b5a9fbab0cf79f41e77a5e7b5115f35b41f20d245f08f2",
           "rig": null
         }
@@ -6350,9 +6698,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e6a7a8ebd23f7659971d9e2b2d7ec848601884b1bd67a50d5671f846208a6ae6",
           "rig": null
         }
@@ -6367,9 +6718,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for hold-the-door.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "639a4435d84700b82884a711e57983df746ce2dd436dadd8eba42782607b8623",
           "rig": null
         }
@@ -6384,9 +6738,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "035dbecf94b620ac325e8b123b0da2ffb2974bf1f8dd3470f0efb394141c4304",
           "rig": null
         }
@@ -6401,9 +6758,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for take-my-phone.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "085b0fe6d281585f9e1806f1845690fe9fc1498186bbaabfd8412428d166ea6d",
           "rig": null
         }
@@ -6418,9 +6778,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for good-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0811ba3cac4eed80cbe5d78eadb03a8abc1e66ab3786230e371e6487c19be887",
           "rig": null
         }
@@ -6435,9 +6798,12 @@
           "number": 1,
           "date": "2026-10-30",
           "note": "First drawn for the-stove.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e511128127e63d7559bd41a38f4ca405c8c3b740ef21cf05c13457bef7354e1e",
           "rig": null
         }
@@ -6451,10 +6817,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A helicopter in the window with a searchlight sweeping the room. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A helicopter in the window with a searchlight sweeping the room.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "342e1392468d434fd6e31403ea346082935e852c466fdf3d617bdc9d59d0a916",
           "rig": null
         }
@@ -6468,10 +6837,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A closet door that bursts open. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A closet door that bursts open.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0b0fa65e4cb441f02299ce2316d782a9c31deb5e2b6cb05eb22845f120ab1ab3",
           "rig": null
         }
@@ -6485,10 +6857,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A dump at dusk with a dead television. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A dump at dusk with a dead television.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2fe8978ed0f698e79d650705a4d5c701dd592a04947a8ae72e3610c7722ebcb5",
           "rig": null
         }
@@ -6502,10 +6877,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A plain wall behind a far figure. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain wall behind a far figure.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7dcf134f6b9dba89fdab326a9b4bbcac3a8dcb14957fed415eec4e4792e0ef85",
           "rig": null
         }
@@ -6519,10 +6897,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A shared flat's pale wall, spotless. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A shared flat's pale wall, spotless.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ddba45abdcb86e4a6f5f4c0884fdea90290a35af1792c9db7b34325b9a218aee",
           "rig": null
         }
@@ -6536,10 +6917,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A front door on a hall stacked to the ceiling. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A front door on a hall stacked to the ceiling.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "8302d3477d4d9e26beb6faca34140d8b51e3f3151fe39dccc616da90a351733d",
           "rig": null
         }
@@ -6553,10 +6937,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A gull that flies in and lands. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A gull that flies in and lands.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "3174cec37764391d4a6d83e0b9e3a0b541341e48d7a825e0936d35e5dcb3304c",
           "rig": null
         }
@@ -6570,10 +6957,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A plain wooden chair back behind whoever sits on it. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain wooden chair back behind whoever sits on it.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7fd7e95b7b22b51ef65c60853590c554b5255d1363a6564fbbdcc033f9dab941",
           "rig": null
         }
@@ -6587,10 +6977,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A heap of shirts that rises over whoever is in shot. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A heap of shirts that rises over whoever is in shot.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "a32347be0c41dd51ab18679d1416ab4f6b1d28a7f3ae197276de7f7fba9681ef",
           "rig": null
         }
@@ -6604,10 +6997,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A plain counter top in the desk's place. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain counter top in the desk's place.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "a086734b6bbc964b0c6ef7c323224dc14e915af9b4b11550d355d4d6003918fe",
           "rig": null
         }
@@ -6621,10 +7017,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A news strap across the lectern's front. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A news strap across the lectern's front.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "07339dc6610ddc948e6ea88bfb33861514f61b403d82e13000b2900a118f49a9",
           "rig": null
         }
@@ -6638,10 +7037,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A bunch of microphones on a lectern. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A bunch of microphones on a lectern.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "78947401661f47c9c84f73bdca8e7372649c715b28e40da21db19fad3a097161",
           "rig": null
         }
@@ -6655,10 +7057,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A delivery slip sliding under a door until it fills the frame. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A delivery slip sliding under a door until it fills the frame.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "719e9fac10263295a38b8142513b638d9da1fb7b54a479f71d17951b8cab059a",
           "rig": null
         }
@@ -6672,10 +7077,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A night street of dark houses with a crowd that gets a message and walks away. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A night street of dark houses with a crowd that gets a message and walks away.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "2303e31d9dbc27339fc70564e08496673c5472d7c1ac2d9633a0ed7e5ebdc73e",
           "rig": null
         }
@@ -6689,10 +7097,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "An oven whose door drops open. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An oven whose door drops open.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "195e824f373d0cc7934881976a9e163a8013db120258134a80d27d38dc8ffd7e",
           "rig": null
         }
@@ -6706,10 +7117,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "An arm that slides in holding something. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An arm that slides in holding something.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "0bf9f08a3ccbe941648a1b41c4f6a194111f47c4593922e025c30d809d3b8abe",
           "rig": null
         }
@@ -6723,10 +7137,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "Plates sliding out of an oven across the frame. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Plates sliding out of an oven across the frame.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
           "rig": null
         }
@@ -6740,10 +7157,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A clapboard wall with a front door from outside and a mat. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A clapboard wall with a front door from outside and a mat.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "50d641a343d84cdf6b131e8d3ef9c0d17aabafb840ab6a6d5adf13ffe3441717",
           "rig": null
         }
@@ -6757,10 +7177,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "4e4fc84b489f66d06eb9f6f866ee17f321509a8f749dcb7d1447506121ecf4ac",
           "rig": null
         }
@@ -6774,10 +7197,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A road passing behind a flatbed. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A road passing behind a flatbed.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "d9f22f548ed35a29885344cb431de156302b962464bf0f188ee2e22043d1c403",
           "rig": null
         }
@@ -6791,10 +7217,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A shower curtain pulled back on a stack of bins. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A shower curtain pulled back on a stack of bins.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
           "rig": null
         }
@@ -6808,10 +7237,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "Zs that rise from a sleeper. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Zs that rise from a sleeper.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "dfbf779c846e4a0568551715372e2a7bdf5922982c7f7beee4201532cf980504",
           "rig": null
         }
@@ -6825,10 +7257,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A sofa and side table that carry the character and the marks anywhere. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A sofa and side table that carry the character and the marks anywhere.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "1a772a5ccd97110f214a49f244ad3c26760c74c0c92e95ec2f852a6ae7e6ffe0",
           "rig": null
         }
@@ -6842,10 +7277,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "The sofa seen from behind, for a far figure. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The sofa seen from behind, for a far figure.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "124302cfe52fdbe12ee6d8708d9a83cde99b7cd4712485e22ea98f9f4969de6f",
           "rig": null
         }
@@ -6859,10 +7297,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "Four-pointed glints on a clean room. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Four-pointed glints on a clean room.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "1f189256a7e2b9cbc43cf00b62ced821f6bd2847962907941bab8c4a1b0c3f97",
           "rig": null
         }
@@ -6876,10 +7317,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
           "rig": null
         }
@@ -6893,10 +7337,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A tiny chest whose top drawer opens on one sock. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A tiny chest whose top drawer opens on one sock.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "6b35a7603e68613e5519cf4d4e3b1015402b01bb3eadd0b46d6d6063f5c04e78",
           "rig": null
         }
@@ -6910,10 +7357,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A plain white van driving off, shrinking. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain white van driving off, shrinking.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "608e47a117b8428de7fbe7b84cfa176899faaddfdf50b54c0240e46a0c75d627",
           "rig": null
         }
@@ -6927,10 +7377,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A spinning blur a character whirls in on. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A spinning blur a character whirls in on.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "72618b7c94bbf74ca17ae02c8ba291f819e8a80dafa2cba4c92890e434c84417",
           "rig": null
         }
@@ -6944,10 +7397,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A front yard with a fence and a sign. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A front yard with a fence and a sign.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
           "drawing": "500b993400a4570b42aea219562c225762f4eaa43e45d80fd936937ba0493c00",
           "rig": null
         }

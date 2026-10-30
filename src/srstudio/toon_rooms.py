@@ -395,7 +395,9 @@ def _picture(cv: Canvas, g, name: str, colour: str) -> None:
     cv.rect(g, fx(392), fy(342), fh(186), fh(114), paint, radius=fh(3))
 
 
-def _lounge_shelf(cv: Canvas, g, blink: float, speaker: Sequence[tuple[float, str]], end: float, blink_from: float = 0.0) -> None:
+def _lounge_shelf(
+    cv: Canvas, g, blink: float, speaker: Sequence[tuple[float, str]], end: float, blink_from: float = 0.0
+) -> None:
     """The shelf above the pill: the router with its antennas and lights, blinking from ``blink_from`` until ``blink``, the
     speaker."""
     _inked(cv, g, [(372, 190), (572, 190), (572, 200), (372, 200)], SHELF, FINE_W / 2)

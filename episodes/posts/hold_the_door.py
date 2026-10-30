@@ -31,7 +31,12 @@ RELEASE = Release(
         "signature-cactus": 1,
         "signature-code": 1,
         "stick-card": 1,
+        "stick-entrance": 1,
+        "stick-glass-door": 1,
+        "stick-marathon": 1,
         "stick-rig": 1,
+        "stick-snow-cap": 1,
+        "stick-street-lens": 1,
         "stick-words": 1,
     },
 )
