@@ -40,7 +40,9 @@ from .styles import Style
 from .takes import Script
 from .voice import Voice, VoiceSettings
 
-__all__ = ["SeriesError", "Series", "Reel", "line", "effect", "word_at", "record", "build"]
+__all__ = ["SeriesError", "Series", "Reel", "line", "effect", "word_at", "record", "build", "MAX_CRF"]
+
+MAX_CRF = 51  # the highest crf the h264 encoder takes
 
 
 class SeriesError(SrstudioError, ValueError):
@@ -90,7 +92,16 @@ class Reel:
     stages: Callable[[Sequence[Any]], Mapping[str, Any]]
     captions: native.CaptionLook | None = None  # None: the series' caption look
     still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
+    crf: str | None = None  # None: the series' crf; a longer reel can ask for a higher one to stay under a size cap
     series: ClassVar[Series | None] = None
+
+    def __post_init__(self) -> None:
+        if self.crf is not None and not (
+            isinstance(self.crf, str) and self.crf.isdigit() and self.crf.isascii() and 0 <= int(self.crf) <= MAX_CRF
+        ):
+            raise SeriesError(
+                f"reel {self.slug!r}: crf must be a whole number 0 to {MAX_CRF} as text, got {self.crf!r}"
+            )
 
     def _series(self) -> Series:
         if self.series is None:
@@ -169,7 +180,7 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
             seed=s.seed,
             style=s.style,
             language=s.language,
-            output_options=dict(s.output),
+            output_options={**s.output, **({"crf": reel.crf} if reel.crf is not None else {})},
             safe_area=s.safe_area,
             accessibility=dict(description=reel.accessible),
         )

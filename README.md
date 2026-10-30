@@ -1606,6 +1606,15 @@ timeline that starts its first take late breaks the contiguous-from-zero rule ev
 segment that freezes the first frame would make the encoded file a second longer than the scene whose clock the
 captions, markers and craft checks read.
 
+**Captions from G8 on.** G8 and later caption in `gloss_reel.LOOK_INK`: the lines wrap and hold as in
+`gloss_reel.LOOK`, in solid dark letters (the sung word too) outlined thinly in their own color. The engine's contrast
+check compares the pixels a caption changes most with the set behind them. A white letter in a dark outline lightens
+some of those pixels and darkens the others, and on the light Gloss sets that averages to 1.00:1, so the strict encode
+refused the house look (the published *Terms* fails it the same way under the current engine). A centered outline
+passed but filled the white letters in, and a plum sung word measured under 3:1 on the notice's darker floor. G1–G7
+keep the looks they shipped with. A reel that runs long can ask for its own encoder quality, `Reel(crf="20")`, over
+the series output, to keep its master under the size cap.
+
 | # | Episode | The turn |
 |---|---|---|
 | G1 | *Orientation* | the exit is painted on, and it arrives "in a future update" |
