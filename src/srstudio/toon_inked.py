@@ -15,7 +15,8 @@ module draws in code (:class:`Inked`, a :class:`srstudio.toon_cast.Drawing`):
   and the face sits toward the far side, the far eye smaller;
 * **eyes and mouths drawn for the face**: almond eyes with an iris that slant to the outer corner, a fox's mouth
   under the nose; every kind of :data:`srstudio.toon.EYES` and :data:`srstudio.toon.MOUTHS` and every viseme is its
-  own drawing here, none the shared brush template, and every eye a one-off: its almond, iris, pupil and shine are
+  own drawing here, none the shared brush template (``sleepy``, ``yawn``, ``scream`` and ``puff`` too, ahead of
+  the vocabulary that ADR 0045 brings), and every eye a one-off: its almond, iris, pupil and shine are
   seeded lumps per kind and side (:func:`srstudio.brush.lump`), never a perfect ellipse;
 * **a shade tone**: one darker coat (:data:`SHADE`) where the forms turn away, the head's a crescent that starts and
   ends on the outline and swells into the cheek, and a cream shade under the chin.
@@ -257,12 +258,14 @@ _LOOK = {  # where the iris looks: (across the frame, +1 to the right; down), ey
     "shock": (0.0, 0.0),
     "roll": (0.28, -0.3),
     "teary": (0.0, 0.06),
+    "sleepy": (0.04, 0.36),
 }
 _LID = {  # a lid over the top of the eye, its edge (outer, inner) this far down
     "half": (-0.14, -0.02),
     "down": (0.22, 0.32),
     "side": (-0.32, -0.2),
     "narrow": (-0.6, 0.06),
+    "sleepy": (0.34, 0.14),  # hung past the middle, drooping to the outer corner
 }
 _BROW = {  # (lift over the eye in px, the inner end's rise, the middle's rise, the outer end's rise) in eye radii
     "wide": (10.0, 0.0, 0.16, 0.0),
@@ -278,6 +281,7 @@ _BROW = {  # (lift over the eye in px, the inner end's rise, the middle's rise, 
     "teary": (8.0, 0.45, 0.12, -0.2),
     "wince": (2.0, 0.5, 0.1, -0.24),
     "hearts": (10.0, 0.04, 0.34, 0.04),
+    "sleepy": (3.0, 0.0, 0.02, -0.1),
 }
 BROW = brush.Pressure(1.0, 0.25, 0.12, 0.1, 1.5)  # pressed at the inner end
 
@@ -395,6 +399,10 @@ class Inked:
             out.append((brush.stroke(well, FINE * 1.2, brush.EVEN, steps=6), TEAR))
             tear = _drop(at(-0.95, 0.5)[0], ey + 0.7 * r, r / 17.0)
             out += [(brush.inked(tear, FINE, MOUTH_HAND), "ink"), (brush.outline(tear), TEAR)]
+        if kind == "sleepy":  # a tired line under the eye
+            out.append(
+                (brush.stroke([at(-0.62, 1.22), at(0.0, 1.36), at(0.55, 1.24)], FINE * 0.85, FUR, steps=4), "ink")
+            )
         return self._turn(out, centre)
 
     def lids(self, look: Look) -> list[Layer]:
@@ -482,6 +490,25 @@ class Inked:
             out += [(brush.inked(pts, FINE, MOUTH_HAND), "ink"), (brush.outline(pts), TONGUE)]
             out.append(half([(0.17, 6.0), (0.18, 13.0)], FINE * 0.6))
             out.append(out.pop(0))  # the lips over the tongue's root
+        elif kind == "yawn":  # the jaw dropped, tall and narrow, the tongue lying low
+            out = opening([(0.0, -4.0), (0.2, -2.0), (0.34, 6.0), (0.36, 18.0), (0.28, 28.0), (0.0, 33.0),
+                           (-0.28, 28.0), (-0.36, 18.0), (-0.32, 6.0), (-0.18, -2.0)], self.inside)  # fmt: skip
+            out.append(tongue([(-0.24, 27.0), (-0.08, 21.0), (0.1, 22.0), (0.25, 27.0), (0.1, 31.0), (-0.12, 31.0)]))
+            out.append(half([(0.0, 23.0), (0.01, 28.5)], FINE * 0.6))
+        elif kind == "scream":  # wide open, the top row of teeth bared and the tongue showing
+            out = opening([(-0.6, -6.0), (-0.2, -8.0), (0.2, -7.5), (0.62, -5.0), (0.56, 10.0), (0.42, 24.0),
+                           (0.02, 31.0), (-0.4, 24.0), (-0.58, 10.0)], self.inside)  # fmt: skip
+            out.append(tongue([(-0.34, 25.0), (-0.1, 17.0), (0.16, 18.0), (0.36, 24.0), (0.12, 29.0), (-0.16, 29.0)]))
+            out.append((brush.outline([at(x, y) for x, y in ((-0.46, -4.5), (0.0, -5.5), (0.48, -3.5), (0.44, 2.5),
+                                                              (0.0, 1.5), (-0.44, 2.5))]), "white"))  # fmt: skip
+            for x, lean in ((-0.22, 0.4), (0.02, -0.3), (0.25, 0.3)):
+                out.append(half([(x - 0.01 * lean, -5.0), (x + 0.01 * lean, 2.0)], FINE * 0.6))
+            out += [half([(-0.7, -10.0), (-0.78, -1.0)], FINE), half([(0.72, -9.0), (0.8, 0.0)], FINE)]
+        elif kind == "puff":  # the cheeks blown out round a small closed smile
+            out = [half([(side * 0.62, -18.0), (side * 0.86, -7.0), (side * 0.86, 5.0), (side * 0.66, 14.0)])
+                   for side in (-1.0, 1.0)]  # fmt: skip
+            out += [half([(-0.18, -1.0), (0.0, 3.0), (0.2, -1.5)], INK * 0.85),
+                    half([(0.2, -1.5), (0.27, -4.5)], FINE), half([(-0.18, -1.0), (-0.25, -3.5)], FINE)]  # fmt: skip
         elif kind == "kiss":
             pts = [(mx + x, my + y) for x, y in ((-2.0, -8.0), (5.0, -6.0), (8.0, -2.0), (4.0, 0.0), (8.0, 3.0),
                                                   (5.0, 7.5), (-2.0, 8.5), (-4.5, 0.0))]  # fmt: skip
