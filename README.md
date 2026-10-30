@@ -585,6 +585,28 @@ from the first key. It reuses `cast.pigeon` (nested in walk, flip and turn group
 mirrored rig's body centre), `graphics.notification` holders at 2.25 times for the phone, and `locations.finish` over
 the park.
 
+## Cutout episode across the interview desk: *Name a Number* (24)
+
+[episodes/name_a_number.py](episodes/name_a_number.py) brings the interviewer and the applicant from *Five Years*
+back for the salary talk, where whoever names a number first loses. "So. What number did you have in mind?" "What's
+the range?" "What would make you happy?" "What would make you happy?" "I asked first." "The ad said competitive."
+"Extremely competitive." "Competitive with what?" "Other ads." They both write it down: the offer says LESS THAN
+YOURS, the ask says MORE THAN YOURS. "Great. We're aligned." "Are we?" "Competitively."
+
+```bash
+srstudio record name-a-number PROJECT
+srstudio build name-a-number PROJECT    # PROJECT/name-a-number.scene.xml
+```
+
+Its first second is still (arm A of the `sp-hook_motion` test): the job ad lies on the desk and the interviewer's
+question is heard over it, its caption from 1.15 s. The desk inserts take one light from the top left, each sheet's
+shadow falling down and to the right, and every angle is drawn into `locations.finish`. Extended for it:
+
+- `locations.office_wide(depth=)` and `locations.office_reverse(depth=)` blur the room behind the desk (wall, art,
+  plant) or the wall behind the chair by that many px in a group of its own; the desk, the cast and the signature
+  marks stay sharp. `locations.elevator(depth=)` does the same for the hallway through the doorway, its cactus kept
+  sharp. Without `depth` each set is the shipped one, byte for byte; an instanced office refuses it.
+
 ## Ink episode: *The Router* (Ink 02)
 
 [episodes/the_router.py](episodes/the_router.py) is the first original Ink episode: the internet is down and the router

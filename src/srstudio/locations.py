@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 
-from . import props, signature
+from . import checks, look, props, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -29,6 +29,19 @@ class LocationError(SrstudioError, ValueError):
 def _call(slot: Slot, g):
     if slot:
         slot(g)
+
+
+def _check_depth(depth) -> None:
+    if depth is not None:
+        checks.positive(depth, LocationError, f"depth is a far-plane blur radius in px above 0, got {depth!r}")
+
+
+def _far(cv: Canvas, g, depth: float | None):
+    """Where a set draws its far plane: ``g`` itself, or with ``depth`` a group in it blurred by that radius
+    (:func:`srstudio.look.depth`). The cast, the props and the signature marks are drawn outside it."""
+    if depth is None:
+        return g
+    return look.depth(cv, g, f"cutout-depth-{depth:g}", depth)
 
 
 def _office_room(cv: Canvas, g, p, plant_id="office-plant"):
@@ -69,14 +82,26 @@ def _office_desk_front(cv: Canvas, g, p, cactus: Slot = None):
 
 @register("location", "office-wide", summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back")
 def office_wide(
-    cv: Canvas, parent, at_desk: Slot = None, id="wide-office-angle", shots=None, instanced=False, cactus: Slot = None
+    cv: Canvas,
+    parent,
+    at_desk: Slot = None,
+    id="wide-office-angle",
+    shots=None,
+    instanced=False,
+    cactus: Slot = None,
+    *,
+    depth: float | None = None,
 ):
     """``instanced`` places the room and the desk as shared symbols (drawn once per document).
 
     The engine draws an instance into an offscreen at its symbol's frame size and scales that texture, so
     a camera push-in on an instanced angle softens its edges: keep the inline drawing for angles that zoom.
-    ``cactus`` draws the desk's cactus instead of the set (ADR 0039); it needs the inline drawing."""
+    ``cactus`` draws the desk's cactus instead of the set (ADR 0039); it needs the inline drawing. ``depth`` blurs
+    the room behind the desk (wall, art, plant) by that many px; the desk, the cast and the marks stay sharp."""
     _refuse_instanced_hand_off(instanced, cactus)
+    _check_depth(depth)
+    if instanced and depth is not None:
+        raise LocationError("an instanced office shares its room with every angle; blur its depth inline")
     p = props.office_paints(cv)
     g = cv.group(parent, id)
     if shots:
@@ -84,7 +109,7 @@ def office_wide(
     if instanced:
         cv.instance(g, f"{id}-room", _office_room_symbol(cv))
     else:
-        _office_room(cv, g, p)
+        _office_room(cv, _far(cv, g, depth), p)
     props.chair(cv, g)
     _call(at_desk, g)
     if instanced:
@@ -140,18 +165,29 @@ def office_desk(
     summary="Office, reverse angle on the candidate: warm wall, gray chair, glass of water",
 )
 def office_reverse(
-    cv: Canvas, parent, in_chair: Slot = None, id="candidate-reverse-angle", shots=None, cactus: Slot = None
+    cv: Canvas,
+    parent,
+    in_chair: Slot = None,
+    id="candidate-reverse-angle",
+    shots=None,
+    cactus: Slot = None,
+    *,
+    depth: float | None = None,
 ):
+    """``depth`` blurs the wall behind the chair by that many px; the chair, the cast, the desk and the marks stay
+    sharp."""
+    _check_depth(depth)
     p = props.office_paints(cv)
     ink = cv.ink
     g = cv.group(parent, id)
     if shots:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
-    cv.rect(g, 0, 0, 1080, 1920, p["warm_wall"])
-    cv.rect(g, 0, 0, 14, 1410, "#818074", ink, 3)
-    cv.line(g, 20, 0, 20, 1402, "#ECE0C9", 3)
+    far = _far(cv, g, depth)
+    cv.rect(far, 0, 0, 1080, 1920, p["warm_wall"])
+    cv.rect(far, 0, 0, 14, 1410, "#818074", ink, 3)
+    cv.line(far, 20, 0, 20, 1402, "#ECE0C9", 3)
     for y in [8, 342]:
-        cv.path(g, f"M1069 {y + 12} L1086 {y} L1086 {y + 38} L1071 {y + 43}Z", "#A49176", ink, 3)
+        cv.path(far, f"M1069 {y + 12} L1086 {y} L1086 {y + 38} L1071 {y + 43}Z", "#A49176", ink, 3)
     props.chair(cv, g, "gray")
     _call(in_chair, g)
     cv.rect(g, 0, 1399, 1080, 433, p["desk"], ink, 4)
@@ -551,13 +587,16 @@ def elevator(
     doors: Sequence[tuple[float, float]] = (),
     lit: int | None = None,
     going: str = "up",
+    depth: float | None = None,
 ):
     """A cab seen from inside, the doors on the back wall: ``riders`` stand in front of them facing the camera
     (office actors with ``legs="standing"`` at :func:`elevator_stand_y`), and ``on_floor`` draws in front of the
     riders (a pigeon walking in). ``floors`` is ``(second, floor)`` from 0: the display shows each floor until the
     next; ``doors`` are ``(open, shut)`` spans, each door sliding :data:`DOOR_W` behind the wall over
     :data:`DOOR_SLIDE` seconds onto the hallway; ``lit`` lights a floor's button (1 to :data:`BUTTONS`); ``going``
-    points the display's arrow ``"up"`` (the default) or ``"down"``."""
+    points the display's arrow ``"up"`` (the default) or ``"down"``; ``depth`` blurs the hallway seen through the
+    doorway by that many px (its cactus, the cab and the riders stay sharp)."""
+    _check_depth(depth)
     _check_floors(floors)
     _check_doors(doors)
     if lit is not None and not (isinstance(lit, int) and 1 <= lit <= BUTTONS):
@@ -582,10 +621,11 @@ def elevator(
         xb, xf = left + (right - left) * k / 5, 1080 * k / 5
         cv.line(g, xb, base, xf, 1920, "#2E2A27", 2, opacity=0.5)
     # the hallway through the doorway
-    cv.rect(g, DOOR_X, DOOR_TOP, 2 * DOOR_W, base - DOOR_TOP, "#EADFC8")
-    cv.rect(g, DOOR_X, base - 120, 2 * DOOR_W, 120, "#8C7A63")
-    cv.rect(g, DOOR_X + 60, DOOR_TOP + 120, 120, 150, "#F7F1E3", ink, 3)  # a print on the hallway wall
-    cv.path(g, f"M{DOOR_X + 72} {DOOR_TOP + 250} L{DOOR_X + 110} {DOOR_TOP + 180} L{DOOR_X + 168} {DOOR_TOP + 250}Z",
+    hall = _far(cv, g, depth)
+    cv.rect(hall, DOOR_X, DOOR_TOP, 2 * DOOR_W, base - DOOR_TOP, "#EADFC8")
+    cv.rect(hall, DOOR_X, base - 120, 2 * DOOR_W, 120, "#8C7A63")
+    cv.rect(hall, DOOR_X + 60, DOOR_TOP + 120, 120, 150, "#F7F1E3", ink, 3)  # a print on the hallway wall
+    cv.path(hall, f"M{DOOR_X + 72} {DOOR_TOP + 250} L{DOOR_X + 110} {DOOR_TOP + 180} L{DOOR_X + 168} {DOOR_TOP + 250}Z",
             "#9DB7A5", ink, 2)  # fmt: skip
     signature.cactus(cv, g, DOOR_X + 300, base - 120, 0.5)  # on the hallway floor, seen when the doors open
     # the doors, then the wall around them, so an open door slides behind it
