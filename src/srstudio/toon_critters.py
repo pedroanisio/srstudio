@@ -163,9 +163,11 @@ def _round_pupil(look: Look, px: float, py: float, size: float) -> list[Layer]:
     return out
 
 
-def _sleepy(look: Look, centre: Point, inner: float, pupil: Pupil) -> list[Layer]:
+def _sleepy(
+    look: Look, centre: Point, inner: float, pupil: Pupil, cover: Callable[[Sequence[Point]], Shape] | None = None
+) -> list[Layer]:
     """Sleepy eyes: a lid hung past the middle of the eye, drooping to the outer corner over a low pupil, a relaxed
-    brow and a tired line under the eye."""
+    brow and a tired line under the eye. ``cover`` draws the lid from its outline, the plain outline by default."""
     ex, ey = centre
     r = look.eye_r
     lid = look.lid or look.coat
@@ -181,7 +183,7 @@ def _sleepy(look: Look, centre: Point, inner: float, pupil: Pupil) -> list[Layer
     outer_x, inside_x = ex - inner * (r + INK + 1.0), ex + inner * (r + INK + 1.0)
     y_out, y_in = ey + 0.32 * r, ey + 0.18 * r
     lid_shape = [(outer_x, top), (inside_x, top), (inside_x, y_in), (ex, y_in + 0.1 * r), (outer_x, y_out)]
-    out.append((brush.outline(lid_shape, steps=3), lid))
+    out.append((cover(lid_shape) if cover else brush.outline(lid_shape, steps=3), lid))
     out.append((brush.stroke([(outer_x + inner * 2.0, y_out), (ex, y_in + 0.12 * r), (inside_x - inner * 2.0, y_in)],
                              INK * 1.1, LINE), "ink"))  # fmt: skip
     bag = ey + r + INK + 3.0
@@ -344,7 +346,8 @@ class Critter:
         if kind in ("closed", "wince", "hearts"):  # no pupil: the shared drawing
             return self.turn(_eye(self.face, local, kind, inner))
         if kind == "sleepy":
-            return self.turn(_sleepy(self.face, local, inner, self.pupil))
+            reach = self.face.eye_r + INK + 1.0
+            return self.turn(_sleepy(self.face, local, inner, self.pupil, lambda box: self._lid(box, local, reach)))
         return self.turn(self._open_eye(local, kind, inner))
 
     def _open_eye(self, centre: Point, kind: str, inner: float) -> list[Layer]:
@@ -376,19 +379,19 @@ class Critter:
         lids = {"half": 0.5, "down": 0.3, "side": 0.45}
         if kind in lids:
             y = ey - r + 2 * r * lids[kind]
-            out.append((brush.outline([(ex - edge, ey - edge), (ex + edge, ey - edge), (ex + edge, y), (ex - edge, y)],
-                                      steps=3), lid))  # fmt: skip
+            box = [(ex - edge, ey - edge), (ex + edge, ey - edge), (ex + edge, y), (ex - edge, y)]
+            out.append((self._lid(box, centre, edge), lid))
             out.append((brush.stroke([(ex - r - 2.0, y), (ex, y + 1.5), (ex + r + 2.0, y)], INK * 1.05, LINE), "ink"))
         elif kind == "narrow":
             outer, inside = ex - inner * edge, ex + inner * edge
             y_out, y_in = ey - 0.6 * r, ey - 0.05 * r
-            out.append((brush.outline([(outer, ey - edge), (inside, ey - edge), (inside, y_in), (outer, y_out)],
-                                      steps=3), lid))  # fmt: skip
+            box = [(outer, ey - edge), (inside, ey - edge), (inside, y_in), (outer, y_out)]
+            out.append((self._lid(box, centre, edge), lid))
             out.append((brush.stroke([(outer, y_out), (inside, y_in)], INK * 1.05, LINE), "ink"))
         elif kind == "roll":
             y = ey + 0.3 * r
-            out.append((brush.outline([(ex - edge, y), (ex + edge, y), (ex + edge, ey + edge), (ex - edge, ey + edge)],
-                                      steps=3), lid))  # fmt: skip
+            box = [(ex - edge, y), (ex + edge, y), (ex + edge, ey + edge), (ex - edge, ey + edge)]
+            out.append((self._lid(box, centre, edge), lid))
             out.append((brush.stroke([(ex - r - 2.0, y), (ex, y - 1.5), (ex + r + 2.0, y)], INK, LINE), "ink"))
         elif kind == "teary":
             out.append((brush.ellipse(px + size * 0.4, py + size * 0.4, size * 0.18, size * 0.18), "white"))
@@ -397,6 +400,10 @@ class Critter:
             tear = _tear(ex - inner * 0.75 * r, ey + r + INK + 4.0, r / 17.0)
             out += [(brush.rim(tear, FINE), "ink"), (brush.outline(tear), TEAR)]
         return out
+
+    def _lid(self, box: Sequence[Point], centre: Point, reach: float) -> Shape:
+        """What a lid covers: ``box`` over an eye at ``centre``, ``reach`` from its middle to outside its rim."""
+        return brush.outline(box, steps=3)
 
     def lids(self, look: Look) -> list[Layer]:
         face = self.face
