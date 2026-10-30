@@ -6,6 +6,7 @@ import textwrap
 
 import pytest
 
+from srstudio import parts
 from srstudio.cli import main
 
 BUILDER = """
@@ -75,6 +76,26 @@ def test_build_finds_an_episode_by_its_slug_and_passes_its_options(episodes):
 def test_build_follows_the_release_to_a_builder_named_otherwise(episodes):
     assert main(["build", "scene", "project"]) == 0
     assert (episodes / "project" / "built.txt").read_text() == "helper printer_recreation.py"
+
+
+def test_build_records_what_it_drew_in_the_project(episodes):
+    assert main(["build", "my-ep", "project"]) == 0
+    assert parts.read_record(episodes / "project") == {}
+
+
+def test_build_with_no_project_records_nothing(episodes):
+    (episodes / "episodes" / "quiet.py").write_text("")
+    assert main(["build", "episodes/quiet.py"]) == 0
+    assert parts.read_record(episodes / "episodes") is None
+
+
+def test_a_build_of_two_versions_of_a_part_fails_with_its_name(episodes, monkeypatch, capsys):
+    def refused(names):
+        raise parts.PartError("two versions")
+
+    monkeypatch.setattr(parts, "drawn", refused)
+    assert main(["build", "my-ep", "project"]) == 1
+    assert "two versions" in capsys.readouterr().err
 
 
 def test_the_episodes_folder_can_be_named(episodes, monkeypatch, tmp_path):

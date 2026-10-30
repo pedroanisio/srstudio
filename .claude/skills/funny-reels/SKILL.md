@@ -382,7 +382,8 @@ Pick the style whose description fits the joke, not the one used last.
 
 Every registered part has numbered versions (ADR 0047), of every kind. A new reel draws each part's latest approved
 version by default, and asks for an older one by pinning it in its release: `parts={"<registered name>": 1}`. Pass
-`versions=PINS[SKETCH.slug]` to a Toon `Staging`. Only Toon's characters take a second version today; any other part
+`versions=PINS[SKETCH.slug]` to a Toon `Staging`. `srstudio build <slug> <project>` records every part it drew in the
+project's `parts.json`, and `deliver` compares that with the pins, so build with it, not by running the script. Only Toon's characters take a second version today; any other part
 is refused by name until its kind and style are in `parts.ROUTED`.
 
 To improve a drawing, add a version: a record in `assets/parts.json`, the drawing registered as `<name>@<N>`, a

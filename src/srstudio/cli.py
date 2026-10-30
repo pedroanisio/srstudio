@@ -13,6 +13,7 @@ import os
 import runpy
 import shutil
 import sys
+from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
 
@@ -128,12 +129,12 @@ def main(argv=None):
             print(json.dumps([s.facts() for s in STYLES.values()], indent=2, ensure_ascii=False))
             return 0
         for s in STYLES.values():
-            parts = registry.entries(style=s.slug)
-            own = [e for e in parts if e.style == s.slug]
+            entries = registry.entries(style=s.slug)
+            own = [e for e in entries if e.style == s.slug]
             palettes = ", ".join(p.name for p in s.palettes)
             print(
                 f"{s.name:<8} {s.slug:<7} {s.frame:<22} {s.timing:<9} palettes: {palettes:<14} "
-                f"parts: {len(own)} own + {len(parts) - len(own)} shared  ({s.summary})"
+                f"parts: {len(own)} own + {len(entries) - len(own)} shared  ({s.summary})"
             )
         return 0
     if args.cmd == "fonts":
@@ -269,12 +270,15 @@ def main(argv=None):
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
-            if script.endswith(".py"):
-                sys.path.insert(0, str(Path(script).resolve().parent))  # sibling helpers such as episodes/_common.py
-                runpy.run_path(script, run_name="__main__")
-            else:
-                runpy.run_module(script, run_name="__main__")
-        except SceneCheckError as exc:
+            with usage.recorded(Path(args.root)) if args.root else nullcontext():
+                if script.endswith(".py"):
+                    sys.path.insert(
+                        0, str(Path(script).resolve().parent)
+                    )  # sibling helpers such as episodes/_common.py
+                    runpy.run_path(script, run_name="__main__")
+                else:
+                    runpy.run_module(script, run_name="__main__")
+        except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
             return 1
         return 0

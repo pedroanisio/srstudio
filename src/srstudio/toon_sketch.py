@@ -39,7 +39,6 @@ from . import (
     foley,
     fonts,
     head_motion,
-    parts,
     recording,
     sketch,
     soundtrack,
@@ -237,7 +236,6 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         raise StagingError("the Toon style has no font to measure its captions in")
     font = (root / TOON.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
-    drawn: dict[str, int] = {}
     for n, app in enumerate(sketch.appearances(sk.beats, sk.end), 1):
         g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
         back = cv.group(g, cv.uid("g"))
@@ -249,8 +247,6 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             toon_head.figure(cv, g, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
         else:
             sketch.drawer(app.who, staging.versions)(cv, g, poses, app.end, taps, enter=app.start, **extra)
-        name = sketch.part_of(app.who)
-        drawn[name] = parts.resolved(name, staging.versions)
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
@@ -267,7 +263,6 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
     subtitles.write_srt(root / f"{sk.slug}.srt", [(p.start, p.end, p.caption) for p in t.phrases])
-    parts.write_record(root, drawn)
     return ep
 
 

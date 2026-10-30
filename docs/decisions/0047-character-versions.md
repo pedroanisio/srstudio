@@ -7,7 +7,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 - Status: accepted (2026-10-30), amended the same day to cover every kind of part (see the amendment below; the
   decisions keep the names they had when written). Implemented: `srstudio.parts`, `srstudio.specimens`,
   `srstudio.catalog_specimens`, `assets/parts.json`, `parts.Rig`, `toon_rigs.rig_of`, `toon_head.reach`,
-  `Release.parts`, `releases.unpinned`, `usage.Report.pin_drift`, `sketch.drawer`, `toon_sketch.Staging.versions`, `srstudio parts`; `tests/test_parts.py`,
+  `Release.parts`, `releases.unpinned`, `usage.recorded`, `usage.Report.pin_drift`, `sketch.drawer`, `toon_sketch.Staging.versions`, `srstudio parts`; `tests/test_parts.py`,
   `tests/test_specimens.py`, `tests/test_catalog_specimens.py`, `tests/test_releases.py`, `tests/test_social.py`,
   `tests/test_usage.py`, `tests/test_cli.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
@@ -134,3 +134,14 @@ part, not only characters.
    - `toon_rigs.rig_of` refuses a rig the operator has not approved, so a proposed rig moves no reel.
    - The sloth, the goat, the hamster and fox version 2 carry approved rigs that quote the operator's "head motion
      approved".
+8. **Every build records what it drew, and a delivery needs that record.** `srstudio build` traces the build
+   (`usage.recorded`) and leaves `parts.json` in the project with every part it drew, so the gate covers every kind and
+   every style, not only the characters Toon's sketches used to note for themselves. Tracing adds a little over a second
+   to a build. A failed build removes the older record, and a build that drew two versions of a part is refused by
+   name, since a release pins one.
+   - `instagram_posts.py deliver` refuses a video it would write whose project has no record: the videos it names, or
+     every video that drifted. `check` does not ask for one, and neither does a delivery of other videos, because a
+     published project was built before records and stays as it is.
+   - A character moving its head is drawn by `toon_head.figure` from its rig and not through its registered builder, so
+     the trace counts that call for the part the rig belongs to.
+
