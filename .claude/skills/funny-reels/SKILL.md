@@ -391,6 +391,9 @@ place; a test fails if one changes, and the fix is a new version, not a new dige
 until the operator has seen its proof clip. Never set `approved` or write `approval` yourself: only the operator's
 decision does that, and the record quotes their words.
 
+A head rig is a record on its version, by the same rules: `srstudio parts --json` shows it, and a reel cannot move a
+head whose rig the operator has not approved. Changing an approved rig means adding a version of the character.
+
 ## Character diversity
 
 Rotate the cast and widen it. Before casting, run the usage report and prefer characters and settings that recent

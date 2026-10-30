@@ -29,7 +29,7 @@ from typing import Any
 
 from sr_core.scene import Scene
 
-from . import blob, cel, collage, gloss, parts, registry, rig, stick, toon
+from . import blob, cel, collage, gloss, parts, registry, rig, stick, toon, toon_head, toon_rigs
 from .canvas import Canvas, flat_counter
 from .errors import SrstudioError
 from .timeline import Take
@@ -45,9 +45,11 @@ __all__ = [
     "DrawingChangedError",
     "SpecimenError",
     "check",
+    "check_rig",
     "digest",
     "fingerprint",
     "load_parts",
+    "rig_digest",
 ]
 
 PLACE = frozenset({"x", "y", "scaleX", "scaleY", "rotation", "opacity", "anchorX", "anchorY", "start", "end"})
@@ -150,6 +152,15 @@ def _newer_toon(entry: registry.Entry) -> Canvas:
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
     entry(cv, cv.comp, poses, seconds, _taps(poses), mouths=_track(VISEMES))
+    return cv
+
+
+def _rigged(rig: toon_head.HeadRig) -> Canvas:
+    """A rig through every kind a drawn face has, its head at rest and at the corners of what it can reach."""
+    poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
+    seconds = len(poses) * STEP
+    cv = _stage("toon", seconds)
+    toon_head.figure(cv, cv.comp, rig, poses, seconds, toon_head.reach(rig), _taps(poses), mouths=_track(VISEMES))
     return cv
 
 
@@ -346,4 +357,22 @@ def check(name: str, number: int = 1) -> None:
         raise DrawingChangedError(
             f"{name} version {number} is approved and immutable, and it no longer draws what was approved. "
             f"Restore its drawing and add a version: an approved look is never revised in place"
+        )
+
+
+def rig_digest(name: str, number: int = 1) -> str:
+    """The digest of the head rig of version ``number`` of ``name``, a drawing outside that version's own digest."""
+    part = parts.part_name(name, number)
+    if part not in toon_rigs.RIGS:
+        raise SpecimenError(f"{name} version {number} has no head rig")
+    return fingerprint(_rigged(toon_rigs.RIGS[part]).scene.to_bytes(layout="pretty"))
+
+
+def check_rig(name: str, number: int = 1) -> None:
+    """Raises :class:`DrawingChangedError` when an approved rig no longer draws what was approved."""
+    held = parts.get(name).version(number).rig
+    if held is not None and held.status == "approved" and rig_digest(name, number) != held.drawing:
+        raise DrawingChangedError(
+            f"{name} version {number}'s head rig is approved and immutable, and it no longer draws what was approved. "
+            f"Restore its drawing and add a version: an approved rig is never revised in place"
         )
