@@ -19,9 +19,10 @@ hand.
 import os
 
 from _common import project_root
-from cup_fee_audio import READINGS
+from cup_fee_audio import INTERVIEW, READINGS
 from instagram_posts import POSTS
 from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, locations, props
+from srstudio import interview as iv_audio
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -33,6 +34,7 @@ ep = Episode(
         description="Café comedy: a three-dollar black coffee, a card reader that beeps a new fee onto it with every "
         "line, and the price of the coffee itself. Native vector animation; ElevenLabs dialogue and sound effects.",
         root=project_root(__file__),
+        **iv_audio.spec_font(INTERVIEW.font, project_root(__file__)),  # the pinned Google caption face
         seed=22042,
         background="#F0DDC0",
         palette=CAFE,

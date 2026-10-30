@@ -18,7 +18,7 @@ after :data:`LEAD`. The voices are the café's own, Jessica (Ava) and Liam (Milo
 
 from __future__ import annotations
 
-from srstudio.interview import Interview, Schedule, Sound, Spoken, Timing, main
+from srstudio.interview import NOTO_SANS_BOLD, Interview, Schedule, Sound, Spoken, Timing, main
 from srstudio.song import Singer
 
 SEED = 22041
@@ -71,6 +71,7 @@ INTERVIEW = Interview(
     reaction_after=0.70,  # "The coffee fee.", a beat, then the tip tablet swivels round to him
     reaction_hold=1.70,  # the tablet faces him; his blink; the last frame
     end_card=0.0,  # no card: the tablet is the last frame
+    font=NOTO_SANS_BOLD,  # the batch's caption face (Google Fonts), pinned under assets/fonts
 )
 LEAD = 1.15  # the still first second (arm A): nothing moves and no caption shows before 1.0 s
 STARE = 0.90  # after "Cash fee.": the reader, then Milo, before he asks
