@@ -6,6 +6,8 @@ buzzes it, a code or password prompt, a dating profile, a declined payment, a lo
 :func:`speaker` is a smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light
 chasing round), speaking (the ring pulsing) or an error (red). :func:`receipt` hangs from a printer's slot and
 unrolls, its rows of items and prices showing as the paper passes them; a longer receipt is a longer strip.
+:func:`take_a_number` is the deli-counter dispenser on its pole, a ticket sticking out of it, under a NOW SERVING
+display whose number changes on cue.
 
 Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
 drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
@@ -545,4 +547,75 @@ def receipt(
             Slot(TEXT_X, y0, TEXT_W, h, size, align="end").draw(cv, row, texts[1], "receipt-text")
         top = bottom
     _rect(cv, g, PAPER_X - 6, -12, PAPER_W + 12, 14, PRINTER, INK_W * 0.6, radius=5)  # the slot, over the paper's top
+    return box
+
+
+# -- take a number -----------------------------------------------------------------------------------------------------
+DISPENSER, POLE, DISPLAY, LED, LED_LABEL = "#d63c3c", "#9aa0a8", "#1b1b2a", "#ff4d4d", "#ffb020"
+SERVING_LABEL = "NOW SERVING"
+LABEL_SLOT = Slot(-60, -280, 120, 20, 24, LED_LABEL)
+NUMBER_SLOT = Slot(-60, -258, 120, 46, 60, LED)
+TICKET_SLOT = Slot(25, -190, 50, 28, 32)
+NUMBER_MAX = 999
+TAKE_BOX: Box = (-68.0, -288.0, 80.0, 8.0)
+
+
+def _number(value, slot: Slot, measure: Measure, what: str) -> str:
+    """A whole number 0 to :data:`NUMBER_MAX` or a short text, as the text the slot letters."""
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= NUMBER_MAX:
+        value = str(value)
+    if not isinstance(value, str) or not value.strip():
+        raise ToonDataError(f"{what} is a number 0 to {NUMBER_MAX} or a short text, got {value!r}")
+    return slot.fit(measure, value, what)
+
+
+@register(
+    "prop",
+    "toon-take-a-number",
+    summary="A take-a-number dispenser on its pole, a ticket sticking out of it, under a NOW SERVING display whose "
+    "number changes on cue",
+)
+def take_a_number(
+    cv: Canvas,
+    parent,
+    serving: Sequence[tuple[float, int | str]],
+    *,
+    measure: Measure,
+    ticket: int | str | None = None,
+    at: tuple[float, float] = (440, 826),
+    scale: float = 1.0,
+    id: str = "take-a-number",
+) -> Box:
+    """The pole stands at reference ``at``; ``serving`` are ``(second, number)`` from 0 in rising seconds, each
+    number (0 to :data:`NUMBER_MAX`, or a short text such as ``"A7"``) shown until the next; ``ticket`` is the number
+    on the ticket sticking out of the dispenser (none when ``None``). Returns its footprint."""
+    box = _place("take-a-number", at, scale, TAKE_BOX)
+    if not serving:
+        raise ToonDataError("a take-a-number display needs at least one number")
+    for k, pair in enumerate(serving):
+        if not (isinstance(pair, tuple | list) and len(pair) == 2):
+            raise ToonDataError(f"take-a-number state {k}: a (second, number) pair, got {pair!r}")
+    times = _rising([t for t, _ in serving], "take-a-number state")
+    numbers = [_number(n, NUMBER_SLOT, measure, f"take-a-number state {k}: the number")
+               for k, (_, n) in enumerate(serving)]  # fmt: skip
+    tab = None if ticket is None else _number(ticket, TICKET_SLOT, measure, "the ticket")
+    label = LABEL_SLOT.fit(measure, SERVING_LABEL, "the display's label")
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    _ellipse(cv, g, -30, -6, 60, 12, SHADOW, 0, opacity=0.16)
+    _ellipse(cv, g, -24, -10, 48, 12, PRINTER, FINE_W * 0.6)  # the foot
+    _rect(cv, g, -5, -212, 10, 206, POLE, FINE_W * 0.6, radius=3)
+    if tab is not None:
+        t = cv.group(g, f"{id}-ticket")
+        _rect(cv, t, 24, -190, 52, 30, PAPER, FINE_W * 0.6, radius=2)
+        TICKET_SLOT.draw(cv, t, tab, "ticket-text")
+    _rect(cv, g, -28, -196, 56, 48, DISPENSER, INK_W * 0.8, radius=20)
+    _rect(cv, g, -16, -178, 32, 7, PRINTER, 0, radius=3)  # the slot the tickets come out of
+    d = cv.group(g, f"{id}-display")
+    _rect(cv, d, -64, -284, 128, 74, DISPLAY, INK_W * 0.8, radius=8)
+    LABEL_SLOT.draw(cv, d, label, "display-text")
+    for k, (t0, text) in enumerate(zip(times, numbers, strict=True)):
+        n = cv.group(g, f"{id}-serving-{k}")
+        _shown(cv, n, t0, times[k + 1] if k + 1 < len(times) else None)
+        NUMBER_SLOT.draw(cv, n, text, "display-text")
     return box
