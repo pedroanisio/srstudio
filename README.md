@@ -1726,7 +1726,7 @@ a singing porcelain toilet. The style is decided in
 
 - **Cast and sets**, [src/srstudio/collage.py](src/srstudio/collage.py) and
   [src/srstudio/collage_sets.py](src/srstudio/collage_sets.py): ten characters as data (`collage.LOOKS`, drawn by
-  `collage.DRAWERS`), eight painted rooms (`collage_sets.SETS`), and the paper sign, chart and TV props.
+  `collage.DRAWERS`), twelve painted rooms (`collage_sets.SETS`), and the paper sign, chart and TV props.
 - **The build**, [src/srstudio/collage_sketch.py](src/srstudio/collage_sketch.py): a `Staging` per episode turns a
   sketch's beats into one shot per appearance, with crash zooms, the sting, Kai's beep, lip sync and tinted
   caption pills. `Staging.cast` decides who is drawn in a shot. `Staging.still` holds the first shot still for
@@ -1741,6 +1741,13 @@ a singing porcelain toilet. The style is decided in
   beats; outside its spans it draws the speaker alone.
 - **The family photo's props**, [src/srstudio/collage_photo.py](src/srstudio/collage_photo.py): the self-timer
   on a stack of books, the viewfinder's countdown, the sofa front, the flash and the printed photo.
+- **Everyday props**, [src/srstudio/collage_everyday.py](src/srstudio/collage_everyday.py): food, a phone with a
+  screen the scene writes on, message bubbles, a bedside clock, a cereal box, a duvet and a tablecloth, a salt
+  shaker, chip bags and chips, a certificate, a snapshot, a gust of air, walking bills, confetti that can turn and
+  fall back up, an arm on its own, a thumbs-up, and `chew`, which keeps a mouth working while a character eats.
+- **A change of room and the extra sounds**: `Staging.setting` picks a shot's set from the beats (a reel that moves
+  from the sofa to the bed), and rows can start on a later word of a line, `(line, word, caption)`. Beats also take
+  `swat`, `ding`, `crunch` and `hiss:<seconds>`, written by `sound_effects` from `srstudio.foley`.
 
 An episode is `episodes/<name>_data.py` (the lines, the timed beats and the `Staging`), `episodes/<name>.py`
 (the build) and `episodes/<name>_audio.py` (the ElevenLabs recording, every line heard back by speech-to-text, no

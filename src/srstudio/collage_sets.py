@@ -30,6 +30,10 @@ __all__ = [
     "therapy",
     "stage",
     "bathroom",
+    "bedroom",
+    "supermarket",
+    "dining_room",
+    "bus_stop",
     "sign",
     "chart",
     "tv",
@@ -60,11 +64,12 @@ def _backdrop(cv: Canvas, g) -> object:
     return back
 
 
-def _finish(cv: Canvas, back) -> None:
+def _finish(cv: Canvas, back, lit: bool = True) -> None:
     """A soft light from above and a painted vignette over a set's backdrop (the engine's vignette effect blacks out
-    the frame on scene-render 0.8, so it is painted)."""
-    light = cv.rgrad("collage-light", [(0, "#fff6e04d"), (1, "#fff6e000")], (0.5, 0.42, 0.5))
-    cv.rect(back, 0, 0, cv.width, cv.height, light)
+    the frame on scene-render 0.8, so it is painted); a night set is not ``lit``."""
+    if lit:
+        light = cv.rgrad("collage-light", [(0, "#fff6e04d"), (1, "#fff6e000")], (0.5, 0.42, 0.5))
+        cv.rect(back, 0, 0, cv.width, cv.height, light)
     shade = cv.rgrad("collage-vignette", [(0, "#2b183800"), (0.62, "#2b183800"), (1, "#2b183870")], (0.5, 0.5, 0.75))
     cv.rect(back, 0, 0, cv.width, cv.height, shade)
 
@@ -79,6 +84,10 @@ SHELVES: dict[str, tuple[float, float]] = {
     "therapy": (380.0, 300.0),
     "stage": (690.0, 320.0),
     "bathroom": (730.0, 290.0),
+    "bedroom": (700.0, 320.0),
+    "supermarket": (40.0, 330.0),
+    "dining-room": (690.0, 330.0),
+    "bus-stop": (40.0, 330.0),
 }
 SHELF_DEPTH = 26.0
 
@@ -396,6 +405,144 @@ def bathroom(cv: Canvas, parent) -> object:
     return g
 
 
+@register(
+    "location",
+    "collage-bedroom",
+    summary="A bedroom at night: dark blue wall, a moonlit window, a padded headboard, pillows and the cactus on a "
+    "wall shelf",
+)
+def bedroom(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "bedroom", "#141a3a", "#2c2f5e")
+    night = cv.grad("collage-bedroom-window", [(0, "#2a3a80"), (1, "#7d8fd6")], (0, 0, 0, 1))
+    cv.rect(back, 90, 800, 340, 460, night, "#0b0f28", 12)
+    cv.ellipse(back, 280, 850, 110, 110, "#fbf5cf")
+    cv.line(back, 260, 800, 260, 1260, "#0b0f28", 10)
+    cv.line(back, 90, 1030, 430, 1030, "#0b0f28", 10)
+    head = [(40, 1210), (1040, 1210), (1040, 1620), (40, 1620)]
+    draw_shapes(cv, back, _paper(_cut("bed-headboard", head, 4), "#3d2c5e"))
+    for x in (250, 540, 830):
+        cv.ellipse(back, x - 26, 1340, 52, 52, "#2d2048")
+    cv.rect(
+        back, 0, 1620, cv.width, 300, cv.grad("collage-bedroom-bed", [(0, "#5a6fa8"), (1, "#2f3c6e")], (0, 0, 0, 1))
+    )
+    _finish(cv, back, lit=False)
+    _shelf(cv, g, "bedroom", "#3d2c5e")
+    return g
+
+
+@register(
+    "location",
+    "collage-supermarket",
+    summary="A supermarket aisle: strip lights, shelves of plain paper packets with price tags, and the cactus on an "
+    "end shelf",
+)
+def supermarket(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "supermarket", "#eef4f2", "#c9dbd6")
+    for x in (130, 430, 730):
+        cv.rect(back, x, 120, 220, 26, "#ffffff")
+        glow = cv.rgrad("collage-supermarket-glow", [(0, "#ffffffb0"), (1, "#ffffff00")])
+        cv.ellipse(back, x - 90, 0, 400, 300, glow)
+    packets = ("#e63946", "#f4a261", "#2a9d8f", "#457b9d", "#e9c46a", "#9b5de5")
+    for row, y in enumerate((860, 1110, 1360)):
+        cv.rect(back, 0, y + 200, cv.width, 34, "#5f7470")
+        for col in range(9):
+            colour = packets[(row * 2 + col) % len(packets)]
+            h = 170 + (col * 37 + row * 23) % 26
+            cv.rect(back, 12 + col * 120, y + 200 - h, 104, h, colour, INK, 3, radius=8)
+            cv.rect(back, 30 + col * 120, y + 200 - h + 40, 68, 54, "#fffaf0", opacity=0.75, radius=6)
+            cv.rect(back, 36 + col * 120, y + 206, 56, 22, "#fff3b0")
+    cv.rect(
+        back,
+        0,
+        1610,
+        cv.width,
+        310,
+        cv.grad("collage-supermarket-floor", [(0, "#b6c6c2"), (1, "#7f9490")], (0, 0, 0, 1)),
+    )
+    _finish(cv, back)
+    _shelf(cv, g, "supermarket", "#3f5552")
+    return g
+
+
+@register(
+    "location",
+    "collage-dining-room",
+    summary="A dining room: sage wallpaper, a dusk window, a sideboard with plates and a laid table's cloth, the "
+    "cactus on a shelf",
+)
+def dining_room(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "dining", "#a7bfa0", "#7f9d80")
+    for y in range(40, 1500, 150):
+        for x in range(0 if y % 300 else 60, 1080, 120):
+            cv.ellipse(back, x, y, 16, 16, "#c7dbbf", opacity=0.45)
+    dusk = cv.grad("collage-dining-window", [(0, "#f2a65a"), (1, "#7b4f8e")], (0, 0, 0, 1))
+    cv.rect(back, 110, 800, 300, 400, dusk, "#5a4632", 12)
+    cv.line(back, 260, 800, 260, 1200, "#5a4632", 9)
+    side = [(600, 1120), (1060, 1120), (1060, 1500), (600, 1500)]
+    draw_shapes(cv, back, _paper(_cut("dining-sideboard", side, 3), "#6b4f3a"))
+    for x in (690, 830, 970):
+        cv.ellipse(back, x - 52, 1016, 104, 104, "#f8f3e6", INK, 3)
+        cv.ellipse(back, x - 26, 1042, 52, 52, "#e3dccb")
+    glow = cv.rgrad("collage-dining-glow", [(0, "#ffe9b0a0"), (1, "#ffe9b000")])
+    cv.ellipse(back, 180, 900, 720, 720, glow)
+    cv.rect(
+        back, 0, 1590, cv.width, 330, cv.grad("collage-dining-cloth", [(0, "#f4ecd8"), (1, "#d7c9a8")], (0, 0, 0, 1))
+    )
+    _finish(cv, back)
+    _shelf(cv, g, "dining-room", "#5a4632")
+    return g
+
+
+@register(
+    "location",
+    "collage-bus-stop",
+    summary="A bus stop in the morning: pale sky, a row of far buildings, the shelter's glass and bench, the cactus "
+    "on the shelter's ledge",
+)
+def bus_stop(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "bus-stop", "#9bd4e4", "#fbe7c6")
+    for i, (w, h, colour) in enumerate(
+        (
+            (170, 520, "#b79ced"),
+            (130, 640, "#957fef"),
+            (210, 460, "#efc3e6"),
+            (150, 700, "#b79ced"),
+            (190, 540, "#957fef"),
+        )
+    ):
+        x = 10 + i * 220
+        cv.rect(back, x, 1500 - h, w, h, colour, opacity=0.8)
+        for row in range(int(h // 90)):
+            for col in range(3):
+                cv.rect(back, x + 18 + col * 50, 1500 - h + 30 + row * 90, 28, 46, "#fff7d6", opacity=0.6)
+    cv.rect(back, 0, 1500, cv.width, 130, "#8d99ae")
+    cv.rect(
+        back,
+        0,
+        1620,
+        cv.width,
+        300,
+        cv.grad("collage-bus-stop-pavement", [(0, "#cfd2cd"), (1, "#979b98")], (0, 0, 0, 1)),
+    )
+    for x in (30, 1020):
+        cv.rect(back, x, 760, 26, 860, "#2b3a55")
+    cv.rect(back, 0, 740, cv.width, 34, "#2b3a55")
+    cv.rect(back, 56, 774, 964, 700, "#dff3ff", opacity=0.18)
+    bench = [(150, 1480), (930, 1480), (930, 1530), (150, 1530)]
+    draw_shapes(cv, back, _paper(_cut("bus-stop-bench", bench, 2), "#e76f51"))
+    _finish(cv, back)
+    _shelf(cv, g, "bus-stop", "#2b3a55")
+    return g
+
+
 SETS: dict[str, Callable[[Canvas, object], object]] = {
     "boardroom": boardroom,
     "classroom": classroom,
@@ -405,6 +552,10 @@ SETS: dict[str, Callable[[Canvas, object], object]] = {
     "therapy": therapy,
     "stage": stage,
     "bathroom": bathroom,
+    "bedroom": bedroom,
+    "supermarket": supermarket,
+    "dining-room": dining_room,
+    "bus-stop": bus_stop,
 }
 
 

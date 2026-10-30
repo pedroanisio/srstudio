@@ -13,6 +13,7 @@ from . import (  # noqa: F401  (registers builders)
     cast,
     cel,
     collage,
+    collage_everyday,
     collage_photo,
     collage_sets,
     gloss,

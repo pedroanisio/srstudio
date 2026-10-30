@@ -505,108 +505,312 @@
     }
   },
   "parts": {
-    "candidate": {"title": "O candidato"},
-    "manager": {"title": "O gerente"},
-    "talking-printer": {"title": "Impressora falante"},
-    "saga-droid": {"title": "O droide do bar"},
-    "saga-enforcer": {"title": "Enforcer Seven"},
-    "saga-gloom": {"title": "Lord Gloom"},
-    "saga-juno": {"title": "Juno, a jovem heroína"},
-    "saga-rook": {"title": "Rook"},
-    "juno": {"title": "Juno, a colega"},
-    "stick-rig": {"title": "O boneco articulado"},
-    "toon-bib-insert": {"title": "Babador em close"},
-    "toon-dental-lamp": {"title": "Refletor de dentista"},
-    "toon-dental-tray": {"title": "Bandeja de instrumentos"},
-    "toon-fox": {"title": "A raposa"},
-    "toon-fox@2": {"title": "A raposa de contorno"},
-    "toon-goat": {"title": "A cabra lilás"},
-    "toon-hamster": {"title": "O hamster"},
-    "toon-hedgehog": {"title": "O ouriço"},
-    "toon-probe": {"title": "Sonda"},
-    "toon-raccoon": {"title": "O guaxinim"},
-    "toon-sloth": {"title": "A preguiça"},
-    "answer-bubble": {"title": "Número da resposta"},
-    "connected-card": {"title": "Cartão de conexão"},
-    "dashboard": {"title": "Painel de status"},
-    "quiz-card": {"title": "Cartão de pergunta"},
-    "saga-hook": {"title": "Gancho do Guia"},
-    "scorecard": {"title": "Placar final"},
-    "cafe": {"title": "Interior do café"},
-    "collage-boardroom": {"title": "Sala da diretoria"},
-    "collage-classroom": {"title": "Sala de aula com lousa"},
-    "ink-printer-shot": {"title": "Plano da impressora"},
-    "ink-wide": {"title": "Mesa larga, plano geral"},
-    "office-reverse": {"title": "Escritório, contraplano"},
-    "office-wide": {"title": "Escritório, plano geral"},
-    "park": {"title": "Parque"},
-    "saga-cantina": {"title": "Cantina do deserto"},
-    "saga-cantina-bar": {"title": "Balcão da cantina"},
-    "saga-cockpit": {"title": "Cabine do cargueiro"},
-    "saga-cockpit-console": {"title": "Console da cabine"},
-    "saga-space": {"title": "Espaço profundo"},
-    "stick-classroom": {"title": "Sala de aula do primário"},
-    "toon-counter": {"title": "Sala de espera sob luz fria"},
-    "toon-lounge": {"title": "Sala de estar à noite"},
-    "bean-jar": {"title": "Pote de grãos de café"},
-    "bench": {"title": "Banco de praça"},
-    "blinds-window": {"title": "Janela com persiana"},
-    "building": {"title": "Prédio de apartamentos"},
-    "cafe-window": {"title": "Janela do café"},
-    "chair": {"title": "Cadeira de escritório"},
-    "espresso-machine": {"title": "Máquina de espresso"},
-    "globe-pendant": {"title": "Pendente de globo"},
-    "laptop": {"title": "Laptop aberto"},
-    "menu-board": {"title": "Cardápio de giz"},
-    "office-art": {"title": "Quadro abstrato"},
-    "papers": {"title": "Pilha de papéis"},
-    "park-sign": {"title": "Placa do parque"},
-    "pastry-stand": {"title": "Prato de croissants"},
-    "pendant-light": {"title": "Luminária pendente"},
-    "plant": {"title": "Planta em vaso"},
-    "reception-counter": {"title": "Balcão de recepção"},
-    "shrub": {"title": "Arbusto"},
-    "silent-phone": {"title": "Celular no silencioso"},
-    "slat-wall": {"title": "Painel de ripas"},
-    "tree": {"title": "Árvore do parque"},
-    "whiteboard": {"title": "Quadro branco com gráfico"},
-    "woodgrain": {"title": "Veios de madeira"},
-    "gloss-door": {"title": "Porta de saída"},
-    "gloss-ticket": {"title": "Senha de fila"},
-    "ink-desk": {"title": "Tampo da mesa larga"},
-    "ink-laptop": {"title": "Laptop a traço"},
-    "saga-cube": {"title": "Cubo de batalha"},
-    "saga-fighter": {"title": "Caça do Diretório"},
-    "saga-freighter": {"title": "Cargueiro do Rook"},
-    "saga-handbook": {"title": "O Guia"},
-    "soft-chair": {"title": "Cadeira de madeira"},
-    "soft-coffee-machine": {"title": "Cafeteira da copa"},
-    "soft-desk": {"title": "Mesa de madeira"},
-    "soft-fridge": {"title": "Geladeira pastel"},
-    "soft-laptop": {"title": "Laptop Soft"},
-    "stick-cockpit": {"title": "Painel do motorista"},
-    "stick-ride": {"title": "Balanço do carro"},
-    "toon-clipboard": {"title": "Prancheta"},
-    "toon-bedroom": {"title": "Quarto à noite"},
-    "toon-day-card": {"title": "Cartão dos dias"},
-    "toon-desk-lamp": {"title": "Luminária de mesa"},
-    "toon-finger": {"title": "Mão apontando"},
-    "toon-hallway": {"title": "Corredor de casa"},
-    "toon-horse": {"title": "Cavalo cinza"},
-    "toon-key-line": {"title": "Faixa de uma frase"},
-    "toon-ledge": {"title": "Tampo assinado"},
-    "toon-phone": {"title": "Smartphone"},
-    "toon-plant": {"title": "Planta de folhas brilhantes"},
-    "toon-quilt": {"title": "Colcha de retalhos"},
-    "toon-receipt": {"title": "Nota fiscal"},
-    "toon-speaker": {"title": "Caixa inteligente"},
-    "toon-sink": {"title": "Pia com a panela de molho"},
-    "toon-surgery": {"title": "Consultório de dentista"},
-    "toon-take-a-number": {"title": "Dispensador de senhas"},
-    "toon-thermostat": {"title": "Termostato"},
-    "toon-tooth-photo": {"title": "Foto do dente"},
-    "toon-vent": {"title": "Grelha de ventilação"},
-    "toon-watering-can": {"title": "Regador"}
+    "candidate": {
+      "title": "O candidato"
+    },
+    "manager": {
+      "title": "O gerente"
+    },
+    "talking-printer": {
+      "title": "Impressora falante"
+    },
+    "saga-droid": {
+      "title": "O droide do bar"
+    },
+    "saga-enforcer": {
+      "title": "Enforcer Seven"
+    },
+    "saga-gloom": {
+      "title": "Lord Gloom"
+    },
+    "saga-juno": {
+      "title": "Juno, a jovem heroína"
+    },
+    "saga-rook": {
+      "title": "Rook"
+    },
+    "juno": {
+      "title": "Juno, a colega"
+    },
+    "stick-rig": {
+      "title": "O boneco articulado"
+    },
+    "toon-bib-insert": {
+      "title": "Babador em close"
+    },
+    "toon-dental-lamp": {
+      "title": "Refletor de dentista"
+    },
+    "toon-dental-tray": {
+      "title": "Bandeja de instrumentos"
+    },
+    "toon-fox": {
+      "title": "A raposa"
+    },
+    "toon-fox@2": {
+      "title": "A raposa de contorno"
+    },
+    "toon-goat": {
+      "title": "A cabra lilás"
+    },
+    "toon-hamster": {
+      "title": "O hamster"
+    },
+    "toon-hedgehog": {
+      "title": "O ouriço"
+    },
+    "toon-probe": {
+      "title": "Sonda"
+    },
+    "toon-raccoon": {
+      "title": "O guaxinim"
+    },
+    "toon-sloth": {
+      "title": "A preguiça"
+    },
+    "answer-bubble": {
+      "title": "Número da resposta"
+    },
+    "connected-card": {
+      "title": "Cartão de conexão"
+    },
+    "dashboard": {
+      "title": "Painel de status"
+    },
+    "quiz-card": {
+      "title": "Cartão de pergunta"
+    },
+    "saga-hook": {
+      "title": "Gancho do Guia"
+    },
+    "scorecard": {
+      "title": "Placar final"
+    },
+    "cafe": {
+      "title": "Interior do café"
+    },
+    "collage-boardroom": {
+      "title": "Sala da diretoria"
+    },
+    "collage-classroom": {
+      "title": "Sala de aula com lousa"
+    },
+    "ink-printer-shot": {
+      "title": "Plano da impressora"
+    },
+    "ink-wide": {
+      "title": "Mesa larga, plano geral"
+    },
+    "office-reverse": {
+      "title": "Escritório, contraplano"
+    },
+    "office-wide": {
+      "title": "Escritório, plano geral"
+    },
+    "park": {
+      "title": "Parque"
+    },
+    "saga-cantina": {
+      "title": "Cantina do deserto"
+    },
+    "saga-cantina-bar": {
+      "title": "Balcão da cantina"
+    },
+    "saga-cockpit": {
+      "title": "Cabine do cargueiro"
+    },
+    "saga-cockpit-console": {
+      "title": "Console da cabine"
+    },
+    "saga-space": {
+      "title": "Espaço profundo"
+    },
+    "stick-classroom": {
+      "title": "Sala de aula do primário"
+    },
+    "toon-counter": {
+      "title": "Sala de espera sob luz fria"
+    },
+    "toon-lounge": {
+      "title": "Sala de estar à noite"
+    },
+    "bean-jar": {
+      "title": "Pote de grãos de café"
+    },
+    "bench": {
+      "title": "Banco de praça"
+    },
+    "blinds-window": {
+      "title": "Janela com persiana"
+    },
+    "building": {
+      "title": "Prédio de apartamentos"
+    },
+    "cafe-window": {
+      "title": "Janela do café"
+    },
+    "chair": {
+      "title": "Cadeira de escritório"
+    },
+    "espresso-machine": {
+      "title": "Máquina de espresso"
+    },
+    "globe-pendant": {
+      "title": "Pendente de globo"
+    },
+    "laptop": {
+      "title": "Laptop aberto"
+    },
+    "menu-board": {
+      "title": "Cardápio de giz"
+    },
+    "office-art": {
+      "title": "Quadro abstrato"
+    },
+    "papers": {
+      "title": "Pilha de papéis"
+    },
+    "park-sign": {
+      "title": "Placa do parque"
+    },
+    "pastry-stand": {
+      "title": "Prato de croissants"
+    },
+    "pendant-light": {
+      "title": "Luminária pendente"
+    },
+    "plant": {
+      "title": "Planta em vaso"
+    },
+    "reception-counter": {
+      "title": "Balcão de recepção"
+    },
+    "shrub": {
+      "title": "Arbusto"
+    },
+    "silent-phone": {
+      "title": "Celular no silencioso"
+    },
+    "slat-wall": {
+      "title": "Painel de ripas"
+    },
+    "tree": {
+      "title": "Árvore do parque"
+    },
+    "whiteboard": {
+      "title": "Quadro branco com gráfico"
+    },
+    "woodgrain": {
+      "title": "Veios de madeira"
+    },
+    "gloss-door": {
+      "title": "Porta de saída"
+    },
+    "gloss-ticket": {
+      "title": "Senha de fila"
+    },
+    "ink-desk": {
+      "title": "Tampo da mesa larga"
+    },
+    "ink-laptop": {
+      "title": "Laptop a traço"
+    },
+    "saga-cube": {
+      "title": "Cubo de batalha"
+    },
+    "saga-fighter": {
+      "title": "Caça do Diretório"
+    },
+    "saga-freighter": {
+      "title": "Cargueiro do Rook"
+    },
+    "saga-handbook": {
+      "title": "O Guia"
+    },
+    "soft-chair": {
+      "title": "Cadeira de madeira"
+    },
+    "soft-coffee-machine": {
+      "title": "Cafeteira da copa"
+    },
+    "soft-desk": {
+      "title": "Mesa de madeira"
+    },
+    "soft-fridge": {
+      "title": "Geladeira pastel"
+    },
+    "soft-laptop": {
+      "title": "Laptop Soft"
+    },
+    "stick-cockpit": {
+      "title": "Painel do motorista"
+    },
+    "stick-ride": {
+      "title": "Balanço do carro"
+    },
+    "toon-clipboard": {
+      "title": "Prancheta"
+    },
+    "toon-bedroom": {
+      "title": "Quarto à noite"
+    },
+    "toon-day-card": {
+      "title": "Cartão dos dias"
+    },
+    "toon-desk-lamp": {
+      "title": "Luminária de mesa"
+    },
+    "toon-finger": {
+      "title": "Mão apontando"
+    },
+    "toon-hallway": {
+      "title": "Corredor de casa"
+    },
+    "toon-horse": {
+      "title": "Cavalo cinza"
+    },
+    "toon-key-line": {
+      "title": "Faixa de uma frase"
+    },
+    "toon-ledge": {
+      "title": "Tampo assinado"
+    },
+    "toon-phone": {
+      "title": "Smartphone"
+    },
+    "toon-plant": {
+      "title": "Planta de folhas brilhantes"
+    },
+    "toon-quilt": {
+      "title": "Colcha de retalhos"
+    },
+    "toon-receipt": {
+      "title": "Nota fiscal"
+    },
+    "toon-speaker": {
+      "title": "Caixa inteligente"
+    },
+    "toon-sink": {
+      "title": "Pia com a panela de molho"
+    },
+    "toon-surgery": {
+      "title": "Consultório de dentista"
+    },
+    "toon-take-a-number": {
+      "title": "Dispensador de senhas"
+    },
+    "toon-thermostat": {
+      "title": "Termostato"
+    },
+    "toon-tooth-photo": {
+      "title": "Foto do dente"
+    },
+    "toon-vent": {
+      "title": "Grelha de ventilação"
+    },
+    "toon-watering-can": {
+      "title": "Regador"
+    }
   },
   "gallery": [
     {
@@ -3932,128 +4136,505 @@
     {
       "section": "props",
       "name": "Tampo assinado",
-      "parts": ["toon-ledge"],
-      "shot": {"episode": "representative", "at": 0.5},
+      "parts": [
+        "toon-ledge"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 0.5
+      },
       "text": "Superfície simples no lugar da mesa, em carvalho, branco ou aço, com o cacto e o código nos lugares de sempre."
     },
     {
       "section": "props",
       "name": "Cavalo cinza",
-      "parts": ["toon-horse"],
-      "shot": {"episode": "representative", "at": 25.5},
+      "parts": [
+        "toon-horse"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 25.5
+      },
       "text": "Cabeça de frente, cara longa e olhar parado, cabresto e pálpebras que piscam. Não fala: só existe."
     },
     {
       "section": "locations",
       "name": "Corredor de casa",
-      "parts": ["toon-hallway"],
-      "shot": {"episode": "representative", "at": 25.5},
+      "parts": [
+        "toon-hallway"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 25.5
+      },
       "text": "Parede sálvia, rodapé alto, dois quadros e uma porta que abre para a varanda à noite."
     },
     {
       "section": "graphics",
       "name": "Faixa de uma frase",
-      "parts": ["toon-key-line"],
-      "shot": {"episode": "representative", "at": 0.5},
+      "parts": [
+        "toon-key-line"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 0.5
+      },
       "text": "Uma frase curta numa barra escura, abaixo do código, para ler o vídeo sem som no primeiro segundo."
     },
     {
       "section": "props",
       "name": "Termostato",
-      "parts": ["toon-thermostat"],
-      "shot": {"episode": "who-touched-it", "at": 0.5},
+      "parts": [
+        "toon-thermostat"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 0.5
+      },
       "text": "Parede, mostrador redondo e dois dígitos que mudam na hora certa. Um grau já basta."
     },
     {
       "section": "props",
       "name": "Mão apontando",
-      "parts": ["toon-finger"],
-      "shot": {"episode": "who-touched-it", "at": 0.5},
+      "parts": [
+        "toon-finger"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 0.5
+      },
       "text": "Antebraço, polegar, três dedos dobrados e um dedo em riste que vai aonde mandarem."
     },
     {
       "section": "props",
       "name": "Grelha de ventilação",
-      "parts": ["toon-vent"],
-      "shot": {"episode": "who-touched-it", "at": 8.7},
+      "parts": [
+        "toon-vent"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 8.7
+      },
       "text": "Grelha branca de parede, para quem sabe o que o ar andou fazendo."
     },
     {
       "section": "locations",
       "name": "Quarto à noite",
-      "parts": ["toon-bedroom"],
-      "shot": {"episode": "who-touched-it", "at": 3.5},
+      "parts": [
+        "toon-bedroom"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 3.5
+      },
       "text": "Parede escura, cabeceira de madeira, travesseiro e a lua na janela."
     },
     {
       "section": "props",
       "name": "Colcha de retalhos",
-      "parts": ["toon-quilt"],
-      "shot": {"episode": "who-touched-it", "at": 3.5},
+      "parts": [
+        "toon-quilt"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 3.5
+      },
       "text": "Colcha até o peito no lugar da mesa, com o criado-mudo levando o cacto e o código."
     },
     {
       "section": "props",
       "name": "Pia com a panela de molho",
-      "parts": ["toon-sink"],
-      "shot": {"episode": "its-soaking", "at": 8.9},
+      "parts": [
+        "toon-sink"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 8.9
+      },
       "text": "Bancada vista de cima, pia de aço e uma panela que, com o tempo, cria película, planta, caixa de correio e um sapinho que acena."
     },
     {
       "section": "props",
       "name": "Cartão dos dias",
-      "parts": ["toon-day-card"],
-      "shot": {"episode": "its-soaking", "at": 8.9},
+      "parts": [
+        "toon-day-card"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 8.9
+      },
       "text": "Cartão preso na geladeira, cabeçalho DAY e o número que sobe a cada corte."
     },
     {
       "section": "props",
       "name": "Regador",
-      "parts": ["toon-watering-can"],
-      "shot": {"episode": "its-soaking", "at": 10.9},
+      "parts": [
+        "toon-watering-can"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 10.9
+      },
       "text": "Regador inclinado numa luva escura, com as gotas caindo enquanto rega."
     },
     {
       "section": "locations",
       "name": "Consultório de dentista",
-      "parts": ["toon-surgery"],
-      "shot": {"episode": "do-you-floss", "at": 5.0},
+      "parts": [
+        "toon-surgery"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 5.0
+      },
       "text": "Azulejo claro até a faixa verde, com o encosto da cadeira e a caixa de raio-X, ou o outro lado com armários de vidro e potes."
     },
     {
       "section": "props",
       "name": "Refletor de dentista",
-      "parts": ["toon-dental-lamp"],
-      "shot": {"episode": "do-you-floss", "at": 0.6},
+      "parts": [
+        "toon-dental-lamp"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 0.6
+      },
       "text": "Refletor num braço longo que balança desde o primeiro quadro, com uma pata no aro."
     },
     {
       "section": "props",
       "name": "Bandeja de instrumentos",
-      "parts": ["toon-dental-tray"],
-      "shot": {"episode": "do-you-floss", "at": 0.6},
+      "parts": [
+        "toon-dental-tray"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 0.6
+      },
       "text": "Bandeja de aço com espelho, sonda e dois rolinhos de algodão."
     },
     {
       "section": "props",
       "name": "Foto do dente",
-      "parts": ["toon-tooth-photo"],
-      "shot": {"episode": "do-you-floss", "at": 8.6},
+      "parts": [
+        "toon-tooth-photo"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 8.6
+      },
       "text": "Foto de um único dente manchado, que entra deslizando pela direita."
     },
     {
       "section": "props",
       "name": "Sonda",
-      "parts": ["toon-probe"],
-      "shot": {"episode": "do-you-floss", "at": 9.3},
+      "parts": [
+        "toon-probe"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 9.3
+      },
       "text": "Sonda de aço que entra de uma vez até a ponta, para uma cutucada."
     },
     {
       "section": "props",
       "name": "Babador em close",
-      "parts": ["toon-bib-insert"],
-      "shot": {"episode": "do-you-floss", "at": 10.2},
+      "parts": [
+        "toon-bib-insert"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 10.2
+      },
       "text": "Quadro inteiro: o papel do babador, a corrente, e uma gota de sangue que cai e fica."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto à noite",
+      "parts": [
+        "collage-bedroom"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 23.0
+      },
+      "text": "Quarto escuro com janela de lua cheia e prateleira do cacto em roxo; o casal come cereal seco na cama, em Anything's Fine."
+    },
+    {
+      "section": "props",
+      "name": "Comida de papel",
+      "parts": [
+        "collage-food"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 8.5,
+        "box": [
+          680,
+          980,
+          400,
+          420
+        ]
+      },
+      "text": "Taco, sushi, sopa e pizza recortados em papel. Voam até o Gary, que recusa e rebate cada um (Anything's Fine)."
+    },
+    {
+      "section": "props",
+      "name": "Celular grande e relógio",
+      "parts": [
+        "collage-phone",
+        "collage-alarm-clock"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 13.3,
+        "box": [
+          160,
+          540,
+          760,
+          1290
+        ]
+      },
+      "text": "Celular de papel com a tela como um grupo em que a cena escreve, e o relógio de dígitos vermelhos que salta de 7:42 para 11:40 (Anything's Fine)."
+    },
+    {
+      "section": "props",
+      "name": "Edredom e caixa de cereal",
+      "parts": [
+        "collage-duvet",
+        "collage-cereal-box"
+      ],
+      "shot": {
+        "episode": "anythings-fine",
+        "at": 23.0,
+        "box": [
+          0,
+          1360,
+          1080,
+          560
+        ]
+      },
+      "text": "A frente do edredom, em que os bustos sentados afundam, e uma caixa de cereal sem marca entre os dois (Anything's Fine)."
+    },
+    {
+      "section": "locations",
+      "name": "Corredor do supermercado",
+      "parts": [
+        "collage-supermarket"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 6.2
+      },
+      "text": "Corredor de prateleiras cheias de pacotes sem marca, sob luz fria; a Rosa abre sacos cada vez maiores em Family Size."
+    },
+    {
+      "section": "props",
+      "name": "Saco de batata e batata",
+      "parts": [
+        "collage-chip-bag",
+        "collage-chip"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 0.6,
+        "box": [
+          320,
+          500,
+          720,
+          900
+        ]
+      },
+      "text": "Saco estufado de papel com rótulo próprio, que murcha quando a cena o escala, e a batata inteira, pela metade ou em farelo (Family Size)."
+    },
+    {
+      "section": "props",
+      "name": "Certificado e foto",
+      "parts": [
+        "collage-certificate",
+        "collage-snapshot"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 11.8,
+        "box": [
+          300,
+          1400,
+          700,
+          520
+        ]
+      },
+      "text": "Certificado com selo vermelho para meia batata e, no saco seguinte, só a foto de uma batata (Family Size)."
+    },
+    {
+      "section": "props",
+      "name": "Rajada de ar",
+      "parts": [
+        "collage-gust"
+      ],
+      "shot": {
+        "episode": "family-size",
+        "at": 3.5,
+        "box": [
+          100,
+          900,
+          800,
+          500
+        ]
+      },
+      "text": "Traços de ar correndo de um ponto a outro: o saco esvaziando no rosto da Rosa por três segundos (Family Size)."
+    },
+    {
+      "section": "locations",
+      "name": "Ponto de ônibus",
+      "parts": [
+        "collage-bus-stop"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 0.5
+      },
+      "text": "Abrigo de ônibus com banco laranja e prédios lilases ao fundo; a Deb recebe e perde o salário aqui em Payday."
+    },
+    {
+      "section": "props",
+      "name": "Conta com dentes e celular",
+      "parts": [
+        "collage-bill",
+        "collage-phone"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 5.7,
+        "box": [
+          560,
+          780,
+          520,
+          1000
+        ]
+      },
+      "text": "Conta de papel com boca serrilhada e pernas, que sobe até o celular e morde o saldo; a Deb perde tudo em onze segundos (Payday)."
+    },
+    {
+      "section": "props",
+      "name": "Confete",
+      "parts": [
+        "collage-confetti"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 0.5,
+        "box": [
+          0,
+          0,
+          1080,
+          760
+        ]
+      },
+      "text": "Confete de papel já no ar no primeiro quadro, que a certa altura vira e cai para cima (Payday)."
+    },
+    {
+      "section": "props",
+      "name": "Balão de mensagem",
+      "parts": [
+        "collage-bubble"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 12.5,
+        "box": [
+          360,
+          720,
+          720,
+          520
+        ]
+      },
+      "text": "Balão de mensagem com rabicho, cinza para o outro e verde para o meu; aqui o banco parabeniza a Deb (Payday)."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de jantar",
+      "parts": [
+        "collage-dining-room"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6
+      },
+      "text": "Parede verde com janela ao entardecer, aparador e pratos na parede; a família janta a uma cadeira de distância e o Gary manda cartas por mensagem (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Toalha de mesa",
+      "parts": [
+        "collage-tablecloth"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          0,
+          1590,
+          1080,
+          330
+        ]
+      },
+      "text": "Toalha de mesa de papel que ocupa a base do quadro e fica na frente de todo mundo (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Saleiro",
+      "parts": [
+        "collage-salt-shaker"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          280,
+          1570,
+          190,
+          250
+        ]
+      },
+      "text": "Saleiro de papel que o Kai faz deslizar pela mesa depois de receber o pedido por carta (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Polegar para cima",
+      "parts": [
+        "collage-thumb"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 8.0,
+        "box": [
+          680,
+          1560,
+          240,
+          290
+        ]
+      },
+      "text": "Polegar para cima, a resposta do Kai que o pai declara não entender (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Braço solto com um dedo",
+      "parts": [
+        "collage-arm"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          790,
+          1440,
+          290,
+          340
+        ]
+      },
+      "text": "Braço solto que entra pela borda do quadro; o Gary digita com um dedo só (Regards, Dad)."
     }
   ]
 }
