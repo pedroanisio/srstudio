@@ -11,15 +11,16 @@ notes curate and the videos ``srstudio usage`` measured.
 Nothing about an episode is typed in here. Title, description, frame, fps and duration come from its ``.scene.xml``,
 the lines from whichever script the project has (``dialogue.json``, ``timeline.json`` or ``narration.json``) and the
 style from the measured usage. An optional *notes* file adds curated text (number, lede, highlights) per episode and
-per style, and the library's cast, locations, props and graphics: each item names the registered parts it shows and a
-still cut from an episode render (a time and an optional crop box). When the notes curate that gallery, every part a
-rendered library episode is registered with must be shown by an item, so a new episode cannot leave the gallery
-behind.
+per style, a title per part, and the library's cast, locations, props and graphics: each item names the registered
+parts it shows and a still cut from an episode render (a time and an optional crop box). When the notes curate that
+gallery, every part a rendered library episode is registered with must be shown by an item, so a new episode cannot
+leave the gallery behind.
 
 A part's picture comes from its own definition, not from the notes or a reel: every registered part is drawn alone by
 the engine (:mod:`srstudio.catalog_specimens`), so a part added to the registry shows in the next build, titled from
-its registered summary (:func:`title_of`) until the notes name it. A part that cannot stand alone carries the reason,
-and one with neither stops the build by name. Each package's poster is likewise rendered from its scene spec.
+its registered summary (:func:`title_of`) until the notes title it (:func:`curated_titles`). A part that cannot stand
+alone carries the reason, and one with neither stops the build by name. Each package's poster is likewise rendered from
+its scene spec.
 
 Videos are re-encoded for the web once per render (keyed by size and modification time). They, the stills, the pose
 sheet, the app and everything the base page embedded are files with relative URLs, and neither the page nor the
@@ -53,8 +54,8 @@ from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES
 from .usage import Report
 
-NOTES_SCHEMA = "1.1.0"
-SCHEMAS = ("1.0.0", NOTES_SCHEMA)  # 1.1.0 adds the optional gallery
+NOTES_SCHEMA = "1.2.0"
+SCHEMAS = ("1.0.0", "1.1.0", NOTES_SCHEMA)  # 1.1.0 adds the optional gallery, 1.2.0 the optional part titles
 SCRIPTS = ("dialogue.json", "timeline.json", "narration.json")
 
 
@@ -70,6 +71,11 @@ class EpisodeNote:
 class StyleNote:
     title: str
     text: str
+
+
+@dataclass(frozen=True)
+class PartNote:
+    title: str
 
 
 @dataclass(frozen=True)
@@ -106,6 +112,7 @@ class Notes:
     episodes: dict[str, EpisodeNote] = field(default_factory=dict)
     styles: dict[str, StyleNote] = field(default_factory=dict)
     gallery: tuple[GalleryItem, ...] | None = None  # None: the notes do not curate the gallery
+    parts: dict[str, PartNote] = field(default_factory=dict)
 
     @property
     def order(self) -> tuple[str, ...]:
@@ -136,11 +143,13 @@ def load_notes(path: Path) -> Notes:
         doc = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise CatalogError(f"{path}: {exc}") from None
-    top = _fields(str(path), doc, {"schema", "episodes", "styles"}, {"gallery"})
+    top = _fields(str(path), doc, {"schema", "episodes", "styles"}, {"gallery", "parts"})
     if top["schema"] not in SCHEMAS:
         raise CatalogError(f"{path}: schema {top['schema']!r}, expected one of {', '.join(SCHEMAS)}")
     if "gallery" in top and top["schema"] == "1.0.0":
-        raise CatalogError(f"{path}: a gallery needs schema {NOTES_SCHEMA}")
+        raise CatalogError(f"{path}: a gallery needs schema 1.1.0 or later")
+    if "parts" in top and top["schema"] != NOTES_SCHEMA:
+        raise CatalogError(f"{path}: parts need schema {NOTES_SCHEMA}")
     episodes = {}
     for slug, raw in _fields(f"{path} episodes", top["episodes"], set(), set(top["episodes"])).items():
         where = f"{path} episodes.{slug}"
@@ -162,7 +171,14 @@ def load_notes(path: Path) -> Notes:
         if not isinstance(top["gallery"], list):
             raise CatalogError(f"{path} gallery: expected a list of items")
         gallery = tuple(_item(f"{path} gallery[{i}]", raw) for i, raw in enumerate(top["gallery"]))
-    return Notes(episodes, styles, gallery)
+    parts = {}
+    for name, raw in _fields(f"{path} parts", top.get("parts", {}), set(), set(top.get("parts", {}))).items():
+        where = f"{path} parts.{name}"
+        title = _text(f"{where}.title", _fields(where, raw, {"title"}, set())["title"])
+        if not title.strip():
+            raise CatalogError(f"{where}.title: empty")
+        parts[name] = PartNote(title)
+    return Notes(episodes, styles, gallery, parts)
 
 
 def _shot(where: str, raw: object) -> Shot:
@@ -508,6 +524,33 @@ _REFERENCE = re.compile(r"[\s,]*\b(?:at|on|of|in|by|from|to|for|with)?\s*(?::[a-
 _CLAUSE = re.compile(r"(?<=\w{3})\.(?:\s|$)|[:;]\s|\s[—–]\s|\s\(")
 
 
+def curated_titles(notes: Notes) -> dict[str, str]:
+    """The title the notes give each part: its own entry, or the name of a gallery item that shows it alone.
+
+    An item that shows several parts names a shot, and that says nothing about any one of them on its own."""
+    titles: dict[str, str] = {}
+    for item in notes.gallery or ():
+        if len(item.parts) == 1:
+            titles.setdefault(item.parts[0], item.name)
+    return titles | {name: note.title for name, note in notes.parts.items()}
+
+
+def check_titles(titles: dict[str, str]) -> None:
+    """Refuse a title for an unregistered part, or one that two parts of a kind share, by name.
+
+    A registered summary's title is left out on purpose: a part the notes do not know yet must still build."""
+    kinds = {x.name: x.kind for x in registry.entries()}
+    unknown = sorted(set(titles) - set(kinds))
+    if unknown:
+        raise CatalogError(f"the notes title unregistered parts: {', '.join(unknown)}")
+    holders: dict[tuple[str, str], list[str]] = defaultdict(list)
+    for name, title in titles.items():
+        holders[kinds[name], title].append(name)
+    repeated = [f"{title!r} on {', '.join(sorted(names))}" for (_, title), names in holders.items() if len(names) > 1]
+    if repeated:
+        raise CatalogError(f"curated titles repeat within a kind: {'; '.join(sorted(repeated))}")
+
+
 def title_of(entry: registry.Entry) -> str:
     """What a part with no curated title is called: the first clause of its registered summary, the only display text
     an entry offers. No name is invented, so a part the summary does not name reads as its description."""
@@ -571,11 +614,13 @@ def assemble(
     sheet = tuple(Still(src=uri, width=POSE_SIZE[0], height=POSE_SIZE[1], label=name) for name, uri in poses)
     if sheet and "pip" not in known:
         raise CatalogError("the pose sheet is Pip's, and no part is registered as pip")
+    titles = curated_titles(notes)
+    check_titles(titles)
     parts = [
         catalog_data.Part(
             name=x.name,
             kind=x.kind,
-            title=shown[x.name][0].name if x.name in shown else title_of(x),
+            title=titles[x.name] if x.name in titles else title_of(x),
             style=x.style,
             summary=plain(x.summary),
             videos=tuple(_episodes_of(x, usage)),

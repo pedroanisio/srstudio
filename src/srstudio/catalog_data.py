@@ -66,7 +66,7 @@ class GalleryEntry:
 class Part:
     name: str  # the registered name: unique across kinds, and the part's route
     kind: str
-    title: str  # the gallery's name for it, or a title from its registered summary when no item shows it
+    title: str  # what the notes call this part alone, or a title from its registered summary until they do
     style: str  # "" for a part shared by every style
     summary: str
     videos: tuple[str, ...]  # measured

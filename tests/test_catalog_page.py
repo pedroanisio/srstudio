@@ -70,6 +70,12 @@ def test_notes_parse_into_typed_values(tmp_path):
         ({"schema": "1.0.0", "episodes": {"x": {"highlights": "one"}}, "styles": {}}, "highlights"),
         ({"schema": "1.0.0", "episodes": {}, "styles": {"soft": {"title": "T"}}}, "text"),
         ({"schema": "2.0.0", "episodes": {}, "styles": {}}, "schema"),
+        ({"schema": "1.1.0", "episodes": {}, "styles": {}, "parts": {"pip": {"title": "T"}}}, "parts"),
+        ({"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": []}, "parts"),
+        ({"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": {"pip": {}}}, "title"),
+        ({"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": {"pip": {"title": 3}}}, "title"),
+        ({"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": {"pip": {"title": " "}}}, "title"),
+        ({"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": {"pip": {"title": "T", "colour": "x"}}}, "unknown"),
         ([], "object"),
     ],
 )
@@ -686,9 +692,12 @@ def test_a_uri_of_any_other_form_still_counts_as_embedded(tmp_path, uri):
 
 
 # -- the galleries ----------------------------------------------------------------------------------------
-def gallery_notes(tmp_path, gallery=GALLERY, schema="1.1.0") -> cp.Notes:
+def gallery_notes(tmp_path, gallery=GALLERY, schema="1.1.0", parts=None) -> cp.Notes:
     path = tmp_path / "notes.json"
-    path.write_text(json.dumps({"schema": schema, "episodes": {}, "styles": {}, "gallery": gallery}))
+    doc = {"schema": schema, "episodes": {}, "styles": {}, "gallery": gallery}
+    if parts is not None:
+        doc |= {"schema": "1.2.0", "parts": {name: {"title": title} for name, title in parts.items()}}
+    path.write_text(json.dumps(doc))
     return cp.load_notes(path)
 
 
@@ -753,9 +762,62 @@ def test_a_gallery_item_reaches_every_part_it_shows(tree, tmp_path):
     assert pip.gallery[0].note_html == "O <i>blob</i>."  # curated text is markup, as in the episode highlights
     assert pip.gallery[0].still == cp.Still(url("camera-off@1"), 300, 400, "", "camera-off")
     assert pip.gallery[0].poses == (cp.Still(url("camera-off@2"), 200, 200, "dança", "camera-off"),)
-    assert parts["talking-router"].gallery == parts["ink-hand"].gallery and parts["ink-hand"].title == "O roteador"
+    assert parts["talking-router"].gallery == parts["ink-hand"].gallery
+    assert parts["ink-hand"].gallery[0].name == "O roteador"
     assert parts["cel-lettering"].gallery[0].still.height == 300  # a crop keeps its own shape
     assert parts["soft-office"].gallery[0].still.width == 1080  # a whole frame has the episode's
+
+
+def test_a_gallery_title_names_a_part_only_when_the_item_shows_that_part_alone(tree, tmp_path):
+    parts = {p.name: p for p in assembled(tree, gallery_notes(tmp_path), usage=SHOWN).parts}
+    assert parts["pip"].title == "Pip"  # the item shows pip alone
+    for name in ("talking-router", "ink-hand"):  # "O roteador" names a shot of the two
+        assert parts[name].title == cp.title_of(cp.registry.get(parts[name].kind, name))
+        assert parts[name].title != "O roteador"
+
+
+def test_a_part_note_titles_the_part_whatever_the_gallery_calls_it(tree, tmp_path):
+    notes = gallery_notes(tmp_path, parts={"ink-hand": "A mão de tinta", "pip": "O blob"})
+    assert notes.parts["ink-hand"] == cp.PartNote(title="A mão de tinta")
+    parts = {p.name: p for p in assembled(tree, notes, usage=SHOWN).parts}
+    assert (parts["ink-hand"].title, parts["pip"].title) == ("A mão de tinta", "O blob")
+    assert parts["ink-hand"].gallery[0].name == "O roteador"  # the shot keeps its own name
+
+
+def test_part_notes_need_no_gallery(tree, tmp_path):
+    doc = {"schema": "1.2.0", "episodes": {}, "styles": {}, "parts": {"juno": {"title": "A Juno"}}}
+    notes = cp.load_notes(write_notes(tmp_path, doc))
+    assert {p.name: p for p in assembled(tree, notes, usage=USAGE).parts}["juno"].title == "A Juno"
+
+
+def test_a_note_for_an_unregistered_part_is_refused_by_name(tree, tmp_path):
+    notes = gallery_notes(tmp_path, parts={"no-such-part": "Nada"})
+    with pytest.raises(cp.CatalogError, match="no-such-part"):
+        assembled(tree, notes, usage=SHOWN)
+
+
+def test_curated_titles_that_repeat_within_a_kind_are_refused_by_name(tree, tmp_path):
+    for repeated in (
+        {"juno": "Pip"},  # a note against a solo gallery item
+        {"juno": "Outra", "manager": "Outra"},  # two notes
+    ):
+        with pytest.raises(cp.CatalogError, match="juno") as caught:
+            assembled(tree, gallery_notes(tmp_path, parts=repeated), usage=SHOWN)
+        assert "pip" in str(caught.value) or "manager" in str(caught.value)
+
+
+def test_a_curated_title_may_repeat_across_kinds(tree, tmp_path):
+    notes = gallery_notes(tmp_path, parts={"juno": "Cena", "soft-office": "Cena"})
+    parts = {p.name: p for p in assembled(tree, notes, usage=SHOWN).parts}
+    assert parts["juno"].title == parts["soft-office"].title == "Cena"
+
+
+def test_the_library_notes_title_registered_parts_shortly_and_never_twice_in_a_kind():
+    specimens.load_parts()
+    notes = cp.load_notes(Path(__file__).parents[1] / "docs" / "catalog" / "notes.json")
+    titles = cp.curated_titles(notes)
+    cp.check_titles(titles)  # raises on an unregistered part or a repeated title
+    assert notes.parts and not [t for t in titles.values() if len(t) > cp.TITLE_LIMIT]
 
 
 def test_without_a_curated_gallery_no_part_has_a_still(tree):
