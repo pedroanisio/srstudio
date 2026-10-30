@@ -2457,6 +2457,23 @@
         }
       ]
     },
+    "soft-bedroom": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a bed seen from its foot, where a phone can be the only light.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a08d01b64655c89b361a159976e8499d3aff2e4b50f24d0564a38eb23d86d42e",
+          "rig": null
+        }
+      ]
+    },
     "soft-bench": {
       "kind": "prop",
       "style": "soft",
@@ -2593,6 +2610,23 @@
         }
       ]
     },
+    "soft-hive": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a painted wooden beehive on legs.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "45a90e4e48674e605bcf543a41ed1c9cb960f34ecdbcb8abde746db58fcc2936",
+          "rig": null
+        }
+      ]
+    },
     "soft-home": {
       "kind": "location",
       "style": "soft",
@@ -2691,6 +2725,23 @@
           "proof": "",
           "approval": null,
           "drawing": "b25c247b71e452492c4ffb652aa9730c995c84047fa4956b320c647b7b5129f6",
+          "rig": null
+        }
+      ]
+    },
+    "soft-shovel": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "New for early-night: a garden shovel, rusty until asked otherwise.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dee80f3e0c550b4b1c2c37ce465e5911e9ef1fc6296fd532eabf7046642f6a66",
           "rig": null
         }
       ]

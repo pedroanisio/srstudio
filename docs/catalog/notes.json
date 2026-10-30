@@ -483,6 +483,13 @@
         "Sem música: diálogo pelo <code>srstudio.interview</code>, com a folha sintetizada por <code>foley</code>.",
         "O plano nunca muda; quem envelhece é o mundo (<code>soft_sets.park(growth=)</code>)."
       ]
+    },
+    "early-night": {
+      "lede": "Um narrador anuncia: hoje, cama às dez. O cartão de hora dispara: 11:40, um homem restaura uma pá enferrujada; 1:15, apicultores da Bulgária; 2:30, ela já tem opiniões. 3:47, ela explica lixamento para ninguém. O telefone desce, o quarto apaga, e o despertador toca sobre um olho.",
+      "highlights": [
+        "O quarto vira de claro a escuro por linhas de <code>Light</code>: um círculo de luz que treme em volta do telefone, breu, dia.",
+        "As linhas de <code>Shot</code> cortam para dentro do quarto e deixam o criado-mudo no lugar, com as marcas de assinatura no último quadro."
+      ]
     }
   },
   "styles": {
@@ -3352,6 +3359,36 @@
         "at": 17.2
       },
       "text": "O bolo Soft (<code>soft_props.cake</code>) depois do giro: escrita de glacê na frente e outra atrás, trocadas quando o bolo gira no prato. Em The Cake (19), WE'LL MISS YOU vira BYE PIP."
+    },
+    {
+      "section": "locations",
+      "name": "Quarto à noite",
+      "parts": ["soft-bedroom"],
+      "shot": {
+        "episode": "early-night",
+        "at": 0.5
+      },
+      "text": "A cama vista dos pés (<code>soft_sets.bedroom</code>): cabeceira, travesseiros, edredom e criado-mudo, com o telefone como única luz."
+    },
+    {
+      "section": "props",
+      "name": "Pá enferrujada",
+      "parts": ["soft-shovel"],
+      "shot": {
+        "episode": "early-night",
+        "at": 2.0
+      },
+      "text": "A pá de jardim Soft (<code>soft_props.shovel</code>), enferrujada até que se peça o contrário, na tela de Juno às 11:40."
+    },
+    {
+      "section": "props",
+      "name": "Colmeia",
+      "parts": ["soft-hive"],
+      "shot": {
+        "episode": "early-night",
+        "at": 4.5
+      },
+      "text": "A colmeia pintada Soft (<code>soft_props.hive</code>), em um documentário sobre apicultores da Bulgária."
     },
     {
       "section": "locations",

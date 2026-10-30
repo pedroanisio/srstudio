@@ -38,6 +38,9 @@ def opacity_keys(group) -> list[tuple[float, float]]:
         ("prop", "soft-cane"),
         ("prop", "soft-phone"),
         ("graphic", "soft-time-card"),
+        ("location", "soft-bedroom"),
+        ("prop", "soft-shovel"),
+        ("prop", "soft-hive"),
     ],
 )
 def test_the_parts_are_registered_for_the_soft_style(kind, name):
@@ -173,5 +176,83 @@ def test_a_time_card_that_cannot_be_read_is_refused(states, box, why):
     ],
 )
 def test_a_prop_refuses_a_size_it_cannot_draw(call):
+    with pytest.raises(SoftPropError):
+        call(canvas())
+
+
+def test_a_bedroom_cuts_in_on_the_room_and_leaves_the_nightstand_where_it_is():
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp, shots=[soft_sets.Shot(0.0), soft_sets.Shot(3.0, 2.0, 500.0, 1000.0)])
+    found = groups(cv)
+    keys = {a.get("property"): a for a in found["soft-bedroom-room"].findall("animate")}
+    assert [k.get("value") for k in keys["scaleX"].iter("key")] == ["1.0", "2.0"]
+    assert [k.get("value") for k in keys["x"].iter("key")] == ["0.0", "-460.0"]  # 500 lands mid-frame at twice the size
+    assert [k.get("value") for k in keys["y"].iter("key")] == ["0.0", "-1040.0"]
+    assert not found["soft-bedroom-front"].findall("animate")
+
+
+def test_a_bedroom_carries_both_signature_marks_in_the_front_plane():
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp)
+    front = [g.get("id") for g in groups(cv)["soft-bedroom-front"].iter("group")]
+    assert "sig-cactus" in front and "sig-code" in front
+
+
+def test_the_cast_lies_behind_the_duvet_and_the_phone_in_front_of_it():
+    cv = signed()
+    order = []
+    soft_sets.bedroom(cv, cv.comp, cast=lambda g: order.append("cast"), held=lambda g: order.append("held"))
+    assert order == ["cast", "held"]
+
+
+def test_a_bedroom_is_dark_only_by_its_lights_and_the_phone_flickers_inside_its_gate():
+    cv = signed()
+    lights = [soft_sets.Light(0.0, "phone"), soft_sets.Light(2.0, "dark"), soft_sets.Light(3.0, "day")]
+    soft_sets.bedroom(cv, cv.comp, lights=lights)
+    found = groups(cv)
+    assert opacity_keys(found["soft-bedroom-night-1"])[:2] == [(0.0, 1.0), (2.0, 0.0)]
+    assert (2.0, 1.0) in opacity_keys(found["soft-bedroom-night-2"])
+    assert (3.0, 0.0) in opacity_keys(found["soft-bedroom-night-2"])  # by day there is no dark left
+    assert "soft-bedroom-night-3" not in found
+    flicker = {value for _, value in opacity_keys(found["soft-bedroom-flicker-1"])}
+    assert len(flicker) > 1 and min(flicker) >= 0.9
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"lights": []},
+        {"shots": []},
+        {"lights": [soft_sets.Light(1.0, "day")]},
+        {"lights": [soft_sets.Light(0.0, "moon")]},
+        {"shots": [soft_sets.Shot(0.0), soft_sets.Shot(0.0, 2.0)]},
+        {"shots": [soft_sets.Shot(0.0, 0.0)]},
+        {"shots": [soft_sets.Shot(float("nan"))]},
+    ],
+)
+def test_a_bedroom_that_cannot_be_drawn_is_refused(kw):
+    cv = signed()
+    with pytest.raises(SoftSetError):
+        soft_sets.bedroom(cv, cv.comp, **kw)
+
+
+def test_a_clean_shovel_has_no_rust():
+    cv = canvas()
+    soft_props.shovel(cv, cv.comp, 540, 900)
+    soft_props.shovel(cv, cv.comp, 540, 900, rust=False, id="clean")
+    found = groups(cv)
+    assert "soft-shovel-rust" in found and "clean-rust" not in found
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda cv: soft_props.shovel(cv, cv.comp, 540, 900, scale=0),
+        lambda cv: soft_props.shovel(cv, cv.comp, float("nan"), 900),
+        lambda cv: soft_props.hive(cv, cv.comp, 540, 900, scale=-1),
+        lambda cv: soft_props.hive(cv, cv.comp, 540, float("inf")),
+    ],
+)
+def test_a_shovel_or_hive_refuses_what_it_cannot_draw(call):
     with pytest.raises(SoftPropError):
         call(canvas())

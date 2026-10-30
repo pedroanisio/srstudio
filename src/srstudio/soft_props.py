@@ -26,8 +26,10 @@ __all__ = [
     "cake",
     "cane",
     "month_view",
+    "hive",
     "phone",
     "status_badge",
+    "shovel",
     "time_card",
 ]
 
@@ -282,6 +284,58 @@ def bench(cv: Canvas, parent, x: float = 540, seat: float = 1500, *, width: floa
         cv.rect(g, left + 8, seat - 256 + k * 72, width - 16, 12, slat_dark, radius=6)
     cv.rect(g, left - 12, seat - 44, width + 24, 56, slat, ink, 4, radius=12)
     cv.rect(g, left - 12, seat + 8, width + 24, 26, slat_dark, ink, 4, radius=10)
+    return g
+
+
+@register("prop", "soft-shovel", summary="A garden shovel with a D grip, its blade rusty until asked otherwise")
+def shovel(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    scale: float = 1,
+    angle: float = 0,
+    rust: bool = True,
+    id: str = "soft-shovel",
+):
+    """A shovel 620 px long at ``scale`` 1, its balance at (``x``, ``y``), the grip up at ``angle`` 0."""
+    if not (checks.number(x) and checks.number(y) and checks.number(angle) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a shovel stands at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, rotation=angle, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -44, -320, 88, 76, "#00000000", ink, 22)  # the D grip
+    cv.ellipse(g, -44, -320, 88, 76, "#00000000", "#A5713F", 13)
+    cv.rect(g, -12, -250, 24, 370, "#A5713F", ink, 4, radius=6)
+    cv.path(g, "M -82 110 Q 0 88 82 110 L 76 216 Q 44 276 0 300 Q -44 276 -76 216 Z", "#A9B3BA", ink, 5)
+    cv.rect(g, -20, 86, 40, 62, "#7F8A92", ink, 4, radius=8)
+    if rust:
+        patches = cv.group(g, f"{id}-rust")
+        for px, py, w, h, color in (
+            (-68, 130, 74, 56, "#A4552D"),
+            (6, 118, 66, 44, "#B5653A"),
+            (-30, 186, 92, 62, "#8C4524"),
+            (-16, 246, 40, 34, "#A4552D"),
+        ):
+            cv.ellipse(patches, px, py, w, h, color)
+    return g
+
+
+@register("prop", "soft-hive", summary="A painted wooden beehive on legs: two boxes, a flat roof and an entrance slot")
+def hive(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-hive"):
+    """A hive 260 px wide and 340 px tall at ``scale`` 1, standing with its feet at (``x``, ``y``)."""
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a hive stands at a finite place with a positive scale, got {x!r}, {y!r}, {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    for lx in (-96, 72):
+        cv.rect(g, lx, -44, 24, 44, "#8A6242", ink, 4)
+    cv.rect(g, -120, -176, 240, 134, "#F2D27A", ink, 5, radius=6)
+    cv.rect(g, -120, -300, 240, 126, "#E9A85C", ink, 5, radius=6)
+    cv.rect(g, -130, -340, 260, 42, "#6F8FA8", ink, 5, radius=8)
+    cv.rect(g, -56, -78, 112, 16, "#2B2320", radius=8)  # the way in
+    for ly in (-146, -270):
+        cv.line(g, -70, ly, 70, ly, "#B9823F", 6)
     return g
 
 

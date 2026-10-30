@@ -955,6 +955,19 @@ srstudio record hang-out PROJECT   # the key from ELEVENLABS_API_KEY
 srstudio build hang-out PROJECT && scene-render encode PROJECT/hang-out.scene.xml --out-dir generated --strict
 ```
 
+## Soft style episode: *Early Night*
+
+A narrator goes on announcing an early night while the hour card runs away from him. [episodes/early_night.py](episodes/early_night.py)
+is a bed seen from its foot, `soft_sets.bedroom`: rows of `Light` take the room from one flickering pool around a phone to
+black and then to day, and rows of `Shot` cut in on everything but the nightstand, which keeps the signature marks in the
+last frame, a single open eye. What is on her phone is drawn at full frame with `soft_props.shovel` and `soft_props.hive`.
+The video is 17.1 s.
+
+```bash
+srstudio record early-night PROJECT   # the key from ELEVENLABS_API_KEY
+srstudio build early-night PROJECT && scene-render encode PROJECT/early-night.scene.xml --out-dir generated --strict
+```
+
 ## Cel style package: *Work Training Be Like*
 
 The fourth style comes from the silent package `mushroom-training-2.0.0` (a recreation of an Under Studio

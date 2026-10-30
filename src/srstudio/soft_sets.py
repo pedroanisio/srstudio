@@ -10,6 +10,7 @@ goes dark (``dark``), so a reel moves the world and leaves the cast alone.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import NamedTuple
 
 from . import checks, look, signature
 from .canvas import Canvas
@@ -17,7 +18,7 @@ from .errors import SrstudioError
 from .registry import register
 from .soft_props import bench as park_bench
 
-__all__ = ["CAPTIONS", "FINISH", "SoftSetError", "finish", "park"]
+__all__ = ["CAPTIONS", "FINISH", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -37,6 +38,30 @@ BENCH_SEAT = 1750.0  # the seat's front edge: a seated head lands where a standi
 INK_LINE = 4.0
 LEAF_DARK, LEAF_LIT = "#5F9E6A", "#8CC47A"
 BARK, BARK_DARK = "#8A6242", "#6B4A30"
+
+
+NIGHT, NIGHT_CLEAR = "#0B1026FB", "#0B102600"  # the engine composites in linear light: a lit wall needs 98 % to go dark
+LIGHTS = ("day", "phone", "dark")
+FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
+FLICKER_STEP = 0.14  # seconds a flicker value holds
+
+
+class Light(NamedTuple):
+    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` pooled on (``x``, ``y``)."""
+
+    time: float
+    state: str
+    x: float = 540.0
+    y: float = 1040.0
+
+
+class Shot(NamedTuple):
+    """From ``time``, the room is framed ``scale`` times closer, with (``x``, ``y``) in the middle of the frame."""
+
+    time: float
+    scale: float = 1.0
+    x: float = 540.0
+    y: float = 960.0
 
 
 class SoftSetError(SrstudioError, ValueError):
@@ -175,6 +200,87 @@ def park(
     signature.cactus(cv, front, 968, 1744, 0.72)
     signature.code(cv, front, 880, 1800, 15, color="#F3DFCF")
     return g
+
+
+@register(
+    "location",
+    "soft-bedroom",
+    summary="A bed seen from its foot: headboard, pillows and a duvet; a phone can be the only light in the room",
+)
+def bedroom(
+    cv: Canvas,
+    parent,
+    *,
+    lights: Sequence[Light] = (Light(0.0, "day"),),
+    shots: Sequence[Shot] = (Shot(0.0),),
+    cast: Slot = None,
+    held: Slot = None,
+    id: str = "soft-bedroom",
+):
+    """The bed: ``cast`` lies against the pillows behind the duvet, ``held`` is above the duvet, and ``lights`` and
+    ``shots`` are rows from 0 in rising time. A shot cuts in on everything but the nightstand, the foreground that
+    holds the signature marks."""
+    if not lights or not shots:
+        raise SoftSetError("a bedroom needs at least one light and one shot")
+    times = [row.time for row in lights], [row.time for row in shots]
+    for rows in times:
+        rising = all(b > a for a, b in zip(rows, rows[1:], strict=False))
+        if rows[0] != 0 or not all(checks.number(t) for t in rows) or not rising:
+            raise SoftSetError(f"lights and shots run from 0 in rising time, got {rows!r}")
+    if any(row.state not in LIGHTS for row in lights):
+        raise SoftSetError(f"a light is one of {LIGHTS}, got {[row.state for row in lights]!r}")
+    if not all(checks.number(row.scale) and row.scale > 0 for row in shots):
+        raise SoftSetError(f"a shot's scale is a positive number, got {[row.scale for row in shots]!r}")
+    g = cv.group(parent, id)
+    room = cv.group(g, f"{id}-room")
+    if len(shots) > 1:
+        for prop, values in (
+            ("x", [(s.time, 540 - s.x * s.scale) for s in shots]),
+            ("y", [(s.time, 960 - s.y * s.scale) for s in shots]),
+            ("scaleX", [(s.time, s.scale) for s in shots]),
+            ("scaleY", [(s.time, s.scale) for s in shots]),
+        ):
+            cv.keys(room, prop, values)
+    cv.rect(room, 0, 0, WIDTH, HEIGHT, cv.grad("soft-bedroom-wall", [(0.0, "#E8DCC8"), (1.0, "#D9C7AE")], (0, 0, 0, 1)))
+    far = look.depth(cv, room, "soft-bedroom-far", FAR_BLUR)
+    cv.rect(far, 742, 118, 280, 420, "#BFDDEE", "#F5EEDF", 16, radius=8)  # the window, out of focus
+    cv.line(far, 882, 118, 882, 538, "#F5EEDF", 10)
+    cv.rect(room, 56, 740, 968, 900, BARK, cv.ink, INK_LINE, radius=70)
+    cv.rect(room, 96, 780, 888, 860, BARK_DARK, radius=46)
+    cv.ellipse(room, 40, 1000, 640, 500, "#FFFFFF", cv.ink, INK_LINE)
+    cv.ellipse(room, 400, 1000, 640, 500, "#F4F0EA", cv.ink, INK_LINE)
+    if cast is not None:
+        cast(room)
+    duvet = "M -20 1548 Q 180 1490 400 1530 T 800 1520 T 1100 1544 L 1100 1960 L -20 1960 Z"
+    cv.path(room, duvet, "#D8836B", cv.ink, INK_LINE)
+    cv.path(room, "M 140 1640 Q 300 1610 420 1650 M 620 1600 Q 760 1580 880 1620", stroke="#B9654F", sw=8)
+    if held is not None:
+        held(room)
+    front = cv.group(g, f"{id}-front")
+    cv.rect(front, 850, 1680, 280, 300, "#A9744B", cv.ink, INK_LINE, radius=12)
+    cv.rect(front, 830, 1662, 320, 34, "#C98C5C", cv.ink, INK_LINE, radius=12)
+    signature.cactus(cv, front, 962, 1668, 0.72)
+    signature.code(cv, front, 880, 1730, 15, color="#F3DFCF")
+    _lights(cv, g, lights, id)
+    return g
+
+
+def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
+    """The dark over the room: nothing by day, a pool that flickers around a phone, or all of it."""
+    pool = cv.rgrad("soft-bedroom-pool", [(0.0, NIGHT_CLEAR), (0.12, NIGHT_CLEAR), (0.34, NIGHT)])
+    for k, row in enumerate(lights):
+        if row.state == "day":
+            continue
+        end = lights[k + 1].time if k + 1 < len(lights) else 1e6
+        night = cv.group(g, f"{id}-night-{k + 1}")
+        cv.gate(night, [(row.time, end)])
+        if row.state == "dark":
+            cv.rect(night, 0, 0, WIDTH, HEIGHT, NIGHT)
+            continue
+        lit = cv.group(night, f"{id}-flicker-{k + 1}")  # a gate holds its group's opacity: the flicker sits inside it
+        cv.rect(lit, row.x - 2000, row.y - 2000, 4000, 4000, pool)
+        beats = int(min(end - row.time, 60.0) / FLICKER_STEP) + 1
+        cv.keys(lit, "opacity", [(row.time + n * FLICKER_STEP, FLICKER[n % len(FLICKER)]) for n in range(beats)])
 
 
 def _gated(cv: Canvas, parent, id: str, spans: Sequence[tuple[float, float]]):
