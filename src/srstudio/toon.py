@@ -37,6 +37,8 @@ __all__ = [
     "ToonDataError",
     "EYES",
     "MOUTHS",
+    "TRACED_EYES",
+    "TRACED_MOUTHS",
     "ARMS",
     "BODIES",
     "Pose",
@@ -78,8 +80,10 @@ SCALE = 1080 / REF_W
 EPSILON = 1e-6
 Number = (int, float)
 
-EYES = ("wide", "half", "left", "up", "down", "side", "closed", "narrow", "shock")
-MOUTHS = ("flat", "open", "round", "o", "drop", "grin", "wave", "smirk", "none")
+TRACED_EYES = ("wide", "half", "left", "up", "down", "side", "closed", "narrow", "shock")  # what cat.json holds
+TRACED_MOUTHS = ("flat", "open", "round", "o", "drop", "grin", "wave", "smirk", "none")
+EYES = (*TRACED_EYES, "roll", "teary", "wince", "hearts")  # the brush characters draw them all; the cat, the traced
+MOUTHS = (*TRACED_MOUTHS, "grimace", "frown", "tongue", "kiss")
 ARMS = ("desk", "type", "crossed", "sigh", "lean", "face", "face2")
 BODIES = ("desk", "type_a", "type_b", "crossed", "sigh", "lean", "face", "face2")
 ART_SCHEMA = "toon-cat/1.0.0"
@@ -266,7 +270,7 @@ def _table(data: Any, where: str, keys: Sequence[str]) -> dict:
 
 
 def parse_art(data: Any, where: str = "art") -> CatArt:
-    """The traced cat: a body per :data:`BODIES`, eyes per :data:`EYES`, a mouth per :data:`MOUTHS`."""
+    """The traced cat: a body per :data:`BODIES`, eyes per :data:`TRACED_EYES`, a mouth per :data:`TRACED_MOUTHS`."""
     top = _record(
         data, where, {"schema": str, "generated_by": str, "space": dict, "bodies": dict, "eyes": dict, "mouths": dict}
     )
@@ -289,7 +293,7 @@ def parse_art(data: Any, where: str = "art") -> CatArt:
             _shapes(rec["nose_ink"], f"{w}.nose_ink"),
             _shapes(rec["nose_pink"], f"{w}.nose_pink"),
         )
-    for name, item in _table(top["eyes"], f"{where}.eyes", EYES).items():
+    for name, item in _table(top["eyes"], f"{where}.eyes", TRACED_EYES).items():
         w = f"{where}.eyes.{name}"
         rec = _record(item, w, {"ink": list, "white": list, "pupil": list})
         eyes[name] = Eyes(
@@ -297,7 +301,7 @@ def parse_art(data: Any, where: str = "art") -> CatArt:
         )
         if name != "closed" and not eyes[name].ink:
             raise ToonDataError(f"{w}: no ink")
-    for name, item in _table(top["mouths"], f"{where}.mouths", MOUTHS).items():
+    for name, item in _table(top["mouths"], f"{where}.mouths", TRACED_MOUTHS).items():
         w = f"{where}.mouths.{name}"
         rec = _record(item, w, {"ink": list, "white": list, "red": list})
         mouths[name] = Mouth(
@@ -486,11 +490,17 @@ def cat(
 ) -> list:
     """One group per pose run, alive from its start to its end; ``taps`` (project seconds) swap the two typing
     bodies of every typing pose that contains them. ``enter`` puts the cat on from that project second: its poses
-    count from it, and it leaves at ``duration``."""
+    count from it, and it leaves at ``duration``. The cat is traced art: an expression it was not traced with
+    (outside :data:`TRACED_EYES` and :data:`TRACED_MOUTHS`) is refused by name before anything is drawn."""
     if any(not (checks.number(t) and t >= 0) for t in taps):
         raise ToonDataError("taps must be non-negative seconds")
     if not (checks.number(enter) and 0 <= enter < duration):
         raise ToonDataError(f"enter must be a project second before the end, got {enter!r}")
+    for pose in poses:
+        if pose.eyes not in TRACED_EYES:
+            raise ToonDataError(f"the traced cat has no {pose.eyes!r} eyes; it was traced with {TRACED_EYES}")
+        if pose.mouth not in TRACED_MOUTHS:
+            raise ToonDataError(f"the traced cat has no {pose.mouth!r} mouth; it was traced with {TRACED_MOUTHS}")
     drawn = art()
     groups = []
     for pose, start, end in runs(poses, duration - enter):
