@@ -1304,8 +1304,10 @@ scene-render encode PROJECT/employee-survey.scene.xml -o /abs/path/employee-surv
 (Catmull-Rom through the points, open or closed), `stroke` (a band whose width follows a `Pressure` profile with a
 swell and a slow wobble, round caps), `outline` (a closed fill) and `rim` (the fill pushed outward by the ink
 weight, whichever way the points wind), `inked` (a rim pressed by a `Hand`: heavier where the outline turns from
-the light, thin at sharp tips, uneven along the way), `wobble` (a contour's small, repeatable hand drift),
-`ellipse`, and `shift`/`rotate`/`flip`/`bounds`. Every result is a closed cubic `Shape` the Toon parts fill flat
+the light, thin at sharp tips, uneven along the way, with a dry brush's fine grit when the hand is `ragged`),
+`broken` (that band in seeded pieces with tapered gaps and nicks), `wobble` (a contour's small, repeatable hand
+drift), `lump` (a seeded one-off blob where an ellipse would look digital), `ellipse`, and
+`shift`/`rotate`/`flip`/`bounds`. Every result is a closed cubic `Shape` the Toon parts fill flat
 with `toon.flat`, so a figure is a stack of filled layers (ink rim, coat, markings, limbs, face) and never a stroked
 path. [src/srstudio/toon_cast.py](src/srstudio/toon_cast.py) draws two
 coworkers for the cat's desk with the cat's vocabulary and contract: `toon-dog` (orange coat, drop ears, a light

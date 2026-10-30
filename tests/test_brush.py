@@ -88,6 +88,70 @@ def test_a_wobbled_contour_is_dense_uneven_and_the_same_every_time():
     assert line[0] == pytest.approx((0.0, 0.0), abs=2.0) and len(line) == 11  # an open line keeps its ends
 
 
+def sampled(shape: brush.Shape, k: int = 6) -> list[tuple[float, float]]:
+    """The shape's outline as a polygon: each cubic sampled ``k`` times."""
+    out, (x0, y0) = [], (shape[0], shape[1])
+    for i in range(2, len(shape), 6):
+        c1x, c1y, c2x, c2y, x, y = shape[i : i + 6]
+        for j in range(1, k + 1):
+            t, u = j / k, 1 - j / k
+            out.append(
+                (
+                    u**3 * x0 + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t**3 * x,
+                    u**3 * y0 + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t**3 * y,
+                )
+            )
+        x0, y0 = x, y
+    return out
+
+
+def inside(poly: list[tuple[float, float]], x: float, y: float) -> bool:
+    hit = False
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1], strict=True):
+        if (ay > y) != (by > y) and x < ax + (y - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+    return hit
+
+
+def test_a_ragged_hand_breaks_the_band_s_edge_at_a_fine_scale():
+    calm, ragged = brush.Hand(), brush.Hand(ragged=0.25)
+    assert all(calm.at((0.0, 1.0), 0.0, k / 50) == brush.HAND.at((0.0, 1.0), 0.0, k / 50) for k in range(51))
+
+    def turns(hand: brush.Hand) -> int:  # how often the width changes direction along the way
+        w = [hand.at((0.0, 1.0), 0.0, k / 400) for k in range(401)]
+        d = [b - a for a, b in zip(w, w[1:], strict=False)]
+        return sum((a > 0) != (b > 0) for a, b in zip(d, d[1:], strict=False))
+
+    assert turns(ragged) > 4 * turns(calm)
+
+
+def test_a_broken_band_lifts_the_brush_in_as_many_places_as_asked():
+    even = brush.Hand(light=1.0, heavy=1.0, tips=0.0, grain=0.0)
+    pieces = brush.broken(circle(), 6.0, even, breaks=4, seed=3)
+    assert len(pieces) == 4 and all((len(s) - 2) % 6 == 0 for s in pieces)
+    polys = [sampled(s) for s in pieces]
+    covered = []
+    for k in range(360):
+        a = 2 * math.pi * k / 360
+        x, y = 53.0 * math.cos(a), 53.0 * math.sin(a)  # halfway across the band
+        covered.append(any(inside(p, x, y) for p in polys))
+    assert 0.7 < sum(covered) / 360 < 0.97  # mostly inked, with gaps
+    assert sum(a and not b for a, b in zip(covered, covered[1:] + covered[:1], strict=True)) == 4  # four gaps
+    assert brush.broken(circle(), 6.0, even, breaks=4, seed=3) == pieces  # seeded: the same every build
+    assert brush.broken(circle(), 6.0, even, breaks=4, seed=4) != pieces
+    assert len(brush.broken(circle(), 6.0, breaks=3)) == 3
+
+
+def test_a_lump_is_an_uneven_one_off_blob_round_its_centre():
+    a = brush.lump(10.0, 20.0, 8.0, 6.0, 0.15, seed=1)
+    assert a == brush.lump(10.0, 20.0, 8.0, 6.0, 0.15, seed=1) != brush.lump(10.0, 20.0, 8.0, 6.0, 0.15, seed=2)
+    assert len(a) != len(brush.ellipse(10.0, 20.0, 8.0, 6.0))  # not the four arcs of a perfect ellipse
+    x0, y0, x1, y1 = brush.bounds(a)
+    assert 10.0 - 8.0 * 1.25 < x0 < 10.0 - 8.0 * 0.75 and 10.0 + 8.0 * 0.75 < x1 < 10.0 + 8.0 * 1.25
+    assert 20.0 - 6.0 * 1.25 < y0 < 20.0 - 6.0 * 0.75 and 20.0 + 6.0 * 0.75 < y1 < 20.0 + 6.0 * 1.25
+    assert brush.bounds(brush.lump(0.0, 0.0, 8.0, 6.0, 0.15, seed=1, tilt=90.0))[3] > 6.0 * 1.1  # turned
+
+
 def test_ellipse_shift_rotate_flip_and_bounds():
     e = brush.ellipse(50, 40, 20, 10)
     assert len(e) == 26 and brush.bounds(e) == (30, 30, 70, 50)
@@ -121,6 +185,13 @@ def test_ellipse_shift_rotate_flip_and_bounds():
         (lambda: brush.wobble(SQUARE, -1.0), "amount must be a non-negative"),
         (lambda: brush.wobble(SQUARE, math.nan), "amount must be a non-negative"),
         (lambda: brush.wobble([(0, 0)], 1.0), "at least 2 points"),
+        (lambda: brush.broken(SQUARE, 5, breaks=0), "breaks must be a whole number of at least 1"),
+        (lambda: brush.broken(SQUARE, 5, gap=0.0), "gap must be a positive"),
+        (lambda: brush.broken(SQUARE, 5, breaks=5, gap=90.0), "the gaps would take half the contour"),
+        (lambda: brush.broken(SQUARE, 5, steps=1, breaks=3), "piece 1 of 3 is too short to draw"),
+        (lambda: brush.lump(0, 0, 0, 5, 0.1), "rx must be a positive"),
+        (lambda: brush.lump(0, 0, 5, 5, 0.6), "amount must be a number from 0 to 0.5"),
+        (lambda: brush.lump(0, 0, 5, 5, 0.1, points=3), "points must be a whole number of at least 5"),
     ],
 )
 def test_bad_measures_are_refused(call, match):

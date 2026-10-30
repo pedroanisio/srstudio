@@ -15,6 +15,8 @@ Everything is geometry in the caller's units (the Toon parts use reference pixel
   same shape pushed out by the line's weight;
 * :func:`inked` is a rim pressed like a hand (:class:`Hand`): heavier where the outline turns away from the light,
   lighter at sharp tips, unevenly along the way; :func:`wobble` gives a contour a hand's small, uneven deviations;
+* :func:`broken` is that band in pieces, the brush lifted in a few seeded places and nicked in others, and
+  :func:`lump` an uneven one-off blob where a perfect :func:`ellipse` would look digital;
 * :func:`ellipse`, :func:`shift`, :func:`rotate` and :func:`flip` are the small tools around them.
 
 Inputs are checked: a stroke needs two points, an outline three, a weight and a radius are positive, every
@@ -24,6 +26,7 @@ coordinate is finite (:class:`BrushError`).
 from __future__ import annotations
 
 import math
+import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -45,6 +48,8 @@ __all__ = [
     "HAND",
     "inked",
     "wobble",
+    "broken",
+    "lump",
     "ellipse",
     "shift",
     "rotate",
@@ -91,18 +96,28 @@ def _grain(s: float, phase: float = 0.0) -> float:
     ) / 1.95
 
 
+def _grit(s: float) -> float:
+    """A fine, rough wave in -1..1, periodic over ``s`` in 0..1: the paper's tooth catching the brush."""
+    return (
+        math.sin(2 * math.pi * 61 * s + 0.9)
+        + 0.7 * math.sin(2 * math.pi * 97 * s + 2.6)
+        + 0.5 * math.sin(2 * math.pi * 151 * s + 5.2)
+    ) / 2.2
+
+
 @dataclass(frozen=True)
 class Hand:
     """How a hand presses an ink line round a shape, as factors of its weight: ``light`` where the outline faces
     the light and ``heavy`` where it turns away, the weight falling ``toward`` that direction (down and to the back
     by default); a convex turn of a right angle or more thins the line by ``tips`` (a tip, where the brush lifts),
-    and ``grain`` makes the pressure uneven along the way."""
+    ``grain`` makes the pressure uneven along the way, and ``ragged`` adds the fine grit of a dry brush on paper."""
 
     light: float = 0.45
     heavy: float = 1.35
     toward: Point = (0.35, 0.94)
     tips: float = 0.65
     grain: float = 0.18
+    ragged: float = 0.0
 
     def at(self, normal: Point, turn: float, s: float) -> float:
         """The width factor where the outward ``normal`` points, the outline turning ``turn`` radians there
@@ -111,6 +126,8 @@ class Hand:
         facing = (normal[0] * tx + normal[1] * ty) / math.hypot(tx, ty)
         base = self.light + (self.heavy - self.light) * (facing + 1) / 2
         tip = 1.0 - self.tips * min(1.0, max(0.0, turn) / (math.pi / 2))
+        if self.ragged:
+            return max(0.08, base * tip * (1 + self.grain * _grain(s) + self.ragged * _grit(s)))
         return max(0.08, base * tip * (1 + self.grain * _grain(s)))
 
 
@@ -271,22 +288,23 @@ def rim(points: Sequence[Point], weight: float, pressure: Pressure = EVEN, steps
     return _cubic(poly, 100.0)
 
 
-def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int = 6) -> Shape:
-    """The ink band under an :func:`outline` of the same points, pressed by ``hand``: pushed out by ``weight`` times
-    :meth:`Hand.at` at every point, so the line swells where the shape turns from the light and thins to almost
-    nothing at its tips, like a traced line."""
+def _pressed(
+    points: Sequence[Point], weight: float, hand: Hand, steps: int, where: str
+) -> list[tuple[Point, Point, float]]:
+    """Every sample of the closed spline through ``points``, with its outward normal and the push ``hand`` gives
+    it."""
     weight = _positive(weight, "weight")
     _positive(hand.light, "light")
     _positive(hand.heavy, "heavy")
     if not (all(checks.number(v) for v in hand.toward) and math.hypot(*hand.toward) > 0):
         raise BrushError(f"toward must be a direction, got {hand.toward!r}")
-    path = _dedupe(spline(_points(points, 3, "inked"), True, steps))
+    path = _dedupe(spline(_points(points, 3, where), True, steps))
     n = len(path)
     area = sum(path[i][0] * path[(i + 1) % n][1] - path[(i + 1) % n][0] * path[i][1] for i in range(n))
     sign = -1.0 if area > 0 else 1.0
     convex = 1.0 if area > 0 else -1.0
     reach = max(1, steps)  # the turn is measured over about one control segment either side
-    poly = []
+    out = []
     for i, p in enumerate(path):
         a, b = path[i - 1], path[(i + 1) % n]
         dx, dy = b[0] - a[0], b[1] - a[1]
@@ -296,9 +314,72 @@ def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int 
         ux, uy = p[0] - back[0], p[1] - back[1]
         vx, vy = ahead[0] - p[0], ahead[1] - p[1]
         turn = convex * math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-        push = weight * hand.at((nx, ny), turn, i / n)
-        poly.append((p[0] + nx * push, p[1] + ny * push))
-    return _cubic(poly, 100.0)
+        out.append((p, (nx, ny), weight * hand.at((nx, ny), turn, i / n)))
+    return out
+
+
+def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int = 6) -> Shape:
+    """The ink band under an :func:`outline` of the same points, pressed by ``hand``: pushed out by ``weight`` times
+    :meth:`Hand.at` at every point, so the line swells where the shape turns from the light and thins to almost
+    nothing at its tips, like a traced line."""
+    pressed = _pressed(points, weight, hand, steps, "inked")
+    return _cubic([(p[0] + nx * push, p[1] + ny * push) for p, (nx, ny), push in pressed], 100.0)
+
+
+def broken(
+    points: Sequence[Point],
+    weight: float,
+    hand: Hand = HAND,
+    steps: int = 6,
+    breaks: int = 4,
+    gap: float | None = None,
+    seed: int = 0,
+) -> list[Shape]:
+    """The :func:`inked` band in ``breaks`` pieces: the brush lifts in as many seeded places round the contour,
+    each gap about ``gap`` long (the line's weight by default, varied per gap), the band tapering into it, and a
+    nick bitten from the band's edge in each piece. A piece's inner edge sits a little inside the contour, under
+    the fill drawn over it, so only the ink outside shows. The same ``seed`` breaks the same places every build."""
+    if isinstance(breaks, bool) or not isinstance(breaks, int) or breaks < 1:
+        raise BrushError(f"breaks must be a whole number of at least 1, got {breaks!r}")
+    gap = weight if gap is None else gap
+    gap = _positive(gap, "gap")
+    pressed = _pressed(points, weight, hand, steps, "broken")
+    n = len(pressed)
+    along = [0.0]
+    for (a, _, _), (b, _, _) in zip(pressed, pressed[1:] + pressed[:1], strict=True):
+        along.append(along[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+    total = along.pop()
+    if breaks * gap > total / 2:
+        raise BrushError(f"broken: the gaps would take half the contour ({breaks} x {gap} of {total:.1f})")
+    rng = random.Random(seed)
+    start = rng.random() * total
+    gaps = []  # (where the gap opens, where it closes), along the contour from ``start``
+    for k in range(breaks):
+        centre = (k + 0.5 + rng.uniform(-0.3, 0.3)) * total / breaks
+        half = gap * rng.uniform(0.6, 1.4) / 2
+        gaps.append((centre - half, centre + half))
+    opens = [g[0] for g in gaps[1:]] + [gaps[0][0] + total]
+    nicks = [gaps[k][1] + rng.uniform(0.3, 0.7) * (opens[k] - gaps[k][1]) for k in range(breaks)]
+    taper = 1.5 * weight
+    inset = 0.25 * weight
+    pieces = []
+    for k in range(breaks):
+        lo, hi = gaps[k][1], opens[k]
+        outer, inner = [], []
+        ahead = (((along[i] - start) % total, i) for i in range(n))
+        for pos, i in sorted((pos + (total if pos < lo else 0.0), i) for pos, i in ahead):
+            if pos > hi:
+                break
+            p, (nx, ny), push = pressed[i]
+            t = min(1.0, min(pos - lo, hi - pos) / taper)
+            bite = 1.0 - 0.4 * math.exp(-(((pos - nicks[k]) / (0.6 * weight)) ** 2))
+            push *= t * t * (3 - 2 * t) * bite
+            outer.append((p[0] + nx * push, p[1] + ny * push))
+            inner.append((p[0] - nx * inset, p[1] - ny * inset))
+        if len(outer) < 2:
+            raise BrushError(f"broken: piece {k + 1} of {breaks} is too short to draw; use fewer breaks or more steps")
+        pieces.append(_cubic(_dedupe(outer + inner[::-1]), 100.0))
+    return pieces
 
 
 def wobble(points: Sequence[Point], amount: float, closed: bool = True, steps: int = 4, seed: int = 0) -> list[Point]:
@@ -320,6 +401,28 @@ def wobble(points: Sequence[Point], amount: float, closed: bool = True, steps: i
         drift = amount * _grain(i / n if closed else i / max(1, n - 1), 1.618 * seed)
         out.append((p[0] - dy / length * drift, p[1] + dx / length * drift))
     return out
+
+
+def lump(
+    cx: float, cy: float, rx: float, ry: float, amount: float, seed: int = 0, tilt: float = 0.0, points: int = 7
+) -> Shape:
+    """A one-off blob about ``rx`` by ``ry`` round ``(cx, cy)``, turned ``tilt`` degrees clockwise: a smooth closed
+    shape through ``points`` points, each pushed in or out by up to ``amount`` of the radius and slid a little
+    round, so no two seeds draw the same blob and none is a perfect :func:`ellipse`."""
+    rx, ry = _positive(rx, "rx"), _positive(ry, "ry")
+    if not (checks.number(amount) and 0 <= amount <= 0.5):
+        raise BrushError(f"amount must be a number from 0 to 0.5, got {amount!r}")
+    if isinstance(points, bool) or not isinstance(points, int) or points < 5:
+        raise BrushError(f"points must be a whole number of at least 5, got {points!r}")
+    rng = random.Random(seed)
+    c, s = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+    pts = []
+    for k in range(points):
+        ang = 2 * math.pi * (k + rng.uniform(-0.25, 0.25)) / points
+        r = 1 + amount * rng.uniform(-1.0, 1.0)
+        x, y = rx * r * math.cos(ang), ry * r * math.sin(ang)
+        pts.append((cx + x * c - y * s, cy + x * s + y * c))
+    return outline(pts)
 
 
 def ellipse(cx: float, cy: float, rx: float, ry: float, tilt: float = 0.0) -> Shape:
