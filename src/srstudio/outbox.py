@@ -4,8 +4,9 @@
 each one with its ``ig.txt``, its ``cover.jpg`` and its ``.vpkg.zip`` package (received with a recreation, packed by
 :mod:`srstudio.package` for an original episode); a video that drifted, or that has no package, is held back and
 reported. :func:`stage` copies the bundles into one private folder per video, with an ``ab.json`` naming the
-A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now;
-the operator's own top-level dot-files (``.ignore``) are carried over and uploaded with it.
+A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s, replacing the previous outbox whole,
+so the folder holds exactly what is ready now; the operator's own top-level dot-files (``.ignore``) are carried
+over and uploaded with it.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
 check that every staged file arrived with the same hash.
 """

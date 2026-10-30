@@ -6,11 +6,11 @@
 
 Ready means the publish gate (``instagram_posts.py check``) finds no drift for the video: its render, post,
 caption and cover all match the last delivery, and it has its package. A video whose release is in an A/B test
-(``releases.Tags(test=, arm=)``) is staged with an ``ab.json`` naming the test and its arm. A recreation's package is the one received
-in ``videos-styles``; an original episode is packed from its project in ``generated/episodes`` into
-``generated/vpkg`` (``srstudio.package``: verified, validated by the engine, repacked only when its scene changed).
-A drifted video, or one without a package, is held back and listed, and the command exits 1;
-a staging or upload failure exits 2. ``tools/systemd/srstudio-drive.{path,service}`` run it on every delivery.
+(``releases.Tags(test=, arm=)``) is staged with an ``ab.json`` naming the test and its arm. A recreation's
+package is the one received in ``videos-styles``; an original episode is packed from its project in
+``generated/episodes`` into ``generated/vpkg`` (``srstudio.package``: verified, validated by the engine, repacked
+only when its scene changed). A drifted video, or one without a package, is held back and listed, and the command
+exits 1; a staging or upload failure exits 2. ``tools/systemd/srstudio-drive.{path,service}`` run it on every delivery.
 The upload is ``rclone copy``, which never deletes on Drive; a video that is held back stays wherever an earlier
 push put it. Needs an rclone remote (``rclone config``; the default is ``gdrive:``).
 """
