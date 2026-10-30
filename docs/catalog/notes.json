@@ -4046,6 +4046,73 @@
         ]
       },
       "text": "Traços de ar correndo de um ponto a outro: o saco esvaziando no rosto da Rosa por três segundos (Family Size)."
+    },
+    {
+      "section": "locations",
+      "name": "Ponto de ônibus",
+      "parts": [
+        "collage-bus-stop"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 0.5
+      },
+      "text": "Abrigo de ônibus com banco laranja e prédios lilases ao fundo; a Deb recebe e perde o salário aqui em Payday."
+    },
+    {
+      "section": "props",
+      "name": "Conta com dentes e celular",
+      "parts": [
+        "collage-bill",
+        "collage-phone"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 5.7,
+        "box": [
+          560,
+          780,
+          520,
+          1000
+        ]
+      },
+      "text": "Conta de papel com boca serrilhada e pernas, que sobe até o celular e morde o saldo; a Deb perde tudo em onze segundos (Payday)."
+    },
+    {
+      "section": "props",
+      "name": "Confete",
+      "parts": [
+        "collage-confetti"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 0.5,
+        "box": [
+          0,
+          0,
+          1080,
+          760
+        ]
+      },
+      "text": "Confete de papel já no ar no primeiro quadro, que a certa altura vira e cai para cima (Payday)."
+    },
+    {
+      "section": "props",
+      "name": "Balão de mensagem",
+      "parts": [
+        "collage-bubble"
+      ],
+      "shot": {
+        "episode": "payday",
+        "at": 12.5,
+        "box": [
+          360,
+          720,
+          720,
+          520
+        ]
+      },
+      "text": "Balão de mensagem com rabicho, cinza para o outro e verde para o meu; aqui o banco parabeniza a Deb (Payday)."
     }
   ]
 }
