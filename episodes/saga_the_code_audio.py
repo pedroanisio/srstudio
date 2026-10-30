@@ -24,7 +24,7 @@ from srstudio.saga_sets import FLOOR
 
 Panel = partial(saga_sets.Panel, fade=True)  # fades in, so each panel is judged as read (strict contrast)
 
-STAND = (Place("gloom", 330), Place("seven", 770, flip=True))
+STAND = (Place("gloom", 330), Place("seven", 700, flip=True))  # Seven clear of the console's SR-1028
 PLANET = (900, 820)  # the target in the bridge window; zooms pivot on the floor line, keeping the cast off the captions
 VERIFY = Panel(0, "VERIFY IT'S YOU", "We sent a code to your phone.", tone="alert")
 CALLING = Panel(0, "CALLING", "Lord Gloom's phone. Ringing...")
