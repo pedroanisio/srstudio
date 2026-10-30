@@ -3,6 +3,7 @@
 import json
 import runpy
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -153,6 +154,26 @@ def test_parts_lists_every_version_and_the_default(capsys):
     fox = next(line for line in out.splitlines() if line.startswith("toon-fox "))
     assert fox.split() == ["toon-fox", "character", "toon", "2", "1,2"]
     assert "toon-bear " in out
+
+
+def only_proposed(monkeypatch):
+    bear = parts.get("toon-bear")
+    version = replace(bear.versions[0], status="proposed", approval=None, proof="", drawing="")
+    table = {**parts.load(), "toon-bear": replace(bear, versions=(version,))}
+    monkeypatch.setattr(parts, "load", lambda: table)
+
+
+def test_parts_lists_a_part_with_no_approved_version_without_a_default(capsys, monkeypatch):
+    only_proposed(monkeypatch)
+    assert main(["parts"]) == 0
+    bear = next(line for line in capsys.readouterr().out.splitlines() if line.startswith("toon-bear "))
+    assert bear.split() == ["toon-bear", "character", "toon", "-", "1?"]
+
+
+def test_parts_json_gives_a_part_with_no_approved_version_no_default(capsys, monkeypatch):
+    only_proposed(monkeypatch)
+    assert main(["parts", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["toon-bear"]["default"] is None
 
 
 def test_parts_json_is_the_table(capsys):

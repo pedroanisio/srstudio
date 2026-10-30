@@ -247,6 +247,10 @@ class Part:
             raise NotApprovedError(f"{self.name} has no approved version")
         return approved[-1]
 
+    def default(self) -> int | None:
+        """The number of :meth:`latest`, or None while every version is proposed: a listing shows such a part."""
+        return next((v.number for v in reversed(self.versions) if v.status == "approved"), None)
+
     def pinned(self, number: int) -> Version:
         """``number`` as a release may pin it: it exists and it is approved."""
         v = self.version(number)

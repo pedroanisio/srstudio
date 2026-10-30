@@ -526,3 +526,15 @@ def test_the_clipboard_draws_inside_its_footprint_even_at_the_height_of_the_pop(
 def test_the_clipboard_refuses_a_form_it_cannot_letter(kw, match):
     with pytest.raises(ToonDataError, match=match):
         clipboard(**{"at": (300, 826), **kw})
+
+
+def test_the_deep_stamp_tone_is_darker_than_the_tone_it_stands_in_for():
+    def luminance(colour: str) -> float:
+        return sum(
+            weight * int(colour[i : i + 2], 16) for weight, i in zip((0.2126, 0.7152, 0.0722), (1, 3, 5), strict=True)
+        )
+
+    assert luminance(toon_everyday.STAMP_TONES["deep"]) < luminance(toon_everyday.STAMP_TONES["bad"])
+    cv = canvas()
+    clipboard(cv, stamp=(1.0, "NO", "deep"), at=(300, 826))
+    assert toon_everyday.STAMP_TONES["deep"] in ET.tostring(tree(cv), encoding="unicode")

@@ -54,10 +54,12 @@ from . import (  # noqa: F401  (registers builders)
     toon_dinner,
     toon_everyday,
     toon_head,
+    toon_house,
     toon_props,
     toon_redrawn,
     toon_rooms,
     toon_sets,
+    toon_surgery,
     toon_torso,
 )
 from .canvas import (

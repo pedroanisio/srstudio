@@ -22,7 +22,21 @@ def test_the_toon_recorder_passes_the_sketch_seed_note_and_mouth(helpers, monkey
     monkeypatch.setattr(toon, "record_episode", lambda *a, **k: got.append((a, k)))
     main = toon.recorder("SKETCH", 7, "note", "Doc\n\nmore", mouth="MOUTH")
     assert main([str(tmp_path), "--ffmpeg", "ff"], {"K": "v"}) == 0
-    assert got == [(("SKETCH", tmp_path.resolve(), {"K": "v"}, "ff", 7, "note"), {"mouth": "MOUTH"})]
+    assert got == [
+        (
+            ("SKETCH", tmp_path.resolve(), {"K": "v"}, "ff", 7, "note"),
+            {"mouth": "MOUTH", "foley_of": toon.sound_effects},
+        )
+    ]
+
+
+def test_the_toon_recorder_passes_a_reels_own_foley(helpers, monkeypatch, tmp_path):
+    toon, _ = helpers
+    got = []
+    foley = lambda *a: []  # noqa: E731
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: got.append(k))
+    assert toon.recorder("SKETCH", 7, "note", "Doc", foley_of=foley)([str(tmp_path)], {}) == 0
+    assert got[0]["foley_of"] is foley
 
 
 def test_the_toon_recorder_keeps_the_default_mouth_when_none_is_named(helpers, monkeypatch, tmp_path):
@@ -30,7 +44,7 @@ def test_the_toon_recorder_keeps_the_default_mouth_when_none_is_named(helpers, m
     got = []
     monkeypatch.setattr(toon, "record_episode", lambda *a, **k: got.append(k))
     toon.recorder("SKETCH", 7, "note", "Doc")([str(tmp_path)], {})
-    assert got == [{"mouth": toon.sketch.MOUTH_STYLE}]
+    assert got == [{"mouth": toon.sketch.MOUTH_STYLE, "foley_of": toon.sound_effects}]
 
 
 def test_the_toon_recorder_validates_the_sketch_after_parsing_and_before_recording(helpers, monkeypatch, tmp_path):

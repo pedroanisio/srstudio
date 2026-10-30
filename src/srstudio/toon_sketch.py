@@ -35,6 +35,7 @@ from . import (
     TOON,
     Episode,
     EpisodeSpec,
+    checks,
     errors,
     foley,
     fonts,
@@ -62,6 +63,7 @@ BADGE_SIZE = 28
 CALL_ENDED = "Call ended"
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 PILL_MARGIN = 40  # frame pixels kept free at each side of the widest caption pill
+SEAT = (165, 840)  # where a character sits on the desk, reference pixels: a framed figure grows from here
 
 
 @dataclass(frozen=True)
@@ -91,7 +93,9 @@ class Staging:
     dressed :class:`Shot` (its beats are the ones drawn, scripted or voiced) and the shot's group (set, character,
     desk and props; the captions stay still), which is then named ``shot-NNN`` (its order) so
     :mod:`srstudio.craft` counts its moves as camera. ``heads`` names the characters that move their heads
-    (:mod:`srstudio.toon_rigs`); everyone else is drawn flat."""
+    (:mod:`srstudio.toon_rigs`); everyone else is drawn flat. ``figures`` frames a character closer than the desk's
+    medium: ``{who: (scale, dx)}`` draws it that much larger about its seat (:data:`SEAT`) and moves it ``dx``
+    reference pixels sideways, set and desk staying where they are, so a small character can fill a shot."""
 
     sketch: sketch.Sketch
     seed: int
@@ -106,6 +110,18 @@ class Staging:
     lit: bool = False  # each shot gets a light layer between the character and the desk (ADR 0043)
     camera: Callable[[Shot, object], None] | None = None
     heads: tuple[str, ...] = ()
+    figures: Mapping[str, tuple[float, float]] = field(default_factory=dict)
+
+
+def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
+    """The group a character is drawn into: ``parent`` itself, or a group ``framing`` scales and moves."""
+    if framing is None:
+        return parent
+    scale, dx = framing
+    if not (checks.number(scale) and scale > 0 and checks.number(dx)):
+        raise StagingError(f"a figure's framing is (scale > 0, dx), got {framing!r}")
+    x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
+    return cv.group(parent, cv.uid("g"), anchorX=x, anchorY=y, x=x + toon.fh(dx), y=y, scaleX=scale, scaleY=scale)
 
 
 def _rig(who: str, versions: Mapping[str, int]) -> toon_head.HeadRig:
@@ -241,12 +257,13 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
+        body = figure_group(cv, g, staging.figures.get(app.who))
         if app.who in heads:
             rig, plan = heads[app.who]
             shot_plan = plan.during(app.start, app.end)
-            toon_head.figure(cv, g, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
+            toon_head.figure(cv, body, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
         else:
-            sketch.drawer(app.who, staging.versions)(cv, g, poses, app.end, taps, enter=app.start, **extra)
+            sketch.drawer(app.who, staging.versions)(cv, body, poses, app.end, taps, enter=app.start, **extra)
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
@@ -288,6 +305,9 @@ def sound_effects(
     return out
 
 
+Foley = Callable[[Sequence[sketch.Beat], float, Sequence[tuple[float, float]], Path, int], list[dict]]
+
+
 def record_episode(
     sk: sketch.Sketch,
     root: Path,
@@ -296,17 +316,19 @@ def record_episode(
     seed: int,
     note: str,
     mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
+    foley_of: Foley = sound_effects,
 ) -> dict:
     """Record the sketch under ``root`` (only with ``SRSTUDIO_ALLOW_CLOUD=1``; the key from the environment, never
     written), synthesise its effects and write ``narration.json``; returns the manifest. ``mouth`` reads the takes'
-    letters into the characters' viseme tracks (``voiced/mouths.json``)."""
+    letters into the characters' viseme tracks (``voiced/mouths.json``); ``foley_of`` makes the effects, the office
+    sounds of :func:`sound_effects` unless a sketch set somewhere else brings its own."""
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
     require_consent(env)
     root = Path(root)
     key = env.get(KEY_ENV, "")
     client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=seed)
     rec = sketch.record(sk, root, client, key=key, ffmpeg=ffmpeg, mouth=mouth)
-    effects = sound_effects(rec.beats, rec.end, rec.speech, root, seed)
+    effects = foley_of(rec.beats, rec.end, rec.speech, root, seed)
     manifest = sketch.manifest(sk, rec, effects, MODEL, note)
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     for q in rec.items:
@@ -323,15 +345,16 @@ def recorder(
     doc: str | None,
     mouth: soundtrack.PhonemeStyle = sketch.MOUTH_STYLE,
     validate: Callable[[sketch.Sketch], object] | None = None,
+    foley_of: Foley = sound_effects,
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
     (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
-    once the arguments are parsed, before anything is recorded."""
+    once the arguments are parsed, before anything is recorded; ``foley_of`` as in :func:`record_episode`."""
 
     def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
         if validate is not None:
             validate(sk)
-        return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth)
+        return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of)
 
     def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
         return recording.main(record, doc, argv, env)

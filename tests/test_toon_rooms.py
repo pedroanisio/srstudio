@@ -286,6 +286,20 @@ def ring(cv: Canvas, colour: str = "lit", k: int = 0):
     ]
 
 
+def test_the_lounge_router_can_hold_still_through_a_held_opening():
+    cv, _, back, light = staged("lounge", blink_from=1.0)
+    blinks = [
+        k for k in map(keys_of, animations(back)) if k[-1][0] == D and len({v for _, v in k}) == 2 and k[0][0] == 1.0
+    ]
+    assert len(blinks) == 4 and all(k[0][0] == 1.0 for k in blinks)
+
+
+@pytest.mark.parametrize("blink_from", [-1.0, D, D + 1, float("nan")])
+def test_the_lounge_refuses_a_blink_start_outside_its_clock(blink_from):
+    with pytest.raises(ToonDataError, match="blink"):
+        staged("lounge", blink_from=blink_from)
+
+
 def test_the_lounge_shelf_holds_the_libraries_smart_speaker():
     cv, _, back, light = staged("lounge")
     assert ring(cv) == [[(0.0, 0.0)]]  # one speaker, off by default

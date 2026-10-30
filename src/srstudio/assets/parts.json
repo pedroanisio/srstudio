@@ -3485,6 +3485,40 @@
         }
       ]
     },
+    "toon-bedroom": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c6f6fd89c051e81879eba754b488b3ec153d7270c9f8cbba4e45d4aeb018bd5a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bib-insert": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "479f730ad5484a4b6c302e6a8fd5c24865091c4af404604a5be30910ba8130e7",
+          "rig": null
+        }
+      ]
+    },
     "toon-board-text": {
       "kind": "graphic",
       "style": "toon",
@@ -3658,6 +3692,57 @@
         }
       ]
     },
+    "toon-day-card": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c8b33040f59660a483f3a26493971b413c083bb7a107c4704f0789e14f759f77",
+          "rig": null
+        }
+      ]
+    },
+    "toon-dental-lamp": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a98eba7085d01f701abccc4f4d8eee606c15f065a988a364ea72ed2a7aa78757",
+          "rig": null
+        }
+      ]
+    },
+    "toon-dental-tray": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ffb563891efb3a62f6b070c80dacd401cfbc6975a35f50be81eec26c41062a75",
+          "rig": null
+        }
+      ]
+    },
     "toon-desk": {
       "kind": "location",
       "style": "toon",
@@ -3735,6 +3820,23 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de",
+          "rig": null
+        }
+      ]
+    },
+    "toon-finger": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "05fbfc6cabc23d0bb1e68fb58099b7201cf5cfaa070b33ddfeb534af2fd4a9af",
           "rig": null
         }
       ]
@@ -3839,6 +3941,23 @@
         }
       ]
     },
+    "toon-hallway": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c983f15b99fdbe93be4ac253970ea927b28297d6a68ab065e844ef3d8ae0e295",
+          "rig": null
+        }
+      ]
+    },
     "toon-hamster": {
       "kind": "character",
       "style": "toon",
@@ -3936,6 +4055,40 @@
         }
       ]
     },
+    "toon-horse": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e73fafe5d42636e68872c0fa05c8954dfe0c2cebdd87e0242804ba03e16d0ad1",
+          "rig": null
+        }
+      ]
+    },
+    "toon-key-line": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "054e23def8ed6830166abfe550c925cd58b866e4dfb2152f14e7574422b62825",
+          "rig": null
+        }
+      ]
+    },
     "toon-kitchen": {
       "kind": "location",
       "style": "toon",
@@ -3949,6 +4102,23 @@
           "proof": "",
           "approval": null,
           "drawing": "a284fd0e37e091f34ee930cc1bfee448f445beebfe440fa2c18a06f806d161e4",
+          "rig": null
+        }
+      ]
+    },
+    "toon-ledge": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "226c74801d7a50827ee3771a3b919eb7094cb22056df8833fd7e500aa55181d3",
           "rig": null
         }
       ]
@@ -4089,6 +4259,40 @@
         }
       ]
     },
+    "toon-probe": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "86cd9646f9fcc8184c9f45627e283e1fc7ddf7ba4cef1338cfb3bfcf431e24aa",
+          "rig": null
+        }
+      ]
+    },
+    "toon-quilt": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fb6e757544dca0f0ef35d799123042feb93f18ac6c41da161d3e8ff28988cb3b",
+          "rig": null
+        }
+      ]
+    },
     "toon-rabbit": {
       "kind": "character",
       "style": "toon",
@@ -4200,6 +4404,23 @@
         }
       ]
     },
+    "toon-sink": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f389110f91bb0d57203734e54ad23106264b1686ec125780f0812a7d4078879",
+          "rig": null
+        }
+      ]
+    },
     "toon-sloth": {
       "kind": "character",
       "style": "toon",
@@ -4247,6 +4468,23 @@
         }
       ]
     },
+    "toon-surgery": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "482b92c135b7de51f7ab76e240afa18a19873c8fbe931f38b4d64da008e974a8",
+          "rig": null
+        }
+      ]
+    },
     "toon-table": {
       "kind": "prop",
       "style": "toon",
@@ -4281,6 +4519,23 @@
         }
       ]
     },
+    "toon-thermostat": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ed82c71e3310f486e96efe462667b552e488193b3ecf66a39d9ea3b6da0f291",
+          "rig": null
+        }
+      ]
+    },
     "toon-toast": {
       "kind": "graphic",
       "style": "toon",
@@ -4294,6 +4549,57 @@
           "proof": "",
           "approval": null,
           "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tooth-photo": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Do You Floss; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e1a3feeaf633f40d0842b2269376784398c16644b11b0d62da4f9a854a973e86",
+          "rig": null
+        }
+      ]
+    },
+    "toon-vent": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Who Touched It; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "825646d11470d5f810966fefd978b0e5edf8a5f130c5d472bbc5300572dfdcd2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-watering-can": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for It's Soaking; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4554b59dfea06acc7f4f9056c543b2452779259db9198a4b2f10c81e87658e85",
           "rig": null
         }
       ]
