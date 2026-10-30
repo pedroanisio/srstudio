@@ -108,5 +108,9 @@ on `DESK_FRONT` #b25647 is 1.44:1 by the WCAG luminance formula. Any shade over 
 
 - A lit sketch sets `Staging(lit=True)` and calls `toon_rooms.dress(shot, name, lights)`. Dressing a shot that is
   not lit is refused, so the light is never drawn over the desk by mistake.
+- The lounge's shelf speaker is the library's `toon_everyday.speaker` (ADR 0042) at scale 0.5, so there is one
+  speaker drawing. Its ring follows the lounge's `speaker=` states (off by default). The speaker keys its ring even
+  when nothing changes, so a still lounge has single-key animations: a still holds still, but it is no longer free of
+  `<animate>`. A still takes one speaker state, at 0.
 - No episode uses the rooms yet. The catalog gallery's coverage check counts only parts that rendered episodes
   use, so the rooms need no gallery note until an episode uses them.

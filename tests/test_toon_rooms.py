@@ -14,7 +14,18 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, TOON, Canvas, flat_counter, registry, toon, toon_rooms, toon_sets, toon_sketch
+from srstudio import (
+    PEACH,
+    TOON,
+    Canvas,
+    flat_counter,
+    registry,
+    toon,
+    toon_everyday,
+    toon_rooms,
+    toon_sets,
+    toon_sketch,
+)
 from srstudio.canvas import Signature
 from srstudio.sample import SYSTEM_FONTS
 from srstudio.toon import ToonDataError
@@ -210,9 +221,10 @@ def test_a_screens_colours_take_turns():
 
 # -- the drawing ----------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize("room", sorted(ROOMS))
-def test_a_still_room_has_no_animation_and_no_signature(room):
+def test_a_still_room_holds_still_and_has_no_signature(room):
     cv, _, back, light = staged(room, end=0.0)
-    assert animations(tree(cv)) == []
+    # nothing moves: an animation in a still (the lounge speaker's ring) holds one key
+    assert all(len(keys_of(a)) == 1 for a in animations(tree(cv)))
     assert not any((g.get("id") or "").startswith("sig-") for g in tree(cv).iter("group"))
     assert len(back) and len(light)
     shade, *_ = blended(light, "multiply")
@@ -262,6 +274,62 @@ def test_the_lounge_router_blinks_until_the_end():
     cv, _, back, light = staged("lounge")
     blinks = [k for k in map(keys_of, animations(back)) if k[0][0] == 0.0 and k[-1][0] == D]
     assert blinks and all(len({v for _, v in k}) == 2 for k in blinks)
+
+
+def ring(cv: Canvas, colour: str = "lit", k: int = 0):
+    """The opacity keys of every speaker ring segment ``k`` of ``colour`` on the canvas."""
+    return [
+        keys_of(a)
+        for g in tree(cv).iter("group")
+        if (g.get("id") or "").endswith(f"-ring-{colour}-{k}")
+        for a in g.findall("animate")
+    ]
+
+
+def test_the_lounge_shelf_holds_the_libraries_smart_speaker():
+    cv, _, back, light = staged("lounge")
+    assert ring(cv) == [[(0.0, 0.0)]]  # one speaker, off by default
+    x, y = toon_rooms.LOUNGE_SPEAKER
+    s = toon_rooms.LOUNGE_SPEAKER_SCALE
+    b = toon_everyday.SPEAKER_BOX
+    foot = (x + s * b[0], y + s * b[1], x + s * b[2], y + s * b[3])
+    shelf = ROOMS["lounge"].objects["shelf"]
+    assert shelf[0] <= foot[0] and shelf[1] <= foot[1] and foot[2] <= shelf[2] and foot[3] <= shelf[3]
+
+
+def test_the_lounge_speaker_follows_its_states():
+    cv, _, back, light = staged("lounge", speaker=[[0, "off"], [2, "listen"], [4, "error"]])
+    assert ring(cv) == [[(0.0, 0.0), (2.0, 1.0), (4.0, 0.0)]]
+    assert ring(cv, "alarm") == [[(0.0, 0.0), (4.0, 1.0)]]
+
+
+def test_two_shots_of_the_lounge_draw_two_speakers_without_a_clash():
+    cv = canvas()
+    for _ in range(2):
+        toon_rooms.stage(cv, cv.group(cv.comp, cv.uid("g")), cv.group(cv.comp, cv.uid("g")), "lounge", None, D)
+    ids = [n.get("id") for n in tree(cv).iter() if n.get("id")]
+    assert len(ring(cv)) == 2 and len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize(
+    ("speaker", "end", "match"),
+    [
+        ([[0, "sing"]], D, "state"),
+        ([], D, "at least one"),
+        ([[0, "off"], [1, "listen"]], 0.0, "still"),
+        ([[1, "listen"]], 0.0, "still"),
+    ],
+)
+def test_bad_speaker_states_are_refused(speaker, end, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_rooms.stage(cv, cv.comp, cv.comp, "lounge", None, end, speaker=speaker)
+
+
+def test_a_still_speaker_shows_its_one_state_without_moving():
+    cv, _, back, light = staged("lounge", end=0.0, speaker=[[0, "think"]])
+    lit = [ring(cv, "lit", k)[0] for k in range(toon_everyday.RING)]
+    assert lit[0] == [(0.0, 1.0)] and all(k == [(0.0, 0.0)] for k in lit[1:])
 
 
 def test_the_counter_shows_each_ticket_in_turn():
