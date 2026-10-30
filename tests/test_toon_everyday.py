@@ -226,6 +226,12 @@ def test_the_props_are_registered_with_the_toon_style():
         assert (names[name]["kind"], names[name]["style"]) == ("prop", "toon"), name
 
 
+def test_the_module_exports_every_prop_and_its_data_types():
+    public = {"phone", "speaker", "receipt", "take_a_number", "clipboard", "Screen", "Field", "SIGNATURE_BOX"}
+    assert public <= set(toon_everyday.__all__)
+    assert all(hasattr(toon_everyday, name) for name in toon_everyday.__all__)
+
+
 # -- the smart speaker -----------------------------------------------------------------------------------------------
 N = toon_everyday.RING
 STEP, PULSE, DIM = toon_everyday.CHASE_STEP, toon_everyday.PULSE_STEP, toon_everyday.PULSE_DIM
