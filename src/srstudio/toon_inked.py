@@ -5,17 +5,20 @@ module draws in code (:class:`Inked`, a :class:`srstudio.toon_cast.Drawing`):
 
 * **uneven, asymmetric contours with many points**: the outlines are placed by hand, unmirrored, and drift like a
   hand following them (:func:`srstudio.brush.wobble`);
-* **a pressed line**: every ink band is heavier where the form turns from the light (the bottom and the back) and
-  thins at the tips, where a brush lifts (:func:`srstudio.brush.inked`); limbs and inner lines taper into their
+* **a pressed, broken line**: every ink band is heavier where the form turns from the light (the bottom and the
+  back), thins at the tips, carries a dry brush's grit, and breaks in three to five seeded places with a nick
+  between, where a hand lifts the brush (:func:`srstudio.brush.broken`); limbs and inner lines taper into their
   joins;
-* **inner lines that stay open**: fur tufts on the crown, the cheeks, the chest and the tail tip, fluff in the ears,
-  the philtrum and the paw creases are tapered strokes, not closed shapes (:meth:`Inked.details`);
+* **few inner lines, left open**: the cheeks, the tail tip, a fluff in each ear, the philtrum and the
+  paw creases are tapered strokes, not closed shapes (:meth:`Inked.details`), each a little lumpy;
 * **a slight head tilt and an off-centre face**: the head turns about the neck, fading to nothing at the shoulders,
   and the face sits toward the far side, the far eye smaller;
 * **eyes and mouths drawn for the face**: almond eyes with an iris that slant to the outer corner, a fox's mouth
   under the nose; every kind of :data:`srstudio.toon.EYES` and :data:`srstudio.toon.MOUTHS` and every viseme is its
-  own drawing here, none the shared brush template;
-* **a shade tone**: one darker coat (:data:`SHADE`) where the forms turn away, and a cream shade under the chin.
+  own drawing here, none the shared brush template, and every eye a one-off: its almond, iris, pupil and shine are
+  seeded lumps per kind and side (:func:`srstudio.brush.lump`), never a perfect ellipse;
+* **a shade tone**: one darker coat (:data:`SHADE`) where the forms turn away, the head's a crescent that starts and
+  ends on the outline and swells into the cheek, and a cream shade under the chin.
 
 :data:`FOX_INKED` is a :class:`srstudio.toon_cast.Look` with this drawing, so it keeps the brush characters'
 contract (every expression and arms, typing frames, blinks, lip sync, wear, :func:`srstudio.toon_cast.figure_shapes`
@@ -25,12 +28,14 @@ as data) and a sketch swaps it in by name (``"fox-inked"``). The fox (:data:`srs
 from __future__ import annotations
 
 import math
+import random
+import zlib
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from . import brush
-from .brush import Point
+from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
 from .toon import LIPS, Pose, ToonDataError
@@ -50,12 +55,13 @@ NECK: Point = (CENTRE, 700.0)
 FADE = 90.0  # the tilt fades to nothing over this many px above the neck
 SHIFT = 13.0  # the face sits this far toward the far (right) side
 
-BODY_HAND = brush.Hand(light=0.62, heavy=1.5, toward=(0.45, 0.89), tips=0.7, grain=0.22)
+BODY_HAND = brush.Hand(light=0.62, heavy=1.5, toward=(0.45, 0.89), tips=0.7, grain=0.22, ragged=0.16)
 EYE_HAND = brush.Hand(light=0.35, heavy=1.55, toward=(0.0, -1.0), tips=0.6, grain=0.12)  # a heavy upper lid
 MOUTH_HAND = brush.Hand(light=0.5, heavy=1.3, toward=(0.0, 1.0), tips=0.5, grain=0.12)
 ARM_INK = brush.Pressure(0.9, 1.12, 0.06, 0.14, 3.3)
-FUR = brush.Pressure(1.0, 0.2, 0.1, 0.06, 1.0)  # pressed at the root, lifted at the tip
-LINE = brush.Pressure(0.95, 0.35, 0.15, 0.08, 1.5)
+FUR = brush.Pressure(1.0, 0.2, 0.14, 0.16, 1.7)  # pressed at the root, lifted at the tip, unevenly
+LINE = brush.Pressure(0.95, 0.35, 0.15, 0.14, 2.3)
+GAP = 1.5  # a break in a body contour, in line weights
 
 
 def _tilt(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -82,18 +88,47 @@ def _hand(points: Sequence[Point], amount: float, seed: int, steps: int = 3) -> 
     return brush.wobble(points, amount, steps=steps, seed=seed)
 
 
-def _inked_fill(points: Sequence[Point], colour: str, weight: float, seed: int, amount: float = 1.4) -> list[Layer]:
-    """A pressed ink band and the fill over it, both on the same hand-drifted contour."""
+def _seed(*parts: str) -> int:
+    """A seed that names what it draws, the same in every build (not :func:`hash`, which changes per run)."""
+    return zlib.crc32("-".join(parts).encode())
+
+
+def _inked_fill(
+    points: Sequence[Point], colour: str, weight: float, seed: int, amount: float = 1.4, breaks: int = 3
+) -> list[Layer]:
+    """A pressed ink band broken in ``breaks`` places and the fill over it, both on the same hand-drifted contour."""
     contour = _hand(points, amount, seed)
-    return [(brush.inked(contour, weight, BODY_HAND, steps=1), "ink"), (brush.outline(contour, steps=1), colour)]
+    band = brush.broken(contour, weight, BODY_HAND, steps=1, breaks=breaks, gap=GAP * weight, seed=seed)
+    return [(piece, "ink") for piece in band] + [(brush.outline(contour, steps=1), colour)]
 
 
 def _fill(points: Sequence[Point], colour: str, seed: int, amount: float = 1.0) -> Layer:
     return (brush.outline(_hand(points, amount, seed), steps=1), colour)
 
 
-def _line(points: Sequence[Point], weight: float, pressure: brush.Pressure = FUR) -> Layer:
-    return (brush.stroke(points, weight, pressure, steps=6), "ink")
+def _line(points: Sequence[Point], weight: float, seed: int, pressure: brush.Pressure = FUR) -> Layer:
+    """An inner line, drifting a little off the points it was placed on."""
+    return (brush.stroke(brush.wobble(points, 0.9, closed=False, steps=3, seed=seed), weight, pressure, steps=2), "ink")
+
+
+def _crescent(outer: Sequence[Point], depth: float, inside: Point, peak: float = 0.6) -> tuple[Point, ...]:
+    """A shade that runs inside the outline along ``outer``: it starts and ends on the outline and swells to
+    ``depth`` toward ``inside``, deepest ``peak`` of the way along, so it turns the form instead of striping it."""
+    path = brush.spline(outer, steps=3)
+    along = [0.0]
+    for a, b in zip(path, path[1:], strict=False):
+        along.append(along[-1] + math.dist(a, b))
+    bend = math.log(0.5) / math.log(peak)
+    inner = []
+    for i, p in enumerate(path):
+        a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        nx, ny = -dy / math.hypot(dx, dy), dx / math.hypot(dx, dy)
+        if nx * (inside[0] - p[0]) + ny * (inside[1] - p[1]) < 0:
+            nx, ny = -nx, -ny
+        d = depth * math.sin(math.pi * (along[i] / along[-1]) ** bend)
+        inner.append((p[0] + nx * d, p[1] + ny * d))
+    return tuple(path) + tuple(inner[-2:0:-1])
 
 
 # -- the fox's body, at rest, before the tilt ------------------------------------------------------------------------
@@ -127,12 +162,7 @@ _EAR_TIPS = (
     ((52.0, 420.0), (48.0, 402.0), (47.0, 394.0), (58.0, 397.0), (73.0, 405.0), (66.0, 412.0), (60.0, 424.0)),
     ((300.0, 406.0), (313.0, 398.0), (316.0, 410.0), (314.0, 424.0), (306.0, 420.0), (296.0, 418.0)),
 )  # fmt: skip
-_EAR_FLUFF = (
-    ((112.0, 506.0), (100.0, 484.0), (93.0, 462.0)),
-    ((126.0, 498.0), (118.0, 480.0), (114.0, 468.0)),
-    ((252.0, 500.0), (262.0, 476.0), (270.0, 460.0)),
-    ((240.0, 504.0), (246.0, 488.0)),
-)
+_EAR_FLUFF = (((112.0, 506.0), (100.0, 484.0), (93.0, 462.0)), ((252.0, 500.0), (262.0, 476.0), (270.0, 460.0)))
 _TAIL = (
     (300.0, 806.0), (318.0, 782.0), (337.0, 752.0), (352.0, 716.0), (360.0, 684.0), (361.0, 656.0), (356.0, 633.0),
     (347.0, 613.0), (369.0, 619.0), (383.0, 641.0), (389.0, 674.0), (384.0, 714.0), (370.0, 754.0), (348.0, 790.0),
@@ -157,10 +187,7 @@ _CHIN = (
     (146.0, 690.0), (170.0, 697.0), (196.0, 698.0), (222.0, 693.0), (238.0, 688.0), (228.0, 701.0), (208.0, 710.0),
     (184.0, 712.0), (162.0, 707.0),
 )  # fmt: skip
-_HEAD_SHADE = (
-    (226.0, 488.0), (252.0, 497.0), (268.0, 510.0), (279.0, 527.0), (287.0, 548.0), (293.0, 570.0), (300.0, 590.0),
-    (304.0, 600.0), (288.0, 603.0), (276.0, 586.0), (268.0, 562.0), (258.0, 536.0), (246.0, 516.0), (232.0, 500.0),
-)  # fmt: skip
+_HEAD_SHADE = _crescent(_SILHOUETTE[7:14], 24.0, (185.0, 580.0))  # the crown's far side down into the cheek
 _FLANK_SHADE = (
     (296.0, 714.0), (309.0, 728.0), (317.0, 756.0), (322.0, 790.0), (324.0, 826.0), (302.0, 826.0), (300.0, 792.0),
     (295.0, 758.0), (288.0, 732.0),
@@ -170,15 +197,10 @@ _TAIL_SHADE = (
     (362.0, 742.0),
 )  # fmt: skip
 _HEAD_STROKES = (
-    ((172.0, 514.0), (176.0, 502.0), (178.0, 494.0)),  # the parting on the crown
-    ((198.0, 512.0), (197.0, 502.0)),
     ((72.0, 640.0), (88.0, 650.0), (98.0, 663.0)),  # the cheek line under the ruff
     ((300.0, 640.0), (287.0, 652.0)),
 )
 _BODY_STROKES = (
-    ((160.0, 736.0), (165.0, 748.0)),  # tufts on the chest
-    ((200.0, 742.0), (196.0, 754.0)),
-    ((178.0, 768.0), (182.0, 781.0)),
     ((382.0, 662.0), (372.0, 657.0), (367.0, 666.0), (360.0, 655.0)),  # where the tail turns white
 )
 _NOSE = ((-11.0, -6.0), (-4.0, -8.5), (5.0, -8.0), (11.5, -5.0), (8.0, 1.5), (2.0, 7.0), (-3.0, 6.0), (-9.0, 1.0))
@@ -198,7 +220,7 @@ def _fox_base() -> tuple[tuple[Layer, ...], tuple[Layer, ...]]:
         layers += _inked_fill(_tilt(ear), FOX.coat, INK, seed=4 + k)
         layers.append(_fill(_tilt(_EAR_INNER[k]), light, seed=6 + k, amount=0.8))
         layers.append(_fill(_tilt(_EAR_TIPS[k]), dark, seed=8 + k, amount=0.4))
-    layers += _inked_fill(_tilt(_SILHOUETTE), FOX.coat, INK * 1.05, seed=10, amount=1.6)
+    layers += _inked_fill(_tilt(_SILHOUETTE), FOX.coat, INK * 1.05, seed=10, amount=1.6, breaks=4)
     layers.append(_fill(_tilt(_HEAD_SHADE), SHADE, seed=11, amount=0.8))
     layers.append(_fill(_FLANK_SHADE, SHADE, seed=12, amount=0.8))
     # the muzzle follows the face; the ruff stays inside the outline it runs along
@@ -210,10 +232,11 @@ def _fox_base() -> tuple[tuple[Layer, ...], tuple[Layer, ...]]:
     layers.append(_fill(_tilt(mask), light, seed=14, amount=1.2))
     layers.append(_fill(_tilt(_CHIN), CREAM_SHADE, seed=15, amount=0.8))
     nose_x, nose_y = _face([NOSE_AT])[0]
-    strokes: list[Layer] = [_line(_tilt(s), FINE * 1.1) for s in _EAR_FLUFF]
-    strokes += [_line(_tilt(s), FINE * 1.25) for s in _HEAD_STROKES]
-    strokes += [_line(s, FINE * 1.15) for s in _BODY_STROKES]
-    strokes.append(_line([(nose_x, nose_y + 8.0), (nose_x + 0.8, nose_y + 18.0)], FINE * 1.2, LINE))  # the philtrum
+    strokes: list[Layer] = [_line(_tilt(s), FINE * 1.1, 20 + k) for k, s in enumerate(_EAR_FLUFF)]
+    strokes += [_line(_tilt(s), FINE * 1.25, 30 + k) for k, s in enumerate(_HEAD_STROKES)]
+    strokes += [_line(s, FINE * 1.15, 40 + k) for k, s in enumerate(_BODY_STROKES)]
+    philtrum = [(nose_x, nose_y + 8.0), (nose_x + 0.8, nose_y + 18.0)]
+    strokes.append(_line(philtrum, FINE * 1.2, 50, LINE))
     return tuple(layers + strokes), tuple(strokes)
 
 
@@ -280,15 +303,14 @@ def _drop(x: float, y: float, scale: float) -> tuple[Point, ...]:
 class Inked:
     """A :class:`srstudio.toon_cast.Drawing` for a look drawn like the traced cat: ``base`` is the body at rest
     (with its inner lines, ``strokes``), the head turned ``tilt`` degrees; the near (left) eye is ``sizes[0]`` and
-    the far one ``sizes[1]`` of the look's eye radius; ``iris``, ``shade`` and ``inside`` colour the eyes, the
-    shading of the limbs and an open mouth."""
+    the far one ``sizes[1]`` of the look's eye radius; ``iris`` and ``inside`` colour the eyes and an open
+    mouth."""
 
     base: tuple[Layer, ...]
     strokes: tuple[Layer, ...]
     tilt: float
     sizes: tuple[float, float]
     iris: str
-    shade: str
     inside: str
 
     def foundation(self, look: Look) -> list[Layer]:
@@ -312,6 +334,11 @@ class Inked:
         def at(u: float, v: float, scale: float = 1.0) -> Point:
             return (ex + inner * u * r * scale, ey + v * r * scale)
 
+        side = "near" if inner > 0 else "far"
+
+        def lump(x: float, y: float, rx: float, ry: float, part: str, amount: float, tilt: float = 0.0) -> Shape:
+            return brush.lump(x, y, rx, ry, amount, seed=_seed(part, kind, side), tilt=tilt, points=6)
+
         lift, rise_in, rise_mid, rise_out = _BROW[kind]
         v0 = -1.0 - (INK + lift) / r
         brow = [at(0.9, v0 - rise_in), at(0.05, v0 - rise_mid), at(-1.0, v0 - rise_out)]
@@ -331,22 +358,23 @@ class Inked:
         if kind == "hearts":
             heart = _heart(ex, ey + 1.0, r * 1.22)
             out += [(brush.inked(heart, INK, EYE_HAND), "ink"), (brush.outline(heart), HEART)]
-            out.append((brush.ellipse(ex - 0.42 * r, ey - 0.42 * r, 0.2 * r, 0.14 * r, tilt=-30.0), "white"))
+            out.append((lump(ex - 0.42 * r, ey - 0.42 * r, 0.2 * r, 0.14 * r, "shine", 0.2, -30.0), "white"))
             return self._turn(out, centre)
         scale = 1.22 if kind == "shock" else 1.0
         stretch = 1.1 if kind == "shock" else 1.0  # a shocked eye opens round
-        almond = [at(u, v * stretch, scale) for u, v in ALMOND]
+        rng = random.Random(_seed("almond", kind, side))  # no two eyes drawn alike
+        almond = [at(u + rng.uniform(-0.07, 0.07), v * stretch + rng.uniform(-0.07, 0.07), scale) for u, v in ALMOND]
         out += [(brush.inked(almond, INK, EYE_HAND), "ink"), (brush.outline(almond), "white")]
         dx, dv = _LOOK[kind]
         ix, iy = ex + dx * r, ey + dv * r
         if kind == "shock":  # a pinpoint: no iris to see
-            out.append((brush.ellipse(ix, iy, 0.17 * r, 0.2 * r), "ink"))
-            out.append((brush.ellipse(ix - 0.06 * r, iy - 0.08 * r, 0.06 * r, 0.06 * r), "white"))
+            out.append((lump(ix, iy, 0.17 * r, 0.2 * r, "pupil", 0.14), "ink"))
+            out.append((lump(ix - 0.06 * r, iy - 0.08 * r, 0.07 * r, 0.06 * r, "shine", 0.2), "white"))
         else:
             ri, rp = (0.64, 0.42) if kind == "teary" else (0.56, 0.3)
-            out.append((brush.ellipse(ix, iy, ri * r, ri * r * 1.06), self.iris))
-            out.append((brush.ellipse(ix + inner * 0.03 * r, iy + 0.02 * r, rp * r * 0.86, rp * r * 1.08), "ink"))
-            out.append((brush.ellipse(ix - 0.22 * r, iy - 0.24 * r, 0.13 * r, 0.11 * r, tilt=-20.0), "white"))
+            out.append((lump(ix, iy, ri * r, ri * r * 1.06, "iris", 0.08), self.iris))
+            out.append((lump(ix + inner * 0.03 * r, iy + 0.02 * r, rp * r * 0.86, rp * r * 1.08, "pupil", 0.12), "ink"))
+            out.append((lump(ix - 0.22 * r, iy - 0.24 * r, 0.13 * r, 0.11 * r, "shine", 0.22, -20.0), "white"))
         if kind in _LID:
             v_out, v_in = _LID[kind]
             out.append(
@@ -362,7 +390,7 @@ class Inked:
             )  # fmt: skip
             out.append((brush.stroke([at(-1.12, 0.36), at(0.0, 0.27), at(1.1, 0.42)], INK, LINE, steps=6), "ink"))
         elif kind == "teary":  # glistening, a welling line and a tear at the outer corner
-            out.append((brush.ellipse(ix + 0.24 * r, iy + 0.26 * r, 0.08 * r, 0.08 * r), "white"))
+            out.append((lump(ix + 0.24 * r, iy + 0.26 * r, 0.08 * r, 0.08 * r, "glint", 0.22), "white"))
             well = [at(-0.8, 0.6), at(-0.2, 0.74), at(0.5, 0.66)]
             out.append((brush.stroke(well, FINE * 1.2, brush.EVEN, steps=6), TEAR))
             tear = _drop(at(-0.95, 0.5)[0], ey + 0.7 * r, r / 17.0)
@@ -379,7 +407,7 @@ class Inked:
             def at(u: float, v: float, ex: float = ex, ey: float = ey, inner: float = inner, r: float = r) -> Point:
                 return (ex + inner * u * r, ey + v * r)
 
-            cover = [at(u * 1.42, v * 1.42) for u, v in ALMOND]
+            cover = [at(u * 1.5, v * 1.52) for u, v in ALMOND]
             arc = [at(1.05, 0.16), at(0.25, 0.48), at(-0.5, 0.42), at(-1.1, 0.04)]
             layers: list[Layer] = [
                 (brush.outline(cover), lid),
@@ -489,14 +517,12 @@ class Inked:
         return self._turn(out, look.mouth)
 
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]:
-        """An arm with a hand's pressure: an uneven ink stroke under the coat, its underside shaded, a pressed
-        mitten of a paw with curved creases."""
+        """An arm with a hand's pressure: an uneven ink stroke under the coat, and a mitten of a paw, its line
+        broken, with curved creases."""
         w = look.limb
-        under = [(x, y + w * 0.28) for x, y in points]
         out: list[Layer] = [
             (brush.stroke(points, w + 2 * INK, ARM_INK), "ink"),
             (brush.stroke(points, w, brush.EVEN), look.coat),
-            (brush.stroke(under, w * 0.34, brush.TAPERED), self.shade),
         ]
         px, py = paw
         rx, ry = w * 0.74, w * 0.52
@@ -507,11 +533,10 @@ class Inked:
             )
             for t in (2 * math.pi * k / 10 - math.pi / 2 for k in range(10))
         ]
-        contour = brush.wobble(mitten, 0.7, steps=3, seed=int(px + py) % 7)
-        out += [
-            (brush.inked(contour, INK * 0.95, BODY_HAND, steps=1), "ink"),
-            (brush.outline(contour, steps=1), look.paw or look.coat),
-        ]
+        seed = int(px + py) % 7
+        contour = brush.wobble(mitten, 0.7, steps=3, seed=seed)
+        band = brush.broken(contour, INK * 0.95, BODY_HAND, steps=1, breaks=3, gap=GAP * INK * 0.95, seed=seed)
+        out += [(piece, "ink") for piece in band] + [(brush.outline(contour, steps=1), look.paw or look.coat)]
         if toes:
             for dx in (-w * 0.22, w * 0.2):
                 x = px + dx
@@ -521,7 +546,7 @@ class Inked:
 
 
 _BASE, _STROKES = _fox_base()
-FOX_INK = Inked(_BASE, _STROKES, TILT, (1.05, 0.93), IRIS, SHADE, INSIDE)
+FOX_INK = Inked(_BASE, _STROKES, TILT, (1.05, 0.93), IRIS, INSIDE)
 FOX_INKED = Look(
     name="fox-inked",
     coat=FOX.coat,
@@ -536,7 +561,13 @@ FOX_INKED = Look(
     ears=tuple(_tilt(ear) for ear in _EARS),
     nose=(
         brush.outline(_face([(NOSE_AT[0] + x, NOSE_AT[1] + y) for x, y in _NOSE])),
-        brush.rotate(brush.ellipse(NOSE_AT[0] + SHIFT - 4.0, NOSE_AT[1] - 4.0, 3.6, 2.0, tilt=-12.0), *NECK, TILT),
+        brush.rotate(
+            brush.lump(
+                NOSE_AT[0] + SHIFT - 4.0, NOSE_AT[1] - 4.0, 3.6, 2.0, 0.2, seed=_seed("nose"), tilt=-12.0, points=6
+            ),
+            *NECK,
+            TILT,
+        ),
     ),
     ear=FOX.coat,
     ear_inner=FOX.light,
