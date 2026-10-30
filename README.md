@@ -1373,11 +1373,11 @@ the default and cannot be pinned. An approved drawing is never revised in place:
 if its digest moves, so changing a look means adding a version. Only the operator approves a version. Only Toon reads
 pins so far, through `toon_sketch.Staging.versions`, and the table refuses a second version on any other style.
 
-Version 2 of the dog, the frog, the bear, the rabbit, the raccoon and the hedgehog is proposed
+Version 2 of the dog, the frog, the bear, the rabbit, the raccoon and the hedgehog is the default for new reels
 ([docs/decisions/0052-older-cast-version-2.md](docs/decisions/0052-older-cast-version-2.md),
 [src/srstudio/toon_redrawn.py](src/srstudio/toon_redrawn.py)): each keeps its colours and what it is known by, and
-is drawn again with one smooth torso, pressed ink, a shade tone, a tilted head and its own pupils and paws. Until the
-operator approves one, only `characters.part(name, 2)` draws it, and every reel keeps version 1.
+is drawn again with one smooth torso, pressed ink, a shade tone, a tilted head and its own pupils and paws. Published
+reels pin version 1 and keep it.
 
 A sloth, a goat and a hamster draw like the traced cat, in code
 ([docs/decisions/0045-toon-sloth-goat-hamster.md](docs/decisions/0045-toon-sloth-goat-hamster.md),

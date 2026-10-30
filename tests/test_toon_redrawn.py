@@ -1,6 +1,6 @@
 """Version 2 of the older brush cast (ADR 0052): the dog, the frog, the bear, the rabbit, the raccoon and the hedgehog
-drawn again with a smooth torso and the critters' polish, each kept recognisably itself, each proposed: nothing
-draws them but a request by version, and a pin at version 1 stays where it is."""
+drawn again with a smooth torso and the critters' polish, each kept recognisably itself, each approved by the operator:
+a new reel draws them by default, and a pin at version 1 stays where it is."""
 
 import math
 
@@ -45,38 +45,36 @@ def test_the_six_are_exactly_the_older_cast_but_the_fox():
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_each_is_version_2_proposed_with_no_approval_and_its_proof(name):
+def test_each_is_version_2_approved_in_the_operator_s_words_with_its_proof(name):
     part = sketch.part_of(name)
     character = characters.get(part)
     assert [v.number for v in character.versions] == [1, 2]
     v = character.version(2)
-    assert v.status == "proposed" and v.approval is None
+    assert v.status == "approved"
+    assert v.approval == characters.Approval("2026-10-30", "all the old-cast approved on v2")
     assert v.proof == "generated/character-proofs/older-cast/index.html"
     assert character.version(1).status == "approved"
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_a_proposed_version_is_no_default_and_no_pin(name):
+def test_a_new_reel_draws_version_2_and_a_pin_keeps_version_1(name):
     part = sketch.part_of(name)
-    assert characters.latest(part).number == 1
-    assert characters.resolved(part) == 1
+    assert characters.latest(part).number == 2
+    assert characters.resolved(part) == 2
     assert characters.resolved(part, {part: 1}) == 1
-    with pytest.raises(characters.NotApprovedError, match="proposed"):
-        characters.resolved(part, {part: 2})
-    with pytest.raises(characters.NotApprovedError, match="proposed"):
-        sketch.drawer(name, {part: 2})
+    assert sketch.drawer(name, {}) is getattr(toon_redrawn, name)
+    assert sketch.drawer(name, {part: 2}) is getattr(toon_redrawn, name)
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_version_1_and_the_default_still_draw_the_old_look(name):
+def test_version_1_still_draws_the_old_look(name):
     part = sketch.part_of(name)
     assert sketch.drawer(name, {part: 1}) is registry.get("character", part).builder
-    assert sketch.drawer(name, {}) is registry.get("character", part).builder
     assert toon_cast.LOOKS[name].drawing is None
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_only_a_request_by_version_draws_it(name):
+def test_the_version_is_registered_as_a_part_of_its_own(name):
     part = sketch.part_of(name)
     entry = characters.part(part, 2)
     assert entry.name == f"{part}@2" and entry.builder is getattr(toon_redrawn, name)

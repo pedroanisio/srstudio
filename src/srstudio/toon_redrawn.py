@@ -8,8 +8,8 @@ way the critters are (:mod:`srstudio.toon_critters`): a :class:`~srstudio.toon_c
 unmirrored head, one smooth :class:`~srstudio.toon_torso.Torso` from the neck to the flank with the arms inside it,
 pressed ink, a shade tone, open inner strokes, a tilted head, and pupils and paws of its own.
 
-Each is registered as ``name@2`` and proposed (:mod:`srstudio.characters`): only a request by version draws it, and
-every reel keeps the drawing it pins. :data:`srstudio.toon_cast.LOOKS` still holds version 1, unchanged.
+Each is registered as ``name@2`` and approved (:mod:`srstudio.characters`): a new reel draws it by default, and every
+reel keeps the drawing it pins. :data:`srstudio.toon_cast.LOOKS` still holds version 1, unchanged.
 """
 
 from __future__ import annotations
@@ -709,7 +709,7 @@ REDRAWN = {"dog": DOG, "frog": FROG, "bear": BEAR, "rabbit": RABBIT, "raccoon": 
 @register(
     "character",
     "toon-dog@2",
-    summary="The dog drawn again, proposed: one smooth body, floppy ears over the head, pressed ink, a tilted head, "
+    summary="The dog drawn again: one smooth body, floppy ears over the head, pressed ink, a tilted head, "
     "soft paws, blinks and lip sync",
 )
 def dog(
@@ -730,7 +730,7 @@ def dog(
 @register(
     "character",
     "toon-frog@2",
-    summary="The frog drawn again, proposed: one smooth body, eyes on domes with round lids, a wide mouth, pressed "
+    summary="The frog drawn again: one smooth body, eyes on domes with round lids, a wide mouth, pressed "
     "ink, a tilted head, finger pads, blinks and lip sync",
 )
 def frog(
@@ -751,7 +751,7 @@ def frog(
 @register(
     "character",
     "toon-bear@2",
-    summary="The bear drawn again, proposed: one smooth body, round ears, pressed ink, a tilted head, heavy clawed "
+    summary="The bear drawn again: one smooth body, round ears, pressed ink, a tilted head, heavy clawed "
     "paws, blinks and lip sync",
 )
 def bear(
@@ -772,7 +772,7 @@ def bear(
 @register(
     "character",
     "toon-rabbit@2",
-    summary="The rabbit drawn again, proposed: one smooth body, tall ears, front teeth, pressed ink, a tilted head, "
+    summary="The rabbit drawn again: one smooth body, tall ears, front teeth, pressed ink, a tilted head, "
     "soft paws, blinks and lip sync",
 )
 def rabbit(
@@ -793,7 +793,7 @@ def rabbit(
 @register(
     "character",
     "toon-raccoon@2",
-    summary="The raccoon drawn again, proposed: one smooth body, a bandit mask, cheek tufts, black gloves, pressed "
+    summary="The raccoon drawn again: one smooth body, a bandit mask, cheek tufts, black gloves, pressed "
     "ink, a tilted head, blinks and lip sync",
 )
 def raccoon(
@@ -814,7 +814,7 @@ def raccoon(
 @register(
     "character",
     "toon-hedgehog@2",
-    summary="The hedgehog drawn again, proposed: one smooth body, an uneven crest of spines, pressed ink, a tilted "
+    summary="The hedgehog drawn again: one smooth body, an uneven crest of spines, pressed ink, a tilted "
     "head, clawed paws, blinks and lip sync",
 )
 def hedgehog(

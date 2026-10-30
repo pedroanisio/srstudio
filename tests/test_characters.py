@@ -46,7 +46,7 @@ def test_a_new_reel_gets_the_latest_approved_version_and_can_ask_for_an_older_on
     assert characters.part("toon-fox", 1).name == "toon-fox"
     assert sketch.drawer("fox") is toon_inked.fox_inked
     assert sketch.drawer("fox", {"toon-fox": 1}).__name__ == "fox"
-    assert characters.latest("toon-bear").number == 1
+    assert characters.latest("toon-sloth").number == 1
 
 
 def test_fox_inked_is_fox_version_two_and_no_longer_a_name():
