@@ -25,7 +25,7 @@ def test_the_toon_recorder_passes_the_sketch_seed_note_and_mouth(helpers, monkey
     assert got == [
         (
             ("SKETCH", tmp_path.resolve(), {"K": "v"}, "ff", 7, "note"),
-            {"mouth": "MOUTH", "foley_of": toon.sound_effects},
+            {"mouth": "MOUTH", "foley_of": toon.sound_effects, "sounds": None},
         )
     ]
 
