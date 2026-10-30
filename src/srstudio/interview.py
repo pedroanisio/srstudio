@@ -11,7 +11,8 @@ Speech-to-text must then hear every line as written (:func:`hear`), or the build
 cached hearing back, so the picture keys on the words of the take. The episode's
 schedule places the lines and effects from the trimmed clip lengths (:func:`place`): a line that runs into
 the next, a missing or unknown effect, or anything past the end card stops the build instead of being
-mixed. :func:`build` runs the steps, writes the room tone, the caption font and ``dialogue.json``;
+mixed. :func:`build` runs the steps, writes the caption face first (:func:`caption_face`: DejaVu Sans Bold by
+default, or ``Interview.font``, a Google Font pinned under ``assets/fonts``), then the room tone and ``dialogue.json``;
 :func:`main` is its command line. Every refusal is an :class:`InterviewError`; a failed resolve is the
 engine's :class:`~srstudio.generated.ResolveError`.
 
@@ -32,8 +33,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import checks
+from . import checks, fonts
 from .errors import SrstudioError
+from .fonts import Fetch, FontError, GoogleFont
 from .generated import (
     Generated,
     PlacedClip,
@@ -128,10 +130,13 @@ class Interview:
     reaction_after: float
     reaction_hold: float
     end_card: float
+    font: GoogleFont | None = None  # the caption face: None keeps DejaVu Sans Bold; a GoogleFont is installed
 
     def __post_init__(self) -> None:
         if not self.lines:
             raise InterviewError(f"{self.slug}: an interview needs at least one line")
+        if self.font is not None and not isinstance(self.font, GoogleFont):
+            raise InterviewError(f"{self.slug}: font is a GoogleFont request or None, got {self.font!r}")
         for name in ("reaction_after", "reaction_hold", "end_card"):
             value = getattr(self, name)
             if not (checks.number(value) and value >= 0):
@@ -379,13 +384,18 @@ def build(
     key: str = "",
     env: Mapping[str, str] | None = None,
     extra: Callable[[Timing], dict] = lambda timing: {},
+    fetch: Fetch | None = None,
 ) -> Path:
     """Resolve, hear, place and record ``iv`` into ``root/dialogue.json`` and return its path. ``extra`` adds the
-    episode's own fields (its beats and camera cuts) from the :class:`Timing`; ``env`` is added to the engine's."""
+    episode's own fields (its beats and camera cuts) from the :class:`Timing`; ``env`` is added to the engine's;
+    ``fetch`` is how a Google caption face is downloaded (:func:`srstudio.fonts.fetch_url` by default)."""
     root = Path(root).resolve()
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
     cache = assets / "elevenlabs"
+
+    # 0. The caption face, before anything is requested: a face that will not install costs no clip.
+    caption_face(iv, assets, fetch=fetch)
 
     # 1. Resolve: the engine runs the provider for every stale item and pins what it wrote.
     lines, effects = declarations(iv)
@@ -409,12 +419,8 @@ def build(
     for phrase in t.phrases:
         print(f"{phrase['voice_name']:>4} {phrase['start']:6.3f}-{phrase['end']:6.3f}  {phrase['text']}")
 
-    # 4. The room tone under the whole episode, and the caption face with its licence notice.
+    # 4. The room tone under the whole episode.
     write_room_tone(assets / "room-tone.wav", t.duration, iv.room_tone_seed)
-    font = next((f for f in SYSTEM_FONTS if f.exists()), None)
-    if font is None:
-        raise InterviewError("DejaVu Sans Bold not found; install fonts-dejavu-core")
-    copy_dejavu(font, assets)
 
     timeline = {
         "title": iv.title,
@@ -432,6 +438,53 @@ def build(
     out.write_text(json.dumps(timeline, indent=2) + "\n")
     print(f"duration {t.duration:.3f}s, reaction {t.reaction:.3f}s, end card {t.ending:.3f}s")
     return out
+
+
+FONT_DIR = "fonts"  # a Google caption face, its licence and fonts.lock.json, under the project's assets
+NOTO_SANS_BOLD = GoogleFont("Noto Sans", 700)  # an opt-in face near DejaVu Sans Bold's width, so captions still fit
+
+
+def caption_face(iv: Interview, assets: Path, *, fetch: Fetch | None = None) -> Path:
+    """The interview's caption face in ``assets``: DejaVu Sans Bold copied with its licence notice (``iv.font`` is
+    None, the default), or ``iv.font`` installed from Google Fonts into ``assets/fonts``, pinned in
+    ``fonts.lock.json`` with its licence beside it. A face that will not install raises :class:`InterviewError`;
+    it never falls back to DejaVu."""
+    assets = Path(assets)
+    if iv.font is None:
+        font = next((f for f in SYSTEM_FONTS if f.exists()), None)
+        if font is None:
+            raise InterviewError("DejaVu Sans Bold not found; install fonts-dejavu-core")
+        return copy_dejavu(font, assets)
+    try:
+        return fonts.install(iv.font, assets / FONT_DIR, fetch=fetch).path
+    except FontError as exc:
+        raise InterviewError(
+            f"{iv.slug}: caption font {iv.font.family} {iv.font.weight} could not be installed: {exc}"
+        ) from exc
+
+
+def spec_font(font: GoogleFont, root: str | Path) -> dict[str, str | None]:
+    """The :class:`~srstudio.episode.EpisodeSpec` font fields for ``font`` as the record step pinned it under
+    ``root/assets/fonts``. It never downloads: a face that is not pinned there raises :class:`InterviewError`."""
+    root = Path(root)
+    folder = root / "assets" / FONT_DIR
+
+    def offline(url: str) -> bytes:
+        raise FontError(f"{font.family} {font.weight} is not pinned in {folder}; record the episode first")
+
+    try:
+        face = fonts.as_font(fonts.install(font, folder, fetch=offline), root=root)
+    except FontError as exc:
+        raise InterviewError(str(exc)) from exc
+    return dict(
+        font=face.src,
+        font_id=face.id,
+        font_family=face.family,
+        font_weight=face.weight,
+        font_style=face.style,
+        font_credit=face.credit,
+        font_license=face.license,
+    )
 
 
 def main(
