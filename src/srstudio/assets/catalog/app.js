@@ -210,7 +210,7 @@
     return Object.entries(KINDS).map(([kind, k]) => {
       const own = names.map(n => parts.get(n)).filter(p => p.kind === kind);
       if (!own.length) return '';
-      const shared = title => own.filter(p => p.title === title).length > 1; // one gallery item can show several
+      const shared = title => own.filter(p => p.title === title).length > 1; // a title from a summary can repeat
       const pills = own.map(p =>
         `<a href="${partHref(p)}" data-part="${esc(p.name)}">${esc(shared(p.title) ? p.name : p.title)}</a>`);
       return `<div class="sub">${k.label} (${own.length})</div><div class="pills">${pills.join('')}</div>`;

@@ -90,15 +90,17 @@ from disk is not supported.
 ## Notes
 
 [`notes.json`](notes.json) holds the Portuguese text that cannot be read from disk: an episode's number, lede and
-highlights, a style card's title and text, and the library's gallery. Noted episodes are listed first, in the file's
-order; any other rendered episode follows by name with its scene description as the lede. Schema `1.1.0` (`1.0.0`
-is still read, without a gallery): an unknown field, a missing field or a wrong type stops the build.
+highlights, a style card's title and text, a part's title, and the library's gallery. Noted episodes are listed
+first, in the file's order; any other rendered episode follows by name with its scene description as the lede. Schema
+`1.2.0` (`1.1.0` is still read, without part titles, and `1.0.0` without a gallery either): an unknown field, a missing
+field or a wrong type stops the build.
 
 ```json
 {
-  "schema": "1.1.0",
+  "schema": "1.2.0",
   "episodes": {"camera-off": {"number": "08", "lede": "…", "highlights": ["…"]}},
   "styles": {"soft": {"title": "Blob pose a pose", "text": "…"}},
+  "parts": {"bean-jar": {"title": "Pote de grãos de café"}},
   "gallery": [
     {"section": "cast", "name": "Pip", "parts": ["pip"], "voice": "Will", "text": "…",
      "shot": {"episode": "focus-mode", "at": 1.0, "box": [390, 560, 690, 920]},
@@ -111,6 +113,12 @@ The gallery fills the detail view of each part it names; the cards of the six pa
 `section` is `cast`, `locations`, `props` or `graphics`. `parts` names the registered parts the item shows. `shot` is a still cut from `generated/renders/<episode>.mp4` at `at` seconds,
 cropped to `box` (`[x, y, w, h]` in frame pixels) when one is given; it is at most 480 px wide and cached like the
 web encodes. Only the cast takes `poses`.
+
+A part's title is its `parts` entry, or else the `name` of a gallery item that shows that part alone. An item that
+shows several parts names a shot, so its name stays under "Visto em" and titles none of them. A part with neither takes
+the first clause of its registered summary, in English, until someone writes its entry; a character with no curated
+name gets a plain description here, because a name is the operator's to choose. The build stops when an entry names an
+unregistered part, or when two parts of a kind share a curated title.
 
 When the notes have a gallery, the build also stops when:
 

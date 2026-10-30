@@ -43,12 +43,22 @@ a note can only lag behind the registry.
    a fresh counter per part. `FRAMING` is in the key, to raise when the framing itself changes.
 8. **A package's poster is a frame of its own spec**, at 35% of its length, keyed by spec, moment and package version.
    Packages are only read. `srstudio page` gains `--packages`; a package with no poster stops the build by name.
-9. **A part with no curated title takes the first clause of its registered summary** (`catalog_page.title_of`), the
-   only display text a registry entry offers, with code references removed. Curated titles still win, and no name is
-   invented. Such a title is in English and reads as a description until the notes name the part.
+9. **A title describes the part alone.** It is the part's own entry in the notes (`parts`, notes schema 1.2.0), or the
+   name of a gallery item that shows that part and no other. An item that shows several parts names a shot, which is
+   wrong on a card that shows one of them, so its name stays under "Visto em". Curated titles that repeat within a kind
+   stop the build, because two cards of one kind must be told apart.
+10. **A part with no curated title takes the first clause of its registered summary** (`catalog_page.title_of`), the
+   only display text a registry entry offers, with code references removed. Such a title is in English and reads as a
+   description until the notes title the part. It does not stop the build and is not held to uniqueness, so a part
+   added to the registry always shows up. No name is invented: a character with no curated name gets a plain
+   description, and a name stays the operator's to choose.
 
 ## Rejected alternatives
 
+- **Title a part from the first gallery item that shows it.** "Mesa da entrevista" named the chair and "Parque" the
+  bench and the building: a shot's name, read as the name of an isolated part.
+- **Require a notes entry for every registered part.** A new part would stop the build until its title was written,
+  which is what the summary fallback exists to avoid. Completeness is checked when the entries are written.
 - **Keep reel stills and add a specimen only where none exists.** A card would mean two different things, and a
   picture of a whole scene would still stand for a salt shaker. It also keeps "sem imagem" as a reachable state.
 - **Fall back to a reel frame for a refused part.** It hides the one fact the mark exists to state, that the part has
