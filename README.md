@@ -1534,7 +1534,9 @@ error is `InstagramPostError`, with every problem listed.
 - **Outbox and packages** ([ADR 0024](docs/decisions/0024-every-video-ships-its-package.md)).
   `python3 episodes/publish_drive.py` stages every video that passes the gate in `generated/outbox/<video name>/`
   (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
-  without a package is held back like a drifted one. A recreation ships the package it was received with
+  without a package is held back like a drifted one. A video whose release is in an A/B test
+  (`releases.Tags(test=, arm=)`) is staged with an `ab.json` (`{"test": ..., "arm": ...}`) that the posting job
+  reads, hashed in `outbox.json` like every staged file. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
   the engine. Each call builds and verifies a candidate, comparing its resolved files and metadata with the latest

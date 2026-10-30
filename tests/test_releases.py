@@ -177,6 +177,11 @@ def test_a_new_release_carries_tags_and_a_published_one_need_not():
     assert releases.Tags("everyday-tech", "institution", "recognition").recurring == ()
 
 
+def test_the_posting_jobs_hook_motion_test_is_a_known_test():
+    tags = releases.Tags("everyday-tech", "institution", "recognition", test="sp-hook_motion", arm="b")
+    assert (tags.test, tags.arm) == ("sp-hook_motion", "b")
+
+
 @pytest.mark.parametrize(
     ("kw", "match"),
     [

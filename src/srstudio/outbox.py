@@ -3,8 +3,8 @@
 :func:`ready` asks the publish gate (:func:`srstudio.social.check_delivery`) which videos are current and bundles
 each one with its ``ig.txt``, its ``cover.jpg`` and its ``.vpkg.zip`` package (received with a recreation, packed by
 :mod:`srstudio.package` for an original episode); a video that drifted, or that has no package, is held back and
-reported. :func:`stage` copies the bundles into one private folder per video next to an
-``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now;
+reported. :func:`stage` copies the bundles into one private folder per video, with an ``ab.json`` naming the
+A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s, replacing the previous outbox whole, so the folder holds exactly what is ready now;
 the operator's own top-level dot-files (``.ignore``) are carried over and uploaded with it.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
 check that every staged file arrived with the same hash.
@@ -23,9 +23,11 @@ from pathlib import Path
 
 from . import digest
 from .errors import SrstudioError
+from .releases import ARMS
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
 __all__ = [
+    "AB_NAME",
     "MANIFEST",
     "MANIFEST_VERSION",
     "NO_PACKAGE",
@@ -38,6 +40,7 @@ __all__ = [
 ]
 
 MANIFEST = "outbox.json"
+AB_NAME = "ab.json"  # beside a video in an A/B test: {"test": ..., "arm": ...}, read by the posting job
 MANIFEST_VERSION = "1.0.0"
 NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package"
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -51,10 +54,12 @@ class OutboxError(SrstudioError, ValueError):
 
 @dataclass(frozen=True)
 class Bundle:
-    """One video ready to publish: its folder name in the outbox and the files that go in it, video first."""
+    """One video ready to publish: its folder name in the outbox, the files that go in it, video first, and the
+    ``(test, arm)`` of the A/B test it is in, if any."""
 
     name: str
     files: tuple[Path, ...]
+    ab: tuple[str, str] | None = None
 
 
 def latest_package(folder: Path, slug: str) -> Path | None:
@@ -75,13 +80,16 @@ def ready(
     font: Path,
     packages: Mapping[str, Path] | None = None,
     frozen: Mapping[str, str] | None = None,
+    ab: Mapping[str, tuple[str, str]] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
     ``packages`` maps a video name to its package file; a current video without one is held back
     (:data:`NO_PACKAGE`). A package for a video that is not published, or one that does not exist, raises
     :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready. ``frozen`` is passed to the gate
-    (:func:`~srstudio.social.check_delivery`)."""
+    (:func:`~srstudio.social.check_delivery`). ``ab`` maps a video name to the ``(test, arm)`` it is staged with; a
+    name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`."""
+    ab = _arms(items, ab)
     packages = dict(packages or {})
     unknown = sorted(set(packages) - set(items))
     if unknown:
@@ -101,8 +109,22 @@ def ready(
             drift.append(Drift(name, NO_PACKAGE))
             continue
         folder = Path(deliveries) / name
-        bundles.append(Bundle(name, (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))))
+        files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))
+        bundles.append(Bundle(name, files, ab.get(name)))
     return bundles, drift
+
+
+def _arms(items: Items, ab: Mapping[str, tuple[str, str]] | None) -> dict[str, tuple[str, str]]:
+    ab = dict(ab or {})
+    unknown = sorted(set(ab) - set(items))
+    if unknown:
+        raise OutboxError(f"an A/B arm is named for a video that is not published: {', '.join(unknown)}")
+    for name, (test, arm) in sorted(ab.items()):
+        if not test:
+            raise OutboxError(f"{name}: an A/B arm needs its test")
+        if arm not in ARMS:
+            raise OutboxError(f"{name}: arm {arm!r} is not one of {', '.join(ARMS)}")
+    return ab
 
 
 def _check(bundles: Sequence[Bundle]) -> None:
@@ -117,6 +139,8 @@ def _check(bundles: Sequence[Bundle]) -> None:
         files = [f.name for f in b.files]
         if len(set(files)) != len(files):
             raise OutboxError(f"{b.name}: two files share one name, so one would be staged twice")
+        if b.ab is not None and AB_NAME in files:
+            raise OutboxError(f"{b.name}: a staged file is named {AB_NAME}, which its A/B arm is written to")
 
 
 def _dot_files(folder: Path) -> list[Path]:
@@ -152,6 +176,11 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
                 hashes[copy.name] = digest.sha256(copy)
                 if hashes[copy.name] != before:
                     raise OutboxError(f"{source} changed while it was staged")
+            if b.ab is not None:
+                arm = target / AB_NAME
+                arm.write_text(json.dumps({"test": b.ab[0], "arm": b.ab[1]}) + "\n")
+                arm.chmod(0o600)
+                hashes[AB_NAME] = digest.sha256(arm)
             videos[b.name] = hashes
         manifest = build / MANIFEST
         manifest.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")

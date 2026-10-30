@@ -46,7 +46,7 @@ TERRITORIES = (
 )
 CAUSES = ("institution", "other-person", "protagonist")
 EMOTIONS = ("recognition", "embarrassment", "tension", "relief", "affection", "triumph")
-TESTS = ("opening", "rhythm", "jargon")
+TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion")  # sp-: the posting job's own test ids
 ARMS = ("a", "b")
 
 

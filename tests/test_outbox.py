@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio.outbox import MANIFEST, NO_PACKAGE, Bundle, OutboxError, latest_package, push, ready, stage
+from srstudio.outbox import AB_NAME, MANIFEST, NO_PACKAGE, Bundle, OutboxError, latest_package, push, ready, stage
 from srstudio.social import MANIFEST as DELIVERY
 from srstudio.social import Item, fingerprint, publish
 from support.package import project
@@ -115,6 +115,41 @@ def test_stage_writes_one_private_folder_per_video_and_a_manifest_of_hashes(deli
     assert items["a"][1].stat().st_nlink == 1  # copies, not links: the staged file never aliases the render
 
 
+def test_a_video_in_an_ab_test_is_staged_with_its_arm_in_ab_json(delivered, tmp_path):
+    """The posting job reads a reel's A/B arm from ``ab.json`` beside the video; it is hashed like every staged
+    file, and a video outside a test gets no ``ab.json``."""
+    items, out, pk = delivered
+    bundles, _ = ready(items, out, font=FONT, packages=pk, ab={"a": ("sp-hook_motion", "b")})
+    assert [b.ab for b in bundles] == [("sp-hook_motion", "b"), None]
+    folder = tmp_path / "outbox"
+    manifest = stage(bundles, folder)
+    assert json.loads((folder / "a" / AB_NAME).read_text()) == {"test": "sp-hook_motion", "arm": "b"}
+    assert (folder / "a" / AB_NAME).stat().st_mode & 0o777 == 0o600
+    assert not (folder / "b" / AB_NAME).exists()
+    assert json.loads(manifest.read_text())["videos"]["a"][AB_NAME] == sha(folder / "a" / AB_NAME)
+
+
+@pytest.mark.parametrize(
+    ("ab", "match"),
+    [
+        ({"nobody": ("sp-hook_motion", "a")}, "not published"),
+        ({"a": ("sp-hook_motion", "c")}, "arm"),
+        ({"a": ("", "a")}, "test"),
+    ],
+)
+def test_an_ab_arm_must_name_a_published_video_a_test_and_arm_a_or_b(delivered, ab, match):
+    items, out, pk = delivered
+    with pytest.raises(OutboxError, match=match):
+        ready(items, out, font=FONT, packages=pk, ab=ab)
+
+
+def test_stage_refuses_a_bundle_whose_own_file_is_named_ab_json(tmp_path):
+    clash = tmp_path / AB_NAME
+    clash.write_text("{}")
+    with pytest.raises(OutboxError, match=AB_NAME):
+        stage([Bundle("a", (clash,), ("sp-hook_motion", "a"))], tmp_path / "outbox")
+
+
 def test_restaging_holds_exactly_what_is_ready_now(delivered, tmp_path):
     items, out, pk = delivered
     folder = tmp_path / "outbox"
@@ -211,8 +246,9 @@ def test_push_refuses_a_missing_rclone(tmp_path):
 
 
 # -- the command ---------------------------------------------------------------------------------------------------
-def command(monkeypatch, items, frozen=None):
-    """``episodes/publish_drive.py`` with the posts replaced by ``items`` and the frozen releases by ``frozen``."""
+def command(monkeypatch, items, frozen=None, ab=None):
+    """``episodes/publish_drive.py`` with the posts replaced by ``items``, the frozen releases by ``frozen`` and the
+    A/B arms by ``ab``."""
     sys.path.insert(0, str(EPISODES))
     try:
         import publish_drive
@@ -221,6 +257,7 @@ def command(monkeypatch, items, frozen=None):
     monkeypatch.setattr(publish_drive.posts, "items", lambda renders: items)
     monkeypatch.setattr(publish_drive.posts, "font_file", lambda folder: FONT)
     monkeypatch.setattr(publish_drive.posts, "FROZEN", dict(frozen or {}))
+    monkeypatch.setattr(publish_drive.posts, "AB", dict(ab or {}))
     return publish_drive
 
 
@@ -259,6 +296,25 @@ def test_the_command_stages_a_frozen_video_at_the_drawing_it_was_frozen_at(deliv
     accepted = fingerprint(post("B2"), items["b"].video, FONT)
     assert command(monkeypatch, items, frozen={"b": accepted}).main(args) == 0
     assert "2 ready, 0 held back" in capsys.readouterr().out
+
+
+def test_the_command_stages_each_released_arm_beside_its_video(delivered, tmp_path, monkeypatch, capsys):
+    items, out, _ = delivered
+    args = [*where(out, tmp_path, tmp_path), "--stage-only"]
+    assert command(monkeypatch, items, ab={"b": ("sp-hook_motion", "a")}).main(args) == 0
+    folder = tmp_path / "outbox"
+    assert json.loads((folder / "b" / AB_NAME).read_text()) == {"test": "sp-hook_motion", "arm": "a"}
+    assert not (folder / "a" / AB_NAME).exists()
+
+
+def test_ab_mirrors_the_test_and_arm_of_every_release_in_a_test():
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import instagram_posts as posts
+    finally:
+        sys.path.remove(str(EPISODES))
+    expected = {r.video_name: (r.tags.test, r.tags.arm) for r in posts.RELEASES.values() if r.tags and r.tags.test}
+    assert posts.AB == expected
 
 
 def test_the_command_packs_each_original_episode_and_holds_back_one_it_cannot_pack(

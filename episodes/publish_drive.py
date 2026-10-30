@@ -5,7 +5,8 @@
     python3 publish_drive.py --stage-only    # stage, push nothing
 
 Ready means the publish gate (``instagram_posts.py check``) finds no drift for the video: its render, post,
-caption and cover all match the last delivery, and it has its package. A recreation's package is the one received
+caption and cover all match the last delivery, and it has its package. A video whose release is in an A/B test
+(``releases.Tags(test=, arm=)``) is staged with an ``ab.json`` naming the test and its arm. A recreation's package is the one received
 in ``videos-styles``; an original episode is packed from its project in ``generated/episodes`` into
 ``generated/vpkg`` (``srstudio.package``: verified, validated by the engine, repacked only when its scene changed).
 A drifted video, or one without a package, is held back and listed, and the command exits 1;
@@ -87,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         found = packages_for(items, [*received, args.vpkg])
         bundles, drift = outbox.ready(
-            items, args.deliveries, font=posts.font_file(args.fonts), packages=found, frozen=posts.FROZEN
+            items, args.deliveries, font=posts.font_file(args.fonts), packages=found, frozen=posts.FROZEN, ab=posts.AB
         )
         for d in drift:
             print(f"held back: {d}")
