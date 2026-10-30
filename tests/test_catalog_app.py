@@ -390,10 +390,12 @@ def test_a_package_film_shows_the_poster_of_its_spec_and_keeps_its_player(page, 
     assert card.query_selector(".frame img") and "pacote em SVG" not in card.inner_text()
 
 
-def test_marks_on_what_has_no_video_or_no_still(page, origin):
+def test_marks_what_has_no_video_and_says_nothing_of_a_reel_still_it_lacks(page, origin):
     go(page, origin, "#/personagens/juno")
     page.wait_for_selector("#unused")
-    assert page.wait_for_selector("#no-still") and "take-home" in page.locator("article").inner_text()
+    article = page.locator("article").inner_text()
+    assert "take-home" in article
+    assert "Visto em" not in article and "Nenhum item da galeria" not in article
     go(page, origin, "#/personagens")
     assert "não usado" in page.wait_for_selector("#index .card[data-part='juno']").inner_text()
 
