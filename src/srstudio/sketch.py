@@ -29,7 +29,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks, fonts, soundtrack, toon, toon_cast
+from . import checks, fonts, soundtrack, toon, toon_cast, toon_inked
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -68,7 +68,7 @@ __all__ = [
     "manifest",
 ]
 
-CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog")
+CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog", "fox-inked")
 LIP_SYNCED = (
     "dog",
     "frog",
@@ -77,6 +77,7 @@ LIP_SYNCED = (
     "fox",
     "raccoon",
     "hedgehog",
+    "fox-inked",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
@@ -359,6 +360,7 @@ DRAWERS: dict[str, Drawer] = {
     "fox": toon_cast.fox,
     "raccoon": toon_cast.raccoon,
     "hedgehog": toon_cast.hedgehog,
+    "fox-inked": toon_inked.fox_inked,
 }
 
 

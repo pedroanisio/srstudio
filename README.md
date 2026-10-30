@@ -124,7 +124,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_flat`, `stick_gym`, `stick_school`, `stick_shop`, `stick_windshield` | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1229,6 +1229,17 @@ name (`toon.TRACED_EYES`, `TRACED_MOUTHS`). Any character, the cat included, can
 (`"wear": ["glasses", "sweat", "flush"]` in a poses file, `wear=` on a sketch `Beat`), drawn by
 [src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face.
 
+`toon-fox-inked` ([src/srstudio/toon_inked.py](src/srstudio/toon_inked.py)) is the fox drawn again the way the
+traced cat is drawn, beside the fox, for comparison. Its outlines are placed by hand, unmirrored, and drift like a
+hand following them (`brush.wobble`). Every ink band is pressed: heavier where the form turns from the light and
+thin at the tips (`brush.inked`, a `brush.Hand`). Fur on the crown, cheeks, chest and tail tip, ear fluff, the
+philtrum and the paw creases are open tapered strokes. A darker coat tone shades the back of the head, the flank,
+the tail and the underside of the arms. The head tilts about the neck and the face sits off its midline, with the
+far eye smaller. Its almond eyes with an iris, its muzzle mouths and its visemes are drawn for its face: every
+`EYES` and `MOUTHS` kind is its own drawing. A `Look` takes these through its `drawing` (a `toon_cast.Drawing`), so
+the inked fox keeps the whole contract and a sketch casts it as `"fox-inked"`. Looks without a drawing are drawn
+exactly as before.
+
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 
 The coworkers' episodes are short comedies written as data and cut between the two characters
@@ -1674,7 +1685,9 @@ error is `InstagramPostError`, with every problem listed.
   registry entries;
   `tests/test_toon_cast_more.py`, `tests/test_toon_expressions.py` and `tests/test_toon_wear.py` cover the fox,
   the raccoon and the hedgehog (thumbnail heads, coats, builds), the new expressions with the cat's refusal, and the
-  wear on every character and through a sketch;
+  wear on every character and through a sketch; `tests/test_toon_inked.py` covers the inked fox (every eyes and
+  mouth pair inside its corner, a face of its own for every kind and viseme, lids over open eyes, a dense, uneven,
+  pressed and asymmetric contour, open inner lines, the shade, typing, blinks, lip sync, wear and a sketch);
   `tests/test_sketch.py` covers the sketch (checks and every refused inconsistency, cues with speakers,
   appearances, events, line spans, typing bursts, the placement onto a recording, the drawn cast with stickers, the
   written and reloaded files, a recording through a fake client with its manifest, and a misheard line);
