@@ -241,6 +241,7 @@ def test_the_style_value(tmp_path):
         "stick_office",
         "stick_school",
         "stick_shop",
+        "stick_street",
         "stick_windshield",
     ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
@@ -285,6 +286,15 @@ def test_the_style_value(tmp_path):
         "stick-glass-door",
         "stick-snow-cap",
         "stick-marathon",
+        "stick-home-street",
+        "stick-side-car",
+        "stick-suitcases",
+        "stick-road-plan",
+        "stick-top-car",
+        "stick-stove-knob",
+        "stick-door-lock",
+        "stick-road-ahead",
+        "stick-road-sign",
         "stick-coffee-corner",
         "stick-coffee-counter",
         "stick-mug",

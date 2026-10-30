@@ -4186,6 +4186,114 @@
         "at": 16.5
       },
       "text": "Meteoro que desce atrás dos prédios, visto só pela janela, e o clarão que fica."
+    },
+    {
+      "section": "locations",
+      "name": "Rua de casa",
+      "parts": [
+        "stick-home-street"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 5.5
+      },
+      "text": "A casa vista do meio-fio, com gramado, janela e uma árvore que cresce: é assim que os anos aparecem."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada vista de cima",
+      "parts": [
+        "stick-road-plan"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 4.5
+      },
+      "text": "A estrada reta de cima, com uma marca de pneu para cada retorno anterior."
+    },
+    {
+      "section": "locations",
+      "name": "Estrada à frente",
+      "parts": [
+        "stick-road-ahead"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 15.0
+      },
+      "text": "A estrada aberta do ponto de vista de quem dirige."
+    },
+    {
+      "section": "props",
+      "name": "Carro de lado",
+      "parts": [
+        "stick-side-car"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 5.5
+      },
+      "text": "O carro carregado, de lado, com as férias no bagageiro do teto."
+    },
+    {
+      "section": "props",
+      "name": "Malas",
+      "parts": [
+        "stick-suitcases"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 1.5
+      },
+      "text": "Duas malas e um travesseiro empilhados no banco de trás."
+    },
+    {
+      "section": "props",
+      "name": "Carro visto de cima",
+      "parts": [
+        "stick-top-car"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 4.5
+      },
+      "text": "O carro de cima, para o retorno."
+    },
+    {
+      "section": "props",
+      "name": "Botão do fogão",
+      "parts": [
+        "stick-stove-knob"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 6.8
+      },
+      "text": "O quadro inteiro é a frente do fogão, com um único botão enorme em OFF."
+    },
+    {
+      "section": "props",
+      "name": "Fechadura da porta",
+      "parts": [
+        "stick-door-lock"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 11.0
+      },
+      "text": "O quadro inteiro é a porta da frente, com a tranca passada."
+    },
+    {
+      "section": "props",
+      "name": "Placa da estrada",
+      "parts": [
+        "stick-road-sign"
+      ],
+      "shot": {
+        "episode": "the-stove",
+        "at": 15.0
+      },
+      "text": "Placa verde de rodovia que cresce conforme o carro se aproxima."
     }
   ]
 }

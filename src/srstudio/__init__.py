@@ -49,6 +49,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_reel,
     stick_school,
     stick_shop,
+    stick_street,
     stick_windshield,
     styles,
     subtitles,
