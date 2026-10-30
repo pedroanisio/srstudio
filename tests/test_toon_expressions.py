@@ -27,8 +27,8 @@ def runs_of(cv: Canvas):
 
 
 def test_the_vocabulary_grows_past_what_the_cat_was_traced_with():
-    assert toon.EYES == (*toon.TRACED_EYES, *NEW_EYES)
-    assert toon.MOUTHS == (*toon.TRACED_MOUTHS, *NEW_MOUTHS)
+    assert toon.EYES == (*toon.TRACED_EYES, *NEW_EYES, "sleepy")  # sleepy: ADR 0045, tests/test_toon_critters.py
+    assert toon.MOUTHS == (*toon.TRACED_MOUTHS, *NEW_MOUTHS, "yawn", "scream", "puff")
     assert set(toon.art().eyes) == set(toon.TRACED_EYES) and set(toon.art().mouths) == set(toon.TRACED_MOUTHS)
     assert sketch.TOON_CAST.eyes == toon.EYES and sketch.TOON_CAST.mouths == toon.MOUTHS
     poses = toon.parse_poses([{"start": 0, "eyes": "hearts", "mouth": "kiss", "arms": "face"}])
