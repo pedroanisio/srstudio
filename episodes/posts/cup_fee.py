@@ -31,4 +31,5 @@ RELEASE = Release(
     tags=Tags(
         "money-services", "institution", "recognition", recurring=("ava", "milo"), test="sp-hook_motion", arm="a"
     ),
+    characters={"barista": 1, "customer": 1},
 )

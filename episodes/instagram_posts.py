@@ -57,14 +57,18 @@ VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug ->
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
 FROZEN = {r.video_name: r.frozen for r in RELEASES.values() if r.frozen}  # video name -> accepted drawing
 AB = {r.video_name: (r.tags.test, r.tags.arm) for r in RELEASES.values() if r.tags and r.tags.test}  # A/B arms
+PINS = {slug: r.characters or {} for slug, r in RELEASES.items()}  # project slug -> the character versions it draws
+
+
+def _beside(renders: Path) -> Path:
+    return Path(renders).resolve().parent / "episodes"
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:
     """Every post with its rendered video (and the scene its cover is drawn from, for a release with ``cover``),
     keyed by the video's name; ``episodes`` defaults to the ``episodes`` folder beside ``renders``. A release whose
     cover disagrees with its built scene raises :class:`~srstudio.releases.ReleaseError`."""
-    episodes = Path(episodes) if episodes is not None else Path(renders).resolve().parent / "episodes"
-    return releases.items(RELEASES, Path(renders), episodes)
+    return releases.items(RELEASES, Path(renders), Path(episodes) if episodes is not None else _beside(renders))
 
 
 def font_file(folder: Path) -> Path:
@@ -76,13 +80,18 @@ def write_all(
     out: Path, renders: Path, *, fonts_dir: Path, engine: str | Path, only: list[str] | None = None
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
-    folders written."""
+    folders written. A release that does not pin what it draws is refused before anything is written."""
+    chosen = {slug: r for slug, r in RELEASES.items() if not only or r.video_name in only}
+    refused = releases.unpinned(chosen, _beside(renders))
+    if refused:
+        raise DeliveryError("; ".join(map(str, refused)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
 
 
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
-    """Every drift between ``out`` and delivering every post from ``renders`` now."""
-    return check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
+    """Every drift between ``out`` and delivering every post from ``renders`` now, with every missing pin."""
+    delivery = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
+    return [*releases.unpinned(RELEASES, _beside(renders)), *delivery]
 
 
 def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:

@@ -28,4 +28,5 @@ RELEASE = Release(
     ),
     video="Printer_Recreation",
     builder="printer_recreation",
+    characters={"doodle": 1, "talking-printer": 1},
 )

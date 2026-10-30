@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Quick question.\nGot a sec?", 1.0, "Toon 05", (340, 1050), 1.3),
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )

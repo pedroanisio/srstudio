@@ -21,4 +21,5 @@ RELEASE = Release(
         hashtags=("#news", "#breakingnews", "#media", "#brainrot", "#ratings", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("Is a toilet rotting\nyour kid's brain?", 14.0, "Collage 06", (540, 1090), 1.3),
     ),
+    characters={"collage-flush": 1, "collage-omar": 1},
 )

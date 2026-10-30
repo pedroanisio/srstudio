@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import Episode, EpisodeSpec, social, thumbnail
+from srstudio.releases import Release
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -863,6 +864,53 @@ def test_every_episode_script_ships_its_post():
     assert scripts
     missing = [p.name for p in scripts if "ep.instagram(POSTS[" not in p.read_text(encoding="utf-8")]
     assert missing == []
+
+
+def test_every_shipped_release_pins_its_characters():
+    posts = shipped_posts()
+    assert [slug for slug, r in posts.RELEASES.items() if r.characters is None] == []
+
+
+def unpinned_release(posts, monkeypatch, tmp_path) -> Path:
+    """The shipped delivery with one release added that pins nothing, and nothing else to compare."""
+    post = next(iter(posts.POSTS.values()))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel")})
+    monkeypatch.setattr(posts, "items", lambda *a, **kw: {})
+    monkeypatch.setattr(posts, "font_file", lambda folder: tmp_path / "font.ttf")
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "FROZEN", {})
+    renders = tmp_path / "renders"
+    renders.mkdir()
+    return renders
+
+
+def test_the_check_gate_reports_a_release_with_a_missing_pin(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    drift = posts.check_all(renders / "ig", renders, fonts_dir=tmp_path)
+    assert [d.name for d in drift] == ["New_Reel"] and "pins no character versions" in drift[0].reason
+
+
+def test_the_deliver_gate_refuses_a_release_with_a_missing_pin_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+
+    def wrote(*a, **kw):
+        raise AssertionError("a release with a missing pin reached publish")
+
+    monkeypatch.setattr(posts, "publish", wrote)
+    with pytest.raises(DeliveryError, match="New_Reel: pins no character versions"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
+    args = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: New_Reel: pins no character versions"):
+        posts.main(args)
+
+
+def test_delivering_one_video_answers_only_for_its_own_pins(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: [])
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="e", only=["Other"]) == []
 
 
 def test_the_published_delivery_has_not_drifted():

@@ -22,4 +22,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Partner one: no.\nPartner two: no.", 9.0, "Collage 17", None, 1.0, place="bottom"),
     ),
     tags=Tags("everyday-tech", "protagonist", "tension", recurring=("gary", "kai"), test="sp-hook_motion", arm="b"),
+    characters={"collage-gary": 1, "collage-kai": 1},
 )

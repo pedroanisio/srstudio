@@ -25,4 +25,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Split it\nevenly?", 1.2, "Toon 10", (470, 1130), 1.35),
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )

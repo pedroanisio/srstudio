@@ -18,4 +18,5 @@ RELEASE = Release(
         hashtags=SERIES + ("#notifications", "#worklifebalance"),
         thumbnail=Thumbnail("How do you handle\npressure?", 6.0, "The Interview · 02", (540, 700), 1.4),
     ),
+    characters={"candidate": 1, "manager": 1},
 )

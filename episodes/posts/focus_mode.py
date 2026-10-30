@@ -25,4 +25,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Shake it\nto the beat!", 10.0, "Episode 07", (620, 1000), 1.3),
     ),
+    characters={"pip": 1},
 )

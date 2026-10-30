@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("2 AM.\nTexting the ex.", 1.4, "Ink 05", (540, 420), 1.5),
     ),
     cover=True,
+    characters={"doodle": 1, "talking-router": 1},
 )

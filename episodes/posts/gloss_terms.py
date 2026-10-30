@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Hope is\npremium", 11.5, "Gloss 07", (540, 960), 1.0),
     ),
     cover=True,
+    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
 )

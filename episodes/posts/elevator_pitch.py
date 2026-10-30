@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Elevator\npitch", 8.6, "Comedy Cut 18", place="top"),
     ),
     cover=True,
+    characters={"candidate": 1, "manager": 1, "pigeon": 1},
 )

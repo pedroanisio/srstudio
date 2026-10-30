@@ -22,4 +22,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Just the\none word.", 0.5, "Collage 18", (600, 1000), 1.3, place="bottom"),
     ),
     tags=Tags("office", "other-person", "embarrassment", recurring=("jun", "omar"), test="sp-hook_motion", arm="a"),
+    characters={"collage-jun": 1, "collage-omar": 1},
 )

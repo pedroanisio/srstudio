@@ -20,4 +20,5 @@ RELEASE = Release(
         hashtags=SERIES + ("#quarterlyreview", "#bonus"),
         thumbnail=Thumbnail("Check\nthe board.", 19.2, "The Interview · 09", (700, 760), 1.25),
     ),
+    characters={"candidate": 1, "customer": 1, "manager": 1},
 )

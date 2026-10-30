@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail('What does a\nsmuggler fear?', 8.5, 'Saga 04', (540, 890), 1.0),
     ),
     cover=True,
+    characters={"saga-droid": 1, "saga-rook": 1},
 )

@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Behind the\nexit door", 18.5, "Gloss 05", (540, 960), 1.0),
     ),
     cover=True,
+    characters={"gloss-gus": 1, "gloss-sunny": 1},
 )

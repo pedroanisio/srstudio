@@ -34,4 +34,5 @@ RELEASE = Release(
         test="sp-hook_motion",
         arm="b",
     ),
+    characters={"candidate": 1, "manager": 1, "rosa": 1},
 )

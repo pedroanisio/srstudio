@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("A calendar invite.\nFor dinner.", 0.8, "Toon 08", (470, 1130), 1.35),
     ),
+    characters={"toon-bear": 1, "toon-rabbit": 1},
 )

@@ -35,4 +35,5 @@ RELEASE = Release(
     tags=Tags(
         "office", "protagonist", "recognition", recurring=("seven", "gloom"), test="sp-hook_motion", arm="b"
     ),  # fmt: skip
+    characters={"saga-enforcer": 1, "saga-gloom": 1},
 )

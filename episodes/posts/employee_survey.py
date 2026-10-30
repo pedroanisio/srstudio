@@ -27,4 +27,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Anonymous\nsurvey?", 37.0, "Employee survey", (480, 1050), 1.3),
     ),
+    characters={"toon-cat": 1},
 )
