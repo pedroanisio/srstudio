@@ -4078,6 +4078,114 @@
         "at": 8.5
       },
       "text": "O boneco visto de cima: pés que alternam, ombros, braços à frente, cabeça com cabelo, e um celular se precisar."
+    },
+    {
+      "section": "locations",
+      "name": "Canto do café",
+      "parts": [
+        "stick-coffee-corner"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "O canto do café do escritório: parede, piso e uma janela alta para a cidade, entre as duas pessoas."
+    },
+    {
+      "section": "props",
+      "name": "Balcão com cafeteira",
+      "parts": [
+        "stick-coffee-counter"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "Balcão desenhado à frente dos bonecos, com a cafeteira no meio."
+    },
+    {
+      "section": "props",
+      "name": "Caneca",
+      "parts": [
+        "stick-mug"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "A caneca na mão, no balcão ou na boca."
+    },
+    {
+      "section": "props",
+      "name": "Gesso no braço",
+      "parts": [
+        "stick-arm-cast"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 4.5
+      },
+      "text": "Gesso do cotovelo à mão, sobre qualquer braço."
+    },
+    {
+      "section": "props",
+      "name": "Colar cervical",
+      "parts": [
+        "stick-neck-brace"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 9.0
+      },
+      "text": "Colar de espuma sob o queixo."
+    },
+    {
+      "section": "props",
+      "name": "Papagaio",
+      "parts": [
+        "stick-parrot"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 9.0
+      },
+      "text": "Papagaio verde de ombro, olhando para qualquer lado."
+    },
+    {
+      "section": "props",
+      "name": "Chamas",
+      "parts": [
+        "stick-flames"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 11.0
+      },
+      "text": "Um fogo pequeno, em dois desenhos que se alternam devagar."
+    },
+    {
+      "section": "props",
+      "name": "Lápide",
+      "parts": [
+        "stick-tombstone"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 13.0
+      },
+      "text": "Lápide atrás do balcão, com o epitáfio que a cena pedir."
+    },
+    {
+      "section": "props",
+      "name": "Meteoro",
+      "parts": [
+        "stick-meteor"
+      ],
+      "shot": {
+        "episode": "good-you",
+        "at": 16.5
+      },
+      "text": "Meteoro que desce atrás dos prédios, visto só pela janela, e o clarão que fica."
     }
   ]
 }

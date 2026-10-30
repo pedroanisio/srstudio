@@ -2729,6 +2729,23 @@
         }
       ]
     },
+    "stick-arm-cast": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "88f6a472812ce6e29b8b73c38729d26f007005bb4b972ba7e3cb1eb2ec8b00ba",
+          "rig": null
+        }
+      ]
+    },
     "stick-armrests": {
       "kind": "prop",
       "style": "stick",
@@ -2936,6 +2953,40 @@
         }
       ]
     },
+    "stick-coffee-corner": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "986a621ce009ca69681fabd8c7cfedf941885d9bcc301ecd5e255be4bd91c994",
+          "rig": null
+        }
+      ]
+    },
+    "stick-coffee-counter": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9ec3a28a395672cc29281c1b01c6a1676a0e44af01211a2731b88b0403c405b1",
+          "rig": null
+        }
+      ]
+    },
     "stick-entrance": {
       "kind": "location",
       "style": "stick",
@@ -2986,6 +3037,23 @@
           "proof": "",
           "approval": null,
           "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "stick-flames": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b5b288f9d07ac56b98fbce1bfeb4a9ad615ccdd28add205f1e4204a0d99bfba",
           "rig": null
         }
       ]
@@ -3262,6 +3330,40 @@
         }
       ]
     },
+    "stick-meteor": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c2542644a8793515db85da5b997d9ce74e7def11aeb682b2eaf6efcba5f7078a",
+          "rig": null
+        }
+      ]
+    },
+    "stick-mug": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bc144d3950c226198f8ab57fa8ab3df87815858ca0a729437a3e617404b8a124",
+          "rig": null
+        }
+      ]
+    },
     "stick-murphy-bed": {
       "kind": "prop",
       "style": "stick",
@@ -3292,6 +3394,40 @@
           "proof": "",
           "approval": null,
           "drawing": "ac593d7162bc5022294b6efff706512f15da9086d2cced1cd7ee69ab31d48680",
+          "rig": null
+        }
+      ]
+    },
+    "stick-neck-brace": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ee4e4c93600b1532bc693d2fad3e6fedde160456a6e50626095142b950b988c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-parrot": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3802f5721e5e7a7e771b65f87234b4e405764a6a504107105b0ebc56ac70c14d",
           "rig": null
         }
       ]
@@ -3499,6 +3635,23 @@
           "proof": "",
           "approval": null,
           "drawing": "047adc876eff6d3ab23b769df0cb6a48f81d2fdb4f70a944082fd1b8d1602549",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tombstone": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0811ba3cac4eed80cbe5d78eadb03a8abc1e66ab3786230e371e6487c19be887",
           "rig": null
         }
       ]
