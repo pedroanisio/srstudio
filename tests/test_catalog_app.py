@@ -51,24 +51,35 @@ def site(tmp_path_factory) -> Path:
     gallery = [*fx.GALLERY, fx.item(name="Mesa", parts=["soft-desk"])]
     notes.write_text(json.dumps({"schema": "1.1.0", "episodes": {}, "styles": {}, "gallery": gallery}))
     report = cp.Report(fx.USAGE.episodes, ("take-home", "the-code"))
+    inked = cache / "inked.jpg"  # the fox's second version looks different from its first
+    inked.write_bytes(poster.read_bytes() + b"inked")
+    work = root / "work" / "generated" / "character-proofs"
+    (work / "fox").mkdir(parents=True)
+    shutil.copyfile(video, work / "fox" / "fox-proof.mp4")
+    (work / "critters").mkdir()
+    (work / "critters" / "index.html").write_text('<!doctype html><video src="./goat.mp4"></video>')
+    shutil.copyfile(video, work / "critters" / "goat.mp4")
+    (work / "head-rig").mkdir()
+    (work / "head-rig" / "index.html").write_text('<!doctype html><video src="./fox-head.mp4"></video>')
+    shutil.copyfile(video, work / "head-rig" / "fox-head.mp4")
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(cp, "web_video", lambda render, cache: (video, poster))
         patch.setattr(cp, "still", lambda render, shot, cache: poster)
         patch.setattr(cp, "pose_sheet", lambda engine, cache: [("stand", poster)])
-        patch.setattr(cp.catalog_specimens, "render_all", lambda engine, cache, episodes: shelf(poster))
+        patch.setattr(cp.catalog_specimens, "render_all", lambda engine, cache, episodes: shelf(poster, inked))
         patch.setattr(cp.catalog_specimens, "poster", lambda packages, slug, engine, cache: poster)
         cp.build(
             base=base, episodes=episodes, renders=renders, site=root / "site", cache=cache, engine=Path("unused"),
-            packages=Path("unused"), notes=cp.load_notes(notes), usage=report,
+            packages=Path("unused"), notes=cp.load_notes(notes), usage=report, proof_root=root / "work",
+            pins={"camera-off": {"toon-fox": 2}, "the-router": {"toon-fox": 1}, "not-rendered": {"toon-fox": 2}},
         )  # fmt: skip
     return root / "site"
 
 
-def shelf(picture: Path) -> specimens.Shelf:
+def shelf(picture: Path, inked: Path) -> specimens.Shelf:
     """Every part drawn but the captions, which say why they are not."""
-    done = {
-        x.name: specimens.Specimen(x.name, picture, 480, 480) for x in cp.registry.entries() if x.name != "captions"
-    }
+    drawn = (x.name for x in cp.registry.entries() if x.name != "captions")
+    done = {name: specimens.Specimen(name, inked if name == "toon-fox@2" else picture, 480, 480) for name in drawn}
     why = specimens.Refused(specimens.Reason.OVERLAY, "burned captions over a shot")
     return specimens.Shelf(done, {"captions": why}, 0)
 
@@ -127,7 +138,7 @@ def test_every_section_of_the_navigation_renders(page, origin, site):
     kinds = {"Personagens": "character", "Locações": "location", "Objetos": "prop", "Gráficos": "graphic"}
     for label, kind in kinds.items():
         nav(page, label)
-        assert len(cards(page)) == sum(p["kind"] == kind for p in catalog["parts"])
+        assert len(cards(page)) == sum(p["kind"] == kind and not p["version_of"] for p in catalog["parts"])
     nav(page, "Estilos")
     assert len(cards(page)) == len(catalog["styles"])
     nav(page, "Vídeos")
@@ -140,7 +151,8 @@ def test_the_sidebar_stays_in_view_and_counts_every_section(page, origin, site):
     page.wait_for_selector("#index .card")
     count = "href => document.querySelector(`.nav-links a[href='${href}']`).dataset.count"
     assert page.evaluate(count, "#/videos") == str(len(catalog["videos"]))
-    assert page.evaluate(count, "#/personagens") == str(sum(p["kind"] == "character" for p in catalog["parts"]))
+    characters = [p for p in catalog["parts"] if p["kind"] == "character" and not p["version_of"]]
+    assert page.evaluate(count, "#/personagens") == str(len(characters))
     page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     assert page.locator("#nav").evaluate("n => n.getBoundingClientRect().top") == 0
     assert page.locator("#nav").evaluate("n => n.getBoundingClientRect().height") == 900
@@ -253,7 +265,8 @@ def test_the_usage_filter_narrows_parts(page, origin, site):
     catalog = json.loads((site / "catalog.json").read_text())
     go(page, origin, "#/personagens?uso=nao")
     page.wait_for_selector("#index .card")
-    unused = {p["name"] for p in catalog["parts"] if p["kind"] == "character" and not p["videos"]}
+    characters = [p for p in catalog["parts"] if p["kind"] == "character" and not p["version_of"]]
+    unused = {p["name"] for p in characters if not p["videos"]}
     assert set(cards(page)) == unused
     assert page.locator(".seg a[aria-current='true']", has_text="Sem uso").count() == 1
 
@@ -359,13 +372,14 @@ def test_a_refused_part_page_says_why(page, origin):
     assert cp.REFUSAL_TEXT[specimens.Reason.OVERLAY] in page.wait_for_selector("#refused").inner_text()
 
 
-def test_a_part_page_lists_its_versions_and_links_each_drawing(page, origin):
+def test_a_part_page_lists_its_versions_oldest_first_each_with_its_drawing(page, origin):
     go(page, origin, "#/personagens/toon-fox")
     versions = page.wait_for_selector("#versions")
-    rows = versions.query_selector_all("tbody tr")
-    assert len(rows) == 2 and "aprovada" in rows[1].inner_text()
-    assert rows[1].query_selector("a").get_attribute("href").endswith("toon-fox%402")
-    assert rows[0].query_selector("a") is None  # the page's own version needs no link
+    entries = versions.query_selector_all(".version")
+    assert [e.get_attribute("data-version") for e in entries] == ["1", "2"]
+    assert "Aprovada" in entries[1].inner_text() and all(e.query_selector("img") for e in entries)
+    go(page, origin, "#/personagens/toon-fox%402")  # the later drawing's own route opens this history at that version
+    assert page.wait_for_selector(".version.current").get_attribute("data-version") == "2"
 
 
 def test_a_list_row_shows_the_part_itself_whole_and_a_refused_row_says_why(page, origin):
@@ -548,3 +562,222 @@ def test_a_document_the_app_cannot_read_is_reported_on_the_page(browser, origin,
     go(tab, origin, "#/videos")
     assert shown in tab.wait_for_selector("#load-error").inner_text()
     tab.close()
+
+
+# -- versions ---------------------------------------------------------------------------------------------
+def rewritten(tab, site, change) -> None:
+    """Serve ``catalog.json`` as ``change`` leaves it, for a shape the shipped table does not hold."""
+    doc = json.loads((site / "catalog.json").read_text())
+    change(doc, {p["name"]: p for p in doc["parts"]})
+    tab.route("**/catalog.json", lambda route: route.fulfill(json=doc))
+
+
+def proposed_fox(doc, parts) -> None:
+    """The fox as feat/older-cast leaves the rest of the cast: version 2 drawn and proposed, version 1 the default."""
+    first, second = parts["toon-fox"]["versions"]
+    first["default"] = True
+    second.update(status="proposed", default=False, approval=None, pins=[])
+
+
+def test_a_character_is_one_card_with_its_version_count_showing_its_default(page, origin, site):
+    parts = {p["name"]: p for p in json.loads((site / "catalog.json").read_text())["parts"]}
+    go(page, origin, "#/personagens")
+    page.wait_for_selector("#index .card")
+    assert "toon-fox" in cards(page) and "toon-fox@2" not in cards(page)
+    card = page.locator("#index .card[data-part='toon-fox']")
+    assert "2 versões" in card.inner_text()
+    assert card.locator("img").get_attribute("src") == parts["toon-fox@2"]["specimen"]["src"]
+    assert "versões" not in page.locator("#index .card[data-part='pip']").inner_text()
+    go(page, origin, "#/personagens?ver=lista")
+    row = page.wait_for_selector("#index tr.row[data-part='toon-fox']")
+    assert "2 versões" in row.inner_text()
+    assert page.locator("#index tr.row[data-part='toon-fox@2']").count() == 0
+
+
+def test_the_counts_follow_the_cards_and_the_registry_stays_complete(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    characters = [p for p in catalog["parts"] if p["kind"] == "character" and not p["version_of"]]
+    go(page, origin, "#/personagens")
+    page.wait_for_selector("#index .card")
+    assert len(cards(page)) == len(characters)
+    assert page.evaluate("document.querySelector(\".nav-links a[href='#/personagens']\").dataset.count") == str(
+        len(characters)
+    )
+    go(page, origin, "#/")
+    toon = page.wait_for_selector(".style-table a[href='#/personagens?estilo=toon']", state="attached")
+    assert toon.inner_text() == str(sum(p["style"] == "toon" for p in characters))
+    go(page, origin, "#/registro")
+    page.wait_for_selector(".lib-usage-kind")
+    assert page.locator("a[href='#/personagens/toon-fox%402'] code").count() >= 1
+    assert page.locator("article, #app").first.inner_text().count("toon-fox@2") >= 1
+
+
+def test_a_part_page_shows_its_whole_history(page, origin, site):
+    parts = {p["name"]: p for p in json.loads((site / "catalog.json").read_text())["parts"]}
+    go(page, origin, "#/personagens/toon-fox")
+    page.wait_for_selector("#versions")
+    assert page.locator("#versions .version").count() == 2
+    first, second = page.locator("#versions .version[data-version='1']"), page.locator(".version[data-version='2']")
+    for v, name in ((first, "toon-fox"), (second, "toon-fox@2")):
+        assert v.locator("img").get_attribute("src") == parts[name]["specimen"]["src"]
+    text = second.inner_text()
+    record = parts["toon-fox"]["versions"][1]
+    assert "Versão 2" in text and "Aprovada" in text and "Padrão para novos reels" in text
+    assert record["note"] in text and "30/10/2026" in text
+    assert f"“{record['approval']['words']}”" in text
+    assert "Padrão para novos reels" not in first.inner_text() and "Aprovada" in first.inner_text()
+    assert page.locator("#specimen img").get_attribute("src") == parts["toon-fox@2"]["specimen"]["src"]
+
+
+def test_a_version_links_its_proof_and_the_reels_that_pin_it(page, origin):
+    go(page, origin, "#/personagens/toon-fox")
+    second = page.wait_for_selector(".version[data-version='2']")
+    proof = second.query_selector("a.proof")
+    assert page.request.get(origin + proof.get_attribute("href")).status == 200
+    pins = page.locator(".version[data-version='2'] .pins")
+    assert pins.locator("a").get_attribute("href") == "#/videos/camera-off"
+    assert "not-rendered" in pins.inner_text()  # a pin with no video yet is named, with nothing to link to
+    assert page.locator(".version[data-version='1'] .pins a").get_attribute("href") == "#/videos/the-router"
+    assert page.locator(".version[data-version='1'] a.proof").count() == 0
+
+
+def test_a_page_proof_opens_with_the_files_beside_it(page, origin):
+    go(page, origin, "#/personagens/toon-goat")
+    link = page.wait_for_selector(".version a.proof").get_attribute("href")
+    assert link.startswith("proofs/") and link.endswith("/index.html")
+    assert page.request.get(origin + link.replace("index.html", "goat.mp4")).status == 200
+
+
+def test_an_approved_head_rig_shows_with_its_note_approval_and_proof(page, origin, site):
+    parts = {p["name"]: p for p in json.loads((site / "catalog.json").read_text())["parts"]}
+    rig = parts["toon-fox"]["versions"][1]["rig"]
+    go(page, origin, "#/personagens/toon-fox")
+    block = page.wait_for_selector(".version[data-version='2'] .rig")
+    text = block.inner_text()
+    assert "Rig da cabeça" in text and "Aprovada" in text and rig["note"] in text
+    assert f"“{rig['approval']['words']}”" in text
+    assert block.query_selector("a.proof").get_attribute("href").startswith("proofs/")
+    assert page.locator(".version[data-version='1'] .rig").count() == 0  # a version with no rig shows none
+
+
+def test_a_head_rig_proof_not_on_this_machine_says_so(page, origin, site):
+    parts = {p["name"]: p for p in json.loads((site / "catalog.json").read_text())["parts"]}
+    rig = parts["toon-bear"]["versions"][1]["rig"]
+    go(page, origin, "#/personagens/toon-bear")
+    block = page.wait_for_selector(".version[data-version='2'] .rig")
+    assert "não está nesta máquina" in block.inner_text() and rig["proof_path"] in block.inner_text()
+    assert not block.query_selector("a.proof")
+
+
+def test_a_proposed_head_rig_shows_as_proposed_with_no_approval(page, origin, site):
+    def proposed(doc, parts):
+        parts["toon-fox"]["versions"][1]["rig"].update(status="proposed", approval=None)
+
+    rewritten(page, site, proposed)
+    go(page, origin, "#/personagens/toon-fox")
+    text = page.wait_for_selector(".version[data-version='2'] .rig").inner_text()
+    assert "Proposta" in text and "Aprovação do operador" not in text
+
+
+def test_a_single_version_is_listed_without_repeating_the_picture(page, origin):
+    go(page, origin, "#/personagens/toon-goat")
+    page.wait_for_selector("#versions")
+    version = page.locator("#versions .version")
+    assert version.count() == 1 and version.locator("img").count() == 0
+    assert "“all approved”" in version.inner_text() and "Padrão para novos reels" in version.inner_text()
+
+
+def test_a_proof_not_on_this_machine_says_so(page, origin, site):
+    def gone(doc, parts):
+        parts["toon-fox"]["versions"][1]["proof"] = ""
+
+    rewritten(page, site, gone)
+    go(page, origin, "#/personagens/toon-fox")
+    version = page.wait_for_selector(".version[data-version='2']")
+    own = version.query_selector(".version-facts > p.aside")  # the head rig below it has its own proof
+    assert (
+        own
+        and "não está nesta máquina" in own.inner_text()
+        and not version.query_selector(".version-facts > p > a.proof")
+    )
+
+
+def test_a_proposed_version_shows_as_proposed_and_never_as_the_default(page, origin, site):
+    rewritten(page, site, proposed_fox)
+    parts = {p["name"]: p for p in json.loads((site / "catalog.json").read_text())["parts"]}
+    go(page, origin, "#/personagens")
+    card = page.wait_for_selector("#index .card[data-part='toon-fox']")
+    assert "1 proposta" in card.inner_text()
+    assert card.query_selector("img").get_attribute("src") == parts["toon-fox"]["specimen"]["src"]
+    go(page, origin, "#/personagens/toon-fox")
+    second = page.wait_for_selector(".version[data-version='2']")
+    tags = second.query_selector(".version-facts > .tags").inner_text()  # not the head rig's own tag below it
+    assert "Proposta" in tags and "Padrão para novos reels" not in second.inner_text()
+    assert "Aprovada" not in tags
+    assert "Padrão para novos reels" in page.locator(".version[data-version='1']").inner_text()
+    assert second.query_selector("img").get_attribute("src") == parts["toon-fox@2"]["specimen"]["src"]
+    assert page.locator("#specimen img").get_attribute("src") == parts["toon-fox"]["specimen"]["src"]
+
+
+def test_a_proposed_version_with_no_drawing_says_so(page, origin, site):
+    def undrawn(doc, parts):
+        proposed_fox(doc, parts)
+        parts["toon-fox"]["versions"][1]["part"] = ""
+
+    rewritten(page, site, undrawn)
+    go(page, origin, "#/personagens/toon-fox")
+    assert "Ainda sem desenho" in page.wait_for_selector(".version[data-version='2']").inner_text()
+
+
+def test_a_version_s_own_route_opens_the_history_at_that_version(page, origin):
+    go(page, origin, "#/personagens/toon-fox%402")
+    current = page.wait_for_selector(".version.current")
+    assert current.get_attribute("data-version") == "2"
+    assert page.locator("article").get_attribute("data-part") == "toon-fox"
+    assert page.locator(".version").count() == 2
+
+
+def test_a_character_counts_the_videos_of_every_version(page, origin, site):
+    def used(doc, parts):
+        parts["toon-fox@2"]["videos"] = ["camera-off"]
+
+    rewritten(page, site, used)
+    go(page, origin, "#/personagens")
+    card = page.wait_for_selector("#index .card[data-part='toon-fox']")
+    assert "1 vídeo" in card.inner_text() and "não usado" not in card.inner_text()
+    go(page, origin, "#/personagens/toon-fox")
+    assert page.wait_for_selector("#part-videos .card[data-video='camera-off']")
+
+
+def test_the_search_finds_a_character_by_a_version_once(page, origin):
+    go(page, origin, "#/busca/toon-fox%402")
+    page.wait_for_selector("#results .card")
+    assert cards(page, "#results") == ["toon-fox"]
+
+
+def test_pins_that_were_not_read_are_not_shown_as_none(page, origin, site):
+    def unread(doc, parts):
+        doc["pinned"] = False
+        for v in parts["toon-fox"]["versions"]:
+            v["pins"] = []
+
+    rewritten(page, site, unread)
+    go(page, origin, "#/personagens/toon-fox")
+    text = page.wait_for_selector(".version[data-version='2']").inner_text()
+    assert "não lidas" in text and "Nenhum reel" not in text
+
+
+def test_a_version_no_reel_pins_says_so(page, origin, site):
+    def none(doc, parts):
+        for v in parts["toon-fox"]["versions"]:
+            v["pins"] = []
+
+    rewritten(page, site, none)
+    go(page, origin, "#/personagens/toon-fox")
+    assert "Nenhum reel" in page.wait_for_selector(".version[data-version='2']").inner_text()
+
+
+def test_a_part_with_no_history_shows_no_version_section(page, origin):
+    go(page, origin, "#/objetos/soft-desk")
+    page.wait_for_selector("article.detail")
+    assert page.locator("#versions").count() == 0

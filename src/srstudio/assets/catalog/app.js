@@ -17,7 +17,6 @@
     pacotes: ['#episodios', '#elenco', '#usado', '#comparativo'],
     motor: ['#motor', '#pipeline', '#audio'],
   };
-  const VERSION_STATUS = {approved: 'aprovada', proposed: 'proposta'};
   const NONE = 'nenhum'; // the filter value for "no style"
   const byTitle = (a, b) => a.title.localeCompare(b.title, 'pt');
   const VIDEO_SORTS = {
@@ -29,7 +28,7 @@
   const PART_SORTS = {
     '': {label: 'Catálogo'},
     titulo: {label: 'Título', by: byTitle},
-    uso: {label: 'Mais usados', by: (a, b) => b.videos.length - a.videos.length},
+    uso: {label: 'Mais usados', by: (a, b) => videosOf(b).length - videosOf(a).length},
   };
 
   const app = document.getElementById('app');
@@ -93,15 +92,33 @@
     return `<a class="card" href="${videoHref(v)}" data-video="${esc(v.slug)}"><div class="frame">${frame}</div>` +
       `<b>${esc(v.title)}</b><small>${esc(facts)}</small><div class="tags">${styleTag(v.style)}${videoTags(v)}</div></a>`;
   }
+  // A later version is a drawing in the registry, not another part: an index lists its character once, and the
+  // character answers for every version it has.
+  const listed = kind => C.parts.filter(p => p.kind === kind && !p.version_of);
+  const drawingsOf = p => [p, ...p.versions.filter(v => v.part && v.part !== p.name).map(v => parts.get(v.part))];
+  const videosOf = p => [...new Set(drawingsOf(p).flatMap(d => d.videos))];
+  // A lone version that only says the drawing stood as it was when versions began is not a history.
+  const hasHistory = p => p.versions.length > 1 ||
+    p.versions.some(v => v.status === 'proposed' || v.approval || v.proof || v.proof_path || v.pins.length || v.rig);
+  function defaultDrawing(p) {
+    const v = p.versions.find(x => x.default);
+    return v && v.part ? parts.get(v.part) : p;
+  }
+  function versionTags(p) {
+    const proposed = p.versions.filter(v => v.status === 'proposed').length;
+    return (p.versions.length > 1 ? `<span class="tag">${plural(p.versions.length, 'versão', 'versões')}</span>` : '') +
+      (proposed ? `<span class="tag warn">${plural(proposed, 'proposta', 'propostas')}</span>` : '');
+  }
   function usageLabel(p) {
     if (!C.measured) return '<small>uso não medido</small>';
-    return `<small>${videoCount(p.videos.length)}</small>`;
+    return `<small>${videoCount(videosOf(p).length)}</small>`;
   }
   function partCard(p) {
-    const s = p.specimen; // the part alone, drawn by the engine; a refused part has none, and says why
-    const frame = s ? image(s.src, p.title, s.width, s.height) : esc(p.refused);
-    const tags = [styleTag(p.style)];
-    if (C.measured && !p.videos.length) tags.push('<span class="tag warn">não usado</span>');
+    const drawn = defaultDrawing(p);
+    const s = drawn.specimen; // the part alone, drawn by the engine; a refused part has none, and says why
+    const frame = s ? image(s.src, p.title, s.width, s.height) : esc(drawn.refused);
+    const tags = [styleTag(p.style), versionTags(p)];
+    if (C.measured && !videosOf(p).length) tags.push('<span class="tag warn">não usado</span>');
     if (!s) tags.push('<span class="tag warn">sem desenho isolado</span>');
     return `<a class="card" href="${partHref(p)}" data-part="${esc(p.name)}"><div class="frame specimen">${frame}</div>` +
       `<b>${esc(p.title)}</b><code>${esc(p.name)}</code>${usageLabel(p)}<div class="tags">${tags.join('')}</div></a>`;
@@ -126,22 +143,11 @@
       `<td>${styleTag(v.style)}${videoTags(v)}</td><td>${esc(v.number)}</td><td>${esc(v.format)}</td>` +
       `<td class="num">${v.duration ? seconds(v.duration) : '—'}</td><td class="num">${v.parts.length}</td></tr>`;
   }
-  function versionsOf(p) {
-    if (!p.versions.length) return '';
-    const base = p.name.split('@')[0];
-    const rows = p.versions.map(v => {
-      const name = v.number === 1 ? base : `${base}@${v.number}`, other = parts.get(name);
-      const number = other && name !== p.name ? `<a href="${partHref(other)}">${v.number}</a>` : `${v.number}`;
-      return `<tr><td class="num">${number}</td><td>${esc(v.date)}</td><td>${VERSION_STATUS[v.status]}</td><td>${esc(v.note)}</td></tr>`;
-    }).join('');
-    return '<div class="sub">Versões</div><table class="rows" id="versions"><thead><tr><th>Versão</th><th>Data</th>' +
-      `<th>Situação</th><th>Nota</th></tr></thead><tbody>${rows}</tbody></table>`;
-  }
   function partRow(p) {
-    const s = p.specimen;
+    const s = defaultDrawing(p).specimen;
     return `<tr class="row" data-part="${esc(p.name)}">${s ? thumb(s.src, p.title, s.width, s.height, ' specimen') : thumb()}` +
       `<td><a href="${partHref(p)}"><b>${esc(p.title)}</b></a>${named(p.name)}</td>` +
-      `<td>${styleTag(p.style)}</td><td class="num">${C.measured ? p.videos.length : '—'}</td>` +
+      `<td>${styleTag(p.style)}${versionTags(p)}</td><td class="num">${C.measured ? videosOf(p).length : '—'}</td>` +
       `<td class="summary">${esc(p.summary)}${p.refused ? `<small>${esc(p.refused)}</small>` : ''}</td></tr>`;
   }
   const VIDEO_HEADS = [{}, {label: 'Vídeo'}, {label: 'Estilo'}, {label: 'Nº'}, {label: 'Formato'},
@@ -207,9 +213,9 @@
   function viewParts(kind, id, params) {
     if (id) return viewPart(kind, id);
     const k = KINDS[kind];
-    const all = C.parts.filter(p => p.kind === kind);
+    const all = listed(kind);
     const use = params.get('uso') || '';
-    const used = {'': () => true, sim: p => p.videos.length, nao: p => !p.videos.length}[use] || (() => true);
+    const used = {'': () => true, sim: p => videosOf(p).length, nao: p => !videosOf(p).length}[use] || (() => true);
     const shown = sorted(chosen(all, params.get('estilo') || '').filter(used), PART_SORTS, params);
     const body = params.get('ver') === 'lista'
       ? table(PART_HEADS, shown.map(partRow), 'index')
@@ -296,36 +302,77 @@
     const caption = [esc(s.label), lead ? from : ''].filter(Boolean).join(' · ');
     return `<figure>${image(s.src, alt, s.width, s.height)}${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`;
   }
+  const day = iso => iso.split('-').reverse().join('/');
+  function versionPins(v) {
+    if (v.status === 'proposed') return '';
+    if (!C.pinned) return '<p class="pins">Fixações não lidas: o catálogo foi gerado sem os arquivos de release.</p>';
+    if (!v.pins.length) return '<p class="pins">Nenhum reel fixa esta versão.</p>';
+    const reels = v.pins.map(slug => (videos.has(slug) ? `<a href="${videoHref(videos.get(slug))}">${esc(videos.get(slug).title)}</a>` : `<code>${esc(slug)}</code>`));
+    return `<div class="pins"><p>Fixada por ${plural(v.pins.length, 'reel', 'reels')}:</p><div class="pills">${reels.join('')}</div></div>`;
+  }
+  function proofLink(proof, path) {
+    if (proof) return `<p><a class="proof" href="${esc(proof)}" target="_blank" rel="noopener">Abrir a prova</a></p>`;
+    return path ? `<p class="aside">A prova não está nesta máquina: <code>${esc(path)}</code></p>` : '';
+  }
+  function rigEntry(rig) {
+    if (!rig) return '';
+    const tag = rig.status === 'proposed' ? '<span class="tag warn">Proposta</span>' : '<span class="tag">Aprovada</span>';
+    const approval = rig.approval ? `<p class="approval">Aprovação do operador em ${esc(day(rig.approval.date))}: “${esc(rig.approval.words)}”</p>` : '';
+    return `<div class="rig"><h4>Rig da cabeça</h4><div class="tags">${tag}</div><small>${esc(day(rig.date))}</small>` +
+      `<p>${esc(rig.note)}</p>${approval}${proofLink(rig.proof, rig.proof_path)}</div>`;
+  }
+  function versionEntry(p, v, at) {
+    const drawing = v.part ? parts.get(v.part) : null;
+    let picture = '';
+    if (p.versions.length > 1) { // with one version the picture is the one at the top of the page
+      if (drawing && drawing.specimen) picture = `<div class="stills">${figure(drawing.specimen, `${p.title}, versão ${v.number}`, false)}</div>`;
+      else picture = `<p class="notice">${esc(drawing ? drawing.refused : 'Ainda sem desenho registrado.')}</p>`;
+    }
+    const tags = [v.status === 'proposed' ? '<span class="tag warn">Proposta</span>' : '<span class="tag">Aprovada</span>'];
+    if (v.default) tags.push('<span class="tag default">Padrão para novos reels</span>');
+    const approval = v.approval ? `<p class="approval">Aprovação do operador em ${esc(day(v.approval.date))}: “${esc(v.approval.words)}”</p>` : '';
+    const proof = proofLink(v.proof, v.proof_path);
+    return `<section class="version${picture ? ' pictured' : ''}${v.number === at ? ' current' : ''}" data-version="${v.number}">${picture}` +
+      `<div class="version-facts"><h3>Versão ${v.number}</h3><div class="tags">${tags.join('')}</div>` +
+      `<small>${esc(day(v.date))}</small><p>${esc(v.note)}</p>${approval}${proof}${rigEntry(v.rig)}${versionPins(v)}</div></section>`;
+  }
   function viewPart(kind, name) {
-    const p = parts.get(name);
+    const found = parts.get(name);
     const k = KINDS[kind];
-    if (!p || p.kind !== kind) return missing(`${k.one} ${name}`);
-    const gallery = (p.gallery.length ? '<div class="sub">Visto em</div>' : '') + p.gallery.map(g =>
+    if (!found || found.kind !== kind) return missing(`${k.one} ${name}`);
+    const p = found.version_of ? parts.get(found.version_of) : found; // a later version opens its character's history
+    const at = found.version_of ? p.versions.find(v => v.part === found.name).number : 0;
+    const shots = drawingsOf(p).flatMap(d => d.gallery);
+    const gallery = (shots.length ? '<div class="sub">Visto em</div>' : '') + shots.map(g =>
       `<div class="stills lead">${figure(g.still, g.name, true)}</div>` +
       (g.voice ? `<p>voz ${esc(g.voice)} (ElevenLabs)</p>` : '') + `<p class="note">${g.note_html}${copyButton(plainText(g.note_html), 'nota')}</p>` +
       (g.poses.length ? `<div class="stills">${g.poses.map(s => figure(s, `${g.name}, ${s.label}`, false)).join('')}</div>` : '')).join('');
     const sheet = p.sheet.length
       ? `<div class="sub">Folha de poses</div><div class="stills" id="pose-sheet">${p.sheet.map(s => figure(s, `${p.title}, pose ${s.label}`, false)).join('')}</div>`
       : '';
-    const specimen = p.specimen
-      ? `<div class="stills lead" id="specimen">${figure(p.specimen, p.title, false)}</div>`
-      : `<p class="notice" id="refused">Sem desenho isolado. ${esc(p.refused)}</p>`;
-    const versions = versionsOf(p);
+    const drawn = defaultDrawing(p);
+    const specimen = drawn.specimen
+      ? `<div class="stills lead" id="specimen">${figure(drawn.specimen, p.title, false)}</div>`
+      : `<p class="notice" id="refused">Sem desenho isolado. ${esc(drawn.refused)}</p>`;
+    const history = hasHistory(p)
+      ? `<div class="sub">Versões</div><div id="versions">${p.versions.map(v => versionEntry(p, v, at)).join('')}</div>` : '';
+    const seen = videosOf(p);
     let used;
     if (!C.measured) used = '<p class="notice">Uso não medido: o catálogo foi gerado sem o relatório de <code>srstudio usage</code>.</p>';
-    else if (!p.videos.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;
-    else used = grid(p.videos.map(slug => videoCard(videos.get(slug))), 'part-videos') + unmeasuredNote();
-    const voices = p.gallery.map(g => g.voice).filter(Boolean);
+    else if (!seen.length) used = `<p class="notice" id="unused">Não usado: nenhum episódio medido chama esta peça.</p>${unmeasuredNote()}`;
+    else used = grid(seen.map(slug => videoCard(videos.get(slug))), 'part-videos') + unmeasuredNote();
+    const voices = shots.map(g => g.voice).filter(Boolean);
     const sheetFacts = ficha([
       ['Tipo', k.one], ['Estilo', styleLink(p.style) || 'Compartilhada'], ['Nome', named(p.name)],
-      ['Aparece em', C.measured ? videoCount(p.videos.length) : 'não medido'],
+      ['Versões', p.versions.length > 1 ? String(p.versions.length) : ''],
+      ['Aparece em', C.measured ? videoCount(seen.length) : 'não medido'],
       ['Voz', esc([...new Set(voices)].join(', '))],
     ]);
     return {
       title: p.title,
       html: `<article class="detail" data-part="${esc(p.name)}">${crumbs(`#/${k.route}`, k.label, p.title)}` +
         `<div class="view-head"><h2>${esc(p.title)}${copyButton(p.title, 'título')}</h2><div class="tags">${styleTag(p.style)}</div>` +
-        `<p class="lede">${esc(p.summary)}${copyButton(p.summary, 'descrição')}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${versions}${gallery}${sheet}</div>` +
+        `<p class="lede">${esc(p.summary)}${copyButton(p.summary, 'descrição')}</p></div><div class="detail-grid part"><div class="part-main">${specimen}${history}${gallery}${sheet}</div>` +
         `<aside class="side">${sheetFacts}</aside></div>` +
         `<div class="sub">Vídeos com esta peça</div>${used}</article>`,
     };
@@ -334,7 +381,7 @@
     const s = styles.get(slug);
     if (!s) return missing(`O estilo ${slug}`);
     const tab = params.get('aba') || '';
-    const ownOf = kind => s.parts.map(n => parts.get(n)).filter(p => p.kind === kind);
+    const ownOf = kind => s.parts.map(n => parts.get(n)).filter(p => p.kind === kind && !p.version_of);
     const link = (value, label, n) =>
       `<a href="${styleHref(s)}${query(new URLSearchParams(), {aba: value})}" aria-current="${tab === value}">${esc(label)}<small>${n}</small></a>`;
     const tabs = [link('', 'Vídeos', s.videos.length)];
@@ -394,7 +441,7 @@
       Vídeos: C.videos.filter(v => hit([v.title, v.slug, v.number])).map(videoCard),
     };
     Object.entries(KINDS).forEach(([kind, k]) => {
-      found[k.label] = C.parts.filter(p => p.kind === kind && hit([p.title, p.name, ...p.gallery.map(g => g.name)])).map(partCard);
+      found[k.label] = listed(kind).filter(p => hit(drawingsOf(p).flatMap(d => [d.title, d.name, ...d.gallery.map(g => g.name)]))).map(partCard);
     });
     const topics = C.engine.filter(t => hit([t])).map(t => `<a href="#/motor">${esc(t)}</a>`);
     const total = Object.values(found).reduce((n, cards) => n + cards.length, 0) + topics.length;
@@ -411,7 +458,7 @@
 
   function styleRow(s) {
     const v = s.videos.map(slug => videos.get(slug)).find(x => x.poster);
-    const count = kind => s.parts.filter(n => parts.get(n).kind === kind).length;
+    const count = kind => s.parts.filter(n => parts.get(n).kind === kind && !parts.get(n).version_of).length;
     const cell = (route, n) => `<td class="num"><a href="#/${route}?estilo=${esc(s.slug)}">${n || '—'}</a></td>`;
     const time = s.videos.reduce((t, slug) => t + videos.get(slug).duration, 0);
     return `<tr>${v ? thumb(v.poster, s.name, v.width, v.height) : thumb()}` +
@@ -420,8 +467,8 @@
       `<td class="num">${minutes(time)}</td></tr>`;
   }
   function usageBar([kind, k]) {
-    const all = C.parts.filter(p => p.kind === kind);
-    const used = all.filter(p => p.videos.length).length;
+    const all = listed(kind);
+    const used = all.filter(p => videosOf(p).length).length;
     const share = all.length ? Math.round(100 * used / all.length) : 0;
     return `<div class="usage-bar"><a href="#/${k.route}">${k.label}</a><span class="usage-n">${used} de ${all.length}</span>` +
       `<div class="bar" role="img" aria-label="${used} de ${all.length} ${k.label} usados"><i style="width:${share}%"></i></div>` +
@@ -500,7 +547,7 @@
   function countSections() {
     const count = {'#/estilos': C.styles.length, '#/videos': C.videos.length, '#/registro': C.parts.length,
       '#/pacotes': C.videos.filter(v => v.source === 'package').length, '#/motor': C.engine.length};
-    Object.entries(KINDS).forEach(([kind, k]) => { count[`#/${k.route}`] = C.parts.filter(p => p.kind === kind).length; });
+    Object.entries(KINDS).forEach(([kind, k]) => { count[`#/${k.route}`] = listed(kind).length; });
     document.querySelectorAll('.nav-links a').forEach(a => {
       const n = count[a.getAttribute('href')];
       if (n !== undefined) a.dataset.count = n;
@@ -526,7 +573,7 @@
   }
   function afterRender() {
     const route = parseHash();
-    const target = route.section === 'pacotes' && route.id ? document.getElementById(`ep-${route.id}`) : null;
+    const target = route.section === 'pacotes' && route.id ? document.getElementById(`ep-${route.id}`) : app.querySelector('.version.current');
     if (target) target.scrollIntoView();
     else window.scrollTo(0, fresh ? 0 : scrolled.get(location.hash) || 0);
     fresh = false;

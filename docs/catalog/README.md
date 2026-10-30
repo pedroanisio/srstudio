@@ -44,7 +44,13 @@ in `catalog_specimens.RECIPES` when its builder needs data of its own, or give i
 Marks say what is missing. A part no video uses is marked *não usado*, and an episode
 the usage report could not measure says *Não medido* instead of showing as using nothing.
 
-The document is defined by `srstudio.catalog_data` (`schema_version` `1.1.0`). `catalog_data.load` rejects unknown
+A part with a version history to show (more than one version, or one that is proposed or carries an approval, a proof
+or a pin) shows it on its page (ADR 0061): number, date, note, status, which version
+new reels get, the operator's approval, the proof and the reels that pin it, with the drawing of every version. An
+index lists the part once, showing its default's drawing, with a version count and how many are proposed; the registry
+table keeps every drawing. A proposed version is marked as proposed and is never the default. A version's head rig, when it has one, is shown under it with its own approval and proof.
+
+The document is defined by `srstudio.catalog_data` (`schema_version` `1.3.0`). `catalog_data.load` rejects unknown
 fields, unresolved references and missing media.
 
 ## Running it
@@ -60,6 +66,7 @@ From the workspace root, first measure which parts the episodes use (see the
     --base generated/catalog/packages-base.html \
     --episodes generated/episodes --renders generated/renders \
     --notes srstudio/docs/catalog/notes.json --usage generated/catalog/usage.json \
+    --releases srstudio/episodes/posts \
     --cache generated/catalog/cache --engine generated/bin/scene-render --packages generated/packages \
     --site generated/catalog/site
 .venv/bin/srstudio serve generated/catalog/site   # http://127.0.0.1:8765/
@@ -69,6 +76,10 @@ From the workspace root, first measure which parts the episodes use (see the
 loopback unless told otherwise. It answers the byte ranges a browser needs to seek a video. Opening `index.html`
 from disk is not supported.
 
+- `--releases` is the folder of release files (`srstudio/episodes/posts`), which says which reels pin which version.
+  Without it the page says the pins were not read.
+- `--proof-root` is where a version record's proof paths start, by default the working directory. A proof that is not
+  on the machine keeps its path on the page, with no link.
 - `--usage` is the report `srstudio usage` writes (schema `1.0.0`). Each part's videos, each video's parts and the
   gallery check below come from it; without it no part is claimed by any video and every video is marked as not
   measured. Notes with a gallery need it: the build stops with exit code 2 without one, since the gallery check could
@@ -92,7 +103,7 @@ from disk is not supported.
 [`notes.json`](notes.json) holds the Portuguese text that cannot be read from disk: an episode's number, lede and
 highlights, a style card's title and text, a part's title, and the library's gallery. Noted episodes are listed
 first, in the file's order; any other rendered episode follows by name with its scene description as the lede. Schema
-`1.2.0` (`1.1.0` is still read, without part titles, and `1.0.0` without a gallery either): an unknown field, a missing
+`1.3.0` (`1.1.0` is still read, without part titles, and `1.0.0` without a gallery either): an unknown field, a missing
 field or a wrong type stops the build.
 
 ```json
