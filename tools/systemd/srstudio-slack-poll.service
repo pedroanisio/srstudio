@@ -1,0 +1,10 @@
+# Reads the Slack channel into generated/slack/inbox.jsonl; started by srstudio-slack-poll.timer. It only reads.
+# The token is loaded from the workspace .env inside this command, the way docs/slack-channel.md says to.
+[Unit]
+Description=Read the Slack channel into the local inbox
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/worskpace/srstudio
+UMask=0077
+ExecStart=/bin/sh -c 'set -a; . %h/worskpace/.env; set +a; exec %h/worskpace/.venv/bin/python3 tools/slack_poll.py %h/worskpace/generated/slack'
