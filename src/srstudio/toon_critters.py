@@ -33,15 +33,17 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import TYPE_CHECKING
 
 from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
+from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import Pose
 from .toon_cast import CENTRE, FINE, INK, TONGUE, Layer, Look, Mouths, _brow, _eye, _mouth, _viseme, figure
+from .toon_head import HeadRig
 from .toon_torso import Torso
 
 if TYPE_CHECKING:
@@ -481,6 +483,51 @@ def _sloth_parts() -> list[tuple[Layer, bool]]:
     return out
 
 
+_SLOTH_CHIN = ((286.0, 716.0), (240.0, 738.0), (185.0, 744.0), (130.0, 738.0), (88.0, 716.0))  # behind the ruff
+_SLOTH_RUFF = (  # the body's top: a shaggy ruff from neck join to neck join, over the seam under the head
+    (75.0, 692.0), (66.0, 682.0), (84.0, 684.0), (92.0, 672.0), (104.0, 685.0), (118.0, 681.0), (130.0, 693.0),
+    (152.0, 698.0), (185.0, 702.0), (218.0, 698.0), (240.0, 693.0), (252.0, 681.0), (266.0, 685.0), (278.0, 672.0),
+    (286.0, 684.0), (304.0, 682.0), (300.0, 692.0),
+)  # fmt: skip
+_SLOTH_RUFF_SHADE = tuple((x, y + 13.0) for x, y in _SLOTH_CHIN_SHADE)
+_SLOTH_RUFF_FUR = (((112.0, 690.0), (116.0, 702.0)), ((262.0, 690.0), (258.0, 702.0)))
+
+
+@lru_cache(maxsize=1)
+def _sloth_skull() -> tuple[Layer, ...]:
+    """The sloth's head alone, closed under the chin behind the ruff, with its crown and cheek fur."""
+    head = tuple(brush.wobble((*_SLOTH_HEAD, *_SLOTH_CHIN), 1.3, steps=1, seed=1))
+    layers = [(pressed(head, INK * 1.05, seed=1.0), "ink"), (brush.outline(head, steps=3), _SLOTH_COAT)]
+    layers += shade(head, 22.0, SLOTH_SHADE)
+    layers += [_fur(points) for points in _SLOTH_FUR[:7]]
+    return tuple(layers)
+
+
+@lru_cache(maxsize=1)
+def _sloth_features() -> tuple[Layer, ...]:
+    """What slides across the sloth's head when it turns: the pale face, its stripes, the chin line and the nose."""
+    layers: list[Layer] = [_fill(_SLOTH_DISC, _SLOTH_LIGHT, 4.0, amount=1.0)]
+    layers += [_fill(stripe, SLOTH_STRIPE, 5.0 + k, amount=0.6) for k, stripe in enumerate(_SLOTH_STRIPES)]
+    layers += [_fur(_SLOTH_FUR[7]), _fur(_SLOTH_FUR[11])]
+    layers += [(pressed(_SLOTH_NOSE, FINE, seed=7.0), "ink"), (brush.outline(_SLOTH_NOSE, steps=3), SLOTH_NOSE)]
+    layers.append((brush.ellipse(181.0, 604.0, 3.6, 2.2, -10.0), "white"))
+    return tuple(layers)
+
+
+@lru_cache(maxsize=1)
+def _sloth_trunk() -> tuple[Layer, ...]:
+    """The sloth's body with the ruff along its top, drawn over the head."""
+    body = brush.wobble(
+        _SLOTH_TORSO.under(_SLOTH_RUFF), 1.3, steps=1, seed=1, weights=_SLOTH_TORSO.weights(CALM, len(_SLOTH_RUFF))
+    )
+    layers = [(pressed(body, INK * 1.05, BODY_PRESS, 1.0), "ink"), (brush.outline(body, steps=3), _SLOTH_COAT)]
+    layers += shade(body, 22.0, SLOTH_SHADE)
+    layers.append(_fill(_SLOTH_BELLY, SLOTH_BELLY, 2.0))
+    layers.append(_fill(_SLOTH_RUFF_SHADE, SLOTH_SHADE, 3.0))
+    layers += [_fur(points) for points in (*_SLOTH_FUR[8:11], *_SLOTH_RUFF_FUR)]
+    return tuple(layers)
+
+
 def _sloth_mouths(face: Look, kind: str) -> list[Layer] | None:
     if kind != "yawn":
         return None
@@ -540,6 +587,33 @@ SLOTH_CRITTER = Critter(
     torso=_SLOTH_TORSO,
 )
 SLOTH = SLOTH_CRITTER.look()
+SLOTH_MOTION = HeadStyle(  # slow, heavy, late: a low spring, a slow shift for its one nod, a long breath
+    seed=1045,
+    signature="/",
+    nod_px=11.0,
+    nod_roll=2.0,
+    head=Spring(1.5, 0.7, 0.12),
+    settle=Spring(0.8, 0.85),
+    body=Spring(1.0, 1.0),
+    min_gap=0.55,
+    loud_range=8.0,
+    lean=1.2,
+    idle_roll=2.4,
+    idle_px=1.5,
+    idle_hz=0.2,
+    breath_period=5.4,
+    glance_every=4.5,
+    glance_hold=1.3,
+)
+SLOTH_RIG = HeadRig(
+    look=replace(SLOTH_CRITTER, tilt=0.0).look(),
+    neck=SLOTH_CRITTER.neck,
+    tilt=SLOTH_CRITTER.tilt,
+    skull=_sloth_skull,
+    face=_sloth_features,
+    trunk=_sloth_trunk,
+    style=SLOTH_MOTION,
+)
 
 
 # -- the goat ----------------------------------------------------------------------------------------------------------

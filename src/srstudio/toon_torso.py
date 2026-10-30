@@ -242,14 +242,26 @@ class Torso:
         ]
         return tuple([*left, *self.head, *right, *bottom])
 
-    def weights(self, calm: float) -> tuple[float, ...]:
-        """How much of a hand's drift each contour point takes: all of it on the head, ``calm`` (0..1) on the torso
-        and on the two neck joins, so the line leaves the head as gently as the arcs below them run."""
+    def under(self, top: Sequence[Point]) -> tuple[Point, ...]:
+        """The closed outline of the body alone: :attr:`contour` with ``top``, a line from one neck join to the other,
+        where the head was, for a head drawn separately behind it (:mod:`srstudio.toon_head`)."""
+        if len(top) < 3 or any(len(p) != 2 or not all(checks.number(v) for v in p) for p in top):
+            raise ToonDataError(f"a body's top is at least 3 finite points, got {top!r}")
+        whole = self.contour
+        before = len(self._side(-1))
+        return tuple([*whole[:before], *top, *whole[before + len(self.head) :]])
+
+    def weights(self, calm: float, top: int | None = None) -> tuple[float, ...]:
+        """How much of a hand's drift each contour point takes: all of it on the head, or on a body's ``top`` of that
+        many points (:meth:`under`), ``calm`` (0..1) on the torso and on the two neck joins, so the line leaves the
+        head as gently as the arcs below them run."""
         if not (checks.number(calm) and 0 <= calm <= 1):
             raise ToonDataError(f"calm is a share of the drift, 0 to 1, got {calm!r}")
         before = len(self._side(-1))
-        head = range(before + 1, before + len(self.head) - 1)
-        return tuple(1.0 if i in head else float(calm) for i in range(len(self.contour)))
+        count = len(self.head) if top is None else top
+        total = len(self.contour) - len(self.head) + count
+        head = range(before + 1, before + count - 1)
+        return tuple(1.0 if i in head else float(calm) for i in range(total))
 
     def edge(self, y: float, side: int) -> float:
         """The outline's x at height ``y`` on the left (``side`` -1) or right (+1), between the neck and the base."""
