@@ -1,4 +1,4 @@
-# Rebuilds the catalog page whenever a render, the library, the notes or the base page changes.
+# Rebuilds the catalog site whenever a render, the library, the notes or the base page changes.
 # Install: systemctl --user link $PWD/srstudio-catalog.{path,service} && systemctl --user enable --now srstudio-catalog.path
 [Unit]
 Description=Watch renders and the srstudio library for the scene-render catalog

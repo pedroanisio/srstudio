@@ -1,6 +1,7 @@
-# Writes ~/worskpace/catalogo-scene-render.html with `srstudio page`; started by srstudio-catalog.path.
+# Writes the catalog site to ~/worskpace/generated/catalog/site with `srstudio page`; started by srstudio-catalog.path.
+# srstudio-catalog-web.service serves it.
 [Unit]
-Description=Rebuild the scene-render catalog page
+Description=Rebuild the scene-render catalog site
 
 [Service]
 Type=oneshot
@@ -16,5 +17,5 @@ ExecStart=%h/worskpace/.venv/bin/srstudio page \
     --usage generated/catalog/usage.json \
     --cache generated/catalog/cache \
     --engine generated/bin/scene-render \
-    --out catalogo-scene-render.html
+    --site generated/catalog/site
 Environment=SRSTUDIO_PACKAGES=%h/worskpace/generated/packages
