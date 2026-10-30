@@ -70,10 +70,21 @@ replace them.
      face levelled about the eyes' midpoint, then turns them with the head. A face with no tilt takes the old path,
      so no other look's wear changes.
    - **Seeded.** Every random choice is seeded, so builds stay deterministic.
-   - **The critters' kinds.** `sleepy` eyes and the `yawn`, `scream` and `puff` mouths, which the sloth, goat and hamster add to the
-     vocabulary, are drawn for this face, not delegated to the shared drawings. Those use perfect ellipses and an
-     even line, so delegating would break the inked face. A kind the face has no drawing for is still refused by
-     name, never drawn by a silent fallback.
+   - **The critters' kinds.** `sleepy` eyes and the `yawn`, `scream` and `puff` mouths, which the sloth, goat and
+     hamster add to the vocabulary, are drawn for this face, not delegated to the shared drawings. Those use perfect
+     ellipses and an even line, so delegating would break the inked face. A kind the face has no drawing for is
+     still refused by name, never drawn by a silent fallback.
+   - **Shoulders like the cat's.** The operator saw the arms rise from the shoulders as tapered lobes, "like
+     pointers". The cat is one contour from head into shoulders into body, its arms an inner line. The shared arm
+     paths start on the brush silhouette's edge, so a full-width arm with a round cap stood out of the body there,
+     in a notch under the ruff. The inked silhouette now runs from the ruff into the shoulders and the flanks in one
+     gentle curve (no turn sharper than 30°, under 150° in all, either side). The left side lost its lowest ruff
+     tip for it. The arm leaves the body inside the shoulder (`TUCK`), slim there and widest at the forearm and paw
+     (`ARM_TAPER`). An arm whose next point is outside the body bends at an elbow inside it first, so a reaching
+     forearm leaves the flank below the shoulder. Its ink follows each edge only where the edge lies outside the body,
+     deep inside it (the overlap line) or crosses the body's edge (`_arm_lines`). Where the edge runs just inside the
+     flank and along it, there is no ink, and the arm and the body read as one form. Paw targets and the shared arm
+     code are unchanged, so typing still reaches the laptop.
 
 ## Alternatives rejected
 
@@ -86,6 +97,10 @@ replace them.
   two to three shapes per contour.
 - **Rotating every worn item about the neck.** The eyes already sit on the turned head. Turning the items about the
   eyes' midpoint after levelling the face puts the lenses back on the eyes exactly.
+- **Drawing the arm inside a clip of the body.** Clipping hides the lobe but keeps the arm's outer ink doubling
+  the flank. Inking edges by how they sit against the body draws one contour.
+- **Moving the shared shoulder points.** The brush cast and the published reels draw from them, and they must stay
+  byte-identical. The inked drawing moves its own arm's start instead.
 - **Random jitter.** A build must draw the same line every time, so the drift is a fixed function of the position
   along the contour and a seed.
 
@@ -93,7 +108,9 @@ replace them.
 
 - A look drawn this way costs more to render. On the comparison sheet's eight poses, the second pass draws 62–73
   shapes and 2,228–2,768 cubic segments per pose; the first pass drew 58–69 shapes and 2,086–2,562 segments. Over
-  every kind of eyes, mouth and arms, the second pass draws 54–81 shapes per pose (first pass 50–77). The broken
+  every kind of eyes, mouth and arms, the second pass draws 54–81 shapes per pose (first pass 50–77). With the
+  shoulder pass, one expression in each of the seven arms poses draws 66–72 shapes and 2,549–2,817 segments, and
+  every kind of eyes, mouth and arms 54–83 shapes and 1,983–3,247 segments. The broken
   bands add shapes and the cut lines remove some. The brush fox draws 29–46 shapes and 1,028–1,550 segments, and the
   traced cat 23–26 shapes and 493–525 segments. The engine renders every still of the sheet cleanly.
 - Every vocabulary kind needs a drawing in each inked face. A kind added to `EYES` or `MOUTHS` fails the inked
@@ -102,3 +119,5 @@ replace them.
   `tilt`.
 - `brush.broken`, `brush.lump` and `Hand.ragged` are general brush tools, and any character drawn in code can use
   them.
+- Hanging arms (`sigh`) lie along the flanks, so most of their edge merges with the body and little arm line
+  shows. A leaning arm that hangs outside the body keeps a full outline.
