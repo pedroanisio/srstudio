@@ -193,7 +193,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
-        sketch.DRAWERS[app.who](cv, g, poses, app.end, taps, enter=app.start, **extra)
+        sketch.drawer(app.who)(cv, g, poses, app.end, taps, enter=app.start, **extra)
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
