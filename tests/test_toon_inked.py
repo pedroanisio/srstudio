@@ -291,6 +291,102 @@ def test_the_head_shade_turns_the_form_tapering_at_both_ends():
     assert ends and max(ends) < 0.5 * deepest  # and thins to the outline at both ends, where a stripe stays full
 
 
+def sampled(shape: brush.Shape, k: int = 6) -> list[tuple[float, float]]:
+    """The shape's outline as a polygon: each cubic sampled ``k`` times."""
+    out, (x0, y0) = [], (shape[0], shape[1])
+    for i in range(2, len(shape), 6):
+        c1x, c1y, c2x, c2y, x, y = shape[i : i + 6]
+        for j in range(1, k + 1):
+            t, u = j / k, 1 - j / k
+            out.append(
+                (
+                    u**3 * x0 + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t**3 * x,
+                    u**3 * y0 + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t**3 * y,
+                )
+            )
+        x0, y0 = x, y
+    return out
+
+
+def inside(poly: list[tuple[float, float]], x: float, y: float) -> bool:
+    hit = False
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1], strict=True):
+        if (ay > y) != (by > y) and x < ax + (y - ay) * (bx - ax) / (by - ay):
+            hit = not hit
+    return hit
+
+
+def to_outline(poly: list[tuple[float, float]], p: tuple[float, float]) -> float:
+    """How far the point is from the polygon's edge."""
+    best = math.inf
+    for a, b in zip(poly, poly[1:] + poly[:1], strict=True):
+        (ax, ay), (bx, by) = a, b
+        t = max(0.0, min(1.0, ((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / (math.dist(a, b) ** 2 or 1.0)))
+        best = min(best, math.dist(p, (ax + t * (bx - ax), ay + t * (by - ay))))
+    return best
+
+
+OUTLINE = brush.spline(INKED.silhouette, True, 8)  # the body's drawn contour
+SHOULDER = (676.0, 770.0)  # from under the ruff down the flank, reference px
+
+
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_the_neck_runs_into_the_shoulder_and_flank_as_one_gentle_contour(side):
+    at = [
+        i
+        for i, (x, y) in enumerate(OUTLINE)
+        if SHOULDER[0] <= y <= SHOULDER[1] and (x < toon_cast.CENTRE) == (side == "left")
+    ]
+    assert at == list(range(at[0], at[0] + len(at))) and len(at) >= 30  # one stretch of the contour
+    run = [OUTLINE[i] for i in at]
+    heads = [math.atan2(b[1] - a[1], b[0] - a[0]) for a, b in zip(run, run[1:], strict=False)]
+    turns = [
+        abs(math.degrees((h - g + math.pi) % (2 * math.pi) - math.pi)) for g, h in zip(heads, heads[1:], strict=False)
+    ]
+    # no notch where an arm met the torso and no ruff tip under the cheek: one gentle curve, never a corner
+    assert max(turns) < 30.0 and sum(turns) < 150.0
+
+
+@pytest.mark.parametrize("arms", toon.ARMS)
+def test_every_arm_leaves_the_shoulder_inside_the_body_and_ends_under_its_paw(arms):
+    for frame in (0, 1) if arms == "type" else (0,):
+        under, over = toon_cast._arms(INKED, arms, frame)
+        layers = under + over
+        fills = [s for s, c in layers if c == INKED.coat]
+        paws = [s for s, c in layers if c == INKED.paw]
+        assert len(fills) == len(paws) == 2
+        for fill, (sx, sy) in zip(fills, toon_cast.SHOULDERS, strict=True):
+            # no lobe over the shoulder: round it, down to 12 px under it, the arm is inside the body; a forearm
+            # reaching out (typing, leaning) leaves the flank lower down, at the elbow
+            near = [(x, y) for x, y in sampled(fill) if math.dist((x, y), (sx, sy)) < 45.0 and y < sy + 12.0]
+            assert near and all(inside(OUTLINE, *p) for p in near), (arms, sx)
+            if arms not in ("face", "face2"):  # paws up at the mouth climb the chest, inside the body
+                assert brush.bounds(fill)[1] > sy, (arms, sx)
+        for fill, paw in zip(fills, paws, strict=True):
+            assert any(inside(sampled(paw), *p) for p in sampled(fill)), arms  # the arm runs under its paw
+
+
+@pytest.mark.parametrize("arms", ["desk", "crossed", "face", "face2"])
+def test_an_arm_resting_on_the_body_is_an_inner_line_never_a_second_contour(arms):
+    under, over = toon_cast._arms(INKED, arms, 0)
+    layers = under + over
+    paws = [brush.bounds(s) for s, c in layers if c == INKED.paw]
+
+    def on_a_paw(p: tuple[float, float]) -> bool:
+        return any(x0 - 8 <= p[0] <= x1 + 8 and y0 - 8 <= p[1] <= y1 + 8 for x0, y0, x1, y1 in paws)
+
+    lines = [s for s, c in layers if c == "ink" and not all(on_a_paw(p) for p in sampled(s))]
+    assert lines  # the overlap still reads
+    points = [p for s in lines for p in sampled(s) if not on_a_paw(p)]
+    assert all(inside(OUTLINE, *p) for p in points)
+    assert min(to_outline(OUTLINE, p) for p in points) > 0.25 * INKED.limb  # never doubling the flank
+
+
+def test_an_arm_is_slim_at_the_shoulder_and_widest_at_forearm_and_paw():
+    widths = [toon_inked.ARM_TAPER.at(k / 20) for k in range(21)]
+    assert max(widths) == max(widths[12:]) and widths[0] < 0.6 * max(widths)
+
+
 def test_inner_lines_stay_open_and_a_shade_tone_turns_the_forms():
     base = DRAWING.foundation(INKED)
     strokes = DRAWING.details(INKED)
