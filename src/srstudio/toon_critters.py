@@ -6,7 +6,7 @@ shared face: symmetric, few points, an even line. These three carry a :class:`Cr
 :class:`srstudio.toon_cast.Drawing` of their own, drawn the way the traced cat reads:
 
 * **dense, asymmetric contours**: every outline is placed by hand, unmirrored, and drifts a little like a hand
-  following it (:func:`drift`);
+  following it (:func:`drifted`);
 * **a pressed line** (:func:`pressed`): the ink band under a fill is heavier where the form turns from the light (the
   bottom and the back) and thins where the outline turns sharply, where a brush lifts; arms are inked heavier
   underneath and taper into the shoulder;
@@ -36,7 +36,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from . import brush, checks
+from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
@@ -49,10 +49,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "THROAT",
-    "Press",
     "PRESS",
     "pressed",
-    "drift",
+    "drifted",
     "shade",
     "shared_eye",
     "shared_mouth",
@@ -77,118 +76,31 @@ CLAW = brush.Pressure(1.0, 0.16, 0.0, 0.0, 1.0)
 
 
 # -- the hand ----------------------------------------------------------------------------------------------------------
-def _grain(s: float, seed: float = 0.0) -> float:
-    """A repeatable uneven wave in -1..1, periodic over ``s`` in 0..1: a hand's drift or pressure."""
-    return (
-        math.sin(2 * math.pi * 5 * s + 0.4 + seed)
-        + 0.55 * math.sin(2 * math.pi * 11 * s + 2.1 + 1.7 * seed)
-        + 0.3 * math.sin(2 * math.pi * 23 * s + 4.3 + 2.9 * seed)
-    ) / 1.85
+WAVE = brush.Wave(((5, 1.0, 0.4, 1.0), (11, 0.55, 2.1, 1.7), (23, 0.3, 4.3, 2.9)), 1.85)  # slower than the fox's hand
+PRESS = brush.Hand(light=0.45, heavy=1.45, toward=(0.45, 0.89), tips=0.6, grain=0.12, wave=WAVE)
+EYE_PRESS = replace(PRESS, light=0.6, heavy=1.35, toward=(0.0, -1.0), tips=0.3, grain=0.08)  # a heavy upper lid
 
 
-@dataclass(frozen=True)
-class Press:
-    """How hard a hand presses an ink band round a fill, as factors of its weight: ``light`` where the outline faces
-    the light, ``heavy`` where it faces ``away`` (down and to the back); a convex turn of a right angle or more thins
-    it by ``tips`` (a brush lifting at a tip), and ``grain`` makes the pressure uneven along the way."""
-
-    light: float = 0.45
-    heavy: float = 1.45
-    away: Point = (0.45, 0.89)
-    tips: float = 0.6
-    grain: float = 0.12
-
-    def at(self, normal: Point, turn: float, s: float, seed: float = 0.0) -> float:
-        ax, ay = self.away
-        facing = (normal[0] * ax + normal[1] * ay) / math.hypot(ax, ay)
-        base = self.light + (self.heavy - self.light) * (facing + 1) / 2
-        tip = 1.0 - self.tips * min(1.0, max(0.0, turn) / (math.pi / 2))
-        return max(0.1, base * tip * (1 + self.grain * _grain(s, seed)))
+def pressed(points: Sequence[Point], weight: float, press: brush.Hand = PRESS, seed: float = 0.0) -> Shape:
+    """The ink band under an :func:`srstudio.brush.outline` of the same points, by a critter's hand."""
+    return brush.inked(points, weight, press, steps=4, seed=seed)
 
 
-PRESS = Press()
-EYE_PRESS = Press(light=0.6, heavy=1.35, away=(0.0, -1.0), tips=0.3, grain=0.08)  # a heavy upper lid
-
-
-def _closed_path(points: Sequence[Point], steps: int) -> list[Point]:
-    if len(points) < 3:
-        raise brush.BrushError(f"a pressed rim needs at least 3 points, got {len(points)}")
-    path: list[Point] = []
-    for p in brush.spline(points, True, steps):
-        if not path or math.hypot(p[0] - path[-1][0], p[1] - path[-1][1]) > 0.05:
-            path.append(p)
-    return path
-
-
-def _winding(path: Sequence[Point]) -> float:
-    """+1 when the closed path winds clockwise on screen (y down), -1 otherwise."""
-    n = len(path)
-    area = sum(path[i][0] * path[(i + 1) % n][1] - path[(i + 1) % n][0] * path[i][1] for i in range(n))
-    return 1.0 if area > 0 else -1.0
-
-
-def _outward(path: Sequence[Point], i: int, wind: float) -> Point:
-    n = len(path)
-    a, b = path[i - 1], path[(i + 1) % n]
-    dx, dy = b[0] - a[0], b[1] - a[1]
-    length = math.hypot(dx, dy) or 1.0
-    return -wind * -dy / length, -wind * dx / length
-
-
-def pressed(points: Sequence[Point], weight: float, press: Press = PRESS, steps: int = 4, seed: float = 0.0) -> Shape:
-    """The ink band under an :func:`srstudio.brush.outline` of the same points, pressed by hand: pushed out by
-    ``weight`` times :meth:`Press.at`, so it swells where the shape turns from the light and thins at its tips."""
-    if not (checks.number(weight) and weight > 0):
-        raise brush.BrushError(f"weight must be a positive number, got {weight!r}")
-    path = _closed_path(points, steps)
-    n = len(path)
-    wind = _winding(path)
-    reach = max(1, steps)
-    out = []
-    for i, p in enumerate(path):
-        nx, ny = _outward(path, i, wind)
-        back, ahead = path[(i - reach) % n], path[(i + reach) % n]
-        ux, uy = p[0] - back[0], p[1] - back[1]
-        vx, vy = ahead[0] - p[0], ahead[1] - p[1]
-        turn = wind * math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-        push = weight * press.at((nx, ny), turn, i / n, seed)
-        out.append((p[0] + nx * push, p[1] + ny * push))
-    return brush.outline(out, steps=1)
-
-
-def drift(
+def drifted(
     points: Sequence[Point], amount: float, seed: float, weights: Sequence[float] | None = None
 ) -> tuple[Point, ...]:
-    """The control points of a closed contour each moved across it by at most ``amount``: a hand's small uneven
-    drift, the same for a ``seed`` every build. ``weights`` (one per point, 0..1) calm the drift where a line must
-    stay smooth, such as the shoulders of a torso (:meth:`srstudio.toon_torso.Torso.weights`)."""
-    if not (checks.number(amount) and amount >= 0):
-        raise brush.BrushError(f"amount must be a non-negative number, got {amount!r}")
-    n = len(points)
-    if weights is not None and (len(weights) != n or not all(checks.number(w) and 0 <= w <= 1 for w in weights)):
-        raise brush.BrushError(f"drift weights are one share in 0..1 per point ({n}), got {weights!r}")
-    out = []
-    for i, (x, y) in enumerate(points):
-        a, b = points[i - 1], points[(i + 1) % n]
-        dx, dy = b[0] - a[0], b[1] - a[1]
-        length = math.hypot(dx, dy) or 1.0
-        move = amount * _grain(i / n, seed) * (1.0 if weights is None else weights[i])
-        out.append((round(x - dy / length * move, 2), round(y + dx / length * move, 2)))
-    return tuple(out)
+    """The control points of a contour wobbled by a critter's hand, as :data:`WAVE` draws them for a ``seed``."""
+    moved = brush.wobble(points, amount, steps=1, seed=seed / brush.SEED_RATE, weights=weights, wave=WAVE)
+    return tuple((round(x, 2), round(y, 2)) for x, y in moved)
 
 
 def shade(points: Sequence[Point], depth: float, colour: str, least: float = 0.2, steps: int = 4) -> list[Layer]:
     """The shade tone along every run of a closed contour that faces away from the light: a band from the edge
     inward, ``depth`` deep where the edge faces straight away and nothing where it stops facing away."""
-    path = _closed_path(points, steps)
-    n = len(path)
-    wind = _winding(path)
+    ring = brush.facing(points, steps)
+    n = len(ring)
     lx, ly = LIGHT_FROM
-    depths = []
-    for i in range(n):
-        nx, ny = _outward(path, i, wind)
-        facing = -(nx * lx + ny * ly)
-        depths.append(depth * max(0.0, (facing - least) / (1 - least)) ** 0.8)
+    depths = [depth * max(0.0, (-(nx * lx + ny * ly) - least) / (1 - least)) ** 0.8 for _, (nx, ny) in ring]
     start = next((i for i in range(n) if depths[i] == 0), None)
     if start is None:
         raise brush.BrushError("a shade needs part of the contour to face the light")
@@ -200,11 +112,10 @@ def shade(points: Sequence[Point], depth: float, colour: str, least: float = 0.2
             run.append(i)
             continue
         if len(run) >= 6:
-            edge = [path[j] for j in run]
-            inner = []
-            for j in run:
-                nx, ny = _outward(path, j, wind)
-                inner.append((path[j][0] - nx * depths[j], path[j][1] - ny * depths[j]))
+            edge = [ring[j][0] for j in run]
+            inner = [
+                (ring[j][0][0] - ring[j][1][0] * depths[j], ring[j][0][1] - ring[j][1][1] * depths[j]) for j in run
+            ]
             layers.append((brush.outline([*edge, *inner[::-1]], steps=1), colour))
         run = []
     return layers
@@ -216,12 +127,12 @@ def _fur(points: Sequence[Point], weight: float = FINE * 1.15, pressure: brush.P
 
 def _inked(points: Sequence[Point], colour: str, seed: float, weight: float = INK, amount: float = 1.2) -> list[Layer]:
     """A pressed ink band and the fill over it, on the same drifted contour."""
-    contour = drift(points, amount, seed)
+    contour = drifted(points, amount, seed)
     return [(pressed(contour, weight, seed=seed), "ink"), (brush.outline(contour, steps=3), colour)]
 
 
 def _fill(points: Sequence[Point], colour: str, seed: float, amount: float = 0.8) -> Layer:
-    return (brush.outline(drift(points, amount, seed), steps=3), colour)
+    return (brush.outline(drifted(points, amount, seed), steps=3), colour)
 
 
 def _oval(cx: float, cy: float, rx: float, ry: float, n: int = 12, flat: float = 0.0) -> list[Point]:
@@ -280,7 +191,7 @@ def _yawn(look: Look, cx: float, top: float, rx: float, ry: float) -> list[Layer
     cy = top + ry
     oval = _oval(cx, cy, rx, ry, 14, flat=0.25)
     return [
-        (pressed(oval, INK, Press(light=0.55, heavy=1.3, away=(0.0, 1.0), tips=0.2)), "ink"),
+        (pressed(oval, INK, replace(PRESS, light=0.55, heavy=1.3, toward=(0.0, 1.0), tips=0.2)), "ink"),
         (brush.outline(oval, steps=3), THROAT),
         (brush.ellipse(cx, cy + ry * 0.5, rx * 0.62, ry * 0.34), TONGUE),
         (brush.stroke([(cx, cy + ry * 0.32), (cx, cy + ry * 0.6)], FINE * 0.6, LINE), "ink"),
@@ -311,7 +222,7 @@ def _scream(look: Look, mx: float, top: float, bottom: float, hw_top: float, hw_
         (mx - hw_bottom * 0.45, bottom - 0.5),
     ]
     out: list[Layer] = [
-        (pressed(opening, INK, Press(light=0.55, heavy=1.35, away=(0.0, 1.0), tips=0.35)), "ink"),
+        (pressed(opening, INK, replace(PRESS, light=0.55, heavy=1.35, toward=(0.0, 1.0), tips=0.35)), "ink"),
         (brush.outline(opening, steps=3), THROAT),
         (brush.outline(tongue, steps=3), TONGUE),
         (brush.stroke([(mx, bottom - 12.0), (mx + 0.5, bottom - 4.0)], FINE * 0.6, LINE), "ink"),
@@ -376,7 +287,7 @@ class Critter:
     mouths: Callable[[Look, str], list[Layer] | None]
     paw: Callable[[Look, Point, Point, bool], list[Layer]]
     torso: Torso
-    lid_press: Press = EYE_PRESS
+    lid_press: brush.Hand = EYE_PRESS
 
     def _turn(self, x: float, y: float) -> Point:
         nx, ny = self.neck
@@ -560,7 +471,7 @@ _SLOTH_FUR = (
 
 
 def _sloth_parts() -> list[tuple[Layer, bool]]:
-    body = drift(_SLOTH_BODY, 1.3, 1.0, _SLOTH_TORSO.weights(CALM))
+    body = drifted(_SLOTH_BODY, 1.3, 1.0, _SLOTH_TORSO.weights(CALM))
     out: list[tuple[Layer, bool]] = [
         ((pressed(body, INK * 1.05, seed=1.0), "ink"), False),
         ((brush.outline(body, steps=3), _SLOTH_COAT), False),
@@ -712,7 +623,7 @@ def _goat_parts() -> list[tuple[Layer, bool]]:
     for k, ear in enumerate(_GOAT_EARS):
         out += [(layer, False) for layer in _inked(ear, _GOAT_COAT, 12.0 + k, amount=0.6)]
         out.append((_fill(_GOAT_EAR_INNER[k], GOAT_EAR, 14.0 + k, amount=0.4), False))
-    body = drift(_GOAT_BODY, 1.2, 16.0, _GOAT_TORSO.weights(CALM))
+    body = drifted(_GOAT_BODY, 1.2, 16.0, _GOAT_TORSO.weights(CALM))
     out += [((pressed(body, INK * 1.05, seed=16.0), "ink"), False), ((brush.outline(body, steps=3), _GOAT_COAT), False)]
     layers: list[Layer] = shade(body, 22.0, GOAT_SHADE)
     layers.append(_fill(_GOAT_CHIN_SHADE, GOAT_SHADE, 17.0))
@@ -860,7 +771,7 @@ def _hamster_parts() -> list[tuple[Layer, bool]]:
     for k, ear in enumerate(_HAMSTER_EARS):
         out += [(layer, False) for layer in _inked(ear, _HAMSTER_COAT, 30.0 + k, amount=0.5)]
         out.append((_fill(_HAMSTER_EAR_INNER[k], HAMSTER_EAR, 32.0 + k, amount=0.3), False))
-    body = drift(_HAMSTER_BODY, 1.1, 34.0, _HAMSTER_TORSO.weights(CALM))
+    body = drifted(_HAMSTER_BODY, 1.1, 34.0, _HAMSTER_TORSO.weights(CALM))
     out += [
         ((pressed(body, INK * 1.05, seed=34.0), "ink"), False),
         ((brush.outline(body, steps=3), _HAMSTER_COAT), False),

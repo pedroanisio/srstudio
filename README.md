@@ -1304,9 +1304,11 @@ scene-render encode PROJECT/employee-survey.scene.xml -o /abs/path/employee-surv
 (Catmull-Rom through the points, open or closed), `stroke` (a band whose width follows a `Pressure` profile with a
 swell and a slow wobble, round caps), `outline` (a closed fill) and `rim` (the fill pushed outward by the ink
 weight, whichever way the points wind), `inked` (a rim pressed by a `Hand`: heavier where the outline turns from
-the light, thin at sharp tips, uneven along the way, with a dry brush's fine grit when the hand is `ragged`),
+the light, thin at sharp tips, uneven along the way in the shape of a `Wave`, with a dry brush's fine grit when the
+hand is `ragged`),
 `broken` (that band in seeded pieces with tapered gaps and nicks), `wobble` (a contour's small, repeatable hand
-drift), `lump` (a seeded one-off blob where an ellipse would look digital), `ellipse`, and
+drift, with per-sample `weights`), `facing` (a contour's samples with their outward normals), `crescent` (a shade
+swelling inside an edge), `lump` (a seeded one-off blob where an ellipse would look digital), `ellipse`, and
 `shift`/`rotate`/`flip`/`bounds`. Every result is a closed cubic `Shape` the Toon parts fill flat
 with `toon.flat`, so a figure is a stack of filled layers (ink rim, coat, markings, limbs, face) and never a stroked
 path. [src/srstudio/toon_cast.py](src/srstudio/toon_cast.py) draws two
@@ -1370,9 +1372,11 @@ A critter's body and arms come from a `Torso`
 ([docs/decisions/0049-toon-torso-one-smooth-body.md](docs/decisions/0049-toon-torso-one-smooth-body.md),
 [src/srstudio/toon_torso.py](src/srstudio/toon_torso.py)). `Torso(head, shoulder, slope, flank, arm)` builds one
 smooth outline under a head contour: fixed-radius arcs from the neck over the shoulder and down the flank, so it
-cannot make a corner. `Torso.weights` calms `drift` on that line. `Torso.limb(points, paw, coat, shade)` redraws a
-pose's arm inside the body, a thin crease at the top and full width at the forearm, and leaves the paw to the
-character. Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
+cannot make a corner. `Torso.weights` calms `brush.wobble` on that line. `Torso.limb(points, paw, coat, shade)` redraws
+a pose's arm inside the body, a wedge from a thin crease at the top to full width at the forearm, its ink set low so
+it reads heavier underneath, and leaves the paw to the character. `toon_torso.arm_lines` is the other way to ink an
+arm, the inked fox's: only where it leaves the body or lies well over it.
+Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
 
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 

@@ -46,7 +46,12 @@ __all__ = [
     "rim",
     "Hand",
     "HAND",
+    "Wave",
+    "GRAIN",
+    "SEED_RATE",
     "inked",
+    "facing",
+    "crescent",
     "wobble",
     "broken",
     "lump",
@@ -87,13 +92,23 @@ EVEN = Pressure(1.0, 1.0, 0.0, 0.08, 2.0)  # an even line with a breath in it
 TAPERED = Pressure()  # the default: thick in the middle, round tapered ends
 
 
-def _grain(s: float, phase: float = 0.0) -> float:
-    """An uneven but repeatable wave in -1..1, periodic over ``s`` in 0..1: a hand's pressure or drift."""
-    return (
-        math.sin(2 * math.pi * 7 * s + 0.3 + phase)
-        + 0.6 * math.sin(2 * math.pi * 13 * s + 1.9 + 2.3 * phase)
-        + 0.35 * math.sin(2 * math.pi * 29 * s + 4.1 + 3.7 * phase)
-    ) / 1.95
+@dataclass(frozen=True)
+class Wave:
+    """An uneven but repeatable wave in -1..1, periodic over ``s`` in 0..1: the character of a hand's pressure or
+    drift. ``partials`` are (cycles, amplitude, start, how fast a phase shifts it); ``peak`` scales the sum."""
+
+    partials: tuple[tuple[int, float, float, float], ...]
+    peak: float
+
+    def at(self, s: float, phase: float = 0.0) -> float:
+        total = 0.0
+        for cycles, amplitude, start, rate in self.partials:
+            total += amplitude * math.sin(2 * math.pi * cycles * s + start + rate * phase)
+        return total / self.peak
+
+
+SEED_RATE = 1.618  # a wobble's seed, as a shift of its wave's phase
+GRAIN = Wave(((7, 1.0, 0.3, 1.0), (13, 0.6, 1.9, 2.3), (29, 0.35, 4.1, 3.7)), 1.95)
 
 
 def _grit(s: float) -> float:
@@ -110,7 +125,8 @@ class Hand:
     """How a hand presses an ink line round a shape, as factors of its weight: ``light`` where the outline faces
     the light and ``heavy`` where it turns away, the weight falling ``toward`` that direction (down and to the back
     by default); a convex turn of a right angle or more thins the line by ``tips`` (a tip, where the brush lifts),
-    ``grain`` makes the pressure uneven along the way, and ``ragged`` adds the fine grit of a dry brush on paper."""
+    ``grain`` makes the pressure uneven along the way, in the shape of ``wave``, and ``ragged`` adds the fine grit of
+    a dry brush on paper."""
 
     light: float = 0.45
     heavy: float = 1.35
@@ -118,17 +134,18 @@ class Hand:
     tips: float = 0.65
     grain: float = 0.18
     ragged: float = 0.0
+    wave: Wave = GRAIN
 
-    def at(self, normal: Point, turn: float, s: float) -> float:
+    def at(self, normal: Point, turn: float, s: float, seed: float = 0.0) -> float:
         """The width factor where the outward ``normal`` points, the outline turning ``turn`` radians there
-        (positive convex), ``s`` of the way round."""
+        (positive convex), ``s`` of the way round; ``seed`` shifts the grain, so two shapes do not share it."""
         tx, ty = self.toward
         facing = (normal[0] * tx + normal[1] * ty) / math.hypot(tx, ty)
         base = self.light + (self.heavy - self.light) * (facing + 1) / 2
         tip = 1.0 - self.tips * min(1.0, max(0.0, turn) / (math.pi / 2))
         if self.ragged:
-            return max(0.08, base * tip * (1 + self.grain * _grain(s) + self.ragged * _grit(s)))
-        return max(0.08, base * tip * (1 + self.grain * _grain(s)))
+            return max(0.08, base * tip * (1 + self.grain * self.wave.at(s, seed) + self.ragged * _grit(s)))
+        return max(0.08, base * tip * (1 + self.grain * self.wave.at(s, seed)))
 
 
 HAND = Hand()
@@ -288,8 +305,30 @@ def rim(points: Sequence[Point], weight: float, pressure: Pressure = EVEN, steps
     return _cubic(poly, 100.0)
 
 
+def _ring(points: Sequence[Point], steps: int, where: str) -> tuple[list[Point], list[Point], float]:
+    """The closed spline through ``points``: its samples, their outward normals and +1 when it winds clockwise on
+    screen (y down), -1 otherwise."""
+    path = _dedupe(spline(_points(points, 3, where), True, steps))
+    n = len(path)
+    area = sum(path[i][0] * path[(i + 1) % n][1] - path[(i + 1) % n][0] * path[i][1] for i in range(n))
+    sign = -1.0 if area > 0 else 1.0
+    normals = []
+    for i in range(n):
+        a, b = path[i - 1], path[(i + 1) % n]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(dx, dy) or 1.0
+        normals.append((sign * -dy / length, sign * dx / length))
+    return path, normals, 1.0 if area > 0 else -1.0
+
+
+def facing(points: Sequence[Point], steps: int = 6) -> list[tuple[Point, Point]]:
+    """Every sample of the closed spline through ``points`` with its outward normal, whichever way it winds."""
+    path, normals, _ = _ring(points, steps, "facing")
+    return list(zip(path, normals, strict=True))
+
+
 def _pressed(
-    points: Sequence[Point], weight: float, hand: Hand, steps: int, where: str
+    points: Sequence[Point], weight: float, hand: Hand, steps: int, where: str, seed: float = 0.0
 ) -> list[tuple[Point, Point, float]]:
     """Every sample of the closed spline through ``points``, with its outward normal and the push ``hand`` gives
     it."""
@@ -298,31 +337,24 @@ def _pressed(
     _positive(hand.heavy, "heavy")
     if not (all(checks.number(v) for v in hand.toward) and math.hypot(*hand.toward) > 0):
         raise BrushError(f"toward must be a direction, got {hand.toward!r}")
-    path = _dedupe(spline(_points(points, 3, where), True, steps))
+    path, normals, convex = _ring(points, steps, where)
     n = len(path)
-    area = sum(path[i][0] * path[(i + 1) % n][1] - path[(i + 1) % n][0] * path[i][1] for i in range(n))
-    sign = -1.0 if area > 0 else 1.0
-    convex = 1.0 if area > 0 else -1.0
     reach = max(1, steps)  # the turn is measured over about one control segment either side
     out = []
-    for i, p in enumerate(path):
-        a, b = path[i - 1], path[(i + 1) % n]
-        dx, dy = b[0] - a[0], b[1] - a[1]
-        length = math.hypot(dx, dy) or 1.0
-        nx, ny = sign * -dy / length, sign * dx / length
+    for i, (p, (nx, ny)) in enumerate(zip(path, normals, strict=True)):
         back, ahead = path[(i - reach) % n], path[(i + reach) % n]
         ux, uy = p[0] - back[0], p[1] - back[1]
         vx, vy = ahead[0] - p[0], ahead[1] - p[1]
         turn = convex * math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-        out.append((p, (nx, ny), weight * hand.at((nx, ny), turn, i / n)))
+        out.append((p, (nx, ny), weight * hand.at((nx, ny), turn, i / n, seed)))
     return out
 
 
-def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int = 6) -> Shape:
+def inked(points: Sequence[Point], weight: float, hand: Hand = HAND, steps: int = 6, seed: float = 0.0) -> Shape:
     """The ink band under an :func:`outline` of the same points, pressed by ``hand``: pushed out by ``weight`` times
     :meth:`Hand.at` at every point, so the line swells where the shape turns from the light and thins to almost
-    nothing at its tips, like a traced line."""
-    pressed = _pressed(points, weight, hand, steps, "inked")
+    nothing at its tips, like a traced line. ``seed`` gives a shape a grain of its own."""
+    pressed = _pressed(points, weight, hand, steps, "inked", seed)
     return _cubic([(p[0] + nx * push, p[1] + ny * push) for p, (nx, ny), push in pressed], 100.0)
 
 
@@ -382,14 +414,25 @@ def broken(
     return pieces
 
 
-def wobble(points: Sequence[Point], amount: float, closed: bool = True, steps: int = 4, seed: int = 0) -> list[Point]:
+def wobble(
+    points: Sequence[Point],
+    amount: float,
+    closed: bool = True,
+    steps: int = 4,
+    seed: float = 0,
+    weights: Sequence[float] | None = None,
+    wave: Wave = GRAIN,
+) -> list[Point]:
     """Points along the spline through ``points`` (``steps`` per segment, as :func:`spline`), each moved across
     the curve by at most ``amount``: the small uneven drift of a hand following a contour. The drift repeats for a
-    ``seed``, so a build draws the same line every time."""
+    ``seed``, so a build draws the same line every time; ``wave`` gives it a hand's character. ``weights``, a share in
+    0..1 per sample, calm it where a line must stay smooth (at ``steps=1`` the samples are the points themselves)."""
     if not (checks.number(amount) and amount >= 0):
         raise BrushError(f"amount must be a non-negative number, got {amount!r}")
     path = spline(_points(points, 2, "wobble"), closed, steps)
     n = len(path)
+    if weights is not None and (len(weights) != n or not all(checks.number(w) and 0 <= w <= 1 for w in weights)):
+        raise BrushError(f"wobble weights are one share in 0..1 per sample ({n}), got {weights!r}")
     out = []
     for i, p in enumerate(path):
         if closed:
@@ -398,9 +441,30 @@ def wobble(points: Sequence[Point], amount: float, closed: bool = True, steps: i
             a, b = path[max(0, i - 1)], path[min(n - 1, i + 1)]
         dx, dy = b[0] - a[0], b[1] - a[1]
         length = math.hypot(dx, dy) or 1.0
-        drift = amount * _grain(i / n if closed else i / max(1, n - 1), 1.618 * seed)
+        drift = amount * wave.at(i / n if closed else i / max(1, n - 1), SEED_RATE * seed)
+        drift *= weights[i] if weights else 1.0
         out.append((p[0] - dy / length * drift, p[1] + dx / length * drift))
     return out
+
+
+def crescent(outer: Sequence[Point], depth: float, inside: Point, peak: float = 0.6) -> tuple[Point, ...]:
+    """A shade that runs inside an outline along ``outer``: it starts and ends on the outline and swells to ``depth``
+    toward ``inside``, deepest ``peak`` of the way along, so it turns the form instead of striping it."""
+    path = spline(outer, steps=3)
+    along = [0.0]
+    for a, b in zip(path, path[1:], strict=False):
+        along.append(along[-1] + math.dist(a, b))
+    bend = math.log(0.5) / math.log(peak)
+    inner = []
+    for i, p in enumerate(path):
+        a, b = path[max(0, i - 1)], path[min(len(path) - 1, i + 1)]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        nx, ny = -dy / math.hypot(dx, dy), dx / math.hypot(dx, dy)
+        if nx * (inside[0] - p[0]) + ny * (inside[1] - p[1]) < 0:
+            nx, ny = -nx, -ny
+        d = depth * math.sin(math.pi * (along[i] / along[-1]) ** bend)
+        inner.append((p[0] + nx * d, p[1] + ny * d))
+    return tuple(path) + tuple(inner[-2:0:-1])
 
 
 def lump(
