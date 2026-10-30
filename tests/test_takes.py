@@ -96,6 +96,24 @@ def test_record_writes_the_takes_their_words_and_a_frame_rounded_timeline(tmp_pa
     assert json.loads((root / "voice-transcript.json").read_text())["passed"] is True
 
 
+def test_a_still_opening_is_silence_inside_the_first_take_and_moves_its_words_later(tmp_path):
+    """The ``sp-hook_motion`` test's arm A: the first word waits ``still`` seconds; the timeline stays contiguous
+    from zero, so the pause lives inside the first take (its clip, words, phones and length)."""
+    plain_root, plain, _ = run(tmp_path / "plain")
+    root, timeline, _ = run(tmp_path / "still", script(still=1.0))
+    first, was = timeline["items"][0], plain["items"][0]
+    assert first["start"] == 0 and first["still"] == 1.0 and "still" not in was
+    assert first["duration"] == pytest.approx(was["duration"] + 1.0)
+    assert first["speech_duration"] == pytest.approx(was["speech_duration"] + 1.0)
+    assert [w["start"] for w in first["words"]] == pytest.approx([w["start"] + 1.0 for w in was["words"]])
+    assert first["phones"][0]["start"] == pytest.approx(was["phones"][0]["start"] + 1.0)
+    assert takes.wav_seconds(root / first["audio"]) == pytest.approx(
+        takes.wav_seconds(plain_root / was["audio"]) + 1.0, abs=1 / 48000
+    )
+    assert first["sha256"] == takes.sha256_of(root / first["audio"])
+    assert timeline["items"][1:] == [{**q, "start": pytest.approx(q["start"] + 1.0)} for q in plain["items"][1:]]
+
+
 def test_a_misheard_take_stops_the_recording_and_says_what_was_heard(tmp_path):
     provider = Provider(tmp_path, heard={"speech-2.wav": "Repeat after you."})
     with pytest.raises(takes.TakesError, match="take 02: heard 'Repeat after you.'"):
@@ -215,6 +233,10 @@ def test_a_malformed_take_is_refused_before_anything_is_requested(take, match):
         (dict(bed=takes.Bed(BED_PLAN, seed=1, bpm=0)), "bpm"),
         (dict(bed=takes.Bed(BED_PLAN, seed=1, bpm=96, gain_db=3)), "gain"),
         (dict(bed=takes.Bed(BED_PLAN, seed=1, bpm=96, fade=-1)), "fade"),
+        (dict(still=-0.5), "still"),
+        (dict(still=float("nan")), "still"),
+        (dict(still=True), "still"),
+        (dict(still=takes.STILL_MAX + 0.5), "still"),
     ],
 )
 def test_a_malformed_script_is_refused(changes, match):

@@ -1512,8 +1512,20 @@ Sunny, the guests and the Joy Points are the library's own.
 
 An episode is two files: `episodes/gloss_<name>_audio.py` (its takes and stages; run it to record through
 `srstudio.takes` via `episodes/_gloss.py`, every line heard back by speech-to-text, no retries) and a short
-`episodes/gloss_<name>.py` that builds it. `tests/test_gloss_episodes.py` holds all seven to the format: Sunny's
+`episodes/gloss_<name>.py` that builds it. `tests/test_gloss_episodes.py` holds every reel to the format: Sunny's
 hook question first, a hold of at least 1.2 s before the button, the Plaza notice last.
+
+**A still opening.** A reel may open on a still first second (arm A of the `sp-hook_motion` test) with
+`Reel(still=1.0)`. The recording (`takes.Script.still`) puts that much silence at the head of the first take, so the
+first word comes after it and the timeline still runs contiguous from zero. The build then holds the first shot and
+the hook on their first frame until then: it draws a copy of each inside `Canvas.frozen()`, where every key keeps
+only its value at 0 s, and shows the running shot from the first word on. `gloss_reel.still_opening` refuses a
+staging that would change the shot inside the still second (a card, move, blackout, shake, walk, face or pose
+before the first word) and a notice as the first shot; a frozen drawing refuses expressions and text animators, which
+it cannot hold still. Without `still`, recordings and builds are as before. Two other designs were rejected. A
+timeline that starts its first take late breaks the contiguous-from-zero rule every take timeline keeps. An output
+segment that freezes the first frame would make the encoded file a second longer than the scene whose clock the
+captions, markers and craft checks read.
 
 | # | Episode | The turn |
 |---|---|---|

@@ -14,7 +14,9 @@ reel. :func:`check` refuses a staging that does not fit the recording before any
 :func:`build` draws it into an :class:`~srstudio.episode.Episode` with a shot sequence: set, back props, cast,
 front props and blackout inside a camera group, the board over it (a zoom never pushes its text out of the safe
 area); the hook (:func:`srstudio.gloss_sets.hook`) over the first take; a crossfade into the notice; the engine's
-own word-by-word captions; and the mix of the takes, effects and music bed, the music ducked under every line.
+own word-by-word captions; and the mix of the takes, effects and music bed, the music ducked under every line. A
+first take recorded with a still opening (:attr:`srstudio.takes.Script.still`) shows its shot and the hook held on
+their first frame until the first word (:func:`still_opening`).
 """
 
 from __future__ import annotations
@@ -23,12 +25,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import craft, gloss, gloss_sets, native, staging
+from . import checks, craft, gloss, gloss_sets, native, staging
 from .gloss import HOST, GlossError, Track, Walk
 from .gloss_sets import Card
 from .staging import Move
 
-__all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "build", "DUCK", "MUSIC_GAIN", "BADGE"]
+__all__ = ["Place", "Prop", "Move", "Notice", "Stage", "HOST", "check", "still_opening", "build", "DUCK", "MUSIC_GAIN",
+           "BADGE"]  # fmt: skip
 
 DUCK = -9.0  # dB the music drops under a line
 HUSH = -12.0  # dB more it drops through a pause between lines, so the beat before a punchline is quiet, not muzak
@@ -156,6 +159,47 @@ def _draw(cv, parent, p: Place, said, end: float) -> None:
                walk=p.walk, end=end, **p.traits)  # fmt: skip
 
 
+def _shot(cv, g, take, s: Stage, speech, end: float, font: bytes, *, name: str) -> None:
+    """One staged take into ``g``: the graded world in its camera, the cast and props, the board over it."""
+    world = cv.group(g, cv.uid("g"))  # graded; the board and Sunny's corner badge sit over it, crisp
+    gloss_sets.finish(cv, world)
+    shaken = staging.rig(cv, world, s.move, s.shake, name=name)  # named as the camera: srstudio.craft counts its moves
+    gloss_sets.SETS[s.set](cv, shaken, end=end, **s.options)
+    for front in (False, True):
+        if front:
+            for p in s.cast:
+                _draw(cv, shaken, p, speech if take.actor == p.who else (), end)
+        for prop in s.props:
+            if prop.front == front:
+                gloss_sets.PROPS[prop.name](cv, shaken, at=(prop.x, prop.y), end=end, **prop.options)
+    staging.blackout(cv, shaken, s.dark)
+    if s.cards:  # over the camera, not in it: a zoom never pushes the board's text out of the safe area
+        gloss_sets.board(cv, g, s.cards, end=end, font=font, box=s.box)
+
+
+def still_opening(take: Any, s: Stage) -> float:
+    """The seconds the first ``take`` opens still (``still`` in its timeline item: silence the recording put
+    inside it, :attr:`srstudio.takes.Script.still`), 0 without one. Its shot is held on its first frame until
+    then, so nothing staged may happen inside the still opening: no card, move, blackout, shake, walk, face or
+    pose change before the first word, and the notice cannot open a reel. :class:`GlossError` says which."""
+    lead = take.extra.get("still", 0.0)
+    if not lead:
+        return 0.0
+    where = f"take {take.id}: a still opening of {lead} s"
+    if not (checks.number(lead) and 0 < lead < take.duration):
+        raise GlossError(f"{where} must be a number of seconds inside the take (0..{take.duration})")
+    if s.notice is not None:
+        raise GlossError(f"{where} needs a staged shot, not the Plaza Notice")
+    changes = [c.start for c in s.cards if c.start > 0] + [a for a, _ in (*s.dark, *s.shake)]
+    changes += [s.move.at] if s.move is not None else []
+    for p in s.cast:
+        changes += [t for t, _ in (*p.face, *p.pose) if t > 0] + ([p.walk[0]] if p.walk is not None else [])
+    early = sorted(t for t in changes if t < lead)
+    if early:
+        raise GlossError(f"{where}: the staging changes the shot at {early[0]} s, before the first word")
+    return float(lead)
+
+
 def build(
     ep: Any, stages: Mapping[str, Stage], *, hook: str, font: bytes, look: native.CaptionLook = native.CAPTION_LOOK
 ) -> dict[str, Any]:
@@ -163,6 +207,8 @@ def build(
     hook and caption nodes (``ep.hide_on_cover`` takes them) and the mix."""
     takes = ep.takes
     check(takes, stages)
+    first = takes[0]
+    lead = still_opening(first, stages[first.id])
     cv = ep.cv
     shots = ep.sequence("shots")
     fades = staging.crossfades(takes, lambda id: stages[id].notice is not None)
@@ -174,27 +220,28 @@ def build(
             gloss_sets.notice(cv, g, s.notice.title, s.notice.body, end=end, font=font,
                               talk=speech if take.actor == HOST else (), settle=fades.get(take.id, 0.0))  # fmt: skip
             continue
-        world = cv.group(g, cv.uid("g"))  # graded; the board and Sunny's corner badge sit over it, crisp
-        gloss_sets.finish(cv, world)
-        # the frame is named as the camera, so srstudio.craft counts its moves
-        shaken = staging.rig(cv, world, s.move, s.shake, name=f"gloss-{take.id}-angle")
-        gloss_sets.SETS[s.set](cv, shaken, end=end, **s.options)
-        for front in (False, True):
-            if front:
-                for p in s.cast:
-                    _draw(cv, shaken, p, speech if take.actor == p.who else (), end)
-            for prop in s.props:
-                if prop.front == front:
-                    gloss_sets.PROPS[prop.name](cv, shaken, at=(prop.x, prop.y), end=end, **prop.options)
-        staging.blackout(cv, shaken, s.dark)
-        if s.cards:  # over the camera, not in it: a zoom never pushes the board's text out of the safe area
-            gloss_sets.board(cv, g, s.cards, end=end, font=font, box=s.box)
-        if take.actor == HOST and take is not takes[0] and HOST not in {p.who for p in s.cast}:
+        if take is first and lead:  # the shot as it stands on its first frame, held; then the same shot running
+            held = cv.group(g, f"gloss-still-{take.id}")
+            cv.gate(held, [(0, lead)])
+            with cv.frozen():
+                _shot(cv, held, take, s, (), end, font, name=f"gloss-still-{take.id}-angle")
+            g = cv.group(g, cv.uid("g"))
+            cv.gate(g, [(lead, end)])
+        _shot(cv, g, take, s, speech, end, font, name=f"gloss-{take.id}-angle")
+        if take.actor == HOST and take is not first and HOST not in {p.who for p in s.cast}:
             gloss.sunny(cv, g, at=BADGE, scale=0.5, talk=speech, end=end)
-    first = takes[0]
-    hook_node = gloss_sets.hook(
-        cv, cv.comp, hook, end=first.duration, font=font, talk=gloss.talk(first) if first.actor == HOST else ()
-    )
+    talk = gloss.talk(first) if first.actor == HOST else ()
+    if lead:
+        hook_node = cv.group(cv.comp, "gloss-hook")
+        held = cv.group(hook_node, cv.uid("g"))
+        cv.gate(held, [(0, lead)])
+        with cv.frozen():
+            gloss_sets.hook(cv, held, hook, end=first.duration, font=font)
+        running = cv.group(hook_node, cv.uid("g"))
+        cv.gate(running, [(lead, first.duration)])
+        gloss_sets.hook(cv, running, hook, end=first.duration, font=font, talk=talk)
+    else:
+        hook_node = gloss_sets.hook(cv, cv.comp, hook, end=first.duration, font=font, talk=talk)
     closed = staging.close(ep, shots, takes, fades=fades, look=look, pans=PANS, duck=DUCK)
     music = ep.t.meta.get("music")
     if music:

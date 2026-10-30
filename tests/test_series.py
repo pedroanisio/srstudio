@@ -111,6 +111,11 @@ def test_three_voices_are_credited_as_a_list():
     assert "voices River, George and Roger;" in reel(takes=takes3).script().voice_note
 
 
+def test_a_reel_opens_on_its_still_second_only_when_it_asks_for_one():
+    assert reel().script().still == 0.0
+    assert reel(still=1.0).script().still == 1.0
+
+
 def test_a_line_for_a_voice_the_series_lacks_is_refused():
     with pytest.raises(SeriesError, match="no voice for 'gary'"):
         reel(takes=(series.line("01", "gary", "Hi."),)).script()

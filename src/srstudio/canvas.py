@@ -8,7 +8,8 @@ needs nothing but these few calls.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -124,6 +125,7 @@ class Canvas:
         self._symbol_root: Any = None
         self._effects: dict[str, tuple[str, dict[str, Any]]] = {}
         self._effect_root: Any = None
+        self._frozen = 0  # inside Canvas.frozen(): every key holds its value at 0 s
 
     @property
     def assets(self):
@@ -352,6 +354,7 @@ class Canvas:
         ``presetStart``, ``presetDuration``, ``unit``, ``order``, ``stagger``... pass through."""
         if layer.xml_name != "layer" or layer.asset is None:
             raise NativeError(f"a text animator needs a text layer, not <{layer.xml_name} id={layer.id!r}>")
+        self._refuse_frozen(f"the {preset!r} text animator")
         return layer.add_textAnimator(preset=preset, **kw)
 
     # -- effects --------------------------------------------------------------------------
@@ -372,13 +375,32 @@ class Canvas:
 
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
         ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas."""
+        ordered = sorted(values, key=lambda kv: kv[0])
+        if self._frozen:
+            ordered = [(0, _at_zero(ordered, hold and kind is None, prop))]
         kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
         a = node.add_animate(**kw)
-        for t, value in sorted(values, key=lambda kv: kv[0]):
+        for t, value in ordered:
             a.add_key(time=round(float(t), 6), value=str(value))
         return a
+
+    @contextmanager
+    def frozen(self) -> Iterator[Canvas]:
+        """Draw still: inside the block every :meth:`keys` call (and so :meth:`gate` and :meth:`pop_in`) keeps one
+        key, its value at 0 s, so a shot drawn here stands as it would on its first frame and nothing in it moves
+        (a still opening, the ``sp-hook_motion`` test's arm A). An expression or a text animator cannot be held
+        still and is refused."""
+        self._frozen += 1
+        try:
+            yield self
+        finally:
+            self._frozen -= 1
+
+    def _refuse_frozen(self, what: str) -> None:
+        if self._frozen:
+            raise CanvasError(f"a frozen drawing cannot hold {what} still")
 
     def gate(self, node, spans: Spans):
         """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
@@ -416,4 +438,20 @@ class Canvas:
         self.keys(node, "scaleY", values, hold=False)
 
     def expression(self, node, prop: str, js: str):
+        self._refuse_frozen(f"the expression on {prop!r}")
         node.add_expression(property=prop).content = js
+
+
+def _at_zero(ordered: Sequence[tuple[float, Any]], hold: bool, prop: str) -> Any:
+    """The value keys ``ordered`` by time give at 0 s: the first key's before it, the last at or before 0 s with
+    hold keys; a curve between a key before 0 s and one after it is refused rather than evaluated."""
+    if not ordered:
+        raise CanvasError(f"keys on {prop!r}: no keys to hold")
+    before = [v for t, v in ordered if t <= 0]
+    if not before:
+        return ordered[0][1]
+    after = [t for t, _ in ordered if t > 0]
+    last = max(t for t, _ in ordered if t <= 0)
+    if after and last < 0 and not hold:
+        raise CanvasError(f"keys on {prop!r}: a frozen drawing cannot hold a curve that runs across 0 s still")
+    return before[-1]
