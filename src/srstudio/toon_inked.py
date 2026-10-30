@@ -16,7 +16,7 @@ module draws in code (:class:`Inked`, a :class:`srstudio.toon_cast.Drawing`):
 * **eyes and mouths drawn for the face**: almond eyes with an iris that slant to the outer corner, a fox's mouth
   under the nose; every kind of :data:`srstudio.toon.EYES` and :data:`srstudio.toon.MOUTHS` and every viseme is its
   own drawing here, none the shared brush template (``sleepy``, ``yawn``, ``scream`` and ``puff`` too, ahead of
-  the vocabulary that ADR 0045 brings), and every eye a one-off: its almond, iris, pupil and shine are
+  the vocabulary the sloth, goat and hamster bring), and every eye a one-off: its almond, iris, pupil and shine are
   seeded lumps per kind and side (:func:`srstudio.brush.lump`), never a perfect ellipse;
 * **a shade tone**: one darker coat (:data:`SHADE`) where the forms turn away, the head's a crescent that starts and
   ends on the outline and swells into the cheek, and a cream shade under the chin.
