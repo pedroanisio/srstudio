@@ -1,0 +1,675 @@
+{
+  "schema": "1.0.0",
+  "characters": {
+    "barista": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "5920843945199b355a9132ad79c656c59722224e57926657c69436bbf081b1d5"
+        }
+      ]
+    },
+    "bo": {
+      "style": "soft",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "c98a709dd55bad1ccd59c3c19f3ba3178d7484bdc868d66b51b33adb1f385727"
+        }
+      ]
+    },
+    "candidate": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "3577be4b61da642d351f5e07d4a4e04e7af105c9eaa6984a05ba7b335de89166"
+        }
+      ]
+    },
+    "cel-traced": {
+      "style": "cel",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "dcb950ddd9fe50f291fb0209e0804cec5a14ae6aaf88661e60e8a2060de6f75f"
+        }
+      ]
+    },
+    "collage-brent": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "10befa10d7e272e959bbfb799dba54634b85c8e8d799145e57fcd99c98f6697a"
+        }
+      ]
+    },
+    "collage-deb": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "1a2a8f5fd11a45c4df15ee11765a527838db36a08e8abe0f031da2fe950ef48f"
+        }
+      ]
+    },
+    "collage-feld": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "43b9204129f09e449095be873afc8369fac8254b12bf9127eabb5a0fe3a655ba"
+        }
+      ]
+    },
+    "collage-flush": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "fa347cc97b162066d3e97db103d83c730862db5ed4dc18792e9946511b6d7cf0"
+        }
+      ]
+    },
+    "collage-gary": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "726c6e3fe4acd1dc17013e59b4e97257901e2df13156fd04b5aa2c618b15ee18"
+        }
+      ]
+    },
+    "collage-jun": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "f6db091d5bf3a6ed489d3d556b735693bd4083e3ecdfd6c8dbde986591e6aedf"
+        }
+      ]
+    },
+    "collage-kai": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "bf18dfaf14562131a33cca15d89171906e4d270a7a8c35ede676a4a90c262b73"
+        }
+      ]
+    },
+    "collage-omar": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "7f0bba74a49d14f6546ad5fa8e0e6ecf083621cb9f0f873662f852fc695430b8"
+        }
+      ]
+    },
+    "collage-priya": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "3485e693b774c71f788c23bea70b4d5dc33b9492cab52e354ba613142131c6ec"
+        }
+      ]
+    },
+    "collage-rosa": {
+      "style": "collage",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "cab0964b378eef11f6b4bdc6a52797f7609b7666f98bdb179c0fc6de3370b068"
+        }
+      ]
+    },
+    "customer": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "94d47b423be61342e40251f6d415bfa8fb9b4bf34f0af76596c73a8a15ca6272"
+        }
+      ]
+    },
+    "doodle": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "2a50ffe00723ea25e6844cda2ae9e667650b8c6dd227a2e203c6505622b2f13c"
+        }
+      ]
+    },
+    "gloss-gus": {
+      "style": "gloss",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "c35a2f00b246e2f784e6753ead66446d059957ce9ed238108c32938c399301a8"
+        }
+      ]
+    },
+    "gloss-nadia": {
+      "style": "gloss",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "dfd750fba75842f4904724a702d28c015522fc313f80bc8d3be1cc0885e171e5"
+        }
+      ]
+    },
+    "gloss-sunny": {
+      "style": "gloss",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "e72fbd55d175062ad3837a9b1f18ee388ef630ece9f3e1769c7fc849261f1046"
+        }
+      ]
+    },
+    "gloss-tamsin": {
+      "style": "gloss",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "f7144e18b36fa18af09de322933e28b43d09af846f0591da078eb4afd9dff1e9"
+        }
+      ]
+    },
+    "juno": {
+      "style": "soft",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "285b6f53fdf15edf306a7ebd9d07ff16c079d04f880f72336b97301865473cb1"
+        }
+      ]
+    },
+    "manager": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "fe30bf56b554df333b3cb48949bd02238d9841b932399aec0bf1ca787878bf15"
+        }
+      ]
+    },
+    "pigeon": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "f20287b6fd11d5fae364ee61c9bc0fdb7e0289b9544ce45c2777590b0a1748cd"
+        }
+      ]
+    },
+    "pip": {
+      "style": "soft",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "7e08b5891dc25d9d6d689d71f1ab394a85ea55182d25bfec0ff231126cc59f27"
+        }
+      ]
+    },
+    "remy": {
+      "style": "soft",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b6666ca1636252a50ec562e4604f3c147c06b3f5afd4d1b6a52cc2784008582"
+        }
+      ]
+    },
+    "rosa": {
+      "style": "cutout",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "1be961eea7e5dcd803679bad8d70dc68c0000d9f2d4d081f3d77aaa0e6dcb110"
+        }
+      ]
+    },
+    "saga-droid": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "7d5727354a980028ab9ea396576b0a83dea5ec654779c4d7b6c46654ddbf42ed"
+        }
+      ]
+    },
+    "saga-enforcer": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "489b0396d35bd908da2edc78f25a566f8624f2d29f4f3a372e1563894f331d09"
+        }
+      ]
+    },
+    "saga-gloom": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "31dc739c049f24b563205aab50118206a051fdd4fd4a3aa490a3b8484bd257af"
+        }
+      ]
+    },
+    "saga-juno": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "499f15faf8d25b79e9c47be6e23181a01dc3b00647eac1935e7577a33d6b0890"
+        }
+      ]
+    },
+    "saga-mabel": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "d8bf293d1c4f6f1626117cf8b315069aa1c33c133c127f9c9e8d3a5074a8fc94"
+        }
+      ]
+    },
+    "saga-rook": {
+      "style": "saga",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "9f9a7864fb55d24692bf6eeb0df2dd1490afecef8c2c2c607806409ef4fa1d6f"
+        }
+      ]
+    },
+    "stick-figure": {
+      "style": "stick",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "d278530a9cad8fe6c9f0313567f0821e8ea8dfec1808f3be7919a382e543dc81"
+        }
+      ]
+    },
+    "stick-rig": {
+      "style": "stick",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "7052b8f5ec6067b8222693ce4fc724a83d3ca9f3f501d03095c5d01ee289adc2"
+        }
+      ]
+    },
+    "talking-doorbell": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "372921b4cce6d52ebb8a76c6c4bf2b2ddad5b39ff19a168f500a3a1a43985000"
+        }
+      ]
+    },
+    "talking-meter": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "99c7967fd6f465391e0b9e87a8769388c4cf123d9be8e2ae108e191e876ca1f6"
+        }
+      ]
+    },
+    "talking-printer": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "f0581f5e9513d65b9cb09de29f4f523dae76ead5f1d414c8602ac26e2f07ae8f"
+        }
+      ]
+    },
+    "talking-router": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "93397c9db837b57182e6a8aabc707baf5b5b8119b84173bad2620575345eac07"
+        }
+      ]
+    },
+    "talking-vacuum": {
+      "style": "ink",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "130576300fd381959803c37291cae020ab861e7284e98c42f55c58677e21a6f2"
+        }
+      ]
+    },
+    "toon-bear": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "dc35ce06c67dc790a6db070b2c90952a167da191a7051e0b4bbbe695f1fb390b"
+        }
+      ]
+    },
+    "toon-cat": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "64caaccc406884ea99e3c21ca59fac34c8ce019d771298c8623af3751ab8a97c"
+        }
+      ]
+    },
+    "toon-dog": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "6afe1123373a2e36cb55b2babe7af1ea950d1e70f0656ad959be65cf4f3dd6ba"
+        }
+      ]
+    },
+    "toon-fox": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "482be6508fcafdaa9ce076c136f834ccbad4d7d3b64699d875939c54abf62920"
+        },
+        {
+          "number": 2,
+          "date": "2026-10-30",
+          "note": "Inked like the traced cat: broken rim, one-off eyes, a turned head, shoulders in one contour.",
+          "status": "approved",
+          "proof": "generated/character-proofs/fox/fox-proof.mp4",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "approved, lets add version to the characters as we will improve then frequently"
+          },
+          "drawing": "e2a08cab58d856c985d175f901ad64445195bb10a793f0f573b5f51d94d24e90"
+        }
+      ]
+    },
+    "toon-frog": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "3db890f73e5fc27a435bdb43cc6ed888df897369a7b436169f6888f4a821d376"
+        }
+      ]
+    },
+    "toon-hedgehog": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "a267cb64e4917325b0b37b57d05287f048511fcff6509ba3803326162fa91bae"
+        }
+      ]
+    },
+    "toon-rabbit": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "f51c0134560f7521bc29bcbe20fcbf6618289521fa19802456753859694ff088"
+        }
+      ]
+    },
+    "toon-raccoon": {
+      "style": "toon",
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The drawing as it stood when versions began.",
+          "status": "approved",
+          "proof": "",
+          "approval": null,
+          "drawing": "dd2cc20612d3c3d3310cd4357a9a6ff479adcf79bba631388a4ce11d972c3240"
+        }
+      ]
+    }
+  }
+}

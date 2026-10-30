@@ -13,7 +13,7 @@ top. The vocabulary is the style's own (:data:`EYES`, :data:`MOUTHS`, :data:`ARM
 
 :func:`figure_shapes` is the drawing as data (``(d, fill, stroke, width, opacity)``, frame pixels, only coordinate
 pairs in ``d``), so a test can measure it; :func:`figure` puts it on a canvas, one group per pose run, and the
-registered drawers in :data:`DRAWERS` follow the :data:`srstudio.sketch.DRAWERS` contract.
+registered drawers in :data:`DRAWERS` follow the :func:`srstudio.sketch.drawer` contract.
 """
 
 from __future__ import annotations

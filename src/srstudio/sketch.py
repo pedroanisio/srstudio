@@ -29,7 +29,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks, fonts, soundtrack, toon, toon_cast, toon_inked
+from . import characters, checks, fonts, soundtrack, toon, toon_cast, toon_inked  # noqa: F401 - toon_inked registers
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -68,7 +68,7 @@ __all__ = [
     "manifest",
 ]
 
-CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog", "fox-inked")
+CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog")
 LIP_SYNCED = (
     "dog",
     "frog",
@@ -77,7 +77,6 @@ LIP_SYNCED = (
     "fox",
     "raccoon",
     "hedgehog",
-    "fox-inked",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
@@ -351,17 +350,17 @@ def place(sketch: Sketch, word_starts: Sequence[Sequence[float]], speech_ends: S
 
 # -- drawing and files ----------------------------------------------------------------------------------------------
 Drawer = Callable[..., list]
-DRAWERS: dict[str, Drawer] = {
-    "cat": toon.cat,
-    "dog": toon_cast.dog,
-    "frog": toon_cast.frog,
-    "bear": toon_cast.bear,
-    "rabbit": toon_cast.rabbit,
-    "fox": toon_cast.fox,
-    "raccoon": toon_cast.raccoon,
-    "hedgehog": toon_cast.hedgehog,
-    "fox-inked": toon_inked.fox_inked,
-}
+
+
+def part_of(who: str) -> str:
+    """The registered character a sketch's ``who`` names."""
+    return f"toon-{who}"
+
+
+def drawer(who: str, versions: Mapping[str, int] | None = None) -> Drawer:
+    """The drawing of a sketch's character: the version ``versions`` pins, else its latest approved (ADR 0047)."""
+    name = part_of(who)
+    return characters.part(name, characters.resolved(name, versions)).builder
 
 
 def draw_cast(
@@ -372,16 +371,17 @@ def draw_cast(
     taps: Sequence[float] = (),
     stickers: Mapping[str, Sequence[tuple]] | None = None,
     mouths: Mapping[str, Sequence[tuple[float, str]]] | None = None,
+    versions: Mapping[str, int] | None = None,
 ) -> list:
-    """Every appearance drawn by its character's part (:data:`DRAWERS`), on from its entrance to its exit, the
-    typing frames swapped on ``taps``; ``stickers[who]`` are layers stuck on that character
+    """Every appearance drawn by its character's part (:func:`drawer`, at the version ``versions`` pins), on from its
+    entrance to its exit, the typing frames swapped on ``taps``; ``stickers[who]`` are layers stuck on that character
     (``toon_cast.sticky_note``) and ``mouths[who]`` its viseme track (:func:`load_mouths`); the traced cat takes
     neither."""
     groups = []
     for app in appearances(beats, end):
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = drawer_extras(app.who, stickers, mouths)
-        groups.extend(DRAWERS[app.who](cv, parent, poses, app.end, taps, enter=app.start, **extra))
+        groups.extend(drawer(app.who, versions)(cv, parent, poses, app.end, taps, enter=app.start, **extra))
     return groups
 
 
