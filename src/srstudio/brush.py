@@ -25,6 +25,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import checks
 from .errors import SrstudioError
 
 __all__ = [
@@ -80,14 +81,14 @@ def _points(points: Sequence[Point], least: int, where: str) -> list[Point]:
         raise BrushError(f"{where}: needs at least {least} points, got {len(points)}")
     out = []
     for p in points:
-        if len(p) != 2 or not all(isinstance(v, int | float) and math.isfinite(v) for v in p):
+        if len(p) != 2 or not all(checks.number(v) for v in p):
             raise BrushError(f"{where}: {p!r} is not a finite point")
         out.append((float(p[0]), float(p[1])))
     return out
 
 
 def _positive(value: float, name: str) -> float:
-    if not (isinstance(value, int | float) and math.isfinite(value) and value > 0):
+    if not (checks.number(value) and value > 0):
         raise BrushError(f"{name} must be a positive number, got {value!r}")
     return float(value)
 

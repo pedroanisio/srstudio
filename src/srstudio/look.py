@@ -15,11 +15,10 @@ these for the drawing, so a finish learned in one style is a call away in the ne
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping
 from typing import Any
 
-from . import fonts
+from . import checks, fonts
 from .canvas import Canvas
 from .errors import SrstudioError
 
@@ -117,7 +116,7 @@ def grade(cv: Canvas, node, prefix: str, effects: Mapping[str, Mapping[str, Any]
 
 def depth(cv: Canvas, parent, name: str, radius: float):
     """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane."""
-    if not (math.isfinite(radius) and radius > 0):
+    if not (checks.number(radius) and radius > 0):
         raise LookError(f"a far plane's blur radius must be positive, got {radius}")
     far = cv.group(parent, cv.uid("g"))
     cv.apply(far, cv.effect(name, "blur", radius=radius))

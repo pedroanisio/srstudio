@@ -131,7 +131,7 @@ class BlobError(SrstudioError, ValueError):
 
 
 def _finite(*values: float) -> bool:
-    return all(math.isfinite(v) for v in values)
+    return all(checks.number(v) for v in values)
 
 
 def _lerp(a: float, b: float, u: float) -> float:
@@ -723,7 +723,7 @@ def _crescent(r: float, dx: float, dy: float, steps: int = 24) -> str:
     """The part of a disc of radius ``r`` at the origin that the same disc moved by ``dx, dy`` leaves uncovered:
     an outer arc on the side away from the move, closed by an arc of the moved disc."""
     gap = math.hypot(dx, dy)
-    if not (math.isfinite(gap) and 0 < gap < 2 * r):
+    if not (checks.number(gap) and 0 < gap < 2 * r):
         raise BlobError(f"a crescent needs the lit disc moved by more than 0 and less than {2 * r:g}, got {gap!r}")
     toward, half = math.atan2(dy, dx), math.acos(gap / (2 * r))
     outer = _arc(0, 0, r, toward + half, toward + 2 * math.pi - half, steps)
@@ -948,7 +948,7 @@ def cue(
 ) -> Cue:
     """A :class:`Cue` at ``spot`` in output pixels, for a character drawn at ``scale`` (the rig's units are
     pixels / scale); without a spot the character stays where it is. A cue at 0 has nothing to ease from."""
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise BlobError(f"scale {scale} must be a positive number to map pixels to rig units")
     x, y = (0.0, 0.0) if spot is None else (spot[0] / scale, spot[1] / scale)
     return Cue(time, pose, x=x, y=y, ease=ease if time else 0.0, **kw)
@@ -961,7 +961,7 @@ def settle(cues: Sequence[Cue], fps: float, *, published_full_gap_ease: bool = F
     ``published_full_gap_ease`` reproduces a defect kept only for frozen published episodes (L8); never use in new
     work. It makes :func:`drawings` draw an ease that fills the whole gap as those episodes shipped: its first
     in-between at the time of the drawing before it, which hides that drawing."""
-    if not (math.isfinite(fps) and fps > 0):
+    if not (checks.number(fps) and fps > 0):
         raise BlobError(f"fps {fps} must be a positive number")
     ordered = sorted(cues, key=lambda c: c.time)
     for a, b in zip(ordered, ordered[1:], strict=False):
@@ -1606,7 +1606,7 @@ def home(
     """``lamp_talk``: (start, end) spans, in order and apart, in which the floor lamp speaks and its shade glows."""
     last = 0.0
     for start, end in lamp_talk:
-        if not (math.isfinite(start) and math.isfinite(end) and last <= start < end):
+        if not (checks.number(start) and checks.number(end) and last <= start < end):
             raise BlobError(f"lamp_talk spans are (start, end) in order from 0, apart; got {list(lamp_talk)}")
         last = end
     g = cv.group(parent, id)

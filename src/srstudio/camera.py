@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+from . import checks
 from .canvas import Canvas, Keys
 from .errors import SrstudioError
 
@@ -49,15 +50,15 @@ def crash_zoom(
     with ``back`` it snaps out again at that time. Set the pivot first with :func:`anchor`. Returns ``at``, the cue
     for the whoosh or sting that sells the move (:func:`srstudio.foley.whoosh`). A move slower than :data:`SNAP` is
     a push: use :func:`push_in`."""
-    if not (math.isfinite(at) and at >= 0):
+    if not (checks.number(at) and at >= 0):
         raise CameraError(f"crash zoom: at {at} must be a time >= 0")
-    if not (math.isfinite(scale) and scale > 0 and math.isfinite(start_scale) and start_scale > 0):
+    if not (checks.number(scale) and scale > 0 and checks.number(start_scale) and start_scale > 0):
         raise CameraError(f"crash zoom: scale {scale} and start_scale {start_scale} must be > 0")
-    if not (math.isfinite(duration) and duration > 0):
+    if not (checks.number(duration) and duration > 0):
         raise CameraError(f"crash zoom: duration {duration} must be > 0")
     if duration > SNAP:
         raise CameraError(f"crash zoom: {duration} s is slower than a snap ({SNAP} s); use push_in for a push")
-    if back is not None and not (math.isfinite(back) and back >= at + duration):
+    if back is not None and not (checks.number(back) and back >= at + duration):
         raise CameraError(f"crash zoom: back {back} must come after the zoom lands at {at + duration}")
     keys: list[tuple[float, float]] = [(0, start_scale), (at, start_scale), (at + duration, scale)]
     if back is not None:

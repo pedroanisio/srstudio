@@ -13,7 +13,6 @@ for the rest, so a fix to a camera move or a crossfade reaches every style:
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -64,7 +63,7 @@ class Move:
 
 def inside(a: float, b: float, end: float) -> bool:
     """``a`` < ``b``, both finite, inside ``0..end``."""
-    return math.isfinite(a) and math.isfinite(b) and 0 <= a < b <= end + 1e-6
+    return checks.number(a) and checks.number(b) and 0 <= a < b <= end + 1e-6
 
 
 def check_cover(takes: Sequence[Any], stages: Collection[str], error: type[Exception] = StagingError) -> None:

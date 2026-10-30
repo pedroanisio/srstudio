@@ -6,6 +6,7 @@ import math
 import random
 from collections.abc import Sequence
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -742,7 +743,7 @@ def tip_tablet(
     times = [t for t, _ in picks]
     if any(not (0 <= t) for t in times) or times != sorted(times) or any(not 0 <= i < len(options) for _, i in picks):
         raise PropError(f"each pick is (time >= 0, option index), in time order, got {picks!r}")
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise PropError(f"scale must be a positive number, got {scale!r}")
     ink = cv.ink
     w, h = TIP_SCREEN
@@ -810,7 +811,7 @@ def pink_slip(
         raise PropError(f"show is one (start, end) span with 0 <= start < end, and never with fall, got {show!r}")
     if fall is not None and not (fall[0] >= 0 and fall[1] > 0):
         raise PropError(f"fall is (time >= 0, height > 0), got {fall!r}")
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise PropError(f"scale must be a positive number, got {scale!r}")
     ink = cv.ink
     w, h = SLIP_SIZE

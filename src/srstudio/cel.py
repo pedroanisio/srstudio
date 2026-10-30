@@ -24,7 +24,6 @@ The measured files are data the episode reads; the parsers here reject what they
 from __future__ import annotations
 
 import json
-import math
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -122,18 +121,16 @@ class Pressed:
 
     def __post_init__(self) -> None:
         x0, y0, x1, y1 = self.box
-        if not all(math.isfinite(v) for v in self.box) or x1 <= x0 or y1 <= y0:
+        if not all(checks.number(v) for v in self.box) or x1 <= x0 or y1 <= y0:
             raise CelDataError(f"box {self.box} must be x0 y0 x1 y1 with x0 < x1 and y0 < y1")
         if not (
-            math.isfinite(self.press)
+            checks.number(self.press)
             and self.press > 0
-            and math.isfinite(self.press_seconds)
+            and checks.number(self.press_seconds)
             and self.press_seconds > 0
         ):
             raise CelDataError(f"press {self.press} px over {self.press_seconds} s must both be positive")
-        if any(
-            isinstance(t, bool) or not isinstance(t, Number) or not (math.isfinite(t) and t >= 0) for t in self.taps
-        ):
+        if any(not (checks.number(t) and t >= 0) for t in self.taps):
             raise CelDataError("taps must be non-negative seconds")
 
 

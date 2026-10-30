@@ -8,11 +8,11 @@ optionally, different lettering on its back, shown when it turns on its plate at
 
 from __future__ import annotations
 
-import math
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -50,7 +50,7 @@ class BadgeState:
 def _check(states: Sequence[BadgeState], box: tuple[float, float, float, float]) -> None:
     if not states:
         raise SoftPropError("a badge needs at least one state")
-    if len(box) != 4 or not all(math.isfinite(v) for v in box) or box[2] <= 0 or box[3] <= 0:
+    if len(box) != 4 or not all(checks.number(v) for v in box) or box[2] <= 0 or box[3] <= 0:
         raise SoftPropError(f"a badge box is (x, y, width, height) with a positive size, got {box!r}")
     names = [s.name for s in states]
     if len(set(names)) != len(names):
@@ -62,7 +62,7 @@ def _check(states: Sequence[BadgeState], box: tuple[float, float, float, float])
             raise SoftPropError(f"a badge label is 1 to {MAX_LABEL} characters, got {s.label!r}")
         if not _COLOUR.match(s.dot):
             raise SoftPropError(f"a badge dot colour is #RRGGBB, got {s.dot!r}")
-        if not (math.isfinite(s.start) and math.isfinite(s.end) and 0 <= s.start < s.end):
+        if not (checks.number(s.start) and checks.number(s.end) and 0 <= s.start < s.end):
             raise SoftPropError(f"badge state {s.name}: needs 0 <= start < end, got {s.start}..{s.end}")
         if i and s.start < states[i - 1].end:
             raise SoftPropError("badge states must be in order and must not overlap")
@@ -117,7 +117,7 @@ def beach_call(
     """A ``w`` x ``h`` call picture with its top-left at the parent's origin; ``guest`` draws the caller in front of
     the beach and behind the name tag (``name``, 1 to :data:`MAX_LABEL` characters) at ``tag`` (its top-left in the
     picture; default the bottom-left corner)."""
-    if not (math.isfinite(w) and math.isfinite(h) and w > 0 and h > 0):
+    if not (checks.number(w) and checks.number(h) and w > 0 and h > 0):
         raise SoftPropError(f"a call picture needs a positive size, got {w!r} x {h!r}")
     if not name.strip() or len(name) > MAX_LABEL:
         raise SoftPropError(f"a call name tag is 1 to {MAX_LABEL} characters, got {name!r}")
@@ -189,15 +189,15 @@ def cake(
         raise SoftPropError("a cake turns only with both back lettering and a turn_at time")
     if back is not None:
         _icing(back)
-        if turn_at is None or not (math.isfinite(turn_at) and turn_at >= 0):
+        if turn_at is None or not (checks.number(turn_at) and turn_at >= 0):
             raise SoftPropError(f"a cake's turn_at is a time >= 0, got {turn_at!r}")
-    if not (math.isfinite(scale) and scale > 0):
+    if not (checks.number(scale) and scale > 0):
         raise SoftPropError(f"a cake's scale must be a positive number, got {scale!r}")
     if lettering is not None:
         ends = [v for span in lettering for v in span]
         if (
             not ends
-            or not all(math.isfinite(v) and v >= 0 for v in ends)
+            or not all(checks.number(v) and v >= 0 for v in ends)
             or any(b <= a for a, b in zip(ends, ends[1:], strict=False))
         ):
             raise SoftPropError(f"cake lettering spans are increasing (start, end) times >= 0, got {lettering!r}")

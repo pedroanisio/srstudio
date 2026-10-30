@@ -8,13 +8,13 @@ needs nothing but these few calls.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from sr_core.scene import Scene
 
+from . import checks
 from .errors import SrstudioError
 from .native import NativeError
 
@@ -384,7 +384,7 @@ class Canvas:
         """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
         intervals = []
         for start, end in spans:
-            if not (math.isfinite(start) and math.isfinite(end) and 0 <= start <= end):
+            if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
                 raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
             if end > start:
                 intervals.append((float(start), float(end)))
