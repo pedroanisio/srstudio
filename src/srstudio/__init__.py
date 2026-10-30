@@ -44,6 +44,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_door,
     stick_flat,
     stick_gym,
+    stick_home,
     stick_reel,
     stick_school,
     stick_shop,

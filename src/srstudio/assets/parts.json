@@ -2990,6 +2990,40 @@
         }
       ]
     },
+    "stick-fridge-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fa9625a9da3338f52480c0ddeb93fe5d2cd4c1408dd176536b1bf3cfada17344",
+          "rig": null
+        }
+      ]
+    },
+    "stick-from-above": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d102edae24db04e507d10cce4d83803122f73912fd31e4d7b3404e099eab816d",
+          "rig": null
+        }
+      ]
+    },
     "stick-gate": {
       "kind": "location",
       "style": "stick",
@@ -3075,6 +3109,23 @@
         }
       ]
     },
+    "stick-handset": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2fe0efeeb0ad09bab01e61fccb8e7f047720b59419a1dde5bcea0477f43459d7",
+          "rig": null
+        }
+      ]
+    },
     "stick-headline": {
       "kind": "graphic",
       "style": "stick",
@@ -3109,6 +3160,23 @@
         }
       ]
     },
+    "stick-key": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ba85dd011ce045484953f46ad5fd4bf6a4084a94c3bb42544a30131422b45701",
+          "rig": null
+        }
+      ]
+    },
     "stick-kiosk": {
       "kind": "prop",
       "style": "stick",
@@ -3122,6 +3190,40 @@
           "proof": "",
           "approval": null,
           "drawing": "cf67f56f3331185ecaf27e9b7481c393da078a0e3572f2a1856e9c602d4c531c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-kitchen": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "07842f0e2c9e5085a760cadfd90723bc02b8d9835faab8196d2931caaca4c822",
+          "rig": null
+        }
+      ]
+    },
+    "stick-kitchen-plan": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c555368f368d226425709926d836677175b83488cd7b7a2b94677dd69dae5bc8",
           "rig": null
         }
       ]
@@ -3211,6 +3313,23 @@
         }
       ]
     },
+    "stick-reply-screen": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "451746167f64bca3a280b6b9585721b31ddf7d8a6dc20f425322d96d6bbf9627",
+          "rig": null
+        }
+      ]
+    },
     "stick-ride": {
       "kind": "prop",
       "style": "stick",
@@ -3265,6 +3384,23 @@
         }
       ]
     },
+    "stick-safe-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "916a41c61a1d2005a82ba20d60ea5fba483d138c4532410f13842aa84adf02e0",
+          "rig": null
+        }
+      ]
+    },
     "stick-snow-cap": {
       "kind": "prop",
       "style": "stick",
@@ -3312,6 +3448,23 @@
           "proof": "",
           "approval": null,
           "drawing": "fac851dac2162e030a85807ba4ccb975ddc5a857b734f2b82c675e0faed48119",
+          "rig": null
+        }
+      ]
+    },
+    "stick-table": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "085b0fe6d281585f9e1806f1845690fe9fc1498186bbaabfd8412428d166ea6d",
           "rig": null
         }
       ]

@@ -237,6 +237,7 @@ def test_the_style_value(tmp_path):
         "stick_door",
         "stick_flat",
         "stick_gym",
+        "stick_home",
         "stick_school",
         "stick_shop",
         "stick_windshield",
@@ -283,6 +284,15 @@ def test_the_style_value(tmp_path):
         "stick-glass-door",
         "stick-snow-cap",
         "stick-marathon",
+        "stick-kitchen",
+        "stick-kitchen-plan",
+        "stick-from-above",
+        "stick-table",
+        "stick-fridge-open",
+        "stick-safe-open",
+        "stick-handset",
+        "stick-key",
+        "stick-reply-screen",
     }
 
 
