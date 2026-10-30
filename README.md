@@ -12,7 +12,7 @@ in a new episode, and every new part you register shows up in `srstudio catalog`
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e ".[validate,test]"      # sr-core (the SDK), lxml for XSD + Schematron checks, pytest
-srstudio catalog                       # 43 characters, 59 locations, 92 props, 34 graphics; --style cutout|ink|soft|cel|stick|toon|saga|collage|gloss
+srstudio catalog                       # 46 characters, 59 locations, 92 props, 34 graphics; --style cutout|ink|soft|cel|stick|toon|saga|collage|gloss
 srstudio styles                        # the nine styles: Cutout 1080×1920 @ 30 fps clock · Ink 1080×1080 @ 24 fps sequence · Soft 1080×1920 @ 30 fps clock · Cel, Stick, Toon and Collage 1080×1920 @ 24 fps clock · Saga and Gloss 1080×1920 @ 24 fps sequence
 python3 examples/new_episode.py        # writes examples/out/coffee-review/coffee-review.scene.xml
 python3 -m pytest tests                # unit/integration tests; fidelity with SRSTUDIO_PACKAGES, engine tests with SRSTUDIO_ENGINE
@@ -1298,6 +1298,15 @@ one layer per viseme heard, keyed on opacity on the composition clock (`viseme_k
 own mouth, so a character that is not speaking keeps its expression. `figure_layers` splits a figure into the
 layers under the mouth, the mouth and the layers over it, so typing frames and stickers are drawn once per run.
 
+Three more take the same contract ([docs/decisions/0041-toon-cast-expressions-and-wear.md](docs/decisions/0041-toon-cast-expressions-and-wear.md)):
+`toon-fox` (slender, tall splayed ears, white cheek tufts, dark paws), `toon-raccoon` (stout, a bandit mask,
+rounded ears, cheek ruffs, dark gloves) and `toon-hedgehog` (small, a crest of spines drawn as the look's `mantle`).
+The vocabulary also has eyes and mouths past the traced set: `roll`, `teary`, `wince` and `hearts` eyes, and
+`grimace`, `frown`, `tongue` and `kiss` mouths. Every brush character draws them; the traced cat refuses them by
+name (`toon.TRACED_EYES`, `TRACED_MOUTHS`). Any character, the cat included, can wear `toon.WEAR` per pose
+(`"wear": ["glasses", "sweat", "flush"]` in a poses file, `wear=` on a sketch `Beat`), drawn by
+[src/srstudio/toon_wear.py](src/srstudio/toon_wear.py) about the character's face.
+
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 
 The coworkers' episodes are short comedies written as data and cut between the two characters
@@ -1741,6 +1750,9 @@ error is `InstagramPostError`, with every problem listed.
   the transforms, refused measures); `tests/test_toon_cast.py` draws every expression of the dog and the frog
   inside their corner, the two typing frames, refused expressions, the groups and swaps, a later entrance and the
   registry entries;
+  `tests/test_toon_cast_more.py`, `tests/test_toon_expressions.py` and `tests/test_toon_wear.py` cover the fox,
+  the raccoon and the hedgehog (thumbnail heads, coats, builds), the new expressions with the cat's refusal, and the
+  wear on every character and through a sketch;
   `tests/test_sketch.py` covers the sketch (checks and every refused inconsistency, cues with speakers,
   appearances, events, line spans, typing bursts, the placement onto a recording, the drawn cast with stickers, the
   written and reloaded files, a recording through a fake client with its manifest, and a misheard line);
