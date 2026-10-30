@@ -20,7 +20,9 @@ import os
 
 from _common import project_root
 from instagram_posts import POSTS
+from name_a_number_audio import INTERVIEW
 from srstudio import Episode, EpisodeSpec, cast, layout, locations, look, props
+from srstudio import interview as iv_audio
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -32,6 +34,7 @@ ep = Episode(
         description="Interview comedy: a salary talk where neither side will name a number first, until both write "
         "one down. Native vector animation; ElevenLabs dialogue and sound effects.",
         root=project_root(__file__),
+        **iv_audio.spec_font(INTERVIEW.font, project_root(__file__)),  # the pinned Google caption face
         seed=24052,
         background="#D5DFDF",
         audio=None,  # every clip is a pinned <generated> asset on its own track
@@ -71,7 +74,9 @@ def sheet(g, id: str, x, y, w, h, rotation, heading: str, body: str | None, *, l
     cv.line(s, -w / 2 + 30, -h / 2 + 100, w / 2 - 30, -h / 2 + 100, "#9AA3A0", 3)
     if body is None:
         for k in range(lines):
-            cv.line(s, -w / 2 + 34, -h / 2 + 140 + 34 * k, w / 2 - 34 - (k % 3) * 60, -h / 2 + 140 + 34 * k, "#C9CDCB", 6)
+            cv.line(
+                s, -w / 2 + 34, -h / 2 + 140 + 34 * k, w / 2 - 34 - (k % 3) * 60, -h / 2 + 140 + 34 * k, "#C9CDCB", 6
+            )
     else:
         cv.text(s, f"{id}-body", body, -w / 2 + 20, -h / 2 + 140, w - 40, 170, 56, "#1F3E8A", weight="700")
     return s
@@ -128,10 +133,26 @@ def manager_slot(g):
         ],
         arms="articulated",
         brows=(
-            [(0, 0), (L[4].start, 0), (L[4].start + 0.15, -7), (L[5].start, -7), (L[5].start + 0.2, 0),
-             (L[11].start, 0), (L[11].start + 0.15, 8), (L[12].end, 8)],
-            [(0, 0), (L[4].start, 0), (L[4].start + 0.15, 7), (L[5].start, 7), (L[5].start + 0.2, 0),
-             (L[11].start, 0), (L[11].start + 0.15, -8), (L[12].end, -8)],
+            [
+                (0, 0),
+                (L[4].start, 0),
+                (L[4].start + 0.15, -7),
+                (L[5].start, -7),
+                (L[5].start + 0.2, 0),
+                (L[11].start, 0),
+                (L[11].start + 0.15, 8),
+                (L[12].end, 8),
+            ],
+            [
+                (0, 0),
+                (L[4].start, 0),
+                (L[4].start + 0.15, 7),
+                (L[5].start, 7),
+                (L[5].start + 0.2, 0),
+                (L[11].start, 0),
+                (L[11].start + 0.15, -8),
+                (L[12].end, -8),
+            ],
         ),  # fmt: skip
         pupils=[(0, -31), (SCRIBBLE, -31), (SCRIBBLE + 0.2, -10), (FLIP, -10), (FLIP + 0.2, -31)],
     )
@@ -151,7 +172,7 @@ PUSH = framing((560, 900), 1.18, (540, 880))  # the end: a slow push on the two 
 rows = [(c.time, *(CLOSE if c.angle == "manager" else WIDE)) for c in t.cuts if c.angle in {"manager", "wide"}]
 for prop, column in [("scaleX", 1), ("scaleY", 1), ("x", 2), ("y", 3)]:
     values = [(0.0, rows[0][column])]
-    for prev, row in zip(rows, rows[1:]):
+    for prev, row in zip(rows, rows[1:], strict=False):
         values += [(row[0] - EPS, prev[column]), (row[0], row[column])]
     last = rows[-1]
     values += [(REACTION, last[column]), (DURATION, PUSH[column - 1])]
@@ -215,10 +236,7 @@ spoken = ep.captions(
     x=80,
     y=1240,
     width=840,
-    highlights={
-        "dialogue-9": [("Other ads.", True)],
-        "dialogue-13": [("Competitively.", True)],
-    },
+    highlights={"dialogue-9": [("Other ads.", True)], "dialogue-13": [("Competitively.", True)]},
 )
 ep.hide_on_cover(*spoken)
 ep.markers(extra=[("marker-flip", FLIP, "The papers"), ("marker-end", L[12].start, "Competitively")])

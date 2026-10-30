@@ -17,7 +17,7 @@ first line after :data:`LEAD`. The voices are the Interview's own, Eric (the int
 
 from __future__ import annotations
 
-from srstudio.interview import Interview, Schedule, Sound, Spoken, Timing, main
+from srstudio.interview import NOTO_SANS_BOLD, Interview, Schedule, Sound, Spoken, Timing, main
 from srstudio.song import Singer
 
 SEED = 24051
@@ -72,6 +72,7 @@ INTERVIEW = Interview(
     reaction_after=0.50,  # "Competitively.", then the wide holds on the two of them
     reaction_hold=1.60,  # the interviewer's satisfied nod; the applicant does not move; the last frame
     end_card=0.0,  # no card: the wide is the last frame
+    font=NOTO_SANS_BOLD,  # the batch's caption face (Google Fonts), pinned under assets/fonts
 )
 LEAD = 1.15  # the still first second (arm A): the job ad, still, and no caption before 1.0 s
 ECHO = 0.55  # after "What would make you happy?" said back: the interviewer takes it in
