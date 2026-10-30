@@ -20,6 +20,8 @@ import os
 from _common import project_root
 from instagram_posts import POSTS
 from srstudio import CAFE, Episode, EpisodeSpec, cast, graphics, locations
+from srstudio import interview as iv_audio
+from storage_full_audio import INTERVIEW
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -31,6 +33,7 @@ ep = Episode(
         description="Park comedy: a pigeon does a backflip, the phone is full, and Milo decides what to delete to "
         "film the encore. Native vector animation; ElevenLabs dialogue and sound effects.",
         root=project_root(__file__),
+        **iv_audio.spec_font(INTERVIEW.font, project_root(__file__)),  # the pinned Google caption face
         seed=23042,
         background="#CFE3E6",
         palette=CAFE,
