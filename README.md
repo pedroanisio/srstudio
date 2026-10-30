@@ -1477,7 +1477,13 @@ a singing porcelain toilet. The style is decided in
   `collage.DRAWERS`), eight painted rooms (`collage_sets.SETS`), and the paper sign, chart and TV props.
 - **The build**, [src/srstudio/collage_sketch.py](src/srstudio/collage_sketch.py): a `Staging` per episode turns a
   sketch's beats into one shot per appearance, with crash zooms, the sting, Kai's beep, lip sync and tinted
-  caption pills. `Staging.cast` decides who is drawn in a shot.
+  caption pills. `Staging.cast` decides who is drawn in a shot. `Staging.still` holds the first shot still for
+  that many seconds (the `sp-hook_motion` test's still arm): no grain, and `Staging.opening` draws its cast keying
+  nothing (`collage.figure(still=True)`). `Staging.bitrate` sets the master's average video bitrate, encoded in
+  two passes (the rate factor alone, as published, by default).
+- **Camera-safe zooms and call buttons**: `collage_sets.zoom_pivot` moves a zoom's pivot off a face only as far as
+  keeps the set's whole signature in frame; `collage_sets.call_buttons` turns a shot into the far side of a video
+  call.
 - **Group shots**, [src/srstudio/collage_group.py](src/srstudio/collage_group.py): `Lineup` puts several of the
   cast on one set, each in a fixed `Place`, the listeners holding their reactions while the speaker plays its
   beats; outside its spans it draws the speaker alone.

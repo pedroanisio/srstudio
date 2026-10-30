@@ -5,6 +5,7 @@ speaker's face in its place; the ``timer`` and ``flash`` events are known, and a
 import os
 import shutil
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -127,3 +128,72 @@ def test_timer_and_flash_are_known_events_and_a_flash_is_heard_as_a_shutter(tmp_
     effects = sound_effects(BEATS, END, tmp_path, 7)
     assert [e["id"] for e in effects] == ["whoosh", "shutter"]
     assert (tmp_path / effects[-1]["audio"]).is_file()
+
+
+# -- the still opening (the sp-hook_motion test's arm a) --------------------------------------------------------------
+STILL_LINES = (sketch.Line("gary", "I hike."), sketch.Line("rosa", "Where?"))
+STILL_BEATS, STILL_END = timed(
+    STILL_LINES,
+    (
+        (1.2, "rosa", "", "half", "smug", "hold"),  # the still frame: nobody speaks, nothing moves
+        (1.4, "gary", 0, "open", "grin", "shrug"),
+        (1.2, "rosa", 1, "half", "flat", "hold", "zoom"),
+    ),
+)
+
+
+def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
+    sk = make_sketch("still-test", "Still test", ("gary", "rosa"), STILL_LINES, beats, STILL_END)
+    sets = {"gary": "cafe", "rosa": "cafe"}
+    return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
+
+
+def test_a_still_opening_is_checked():
+    check_staging(still_staging())
+    check_staging(still_staging(still=0.0))  # no still opening: any first beat
+    for beats, still, match in (
+        (STILL_BEATS, -1.0, "still"),
+        (STILL_BEATS, float("nan"), "still"),
+        (STILL_BEATS, 1.5, "1.2"),  # the next beat starts inside the still second
+        ((replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:]), 1.0, "silent"),
+        ((replace(STILL_BEATS[0], caption="Hi"), *STILL_BEATS[1:]), 1.0, "silent"),
+        ((replace(STILL_BEATS[0], who="gary"), *STILL_BEATS[1:]), 1.0, "cut"),
+    ):
+        with pytest.raises(collage_sketch.StagingError, match=match):
+            check_staging(still_staging(beats, still))
+
+
+def test_the_still_opening_draws_no_grain_and_no_keys_and_the_rest_keeps_both(pinned_fonts, tmp_path):
+    seen = []
+
+    def opening(cv, parent, app, mouths):
+        seen.append(app.start)
+        return collage_sketch.stilled(cv, parent, app, mouths)
+
+    ep = built(tmp_path, still_staging(opening=opening), pinned_fonts)
+    root = ET.fromstring(ep.scene.to_bytes(layout="pretty"))
+    comp = next(root.iter("composition"))
+    shots = [  # one group per appearance; the others are the caption pills
+        g for g in comp.findall("group") if g.get("start") is not None and "caption" not in (g.get("effects") or "")
+    ]
+    assert len(shots) == len(sketch.appearances(STILL_BEATS, STILL_END))
+    first = next(g for g in shots if float(g.get("start")) == 0.0)
+    assert "collage-grain" not in (first.get("effects") or "")
+    assert not list(first.iter("animate"))  # no breath, no blink, no lips, no camera: the first second is a still
+    rest = [g for g in shots if float(g.get("start")) > 0.0]
+    assert rest and all("collage-grain" in (g.get("effects") or "") for g in rest)
+    assert all(list(g.iter("animate")) for g in rest)
+    assert seen == [0.0]  # the staging's opening drawer drew the still shot, and only it
+
+
+def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    def output(ep) -> dict:
+        return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+
+    plain = output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    assert plain["crf"] == "17" and not {"bitrate", "twoPass", "maxBitrate"} & set(plain)  # every published reel
+    sized = output(built(tmp_path / "sized", still_staging(bitrate=5_800_000), pinned_fonts))
+    assert (sized["bitrate"], sized["twoPass"]) == ("5800000", "true") and "maxBitrate" not in sized
+    for bad in (-1, 2.5, "5M", True):
+        with pytest.raises(collage_sketch.StagingError, match="bitrate"):
+            check_staging(still_staging(bitrate=bad))
