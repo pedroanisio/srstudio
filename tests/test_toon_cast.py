@@ -45,8 +45,9 @@ def test_every_expression_is_drawn_inside_the_character_s_corner(look, eyes, mou
     assert min(b[0] for b in boxes) > -40 and max(b[2] for b in boxes) < 440
     assert min(b[1] for b in boxes) > 360 and max(b[3] for b in boxes) < 860
     colours = [c for _, c in layers]
-    whites = (0 if eyes == "closed" else 2 + 2 * look.shine) + (mouth == "grin") + (1 if look.nose else 0)
-    whites += 2 * (look.teeth and mouth != "none")
+    eye_whites = {"closed": 0, "wince": 0, "hearts": 0, "teary": 2 * 3}.get(eyes, 2 + 2 * look.shine)
+    whites = eye_whites + (mouth in ("grin", "grimace")) + (1 if look.nose else 0)
+    whites += 2 * (look.teeth and mouth not in ("none", "grimace", "kiss"))
     assert colours[0] == "ink" and look.coat in colours and colours.count("white") == whites
     assert (look.blush in colours) == bool(look.blush) and (look.ear_inner in colours) == bool(look.ear_inner)
     assert (toon.LIPS in colours) == (mouth in ("open", "round", "o"))

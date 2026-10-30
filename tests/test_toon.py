@@ -45,8 +45,10 @@ def art_data() -> dict:
         "generated_by": "test",
         "space": {"width": toon.REF_W, "top": toon.REF_TOP, "note": "squares"},
         "bodies": {b: json.loads(json.dumps(body)) for b in toon.BODIES},
-        "eyes": {e: {**eyes, "ink": [] if e == "closed" else [SQUARE]} for e in toon.EYES},
-        "mouths": {m: {"ink": [] if m == "none" else [SQUARE], "white": [], "red": [SQUARE]} for m in toon.MOUTHS},
+        "eyes": {e: {**eyes, "ink": [] if e == "closed" else [SQUARE]} for e in toon.TRACED_EYES},
+        "mouths": {
+            m: {"ink": [] if m == "none" else [SQUARE], "white": [], "red": [SQUARE]} for m in toon.TRACED_MOUTHS
+        },
     }
 
 
@@ -125,8 +127,8 @@ def test_files_are_read_and_unreadable_ones_refused(tmp_path):
 # -- the art file ---------------------------------------------------------------------------------------------
 def test_the_art_file_parses_into_a_body_per_arm_pose_and_a_face_per_expression():
     drawn = toon.parse_art(art_data())
-    assert set(drawn.bodies) == set(toon.BODIES) and set(drawn.eyes) == set(toon.EYES)
-    assert set(drawn.mouths) == set(toon.MOUTHS)
+    assert set(drawn.bodies) == set(toon.BODIES) and set(drawn.eyes) == set(toon.TRACED_EYES)
+    assert set(drawn.mouths) == set(toon.TRACED_MOUTHS)
     assert drawn.bodies["desk"].ink == tuple(float(v) for v in SQUARE) and drawn.eyes["closed"].ink == ()
     d = toon.shape_d(drawn.bodies["desk"].ink)
     assert d.startswith(f"M 0 {toon.fy(0):g} C 0 {toon.fy(0):g} {toon.fx(10):g} {toon.fy(0):g}") and d.endswith(" Z")
@@ -328,8 +330,8 @@ def test_the_style_value(tmp_path):
 
 
 @pytest.mark.parametrize("arms", toon.ARMS)
-@pytest.mark.parametrize("eyes", toon.EYES)
-@pytest.mark.parametrize("mouth", toon.MOUTHS)
+@pytest.mark.parametrize("eyes", toon.TRACED_EYES)
+@pytest.mark.parametrize("mouth", toon.TRACED_MOUTHS)
 def test_every_expression_draws_from_its_traced_part(eyes, mouth, arms):
     cv = canvas()
     pose = toon.Pose(0.0, eyes, mouth, arms)
