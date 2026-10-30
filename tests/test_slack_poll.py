@@ -18,6 +18,7 @@ sys.modules["slack_poll"] = slack_poll
 spec.loader.exec_module(slack_poll)
 
 ARC = "U0CDPAX3DHQ"
+OWNER = "U089V1152MV"
 
 
 class Channel:
@@ -231,3 +232,8 @@ def test_the_command_reports_what_it_added(tmp_path, capsys, monkeypatch):
     channel.history.insert(0, post("2.000002"))
     assert slack_poll.main([str(tmp_path)], {"BOT_TOKEN": "secret"}) == 0
     assert "1 new" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(("user", "asks"), [(ARC, True), (OWNER, True), ("U000000000", False)])
+def test_only_arc4d3_and_the_owner_are_requesters(user, asks):
+    assert slack_poll.parse_post(post("1.000001", user=user)).request is asks

@@ -31,7 +31,7 @@ from typing import Any
 API = "https://slack.com/api/"
 CHANNEL = "C0CCWSXH9FU"
 OURS = frozenset({"U0CDPEHS04S", "B0CDJBCCY7P"})  # creationbot, as a user and as a bot
-REQUESTERS = frozenset({"U0CDPAX3DHQ"})  # arc4d3; the account owner joins when the operator confirms their user id
+REQUESTERS = frozenset({"U0CDPAX3DHQ", "U089V1152MV"})  # arc4d3 and the account owner
 TAGS = ("brief", "request", "stats", "alert", "setup", "question")
 HISTORY = 100
 REPLIES = 200

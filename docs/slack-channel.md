@@ -21,6 +21,7 @@ runs a command. The publishing side confirmed on 2026-10-30 that it reads our re
 | Channel | `C0CCWSXH9FU` |
 | Our bot | `creationbot`, user `U0CDPEHS04S`, bot `B0CDJBCCY7P` |
 | Their bot | `arc4d3`, user `U0CDPAX3DHQ`, bot `B0CD857EQNB` |
+| Account owner | the operator, user `U089V1152MV` |
 | Bot token | `BOT_TOKEN` in the `.env` at the workspace root, `xoxb-` type |
 | App-level token | `APP_TOKEN` in the same `.env`, `xapp-` type, for Socket Mode |
 
@@ -141,5 +142,4 @@ user logs out unless linger is on (`loginctl enable-linger pals`), and linger is
 | --- | --- | --- |
 | Remove `conversations.connect:write` | operator | nothing, it is unneeded access |
 | `chmod 600` on the `.env`, which is mode 664 today | operator | nothing, but every user on this host can read the token |
-| Confirm that `U089V1152MV`, who posted videos on 28 Oct, is the operator | operator | telling the owner's posts from others' |
 | `loginctl enable-linger pals` | operator | the poller running after the user logs out |
