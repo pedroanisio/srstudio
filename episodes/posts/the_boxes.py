@@ -30,4 +30,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Now type it all\nagain into the boxes.", 3.0, "Collage 19", None, 1.0, place="bottom"),
     ),
     tags=Tags("job-hunting", "institution", "recognition", recurring=("rosa", "priya"), test="sp-hook_motion", arm="b"),
+    characters={"collage-priya": 1, "collage-rosa": 1},
 )

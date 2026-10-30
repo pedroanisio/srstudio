@@ -23,4 +23,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Where is\nthe exit?", 15.0, "Gloss 01", (540, 960), 1.0),
     ),
     cover=True,
+    characters={"gloss-gus": 1, "gloss-nadia": 1, "gloss-sunny": 1, "gloss-tamsin": 1},
 )

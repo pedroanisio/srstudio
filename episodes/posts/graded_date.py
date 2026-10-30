@@ -22,4 +22,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("What do you\ndo for fun?", 0.5, "Collage 14", (600, 1000), 1.3, place="bottom"),
     ),
     tags=Tags("relationships", "protagonist", "affection", recurring=("gary", "priya"), test="sp-hook_motion", arm="a"),
+    characters={"collage-gary": 1, "collage-priya": 1},
 )

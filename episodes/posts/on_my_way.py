@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Where are you?\nOn the bus!", 0.5, "Toon 20"),
     ),
     tags=Tags("everyday-tech", "other-person", "recognition", recurring=("pip", "gil"), test="sp-hook_motion", arm="a"),
+    characters={"toon-frog": 1, "toon-rabbit": 1},
 )

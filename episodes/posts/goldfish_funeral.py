@@ -22,4 +22,5 @@ RELEASE = Release(
         hashtags=("#goldfish", "#parenting", "#petfuneral", "#brainrot", "#dadlife", "#animatedshorts", "#satire"),
         thumbnail=Thumbnail("A few words\nfor Bubbles?", 1.0, "Collage 08", (540, 1200), 1.6),
     ),
+    characters={"collage-flush": 1, "collage-gary": 1, "collage-kai": 1},
 )

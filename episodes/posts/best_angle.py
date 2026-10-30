@@ -24,4 +24,5 @@ RELEASE = Release(
     tags=Tags(
         "everyday-tech", "other-person", "embarrassment", recurring=("rosa", "gary"), test="sp-hook_motion", arm="b"
     ),
+    characters={"collage-flush": 1, "collage-gary": 1, "collage-rosa": 1},
 )

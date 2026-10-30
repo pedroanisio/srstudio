@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Asking for\na raise.", 9.0, "Episode 16", (540, 900), 1.3, place="bottom"),
     ),
     cover=True,
+    characters={"candidate": 1},
 )

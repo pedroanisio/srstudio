@@ -28,4 +28,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("Somebody\nreboot me.", 29.5, "Episode 10", (600, 1000), 1.2),
     ),
+    characters={"juno": 1, "pip": 1, "remy": 1},
 )

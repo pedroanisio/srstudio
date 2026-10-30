@@ -27,4 +27,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Repeat\nafter me.", 10.8, "Stick 03", (540, 1200), 1.3),
     ),
     cover=True,
+    characters={"stick-rig": 1},
 )

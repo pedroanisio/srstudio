@@ -18,4 +18,5 @@ RELEASE = Release(
         hashtags=SERIES + ("#mathjokes", "#fastnotright"),
         thumbnail=Thumbnail("17 × 19?\nForty-two.", 5.4, "The Interview · 03", (600, 520), 1.15),
     ),
+    characters={"candidate": 1, "manager": 1},
 )

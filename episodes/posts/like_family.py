@@ -19,4 +19,5 @@ RELEASE = Release(
         hashtags=("#salary", "#payraise", "#werefamily", "#officehumor", "#workcomedy", "#animatedshorts", "#lipsync"),
         thumbnail=Thumbnail("Can we talk about\nmy salary?", 0.8, "Toon 16", (470, 1130), 1.35),
     ),
+    characters={"toon-dog": 1, "toon-frog": 1},
 )

@@ -20,4 +20,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Greatest weakness?\nHonesty.", 2.4, "The Interview · 01", (540, 690), 1.4),
     ),
     video="honesty-interview-recreated",
+    characters={"candidate": 1, "manager": 1},
 )

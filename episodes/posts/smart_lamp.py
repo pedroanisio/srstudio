@@ -26,4 +26,5 @@ RELEASE = Release(
         ),
         thumbnail=Thumbnail("The lamp\nhas recordings.", 6.0, "Episode 17", (540, 900), 1.0),
     ),
+    characters={"juno": 1, "pip": 1},
 )

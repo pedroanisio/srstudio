@@ -28,4 +28,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Is Group 9\nboarding yet?", 1.0, "Stick 08", place="top"),
     ),
     cover=True,
+    characters={"stick-rig": 1},
 )

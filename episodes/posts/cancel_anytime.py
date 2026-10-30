@@ -28,4 +28,5 @@ RELEASE = Release(
         thumbnail=Thumbnail("Cancel\nanytime*", 1.0, "Stick 06", (540, 1200), 1.3),
     ),
     cover=True,
+    characters={"stick-rig": 1},
 )
