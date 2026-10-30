@@ -1,22 +1,26 @@
-"""The catalog page, rebuilt from what is on disk: ``srstudio page``.
+"""The catalog site, rebuilt from what is on disk: ``srstudio page``.
 
-The page starts from a frozen *base*, the self-contained catalog of the six original packages, and adds the
-library's own part to it: one card per episode project that has a render (its video, facts and a line list that
-seeks the video), a card for every registered style the base does not show yet, Pip's pose sheet rendered by the
-engine and the whole parts registry. Nothing about an episode is typed in here. Title, description, frame, fps and
-duration come from its ``.scene.xml``, the lines from whichever script the project has (``dialogue.json``,
-``timeline.json`` or ``narration.json``) and the style from the registry. An optional *notes* file adds curated text
-(number, lede, highlights) per episode and per style, and the library's cast, locations, props and graphics: each
-item names the registered parts it shows and a still cut from an episode render (a time and an optional crop box).
-When the notes curate that gallery, every part a rendered library episode is registered with must be shown by an
-item, so a new episode cannot leave the gallery behind.
+The site is ``index.html``, ``catalog.json`` and ``media/<content-hash>.<ext>``, served by ``srstudio serve``
+(ADR 0046). ``index.html`` is the frozen *base* page, the catalog of the six original packages, as the shell of a small
+client-side app: a navigation bar, the base page's sections shown by route, and a script that renders everything else
+from ``catalog.json``. That document (:mod:`srstudio.catalog_data`) is generated here and never hand-maintained. It
+holds one video per episode project that has a render, with its facts and lines; the six packages and any measured
+episode without a render, marked as such; every registered style; and every registered part, with the stills the
+notes curate and the videos ``srstudio usage`` measured.
 
-The output is a site, not a file: ``index.html`` plus ``media/<content-hash>.<ext>``, served by ``srstudio serve``.
-Videos are re-encoded for the web once per render (keyed by size and modification time); they, the stills, the pose
-sheet and everything the base page embedded are files the page links to with relative URLs, and the page holds no
-data URI at all. Names follow the content, so a rebuild writes only what changed. Media are placed first and the
-index replaces the old one last, atomically, so a failed build leaves the previous site working; only then are the
-files nothing references removed. Folders are mode 700 and files 600 (ADR 0046).
+Nothing about an episode is typed in here. Title, description, frame, fps and duration come from its ``.scene.xml``,
+the lines from whichever script the project has (``dialogue.json``, ``timeline.json`` or ``narration.json``) and the
+style from the measured usage. An optional *notes* file adds curated text (number, lede, highlights) per episode and
+per style, and the library's cast, locations, props and graphics: each item names the registered parts it shows and a
+still cut from an episode render (a time and an optional crop box). When the notes curate that gallery, every part a
+rendered library episode is registered with must be shown by an item, so a new episode cannot leave the gallery
+behind.
+
+Videos are re-encoded for the web once per render (keyed by size and modification time). They, the stills, the pose
+sheet, the app and everything the base page embedded are files with relative URLs, and neither the page nor the
+document holds a data URI. Names follow the content, so a rebuild writes only what changed. Media are placed first,
+then ``catalog.json``, and the index replaces the old one last, atomically, so a failed build leaves the previous site
+working; only then are the files nothing references removed. Folders are mode 700 and files 600.
 """
 
 from __future__ import annotations
@@ -33,23 +37,20 @@ import stat
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from importlib.resources import files
 from pathlib import Path
 
-from . import checks, digest, registry
-from .errors import SrstudioError
+from . import catalog_data, checks, digest, registry
+from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES
 from .usage import Report
 
 NOTES_SCHEMA = "1.1.0"
 SCHEMAS = ("1.0.0", NOTES_SCHEMA)  # 1.1.0 adds the optional gallery
 SCRIPTS = ("dialogue.json", "timeline.json", "narration.json")
-
-
-class CatalogError(SrstudioError):
-    """A notes file, project, base page or media step the page cannot be built from."""
 
 
 # -- notes ------------------------------------------------------------------------------------------------
@@ -92,13 +93,7 @@ class GalleryItem:
     poses: tuple[Pose, ...] = ()  # cast only
 
 
-# section: (the base page's host div, the card class, its image class)
-SECTIONS = {
-    "cast": ("cast", "char", "char-main"),
-    "locations": ("locs", "loc", "loc-img"),
-    "props": ("props", "prop", "prop-img"),
-    "graphics": ("graphics", "prop", "prop-img"),
-}
+SECTIONS = ("cast", "locations", "props", "graphics")
 
 
 @dataclass(frozen=True)
@@ -208,15 +203,6 @@ def _item(where: str, raw: object) -> GalleryItem:
 
 # -- projects ---------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
-class Line:
-    t: float
-    who: str
-    voice: str
-    text: str
-    sfx: bool = False
-
-
-@dataclass(frozen=True)
 class Card:
     slug: str
     title: str
@@ -232,6 +218,14 @@ class Card:
     effects: int
     render: Path
     size: tuple[int, int] = (1080, 1920)  # the frame, in pixels
+
+
+def _format(width: int, height: int) -> str:
+    return "1:1" if width == height else ("9:16" if height > width else "16:9")
+
+
+def _num(x: float, digits: int = 1) -> str:
+    return f"{x:.{digits}f}".replace(".", ",")
 
 
 def lines_of(project: Path) -> tuple[list[Line], int]:
@@ -318,7 +312,7 @@ def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None =
                 number=note.number,
                 lede=note.lede or description,
                 highlights=note.highlights,
-                fmt="1:1" if w == h else ("9:16" if h > w else "16:9"),
+                fmt=_format(w, h),
                 fps=fps,
                 duration=duration,
                 lines=tuple(lines),
@@ -331,50 +325,7 @@ def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None =
     return sorted(cards, key=lambda c: (rank.get(c.slug, len(rank)), c.slug))
 
 
-# -- the page ---------------------------------------------------------------------------------------------
-def _num(x: float, digits: int = 1) -> str:
-    return f"{x:.{digits}f}".replace(".", ",")
-
-
-def _clock(t: float) -> str:
-    return f"{int(t // 60)}:{t % 60:05.2f}"
-
-
-def _card(c: Card, media: Callable[[Path], str], poster: Callable[[Path], str] | None) -> str:
-    e = html.escape
-    spoken = [x for x in c.lines if not x.sfx]
-    voices = ", ".join(sorted({x.voice for x in c.lines if x.voice})) or "—"
-    facts = [
-        (_num(c.duration) + " s", "duração"),
-        (c.fmt, "formato"),
-        (f"{c.fps:g} fps", "quadros"),
-        (str(len(spoken)), "falas"),
-        (str(c.effects), "efeitos"),
-        (voices, "vozes"),
-    ]
-    rows = "".join(
-        f'<button class="line" data-t="{x.t:.3f}"><span class="t">{_clock(x.t)}</span>'
-        f'<span class="who">{e(x.who)}<small>{e(x.voice)}</small></span>'
-        f'<span class="txt">{f"<span class=sfx>{e(x.text)}</span>" if x.sfx else e(x.text)}</span></button>'
-        for x in c.lines
-    )
-    tag = f'<span class="style-tag {c.style}">{e(STYLES[c.style].name)}</span>' if c.style in STYLES else ""
-    poster_attr = f' poster="{poster(c.render)}"' if poster else ""
-    return (
-        f'\n<article class="ep" id="lib-{e(c.slug)}">'
-        f'<div class="ep-head"><div class="ep-no">{e(c.number or "·")}</div><div><h3>{e(c.title)}{tag}</h3>'
-        f"<p>{e(c.lede)}</p></div></div>"
-        f'<div class="ep-grid"><div><div class="phone{" sq" if c.fmt == "1:1" else ""}">'
-        f'<video controls playsinline preload="none"{poster_attr} src="{media(c.render)}" '
-        f'aria-label="{e(c.title)}"></video></div></div>'
-        f'<div class="ep-info"><div class="facts">'
-        + "".join(f'<div class="fact"><b>{e(v)}</b><span>{k}</span></div>' for v, k in facts)
-        + "</div>"
-        + (f'<ul class="hl">{"".join(f"<li>{h}</li>" for h in c.highlights)}</ul>' if c.highlights else "")
-        + f'<div class="dialog lib-dialog">{rows}</div></div></div></article>'
-    )
-
-
+# -- the document -----------------------------------------------------------------------------------------
 def _episodes_of(entry: registry.Entry, usage: Report | None) -> list[str]:
     """The episodes a part appears in, as measured; none are claimed without a usage report."""
     return usage.used_by(entry.name) if usage is not None else []
@@ -391,33 +342,6 @@ def _registry_table(usage: Report | None = None) -> str:
     return (
         '<div class="tbl"><table class="lib-registry"><thead><tr><th>Peça</th><th>Estilo</th><th>Tipo</th>'
         f"<th>Resumo</th><th>Episódios</th></tr></thead><tbody>{body}</tbody></table></div>"
-    )
-
-
-USAGE_KINDS = {"character": "Personagens", "location": "Locações", "prop": "Props"}
-
-
-def _usage_lists(usage: Report) -> str:
-    """Every character, location and prop: the used ones with the episodes that use them, then the unused ones."""
-    e = html.escape
-    blocks = []
-    for kind, title in USAGE_KINDS.items():
-        parts = sorted(registry.entries(kind), key=lambda x: (x.style or "~", x.name))
-        used = [(x, usage.used_by(x.name)) for x in parts if usage.used_by(x.name)]
-        unused = [x for x in parts if not usage.used_by(x.name)]
-        used_html = "".join(f"<li><code>{e(x.name)}</code> <small>{e(', '.join(eps))}</small></li>" for x, eps in used)
-        unused_html = "".join(f"<li><code>{e(x.name)}</code> <small>{e(x.summary)}</small></li>" for x in unused)
-        blocks.append(
-            f'<div class="lib-usage-kind" id="usage-{kind}"><h3>{title}</h3>'
-            f"<p><b>{len(used)}</b> usados · <b>{len(unused)}</b> não usados</p>"
-            f"<ul>{used_html}</ul><p><b>Não usados</b></p><ul>{unused_html or '<li>nenhum</li>'}</ul></div>"
-        )
-    measured = ", ".join(e(slug) for slug in usage.episodes)
-    unmeasured = f" Sem script, não medidos: {e(', '.join(usage.unmeasured))}." if usage.unmeasured else ""
-    return (
-        '<div class="sub">Peças usadas e não usadas</div><div class="lib-usage" id="lib-usage">'
-        f"<p>Medido por <code>srstudio usage</code>, que reconstrói cada episódio e registra as peças chamadas: "
-        f"{measured}.{unmeasured}</p>" + "".join(blocks) + "</div>"
     )
 
 
@@ -452,101 +376,229 @@ def check_gallery(gallery: Sequence[GalleryItem], cards: Sequence[Card], usage: 
         raise CatalogError(f"the gallery shows no item for the registered part(s) {missing}")
 
 
-def _gallery(
-    items: Sequence[GalleryItem], cards: Sequence[Card], stills: Callable[[Shot], str], usage: Report | None = None
-) -> dict[str, str]:
-    """The cards of each section, in the base page's markup."""
-    e = html.escape
-    by_slug = {c.slug: c for c in cards}
-    sizes: dict[str, str] = {k: "" for k in SECTIONS}
+@dataclass(frozen=True)
+class Package:
+    """An original package: the base page plays it as SVG, so it has facts here and no file."""
+
+    slug: str
+    title: str
+    number: str
+    lede: str
+    fmt: str
+    fps: float
+    duration: float
+    width: int
+    height: int
+
+
+_SCENES = re.compile(r'<script id="scenes-data" type="application/json">(.*?)</script>', re.DOTALL)
+_PACKAGE_TEXT = re.compile(r"'([a-z-]+)':\{no:'(\d+)', pt:'([^']*)', desc:'((?:[^'\\]|\\.)*)'")
+_ENGINE = re.compile(r"const ENGINE = \[(.*?)\n\];", re.DOTALL)
+
+
+def packages_of(page: str) -> list[Package]:
+    """The six packages, from the scene data the base page plays them with and its Portuguese titles."""
+    m = _SCENES.search(page)
+    if m is None:
+        return []
+    text = {slug: (no, pt, desc.replace("\\'", "'")) for slug, no, pt, desc in _PACKAGE_TEXT.findall(page)}
+    try:
+        out = []
+        for scene in json.loads(m[1]):
+            no, pt, desc = text.get(scene["id"], ("", scene["title"], scene["description"]))
+            w, h = int(scene["width"]), int(scene["height"])
+            out.append(
+                Package(scene["id"], pt, no, desc, _format(w, h), float(scene["fps"]), float(scene["duration"]), w, h)
+            )
+    except (ValueError, KeyError, TypeError) as exc:
+        raise CatalogError(f"the base page's scene data: {type(exc).__name__} {exc}") from None
+    return out
+
+
+def engine_topics(page: str) -> tuple[str, ...]:
+    """The headings of the base page's engine inventory, for the search."""
+    m = _ENGINE.search(page)
+    return tuple(re.findall(r"\{h:'([^']+)'", m[1])) if m else ()
+
+
+def _still(shot: Shot, cards: dict[str, Card], stills: Callable[[Shot], str], label: str = "") -> Still:
+    w, h = shot.box[2:] if shot.box else cards[shot.episode].size
+    return Still(src=stills(shot), width=w, height=h, label=label, video=shot.episode)
+
+
+def _gallery_of(
+    items: Sequence[GalleryItem], cards: dict[str, Card], stills: Callable[[Shot], str]
+) -> dict[str, list[GalleryEntry]]:
+    """The gallery items that show each part, in the notes' order."""
+    shown: dict[str, list[GalleryEntry]] = defaultdict(list)
     for g in items:
-        parts = [x for x in registry.entries() if x.name in g.parts]
-        shown = {g.shot.episode, *(p.shot.episode for p in g.poses)}
-        chips = "".join(
-            f'<span class="chip on">{e(c.number or c.slug)}</span>'
-            for c in cards
-            if c.slug in shown or any(_keys(c) & set(_episodes_of(x, usage)) for x in parts)
+        entry = GalleryEntry(
+            name=g.name,
+            note_html=g.text,
+            voice=g.voice,
+            still=_still(g.shot, cards, stills),
+            poses=tuple(_still(p.shot, cards, stills, p.label) for p in g.poses),
         )
-        img = f'<img src="{stills(g.shot)}" alt="{e(g.name)}" loading="lazy">'
-        _, card, frame = SECTIONS[g.section]
-        if g.section == "cast":
-            voice = f"<span>voz {e(g.voice)} (ElevenLabs)</span><span>·</span>" if g.voice else ""
-            poses = "".join(
-                f'<div class="pose"><div class="pose-img"><img src="{stills(p.shot)}" alt="{e(g.name)}, '
-                f'{e(p.label)}" loading="lazy"></div><small>{e(p.label)}</small></div>'
-                for p in g.poses
+        for name in g.parts:
+            shown[name].append(entry)
+    return shown
+
+
+def _video_of_card(c: Card, media: Callable[[Path], str], poster: Callable[[Path], str], usage: Report | None):
+    measured = usage is not None and c.slug in usage.episodes
+    return catalog_data.Video(
+        slug=c.slug,
+        title=c.title,
+        number=c.number,
+        lede=c.lede,
+        highlights_html=c.highlights,
+        style=c.style,
+        source="library",
+        measured=measured,
+        parts=tuple(usage.episodes[c.slug]) if usage is not None and measured else (),
+        format=c.fmt,
+        fps=c.fps,
+        duration=c.duration,
+        width=c.size[0],
+        height=c.size[1],
+        effects=c.effects,
+        src=media(c.render),
+        poster=poster(c.render),
+        lines=c.lines,
+    )
+
+
+def _video_elsewhere(slug: str, package: Package | None, usage: Report | None) -> catalog_data.Video:
+    """A video with no file on the site: a package, or a project usage knows of that has no render."""
+    measured = usage is not None and slug in usage.episodes
+    return catalog_data.Video(
+        slug=slug,
+        title=package.title if package else slug,
+        number=package.number if package else "",
+        lede=package.lede if package else "",
+        highlights_html=(),
+        style=style_of(slug, usage),
+        source="package" if package else "no-render",
+        measured=measured,
+        parts=tuple(usage.episodes[slug]) if usage is not None and measured else (),
+        format=package.fmt if package else "",
+        fps=package.fps if package else 0.0,
+        duration=package.duration if package else 0.0,
+        width=package.width if package else 0,
+        height=package.height if package else 0,
+        effects=0,
+    )
+
+
+def assemble(
+    cards: Sequence[Card],
+    notes: Notes,
+    *,
+    media: Callable[[Path], str],
+    poster: Callable[[Path], str],
+    poses: Sequence[tuple[str, str]],
+    stills: Callable[[Shot], str] | None = None,
+    usage: Report | None = None,
+    packages: Sequence[Package] = (),
+    engine: Sequence[str] = (),
+) -> catalog_data.Catalog:
+    """The site's document, checked; :class:`CatalogError` when the notes curate a gallery that
+    :func:`check_gallery` refuses, that has no ``usage`` to check its coverage against or no ``stills`` to show, or
+    when ``usage`` names a part the registry no longer has."""
+    known = {x.name: x for x in registry.entries()}
+    if usage is not None:
+        stale = sorted({p for parts in usage.episodes.values() for p in parts} - set(known))
+        if stale:
+            raise CatalogError(f"the usage report names unregistered parts {stale}: run srstudio usage again")
+    by_slug = {c.slug: c for c in cards}
+    shown: dict[str, list[GalleryEntry]] = {}
+    if notes.gallery is not None:
+        if usage is None:
+            raise CatalogError(
+                "the notes curate a gallery, and its coverage check needs a usage report (srstudio usage; --usage)"
             )
-            sizes[g.section] += (
-                f'<div class="{card}"><div class="{frame}">{img}</div><h3>{e(g.name)}</h3>'
-                f'<div class="char-meta">{voice}{chips}</div><p class="note">{g.text}</p>'
-                + (f'<div class="poses">{poses}</div>' if poses else "")
-                + "</div>"
-            )
-            continue
-        w, h = g.shot.box[2:] if g.shot.box else by_slug[g.shot.episode].size
-        title = f"<h3>{e(g.name)}</h3>" if g.section == "locations" else f"<b>{e(g.name)}</b>"
-        sizes[g.section] += (
-            f'<div class="{card}"><div class="{frame}" style="aspect-ratio:{w}/{h}">{img}</div>{title}'
-            f'<div class="char-meta">{chips}</div><p>{g.text}</p></div>'
+        check_gallery(notes.gallery, cards, usage)
+        if stills is None:
+            raise CatalogError("the notes curate a gallery but no stills were given to show it")
+        shown = _gallery_of(notes.gallery, by_slug, stills)
+    videos = [_video_of_card(c, media, poster, usage) for c in cards]
+    by_package = {p.slug: p for p in packages}
+    elsewhere = [*by_package, *(usage.episodes if usage else ()), *(usage.unmeasured if usage else ())]
+    for slug in dict.fromkeys(elsewhere):
+        if slug not in by_slug:
+            videos.append(_video_elsewhere(slug, by_package.get(slug), usage))
+    sheet = tuple(Still(src=uri, width=POSE_SIZE[0], height=POSE_SIZE[1], label=name) for name, uri in poses)
+    if sheet and "pip" not in known:
+        raise CatalogError("the pose sheet is Pip's, and no part is registered as pip")
+    parts = [
+        catalog_data.Part(
+            name=x.name,
+            kind=x.kind,
+            title=shown[x.name][0].name if x.name in shown else x.name,
+            style=x.style,
+            summary=x.summary,
+            videos=tuple(_episodes_of(x, usage)),
+            gallery=tuple(shown.get(x.name, ())),
+            sheet=sheet if x.name == "pip" else (),
         )
-    return sizes
+        for x in sorted(known.values(), key=lambda x: (x.kind, x.style or "~", x.name))
+    ]
+    styles = [
+        catalog_data.Style(
+            slug=s.slug,
+            name=s.name,
+            title=notes.styles[s.slug].title if s.slug in notes.styles else s.name,
+            text_html=notes.styles[s.slug].text if s.slug in notes.styles else html.escape(s.summary),
+            summary=s.summary,
+            videos=tuple(v.slug for v in videos if v.style == s.slug),
+            parts=tuple(p.name for p in parts if p.style == s.slug),
+        )
+        for s in STYLES.values()
+    ]
+    return catalog_data.validate(
+        catalog_data.Catalog(
+            schema_version=catalog_data.SCHEMA_VERSION,
+            measured=usage is not None,
+            unmeasured=tuple(usage.unmeasured) if usage else (),
+            engine=tuple(engine),
+            styles=tuple(styles),
+            videos=tuple(videos),
+            parts=tuple(parts),
+        )
+    )
 
 
-_CSS = """
-.phone video{ width:100%; height:100%; display:block; border-radius:11px; object-fit:contain; background:#000 }
-.phone.sq{ aspect-ratio:1/1 }
-.lib-dialog{ max-height:420px; overflow-y:auto; padding-right:4px }
-.lib-poses{ grid-template-columns:repeat(auto-fill,minmax(96px,1fr)) }
-.lib-poses .pose-img{ aspect-ratio:15/16 }
-.lib-poses img{ width:100%; height:100%; display:block; object-fit:cover }
-.lib-gal{ margin-top:14px }
-.lib-gal .loc,.lib-gal .prop{ align-content:start }
-.lib-gal img{ width:100%; height:100%; display:block; object-fit:cover }
-.lib-usage{ display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)) }
-.lib-usage > p{ grid-column:1/-1 }
-.lib-usage ul{ margin:6px 0 10px; padding-left:18px }
-.lib-usage li{ margin:2px 0; overflow-wrap:anywhere }
-"""
-
-_JS = """
-<script>
-(function(){
-  'use strict';
-  document.querySelectorAll('#biblioteca .ep').forEach(function(card){
-    var video = card.querySelector('video');
-    var lines = Array.prototype.slice.call(card.querySelectorAll('.line'));
-    lines.forEach(function(b){
-      b.addEventListener('click', function(){
-        var t = parseFloat(b.dataset.t);
-        // nothing is preloaded: a video has no timeline before its metadata, and play() is what starts loading
-        if (video.readyState >= 1) video.currentTime = t;
-        else video.addEventListener('loadedmetadata', function(){ video.currentTime = t; }, {once: true});
-        video.play().catch(function(){});
-      });
-    });
-    video.addEventListener('timeupdate', function(){
-      var now = video.currentTime, active = null;
-      lines.forEach(function(b){ if (!b.querySelector('.sfx') && parseFloat(b.dataset.t) <= now + 0.05) active = b; });
-      lines.forEach(function(b){ b.classList.toggle('active', b === active); });
-    });
-  });
-})();
-</script>
-"""
-
+# -- the page ---------------------------------------------------------------------------------------------
 _ANCHORS = {
     "style": "</style>",
+    "head": "</head>",
+    "wrap": '<div class="wrap">',
     "styles": '\n      </div>\n    </div>\n    <div class="specs"',
     "spec": '<div class="spec"><b>95,7 s</b><span>6 episódios</span></div>',
-    "section": '\n<section id="elenco">',
-    "elenco": "Tudo que aparece nos seis vídeos,",
-    **{
-        f"host-{k}": f'<div class="{"props" if k == "graphics" else k}" id="{k}"></div>'
-        for k in ("cast", "locs", "props", "graphics")
-    },
+    "app": "<footer>",
     "footer": "</footer>",
+    "script": "(function(){\n'use strict';\nconst AUDIO_SRC",
+    "script-end": "})();\n</script>\n\n</body>",
+    "engine": "const ENGINE = [",
     "body": "</body>",
 }
+
+_NAV = """<nav id="nav" aria-label="Seções do catálogo">
+  <a class="nav-home" href="#/">Catálogo</a>
+  <div class="nav-links">
+    <a href="#/estilos">Estilos</a>
+    <a href="#/personagens">Personagens</a>
+    <a href="#/locacoes">Locações</a>
+    <a href="#/objetos">Objetos</a>
+    <a href="#/graficos">Gráficos</a>
+    <a href="#/videos">Vídeos</a>
+    <a href="#/motor">Motor</a>
+    <a href="#/pacotes">Pacotes</a>
+    <a href="#/registro">Registro</a>
+  </div>
+  <input id="search" type="search" placeholder="Buscar por nome" aria-label="Buscar por nome" autocomplete="off">
+</nav>
+"""
 
 
 def check_base(page: str) -> None:
@@ -557,52 +609,20 @@ def check_base(page: str) -> None:
         raise CatalogError(f"the base page lost its anchor(s) {missing}; it is not the packages catalog")
 
 
-def inject(
-    page: str,
-    cards: Sequence[Card],
-    notes: Notes,
-    *,
-    media: Callable[[Path], str],
-    poses: Sequence[tuple[str, str]],
-    poster: Callable[[Path], str] | None = None,
-    stills: Callable[[Shot], str] | None = None,
-    usage: Report | None = None,
-) -> str:
-    """The base page with the library's part added; :class:`CatalogError` when the base lost an anchor, or when
-    the notes curate a gallery that :func:`check_gallery` refuses, that has no ``usage`` to check its coverage
-    against or no ``stills`` to show."""
+def inject(page: str, cards: Sequence[Card], notes: Notes, *, stylesheet: str, script: str) -> str:
+    """The base page as the app's shell: its hero brought up to date, the navigation and the app's host added, and
+    its own script held back until a route needs it, since it builds six SVG players and every package still.
+    :class:`CatalogError` when the base lost an anchor."""
     check_base(page)
-    if notes.gallery is not None:
-        if usage is None:
-            raise CatalogError(
-                "the notes curate a gallery, and its coverage check needs a usage report (srstudio usage; --usage)"
-            )
-        check_gallery(notes.gallery, cards, usage)
-        if stills is None:
-            raise CatalogError("the notes curate a gallery but no stills were given to show it")
-        for key, cards_html in _gallery(notes.gallery, cards, stills, usage).items():
-            host = SECTIONS[key][0]
-            div = f'<div class="{"props" if host == "graphics" else host} lib-gal" id="lib-{host}">{cards_html}</div>'
-            anchor = _ANCHORS[f"host-{host}"]
-            page = page.replace(anchor, anchor + "\n  " + div, 1)
-        page = page.replace(
-            _ANCHORS["elenco"],
-            f"Tudo que aparece nos seis vídeos originais e nos {len(cards)} episódios da biblioteca,",
-            1,
-        )
     e = html.escape
-    page = re.sub(
-        r'<div class="eyebrow">Parte (\d+)</div>',
-        lambda m: f'<div class="eyebrow">Parte {int(m[1]) + 1 if int(m[1]) >= 2 else m[1]}</div>',
-        page,
-    )
     new_styles = [s for s in STYLES.values() if f'class="style-tag {s.slug}"' not in page]
-    css = _CSS + "".join(
+    css = "".join(
         f".style-tag.{s.slug}{{ background:{s.palettes[0].background or s.palettes[0].shade}; "
         f"color:{s.palettes[0].ink} }}\n"
         for s in new_styles
     )
     page = page.replace(_ANCHORS["style"], css + _ANCHORS["style"], 1)
+    page = page.replace(_ANCHORS["head"], f'<link rel="stylesheet" href="{stylesheet}">\n' + _ANCHORS["head"], 1)
     style_cards = "".join(
         f'\n        <div class="style-card"><span class="style-tag {s.slug}">{e(s.name)}</span>'
         f"<b>{e(notes.styles[s.slug].title if s.slug in notes.styles else s.name)}</b>"
@@ -631,38 +651,26 @@ def inject(
         f'      <div class="spec"><b>{len(registry.entries())}</b><span>peças registradas</span></div>',
         1,
     )
-    pose_tiles = "".join(
-        f'<div class="pose"><div class="pose-img"><img src="{uri}" alt="Pip, pose {e(name)}" loading="lazy"></div>'
-        f"<small>{e(name)}</small></div>"
-        for name, uri in poses
+    page = page.replace(_ANCHORS["wrap"], _NAV + '<div class="wrap" id="base">', 1)
+    page = page.replace(
+        _ANCHORS["app"],
+        '<main id="app" class="on"><noscript>Este catálogo precisa de JavaScript.</noscript></main>\n'
+        + _ANCHORS["app"],
+        1,
     )
-    section = (
-        '\n<section id="biblioteca"><div class="sec-head"><div class="eyebrow">Parte 2</div>'
-        "<h2>Os episódios da biblioteca</h2>"
-        f'<p class="lede">{len(cards)} curtas feitos com a <code>srstudio</code>, lidos dos projetos em disco e dos '
-        "renders do motor, reduzidos para a web. Clique numa fala para pular até ela.</p></div>"
-        + "".join(_card(c, media, poster) for c in cards)
-        + (
-            f'<div class="sub">Folha de poses do Pip</div><div class="poses lib-poses">{pose_tiles}</div>'
-            if poses
-            else ""
-        )
-        + f'<div class="sub">Registro de peças</div>{_registry_table(usage)}'
-        + (_usage_lists(usage) if usage is not None else "")
-        + "</section>\n"
-    )
-    page = page.replace(_ANCHORS["section"], section + _ANCHORS["section"], 1)
     page = page.replace(
         _ANCHORS["footer"],
         "  <p>Episódios da biblioteca: projetos em <code>generated/episodes/</code> e renders em "
-        "<code>generated/renders/</code>; página gerada por <code>srstudio page</code>.</p>\n" + _ANCHORS["footer"],
+        "<code>generated/renders/</code>; site gerado por <code>srstudio page</code>.</p>\n" + _ANCHORS["footer"],
         1,
     )
-    return page.replace(_ANCHORS["body"], _JS + _ANCHORS["body"], 1)
+    page = page.replace(_ANCHORS["script"], "window.srstudioBase = " + _ANCHORS["script"], 1)
+    page = page.replace(_ANCHORS["script-end"], f'}});\n</script>\n<script src="{script}" defer></script>\n</body>', 1)
+    return page
 
 
 # -- media and the build ----------------------------------------------------------------------------------
-INDEX_LIMIT = 2 << 20  # bytes (measured: 1.2 MB); everything heavy is a file, so past this something is embedded
+INDEX_LIMIT = 1 << 20  # bytes (the real page is 0.63 MB); the heavy things are files, so past this one is embedded
 _EXTENSIONS = {"audio/mpeg": ".mp3", "font/ttf": ".ttf", "image/jpeg": ".jpg", "image/png": ".png", "video/mp4": ".mp4"}
 _BASE64_URI = re.compile(r"\bdata:([a-z0-9.+-]+/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]*={0,2})", re.IGNORECASE)
 _ANY_URI = re.compile(r"\bdata:(?:[a-z0-9.+-]+/[a-z0-9.+-]+)?[;,][^\s\"'<>)]{0,40}", re.IGNORECASE)
@@ -780,6 +788,9 @@ def still(render: Path, shot: Shot, cache: Path) -> Path:
     return out
 
 
+POSE_SIZE = (300, 320)
+
+
 def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
     """One PNG per pose in :data:`blob.POSES`, rendered by the engine; re-rendered only when the poses change."""
     from sr_core.scene import Scene
@@ -795,7 +806,7 @@ def pose_sheet(engine: Path, cache: Path) -> list[tuple[str, Path]]:
         return pngs
     folder.mkdir(parents=True, exist_ok=True)
     scene = Scene(version="auto")
-    scene.add_project(width=300, height=320, fps="1", duration=len(names), background=WARM.background)
+    scene.add_project(width=POSE_SIZE[0], height=POSE_SIZE[1], fps="1", duration=len(names), background=WARM.background)
     cv = Canvas(scene, WARM)
     seated = {"sit", "type-a", "type-b", "nod"}
     happy = ("cheer", "wave", "groove")
@@ -868,8 +879,9 @@ def build(
     notes: Notes | None = None,
     usage: Report | None = None,
 ) -> list[Card]:
-    """Write the site to ``site`` (files 600, folders 700) and return its cards: media first, ``index.html`` last,
-    and only then the removal of media nothing references. A failure at any step leaves the previous site working."""
+    """Write the site to ``site`` (files 600, folders 700) and return its cards: media first, then ``catalog.json``,
+    ``index.html`` last, and only then the removal of media nothing references. A failure at any step leaves the
+    previous site working."""
     notes = notes or Notes()
     try:
         page = Path(base).read_text(encoding="utf-8")
@@ -885,8 +897,7 @@ def build(
         os.chmod(site, 0o700)
         store = MediaStore(site / "media")
         renders_of = {c.slug: c.render for c in cards}
-        result = inject(
-            extract_embedded(page, store),
+        catalog = assemble(
             cards,
             notes,
             media=lambda r: store.add(web[r][0]),
@@ -894,11 +905,25 @@ def build(
             poses=[(n, store.add(p)) for n, p in pose_sheet(Path(engine), cache)],
             stills=lambda s: store.add(still(renders_of[s.episode], s, cache)),
             usage=usage,
+            packages=packages_of(page),
+            engine=engine_topics(page),
         )
+        document = catalog_data.dumps(catalog)
+        catalog_data.parse(json.loads(document))  # what is written is what the reader accepts
+        assets = files("srstudio") / "assets" / "catalog"
+        result = inject(
+            extract_embedded(page, store),
+            cards,
+            notes,
+            stylesheet=store.add_bytes((assets / "app.css").read_bytes(), ".css"),
+            script=store.add_bytes((assets / "app.js").read_bytes(), ".js"),
+        )
+        require_no_embedded(document)
         require_no_embedded(result)
         size = len(result.encode("utf-8"))
         if size > INDEX_LIMIT:
             raise CatalogError(f"index.html is {size} bytes, past the bound of {INDEX_LIMIT}")
+        _write_text(site / "catalog.json", document)
         _write_text(site / "index.html", result)
         store.prune()
     except OSError as exc:
