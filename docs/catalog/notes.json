@@ -4113,6 +4113,90 @@
         ]
       },
       "text": "Balão de mensagem com rabicho, cinza para o outro e verde para o meu; aqui o banco parabeniza a Deb (Payday)."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de jantar",
+      "parts": [
+        "collage-dining-room"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6
+      },
+      "text": "Parede verde com janela ao entardecer, aparador e pratos na parede; a família janta a uma cadeira de distância e o Gary manda cartas por mensagem (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Toalha de mesa",
+      "parts": [
+        "collage-tablecloth"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          0,
+          1590,
+          1080,
+          330
+        ]
+      },
+      "text": "Toalha de mesa de papel que ocupa a base do quadro e fica na frente de todo mundo (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Saleiro",
+      "parts": [
+        "collage-salt-shaker"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          280,
+          1570,
+          190,
+          250
+        ]
+      },
+      "text": "Saleiro de papel que o Kai faz deslizar pela mesa depois de receber o pedido por carta (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Polegar para cima",
+      "parts": [
+        "collage-thumb"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 8.0,
+        "box": [
+          680,
+          1560,
+          240,
+          290
+        ]
+      },
+      "text": "Polegar para cima, a resposta do Kai que o pai declara não entender (Regards, Dad)."
+    },
+    {
+      "section": "props",
+      "name": "Braço solto com um dedo",
+      "parts": [
+        "collage-arm"
+      ],
+      "shot": {
+        "episode": "regards-dad",
+        "at": 13.6,
+        "box": [
+          790,
+          1440,
+          290,
+          340
+        ]
+      },
+      "text": "Braço solto que entra pela borda do quadro; o Gary digita com um dedo só (Regards, Dad)."
     }
   ]
 }
