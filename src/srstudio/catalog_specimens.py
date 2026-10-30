@@ -256,6 +256,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-take-a-number": Recipe(lettered(((0.0, 47),))),
     "toon-clipboard": Recipe(
         lettered("Form 7", (toon_everyday.Field("Name", "Rex"), toon_everyday.Field("Date", "Today")))),
+    "toon-key-line": Recipe(lettered("Say what you mean.", 0.0, SECONDS)),
     "toon-clock": Recipe(part(((0.0, "09:00"),))),
     "toon-notes": Recipe(part(("REPORT!", "9 AM", "DO NOT", "FORGET"))),
     "toon-note-insert": Recipe(part("IT MOVED.", 0.0, SECONDS)),

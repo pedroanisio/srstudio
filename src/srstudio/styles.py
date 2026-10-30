@@ -361,6 +361,7 @@ TOON = Style(
         "toon_critters",
         "toon_dinner",
         "toon_everyday",
+        "toon_house",
         "toon_inked",
         "toon_props",
         "toon_redrawn",

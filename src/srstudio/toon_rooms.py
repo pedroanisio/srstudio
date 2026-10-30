@@ -298,8 +298,10 @@ def lounge(
     *,
     light=None,
     speaker: Sequence[tuple[float, str]] = ((0.0, "off"),),
+    blink_from: float = 0.0,
 ):
-    """A deep teal wall at night with faint stripes; a shelf above the pill with a router whose lights blink and the
+    """A deep teal wall at night with faint stripes; a shelf above the pill with a router whose lights blink from
+    ``blink_from`` (a held opening keeps them still until then) and the
     library's smart speaker (:func:`srstudio.toon_everyday.speaker`), whose ring follows ``speaker`` (``(second,
     state)`` from 0; a still takes one state at 0); a floor lamp at the left (its shade above the character, its
     pole behind the sofa); a wall TV at the right above a media console; the sofa's back behind the character.
@@ -307,6 +309,8 @@ def lounge(
     shot's, between the character and the desk), else into a group drawn over the set. Returns the cues."""
     cues = parse_lights("lounge", lights, end)
     end = float(end)
+    if blink_from and not (checks.number(blink_from) and 0 < blink_from < end):
+        raise ToonDataError(f"the router's blink starts inside the clock, got {blink_from!r} of {end}")
     if not end and not (
         isinstance(speaker, Sequence)
         and len(speaker) == 1
@@ -322,7 +326,7 @@ def lounge(
     cv.rect(g, 0, 0, cv.width, cv.height, wall)
     for x in range(24, 592, 48):
         cv.rect(g, fx(x), 0, fh(6), cv.height, STRIPE, opacity=0.3)
-    _lounge_shelf(cv, g, end, speaker)
+    _lounge_shelf(cv, g, end, speaker, blink_from)
     # the floor lamp: the pole runs down behind the sofa; the shade lights up with its level, a glow round it
     _line(cv, g, [(88, 396), (88, 820)], 7.0, LAMP_POLE)
     _glow(cv, _level(cv, g, lamp), "toon-lounge-lamp", 88, 380, 150, LAMP_LIGHT)
@@ -366,7 +370,7 @@ def _picture(cv: Canvas, g, name: str, colour: str) -> None:
     cv.rect(g, fx(392), fy(342), fh(186), fh(114), paint, radius=fh(3))
 
 
-def _lounge_shelf(cv: Canvas, g, end: float, speaker: Sequence[tuple[float, str]]) -> None:
+def _lounge_shelf(cv: Canvas, g, end: float, speaker: Sequence[tuple[float, str]], blink_from: float = 0.0) -> None:
     """The shelf above the pill: the router with its antennas and blinking lights, the smart speaker."""
     _inked(cv, g, [(372, 190), (572, 190), (572, 200), (372, 200)], SHELF, FINE_W / 2)
     for x in (392, 552):
@@ -381,7 +385,7 @@ def _lounge_shelf(cv: Canvas, g, end: float, speaker: Sequence[tuple[float, str]
         cv.ellipse(led, fx(x - 3), fy(172), fh(6), fh(6), ROUTER_LED)
         if end:
             pattern = [(0.0, 1.0), (ROUTER_BLINK * 0.4, 0.15)]
-            cv.keys(led, "opacity", cycle_keys(pattern, ROUTER_BLINK, 0.0, end, phase=0.23 * i))
+            cv.keys(led, "opacity", cycle_keys(pattern, ROUTER_BLINK, blink_from, end, phase=0.23 * i))
     toon_everyday.speaker(cv, g, speaker, end or STILL_RING, at=LOUNGE_SPEAKER, scale=LOUNGE_SPEAKER_SCALE,
                           id=cv.uid("speaker"))  # fmt: skip
 
@@ -504,7 +508,7 @@ ROOMS: dict[str, Room] = {
         "tv",
         {"lamp": ((0, "on"),), "tv": ((0, "on", "blue"),)},
         {"lamp": (26, 318, 150, 396), "tv": (380, 330, 590, 468), "shelf": (372, 100, 572, 214)},
-        frozenset({"speaker"}),
+        frozenset({"speaker", "blink_from"}),
     ),
     "counter": Room(
         "counter",

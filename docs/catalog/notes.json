@@ -584,6 +584,10 @@
     "stick-ride": {"title": "Balanço do carro"},
     "toon-clipboard": {"title": "Prancheta"},
     "toon-desk-lamp": {"title": "Luminária de mesa"},
+    "toon-hallway": {"title": "Corredor de casa"},
+    "toon-horse": {"title": "Cavalo cinza"},
+    "toon-key-line": {"title": "Faixa de uma frase"},
+    "toon-ledge": {"title": "Tampo assinado"},
     "toon-phone": {"title": "Smartphone"},
     "toon-plant": {"title": "Planta de folhas brilhantes"},
     "toon-receipt": {"title": "Nota fiscal"},
@@ -3910,6 +3914,34 @@
         ]
       },
       "text": "A foto impressa, inclinada, com borda branca e margem de baixo mais larga: a família no seu cômodo, com quem se mexeu fora de foco (aqui, o Gary)."
+    },
+    {
+      "section": "props",
+      "name": "Tampo assinado",
+      "parts": ["toon-ledge"],
+      "shot": {"episode": "representative", "at": 0.5},
+      "text": "Superfície simples no lugar da mesa, em carvalho, branco ou aço, com o cacto e o código nos lugares de sempre."
+    },
+    {
+      "section": "props",
+      "name": "Cavalo cinza",
+      "parts": ["toon-horse"],
+      "shot": {"episode": "representative", "at": 25.5},
+      "text": "Cabeça de frente, cara longa e olhar parado, cabresto e pálpebras que piscam. Não fala: só existe."
+    },
+    {
+      "section": "locations",
+      "name": "Corredor de casa",
+      "parts": ["toon-hallway"],
+      "shot": {"episode": "representative", "at": 25.5},
+      "text": "Parede sálvia, rodapé alto, dois quadros e uma porta que abre para a varanda à noite."
+    },
+    {
+      "section": "graphics",
+      "name": "Faixa de uma frase",
+      "parts": ["toon-key-line"],
+      "shot": {"episode": "representative", "at": 0.5},
+      "text": "Uma frase curta numa barra escura, abaixo do código, para ler o vídeo sem som no primeiro segundo."
     }
   ]
 }

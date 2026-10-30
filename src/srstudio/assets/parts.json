@@ -3839,6 +3839,23 @@
         }
       ]
     },
+    "toon-hallway": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c983f15b99fdbe93be4ac253970ea927b28297d6a68ab065e844ef3d8ae0e295",
+          "rig": null
+        }
+      ]
+    },
     "toon-hamster": {
       "kind": "character",
       "style": "toon",
@@ -3936,6 +3953,40 @@
         }
       ]
     },
+    "toon-horse": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e73fafe5d42636e68872c0fa05c8954dfe0c2cebdd87e0242804ba03e16d0ad1",
+          "rig": null
+        }
+      ]
+    },
+    "toon-key-line": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "054e23def8ed6830166abfe550c925cd58b866e4dfb2152f14e7574422b62825",
+          "rig": null
+        }
+      ]
+    },
     "toon-kitchen": {
       "kind": "location",
       "style": "toon",
@@ -3949,6 +4000,23 @@
           "proof": "",
           "approval": null,
           "drawing": "a284fd0e37e091f34ee930cc1bfee448f445beebfe440fa2c18a06f806d161e4",
+          "rig": null
+        }
+      ]
+    },
+    "toon-ledge": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for Representative; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "226c74801d7a50827ee3771a3b919eb7094cb22056df8833fd7e500aa55181d3",
           "rig": null
         }
       ]

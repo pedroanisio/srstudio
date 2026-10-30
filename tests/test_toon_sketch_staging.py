@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, craft, parts, sketch, toon_sketch, usage
+from srstudio import TOON, camera, craft, parts, sketch, toon, toon_sketch, usage
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -129,3 +129,24 @@ def test_without_a_camera_the_shots_keep_their_anonymous_ids(pinned_fonts, tmp_p
     sk = Sketch("plain-test", "Plain test", SPEAKERS, LINES, STILL, END)
     _, xml = built(tmp_path, silent(sk), pinned_fonts)
     assert not [g for g in xml.iter("group") if craft.CAMERA.fullmatch(g.get("id", ""))]
+
+
+def test_a_staging_scales_a_figure_about_its_seat_and_leaves_the_others_alone(pinned_fonts, tmp_path):
+    sk = Sketch("figure-test", "Figure test", SPEAKERS, LINES, STILL, END)
+    plain = silent(sk)
+    framed = replace(plain, figures={"rabbit": (1.4, 6.0)})
+    _, xml = built(tmp_path, framed, pinned_fonts)
+    x, y = toon.fx(toon_sketch.SEAT[0]), toon.fy(toon_sketch.SEAT[1])
+    scaled = [g for g in xml.iter("group") if g.get("scaleX") == "1.4"]
+    assert len(scaled) == 1  # the rabbit's one shot, none of the bear's
+    assert float(scaled[0].get("anchorX")) == pytest.approx(x)
+    assert float(scaled[0].get("anchorY")) == pytest.approx(y)
+    assert float(scaled[0].get("x")) == pytest.approx(x + toon.fh(6.0))
+
+
+@pytest.mark.parametrize("framing", [(0.0, 0.0), (-1.0, 0.0), (float("nan"), 0.0), (1.2, float("inf"))])
+def test_a_staging_refuses_a_framing_it_cannot_draw(pinned_fonts, tmp_path, framing):
+    sk = Sketch("figure-test", "Figure test", SPEAKERS, LINES, STILL, END)
+    staging = replace(silent(sk), figures={"rabbit": framing})
+    with pytest.raises(toon_sketch.StagingError, match="framing"):
+        built(tmp_path, staging, pinned_fonts)
