@@ -6,11 +6,12 @@ import json
 import os
 import shutil
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, craft, sketch, toon_sketch
+from srstudio import TOON, camera, characters, craft, sketch, toon_sketch
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -28,8 +29,9 @@ STILL = (
 END = 6.0
 
 
-def silent(sk: Sketch, **kw) -> toon_sketch.Staging:
-    return toon_sketch.Staging(sk, 3, "d", "a", "n", {"bo": "#ffe3b3", "mo": "#d6f5dc"}, lambda shot: None, **kw)
+def silent(sk: Sketch, versions=None, **kw) -> toon_sketch.Staging:
+    tints = {"bo": "#ffe3b3", "mo": "#d6f5dc"}
+    return toon_sketch.Staging(sk, 3, "d", "a", "n", tints, lambda shot: None, versions or {}, **kw)
 
 
 @pytest.fixture(scope="module")
@@ -51,6 +53,41 @@ def built(root: Path, staging: toon_sketch.Staging, fonts: Path):
     ep = toon_sketch.build(root, staging, set())
     assert ep is not None
     return ep, ET.fromstring(ep.scene.to_bytes(layout="pretty"))
+
+
+def test_a_staging_must_say_which_versions_it_draws():
+    sk = Sketch("still-test", "Still test", SPEAKERS, LINES, STILL, END)
+    with pytest.raises(TypeError, match="versions"):
+        toon_sketch.Staging(sk, 3, "d", "a", "n", {}, lambda shot: None)
+
+
+def fox_sketch() -> Sketch:
+    speakers = (SPEAKERS[0], Speaker("mo", SPEAKERS[1].voice, SPEAKERS[1].settings, "fox"))
+    beats = tuple(replace(b, who="fox") if b.who == "rabbit" else b for b in STILL)
+    return Sketch("fox-test", "Fox test", speakers, LINES, beats, END)
+
+
+@pytest.mark.parametrize(("pins", "drew"), [({"toon-fox": 1}, 1), ({"toon-fox": 2}, 2), ({}, 2)])
+def test_a_build_draws_the_pinned_version_or_the_default_and_records_it(pinned_fonts, tmp_path, pins, drew):
+    ep, _ = built(tmp_path, silent(fox_sketch(), versions=pins), pinned_fonts)
+    assert characters.read_record(tmp_path) == {"toon-bear": 1, "toon-fox": drew}
+    expected = {1: "toon_cast", 2: "toon_inked"}[drew]
+    assert sketch.drawer("fox", {"toon-fox": drew}).__module__ == f"srstudio.{expected}"
+
+
+def test_a_pin_changes_what_a_build_draws(pinned_fonts, tmp_path):
+    drawings = []
+    for number in (1, 2):
+        root = tmp_path / str(number)
+        root.mkdir()
+        _, xml = built(root, silent(fox_sketch(), versions={"toon-fox": number}), pinned_fonts)
+        drawings.append(ET.tostring(xml))
+    assert drawings[0] != drawings[1]
+
+
+def test_a_build_refuses_a_pin_it_cannot_draw(pinned_fonts, tmp_path):
+    with pytest.raises(characters.UnknownVersionError, match="toon-fox has no version 9"):
+        built(tmp_path, silent(fox_sketch(), versions={"toon-fox": 9}), pinned_fonts)
 
 
 def test_a_sketch_may_open_on_a_still_uncaptioned_beat_and_caption_its_first_line_later(pinned_fonts, tmp_path):

@@ -2,6 +2,7 @@
 
 import fcntl
 import hashlib
+import importlib
 import json
 import os
 import subprocess
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, social, thumbnail
+from srstudio import Episode, EpisodeSpec, characters, sketch, social, thumbnail
 from srstudio.releases import Release
 from srstudio.social import (
     CAPTION_LIMIT,
@@ -869,6 +870,42 @@ def test_every_episode_script_ships_its_post():
 def test_every_shipped_release_pins_its_characters():
     posts = shipped_posts()
     assert [slug for slug, r in posts.RELEASES.items() if r.characters is None] == []
+
+
+def toon_scripts() -> list[Path]:
+    return [p for p in sorted(EPISODES.glob("*.py")) if "from srstudio.toon_sketch import Staging" in p.read_text()]
+
+
+def test_every_toon_script_draws_the_versions_its_release_pins():
+    scripts = toon_scripts()
+    assert len(scripts) >= 19
+    missing = [p.name for p in scripts if "versions=PINS[SKETCH.slug]" not in p.read_text(encoding="utf-8")]
+    assert missing == []
+
+
+@pytest.mark.parametrize("script", toon_scripts(), ids=lambda p: p.stem)
+def test_a_toon_sketch_pins_every_character_it_shows(script):
+    posts = shipped_posts()
+    sys.path.insert(0, str(EPISODES))
+    try:
+        sk = importlib.import_module(f"{script.stem}_data").SKETCH
+    finally:
+        sys.path.pop(0)
+    shown = {sketch.part_of(beat.who) for beat in sk.beats}
+    assert shown <= set(posts.RELEASES[sk.slug].characters)
+
+
+def test_a_toon_reel_outside_the_sketch_builder_stays_on_version_one():
+    """Only ``toon_sketch.build`` reads a pin, so a script that draws for itself draws version 1 by code."""
+    posts = shipped_posts()
+    routed = {p.stem for p in toon_scripts()}
+    outside = {
+        r.builder_name: r.characters
+        for r in posts.RELEASES.values()
+        if r.builder_name not in routed and any(characters.get(n).style == "toon" for n in r.characters)
+    }
+    assert set(outside) == {"employee_survey"}
+    assert all(number == 1 for pins in outside.values() for number in pins.values())
 
 
 def unpinned_release(posts, monkeypatch, tmp_path) -> Path:
