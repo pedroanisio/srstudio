@@ -1117,6 +1117,35 @@ def _limb_layer(cv: Canvas, parent, arms: str):
     return ref
 
 
+def _draw_mouth(
+    cv: Canvas, g, look: Look, pose: Pose, closed: Sequence[Layer], mouths: Mouths, start: float, end: float
+) -> None:
+    """The pose's mouth ``closed`` in ``g``, or one layer per viseme with hold keys where a sound is heard."""
+    keys = viseme_keys(mouths, start, end)
+    if keys:
+        lips = cv.group(g, cv.uid("g"))
+        for viseme, states in keys.items():
+            layer = cv.group(lips, cv.uid("g"))
+            _draw(cv, layer, closed if viseme == "closed" else _place(_viseme(look, viseme), pose.arms))
+            cv.keys(layer, "opacity", states, local=False)
+    else:
+        _draw(cv, g, closed)
+
+
+def _draw_blinks(cv: Canvas, g, look: Look, pose: Pose, start: float, end: float) -> None:
+    """The lids shut at the look's blinks over the run, slower on sleepy eyes."""
+    sleepy = pose.eyes == "sleepy"
+    pace, hold = (SLEEPY_PACE, SLEEPY_HOLD) if sleepy else (1.0, BLINK_HOLD)
+    blinks = blink_times(start, end, look.blink * pace, hold) if pose.eyes not in SHUT else []
+    if blinks:
+        shut = cv.group(g, cv.uid("g"))
+        _draw(cv, shut, _place(_lids(look), pose.arms))
+        states = [(start, 0)]
+        for t in blinks:
+            states += [(t, 1), (round(t + hold, 6), 0)]
+        cv.keys(shut, "opacity", states, local=False)
+
+
 def figure(
     cv: Canvas,
     parent,
@@ -1175,25 +1204,8 @@ def figure(
             swap_frames(cv, g, start, end, taps, frame_of)
         else:
             _draw(cv, g, under[base_count:])
-        keys = viseme_keys(mouths, start, end)
-        if keys:
-            lips = cv.group(g, cv.uid("g"))
-            for viseme, states in keys.items():
-                layer = cv.group(lips, cv.uid("g"))
-                _draw(cv, layer, mouth_layers if viseme == "closed" else _place(_viseme(look, viseme), pose.arms))
-                cv.keys(layer, "opacity", states, local=False)
-        else:
-            _draw(cv, g, mouth_layers)
-        sleepy = pose.eyes == "sleepy"
-        pace, hold = (SLEEPY_PACE, SLEEPY_HOLD) if sleepy else (1.0, BLINK_HOLD)
-        blinks = blink_times(start, end, look.blink * pace, hold) if pose.eyes not in SHUT else []
-        if blinks:
-            shut = cv.group(g, cv.uid("g"))
-            _draw(cv, shut, _place(_lids(look), pose.arms))
-            states = [(start, 0)]
-            for t in blinks:
-                states += [(t, 1), (round(t + hold, 6), 0)]
-            cv.keys(shut, "opacity", states, local=False)
+        _draw_mouth(cv, g, look, pose, mouth_layers, mouths, start, end)
+        _draw_blinks(cv, g, look, pose, start, end)
         _draw(cv, g, over)
         if limbs:
             front = _limb_layer(cv, g, pose.arms)
