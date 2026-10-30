@@ -4,7 +4,8 @@ money and services, job hunting and dating.
 :func:`phone` is a smartphone standing on a surface or held, whose screen changes on cue: a notification that
 buzzes it, a code or password prompt, a dating profile, a declined payment, a loading bar, the screen off.
 :func:`speaker` is a smart speaker whose light ring shows what it is doing: dark, listening, thinking (a light
-chasing round), speaking (the ring pulsing) or an error (red).
+chasing round), speaking (the ring pulsing) or an error (red). :func:`receipt` hangs from a printer's slot and
+unrolls, its rows of items and prices showing as the paper passes them; a longer receipt is a longer strip.
 
 Every prop stands at a reference point (``at``, screen pixels as :func:`srstudio.toon.fx`/``fy`` map them), is
 drawn ``scale`` times its size about that point, and returns its footprint, the reference box it may draw in over
@@ -441,4 +442,107 @@ def speaker(
             seg = cv.group(g, f"{id}-ring-{colour}-{k}")
             cv.keys(seg, "opacity", ring[colour][k], local=False)
             _rect(cv, seg, -29.5 + 10 * k, -105, 9, 10, fill, 0, radius=3)
+    return box
+
+
+# -- the receipt -------------------------------------------------------------------------------------------------------
+PAPER, PAPER_RULE, PRINTER = "#fffdf6", "#b9b2a5", "#3a3f47"
+PAPER_X, PAPER_W = -60.0, 120.0  # the strip, reference units about the slot's centre
+TEXT_X, TEXT_W = -56.0, 112.0
+ROW, HEAD_ROW, TOTAL_ROW, RULE_ROW, PAPER_PAD = 18.0, 24.0, 22.0, 10.0, 8.0  # heights down the strip
+ITEM_SIZE, HEAD_SIZE, TOTAL_SIZE = 24, 26, 28
+PRICE_GAP = 6.0  # reference units kept between a name and its price
+TOOTH = 5.0  # the torn edge's teeth
+PACE_MAX = 2.0  # seconds a row may take to print
+
+
+def _row(measure: Measure, value, size: int, what: str) -> tuple[str, str]:
+    """``value`` as a ``(name, price)`` pair of one-line texts that fit the paper side by side at ``size``."""
+    if not (isinstance(value, tuple | list) and len(value) == 2):
+        raise ToonDataError(f"{what} is a (name, price) pair, got {value!r}")
+    name, price = value
+    for field, text in (("name", name), ("price", price)):
+        if not isinstance(text, str) or not text.strip() or "\n" in text:
+            raise ToonDataError(f"{what}: the {field} is one line of text, got {text!r}")
+    need = measure(name, size) + measure(price, size) + fh(PRICE_GAP)
+    if need > int(fh(TEXT_W)):
+        raise ToonDataError(f"{what} {name!r} {price!r} needs {need:.0f} px; the paper gives {int(fh(TEXT_W))}")
+    return name, price
+
+
+def _dashes(cv: Canvas, g, y: float) -> None:
+    for x in range(int(TEXT_X), int(TEXT_X + TEXT_W), 8):
+        _line(cv, g, [(x, y), (x + 4, y)], FINE_W * 0.4, PAPER_RULE)
+
+
+@register(
+    "prop",
+    "toon-receipt",
+    summary="A receipt that unrolls from a printer's slot, its items and prices showing as the paper passes them; "
+    "an optional store name on top and a total under a rule",
+)
+def receipt(
+    cv: Canvas,
+    parent,
+    items: Sequence[tuple[str, str]],
+    *,
+    measure: Measure,
+    header: str = "",
+    total: tuple[str, str] | None = None,
+    start: float = 0.0,
+    pace: float = 0.25,
+    at: tuple[float, float] = (440, 330),
+    scale: float = 1.0,
+    id: str = "receipt",
+) -> Box:
+    """The strip hangs from the slot at reference ``at``: the ``header`` (none when empty), each ``(name, price)``
+    of ``items`` and the ``total``, each row one line that fits the paper. It prints from ``start`` at ``pace``
+    seconds a row, the paper growing down from the slot. Returns its footprint, which grows with the rows."""
+    if not items:
+        raise ToonDataError("a receipt needs at least one item")
+    rows: list[tuple[str, tuple[str, ...]]] = []
+    if not isinstance(header, str):
+        raise ToonDataError(f"a receipt's header is text, got {header!r}")
+    if header:
+        Slot(TEXT_X, 0, TEXT_W, HEAD_ROW, HEAD_SIZE).fit(measure, header, "the receipt header")
+        rows.append(("head", (header,)))
+    for k, item in enumerate(items):
+        rows.append(("item", _row(measure, item, ITEM_SIZE, f"receipt item {k}")))
+    if total is not None:
+        rows.append(("total", _row(measure, total, TOTAL_SIZE, "the receipt total")))
+    if not (checks.number(start) and start >= 0):
+        raise ToonDataError(f"a receipt's start is a second >= 0, got {start!r}")
+    if not (checks.number(pace) and 0 < pace <= PACE_MAX):
+        raise ToonDataError(f"a receipt's pace is over 0 and at most {PACE_MAX} s a row, got {pace!r}")
+    heights = {"head": HEAD_ROW + RULE_ROW, "item": ROW, "total": RULE_ROW + TOTAL_ROW}
+    length = PAPER_PAD * 2 + sum(heights[kind] for kind, _ in rows)
+    box = _place("receipt", at, scale, (PAPER_X - 8, -14.0, -PAPER_X + 8, length + TOOTH + 1))
+    x, y = at
+    printed = start + pace * len(rows)
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    paper = cv.group(g, f"{id}-paper")
+    cv.keys(paper, "scaleY", [(0.0, 0.0), *([(start, 0.0)] if start > 0 else []), (printed, 1.0)], hold=False,
+            local=False)  # fmt: skip
+    _rect(cv, paper, PAPER_X, 0, PAPER_W, length, PAPER, FINE_W * 0.6)
+    edge = cv.group(g, f"{id}-edge", y=fh(length))
+    cv.keys(edge, "y", [(0.0, 0.0), *([(start, 0.0)] if start > 0 else []), (printed, fh(length))], hold=False,
+            local=False)  # fmt: skip
+    teeth = [(PAPER_X + i * PAPER_W / 20, TOOTH if i % 2 else 0.0) for i in range(21)]
+    _line(cv, edge, teeth, FINE_W * 0.6, fill=PAPER)
+    top = PAPER_PAD
+    for k, (kind, texts) in enumerate(rows):
+        row = cv.group(g, f"{id}-row-{k}")
+        bottom = top + heights[kind]
+        _shown(cv, row, start + (printed - start) * bottom / length, None)
+        if kind == "head":
+            Slot(TEXT_X, top, TEXT_W, HEAD_ROW, HEAD_SIZE).draw(cv, row, texts[0], "receipt-text")
+            _dashes(cv, row, top + HEAD_ROW + RULE_ROW / 2)
+        else:
+            y0, h, size = (top, ROW, ITEM_SIZE) if kind == "item" else (top + RULE_ROW, TOTAL_ROW, TOTAL_SIZE)
+            if kind == "total":
+                _dashes(cv, row, top + RULE_ROW / 2)
+            Slot(TEXT_X, y0, TEXT_W, h, size, align="start").draw(cv, row, texts[0], "receipt-text")
+            Slot(TEXT_X, y0, TEXT_W, h, size, align="end").draw(cv, row, texts[1], "receipt-text")
+        top = bottom
+    _rect(cv, g, PAPER_X - 6, -12, PAPER_W + 12, 14, PRINTER, INK_W * 0.6, radius=5)  # the slot, over the paper's top
     return box
