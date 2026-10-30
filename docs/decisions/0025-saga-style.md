@@ -151,3 +151,20 @@ exactly one, spanning the band below the floor line.
   location, and a box over the floor hides the cast's feet and contact shadows.
 - *Restage the desert scenes elsewhere.* The premise needs Elder Mabel at home; the location is the joke's
   setting, not a choice to make for the captions.
+
+## Amendment, 2026-10-30: the cast stays as drawn
+
+**Context.** Lord Gloom (black helmet, red visor, cape, lit chest panel) and the enforcers (white plate armour,
+dark visor band) draw on the space-opera genre the style parodies. A redesign was built on `feat/saga-redesign`
+(f151612): Gloom as a robed comptroller with a chain of office and a stepped hat, the enforcers as hard-hatted
+workers in hi-vis. Every existing Saga reel rebuilt identically with the old cast pinned.
+
+**Decision.** The operator declined the redesign. Gloom and the enforcers stay as drawn, for the reels already made
+and for new ones: the operator's position is that the cast is inspired by the genre, not a copy of any design. The
+redesign branch is not merged, and the operator holds this decision; only the operator reopens it.
+
+**Rejected alternatives.**
+
+- *Adopt the redesign as the default for new reels.* Declined by the operator after reviewing the side-by-side sheet.
+- *Keep both designs selectable.* Two casts for one series splits its look between reels and keeps unused library
+  code with no reel to exercise it.
