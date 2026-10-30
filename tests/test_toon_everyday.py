@@ -226,7 +226,7 @@ def test_the_phone_refuses_a_hand_that_is_not_a_colour():
 def test_the_props_are_registered_with_the_toon_style():
     names = {e["name"]: e for e in registry.catalog(style="toon")}
     assert "toon_everyday" in TOON.parts
-    for name in ("toon-phone", "toon-speaker", "toon-receipt"):
+    for name in ("toon-phone", "toon-speaker", "toon-receipt", "toon-take-a-number"):
         assert (names[name]["kind"], names[name]["style"]) == ("prop", "toon"), name
 
 
@@ -382,3 +382,55 @@ def test_a_longer_receipt_has_a_longer_footprint_and_draws_inside_it():
 def test_the_receipt_refuses_what_it_cannot_print(kw, match):
     with pytest.raises(ToonDataError, match=match):
         receipt(**{"at": (300, 330), **kw})
+
+
+# -- take a number ---------------------------------------------------------------------------------------------------
+def take_a_number(cv=None, serving=((0.0, 12),), **kw):
+    cv = cv or canvas()
+    return toon_everyday.take_a_number(cv, cv.comp, serving, measure=measure, **kw)
+
+
+def test_the_display_shows_each_number_alone_from_its_second_to_the_next():
+    cv = canvas()
+    take_a_number(cv, [(0.0, 12), (2.0, 13), (5.0, "A7")], at=(300, 826))
+    assert layer_texts(cv, "take-a-number-display") == ["NOW SERVING"]
+    for k, (text, shown) in enumerate([("12", [(0.0, 1.0), (2.0, 0.0)]), ("13", [(0.0, 0.0), (2.0, 1.0), (5.0, 0.0)]),
+                                       ("A7", [(0.0, 0.0), (5.0, 1.0)])]):  # fmt: skip
+        assert layer_texts(cv, f"take-a-number-serving-{k}") == [text]
+        assert keys(group(cv, f"take-a-number-serving-{k}"), "opacity") == shown
+
+
+def test_the_ticket_sticks_out_of_the_dispenser_with_its_number():
+    with_ticket, without = canvas(), canvas()
+    take_a_number(with_ticket, ticket=87, at=(300, 826))
+    take_a_number(without, at=(300, 826))
+    assert layer_texts(with_ticket, "take-a-number-ticket") == ["87"]
+    assert not [g for g in tree(without).iter("group") if g.get("id") == "take-a-number-ticket"]
+
+
+def test_take_a_number_draws_inside_its_footprint():
+    cv = canvas()
+    box = take_a_number(cv, [(0.0, 999)], ticket="B12", at=(300, 826), scale=1.4)
+    assert inside(drawn(cv, "take-a-number"), frame_box(box))
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(serving=[]), "at least one"),
+        (dict(serving=[(0.0,)]), "pair"),
+        (dict(serving=[(True, 12)]), "second"),
+        (dict(serving=[(0.0, 12), (0.0, 13)]), "rising"),
+        (dict(serving=[(0.0, True)]), "number"),
+        (dict(serving=[(0.0, -1)]), "number"),
+        (dict(serving=[(0.0, 1000)]), "number"),
+        (dict(serving=[(0.0, 12.5)]), "number"),
+        (dict(serving=[(0.0, "")]), "number"),
+        (dict(serving=[(0.0, "NEXT PLEASE")]), "px"),
+        (dict(ticket="TOO LONG"), "ticket.*px"),
+        (dict(ticket=False), "ticket"),
+    ],
+)
+def test_take_a_number_refuses_what_its_display_and_ticket_cannot_show(kw, match):
+    with pytest.raises(ToonDataError, match=match):
+        take_a_number(**{"at": (300, 826), **kw})
