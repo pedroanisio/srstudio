@@ -41,6 +41,10 @@ settings:
   socket_mode_enabled: true
 ```
 
+The app's icon is the studio's cactus as a robot, drawn by [`tools/creationbot_avatar.py`](../tools/creationbot_avatar.py)
+on the sr-core scene SDK. Run it with `SRSTUDIO_ENGINE` set and an output path, and upload the PNG under **Basic
+Information**, **Display Information**, **Add App Icon**. Slack takes a square from 512 to 2000 px.
+
 The token itself holds seven scopes, read from the `x-oauth-scopes` response header of `auth.test`:
 
 | Scope | Used for |
