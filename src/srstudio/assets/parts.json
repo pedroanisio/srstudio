@@ -3641,6 +3641,23 @@
         }
       ]
     },
+    "toon-closet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A closet door that bursts open. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b0fa65e4cb441f02299ce2316d782a9c31deb5e2b6cb05eb22845f120ab1ab3",
+          "rig": null
+        }
+      ]
+    },
     "toon-coffee-machine": {
       "kind": "prop",
       "style": "toon",
@@ -3790,6 +3807,23 @@
         }
       ]
     },
+    "toon-flat": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shared flat's pale wall, spotless. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ddba45abdcb86e4a6f5f4c0884fdea90290a35af1792c9db7b34325b9a218aee",
+          "rig": null
+        }
+      ]
+    },
     "toon-fox": {
       "kind": "character",
       "style": "toon",
@@ -3856,6 +3890,23 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "9bfec33787803e36e3157934b65cf561368ceca949e7e941242de459b642f30f",
+          "rig": null
+        }
+      ]
+    },
+    "toon-front-door": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front door on a hall stacked to the ceiling. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8302d3477d4d9e26beb6faca34140d8b51e3f3151fe39dccc616da90a351733d",
           "rig": null
         }
       ]
@@ -4017,6 +4068,23 @@
           "proof": "",
           "approval": null,
           "drawing": "a284fd0e37e091f34ee930cc1bfee448f445beebfe440fa2c18a06f806d161e4",
+          "rig": null
+        }
+      ]
+    },
+    "toon-laundry-pile": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A heap of shirts that rises over whoever is in shot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a32347be0c41dd51ab18679d1416ab4f6b1d28a7f3ae197276de7f7fba9681ef",
           "rig": null
         }
       ]
@@ -4191,6 +4259,23 @@
         }
       ]
     },
+    "toon-oven": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An oven whose door drops open. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "195e824f373d0cc7934881976a9e163a8013db120258134a80d27d38dc8ffd7e",
+          "rig": null
+        }
+      ]
+    },
     "toon-paw": {
       "kind": "prop",
       "style": "toon",
@@ -4238,6 +4323,23 @@
           "proof": "",
           "approval": null,
           "drawing": "07cdef4b137276c22b272faea4fa1eb0c06af2abd280e0539fbb80827d4e8611",
+          "rig": null
+        }
+      ]
+    },
+    "toon-plates": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Plates sliding out of an oven across the frame. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
           "rig": null
         }
       ]
@@ -4387,6 +4489,23 @@
         }
       ]
     },
+    "toon-shower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shower curtain pulled back on a stack of bins. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
+          "rig": null
+        }
+      ]
+    },
     "toon-sloth": {
       "kind": "character",
       "style": "toon",
@@ -4468,6 +4587,23 @@
         }
       ]
     },
+    "toon-sparkles": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Four-pointed glints on a clean room. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f189256a7e2b9cbc43cf00b62ced821f6bd2847962907941bab8c4a1b0c3f97",
+          "rig": null
+        }
+      ]
+    },
     "toon-speaker": {
       "kind": "prop",
       "style": "toon",
@@ -4519,6 +4655,23 @@
         }
       ]
     },
+    "toon-tiny-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A tiny chest whose top drawer opens on one sock. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6b35a7603e68613e5519cf4d4e3b1015402b01bb3eadd0b46d6d6063f5c04e78",
+          "rig": null
+        }
+      ]
+    },
     "toon-toast": {
       "kind": "graphic",
       "style": "toon",
@@ -4532,6 +4685,23 @@
           "proof": "",
           "approval": null,
           "drawing": "3af31d5083d0b3a10af5d9b3edef0cf6aed5157522c8c137fdea0d6ead827a00",
+          "rig": null
+        }
+      ]
+    },
+    "toon-whirl": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A spinning blur a character whirls in on. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "72618b7c94bbf74ca17ae02c8ba291f819e8a80dafa2cba4c92890e434c84417",
           "rig": null
         }
       ]

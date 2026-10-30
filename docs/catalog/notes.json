@@ -492,6 +492,14 @@
         "A voz da mãe vem pelo viva-voz antes de ela aparecer no púlpito, com a tarja do telejornal mudando entre as duas coletivas (<code>toon_world.lower_third</code>).",
         "Cada pessoa da multidão recebe a mensagem, lê e vai embora, uma de cada vez (<code>toon_world.night_street</code>)."
       ]
+    },
+    "i-cleaned": {
+      "number": "T30",
+      "lede": "Ele limpou. Tudo está fora de vista. Ninguém deveria abrir nada.",
+      "highlights": [
+        "Cada revelação fica atrás do personagem, num balcão que guarda o cacto e o código: a pilha sobe antes do balcão, então a assinatura fica por cima (<code>toon_flat.pile</code>).",
+        "O rodopio de entrada é lento o bastante para passar na checagem de flashes do motor."
+      ]
     }
   },
   "styles": {
@@ -619,7 +627,17 @@
     "toon-press-room": {"title": "Sala de coletiva"},
     "toon-mics": {"title": "Microfones no púlpito"},
     "toon-lower-third": {"title": "Tarja de telejornal"},
-    "toon-chopper": {"title": "Helicóptero na janela"}
+    "toon-chopper": {"title": "Helicóptero na janela"},
+    "toon-flat": {"title": "Apartamento impecável"},
+    "toon-closet": {"title": "Armário que explode"},
+    "toon-oven": {"title": "Forno de porta caída"},
+    "toon-plates": {"title": "Pratos deslizando"},
+    "toon-shower": {"title": "Cortina do chuveiro"},
+    "toon-front-door": {"title": "Porta da frente"},
+    "toon-laundry-pile": {"title": "Pilha de roupas"},
+    "toon-tiny-drawer": {"title": "Gaveta minúscula"},
+    "toon-whirl": {"title": "Rodopio"},
+    "toon-sparkles": {"title": "Brilhos de limpeza"}
   },
   "gallery": [
     {
@@ -4110,6 +4128,115 @@
         "at": 7.0
       },
       "text": "Entra pelo céu da janela e paira, enquanto o holofote varre o quadro por cima do personagem."
+    },
+    {
+      "section": "locations",
+      "name": "Apartamento impecável",
+      "parts": [
+        "toon-flat"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 1.2
+      },
+      "text": "Parede clara e rodapé branco, à espera do que está escondido atrás de cada porta."
+    },
+    {
+      "section": "props",
+      "name": "Armário que explode",
+      "parts": [
+        "toon-closet"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 3.6
+      },
+      "text": "A porta voa aberta no segundo pedido e mostra o escuro de dentro."
+    },
+    {
+      "section": "props",
+      "name": "Forno de porta caída",
+      "parts": [
+        "toon-oven",
+        "toon-plates"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 6.9
+      },
+      "text": "A porta cai e os pratos saem deslizando pelo quadro, um de cada vez."
+    },
+    {
+      "section": "props",
+      "name": "Cortina do chuveiro",
+      "parts": [
+        "toon-shower"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 8.7
+      },
+      "text": "A cortina corre para o lado e mostra as lixeiras empilhadas."
+    },
+    {
+      "section": "props",
+      "name": "Porta da frente",
+      "parts": [
+        "toon-front-door"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 11.8
+      },
+      "text": "Abre para um corredor com caixas até o teto."
+    },
+    {
+      "section": "props",
+      "name": "Pilha de roupas",
+      "parts": [
+        "toon-laundry-pile"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 12.7
+      },
+      "text": "Camisas caídas que sobem por cima de quem está em cena, até o queixo ou acima da cabeça."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta minúscula",
+      "parts": [
+        "toon-tiny-drawer"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 10.5
+      },
+      "text": "Uma cômoda pequena sobre o balcão; a gaveta de cima abre e sobe uma meia."
+    },
+    {
+      "section": "props",
+      "name": "Rodopio",
+      "parts": [
+        "toon-whirl"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 0.3
+      },
+      "text": "Um borrão que atravessa o quadro com o personagem dentro; tons próximos, para não piscar."
+    },
+    {
+      "section": "props",
+      "name": "Brilhos de limpeza",
+      "parts": [
+        "toon-sparkles"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 1.4
+      },
+      "text": "Estrelas de quatro pontas que piscam uma de cada vez."
     }
   ]
 }
