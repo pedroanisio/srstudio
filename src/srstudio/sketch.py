@@ -133,11 +133,14 @@ class Speaker:
 @dataclass(frozen=True)
 class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
-    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest."""
+    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
+    ``level`` is the part of the full voice it is said at: every take is levelled to one peak, so a line meant to come
+    out small is only small in the mix with a ``level`` under 1."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
+    level: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -227,6 +230,8 @@ def check(sketch: Sketch) -> None:
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
     for i, line in enumerate(sketch.lines):
+        if not (checks.number(line.level) and 0 < line.level <= 1):
+            raise SketchError(f"line {i}: a level is a part of the full voice, in 0..1, got {line.level!r}")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -756,7 +761,13 @@ def record(
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
         conform_clip(
-            spoken.wav, dst, trim.clip_in, trim.clip_in + kept, kept, gain_to_peak(trim.peak, VOICE_PEAK), ffmpeg
+            spoken.wav,
+            dst,
+            trim.clip_in,
+            trim.clip_in + kept,
+            kept,
+            gain_to_peak(trim.peak, VOICE_PEAK * line.level),
+            ffmpeg,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
