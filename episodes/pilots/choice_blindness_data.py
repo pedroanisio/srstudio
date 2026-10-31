@@ -22,7 +22,20 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import camera, look, mind_kit, scripting, sketch, toon, toon_cars, toon_house, toon_parlour, toon_rigs
+from srstudio import (
+    camera,
+    look,
+    mind_kit,
+    scripting,
+    sketch,
+    toon,
+    toon_cars,
+    toon_cast,
+    toon_critters,
+    toon_house,
+    toon_parlour,
+    toon_rigs,
+)
 from srstudio import foley as synth
 from srstudio.mind_kit import CORAL, INK, PAPER, SPOT
 from srstudio.sketch import Line, Sketch, Speaker
@@ -76,7 +89,12 @@ VERSIONS = {"toon-goat": 1, "toon-fox": 2}
 HEADS = ("goat", "fox")
 FIGURES = {"goat": (1.3, -5.0), "fox": (1.25, 150.0)}
 
-GOAT_COAT, GOAT_HOOF, FOX_COAT, FOX_PAW = "#a083d8", "#4a3a6a", "#e0652c", "#5a3024"
+GOAT_COAT, GOAT_HOOF, FOX_COAT, FOX_PAW = (
+    toon_critters.GOAT.coat,
+    toon_critters.GOAT_HOOF,
+    toon_cast.FOX.coat,
+    "#5a3024",
+)
 STAND_AT = ((362.0, 812.0), (456.0, 812.0))  # the two cones on the counter, points sunk in its edge
 STAND_SCALE = 0.64
 GOAT_ROOT, HAND = (255.0, 784.0), (445.0, 610.0)  # his arm starts where a resting hoof is, and covers it
