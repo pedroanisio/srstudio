@@ -8481,6 +8481,23 @@
         }
       ]
     },
+    "news-missing-card": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A missing-person flyer for an object. First drawn for missing-lid.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "773559e4df9d21daf41c1bc517b25d17bf25e431735a2283555315a62e1c5346",
+          "rig": null
+        }
+      ]
+    },
     "news-parody-tag": {
       "kind": "graphic",
       "style": "toon",

@@ -96,6 +96,7 @@ __all__ = [
     "TWO_SHOT",
     "banner",
     "bug",
+    "missing_card",
     "captions",
     "desk",
     "gus",
@@ -1318,6 +1319,34 @@ def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, i
     x = TEXT_RIGHT - wide
     _chip(cv, g, x, wide, PLUM_DEEP, BUTTER)
     _text(cv, g, "PARODY", x, BUG_Y, wide, BUG_H, 40, BUTTER, "center")
+
+
+MISSING_X, MISSING_Y, MISSING_W, MISSING_H = 794.0, 486.0, 236.0, 296.0  # beside the close-up's head, under the top row
+MISSING_HEAD = 66.0
+MISSING_SIZE = 36.0
+LID_FILL, LID_RIM = "#8fd4dc", "#5fb3c0"
+LID = ((-78, -34), (-62, -48), (62, -48), (78, -34), (78, 34), (62, 48), (-62, 48), (-78, 34))
+
+
+@register("graphic", "news-missing-card", summary="A missing-person flyer for an object: its picture and its name")
+def missing_card(
+    cv: Canvas, parent, label: str, start: float, end: float, measure: Measure, id: str = "news-missing-card"
+) -> None:
+    """A flyer beside a close-up's head: MISSING, a storage lid, and ``label`` under it; it refuses a label too wide."""
+    _span(start, end, "the missing card")
+    if not label.strip() or measure(label, MISSING_SIZE) > MISSING_W - 24.0:
+        raise NewsKitError(f"the missing card's label {label!r} must be some words that fit")
+    g = cv.group(parent, id, start=start, end=end)
+    x, y = MISSING_X, MISSING_Y
+    cv.rect(g, x + DROP[0], y + DROP[1], MISSING_W, MISSING_H, SHADOW, radius=CHIP)
+    cv.rect(g, x, y, MISSING_W, MISSING_H, CREAM, PLUM_DEEP, 4.0, radius=CHIP)
+    cv.rect(g, x, y, MISSING_W, MISSING_HEAD, PLUM_DEEP, radius=CHIP)
+    _text(cv, g, "MISSING", x, y + 6.0, MISSING_W, MISSING_HEAD - 12.0, 46, BUTTER, "center")
+    lid = cv.group(g, f"{id}-lid", x=x + MISSING_W / 2, y=y + 150.0)
+    _form(cv, lid, LID, LID_RIM, None, 3.0, 5.0, depth=0.0, amount=0.2)
+    _form(cv, lid, tuple((a * 0.8, b * 0.72) for a, b in LID), LID_FILL, None, 5.0, 2.5, depth=0.0, amount=0.2)
+    _form(cv, lid, ((64, -56), (98, -66), (104, -48), (76, -38)), LID_RIM, None, 7.0, 4.0, depth=0.0, amount=0.2)
+    _text(cv, g, label, x, y + MISSING_H - 62.0, MISSING_W, 48.0, MISSING_SIZE, PLUM_DEEP, "center")
 
 
 @register(

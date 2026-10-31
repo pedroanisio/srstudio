@@ -889,6 +889,9 @@
     "news-bug@2": {
       "title": "Marca do programa, versão 2"
     },
+    "news-missing-card": {
+      "title": "Cartaz de desaparecido"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
     },
@@ -7702,6 +7705,18 @@
         "at": 26.0
       },
       "text": "O telefone ocupa o quadro: o nome de uma conversa e as mensagens, uma de cada vez."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartaz de desaparecido",
+      "parts": [
+        "news-missing-card"
+      ],
+      "shot": {
+        "episode": "missing-lid",
+        "at": 1.0
+      },
+      "text": "Um cartaz de desaparecido para um objeto: o desenho dele e o nome, ao lado de quem apresenta."
     }
   ]
 }

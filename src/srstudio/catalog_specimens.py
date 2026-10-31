@@ -385,6 +385,7 @@ RECIPES: dict[str, Recipe] = {
         lettered(news_kit.Source("The Outlet", "Oct 30, 2026", "A headline, word for word"), 0.0, 1.8, SECONDS)
     ),
     "news-lower-third": Recipe(lettered("THE KICKER", "ONE LINE OF THE STORY", 0.0, SECONDS)),
+    "news-missing-card": Recipe(lettered("ONE LID", 0.0, SECONDS)),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),

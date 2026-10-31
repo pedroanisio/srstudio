@@ -361,6 +361,32 @@ def test_what_cannot_go_on_screen_is_still_refused(call, needle):
         call(canvas())
 
 
+def test_the_missing_card_shows_its_picture_and_its_name_for_its_window():
+    cv = canvas()
+    news_inked.missing_card(cv, cv.comp, "ONE LID", 2.0, 5.0, measure)
+    root = tree(cv)
+    card = next(node for node in root.iter() if node.get("id") == "news-missing-card")
+    assert (card.get("start"), card.get("end")) == ("2", "5")
+    drawn = ET.tostring(root, encoding="unicode")
+    assert "MISSING" in drawn and "ONE LID" in drawn
+    assert next(node for node in root.iter() if node.get("id") == "news-missing-card-lid") is not None
+
+
+@pytest.mark.parametrize(
+    ("label", "needle"), [("", "fit"), ("   ", "fit"), ("ONE LID, LAST SEEN AT A VERY LONG POTLUCK", "fit")]
+)
+def test_a_missing_card_that_cannot_be_read_is_refused(label, needle):
+    cv = canvas()
+    with pytest.raises(news_kit.NewsKitError, match=needle):
+        news_inked.missing_card(cv, cv.comp, label, 0.0, 1.0, measure)
+
+
+def test_a_missing_card_with_no_time_on_screen_is_refused():
+    cv = canvas()
+    with pytest.raises(news_kit.NewsKitError):
+        news_inked.missing_card(cv, cv.comp, "ONE LID", 2.0, 2.0, measure)
+
+
 def test_the_ticker_never_runs_out_of_words():
     cv = canvas()
     news_inked.ticker(cv, cv.comp, ("ONE",), 0.0, 30.0, measure)
