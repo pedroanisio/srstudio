@@ -97,7 +97,7 @@ def test_each_sketch_opens_on_its_hook(mods, name):
         return
     # rubric #1: the hook is an opening chosen for the premise, tagged for analytics, its first beat a spoken line
     # that has landed by HOOK_SECONDS; in the still arm of the sp-hook_motion test, a still shot instead, cut by
-    # HOOK_SECONDS to the first line
+    # HOOK_SECONDS to the first line. A reel recorded with a silent lead-in opens on a push (L7): its takes stand.
     tags = RELEASES[sk.slug].tags
     assert tags is not None, f"{sk.slug}: a new release carries its Tags"
     still = tags.test == "sp-hook_motion" and tags.arm == "a"
@@ -105,10 +105,12 @@ def test_each_sketch_opens_on_its_hook(mods, name):
         f"{sk.slug}: a still opening is the still arm's, and only its"
     )
     first, second = sk.beats[0], sk.beats[1]
-    assert first.start == 0.0 and first.line == (None if still else 0)
+    pushed = data[name].STAGING.push[1] > 1.0
+    assert not (still and pushed), f"{sk.slug}: a still opening does not push"
+    assert first.start == 0.0 and first.line == (None if still or pushed else 0)
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
-    if still:
-        assert second.line == 0, f"{sk.slug}: the still shot cuts to the first line"
+    if still or pushed:
+        assert second.line == 0, f"{sk.slug}: the silent shot cuts to the first line"
 
 
 def test_the_published_sketches_are_still_there():
