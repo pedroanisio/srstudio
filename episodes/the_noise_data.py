@@ -107,7 +107,7 @@ BEATS = (
     hold(28.71, "goat", "", "narrow", "flat", "desk"),  # then his eyes come round
     say(29.81, "fox", 14, "wince", "grimace", "sigh", wear=("sweat",)),
 )
-SKETCH = Sketch(SLUG, TITLE, (FOX, GOAT, FOX_LOW), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (FOX, GOAT, FOX_LOW), LINES, BEATS, END, bare=(WIDE,))
 
 
 def validate(sk: Sketch = SKETCH) -> None:

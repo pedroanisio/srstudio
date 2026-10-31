@@ -99,7 +99,7 @@ BEATS = (
     hold(30.22, WIDE, "", "wide", "flat", "desk", "close"),  # the music stops
     hold(31.42, WIDE, "", "wide", "flat", "desk", "wall"),
 )
-SKETCH = Sketch(SLUG, TITLE, (RABBIT, BEAR), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (RABBIT, BEAR), LINES, BEATS, END, bare=(WIDE,))
 ORDER = ("accused", "typed", "sorry", "forgiven", "typed-again", "finale", "settle", "spoiled", "close", "wall")
 
 

@@ -39,7 +39,6 @@ STAGING = Staging(
     desk=no_desk,
     lit=True,
     figures=FIGURES,
-    bare=(WIDE,),
     stickers=STICKERS,
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))

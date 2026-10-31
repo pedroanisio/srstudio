@@ -10,7 +10,7 @@ import sys
 
 from _common import project_root
 from instagram_posts import PINS, POSTS
-from left_at_door_data import ACCESSIBILITY, DESCRIPTION, FIGURES, NARRATION, SEED, SKETCH, TINTS, WIDE, dress, validate
+from left_at_door_data import ACCESSIBILITY, DESCRIPTION, FIGURES, NARRATION, SEED, SKETCH, TINTS, dress, validate
 from srstudio.toon_sketch import Staging, build
 from srstudio.toon_world import no_desk
 
@@ -27,7 +27,6 @@ STAGING = Staging(
     desk=no_desk,
     lit=True,
     figures=FIGURES,
-    bare=(WIDE,),
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
 if ep is not None:  # None: --init wrote the project files

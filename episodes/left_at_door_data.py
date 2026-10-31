@@ -112,7 +112,7 @@ BEATS = (
     say(26.71, "sloth", 8, "half", "flat", "desk", "again"),
     hold(28.36, WIDE, "", "wide", "flat", "desk", "ping"),
 )
-SKETCH = Sketch(SLUG, TITLE, (NARRATOR, FROG), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (NARRATOR, FROG), LINES, BEATS, END, bare=(WIDE,))
 ORDER = ("photo", "street", "door-green", "door-red", "door-blue", "gnome", "open", "shut", "again", "ping")
 
 

@@ -128,7 +128,7 @@ BEATS = (
     hold(29.09, WIDE, "", "wide", "flat", "desk", "pull"),
     say(32.09, WIDE, 14, "wide", "open", "desk"),
 )
-SKETCH = Sketch(SLUG, TITLE, (RABBIT, HEDGEHOG, LOW, FLOOR), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (RABBIT, HEDGEHOG, LOW, FLOOR), LINES, BEATS, END, bare=(WIDE,))
 
 
 def validate(sk: Sketch = SKETCH) -> None:

@@ -106,7 +106,7 @@ BEATS = (
     hold(22.85, WIDE, "", "wide", "flat", "desk", "lot"),
     hold(25.25, WIDE, "", "wide", "flat", "desk", "turn"),
 )
-SKETCH = Sketch(SLUG, TITLE, (GOAT, GOAT_LOW, BEAR), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (GOAT, GOAT_LOW, BEAR), LINES, BEATS, END, bare=(WIDE,))
 ORDER = ("stare", "write", "form", "out", "keys", "lot", "turn")
 
 

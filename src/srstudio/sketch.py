@@ -195,6 +195,7 @@ class Sketch:
     beats: tuple[Beat, ...]
     end: float
     cast: Cast = TOON_CAST
+    bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
 
 
 @dataclass(frozen=True)

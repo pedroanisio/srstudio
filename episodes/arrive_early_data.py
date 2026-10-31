@@ -119,7 +119,7 @@ BEATS = (
     hold(24.49, "frog", "", "down", "flat", "desk"),  # she does not look up
     say(25.49, "frog", 11, "half", "smirk", "desk", "turn"),
 )
-SKETCH = Sketch(SLUG, TITLE, (FROG, RACCOON, DOG), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (FROG, RACCOON, DOG), LINES, BEATS, END, bare=(WIDE,))
 
 
 def validate(sk: Sketch = SKETCH) -> None:

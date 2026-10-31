@@ -113,7 +113,7 @@ BEATS = (
     hold(27.0, "hedgehog", "", "down", "flat", "desk", "down", wear=("sweat",)),
     hold(28.4, "hedgehog", "", "half", "flat", "desk", wear=("sweat",)),
 )
-SKETCH = Sketch(SLUG, TITLE, (FRIEND, FAST), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (FRIEND, FAST), LINES, BEATS, END, bare=(WIDE,))
 ORDER = (*STOPS, "down")
 
 
