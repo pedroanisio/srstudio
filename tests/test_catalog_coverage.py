@@ -50,6 +50,7 @@ NO_EPISODE = [
     "toon-paper-insert",
     "toon-pipe",
     "toon-rolled-towel",
+    "toon-tasting-spoons",
     "toon-wrestled-sheet",
 ]
 NOT_SHOWN: dict[str, str] = {

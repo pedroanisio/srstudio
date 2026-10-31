@@ -230,3 +230,22 @@ def padlock(cv: Canvas, parent, at: Point = (400.0, 540.0), start: float = 0.0, 
     cv.ellipse(g, x - fh(8), y + fh(4), fh(16), fh(16), cv.ink)
     cv.rect(g, x - fh(4), y + fh(14), fh(8), fh(22), cv.ink, cv.clear, 0, radius=0)
     return g
+
+
+@register(
+    "prop", "toon-tasting-spoons", summary="Tiny tasting spoons that pile up on a counter, one per cue", style="toon"
+)
+def tasting_spoons(cv: Canvas, parent, cues: Sequence[float], at: Point = (450.0, 880.0), end: float = 4.0):
+    """One small pink spoon lands on the pile at reference ``at`` at every second of ``cues`` and stays to ``end``."""
+    times = _cues(cues, end, "a pile's spoons")
+    x0, y0 = at
+    g = cv.group(parent, cv.uid("g"))
+    per_row = 7
+    for k, t in enumerate(times):
+        row, col = k // per_row, k % per_row
+        x, y = x0 - 96 + col * 32 + (row % 2) * 14, y0 - row * 16
+        s = cv.group(g, cv.uid("g"), start=t, anchorX=fx(x), anchorY=fy(y), x=fx(x), y=fy(y))
+        s.rotation = 18 + (k * 53) % 130
+        cv.rect(s, fx(x) - fh(5), fy(y) - fh(38), fh(10), fh(60), "#ff9ab8", cv.ink, FINE_W * 0.4, radius=fh(4))
+        cv.ellipse(s, fx(x) - fh(11), fy(y) - fh(50), fh(22), fh(26), "#ff9ab8", cv.ink, FINE_W * 0.4)
+    return g
