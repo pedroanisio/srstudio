@@ -268,6 +268,9 @@ def dishes(cv: Canvas, parent, items: Sequence[tuple], id: str = "dish") -> None
 
 
 # -- the mint --------------------------------------------------------------------------------------------------------
+MINT_STRIPES = ((-0.92, -0.58), (-0.2, 0.2), (0.58, 0.92))  # each stripe's edges, as shares of the sweet's half-width
+
+
 @register(
     "prop",
     "toon-mint",
@@ -303,9 +306,8 @@ def mint(
         _local(cv, g, "M -26 -8 Q -8 -30 0 -14 Q 10 -32 26 -8 Q 0 2 -26 -8 Z", wrapper, FINE_W * 0.7)
         return
     cv.ellipse(g, fh(-28), fh(-52), fh(56), fh(50), "#fff7f2", cv.ink, INK_W * 0.8)
-    for dx in (-18, 0, 18):  # the stripes curve round it, as a boiled sweet's do
-        _local(cv, g, f"M {dx - 6} -49 Q {dx + 12} -27 {dx - 6} -5 L {dx + 4} -5 Q {dx + 22} -27 {dx + 4} -49 Z",
-               CLOTH_STRIPE, 0)  # fmt: skip
+    for left, right in MINT_STRIPES:  # each runs pole to pole round it, as a boiled sweet's do
+        _local(cv, g, f"M 0 -52 Q {left * 56} -27 0 -2 Q {right * 56} -27 0 -52 Z", CLOTH_STRIPE, 0)
     cv.ellipse(g, fh(-28), fh(-52), fh(56), fh(50), cv.clear, cv.ink, INK_W * 0.8)
     cv.ellipse(g, fh(-14), fh(-44), fh(16), fh(9), "#ffffff", opacity=0.8)
 
