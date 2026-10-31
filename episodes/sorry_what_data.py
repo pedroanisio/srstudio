@@ -38,6 +38,8 @@ LEAD = 0.45  # the silence before the first word
 ENGINE = Burst(1.3, 620.0, attack=0.02, decay=4.0, tone_hz=82.0, tone_end_hz=86.0, tone=0.35, flutter_hz=33.0)
 HISS = Burst(1.3, 5200.0, attack=0.02, decay=4.0, tone_hz=240.0, tone_end_hz=250.0, tone=0.1, flutter_hz=23.0)
 SUITCASE = "#b3734a"
+CASE = (770.0, 1236.0, 150.0, 104.0)  # at his feet: the ledge line hides its bottom edge
+CASE_HANDLE = 18.0
 ROPE_OUT = [(300, 790), (380, 730), (470, 760), (620, 700)]
 HORSE_DOOR = dict(at=(462, 486), scale=0.92)
 END = 31.8
@@ -146,8 +148,9 @@ def dress(shot) -> None:
         if app.start >= keith:
             toon_house.rope(cv, shot.front, [(292, 790), (346, 716), (404, 712), (462, 600)])
         else:
-            cv.rect(shot.back, cv.width * 0.64, cv.height * 0.56, 150, 104, SUITCASE, cv.ink, 5.0, radius=10)
-            cv.rect(shot.back, cv.width * 0.64 + 50, cv.height * 0.56 - 18, 50, 20, cv.clear, cv.ink, 5.0, radius=8)
+            x, y, w, h = CASE
+            cv.rect(shot.back, x + 50, y - CASE_HANDLE, 50, 20, cv.clear, cv.ink, 5.0, radius=8)
+            cv.rect(shot.back, x, y, w, h, SUITCASE, cv.ink, 5.0, radius=10)
         toon_house.ledge(cv, shot.front, "white")
     else:
         toon_world.yard(cv, shot.back, sign=None, table=False)
