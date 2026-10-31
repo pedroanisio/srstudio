@@ -93,6 +93,7 @@ DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the d
     "radialGradient": GRADIENT,
     "stop": frozenset({"color", "offset"}),
     "text": LETTERS | {"fontAsset"},
+    "image": frozenset({"src", "width", "height"}),  # a plate: its file is named by the digest of what it draws
     "geo": frozenset({"src", "sha256", "license", "credit"}),
     "map": frozenset({"width", "height", "projection", "centerLon", "centerLat", "zoom", "background"})
     | {"fitPadding", "outline", "outlineWidth"},
@@ -256,6 +257,19 @@ def _moth(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _clay(entry: registry.Entry) -> Canvas:
+    """Every face of a clay character, one plate at a time (ADR 0068)."""
+    from . import rafa_host
+
+    cv = _stage("toon", HOLD)
+    faces = rafa_host.part_plates(entry.name)
+    for n, plate in enumerate(faces):
+        shown = cv.group(cv.comp, cv.uid("g"), opacity=0.0)
+        cv.gate(shown, [(HOLD * n / len(faces), HOLD * (n + 1) / len(faces))])
+        rafa_host.place(cv, shown, plate)
+    return cv
+
+
 def _pigeon(entry: registry.Entry) -> Canvas:
     cv = _stage("cutout", HOLD)
     entry(cv, cv.comp, nods=[(0.0, 0.0), (1.0, 8.0)])
@@ -319,6 +333,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "pigeon": _pigeon,
     **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2", "news-vera@3", "news-gus@3"), _anchor),
     "host-lint": _moth,
+    "rafa": _clay,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
     "stick-figure": _traced_stick,

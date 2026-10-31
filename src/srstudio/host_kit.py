@@ -1,4 +1,6 @@
-"""The host kit: Lint, the moth in your wardrobe, and his talking-head show, The Unwritten Rules (ADR 0066).
+"""The host kit: the talking-head show The Unwritten Rules (ADR 0066). Who hosts it is a parameter (ADR 0068): Rafa, a
+clay man shot as plates in :mod:`srstudio.rafa_host`, hosts it from his pilot on. Lint, the moth in your wardrobe, is
+drawn here, keeps his delivered reel and takes no new work.
 
 One character talks straight to camera, so the mouth and the eyes carry the reel. A show is not a style of its own here,
 as with :mod:`srstudio.mind_kit`: :data:`HOST` is Toon's frame and recording road on its own clock, master and letters.
@@ -36,7 +38,7 @@ from .errors import SrstudioError
 from .fonts import GoogleFont
 from .head_motion import Channel, HeadPlan, HeadStyle, Spring
 from .registry import register
-from .sketch import TOON_CAST, Speaker
+from .sketch import TOON_CAST, Cast, Speaker
 from .styles import TOON, Font, Mix
 from .toon_head import _animate
 from .voice import Voice, VoiceSettings
@@ -954,9 +956,9 @@ def lint(cv: Canvas, parent, pose: Pose | None = None, start: float = 0.0, end: 
     return perform(cv, parent, parent, ((start, pose or Pose()),), start, end, mouths)
 
 
-def spoken(root: Path) -> list[Word]:
+def spoken(root: Path, cast: Cast = HOST_CAST) -> list[Word]:
     """Every word of the kept takes in ``root``, in order, on the project's clock, from ``voiced/speech.json``."""
-    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", HOST_CAST)
+    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", cast)
     return [
         (w.start, w.end, w.text)
         for take in sorted(takes, key=lambda t: t.at)
@@ -964,11 +966,12 @@ def spoken(root: Path) -> list[Word]:
     ]
 
 
-def head_plan(root: Path, end: float, voiced: bool) -> HeadPlan:
-    """His head over the whole reel: in a voiced build from the kept takes, in a silent one idle."""
-    takes = sketch.load_speech(Path(root) / "voiced" / "speech.json", HOST_CAST)[0] if voiced else []
+def head_plan(root: Path, end: float, voiced: bool, *, cast: Cast = HOST_CAST, style: HeadStyle = MOTION) -> HeadPlan:
+    """The host's head over the whole reel: in a voiced build from the kept takes, in a silent one idle. ``cast`` and
+    ``style`` say who the host is."""
+    takes = sketch.load_speech(Path(root) / "voiced" / "speech.json", cast)[0] if voiced else []
     said = [head_motion.speech_of(t.alignment, t.at, Path(root) / "audio" / f"vo-{t.id}.wav") for t in takes]
-    return head_motion.plan(MOTION, said, end)
+    return head_motion.plan(style, said, end)
 
 
 def light_spans(beats: Sequence[sketch.Beat], end: float) -> Spans:

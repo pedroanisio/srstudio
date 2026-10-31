@@ -4,11 +4,14 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0066: The Unwritten Rules: a talking-head host kit
 
-- Status: proposed
+- Status: proposed; the host is superseded by [ADR 0068](0068-rafa-clay-host-on-plates.md)
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Builds on [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync), [ADR 0021](0021-engine-native-features.md) (native
   captions) and [ADR 0050](0050-organic-head-motion.md) (head motion)
 - Back to the [library README](../../README.md)
+
+> Superseded in part. The operator's decision: "Rafa will replace Lint on the talking head pilot". The show, its bible
+> and its kit stand. The host below is now a parameter, Rafa takes the pilot, and Lint takes no new work.
 
 ## Context
 
