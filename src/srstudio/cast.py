@@ -61,13 +61,25 @@ def _options(perf: Performance, allowed: frozenset[str]) -> None:
         raise CastError("name: expected badge text or None")
 
 
+SIDES = ("left", "right")  # the screen sides an arm can be left off
+
+
+def _free_sides(perf: Performance) -> tuple[str, ...]:
+    """The screen sides a reel draws its own arm on, refused unless they are sides."""
+    free = perf.extras.get("free_arms", ())
+    if isinstance(free, str) or not set(free) <= set(SIDES):
+        raise CastError(f"free_arms names screen sides, {' and '.join(SIDES)}; got {free!r}")
+    return tuple(free)
+
+
 class OfficeActor(Actor):
     """Shared body of the interview series: white shirt, dark tie, head radius 100.
 
     extras: ``arms`` = ``"static"`` (one stroke for both arms) or ``"articulated"`` (a
     right-arm group with a forearm that can rotate at the elbow); ``legs`` = ``"seated"`` draws
     trousers and shoes below the torso, for a bench, and ``"standing"`` trousers straight down to the shoes,
-    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them).
+    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them); ``free_arms`` = screen sides (``left``,
+    ``right``) drawn with no arm, for a reel to reach with (:mod:`srstudio.cutout_reach`).
     """
 
     bottom = 312
@@ -75,7 +87,7 @@ class OfficeActor(Actor):
     eye_xs = (-37, 31)
     LEGS = ("seated", "standing")
     STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
-    extra_options = frozenset({"arms", "legs"})
+    extra_options = frozenset({"arms", "legs", "free_arms"})
 
     def validate_performance(self, perf: Performance) -> None:
         _options(perf, self.extra_options)
@@ -84,6 +96,8 @@ class OfficeActor(Actor):
         legs = perf.extras.get("legs")
         if legs is not None and legs not in self.LEGS:
             raise CastError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
+        if _free_sides(perf) and perf.extras.get("arms", "static") == "articulated":
+            raise CastError("free_arms: an articulated arm cannot be left out")
 
     def draw_body(self, g, perf: Performance):
         cv, ink, white, clear = self.cv, self.cv.ink, self.cv.white, self.cv.clear
@@ -101,8 +115,8 @@ class OfficeActor(Actor):
         cv.path(
             g, f"M-64 {bottom} L-68 154 Q-69 124 -39 120 Q-4 113 38 120 Q68 126 68 154 L64 {bottom}Z", white, ink, 4.5
         )
-        replaced = self.replaced_arms(perf)  # legacy arm names, by screen side
-        if perf.limbs:
+        replaced = self.replaced_arms(perf) | frozenset(_free_sides(perf))  # legacy arm names, by screen side
+        if perf.limbs or replaced:
             if "left" not in replaced:
                 cv.path(g, f"M-66 148 L-87 235 L-79 {bottom}", stroke=ink, sw=5)
             if "right" not in replaced:
@@ -333,17 +347,14 @@ class CafeActor(Actor):
     supports_limbs = True
     skin = "#F1D0AA"
     extra_options = frozenset({"skin", "free_arms"})
-    SIDES = ("left", "right")
 
     def validate_performance(self, perf: Performance) -> None:
         _options(perf, self.extra_options)
-        free = perf.extras.get("free_arms", ())
-        if isinstance(free, str) or not set(free) <= set(self.SIDES):
-            raise CastError(f"free_arms names screen sides, {' and '.join(self.SIDES)}; got {free!r}")
+        _free_sides(perf)
 
     def arms_left_out(self, perf: Performance) -> frozenset[str]:
         """The screen sides this actor does not draw an arm on: a limb track's, or a reel's own."""
-        return self.replaced_arms(perf) | frozenset(perf.extras.get("free_arms", ()))
+        return self.replaced_arms(perf) | frozenset(_free_sides(perf))
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
         role = role or self.role
