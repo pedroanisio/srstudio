@@ -6,6 +6,7 @@ phone size (:data:`READ_SIZE` frame pixels at least)."""
 
 from __future__ import annotations
 
+import textwrap
 from collections.abc import Callable, Sequence
 
 from . import checks
@@ -19,7 +20,7 @@ Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "reception_glass", "voice_note_bar"]
+__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "reception_glass", "voice_note_bar", "wifi_list"]
 
 
 def _second(value: object, what: str) -> float:
@@ -242,3 +243,80 @@ def gull_stare(
     w = 58 * scale
     cv.ellipse(eye, fx(x - r * 0.55 - w / 2), fy(y - 70 * scale - w / 2), fh(w), fh(w), STARE_IRIS, cv.ink, FINE_W)
     cv.ellipse(eye, fx(x - r * 0.55 - w / 4), fy(y - 70 * scale - w / 4), fh(w / 2), fh(w / 2), cv.ink)
+
+
+LIST_PANEL, LIST_ROW, LIST_NEW, LIST_TEXT, LIST_BAR = "#f6f6f2", "#ffffff", "#ffe27a", "#1d232b", "#3f7fbf"
+LIST_SIZE = 62  # frame pixels of a network's name
+LIST_WRAP = 19  # letters a line of it holds at that size
+LIST_LINE = 44.0  # reference pixels between the two lines of a long name
+LIST_ROW_H = 118.0  # reference height of a row
+LIST_LIT = 0.9  # seconds a changed row stays lit
+SPIN = 1.2  # seconds a turn of the searching wheel
+
+
+@register(
+    "graphic",
+    "toon-wifi-list",
+    summary="A phone's list of Wi-Fi networks, lettered to read at phone size, that refreshes and lights what changed",
+    style="toon",
+)
+def wifi_list(
+    cv: Canvas,
+    parent,
+    states: Sequence[tuple[float, Sequence[str]]] = ((0.0, ("BRUNO-HOME", "LINKSYS-204", "TURN IT DOWN")),),
+    end: float = 2.0,
+    top: float = 330.0,
+    title: str = "Wi-Fi",
+) -> None:
+    """The list from reference ``top`` down, across the frame. ``states`` are ``(project second, the names)``: the
+    first from 0, each a list of the same length up to 4 names that fit two lines, in rising order. A name that changed
+    is lit for :data:`LIST_LIT` seconds, and the wheel by the title keeps turning, so the list moves as it is read."""
+    if not states or states[0][0] != 0:
+        raise ToonDataError(f"a Wi-Fi list starts at 0, got {states!r}")
+    seconds = [_second(at, "a refresh") for at, _ in states]
+    count = len(states[0][1])
+    if seconds != sorted(set(seconds)) or not (checks.number(end) and end > seconds[-1]) or not 1 <= count <= 4:
+        raise ToonDataError(f"a Wi-Fi list refreshes in order before {end!r}, 1 to 4 names: {states!r}")
+    wrapped = []
+    for _, names in states:
+        lines = [textwrap.wrap(name, LIST_WRAP) for name in names]
+        if len(names) != count or not all(1 <= len(line) <= 2 and max(map(len, line)) <= LIST_WRAP for line in lines):
+            raise ToonDataError(f"a Wi-Fi list keeps {count} names of up to two lines: {names!r}")
+        wrapped.append(lines)
+    g = cv.group(parent, cv.uid("wifi-list"), end=end)
+    height = 96.0 + count * LIST_ROW_H + 18.0
+    cv.rect(g, fx(14), fy(top), fh(564), fh(height), LIST_PANEL, cv.ink, FINE_W, radius=fh(26))
+    cv.text(g, cv.uid("wifi-title"), title, fx(40), fy(top + 20), int(fh(300)), int(fh(62)), 76, LIST_TEXT, "start")
+    cx, cy = fx(530), fy(top + 50)
+    wheel = cv.group(g, cv.uid("g"), x=cx, y=cy, anchorX=cx, anchorY=cy)
+    turns = int(end / SPIN) + 1
+    cv.keys(wheel, "rotation", [(k * SPIN, k * 360.0) for k in range(turns + 1)], hold=False, local=False)
+    for k in range(8):
+        dx, dy = ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))[k]
+        cv.ellipse(
+            wheel, cx + fh(24 * dx) - fh(5), cy + fh(24 * dy) - fh(5), fh(10), fh(10), LIST_BAR, opacity=(k + 1) / 8
+        )
+    for n, (at, stop, lines) in enumerate(zip(seconds, [*seconds[1:], end], wrapped, strict=True)):
+        page = cv.group(g, cv.uid("g"), start=at, end=stop)
+        for row, line in enumerate(lines):
+            y = top + 96 + row * LIST_ROW_H
+            changed = n > 0 and line != wrapped[n - 1][row]
+            cv.rect(page, fx(26), fy(y), fh(540), fh(LIST_ROW_H - 10), LIST_ROW, radius=fh(14))
+            if changed:
+                lit = cv.group(page, cv.uid("g"), start=at, end=min(stop, at + LIST_LIT))
+                cv.rect(lit, fx(26), fy(y), fh(540), fh(LIST_ROW_H - 10), LIST_NEW, radius=fh(14))
+            first = y + (LIST_ROW_H - 10 - LIST_LINE * len(line)) / 2 - 2
+            for k, words in enumerate(line):
+                name = cv.uid("wifi-name")
+                cv.text(
+                    page,
+                    name,
+                    words,
+                    fx(40),
+                    fy(first + k * LIST_LINE),
+                    int(fh(516)),
+                    int(fh(LIST_LINE)),
+                    LIST_SIZE,
+                    LIST_TEXT,
+                    "start",
+                )

@@ -9273,6 +9273,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-wifi-list": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A Wi-Fi list that refreshes, lettered to read at phone size. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c5645544b3989912cc8e3f39f10c0090a08b9c872de7afde02aee5234bebbc10",
+          "rig": null
+        }
+      ]
     }
   }
 }

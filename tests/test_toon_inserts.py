@@ -114,3 +114,36 @@ def test_a_gull_refuses_a_turn_it_has_no_time_for(bad):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.gull_stare(cv, cv.comp, **bad)
+
+
+def test_a_wifi_list_reads_on_a_phone_and_lights_what_changed():
+    specimens.load_parts()
+    assert registry.get("graphic", "toon-wifi-list").builder is toon_inserts.wifi_list
+    cv = canvas()
+    states = ((0.0, ("BRUNO-HOME", "TURN IT DOWN")), (2.0, ("BRUNO-HOME", "GREAT SHOW. THE SISTER DID IT.")))
+    toon_inserts.wifi_list(cv, cv.comp, states, end=4.0)
+    assert "GREAT SHOW. THE SISTER" in " ".join(texts(cv))
+    sizes = [int(n.get("size")) for n in tree(cv).iter() if n.get("size")]
+    assert min(sizes) >= toon_inserts.READ_SIZE
+    lit = [n for n in tree(cv).iter() if n.get("fill") == toon_inserts.LIST_NEW]
+    assert len(lit) == 1  # the one name that changed, once
+    assert [a for a in tree(cv).iter("animate") if a.get("property") == "rotation"]
+
+
+@pytest.mark.parametrize(
+    "states",
+    [
+        (),
+        ((1.0, ("A",)),),
+        ((0.0, ()),),
+        ((0.0, ("A", "B", "C", "D", "E")),),
+        ((0.0, ("A",)), (0.0, ("B",))),
+        ((0.0, ("A",)), (1.0, ("B", "C"))),
+        ((0.0, ("A VERY LONG NAME INDEED THAT WILL NEVER FIT ON TWO LINES OF A PHONE",)),),
+        ((0.0, ("A",)), (9.0, ("B",))),
+    ],
+)
+def test_a_wifi_list_refuses_what_it_cannot_show(states):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.wifi_list(cv, cv.comp, states, end=4.0)

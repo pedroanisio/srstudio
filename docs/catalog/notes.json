@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "toon-wifi-list": {"title": "Lista de Wi-Fi"},
     "toon-gull-stare": {"title": "Gaivota que encara"},
     "toon-voice-note-bar": {"title": "Barra de áudio"},
     "toon-reception-glass": {"title": "Vidro da recepção"},
@@ -7735,6 +7736,7 @@
     {"section": "props", "name": "Colírio", "parts": ["toon-eye-drops"], "shot": {"episode": "someone-else", "at": 21.0}, "text": "O frasco entra sobre o rosto e duas gotas caem no olho: de onde vêm as lágrimas."},
     {"section": "props", "name": "Vidro da recepção", "parts": ["toon-reception-glass"], "shot": {"episode": "arrive-early", "at": 4.0}, "text": "O vidro de correr com o furo de falar: quem está atrás dele manda."},
     {"section": "graphics", "name": "Barra de áudio", "parts": ["toon-voice-note-bar"], "shot": {"episode": "voice-note", "at": 3.0}, "text": "O áudio de onze minutos: a barra enche devagar e o tempo aparece grande o bastante para ler no celular."},
-    {"section": "props", "name": "Gaivota que encara", "parts": ["toon-gull-stare"], "shot": {"episode": "full-coverage", "at": 1.0}, "text": "A cabeça da gaivota vira devagar até um olho encontrar você."}
+    {"section": "props", "name": "Gaivota que encara", "parts": ["toon-gull-stare"], "shot": {"episode": "full-coverage", "at": 1.0}, "text": "A cabeça da gaivota vira devagar até um olho encontrar você."},
+    {"section": "graphics", "name": "Lista de Wi-Fi", "parts": ["toon-wifi-list"], "shot": {"episode": "network-names", "at": 1.0}, "text": "A lista de redes, em letras que dão para ler no celular; o nome que mudou acende."}
   ]
 }
