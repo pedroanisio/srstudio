@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import parts, releases
+from srstudio import parts, releases, subtitles
 from srstudio.releases import Release, ReleaseError
 from srstudio.social import InstagramPost, Item
 from srstudio.thumbnail import Thumbnail
@@ -344,3 +344,37 @@ def test_a_published_video_is_not_read_for_doubled_captions(tmp_path):
     project.mkdir()
     (project / "a-b.scene.xml").write_text("<scene")
     assert releases.doubled_captions({"a-b": Release("a-b", POST)}, tmp_path, ()) == []
+
+
+def on_cover_project(tmp_path: Path, srt: str = "1\n00:00:00,200 --> 00:00:02,000\nHello.\n") -> Path:
+    project = tmp_path / "a-b"
+    project.mkdir()
+    (project / "a-b.srt").write_text(srt)
+    return tmp_path
+
+
+def test_a_cover_whose_frame_carries_a_caption_is_named(tmp_path):
+    drift = releases.caption_on_cover({"a-b": Release("a-b", POST)}, on_cover_project(tmp_path), {"a-b"})
+    assert [(d.name, d.reason) for d in drift] == [("a-b", 'the cover frame at 1.00 s carries the caption "Hello."')]
+
+
+def test_a_cover_on_a_clean_frame_or_drawn_from_the_cover_variant_passes(tmp_path):
+    episodes = on_cover_project(tmp_path, "1\n00:00:02,000 --> 00:00:03,000\nHello.\n")
+    assert releases.caption_on_cover({"a-b": Release("a-b", POST)}, episodes, {"a-b"}) == []
+    (tmp_path / "x").mkdir()
+    late = on_cover_project(tmp_path / "x")
+    assert releases.caption_on_cover({"a-b": Release("a-b", POST, cover=True)}, late, {"a-b"}) == []
+
+
+def test_a_published_video_or_a_project_with_no_captions_is_not_read(tmp_path):
+    release = {"a-b": Release("a-b", POST)}
+    assert releases.caption_on_cover(release, tmp_path, {"a-b"}) == []
+    assert releases.caption_on_cover(release, on_cover_project(tmp_path), ()) == []
+
+
+def test_a_written_srt_reads_back_and_a_broken_one_is_refused(tmp_path):
+    srt = subtitles.write_srt(tmp_path / "a.srt", [(0.2, 1.75, "Hello."), (61.0, 62.5, "Two\nlines")])
+    assert subtitles.read_srt(srt) == [(0.2, 1.75, "Hello."), (61.0, 62.5, "Two\nlines")]
+    srt.write_text("1\nnot a time\nHello.\n")
+    with pytest.raises(subtitles.SubtitleError, match="not a subtitle block"):
+        subtitles.read_srt(srt)
