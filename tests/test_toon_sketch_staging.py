@@ -92,6 +92,16 @@ def test_a_build_refuses_a_pin_it_cannot_draw(pinned_fonts, tmp_path):
         built(tmp_path, silent(fox_sketch(), versions={"toon-fox": 9}), pinned_fonts)
 
 
+def test_the_opening_push_moves_the_first_shot_and_no_other(pinned_fonts, tmp_path):
+    sk = Sketch("push-test", "Push test", SPEAKERS, LINES, STILL, END)
+    _, xml = built(tmp_path, replace(silent(sk), camera=toon_sketch.opening_push(1.08)), pinned_fonts)
+    shots = xml.findall(".//group[@id]")
+    moved = [g.get("id") for g in shots if g.get("id", "").startswith("shot-") and g.find("animate") is not None]
+    assert moved == ["shot-001"]
+    with pytest.raises(toon_sketch.StagingError, match="above 1"):
+        toon_sketch.opening_push(1.0)
+
+
 def test_a_sketch_may_open_on_a_still_uncaptioned_beat_and_caption_its_first_line_later(pinned_fonts, tmp_path):
     sk = Sketch("still-test", "Still test", SPEAKERS, LINES, STILL, END)
     sketch.check(sk)

@@ -107,6 +107,11 @@ def test_each_sketch_opens_on_its_hook(mods, name):
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
     if first.line is None:
         assert second.line == 0, f"{sk.slug}: a silent opening cuts to the first line"
+    silent_head = still or data[name].STAGING.push > 0  # arm b on a recording that kept its silent second
+    assert first.start == 0.0 and first.line == (None if silent_head else 0)
+    assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
+    if silent_head:
+        assert second.line == 0, f"{sk.slug}: the silent shot cuts to the first line"
 
 
 def test_the_published_sketches_are_still_there():

@@ -12,7 +12,7 @@ from dataclasses import replace
 
 from srstudio import foley, scripting, sketch, toon_house, toon_odds, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
-from srstudio.toon_sketch import Sound
+from srstudio.toon_sketch import Sound, opening_push
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3106
@@ -175,5 +175,6 @@ STAGING_ARGS = dict(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    camera=opening_push(),
     desk=toon_world.no_desk,
 )

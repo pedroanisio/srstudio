@@ -24,7 +24,7 @@ RELEASE = Release(
         "recognition",
         recurring=("rex", "fern"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
         recipient="a",
     ),
     style="Toon",

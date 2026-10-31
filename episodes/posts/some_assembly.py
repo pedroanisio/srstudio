@@ -25,7 +25,7 @@ RELEASE = Release(
         "tension",
         recurring=("noor", "dev"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
         recipient="b",
         to="partner",
     ),

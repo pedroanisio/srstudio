@@ -18,7 +18,7 @@ RELEASE = Release(
         hashtags=('#webmd', '#doctor', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("You have a headache.", 3.4, "Toon 33"),
     ),
-    tags=Tags("own-worst-enemy", "protagonist", "tension", test="sp-hook_motion", arm="a", recipient="a"),
+    tags=Tags("own-worst-enemy", "protagonist", "tension", test="sp-hook_motion", arm="b", recipient="a"),
     style="Toon",
     parts={
         "signature-cactus": 1,
