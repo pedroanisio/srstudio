@@ -83,7 +83,7 @@ BEATS, END = timed(
         (1.0, "rosa", "", "half", "smug", "down", "reveal:hold"),
         (0.7, "rosa", "", "half", "smile", "point", "swat"),  # the flick
         (1.6, "jun", "", "open", "flat", "hold", "reveal:insert"),
-        (1.0, "gary", "", "wide", "frown", "down", "sting"),
+        (1.0, "gary", "", "wide", "frown", "hold", "sting"),
     ),
     tail=1.0,
 )
@@ -122,6 +122,8 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if app.start == insert:
             return collage.face(collage.LOOKS[app.who])
+        if app.start > insert:  # his forearms go behind the wallet whatever the recording's poses say
+            return solo(cv, parent, replace(app, poses=[{**p, "arms": "hold"} for p in app.poses]), mouths)
         if app.start == rise:
             up = cv.group(parent, cv.uid("g"))
             cv.keys(up, "y", [(rise + 0.1, 330.0), (rise + 0.8, 0.0)], kind="sine-in-out", local=False)
@@ -209,8 +211,8 @@ def _wallet(shot) -> None:
     """Gary with his wallet open: the slot it should be in."""
     cv, front = shot.cv, shot.front
     collage_things.wallet(cv, front, 540.0, 1590.0, 640.0, cards=(HIS_CARD, OMAR_CARD))
-    collage_everyday.arm(cv, front, "gary", (-40.0, 1990.0), (250.0, 1640.0))
-    collage_everyday.arm(cv, front, "gary", (1120.0, 1990.0), (830.0, 1640.0))
+    collage_everyday.arm(cv, front, "gary", (206.0, 1630.0), (262.0, 1640.0))  # from the elbows of his "hold" pose
+    collage_everyday.arm(cv, front, "gary", (874.0, 1630.0), (818.0, 1640.0))
 
 
 def dress(shot) -> None:
