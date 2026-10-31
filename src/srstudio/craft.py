@@ -7,7 +7,8 @@ under :data:`CUT` is a punch-in on the cut, :data:`~srstudio.camera.SNAP` or fas
 and marked as the camera when the group is a location, an angle, a shot or a setup.
 :func:`pauses` finds the silences between the lines of ``dialogue.json``, ``narration.json`` or a takes
 ``timeline.json``, and :func:`levels` measures the rendered sound inside each one, so a pause meant to be awkward is
-shown to be quiet, or filled.
+shown to be quiet, or filled. :func:`opening_silences` measures the first seconds as well, where :func:`pauses` is
+blind to the wait before the first line.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
 
@@ -42,14 +43,17 @@ __all__ = [
     "moves",
     "lines",
     "pauses",
+    "opening_silences",
     "levels",
     "measure",
 ]
 
-SCHEMA = "1.0.0"
+SCHEMA = "1.1.0"  # 1.1.0: the opening's silences
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 PAUSE = 0.8  # seconds between lines that count as a pause
+OPENING = 5.0  # seconds of a reel that have to hold a stranger
+OPENING_LIMIT = 1.0  # seconds without a line that the opening can afford
 QUIET_DB = -35.0  # mean level at or under which a pause is quiet: no music or effect fills it
 FLOOR_DB = -120.0  # how digital silence (-inf) is written in the JSON report
 CAMERA = re.compile(r"location-.+|.+-angle|shot-.+|setup-.+")
@@ -92,6 +96,7 @@ class Craft:
     slug: str
     moves: list[Move]
     pauses: list[Pause]
+    opening: list[tuple[float, float]]
 
     def to_dict(self) -> dict:
         return {
@@ -107,6 +112,7 @@ class Craft:
                 }
                 for p in self.pauses
             ],
+            "opening": [{"start": a, "end": b} for a, b in self.opening],
         }
 
 
@@ -273,6 +279,24 @@ def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> l
     return gaps
 
 
+def opening_silences(
+    spoken: Sequence[tuple[float, float]], *, within: float = OPENING, limit: float = OPENING_LIMIT
+) -> list[tuple[float, float]]:
+    """The stretches of at least ``limit`` seconds with no line in the first ``within`` seconds: gaps between lines,
+    and the wait before the first line and after the last. A sound effect or a gag can fill one, so read the picture."""
+    if not (checks.number(within) and within > 0 and checks.number(limit) and limit > 0):
+        raise CraftError(f"an opening of {within} s with a limit of {limit} s is not one")
+    gaps: list[tuple[float, float]] = []
+    heard_until = 0.0
+    for start, end in sorted(spoken):
+        if min(start, within) - heard_until >= limit:
+            gaps.append((heard_until, min(start, within)))
+        heard_until = max(heard_until, end)
+    if within - heard_until >= limit:
+        gaps.append((heard_until, within))
+    return gaps
+
+
 def levels(
     video: Path,
     spans: Sequence[tuple[float, float]],
@@ -314,7 +338,8 @@ def measure(
     scene = project / f"{project.name}.scene.xml"
     if not scene.is_file():
         raise CraftError(f"{project} has no scene {scene.name}")
-    gaps = pauses(lines(project), threshold)
+    spoken = lines(project)
+    gaps = pauses(spoken, threshold)
     measured: Sequence[float | None] = [None] * len(gaps)
     if video is not None:
         measured = list(levels(Path(video), gaps))
@@ -324,4 +349,5 @@ def measure(
         project.name,
         moves(scene.read_bytes()),
         list(Pause(round(a, 3), round(b, 3), level) for (a, b), level in zip(gaps, measured, strict=True)),
+        [(round(a, 3), round(b, 3)) for a, b in opening_silences(spoken)],
     )
