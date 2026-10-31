@@ -131,6 +131,25 @@ def test_changed_package_metadata_gets_a_new_version(scene_render, tmp_path):
     assert manifest(second)["package"]["title"] == "Revised title"
 
 
+def geo_project(root):
+    folder = project(root)
+    (folder / "assets" / "maps").mkdir(parents=True)
+    layer = folder / "assets" / "maps" / "land.geojson"
+    layer.write_text('{"type": "FeatureCollection", "features": []}\n')
+    scene = read(folder / "demo.scene.xml")
+    scene.add_assets().add_geo(id="land", src="assets/maps/land.geojson", sha256=package.sha256(layer), license="CC0")
+    write(scene, folder / "demo.scene.xml")
+    xml = folder / "demo.scene.xml"
+    xml.write_text(xml.read_text().replace('<scene version="1.0"', '<scene version="1.1"', 1))  # <geo> arrived in 1.1
+    return folder
+
+
+def test_a_map_layer_the_scene_reads_travels_in_the_package(scene_render, tmp_path):
+    built = package.pack(geo_project(tmp_path), tmp_path / "vpkg", post(), engine=scene_render)
+    with zipfile.ZipFile(built) as z:
+        assert "project/assets/maps/land.geojson" in z.namelist()
+
+
 def test_a_project_without_its_scene_is_refused(tmp_path):
     folder = tmp_path / "episodes" / "demo"
     folder.mkdir(parents=True)

@@ -20,6 +20,7 @@ import tempfile
 import zipfile
 from collections.abc import Callable
 from pathlib import Path
+from xml.etree import ElementTree
 
 from . import digest
 from .errors import SrstudioError
@@ -101,6 +102,11 @@ def _contents(path: Path) -> dict:
     return data
 
 
+def _geo_layers(scene: Path) -> list[str]:
+    """The ``<geo>`` files ``scene`` reads. The packer does not follow that element, so the package names them."""
+    return [el.attrib["src"] for el in ElementTree.parse(scene).iter() if el.tag.rpartition("}")[2] == "geo"]
+
+
 def _tool(explicit: Path | str | None) -> Path:
     beside = Path(sys.executable).with_name("scenerender-vpkg")
     found = explicit or (beside if beside.is_file() else shutil.which("scenerender-vpkg"))
@@ -162,7 +168,7 @@ def pack(
     try:
         source = work / slug
         shutil.copytree(project, source, ignore=shutil.ignore_patterns("vpkg.json", "*.lock", "renders"))
-        spec = manifest(slug, post, version=version, engine_version=m.group(1))
+        spec = manifest(slug, post, version=version, engine_version=m.group(1)) | {"include": _geo_layers(scene)}
         (source / "vpkg.json").write_text(json.dumps(spec, indent=2) + "\n")
         _step(run, [vpkg, "pack", "-o", work, source], f"scenerender-vpkg pack failed for {slug}")
         built = work / f"{slug}-{version}.vpkg.zip"
