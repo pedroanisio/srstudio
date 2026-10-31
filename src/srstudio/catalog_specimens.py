@@ -432,6 +432,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
     "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
     "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s
+    "water-splash": Recipe(part(), at=0.2),  # every bead has fallen back by 0.48 s
     # -- graphics -------------------------------------------------------------------------------------------------
     "signature-code": Recipe(part(540, 960, height=40)),
     "episode-slate": Recipe(part("08", "CAMERA OFF"), at=0.4),  # it fades out by one second
