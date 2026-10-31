@@ -1,6 +1,7 @@
 """Toon dinner: the restaurant booth, the laid table that stands in for the desk, the dishes on it and the card
 reader whose screen changes on cue."""
 
+import re
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -153,6 +154,22 @@ def test_a_mint_arrives_on_cue():
     toon_dinner.mint(cv, cv.comp, start=3.0, id="m")
     node = next(g for g in tree(cv).iter("group") if g.get("id") == "m")
     assert [float(k.get("time")) for k in node.find("animate")] == [0.0, 3.0]
+
+
+def test_a_mints_stripes_stay_inside_the_sweet():
+    cv = canvas()
+    toon_dinner.mint(cv, cv.comp, (300, 820))
+    half_w, half_h, centre = toon.fh(28), toon.fh(25), toon.fh(-27)
+    stripes = [s for s in ET.fromstring(cv.scene.to_bytes(layout="pretty")).iter("shape")
+               if s.get("fill") == toon_dinner.CLOTH_STRIPE and s.get("path")]  # fmt: skip
+    assert len(stripes) == len(toon_dinner.MINT_STRIPES)
+    for stripe in stripes:
+        n = [float(v) for v in re.findall(r"-?\d+\.?\d*", stripe.get("path"))]
+        for start, control, end in (((n[0], n[1]), n[2:4], n[4:6]), (n[4:6], n[6:8], n[8:10])):
+            for t in (k / 10 for k in range(11)):
+                x = (1 - t) ** 2 * start[0] + 2 * t * (1 - t) * control[0] + t**2 * end[0]
+                y = (1 - t) ** 2 * start[1] + 2 * t * (1 - t) * control[1] + t**2 * end[1]
+                assert (x / half_w) ** 2 + ((y - centre) / half_h) ** 2 <= 1.0 + 1e-6
 
 
 def test_an_eaten_mint_leaves_less_on_the_saucer():
