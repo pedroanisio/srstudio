@@ -20,6 +20,7 @@ __all__ = ["SoftOddError", "bottle", "grill", "in_hand", "pizza_box", "smoke", "
 METAL, METAL_LIGHT, METAL_DARK = blob.METAL, blob.METAL_LIGHT, blob.METAL_DARK
 CHAR = "#2A211C"
 SNAP = 0.07  # seconds tongs stay shut
+FLIP_LIFT = 0.12  # seconds a turned burger takes to leave the grate
 TONGS_OPEN = 7.0  # degrees either arm stands off the middle
 FLAME_LEVELS = 4  # none, licks, flames, a fire
 SMOKE_LEVELS = 4  # none, a thread, smoke, thick
@@ -144,6 +145,8 @@ def grill(
     for name, value in (("char", char), ("flip", flip)):
         if value is not None and not (checks.number(value) and 0 <= value < end):
             raise SoftOddError(f"a grill's {name} is a time within {end}, got {value!r}")
+    if flip is not None and flip <= FLIP_LIFT:
+        raise SoftOddError(f"a burger is turned from {FLIP_LIFT} s on, got {flip!r}")
     ink = cv.ink
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
     for x0, x1 in ((-120, -190), (120, 190), (0, 0)):
@@ -177,7 +180,8 @@ def grill(
         at = -170 + gap * (k + 0.5)
         burger = cv.group(g, f"{id}-burger-{k + 1}", x=at, y=-314)
         if flip is not None and k == burgers // 2:
-            cv.keys(burger, "y", [(0.0, -314.0), (flip, -372.0), (flip + 0.2, -314.0)], False)
+            lifted = flip - FLIP_LIFT  # it lies on the grate until it is turned
+            cv.keys(burger, "y", [(0.0, -314.0), (lifted, -314.0), (flip, -372.0), (flip + 0.2, -314.0)], False)
             cv.keys(burger, "rotation", [(0.0, 0.0), (flip, 0.0), (flip + 0.2, 360.0)], False)
         cv.ellipse(burger, -48, -18, 96, 34, "#8A5A3A", ink, 4)
         if char is not None:

@@ -132,3 +132,11 @@ def test_a_pizza_box_has_no_lettering_to_leave_the_safe_area_and_a_bottle_takes_
     assert "#E2B64E" in ET.tostring(t, encoding="unicode")
     with pytest.raises(SoftOddError, match="positive scale"):
         soft_odds.pizza_box(cv, cv.comp, 540, 900, scale=-1)
+
+
+def test_a_burger_lies_on_the_grate_until_it_is_turned():
+    cv = canvas()
+    soft_odds.grill(cv, cv.comp, 500, 1500, end=END, flip=4.0, id="g")
+    assert keys(groups(cv)["g-burger-2"], "y")[:2] == [(0.0, -314.0), (4.0 - soft_odds.FLIP_LIFT, -314.0)]
+    with pytest.raises(SoftOddError, match="turned from"):
+        soft_odds.grill(cv, cv.comp, 500, 1500, end=END, flip=soft_odds.FLIP_LIFT / 2)
