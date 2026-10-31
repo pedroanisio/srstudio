@@ -1166,6 +1166,12 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-quilt-pull": {"title": "Edredom puxado"},
+    "soft-handshake": {"title": "Aperto de mão"},
+    "soft-open-briefcase": {"title": "Maleta aberta"},
+    "soft-bedside-lamp": {"title": "Abajur"},
+    "soft-picture-book": {"title": "Livro infantil"},
+    "soft-wall-clock": {"title": "Relógio de parede, Soft"},
     "robe-and-blazer": {"title": "Blazer sobre roupão"},
     "banknotes": {"title": "Duas notas"},
     "cue-cards": {"title": "Cartões de deixa"},
@@ -8376,6 +8382,78 @@
         "at": 2.0
       },
       "text": "O blazer por cima do roupão: a roupa de quem atende em casa."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de parede",
+      "parts": [
+        "soft-wall-clock"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 6.8
+      },
+      "text": "O relógio redondo que o Bo olha antes de ceder."
+    },
+    {
+      "section": "props",
+      "name": "Livro infantil",
+      "parts": [
+        "soft-picture-book"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 13.0
+      },
+      "text": "O livro que escorrega do peito do Bo quando ele dorme."
+    },
+    {
+      "section": "props",
+      "name": "Abajur",
+      "parts": [
+        "soft-bedside-lamp"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 2.0
+      },
+      "text": "O abajur na mesa de cabeceira, aceso até o clique."
+    },
+    {
+      "section": "props",
+      "name": "Maleta aberta",
+      "parts": [
+        "soft-open-briefcase"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 1.0
+      },
+      "text": "A maleta aberta no edredom, com o contrato dentro."
+    },
+    {
+      "section": "props",
+      "name": "Aperto de mão",
+      "parts": [
+        "soft-handshake"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 11.0
+      },
+      "text": "O acordo em close: a mão pequena e a mão grande."
+    },
+    {
+      "section": "props",
+      "name": "Edredom puxado",
+      "parts": [
+        "soft-quilt-pull"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 19.9
+      },
+      "text": "O edredom sobe até o queixo de quem dormiu."
     }
   ]
 }
