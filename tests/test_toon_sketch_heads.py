@@ -27,6 +27,7 @@ from srstudio import (
     toon_sketch,
     usage,
 )
+from srstudio.narration import narration_cues
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import MODEL, Alignment, Transcript, Voice, VoiceSettings
 
@@ -301,3 +302,35 @@ def test_on_face_reaches_only_the_character_it_names(pinned_fonts, tmp_path):
     ep = toon_sketch.build(root, staged(heads=BOTH, on_face={"goat": foam}), set())
     assert seen and set(seen) == {"goat"}
     assert sum(1 for s in tree(ep).iter("shape") if s.get("fill") == "#123456") == len(seen)
+
+
+def bed_project(tmp_path: Path, fonts: Path, role: str | None) -> Path:
+    root = project(tmp_path / "p", fonts, voiced=True)
+    manifest = root / "narration.json"
+    data = json.loads(manifest.read_text())
+    bed = root / "audio" / "bed.wav"
+    shutil.copy(root / data["items"][0]["audio"], bed)
+    data["effects"] = [sketch.effect("bed", 0.0, -12.0, root, bed, role=role or "effects")]
+    manifest.write_text(json.dumps(data))
+    return root
+
+
+def test_a_music_effect_ducks_under_every_line_and_stays_down_through_the_holds(pinned_fonts, tmp_path):
+    root = bed_project(tmp_path, pinned_fonts, "music")
+    xml = tree(toon_sketch.build(root, staged(), {"--voice"}))
+    (bed,) = [t for t in xml.iter("audioTrack") if t.get("asset") == "fx-bed"]
+    spoken = [t.get("id") for t in xml.iter("audioTrack") if t.get("role") == "dialogue"]
+    assert bed.get("role") == "music" and bed.get("duckUnder").split() == spoken
+    assert float(bed.get("duckAmount")) == toon_sketch.BED_DUCK
+    cues = narration_cues(root / "narration.json", root)
+    gaps = craft.pauses([(q.start, q.start + q.duration) for q in cues], toon_sketch.BED_HOLD)
+    assert gaps, "the fixture has a hold to keep the bed down through"
+    held = [float(k.get("value")) for k in bed.find("animate[@property='gain']").findall("key")]
+    assert held.count(-12.0 + craft.HUSH) == 2 * len(gaps)
+
+
+def test_an_effect_stays_an_effect_and_nothing_is_ducked(pinned_fonts, tmp_path):
+    root = bed_project(tmp_path, pinned_fonts, None)
+    xml = tree(toon_sketch.build(root, staged(), {"--voice"}))
+    (fx,) = [t for t in xml.iter("audioTrack") if t.get("asset") == "fx-bed"]
+    assert fx.get("role") == "effects" and fx.get("duckUnder") is None and fx.find("animate") is None

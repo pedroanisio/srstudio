@@ -295,6 +295,7 @@ class Effect:
     audio: str
     sha256: str
     taps: tuple[float, ...] = ()  # keystroke onsets the picture follows (typing)
+    role: str = "effects"  # the mix's role: "music" is a bed the lines duck
 
 
 def slots(captions: Sequence[_Caption], duration: float, margin: float = MARGIN) -> list[Slot]:
@@ -463,7 +464,8 @@ ITEM_FIELDS: dict[str, object] = dict(
 )
 OPTIONAL_ITEM_FIELDS: dict[str, object] = dict(lag=_Number)  # written by the relaxed policy only
 EFFECT_FIELDS: dict[str, object] = dict(id=str, start=_Number, gain_db=_Number, audio=str, sha256=str)
-OPTIONAL_EFFECT_FIELDS: dict[str, object] = dict(taps=list)
+OPTIONAL_EFFECT_FIELDS: dict[str, object] = dict(taps=list, role=str)
+EFFECT_ROLES = ("effects", "music")
 
 
 def _checked(q: object, where: str, fields: Mapping[str, object], optional: Mapping[str, object]) -> dict:
@@ -534,8 +536,11 @@ def effect_cues(path: Path, root: Path) -> list[Effect]:
             raise NarrationError(f"{where}: taps must be non-negative numbers of seconds")
         if any(b < a for a, b in zip(taps, taps[1:], strict=False)):
             raise NarrationError(f"{where}: taps must be in order")
+        role = q.get("role", "effects")
+        if role not in EFFECT_ROLES:
+            raise NarrationError(f"{where}: role must be one of {EFFECT_ROLES}, got {role!r}")
         _clip(root, q, where)
-        out.append(Effect(q["id"], float(q["start"]), float(q["gain_db"]), q["audio"], q["sha256"], tuple(taps)))
+        out.append(Effect(q["id"], float(q["start"]), float(q["gain_db"]), q["audio"], q["sha256"], tuple(taps), role))
     return out
 
 
