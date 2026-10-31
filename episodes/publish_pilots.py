@@ -20,16 +20,18 @@ the normalised remote it hands to rclone; only stages in ``generated/pilots/mind
 from __future__ import annotations
 
 import argparse
+import json
 import posixpath
 import re
 import sys
 from pathlib import Path
 
-from srstudio import outbox
+from srstudio import auto_enhance, outbox
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
 
+REPO = Path(__file__).resolve().parents[1]  # its history holds the enhancements, its settings the mode (ADR 0056)
 WORKSPACE = Path(__file__).resolve().parents[2]
 REMOTE = "gdrive:srstudio/pilots/mind"
 REMOTE_NAME = "gdrive"
@@ -128,6 +130,34 @@ def bundles(root: Path, taken: set[str]) -> list[outbox.Bundle]:
     return [bundle(root, p.name, taken) for p in entries]
 
 
+def delivered(remote: str, rclone: str) -> set[str]:
+    """The pilots already on ``remote``, from its manifest; none before the first delivery."""
+    text = outbox.fetch(remote, MANIFEST, rclone=rclone)
+    if text is None:
+        return set()
+    try:
+        videos = json.loads(text)["videos"]
+    except (ValueError, KeyError, TypeError) as e:
+        raise PilotError(f"the {MANIFEST} on {remote} cannot be read: {e!r}") from e
+    if not isinstance(videos, dict):
+        raise PilotError(f"the {MANIFEST} on {remote} cannot be read: videos is no table")
+    return set(videos)
+
+
+def unenhanced(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
+    """Refuse a new pilot whose builder landed no enhancement (ADR 0056); a pilot already on Drive owes none."""
+    try:
+        if not auto_enhance.enabled(REPO):
+            print("auto-enhance off: nothing asked of these videos")
+            return
+        on_drive = delivered(remote, rclone)
+        refused = auto_enhance.refused({p.name: p.name for p in ready if p.name not in on_drive}, REPO)
+    except auto_enhance.EnhanceError as e:
+        raise PilotError(str(e)) from e
+    if refused:
+        raise PilotError("; ".join(map(str, refused)))
+
+
 def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
     """What is in the pilot's folder and not delivered, as ``slug/name``."""
     chosen = {f.name for f in pilot.files}
@@ -158,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         for pilot in ready:
             for name in left_behind(pilot, source):
                 print(f"left behind: {name}")
+        unenhanced(ready, remote, args.rclone)
         stage.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         stage.parent.chmod(0o700)
         manifest = outbox.stage(ready, stage, manifest=MANIFEST)
