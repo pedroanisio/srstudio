@@ -30,11 +30,6 @@ RELEASE = Release(
     ),
     style="Soft",
     parts={
-        # soft-bottle is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-grill is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-pizza-box is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-smoke is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-tongs is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
         "bo": 1,
         "captions": 1,
         "juno": 1,
@@ -42,8 +37,13 @@ RELEASE = Release(
         "signature-cactus": 1,
         "signature-code": 1,
         "soft-bench": 1,
+        "soft-bottle": 1,
+        "soft-grill": 1,
         "soft-park": 1,
         "soft-phone": 1,
+        "soft-pizza-box": 1,
+        "soft-smoke": 1,
+        "soft-tongs": 1,
     },
     comedy=Scores(18, 18),
 )

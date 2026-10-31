@@ -23,8 +23,11 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={
+        "collage-boardroom": 1,
         "collage-deb": 1,
+        "collage-eye-chart": 1,
         "collage-feld": 1,
+        "collage-lens-frame": 1,
         "collage-sign": 1,
         "collage-therapy": 1,
         "signature-cactus": 1,

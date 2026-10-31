@@ -39,6 +39,8 @@ RELEASE = Release(
         "stick-card": 1,
         "stick-gym": 1,
         "stick-gym-counter": 1,
+        "stick-headset": 1,
+        "stick-poster": 1,
         "stick-rig": 1,
         "stick-street-lens": 1,
         "stick-words": 1,

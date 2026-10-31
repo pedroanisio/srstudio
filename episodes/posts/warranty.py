@@ -29,24 +29,23 @@ RELEASE = Release(
     ),
     style="Soft",
     parts={
-        # soft-bowling-ball is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-brick is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-coin-bag is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-dimmer is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-dust is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-home-fridge is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-smoke is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-tv is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
-        # soft-washer is drawn too; it is held at the pin gate: a release cannot pin a proposed version.
         "captions": 1,
         "juno": 1,
         "pip": 1,
         "signature-cactus": 1,
         "signature-code": 1,
+        "soft-bowling-ball": 1,
+        "soft-brick": 1,
+        "soft-coin-bag": 1,
+        "soft-dust": 1,
         "soft-home": 1,
+        "soft-home-fridge": 1,
         "soft-shovel": 1,
+        "soft-smoke": 1,
         "soft-sofa": 1,
         "soft-time-card": 1,
+        "soft-tv": 1,
+        "soft-washer": 1,
     },
     comedy=Scores(18, 18),
 )

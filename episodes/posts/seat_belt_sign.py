@@ -36,10 +36,13 @@ RELEASE = Release(
     parts={
         "signature-cactus": 1,
         "signature-code": 1,
+        "stick-book": 1,
         "stick-cabin": 1,
         "stick-card": 1,
         "stick-carry-on": 1,
+        "stick-duffel": 1,
         "stick-rig": 1,
+        "stick-robe": 1,
         "stick-words": 1,
     },
     comedy=Scores(17, 18),

@@ -31,6 +31,7 @@ RELEASE = Release(
     style="Collage",
     parts={
         "collage-cafe": 1,
+        "collage-cake-slice": 1,
         "collage-deb": 1,
         "collage-flash": 1,
         "collage-gust": 1,
