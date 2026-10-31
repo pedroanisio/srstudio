@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import host_kit, sketch
+from srstudio import comedy_floor, host_kit, sketch
 from srstudio.sketch import Line, SketchError
 from srstudio.social import InstagramPost
 
@@ -31,6 +31,10 @@ def frontmatter() -> dict[str, str]:
 
 def test_the_pilot_as_written_is_valid():
     pilot.validate()
+
+
+def test_his_mouth_opens_on_the_first_sound_of_a_take():
+    assert pilot.MOUTH.first_sound
 
 
 def test_he_speaks_on_the_first_frame_and_the_premise_is_on_screen_in_seven_words():
@@ -113,7 +117,7 @@ def test_the_caption_carries_the_disclosure_word_for_word():
 def test_the_notes_carry_the_persona_and_the_comedy_score():
     meta = frontmatter()
     assert meta["pilot"] == pilot.SLUG and meta["main-trigger"] and meta["generated-by"] and meta["date"]
-    assert int(meta["comedy-author"].split("/")[0]) >= 14
+    assert comedy_floor.notes_shortfall((FOLDER / "notes.md").read_bytes()) == ""
     notes = (FOLDER / "notes.md").read_text(encoding="utf-8").lower()
     for heading in ("name", "look", "voice", "point of view", "sign-off", "never do", "hook formula", "three rules"):
         assert heading in notes

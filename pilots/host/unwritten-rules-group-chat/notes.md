@@ -3,7 +3,8 @@ pilot: unwritten-rules-group-chat
 main-trigger: recognition
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
-comedy-author: 17/20
+comedy-author: 17
+comedy-reviewer: 16
 ---
 
 # Notes: The Unwritten Rules, the group chat
