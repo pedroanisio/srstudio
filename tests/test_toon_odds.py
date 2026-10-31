@@ -22,7 +22,19 @@ def tree(cv: Canvas):
     return ET.fromstring(cv.scene.to_bytes(layout="pretty"))
 
 
-@pytest.mark.parametrize("name", ["toon-pipe", "toon-paper-insert", "toon-mosquito", "toon-rolled-towel"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "toon-pipe",
+        "toon-paper-insert",
+        "toon-mosquito",
+        "toon-rolled-towel",
+        "toon-wrestled-sheet",
+        "toon-balled-sheets",
+        "toon-folded-sheet",
+        "toon-padlock",
+    ],
+)
 def test_every_prop_is_registered_for_toon(name):
     entry = registry.get("prop", name)
     assert entry.style == "toon" and entry.module == "srstudio.toon_odds"
@@ -51,6 +63,12 @@ def test_a_mosquito_refuses_a_path_it_cannot_fly(path, end):
     [
         lambda cv: toon_odds.rolled_towel(cv, cv.comp, swings=()),
         lambda cv: toon_odds.rolled_towel(cv, cv.comp, start=2.0, end=1.0),
+        lambda cv: toon_odds.wrestled_sheet(cv, cv.comp, start=2.0, end=1.0),
+        lambda cv: toon_odds.wrestled_sheet(cv, cv.comp, beat=0.0),
+        lambda cv: toon_odds.balled_sheets(cv, cv.comp, top=1500.0),
+        lambda cv: toon_odds.balled_sheets(cv, cv.comp, start=3.8, end=4.0),
+        lambda cv: toon_odds.folded_sheet(cv, cv.comp, start=2.0, end=1.0),
+        lambda cv: toon_odds.padlock(cv, cv.comp, start=3.0, opened=1.0),
     ],
 )
 def test_a_prop_refuses_bad_data(call):

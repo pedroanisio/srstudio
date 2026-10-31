@@ -150,3 +150,83 @@ def rolled_towel(
     for k in range(4):
         cv.rect(g, x - club / 2, y - fh(390 - k * 60), club, fh(5), cv.ink, cv.clear, 0, radius=0, opacity=0.45)
     return g
+
+
+@register(
+    "prop", "toon-wrestled-sheet", summary="A sheet in a losing fight with someone, heaving on the beat", style="toon"
+)
+def wrestled_sheet(cv: Canvas, parent, start: float = 0.0, end: float = 4.0, y: float = 760.0, beat: float = 0.28):
+    """A billowing sheet over someone's arms at height ``y`` from ``start`` to ``end``, heaving every ``beat`` s."""
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end) or not 0.1 <= beat <= 1:
+        raise ToonDataError(f"a sheet heaves over 0 <= start < end every 0.1..1 s, got {start!r}..{end!r} {beat!r}")
+    x0, y0 = fx(190), fy(y)
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, anchorX=x0, anchorY=y0, x=x0, y=y0)
+    n = int((end - start) / beat) + 1
+    cv.keys(
+        g, "scaleY", [(start + k * beat, 1.0 if k % 2 else 1.18) for k in range(n)], kind="sine-in-out", local=False
+    )
+    cv.keys(g, "rotation", [(start + k * beat, -5 if k % 2 else 6) for k in range(n)], kind="sine-in-out", local=False)
+    for dx, dy, w, h in ((-250, -70, 300, 170), (-30, -110, 300, 210), (150, -50, 220, 150), (-120, 10, 360, 150)):
+        cv.ellipse(g, x0 + fh(dx), y0 + fh(dy), fh(w), fh(h), "#fbfbf5", cv.ink, INK_W * 0.8)
+    for dx, dy, w in ((-160, -40, 150), (40, -60, 130)):
+        cv.rect(g, x0 + fh(dx), y0 + fh(dy), fh(w), fh(5), "#c6ccd6", cv.clear, 0, radius=fh(3))
+    return g
+
+
+@register(
+    "prop",
+    "toon-balled-sheets",
+    summary="An avalanche of balled-up white sheets, rising or already there",
+    style="toon",
+)
+def balled_sheets(cv: Canvas, parent, top: float = 700.0, start: float | None = 0.5, end: float = 4.0):
+    """The heap's top edge at reference ``top``: rising there over :data:`SHEETS_RISE` from ``start``, or there already
+    (``start`` None) until ``end``."""
+    if not (checks.number(top) and 200 <= top <= 900):
+        raise ToonDataError(f"a heap's top stands between 200 and 900, got {top!r}")
+    if start is not None and not (checks.number(start) and 0 <= start and start + SHEETS_RISE <= end):
+        raise ToonDataError(f"a heap rises in {SHEETS_RISE} s from {start!r} before {end!r}")
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    if start is not None:
+        cv.keys(g, "y", [(start, fh(1200 - top)), (start + SHEETS_RISE, 0.0)], kind="cubic-out", local=False)
+    cv.rect(g, fx(-20), fy(top + 80), fh(640), fh(1200 - top), "#eef1f4", cv.clear, 0, radius=0)
+    for row in range(5):
+        for col in range(5):
+            x, y = -40 + col * 140 + (row % 2) * 60, top + row * 86
+            cv.ellipse(
+                g, fx(x), fy(y), fh(170), fh(124), "#fbfbf5" if (row + col) % 3 else "#e8ecf2", cv.ink, INK_W * 0.6
+            )
+            cv.rect(g, fx(x + 50), fy(y + 52), fh(60), fh(5), "#c6ccd6", cv.clear, 0, radius=fh(3))
+    return g
+
+
+@register("prop", "toon-folded-sheet", summary="One impossibly square folded sheet, held out on two paws", style="toon")
+def folded_sheet(
+    cv: Canvas, parent, at: Point = (190.0, 700.0), coat: str = "#a9744f", start: float = 0.0, end: float = 4.0
+):
+    """A folded sheet with knife edges, its bottom edge on reference ``at``, resting on two paws of ``coat``."""
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end):
+        raise ToonDataError(f"a sheet is held over 0 <= start < end, got {start!r}..{end!r}")
+    x, y = at
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    cv.rect(g, fx(x - 110), fy(y - 120), fh(220), fh(120), "#fbfbf5", cv.ink, INK_W, radius=fh(4))
+    for k in range(1, 5):
+        cv.rect(g, fx(x - 110), fy(y - 120 + k * 24), fh(220), fh(3), "#c6ccd6", cv.clear, 0, radius=0)
+    for side in (-1, 1):
+        cv.ellipse(g, fx(x + side * 90 - 40), fy(y - 20), fh(80), fh(62), coat, cv.ink, FINE_W * 1.2)
+    return g
+
+
+@register("prop", "toon-padlock", summary="A brass padlock on a door that drops away when it is unlocked", style="toon")
+def padlock(cv: Canvas, parent, at: Point = (400.0, 540.0), start: float = 0.0, opened: float = 4.0, end: float = 4.0):
+    """A padlock at reference ``at`` from ``start``, falling out of frame at ``opened``."""
+    if not (checks.number(start) and checks.number(opened) and 0 <= start <= opened <= end):
+        raise ToonDataError(f"a padlock needs 0 <= start <= opened <= end, got {start!r}, {opened!r}, {end!r}")
+    x, y = fx(at[0]), fy(at[1])
+    g = cv.group(parent, cv.uid("g"), start=start, end=min(end, opened + 0.6))
+    cv.keys(g, "y", [(opened, 0.0), (opened + 0.6, fh(700))], kind="cubic-in", local=False)
+    cv.ellipse(g, x - fh(24), y - fh(52), fh(48), fh(70), cv.clear, "#7c8691", INK_W * 0.9)
+    cv.rect(g, x - fh(44), y - fh(16), fh(88), fh(76), "#e0b13c", cv.ink, INK_W * 0.8, radius=fh(10))
+    cv.ellipse(g, x - fh(8), y + fh(4), fh(16), fh(16), cv.ink)
+    cv.rect(g, x - fh(4), y + fh(14), fh(8), fh(22), cv.ink, cv.clear, 0, radius=0)
+    return g
