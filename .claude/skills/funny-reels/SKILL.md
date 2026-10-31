@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.17.0
+schema_version: 1.18.0
 changelog: "1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
@@ -601,6 +601,23 @@ next video can use, never a comment, a rename or a test that cannot fail. The us
 reels stay byte-identical, so a library change defaults to no change. A new part follows the approval rules, and new
 character looks, hearings, frozen reels and the caption looks stay the operator's. Never loosen a check as your
 enhancement.
+
+## Lanes
+
+Each batch or pilot set is one govern lane (ADR 0058), so its state and its token cost live outside any one chat. The
+tool is `/home/pals/src/super-tools/bin/govern`, and it finds the workspace from any worktree.
+
+- Start: `govern new <slug> --process reel` or `--process pilot`, then write `lane.json` in the lane's folder
+  (`generated/govern/projects/<slug>/`) with `branch` and, for a pilot, `series`. Name the worktree with
+  `govern file <slug> worktree '{repo}/_tmp/wt/<name>/'`, so sessions working there count on the lane.
+- Work: `govern brief <slug>` starts a session from the lane's state. Record a decision with `govern note` when you
+  make it.
+- Move: `govern advance <slug> --note "<evidence>"`. Merge and deliver leave only on their checks; a note cannot pass
+  them, and a failed check is a defect to fix.
+- Cost: `govern usage <slug>` reports model tokens. ElevenLabs takes are not in it.
+
+A lane records the work and never replaces a gate. Approvals stay where they are, the operator's own words on the
+record, and a pilot's `watch` note quotes them and approves nothing.
 
 ## Review the batch for variety
 

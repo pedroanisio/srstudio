@@ -159,6 +159,10 @@ Recording and generated audio use separate workflows and may require provider cr
 
 Auto-enhance is on by default: each video lands one real change to the process on `develop` before its first delivery, and both delivery commands refuse a new video without it. `srstudio enhance` shows the mode and the ledger, `srstudio enhance kinds` the possibilities, and `srstudio enhance off` is the operator's switch back to just delivering. See [ADR 0056](docs/decisions/0056-auto-enhance.md).
 
+## Lanes
+
+Batches and pilot sets run as `govern` lanes, so their state and token cost live in files: processes and exit checks are in [tools/govern/](tools/govern/), the reasons in [ADR 0058](docs/decisions/0058-govern-lanes.md).
+
 ## Verification
 
 Run the local checks from the repository root:
