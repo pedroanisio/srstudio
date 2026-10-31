@@ -1124,6 +1124,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "cafe-door": {"title": "Porta do café"},
+    "coat-over": {"title": "Casaco vestido em cena"},
+    "big-thumb": {"title": "Polegar gigante"},
+    "phone-post": {"title": "Post antigo no celular"},
     "collage-eye-twitch": {"title": "Tique no olho"},
     "collage-ring-corner": {"title": "Canto do ringue"},
     "collage-towel": {"title": "Toalha listrada"},
@@ -8032,6 +8036,32 @@
         "at": 0.2
       },
       "text": "O canto do ringue com cordas, banquinho e uma toalha listrada."
+    },
+    {
+      "section": "props",
+      "name": "Post antigo no celular",
+      "parts": [
+        "phone-post",
+        "big-thumb"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 12.0
+      },
+      "text": "Um post de 2016 em tela cheia: a travessa, o coração vazio e o polegar quase em cima dele."
+    },
+    {
+      "section": "props",
+      "name": "Casaco e porta do café",
+      "parts": [
+        "coat-over",
+        "cafe-door"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 24.4
+      },
+      "text": "O casaco que veste um lado de cada vez, e a porta com a placa lida por dentro."
     }
   ]
 }
