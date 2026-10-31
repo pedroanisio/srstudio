@@ -95,3 +95,38 @@ def test_only_events_refuses_an_unknown_kind():
     scripting.only_events(BEATS, {"board", "toast", "hangup"})
     with pytest.raises(SketchError, match=r"unknown events \['hangup', 'toast'\]"):
         scripting.only_events(BEATS, {"board"})
+
+
+def _beats(*events):
+    return [Beat(float(i), "bear", "", "h", "f", "d", event=e) for i, e in enumerate(events)]
+
+
+def test_at_is_when_an_event_comes_and_refuses_one_that_never_does():
+    beats = _beats("door", "", "door")
+    assert scripting.at(beats, "door") == 0.0
+    with pytest.raises(SketchError, match="no gulp event"):
+        scripting.at(beats, "gulp")
+
+
+def test_times_are_the_moments_foley_lands_on():
+    assert scripting.times(_beats("step", "door", "step:left"), "step") == [0.0, 2.0]
+
+
+def test_every_spaces_a_bed_of_sounds_and_stops_before_the_end():
+    assert scripting.every(1.0, 2.0, 0.4) == [1.0, 1.4, 1.8]
+    assert scripting.every(2.0, 2.0, 0.4) == []
+
+
+@pytest.mark.parametrize("step", [0.0, -1.0])
+def test_every_refuses_a_step_that_never_ends(step):
+    with pytest.raises(SketchError, match="positive"):
+        scripting.every(0.0, 1.0, step)
+
+
+def test_speaks_by_holds_the_first_line_to_the_opening():
+    spoken = [Beat(0.4, "bear", "Hi.", "h", "f", "d", line=0), Beat(1.0, "bear", "Yes.", "h", "f", "d", line=1)]
+    scripting.speaks_by(spoken, 0.5)
+    with pytest.raises(SketchError, match=r"first line starts at 0\.40 s, after 0\.30 s"):
+        scripting.speaks_by(spoken, 0.3)
+    with pytest.raises(SketchError, match="no line is spoken"):
+        scripting.speaks_by(_beats("door"), 0.5)
