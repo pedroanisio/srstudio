@@ -109,7 +109,7 @@ POST = InstagramPost(
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#forgotpassword", "#securityquestion", "#everydaylife"),
     thumbnail=Thumbnail(
-        "Incorrect password.\nFourth attempt.", 5.0, "News Compiler", focus=(540.0, 400.0), zoom=1.6, place="top"
+        "Incorrect password.\nFourth attempt.", 5.0, "News Compiler", focus=(540.0, 400.0), zoom=1.7, place="top"
     ),
 )
 

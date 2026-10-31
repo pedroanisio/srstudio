@@ -96,14 +96,14 @@ BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
 SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, cast=news_kit.NEWS_CAST, tail=TAIL)
 EVENTS = ("first", "board", "call")
-FACES = ((145.0, 640.0, 240.0, 250.0), (610.0, 640.0, 260.0, 250.0))  # both heads on the cover's frame, kept clear
+FACES = ((78.0, 565.0, 370.0, 320.0), (540.0, 565.0, 380.0, 320.0))  # both heads, hair included, on the cover's frame
 POST = InstagramPost(
     title="Who in your house says 'I don't mind' and means it?",
     description="Parody.",
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#whattoeat", "#couplelife", "#everydaylife"),
     thumbnail=Thumbnail(
-        "Where to eat?\nToo close to call.", 1.5, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
+        "Where to eat?\nToo close to call.", 1.5, "News Compiler", focus=(495.0, 400.0), zoom=1.28, place="top"
     ),
 )
 

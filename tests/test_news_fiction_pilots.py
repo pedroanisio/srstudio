@@ -15,9 +15,10 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import Canvas, craft, news_kit, sketch
-from srstudio.news_kit import NewsKitError
+from srstudio.news_inked import BANNER_Y
+from srstudio.news_kit import TEXT_LEFT, NewsKitError
 from srstudio.sketch import Line, SketchError
-from srstudio.thumbnail import Thumbnail, covered
+from srstudio.thumbnail import Thumbnail, _backdrop_placement, covered, layout
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOTS = ROOT / "episodes" / "pilots"
@@ -38,6 +39,7 @@ BANNER = (
     "All LLM output must be treated as untrusted and validated explicitly.",
 )
 LEGIBLE = 0.9  # a window the engine's strict encode can read, with a frame to spare
+HAIR_TOP = 565.0  # the highest hair of any shot on the desk, in px of the frame
 
 
 def load(name: str) -> ModuleType:
@@ -142,6 +144,20 @@ def test_the_cover_headline_stays_off_the_heads(pilot):
     if not episodes or not font.exists():
         pytest.skip("needs SRSTUDIO_EPISODES and the project's pinned font")
     assert covered(cover(pilot), font.read_bytes(), 1080, 1920, pilot.FACES) == []
+
+
+def test_the_keep_clear_boxes_start_at_the_hair(pilot):
+    assert all(top <= HAIR_TOP for _, top, _, _ in pilot.FACES)
+
+
+def test_the_cover_cuts_no_word_of_the_banner(pilot):
+    episodes = os.environ.get("SRSTUDIO_EPISODES")
+    font = Path(episodes or "") / "pilots" / "news" / pilot.SLUG / "assets" / "fonts" / "barlow-condensed-700.ttf"
+    if not episodes or not font.exists():
+        pytest.skip("needs SRSTUDIO_EPISODES and the project's pinned font")
+    thumb = cover(pilot)
+    x, y, zoom = _backdrop_placement(thumb, layout(thumb, font.read_bytes(), 1080, 1920), 1080, 1920)
+    assert y + zoom * BANNER_Y >= 1920 or x + zoom * TEXT_LEFT >= 0
 
 
 def test_the_caption_opens_on_a_question_and_says_parody(pilot):

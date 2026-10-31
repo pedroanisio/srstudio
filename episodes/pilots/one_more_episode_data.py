@@ -117,7 +117,7 @@ POST = InstagramPost(
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#bingewatching", "#onemoreepisode", "#everydaylife"),
     thumbnail=Thumbnail(
-        "One more episode.\nSeven episodes ago.", 3.0, "News Compiler", focus=(540.0, 400.0), zoom=1.6, place="top"
+        "One more episode.\nSeven episodes ago.", 3.0, "News Compiler", focus=(540.0, 400.0), zoom=1.7, place="top"
     ),
 )
 
