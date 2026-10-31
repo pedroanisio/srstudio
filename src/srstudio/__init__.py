@@ -61,6 +61,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_home,
     stick_office,
     stick_reel,
+    stick_roadtrip,
     stick_school,
     stick_shop,
     stick_street,
