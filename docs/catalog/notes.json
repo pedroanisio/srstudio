@@ -1124,6 +1124,22 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "collage-eye-twitch": {"title": "Tique no olho"},
+    "collage-ring-corner": {"title": "Canto do ringue"},
+    "collage-towel": {"title": "Toalha listrada"},
+    "collage-stool": {"title": "Banquinho"},
+    "collage-till": {"title": "Caixa registradora"},
+    "collage-counter": {"title": "Balcão"},
+    "collage-wallet": {"title": "Carteira aberta"},
+    "collage-receipt": {"title": "Nota da conta"},
+    "collage-bank-card": {"title": "Cartão de banco"},
+    "collage-wine-glass": {"title": "Taça de vinho"},
+    "collage-tiny-cup": {"title": "Xicrinha"},
+    "collage-gravy-boat": {"title": "Molheira com garfos"},
+    "collage-fork": {"title": "Garfo"},
+    "collage-resume": {"title": "Currículo"},
+    "collage-desk-phone": {"title": "Telefone de mesa"},
+    "collage-handset": {"title": "Fone de mesa"},
     "stick-lights-low": {"title": "Luz baixa"},
     "stick-recorder": {"title": "Celular gravando"},
     "stick-eye-mask": {"title": "Máscara de dormir"},
@@ -7901,6 +7917,121 @@
         "at": 21.3
       },
       "text": "Qualquer cenário baixado para a noite, com uma poça de luz em volta de um ponto."
+    },
+    {
+      "section": "props",
+      "name": "Telefone e fone",
+      "parts": [
+        "collage-desk-phone",
+        "collage-handset"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 16.5
+      },
+      "text": "Um telefone de mesa com visor e um fone de fio espiral, no gancho ou fora dele."
+    },
+    {
+      "section": "props",
+      "name": "Currículo de verso em branco",
+      "parts": [
+        "collage-resume"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 8.0
+      },
+      "text": "Um currículo que vira e mostra o verso em branco."
+    },
+    {
+      "section": "props",
+      "name": "Tique no olho",
+      "parts": [
+        "collage-eye-twitch"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 5.5
+      },
+      "text": "Uma pálpebra que pisca sozinha por cima de um sorriso parado."
+    },
+    {
+      "section": "props",
+      "name": "Molheira de imprensa",
+      "parts": [
+        "collage-gravy-boat",
+        "collage-fork"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 1.0
+      },
+      "text": "Uma molheira com garfos presos com fita, apontada como microfone de coletiva."
+    },
+    {
+      "section": "props",
+      "name": "Taça de vinho",
+      "parts": [
+        "collage-wine-glass"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 4.0
+      },
+      "text": "Uma taça de vinho para quem não vai responder."
+    },
+    {
+      "section": "props",
+      "name": "Conta rasgada e xicrinha",
+      "parts": [
+        "collage-receipt",
+        "collage-tiny-cup"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 1.5
+      },
+      "text": "A nota do restaurante, inteira ou rasgada, e uma xicrinha de café."
+    },
+    {
+      "section": "props",
+      "name": "Cartão e carteira",
+      "parts": [
+        "collage-bank-card",
+        "collage-wallet"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 19.0
+      },
+      "text": "Um cartão com o nome do dono e a carteira aberta, com um espaço vazio."
+    },
+    {
+      "section": "props",
+      "name": "Balcão e caixa",
+      "parts": [
+        "collage-counter",
+        "collage-till"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 11.0
+      },
+      "text": "O balcão de uma loja e a caixa registradora com o visor aceso."
+    },
+    {
+      "section": "props",
+      "name": "Corner de boxe",
+      "parts": [
+        "collage-ring-corner",
+        "collage-stool",
+        "collage-towel"
+      ],
+      "shot": {
+        "episode": "book-a-table",
+        "at": 0.2
+      },
+      "text": "O canto do ringue com cordas, banquinho e uma toalha listrada."
     }
   ]
 }
