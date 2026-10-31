@@ -10057,6 +10057,57 @@
           "rig": null
         }
       ]
+    },
+    "collage-cake-slice": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A slice of cake on a plate that halves on every cue. First drawn for you-have-it; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2ee15fcb892433a391d58af83e907f1a8cad3f907b97b6b787f0a419b7d0a001",
+          "rig": null
+        }
+      ]
+    },
+    "collage-eye-chart": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An eye chart whose rows snap sharp one at a time. First drawn for eye-chart; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b330896566f527bc8609da05e5f85dc36e1f48ec1f7aa32316cfad14f2df19ba",
+          "rig": null
+        }
+      ]
+    },
+    "collage-lens-frame": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clinic lens frame held in front of a face. First drawn for eye-chart; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5167db5320d41579aab87c080823d42d966e42db5f3b7bb9eca8e20688fcb98c",
+          "rig": null
+        }
+      ]
     }
   }
 }
