@@ -8,9 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import parts, registry
+from srstudio import parts, registry, releases
 from srstudio import usage as U
 from srstudio.cli import main
+from srstudio.releases import Release, Tags
+from srstudio.social import InstagramPost
 
 PLUGIN = '''
 from srstudio import register
@@ -255,3 +257,18 @@ def test_parts_refused_lists_each_part_with_no_drawing_and_why(capsys):
     lines = capsys.readouterr().out.splitlines()
     assert len(lines) == sum(1 for p in parts.load().values() if p.refused)
     assert any(line.startswith("captions: overlay: ") for line in lines)
+
+
+def test_arms_prints_the_split_and_fails_on_a_lopsided_one(tmp_path, monkeypatch, capsys):
+    post = InstagramPost(title="A title", description="A description.")
+    split = {"p": "a", "q": "b", "r": "a"}
+    tagged = {s: Tags("family", "protagonist", "recognition", test="sp-hook_motion", arm=a) for s, a in split.items()}
+    run = {slug: Release(f"{slug}-x", post, tags=tag) for slug, tag in tagged.items()}
+    monkeypatch.setattr(releases, "load", lambda folder: run)
+    assert main(["arms", "sp-hook_motion", "--scripts", str(tmp_path)]) == 1
+    out = capsys.readouterr()
+    assert "a   2  p r" in out.out and "arm a has 2 and arm b has 1" in out.err
+    del run["r"]
+    order = tmp_path / "order.txt"
+    order.write_text("p\nq\n")
+    assert main(["arms", "sp-hook_motion", "--scripts", str(tmp_path), "--order", str(order)]) == 0

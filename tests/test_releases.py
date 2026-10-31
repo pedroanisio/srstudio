@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import parts, releases, subtitles
-from srstudio.releases import Release, ReleaseError
+from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import InstagramPost, Item
 from srstudio.thumbnail import Thumbnail
 
@@ -370,6 +370,34 @@ def test_a_published_video_or_a_project_with_no_captions_is_not_read(tmp_path):
     release = {"a-b": Release("a-b", POST)}
     assert releases.caption_on_cover(release, tmp_path, {"a-b"}) == []
     assert releases.caption_on_cover(release, on_cover_project(tmp_path), ()) == []
+
+
+def tagged(slug: str, arm: str, test: str = "sp-hook_motion") -> Release:
+    return Release(slug, POST, tags=Tags("family", "protagonist", "recognition", test=test, arm=arm))
+
+
+def test_an_arm_count_lists_each_arm_of_one_test():
+    run = {"a": tagged("a", "a"), "b": tagged("b", "b"), "c": Release("c", POST), "d": tagged("d", "a", "opening")}
+    assert releases.arms(run, "sp-hook_motion") == {"a": ["a"], "b": ["b"]}
+
+
+def test_a_balanced_alternating_order_has_no_problems():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "b"), "r": tagged("r", "a"), "s": tagged("s", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "q", "r", "s"]) == []
+    assert releases.arm_problems(run, "sp-hook_motion") == []
+
+
+def test_a_lopsided_test_and_a_broken_order_are_named():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "a"), "r": tagged("r", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "q", "r"]) == [
+        "arm a has 2 and arm b has 1",
+        "q follows p on the same arm a",
+    ]
+
+
+def test_an_order_with_a_stranger_or_a_gap_is_named():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "z"]) == ["z is not in the test", "q is not in the order"]
 
 
 def test_a_written_srt_reads_back_and_a_broken_one_is_refused(tmp_path):
