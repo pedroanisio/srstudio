@@ -238,3 +238,52 @@ def test_a_burger_lies_on_the_grate_until_it_is_turned():
     assert keys(groups(cv)["g-burger-2"], "y")[:2] == [(0.0, -314.0), (4.0 - soft_odds.FLIP_LIFT, -314.0)]
     with pytest.raises(SoftOddError, match="turned from"):
         soft_odds.grill(cv, cv.comp, 500, 1500, end=END, flip=soft_odds.FLIP_LIFT / 2)
+
+
+def test_a_notice_reads_its_words_and_can_be_shown_in_spans():
+    cv = canvas()
+    soft_odds.notice(cv, cv.comp, 540, 600, shown=[(0.0, 2.0)])
+    assert [t.get("text") for t in tree(cv).iter("text")] == ["QUIET PLEASE"]
+    assert opacity(groups(cv)["soft-notice"]) == [(0.0, 1.0), (2.0, 0.0)]
+
+
+@pytest.mark.parametrize("words", ["", "   ", "X" * (soft_odds.MAX_NOTICE + 1)])
+def test_a_notice_holds_a_few_words(words):
+    cv = canvas()
+    with pytest.raises(SoftOddError, match="a notice reads"):
+        soft_odds.notice(cv, cv.comp, 540, 600, words)
+
+
+def test_a_book_takes_a_cover_and_a_finger_takes_a_length():
+    cv = canvas()
+    soft_odds.book(cv, cv.comp, 540, 900, color="#5C8A6B", angle=12)
+    soft_odds.yogurt(cv, cv.comp, 300, 900)
+    soft_odds.hush_finger(cv, cv.comp, 500, 900, reach=-120)
+    assert "#5C8A6B" in ET.tostring(tree(cv), encoding="unicode")
+    assert {"soft-book", "soft-yogurt", "soft-hush-finger"} <= set(groups(cv))
+    with pytest.raises(SoftOddError, match="reach"):
+        soft_odds.hush_finger(cv, cv.comp, 500, 900, reach=0)
+    with pytest.raises(SoftOddError, match="positive scale"):
+        soft_odds.yogurt(cv, cv.comp, 300, 900, scale=0)
+
+
+def test_a_rumble_shakes_only_through_its_spans_the_same_every_build():
+    def built():
+        cv = canvas()
+        soft_odds.rumble(cv, cv.comp, 500, 900, [(1.0, 1.3), (3.0, 3.2)], color="#1F5E9E", id="r")
+        return cv
+
+    a, b = built(), built()
+    assert a.scene.to_bytes(layout="pretty") == b.scene.to_bytes(layout="pretty")
+    g = groups(a)
+    assert opacity(g["r"]) == [(0.0, 0.0), (1.0, 1.0), (1.3, 0.0), (3.0, 1.0), (3.2, 0.0)]
+    shake = keys(g["r-shake"], "x")
+    assert shake[0] == (1.0, soft_odds.RUMBLE_SHAKE) and shake[1][1] == -soft_odds.RUMBLE_SHAKE
+    assert all(1.0 <= time <= 1.3 or 3.0 <= time <= 3.2 for time, _ in shake)
+
+
+@pytest.mark.parametrize("spans", [[], [(2.0, 1.0)], [(1.0, 3.0), (2.0, 4.0)]])
+def test_a_rumble_refuses_spans_that_do_not_run_in_order(spans):
+    cv = canvas()
+    with pytest.raises(SoftOddError, match="rumble"):
+        soft_odds.rumble(cv, cv.comp, 500, 900, spans)

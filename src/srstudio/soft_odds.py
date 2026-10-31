@@ -19,6 +19,7 @@ __all__ = [
     "LOADS",
     "SoftOddError",
     "bottle",
+    "book",
     "bowling_ball",
     "brick",
     "coin_bag",
@@ -26,12 +27,16 @@ __all__ = [
     "dust",
     "grill",
     "home_fridge",
+    "hush_finger",
     "in_hand",
+    "notice",
     "pizza_box",
+    "rumble",
     "smoke",
     "tongs",
     "tv",
     "washer",
+    "yogurt",
 ]
 
 METAL, METAL_LIGHT, METAL_DARK = blob.METAL, blob.METAL_LIGHT, blob.METAL_DARK
@@ -47,6 +52,10 @@ DRUM_TURN = 1.6  # seconds a washer's drum takes to go round
 TV_STEP = 0.4  # seconds a TV picture holds before it shifts
 TV_FLICKER = (0.2, 0.75, 0.4, 1.0, 0.1, 0.6)  # how far the picture has shifted, step by step
 DUST_SPECKS = 14
+MAX_NOTICE = 24  # characters a notice holds at its size
+RUMBLE_STEP = 0.07  # seconds a rumble holds one side
+RUMBLE_SHAKE = 5.0  # px it shakes either way
+FINGER_WIDTH, FINGER_LENGTH = 30, 62  # px; short, so that it stays a finger at any zoom
 
 
 class SoftOddError(SrstudioError, ValueError):
@@ -567,4 +576,132 @@ def dimmer(
     g = cv.group(parent, id)
     cv.rect(g, -100, -100, 1280, 2120, color)
     cv.keys(g, "opacity", list(rows))
+    return g
+
+
+@register("prop", "soft-notice", summary="A framed notice on a wall, a few big words: the rule of the room")
+def notice(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    text: str = "QUIET PLEASE",
+    *,
+    scale: float = 1,
+    shown: Sequence[tuple[float, float]] | None = None,
+    id: str = "soft-notice",
+):
+    """A notice 440 x 180 px at ``scale`` 1, centred on (``x``, ``y``), reading ``text``. ``shown`` gates it to spans:
+    its words are a text layer, and a text layer stays in the safe area for as long as it shows."""
+    _place("a notice", x, y, scale)
+    if not text.strip() or len(text) > MAX_NOTICE:
+        raise SoftOddError(f"a notice reads 1 to {MAX_NOTICE} characters, got {text!r}")
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    if shown is not None:
+        cv.gate(g, list(shown))
+    cv.rect(g, -220, -90, 440, 180, "#7A5A36", cv.ink, 5, radius=10)
+    cv.rect(g, -204, -74, 408, 148, "#FBF6EA", cv.ink, 3, radius=6)
+    cv.text(g, f"{id}-words", text, -200, -74, 400, 148, 62, color=cv.ink)
+    return g
+
+
+@register("prop", "soft-book", summary="A closed hardback with a band on its cover, held up or lying in a pile")
+def book(
+    cv: Canvas,
+    parent,
+    x: float = 0,
+    y: float = 0,
+    *,
+    scale: float = 1,
+    angle: float = 0,
+    color: str = "#4C7A9E",
+    id: str = "soft-book",
+):
+    """A book 170 x 220 px at ``scale`` 1, centred on (``x``, ``y``), its spine on the left at ``angle`` 0."""
+    _place("a book", x, y, scale)
+    g = cv.group(parent, id, x=x, y=y, rotation=angle, scaleX=scale, scaleY=scale)
+    cv.rect(g, -77, -106, 162, 212, "#F4EFE2", cv.ink, 3, radius=3)  # the pages
+    cv.rect(g, -85, -110, 158, 220, color, cv.ink, 5, radius=6)
+    cv.rect(g, -85, -110, 22, 220, "#00000030", radius=6)  # the spine
+    cv.rect(g, -44, -66, 92, 26, "#F4EFE2", cv.ink, 3, radius=4)
+    return g
+
+
+@register("prop", "soft-yogurt", summary="A small plastic yogurt pot with a foil lid and a strawberry on its label")
+def yogurt(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-yogurt"):
+    """A pot 130 px wide and 150 high at ``scale`` 1, its base on (``x``, ``y``)."""
+    _place("a yogurt", x, y, scale)
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M -60 -130 L -44 -2 Q 0 8 44 -2 L 60 -130 Z", "#FBF6EA", cv.ink, 5)
+    cv.path(g, "M -52 -76 L -48 -36 Q 0 -28 48 -36 L 52 -76 Q 0 -68 -52 -76 Z", "#E8A6A0", cv.ink, 3)
+    cv.ellipse(g, -13, -70, 26, 28, "#D94A4A", cv.ink, 3)
+    cv.rect(g, -68, -148, 136, 20, "#C9CFD6", cv.ink, 4, radius=8)
+    return g
+
+
+@register("prop", "soft-rumble", summary="Three curved lines either side of a belly, shaking while it talks")
+def rumble(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    spans: Sequence[tuple[float, float]] = ((0.0, 1.0),),
+    *,
+    scale: float = 1,
+    color: str = "#1A1714",
+    id: str = "soft-rumble",
+):
+    """Lines 260 px apart at ``scale`` 1 around (``x``, ``y``), shaking through each of ``spans``, the same every
+    build. The ``color`` ties a belly to the words it says."""
+    _place("a rumble", x, y, scale)
+    last = 0.0
+    for start, stop in spans:
+        if not (checks.number(start) and checks.number(stop) and last <= start < stop):
+            raise SoftOddError(f"rumble spans run in order and apart, got {list(spans)!r}")
+        last = stop
+    if not spans:
+        raise SoftOddError("a rumble needs at least one span")
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.gate(g, list(spans))
+    shake = cv.group(g, f"{id}-shake")
+    rows = []
+    for start, stop in spans:
+        rows += [
+            (round(start + RUMBLE_STEP * n, 3), RUMBLE_SHAKE * (-1 if n % 2 else 1))
+            for n in range(int((stop - start) / RUMBLE_STEP) + 1)
+        ]
+    cv.keys(shake, "x", rows)
+    for side in (-1, 1):
+        for k in range(3):
+            at = side * (130 + 26 * k)
+            bow = side * 26
+            cv.path(shake, f"M {at} {-44 + 8 * k} Q {at + bow} 0 {at} {44 - 8 * k}", None, color, 8)
+    return g
+
+
+@register(
+    "prop",
+    "soft-hush-finger",
+    summary="A forearm that curls in from a raised hand and one short finger across the lips",
+)
+def hush_finger(
+    cv: Canvas,
+    parent,
+    x: float = 0,
+    y: float = 0,
+    *,
+    fill: str = blob.BO_FILL,
+    reach: float = 150,
+    scale: float = 1,
+    id: str = "soft-hush-finger",
+):
+    """From a hand at (``x``, ``y``), the rig's raised hand in ``step``, an arm curls ``reach`` px across the face and a
+    finger rises over the lips. A negative ``reach`` curls the other way."""
+    _place("a finger", x, y, scale)
+    if not (checks.number(reach) and reach != 0):
+        raise SoftOddError(f"a finger's reach must be a number other than 0, got {reach!r}")
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    curl = f"M 0 0 Q {-reach * 0.5:g} 66 {-reach:g} 62 L {-reach:g} {62 - FINGER_LENGTH:g}"
+    cv.path(g, curl, None, cv.ink, FINGER_WIDTH + 8)
+    cv.path(g, curl, None, fill, FINGER_WIDTH)
     return g

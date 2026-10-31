@@ -11162,6 +11162,91 @@
           "rig": null
         }
       ]
+    },
+    "soft-notice": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A framed notice with a few big words. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "65811e6afa790a8aa0ca39f0ce5a6db55a3b610c65a250fbba13258a198a75d4",
+          "rig": null
+        }
+      ]
+    },
+    "soft-book": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A closed hardback with a band on its cover. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "863fea34a68613ca070dbd50bb68edca2561b22d329b699c1c9a9c4c7a919cdd",
+          "rig": null
+        }
+      ]
+    },
+    "soft-yogurt": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small yogurt pot with a foil lid. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f5722305f1f80e385f1e0e5ac839578ba9fe7c793c1b58c2a4c5d086b76ff8d",
+          "rig": null
+        }
+      ]
+    },
+    "soft-rumble": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Curved lines either side of a belly, shaking while it talks. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6979a05f16eb7d00961bd672e4d4606edfd57f2daff735d063ea6302abbe1493",
+          "rig": null
+        }
+      ]
+    },
+    "soft-hush-finger": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One raised finger for the rig's clasped hands. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b6bbb652972a8cc263f222a5a1efca59d65a37133f80d2dceb9e11b685132ad5",
+          "rig": null
+        }
+      ]
     }
   }
 }
