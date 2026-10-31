@@ -10058,6 +10058,40 @@
         }
       ]
     },
+    "toon-mosquito": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A mosquito on a keyed path that jitters and lands. First drawn for mosquito; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d49bc14522a2d0f020e00d345244e2d0e9b4ac00910aef3b11a7a13f0e2d924c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-rolled-towel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A rolled towel raised in a fist and swung. First drawn for mosquito; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "780ec85a4a6aa958250ebf61b42c1be3e09ee88d925425c11a511c03a5998a50",
+          "rig": null
+        }
+      ]
+    },
     "collage-cake-slice": {
       "kind": "prop",
       "style": "collage",

@@ -106,3 +106,47 @@ def paper_insert(
     cv.keys(g, "scaleX", [(start, 1.0), (end, INSERT_PUSH)], hold=False)
     cv.keys(g, "scaleY", [(start, 1.0), (end, INSERT_PUSH)], hold=False)
     return g
+
+
+@register(
+    "prop", "toon-mosquito", summary="A mosquito that wanders a keyed path with a jitter, or sits still", style="toon"
+)
+def mosquito(cv: Canvas, parent, path: Sequence[tuple[float, float, float]], end: float = 4.0, id: str = "mosquito"):
+    """A mosquito through ``path``, ``(second, x, y)`` keys in rising seconds on reference pixels, from the first key
+    to ``end``, its wings blurring while it flies; two keys at one place land it."""
+    if len(path) < 2 or [k[0] for k in path] != sorted(k[0] for k in path) or not 0 <= path[0][0] < end:
+        raise ToonDataError(f"a mosquito needs two rising keys before {end}, got {path!r}")
+    g = cv.group(parent, cv.uid(id), start=path[0][0], end=end)
+    cv.keys(g, "x", [(t, fx(x)) for t, x, _ in path], hold=False, local=False)
+    cv.keys(g, "y", [(t, fy(y)) for t, _, y in path], hold=False, local=False)
+    size = fh(9)
+    cv.ellipse(g, -size * 1.6, -size * 1.8, size * 1.6, size * 2.6, "#d7e3ea", cv.ink, FINE_W * 0.35, opacity=0.8)
+    cv.ellipse(g, size * 0.1, -size * 1.8, size * 1.6, size * 2.6, "#d7e3ea", cv.ink, FINE_W * 0.35, opacity=0.8)
+    cv.ellipse(g, -size * 0.5, -size * 0.6, size, size * 1.8, "#2a2226", cv.ink, FINE_W * 0.3)
+    cv.rect(g, -size * 0.1, size * 0.9, size * 0.2, size * 1.3, "#2a2226", cv.clear, 0, radius=0)
+    return g
+
+
+@register("prop", "toon-rolled-towel", summary="A rolled towel in a fist, raised and swung on cue", style="toon")
+def rolled_towel(
+    cv: Canvas,
+    parent,
+    root: Point = (470.0, 900.0),
+    swings: Sequence[tuple[float, float]] = ((0.0, 0.0),),
+    start: float = 0.0,
+    end: float = 4.0,
+    colour: str = "#5d8fc9",
+):
+    """An arm up from ``root`` holding a towel twisted into a club, turned by the ``(second, degrees)`` of ``swings``
+    about ``root``, from ``start`` to ``end``."""
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end) or not swings:
+        raise ToonDataError(f"a towel needs swings and 0 <= start < end, got {swings!r}, {start!r}..{end!r}")
+    x, y = fx(root[0]), fy(root[1])
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, anchorX=x, anchorY=y, x=x, y=y)
+    cv.keys(g, "rotation", list(swings), hold=False, local=False)
+    arm, club = fh(66), fh(58)
+    cv.rect(g, x - arm / 2, y - fh(190), arm, fh(230), "#a9744f", cv.ink, INK_W, radius=arm / 2)
+    cv.rect(g, x - club / 2, y - fh(430), club, fh(280), colour, cv.ink, INK_W, radius=club / 2)
+    for k in range(4):
+        cv.rect(g, x - club / 2, y - fh(390 - k * 60), club, fh(5), cv.ink, cv.clear, 0, radius=0, opacity=0.45)
+    return g
