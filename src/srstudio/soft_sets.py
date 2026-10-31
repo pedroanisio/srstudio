@@ -41,14 +41,17 @@ BARK, BARK_DARK = "#8A6242", "#6B4A30"
 
 
 NIGHT, NIGHT_CLEAR = "#0B1026FB", "#0B102600"  # the engine composites in linear light: a lit wall needs 98 % to go dark
-LIGHTS = ("day", "phone", "dark")
+LIGHTS = ("day", "phone", "lamp", "dark")
+LAMP_GLOW = "#E08A2E5C"  # the amber a bulb leaves on a wall, between its clear middle and the dark
 FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
+LAMP_DARK = "#0B1026D8"  # a lamp's dark stays short of NIGHT: the corners of a lamplit room are there
+LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool, past the frame from anywhere in it
 FLICKER_STEP = 0.14  # seconds a flicker value holds
 OVER = 600  # px a room runs past the frame on every side
 
 
 class Light(NamedTuple):
-    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` pooled on (``x``, ``y``)."""
+    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` or ``lamp`` at (``x``, ``y``)."""
 
     time: float
     state: str
@@ -349,7 +352,8 @@ def _framed(cv: Canvas, parent, id: str, shots: Sequence[Shot]):
 
 
 def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
-    """The dark over the room: nothing by day, a pool that flickers around a phone, or all of it."""
+    """The dark over the room: nothing by day, a pool that flickers around a phone, a warm one that holds still
+    around a lamp, or all of it."""
     pool = cv.rgrad("soft-bedroom-pool", [(0.0, NIGHT_CLEAR), (0.12, NIGHT_CLEAR), (0.34, NIGHT)])
     for k, row in enumerate(lights):
         if row.state == "day":
@@ -360,10 +364,18 @@ def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
         if row.state == "dark":
             cv.rect(night, 0, 0, WIDTH, HEIGHT, NIGHT)
             continue
+        if row.state == "lamp":
+            cv.rect(night, row.x - LAMP_REACH, row.y - LAMP_REACH, 2 * LAMP_REACH, 2 * LAMP_REACH, _lamplight(cv))
+            continue
         lit = cv.group(night, f"{id}-flicker-{k + 1}")  # a gate holds its group's opacity: the flicker sits inside it
         cv.rect(lit, row.x - 2000, row.y - 2000, 4000, 4000, pool)
         beats = int(min(end - row.time, 60.0) / FLICKER_STEP) + 1
         cv.keys(lit, "opacity", [(row.time + n * FLICKER_STEP, FLICKER[n % len(FLICKER)]) for n in range(beats)])
+
+
+def _lamplight(cv: Canvas) -> str:
+    """A bulb's pool: clear where it falls, amber at its edge and dark past that, with the room still readable."""
+    return cv.rgrad("soft-bedroom-lamp", [(0.0, NIGHT_CLEAR), (0.2, NIGHT_CLEAR), (0.46, LAMP_GLOW), (1.0, LAMP_DARK)])
 
 
 def _gated(cv: Canvas, parent, id: str, spans: Sequence[tuple[float, float]]):

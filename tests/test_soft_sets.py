@@ -221,6 +221,23 @@ def test_a_bedroom_is_dark_only_by_its_lights_and_the_phone_flickers_inside_its_
     assert len(flicker) > 1 and min(flicker) >= 0.9
 
 
+def test_a_lamp_lights_a_warm_pool_that_holds_still_where_a_phone_flickers():
+    cv = signed()
+    lights = [soft_sets.Light(0.0, "lamp", 300.0, 1400.0), soft_sets.Light(2.0, "dark")]
+    soft_sets.bedroom(cv, cv.comp, lights=lights)
+    found = groups(cv)
+    night = found["soft-bedroom-night-1"]
+    assert opacity_keys(night)[:2] == [(0.0, 1.0), (2.0, 0.0)]
+    assert (2.0, 1.0) in opacity_keys(found["soft-bedroom-night-2"])  # the lamp goes off into the dark
+    assert "soft-bedroom-flicker-1" not in found  # a bulb holds still
+    pool = night.find("shape")
+    assert pool is not None and pool.get("fill") == "url(#soft-bedroom-lamp)"
+    x, y, w, h = (float(pool.get(k)) for k in ("x", "y", "width", "height"))
+    assert (x + w / 2, y + h / 2) == (300.0, 1400.0)
+    stops = [s.get("color") for g in tree(cv).iter("radialGradient") if g.get("id") == "soft-bedroom-lamp" for s in g]
+    assert soft_sets.LAMP_GLOW in stops
+
+
 @pytest.mark.parametrize(
     "kw",
     [
