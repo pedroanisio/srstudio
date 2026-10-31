@@ -116,6 +116,7 @@ def write_all(
     refused = [
         *releases.unpinned(chosen, _beside(renders), delivering),
         *releases.doubled_captions(chosen, _beside(renders), delivering),
+        *releases.caption_on_cover(chosen, _beside(renders), delivering),
     ]
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))

@@ -24,13 +24,23 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import craft
+from . import craft, subtitles
 from .comedy_floor import Scores
 from .errors import SrstudioError
 from .parts import PartError, pin, read_record
 from .social import COVER_VARIANT, Drift, InstagramPost, Item
 
-__all__ = ["Release", "ReleaseError", "Tags", "doubled_captions", "grandfathered", "load", "items", "unpinned"]
+__all__ = [
+    "Release",
+    "ReleaseError",
+    "Tags",
+    "caption_on_cover",
+    "doubled_captions",
+    "grandfathered",
+    "load",
+    "items",
+    "unpinned",
+]
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -227,6 +237,22 @@ def doubled_captions(releases: Mapping[str, Release], episodes: Path, delivering
         scene = Path(episodes) / release.slug / release.scene_file
         if release.video_name in delivering and scene.is_file():
             drift.extend(Drift(release.video_name, why) for why in craft.doubled_captions(scene.read_bytes()))
+    return drift
+
+
+def caption_on_cover(releases: Mapping[str, Release], episodes: Path, delivering: Collection[str]) -> list[Drift]:
+    """Every cover drawn from a frame of the video that carries a spoken caption, so the headline competes with the
+    words under it. A cover from the scene's cover variant has its captions hidden; a published video is frozen."""
+    drift: list[Drift] = []
+    for release in releases.values():
+        srt = Path(episodes) / release.slug / f"{release.slug}.srt"
+        thumb = release.post.thumbnail
+        if release.video_name not in delivering or release.cover or thumb is None or not srt.is_file():
+            continue
+        words = [text for start, end, text in subtitles.read_srt(srt) if start <= thumb.at < end]
+        drift.extend(
+            Drift(release.video_name, f'the cover frame at {thumb.at:.2f} s carries the caption "{w}"') for w in words
+        )
     return drift
 
 
