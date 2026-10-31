@@ -4,6 +4,7 @@ keep to the safe area and refuse what the show cannot put on screen."""
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -248,6 +249,14 @@ def test_a_cue_carries_each_word_on_its_sound_and_holds_to_the_next():
 
 def test_a_silent_master_spreads_the_words_through_their_cue():
     assert [w.start for w in host_kit.caption_cues(LINES[:1])[0].words] == pytest.approx([0.0, 1 / 3, 2 / 3])
+
+
+def test_a_caption_that_arrives_after_its_voice_stops_the_build():
+    late = [replace(LINES[0], start=SAID[0][0] + host_kit.CAPTION_LATE + 0.01), *LINES[1:]]
+    with pytest.raises(host_kit.HostKitError, match="after its voice"):
+        host_kit.caption_cues(late, SAID)
+    held = [replace(LINES[0], start=SAID[0][0] + host_kit.CAPTION_LATE), *LINES[1:]]
+    assert host_kit.caption_cues(held, SAID)
 
 
 def test_a_caption_that_is_not_what_was_said_stops_the_build():
