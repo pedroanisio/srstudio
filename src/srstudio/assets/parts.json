@@ -12546,6 +12546,23 @@
           "rig": null
         }
       ]
+    },
+    "pedro": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Pedro, the operator's own likeness, rebuilt from a procedural 3D sculpt: a parametric head that blends three expressions, shot on path-traced plates (ADR 0072). His approval alone, from a moving clip.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/pedro/index.html",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
     }
   }
 }
