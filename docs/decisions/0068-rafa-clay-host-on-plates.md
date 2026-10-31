@@ -4,8 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0068: Rafa, a clay host shot as replacement plates
 
-- Status: accepted (2026-10-31). The operator approved his look as drawn at the proof: "Rafa is approved". His voice is
-  still the operator's to choose.
+- Status: accepted (2026-10-31). The operator approved his look as drawn at the proof: "Rafa is approved". The operator
+  chose his voice the same day: "will is the voice".
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Builds on [ADR 0066](0066-talking-head-host-kit.md) (the host kit), [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync)
   and [ADR 0050](0050-organic-head-motion.md) (head motion)
@@ -76,8 +76,11 @@ GPU, and a rebuild that reused them took under 130 s, a change of one prop inclu
 
 ## Consequences
 
-- `rafa` and his seven parts are approved as drawn. Changing the look now means adding a version. His voice is the
-  operator's to choose.
+- `rafa` and his seven parts are approved as drawn. Changing the look now means adding a version. His voice is
+  ElevenLabs premade Will, `eleven_multilingual_v2`, seed 52026, stability 0.42, similarity 0.75, style 0.35.
+- `rafa_reel` stages a sketch of his as one long appearance: each beat's `Act` names a framing, a prop and a mood, and they
+  change on one frame ahead of the word. It has no part record, because it draws no new thing but him and the seven
+  parts. Its tote insert is a new plate of the approved prop, whose drawing does not change.
 - The family cap in `tests/test_specimens.py` rises by one.
 - `host_kit.spoken` and `host_kit.head_plan` take the cast. Lint's cast and framings are untouched, and published reels
   stay byte-identical: no drawing they use changed.
