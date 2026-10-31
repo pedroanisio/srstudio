@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from collections import defaultdict
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
@@ -34,6 +35,7 @@ __all__ = [
     "Reel",
     "candidates",
     "clashes",
+    "added_order",
     "cite",
     "collect",
     "corpus",
@@ -331,3 +333,45 @@ def clashes(candidate: Candidate) -> list[str]:
                 + "; ".join(f"{'+'.join(sorted(parts))} in {slug}" for slug, parts in sorted(per_reel.items()))
             )
     return found
+
+
+def added_order(folder: Path, releases: Mapping[str, Release]) -> list[str]:
+    """The slugs of ``releases`` in the order their release files were first committed, oldest first.
+
+    The repository does not record when a reel was posted, so this is the order the reels were written in; it is the
+    best order the record holds, and a file added in the same second as another is placed by its path. A release with
+    no commit (not yet committed) comes last, by slug."""
+    try:
+        done = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(folder),
+                "log",
+                "--diff-filter=A",
+                "--name-only",
+                "--format=@%at",
+                "--reverse",
+                "--",
+                ".",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise InventoryError(f"{folder}: cannot read the commit order of the releases: {exc}") from exc
+    by_file = {}
+    for slug in releases:
+        by_file[f"{slug.replace('-', '_')}.py"] = slug
+    stamp = 0
+    placed: dict[str, tuple[int, str]] = {}
+    for line in done.stdout.splitlines():
+        if line.startswith("@"):
+            stamp = int(line[1:])
+        elif line.strip():
+            owner = by_file.get(Path(line).name)
+            if owner and owner not in placed:
+                placed[owner] = (stamp, line)
+    first = sorted(placed, key=lambda s: placed[s])
+    return [*first, *sorted(set(releases) - set(placed))]

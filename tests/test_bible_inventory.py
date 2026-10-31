@@ -225,3 +225,35 @@ def test_what_was_seen_in_a_render_cannot_be_confirmed_by_code_and_is_never_acce
     ask = dict(releases={"a": release("a")}, published_slugs=frozenset({"a"}), episodes=tmp_path)
     assert "cannot be confirmed" in inv.cite("a", "seen", "green sweater", **ask)
     assert "cannot be confirmed" in inv.cite("a", "anything", "x", **ask)
+
+
+def commit(repo: Path, name: str, when: str) -> None:
+    import subprocess
+
+    (repo / name).write_text("x = 1\n")
+    env = {
+        "GIT_AUTHOR_DATE": when,
+        "GIT_COMMITTER_DATE": when,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+        "PATH": __import__("os").environ["PATH"],
+    }
+    subprocess.run(["git", "-C", str(repo), "add", name], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", name], check=True, env=env)
+
+
+def test_reels_are_ordered_by_the_commit_that_added_their_release_file(tmp_path):
+    import subprocess
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    commit(tmp_path, "later_one.py", "2020-01-02T00:00:00+0000")
+    commit(tmp_path, "first_one.py", "2020-01-01T00:00:00+0000")
+    releases = {s: release(s) for s in ("first-one", "later-one", "uncommitted")}
+    assert inv.added_order(tmp_path, releases) == ["first-one", "later-one", "uncommitted"]
+
+
+def test_the_order_of_a_folder_that_is_not_a_repository_is_a_typed_error(tmp_path):
+    with pytest.raises(inv.InventoryError, match="cannot read the commit order"):
+        inv.added_order(tmp_path / "nowhere", {})
