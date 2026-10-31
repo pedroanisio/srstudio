@@ -26,6 +26,7 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={
+        "collage-arm": 1,
         "collage-counter": 1,
         "collage-deb": 1,
         "collage-living-room": 1,
