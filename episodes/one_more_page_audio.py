@@ -15,7 +15,7 @@ kitchen. Alice is Pip and Eric is Bo. There is no music: the reel's foley is syn
 
 from __future__ import annotations
 
-from srstudio.interview import Interview, Schedule, Spoken, Timing, beats, main
+from srstudio.interview import Interview, Schedule, Spoken, Timing, beats, chain, main
 from srstudio.song import Singer
 from srstudio.styles import SOFT
 
@@ -73,22 +73,12 @@ def extra(t: Timing) -> dict:
     p = t.phrases
     clock = p[3]["end"] + 0.15
     shake = p[5]["end"] + 0.30
-    book = p[6]["end"] + 0.15  # the sentence stops and the book lets go
-    snore = book + 0.55
-    wave = snore + 2.00
-    tie = wave + 1.05
-    quilt = tie + 0.75
-    click = quilt + 0.85
+    silent = chain(p[6]["end"], book=0.15, snore=0.55, wave=2.00, tie=1.05, quilt=0.75, click=0.85)
     return {
+        **silent,
         "clock": clock,
         "shake": shake,
         "card": shake + SHAKE,
-        "book": book,
-        "snore": snore,
-        "wave": wave,
-        "tie": tie,
-        "quilt": quilt,
-        "click": click,
         "walk": p[7]["end"] + 0.10,
         "door": t.last_end + 1.20,
         "fridge": t.last_end + 1.65,
