@@ -2484,6 +2484,142 @@
         }
       ]
     },
+    "mind-captions": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The channel's captions, in its own letter and palette. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "06a301bf9e8113a3340fb98138bb2b6b11484d8dedae3d98f2f7b703eda68941",
+          "rig": null
+        }
+      ]
+    },
+    "mind-evidence-card": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "One study on a paper card: who, when, what they did, what they found. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "84e0c542dc106d3034b07fe6abeb23ebdad02000558274d1600e1880689b2d33",
+          "rig": null
+        }
+      ]
+    },
+    "mind-lens": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A bias as a tinted lens over what it passes. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1d82c2e951659c1433142ba20dbb29d4bbc78803aa5fae3e295473dc9c04f16a",
+          "rig": null
+        }
+      ]
+    },
+    "mind-memory-shelf": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shelf of labelled files, one pulled out. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "cbf06cb073922365642fa89e5fb7619df3e74fdd7008fcbb594a7f324a019b10",
+          "rig": null
+        }
+      ]
+    },
+    "mind-name-card": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The channel's card: the catchphrase, then the effect's name big on the spot. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2647ef5927a70ae78fed1265d5ccec00c1b037dce469fddbd11807ab430cb0b2",
+          "rig": null
+        }
+      ]
+    },
+    "mind-spotlight": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A beam of attention from above onto one point. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "114c8e5e5dd4d9bbe6039230328fe495db16a2e9f35fd30b69568ba2dd1148d2",
+          "rig": null
+        }
+      ]
+    },
+    "mind-stage": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The channel's dark ground, a soft glow behind what it shows. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "830f02199a56eecd88563549205edf3e177ab480d5764957612e7de822352f09",
+          "rig": null
+        }
+      ]
+    },
+    "mind-two-lines": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Expectation against reality: two bars to scale. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7772d93f911e152fedc74af91df538769229bc9bffeb003010a8647bf9a0b9c8",
+          "rig": null
+        }
+      ]
+    },
     "notification": {
       "kind": "graphic",
       "style": "cutout",
@@ -4089,6 +4225,26 @@
         }
       ]
     },
+    "stick-arm-cast": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "88f6a472812ce6e29b8b73c38729d26f007005bb4b972ba7e3cb1eb2ec8b00ba",
+          "rig": null
+        }
+      ]
+    },
     "stick-armrests": {
       "kind": "prop",
       "style": "stick",
@@ -4296,6 +4452,86 @@
         }
       ]
     },
+    "stick-coffee-corner": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "986a621ce009ca69681fabd8c7cfedf941885d9bcc301ecd5e255be4bd91c994",
+          "rig": null
+        }
+      ]
+    },
+    "stick-coffee-counter": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "9ec3a28a395672cc29281c1b01c6a1676a0e44af01211a2731b88b0403c405b1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-door-lock": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "d149e03a92966ef6e29ee0b2259cb285fe15b2f213ca15f0be55f744e21c51b5",
+          "rig": null
+        }
+      ]
+    },
+    "stick-entrance": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "8b31b640539fdb77cd94fd84f35fb84d230ce93fa95f59ecbc66d89e7e552cf7",
+          "rig": null
+        }
+      ]
+    },
     "stick-essay": {
       "kind": "graphic",
       "style": "stick",
@@ -4329,6 +4565,66 @@
           "proof": "",
           "approval": null,
           "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "stick-flames": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "0b5b288f9d07ac56b98fbce1bfeb4a9ad615ccdd28add205f1e4204a0d99bfba",
+          "rig": null
+        }
+      ]
+    },
+    "stick-fridge-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "fa9625a9da3338f52480c0ddeb93fe5d2cd4c1408dd176536b1bf3cfada17344",
+          "rig": null
+        }
+      ]
+    },
+    "stick-from-above": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "d102edae24db04e507d10cce4d83803122f73912fd31e4d7b3404e099eab816d",
           "rig": null
         }
       ]
@@ -4367,6 +4663,26 @@
         }
       ]
     },
+    "stick-glass-door": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "58f2f69790aca034327fc402c4c8149a704fd228438d41f33d96292ee8a8b553",
+          "rig": null
+        }
+      ]
+    },
     "stick-gym": {
       "kind": "location",
       "style": "stick",
@@ -4401,6 +4717,26 @@
         }
       ]
     },
+    "stick-handset": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "2fe0efeeb0ad09bab01e61fccb8e7f047720b59419a1dde5bcea0477f43459d7",
+          "rig": null
+        }
+      ]
+    },
     "stick-headline": {
       "kind": "graphic",
       "style": "stick",
@@ -4414,6 +4750,26 @@
           "proof": "",
           "approval": null,
           "drawing": "1979bfeeb1c4ea0f8719e443a7b84781d54394c23e3db5fe7e0279fb2c8a65d7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-home-street": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "1ec37de0efebe7dad82f5ead11d2d34bf58e517d5c1a40129c23d3e0638a7c53",
           "rig": null
         }
       ]
@@ -4435,6 +4791,26 @@
         }
       ]
     },
+    "stick-key": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "ba85dd011ce045484953f46ad5fd4bf6a4084a94c3bb42544a30131422b45701",
+          "rig": null
+        }
+      ]
+    },
     "stick-kiosk": {
       "kind": "prop",
       "style": "stick",
@@ -4452,6 +4828,46 @@
         }
       ]
     },
+    "stick-kitchen": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "07842f0e2c9e5085a760cadfd90723bc02b8d9835faab8196d2931caaca4c822",
+          "rig": null
+        }
+      ]
+    },
+    "stick-kitchen-plan": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "c555368f368d226425709926d836677175b83488cd7b7a2b94677dd69dae5bc8",
+          "rig": null
+        }
+      ]
+    },
     "stick-laptop": {
       "kind": "prop",
       "style": "stick",
@@ -4465,6 +4881,66 @@
           "proof": "",
           "approval": null,
           "drawing": "d0037c1d181507c981f9139ca17e013052aaa7cd4ead31bffc1382890c9d7ee4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-marathon": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "9c448e51c44d2ad66fd3015a36b11fe34648cff92e25d6fdbc591847ae752464",
+          "rig": null
+        }
+      ]
+    },
+    "stick-meteor": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "c2542644a8793515db85da5b997d9ce74e7def11aeb682b2eaf6efcba5f7078a",
+          "rig": null
+        }
+      ]
+    },
+    "stick-mug": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "bc144d3950c226198f8ab57fa8ab3df87815858ca0a729437a3e617404b8a124",
           "rig": null
         }
       ]
@@ -4503,6 +4979,46 @@
         }
       ]
     },
+    "stick-neck-brace": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "ee4e4c93600b1532bc693d2fad3e6fedde160456a6e50626095142b950b988c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-parrot": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "3802f5721e5e7a7e771b65f87234b4e405764a6a504107105b0ebc56ac70c14d",
+          "rig": null
+        }
+      ]
+    },
     "stick-phone": {
       "kind": "prop",
       "style": "stick",
@@ -4516,6 +5032,26 @@
           "proof": "",
           "approval": null,
           "drawing": "a658fcb421d69e68eebbd01f1f0406cf97fe083e0a532c780664d9940fd819c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-reply-screen": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "451746167f64bca3a280b6b9585721b31ddf7d8a6dc20f425322d96d6bbf9627",
           "rig": null
         }
       ]
@@ -4557,6 +5093,66 @@
         }
       ]
     },
+    "stick-road-ahead": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "5b7aa153c345c300602d7402e501f408127497859e0f51d6b6736011dc814640",
+          "rig": null
+        }
+      ]
+    },
+    "stick-road-plan": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "6b27ffde2cb08b52a92a83760485988582bfd6c5b33df6e382c0e5048ffb6c87",
+          "rig": null
+        }
+      ]
+    },
+    "stick-road-sign": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "6d55fd23ab076f0bf1eb072289d32c1d00bf4b8f4bbed188273807004dfd3206",
+          "rig": null
+        }
+      ]
+    },
     "stick-room": {
       "kind": "location",
       "style": "stick",
@@ -4574,6 +5170,106 @@
         }
       ]
     },
+    "stick-safe-open": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "916a41c61a1d2005a82ba20d60ea5fba483d138c4532410f13842aa84adf02e0",
+          "rig": null
+        }
+      ]
+    },
+    "stick-side-car": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "aa747f320a894e66e5e256058805a7b1888a565fcec36bad9ab342d3c749cfc7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-snow-cap": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "c5f461df691038f7e3b5a9fbab0cf79f41e77a5e7b5115f35b41f20d245f08f2",
+          "rig": null
+        }
+      ]
+    },
+    "stick-stove-knob": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "e6a7a8ebd23f7659971d9e2b2d7ec848601884b1bd67a50d5671f846208a6ae6",
+          "rig": null
+        }
+      ]
+    },
+    "stick-street-lens": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for hold-the-door.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "639a4435d84700b82884a711e57983df746ce2dd436dadd8eba42782607b8623",
+          "rig": null
+        }
+      ]
+    },
     "stick-studio-flat": {
       "kind": "location",
       "style": "stick",
@@ -4587,6 +5283,46 @@
           "proof": "",
           "approval": null,
           "drawing": "fac851dac2162e030a85807ba4ccb975ddc5a857b734f2b82c675e0faed48119",
+          "rig": null
+        }
+      ]
+    },
+    "stick-suitcases": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "035dbecf94b620ac325e8b123b0da2ffb2974bf1f8dd3470f0efb394141c4304",
+          "rig": null
+        }
+      ]
+    },
+    "stick-table": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for take-my-phone.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "085b0fe6d281585f9e1806f1845690fe9fc1498186bbaabfd8412428d166ea6d",
           "rig": null
         }
       ]
@@ -4621,6 +5357,46 @@
           "proof": "",
           "approval": null,
           "drawing": "047adc876eff6d3ab23b769df0cb6a48f81d2fdb4f70a944082fd1b8d1602549",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tombstone": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for good-you.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "0811ba3cac4eed80cbe5d78eadb03a8abc1e66ab3786230e371e6487c19be887",
+          "rig": null
+        }
+      ]
+    },
+    "stick-top-car": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "First drawn for the-stove.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "e511128127e63d7559bd41a38f4ca405c8c3b740ef21cf05c13457bef7354e1e",
           "rig": null
         }
       ]
@@ -5050,6 +5826,26 @@
         }
       ]
     },
+    "toon-chopper": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A helicopter in the window with a searchlight sweeping the room.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "342e1392468d434fd6e31403ea346082935e852c466fdf3d617bdc9d59d0a916",
+          "rig": null
+        }
+      ]
+    },
     "toon-clipboard": {
       "kind": "prop",
       "style": "toon",
@@ -5080,6 +5876,26 @@
           "proof": "",
           "approval": null,
           "drawing": "ec3ba8a1d84a176333ac2e3e8b756faa72f54ca5dfd2ee988da8dc7081a70bcc",
+          "rig": null
+        }
+      ]
+    },
+    "toon-closet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A closet door that bursts open.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "0b0fa65e4cb441f02299ce2316d782a9c31deb5e2b6cb05eb22845f120ab1ab3",
           "rig": null
         }
       ]
@@ -5259,6 +6075,46 @@
         }
       ]
     },
+    "toon-dump": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A dump at dusk with a dead television.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "2fe8978ed0f698e79d650705a4d5c701dd592a04947a8ae72e3610c7722ebcb5",
+          "rig": null
+        }
+      ]
+    },
+    "toon-far-wall": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wall behind a far figure.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "7dcf134f6b9dba89fdab326a9b4bbcac3a8dcb14957fed415eec4e4792e0ef85",
+          "rig": null
+        }
+      ]
+    },
     "toon-finger": {
       "kind": "prop",
       "style": "toon",
@@ -5275,6 +6131,26 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "404e31e6798fbac3e262b3a6b29c97983c3bad3960fbabd319e4b08d7ad12c59",
+          "rig": null
+        }
+      ]
+    },
+    "toon-flat": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shared flat's pale wall, spotless.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "ddba45abdcb86e4a6f5f4c0884fdea90290a35af1792c9db7b34325b9a218aee",
           "rig": null
         }
       ]
@@ -5349,6 +6225,26 @@
         }
       ]
     },
+    "toon-front-door": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front door on a hall stacked to the ceiling.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "8302d3477d4d9e26beb6faca34140d8b51e3f3151fe39dccc616da90a351733d",
+          "rig": null
+        }
+      ]
+    },
     "toon-goat": {
       "kind": "character",
       "style": "toon",
@@ -5376,6 +6272,46 @@
             },
             "drawing": "17f0ced80ff0f4dd86dacfbcec21f646f74864eff790e4c68aac8f1719fd183c"
           }
+        }
+      ]
+    },
+    "toon-gull": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A gull that flies in and lands.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "3174cec37764391d4a6d83e0b9e3a0b541341e48d7a825e0936d35e5dcb3304c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-hall-chair": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain wooden chair back behind whoever sits on it.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "7fd7e95b7b22b51ef65c60853590c554b5255d1363a6564fbbdcc033f9dab941",
+          "rig": null
         }
       ]
     },
@@ -5553,6 +6489,26 @@
         }
       ]
     },
+    "toon-laundry-pile": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A heap of shirts that rises over whoever is in shot.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "a32347be0c41dd51ab18679d1416ab4f6b1d28a7f3ae197276de7f7fba9681ef",
+          "rig": null
+        }
+      ]
+    },
     "toon-ledge": {
       "kind": "prop",
       "style": "toon",
@@ -5607,6 +6563,26 @@
         }
       ]
     },
+    "toon-lower-third": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A news strap across the lectern's front.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "07339dc6610ddc948e6ea88bfb33861514f61b403d82e13000b2900a118f49a9",
+          "rig": null
+        }
+      ]
+    },
     "toon-meeting": {
       "kind": "location",
       "style": "toon",
@@ -5624,6 +6600,46 @@
         }
       ]
     },
+    "toon-mics": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A bunch of microphones on a lectern.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "78947401661f47c9c84f73bdca8e7372649c715b28e40da21db19fad3a097161",
+          "rig": null
+        }
+      ]
+    },
+    "toon-missed-slip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A delivery slip sliding under a door until it fills the frame.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "719e9fac10263295a38b8142513b638d9da1fb7b54a479f71d17951b8cab059a",
+          "rig": null
+        }
+      ]
+    },
     "toon-mug": {
       "kind": "prop",
       "style": "toon",
@@ -5637,6 +6653,26 @@
           "proof": "",
           "approval": null,
           "drawing": "bb695f58bbfdf61e0de32e079943831b8dce9432367adb50c607c3ea04eae0fc",
+          "rig": null
+        }
+      ]
+    },
+    "toon-night-street": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A night street of dark houses with a crowd that gets a message and walks away.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "2303e31d9dbc27339fc70564e08496673c5472d7c1ac2d9633a0ed7e5ebdc73e",
           "rig": null
         }
       ]
@@ -5675,6 +6711,46 @@
         }
       ]
     },
+    "toon-oven": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An oven whose door drops open.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "195e824f373d0cc7934881976a9e163a8013db120258134a80d27d38dc8ffd7e",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paw": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "An arm that slides in holding something.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "0bf9f08a3ccbe941648a1b41c4f6a194111f47c4593922e025c30d809d3b8abe",
+          "rig": null
+        }
+      ]
+    },
     "toon-phone": {
       "kind": "prop",
       "style": "toon",
@@ -5705,6 +6781,66 @@
           "proof": "",
           "approval": null,
           "drawing": "07cdef4b137276c22b272faea4fa1eb0c06af2abd280e0539fbb80827d4e8611",
+          "rig": null
+        }
+      ]
+    },
+    "toon-plates": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Plates sliding out of an oven across the frame.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
+          "rig": null
+        }
+      ]
+    },
+    "toon-porch": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A clapboard wall with a front door from outside and a mat.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "50d641a343d84cdf6b131e8d3ef9c0d17aabafb840ab6a6d5adf13ffe3441717",
+          "rig": null
+        }
+      ]
+    },
+    "toon-press-room": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "4e4fc84b489f66d06eb9f6f866ee17f321509a8f749dcb7d1447506121ecf4ac",
           "rig": null
         }
       ]
@@ -5843,6 +6979,26 @@
         }
       ]
     },
+    "toon-road": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A road passing behind a flatbed.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "d9f22f548ed35a29885344cb431de156302b962464bf0f188ee2e22043d1c403",
+          "rig": null
+        }
+      ]
+    },
     "toon-room": {
       "kind": "location",
       "style": "toon",
@@ -5856,6 +7012,26 @@
           "proof": "",
           "approval": null,
           "drawing": "00c0f4b927cadcff5889cb313bebbd17b180fc6595afe823a57fd41507f4cc81",
+          "rig": null
+        }
+      ]
+    },
+    "toon-shower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A shower curtain pulled back on a stack of bins.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
           "rig": null
         }
       ]
@@ -5910,6 +7086,86 @@
         }
       ]
     },
+    "toon-snores": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Zs that rise from a sleeper.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "dfbf779c846e4a0568551715372e2a7bdf5922982c7f7beee4201532cf980504",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A sofa and side table that carry the character and the marks anywhere.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "1a772a5ccd97110f214a49f244ad3c26760c74c0c92e95ec2f852a6ae7e6ffe0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sofa-back": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "The sofa seen from behind, for a far figure.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "124302cfe52fdbe12ee6d8708d9a83cde99b7cd4712485e22ea98f9f4969de6f",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sparkles": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "Four-pointed glints on a clean room.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "1f189256a7e2b9cbc43cf00b62ced821f6bd2847962907941bab8c4a1b0c3f97",
+          "rig": null
+        }
+      ]
+    },
     "toon-speaker": {
       "kind": "prop",
       "style": "toon",
@@ -5923,6 +7179,26 @@
           "proof": "",
           "approval": null,
           "drawing": "f183d6922efc0ffdb00ccdbb6aaa5b3058d49d7c4ed9e2035e5c527f6125a230",
+          "rig": null
+        }
+      ]
+    },
+    "toon-stuck-note": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
           "rig": null
         }
       ]
@@ -5981,6 +7257,23 @@
         }
       ]
     },
+    "toon-tee": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A loud T-shirt front with an invented portrait in a heart. First drawn for spotlight-effect; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5932924aead8b6c9a7e0363fe499b42dd7af96a70df2ecf56c5834fef95edcb0",
+          "rig": null
+        }
+      ]
+    },
     "toon-thermostat": {
       "kind": "prop",
       "style": "toon",
@@ -5997,6 +7290,26 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "2ed82c71e3310f486e96efe462667b552e488193b3ecf66a39d9ea3b6da0f291",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tiny-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A tiny chest whose top drawer opens on one sock.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "6b35a7603e68613e5519cf4d4e3b1015402b01bb3eadd0b46d6d6063f5c04e78",
           "rig": null
         }
       ]
@@ -6038,6 +7351,26 @@
         }
       ]
     },
+    "toon-van": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain white van driving off, shrinking.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "608e47a117b8428de7fbe7b84cfa176899faaddfdf50b54c0240e46a0c75d627",
+          "rig": null
+        }
+      ]
+    },
     "toon-vent": {
       "kind": "prop",
       "style": "toon",
@@ -6074,6 +7407,66 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "4554b59dfea06acc7f4f9056c543b2452779259db9198a4b2f10c81e87658e85",
+          "rig": null
+        }
+      ]
+    },
+    "toon-whirl": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A spinning blur a character whirls in on.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "72618b7c94bbf74ca17ae02c8ba291f819e8a80dafa2cba4c92890e434c84417",
+          "rig": null
+        }
+      ]
+    },
+    "toon-worktop": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A plain counter top in the desk's place.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "a086734b6bbc964b0c6ef7c323224dc14e915af9b4b11550d355d4d6003918fe",
+          "rig": null
+        }
+      ]
+    },
+    "toon-yard": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-30",
+          "note": "A front yard with a fence and a sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-30",
+            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
+          },
+          "drawing": "500b993400a4570b42aea219562c225762f4eaa43e45d80fd936937ba0493c00",
           "rig": null
         }
       ]
@@ -6165,1246 +7558,6 @@
           "proof": "",
           "approval": null,
           "drawing": "",
-          "rig": null
-        }
-      ]
-    },
-    "stick-arm-cast": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "88f6a472812ce6e29b8b73c38729d26f007005bb4b972ba7e3cb1eb2ec8b00ba",
-          "rig": null
-        }
-      ]
-    },
-    "stick-coffee-corner": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "986a621ce009ca69681fabd8c7cfedf941885d9bcc301ecd5e255be4bd91c994",
-          "rig": null
-        }
-      ]
-    },
-    "stick-coffee-counter": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "9ec3a28a395672cc29281c1b01c6a1676a0e44af01211a2731b88b0403c405b1",
-          "rig": null
-        }
-      ]
-    },
-    "stick-door-lock": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "d149e03a92966ef6e29ee0b2259cb285fe15b2f213ca15f0be55f744e21c51b5",
-          "rig": null
-        }
-      ]
-    },
-    "stick-entrance": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for hold-the-door.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "8b31b640539fdb77cd94fd84f35fb84d230ce93fa95f59ecbc66d89e7e552cf7",
-          "rig": null
-        }
-      ]
-    },
-    "stick-flames": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "0b5b288f9d07ac56b98fbce1bfeb4a9ad615ccdd28add205f1e4204a0d99bfba",
-          "rig": null
-        }
-      ]
-    },
-    "stick-fridge-open": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "fa9625a9da3338f52480c0ddeb93fe5d2cd4c1408dd176536b1bf3cfada17344",
-          "rig": null
-        }
-      ]
-    },
-    "stick-from-above": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "d102edae24db04e507d10cce4d83803122f73912fd31e4d7b3404e099eab816d",
-          "rig": null
-        }
-      ]
-    },
-    "stick-glass-door": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for hold-the-door.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "58f2f69790aca034327fc402c4c8149a704fd228438d41f33d96292ee8a8b553",
-          "rig": null
-        }
-      ]
-    },
-    "stick-handset": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "2fe0efeeb0ad09bab01e61fccb8e7f047720b59419a1dde5bcea0477f43459d7",
-          "rig": null
-        }
-      ]
-    },
-    "stick-home-street": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "1ec37de0efebe7dad82f5ead11d2d34bf58e517d5c1a40129c23d3e0638a7c53",
-          "rig": null
-        }
-      ]
-    },
-    "stick-key": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "ba85dd011ce045484953f46ad5fd4bf6a4084a94c3bb42544a30131422b45701",
-          "rig": null
-        }
-      ]
-    },
-    "stick-kitchen": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "07842f0e2c9e5085a760cadfd90723bc02b8d9835faab8196d2931caaca4c822",
-          "rig": null
-        }
-      ]
-    },
-    "stick-kitchen-plan": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "c555368f368d226425709926d836677175b83488cd7b7a2b94677dd69dae5bc8",
-          "rig": null
-        }
-      ]
-    },
-    "stick-marathon": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for hold-the-door.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "9c448e51c44d2ad66fd3015a36b11fe34648cff92e25d6fdbc591847ae752464",
-          "rig": null
-        }
-      ]
-    },
-    "stick-meteor": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "c2542644a8793515db85da5b997d9ce74e7def11aeb682b2eaf6efcba5f7078a",
-          "rig": null
-        }
-      ]
-    },
-    "stick-mug": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "bc144d3950c226198f8ab57fa8ab3df87815858ca0a729437a3e617404b8a124",
-          "rig": null
-        }
-      ]
-    },
-    "stick-neck-brace": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "ee4e4c93600b1532bc693d2fad3e6fedde160456a6e50626095142b950b988c4",
-          "rig": null
-        }
-      ]
-    },
-    "stick-parrot": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "3802f5721e5e7a7e771b65f87234b4e405764a6a504107105b0ebc56ac70c14d",
-          "rig": null
-        }
-      ]
-    },
-    "stick-reply-screen": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "451746167f64bca3a280b6b9585721b31ddf7d8a6dc20f425322d96d6bbf9627",
-          "rig": null
-        }
-      ]
-    },
-    "stick-road-ahead": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "5b7aa153c345c300602d7402e501f408127497859e0f51d6b6736011dc814640",
-          "rig": null
-        }
-      ]
-    },
-    "stick-road-plan": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "6b27ffde2cb08b52a92a83760485988582bfd6c5b33df6e382c0e5048ffb6c87",
-          "rig": null
-        }
-      ]
-    },
-    "stick-road-sign": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "6d55fd23ab076f0bf1eb072289d32c1d00bf4b8f4bbed188273807004dfd3206",
-          "rig": null
-        }
-      ]
-    },
-    "stick-safe-open": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "916a41c61a1d2005a82ba20d60ea5fba483d138c4532410f13842aa84adf02e0",
-          "rig": null
-        }
-      ]
-    },
-    "stick-side-car": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "aa747f320a894e66e5e256058805a7b1888a565fcec36bad9ab342d3c749cfc7",
-          "rig": null
-        }
-      ]
-    },
-    "stick-snow-cap": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for hold-the-door.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "c5f461df691038f7e3b5a9fbab0cf79f41e77a5e7b5115f35b41f20d245f08f2",
-          "rig": null
-        }
-      ]
-    },
-    "stick-stove-knob": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "e6a7a8ebd23f7659971d9e2b2d7ec848601884b1bd67a50d5671f846208a6ae6",
-          "rig": null
-        }
-      ]
-    },
-    "stick-street-lens": {
-      "kind": "location",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for hold-the-door.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "639a4435d84700b82884a711e57983df746ce2dd436dadd8eba42782607b8623",
-          "rig": null
-        }
-      ]
-    },
-    "stick-suitcases": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "035dbecf94b620ac325e8b123b0da2ffb2974bf1f8dd3470f0efb394141c4304",
-          "rig": null
-        }
-      ]
-    },
-    "stick-table": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for take-my-phone.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "085b0fe6d281585f9e1806f1845690fe9fc1498186bbaabfd8412428d166ea6d",
-          "rig": null
-        }
-      ]
-    },
-    "stick-tombstone": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for good-you.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "0811ba3cac4eed80cbe5d78eadb03a8abc1e66ab3786230e371e6487c19be887",
-          "rig": null
-        }
-      ]
-    },
-    "stick-top-car": {
-      "kind": "prop",
-      "style": "stick",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "First drawn for the-stove.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "e511128127e63d7559bd41a38f4ca405c8c3b740ef21cf05c13457bef7354e1e",
-          "rig": null
-        }
-      ]
-    },
-    "toon-chopper": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A helicopter in the window with a searchlight sweeping the room.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "342e1392468d434fd6e31403ea346082935e852c466fdf3d617bdc9d59d0a916",
-          "rig": null
-        }
-      ]
-    },
-    "toon-closet": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A closet door that bursts open.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "0b0fa65e4cb441f02299ce2316d782a9c31deb5e2b6cb05eb22845f120ab1ab3",
-          "rig": null
-        }
-      ]
-    },
-    "toon-dump": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A dump at dusk with a dead television.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "2fe8978ed0f698e79d650705a4d5c701dd592a04947a8ae72e3610c7722ebcb5",
-          "rig": null
-        }
-      ]
-    },
-    "toon-far-wall": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A plain wall behind a far figure.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "7dcf134f6b9dba89fdab326a9b4bbcac3a8dcb14957fed415eec4e4792e0ef85",
-          "rig": null
-        }
-      ]
-    },
-    "toon-flat": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A shared flat's pale wall, spotless.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "ddba45abdcb86e4a6f5f4c0884fdea90290a35af1792c9db7b34325b9a218aee",
-          "rig": null
-        }
-      ]
-    },
-    "toon-front-door": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A front door on a hall stacked to the ceiling.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "8302d3477d4d9e26beb6faca34140d8b51e3f3151fe39dccc616da90a351733d",
-          "rig": null
-        }
-      ]
-    },
-    "toon-gull": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A gull that flies in and lands.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "3174cec37764391d4a6d83e0b9e3a0b541341e48d7a825e0936d35e5dcb3304c",
-          "rig": null
-        }
-      ]
-    },
-    "toon-hall-chair": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A plain wooden chair back behind whoever sits on it.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "7fd7e95b7b22b51ef65c60853590c554b5255d1363a6564fbbdcc033f9dab941",
-          "rig": null
-        }
-      ]
-    },
-    "toon-laundry-pile": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A heap of shirts that rises over whoever is in shot.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "a32347be0c41dd51ab18679d1416ab4f6b1d28a7f3ae197276de7f7fba9681ef",
-          "rig": null
-        }
-      ]
-    },
-    "toon-worktop": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A plain counter top in the desk's place.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "a086734b6bbc964b0c6ef7c323224dc14e915af9b4b11550d355d4d6003918fe",
-          "rig": null
-        }
-      ]
-    },
-    "toon-lower-third": {
-      "kind": "graphic",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A news strap across the lectern's front.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "07339dc6610ddc948e6ea88bfb33861514f61b403d82e13000b2900a118f49a9",
-          "rig": null
-        }
-      ]
-    },
-    "toon-mics": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A bunch of microphones on a lectern.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "78947401661f47c9c84f73bdca8e7372649c715b28e40da21db19fad3a097161",
-          "rig": null
-        }
-      ]
-    },
-    "toon-missed-slip": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A delivery slip sliding under a door until it fills the frame.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "719e9fac10263295a38b8142513b638d9da1fb7b54a479f71d17951b8cab059a",
-          "rig": null
-        }
-      ]
-    },
-    "toon-night-street": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A night street of dark houses with a crowd that gets a message and walks away.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "2303e31d9dbc27339fc70564e08496673c5472d7c1ac2d9633a0ed7e5ebdc73e",
-          "rig": null
-        }
-      ]
-    },
-    "toon-oven": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "An oven whose door drops open.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "195e824f373d0cc7934881976a9e163a8013db120258134a80d27d38dc8ffd7e",
-          "rig": null
-        }
-      ]
-    },
-    "toon-paw": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "An arm that slides in holding something.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "0bf9f08a3ccbe941648a1b41c4f6a194111f47c4593922e025c30d809d3b8abe",
-          "rig": null
-        }
-      ]
-    },
-    "toon-plates": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "Plates sliding out of an oven across the frame.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "ca10e3587a9068635b5b6e82d033bb79a22f2bdbcb4e20f413406f3816403c66",
-          "rig": null
-        }
-      ]
-    },
-    "toon-porch": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A clapboard wall with a front door from outside and a mat.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "50d641a343d84cdf6b131e8d3ef9c0d17aabafb840ab6a6d5adf13ffe3441717",
-          "rig": null
-        }
-      ]
-    },
-    "toon-press-room": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A press conference: curtain, two plain flags, a stage, flashes and a LIVE bug.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "4e4fc84b489f66d06eb9f6f866ee17f321509a8f749dcb7d1447506121ecf4ac",
-          "rig": null
-        }
-      ]
-    },
-    "toon-road": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A road passing behind a flatbed.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "d9f22f548ed35a29885344cb431de156302b962464bf0f188ee2e22043d1c403",
-          "rig": null
-        }
-      ]
-    },
-    "toon-shower": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A shower curtain pulled back on a stack of bins.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
-          "rig": null
-        }
-      ]
-    },
-    "toon-snores": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "Zs that rise from a sleeper.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "dfbf779c846e4a0568551715372e2a7bdf5922982c7f7beee4201532cf980504",
-          "rig": null
-        }
-      ]
-    },
-    "toon-sofa": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A sofa and side table that carry the character and the marks anywhere.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "1a772a5ccd97110f214a49f244ad3c26760c74c0c92e95ec2f852a6ae7e6ffe0",
-          "rig": null
-        }
-      ]
-    },
-    "toon-sofa-back": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "The sofa seen from behind, for a far figure.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "124302cfe52fdbe12ee6d8708d9a83cde99b7cd4712485e22ea98f9f4969de6f",
-          "rig": null
-        }
-      ]
-    },
-    "toon-sparkles": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "Four-pointed glints on a clean room.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "1f189256a7e2b9cbc43cf00b62ced821f6bd2847962907941bab8c4a1b0c3f97",
-          "rig": null
-        }
-      ]
-    },
-    "toon-stuck-note": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A yellow note with words on it, on a face or in a lap, able to ride a paw.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
-          "rig": null
-        }
-      ]
-    },
-    "toon-tiny-drawer": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A tiny chest whose top drawer opens on one sock.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "6b35a7603e68613e5519cf4d4e3b1015402b01bb3eadd0b46d6d6063f5c04e78",
-          "rig": null
-        }
-      ]
-    },
-    "toon-van": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A plain white van driving off, shrinking.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "608e47a117b8428de7fbe7b84cfa176899faaddfdf50b54c0240e46a0c75d627",
-          "rig": null
-        }
-      ]
-    },
-    "toon-whirl": {
-      "kind": "prop",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A spinning blur a character whirls in on.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "72618b7c94bbf74ca17ae02c8ba291f819e8a80dafa2cba4c92890e434c84417",
-          "rig": null
-        }
-      ]
-    },
-    "toon-yard": {
-      "kind": "location",
-      "style": "toon",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-30",
-          "note": "A front yard with a fence and a sign.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-30",
-            "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
-          },
-          "drawing": "500b993400a4570b42aea219562c225762f4eaa43e45d80fd936937ba0493c00",
           "rig": null
         }
       ]

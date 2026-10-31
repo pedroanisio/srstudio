@@ -337,3 +337,41 @@ def test_a_watering_can_refuses_what_it_cannot_draw(kwargs, match):
     cv = canvas()
     with pytest.raises(ToonDataError, match=match):
         toon_house.watering_can(cv, cv.comp, **kwargs)
+
+
+def test_a_tee_is_registered_and_carries_its_invented_print():
+    cv = canvas()
+    toon_house.tee(cv, cv.comp, (200, 660))
+    assert registry.get("prop", "toon-tee").builder is toon_house.tee
+    assert tree(cv).findall(".//*")
+    assert not [n for n in tree(cv).iter() if n.tag.endswith("text")]  # a picture only: no name, no slogan, no brand
+
+
+def test_a_tee_scales_about_its_collar():
+    cv = canvas()
+    toon_house.tee(cv, cv.comp, (200, 660), scale=0.5)
+    group = next(n for n in tree(cv).iter() if n.get("id") == "tee")
+    assert float(group.get("scaleX")) == float(group.get("scaleY")) == 0.5
+
+
+def test_a_tee_can_keep_to_a_span_of_time():
+    cv = canvas()
+    toon_house.tee(cv, cv.comp, (200, 660), start=1.0, end=3.0)
+    group = next(n for n in tree(cv).iter() if n.get("id") == "tee")
+    assert (float(group.get("start")), float(group.get("end"))) == (1.0, 3.0)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"at": (1,)}, "a tee's place"),
+        ({"at": "here"}, "a tee's place"),
+        ({"at": (1, 2), "scale": 0.0}, "a tee's scale"),
+        ({"at": (1, 2), "colour": "lime"}, "a tee's colour"),
+    ],
+)
+def test_a_tee_refuses_bad_data(kwargs, match):
+    cv = canvas()
+    args = dict(kwargs)
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.tee(cv, cv.comp, args.pop("at"), **args)
