@@ -18,6 +18,7 @@ from . import (  # noqa: F401  (registers builders)
     collage_photo,
     collage_sets,
     cutout_counter,
+    cutout_handed,
     cutout_hiring,
     cutout_home,
     cutout_odds,
