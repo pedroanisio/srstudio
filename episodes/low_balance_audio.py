@@ -27,9 +27,9 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("candidate", "Why is there a $12 fee?", "Why is there a $12 fee?", 1.00),
     Spoken("manager", "Your balance is low.", "Your balance is low.", 0.95),
     Spoken("candidate", "You're charging me for having no money.", "You're charging me\nfor having no money.", 1.00),
-    Spoken("manager", "For having too little.", "For having too little.", 0.95),
+    Spoken("manager", "For having too little.", "For having too little.", 0.95, level_db=-3.0),
     Spoken("candidate", "And now I've got less.", "And now I've got less.", 1.00),
-    Spoken("manager", "Yes. So that's another twelve.", "Yes. So that's\nanother twelve.", 0.95),
+    Spoken("manager", "Yes. So that's another twelve.", "Yes. So that's\nanother twelve.", 0.95, level_db=-3.0),
     Spoken("candidate", "Fine. Close the account.", "Fine. Close the account.", 1.00),
     Spoken(
         "manager", "That's a $25 closing fee. You're short.", "That's a $25 closing fee.\nYou're short.", 0.95
@@ -37,8 +37,8 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("candidate", "What if I had a million dollars?", "What if I had\na million dollars?", 1.00),
     Spoken("manager", "Then it's all free. We'd send a car.", "Then it's all free.\nWe'd send a car.", 1.05),
     Spoken("candidate", "Is anything free for me?", "Is anything free for me?", 1.00),
-    Spoken("manager", "The pen.", "The pen.", 0.95),
-    Spoken("manager", "Early withdrawal.", "Early withdrawal.", 0.90),
+    Spoken("manager", "The pen.", "The pen.", 0.95, level_db=-4.0),
+    Spoken("manager", "Early withdrawal.", "Early withdrawal.", 0.90, level_db=-6.0),
 ]
 DING = "A single clean soft bell ding from a bank teller's counter, one polite note, close, no voices, no music"
 EFFECTS = [

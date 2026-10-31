@@ -56,9 +56,9 @@ LINES = (
     Line("deb", "It's a tiny hole!"),
     Line("feld", "Plus paint. Plus filler. Plus my time."),
     Line("deb", "That's exactly my deposit."),
-    Line("feld", "It always is."),
-    Line("feld", "New listing. Charming. Original features."),
-    Line("feld", "Gallery wall. Two hundred more a month."),
+    Line("feld", "It always is.", level_db=-3.0),
+    Line("feld", "New listing. Charming. Original features.", level_db=-5.0),
+    Line("feld", "Gallery wall. Two hundred more a month.", level_db=-6.0),
 )
 BEATS, END = timed(
     LINES,
