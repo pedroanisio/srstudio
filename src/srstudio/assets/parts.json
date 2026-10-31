@@ -9222,6 +9222,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-reception-glass": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A receptionist's sliding glass with a speaking hole. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7359317dfd2ebf14b80de31ea23e4c4912c5abeab1934389c549b8424be38f84",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -12,13 +12,13 @@ from . import checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, ToonDataError, fh, fx, fy
-from .toon_sets import _inked
+from .toon_sets import _inked, _line
 
 Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops"]
+__all__ = ["READ_SIZE", "eye_drops", "reception_glass"]
 
 
 def _second(value: object, what: str) -> float:
@@ -27,6 +27,8 @@ def _second(value: object, what: str) -> float:
     return float(value)  # type: ignore[arg-type]
 
 
+COUNTER = 801.0  # the reference height of the counter top, the desk's edge
+GAP = 64.0  # the gap under the glass for the paperwork
 DROP_FALL = 0.22  # seconds a drop takes to reach the eye
 BOTTLE, CAP, DROP = "#e8f4fb", "#3f7fbf", "#8fd0f5"
 
@@ -73,3 +75,39 @@ def eye_drops(
         drop = cv.group(g, cv.uid("drop"), start=at, end=at + DROP_FALL)
         cv.ellipse(drop, fx(x - 7 * scale), fy(tip), fh(14 * scale), fh(20 * scale), DROP, cv.ink, FINE_W / 2)
         cv.keys(drop, "y", [(at, 0.0), (at + DROP_FALL, fh(y - tip))], hold=False, local=False)
+
+
+GLASS, GLASS_EDGE, TRAY = "#d7eef2", "#8fb0b6", "#e7e2d6"
+
+
+@register(
+    "prop",
+    "toon-reception-glass",
+    summary="A receptionist's sliding glass over a counter, with a speaking hole and a gap for the paperwork",
+    style="toon",
+)
+def reception_glass(cv: Canvas, parent, left: float = -10.0, right: float = 602.0, top: float = 300.0) -> None:
+    """The pane from reference ``left`` to ``right``, ``top`` down to the counter: whoever sits behind it is behind it
+    for the whole shot. It is drawn over them, so it goes in the shot's ``front``."""
+    if not (checks.number(left) and checks.number(right) and checks.number(top) and left < right and top < COUNTER):
+        raise ToonDataError(f"a pane spans left to right above the counter, got {left!r}, {right!r}, {top!r}")
+    g = cv.group(parent, cv.uid("reception-glass"))
+    cv.rect(
+        g,
+        fx(left),
+        fy(top),
+        fh(right - left),
+        fh(COUNTER - GAP - top),
+        GLASS,
+        GLASS_EDGE,
+        FINE_W,
+        radius=0,
+        opacity=0.28,
+    )
+    for x in (left + (right - left) * 0.2, left + (right - left) * 0.62):  # two glints, so the pane reads as glass
+        _line(cv, g, [(x, top + 40), (x + 70, top + 150)], 6.0, "#ffffff", 0.55)
+    cv.rect(g, fx(left), fy(COUNTER - GAP), fh(right - left), fh(10), GLASS_EDGE, cv.ink, FINE_W / 2, radius=0)
+    mid = (left + right) / 2
+    cv.ellipse(g, fx(mid - 38), fy(top + 190), fh(76), fh(76), "#ffffff", GLASS_EDGE, FINE_W, opacity=0.5)
+    for dx, dy in ((-16, 0), (16, 0), (0, -16), (0, 16), (0, 0)):
+        cv.ellipse(g, fx(mid + dx - 4), fy(top + 228 + dy - 4), fh(8), fh(8), GLASS_EDGE)

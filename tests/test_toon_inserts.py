@@ -54,3 +54,14 @@ def test_drops_refuse_a_time_they_cannot_keep(bad):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.eye_drops(cv, cv.comp, **bad)
+
+
+def test_the_glass_stands_on_the_counter_and_refuses_to_stand_above_nothing():
+    specimens.load_parts()
+    assert registry.get("prop", "toon-reception-glass").builder is toon_inserts.reception_glass
+    cv = canvas()
+    toon_inserts.reception_glass(cv, cv.comp)
+    assert sum(1 for _ in tree(cv).iter("shape")) > 6
+    for bad in ({"left": 300.0, "right": 100.0}, {"top": 900.0}, {"top": float("nan")}):
+        with pytest.raises(ToonDataError):
+            toon_inserts.reception_glass(cv, cv.comp, **bad)
