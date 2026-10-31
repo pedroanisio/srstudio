@@ -188,6 +188,36 @@ def test_runs_are_found_from_projects_packages_and_the_scripts_folder(tmp_path):
     assert missing == ["no-script"]
 
 
+def test_pilots_are_measured_from_their_series_folders_and_the_pilots_folder_is_no_project(tmp_path):
+    scripts = tmp_path / "scripts"
+    (scripts / "pilots").mkdir(parents=True)
+    for name in ("off_and_on.py", "pilots/real_roast.py", "pilots/further_north.py"):
+        (scripts / name).write_text("")
+    episodes = tmp_path / "episodes"
+    for p in (
+        episodes / "off-and-on",
+        episodes / "pilots" / "news" / "real-roast",
+        episodes / "pilots" / "maps" / "further-north",
+        episodes / "pilots" / "maps" / "no-script-yet",
+    ):
+        p.mkdir(parents=True)
+    runs, missing = U.discover(episodes, None, scripts)
+    assert [(r.slug, r.script.parent.name, r.project.parent.name) for r in runs] == [
+        ("further-north", "pilots", "maps"),
+        ("off-and-on", "scripts", "episodes"),
+        ("real-roast", "pilots", "news"),
+    ]
+    assert missing == ["no-script-yet"]  # `pilots` itself is a folder of series, not an unmeasured project
+
+
+def test_a_pilot_may_not_take_a_library_episodes_slug(tmp_path):
+    episodes = tmp_path / "episodes"
+    for p in (episodes / "real-roast", episodes / "pilots" / "news" / "real-roast"):
+        p.mkdir(parents=True)
+    with pytest.raises(U.UsageError, match="real-roast"):
+        U.discover(episodes, None, tmp_path)
+
+
 def test_a_report_round_trips_and_refuses_an_unknown_schema(tmp_path):
     report = U.Report({"a": ("plant",)}, ("b",))
     path = tmp_path / "usage.json"

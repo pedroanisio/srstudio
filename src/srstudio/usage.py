@@ -210,6 +210,20 @@ class Report:
         return cls({k: tuple(v) for k, v in episodes.items()}, tuple(unmeasured))
 
 
+PILOTS = "pilots"  # the folder of series, in the projects and in the scripts, that the library holds apart
+
+
+def pilot_projects(episodes: Path) -> dict[str, tuple[str, Path]]:
+    """The pilot projects under ``<episodes>/pilots/<series>/<slug>``, as ``{slug: (series, folder)}`` in slug order
+    (ADR 0054: a pilot is for a future channel, so it sits beside the library's projects and not among them)."""
+    found: dict[str, tuple[str, Path]] = {}
+    root = Path(episodes) / PILOTS
+    for series in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else ():
+        for project in sorted(p for p in series.iterdir() if p.is_dir()):
+            found[project.name] = (series.name, project)
+    return dict(sorted(found.items()))
+
+
 def discover(
     episodes: Path,
     packages: Path | None,
@@ -231,8 +245,13 @@ def discover(
             if (p / "project").is_dir():
                 projects[_VERSION.sub("", p.name)] = p / "project"
     for p in sorted(Path(episodes).iterdir()):
-        if p.is_dir():
+        if p.is_dir() and p.name != PILOTS:
             projects[p.name] = p
+    pilots = pilot_projects(episodes)
+    clash = sorted(set(pilots) & set(projects))
+    if clash:
+        raise UsageError(f"a pilot takes the slug of a library project: {', '.join(clash)}")
+    projects.update({slug: folder for slug, (_, folder) in pilots.items()})
     unknown = sorted(set(skip) - set(projects))
     if unknown:
         raise UsageError(f"--skip names no project: {', '.join(unknown)}")
@@ -250,7 +269,8 @@ def discover(
         if slug in skip:
             missing.append(slug)
             continue
-        script = Path(scripts) / f"{builders.get(slug, slug.replace('-', '_'))}.py"
+        home = Path(scripts) / PILOTS if slug in pilots else Path(scripts)
+        script = home / f"{builders.get(slug, slug.replace('-', '_'))}.py"
         if script.is_file():
             given = tuple((args or {}).get(slug, ()))
             if "--voice" not in given and (projects[slug] / "voiced").is_dir() and "--voice" in script.read_text():
