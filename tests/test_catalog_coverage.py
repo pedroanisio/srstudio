@@ -68,6 +68,7 @@ NO_EPISODE = [
     "stick-foil-note",
     "stick-poster",
     "stick-headset",
+    "ballpoint",
     "bistro-table",
     "chair-lever",
     "coin-purse",

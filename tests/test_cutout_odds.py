@@ -34,6 +34,7 @@ DRAWN = [
     ("lane-sign", cutout_odds.lane_sign),
     ("glasses-glint", cutout_odds.glasses_glint),
     ("chair-lever", cutout_odds.chair_lever),
+    ("ballpoint", cutout_odds.ballpoint),
 ]
 
 
