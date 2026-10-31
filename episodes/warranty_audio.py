@@ -28,13 +28,13 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("juno", "What are you doing?", "What are you doing?", 1.05),
     Spoken("pip", "The warranty ends at midnight.", "The warranty ends at midnight.", 1.0),
     Spoken("pip", "It's going to die the second it's over.", "It's going to die\nthe second it's over.", 1.02),
-    Spoken("pip", "They always do.", "They always do.", 1.0),
+    Spoken("pip", "They always do.", "They always do.", 1.0, gain=-6.0),
     Spoken("pip", "So it dies now. While it's free.", "So it dies now.\nWhile it's free.", 0.98),
     Spoken("pip", "Spin, you coward.", "Spin, you coward.", 0.95),
     Spoken("juno", "It's never run better.", "It's never run better.", 0.98),
     Spoken("pip", "Oh, you little...", "Oh, you little...", 0.9),
     Spoken("juno", "When did we buy the house?", "When did we buy the house?", 0.95),
-    Spoken("pip", "Same day.", "Same day.", 0.9),
+    Spoken("pip", "Same day.", "Same day.", 0.9, gain=-7.0),
 ]
 INTERVIEW = Interview(
     slug="warranty",

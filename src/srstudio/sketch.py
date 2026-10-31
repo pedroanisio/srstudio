@@ -138,6 +138,7 @@ class Line:
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
+    gain: float = 0.0  # dB under the other lines, zero or less: a line said low, set in the mix on its take
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,8 @@ def check(sketch: Sketch) -> None:
         raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
+    if any(not (checks.number(line.gain) and line.gain <= 0) for line in sketch.lines):
+        raise SketchError("a line's gain is zero or less: the other lines set the level")
     for i, line in enumerate(sketch.lines):
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
@@ -751,7 +754,13 @@ def record(
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
         conform_clip(
-            spoken.wav, dst, trim.clip_in, trim.clip_in + kept, kept, gain_to_peak(trim.peak, VOICE_PEAK), ffmpeg
+            spoken.wav,
+            dst,
+            trim.clip_in,
+            trim.clip_in + kept,
+            kept,
+            gain_to_peak(trim.peak, VOICE_PEAK) + line.gain,
+            ffmpeg,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character

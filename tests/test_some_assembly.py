@@ -1,4 +1,4 @@
-"""Some Assembly as data: arm B moves over the recording's silent second, the manual's pages are held to read, and it ends on Noor."""
+"""Some Assembly as data: arm B moves over the silent second, pages are held to read, and it ends on Noor."""
 
 import sys
 from pathlib import Path

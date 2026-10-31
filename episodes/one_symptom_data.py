@@ -55,8 +55,8 @@ LINES = (
     Line("patient", "At one in the morning. I've written a will."),
     Line("doctor", "Give me that. Headache. Dry mouth. Tingling left thumb."),
     Line("doctor", "How long have I got?"),
-    Line("patient", "Four days. But there's a forum."),
-    Line("doctor", "Is it a good forum?"),
+    Line("patient", "Four days. But there's a forum.", gain=-4.0),
+    Line("doctor", "Is it a good forum?", gain=-7.0),
     Line("patient", "They're very supportive."),
 )
 SCRIPT = scripting.Script(LINES)
