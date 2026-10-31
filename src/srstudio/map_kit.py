@@ -645,27 +645,36 @@ def population(
     colours: Mapping[str, str] | None = None,
     radius: float = DOT_RADIUS,
     id: str = "map-population",
+    fades: Mapping[str, tuple[float, float]] | None = None,
 ) -> None:
     """The dots of the zones ``waves`` names on the map asset ``view``, each zone appearing wave by wave between its
     ``(start, end)``. A zone's dots are its total rounded to the nearest million (``tools/maps/build_layers.py``), so a
-    zone can be counted. ``colours`` overrides a zone's colour: :data:`PIN` for the zone the reel is about."""
+    zone can be counted. ``colours`` overrides a zone's colour: :data:`PIN` for the zone the reel is about. ``fades``
+    takes a zone's dots away again over its ``(start, end)``, once the reel is about something else."""
     if not waves or not set(waves) <= {"inside", "adelaide", "rest"}:
         raise MapKitError(f"the zones are inside, adelaide and rest, got {sorted(waves)}")
+    for zone, (begin, stop) in (fades or {}).items():
+        if zone not in waves or begin < waves[zone][1]:
+            raise MapKitError(f"a zone fades after it is up, got {zone!r} from {begin}")
+        _span(begin, stop, f"the fade of {zone!r}")
     source = _geo(cv, "dots")
     features = [f for f in json.loads(_shipped("dots"))["features"]]
     for zone, (start, end) in waves.items():
         _span(start, end, f"the zone {zone!r}")
-        keys = [f["id"] for f in features if f["properties"]["zone"] == zone]
-        slot = (end - start) / len(keys)
+        names = [f["id"] for f in features if f["properties"]["zone"] == zone]
+        slot = (end - start) / len(names)
         colour = (colours or {}).get(zone, DOT_OUT)
         if not (isinstance(colour, str) and _HEX.match(colour)):
             raise MapKitError(f"a zone's colour is a #rrggbb colour, got {colour!r}")
-        for i, key in enumerate(keys):
+        for i, key in enumerate(names):
             layer = view.add_geoLayer(
                 id=f"{id}-{key}", geo=source, filter=f"k={key}", fill=colour, pointRadius=radius, opacity=0
             )
             at = start + i * slot
-            cv.keys(layer, "opacity", [(at, 0.0), (at + max(slot / WAVE_OVERLAP, 0.05), 1.0)], hold=False, local=False)
+            keys = [(at, 0.0), (at + max(slot / WAVE_OVERLAP, 0.05), 1.0)]
+            if fades and zone in fades:
+                keys += [(fades[zone][0], 1.0), (fades[zone][1], 0.0)]
+            cv.keys(layer, "opacity", keys, hold=False, local=False)
 
 
 @register("prop", "map-ring", summary="A circle of a true radius with a veil outside it, what the reel counts inside")
@@ -678,12 +687,16 @@ def ring(
     x: float = 540.0,
     y: float = 960.0,
     id: str = "map-ring",
+    label: str | None = None,
+    measure: Measure | None = None,
 ) -> None:
     """A ring of ``radius`` frame pixels (:func:`ring_px`) about the frame point ``x, y``, from ``start`` to ``end``,
-    with a pale veil over everything outside it and a beat of a pulse when it arrives."""
+    with a pale veil over everything outside it, and ``label``, its true size, on a tag across its top."""
     _span(start, end, "a ring")
     if not (checks.number(radius) and radius > 0):
         raise MapKitError(f"a ring's radius is over 0, got {radius!r}")
+    if label is not None and measure is None:
+        raise MapKitError("a ring's tag needs the font's measure")
     g = cv.group(parent, id, start=start, end=end)
     veil = 2400.0  # past every corner of the frame
     outer = radius + veil / 2
@@ -691,6 +704,13 @@ def ring(
     halo = radius + 3
     cv.ellipse(g, x - halo, y - halo, 2 * halo, 2 * halo, cv.clear, PAPER, RING_WIDTH + 8)
     cv.ellipse(g, x - radius, y - radius, 2 * radius, 2 * radius, cv.clear, PIN, RING_WIDTH)
+    if label is not None and measure is not None:
+        words = check_copy(label)
+        wide = measure(words, TAG_SIZE) + 2 * TAG_PAD + 6
+        tall = TAG_SIZE * 1.3 + TAG_PAD
+        left, top = x - wide / 2, y - radius - tall / 2
+        cv.rect(g, left, top, wide, tall, PIN, radius=12.0)
+        cv.text(g, cv.uid("map-tag"), words, left, top, math.ceil(wide), math.ceil(tall), TAG_SIZE, color=PAPER)
 
 
 @register("graphic", "map-stamp", summary="One line of evidence over the map: the figure, its dataset and its year")

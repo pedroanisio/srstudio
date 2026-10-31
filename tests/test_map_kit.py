@@ -352,3 +352,35 @@ def test_the_hot_colour_reads_as_text_on_white_and_under_white():
 
     assert 1.05 / (luminance(map_kit.PIN) + 0.05) >= 4.5
     assert 1.05 / (luminance(map_kit.PIN_INK) + 0.05) >= 6.0, "thin strokes on white measure about a fifth paler"
+
+
+def test_a_zone_can_fade_out_once_the_reel_has_moved_on():
+    cv = canvas()
+    view = map_kit.equal_area(cv, cv.comp, 99.0, 21.0, 1.6, 0.0, 8.0, id="world")
+    map_kit.population(cv, view, {"inside": (0.0, 2.0)}, colours={"inside": map_kit.PIN}, fades={"inside": (5.0, 6.0)})
+    written = xml(cv)
+    layer = written[written.index('id="map-population-inside-0"') :]
+    layer = layer[: layer.index("</geoLayer>")]
+    assert '<key time="5" value="1.0"/>' in layer and '<key time="6" value="0.0"/>' in layer
+
+
+def test_a_fade_needs_a_zone_that_is_up_before_it():
+    cv = canvas()
+    view = map_kit.equal_area(cv, cv.comp, 99.0, 21.0, 1.6, 0.0, 8.0, id="world")
+    with pytest.raises(MapKitError):
+        map_kit.population(cv, view, {"inside": (0.0, 2.0)}, fades={"rest": (5.0, 6.0)})
+    with pytest.raises(MapKitError):
+        map_kit.population(cv, view, {"inside": (0.0, 2.0)}, fades={"inside": (1.0, 3.0)})
+
+
+def test_a_ring_can_say_its_size_on_a_tag_at_its_top():
+    cv = canvas()
+    map_kit.ring(cv, cv.comp, 430.0, 0.0, 5.0, label="3,300 km", measure=measure)
+    written = xml(cv)
+    assert "3,300 km" in written
+
+
+def test_a_ring_with_a_tag_needs_the_fonts_measure():
+    cv = canvas()
+    with pytest.raises(MapKitError):
+        map_kit.ring(cv, cv.comp, 430.0, 0.0, 5.0, label="3,300 km")
