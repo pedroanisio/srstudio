@@ -1,6 +1,8 @@
 """Google Fonts: request, typed CSS parse, font-file verification, licence, pinning and offline reuse."""
 
 import json
+import os
+import stat
 import struct
 
 import pytest
@@ -136,6 +138,51 @@ def test_install_fetches_verifies_pins_and_then_works_offline(tmp_path):
     offline = Web({})
     again = fonts.install(GoogleFont("DejaVu Sans", 700), tmp_path / "fonts", fetch=offline)
     assert again == got and offline.asked == []
+
+
+@pytest.fixture
+def open_umask():
+    """A umask that leaves group bits on, so a private mode comes from the code and not from the shell."""
+    before = os.umask(0o002)
+    yield
+    os.umask(before)
+
+
+def mode(path):
+    return stat.S_IMODE(path.stat().st_mode)
+
+
+def test_install_makes_every_folder_private_and_writes_every_file_private(tmp_path, open_umask):
+    (tmp_path / "generated").mkdir()
+    (tmp_path / "generated").chmod(0o755)  # a folder that was already there and that install does not write into
+    folder = tmp_path / "generated" / "episodes" / "a-reel" / "assets" / "fonts"
+    got = fonts.install(GoogleFont("DejaVu Sans", 700), folder, fetch=web())
+    assert {mode(p) for p in (got.path, got.license_file, folder / fonts.LOCK)} == {0o600}
+    made = (folder, folder.parent, folder.parent.parent, folder.parent.parent.parent)
+    assert {mode(p) for p in made} == {0o700}
+    assert mode(tmp_path / "generated") == 0o755
+
+
+def test_install_tightens_what_it_rewrites_and_the_folder_it_writes_into(tmp_path, open_umask):
+    folder = tmp_path / "fonts"
+    folder.mkdir(mode=0o775)
+    stale = folder / "dejavu-sans-700.ttf"
+    lock = folder / fonts.LOCK
+    stale.write_bytes(b"left by an older install, with no pin")
+    lock.write_text("{}\n")
+    for path in (stale, lock):
+        path.chmod(0o664)
+    got = fonts.install(GoogleFont("DejaVu Sans", 700), folder, fetch=web())
+    assert got.path == stale
+    assert {mode(p) for p in (stale, got.license_file, lock)} == {0o600}
+    assert mode(folder) == 0o700
+
+
+def test_a_refused_font_leaves_the_folder_unmade(tmp_path, open_umask):
+    w = web(**{TTF_URL: b"not a font"})
+    with pytest.raises(FontError):
+        fonts.install(GoogleFont("DejaVu Sans", 700), tmp_path / "new" / "fonts", fetch=w)
+    assert not (tmp_path / "new").exists()
 
 
 def test_a_pinned_font_that_changed_on_disk_is_refused(tmp_path):
