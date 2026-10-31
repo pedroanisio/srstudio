@@ -307,7 +307,8 @@ def evidence_card(
     reveal: float | None = None,
 ) -> None:
     """A paper card from ``start`` to ``end``: the year on the spot, the authors, what they did, and the result, which
-    waits until ``reveal`` when the narration has not reached it yet."""
+    waits until ``reveal`` when the narration has not reached it yet. The paper is always the size of what is on it:
+    a held-back result grows the card downwards by a cut as it lands."""
     _span(start, end, "an evidence card")
     if reveal is not None and not start < reveal < end:
         raise MindKitError(f"a held-back result comes inside the card, {start} to {end} s, got {reveal}")
@@ -320,9 +321,13 @@ def evidence_card(
     result, result_size = _fitted(measure, evidence.result, 64.0, 44.0, inner, 3, "an evidence card's result")
     who, who_size = _fitted(measure, evidence.who, 38.0, 26.0, inner - 190, 2, "an evidence card's who")
     head = max(len(who) * who_size * LINE_HEIGHT, 76.0)
-    body = len(what) * what_size * LINE_HEIGHT + len(result) * result_size * LINE_HEIGHT
-    height = 2 * pad + head + 2 * 30.0 + body
-    cv.rect(g, x, y, w, height, PAPER, radius=26.0)
+    held = 2 * pad + head + 30.0 + len(what) * what_size * LINE_HEIGHT  # the paper without the result
+    whole = held + 30.0 + len(result) * result_size * LINE_HEIGHT
+    if reveal is None:
+        cv.rect(g, x, y, w, whole, PAPER, radius=26.0)
+    else:  # no blank paper waits for the result: the card grows by a cut as it lands, and nothing on it moves
+        cv.rect(cv.group(g, f"{id}-held", start=start, end=reveal), x, y, w, held, PAPER, radius=26.0)
+        cv.rect(cv.group(g, f"{id}-whole", start=reveal, end=end), x, y, w, whole, PAPER, radius=26.0)
     cv.rect(g, x + pad, y + pad, 160.0, 76.0, SPOT, radius=16.0)
     _block(cv, g, [evidence.year], x + pad, y + pad + 8, 160.0, 48.0, INK, "center")
     _block(

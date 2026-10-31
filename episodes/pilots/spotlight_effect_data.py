@@ -20,12 +20,24 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import camera, mind_kit, scripting, sketch, toon, toon_everyday, toon_house, toon_sets
+from srstudio import (
+    camera,
+    mind_kit,
+    scripting,
+    sketch,
+    toon,
+    toon_everyday,
+    toon_head,
+    toon_house,
+    toon_rigs,
+    toon_sets,
+)
 from srstudio import foley as synth
 from srstudio.mind_kit import CARD, STAGE
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.social import InstagramPost
 from srstudio.thumbnail import Thumbnail
+from srstudio.toon_sketch import SEAT, figure_group
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3101
@@ -76,13 +88,14 @@ MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.
 VERSIONS = {"toon-hamster": 1, "toon-goat": 1, "toon-fox": 2}
 FIGURES = {"hamster": (1.35, 0.0), "goat": (1.1, 0.0)}
 
-TEE = {"hamster": {"at": (190, 665), "scale": 1.0}, "goat": {"at": (190, 696), "scale": 0.77}}  # at their figure scale
-ROW_TEE = {"hamster": {"at": (165, 628), "scale": 0.72}, "goat": {"at": (190, 672), "scale": 0.78}}  # at the row's
+SHIRT = {"hamster": 0.72, "goat": 0.66}  # its size on the figure: drawn in the figure's coordinates, it scales with it
 BOARD_FIELDS = (toon_everyday.Field("Agenda"), toon_everyday.Field("Notes"))
 PAW = {"hamster": "#f2a7a0", "goat": "#a083d8"}
-BOARD = {"hamster": {"at": (212, 846), "scale": 0.9}, "goat": {"at": (212, 852), "scale": 1.1}}  # held over the chest
+BOARD = {"hamster": {"foot": 866, "scale": 1.0}, "goat": {"foot": 852, "scale": 1.1}}  # held over the chest and shirt
 ROW_GOAT = 205
+ROW = {"hamster": 530, "goat": ROW_GOAT, "fox": 845}  # the row's order, screen x of each figure
 ROW_SCALE, ROW_Y, ROW_FOOT = 0.56, 560.0, 1405.0  # the row of people on the stage
+ROW_BOARD = {"foot": 868, "scale": 1.2}  # at this size its smallest lettering still holds its contrast on screen
 BEAM_FOOT = 1420.0
 PUNCH, PIVOT = 1.14, (880.0, 1000.0)  # the pivot this far right keeps the code in frame
 END = 40.9
@@ -178,8 +191,11 @@ def _timed(shot, start: float, end: float):
 
 
 def _board(shot, start: float, end: float, lowered: float | None = None) -> None:
-    """The clipboard held over the chest, sliding down out of the frame at ``lowered``."""
-    cv = shot.cv
+    """The clipboard held square over the shirt, on the framed figure's chest, sliding down out of the frame at
+    ``lowered``. It is at screen scale, so it stays outside the figure's group: a clipboard has a minimum size."""
+    cv, who = shot.cv, shot.app.who
+    scale, dx = FIGURES[who]
+    middle = SEAT[0] + dx + scale * (_chest(shot, who)[0] - SEAT[0])
     g = cv.group(shot.front, cv.uid("g"), start=start, end=end, y=0.0)
     toon_everyday.clipboard(
         cv,
@@ -188,43 +204,62 @@ def _board(shot, start: float, end: float, lowered: float | None = None) -> None
         BOARD_FIELDS,
         measure=shot.measure,
         id=cv.uid("board"),
-        hand=PAW[shot.app.who],
-        **BOARD[shot.app.who],
+        hand=PAW[who],
+        at=(middle, BOARD[who]["foot"]),
+        scale=BOARD[who]["scale"],
     )
     if lowered is not None:
         cv.keys(g, "y", [(lowered, 0.0), (lowered + 0.35, toon.fh(420))], kind="cubic-in", local=False)
 
 
-def _tee(shot, parent, spec: dict) -> None:
-    """The shirt on the shot's character."""
-    toon_house.tee(shot.cv, parent, id=shot.cv.uid("tee"), **spec)
+def _chest(shot, who: str) -> tuple[float, float]:
+    """Where ``who``'s chest is in the figure's own reference pixels, whatever the shot does to the figure."""
+    return toon_head.chest(toon_rigs.rig_of(sketch.part_of(who), shot.versions))
+
+
+def _shirt(shot, figure, who: str) -> None:
+    """The shirt on ``who``, into ``figure``: a group with the transform that figure is drawn at."""
+    toon_house.tee(shot.cv, figure, at=_chest(shot, who), scale=SHIRT[who], id=shot.cv.uid("tee"))
+
+
+def _worn(shot, parent, who: str) -> None:
+    """The shirt on the shot's framed character: the same scale and pivot as the figure it sits on."""
+    _shirt(shot, figure_group(shot.cv, parent, FIGURES[who]), who)
 
 
 def _kitchen_shot(shot, start: float, end: float) -> None:
     """The first frame, and the last: the office kitchen, and the shirt being looked at."""
     cv = shot.cv
     toon_sets.kitchen(cv, _timed(shot, start, end))
-    _tee(shot, cv.group(shot.front, cv.uid("g"), start=start, end=end), TEE[shot.app.who])
+    _worn(shot, cv.group(shot.front, cv.uid("g"), start=start, end=end), shot.app.who)
 
 
 def _others(shot, split: float, end: float) -> None:
     """The room's other people, in a row on the stage, each lit by their own beam once it splits."""
     cv = shot.cv
-    for who, x in (("hamster", 530), ("goat", ROW_GOAT), ("fox", 845)):
+    for who, x in ROW.items():
         g = cv.group(
             shot.back, cv.uid("g"), x=x - ROW_SCALE * toon.fx(165), y=ROW_Y, scaleX=ROW_SCALE, scaleY=ROW_SCALE
         )
         poses = toon.parse_poses([{"start": 0.0, "eyes": "down", "mouth": "flat", "arms": "desk"}], "the row")
         sketch.drawer(who, shot.versions)(cv, g, poses, end, (), enter=shot.app.start)
-        if who in ROW_TEE:
-            _tee(shot, g, ROW_TEE[who])
+        if who in SHIRT:
+            _shirt(shot, g, who)
         mind_kit.spotlight(cv, shot.front, (x, ROW_FOOT), split, end, radius=130.0, id=cv.uid("beam"))
     # he has held it all along, here too; in front of the beams, which would dim its lettering
     held = cv.group(
         shot.front, cv.uid("g"), x=ROW_GOAT - ROW_SCALE * toon.fx(165), y=ROW_Y, scaleX=ROW_SCALE, scaleY=ROW_SCALE
     )
     toon_everyday.clipboard(
-        cv, held, "NOTES", BOARD_FIELDS, measure=shot.measure, id=cv.uid("board"), hand=PAW["goat"], **BOARD["goat"]
+        cv,
+        held,
+        "NOTES",
+        BOARD_FIELDS,
+        measure=shot.measure,
+        id=cv.uid("board"),
+        hand=PAW["goat"],
+        at=(_chest(shot, "goat")[0], ROW_BOARD["foot"]),
+        scale=ROW_BOARD["scale"],
     )
 
 
@@ -256,36 +291,36 @@ def dress(shot) -> None:
     elif app.who == "hamster" and app.start == 0.0:
         _kitchen_shot(shot, 0.0, at["desk"])
         toon.room(cv, _timed(shot, at["desk"], app.end))
-        _tee(shot, cv.group(shot.front, cv.uid("g"), start=at["desk"], end=app.end), TEE["hamster"])
+        _worn(shot, cv.group(shot.front, cv.uid("g"), start=at["desk"], end=app.end), "hamster")
         _board(shot, at["desk"], app.end)
         toon_house.ledge(cv, shot.front, "oak")
     elif app.who == "hamster" and app.start < at["beam"]:
         toon.room(cv, _timed(shot, app.start, app.end))
-        _tee(shot, shot.front, TEE["hamster"])
+        _worn(shot, shot.front, "hamster")
         _board(shot, app.start, app.end)
         toon_house.ledge(cv, shot.front, "oak")
     elif app.who == "hamster" and app.start == at["beam"]:
         mind_kit.stage(cv, shot.back)
-        _tee(shot, shot.front, TEE["hamster"])
+        _worn(shot, shot.front, "hamster")
         mind_kit.floor(cv, shot.front)
         mind_kit.spotlight(cv, shot.front, (toon.fx(180), BEAM_FOOT), app.start, app.end, id=cv.uid("beam"))
     elif app.who == "hamster":
         toon.room(cv, _timed(shot, app.start, app.end))
-        _tee(shot, shot.front, TEE["hamster"])
+        _worn(shot, shot.front, "hamster")
         _board(shot, app.start, app.end, lowered=at["lower"] + 0.3)
         toon_house.ledge(cv, shot.front, "oak")
     elif app.start < at["beam"]:
         toon.room(cv, _timed(shot, app.start, app.end))
-        _tee(shot, shot.front, TEE["goat"])
+        _worn(shot, shot.front, "goat")
         _board(shot, app.start, app.end)
         toon_house.ledge(cv, shot.front, "white")
     else:
         toon.room(cv, _timed(shot, app.start, at["kitchen"]))
         over = cv.group(shot.front, cv.uid("g"), start=app.start, end=at["kitchen"])
-        _tee(shot, over, TEE["goat"])
+        _worn(shot, over, "goat")
         _board(shot, app.start, at["kitchen"], lowered=app.start + 0.3)
-        toon_house.ledge(cv, shot.front, "white")
         _kitchen_shot(shot, at["kitchen"], app.end)
+        toon_house.ledge(cv, shot.front, "white")
 
 
 def lens(shot, setup) -> None:

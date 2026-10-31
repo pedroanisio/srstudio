@@ -29,6 +29,11 @@ series is not @tuxmeme: a pilot must not be able to reach the publishing path by
    refuses a card that cannot be read in about two seconds.
 5. A pilot lives in `episodes/pilots/`, has no release and no post, and renders to `renders/pilots/`. Its cover and
    caption are written next to its sources by `InstagramPost.deliver`, not by the publishing command.
+6. An evidence card's paper is the size of what is on it at each moment. A result held back for the narration grows the
+   card downwards by a cut as it lands, so nothing already on the card moves and no blank paper waits for it.
+7. A worn thing is placed from `toon_head.chest`, in the figure's own coordinates and inside the figure's own transform,
+   so one placement holds at every scale a shot gives that figure. The anchor comes from the rig: the neck's line, under
+   the lowest the head can reach.
 
 ## Rejected alternatives
 
@@ -37,6 +42,8 @@ series is not @tuxmeme: a pilot must not be able to reach the publishing path by
 - **The pilot drawing its own cards.** Every pilot would repeat the same copy limits and the same timing rules, and a
   limit kept in one episode is not kept in the next.
 - **A release for each pilot.** Anything with a release can reach ready-to-publish and post to @tuxmeme.
+- **The held-back result as a strip of its own.** It adds a second object to read beside the card, and the card would
+  need a layout rule for it. Growing one paper keeps one thing on screen.
 - **Bars without figures on the evidence card.** A bar's length is a claim, so `two_lines` draws to scale from values
   that come from the pilot's sources.
 
