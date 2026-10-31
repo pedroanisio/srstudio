@@ -54,9 +54,9 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
-# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
-# play on their beat; hiss:<seconds> lets the air out of something for that long
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss")
+# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding, crunch and
+# thud (a door shutting, something heavy landing) play on their beat; hiss:<seconds> lets the air out of something for that long
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "thud")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
 WHOOSH_GAIN_DB = -6.0
@@ -70,6 +70,7 @@ SWAT = 0.12  # seconds of a swat's whoosh: it lands on its beat
 DING_GAIN_DB = -8.0
 HISS_GAIN_DB = -9.0
 CRUNCH_GAIN_DB = -6.0
+THUD_GAIN_DB = -4.0
 CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
@@ -361,8 +362,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 # -- the recording run ------------------------------------------------------------------------------------------------
 def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
-    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, chewing on ``crunch``
-    and air on ``hiss:<seconds>``."""
+    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, chewing on ``crunch``,
+    a thud on ``thud`` and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -399,6 +400,10 @@ def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: in
         clicks = sorted(at + d for at in bites for d in CRUNCH)
         crunch = foley.write_typing(audio / "crunch.wav", clicks, end, seed=seed)
         out.append(sketch.effect("crunch", 0.0, CRUNCH_GAIN_DB, root, crunch))
+    thuds = [at for at, _ in sketch.events(beats, "thud")]
+    if thuds:
+        thud = foley.write_bursts(audio / "thud.wav", thuds, end, foley.THUD, seed=seed)
+        out.append(sketch.effect("thud", 0.0, THUD_GAIN_DB, root, thud))
     for i, (at, seconds) in enumerate(sketch.events(beats, "hiss")):
         hiss = foley.write_air(audio / f"hiss-{i}.wav", [at], end, min(float(seconds), end - at), seed=seed + i)
         out.append(sketch.effect(f"hiss-{i}", 0.0, HISS_GAIN_DB, root, hiss))

@@ -197,3 +197,11 @@ def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinn
     for bad in (-1, 2.5, "5M", True):
         with pytest.raises(collage_sketch.StagingError, match="bitrate"):
             check_staging(still_staging(bitrate=bad))
+
+
+def test_a_thud_beat_plays_a_thud(tmp_path):
+    beats = [
+        sketch.Beat(0.0, "gary", "", "open", "flat", "down"),
+        sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="thud"),
+    ]
+    assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]
