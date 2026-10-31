@@ -55,7 +55,7 @@ PIP_TINT, JUNO_TINT = "#1F5E9E", "#B8326E"
 EYE_SLIDE = ON_PIP + 1.5  # the cut back to Bo
 SHAKE = VAST + 0.55  # the room shakes this long, then the zoom
 BO_SPANS = [(0.0, ON_PIP), (EYE_SLIDE, ON_JUNO)]
-CRASH, CRASH_AT = 3.0, (540.0, 1832.0)  # his belly lands in the middle of the frame
+CRASH, CRASH_AT = 2.1, (560.0, 1664.0)  # his face and finger under the caption, the belly filling the rest
 PIP_BELLY, JUNO_BELLY, BO_BELLY = (770.0, 1270.0), (250.0, 1270.0), (540.0, 1555.0)
 REACH = 150.0  # the raised hand of "step", across to his lips
 EXCHANGE = (BLUSH - GOSSIP) / 4
@@ -217,6 +217,7 @@ wall_hand = soft_odds.in_hand(cv, bo_shot, bo_wall, "right", end=DURATION, scale
 cv.gate(wall_hand, [(0.3, DURATION)])
 soft_odds.hush_finger(cv, wall_hand, 0, 0, reach=REACH, scale=BO_WALL_SCALE, id="wall-finger")
 soft_odds.notice(cv, bo_shot, 540, 590, shown=BO_SPANS)
+soft_sets.planter(cv, cv.group(graded, "room-front"))  # the room's own marks stay behind the cast and out of frame
 
 spoken = [(max(0.0, p.start - 0.05), p.end + 0.5, p.caption, f"caption-{i + 1}") for i, p in enumerate(P)]
 ep.captions(spoken, **soft_sets.CAPTIONS)
