@@ -18,7 +18,8 @@ from .errors import SrstudioError
 from .registry import register
 from .soft_props import bench as park_bench
 
-__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park", "playroom"]
+__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "hall_light", "park"]
+__all__ += ["playroom"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -47,6 +48,7 @@ FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light chan
 LAMP_DARK = "#0B1026D8"  # a lamp's dark stays short of NIGHT: the corners of a lamplit room are there
 LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool
 LAMP_BOX = 4000.0  # px from a lamp to the edge of the painted square: past its reach it is all LAMP_DARK
+HALL_X, HALL_SWUNG_X = -300.0, -760.0  # px of a hall's light left of the frame: open, and with the door nearly to
 FLICKER_STEP = 0.14  # seconds a flicker value holds
 OVER = 600  # px a room runs past the frame on every side
 
@@ -58,6 +60,16 @@ class Light(NamedTuple):
     state: str
     x: float = 540.0
     y: float = 1040.0
+
+
+def hall_light(opens: float, shuts: float, *, y: float = 1300.0, swing: float = 0.25) -> list[Light]:
+    """The rows of a door off the left of the frame: the hall comes in at ``opens``, thins as the door swings to over
+    ``swing`` seconds, and the room is dark at ``shuts``. A bedroom's lights go on from these."""
+    if not all(checks.number(v) for v in (opens, shuts, y, swing)) or opens < 0 or swing <= 0:
+        raise SoftSetError(f"a hall light opens and swings at finite times, got {opens!r}, {shuts!r}, {swing!r}")
+    if shuts - swing <= opens:
+        raise SoftSetError(f"a door open at {opens} cannot swing {swing} s and shut by {shuts}")
+    return [Light(opens, "lamp", HALL_X, y), Light(shuts - swing, "lamp", HALL_SWUNG_X, y), Light(shuts, "dark")]
 
 
 class Shot(NamedTuple):
