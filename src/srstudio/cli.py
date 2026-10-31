@@ -362,7 +362,7 @@ def main(argv=None):
         except (SceneCheckError, parts.PartError) as exc:
             print(exc, file=sys.stderr)
             return 1
-        except (SrstudioError, SchemaValueError) as exc:
+        except (SrstudioError, SchemaValueError, OSError) as exc:
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0

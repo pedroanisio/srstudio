@@ -376,7 +376,9 @@ def check(name: str, number: int = 1, *, episodes: Path | None = None) -> None:
     part = parts.get(name)
     version = part.version(number)
     if version.status != "approved":
-        return
+        raise parts.NotApprovedError(
+            f"{name} version {number} is {version.status}; only approved drawings can be verified"
+        )
     entry = registry.get(part.kind, parts.part_name(name, number))
     if part.refused is not None:
         if entry._original is None:

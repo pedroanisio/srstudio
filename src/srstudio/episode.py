@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
+from urllib.request import url2pathname
 
 from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group, Layer, Scene
 from sr_core.scene import Sequence as SceneSequence
@@ -118,6 +119,28 @@ def _document_at(scene: Scene, root: Path, destination: Path) -> bytes:
             node._attrs[name] = value
 
 
+def _input_path(root: Path, value: str) -> Path | None:
+    """Resolve a local scene input URI relative to the project; remote URIs are not local files."""
+    if not value or value.startswith("#"):
+        return None
+    uri = urlsplit(value)
+    if uri.scheme and uri.scheme.lower() != "file":
+        return None
+    if uri.netloc and uri.netloc.lower() != "localhost":
+        return None
+    path = Path(url2pathname(uri.path))
+    return path if path.is_absolute() else root / path
+
+
+def _same_file(first: Path, second: Path) -> bool:
+    if first.resolve() == second.resolve():
+        return True
+    try:
+        return first.samefile(second)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+
+
 _AudioMethod = TypeVar("_AudioMethod", bound=Callable[..., Any])
 
 
@@ -131,7 +154,10 @@ def _audio_transaction(method: _AudioMethod) -> _AudioMethod:
             name: getattr(self, name, missing)
             for name in ("_mix", "_master", "_master_kw", "track", "_cover_written", "_cover_variant")
         }
-        lists = {name: (getattr(self, name), getattr(self, name).copy()) for name in ("caption_specs", "_cover_hidden")}
+        lists = {
+            name: (getattr(self, name), getattr(self, name).copy())
+            for name in ("caption_specs", "_cover_hidden", "_input_manifests")
+        }
         if state["_master_kw"] is not missing:
             state["_master_kw"] = state["_master_kw"].copy()
         cast_state = self.cast.copy()
@@ -309,6 +335,7 @@ class Episode:
         if spec.font is not None:
             self._add_font(spec.font)
         self.caption_specs: list[tuple[float, float, str, str]] = []
+        self._input_manifests: list[Path] = []
         self.cast: dict[str, Actor] = {}
 
     def _add_font(self, font: str) -> None:
@@ -681,9 +708,11 @@ class Episode:
         mix = self.mix(loud, peak, bit_depth=style.bit_depth)
         if source == "narration":
             lang = self.spec.language
-            for cue in narration_cues(Path(narration), self.root):  # type: ignore[arg-type]
+            manifest = Path(narration)  # type: ignore[arg-type]
+            for cue in narration_cues(manifest, self.root):
                 self.cv.assets.add_audio(id=f"vo-{cue.id}", src=cue.audio, sha256=cue.sha256, language=lang)
                 self.add_track(f"vo-track-{cue.id}", f"vo-{cue.id}", start=cue.start, role="dialogue", language=lang)
+            self._input_manifests.append(manifest.resolve())
             return mix
         for t in self.takes:
             self.take_audio(t, **(take(t) if take else {}))
@@ -734,6 +763,35 @@ class Episode:
             else:
                 self._cover_hidden.append((node.id, "visible", "false"))
 
+    def _input_files(self) -> list[Path]:
+        """Project data and local scene assets that must survive writing the output files."""
+        inputs = [self.root / self.spec.dialogue]
+        inputs.extend(self._input_manifests)
+        for name in (self.spec.audio, self.spec.font):
+            if name is not None:
+                inputs.append(self.root / name)
+        for phrase in self.t.phrases:
+            if isinstance(phrase.timing_file, str) and phrase.timing_file:
+                inputs.append((self.t.root or self.root) / phrase.timing_file)
+        for take in self.t.takes:
+            if isinstance(take.audio, str) and take.audio:
+                inputs.append(self.root / take.audio)
+        clips = self.t.meta.get("clips")
+        if isinstance(clips, list):
+            for clip in clips:
+                generated = clip.get("generated") if isinstance(clip, dict) else None
+                cache = generated.get("cache") if isinstance(generated, dict) else None
+                if isinstance(cache, str) and cache:
+                    inputs.append(self.root / cache)
+        for node in self.scene.iter():
+            for name, attr in _attr_specs(type(node)).items():
+                value = node._attrs.get(name)
+                if attr.spec == "xs:anyURI" and name not in ("path", "uri", "report") and isinstance(value, str):
+                    path = _input_path(self.root, value)
+                    if path is not None:
+                        inputs.append(path)
+        return inputs
+
     def finish(
         self, out: Path | None = None, report: Path | None = None, strict: bool = True, *, overwrite: bool = True
     ) -> Path:
@@ -742,8 +800,13 @@ class Episode:
         to refuse existing outputs, including those created during the build."""
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"
         report = Path(report) if report else out.with_name("sdk-validation.json")
-        if out.resolve() == report.resolve() or (out.exists() and report.exists() and out.samefile(report)):
+        if _same_file(out, report):
             raise EpisodeArgumentError("scene output and validation report must be different files")
+        inputs = self._input_files()
+        for output_file in (out, report):
+            for input_file in inputs:
+                if _same_file(output_file, input_file):
+                    raise EpisodeArgumentError(f"{output_file}: output must not replace project input {input_file}")
         if len(self._cover_hidden) > self._cover_written:
             from .social import COVER_VARIANT
 
