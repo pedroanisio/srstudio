@@ -27,6 +27,7 @@ from . import (
     catalog_versions,
     craft,
     fonts,
+    frames,
     lip_proof,
     lipsync,
     parts,
@@ -151,6 +152,13 @@ def main(argv=None):
     )
     lips = sub.add_parser("lipsync", help="score the shipped and the speech mouth over the takes of timelines")
     lips.add_argument("timelines", nargs="+", type=Path, help="timeline.json files with character timestamps")
+    framed = sub.add_parser("frames", help="list, or render at full size, the frames to review in a voiced project")
+    framed.add_argument("project", type=Path, help="the project folder (<slug>/voiced/beats.json)")
+    framed.add_argument("--payoff", type=float, help="the payoff's second, else the last beat with an event")
+    framed.add_argument("--out", type=Path, help="render each frame into this folder")
+    framed.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
     crafted = sub.add_parser("craft", help="measure the camera moves and the pauses between lines of episode projects")
     crafted.add_argument("projects", nargs="+", type=Path, help="episode project folders (<slug>/<slug>.scene.xml)")
     crafted.add_argument("--renders", type=Path, help="folder of renders (<slug>.mp4): measure the sound in each pause")
@@ -321,6 +329,20 @@ def main(argv=None):
         print(f"{len(takes)} takes")
         for name, result in scores.items():
             print(f"{name:<13} {result.summary()}")
+        return 0
+    if args.cmd == "frames":
+        try:
+            listed = frames.project_frames(args.project, args.payoff)
+            for frame in listed:
+                print(f"{frame.at:8.2f}  {frame.why}")
+            if args.out is not None:
+                if args.engine is None:
+                    raise frames.FrameError("set --engine or SRSTUDIO_ENGINE to render the frames")
+                scene = args.project / f"{args.project.name}.scene.xml"
+                print(f"{len(frames.at_size(scene, listed, args.out, args.engine))} frames in {args.out}")
+        except (frames.FrameError, SrstudioError) as exc:
+            print(f"srstudio frames: {exc}", file=sys.stderr)
+            return 2
         return 0
     if args.cmd == "craft":
         try:
