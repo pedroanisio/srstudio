@@ -8,6 +8,7 @@ optionally, different lettering on its back, shown when it turns on its plate at
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -26,10 +27,12 @@ __all__ = [
     "briefcase",
     "cake",
     "cane",
+    "glare_lamp",
     "hive",
     "month_view",
     "necktie",
     "phone",
+    "review_view",
     "shovel",
     "status_badge",
     "time_card",
@@ -440,6 +443,71 @@ def month_view(cv: Canvas, g, month: str, year: str, *, stamp: str = "", id: str
         for row in range(5):
             cv.rect(g, -60, -56 + row * 34, 120, 22, "#E0503F", radius=6)
         cv.text(g, f"{id}-stamp", stamp, -60, -22 + 34 - 34, 120, 22, 18, color="#FFFFFF")
+
+
+STARS = 5  # a review's rating, out of
+STAR_ON, STAR_OFF = "#F2A93B", "#D9DDE1"
+MAX_REVIEWER = 12  # characters of a reviewer's name that fit a phone's width
+
+
+def _star(cx: float, cy: float, r: float) -> str:
+    """A five-pointed star's outline, its point up."""
+    points = []
+    for k in range(10):
+        radius = r if k % 2 == 0 else r * 0.45
+        angle = math.radians(-90 + 36 * k)
+        points.append(f"{cx + radius * math.cos(angle):.2f} {cy + radius * math.sin(angle):.2f}")
+    return "M " + " L ".join(points) + " Z"
+
+
+def review_view(cv: Canvas, g, name: str, stars: int, *, id: str = "soft-review") -> None:
+    """What a phone's ``screen`` shows of a shop review: the reviewer's ``name`` over a row of :data:`STARS` stars, the
+    first ``stars`` of them filled, and the grey lines of the review. What it says is the voice's, and the caption's."""
+    if not name.strip() or len(name) > MAX_REVIEWER:
+        raise SoftPropError(f"a reviewer's name is 1 to {MAX_REVIEWER} characters, got {name!r}")
+    if isinstance(stars, bool) or not isinstance(stars, int) or not 0 <= stars <= STARS:
+        raise SoftPropError(f"a review has 0 to {STARS} stars, got {stars!r}")
+    cv.ellipse(g, -22, -122, 44, 44, "#D9DDE1")
+    cv.text(g, f"{id}-name", name, -60, -74, 120, 30, 22, color=cv.ink)
+    for k in range(STARS):
+        fill = STAR_ON if k < stars else STAR_OFF
+        cv.path(cv.group(g, f"{id}-star-{k + 1}"), _star(-48 + 24 * k, -24, 12), fill, cv.clear, 0)
+    for row, width in enumerate((112, 104, 112, 88, 100)):
+        cv.rect(g, -56, 8 + row * 22, width, 10, "#D9DDE1", radius=5)
+
+
+GLARE_RINGS = 9  # how many steps the light falls away in; fewer show as bands
+GLARE_LEVEL = 0.12  # the opacity of each ring
+
+
+@register(
+    "prop",
+    "soft-glare-lamp",
+    summary="A small desk lamp on a round base whose bulb throws a white glare many times its own size",
+)
+def glare_lamp(
+    cv: Canvas, parent, x: float, y: float, *, scale: float = 1, reach: float = 620, id: str = "soft-glare-lamp"
+):
+    """The lamp with its base on (``x``, ``y``), about 150 px tall at ``scale`` 1, and over it the glare, ``reach`` px
+    from the bulb to where the light gives out. Draw whoever squints at it first: the glare falls on them."""
+    if not (checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a lamp's scale must be a positive number, got {scale!r}")
+    if not (checks.number(reach) and reach > 0):
+        raise SoftPropError(f"a glare's reach must be a positive number, got {reach!r}")
+    ink = cv.ink
+    g = cv.group(parent, id)
+    body = cv.group(g, f"{id}-body", x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.ellipse(body, -46, -14, 92, 28, "#6E777D", ink, 4)
+    cv.path(body, "M 0 -8 L 0 -96", stroke=ink, sw=7)
+    cv.path(body, "M -52 -96 L 52 -96 L 30 -150 L -30 -150 Z", "#F6E3B4", ink, 4)
+    cx, cy = x, y - 92 * scale
+    glare = cv.group(g, f"{id}-glare")
+    for k in range(GLARE_RINGS):
+        r = reach * (GLARE_RINGS - k) / GLARE_RINGS
+        cv.ellipse(glare, cx - r, cy - r, 2 * r, 2 * r, "#FFFFFF", opacity=GLARE_LEVEL)
+    core = 56 * scale
+    cv.ellipse(glare, cx - core, cy - core, 2 * core, 2 * core, "#FFFFFF")
+    return g
 
 
 @dataclass(frozen=True)

@@ -8678,6 +8678,23 @@
           "rig": null
         }
       ]
+    },
+    "soft-glare-lamp": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small desk lamp that throws a white glare many times its size. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9f503cdd6b8325e4dfdbcce9955513dc3b41c84ecfd86e5a6673a17be1f5a288",
+          "rig": null
+        }
+      ]
     }
   }
 }

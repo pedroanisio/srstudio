@@ -150,3 +150,44 @@ def test_cake_lettering_spans_must_be_in_order():
         soft_props.cake(cv, cv.comp, "HI", lettering=[(2.0, 1.0)])
     with pytest.raises(SoftPropError, match="lettering spans"):
         soft_props.cake(cv, cv.comp, "HI", lettering=[(0.0, 2.0), (1.0, 3.0)])
+
+
+# -- the glare lamp and the review screen ----------------------------------------------------------------------------
+def test_the_glare_lamp_is_registered_for_the_soft_style():
+    entry = {e.name: e for e in registry.entries()}["soft-glare-lamp"]
+    assert entry.kind == "prop" and entry.style == "soft"
+
+
+def test_the_glare_is_far_larger_than_the_lamp_and_drawn_over_it():
+    cv = canvas()
+    soft_props.glare_lamp(cv, cv.comp, 540, 1400, reach=700)
+    groups = {g.get("id"): g for g in tree(cv).iter("group")}
+    lamp, glare = groups["soft-glare-lamp-body"], groups["soft-glare-lamp-glare"]
+    order = [g.get("id") for g in tree(cv).iter("group")]
+    assert order.index("soft-glare-lamp-body") < order.index("soft-glare-lamp-glare")
+    assert len(list(glare)) == soft_props.GLARE_RINGS + 1  # the rings and the white core
+    assert len(list(lamp)) >= 3
+
+
+@pytest.mark.parametrize("kw", [{"reach": 0}, {"reach": float("nan")}, {"scale": 0}, {"scale": float("inf")}])
+def test_a_glare_lamp_refuses_a_size_it_cannot_draw(kw):
+    cv = canvas()
+    with pytest.raises(SoftPropError):
+        soft_props.glare_lamp(cv, cv.comp, 540, 1400, **kw)
+
+
+def test_a_review_screen_fills_only_the_stars_it_was_given():
+    cv = canvas()
+    soft_props.review_view(cv, cv.comp, "Dale", 4)
+    stars = [g for g in tree(cv).iter("group") if "star" in g.get("id", "")]
+    fills = [g.find("shape").get("fill") for g in stars]
+    assert len(fills) == soft_props.STARS and fills.count(soft_props.STAR_ON) == 4
+
+
+@pytest.mark.parametrize(
+    ("name", "stars"), [("Dale", 6), ("Dale", -1), ("Dale", 2.5), ("Dale", True), ("", 3), ("X" * 13, 3)]
+)
+def test_a_review_screen_refuses_what_it_cannot_show(name, stars):
+    cv = canvas()
+    with pytest.raises(SoftPropError):
+        soft_props.review_view(cv, cv.comp, name, stars)
