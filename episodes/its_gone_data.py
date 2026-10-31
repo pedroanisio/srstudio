@@ -3,7 +3,7 @@ presses one button, the light comes on green. She says it only works when he is 
 shuts. The smile goes. She walks to the router, looks back at the door, and pulls the plug. Then, small again: Gary?
 It's gone.
 
-Collage style (ADR 0026): Rosa's helplessness is an act, seen once, without a sting. The reel opens moving (the
+Collage style (ADR 0026): Rosa's helplessness is an act, seen once, in silence. The reel opens moving (the
 sp-hook_motion test's arm b): Rosa arrives in frame, already on the phone. ElevenLabs premade voices, lip-synced.
 """
 
@@ -32,7 +32,7 @@ ACCESSIBILITY = (
     "shuts. Her smile fades. She walks to the router, looks back at the door and pulls out the plug, and the light "
     "dies. She picks up the phone and says in a small voice that it is gone. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized beep and door."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized beep, door, whoosh and sting."
 NOTE = "ElevenLabs premade voices Matilda and Chris at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
@@ -68,16 +68,16 @@ BEATS, END = timed(
         (1.05, "rosa", 4, "up", "smile", "hold"),
         (0.9, "gary", "", "half", "flat", "point", "beep"),  # the button: the light comes on
         (1.2, "gary", 5, "open", "smile", "point"),
-        (1.75, "rosa", 6, "open", "smile", "hold"),
+        (1.75, "rosa", 6, "open", "smile", "hold", "zoom"),
         (1.45, "gary", 7, "open", "smile", "shrug"),
         (0.8, "gary", "", "closed", "smile", "down", "reveal:leave"),  # he goes
         (1.2, "rosa", "", "side", "smile", "down", "thud"),  # the door; she looks at it
         (0.9, "rosa", "", "side", "flat", "down"),  # the smile goes
         (1.8, "rosa", "", "half", "flat", "down", "reveal:walk"),  # slowly
         (0.9, "rosa", "", "side", "flat", "down"),  # back at the door
-        (1.1, "rosa", "", "half", "flat", "down", "reveal:plug"),  # no sting
+        (1.1, "rosa", "", "half", "flat", "down", "reveal:plug"),  # nothing under it
         (0.8, "rosa", "", "half", "flat", "hold", "reveal:close"),  # the phone
-        (1.5, "rosa", 8, "sad", "frown", "hold"),
+        (1.5, "rosa", 8, "sad", "frown", "hold", "sting"),
     ),
     tail=1.6,
 )

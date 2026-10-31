@@ -33,7 +33,7 @@ ACCESSIBILITY = (
     "holding the card, lit from below. She says unsubscribe. He sits down, takes off one shoe, and says it takes ten "
     "business days. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh and thud."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh, thud and sting."
 NOTE = "ElevenLabs premade voices Brian and Sarah at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
@@ -66,7 +66,7 @@ LINES = (
 BEATS, END = timed(
     LINES,
     (
-        (2.1, "brent", 0, "wide", "grin", "shrug"),
+        (2.0, "brent", 0, "wide", "grin", "shrug"),
         (0.9, "priya", 1, "half", "flat", "hold"),
         (0.85, "brent", 2, "open", "smile", "hold", "reveal:card"),
         (2.1, "priya", 3, "half", "flat", "hold"),
@@ -81,12 +81,12 @@ BEATS, END = timed(
         (0.95, "brent", 9, "open", "smug", "down"),
         (1.3, "priya", "", "open", "flat", "down", "reveal:bed"),  # awake
         (0.9, "brent", 10, "open", "smile", "hold", "reveal:foot"),
-        (1.5, "brent", "", "open", "smile", "hold"),
+        (1.5, "brent", "", "open", "smile", "hold", "zoom"),
         (1.25, "priya", 11, "angry", "flat", "down", "reveal:up"),
         (0.6, "brent", "", "sad", "frown", "down", "reveal:shoe"),  # he sits
         (0.4, "brent", "", "sad", "frown", "down", "thud"),  # one shoe
         (1.6, "brent", 12, "sad", "flat", "down"),
-        (1.4, "priya", "", "half", "flat", "down"),
+        (1.4, "priya", "", "half", "flat", "down", "sting"),
     ),
     tail=0.2,
 )

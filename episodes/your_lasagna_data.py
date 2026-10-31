@@ -32,7 +32,7 @@ ACCESSIBILITY = (
     "At a silent wake, he stands with an enormous lasagna and everyone looks at him. A woman takes it, looks down "
     "and says he looks so peaceful. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh and ping."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh, ping and sting."
 NOTE = "ElevenLabs premade voices Chris, Sarah and Jessica at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
@@ -77,13 +77,13 @@ BEATS, END = timed(
         (1.15, "gary", 5, "wide", "frown", "shrug"),
         (1.2, "gary", "", "side", "flat", "down", "ding"),  # they both look at it
         (1.05, "priya", 6, "side", "flat", "hold", "reveal:wrote"),
-        (0.85, "gary", 7, "wide", "frown", "down"),
+        (0.85, "gary", 7, "wide", "frown", "down", "zoom"),
         (2.0, "priya", 8, "side", "flat", "hold", "reveal:reply"),
         (1.2, "gary", "", "wide", "frown", "down", "reveal:face"),
         (1.0, "omar", "", "half", "flat", "down", "reveal:wake"),
         (1.4, "omar", "", "side", "flat", "down"),  # the table turns
         (1.6, "deb", 9, "sad", "frown", "hold", "reveal:medium"),
-        (1.5, "gary", "", "wide", "flat", "down"),
+        (1.5, "gary", "", "wide", "flat", "down", "sting"),
     ),
     tail=0.3,
 )

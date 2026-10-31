@@ -31,7 +31,9 @@ ACCESSIBILITY = (
     "a time until they equal the deposit. The tenant leaves the keys and goes. The landlord photographs the hole "
     "and lists it as a charming original feature for two hundred more a month. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized camera flash and door."
+NARRATION = (
+    f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized camera flash, door, whoosh and sting."
+)
 NOTE = "ElevenLabs premade voices Alice and Jessica at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
@@ -42,7 +44,7 @@ HOLE = (540.0, 1100.0)
 FELD, DEB = Place(300.0, 1920.0, 0.74), Place(820.0, 1960.0, 0.7)
 BILLS = (("$200", 300.0, 960.0), ("PAINT", 610.0, 900.0), ("FILLER", 830.0, 1040.0), ("MY TIME", 520.0, 1120.0))
 MORE = (0.0, 0.85, 1.75)  # how far into her line "plus paint", "plus filler" and "plus my time" fall
-LISTING = dict(x=120.0, y=500.0, w=840.0, h=1260.0)
+LISTING = dict(x=120.0, y=800.0, w=840.0, h=960.0)  # under the shelf, clear of the signature
 CARD = "#c9a26a"
 
 LINES = (
@@ -75,9 +77,10 @@ BEATS, END = timed(
         (1.3, "feld", "", "side", "flat", "hold", "thud"),  # alone
         (0.5, "feld", "", "half", "smile", "point", "flash"),
         (2.7, "feld", 9, "half", "smile", "point"),
-        (0.5, "feld", "", "half", "grin", "point"),  # with love
+        (0.5, "feld", "", "half", "grin", "point", "zoom"),  # with love
         (2.2, "feld", 10, "half", "smug", "point"),
-        (1.4, "feld", "", "half", "smile", "point", "reveal:listing"),
+        (0.9, "feld", "", "half", "smile", "point", "reveal:listing"),
+        (0.5, "feld", "", "half", "smile", "point", "sting"),
     ),
     tail=0.3,
 )
@@ -162,13 +165,19 @@ def _listing(cv, parent) -> None:
     """The phone, the hole in its photo, and the arrow."""
     screen = collage_everyday.phone(cv, parent, **LISTING)
     w = LISTING["w"] - 2 * collage_everyday.BEZEL
-    cv.rect(screen, 0.0, 0.0, w, 620.0, "#ffe5d9")
-    cv.ellipse(screen, w / 2 - 12.0, 300.0, 24.0, 24.0, "#2b2d42")
-    cv.path(screen, f"M{w - 80} 90 L{w / 2 + 40} 280", stroke="#ef3340", sw=26)
-    cv.path(screen, f"M{w / 2 + 30} 200 L{w / 2 + 22} 300 L{w / 2 + 120} 290", stroke="#ef3340", sw=26)
-    collage_sets.sign(cv, screen, "ORIGINAL FEATURES", 34, 650, 720, 130, size=64)
-    collage_sets.sign(cv, screen, "GALLERY WALL", 34, 800, 720, 130, size=64)
-    collage_sets.sign(cv, screen, "+ $200 A MONTH", 34, 950, 720, 130, size=64, color="#c1121f")
+    collage_sets.sign(cv, screen, "ORIGINAL FEATURES", 34, 20, 720, 118, size=60)
+    collage_sets.sign(cv, screen, "GALLERY WALL", 34, 150, 720, 118, size=60)
+    collage_sets.sign(cv, screen, "+ $200 A MONTH", 34, 280, 720, 118, size=60, color="#c1121f")
+    top = 420.0  # the photo, under its words
+    cv.rect(screen, 0.0, top, w, 480.0, "#ffe5d9")
+    cv.ellipse(screen, w / 2 - 12.0, top + 300.0, 24.0, 24.0, "#2b2d42")
+    cv.path(screen, f"M{w - 80} {top + 90} L{w / 2 + 40} {top + 280}", stroke="#ef3340", sw=26)
+    cv.path(
+        screen,
+        f"M{w / 2 + 30} {top + 200} L{w / 2 + 22} {top + 300} L{w / 2 + 120} {top + 290}",
+        stroke="#ef3340",
+        sw=26,
+    )
 
 
 def dress(shot) -> None:

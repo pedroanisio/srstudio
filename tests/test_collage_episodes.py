@@ -47,6 +47,7 @@ PUBLISHED = (
     "therapy_session",
     "thought_leader",
 )
+OFF_SCREEN = {"the_boat": "phone"}  # a voice from a device, never on a set: outside the cast and its voices
 HOOK_SECONDS = 2.0  # funny-reels rubric #1, Hook: the premise reads in the first 1-2 s
 RELEASES = releases.load(EPISODES / "posts")
 
@@ -115,10 +116,16 @@ def test_the_published_sketches_are_still_there():
 def test_every_character_keeps_one_voice_across_episodes(mods):
     builder, data = mods
     ids = {}
-    for d in data.values():
+    for name, d in data.items():
         for s in d.STAGING.sketch.speakers:
+            if s.name == OFF_SCREEN.get(name):
+                continue
             assert s is builder.SPEAKERS[s.name]
             ids.setdefault(s.voice.id, set()).add(s.name)
+    cast_voices = {s.voice.id for s in builder.SPEAKERS.values()}
+    for name, who in OFF_SCREEN.items():
+        voice = next(s for s in data[name].STAGING.sketch.speakers if s.name == who).voice
+        assert voice.id not in cast_voices  # a voice from a device is nobody in the cast
     assert all(len(names) == 1 for names in ids.values())
     assert set(builder.SPEAKERS) == set(collage.LOOKS) == set(builder.TINTS)
 

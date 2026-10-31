@@ -38,7 +38,7 @@ ACCESSIBILITY = (
     "on and they shush him, and he comes down and joins them. The phone shows one percent and goes black. Four heads "
     "turn to her. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)} and Laura (the phone); a synthesized bus."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)} and Laura (the phone); a synthesized bus, whoosh and sting."
 NOTE = "ElevenLabs premade voices Jessica, Daniel, Sarah, Will, Brian and Laura at their natural pace; no cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
@@ -95,7 +95,7 @@ BEATS, END = timed(
         (2.3, "deb", 1, "wide", "o", "hold", "reveal:close"),
         (2.0, "omar", "", "half", "flat", "down", "reveal:air"),
         (1.1, "omar", 2, "half", "flat", "down"),
-        (0.75, "deb", 3, "wide", "flat", "hold"),
+        (0.75, "deb", 3, "wide", "flat", "hold", "zoom"),
         (1.95, "priya", 4, "half", "flat", "down"),
         (1.0, "jun", 5, "half", "flat", "down"),
         (1.0, "deb", "", "wide", "flat", "hold", "reveal:huddle"),
@@ -107,7 +107,8 @@ BEATS, END = timed(
         (1.4, "brent", 8, "wide", "flat", "down", "reveal:joined"),
         (1.3, "deb", "", "wide", "flat", "hold", "reveal:battery"),
         (1.2, "deb", "", "wide", "flat", "hold", "reveal:dead"),
-        (2.2, "omar", "", "open", "flat", "down", "reveal:turn"),
+        (1.2, "omar", "", "open", "flat", "down", "reveal:turn"),
+        (1.0, "omar", "", "open", "flat", "down", "sting"),
     ),
     tail=2.2,
 )
