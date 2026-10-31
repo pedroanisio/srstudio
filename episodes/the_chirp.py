@@ -60,7 +60,7 @@ SMILING = stick.Face("open", "raised", "smirk")
 DEAD = stick.Face("half", "flat", "frown")
 AT_PEACE = stick.Face("half", "flat", "smile", look=(1, 0))
 HEAP = ((640, 1500), (790, 1510), (940, 1495), (710, 1420), (860, 1415))
-DIRT = ((470, 1030), (610, 1120), (540, 1260), (500, 1500), (600, 1420), (560, 700), (470, 800))
+DIRT = ((505, 819), (573, 724), (523, 1019), (563, 1234), (510, 1409), (541, 1459))  # each lands on him, not beside him
 
 
 def spoken_end(take) -> float:
@@ -164,7 +164,7 @@ for take in t.takes:
     else:
         buried += yard_shot(take, g, end)
 
-spoken = stick_reel.words(ep, t.takes)
+spoken = stick_reel.words(ep, t.takes, sentences=True)
 chirps = (("loud", loud, foley.CHIRP), ("shut", shut, foley.CHIRP_SHUT), ("buried", buried, foley.CHIRP_BURIED))
 for name, times, sound in chirps:
     foley.write_bursts(ROOT / "audio" / f"chirp-{name}.wav", times, t.duration, sound)
