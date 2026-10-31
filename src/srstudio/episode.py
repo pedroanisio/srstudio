@@ -18,6 +18,7 @@ from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
 from . import checks, digest, native, signature
+from ._outputs import write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
 from .errors import SrstudioError
@@ -733,9 +734,12 @@ class Episode:
             else:
                 self._cover_hidden.append((node.id, "visible", "false"))
 
-    def finish(self, out: Path | None = None, report: Path | None = None, strict: bool = True) -> Path:
+    def finish(
+        self, out: Path | None = None, report: Path | None = None, strict: bool = True, *, overwrite: bool = True
+    ) -> Path:
         """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path; a check that finds an
-        error (with ``strict``, any finding) is a :class:`SceneCheckError` and writes no scene."""
+        error (with ``strict``, any finding) is a :class:`SceneCheckError` and writes no scene. Set ``overwrite=False``
+        to refuse existing outputs, including those created during the build."""
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"
         report = Path(report) if report else out.with_name("sdk-validation.json")
         if out.resolve() == report.resolve() or (out.exists() and report.exists() and out.samefile(report)):
@@ -751,11 +755,10 @@ class Episode:
                 self._cover_variant.add_override(target=target, property=prop, value=value)
             self._cover_written = len(self._cover_hidden)
         findings = self.check()
-        report.parent.mkdir(parents=True, exist_ok=True)
         report_rows = [{"severity": f.severity, "code": f.code, "message": str(f)} for f in findings]
         errors = [f for f in findings if f.severity == "error"]
         if errors or (strict and findings):
-            report.write_text(json.dumps(report_rows, indent=2) + "\n")
+            write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
             raise SceneCheckError(findings)
         document = _document_at(self.scene, self.root, out.parent)
         if self.cv.signature is not None and (absent := signature.missing(document)):
@@ -764,11 +767,10 @@ class Episode:
                 "both marks (ADR 0001), or the episode passes signature=False because its package predates them"
             )
             report_rows.append({"severity": "error", "code": "srstudio:signature", "message": str(error)})
-            report.write_text(json.dumps(report_rows, indent=2) + "\n")
+            write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
             raise error
-        report.write_text(json.dumps(report_rows, indent=2) + "\n")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(document)
+        report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
+        write_outputs([(out, document), (report, report_data)], overwrite=overwrite)
         print(
             f"{out.name}: {document.count(b'<shape ')} shapes, {document.count(b'<group ')} groups, "
             f"{len(self.caption_specs)} captions, {len(findings)} findings"

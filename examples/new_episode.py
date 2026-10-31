@@ -119,4 +119,7 @@ graphics.connected_card(ep.cv, ep.comp, "VERDICT", "hired (for the coffee)", sho
 ep.captions(x=40, y=1488, width=1000, weight=None, line_height="1.12", stroke=ep.cv.ink, shadow="#00000055")
 ep.audio(track_id="sample-dialogue")
 ep.markers()
-ep.finish()
+try:
+    ep.finish(overwrite=args.overwrite)
+except FileExistsError as exc:
+    parser.exit(2, f"{parser.prog}: {exc}; pass --overwrite to replace existing artifacts\n")

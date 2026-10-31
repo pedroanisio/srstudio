@@ -85,7 +85,7 @@ The default Cutout project uses `dialogue.json`, `assets/dialogue.wav` and a cap
 | `ep.audio()`, `ep.markers()` | Add the project's audio mix and markers. |
 | `ep.finish()` | Check the scene, write XML and a validation report, and return the XML path. |
 
-`finish()` raises `SceneCheckError` on scene-check errors and, by default, on any finding; a missing signature raises `SignatureError`. The underlying SDK may also raise `sr_core.scene.SchemaValueError` during construction. Pass `strict=False` to allow warnings. Custom `out=` and `report=` paths can use separate directories; their parents are created as needed. Relative input paths in the written scene are adjusted to continue resolving against the project root. See [audio, captions and episode workflows](docs/authoring-reference.md) for more options.
+`finish()` raises `SceneCheckError` on scene-check errors and, by default, on any finding; a missing signature raises `SignatureError`. The underlying SDK may also raise `sr_core.scene.SchemaValueError` during construction. Pass `strict=False` to allow warnings. Existing outputs are replaced by default; pass `overwrite=False` to refuse replacement, including files created during the build. Custom `out=` and `report=` paths can use separate directories; their parents are created as needed. Relative input paths in the written scene are adjusted to continue resolving against the project root. See [audio, captions and episode workflows](docs/authoring-reference.md) for more options.
 
 ## The parts
 
