@@ -50,9 +50,9 @@ its thinner lens glass came from `feat/mind`. All effects are synthesised.
 
 ## What I would change
 
-- The name lands early: the catchphrase at 33% and the reveal at 35%, against a target near 40%. The reel is already at
+- The name lands early: the catchphrase at 33% and the reveal at 36%, against a target near 40%. The reel is already at
   the 45 second limit, so holding the opening longer would need a cut after the name.
-- The reel is exactly at the limit, 45.0 seconds. Dropping "Note the last word." would buy room, but the underline is what
+- The reel runs 44.4 seconds, just under the limit. Dropping "Note the last word." would buy room, but the underline is what
   makes the name a joke and not a label.
 - The narrator carries a lot in the middle. The evidence and its caveat are two long lines, and a viewer who only wants
   the joke waits from about 24 to 37 seconds for the hedgehog to come back.

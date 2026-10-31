@@ -42,5 +42,5 @@ pilot. The channel sting is a function, not a registered part.
   shirt, but a clothing layer under the arms would be cleaner if shirts come back in the series.
 - The goat's clipboard covers his mouth while he speaks, so his lip sync does not show until it drops. A smaller board
   set lower would show it.
-- The name lands at 37% of the way in, a little ahead of the 40% target. A longer hold on her reaction would close that
+- The name lands at 38.4% of the way in, a little ahead of the 40% target. A longer hold on her reaction would close that
   gap, at the cost of pace.
