@@ -23,7 +23,7 @@ import subprocess
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import CodeType
 
@@ -144,7 +144,8 @@ class Run:
 @dataclass(frozen=True)
 class Report:
     episodes: Mapping[str, tuple[str, ...]]  # slug -> the parts its build called, sorted
-    unmeasured: tuple[str, ...] = ()  # projects with no script to build them, or skipped on request
+    unmeasured: tuple[str, ...] = ()  # projects with no script, skipped on request, or whose build failed
+    failures: Mapping[str, str] = field(default_factory=dict, compare=False)  # why each build failed; not stored
 
     def used_by(self, name: str) -> list[str]:
         return [slug for slug, parts in self.episodes.items() if name in parts]
@@ -220,7 +221,9 @@ def discover(
     ``<slug with underscores>.py`` is in ``scripts`` (or the builder its release in ``<scripts>/posts`` names, see
     :mod:`srstudio.releases`; a project in both is built from ``episodes``); ``args`` adds
     command-line options by slug, and ``skip`` names projects not to build (one still in progress, whose build
-    cannot run yet). Returns the runs by slug and the projects not measured: those with no script and those
+    cannot run yet). A project with a ``voiced/`` recording whose script takes ``--voice`` is built from it: its
+    delivered master was, and its silent ``script.json`` can be an older timing that the silent build refuses.
+    Returns the runs by slug and the projects not measured: those with no script and those
     skipped. A skipped slug, or one given ``args``, that names no project raises :class:`UsageError`."""
     projects: dict[str, Path] = {}
     if packages is not None and Path(packages).is_dir():
@@ -249,17 +252,24 @@ def discover(
             continue
         script = Path(scripts) / f"{builders.get(slug, slug.replace('-', '_'))}.py"
         if script.is_file():
-            runs.append(Run(slug, script, projects[slug], tuple((args or {}).get(slug, ()))))
+            given = tuple((args or {}).get(slug, ()))
+            if "--voice" not in given and (projects[slug] / "voiced").is_dir() and "--voice" in script.read_text():
+                given = (*given, "--voice")
+            runs.append(Run(slug, script, projects[slug], given))
         else:
             missing.append(slug)
     return runs, missing
 
 
 def measure(runs: Sequence[Run], work: Path, unmeasured: Sequence[str] = ()) -> Report:
-    """Build each run on a copy of its project under ``work`` and report the parts each used."""
+    """Build each run on a copy of its project under ``work`` and report the parts each used. A build that fails is
+    reported as not measured, with its reason in ``failures``, and the others still run: one episode that cannot build
+    must not leave every other part's usage stale. When no build succeeds nothing is reported, since an environment
+    that cannot build at all must not replace a good report with an empty one."""
     work = Path(work)
     work.mkdir(parents=True, exist_ok=True)
     out: dict[str, tuple[str, ...]] = {}
+    failures: dict[str, str] = {}
     for run in runs:
         copy = work / run.slug
         if copy.exists():
@@ -269,9 +279,14 @@ def measure(runs: Sequence[Run], work: Path, unmeasured: Sequence[str] = ()) -> 
         try:
             probe(run.script, copy, run.args, used)
         except UsageError as exc:
-            raise UsageError(f"{run.slug}: {exc}") from None
+            failures[run.slug] = str(exc)
+            continue
         out[run.slug] = tuple(json.loads(used.read_text()))
-    return Report(out, tuple(unmeasured))
+    if runs and not out:
+        raise UsageError(
+            f"every episode failed to build: {', '.join(failures)}; the first: {next(iter(failures.values()))}"
+        )
+    return Report(out, (*unmeasured, *failures), failures)
 
 
 if __name__ == "__main__":  # the probe's child: python -m srstudio.usage SCRIPT PROJECT OUT [ARGS...]

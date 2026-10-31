@@ -108,13 +108,62 @@ def test_measure_runs_each_episode_on_a_copy_and_reports_used_and_unused(tmp_pat
     assert report.unused("prop") and "plant" not in report.unused("prop")
 
 
-def test_a_failing_episode_stops_the_measurement_with_its_name(tmp_path):
-    script = tmp_path / "broken.py"
-    script.write_text("raise SystemExit('no inputs')\n")
-    project = tmp_path / "p"
-    project.mkdir()
-    with pytest.raises(U.UsageError, match="broken-ep"):
-        U.measure([U.Run("broken-ep", script, project)], tmp_path / "work")
+PLANTS = (
+    "import sys\nfrom pathlib import Path\nfrom srstudio import Episode, EpisodeSpec, props\n"
+    "ep = Episode(EpisodeSpec(slug='t', title='t', description='t', root=Path(sys.argv[1]), seed=1))\n"
+    "props.plant(ep.cv, ep.comp)\n"
+)
+
+
+def test_a_failing_episode_is_reported_unmeasured_and_cannot_abort_the_others(tmp_path, project):
+    broken = tmp_path / "broken.py"
+    broken.write_text("raise SystemExit('no inputs')\n")
+    good = tmp_path / "good.py"
+    good.write_text(PLANTS)
+    empty = tmp_path / "p"
+    empty.mkdir()
+    runs = [U.Run("broken-ep", broken, empty), U.Run("good-ep", good, project)]
+    report = U.measure(runs, tmp_path / "work")
+    assert report.episodes == {"good-ep": ("plant",)}
+    assert report.unmeasured == ("broken-ep",)
+    assert "broken.py failed" in report.failures["broken-ep"] and "no inputs" in report.failures["broken-ep"]
+    assert report.to_dict()["unmeasured"] == ["broken-ep"]  # the page marks it "not measured", never "uses nothing"
+    assert U.Report.read(report.write(tmp_path / "usage.json")).unmeasured == ("broken-ep",)
+
+
+def test_a_run_where_every_episode_fails_measures_nothing_and_says_so(tmp_path):
+    """An environment that cannot build at all (a broken import) must not replace a good report with an empty one."""
+    broken = tmp_path / "broken.py"
+    broken.write_text("raise SystemExit('no inputs')\n")
+    empty = tmp_path / "p"
+    empty.mkdir()
+    runs = [U.Run("one", broken, empty), U.Run("two", broken, empty)]
+    with pytest.raises(U.UsageError, match="every episode failed.*one.*two"):
+        U.measure(runs, tmp_path / "work")
+
+
+def test_a_voiced_recording_means_the_episode_is_measured_from_it(tmp_path):
+    """An episode's ``script.json`` can be the silent timing of an older sketch while the delivered master is built from
+    ``voiced/``, so the silent build refuses to run: the measure follows the recording the project already has."""
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "voiced_ep.py").write_text("# python3 voiced_ep.py PROJECT --voice\n")
+    (scripts / "silent_ep.py").write_text("# python3 silent_ep.py PROJECT\n")
+    (scripts / "no_flag_ep.py").write_text("# takes no options\n")
+    (scripts / "named_ep.py").write_text("# python3 named_ep.py PROJECT --voice\n")
+    episodes = tmp_path / "episodes"
+    for slug in ("voiced-ep", "silent-ep", "no-flag-ep", "named-ep"):
+        (episodes / slug).mkdir(parents=True)
+    (episodes / "voiced-ep" / "voiced").mkdir()
+    (episodes / "no-flag-ep" / "voiced").mkdir()
+    (episodes / "named-ep" / "voiced").mkdir()
+    runs, _ = U.discover(episodes, None, scripts, args={"named-ep": ("--voice",)})
+    assert {r.slug: r.args for r in runs} == {
+        "voiced-ep": ("--voice",),  # a recording and a script that takes --voice
+        "silent-ep": (),  # no recording
+        "no-flag-ep": (),  # a recording, but the script does not take --voice
+        "named-ep": ("--voice",),  # an option given by name is not added twice
+    }
 
 
 def test_runs_are_found_from_projects_packages_and_the_scripts_folder(tmp_path):
@@ -172,7 +221,8 @@ def test_the_command_writes_the_report_and_lists_the_unused_parts(tmp_path, proj
     assert U.Report.read(out).episodes == {"my-ep": ("plant",)}
     with pytest.raises(SystemExit):
         cli.main([*common, "--out", str(out), "--arg", "my-ep"])
-    assert cli.main([*common, "--out", str(out)]) == 2  # the script refuses to run without its option
+    assert cli.main([*common, "--out", str(out)]) == 2  # the only episode refuses to run without its option: no report
+    assert "every episode failed" in capsys.readouterr().err
 
 
 def test_a_skipped_project_is_not_built_and_is_reported_unmeasured(tmp_path):
@@ -217,7 +267,13 @@ def test_the_command_skips_a_project_it_is_told_to(tmp_path, project, capsys):
     (episodes / "unfinished").mkdir()
     out = tmp_path / "usage.json"
     common = ["usage", "--episodes", str(episodes), "--scripts", str(scripts), "--work", str(tmp_path / "w")]
-    assert cli.main([*common, "--out", str(out)]) == 2  # without the skip, the unfinished build stops it
+    assert (
+        cli.main([*common, "--out", str(out)]) == 1
+    )  # without the skip it is reported, and the report is still written
+    failed = capsys.readouterr().out
+    assert "not measured (failed): unfinished" in failed and "no timeline.json yet" in failed
+    report = U.Report.read(out)
+    assert report.episodes == {"my-ep": ("plant",)} and report.unmeasured == ("unfinished",)
     assert cli.main([*common, "--out", str(out), "--skip", "unfinished"]) == 0
     assert "not measured (skipped): unfinished" in capsys.readouterr().out
     report = U.Report.read(out)

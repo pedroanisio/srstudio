@@ -178,14 +178,15 @@ report that `srstudio page --usage` reads:
 
 ```bash
 srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes \
-    --work _tmp/usage-work --out ../generated/catalog/usage.json \
-    --arg mushroom-training=--voice --arg employee-survey=--voice --arg the-report=--voice --arg logo-bigger=--voice
+    --work _tmp/usage-work --out ../generated/catalog/usage.json
 ```
 
-`--arg SLUG=OPTION` passes an option to one episode's script, here the narrated masters. A project with no script in
-`--scripts` is listed as not measured, and an episode whose build fails stops the run with its name. `--skip SLUG`
-leaves out a project that cannot build yet (one still in progress, with no `timeline.json`): it is reported as not
-measured, and a skip that names no project is refused.
+A project with a `voiced/` recording whose script takes `--voice` is built from it, as its delivered master was;
+`--arg SLUG=OPTION` passes any other option to one episode's script. A project with no script in `--scripts` is listed
+as not measured. So is an episode whose build fails: the others still run, the report is written, the failure is
+printed and the exit code is 1; when every build fails nothing is written. `--skip SLUG` leaves out a project that cannot
+build yet (one still in progress, with no `timeline.json`): it is reported as not measured, and a skip that names no
+project is refused.
 
 - **Characters** (`srstudio.cast`): `Manager`, `Candidate` (office rig: five mouth shapes, blink overlay, head nods,
   static or articulated arms, raised brows, pupils, facepalm, pointing forearm), `Barista`, `Customer` (café rig;

@@ -1,6 +1,7 @@
 # Measures which registered parts each episode uses and writes generated/catalog/usage.json, the report `srstudio page
 # --usage` reads; started by srstudio-usage.path. It builds every episode on a copy, so it takes minutes, and the report
-# is written only after every episode was measured: a failed run leaves the previous report in place.
+# is written once every episode was tried: one whose build fails is listed as not measured (the page marks it), and the
+# run then exits 1 so `systemctl --user --failed` and the journal name it. If every build fails, nothing is written.
 [Unit]
 Description=Measure the parts the scene-render episodes use
 
@@ -14,12 +15,6 @@ ExecStart=%h/worskpace/.venv/bin/srstudio usage \
     --packages ../generated/packages \
     --scripts episodes \
     --work ../generated/catalog/usage-work \
-    --out ../generated/catalog/usage.json \
-    --arg mushroom-training=--voice \
-    --arg employee-survey=--voice \
-    --arg the-report=--voice \
-    --arg logo-bigger=--voice \
-    --arg i-was-watching=--voice \
-    --arg regards-dad=--voice
+    --out ../generated/catalog/usage.json
 Environment=SRSTUDIO_PACKAGES=%h/worskpace/generated/packages
 Environment=SRSTUDIO_ENGINE=%h/worskpace/generated/bin/scene-render

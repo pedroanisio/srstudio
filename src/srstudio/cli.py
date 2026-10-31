@@ -284,7 +284,9 @@ def main(argv=None):
             print(f"not measured (no script): {', '.join(no_script)}")
         if args.skip:
             print(f"not measured (skipped): {', '.join(sorted(args.skip))}")
-        return 0
+        for slug, reason in report.failures.items():
+            print(f"not measured (failed): {slug}: {reason}")
+        return 1 if report.failures else 0  # the report is written; a failed build is named, never silent
     if args.cmd == "lipsync":
         try:
             takes = [

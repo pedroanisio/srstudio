@@ -72,6 +72,7 @@ def test_the_usage_unit_measures_what_the_other_units_read():
         assert (Path("worskpace/srstudio") / option(words, name)).resolve() == (
             Path("worskpace") / option(page, name)
         ).resolve()
+    assert "--arg" not in words  # no per-episode option kept by hand: the measure finds what each episode needs
     unit = (UNITS / "srstudio-usage.service").read_text()
     assert "Type=oneshot" in unit and "UMask=0077" in unit
     env = environment("srstudio-usage.service")

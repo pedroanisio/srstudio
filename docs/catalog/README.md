@@ -60,9 +60,7 @@ From the workspace root, first measure which parts the episodes use (see the
 
 ```bash
 (cd srstudio && ../.venv/bin/srstudio usage --episodes ../generated/episodes --packages ../generated/packages \
-    --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json \
-    --arg mushroom-training=--voice --arg employee-survey=--voice --arg the-report=--voice --arg logo-bigger=--voice \
-    --arg i-was-watching=--voice --arg regards-dad=--voice)
+    --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json)
 .venv/bin/srstudio page \
     --base generated/catalog/packages-base.html \
     --episodes generated/episodes --renders generated/renders \
@@ -159,10 +157,11 @@ The service first waits until no render has changed for 15 s, checking at most 6
 The page only reads the usage report, so a third pair of units keeps it current: `srstudio-usage.path` starts
 `srstudio-usage.service` when an episode is added or removed, or a branch of this repository changes, and the service
 runs `srstudio usage` over every episode (minutes, since each is built on a copy). The report is written only after
-every episode was measured, so a run that fails leaves the previous report in place and the journal names the episode.
-When the report changes, `srstudio-catalog.path` rebuilds the site. An episode whose build needs a flag to run (a
-narrated Toon sketch whose `script.json` runs to the voiced length needs `--voice`) takes an `--arg SLUG=--voice` in
-the service and in the command above. Install them once:
+every episode was tried. An episode with a `voiced/` recording whose script takes `--voice` is built from it, the build
+its delivered master came from. One whose build fails is listed as not measured (the page marks it *Não medido*) and
+the run exits 1, so the unit shows as failed with the episode named in the journal; if every build fails nothing is
+written and the previous report stays. When the report changes, `srstudio-catalog.path` rebuilds the site. Install
+them once:
 
 ```bash
 cd srstudio/tools/systemd
