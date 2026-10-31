@@ -238,6 +238,14 @@ def test_a_lamp_lights_a_warm_pool_that_holds_still_where_a_phone_flickers():
     assert soft_sets.LAMP_GLOW in stops
 
 
+def test_a_lamp_off_the_edge_of_the_frame_still_darkens_the_far_side_of_the_room():
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp, lights=[soft_sets.Light(0.0, "lamp", -760.0, 1300.0)])
+    pool = groups(cv)["soft-bedroom-night-1"].find("shape")
+    x, y, w, h = (float(pool.get(k)) for k in ("x", "y", "width", "height"))
+    assert x <= 0 and y <= 0 and x + w >= 1080 and y + h >= 1920
+
+
 @pytest.mark.parametrize(
     "kw",
     [

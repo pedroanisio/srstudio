@@ -45,7 +45,8 @@ LIGHTS = ("day", "phone", "lamp", "dark")
 LAMP_GLOW = "#E08A2E5C"  # the amber a bulb leaves on a wall, between its clear middle and the dark
 FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
 LAMP_DARK = "#0B1026D8"  # a lamp's dark stays short of NIGHT: the corners of a lamplit room are there
-LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool, past the frame from anywhere in it
+LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool
+LAMP_BOX = 4000.0  # px from a lamp to the edge of the painted square: past its reach it is all LAMP_DARK
 FLICKER_STEP = 0.14  # seconds a flicker value holds
 OVER = 600  # px a room runs past the frame on every side
 
@@ -371,7 +372,7 @@ def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
             cv.rect(night, 0, 0, WIDTH, HEIGHT, NIGHT)
             continue
         if row.state == "lamp":
-            cv.rect(night, row.x - LAMP_REACH, row.y - LAMP_REACH, 2 * LAMP_REACH, 2 * LAMP_REACH, _lamplight(cv))
+            cv.rect(night, row.x - LAMP_BOX, row.y - LAMP_BOX, 2 * LAMP_BOX, 2 * LAMP_BOX, _lamplight(cv))
             continue
         lit = cv.group(night, f"{id}-flicker-{k + 1}")  # a gate holds its group's opacity: the flicker sits inside it
         cv.rect(lit, row.x - 2000, row.y - 2000, 4000, 4000, pool)
@@ -381,7 +382,8 @@ def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
 
 def _lamplight(cv: Canvas) -> str:
     """A bulb's pool: clear where it falls, amber at its edge and dark past that, with the room still readable."""
-    return cv.rgrad("soft-bedroom-lamp", [(0.0, NIGHT_CLEAR), (0.2, NIGHT_CLEAR), (0.46, LAMP_GLOW), (1.0, LAMP_DARK)])
+    stops = [(0.0, NIGHT_CLEAR), (0.2, NIGHT_CLEAR), (0.46, LAMP_GLOW), (1.0, LAMP_DARK)]
+    return cv.rgrad("soft-bedroom-lamp", stops, (0.5, 0.5, LAMP_REACH / (2 * LAMP_BOX)))
 
 
 def _gated(cv: Canvas, parent, id: str, spans: Sequence[tuple[float, float]]):
