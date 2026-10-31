@@ -22,13 +22,16 @@ from .registry import register
 __all__ = [
     "BED_TOP",
     "CHIPS",
+    "DEAD_SCREEN",
     "EverydayError",
     "FLIP",
     "FOODS",
     "LASAGNA_LAYERS",
+    "LOW_BATTERY",
     "TABLE_TOP",
     "alarm_clock",
     "arm",
+    "battery_insert",
     "bill",
     "bubble",
     "cereal_box",
@@ -69,6 +72,9 @@ CARD_PAD = 30.0  # a flip card's margin round its type
 CARD_GLYPH = 0.62  # a capital's width as a share of the type size
 CARD_LEADING = 1.2  # a row's height as a share of the type size
 CARD_FILLS = ("#fffaf0", "#ffe9a8")  # its sides, in turn: a card turned over shows it has
+LOW_BATTERY = "#ff5a64"  # the battery's colour at LOW_LEVEL percent or under
+LOW_LEVEL = 20
+DEAD_SCREEN = "#0b0a10"  # a phone that has died
 LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 
 
@@ -319,6 +325,54 @@ def phone(cv: Canvas, parent, x: float, y: float, w: float, h: float, screen: st
     cv.rect(g, -w / 2 + BEZEL, -h / 2 + BEZEL, w - 2 * BEZEL, h - 2 * BEZEL, screen, radius=14)
     cv.ellipse(g, -9, -h / 2 + 7, 13, 13, "#4a4752")
     return cv.group(g, cv.uid("g"), x=-w / 2 + BEZEL, y=-h / 2 + BEZEL)
+
+
+@register(
+    "prop",
+    "collage-battery-insert",
+    summary="A phone filling the frame with its battery and percentage on it, red when low, then a dead black screen",
+)
+def battery_insert(
+    cv: Canvas,
+    parent,
+    x: float = 190.0,
+    y: float = 420.0,
+    w: float = 700.0,
+    h: float = 1200.0,
+    *,
+    levels: Sequence[tuple[float, int]] = ((0.0, 1),),
+    dead: float | None = None,
+) -> object:
+    """A phone ``w`` by ``h`` with its top-left at ``x, y``, the battery on its screen at each of ``levels`` (``(from,
+    percent)``, project seconds from 0); from ``dead`` the screen is black. Returns the screen's group."""
+    if not levels or levels[0][0] != 0:
+        raise EverydayError(f"a battery's level is known from second 0, got {levels!r}")
+    times = [at for at, _ in levels]
+    if not all(checks.number(t) for t in times) or times != sorted(set(times)):
+        raise EverydayError(f"a battery's level changes in rising seconds, got {times!r}")
+    if not all(0 <= percent <= 100 for _, percent in levels):
+        raise EverydayError(f"a battery runs from 0 to 100 percent, got {levels!r}")
+    if dead is not None and not (checks.number(dead) and dead >= 0):
+        raise EverydayError(f"a battery dies from second 0 on, got {dead!r}")
+    screen = phone(cv, parent, x, y, w, h, screen="#17151f")
+    across, down = w - 2 * BEZEL, h - 2 * BEZEL
+    case_w, case_h = across * 0.68, across * 0.3
+    left, top = (across - case_w) / 2, down * 0.3
+    ends: list[float] = [*times[1:], FOREVER]
+    for (at, percent), stop in zip(levels, ends, strict=True):
+        level = cv.group(screen, cv.uid("g"))
+        cv.gate(level, [(at, stop)])
+        colour = LOW_BATTERY if percent <= LOW_LEVEL else "#3ddc6e"
+        cv.rect(level, left, top, case_w, case_h, "#ffffff00", "#fffaf0", 12, radius=26)
+        cv.rect(level, left + case_w, top + case_h * 0.3, 26, case_h * 0.4, "#fffaf0", radius=8)
+        fill = max(case_w - 40, 1.0) * max(percent, 2) / 100
+        cv.rect(level, left + 20, top + 20, fill, case_h - 40, colour, radius=10)
+        _letter(cv, level, "battery", f"{percent}%", 0, top + case_h + 40, across, 260, 200, color=colour)
+    if dead is not None:
+        black = cv.group(screen, cv.uid("g"))
+        cv.gate(black, [(dead, FOREVER)])
+        cv.rect(black, 0, 0, across, down, DEAD_SCREEN, radius=14)
+    return screen
 
 
 @register("prop", "collage-bubble", summary="A paper message bubble with its tail, grey for theirs and green for mine")

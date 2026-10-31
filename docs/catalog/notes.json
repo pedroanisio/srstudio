@@ -559,6 +559,14 @@
     }
   },
   "parts": {
+    "collage-battery-insert": {"title": "Bateria do celular"},
+    "paper-menu": {"title": "Cardápio de papel"},
+    "soup-bowl": {"title": "Tigela de sopa"},
+    "reaching-hand": {"title": "Mão que entra"},
+    "phone-screen": {"title": "Tela de celular"},
+    "qr-code": {"title": "Código QR"},
+    "table-tent": {"title": "Display de mesa"},
+    "cafe-table": {"title": "Mesa de café"},
     "collage-magnifying-glass": {"title": "Lupa de papel"},
     "stick-message-insert": {"title": "Mensagem na tela"},
     "collage-flip-card": {"title": "Cartão virável"},
@@ -7707,6 +7715,14 @@
     {"section": "locations", "name": "Sala dos fundos", "parts": ["back-room"], "shot": {"episode": "my-manager", "at": 23.0}, "text": "Uma porta com plaqueta e, atrás dela, um armário com prateleiras, lâmpada nua e duas cadeiras dobráveis."},
     {"section": "props", "name": "Cartão virável", "parts": ["collage-flip-card"], "shot": {"episode": "no-thanks", "at": 7.5}, "text": "Um cartão grande para ler em voz alta: o texto é medido e ele vira para o outro lado."},
     {"section": "props", "name": "Mensagem na tela", "parts": ["stick-message-insert"], "shot": {"episode": "whats-your-split", "at": 18.4}, "text": "Uma mensagem de texto na tela inteira, grande o bastante para ler no celular."},
-    {"section": "props", "name": "Lupa de papel", "parts": ["collage-magnifying-glass"], "shot": {"episode": "nail-hole", "at": 1.5}, "text": "A lupa: aro, cabo e uma lente translúcida que deixa ver o que está por baixo."}
+    {"section": "props", "name": "Lupa de papel", "parts": ["collage-magnifying-glass"], "shot": {"episode": "nail-hole", "at": 1.5}, "text": "A lupa: aro, cabo e uma lente translúcida que deixa ver o que está por baixo."},
+    {"section": "props", "name": "Mesa de café", "parts": ["cafe-table"], "shot": {"episode": "scan-the-code", "at": 1.0}, "text": "Mesa com toalha xadrez até o chão; esconde quem está atrás."},
+    {"section": "props", "name": "Display de mesa", "parts": ["table-tent"], "shot": {"episode": "scan-the-code", "at": 3.0}, "text": "Display dobrado com QR e número da mesa."},
+    {"section": "props", "name": "Código QR", "parts": ["qr-code"], "shot": {"episode": "scan-the-code", "at": 14.2}, "text": "QR desenhado a partir da semente, aqui no avental da Ava."},
+    {"section": "props", "name": "Tela de celular", "parts": ["phone-screen"], "shot": {"episode": "scan-the-code", "at": 17.0}, "text": "Celular de frente, com tela legível."},
+    {"section": "props", "name": "Mão que entra", "parts": ["reaching-hand"], "shot": {"episode": "scan-the-code", "at": 15.5}, "text": "Braço que entra de fora do quadro, segurando o que carrega."},
+    {"section": "props", "name": "Tigela de sopa", "parts": ["soup-bowl"], "shot": {"episode": "scan-the-code", "at": 21.0}, "text": "Tigela larga de sopa de tomate, com colher."},
+    {"section": "props", "name": "Cardápio de papel", "parts": ["paper-menu"], "shot": {"episode": "scan-the-code", "at": 29.0}, "text": "Cardápio de uma folha, em pé ou deitado na mesa."},
+    {"section": "props", "name": "Bateria do celular", "parts": ["collage-battery-insert"], "shot": {"episode": "the-boat", "at": 20.2}, "text": "O celular em tela cheia: a bateria em um por cento, e depois o preto."}
   ]
 }

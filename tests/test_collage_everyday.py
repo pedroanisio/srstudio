@@ -310,3 +310,46 @@ def test_a_magnifying_glass_refuses_a_lens_it_cannot_draw(size):
     cv = canvas()
     with pytest.raises(EverydayError):
         collage_everyday.magnifying_glass(cv, cv.comp, size=size)
+
+
+# -- the battery insert -----------------------------------------------------------------------------------------------
+def test_the_battery_insert_is_registered():
+    assert registry.get("prop", "collage-battery-insert").builder is collage_everyday.battery_insert
+
+
+def test_a_battery_insert_says_its_level_in_red_when_it_is_nearly_gone():
+    cv = canvas()
+    collage_everyday.battery_insert(cv, cv.comp, levels=((0.0, 1),))
+    drawn = body(cv)
+    assert b"1%" in drawn
+    assert collage_everyday.LOW_BATTERY.encode() in drawn
+
+
+def test_a_battery_insert_with_charge_left_is_not_red():
+    cv = canvas()
+    collage_everyday.battery_insert(cv, cv.comp, levels=((0.0, 80),))
+    assert collage_everyday.LOW_BATTERY.encode() not in body(cv)
+
+
+def test_a_battery_insert_goes_black_when_it_dies():
+    alive, dead = canvas(), canvas()
+    collage_everyday.battery_insert(alive, alive.comp)
+    collage_everyday.battery_insert(dead, dead.comp, dead=2.0)
+    assert collage_everyday.DEAD_SCREEN.encode() in body(dead)
+    assert collage_everyday.DEAD_SCREEN.encode() not in body(alive)
+
+
+@pytest.mark.parametrize(
+    "levels", [(), ((1.0, 5),), ((0.0, 101),), ((0.0, -1),), ((0.0, 5), (0.0, 4)), ((0.0, 5), (float("nan"), 4))]
+)
+def test_a_battery_insert_refuses_levels_it_cannot_show(levels):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.battery_insert(cv, cv.comp, levels=levels)
+
+
+@pytest.mark.parametrize("dead", [-1.0, float("inf")])
+def test_a_battery_insert_refuses_a_death_off_the_clock(dead):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.battery_insert(cv, cv.comp, dead=dead)

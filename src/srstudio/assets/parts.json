@@ -9035,6 +9035,176 @@
           "rig": null
         }
       ]
+    },
+    "cafe-table": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A café table seen from its chair, a checked cloth to the floor Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4c06bbd6cd507f78c9e73d6cb204546b63818bfee45792ea90c0a109e55c0379",
+          "rig": null
+        }
+      ]
+    },
+    "table-tent": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A folded table tent: a QR code over the table number Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5dc040ccb73e6aa9f495273e0bd5ca799b49822c85611d654ceb621f37d55e8f",
+          "rig": null
+        }
+      ]
+    },
+    "qr-code": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A square QR code drawn from its seed Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fd94f77e58042c703e20558c2597d9c888b589bd29ffe2910f8327cadb6671a0",
+          "rig": null
+        }
+      ]
+    },
+    "phone-screen": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone held to the lens, its screen big enough to read Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bdaaf9bcae6b02972d162df99fa31827b7af704e7af777f44ba8194f5a3451e7",
+          "rig": null
+        }
+      ]
+    },
+    "reaching-hand": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An arm in from off frame, gripping what it carries Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1ba30d0ec5e8c0e9bb1776697f2fdd297aec8af9392dbadbc643c29aca2fc615",
+          "rig": null
+        }
+      ]
+    },
+    "soup-bowl": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wide bowl of tomato soup, a spoon standing in it Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dbf0e4d725e81c002eea78cdf1044452c6f9de4869386491a4a967bcb721942e",
+          "rig": null
+        }
+      ]
+    },
+    "paper-menu": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A one-page paper menu, standing or lying flat Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "eb69f62179c34292a932f66678cdc11447bfb0a260ce875115af0416967a08a2",
+          "rig": null
+        }
+      ]
+    },
+    "rising-bubbles": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Seeded bubbles climbing through a glass of water Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "water-splash": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Beads of water thrown up and falling back Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "collage-battery-insert": {
+      "kind": "prop",
+      "style": "Collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone filling the frame with a big battery and its percentage, red when low, which goes black on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6e5a1fe2fd461d8d3bbdd68778c01250fc833ac694b5f24cae967b4e18909be2",
+          "rig": null
+        }
+      ]
     }
   }
 }
