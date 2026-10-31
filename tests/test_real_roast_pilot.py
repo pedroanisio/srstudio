@@ -181,3 +181,16 @@ def test_the_recording_script_carries_the_banner():
     assert "ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error." in text
     assert "Absence of output verification is a design defect, not a runtime bug." in text
     assert "All LLM output must be treated as untrusted and validated explicitly." in text
+
+
+@pytest.mark.parametrize("window", range(len(pilot.LOWERS)))
+def test_a_lower_third_names_only_who_is_speaking_or_alone_on_screen(window):
+    """A name under the other anchor's face reads as her name."""
+    index, kicker, _ = pilot.LOWERS[window]
+    name = next((k for k in ("vera", "gus") if kicker.lower().startswith(k)), None)
+    if name is None:
+        return
+    stop = pilot.LOWERS[window + 1][0] if window + 1 < len(pilot.LOWERS) else len(pilot.BEATS)
+    for beat in pilot.BEATS[index:stop]:
+        speaking = None if beat.line is None else pilot.LINES[beat.line].speaker
+        assert speaking == name or beat.who == name, (kicker, beat.start)

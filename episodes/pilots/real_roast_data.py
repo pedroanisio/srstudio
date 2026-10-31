@@ -51,14 +51,21 @@ TICKER = (
     "OUTSIDE AI AGENTS: SEVERAL HUNDRED ORDERS, IN TOTAL",
     "SOURCE: Q3 EARNINGS CALL, OCT 29",
 )
-LOWERS = (  # the beat it arrives on, its kicker, its one line
-    (2, "GUS BELLOWS, CO-HOST", "ORDERS PLACED BY GUS: ALSO SEVERAL HUNDRED"),
+TALLY = "ORDERS PLACED BY GUS: ALSO SEVERAL HUNDRED"
+DRIVER = "KNOWS HIS DRIVER PERSONALLY"
+MARRIED = "MARRIED TWICE. CATERED TWICE."
+GUS_NAME, VERA_NAME, STILL_LIVE = "GUS BELLOWS, CO-HOST", "VERA STILLMAN, ANCHOR", "DEVELOPING"
+LOWERS = (  # the beat it arrives on, its kicker, its one line; a name only while that anchor speaks or fills the shot
+    (2, STILL_LIVE, TALLY),  # up through Vera's next line, and a name card here would be too short to read
     (4, "DOORDASH, LAST QUARTER", "993 MILLION TOTAL ORDERS"),
-    (5, "GUS BELLOWS, CO-HOST", "CURRENTLY OUTPERFORMING AI, IN A BATHROBE"),
-    (7, "GUS BELLOWS, CO-HOST", "KNOWS HIS DRIVER PERSONALLY"),
-    (10, "GUS BELLOWS, CO-HOST", "MARRIED TWICE. CATERED TWICE."),
-    (12, "VERA STILLMAN, ANCHOR", "IN FAIRNESS"),
-    (13, "GUS BELLOWS, CO-HOST", "HAS NOW SEEN THE DELIVERY FEE"),
+    (5, GUS_NAME, "CURRENTLY OUTPERFORMING AI, IN A BATHROBE"),
+    (6, VERA_NAME, "RULING: NOT A CATEGORY"),
+    (7, GUS_NAME, DRIVER),
+    (8, STILL_LIVE, DRIVER),
+    (10, GUS_NAME, MARRIED),
+    (11, STILL_LIVE, MARRIED),
+    (12, VERA_NAME, "IN FAIRNESS"),
+    (13, GUS_NAME, "HAS NOW SEEN THE DELIVERY FEE"),
 )
 END = 25.0
 
@@ -152,8 +159,10 @@ def overlay(cv, parent, beats, end, measure) -> None:
     news_kit.sign(cv, parent)
     card = sketch.events(beats, "card")[0][0]
     news_kit.ticker(cv, parent, TICKER, card + news_kit.SLIDE, end, measure)  # the card rises through its place first
+    last = ""
     for a, b, kicker, line in spans(beats, end):
-        news_kit.lower_third(cv, parent, kicker, line, a, b, measure)
+        news_kit.lower_third(cv, parent, kicker, line, a, b, measure, slide=line != last)  # the same story stays up
+        last = line
     news_kit.bug(cv, parent, 0.0, end, measure)
     small = beats[2].start
     news_kit.source_card(cv, parent, SOURCE, card, small, end, measure)
