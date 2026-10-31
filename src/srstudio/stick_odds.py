@@ -5,14 +5,16 @@
 bag, in glowing false colour (:data:`XRAY_ITEMS`), under a moving scan line. :func:`plate` and :func:`spoon` are dinner,
 :func:`robe` dresses a figure in a robe or a coat key by key, :func:`scan_belt` is the belt the bag goes through,
 :func:`foil_parcel` what is in the bag and :func:`foil_note` the note on it, filling the frame. Everything is in frame
-pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same.
+pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same. :func:`aisle` looks down a
+plane's aisle in one-point perspective and :func:`queue` stands a line of people in it who can all turn round at once;
+:func:`book` and :func:`duffel` are what a passenger carries.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from . import checks
+from . import checks, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import HEAD_R, Gradient, RigKey, RigPose, StickDataError, _gate, _group, box, oval, paint, shape
@@ -21,11 +23,15 @@ __all__ = [
     "BELT_TOP",
     "NOTE_BOX",
     "XRAY_ITEMS",
+    "aisle",
+    "book",
+    "duffel",
     "foil_note",
     "foil_parcel",
     "headset",
     "plate",
     "poster",
+    "queue",
     "robe",
     "scan_belt",
     "spoon",
@@ -47,6 +53,16 @@ FACETS = (  # the creases of crumpled foil: triangles in fractions of its box
     (0.06, 0.82, 0.3, 0.78, 0.18, 0.96), (0.4, 0.8, 0.66, 0.84, 0.5, 0.97), (0.7, 0.82, 0.96, 0.8, 0.86, 0.96),
 )  # fmt: skip
 ROBE_COLOUR, ROBE_EDGE = "#7f9fc4", "#5d7ea6"
+COVER, PAGES, DUFFEL, DUFFEL_DARK = "#8a3f5a", "#fbf8f0", "#55704f", "#3f5439"
+HULL, HULL_LOW, CARPET, BIN_DOOR, SEAT, SEAT_LIGHT = "#efe9dc", "#d8cdb8", "#5b4f6b", "#f6f2e8", "#2f4a6d", "#3f5f88"
+SKIN, HAIRS, COATS = (
+    "#f0e9df",
+    ("#23252b", "#6b4a2f", "#a9a39a", "#c98f3f"),
+    ("#7f9fc4", "#c0453b", "#6b5a48", "#55704f"),
+)
+HORIZON = 620  # the aisle's vanishing point on the frame's height
+AISLE_ROWS = 12
+RECEDE = 0.24  # how fast the rows shrink: each is 1 / (1 + RECEDE * depth) the near one
 GLOW = 16.0  # px of blur on the copy of a scanned object that makes it glow
 BELT_TOP = 1200  # the belt's top: what stands on it has its feet here
 BELT_X = (300.0, 1080.0)
@@ -256,4 +272,108 @@ def foil_note(cv: Canvas, parent, text: str, *, size: float = 104):
                        weight=700, color=NOTE_INK, align="center", verticalAlign="middle", wrap="balance",
                        lineHeight="1.14", maxLines=5)  # fmt: skip
     g.add_layer(id=cv.uid("layer"), asset=name, x=x + pad, y=y + pad)
+    return g
+
+
+def _depth(row: int) -> float:
+    return 1 / (1 + RECEDE * row)
+
+
+def _sx(side: int, out: float, depth: float) -> float:
+    return 540 + side * out * depth
+
+
+@register("location", "stick-aisle", tags=("airport", "plane", "cabin", "aisle", "perspective", "travel"))
+def aisle(cv: Canvas, parent):
+    """A plane's aisle from the back of the cabin in one-point perspective: the hull, the bins on both sides and the
+    seat rows shrinking toward the bulkhead at :data:`HORIZON`. Stand people in it with :func:`queue`. The code sits on
+    the floor and the cactus on the nearest seat (ADR 0001)."""
+    g = _group(cv, parent)
+    box(cv, g, 0, 0, cv.width, cv.height, HULL)
+    far = _depth(AISLE_ROWS)
+    fl, fr = _sx(-1, 300, far), _sx(1, 300, far)
+    box(cv, g, fl, HORIZON - 420 * far, fr - fl, 1300 * far, HULL_LOW, 4)
+    floor = HORIZON + 1300
+    shape(cv, g, f"M {_sx(-1, 300, 1)} {floor} L {fl} {HORIZON + 880 * far} L {fr} {HORIZON + 880 * far} "
+                 f"L {_sx(1, 300, 1)} {floor} Z", CARPET)  # fmt: skip
+    for side in (-1, 1):
+        edge, near = _sx(side, 300, far), _sx(side, 620, 1)
+        shape(cv, g, f"M {near} 0 L {edge} {HORIZON - 420 * far} L {edge} {HORIZON - 190 * far} "
+                     f"L {_sx(side, 340, 1)} {HORIZON - 190} L {near} {HORIZON - 190} Z",
+              BIN_DOOR, 4, stroke="#b9ae98")  # fmt: skip
+    for row in range(AISLE_ROWS, -1, -1):
+        depth = _depth(row)
+        for side in (-1, 1):
+            inner, outer = sorted((_sx(side, 240, depth), _sx(side, 760, depth)))
+            top, base = HORIZON + 180 * depth, HORIZON + 1300 * depth
+            box(cv, g, inner, top, outer - inner, base - top, SEAT, 3, r=40 * depth)
+            box(cv, g, inner + 26 * depth, top + 24 * depth, outer - inner - 52 * depth, 150 * depth, SEAT_LIGHT)
+            x = _sx(side, 300, depth)
+            shape(cv, g, f"M {x} {HORIZON - 190 * depth} L {_sx(side, 620, depth)} {HORIZON - 190 * depth}", sw=4,
+                  stroke="#b9ae98")  # fmt: skip
+    signature.cactus(cv, g, 90, 1640, scale=0.5)
+    signature.code(cv, g, 40, 1880, 9, color="#8a7f99")
+    return g
+
+
+def _passenger(cv: Canvas, parent, x: float, y: float, depth: float, hair: str, coat: str, turn: float, end: float):
+    r = 120 * depth
+    wide, base, top = 190 * depth, y + 420 * depth, y + 100 * depth
+    shape(cv, parent, f"M {x - wide} {base} Q {x - wide + 10 * depth} {top} {x} {top} "
+                      f"Q {x + wide - 10 * depth} {top} {x + wide} {base} Z", coat, 4, stroke=cv.ink)  # fmt: skip
+    oval(cv, parent, x - r, y - r, 2 * r, 2 * r, SKIN, sw=4)
+    back = _group(cv, parent)
+    shape(cv, back, f"M {x - r} {y} A {r} {r} 0 0 1 {x + r} {y} Q {x} {y + r * 1.3} {x - r} {y} Z", hair)
+    _gate(cv, back, 0, turn, end)
+    face = _group(cv, parent)
+    for eye in (-0.36, 0.36):
+        oval(cv, face, x + eye * r - r * 0.13, y - r * 0.2, r * 0.26, r * 0.26, cv.ink)
+    shape(cv, face, f"M {x - r * 0.26} {y + r * 0.46} L {x + r * 0.26} {y + r * 0.46}", sw=4 * max(depth, 0.5),
+          stroke=cv.ink)  # fmt: skip
+    _gate(cv, face, turn, end, end)
+
+
+@register("prop", "stick-queue", tags=("airport", "plane", "cabin", "crowd", "people"))
+def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS):
+    """A line of ``rows`` pairs of people down :func:`aisle`, backs to the viewer, who all turn to face them at
+    ``turn`` seconds. Fixed hair and coats, so a shot redraws the same."""
+    if rows not in range(1, AISLE_ROWS + 1):
+        raise StickDataError(f"the aisle holds 1 to {AISLE_ROWS} rows, got {rows!r}")
+    if not 0 <= turn <= end:
+        raise StickDataError(f"they turn inside the shot of {end} s, got {turn!r}")
+    g = _group(cv, parent)
+    for row in range(rows, 0, -1):
+        depth = _depth(row)
+        for side in (-1, 1):
+            n = 2 * row + (side > 0)
+            x = 540 + side * (112 - 14 * (row % 3)) * depth
+            y = HORIZON + (760 + 50 * (n % 3)) * depth
+            _passenger(cv, g, x, y, depth, HAIRS[n % len(HAIRS)], COATS[(n // 2) % len(COATS)], turn, end)
+    return g
+
+
+@register("prop", "stick-book", tags=("book", "reading", "hand-prop"))
+def book(cv: Canvas, parent, x: float, y: float, *, shut: bool = False, scale: float = 1.0):
+    """A paperback centred on ``x, y``, seen from its cover: open and held up to read, or ``shut``."""
+    if scale <= 0:
+        raise StickDataError(f"a book's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    if shut:
+        box(cv, g, -44, -62, 88, 124, COVER, 5, r=6)
+        return g
+    box(cv, g, -92, -66, 184, 8, PAGES, 3)
+    shape(cv, g, "M 0 -62 L -96 -72 L -96 62 L 0 66 Z", COVER, 5, stroke=cv.ink)
+    shape(cv, g, "M 0 -62 L 96 -72 L 96 62 L 0 66 Z", COVER, 5, stroke=cv.ink)
+    return g
+
+
+@register("prop", "stick-duffel", tags=("bag", "travel", "hand-prop"))
+def duffel(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0, colour: str = DUFFEL):
+    """A soft duffel bag centred on ``x, y``, its strap up, in ``colour``."""
+    if scale <= 0:
+        raise StickDataError(f"a bag's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    shape(cv, g, "M -60 -40 Q 0 -150 60 -40", sw=8, stroke=cv.ink)
+    box(cv, g, -120, -56, 240, 112, colour, 5, r=46)
+    shape(cv, g, "M -92 -14 L 92 -14", sw=6, stroke=DUFFEL_DARK)
     return g
