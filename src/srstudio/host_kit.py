@@ -133,6 +133,7 @@ FLUTTER_DEG = 5.0
 GLOW_RISE, GLOW_FALL = 0.12, 0.3
 LABEL_Y, LABEL_H, LABEL_SIZE = 236.0, 84.0, 46.0
 CAPTION_PAD = 30.0
+CAPTION_LATE = 0.1  # seconds a cue may arrive after its first word is said, about a reader's tolerance
 CAPTION_LOOK = native.CaptionLook(
     size=64.0, color=CREAM, active=AMBER, stroke=INK, stroke_width=6.0, line_height=1.14, max_chars=23
 )
@@ -1110,7 +1111,8 @@ def label(cv: Canvas, parent, text: str, start: float, end: float, measure: Meas
 
 def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple[float, str]]]:
     """Each cue's words with the second each is said: from the takes, or spread evenly through a silent master's cue.
-    A word that is not the next one said is :class:`HostKitError`, so a caption can never run ahead of the voice."""
+    A word that is not the next one said is :class:`HostKitError`, so a caption can never run ahead of the voice, and
+    so is a cue arriving over :data:`CAPTION_LATE` after its first word, so it can never trail it."""
     out = []
     left = list(words)
     for line in lines:
@@ -1119,11 +1121,13 @@ def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple
             step = (line.end - line.start) / len(tokens)
             out.append([(line.start + k * step, token) for k, token in enumerate(tokens)])
             continue
-        row = []
+        row: list[tuple[float, str]] = []
         for token in tokens:
             if not left or sketch.normalize_words(left[0][2]) != sketch.normalize_words(token):
                 raise HostKitError(f"caption word {token!r} is not the next word said: {left[:1]!r}")
             at, _, _ = left.pop(0)
+            if not row and line.start - at > CAPTION_LATE + 1e-6:
+                raise HostKitError(f"caption {line.text!r} arrives {line.start - at:.3f} s after its voice")
             row.append((max(at, line.start), token))
         out.append(row)
     return out
