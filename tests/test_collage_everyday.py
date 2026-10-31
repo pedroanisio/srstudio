@@ -226,3 +226,29 @@ def test_a_router_refuses_what_it_cannot_draw(kwargs):
     cv = canvas()
     with pytest.raises(EverydayError):
         collage_everyday.router(cv, cv.comp, **kwargs)
+
+
+# -- the lasagna ------------------------------------------------------------------------------------------------------
+def test_the_lasagna_is_registered():
+    assert registry.get("prop", "collage-lasagna").builder is collage_everyday.lasagna
+
+
+def test_a_lasagna_shows_every_layer_and_its_dish():
+    cv = canvas()
+    collage_everyday.lasagna(cv, cv.comp)
+    drawn = body(cv)
+    assert all(colour.encode() in drawn for _, colour in collage_everyday.LASAGNA_LAYERS)
+
+
+def test_a_lasagna_scales_with_its_width():
+    small, large = canvas(), canvas()
+    collage_everyday.lasagna(small, small.comp, w=260.0)
+    collage_everyday.lasagna(large, large.comp, w=1040.0)
+    assert b"0.5" in body(small) and b"2.0" in body(large) or b"scaleX=\"2" in body(large)
+
+
+@pytest.mark.parametrize("w", [0.0, -5.0, float("nan")])
+def test_a_lasagna_refuses_a_width_it_cannot_draw(w):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.lasagna(cv, cv.comp, w=w)

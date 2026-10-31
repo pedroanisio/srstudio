@@ -8916,6 +8916,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-lasagna": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A whole lasagna in its dish, seen side on, large enough to carry in both arms. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d08c6302455d087e8e9113caa7153c4988e568855f1a219cace2c1525d773294",
+          "rig": null
+        }
+      ]
     }
   }
 }

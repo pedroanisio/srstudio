@@ -24,6 +24,7 @@ __all__ = [
     "CHIPS",
     "EverydayError",
     "FOODS",
+    "LASAGNA_LAYERS",
     "TABLE_TOP",
     "alarm_clock",
     "arm",
@@ -38,6 +39,7 @@ __all__ = [
     "duvet",
     "food",
     "gust",
+    "lasagna",
     "phone",
     "router",
     "salt_shaker",
@@ -52,6 +54,13 @@ BEZEL = 26.0  # the phone's frame round its screen
 CONFETTI = ("#e63946", "#ffca3a", "#8ac926", "#1982c4", "#ff7ab6", "#fffaf0")
 CHEW = 0.24  # seconds of one chew, open and shut
 FOREVER = 86400.0  # the end of a span that runs on: past any reel
+LASAGNA_LAYERS = (  # top of each layer and its colour, drawn from the crust down
+    (-112.0, "#d9913a"),
+    (-72.0, "#fffaf0"),
+    (-46.0, "#c1121f"),
+    (-18.0, "#f2c14e"),
+    (8.0, "#c1121f"),
+)
 LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 
 
@@ -127,6 +136,26 @@ def food(cv: Canvas, parent, kind: str, x: float, y: float, size: float = 240.0,
     k = round(_size(size, "a food's size") / 240.0, 4)
     g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt, scaleX=k, scaleY=k)
     FOODS[kind](cv, g)
+    return g
+
+
+@register(
+    "prop", "collage-lasagna", summary="A paper lasagna in its dish: layers of pasta, sauce and cheese, seen side on"
+)
+def lasagna(cv: Canvas, parent, x: float = 540.0, y: float = 1400.0, w: float = 520.0, tilt: float = 0.0) -> object:
+    """A whole lasagna ``w`` wide, centred on ``x, y``, turned ``tilt`` degrees: drawn large, its layers read at a
+    glance as the one thing it can be."""
+    k = round(_size(w, "a lasagna's width") / 520.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt, scaleX=k, scaleY=k)
+    for i, (top, colour) in enumerate(LASAGNA_LAYERS):
+        ripple = [(-236 + 59 * n, top + (5 if n % 2 else -5)) for n in range(9)]
+        slab = [*ripple, (236, 70), (-236, 70)]
+        draw_shapes(cv, g, _paper(_cut(f"lasagna-layer-{i}", slab, 2), colour, shadow=False))
+    for n, (spot_x, spot_y) in enumerate(((-168, -96), (-62, -104), (34, -90), (142, -100))):
+        cv.ellipse(g, spot_x - 26, spot_y - 9, 52 + 8 * (n % 2), 16, "#a4551f")
+    dish = [(-260, 26), (260, 26), (226, 112), (-226, 112)]
+    draw_shapes(cv, g, _paper(_cut("lasagna-dish", dish, 2), "#c8553d"))
+    cv.rect(g, -274, 16, 548, 24, "#e07a5f", INK, 4, radius=10)
     return g
 
 
