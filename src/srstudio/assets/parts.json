@@ -13320,6 +13320,125 @@
           "rig": null
         }
       ]
+    },
+    "toon-planetarium-salon": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A cream salon composed for 9:16: gold panel, starburst clock, Saturn window, saucer lamp, telescope, boomerang desk. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "0782ca9db9dcadef26d9ff700fb569cdd96c8d1bcfb099d488d956a297de2614",
+          "rig": null
+        }
+      ]
+    },
+    "toon-starlight-terrace": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A night terrace composed for 9:16: crescent in its orbit, hills, observatory pod, curved rail, telescope, field table. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "65353c402cea6d0f88dcf710ebfb5b92c4bc6c02c6306e01518e2ffe470d5136",
+          "rig": null
+        }
+      ]
+    },
+    "toon-telescope": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long-view telescope on a splayed tripod. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "7b47b90b6ddda831072f8951df635bf131c6347f53392ce5bfdbbe9be6e094d9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-moon-globe": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A Moon globe in a crescent cradle. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "2fd61cfd249949b6d45bb54c9b089f02f01e2883046302a7013bc79a072dc6b4",
+          "rig": null
+        }
+      ]
+    },
+    "toon-saturn-model": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A Saturn model on a wire stand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "212228704ad887181fa36e285cee77d6e432e631a6a2e843fe6b5cddd9d1bb8b",
+          "rig": null
+        }
+      ]
+    },
+    "toon-field-notebook": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A field notebook with a pencil. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "b56028ee8109b24b38af2c83c49e74feb7929b56a2c40fb18cd4eb5253a3e8ac",
+          "rig": null
+        }
+      ]
+    },
+    "toon-signal-clicker": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A signal clicker on a wrist loop. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/lyra/index.html",
+          "approval": null,
+          "drawing": "41bf618e16b8c71d5b4666ff3dbd8c1d47815da48e3930c19f4fa57eb8755542",
+          "rig": null
+        }
+      ]
     }
   }
 }

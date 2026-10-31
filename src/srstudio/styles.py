@@ -385,6 +385,7 @@ TOON = Style(
         "toon_inked",
         "toon_laptop",
         "toon_odds",
+        "toon_orbit",
         "toon_parlour",
         "toon_props",
         "toon_redrawn",
