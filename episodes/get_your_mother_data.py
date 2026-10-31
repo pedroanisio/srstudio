@@ -62,7 +62,7 @@ MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.
 KEY_LINE = "Calling Dad on purpose."
 LEAD = 0.45  # the silence before the first word, the phone ringing
 PHONE = dict(at=(432, 838), scale=0.9)
-HELD = dict(at=(330, 838), scale=0.9, hand="#d9d2c7")
+HELD = dict(at=(330, 838), scale=0.9, hand="#4b3d5e")
 HOSE = [(610, 792), (556, 830), (512, 770), (478, 778)]
 NEIGHBOR_AT = (452, 806)
 PIVOT = (980.0, 1420.0)
