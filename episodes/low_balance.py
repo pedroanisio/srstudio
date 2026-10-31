@@ -42,7 +42,7 @@ FIRST_FEE, LAST_FEE = (float(v) for v in t.meta["balance"])
 GO, YANK, FLOOR = float(t.meta["go"]), float(t.meta["yank"]), float(t.meta["floor"])
 TAKE = L[11].end + TAKES  # his hand reaches the pen
 TELLER_AT = (540, 850, 1.05)
-CUSTOMER_AT = (230, 1040, 1.15)  # his head, standing at the counter
+CUSTOMER_AT = (200, 1040, 1.15)  # his head, standing at the counter, his outline hair clear of the set's flowers
 READER_AT = (770, locations.COUNTER_Y + 4, 0.72)
 PEN_AT = (392, locations.COUNTER_Y - 4)
 HAND_UP = (146, 120)  # the hand, from the customer's head at scale 1, forearm raised to the counter
@@ -223,7 +223,7 @@ reception = locations.reception(
 
 
 FRAMES = {  # angle -> scale, x, y
-    "two": (1.3, -99, -342),
+    "two": (1.0, 0, 0),  # the whole counter: the set's mark sits at its far end
     "teller": (1.7, -425, 800 - TELLER_AT[1] * 1.7),
     "wide": (1.0, 0, 0),
 }
