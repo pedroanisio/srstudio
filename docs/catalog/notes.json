@@ -6729,6 +6729,940 @@
         "at": 16.0
       },
       "text": "Um papel amarelo com letras grandes, colado no rosto ou no colo de alguém; pode entrar na mão de um braço."
+    },
+    {
+      "section": "locations",
+      "name": "Estúdio do News Compiler",
+      "parts": [
+        "news-set",
+        "news-desk"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 9.0,
+        "box": [
+          0,
+          100,
+          1080,
+          1000
+        ]
+      },
+      "text": "A parede ameixa e o monitor claro atrás da bancada comprida, com a borda iluminada e uma faixa tangerina na frente. É onde Vera e Gus se sentam."
+    },
+    {
+      "section": "graphics",
+      "name": "Faixa BREAKING",
+      "parts": [
+        "news-banner"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 3.0,
+        "box": [
+          0,
+          1070,
+          1080,
+          140
+        ]
+      },
+      "text": "A faixa que desliza para dentro do quadro; as setas laranja não param de andar."
+    },
+    {
+      "section": "graphics",
+      "name": "Terceiro inferior",
+      "parts": [
+        "news-lower-third"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 3.0,
+        "box": [
+          0,
+          1180,
+          1080,
+          150
+        ]
+      },
+      "text": "Uma etiqueta menta sobre uma linha da matéria; muda a cada virada da história."
+    },
+    {
+      "section": "graphics",
+      "name": "Letreiro do rodapé",
+      "parts": [
+        "news-ticker"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 3.0,
+        "box": [
+          0,
+          1320,
+          1080,
+          100
+        ]
+      },
+      "text": "O letreiro que corre na base da área segura, com os fatos pequenos da notícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Marca do programa e selo PARODY",
+      "parts": [
+        "news-bug",
+        "news-parody-tag"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 1.0,
+        "box": [
+          0,
+          220,
+          1080,
+          90
+        ]
+      },
+      "text": "O nome do programa no canto, em todos os quadros, e o selo PARODY, que fica na tela o vídeo inteiro quando a história é fictícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas do programa",
+      "parts": [
+        "news-captions"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 4.0,
+        "box": [
+          60,
+          320,
+          960,
+          150
+        ]
+      },
+      "text": "Uma ou duas linhas de diálogo, com uma cor para cada âncora: papel claro para Vera, tangerina para Gus."
+    },
+    {
+      "section": "graphics",
+      "name": "Telefone do Gus",
+      "parts": [
+        "news-phone"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 21.0,
+        "box": [
+          150,
+          480,
+          780,
+          880
+        ]
+      },
+      "text": "O telefone enche o quadro e as mensagens chegam uma de cada vez."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão da fonte",
+      "parts": [
+        "news-source-card"
+      ],
+      "shot": {
+        "episode": "real-roast",
+        "at": 1.0,
+        "box": [
+          50,
+          1010,
+          980,
+          330
+        ]
+      },
+      "text": "Quando a história é real: veículo, data e manchete, e depois o cartão encolhe para um canto."
+    },
+    {
+      "section": "locations",
+      "name": "Chão claro do mapa",
+      "parts": [
+        "map-ground",
+        "map-globe"
+      ],
+      "shot": {
+        "episode": "further-north",
+        "at": 1.0,
+        "box": [
+          0,
+          200,
+          1080,
+          1350
+        ]
+      },
+      "text": "O céu pálido e a luz suave atrás de um globo que gira: terra, lagos, grade e a borda iluminada."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa plano que voa",
+      "parts": [
+        "map-flat"
+      ],
+      "shot": {
+        "episode": "further-north",
+        "at": 7.0
+      },
+      "text": "Um mapa equiretangular com câmera que voa: o norte é simplesmente para cima."
+    },
+    {
+      "section": "props",
+      "name": "Pino e paralelo",
+      "parts": [
+        "map-pin",
+        "map-parallel"
+      ],
+      "shot": {
+        "episode": "further-north",
+        "at": 9.0,
+        "box": [
+          0,
+          820,
+          1080,
+          420
+        ]
+      },
+      "text": "O pino marca o lugar, com nome e latitude numa etiqueta que o acompanha; o paralelo é uma linha de latitude que parte de um lugar e dá a volta ao mundo, com a sua etiqueta."
+    },
+    {
+      "section": "graphics",
+      "name": "Selo de evidência do mapa",
+      "parts": [
+        "map-stamp"
+      ],
+      "shot": {
+        "episode": "further-north",
+        "at": 13.0,
+        "box": [
+          60,
+          1440,
+          1020,
+          160
+        ]
+      },
+      "text": "Uma linha de evidência sobre o mapa: o número, o conjunto de dados e o ano."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas do mapa",
+      "parts": [
+        "map-captions"
+      ],
+      "shot": {
+        "episode": "further-north",
+        "at": 1.0,
+        "box": [
+          60,
+          230,
+          960,
+          210
+        ]
+      },
+      "text": "As legendas do canal: uma caixa de papel com letras de tinta no alto do mapa."
+    },
+    {
+      "section": "graphics",
+      "name": "Gente em pontos",
+      "parts": [
+        "map-population"
+      ],
+      "shot": {
+        "episode": "inside-the-circle",
+        "at": 3.0,
+        "box": [
+          0,
+          400,
+          1080,
+          1100
+        ]
+      },
+      "text": "A população do mundo em pontos, um por milhão, por zona e em ondas."
+    },
+    {
+      "section": "props",
+      "name": "Círculo de raio verdadeiro",
+      "parts": [
+        "map-ring",
+        "map-equal-area"
+      ],
+      "shot": {
+        "episode": "inside-the-circle",
+        "at": 13.0,
+        "box": [
+          0,
+          200,
+          1080,
+          1350
+        ]
+      },
+      "text": "Um círculo de raio verdadeiro com um véu por fora, o que o vídeo conta por dentro; o mapa de área igual de Lambert se recentra enquanto se move, e o mesmo círculo cai sobre outro lugar."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão do nome",
+      "parts": [
+        "mind-name-card"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 17.0,
+        "box": [
+          0,
+          480,
+          1080,
+          1020
+        ]
+      },
+      "text": "O cartão da série: a frase de sempre, e depois o nome do efeito no círculo amarelo."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão de estudo",
+      "parts": [
+        "mind-evidence-card"
+      ],
+      "shot": {
+        "episode": "peak-end-rule",
+        "at": 25.0,
+        "box": [
+          80,
+          320,
+          920,
+          420
+        ]
+      },
+      "text": "Um estudo num cartão de papel: quem, quando, o que fizeram e o que encontraram."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas do canal",
+      "parts": [
+        "mind-captions"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 14.5,
+        "box": [
+          200,
+          290,
+          700,
+          180
+        ]
+      },
+      "text": "Uma ou duas linhas numa caixa: tinta para o narrador, destaque amarelo para quem fala em cena."
+    },
+    {
+      "section": "locations",
+      "name": "Fundo escuro do canal",
+      "parts": [
+        "mind-stage"
+      ],
+      "shot": {
+        "episode": "spotlight-effect",
+        "at": 15.0,
+        "box": [
+          0,
+          200,
+          1080,
+          1000
+        ]
+      },
+      "text": "O chão escuro do canal, com um brilho suave atrás do que ele mostra."
+    },
+    {
+      "section": "props",
+      "name": "A lente",
+      "parts": [
+        "mind-lens"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 21.0,
+        "box": [
+          0,
+          560,
+          1080,
+          860
+        ]
+      },
+      "text": "Um viés como lente: um vidro colorido que tinge o que passa por baixo dele."
+    },
+    {
+      "section": "props",
+      "name": "Prateleira de arquivos",
+      "parts": [
+        "mind-memory-shelf"
+      ],
+      "shot": {
+        "episode": "peak-end-rule",
+        "at": 21.0,
+        "box": [
+          40,
+          560,
+          1000,
+          760
+        ]
+      },
+      "text": "Uma prateleira de arquivos rotulados, e um deles sobe um pouco."
+    },
+    {
+      "section": "props",
+      "name": "Facho de atenção",
+      "parts": [
+        "mind-spotlight"
+      ],
+      "shot": {
+        "episode": "spotlight-effect",
+        "at": 21.0,
+        "box": [
+          0,
+          100,
+          1080,
+          1500
+        ]
+      },
+      "text": "Um facho de luz do alto sobre um ponto, que pode varrer a cena."
+    },
+    {
+      "section": "props",
+      "name": "Duas barras",
+      "parts": [
+        "mind-two-lines"
+      ],
+      "shot": {
+        "episode": "planning-fallacy",
+        "at": 27.0,
+        "box": [
+          60,
+          320,
+          960,
+          1020
+        ]
+      },
+      "text": "Expectativa contra realidade: duas barras na mesma escala, a segunda chega atrasada."
+    },
+    {
+      "section": "locations",
+      "name": "Sorveteria atrás do balcão",
+      "parts": [
+        "toon-parlour-front",
+        "toon-parlour-case"
+      ],
+      "shot": {
+        "episode": "choice-blindness",
+        "at": 1.0
+      },
+      "text": "Paredes rosa e uma vitrine para a rua, com o trânsito passando; embaixo do balcão, a vitrine de vidro com seis potes de sorvete."
+    },
+    {
+      "section": "locations",
+      "name": "Sorveteria, lado do cliente",
+      "parts": [
+        "toon-parlour-back"
+      ],
+      "shot": {
+        "episode": "choice-blindness",
+        "at": 11.0
+      },
+      "text": "Prateleiras de casquinhas sob um quadro sem palavras, vistas de onde o cliente está."
+    },
+    {
+      "section": "locations",
+      "name": "Interior de um carro",
+      "parts": [
+        "toon-car-inside",
+        "toon-dash-vents"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 1.0
+      },
+      "text": "O painel visto de dentro: a tinta do carro em volta de uma janela larga, com a estrada passando pelo vidro; embaixo da borda, duas saídas de ar e o porta-luvas."
+    },
+    {
+      "section": "props",
+      "name": "Volante",
+      "parts": [
+        "toon-steering-wheel"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 1.0,
+        "box": [
+          0,
+          1100,
+          700,
+          320
+        ]
+      },
+      "text": "Um volante redondo, de frente, com três raios e sem marca."
+    },
+    {
+      "section": "props",
+      "name": "Encosto do banco",
+      "parts": [
+        "toon-car-seat"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 5.0,
+        "box": [
+          300,
+          300,
+          700,
+          700
+        ]
+      },
+      "text": "O encosto e o apoio de cabeça de um banco de carro, atrás de quem se senta nele."
+    },
+    {
+      "section": "props",
+      "name": "Bloco de contagem",
+      "parts": [
+        "toon-tally-pad"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 26.0,
+        "box": [
+          200,
+          1180,
+          560,
+          360
+        ]
+      },
+      "text": "Um bloco de espiral no painel que conta de cinco em cinco, risco a risco."
+    },
+    {
+      "section": "props",
+      "name": "Ônibus escolar e carro de perfil",
+      "parts": [
+        "toon-school-bus",
+        "toon-side-car"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 24.0,
+        "box": [
+          0,
+          600,
+          1080,
+          760
+        ]
+      },
+      "text": "Um ônibus amarelo comprido, sem letreiro, e um carro pequeno, visto de lado e em qualquer cor, sem emblema."
+    },
+    {
+      "section": "props",
+      "name": "Banana",
+      "parts": [
+        "toon-banana"
+      ],
+      "shot": {
+        "episode": "frequency-illusion",
+        "at": 26.0,
+        "box": [
+          150,
+          900,
+          700,
+          350
+        ]
+      },
+      "text": "Uma banana deitada, madura, com as pontas um pouco machucadas."
+    },
+    {
+      "section": "props",
+      "name": "Casquinha de menta",
+      "parts": [
+        "toon-cone"
+      ],
+      "shot": {
+        "episode": "choice-blindness",
+        "at": 5.0,
+        "box": [
+          520,
+          460,
+          560,
+          560
+        ]
+      },
+      "text": "Uma casquinha com uma bola grande: de baunilha, ou de menta com gotas de chocolate."
+    },
+    {
+      "section": "props",
+      "name": "Casquinha de pasta de dente",
+      "parts": [
+        "toon-toothpaste-cone"
+      ],
+      "shot": {
+        "episode": "choice-blindness",
+        "at": 15.0,
+        "box": [
+          100,
+          180,
+          980,
+          900
+        ]
+      },
+      "text": "Uma casquinha com um redemoinho de pasta listrada e o tubo espetado."
+    },
+    {
+      "section": "locations",
+      "name": "Chuveiro",
+      "parts": [
+        "toon-bathroom",
+        "toon-shower-water"
+      ],
+      "shot": {
+        "episode": "planning-fallacy",
+        "at": 0.3
+      },
+      "text": "Uma parede de azulejos com chuveiro cromado e uma prateleira de frascos; a água cai em fios enquanto a torneira está aberta, e só então."
+    },
+    {
+      "section": "props",
+      "name": "Espuma de xampu",
+      "parts": [
+        "toon-suds"
+      ],
+      "shot": {
+        "episode": "planning-fallacy",
+        "at": 2.0,
+        "box": [
+          100,
+          320,
+          600,
+          420
+        ]
+      },
+      "text": "Um monte de espuma na cabeça de alguém."
+    },
+    {
+      "section": "props",
+      "name": "Toalha na cabeça",
+      "parts": [
+        "toon-towel"
+      ],
+      "shot": {
+        "episode": "planning-fallacy",
+        "at": 4.6,
+        "box": [
+          150,
+          380,
+          520,
+          320
+        ]
+      },
+      "text": "Uma toalha enrolada na cabeça de alguém."
+    },
+    {
+      "section": "props",
+      "name": "Gravata-borboleta",
+      "parts": [
+        "toon-bow-tie"
+      ],
+      "shot": {
+        "episode": "peak-end-rule",
+        "at": 6.0,
+        "box": [
+          100,
+          930,
+          480,
+          300
+        ]
+      },
+      "text": "Uma gravata-borboleta preta sob o queixo de um personagem, que faz de qualquer um um garçom."
+    },
+    {
+      "section": "props",
+      "name": "Bala de menta",
+      "parts": [
+        "toon-mint"
+      ],
+      "shot": {
+        "episode": "peak-end-rule",
+        "at": 13.0,
+        "box": [
+          250,
+          1130,
+          520,
+          330
+        ]
+      },
+      "text": "Um pires com uma bala listrada no papel torcido, posta na hora certa; depois, só o papel vazio."
+    },
+    {
+      "section": "props",
+      "name": "Estrelas de avaliação",
+      "parts": [
+        "toon-stars"
+      ],
+      "shot": {
+        "episode": "peak-end-rule",
+        "at": 1.0,
+        "box": [
+          600,
+          560,
+          420,
+          700
+        ]
+      },
+      "text": "Uma fileira de estrelas que se enchem uma a uma, para a tela de um telefone ou uma placa."
+    },
+    {
+      "section": "props",
+      "name": "Livro aberto e marca-texto",
+      "parts": [
+        "toon-open-book",
+        "toon-highlighter"
+      ],
+      "shot": {
+        "episode": "learning-styles",
+        "at": 1.0,
+        "box": [
+          100,
+          960,
+          880,
+          380
+        ]
+      },
+      "text": "Um livro aberto apoiado numa superfície, com cada linha marcada quando pedido, e uma pata que passa o marca-texto sobre uma linha."
+    },
+    {
+      "section": "props",
+      "name": "Livro fechado",
+      "parts": [
+        "toon-shut-book"
+      ],
+      "shot": {
+        "episode": "learning-styles",
+        "at": 37.0,
+        "box": [
+          100,
+          1240,
+          900,
+          170
+        ]
+      },
+      "text": "O mesmo livro fechado, deitado numa superfície."
+    },
+    {
+      "section": "props",
+      "name": "Página de estudo",
+      "parts": [
+        "toon-study-page"
+      ],
+      "shot": {
+        "episode": "learning-styles",
+        "at": 3.0,
+        "box": [
+          60,
+          420,
+          960,
+          1060
+        ]
+      },
+      "text": "Uma página em close, cada linha marcada, com a chave de cores na margem."
+    },
+    {
+      "section": "props",
+      "name": "Folha de quiz",
+      "parts": [
+        "toon-quiz-sheet"
+      ],
+      "shot": {
+        "episode": "learning-styles",
+        "at": 7.0,
+        "box": [
+          100,
+          470,
+          860,
+          1010
+        ]
+      },
+      "text": "Uma folha dobrada de um quiz antigo da escola, o resultado circulado e uma estrela."
+    },
+    {
+      "section": "props",
+      "name": "Camiseta berrante",
+      "parts": [
+        "toon-tee"
+      ],
+      "shot": {
+        "episode": "spotlight-effect",
+        "at": 1.0,
+        "box": [
+          150,
+          1000,
+          420,
+          380
+        ]
+      },
+      "text": "A frente de uma camiseta berrante, com um retrato inventado num coração, entre os braços de um personagem."
+    },
+    {
+      "section": "cast",
+      "name": "Vera Stillman, a âncora séria",
+      "parts": [
+        "news-vera"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 2.0,
+        "box": [
+          0,
+          350,
+          1080,
+          800
+        ]
+      },
+      "text": "Cabelo prateado em corte reto, óculos de meia-lua e nenhuma reação. Lê a notícia como se fosse verdade, e é aí que está a graça."
+    },
+    {
+      "section": "cast",
+      "name": "Gus Bellows, o coanfitrião",
+      "parts": [
+        "news-gus"
+      ],
+      "shot": {
+        "episode": "everyday-breaking",
+        "at": 4.0,
+        "box": [
+          0,
+          350,
+          1080,
+          800
+        ]
+      },
+      "text": "Cachos, paletó berrante e um telefone. Não consegue deixar nada passar, e comenta tudo."
+    },
+    {
+      "section": "cast",
+      "name": "Lint, a traça",
+      "parts": [
+        "host-lint"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 7.0,
+        "box": [
+          0,
+          150,
+          1080,
+          1000
+        ]
+      },
+      "text": "Uma traça de roupa de cardigã, que também está comendo: antenas emplumadas, pálpebras pesadas e uma opinião enorme sobre o grupo."
+    },
+    {
+      "section": "locations",
+      "name": "Dentro do guarda-roupa",
+      "parts": [
+        "host-wardrobe"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 2.0
+      },
+      "text": "Tábuas de cedro, uma arara de casacos e a porta entreaberta."
+    },
+    {
+      "section": "props",
+      "name": "A tábua e o telefone",
+      "parts": [
+        "host-phone"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 25.0,
+        "box": [
+          0,
+          1250,
+          1080,
+          450
+        ]
+      },
+      "text": "A tábua diante dele e um telefone deitado nela, mais largo do que ele."
+    },
+    {
+      "section": "graphics",
+      "name": "Aproximar e afastar",
+      "parts": [
+        "host-punch"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 7.0
+      },
+      "text": "Os cortes que se aproximam do rosto e voltam, no tempo da piada."
+    },
+    {
+      "section": "graphics",
+      "name": "Palavra no rótulo",
+      "parts": [
+        "host-label"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 0.5,
+        "box": [
+          60,
+          200,
+          960,
+          150
+        ]
+      },
+      "text": "A palavra-chave na tela, num rótulo de roupa tecido no alto do quadro."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas em faixa de tinta",
+      "parts": [
+        "host-captions"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 0.5,
+        "box": [
+          60,
+          1230,
+          960,
+          220
+        ]
+      },
+      "text": "Legendas palavra a palavra do motor, numa faixa de tinta; as palavras cantadas ficam em âmbar."
+    },
+    {
+      "section": "graphics",
+      "name": "A frase final",
+      "parts": [
+        "host-sign-off"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 28.5,
+        "box": [
+          100,
+          980,
+          880,
+          330
+        ]
+      },
+      "text": "A frase de despedida num rótulo tecido grande, sob o nome do programa."
+    },
+    {
+      "section": "graphics",
+      "name": "O telefone em tela cheia",
+      "parts": [
+        "host-screen"
+      ],
+      "shot": {
+        "episode": "unwritten-rules-group-chat",
+        "at": 26.0
+      },
+      "text": "O telefone ocupa o quadro: o nome de uma conversa e as mensagens, uma de cada vez."
     }
   ]
 }

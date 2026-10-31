@@ -17,8 +17,8 @@ from srstudio import registry
 
 NOTES = Path(__file__).resolve().parent.parent / "docs" / "catalog" / "notes.json"
 
-# From `srstudio usage` on 2026-10-31 (133 episodes) and a search of the scripts for the parts added since (the news
-# kit, toon-bento); drop a part from here when its gallery item is added.
+# From `srstudio usage` on 2026-10-31 (145 episodes, the pilots among them); drop a part from here when its gallery item
+# is added.
 PACKAGE_ONLY = [
     "answer-bubble",
     "connected-card",
@@ -29,82 +29,10 @@ PACKAGE_ONLY = [
     "silent-phone",
     "talking-printer",
 ]
-PILOT_ONLY = [
-    "host-captions",
-    "host-label",
-    "host-lint",
-    "host-phone",
-    "host-punch",
-    "host-screen",
-    "host-sign-off",
-    "host-wardrobe",
-    "news-banner",
-    "news-bug",
-    "news-captions",
-    "news-desk",
-    "news-gus",
-    "news-lower-third",
-    "news-parody-tag",
-    "news-phone",
-    "news-set",
-    "news-source-card",
-    "news-ticker",
-    "news-vera",
-]
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
-NO_EPISODE = [
-    "map-captions",
-    "map-equal-area",
-    "map-flat",
-    "map-globe",
-    "map-ground",
-    "map-parallel",
-    "map-pin",
-    "map-population",
-    "map-ring",
-    "map-stamp",
-    "mind-captions",
-    "mind-evidence-card",
-    "mind-lens",
-    "mind-memory-shelf",
-    "mind-name-card",
-    "mind-spotlight",
-    "mind-stage",
-    "mind-two-lines",
-    "toon-banana",
-    "toon-bathroom",
-    "toon-bento",
-    "toon-bow-tie",
-    "toon-car-inside",
-    "toon-car-seat",
-    "toon-cone",
-    "toon-counter",
-    "toon-dash-vents",
-    "toon-highlighter",
-    "toon-mint",
-    "toon-open-book",
-    "toon-parlour-back",
-    "toon-parlour-case",
-    "toon-parlour-front",
-    "toon-quiz-sheet",
-    "toon-receipt",
-    "toon-school-bus",
-    "toon-shower-water",
-    "toon-shut-book",
-    "toon-side-car",
-    "toon-stars",
-    "toon-steering-wheel",
-    "toon-study-page",
-    "toon-suds",
-    "toon-take-a-number",
-    "toon-tally-pad",
-    "toon-tee",
-    "toon-toothpaste-cone",
-    "toon-towel",
-]
+NO_EPISODE = ["toon-bento", "toon-counter", "toon-receipt", "toon-take-a-number"]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
-    **dict.fromkeys(PILOT_ONLY, "only a pilot (episodes/pilots) builds it, and no pilot is in the library yet"),
     **dict.fromkeys(SUPERSEDED, "the first drawing, replaced by its @2 version, which the gallery shows"),
     **dict.fromkeys(NO_EPISODE, "no library episode builds it yet"),
 }
