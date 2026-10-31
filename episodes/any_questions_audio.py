@@ -44,6 +44,8 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("candidate", "We'll be in touch.", "We'll be in touch.", 1.00),
     Spoken("manager", "Will you?", "Will you?", 0.90, level=-5),
 ]
+FOLDER = (540, 1230)
+CODE = (800.0, 1050.0, 12.0)  # right end and height: on the desk above the folder, in frame under the 1.32 push
 START = 0.50  # the first word, on the held frame's last moment
 FALL = 2.0  # the smile holds, and goes on one side
 SLIDE = 0.55  # the glass crosses the desk

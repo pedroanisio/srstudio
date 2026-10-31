@@ -18,7 +18,7 @@ inside x 80–920 by hand.
 import os
 
 from _common import project_root
-from any_questions_audio import INTERVIEW
+from any_questions_audio import CODE, FOLDER, INTERVIEW
 from instagram_posts import POSTS
 from srstudio import OFFICE, Episode, EpisodeSpec, cast, cutout_handed, cutout_hiring, foley, locations, props
 from srstudio import interview as iv_audio
@@ -50,7 +50,6 @@ EPS = 1 / 120
 TALL = (420, 470, 2.2)  # whoever holds the desk: the elbows sit on its edge, so the arms end there
 SEEN_LOW = (540, 737, 2.07)  # the candidate in the gray chair
 SUNK = (540, 972, 1.46)  # the manager in the same chair: smaller, and lower in it
-FOLDER = (640, 1230)
 
 cuts = list(t.cuts)
 spans: dict[str, list[tuple[float, float]]] = {}
@@ -165,7 +164,7 @@ def in_chair(g):
 
 finish = locations.finish(cv, ep.comp)
 office = cutout_hiring.hiring_office(cv, finish, behind_desk=behind_desk, on_desk=on_desk,
-                                     shots=spans["desk"] + spans["desk-after"])  # fmt: skip
+                                     shots=spans["desk"] + spans["desk-after"], code=CODE)  # fmt: skip
 backing = cv.group(finish, "backing")  # the frame's edge, where the wall's blur thins out
 cv.gate(backing, spans["chair"] + spans["chair-after"])
 cv.rect(backing, -10, -10, 1100, 1940, props.office_paints(cv)["warm_wall"])

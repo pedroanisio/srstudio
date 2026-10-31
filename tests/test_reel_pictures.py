@@ -283,3 +283,21 @@ def test_more_tireds_marks_clear_the_card_in_every_framing() -> None:
         assert _seen(framing, x, top) and ty + framing[1] * (top - fy) > stick.CARD[1] + stick.CARD[3]
         assert _seen(framing, *audio.CODE_AT)
         assert _seen(framing, audio.CODE_AT[0] + signature.text_width("SR-1028", audio.CODE_H), audio.CODE_AT[1])
+
+
+def _luminance(colour: str) -> float:
+    r, g, b = (int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def test_any_questions_code_is_seen_under_the_push_and_clear_of_the_folder() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("any_questions_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    right, y, height = audio.CODE
+    left = right - signature.text_width("SR-1028", height)
+    for scale, offset in ((1.0, 0.0), (1.324, -15.0)):
+        assert 0.0 <= offset + scale * left and offset + scale * right <= 1080.0
+    assert y + height <= audio.FOLDER[1] - 150.0  # the folder's top edge, open
