@@ -45,8 +45,8 @@ cat has no frown and its mouth moves on word beats.
 ## Parts new (all proposed)
 
 `toon-open-book`, `toon-shut-book`, `toon-highlighter`, `toon-study-page` and `toon-quiz-sheet`, in
-`src/srstudio/toon_study.py`, catalogued in `docs/catalog/notes.json`. `srstudio.mind_kit` did not change. All effects
-are synthesised.
+`src/srstudio/toon_study.py`, catalogued in `docs/catalog/notes.json`. This pilot changed nothing in `srstudio.mind_kit`;
+its thinner lens glass came from `feat/mind`. All effects are synthesised.
 
 ## What I would change
 
