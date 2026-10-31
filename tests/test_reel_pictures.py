@@ -229,3 +229,13 @@ def test_third_snore_shows_its_marks_in_every_framing() -> None:
         assert _seen(framing, *audio.CODE_AT)
         assert _seen(framing, audio.CODE_AT[0] + signature.text_width("SR-1028", audio.CODE_H), audio.CODE_AT[1])
         assert not _seen(framing, 330.0, 1150.0), "the studio's own cactus is out of every shot of the bed"
+
+
+@pytest.mark.usefixtures("reels")
+def test_moms_plate_stands_clear_of_the_cactus_and_she_sits_on_the_ledge() -> None:
+    mod = _data("call_your_mother")
+    scale, _ = mod.FIGURES["cat"]
+    assert scale == 1.0, "the trace ends at the desk's edge and roughens when enlarged: a larger cat floats over it"
+    plate_right = mod.PLATE_AT[0] + 104.0
+    pot_left = 548.0 - 36.0 * 0.7
+    assert plate_right + 8.0 <= pot_left

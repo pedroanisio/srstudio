@@ -31,7 +31,8 @@ DANA = speaker("dana", "Jessica", "dog")
 SON = speaker("son", "Liam", "fox")
 MOM = speaker("mom", "Laura", "cat", "deadpan")
 TINTS = tinted(DANA, SON, MOM)
-FIGURES = {"cat": (1.3, 40.0)}  # her face fills the laptop
+FIGURES = {"cat": (1.0, 66.0)}  # at her traced size, her base on the ledge's edge; moved in to fill his bedroom
+PLATE_AT = (400.0, 838.0)  # the toast, on the ledge, clear of the cactus
 LEAD = 0.45  # the silence before the first word
 PIVOT = (980.0, 1420.0)
 PHONE = dict(at=(452, 838), scale=0.9)
@@ -109,7 +110,7 @@ def dress(shot) -> None:
         toon_house.bedroom(cv, shot.back)
         toon_house.ledge(cv, shot.front, "oak")
         if app.who == "cat":
-            toon_homeware.toast(cv, shot.front, at=(440.0, 838.0))
+            toon_homeware.toast(cv, shot.front, at=PLATE_AT)
     if app.start == 0.0:
         toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 2.6, measure=shot.measure)
 
