@@ -246,6 +246,21 @@ def test_a_lamp_off_the_edge_of_the_frame_still_darkens_the_far_side_of_the_room
     assert x <= 0 and y <= 0 and x + w >= 1080 and y + h >= 1920
 
 
+def test_a_hall_light_comes_through_a_door_off_the_frame_and_swings_shut():
+    rows = soft_sets.hall_light(2.0, 5.0, y=1200.0)
+    assert [(row.time, row.state) for row in rows] == [(2.0, "lamp"), (4.75, "lamp"), (5.0, "dark")]
+    assert rows[0].x < 0 and rows[1].x < rows[0].x and rows[0].y == 1200.0
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp, lights=[soft_sets.Light(0.0, "lamp", 975.0, 1480.0), *rows])
+    assert (5.0, 1.0) in opacity_keys(groups(cv)["soft-bedroom-night-4"])
+
+
+@pytest.mark.parametrize(("opens", "shuts"), [(5.0, 5.0), (5.0, 5.2), (5.0, 2.0), (-1.0, 2.0), (1.0, float("inf"))])
+def test_a_hall_light_refuses_a_door_that_shuts_before_it_can(opens, shuts):
+    with pytest.raises(SoftSetError):
+        soft_sets.hall_light(opens, shuts)
+
+
 @pytest.mark.parametrize(
     "kw",
     [
