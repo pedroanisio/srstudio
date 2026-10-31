@@ -109,3 +109,31 @@ def test_a_book_is_open_or_shut_and_a_bag_needs_a_scale():
     for draw in (stick_odds.book, stick_odds.duffel):
         with pytest.raises(stick.StickDataError, match="scale"):
             draw(cv, cv.comp, 0, 0, scale=-1)
+
+
+def test_a_double_take_looks_looks_away_and_lands():
+    look, away, land = stick.Face("open"), stick.Face("half"), stick.Face("wide")
+    keys = stick_odds.double_take(1.0, "stand", look, away, land, step=0.5)
+    assert [key.start for key in keys] == [1.0, 1.5, 2.0]
+    assert [key.face for key in keys] == [look, away, land]
+    assert {key.pose for key in keys} == {"stand"}
+
+
+def test_a_double_take_fits_a_rig_after_the_first_key():
+    cv = canvas()
+    keys = [
+        stick.RigKey(0, "stand"),
+        *stick_odds.double_take(0.5, "stand", stick.Face(), stick.Face("half"), stick.Face()),
+    ]
+    assert stick.rig(cv, cv.comp, keys, 2.0, poses=stick.STANDING) is not None
+
+
+@pytest.mark.parametrize("step", [0.0, -1.0])
+def test_a_double_take_needs_time(step):
+    with pytest.raises(stick.StickDataError, match="step"):
+        stick_odds.double_take(0.0, "stand", stick.Face(), stick.Face(), stick.Face(), step=step)
+
+
+def test_a_double_take_starts_in_the_shot():
+    with pytest.raises(stick.StickDataError, match="starts in the shot"):
+        stick_odds.double_take(-0.1, "stand", stick.Face(), stick.Face(), stick.Face())
