@@ -2492,10 +2492,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "The channel's captions, in its own letter and palette. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "The channel's captions, in its own letter and palette. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "06a301bf9e8113a3340fb98138bb2b6b11484d8dedae3d98f2f7b703eda68941",
           "rig": null
         }
@@ -2509,10 +2512,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "One study on a paper card: who, when, what they did, what they found. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "One study on a paper card: who, when, what they did, what they found. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "84e0c542dc106d3034b07fe6abeb23ebdad02000558274d1600e1880689b2d33",
           "rig": null
         }
@@ -2526,10 +2532,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A bias as a tinted lens over what it passes. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A bias as a tinted lens over what it passes. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "108f2d98a62fd1b3d99bffde18ab6e09456504b43f7b26861aa19b864e76e842",
           "rig": null
         }
@@ -2543,10 +2552,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A shelf of labelled files, one pulled out. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A shelf of labelled files, one pulled out. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "cbf06cb073922365642fa89e5fb7619df3e74fdd7008fcbb594a7f324a019b10",
           "rig": null
         }
@@ -2560,10 +2572,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "The channel's card: the catchphrase, then the effect's name big on the spot. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "The channel's card: the catchphrase, then the effect's name big on the spot. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "2647ef5927a70ae78fed1265d5ccec00c1b037dce469fddbd11807ab430cb0b2",
           "rig": null
         }
@@ -2577,10 +2592,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "A beam of attention from above onto one point. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A beam of attention from above onto one point. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "114c8e5e5dd4d9bbe6039230328fe495db16a2e9f35fd30b69568ba2dd1148d2",
           "rig": null
         }
@@ -2594,10 +2612,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "The channel's dark ground, a soft glow behind what it shows. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "The channel's dark ground, a soft glow behind what it shows. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "830f02199a56eecd88563549205edf3e177ab480d5764957612e7de822352f09",
           "rig": null
         }
@@ -2611,10 +2632,13 @@
         {
           "number": 1,
           "date": "2026-10-30",
-          "note": "Expectation against reality: two bars to scale. First drawn for spotlight-effect; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "Expectation against reality: two bars to scale. First drawn for spotlight-effect.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "7772d93f911e152fedc74af91df538769229bc9bffeb003010a8647bf9a0b9c8",
           "rig": null
         }
@@ -7774,10 +7798,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A plain small car from the side, in any paint, with no badge. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain small car from the side, in any paint, with no badge.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "f02c9199a4f5b8b7c0ca1644f2ef1618b28c79243a5eae60ebe9f60d6e5ec4f7",
           "rig": null
         }
@@ -7910,10 +7937,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An ice cream cone, vanilla or mint with chips, one big scoop. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An ice cream cone, vanilla or mint with chips, one big scoop.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "469a1761fe4fc1f9ad9a7ea5ed7fa9d53f996da43fc6b34c18658af91989c765",
           "rig": null
         }
@@ -7927,10 +7957,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A cone with a striped toothpaste swirl and the blank tube upended in it. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A cone with a striped toothpaste swirl and the blank tube upended in it.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "12389518a3e37cdaea5be7c37b9bb8d403c56b4121a03ea592121ecf9c8cdbec",
           "rig": null
         }
@@ -7944,10 +7977,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The glass case in a parlour counter, six tubs of ice cream, no words. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The glass case in a parlour counter, six tubs of ice cream, no words.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "5f5e184c026a9b5f86e8195d06e5ba4d1c658adc2cd66c143fa22e7c09b493c3",
           "rig": null
         }
@@ -7961,10 +7997,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An ice cream parlour from behind its counter: a shop window on a street with traffic going by. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An ice cream parlour from behind its counter: a shop window on a street with traffic going by.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "aa477fc4b0bc02fb8d1e0886b13587efcb75f1c79f98c2f664a157e47232eb6d",
           "rig": null
         }
@@ -7978,10 +8017,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An ice cream parlour from the customer's side: shelves of tubs under a picture board with no words. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An ice cream parlour from the customer's side: shelves of tubs under a picture board with no words.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "mind kit approved."
+          },
           "drawing": "a8940f211f96e8572ab9fc1e679a23cbad052c260a8137e9a72a7308a2d74621",
           "rig": null
         }

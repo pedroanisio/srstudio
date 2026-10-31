@@ -4,8 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0055: The mind kit is a library module on the Toon stage, with the channel's own look
 
-- Status: proposed (2026-10-30); the operator reviews the pilots, and every new part stays `proposed` until then
-- Deciders: the operator (pedroanisio) holds the decision; recorded by Claude Opus 5.5 in Claude Code
+- Status: accepted (2026-10-31), in the operator's words: "mind kit approved."
+- Deciders: the operator (pedroanisio), recorded by Claude Opus 5.5 in Claude Code
 - Applies [ADR 0047](0047-character-versions.md) to new parts, and does not extend
   [ADR 0053](0053-automatic-flow-new-parts.md): that flow covered the broad batch only
 - Back to the [library README](../../README.md)
