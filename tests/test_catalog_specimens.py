@@ -1,5 +1,6 @@
 """``srstudio.catalog_specimens``: each registered part alone, through its real builder and the real engine."""
 
+import inspect
 import os
 import shutil
 import xml.etree.ElementTree as ET
@@ -63,6 +64,22 @@ def test_a_new_part_that_needs_only_a_place_and_a_clock_needs_no_entry():
 
     assert cs.auto(registry.Entry("prop", "bare", bare)) is not None
     assert cs.auto(registry.Entry("prop", "own-data", own_data)) is None
+
+
+# Approved at the stage's corner: its drawing is immutable, and a new recipe would change what was approved.
+AT_THE_CORNER = {"soft-phone"}
+
+
+def test_a_part_with_no_recipe_of_its_own_is_not_left_at_the_stages_corner():
+    """``auto`` fills only what a builder demands, so a builder that defaults ``x`` and ``y`` to 0 draws its card
+    clipped at the top left, and only someone looking at the catalog sees it."""
+    cornered = set()
+    for entry in registry.entries():
+        place = inspect.signature(entry.builder).parameters
+        if entry.kind != "character" and entry.name not in cs.RECIPES and cs.auto(entry) is not None:
+            if any(name in place and place[name].default == 0 for name in ("x", "y")):
+                cornered.add(entry.name)
+    assert cornered == AT_THE_CORNER
 
 
 def test_bounds_finds_what_differs_from_the_background():
