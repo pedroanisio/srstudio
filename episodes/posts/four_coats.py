@@ -23,8 +23,8 @@ RELEASE = Release(
     style="Stick",
     comedy=Scores(author=19, reviewer=18),
     parts={
-        # stick-bag-scale, stick-coat-ball, stick-palm are drawn too; they stay out until they are approved: a release cannot
-        # pin a proposed version.
+        # stick-bag-scale, stick-coat-ball, stick-palm are drawn too; they stay out until they are approved: a release
+        # cannot pin a proposed version.
         "signature-cactus": 1,
         "signature-code": 1,
         "stick-carry-on": 1,
