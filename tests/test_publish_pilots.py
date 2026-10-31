@@ -578,6 +578,55 @@ def test_the_released_list_still_binds_the_maps_series(tool, world, capsys):
     assert "released" in capsys.readouterr().err
 
 
+# -- the hashtag limit: every series, first delivery only (ADR 0065) ---------------------------------------------------
+def tagged(world: Path, slug: str, count: int) -> None:
+    tags = " ".join(f"#tag{i}" for i in range(count))
+    (world / "in" / slug / "ig.txt").write_text(f"Title\n\nDescription.\n\n{tags}\n")
+
+
+@pytest.mark.parametrize("series", ["mind", "maps"])
+def test_a_new_pilot_over_the_hashtag_limit_is_refused_before_anything_is_staged(
+    tool, world, monkeypatch, capsys, series
+):
+    tagged(world, "the-tell", 6)
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    argv = args(world, "--series", series, "--stage-only")
+    argv[argv.index("--stage") + 1] = str(world / "generated/pilots" / series)
+    assert tool.main(argv) == 2
+    err = capsys.readouterr().err
+    assert "the-tell: 6 hashtags; Instagram accepts 5" in err and "second-pilot" not in err
+    assert not (world / "generated/pilots").exists()
+
+
+def test_a_pilot_at_the_hashtag_limit_never_reads_drive(tool, world, monkeypatch):
+    tagged(world, "the-tell", 5)
+    tool.overtagged(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "not-rclone")
+
+
+def test_a_pilot_already_on_drive_keeps_its_hashtags_and_a_new_one_does_not(tool, world, monkeypatch, capsys):
+    tagged(world, "the-tell", 6)
+    tagged(world, "second-pilot", 7)
+    text = json.dumps({"version": "1.0.0", "videos": {"the-tell": {}}})
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(text))
+    with pytest.raises(tool.PilotError, match="second-pilot: 7 hashtags") as e:
+        tool.overtagged(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+    assert "the-tell" not in str(e.value)
+
+
+def test_a_caption_that_cannot_be_read_is_refused_by_name(tool, world, monkeypatch):
+    (world / "in" / "the-tell" / "ig.txt").write_bytes(b"\xff\xfe#tag")
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    with pytest.raises(tool.PilotError, match="the-tell: ig.txt is not UTF-8 text"):
+        tool.overtagged(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+
+
+def test_a_drive_that_cannot_be_read_clears_no_pilot_over_the_limit(tool, world, monkeypatch):
+    tagged(world, "the-tell", 6)
+    monkeypatch.setattr(tool.outbox, "_run", Manifest("not json"))
+    with pytest.raises(tool.PilotError, match="cannot be read"):
+        tool.overtagged(tool.bundles(world / "in", set()), "gdrive:srstudio/pilots/mind", "rclone")
+
+
 # -- the comedy floor: news owes two scores, Mind and Maps owe none (ADR 0064) -----------------------------------------
 def news_args(world: Path, *extra: str) -> list[str]:
     argv = args(world, "--series", "news", *extra)

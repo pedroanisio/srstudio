@@ -45,9 +45,11 @@ from srstudio.social import (
     Item,
     Migration,
     check_delivery,
+    hashtag_excess,
     migrate_manifest,
     publish,
     read_manifest,
+    refuse_hashtags,
 )
 
 THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two big lines fit a portrait cover
@@ -102,8 +104,9 @@ def write_all(
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
-    print over each other, or a first delivery with no enhancement behind it (ADR 0056) or under the comedy floor
-    (ADR 0064), is a :class:`DeliveryError` before anything is written."""
+    print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
+    (ADR 0064) or over the hashtag limit (ADR 0065), is a :class:`DeliveryError` before anything is written. A video in
+    the manifest is past all three: what was published stays as it went out."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -117,6 +120,7 @@ def write_all(
         raise DeliveryError("; ".join(map(str, refused)))
     done = read_manifest(out)
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
+    refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
     refused = auto_enhance.refused(first, REPO)
     if refused:

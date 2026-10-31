@@ -2022,11 +2022,16 @@ Rules:
 
 Every episode ships with an `ig.txt`: title, description, credit and hashtags, in that order, separated by blank
 lines. The caption is data before it is text: `srstudio.social.InstagramPost` holds the four parts and refuses to
-write when a limit is broken (title longer than the 125 characters the feed shows before folding, more than 30
-hashtags, a malformed or duplicate hashtag, a caption over 2200 characters, an empty title or description). The
-error is `InstagramPostError`, with every problem listed.
+write when a limit is broken (title longer than the 125 characters the feed shows before folding, a malformed or
+duplicate hashtag, a caption over 2200 characters, an empty title or description). The error is `InstagramPostError`,
+with every problem listed.
 
-The account is Okayville, handle @okayville.tv, and the brand is everyday life, animated, not office cartoons.
+The account is Okayville, handle @okayville.tv, and the brand is everyday life, animated, not office cartoons. A new
+caption carries at most 5 hashtags (`social.HASHTAG_LIMIT`), Instagram's cap since 18 December 2025. The whole caption
+counts, so a tag in the description is one of the five. The first delivery holds this
+([ADR 0065](../docs/decisions/0065-okayville-and-five-hashtags.md)): `deliver` and `publish_pilots.py` refuse by slug
+with `HashtagError` before anything is written. A published post keeps the 6 to 8 it went out with, so writing one
+still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
 
 - Each shipped episode has a release, `episodes/posts/<slug with underscores>.py`, defining
   `RELEASE = srstudio.releases.Release(slug, post, video=, scene=, cover=, builder=)`

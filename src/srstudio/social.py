@@ -11,6 +11,11 @@ draws the headline over it at the video's own size. An episode that hides its bu
 in a ``cover`` variant of its scene (:meth:`srstudio.episode.Episode.hide_on_cover`) names that scene, and the
 backdrop is drawn from it instead (:func:`take_still`): the same frame, without the text the headline would fight.
 
+A caption carries at most :data:`HASHTAG_LIMIT` hashtags. Instagram cut its cap from 30 to 5 on 18 December 2025, after
+most of the published reels were written, and a published post stays as it went out, so a post can still be written
+with more (:data:`PUBLISHED_HASHTAG_LIMIT`) and the first delivery is what holds the limit: :func:`hashtag_excess` says
+why a caption is over it, and :func:`refuse_hashtags` refuses, in ``deliver`` and ``publish_pilots.py`` (ADR 0065).
+
 The publish gate (:func:`publish`, :func:`check_delivery`) records what each delivery was made from in
 ``delivery.json``. A post's :func:`fingerprint` holds the cover's drawing (the composed document at the video's own
 size and the fixed render steps), not the source of the code that drew it (ADR 0037).
@@ -68,13 +73,18 @@ __all__ = [
     "FRAME_SLACK",
     "CAPTION_LIMIT",
     "HASHTAG_LIMIT",
+    "PUBLISHED_HASHTAG_LIMIT",
+    "HashtagError",
+    "hashtag_excess",
+    "refuse_hashtags",
     "TITLE_LIMIT",
     "FILE_NAME",
     "COVER_NAME",
 ]
 
 CAPTION_LIMIT = 2200  # characters Instagram accepts in one caption
-HASHTAG_LIMIT = 30  # hashtags Instagram accepts in one caption
+HASHTAG_LIMIT = 5  # hashtags Instagram accepts in one caption, since 18 December 2025
+PUBLISHED_HASHTAG_LIMIT = 30  # its cap before that: a published post stays valid under it, so a rebuild still writes
 TITLE_LIMIT = 125  # characters shown in the feed before "… more"
 FILE_NAME = "ig.txt"
 COVER_NAME = "cover.jpg"
@@ -82,6 +92,7 @@ BLANK = 3.0  # a frame whose luma varies less than this (standard deviation, 0-2
 FRAME_SLACK = 1e-6  # the frame on screen at t is floor(t × fps + FRAME_SLACK), so t = n / fps is frame n
 BACKDROP_ARGS = ("-fps_mode", "passthrough", "-frames:v", "1", "-q:v", "2")  # how take_frame writes its frame
 _HASHTAG = re.compile(r"#[^\W\d_]\w*", re.UNICODE)  # whole tag: fullmatch, so no trailing newline
+_TAG_IN_TEXT = re.compile(r"(?<![\w#])#\w*[^\W\d]\w*", re.UNICODE)  # a tag anywhere in a caption; "#1" is no tag
 
 
 class InstagramPostError(SrstudioError, ValueError):
@@ -294,6 +305,13 @@ def take_still(
     return info
 
 
+def hashtag_excess(caption: str) -> str:
+    """Why the caption text ``caption`` is over :data:`HASHTAG_LIMIT`, or an empty string when it is not. The whole
+    text counts, as it does for Instagram: a tag in the description is a tag."""
+    count = len(_TAG_IN_TEXT.findall(caption))
+    return f"{count} hashtags; Instagram accepts {HASHTAG_LIMIT}" if count > HASHTAG_LIMIT else ""
+
+
 @dataclass(frozen=True)
 class InstagramPost:
     title: str
@@ -315,8 +333,8 @@ class InstagramPost:
             out.append(f"title has {len(title)} characters; the feed shows {TITLE_LIMIT} before folding")
         if not description:
             out.append("description is empty")
-        if len(self.hashtags) > HASHTAG_LIMIT:
-            out.append(f"{len(self.hashtags)} hashtags; Instagram accepts {HASHTAG_LIMIT}")
+        if len(self.hashtags) > PUBLISHED_HASHTAG_LIMIT:
+            out.append(f"{len(self.hashtags)} hashtags; no caption ever went out with over {PUBLISHED_HASHTAG_LIMIT}")
         bad = [h for h in self.hashtags if not _HASHTAG.fullmatch(h)]
         if bad:
             out.append(f"hashtags must be '#' plus letters, digits or '_' and start with a letter: {bad}")
@@ -425,6 +443,17 @@ _ENTRY_KEYS = {"render", "post", "ig", "cover"}
 
 class DeliveryError(SrstudioError, ValueError):
     """The delivery cannot start (a render is missing) or its manifest cannot be trusted."""
+
+
+class HashtagError(DeliveryError):
+    """A caption on its first delivery carries more hashtags than Instagram accepts."""
+
+
+def refuse_hashtags(excess: Mapping[str, str]) -> None:
+    """Raise :class:`HashtagError` naming every slug in ``excess`` (slug to :func:`hashtag_excess`) with a reason."""
+    said = [f"{slug}: {why}" for slug, why in excess.items() if why]
+    if said:
+        raise HashtagError("the hashtag limit refuses: " + "; ".join(said))
 
 
 class ManifestVersionError(DeliveryError):

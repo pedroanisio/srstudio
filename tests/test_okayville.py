@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio.social import InstagramPost
+from srstudio.social import HASHTAG_LIMIT, InstagramPost
 from srstudio.thumbnail import Thumbnail
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -75,9 +75,9 @@ def test_the_guides_an_author_copies_from_do_not_carry_the_old_name():
     assert not RETIRED.search(SKILL.read_text().split("\n---\n", 1)[1].encode())  # the changelog above is history
 
 
-def test_the_skill_states_the_handle_and_the_brand():
+def test_the_skill_states_the_handle_the_brand_and_the_limit():
     skill = SKILL.read_text()
-    assert "@okayville.tv" in skill and "everyday life, animated" in skill
+    assert "@okayville.tv" in skill and "everyday life, animated" in skill and f"{HASHTAG_LIMIT} hashtags" in skill
 
 
 def test_no_release_says_the_old_name():

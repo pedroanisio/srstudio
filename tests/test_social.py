@@ -8,7 +8,7 @@ import os
 import re
 import subprocess
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import pytest
@@ -25,9 +25,11 @@ from srstudio.social import (
     LEGACY_LAYOUTS,
     MANIFEST,
     MANIFEST_VERSION,
+    PUBLISHED_HASHTAG_LIMIT,
     CoverError,
     DeliveryError,
     Drift,
+    HashtagError,
     InstagramPost,
     InstagramPostError,
     Item,
@@ -71,7 +73,9 @@ def test_text_layout_is_title_description_credit_hashtags():
         (InstagramPost(title="x" * 126, description="d"), "126 characters"),
         (InstagramPost(title="t", description="  "), "description is empty"),
         (
-            InstagramPost(title="t", description="d", hashtags=tuple(f"#t{i}" for i in range(HASHTAG_LIMIT + 1))),
+            InstagramPost(
+                title="t", description="d", hashtags=tuple(f"#t{i}" for i in range(PUBLISHED_HASHTAG_LIMIT + 1))
+            ),
             "31 hashtags",
         ),
         (
@@ -846,6 +850,49 @@ def shipped_posts():
     return posts
 
 
+def tags(n: int) -> tuple[str, ...]:
+    return tuple(f"#tag{i}" for i in range(n))
+
+
+def test_the_limit_is_instagrams_five():
+    assert HASHTAG_LIMIT == 5
+
+
+def test_a_published_post_over_the_limit_stays_valid_so_a_rebuild_writes_its_caption(tmp_path):
+    post = InstagramPost(title="t", description="d", hashtags=tags(8))
+    assert post.problems() == []
+    assert post.write(tmp_path).is_file()
+
+
+@pytest.mark.parametrize(
+    "caption, count",
+    [
+        ("", 0),
+        ("Title\n\nNo tags, and a #1 rule, and ## nothing.\n", 0),
+        (InstagramPost(title="t", description="d", hashtags=tags(5)).text(), 5),
+        (InstagramPost(title="t", description="d", hashtags=tags(6)).text(), 6),
+        (InstagramPost(title="t", description="One #inline tag.", hashtags=tags(5)).text(), 6),
+        ("#one#two", 1),
+        ("#é_1 #a1 #1a", 3),
+        ("see x.com/page#fragment #real", 1),
+    ],
+)
+def test_the_whole_caption_is_counted(caption, count):
+    says = social.hashtag_excess(caption)
+    assert says == (f"{count} hashtags; Instagram accepts 5" if count > 5 else "")
+
+
+def test_a_hashtag_refusal_is_typed_and_names_every_slug_and_its_reason():
+    with pytest.raises(HashtagError) as e:
+        social.refuse_hashtags({"a": "6 hashtags", "b": "", "c": "7 hashtags"})
+    assert isinstance(e.value, DeliveryError)
+    assert str(e.value) == "the hashtag limit refuses: a: 6 hashtags; c: 7 hashtags"
+
+
+def test_nothing_over_is_nothing_refused():
+    social.refuse_hashtags({"a": "", "b": ""})
+
+
 def test_every_shipped_post_is_valid_has_a_thumbnail_and_maps_to_a_video(tmp_path):
     posts = shipped_posts()
     assert set(posts.POSTS) == set(posts.VIDEOS)
@@ -1000,9 +1047,9 @@ def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
 
 
-def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR):
+def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=("#everydaylife",)):
     renders = unpinned_release(posts, monkeypatch, tmp_path)
-    post = next(iter(posts.POSTS.values()))
+    post = replace(next(iter(posts.POSTS.values())), hashtags=hashtags)
     release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)
@@ -1100,6 +1147,59 @@ def test_delivering_another_video_answers_for_no_comedy_score(monkeypatch, tmp_p
     renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, None)
     posts.auto_enhance.set_mode(tmp_path, on=False)
     assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["Other"]) == ["written"]
+
+
+def test_a_first_delivery_over_the_hashtag_limit_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(HASHTAG_LIMIT + 1))
+    posts.auto_enhance.set_mode(tmp_path, on=False)  # the limit is Instagram's: no mode lifts it
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(HashtagError, match="new-reel: 6 hashtags; Instagram accepts 5"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: .*new-reel: 6 hashtags"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_new_reel_owes_the_hashtag_limit_even_when_the_delivery_finds_it_by_drift(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(HASHTAG_LIMIT + 1))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("New_Reel", "never delivered")])
+    with pytest.raises(HashtagError, match="new-reel"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
+
+
+def test_a_first_delivery_at_the_hashtag_limit_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(HASHTAG_LIMIT))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_video_already_delivered_keeps_the_hashtags_it_was_published_with(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(8))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_delivering_another_video_answers_for_no_hashtags(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(8))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["Other"]) == ["written"]
+
+
+def test_the_check_gate_passes_a_published_post_over_the_hashtag_limit(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, hashtags=tags(8))
+    assert posts.check_all(renders / "ig", renders, fonts_dir=tmp_path) == []
 
 
 def test_the_check_gate_asks_no_comedy_score(monkeypatch, tmp_path):

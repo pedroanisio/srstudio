@@ -18,8 +18,9 @@ Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @okayville.tv,
 ``generated/pilots/<series>``; and refuses a slug released on Okayville. A series never crosses another: its stage and
 remote are the only ones it accepts, and a slug with a folder under another series' ``pilots/`` in this repository is
 refused. A new pilot of a comedy series needs ``comedy-author`` and ``comedy-reviewer`` in the frontmatter of its
-``notes.md``, the lower at the floor or above (ADR 0064); a series in :data:`NOT_COMEDY` owes none. A refused run
-stages and uploads nothing and exits 2, as does a failed upload.
+``notes.md``, the lower at the floor or above (ADR 0064); a series in :data:`NOT_COMEDY` owes none. A new pilot of any
+series carries at most five hashtags in its ``ig.txt`` (ADR 0065). A refused run stages and uploads nothing and exits
+2, as does a failed upload.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ import re
 import sys
 from pathlib import Path
 
-from srstudio import auto_enhance, comedy_floor, outbox
+from srstudio import auto_enhance, comedy_floor, outbox, social
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -48,7 +49,8 @@ NOT_COMEDY = frozenset({"mind", "maps"})  # the operator's line (ADR 0064): any 
 MANIFEST = "manifest.json"
 PACKAGE = "vpkg.zip"
 NOTES = "notes.md"
-ALSO = ("cover.jpg", "ig.txt", PACKAGE, "sources.md", NOTES)  # what follows <slug>.mp4 in a pilot's folder
+CAPTION = social.FILE_NAME
+ALSO = ("cover.jpg", CAPTION, PACKAGE, "sources.md", NOTES)  # what follows <slug>.mp4 in a pilot's folder
 WRITTEN = ("sources.md", NOTES)  # blank is empty for these: a file of spaces says nothing
 _SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 _WATCHED = (("generated", "renders", "ig"), ("generated", "outbox"))
@@ -209,6 +211,26 @@ def unfunny(ready: list[outbox.Bundle], series: str, remote: str, rclone: str) -
             raise PilotError(str(e)) from e
 
 
+def _excess(caption: Path) -> str:
+    try:
+        return social.hashtag_excess(caption.read_text(encoding="utf-8"))
+    except UnicodeDecodeError:
+        return f"{CAPTION} is not UTF-8 text"
+
+
+def overtagged(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
+    """Refuse a new pilot of any series whose caption is over the hashtag limit (ADR 0065); a pilot already on Drive
+    stays as it went out. Drive is read only for a pilot over the limit, so a clean set needs no rclone."""
+    captions = {p.name: dict(zip(p.names, p.files, strict=True))[CAPTION] for p in ready}
+    excess = {slug: why for slug, path in captions.items() if (why := _excess(path))}
+    if excess:
+        on_drive = delivered(remote, rclone)
+        try:
+            social.refuse_hashtags({slug: why for slug, why in excess.items() if slug not in on_drive})
+        except social.HashtagError as e:
+            raise PilotError(str(e)) from e
+
+
 def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
     """What is in the pilot's folder and not delivered, as ``slug/name``."""
     chosen = {f.name for f in pilot.files}
@@ -241,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         for pilot in ready:
             for name in left_behind(pilot, source):
                 print(f"left behind: {name}")
+        overtagged(ready, remote, args.rclone)
         unfunny(ready, args.series, remote, args.rclone)
         unenhanced(ready, remote, args.rclone)
         stage.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
