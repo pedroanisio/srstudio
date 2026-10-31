@@ -1,8 +1,8 @@
 """The Last Guy: the sketch as data. A plumber breathes in through his teeth at the state of the pipe. A child did
 this. He photographs it for the guys. Fern lays his own invoice beside him. Anyone can type Rex. He hands her a card.
 
-Toon, two voices (ElevenLabs premade Charlie as Rex, Matilda as Fern). The first second is held (the
-``sp-hook_motion`` test's arm a). :func:`validate` checks the events; :func:`dress` draws each shot's kitchen, the pipe
+Toon, two voices (ElevenLabs premade Charlie as Rex, Matilda as Fern). The first shot pushes in (the
+``sp-hook_motion`` test's arm b). :func:`validate` checks the events; :func:`dress` draws each shot's kitchen, the pipe
 and the inserts; :func:`sounds` is the foley.
 """
 
@@ -12,7 +12,7 @@ from dataclasses import replace
 
 from srstudio import foley, scripting, sketch, toon_house, toon_odds, toon_sets, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
-from srstudio.toon_sketch import Sound
+from srstudio.toon_sketch import Sound, opening_push
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3101
@@ -129,5 +129,6 @@ STAGING_ARGS = dict(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    camera=opening_push(),
     desk=toon_world.no_desk,
 )

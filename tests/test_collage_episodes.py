@@ -102,10 +102,11 @@ def test_each_sketch_opens_on_its_hook(mods, name):
     still = tags.test == "sp-hook_motion" and tags.arm == "a"
     assert (data[name].STAGING.still >= 1.0) == still, f"{sk.slug}: a still opening is the still arm's, and only its"
     first, second = sk.beats[0], sk.beats[1]
-    assert first.start == 0.0 and first.line == (None if still else 0)
+    silent_head = still or data[name].STAGING.push > 0  # arm b on a recording that kept its silent second
+    assert first.start == 0.0 and first.line == (None if silent_head else 0)
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
-    if still:
-        assert second.line == 0, f"{sk.slug}: the still shot cuts to the first line"
+    if silent_head:
+        assert second.line == 0, f"{sk.slug}: the silent shot cuts to the first line"
 
 
 def test_the_published_sketches_are_still_there():

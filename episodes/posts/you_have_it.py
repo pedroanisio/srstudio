@@ -24,7 +24,7 @@ RELEASE = Release(
         "tension",
         recurring=("priya", "deb"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
         recipient="b",
         to="best friend",
     ),

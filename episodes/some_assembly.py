@@ -34,7 +34,7 @@ from some_assembly_audio import (
     UNEASY,
     WORK,
 )
-from srstudio import SPEECH_MOUTH, Episode, stick, stick_flat, stick_odds, stick_reel, stick_windshield
+from srstudio import SPEECH_MOUTH, Episode, camera, stick, stick_flat, stick_odds, stick_reel, stick_windshield
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -156,7 +156,9 @@ def stage(take) -> None:
     if take.shot == "open":
         if take.id == "01":
             step_in = STILL + 0.95
-            wide(g, end, None, noor_face=READING, dev_keys=[K(0, "stand", SURE)], take=take, phase=(0, step_in))
+            flat = wide(g, end, None, noor_face=READING, dev_keys=[K(0, "stand", SURE)], take=take, phase=(0, step_in))
+            camera.anchor(flat, 540.0, 1300.0, place=True)  # arm b: the recording's silent second opens on movement
+            camera.push_in(cv, flat, scale=[(0.0, 1.0), (step_in, 1.06)])
             page(g, 1, "smiling", at=(step_in, end), end=end)
         else:
             wide(g, end, None, noor_face=READING, dev_keys=[K(0, "stand", SURE)], take=take)

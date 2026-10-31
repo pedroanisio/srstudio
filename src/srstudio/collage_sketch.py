@@ -219,6 +219,9 @@ class Staging:
     # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
     still: float = 0.0
     opening: CastDrawer = stilled
+    # the scale the first shot pushes in to across its length, for a reel that opens on a silent beat and on movement
+    # (arm b, on a recording that kept its silent head); 0 leaves the shot where it stands
+    push: float = 0.0
     # the set of a shot, from the beats the build draws and its appearance, for a reel that changes rooms; a name of
     # collage_sets.SETS. None keeps every character on its ``sets`` entry
     setting: Callable[[Sequence[Beat], Appearance], str] | None = None
@@ -232,6 +235,21 @@ class Staging:
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
         return self.sets[app.who] if self.setting is None else self.setting(beats, app)
+
+
+def check_push(beats: Sequence[sketch.Beat], staging: Staging, name: str) -> None:
+    """A pushed opening moves, so it is not a still one, grows the shot so no edge shows, and leaves the first shot
+    to no crash zoom, which would take the same keys."""
+    push, still = staging.push, staging.still
+    if push == 0:
+        return
+    if not (checks.number(push) and push > 1):
+        raise StagingError(f"{name}: push {push!r} must grow the shot, above 1")
+    if still:
+        raise StagingError(f"{name}: an opening holds still or pushes in, not both")
+    first = sketch.appearances(beats, beats[-1].start + 1.0)[0]
+    if any(at < first.end for at, _ in sketch.events(beats, "zoom")):
+        raise StagingError(f"{name}: a crash zoom in the first shot would take the keys of its push")
 
 
 def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
@@ -270,6 +288,7 @@ def check_staging(staging: Staging) -> None:
         if staging.set_of(sk.beats, app) not in collage_sets.SETS:
             raise StagingError(f"{sk.slug}: unknown set for {app.who} at {app.start} s")
     check_still(sk.beats, staging.still, sk.slug)
+    check_push(sk.beats, staging, sk.slug)
     if not (type(staging.bitrate) is int and staging.bitrate >= 0):
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
 
@@ -299,6 +318,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
     check_still(sk.beats, staging.still, sk.slug)
+    check_push(sk.beats, staging, sk.slug)
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
@@ -357,6 +377,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         face = (staging.opening if opening else cast)(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
+        if staging.push and app.start == 0:
+            camera.anchor(g, *face, place=True)
+            camera.push_in(cv, g, scale=[(0.0, 1.0), (app.end, staging.push)])
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)

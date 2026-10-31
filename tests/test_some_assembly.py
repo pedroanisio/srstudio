@@ -1,4 +1,4 @@
-"""Some Assembly as data: arm A holds its frame, the manual's pages are held to read, and it ends on Noor."""
+"""Some Assembly as data: arm B moves over the recording's silent second, the manual's pages are held to read, and it ends on Noor."""
 
 import sys
 from pathlib import Path
@@ -19,7 +19,7 @@ def data():
         sys.path.pop(0)
 
 
-def test_arm_a_holds_its_frame_and_has_no_bed(data):
+def test_arm_b_keeps_the_recorded_silent_second_and_has_no_bed(data):
     assert data.SCRIPT.still == data.STILL == 1.0
     assert data.SCRIPT.bed is None
 

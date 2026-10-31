@@ -24,7 +24,7 @@ RELEASE = Release(
         "triumph",
         recurring=("deb", "brent", "gary"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
         recipient="a",
     ),
     style="Collage",

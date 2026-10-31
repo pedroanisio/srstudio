@@ -148,6 +148,20 @@ def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
     return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
 
 
+def test_a_pushed_opening_is_checked():
+    check_staging(still_staging(still=0.0, push=1.06))
+    for kw, match in (
+        ({"still": 0.0, "push": 0.9}, "grow"),
+        ({"still": 0.0, "push": float("nan")}, "grow"),
+        ({"still": 1.0, "push": 1.06}, "not both"),
+    ):
+        with pytest.raises(collage_sketch.StagingError, match=match):
+            check_staging(still_staging(**kw))
+    zoomed = (replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:])
+    with pytest.raises(collage_sketch.StagingError, match="crash zoom"):
+        check_staging(still_staging(beats=zoomed, still=0.0, push=1.06))
+
+
 def test_a_still_opening_is_checked():
     check_staging(still_staging())
     check_staging(still_staging(still=0.0))  # no still opening: any first beat

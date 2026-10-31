@@ -24,7 +24,7 @@ RELEASE = Release(
         "embarrassment",
         recurring=("brent", "deb", "omar"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
         recipient="b",
         to="partner",
     ),

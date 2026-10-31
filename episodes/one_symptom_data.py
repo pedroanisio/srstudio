@@ -1,8 +1,8 @@
 """One symptom: the sketch as data. A patient reads a doctor his own diagnosis off a phone. The doctor takes the phone
 to prove a point, reads the symptoms, and looks at his left thumb. They swap chairs, and the patient has the glasses.
 
-Toon, ElevenLabs premade Callum (the patient) and Brian (the doctor). It opens on a held frame, the ``sp-hook_motion``
-test's arm a. Each shot holds one character; the two-shot of the script is a held medium cut on the line. :func:`dress`
+Toon, ElevenLabs premade Callum (the patient) and Brian (the doctor). Its first shot pushes in, the ``sp-hook_motion``
+test's arm b. Each shot holds one character; the two-shot of the script is a held medium cut on the line. :func:`dress`
 draws the surgery, the phone and the thumb.
 """
 
@@ -13,7 +13,7 @@ from dataclasses import replace
 from srstudio import foley, scripting, sketch, toon_everyday, toon_house, toon_surgery, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.toon_everyday import Screen
-from srstudio.toon_sketch import Sound
+from srstudio.toon_sketch import Sound, opening_push
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3108
@@ -142,5 +142,6 @@ STAGING_ARGS = dict(
     narration=NARRATION,
     tints=TINTS,
     dress=dress,
+    camera=opening_push(),
     desk=toon_world.no_desk,
 )
