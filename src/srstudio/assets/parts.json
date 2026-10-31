@@ -10788,6 +10788,57 @@
           "rig": null
         }
       ]
+    },
+    "earbud": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white wireless earbud with a short stem. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2e548d4baabc226c1a987b11c1cc1299d875282f8451a44db6234557689e8784",
+          "rig": null
+        }
+      ]
+    },
+    "tin-of-peas": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tin of peas with a green label. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f9582597ee1948c58484dd16e2c7f66f8559e6230514942803001a66e74fcbb",
+          "rig": null
+        }
+      ]
+    },
+    "store-box": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain supermarket box of crackers. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5b76429123bb67df4f1583517a9536ad71eb642de24edc9c54364e63ced9bf70",
+          "rig": null
+        }
+      ]
     }
   }
 }
