@@ -4333,6 +4333,10 @@
     {
      "question": "Flush shares his voice (Charlie) with Rex.",
      "proposal": "See clash voice-charlie."
+    },
+    {
+     "question": "first-date says Bowl Heads has thirty billion views, and the-lore says 'Nobody watches Bowl Heads anymore'. Do both hold?",
+     "proposal": "Read 'anymore' as after the show's run, and say so in the next reel that uses the show before relying on either number."
     }
    ],
    "since": "1.0.0"
@@ -5015,7 +5019,7 @@
   },
   {
    "slug": "manager",
-   "name": "Eric",
+   "name": "The Boss",
    "world": "okayville",
    "status": "canon",
    "kind": "person",
@@ -5059,7 +5063,7 @@
    "who": {
     "age_range": "open: no reel gives the manager an age. Is he the candidate's senior by years, or only by title?",
     "job": "He interviews applicants and runs the office the candidate later joins; the posts call him 'the boss' and 'the interviewer', and he is the one who decides who starts.",
-    "home": "open: the reels never show where Eric lives; they show his desk, the elevator, the conference-room speakerphone and a park bench at lunch.",
+    "home": "open: the reels never show where the boss lives; they show his desk, the elevator, the conference-room speakerphone and a park bench at lunch.",
     "normal_day": "Interviews at his desk, holds quarterly reviews, takes the elevator and eats lunch on the park bench.",
     "wants": "To end every exchange on his terms: a raise becomes a title, a salary question is answered with the same question, and a bad chart is turned into a record.",
     "flaw": "Cheap and evasive: he hires a pigeon for crumbs, pays in titles and answers a hard question by asking the same one back.",
@@ -5325,12 +5329,12 @@
    ],
    "open": [
     {
-     "question": "Is Eric his name, or only the voice's first name on the end card and the slip?",
-     "proposal": "Treat Eric as canon from Going Down (end card and slip) and use it sparingly; never contradict it."
+     "question": "Is the boss ever given a name? No reel names him; Eric is only the ElevenLabs premade voice that speaks him.",
+     "proposal": "Keep him 'the boss' in canon and give him no name until a reel does; never put the voice's name on screen as his."
     },
     {
-     "question": "Is the man in im-quitting (his friend at the coffee machine, whose only line is 'Hmm.'), in neighbor-names (the third neighbor) and in just-a-trim (a mirror head) the same Eric?",
-     "proposal": "Only the office reels are Eric; the other three are separate people drawn with the same part. See the manager-part-many-roles clash."
+     "question": "Is the man in im-quitting (his friend at the coffee machine, whose only line is 'Hmm.'), in neighbor-names (the third neighbor) and in just-a-trim (a mirror head) the same man?",
+     "proposal": "Only the office reels are the boss; the other three are separate people drawn with the same part. See the manager-part-many-roles clash."
     },
     {
      "question": "Does the post's 'Episode 07 of The Interview. Episode 09, in the new polished reception' (upside-down) mean two numbering schemes for the series?",
@@ -10049,7 +10053,7 @@
   },
   {
    "slug": "rook",
-   "name": "Captain Rook",
+   "name": "Rook",
    "world": "saga",
    "status": "canon",
    "kind": "person",
@@ -10974,7 +10978,7 @@
   },
   {
    "slug": "saga-handbook",
-   "name": "The Handbook (the narrator)",
+   "name": "The Field Guide",
    "world": "saga",
    "status": "canon",
    "kind": "object",
@@ -15534,7 +15538,7 @@
    "id": "manager-names",
    "kind": "name",
    "scope": "within-world",
-   "subject": "One drawing and one voice carry 'the manager', 'the boss', 'the interviewer' and 'Eric' (the slip and the end card of Going Down); the Stick reel screen-share has a different drawing called 'the boss' with the same voice (Eric).",
+   "subject": "One drawing and one voice carry 'the manager', 'the boss', 'the interviewer' (the voice is Eric); the Stick reel screen-share has a different drawing called 'the boss' with the same voice (Eric).",
    "evidence": [
     {
      "fact": "The interviewer.",
@@ -15572,7 +15576,7 @@
      "quote": "Eric"
     }
    ],
-   "proposal": "Keep slug manager and the name Eric for the Cutout office man; call the Stick boss something else in the bible (a role, not a character) and keep 'boss' and 'interviewer' as aliases in posts only."
+   "proposal": "Keep slug manager and the name 'The Boss' for the Cutout office man; call the Stick boss something else in the bible (a role, not a character) and keep 'boss' and 'interviewer' as aliases in posts only."
   },
   {
    "id": "rosa-drawing",
@@ -15748,7 +15752,7 @@
      "quote": "He has been quitting today for forty years."
     }
    ],
-   "proposal": "Declare these three roles unnamed and separate: Eric appears only in the office, bench and elevator reels; the candidate part in im-quitting is the lifer, not the candidate."
+   "proposal": "Declare these three roles unnamed and separate: the boss appears only in the office, bench and elevator reels; the candidate part in im-quitting is the lifer, not the candidate."
   },
   {
    "id": "pigeon-drawing",

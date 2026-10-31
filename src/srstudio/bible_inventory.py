@@ -40,6 +40,7 @@ __all__ = [
     "collect",
     "corpus",
     "mentions",
+    "named_in",
     "published",
     "speakers",
     "vocabulary",
@@ -192,6 +193,21 @@ def corpus(project: Path, release: Release) -> str:
             if document is not None:
                 _strings(document, found)
     return "\n".join(_plain(s) for s in found)
+
+
+def named_in(name: str, project: Path, release: Release) -> bool:
+    """Whether ``name`` (a leading "The" and a bracketed label aside) is a whole word of the release's title or
+    description, of a line or caption of its project, or one of its speakers. The post's credit is left out: it names
+    the voices, not the cast."""
+    found: list[str] = [release.post.title, release.post.description]
+    for source in (*SOURCES, "voice-transcript"):
+        for folder in (project, project / "voiced"):
+            document = _load(folder, source) if folder.is_dir() else None
+            if document is not None:
+                _strings(document, found)
+    found.extend(speakers(project) if project.is_dir() else ())
+    want = re.sub(r"\s*\([^)]*\)", "", _plain(name)).removeprefix("the ")  # a label like (rabbit) is the bible's
+    return bool(re.search(rf"(?<![a-z]){re.escape(want)}(?![a-z])", "\n".join(_plain(s) for s in found)))
 
 
 def cite(
