@@ -2,12 +2,11 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0062: Bento, the operator's capybara, as a proposed Toon character
+# ADR 0062: Bento, the operator's capybara, as a Toon character
 
-- Status: proposed (2026-10-31). Implemented: `srstudio.toon_bento`, the `toon-bento` version record with its rig record
+- Status: accepted (2026-10-31). The operator approved him from his clips: "bento is approved". Implemented: `srstudio.toon_bento`, the `toon-bento` version record with its rig record
   in `parts.json`, `pose_tilt`, `tilt_reach` and `face_slide` on `HeadRig`, `Ramp` and `Posing` in `toon_cast`;
-  `tests/test_toon_bento.py`, `tests/test_toon_head.py`. No approval is recorded: only the operator's decision, in his
-  words, can change that.
+  `tests/test_toon_bento.py`, `tests/test_toon_head.py`.
 - Deciders: the operator (pedroanisio), who authored the character; port drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0020](0020-toon-lip-synced-cast.md), [ADR 0047](0047-character-versions.md) and
   [ADR 0050](0050-organic-head-motion.md)
@@ -54,8 +53,8 @@ of the moods tilt that whole head. His fur and blazer are soft gradients, where 
 10. **Limb tracks are refused by name.** His gestures are not rigged limbs.
 11. **`bento()`, the flat registered drawing, is the rig standing still.** There is one drawing of him, and the digest
     covers it.
-12. **He stays out of reels.** He is `proposed`, the rig too, so a reel refuses him and no `Release`, post or show names
-    him. Published reels change by nothing: every hook is off by default.
+12. **No reel names him yet.** He and his rig are approved, so a reel may draw him; News keeps its own anchors unless the
+    operator says otherwise. Published reels change by nothing: every hook is off by default.
 
 ## Where the port differs from the operator's drawing
 

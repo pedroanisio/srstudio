@@ -1644,7 +1644,7 @@ a body that has no ruff or collar to hide the seam. Word stress comes from a tab
 [tools/build_stress.py](../tools/build_stress.py) from the CMU Pronouncing Dictionary
 ([licence](../src/srstudio/assets/stress/CMUDICT-LICENSE)).
 
-`toon-bento` is the operator's capybara in a blazer, proposed and not yet in any reel
+`toon-bento` is the operator's capybara in a blazer, approved and not yet in any reel
 ([src/srstudio/toon_bento.py](../src/srstudio/toon_bento.py),
 [docs/decisions/0062-bento.md](decisions/0062-bento.md)). He has 36 moods, 12 eye states and 9 gestures as typed data.
 `toon_bento.pose_of(start, "skeptical", "folded", "left")` is one pose: a mood, with any gesture or shared arm and an eye

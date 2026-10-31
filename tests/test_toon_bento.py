@@ -1,4 +1,4 @@
-"""Bento, the operator's character: one module, typed moods, its own gestures and eyes, a proposed rig (ADR 0062)."""
+"""Bento, the operator's character: one module, typed moods, its own gestures and eyes, an approved rig (ADR 0062)."""
 
 from __future__ import annotations
 
@@ -337,10 +337,9 @@ def test_lip_sync_draws_one_layer_per_viseme_with_hold_keys():
     assert len(_opacity_keys(root)) >= len(toon_cast.VISEMES)
 
 
-def test_he_is_lip_synced_in_a_sketch_and_a_sketch_cannot_draw_him_yet():
+def test_he_is_lip_synced_in_a_sketch_and_a_sketch_can_draw_him():
     assert "bento" in sketch.CHARACTERS and "bento" in sketch.LIP_SYNCED
-    with pytest.raises(parts.PartError, match="toon-bento"):
-        sketch.drawer("bento")
+    assert callable(sketch.drawer("bento"))
 
 
 # -- the rig -----------------------------------------------------------------------------------------------------------
@@ -440,15 +439,16 @@ def test_the_plan_moves_him_when_he_speaks():
 
 
 # -- the registry and the record ---------------------------------------------------------------------------------------
-def test_he_is_registered_in_the_toon_style_as_proposed():
+def test_he_is_registered_in_the_toon_style_with_the_operators_approval():
     entry = registry.get("character", "toon-bento")
     assert entry.name == "toon-bento"
     part = parts.get("toon-bento")
     assert part.kind == "character" and part.style == "toon" and part.refused is None
     assert len(part.versions) == 1
     version = part.version(1)
-    assert version.status == "proposed" and version.approval is None
-    assert version.rig is not None and version.rig.status == "proposed" and version.rig.approval is None
+    assert version.status == "approved" and version.approval.words == "bento is approved"
+    assert version.rig is not None and version.rig.status == "approved"
+    assert version.rig.approval.date == "2026-10-31" and version.rig.approval.words == "bento is approved"
 
 
 def test_the_recorded_digests_are_what_he_draws():
@@ -470,11 +470,9 @@ def test_the_digest_moves_when_the_drawing_moves(monkeypatch):
         toon_bento.skull_layers.cache_clear()
 
 
-def test_a_reel_cannot_draw_or_move_him_until_the_operator_approves():
-    with pytest.raises(parts.PartError, match="toon-bento"):
-        parts.resolved("toon-bento")
-    with pytest.raises((parts.PartError, ToonDataError), match="toon-bento"):
-        toon_rigs.rig_of("toon-bento")
+def test_a_reel_can_draw_and_move_him_now_the_operator_has_approved():
+    assert parts.resolved("toon-bento") == 1
+    assert toon_rigs.rig_of("toon-bento") is RIG
 
 
 def test_a_limb_track_is_refused_by_name():
@@ -501,9 +499,9 @@ def test_the_port_reads_nothing_from_outside_and_keeps_no_branding():
         assert kind.isascii()
 
 
-def test_the_adr_records_the_author_and_is_proposed():
+def test_the_adr_records_the_author_and_is_accepted():
     text = (ROOT / "docs/decisions/0062-bento.md").read_text(encoding="utf-8")
-    assert re.search(r"^- Status: proposed\b", text, re.M)
+    assert re.search(r"^- Status: accepted\b", text, re.M)
     assert "operator" in text and "authored" in text
 
 
