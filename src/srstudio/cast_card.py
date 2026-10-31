@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+import numpy as np
 from sr_core.scene import Scene
 
 from . import blob, checks, collage, fonts, parts, rig, specimens, stick, toon
@@ -74,6 +75,8 @@ WORDMARK = "Okayville"
 PICTURE_MIDDLE = (SAFE_TOP + PANEL_TOP) / 2  # a frame's focus lands here
 PICTURE_AREA = WIDTH * (PANEL_TOP - SAFE_TOP)
 MIN_FILL = 0.25  # of the picture, the least the character must cover: drawn big, not a figure on a colour
+EDGE_BAND = 24  # ink that shows less than this much above the panel is the tip of a shape, not a shape
+INK_LEVEL = 96  # the brightest channel of a pixel that counts as ink
 PANEL, LETTER = "#17141F", "#FFF8EC"
 ACCENT = "#FFD166"
 KEY = "#FF00FF"  # what a figure is measured against
@@ -361,16 +364,53 @@ def _draw(scene: Scene, faces: Lettering, engine: str | Path, work: Path, name: 
 
 @dataclass(frozen=True)
 class Measure:
-    """Where the pixels landed: boxes as ``(x0, y0, x1, y1)``, end exclusive, and how much of the picture the figure
-    covers, 0 to 1."""
+    """Where the pixels landed: boxes as ``(x0, y0, x1, y1)``, end exclusive, how much of the picture the figure
+    covers, 0 to 1, and the :func:`edge_specks` of the figure."""
 
     letters: tuple[int, int, int, int]
     figure: tuple[int, int, int, int]
     fill: float
+    specks: tuple[tuple[int, int, int, int], ...] = ()
 
 
 def _colour(hex_colour: str) -> tuple[int, int, int]:
     return int(hex_colour[1:3], 16), int(hex_colour[3:5], 16), int(hex_colour[5:7], 16)
+
+
+def _island(ink: np.ndarray, seed: tuple[int, int]) -> set[tuple[int, int]]:
+    """The ``(row, column)`` cells of ``ink`` joined to ``seed``, diagonals included."""
+    rows, columns = ink.shape
+    found = {seed}
+    waiting = [seed]
+    while waiting:
+        row, column = waiting.pop()
+        for r in range(max(row - 1, 0), min(row + 2, rows)):
+            for c in range(max(column - 1, 0), min(column + 2, columns)):
+                if ink[r, c] and (r, c) not in found:
+                    found.add((r, c))
+                    waiting.append((r, c))
+    return found
+
+
+def edge_specks(pixels: np.ndarray) -> tuple[tuple[int, int, int, int], ...]:
+    """Boxes of the ink the panel cuts down to a speck: the panel covers the lower part of the figure, so a shape whose
+    top ends just above the panel's edge shows only its tip, an island of ink that rests on the edge and stops within
+    :data:`EDGE_BAND`. Ink that climbs out of the band belongs to something the eye can follow."""
+    top = PANEL_TOP - EDGE_BAND
+    ink = pixels[top:PANEL_TOP].max(axis=2) < INK_LEVEL
+    last = EDGE_BAND - 1
+    seen: set[tuple[int, int]] = set()
+    specks = []
+    for column in np.nonzero(ink[last])[0].tolist():
+        if (last, column) in seen:
+            continue
+        island = _island(ink, (last, column))
+        seen |= island
+        rows = [row for row, _ in island]
+        columns = [c for _, c in island]
+        if min(rows) > 0:
+            specks.append((min(columns), top + min(rows), max(columns) + 1, PANEL_TOP))
+    return tuple(specks)
 
 
 def measure(card: Card, faces: Lettering, engine: str | Path, work: Path) -> Measure:
@@ -384,7 +424,7 @@ def measure(card: Card, faces: Lettering, engine: str | Path, work: Path) -> Mea
         raise CastCardError(f"{card.name}: {'no letters' if letters is None else 'no figure'} in the render")
     picture = pixels[SAFE_TOP:PANEL_TOP].astype("int16")
     drawn = (abs(picture - list(_colour(KEY))) > 10).any(axis=2)
-    return Measure(letters, figure, float(drawn.sum()) / PICTURE_AREA)
+    return Measure(letters, figure, float(drawn.sum()) / PICTURE_AREA, edge_specks(pixels))
 
 
 def _refusals(card: Card, seen: Measure) -> list[str]:
@@ -396,6 +436,8 @@ def _refusals(card: Card, seen: Measure) -> list[str]:
         found.append(f"{card.name}: the figure rises to y {seen.figure[1]}, above the safe zone")
     if seen.fill < MIN_FILL:
         found.append(f"{card.name}: the figure covers {seen.fill:.0%} of the picture, too small")
+    if seen.specks:
+        found.append(f"{card.name}: detached ink on the panel edge at {seen.specks}; move the frame")
     return found
 
 
@@ -436,7 +478,7 @@ CAST: tuple[Card, ...] = (
     Card("Rex", "Has never heard of it. It's on his forehead.", "toon-dog", Pose("up", "o", "desk"),
          F((345, 946), 1.55), "#7CC6C3"),
     Card("Fern", "Paid the cleaning fee. Then repainted the fence.", "toon-frog", Pose("narrow", "flat", "desk"),
-         F((338, 961), 1.6), "#F7D774"),
+         F((338, 958), 1.6), "#F7D774"),
     Card("Ava", "Three bucks for the coffee. The cup is extra.", "barista", Pose("open", "smile"),
          F((540, 703), 2.6), "#F6B8A2"),
     Card("Milo", "Went in for light bulbs. Owns a kayak now.", "customer", Pose("open", "smile"),
@@ -446,11 +488,11 @@ CAST: tuple[Card, ...] = (
     Card("Gary", "Texts his son from the next chair. Regards, Dad.", "collage-gary", Pose("open", "grin", "hold"),
          F((550, 1179), 1.3), "#B8D8F0"),
     Card("Kai", "Ten years old. Into tax law now.", "collage-kai", Pose("half", "flat", "down"),
-         F((550, 1097), 1.4), "#9FD8C5"),
+         F((550, 1094), 1.4), "#9FD8C5"),
     Card("Priya", "Grades first dates. Hiking got a C.", "collage-priya", Pose("half", "smug", "point"),
          F((550, 1151), 1.4), "#F6C453"),
     Card("Rosa", "Reads her will out loud, to watch your face.", "collage-rosa", Pose("side", "smug", "down"),
-         F((545, 1092), 1.35), "#BFE3D0"),
+         F((545, 1089), 1.35), "#BFE3D0"),
     Card("Jun", "Forty-seven takes of one word. Used the first.", "collage-jun", Pose("sad", "flat", "down"),
          F((551, 1083), 1.4), "#F4B6C2"),
     Card("Flush", "Is in every toilet. Yes, that one too.", "collage-flush", Pose("wide", "grin", "down"),
@@ -458,7 +500,7 @@ CAST: tuple[Card, ...] = (
     Card("Pip", "Can only rest if he books a meeting with the sofa.", "pip", Pose("closed", "smile", "stand"),
          F((540, 1222), 3.2), "#6FBF9B"),
     Card("Juno", "Bed by ten. It's 3:47 and she has views on bees.", "juno", Pose("wide", "flat", "stand"),
-         F((540, 1240), 3.2), "#4E62A8"),
+         F((540, 1239), 3.2), "#4E62A8"),
     Card("Dev", "The self-checkout made him employee of the month.", "stick-rig",
          Pose("open", "smile", "stand", "raised"), F((540, 760), 3.0), "#F08A6C"),
 )  # fmt: skip

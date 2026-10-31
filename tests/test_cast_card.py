@@ -1,8 +1,10 @@
 """Cast cards: typed data, refusals, layout from measured text, and the safe zone read off real engine renders."""
 
 import os
+from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from srstudio import cast_card, fonts, parts
@@ -193,6 +195,56 @@ def test_each_card_renders_inside_the_safe_zone_with_a_big_character(card, faces
     assert cast_card.MARGIN <= x0 and x1 <= WIDTH - cast_card.MARGIN, measure
     assert measure.figure[1] >= SAFE_TOP, measure
     assert measure.fill >= cast_card.MIN_FILL, measure
+
+
+@pytest.mark.parametrize("card", CAST, ids=lambda card: card.slug)
+def test_each_card_leaves_no_detached_ink_on_the_panel_edge(card, faces, tmp_path, scene_render):
+    assert cast_card.measure(card, faces, scene_render, tmp_path).specks == ()
+
+
+def _sheet() -> np.ndarray:
+    return np.full((HEIGHT, WIDTH, 3), 255, np.uint8)
+
+
+def test_a_tip_of_ink_cut_by_the_panel_is_a_speck():
+    sheet = _sheet()
+    sheet[cast_card.PANEL_TOP - 3 : cast_card.PANEL_TOP, 498:505] = 0
+    assert cast_card.edge_specks(sheet) == ((498, cast_card.PANEL_TOP - 3, 505, cast_card.PANEL_TOP),)
+
+
+def test_two_tips_are_two_specks():
+    sheet = _sheet()
+    sheet[cast_card.PANEL_TOP - 2 : cast_card.PANEL_TOP, 300:306] = 0
+    sheet[cast_card.PANEL_TOP - 2 : cast_card.PANEL_TOP, 770:776] = 0
+    assert [box[0] for box in cast_card.edge_specks(sheet)] == [300, 770]
+
+
+def test_a_line_that_runs_into_the_panel_is_not_a_speck():
+    sheet = _sheet()
+    sheet[900 : cast_card.PANEL_TOP, 200:206] = 0
+    assert cast_card.edge_specks(sheet) == ()
+
+
+def test_a_curl_that_leaves_the_edge_and_climbs_is_not_a_speck():
+    sheet = _sheet()
+    top = cast_card.PANEL_TOP - cast_card.EDGE_BAND
+    sheet[cast_card.PANEL_TOP - 2 : cast_card.PANEL_TOP, 200:260] = 0
+    sheet[top : cast_card.PANEL_TOP, 256:260] = 0
+    assert cast_card.edge_specks(sheet) == ()
+
+
+def test_ink_that_stops_short_of_the_panel_is_not_a_speck():
+    sheet = _sheet()
+    sheet[cast_card.PANEL_TOP - 9 : cast_card.PANEL_TOP - 4, 400:410] = 0
+    assert cast_card.edge_specks(sheet) == ()
+
+
+def test_a_card_with_ink_on_the_panel_edge_writes_nothing(faces, tmp_path, scene_render):
+    fern = next(card for card in CAST if card.slug == "fern")
+    tipped = replace(fern, frame=Frame((338, 961), 1.6))  # the belly tick stops 2 px above the panel
+    with pytest.raises(CastCardError, match="detached ink"):
+        render(tipped, tmp_path / "fern.png", faces, scene_render)
+    assert not (tmp_path / "fern.png").exists()
 
 
 def test_render_writes_a_private_png_at_story_size(faces, tmp_path, scene_render):

@@ -380,8 +380,14 @@ style font is missing stops with the `srstudio fonts add` command that fetches i
 through the engine, a name, one line and the wordmark, in Fredoka 600 and DM Sans 700. `--only rex` narrows it. A
 `Card` is typed data (name, line, drawing, `Pose`, `Frame`, backdrop). Before anything is written the card is
 refused if the drawing is unknown or unapproved, the line reads as engagement bait, the letters leave the story safe
-zone (no text in the top 250 px or the bottom 340 px, measured from the rendered letters) or the figure is too small
-to read. Folders are mode 700, files mode 600.
+zone (no text in the top 250 px or the bottom 340 px, measured from the rendered letters), the figure is too small
+to read, or the panel cuts a shape down to its tip: an island of ink resting on the panel's edge and under 24 px tall.
+That last refusal is fixed by moving the `Frame`, never by painting over the tip or changing the drawing. Folders are
+mode 700, files mode 600.
+
+Who gets a card: a character is cast when the same name sits on the same drawing in five or more reels, in an everyday
+world. Count from the releases and `srstudio usage`. A one-reel character is not cast, and sealed worlds such as Saga
+and Gloss are not everyday life. Ava is the one exception, at four reels, because the Okayville request named her.
 
 ## New episodes with generated audio: *Five Years* (06)
 
