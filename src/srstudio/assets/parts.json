@@ -8536,9 +8536,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A live shot of a door nothing happens at, which can slam shut. First drawn for came-in-for.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483469.145679: \"news-live-door v1: approved.\""
+          },
           "drawing": "9752aad037759639a37134b7b7d549fa8b812f0c87badc36a3f4ee056709a1c7",
           "rig": null
         }
