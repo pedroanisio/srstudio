@@ -38,6 +38,7 @@ from . import (
     cel,
     collage_group,
     gloss_sets,
+    host_kit,
     ink_meter,
     ink_phone,
     map_kit,
@@ -229,6 +230,14 @@ SHOW = (0.0, SECONDS)
 BUBBLES = (ink_phone.Bubble("On my way."), ink_phone.Bubble("Agreed.", mine=False))
 TAKE = Take("01", "speaker", "shot", "Hello.", 0.0, SECONDS)
 PHONE_SCREENS = (toon_everyday.Screen(0.0, "notify", title="Mom", text="Are you eating?"),)
+
+
+def _punched(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
+    shot = cv.group(g, cv.uid("g"))
+    host_kit.lint(cv, shot, end=SECONDS)
+    e(cv, shot, "close", SECONDS / 2, "lint")
+
+
 RECIPES: dict[str, Recipe] = {
     # -- locations -------------------------------------------------------------------------------------------------
     "cel-room": Recipe(_cel_room),
@@ -378,6 +387,10 @@ RECIPES: dict[str, Recipe] = {
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
+    "host-label": Recipe(lettered("THE GROUP CHAT HAS RULES", 0.0, SECONDS)),
+    "host-sign-off": Recipe(lettered("You know what you did.", 0.0, SECONDS)),
+    "host-screen": Recipe(lettered("The Group Chat", (host_kit.Bubble("haha"),), 0.0, SECONDS)),
+    "host-punch": Recipe(_punched),
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
@@ -449,6 +462,7 @@ REFUSED: dict[str, Refused] = {
     "captions": Refused(Reason.OVERLAY, "burned captions: lines of text timed over a shot"),
     "stick-captions": Refused(Reason.OVERLAY, "the Stick caption layer: lines of text timed over a shot"),
     "stick-words": Refused(Reason.OVERLAY, "word-by-word captions over a scrim that dims the shot under it"),
+    "host-captions": Refused(Reason.OVERLAY, "the engine's caption track and its bands, timed over a shot"),
     "toon-captions": Refused(Reason.OVERLAY, "the white caption pills, timed over a shot"),
     "cel-lettering": Refused(Reason.OVERLAY, "one caption's lettering boxes, traced to sit over a Cel shot"),
     "woodgrain": Refused(Reason.OVERLAY, "faint grain strokes laid over a wood fill: too pale to see on their own"),

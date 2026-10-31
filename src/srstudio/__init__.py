@@ -26,6 +26,7 @@ from . import (  # noqa: F401  (registers builders)
     gloss_sets,
     graphics,
     head_motion,
+    host_kit,
     ink,
     ink_captcha,
     ink_doorbell,

@@ -8522,6 +8522,145 @@
           "rig": null
         }
       ]
+    },
+    "host-lint": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Lint, a clothes moth in a bitten mustard cardigan, the host of The Unwritten Rules. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f30ffb308fce2691195cb767a3c7378b67f0684fc7fc73148fbe9ea892115db",
+          "rig": null
+        }
+      ]
+    },
+    "host-wardrobe": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Inside a wardrobe: back panel, rail, coats, a door left ajar with a key of light. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "563b0d1adcb2f2112edb7f4a1724caca34afeba44fe65d1f7b52e309d4c22032",
+          "rig": null
+        }
+      ]
+    },
+    "host-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The shelf and the huge phone lying on it, screen up. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f9e7f3bebb8af8f0ca3f1bf3847772acba9ff010bd4e47ba07ff42c93236d13",
+          "rig": null
+        }
+      ]
+    },
+    "host-label": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The on-screen keyword as a woven care label. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d407cd6fb47d1ee2d8baaca7d97d81854fe5e744b1177a1bf2fd6c7788daa060",
+          "rig": null
+        }
+      ]
+    },
+    "host-sign-off": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The catchphrase on the same label, large, to the last frame. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14cbe25deb0ec32bc29deeefba4317cd800f8b213348adc560d7523095b53cf2",
+          "rig": null
+        }
+      ]
+    },
+    "host-screen": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The phone full frame for a cutaway: a chat, its messages, a read mark. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5856c0c37188cbfcaa6e73fe1c15983c4990bff0522904b4b153ec8edfbffcd1",
+          "rig": null
+        }
+      ]
+    },
+    "host-punch": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The punch-in and punch-out framings about his face, a hold on the cut. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5d3928c437e07cb70cc9f9d952658bf838cdd7ae2dbcb982e0b7058d8674e2ba",
+          "rig": null
+        }
+      ]
+    },
+    "host-captions": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": {
+        "reason": "overlay",
+        "detail": "the engine's caption track and its bands, timed over a shot"
+      },
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The engine's karaoke track on ink bands. First drawn for unwritten-rules-group-chat.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
     }
   }
 }

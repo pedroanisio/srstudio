@@ -171,7 +171,7 @@ def test_the_fixed_vocabulary_is_still_the_vocabulary():
 def test_every_character_has_a_specimen_and_one_family_each():
     names = {e.name for e in registry.entries("character")}
     assert names == set(specimens.SPECIMENS)
-    assert len(set(specimens.SPECIMENS.values())) <= 14
+    assert len(set(specimens.SPECIMENS.values())) <= 15
 
 
 def _scene(body: str, assets: str = "") -> bytes:

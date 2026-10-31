@@ -30,6 +30,14 @@ PACKAGE_ONLY = [
     "talking-printer",
 ]
 PILOT_ONLY = [
+    "host-captions",
+    "host-label",
+    "host-lint",
+    "host-phone",
+    "host-punch",
+    "host-screen",
+    "host-sign-off",
+    "host-wardrobe",
     "news-banner",
     "news-bug",
     "news-captions",
@@ -96,7 +104,7 @@ NO_EPISODE = [
 ]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
-    **dict.fromkeys(PILOT_ONLY, "only the News pilots (episodes/pilots) build it, and no pilot is in the library yet"),
+    **dict.fromkeys(PILOT_ONLY, "only a pilot (episodes/pilots) builds it, and no pilot is in the library yet"),
     **dict.fromkeys(SUPERSEDED, "the first drawing, replaced by its @2 version, which the gallery shows"),
     **dict.fromkeys(NO_EPISODE, "no library episode builds it yet"),
 }
