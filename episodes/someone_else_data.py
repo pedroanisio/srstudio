@@ -1,4 +1,4 @@
-"""Someone Else — the sketch as data: cancelling your internet is a breakup. The agent takes it as one, and the fair
+"""Someone Else — the sketch as data: canceling your internet is a breakup. The agent takes it as one, and the fair
 price only appears when you threaten to leave. The caller stays, the line goes dead, the heartbreak stops, and two eye
 drops later the phone rings. Then the room: every agent on the floor tipping their head back.
 
@@ -30,7 +30,7 @@ from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3107
 SLUG = "someone-else"
-TITLE = "Someone Else — Cancelling the Internet (Toon)"
+TITLE = "Someone Else — Canceling the Internet (Toon)"
 DESCRIPTION = (
     "A Toon sketch on a call: a woman cancels her internet and the agent takes it as a breakup, until forty percent "
     "off keeps her, the agent stops crying, and the whole floor picks up."
@@ -41,7 +41,7 @@ ACCESSIBILITY = (
     "and the rabbit stays. The call ends, the hedgehog's face goes flat, she ticks a form, squeezes eye drops into "
     "her eyes and the phone rings. The camera pulls back on rows of agents all doing the same, and all answer."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Sarah (the caller) and River (the agent); synthesised effects."
+NARRATION = "Voiced with ElevenLabs premade voices Sarah (the caller) and River (the agent); synthesized effects."
 NOTE = "ElevenLabs premade voices Sarah and River at their natural pace; no reference-voice cloning."
 VOICE_AGENT = Voice(role="hedgehog", id="SAz9YHcvj6GT2YYXdXww", name="River")
 RABBIT = Speaker(

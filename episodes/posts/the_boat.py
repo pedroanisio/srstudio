@@ -17,7 +17,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Jessica, Daniel, Sarah, Will, Brian and Laura. Original characters, "
-            "drawn in code. Sound effects synthesised in code."
+            "drawn in code. Sound effects synthesized in code."
         ),
         hashtags=("#earbuds", "#publictransit", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("What dentist?", 18.9, "Collage"),

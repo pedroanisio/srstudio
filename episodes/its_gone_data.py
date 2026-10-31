@@ -32,7 +32,7 @@ ACCESSIBILITY = (
     "shuts. Her smile fades. She walks to the router, looks back at the door and pulls out the plug, and the light "
     "dies. She picks up the phone and says in a small voice that it is gone. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesised beep and door."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized beep and door."
 NOTE = "ElevenLabs premade voices Matilda and Chris at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 

@@ -32,7 +32,7 @@ ACCESSIBILITY = (
     "At a silent wake, he stands with an enormous lasagna and everyone looks at him. A woman takes it, looks down "
     "and says he looks so peaceful. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesised whoosh and ping."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh and ping."
 NOTE = "ElevenLabs premade voices Chris, Sarah and Jessica at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 

@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Brian and Sarah. Original characters, drawn in code. Sound effects "
-            "synthesised in code."
+            "synthesized in code."
         ),
         hashtags=("#unsubscribe", "#onlineshopping", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("No thanks.", 2.6, "Collage"),

@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Alice and Jessica. Original characters, drawn in code. Sound effects "
-            "synthesised in code."
+            "synthesized in code."
         ),
         hashtags=("#landlord", "#renting", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("A nail hole.", 6.5, "Collage"),

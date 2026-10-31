@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Matilda and Chris. Original characters, drawn in code. Sound effects "
-            "synthesised in code."
+            "synthesized in code."
         ),
         hashtags=("#techsupport", "#parents", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("It's gone.", 1.0, "Collage"),

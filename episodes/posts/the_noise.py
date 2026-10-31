@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Liam and Roger. Original characters, drawn in code. Sound effects "
-            "synthesised in code."
+            "synthesized in code."
         ),
         hashtags=("#carrepair", "#mechanic", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("Do the noise.", 8.0, "Toon"),

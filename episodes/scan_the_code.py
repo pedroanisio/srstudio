@@ -6,7 +6,7 @@
 
 Milo asks for a menu and gets a code. The code wants his email, then his location, then Ava turns and the code is on
 her apron. The phone asks how she is doing, while she watches. The pigeon at the next table has a paper menu. Milo
-holds his phone over his water and opens his hand. The heavy plop is synthesised here, from
+holds his phone over his water and opens his hand. The heavy plop is synthesized here, from
 :func:`srstudio.foley.plop`. The last hold is on Ava's face. The opening moves from the first frame (arm B of the
 ``sp-hook_motion`` test).
 """
@@ -27,7 +27,7 @@ ep = Episode(
         slug="scan-the-code",
         title="Scan the Code",
         description="Café comedy: a man who wants a paper menu, a code that wants his email, and a glass of water. "
-        "Native vector animation in the café; ElevenLabs dialogue and sound effects, synthesised foley.",
+        "Native vector animation in the café; ElevenLabs dialogue and sound effects, synthesized foley.",
         root=ROOT,
         **iv_audio.spec_font(INTERVIEW.font, ROOT),
         seed=SEED,

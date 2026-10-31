@@ -4,7 +4,7 @@ her time, which is exactly the deposit. It always is. Deb leaves the keys and go
 the hole, tenderly: new listing, charming, original features. Gallery wall. Two hundred more a month.
 
 Collage style (ADR 0026): what she charged Deb for, she sells as a feature. The reel opens moving (the sp-hook_motion
-test's arm b): the glass is already travelling on frame one. ElevenLabs premade voices, lip-synced.
+test's arm b): the glass is already traveling on frame one. ElevenLabs premade voices, lip-synced.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ ACCESSIBILITY = (
     "a time until they equal the deposit. The tenant leaves the keys and goes. The landlord photographs the hole "
     "and lists it as a charming original feature for two hundred more a month. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesised camera flash and door."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized camera flash and door."
 NOTE = "ElevenLabs premade voices Alice and Jessica at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 

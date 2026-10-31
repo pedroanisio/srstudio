@@ -33,7 +33,7 @@ ACCESSIBILITY = (
     "holding the card, lit from below. She says unsubscribe. He sits down, takes off one shoe, and says it takes ten "
     "business days. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesised whoosh and thud."
+NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized whoosh and thud."
 NOTE = "ElevenLabs premade voices Brian and Sarah at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 

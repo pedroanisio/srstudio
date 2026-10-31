@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Someone Else — a Toon sketch: cancelling your internet is a breakup (see someone_else_data.py for the script).
+"""Someone Else — a Toon sketch: canceling your internet is a breakup (see someone_else_data.py for the script).
 
 python3 someone_else.py PROJECT --init     # script.json, assets/poses.json and the pinned Comic Neue
 python3 someone_else.py PROJECT            # the silent master on the scripted timing

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The Noise — the recording: every line of the sketch said by its ElevenLabs voice, heard back, placed at the
-speakers' own pace, with the effects synthesised; see toon_sketch.record_episode.
+speakers' own pace, with the effects synthesized; see toon_sketch.record_episode.
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 the_noise_audio.py PROJECT [--ffmpeg PATH]
 

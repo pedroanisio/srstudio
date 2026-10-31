@@ -30,7 +30,7 @@ ACCESSIBILITY = (
     "hundred for a rattle, forty for a squeak. The fox pats the car, it clunks, a wheel falls off and rolls slowly "
     "away. The goat turns to look at him and he says squeak in a very small voice."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Liam (Fox) and Roger (the mechanic); synthesised effects."
+NARRATION = "Voiced with ElevenLabs premade voices Liam (Fox) and Roger (the mechanic); synthesized effects."
 NOTE = "ElevenLabs premade voices Liam and Roger at their natural pace; no reference-voice cloning."
 VOICE_FOX = Voice(role="fox", id="TX3LPaxmHKxFdv7VOQHJ", name="Liam")
 FOX = Speaker("fox", VOICE_FOX, VoiceSettings(stability=0.45, similarity_boost=0.75, style=0.35), "fox")

@@ -10,7 +10,7 @@ All LLM output must be treated as untrusted and validated explicitly.
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, its effects, the beats between the
 lines (:func:`schedule`) and its shots (:func:`extra`). The opening moves from the first frame (the ``sp-hook_motion``
 test's arm B): Ava is already crossing to the table, and :func:`schedule` refuses a first line held any later.
-The plop itself is synthesised in the builder, from :func:`srstudio.foley.plop`.
+The plop itself is synthesized in the builder, from :func:`srstudio.foley.plop`.
 """
 
 from __future__ import annotations

@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit=(
             "Voices: ElevenLabs premade voices Chris, Sarah and Jessica. Original characters, drawn in code. Sound "
-            "effects synthesised in code."
+            "effects synthesized in code."
         ),
         hashtags=("#autocorrect", "#texting", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("Your lasagna.", 2.0, "Collage"),
