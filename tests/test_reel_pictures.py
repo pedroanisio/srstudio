@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pytest
 
-from srstudio import collage, collage_everyday, signature
+from srstudio import collage, collage_everyday, signature, stick
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -266,3 +266,20 @@ def test_the_baby_monitor_stands_on_the_counter_and_the_mitts_have_arms() -> Non
     for shoulder, hand, side in mod.ARMS:
         assert 0 < shoulder[0] < WIDTH and shoulder[1] < hand[1], "from her body, down to the dish"
         assert hand[0] * 592.0 / 1080.0 == pytest.approx(mitts[side], abs=40.0)
+
+
+def test_more_tireds_marks_clear_the_card_in_every_framing() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("more_tired_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    (fx, fy), zoom, (tx, ty) = audio.CAMERA
+    pushed = ((fx, fy), audio.OPENING_ZOOM, (tx, ty))
+    for framing in (audio.CAMERA, pushed):
+        x, y = audio.MARKS_AT
+        assert _seen(framing, x, y)
+        top = y - 152.0 * audio.MARKS_SCALE
+        assert _seen(framing, x, top) and ty + framing[1] * (top - fy) > stick.CARD[1] + stick.CARD[3]
+        assert _seen(framing, *audio.CODE_AT)
+        assert _seen(framing, audio.CODE_AT[0] + signature.text_width("SR-1028", audio.CODE_H), audio.CODE_AT[1])

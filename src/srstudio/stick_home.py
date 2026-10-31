@@ -92,8 +92,9 @@ POSES: dict[str, RigPose] = {
 
 
 @register("location", "stick-kitchen", tags=("home", "kitchen", "domestic", "fridge"))
-def kitchen(cv: Canvas, parent) -> None:
-    """The kitchen, without its table: the window and its curtains, a calendar, a shut fridge, a shut safe."""
+def kitchen(cv: Canvas, parent, *, marks: bool = True) -> None:
+    """The kitchen, without its table: the window and its curtains, a calendar, a shut fridge, a shut safe. A reel
+    whose framing or card hides the marks passes ``marks=False`` and places them where they are seen (ADR 0001)."""
     s = _group(cv, parent)
     wall = paint(cv, Gradient("kitchen-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, FLOOR_Y))
     box(cv, s, 0, 0, cv.width, FLOOR_Y, wall)
@@ -106,10 +107,12 @@ def kitchen(cv: Canvas, parent) -> None:
     shape(cv, s, "M 380 160 L 480 160 Q 470 340 400 530 L 380 530 Z", CURTAIN)
     shape(cv, s, "M 760 160 L 660 160 Q 670 340 740 530 L 760 530 Z", CURTAIN)
     box(cv, s, 370, 516, 400, 18, WOOD_DARK)
-    signature.cactus(cv, s, 700, 516, scale=0.42)
+    if marks:
+        signature.cactus(cv, s, 700, 516, scale=0.42)
     _fridge(cv, s)
     _safe(cv, s)
-    signature.code(cv, s, 40, 1885, 9, color="#6d5f49")
+    if marks:
+        signature.code(cv, s, 40, 1885, 9, color="#6d5f49")
 
 
 def _fridge(cv: Canvas, parent) -> None:

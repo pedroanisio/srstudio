@@ -15,6 +15,8 @@ from _common import project_root
 from instagram_posts import POSTS
 from more_tired_audio import (
     CAMERA,
+    CODE_AT,
+    CODE_H,
     DAWN,
     DAWN_STRENGTH,
     DEV,
@@ -26,6 +28,8 @@ from more_tired_audio import (
     HOOK,
     JINGLE_GAIN,
     KEYS_AT,
+    MARKS_AT,
+    MARKS_SCALE,
     MUG_AT,
     NOOR,
     NOOR_AT,
@@ -36,7 +40,7 @@ from more_tired_audio import (
     REACHES,
     TAKES_KEYS,
 )
-from srstudio import SPEECH_MOUTH, Episode, foley, stick, stick_bed, stick_home, stick_office, stick_reel
+from srstudio import SPEECH_MOUTH, Episode, foley, signature, stick, stick_bed, stick_home, stick_office, stick_reel
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -106,7 +110,7 @@ def stage(take) -> None:
     end = take.duration
     pushed = (CAMERA[0], OPENING_ZOOM, CAMERA[2]) if take.id == "01" else CAMERA
     frame = stick.dolly(cv, g, CAMERA, pushed, end, kind="linear")
-    stick_home.kitchen(cv, frame)
+    stick_home.kitchen(cv, frame, marks=False)
     if take.id == "06":
         said = take.speech_duration
         opened = stick_home.fridge_open(cv, frame)
@@ -124,6 +128,8 @@ def stage(take) -> None:
             for start, stop, pose in spans(rows, end):
                 cv.gate(stick_office.mug(cv, frame, *hand_of(pose)), [(start, stop)])
     stick_home.table(cv, frame)
+    signature.cactus(cv, frame, *MARKS_AT, scale=MARKS_SCALE)
+    signature.code(cv, frame, *CODE_AT, CODE_H, color="#f5ead0")
     x, y = MUG_AT["seated"]
     stick_office.mug(cv, frame, x, y, colour="#d9694c")
     if take.id == "06":
@@ -139,7 +145,7 @@ for take in t.takes:
 
 hook = stick.card(cv, cv.comp, HOOK, size=58)
 cv.gate(hook, [(0, t.takes[2].start)])
-spoken = stick_reel.words(ep, t.takes)
+spoken = stick_reel.words(ep, t.takes, alone=False)
 
 trip = t.takes[ids.index("06")]
 at = trip.start + trip.speech_duration

@@ -675,6 +675,7 @@ def word_cues(
     borrow: bool = False,
     tail: bool = False,
     balance: bool = False,
+    alone: bool = True,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -689,7 +690,8 @@ def word_cues(
     ``tail``, a take's last cue still shorter than ``min_seconds`` joins the cue before it when both fit
     ``max_width`` together, or else takes that cue's last words until it is long enough, as far as it fits. With
     ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
-    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie."""
+    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
+    ``alone=False`` a balanced split takes the fewest one-word cues first: a sentence does not end on an orphan."""
     if borrow and not min_seconds:
         raise StickDataError("borrow lengthens cues shorter than min_seconds: give min_seconds")
     if not (checks.number(size) and size > 0):
@@ -710,7 +712,9 @@ def word_cues(
     for take in takes:
         words = [w for w in (take.words or []) if w["text"].strip(PUNCTUATION)]
         groups: list[list[dict]] = (
-            _balanced(words, take.end - take.start, linger, width, max_width) if balance and width is not None else []
+            _balanced(words, take.end - take.start, linger, width, max_width, alone)
+            if balance and width is not None
+            else []
         )
         i = len(words) if groups else 0  # balanced: every word is already placed
         while i < len(words):  # every pass takes at least one word: bounded by the word count
@@ -760,21 +764,28 @@ def word_cues(
 
 
 def _balanced(
-    words: Sequence[dict], length: float, linger: float, width: Callable[[str], float], max_width: float
+    words: Sequence[dict],
+    length: float,
+    linger: float,
+    width: Callable[[str], float],
+    max_width: float,
+    alone: bool = True,
 ) -> list[list[dict]]:
     """The split of a take's ``words`` into cues whose shortest lasts longest (each cue runs to the next one's first
     word, the last to its last word plus ``linger``, within the take's ``length``), every cue but a lone word within
-    ``max_width``; on a tie, the fewest cues. Dynamic programming over the split points: n² candidate cues."""
+    ``max_width``; on a tie, the fewest cues. With ``alone=False`` the fewest one-word cues comes before both. Dynamic
+    programming over the split points: n² candidate cues."""
     n = len(words)
-    best: list[tuple[float, int, int]] = [(math.inf, 0, n)] * (n + 1)  # (shortest, -cues, next split) from i
+    best: list[tuple[float, int, int, int]] = [(math.inf, 0, n, 0)] * (n + 1)  # (shortest, -cues, next split, lone)
     for i in range(n - 1, -1, -1):
         options = []
         for j in range(i + 1, n + 1):
             if j - i > 1 and width(_spoken(words[i:j])) > max_width:
                 break  # wider only grows with more words
             end = words[j]["start"] if j < n else min(length, words[-1]["end"] + linger)
-            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j))
-        best[i] = max(options, key=lambda o: (round(o[0], 6), o[1]))
+            lone = best[j][3] + (0 if alone or j - i > 1 else 1)
+            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j, lone))
+        best[i] = max(options, key=lambda o: (-o[3], round(o[0], 6), o[1]))
     groups, i = [], 0
     while i < n:  # every pass moves past at least one word: bounded by the word count
         j = best[i][2]

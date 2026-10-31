@@ -162,6 +162,9 @@ EYE_CLOSES = 0.15  # after her last line: the peek ends, and that is the end
 KEYS_AT = (956.0, 800.0)  # on the top shelf of the open fridge
 DAWN, DAWN_STRENGTH = "#a7a9c4", 0.5
 POOL = (700.0, 950.0, 760.0)
+# the marks stand on the table: the card sits on the window's cactus, and the kitchen's code is out of the framing
+MARKS_AT, MARKS_SCALE = (780.0, 1237.0), 0.6
+CODE_AT, CODE_H = (700.0, 1250.0), 14.0
 OPENING_ZOOM = 1.56  # where the first shot's push ends
 CAMERA = ((710.0, 900.0), 1.5, (540.0, 960.0))  # past the safe, the table's near edge above the captions
 
