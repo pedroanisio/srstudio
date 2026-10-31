@@ -283,13 +283,13 @@ def close(at, scale, to=(540, 800)):
 
 FRAMES = {  # angle -> scale, x, y
     "wide": close((530, 1010), 1.15, (540, 810)),
-    "ava": close(AVA_AT[:2], 1.42, (540, 640)),
+    "ava": close(AVA_AT[:2], 1.42, (596, 640)),  # off center, so the board's mark stays whole at the left
     "milo": close(MILO_AT[:2], 1.5, (540, 720)),
     "tent": close((TENT_AT[0] - 40, 1120), 2.0, (640, 730)),
     "held-up": close((AVA_AT[0] - 70, 900), 1.45, (610, 760)),
     "pigeon": close((NEXT_TABLE[0], 1120), 1.72, (540, 860)),
     "glass": close((GLASS_BASE[0] + 90, 1030), 3.0, (540, 700)),
-    "face": close(AVA_AT[:2], 1.95, (540, 610)),
+    "face": close(AVA_AT[:2], 1.74, (719, 610)),  # the hold: all of her face, with the tent, the cactus and the mark
 }
 camera.reframe(cv, cafe, [(c.time, *FRAMES[c.angle]) for c in t.cuts])
 
