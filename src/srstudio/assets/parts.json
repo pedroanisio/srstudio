@@ -8514,6 +8514,23 @@
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
             }
           }
+        },
+        {
+          "number": 4,
+          "date": "2026-10-31",
+          "note": "The shout redrawn inside his chin, and the open and round mouths lifted clear of his nose; nothing else drawn differently.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/news-mouths/news-mouths-moving.mp4",
+          "approval": null,
+          "drawing": "f4fd2f1ce1595007406314e3879e7aebc4ac855e3ab96fe59fded370dc5a647a",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the limits of version 3 unchanged, with every mouth state drawn in its specimen.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/news-mouths/news-mouths-moving.mp4",
+            "approval": null,
+            "drawing": "bc7207084ab852ed49444b1335fb1c89b27e7d9a5004f4e031fcf4a1dd9a77de"
+          }
         }
       ]
     },
@@ -8837,6 +8854,23 @@
               "date": "2026-10-31",
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
             }
+          }
+        },
+        {
+          "number": 4,
+          "date": "2026-10-31",
+          "note": "The shout redrawn inside her chin and her grin kept on the skin at the limits; nothing else drawn differently.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/news-mouths/news-mouths-moving.mp4",
+          "approval": null,
+          "drawing": "d5952165309699a7cf8e247103eb89dbe3db1364172e4a63fa361c96b474b843",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the limits of version 3 unchanged, with every mouth state drawn in its specimen.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/news-mouths/news-mouths-moving.mp4",
+            "approval": null,
+            "drawing": "ea15ec7b8c7b3cc2889e615320afaf8b899ee8b09797a9dca50780689dac7912"
           }
         }
       ]

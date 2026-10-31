@@ -32,7 +32,9 @@ PACKAGE_ONLY = [
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
+    "news-gus@4",
     "news-phone@2",
+    "news-vera@4",
     "rafa",
     "rafa-bills",
     "rafa-breakroom",
