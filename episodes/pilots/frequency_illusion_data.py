@@ -7,7 +7,7 @@ is one story from the post that named it and no direct test. And then it has hap
 he now hears about everywhere, the pad reads ten, and the loop's first line is "That's eleven."
 
 Text on screen carries every key point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade
-Daniel; the two characters are ElevenLabs premade Charlie and Matilda. ``SKETCH`` is checked by
+Bella; the two characters are ElevenLabs premade Charlie and Matilda. ``SKETCH`` is checked by
 :func:`srstudio.sketch.check`; :func:`validate` checks the events and every word on screen against
 :func:`srstudio.mind_kit.check_copy`; :func:`dress` draws each shot and :func:`foley` its sound.
 
@@ -48,8 +48,8 @@ ACCESSIBILITY = (
     "says everyone has been talking about it since Friday, the frog says that is when he heard of it, and he adds a "
     "stroke, the tenth."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Daniel (narrator), Charlie and Matilda; synthesised effects."
-NOTE = "ElevenLabs premade voices Daniel, Charlie and Matilda at their natural pace; no reference-voice cloning."
+NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), Charlie and Matilda; synthesised effects."
+NOTE = "ElevenLabs premade voices Bella, Charlie and Matilda at their natural pace; no reference-voice cloning."
 
 # Zwicky 2005, "Just between Dr. Language and I", Language Log, 7 Aug 2005, post body (a web post has no pages):
 # "the frequency of quotative all is very low", and no number published. sources.md, claims 1 and 6.
@@ -63,8 +63,7 @@ STORY = mind_kit.Evidence(
 ATTENTION = "selective attention"  # Zwicky 2006, abstract p. 1; sources.md, claim 4
 BIAS = "confirmation bias"  # the same page
 
-DANIEL = Voice(role="narrator", id="onwK4e9ZLuTAKqWW03F9", name="Daniel")
-NARRATOR = Speaker("narrator", DANIEL, VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15))
+NARRATOR = mind_kit.NARRATOR
 DOG = Speaker(
     "dog",
     Voice(role="dog", id="IKne3meq5aSn9XLyUdCD", name="Charlie"),
@@ -370,7 +369,7 @@ POST = InstagramPost(
         "it in 2005. We found no direct test of it; the attention research behind it is older than the name.\n"
         "Source: Zwicky (2005), Language Log; Zwicky (2006), Why are we so illuded?"
     ),
-    credit="Voices: ElevenLabs premade voices Daniel, Charlie and Matilda. Original characters, drawn in code.",
+    credit="Voices: ElevenLabs premade voices Bella, Charlie and Matilda. Original characters, drawn in code.",
     hashtags=("#psychology", "#frequencyillusion", "#howpeoplethink", "#everydaylife"),
     thumbnail=Thumbnail("Eleven\nwhat?", 0.95, "There's a name for that", place="bottom"),
 )

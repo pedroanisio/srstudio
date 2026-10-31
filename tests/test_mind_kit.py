@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import importlib
+import sys
 import wave
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import pytest
 from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, mind_kit, registry, toon
 from srstudio.styles import TOON
+from srstudio.voice import Voice
 
 
 def measure(text: str, size: float) -> float:
@@ -396,3 +400,33 @@ def test_a_far_plane_is_out_of_focus_and_the_key_is_light_only():
 def test_the_channel_keeps_a_stage_name_apart_from_a_card():
     assert {mind_kit.CARD, mind_kit.STAGE} <= set(mind_kit.MIND_CAST.characters)
     assert mind_kit.CARD != mind_kit.STAGE
+
+
+PILOTS = ("spotlight_effect", "planning_fallacy", "frequency_illusion", "peak_end_rule", "learning_styles")
+
+
+def _pilot(module):
+    folder = str(Path(__file__).parents[1] / "episodes" / "pilots")
+    if folder not in sys.path:
+        sys.path.insert(0, folder)
+    return importlib.import_module(f"{module}_data")
+
+
+def test_the_channels_narrator_is_bella():
+    assert mind_kit.NARRATOR.voice == Voice(role="narrator", id="hpp4J3VqNfWAUOO0d1Us", name="Bella")
+    assert mind_kit.NARRATOR.character is None  # heard only
+
+
+@pytest.mark.parametrize("module", PILOTS)
+def test_every_pilot_speaks_in_the_channels_voice_and_credits_it(module):
+    pilot = _pilot(module)
+    assert pilot.SKETCH.speakers[0] is mind_kit.NARRATOR
+    assert "Bella (narrator)" in pilot.NARRATION
+    assert "Bella" in pilot.POST.credit
+    assert "Bella" in pilot.NOTE
+
+
+@pytest.mark.parametrize("module", PILOTS)
+def test_no_character_shares_the_narrators_voice(module):
+    cast = _pilot(module).SKETCH.speakers[1:]
+    assert cast and mind_kit.NARRATOR.voice.id not in {s.voice.id for s in cast}

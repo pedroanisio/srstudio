@@ -8,7 +8,7 @@ a small benefit its authors would not build on. Then the book shuts, the cat ask
 The one row she writes down gets highlighted, and this time "It's important." is true.
 
 Text on screen carries every key point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade
-Daniel; the two characters are ElevenLabs premade Jessica and Laura. ``SKETCH`` is checked by
+Bella; the two characters are ElevenLabs premade Jessica and Laura. ``SKETCH`` is checked by
 :func:`srstudio.sketch.check`; :func:`validate` checks the events and every word on screen against
 :func:`srstudio.mind_kit.check_copy`; :func:`dress` draws each shot and :func:`foley` its sound.
 
@@ -50,8 +50,8 @@ ACCESSIBILITY = (
     "not disproved. The hedgehog shuts the book and answers the cat from memory. The book opens on one written row "
     "and she highlights it."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Daniel (narrator), Jessica and Laura; synthesised effects."
-NOTE = "ElevenLabs premade voices Daniel, Jessica and Laura at their natural pace; no reference-voice cloning."
+NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), Jessica and Laura; synthesised effects."
+NOTE = "ElevenLabs premade voices Bella, Jessica and Laura at their natural pace; no reference-voice cloning."
 
 # Pashler et al. 2008: full text not accessed, abstract only (PMID 26162104); sources.md claims 2, 4 and 6. The one page
 # confirmed is p. 105, for claim 4, and only by Rogowsky et al. 2020 quoting it.
@@ -74,8 +74,7 @@ BELIEF = "89.1% of educators surveyed believed it too."  # Newton & Salvi 2020, 
 # educators, not the public; sources.md claim 12
 FELT, RECALLED = "How it felt", "Recall"  # Knoll et al. 2017, abstract; sources.md claim 8
 
-DANIEL = Voice(role="narrator", id="onwK4e9ZLuTAKqWW03F9", name="Daniel")
-NARRATOR = Speaker("narrator", DANIEL, VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15))
+NARRATOR = mind_kit.NARRATOR
 HOG = Speaker(
     "hog",
     Voice(role="hog", id="cgSgspJ2msm6clMCkdW9", name="Jessica"),
@@ -474,7 +473,7 @@ POST = InstagramPost(
         "Source: Pashler et al. (2008); Clinton-Lisell & Litzinger (2024); Knoll et al. (2017); "
         "Dunlosky et al. (2013); 89.1% is among educators surveyed, Newton & Salvi (2020)."
     ),
-    credit="Voices: ElevenLabs premade voices Daniel, Jessica and Laura. Original characters, drawn in code.",
+    credit="Voices: ElevenLabs premade voices Bella, Jessica and Laura. Original characters, drawn in code.",
     hashtags=("#psychology", "#learningstyles", "#howpeoplethink", "#studytips"),
     thumbnail=Thumbnail("It's important.", 36.9, "There's a name for that", place="top"),
 )
