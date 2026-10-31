@@ -193,3 +193,32 @@ def test_a_quiz_sheet_refuses_what_it_cannot_draw(title, rule, result, kwargs):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_study.quiz_sheet(cv, stage(cv), title, rule, result, measure=measure, **kwargs)
+
+
+def sheet(**options) -> Canvas:
+    cv = canvas()
+    toon_study.quiz_sheet(
+        cv, stage(cv), ("What kind of learner", "are you?"), "Mostly A's:", "VISUAL", measure=measure, **options
+    )
+    return cv
+
+
+def test_a_sheet_is_on_only_while_it_is_told_to_be():
+    root = next(node for node in tree(sheet(start=1.0, end=3.0)).iter() if node.get("id") == "quiz-sheet")
+    assert (float(root.get("start")), float(root.get("end"))) == (1.0, 3.0)
+
+
+def test_a_sheet_without_times_is_on_throughout():
+    root = next(node for node in tree(sheet()).iter() if node.get("id") == "quiz-sheet")
+    assert root.get("start") is None and root.get("end") is None
+
+
+def test_a_small_sheet_can_leave_the_answer_letters_out_and_keeps_its_words():
+    lettered, plain = texts(sheet()), texts(sheet(answers_lettered=False))
+    assert set(lettered) - set(plain) == set("ABCD")
+    assert {"Mostly A's:", "VISUAL"} <= set(plain)
+
+
+def test_a_small_sheet_keeps_its_ticked_answers():
+    ticked = fills(sheet(answers_lettered=False)).count(toon_study.CIRCLE)
+    assert ticked == fills(sheet()).count(toon_study.CIRCLE) == 4
