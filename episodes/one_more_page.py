@@ -264,10 +264,7 @@ shots = [
     Shot(BOOK + 0.8, 1.35, 420.0, 1240.0),
     Shot(WAVE - 0.3),
 ]
-lights = [
-    Light(0.0, "lamp", *LAMP_AT),
-    *hall_light(CLICK, DOOR),
-]
+lights = [Light(0.0, "lamp", *LAMP_AT), *hall_light(CLICK, DOOR)]
 
 graded = soft_sets.finish(cv, ep.comp)
 soft_sets.bedroom(cv, graded, lights=lights, shots=shots, cast=cast, held=held)
