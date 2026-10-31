@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
 
@@ -234,6 +234,8 @@ class Staging:
     recording_seed: int = 0
     # the sketch's own sounds, from the placed beats; each is a foley.Burst at its project seconds on its own track
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
+    # where the pill of a line goes, by its text, when a shot's picture fills the usual place; empty keeps them all
+    caption_tops: Mapping[str, float] = field(default_factory=dict)
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -387,7 +389,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
     lines = toon.load_script(root / ep.spec.dialogue)
-    collage.captions(cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints)
+    collage.captions(
+        cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints, tops=staging.caption_tops
+    )
     if voiced:
         ep.audio(narration=manifest)
         for fx in effects:

@@ -30,6 +30,8 @@ NOTE = "ElevenLabs premade voices Jessica and Alice at their natural pace; no re
 PLACES = {"deb": Place(290.0, 1920.0, 0.72), "feld": Place(810.0, 1920.0, 0.72)}
 ROWS = ("CALL YOUR SISTER", "NOT A SMALL MISTAKE", "HE IS NOT GOING TO CHANGE", "YOUR MOTHER WAS RIGHT")
 CHART = (60.0, 480.0)  # left of the signature
+# the crash zoom on the last line blows the chart up through the usual pill: this one goes under the chart's rows
+CAPTION_TOPS = {"Your mother... was right.": 815.0}
 
 LINES = (
     Line("feld", "Better with one? Or two?"),
@@ -103,6 +105,7 @@ STAGING = Staging(
     narration=NARRATION,
     tints=TINTS,
     sets={"deb": ROOM, "feld": ROOM},
+    caption_tops=CAPTION_TOPS,
     dress=dress,
     cast=casting,
     still=STILL,
