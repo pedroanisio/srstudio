@@ -877,11 +877,17 @@
     "news-vera@2": {
       "title": "Vera Stillman, a âncora, versão 2"
     },
+    "news-vera@3": {
+      "title": "Vera Stillman, a âncora, versão 3"
+    },
     "news-gus": {
       "title": "Gus Bellows, o coapresentador"
     },
     "news-gus@2": {
       "title": "Gus Bellows, o coapresentador, versão 2"
+    },
+    "news-gus@3": {
+      "title": "Gus Bellows, o coapresentador, versão 3"
     },
     "news-bug": {
       "title": "Marca do programa"
@@ -7899,6 +7905,42 @@
         ]
       },
       "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade."
+    },
+    {
+      "section": "cast",
+      "name": "Vera Stillman, a âncora séria (versão 3)",
+      "parts": [
+        "news-vera@3"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 2.0,
+        "box": [
+          180,
+          470,
+          720,
+          680
+        ]
+      },
+      "text": "O mesmo desenho, com a cabeça girando um pouco menos: as marcas do rosto ficam dentro da pele no limite da virada."
+    },
+    {
+      "section": "cast",
+      "name": "Gus Bellows, o coanfitrião (versão 3)",
+      "parts": [
+        "news-gus@3"
+      ],
+      "shot": {
+        "episode": "one-more-episode",
+        "at": 1.0,
+        "box": [
+          180,
+          480,
+          760,
+          640
+        ]
+      },
+      "text": "O mesmo desenho, com a cabeça girando bem menos: o rubor e as sardas não passam mais da linha do queixo."
     }
   ]
 }
