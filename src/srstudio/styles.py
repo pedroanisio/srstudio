@@ -374,6 +374,7 @@ TOON = Style(
         "toon_critters",
         "toon_dinner",
         "toon_everyday",
+        "toon_homeware",
         "toon_house",
         "toon_surgery",
         "toon_inked",

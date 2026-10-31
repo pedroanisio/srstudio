@@ -80,6 +80,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_extras,
     toon_flat,
     toon_head,
+    toon_homeware,
     toon_house,
     toon_inserts,
     toon_odds,

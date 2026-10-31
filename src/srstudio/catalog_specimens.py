@@ -520,6 +520,8 @@ RECIPES: dict[str, Recipe] = {
         ("My dad works from home.", "He wears a tie on top."), title="My Dad", by="Sam", shown=2)),
     "toon-toast": Recipe(part((toon_props.Toast(0.0, SECONDS, "Fern", "Are you free?"),))),
     "toon-board-text": Recipe(part("LOGO v1")),
+    "toon-scribble": Recipe(part(((0.0, SECONDS),))),
+    "toon-soup-tubs": Recipe(part(((0.0, 3),), end=SECONDS)),
     "toon-badge": Recipe(part("Fern calling", 0.0, SECONDS, lambda text: 16.0 * len(text))),
     "glasses-glint": Recipe(part(((506.0, 942.0), (576.0, 942.0)), scale=1.0), at=0.5),
     "collage-cake-slice": Recipe(part(540.0, 960.0, (1.0, 2.0))),

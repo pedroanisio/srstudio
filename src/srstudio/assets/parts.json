@@ -11301,6 +11301,261 @@
           "rig": null
         }
       ]
+    },
+    "toon-baby-monitor": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A baby monitor unit, its small green light on. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1eee931cb73a44952854fa8ef6c957a6a8b0448baf737b2425bff87370d3d5be",
+          "rig": null
+        }
+      ]
+    },
+    "toon-blower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A leaf blower that shudders while it runs. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c7cedcc619e7fc52d5f4dae41f020d6cab53ba06cf676b6ba5c9b858b51a18d0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-cupcakes": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A close tray of flagged cupcakes. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d2c90dc118f2b660bb49b4b30339dcadd8e52e7bacac7b7ac8a57c956c171426",
+          "rig": null
+        }
+      ]
+    },
+    "toon-device-list": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A streaming service's list of signed-in devices on a full screen. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4b0ed74bae606165badba8e5e4684dec735a933f89827c9ea8377aa1083d44bd",
+          "rig": null
+        }
+      ]
+    },
+    "toon-dishwasher": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An open dishwasher that gains one dish at each load. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3564cbbf53d103b5a6098302f50d79f9d8973abab021eebb05d633df677a0d4c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-lasagna": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A lasagna in its dish. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b8f8375fcbd8a9e1e371590a1a7d26c1cc606820b259de4f53034f3d83e4b0db",
+          "rig": null
+        }
+      ]
+    },
+    "toon-monitor-receiver": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The parents' half of a baby monitor, five green bars that jump at each pulse. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b254b424a42aff054c9536cb414029ba0f684bd94f90d136b5acac4fa32c2687",
+          "rig": null
+        }
+      ]
+    },
+    "toon-mower": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A lawn mower that shudders while it runs. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d5c060a88750a7c1b614cb88879d6c90d32a7fccbd6816a118c720d73d10fc35",
+          "rig": null
+        }
+      ]
+    },
+    "toon-profiles": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A streaming service's who-is-watching screen, one to six named tiles. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "147af716636ea50be85f1b99385d2890cd413816b0177a337d7acb9343ea0bcb",
+          "rig": null
+        }
+      ]
+    },
+    "toon-rack": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dishwasher's top rack seen close: rows of mugs at one slant, rolling in. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b59caca88d4b65796b854cae7a5a45d8f4b39e7b0c71daf7b0dee0438c5e87e3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-scribble": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A scribble in a caption pill, standing for words nobody caught. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3f8751de3e085f4ae8634a8b1ac4ade95dab3eeb83a89f6ebd0e39052cbde8ca",
+          "rig": null
+        }
+      ]
+    },
+    "toon-shampoo": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A shampoo bottle that gives up one bubble. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fdcc26b19fdd811c90dd6406874f1d2645b80da4d840c312327a4d4ae6939361",
+          "rig": null
+        }
+      ]
+    },
+    "toon-soup-tubs": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A stack of soup tubs that grows by count. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "cbaa1ea4027c9339aa38686f12de4da54ac9a93e5b48f3016fb72c40cafbd870",
+          "rig": null
+        }
+      ]
+    },
+    "toon-swing-door": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A swing door between a kitchen and a dining room, opening on its spans. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3dcc351b9bc17b9eeae072dcb8db47c64de2fa65ef0cb5e38e8eab089e1643cb",
+          "rig": null
+        }
+      ]
+    },
+    "toon-plate-of-toast": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plate of toast, two slices. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3cbd517c2019fe4bd172d666f612737445a7412958c041e767841269c0166667",
+          "rig": null
+        }
+      ]
     }
   }
 }
