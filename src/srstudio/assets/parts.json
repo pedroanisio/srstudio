@@ -10346,6 +10346,40 @@
           "rig": null
         }
       ]
+    },
+    "stick-poster": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A big wall poster with one line of lettering. First drawn for wave-back; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "36ce8a91e8704268632792894d9ff7956edb4c2cd94566accc9eab8515294c36",
+          "rig": null
+        }
+      ]
+    },
+    "stick-headset": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-desk headset over a figure's head, mic at the mouth. First drawn for wave-back; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "29070d7fa318faec3930d41dcdb505662efbbd8cda7d7f3ddbb4007cf563abb4",
+          "rig": null
+        }
+      ]
     }
   }
 }

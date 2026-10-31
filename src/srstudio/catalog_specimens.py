@@ -350,6 +350,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-door-lock": Recipe(part()),
     "stick-road-sign": Recipe(part(SECONDS, text="AIRPORT 2")),
     "stick-mug": Recipe(part(540, 960)),
+    "stick-headset": Recipe(part(540, 960)),
+    "stick-poster": Recipe(part(240, 500, 600, 500, "STRETCH WITH NOOR")),
     "stick-arm-cast": Recipe(part((480, 800), (640, 1000))),
     "stick-neck-brace": Recipe(part(540, 960)),
     "stick-parrot": Recipe(part(540, 960)),

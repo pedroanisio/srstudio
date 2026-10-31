@@ -45,6 +45,8 @@ NO_EPISODE = [
     "rafa-mug",
     "rafa-phone",
     "rafa-tote",
+    "stick-poster",
+    "stick-headset",
     "toon-bento",
     "toon-counter",
     "toon-receipt",
