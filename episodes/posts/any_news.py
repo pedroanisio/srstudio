@@ -19,7 +19,7 @@ RELEASE = Release(
             "code. Sound effects synthesized in code."
         ),
         hashtags=('#familydinner', '#siblings', '#holidays', '#animatedshorts', '#okayville'),
-        thumbnail=Thumbnail("No\ncomment.", 1.6, "Okayville"),
+        thumbnail=Thumbnail("No\ncomment.", 2.0, "Okayville"),
     ),
     tags=Tags(
         "family", "other-person", "tension", recurring=('brent', 'gary', 'rosa', 'deb'), test="sp-hook_motion", arm="b"
