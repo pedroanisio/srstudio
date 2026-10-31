@@ -6415,6 +6415,23 @@
         }
       ]
     },
+    "toon-highlighter": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Someone studying. First drawn for learning-styles; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "92a78f40bd3992e120daa3c37b98ceac034c693494e39636496ffb7c10844ba3",
+          "rig": null
+        }
+      ]
+    },
     "toon-home": {
       "kind": "location",
       "style": "toon",
@@ -6711,6 +6728,23 @@
         }
       ]
     },
+    "toon-open-book": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Someone studying. First drawn for learning-styles; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f53662f0a0f324e0e472c11ca56c4cdb91be8fdf901f84cdeb8c4d551e6c1680",
+          "rig": null
+        }
+      ]
+    },
     "toon-oven": {
       "kind": "prop",
       "style": "toon",
@@ -6885,6 +6919,23 @@
         }
       ]
     },
+    "toon-quiz-sheet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Someone studying. First drawn for learning-styles; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7801cbdf3081aaf91821711ca9ded13dcbef606d974112c2e300e4d400766298",
+          "rig": null
+        }
+      ]
+    },
     "toon-rabbit": {
       "kind": "character",
       "style": "toon",
@@ -7032,6 +7083,23 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
+          "rig": null
+        }
+      ]
+    },
+    "toon-shut-book": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Someone studying. First drawn for learning-styles; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8ff494bf79e06549826f73c3c91a23ded283dc90e776c84384cdc963345199d6",
           "rig": null
         }
       ]
@@ -7199,6 +7267,23 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "e5acc4f8ae774e13bc956daf8d1443736a77925c76a203b0466165b866022fa2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-study-page": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Someone studying. First drawn for learning-styles; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c94b181124ea724aaac08343b88d3bb61c275226d68d1d5804aaa59df1d4e4c8",
           "rig": null
         }
       ]

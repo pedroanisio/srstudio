@@ -326,6 +326,13 @@ RECIPES: dict[str, Recipe] = {
     "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
     "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
     "toon-tee": Recipe(part((180, 660))),
+    "toon-open-book": Recipe(part({0: "#ffe14d", 1: "#ffe14d", 9: "#ff9ec4"})),
+    "toon-shut-book": Recipe(part()),
+    "toon-highlighter": Recipe(part((540.0, 960.0), "#c49a6c")),
+    "toon-study-page": Recipe(
+        lettered("Chapter 4", {0: "#ffe14d", 1: "#ff9ec4"}, (("#ffe14d", "important"), ("#ff9ec4", "very important")))
+    ),
+    "toon-quiz-sheet": Recipe(lettered(("What kind of", "learner?"), "Mostly A's:", "VISUAL")),
     "toon-receipt": Recipe(lettered((("Coffee", "3.00"), ("Cup fee", "0.75")), total=("TOTAL", "3.75"))),
     "toon-take-a-number": Recipe(lettered(((0.0, 47),))),
     "toon-clipboard": Recipe(

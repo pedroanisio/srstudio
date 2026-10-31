@@ -73,6 +73,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_redrawn,
     toon_rooms,
     toon_sets,
+    toon_study,
     toon_surgery,
     toon_torso,
     toon_world,

@@ -375,6 +375,7 @@ TOON = Style(
         "toon_world",
         "toon_flat",
         "toon_sets",
+        "toon_study",
         "toon_wear",
     ),
     namer=partial(flat_counter, "k"),

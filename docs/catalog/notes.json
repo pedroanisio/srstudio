@@ -829,6 +829,21 @@
     "toon-tee": {
       "title": "Camiseta constrangedora"
     },
+    "toon-open-book": {
+      "title": "Livro aberto"
+    },
+    "toon-shut-book": {
+      "title": "Livro fechado"
+    },
+    "toon-highlighter": {
+      "title": "Marca-texto"
+    },
+    "toon-study-page": {
+      "title": "Página toda marcada"
+    },
+    "toon-quiz-sheet": {
+      "title": "Teste antigo da escola"
+    },
     "toon-clipboard": {
       "title": "Prancheta"
     },
