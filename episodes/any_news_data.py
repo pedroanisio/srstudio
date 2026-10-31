@@ -9,6 +9,7 @@ sp-hook_motion test's arm b). ElevenLabs premade voices, lip-synced.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 
 from srstudio import collage, collage_everyday, collage_photo, collage_sets, collage_things
 from srstudio.collage_group import Lineup, Place
@@ -50,6 +51,8 @@ ARRIVE = 0.3  # seconds a boat takes to land in front of someone
 FLASH_HOLD, FLASH_FADE = 0.04, 0.22  # a flashbulb: a frame of white, gone in a quarter of a second
 LEAN = (46.0, 0.4)  # px and seconds of leaning into the forks
 GLASS_HELD, GLASS_DROP = (300.0, 1330.0), 290.0  # where her glass is, how far down the table is
+ELBOWS = {"rosa": (262.0, 1590.0), "deb": (212.0, 1590.0)}  # the arm that holds it: rest the pose is out of the way
+HOLDING = tuple(ELBOWS)
 TWO = {"brent": Place(285.0, 1640.0, 0.72), "gary": Place(800.0, 1640.0, 0.72)}
 TWO_TABLE = 1340.0
 LOWERED = 300.0  # px the forks come down
@@ -121,6 +124,8 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if two.staged(app):
             return two(cv, parent, app, mouths)
+        if app.who in HOLDING:  # the arm with the glass or the fork is the shot's, whatever the recording's poses say
+            app = replace(app, poses=[{**p, "arms": "free"} for p in app.poses])
         if app.start == still:
             frozen = cv.group(parent, cv.uid("g"))
             cv.gate(frozen, [(still, speak)])
@@ -157,23 +162,29 @@ def _boat(shot, enter: tuple[float, float] | None, leave: float | None) -> None:
     cv.keys(boat, "x", keys, kind="sine-in-out", local=False)
 
 
+def _arm(shot, who: str, parent) -> None:
+    """Their own arm, with the elbow just over the table it is about to go behind: the hand is at the glass."""
+    collage_everyday.arm(shot.cv, shot.front, who, collage_everyday.shoulder(who), ELBOWS[who], hand=False)
+    collage_everyday.arm(shot.cv, parent, who, ELBOWS[who], (GLASS_HELD[0] + 10.0, GLASS_HELD[1] + 40.0))
+
+
 def _holding(shot, who: str, thing: str) -> None:
-    """One hand up at the table, with a fork or a wine glass in it."""
+    """One hand up at the table, with a fork or a wine glass in it; the table goes over the arm."""
     cv, front = shot.cv, shot.front
-    collage_everyday.arm(cv, front, who, (170.0, 2060.0), (GLASS_HELD[0] + 10.0, GLASS_HELD[1] + 40.0))
+    _arm(shot, who, front)
+    collage_everyday.tablecloth(cv, front)
     if thing == "fork":
         collage_things.fork(cv, front, GLASS_HELD[0] + 10.0, GLASS_HELD[1] + 40.0, 300.0, tilt=-6.0)
     else:
         collage_things.wine_glass(cv, front, *GLASS_HELD, 300.0)
 
 
-def _glass_down(shot, at: float) -> None:
-    """Rosa's glass, put down: nothing else in the reel is as slow."""
-    cv, front = shot.cv, shot.front
-    hand = cv.group(front, cv.uid("g"))
-    cv.keys(hand, "y", [(at, 0.0), (at + 0.8, GLASS_DROP)], kind="sine-in-out", local=False)
-    collage_everyday.arm(cv, hand, "rosa", (170.0, 2060.0), (GLASS_HELD[0] + 10.0, GLASS_HELD[1] + 40.0))
-    collage_things.wine_glass(cv, hand, *GLASS_HELD, 300.0)
+def _going_down(shot, at: float) -> object:
+    """A group lowered onto the table at ``at``: nothing else in the reel is as slow."""
+    cv = shot.cv
+    down = cv.group(shot.front, cv.uid("g"))
+    cv.keys(down, "y", [(at, 0.0), (at + 0.8, GLASS_DROP)], kind="sine-in-out", local=False)
+    return down
 
 
 def _forks(shot) -> None:
@@ -199,17 +210,20 @@ def dress(shot) -> None:
     if app.start == forks:
         _forks(shot)
         return
-    collage_everyday.tablecloth(cv, front)
     if app.who == "brent":
+        collage_everyday.tablecloth(cv, front)
         _boat(shot, (OFF_RIGHT, 0.0) if app.start == 0.0 else None, leaving)
     elif app.who == "gary":
+        collage_everyday.tablecloth(cv, front)
         _boat(shot, (OFF_LEFT, app.start) if app.start == zoom else None, leaving)
     elif app.who == "deb":
         _holding(shot, "deb", "fork")
     elif app.start == still:
         flash = next(t for t, _ in events(beats, "flash") if t >= still)
+        _arm(shot, "rosa", _going_down(shot, flash + 0.7))
+        collage_everyday.tablecloth(cv, front)
         _boat(shot, (OFF_LEFT, still), None)
-        _glass_down(shot, flash + 0.7)
+        collage_things.wine_glass(cv, _going_down(shot, flash + 0.7), *GLASS_HELD, 300.0)
     else:
         _holding(shot, "rosa", "glass")
     for t, _ in events(beats, "flash"):

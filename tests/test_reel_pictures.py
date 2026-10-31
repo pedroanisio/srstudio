@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pytest
 
-from srstudio import collage_everyday
+from srstudio import collage, collage_everyday
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -96,3 +96,115 @@ def test_the_wall_clock_agrees_with_the_chip_when_the_chip_is_up() -> None:
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "TimeState"
     }
     assert chips <= clocks
+
+
+def _sleeves(monkeypatch: pytest.MonkeyPatch, mod: ModuleType) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    """Every arm a shot draws, as (from, to), with the things it holds left out."""
+    drawn: list[tuple[tuple[float, float], tuple[float, float]]] = []
+
+    def arm(cv: object, parent: object, who: str, frm: tuple[float, float], to: tuple[float, float], **_: object):
+        drawn.append((frm, to))
+
+    monkeypatch.setattr(collage_everyday, "arm", arm)
+    return drawn
+
+
+def test_the_free_pose_leaves_the_screen_left_arm_to_the_scene() -> None:
+    look = collage.LOOKS["rosa"]
+    assert "free" in collage.ARMS
+    under, over = collage._arms(look, "free")
+    both, _ = collage._arms(look, "down")
+    assert len(under) * 2 == len(both) and not over
+    assert under == both[len(under) :]  # the arm that stays is the screen-right one of "down", to the shape
+
+
+def test_an_upper_arm_has_no_hand_on_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Canvas:
+        uid = staticmethod(lambda _: "g")
+        group = staticmethod(lambda parent, name: None)
+
+    counts: list[int] = []
+    monkeypatch.setattr(collage_everyday, "draw_shapes", lambda cv, parent, shapes: counts.append(len(shapes)))
+    points = (336.0, 1390.0), (262.0, 1590.0)
+    collage_everyday.arm(Canvas, None, "rosa", *points)  # type: ignore[arg-type]
+    collage_everyday.arm(Canvas, None, "rosa", *points, hand=False)  # type: ignore[arg-type]
+    assert 0 < counts[1] < counts[0]
+
+
+@pytest.mark.parametrize(("who", "thing"), [("rosa", "glass"), ("deb", "fork")])
+@pytest.mark.usefixtures("reels")
+def test_what_they_hold_at_any_news_is_held_from_the_shoulder(
+    monkeypatch: pytest.MonkeyPatch, who: str, thing: str
+) -> None:
+    mod = _data("any_news")
+    drawn = _sleeves(monkeypatch, mod)
+    monkeypatch.setattr(mod.collage_things, "fork", lambda *a, **k: None)
+    monkeypatch.setattr(mod.collage_things, "wine_glass", lambda *a, **k: None)
+    monkeypatch.setattr(collage_everyday, "tablecloth", lambda *a, **k: None)
+
+    class Shot:
+        cv = front = None
+
+    mod._holding(Shot, who, thing)
+    assert drawn[0][0] == collage_everyday.shoulder(who)
+    assert drawn[0][1] == drawn[1][0]  # the elbow joins them
+    assert drawn[0][1][1] <= collage_everyday.TABLE_TOP  # above the cloth: no sleeve across the table
+
+
+@pytest.mark.usefixtures("reels")
+def test_any_news_singles_with_something_in_hand_free_the_arm_that_holds_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("any_news")
+    drawn: list[list[str]] = []
+    monkeypatch.setattr(mod, "solo", lambda cv, parent, app, mouths: drawn.append([p["arms"] for p in app.poses]))
+    draw = mod.casting(mod.BEATS, mod.END)
+    pose = {"start": 0.0, "eyes": "open", "mouth": "flat", "arms": "hold"}
+    draw(None, None, Appearance("deb", 5.45, 6.5, [pose]), {})
+    assert drawn == [["free"]]
+
+
+@pytest.mark.usefixtures("reels")
+def test_rosa_lifts_the_tiny_cup_with_her_own_arm(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("ill_get_this")
+    drawn = _sleeves(monkeypatch, mod)
+    monkeypatch.setattr(mod.collage_things, "tiny_cup", lambda *a, **k: None)
+    monkeypatch.setattr(collage_everyday, "tablecloth", lambda *a, **k: None)
+    cup = next(t for t, what in mod.events(mod.BEATS, "reveal") if what == "cup")
+
+    class Canvas:
+        uid = staticmethod(lambda _: "g")
+        group = staticmethod(lambda parent, name: None)
+        keys = staticmethod(lambda *a, **k: None)
+
+    class Shot:
+        cv, front, beats = Canvas, None, mod.BEATS
+        app = Appearance("rosa", cup + 0.5, cup + 0.6, [])
+
+    mod._cup(Shot)
+    assert drawn[0][0] == collage_everyday.shoulder("rosa")
+    assert drawn[0][1] == drawn[1][0]
+
+
+@pytest.mark.usefixtures("reels")
+def test_rosa_frees_the_arm_with_the_cup_and_keeps_the_flick(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("ill_get_this")
+    drawn: list[list[str]] = []
+    monkeypatch.setattr(mod, "solo", lambda cv, parent, app, mouths: drawn.append([p["arms"] for p in app.poses]))
+    cup = next(t for t, what in mod.events(mod.BEATS, "reveal") if what == "cup")
+    poses = [{"arms": "down"}, {"arms": "point"}]
+    mod.casting(mod.BEATS, mod.END)(None, None, Appearance("rosa", cup + 0.5, cup + 0.6, poses), {})
+    assert drawn == [["free", "point"]]
+
+
+@pytest.mark.usefixtures("reels")
+def test_deb_answers_the_phone_with_an_arm_she_stops_hanging(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("fluent")
+    drawn: list[list[str]] = []
+    monkeypatch.setattr(mod, "solo", lambda cv, parent, app, mouths: drawn.append([p["arms"] for p in app.poses]))
+    ear = next(t for t, what in mod.events(mod.BEATS, "reveal") if what == "ear")
+    mod.casting(mod.BEATS, mod.END)(None, None, Appearance("deb", ear, ear + 1.0, [{"arms": "down"}]), {})
+    assert drawn == [["free"]]
+    lift = next(t for t, what in mod.events(mod.BEATS, "reveal") if what == "lift")
+    lineup = mod._lineup(mod.BEATS, mod.END)
+    assert lineup.reactions["deb"][-1]["arms"] == "free"
+    assert lineup.reactions["deb"][-1]["start"] > lift  # she keeps the arm until the one with the handset comes in
+    assert collage_everyday.shoulder("deb") == mod.SHOULDER_CLOSE
