@@ -97,6 +97,8 @@ class Thumbnail:
         lines = self.lines
         if not self.headline.strip() or any(not line for line in lines):
             out.append("headline has an empty line")
+        if "\\" in self.headline:
+            out.append("headline has a backslash, which would be drawn: was a line break escaped twice?")
         if len(lines) > MAX_LINES:
             out.append(f"headline has {len(lines)} lines; a thumbnail holds {MAX_LINES}")
         at = self.at
