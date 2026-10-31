@@ -10160,6 +10160,23 @@
         }
       ]
     },
+    "toon-tasting-spoons": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Tiny tasting spoons that pile up, one per cue. First drawn for one-more-taste; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dc7addf09555371a8227f1ca7db9fa208985a1e422921a5db303aceb30fe8f96",
+          "rig": null
+        }
+      ]
+    },
     "collage-cake-slice": {
       "kind": "prop",
       "style": "collage",

@@ -33,6 +33,7 @@ def tree(cv: Canvas):
         "toon-balled-sheets",
         "toon-folded-sheet",
         "toon-padlock",
+        "toon-tasting-spoons",
     ],
 )
 def test_every_prop_is_registered_for_toon(name):
@@ -69,8 +70,15 @@ def test_a_mosquito_refuses_a_path_it_cannot_fly(path, end):
         lambda cv: toon_odds.balled_sheets(cv, cv.comp, start=3.8, end=4.0),
         lambda cv: toon_odds.folded_sheet(cv, cv.comp, start=2.0, end=1.0),
         lambda cv: toon_odds.padlock(cv, cv.comp, start=3.0, opened=1.0),
+        lambda cv: toon_odds.tasting_spoons(cv, cv.comp, (1.0, 5.0), end=4.0),
     ],
 )
 def test_a_prop_refuses_bad_data(call):
     with pytest.raises(ToonDataError):
         call(canvas())
+
+
+def test_the_spoon_pile_grows_one_spoon_per_cue():
+    cv = canvas()
+    toon_odds.tasting_spoons(cv, cv.comp, (0.5, 1.0, 1.5), end=4.0)
+    assert sorted(float(g.get("start")) for g in tree(cv).iter("group") if g.get("start")) == [0.5, 1.0, 1.5]

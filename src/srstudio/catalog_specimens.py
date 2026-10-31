@@ -501,6 +501,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
+    "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {
