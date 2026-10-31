@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from srstudio import foley as synth
-from srstudio import news_inked, news_kit, scripting, sketch
+from srstudio import news_kit, scripting, sketch
 from srstudio.news_kit import Act, Pose, Source
 from srstudio.sketch import Line, Sketch
 from srstudio.social import InstagramPost
@@ -154,16 +154,16 @@ def spans(beats, end: float) -> list[tuple[float, float, str, str]]:
 
 def overlay(cv, parent, beats, end, measure) -> None:
     """Everything over the picture: the corner, the card that goes small, the story's lines and the ticker."""
-    news_inked.sign(cv, parent)
+    news_kit.sign(cv, parent)
     card = sketch.events(beats, "card")[0][0]
-    news_inked.ticker(cv, parent, TICKER, card + news_kit.SLIDE, end, measure)  # the card rises through its place first
+    news_kit.ticker(cv, parent, TICKER, card + news_kit.SLIDE, end, measure)  # the card rises through its place first
     last = ""
     for a, b, kicker, line in spans(beats, end):
-        news_inked.lower_third(cv, parent, kicker, line, a, b, measure, slide=line != last)  # the same story stays up
+        news_kit.lower_third(cv, parent, kicker, line, a, b, measure, slide=line != last)  # the same story stays up
         last = line
-    news_inked.bug(cv, parent, 0.0, end, measure)
+    news_kit.bug(cv, parent, 0.0, end, measure)
     small = beats[2].start
-    news_inked.source_card(cv, parent, SOURCE, card, small, end, measure)
+    news_kit.source_card(cv, parent, SOURCE, card, small, end, measure)
 
 
 def foley(beats, end: float, speech, root, seed: int) -> list[dict]:

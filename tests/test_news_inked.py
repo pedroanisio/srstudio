@@ -91,14 +91,15 @@ def test_only_the_named_kit_may_take_a_second_version_beside_the_routed_kinds():
     assert not parts.routed("toon-desk", "location", "toon")
 
 
-def test_both_pilots_draw_the_new_versions():
+def test_the_published_pilots_stay_on_the_first_version():
     for name in ("real_roast", "everyday_breaking"):
         source = (PILOTS / f"{name}.py").read_text(encoding="utf-8")
-        assert "news_inked.stage(ACTS)" in source
-        assert "news_inked.desk" in source
-        assert "news_inked.captions" in source
-    assert roast.overlay.__globals__["news_inked"] is news_inked
-    assert breaking.overlay.__globals__["news_inked"] is news_inked
+        assert "news_kit.stage(ACTS)" in source
+        assert "news_kit.desk" in source
+        assert "news_kit.captions" in source
+        assert "news_inked" not in source
+    assert "news_inked" not in roast.overlay.__globals__
+    assert "news_inked" not in breaking.overlay.__globals__
 
 
 # -- the look ---------------------------------------------------------------------------------------------------------

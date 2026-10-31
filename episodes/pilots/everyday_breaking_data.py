@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from srstudio import foley as synth
-from srstudio import news_inked, news_kit, scripting, sketch
+from srstudio import news_kit, scripting, sketch
 from srstudio.news_kit import Act, Bubble, Pose
 from srstudio.sketch import Line, Sketch
 from srstudio.social import InstagramPost
@@ -140,22 +140,22 @@ def validate(sk: Sketch = SKETCH) -> None:
 def overlay(cv, parent, beats, end, measure) -> None:
     """Everything over the picture: the PARODY tag from frame 1, the banner and ticker off during the phone, the
     headline back one time worse."""
-    news_inked.sign(cv, parent)
+    news_kit.sign(cv, parent)
     buzz = sketch.events(beats, "buzz")[0][0]
     fourth = sketch.events(beats, "fourth")[0][0]
     sends = beats[[b.line for b in beats].index(7)].start
-    news_inked.ticker(cv, parent, TICKER, 0.0, end, measure)
-    news_inked.banner(cv, parent, 0.0, buzz, measure)
-    news_inked.banner(cv, parent, fourth, end, measure, id="news-banner-last", slide=False)
+    news_kit.ticker(cv, parent, TICKER, 0.0, end, measure)
+    news_kit.banner(cv, parent, 0.0, buzz, measure)
+    news_kit.banner(cv, parent, fourth, end, measure, id="news-banner-last", slide=False)
     starts = [beats[index].start for index, _, _ in LOWERS]
     for a, b, (_, kicker, line) in zip(starts, [*starts[1:], buzz], LOWERS, strict=True):
-        news_inked.lower_third(cv, parent, kicker, line, a, b, measure)
-    news_inked.lower_third(cv, parent, "LIVE", FOURTH, fourth, end, measure, slide=False)
-    news_inked.phone_insert(
+        news_kit.lower_third(cv, parent, kicker, line, a, b, measure)
+    news_kit.lower_third(cv, parent, "LIVE", FOURTH, fourth, end, measure, slide=False)
+    news_kit.phone_insert(
         cv, parent, CHAT, (*MESSAGES, Bubble("8:23", "five minutes away", at=sends + 0.9)), buzz, fourth, measure
     )
-    news_inked.bug(cv, parent, 0.0, end, measure)
-    news_inked.parody_tag(cv, parent, 0.0, end, measure)
+    news_kit.bug(cv, parent, 0.0, end, measure)
+    news_kit.parody_tag(cv, parent, 0.0, end, measure)
 
 
 def foley(beats, end: float, speech, root, seed: int) -> list[dict]:

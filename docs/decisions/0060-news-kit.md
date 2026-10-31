@@ -73,9 +73,12 @@ Both anchors keep the same look and voices in every episode. Whatever Gus says a
 ## Amendment: the polish pass (2026-10-31)
 
 The operator approved the voices and asked for the picture to be refined. In their words, on 2026-10-31: "run an refine
-/ polish pass on the news caracter, props and location. voice aproved." That approval covers the voices of Vera and Gus
-as recorded for the two pilots, and nothing else. The look stays proposed: its approval is arc4d3's, by the delegation
-above, so this ADR's status does not change and no version here records an approval.
+/ polish pass on the news caracter, props and location. voice aproved." That approval covers the voices of Vera and Gus,
+and nothing else. The look stays proposed: its approval is arc4d3's, by the delegation above, so this ADR's status does
+not change and no version here records an approval.
+
+The same day the operator ruled that the two pilots are not re-cut: real-roast publishes on its delivered master, and
+both pilots stay as delivered and frozen. So they stay on version 1, and the polish is the default for new reels only.
 
 The two pilots looked flat beside the approved inked Toon cast: a wall of nine plain gradients, a dead band over it, no
 shadow where anything met the desk, a desk that was a strip and a tall lettered panel, and two figures with no necks and
@@ -93,12 +96,9 @@ The desk's top moves up 38 px, to 1082, and the banner moves down 50 px, to 1146
 on the desk stay in the picture. The stack is shorter, so the ticker's foot moves down only 14 px, to 1416, and stays
 over the safe zone. The close-ups pull back, to 1.22 and 1.14, so a head clears a two-line cue.
 
-These parts live in `srstudio.news_inked`, and new reels of the show call it. `finish` stays in `news_kit` with its
+These parts live in `srstudio.news_inked`, new reels of the show call it, and the two pilots do not. `finish` stays in `news_kit` with its
 numbers unchanged, because the polish needed no change to the grade. `parts.KIT_VERSIONS` lets a kit's parts take a second
 version: nothing reads a pin for them, because a reel chooses by calling the module.
-
-The re-cut changes no script, line, take, timing or cut, so it owes no auto-enhance commit and no new comedy score. The
-delivered masters are unchanged on disk until a decision to replace them, which is not taken here.
 
 ### Rejected alternatives
 
