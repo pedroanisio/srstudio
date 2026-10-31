@@ -7,12 +7,46 @@ at that moment is refused when the script is imported, never in the render.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 
 from .sketch import Beat, Line, SketchError, events
 
-__all__ = ["Script", "changes", "exactly_once", "first", "hold", "off_screen", "only_events", "part", "say", "spans"]
+__all__ = [
+    "WORDS_PER_SECOND",
+    "Script",
+    "changes",
+    "exactly_once",
+    "first",
+    "hold",
+    "off_screen",
+    "only_events",
+    "over_budget",
+    "part",
+    "say",
+    "spans",
+    "word_budget",
+    "word_count",
+]
+
+WORDS_PER_SECOND = 2.35  # measured on the two-hander pilots: 57 to 60 spoken words in 23.5 to 25 s, holds included
+
+
+def word_count(lines: Sequence[Line]) -> int:
+    """The words the sketch speaks, the way a reader counts them: a hyphenated word is one."""
+    return sum(len(line.text.split()) for line in lines)
+
+
+def word_budget(seconds: float) -> int:
+    """How many words a two-hander of ``seconds`` holds, with its holds, before a line is recorded."""
+    return math.floor(seconds * WORDS_PER_SECOND)
+
+
+def over_budget(lines: Sequence[Line], seconds: float) -> int:
+    """How many words past :func:`word_budget` the script runs, 0 when it fits. A take costs money and a script that
+    runs long is found only at the master, so this is read before recording. It predicts, and the master decides."""
+    return max(0, word_count(lines) - word_budget(seconds))
 
 
 def say(
