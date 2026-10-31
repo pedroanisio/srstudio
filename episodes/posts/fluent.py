@@ -19,7 +19,7 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=('#jobinterview', '#resume', '#learnfrench', '#animatedshorts', '#okayville'),
-        thumbnail=Thumbnail("Fluent\nin French?", 1.2, "Okayville"),
+        thumbnail=Thumbnail("Fluent\nin French?", 12.4, "Okayville"),
     ),
     tags=Tags(
         "job-hunting", "protagonist", "embarrassment", recurring=('brent', 'deb'), test="sp-hook_motion", arm="a"
