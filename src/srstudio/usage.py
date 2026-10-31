@@ -5,6 +5,8 @@ Hand-written declarations of the episodes that use a part drift as episodes are 
 function, or the methods a class part defines itself) under a profiler hook, so a call counts however it is
 reached (a module attribute, an imported name, the registry, or another part drawing it). A character moving its
 head is drawn by :func:`srstudio.toon_head.figure` from its rig, so that call counts for the part the rig belongs to.
+A part that only returns a call to a drawing of its own module (a one-pose convenience over the performer a shot calls
+instead) counts when that drawing runs with the arguments the part passes it (:func:`_delegates`).
 :func:`measure` runs each
 episode script on a copy of its project in a fresh interpreter (:func:`probe`) and gathers a :class:`Report`: the
 parts each episode used, and with the registry, the parts no episode uses. ``srstudio usage`` writes it as JSON.
@@ -12,6 +14,8 @@ parts each episode used, and with the registry, the parts no episode uses. ``srs
 
 from __future__ import annotations
 
+import ast
+import functools
 import inspect
 import json
 import operator
@@ -21,7 +25,8 @@ import runpy
 import shutil
 import subprocess
 import sys
-from collections.abc import Iterator, Mapping, Sequence
+import textwrap
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -70,10 +75,74 @@ def _called(frame, parts: Sequence[tuple[str, tuple[object, ...]]]) -> str | Non
     )
 
 
+_MISSING = object()
+
+
+@functools.cache
+def _tail_call(builder) -> tuple[ast.Call, inspect.Signature] | None:
+    """The call a function builder ends by returning, when it is a call by name: the part is that call's drawing in
+    one pose. None for a builder whose source cannot be read or that ends otherwise."""
+    try:
+        tree = ast.parse(textwrap.dedent(inspect.getsource(builder)))
+    except (OSError, TypeError, SyntaxError):
+        return None
+    last = tree.body[0].body[-1] if tree.body and isinstance(tree.body[0], ast.FunctionDef) else None
+    if isinstance(last, ast.Return) and isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name):
+        target = builder.__globals__.get(last.value.func.id)
+        return (last.value, inspect.signature(target)) if inspect.isfunction(target) else None
+    return None
+
+
+def _passed(call: ast.Call, signature: inspect.Signature) -> dict[str, object]:
+    """The constants a call passes, by the parameter that takes each: what tells the parts of one drawing apart."""
+    names = list(signature.parameters)
+    passed: dict[str, object] = {}
+    for place, arg in enumerate(call.args):
+        if isinstance(arg, ast.Starred):
+            break
+        if isinstance(arg, ast.Constant) and place < len(names):
+            passed[names[place]] = arg.value
+    passed.update({k.arg: k.value.value for k in call.keywords if k.arg and isinstance(k.value, ast.Constant)})
+    return passed
+
+
+def _delegates(
+    entries: Iterable, registered: Collection[CodeType]
+) -> dict[CodeType, list[tuple[str, dict[str, object]]]]:
+    """The drawings of their own module that parts only call, by code object: each with the parts that return a call
+    to it and the constants each passes. A shot draws a character through its performer (``news_kit.perform``) and the
+    part registered for it is the one-pose call, which no shot makes, so only the performer's own call can show the
+    part is used. A drawing that is itself registered is traced as that part, and parts that pass it the same constants
+    cannot be told apart, so they are left out and the hot drawings they share are not looked into at all."""
+    found: dict[CodeType, list[tuple[str, dict[str, object]]]] = {}
+    for entry in entries:
+        builder = entry.builder
+        tail = _tail_call(builder) if inspect.isfunction(builder) else None
+        if tail is None:
+            continue
+        call, signature = tail
+        target = builder.__globals__[call.func.id]  # type: ignore[attr-defined]
+        if target.__module__ == builder.__module__ and target.__code__ not in registered:
+            found.setdefault(target.__code__, []).append((entry.name, _passed(call, signature)))
+    apart: dict[CodeType, list[tuple[str, dict[str, object]]]] = {}
+    for code, named in found.items():
+        alike = [passed for _, passed in named]
+        if distinct := [(name, passed) for name, passed in named if alike.count(passed) == 1]:
+            apart[code] = distinct
+    return apart
+
+
+def _performed(frame, parts: Sequence[tuple[str, dict[str, object]]]) -> str | None:
+    """The part a call into a performer draws: the one whose constants are the frame's arguments, when only one is."""
+    matching = [name for name, passed in parts if all(frame.f_locals.get(k, _MISSING) == v for k, v in passed.items())]
+    return matching[0] if len(matching) == 1 else None
+
+
 @contextmanager
 def trace() -> Iterator[set[str]]:
     """The names of the registered parts called inside the block (the set fills as they run)."""
     codes, used = _codes(), set()
+    delegates = _delegates(registry.entries(), set(codes))
     rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
     previous = sys.getprofile()
 
@@ -83,6 +152,8 @@ def trace() -> Iterator[set[str]]:
             name = _called(frame, parts) if parts else None
             if frame.f_code is toon_head.figure.__code__:
                 name = rigged.get(id(frame.f_locals["rig"]))
+            if name is None and frame.f_code in delegates:
+                name = _performed(frame, delegates[frame.f_code])
             if name is not None:
                 used.add(name)
 

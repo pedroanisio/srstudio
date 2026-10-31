@@ -389,3 +389,82 @@ def test_a_character_moving_its_head_counts_as_the_part_its_rig_belongs_to():
     with U.trace() as used:
         specimens.rig_digest("toon-fox", 2)
     assert "toon-fox@2" in used and "toon-fox" not in used
+
+
+# -- parts drawn through a performer ----------------------------------------------------------------------
+def _entry(name, builder):
+    return types.SimpleNamespace(name=name, builder=builder)
+
+
+def _draw(cv, who, size=1.0):
+    return (who, size)
+
+
+def _vera(cv, size=1.0):
+    """A one-pose convenience: the registered part, which only calls the drawing the shots call."""
+    return _draw(cv, "vera", size)
+
+
+def _gus(cv, size=1.0):
+    return _draw(cv, "gus", size)
+
+
+def _lone(cv):
+    return _draw(cv, who=None)
+
+
+def _also_lone(cv):
+    return _draw(cv, who=None)
+
+
+def _opens_with_it(cv):
+    _draw(cv, "dan")
+    return None
+
+
+def _elsewhere(cv):
+    return U.json.dumps(cv)  # a call into another module is a library, not the part's drawing
+
+
+def _frame_of(function, **local_values):
+    """A profiler frame as the hook sees one: the function's own code object with the given locals."""
+    return types.SimpleNamespace(f_code=function.__code__, f_locals=local_values)
+
+
+def test_a_part_that_only_calls_a_drawing_counts_when_a_shot_calls_that_drawing_as_it_does():
+    entries = [_entry("anchor-vera", _vera), _entry("anchor-gus", _gus)]
+    delegates = U._delegates(entries, {_vera.__code__, _gus.__code__})
+    assert set(delegates) == {_draw.__code__}
+    assert U._performed(_frame_of(_draw, who="vera"), delegates[_draw.__code__]) == "anchor-vera"
+    assert U._performed(_frame_of(_draw, who="gus"), delegates[_draw.__code__]) == "anchor-gus"
+    assert U._performed(_frame_of(_draw, who="someone else"), delegates[_draw.__code__]) is None
+
+
+def test_a_drawing_two_parts_call_alike_credits_neither_and_one_called_by_a_single_part_credits_it():
+    both = U._delegates([_entry("a", _lone), _entry("b", _also_lone)], {_lone.__code__, _also_lone.__code__})
+    assert both == {}
+    alone = U._delegates([_entry("a", _lone)], {_lone.__code__})
+    assert U._performed(_frame_of(_draw, who=None), alone[_draw.__code__]) == "a"
+
+
+def test_only_a_tail_call_into_the_parts_own_module_is_a_drawing_the_part_delegates_to():
+    entries = [_entry("opens", _opens_with_it), _entry("lib", _elsewhere)]
+    assert U._delegates(entries, {_opens_with_it.__code__, _elsewhere.__code__}) == {}
+
+
+def test_a_drawing_that_is_itself_a_part_is_traced_as_that_part_not_as_a_delegate():
+    assert U._delegates([_entry("vera", _vera), _entry("draw", _draw)], {_vera.__code__, _draw.__code__}) == {}
+
+
+def test_the_anchors_and_the_host_count_when_the_shared_performer_draws_them(project):
+    from srstudio import host_kit, news_kit
+
+    ep = episode(project)
+    acts = ((0.0, news_kit.Pose()),)
+    for who in ("vera", "gus"):
+        with U.trace() as used:
+            news_kit.perform(ep.cv, ep.comp, who, 540.0, acts, 0.0, 2.0)  # as a shot draws them, not the one-pose part
+        assert {"news-vera", "news-gus"} & used == {f"news-{who}"}
+    with U.trace() as used:
+        host_kit.perform(ep.cv, ep.comp, ep.comp, ((0.0, host_kit.Pose()),), 0.0, 2.0)
+    assert "host-lint" in used
