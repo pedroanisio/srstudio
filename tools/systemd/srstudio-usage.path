@@ -1,0 +1,13 @@
+# Measures the parts in use again when an episode is added or removed, or a library branch (a commit) changes.
+# Install: systemctl --user link $PWD/srstudio-usage.{path,service} && systemctl --user enable --now srstudio-usage.path
+# The report it writes is watched by srstudio-catalog.path, which rebuilds the site.
+[Unit]
+Description=Watch the episodes and the srstudio library for the part-usage report
+
+[Path]
+PathChanged=%h/worskpace/generated/episodes
+PathChanged=%h/worskpace/srstudio/.git/refs/heads
+Unit=srstudio-usage.service
+
+[Install]
+WantedBy=default.target

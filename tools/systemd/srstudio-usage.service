@@ -1,0 +1,25 @@
+# Measures which registered parts each episode uses and writes generated/catalog/usage.json, the report `srstudio page
+# --usage` reads; started by srstudio-usage.path. It builds every episode on a copy, so it takes minutes, and the report
+# is written only after every episode was measured: a failed run leaves the previous report in place.
+[Unit]
+Description=Measure the parts the scene-render episodes use
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/worskpace/srstudio
+UMask=0077
+TimeoutStartSec=2h
+ExecStart=%h/worskpace/.venv/bin/srstudio usage \
+    --episodes ../generated/episodes \
+    --packages ../generated/packages \
+    --scripts episodes \
+    --work ../generated/catalog/usage-work \
+    --out ../generated/catalog/usage.json \
+    --arg mushroom-training=--voice \
+    --arg employee-survey=--voice \
+    --arg the-report=--voice \
+    --arg logo-bigger=--voice \
+    --arg i-was-watching=--voice \
+    --arg regards-dad=--voice
+Environment=SRSTUDIO_PACKAGES=%h/worskpace/generated/packages
+Environment=SRSTUDIO_ENGINE=%h/worskpace/generated/bin/scene-render

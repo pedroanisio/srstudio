@@ -61,7 +61,8 @@ From the workspace root, first measure which parts the episodes use (see the
 ```bash
 (cd srstudio && ../.venv/bin/srstudio usage --episodes ../generated/episodes --packages ../generated/packages \
     --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json \
-    --arg mushroom-training=--voice --arg employee-survey=--voice --arg the-report=--voice --arg logo-bigger=--voice)
+    --arg mushroom-training=--voice --arg employee-survey=--voice --arg the-report=--voice --arg logo-bigger=--voice \
+    --arg i-was-watching=--voice --arg regards-dad=--voice)
 .venv/bin/srstudio page \
     --base generated/catalog/packages-base.html \
     --episodes generated/episodes --renders generated/renders \
@@ -149,14 +150,25 @@ changes:
 - a file in `generated/renders`;
 - a branch of this repository (a commit);
 - `notes.json`;
-- the base page.
+- the base page;
+- `generated/catalog/usage.json`, the report below.
 
 The service first waits until no render has changed for 15 s, checking at most 60 times. A second unit,
-`srstudio-catalog-web.service`, keeps `srstudio serve` running on `127.0.0.1:8765`. Install them once:
+`srstudio-catalog-web.service`, keeps `srstudio serve` running on `127.0.0.1:8765`.
+
+The page only reads the usage report, so a third pair of units keeps it current: `srstudio-usage.path` starts
+`srstudio-usage.service` when an episode is added or removed, or a branch of this repository changes, and the service
+runs `srstudio usage` over every episode (minutes, since each is built on a copy). The report is written only after
+every episode was measured, so a run that fails leaves the previous report in place and the journal names the episode.
+When the report changes, `srstudio-catalog.path` rebuilds the site. An episode whose build needs a flag to run (a
+narrated Toon sketch whose `script.json` runs to the voiced length needs `--voice`) takes an `--arg SLUG=--voice` in
+the service and in the command above. Install them once:
 
 ```bash
 cd srstudio/tools/systemd
-systemctl --user link "$PWD/srstudio-catalog.path" "$PWD/srstudio-catalog.service" "$PWD/srstudio-catalog-web.service"
-systemctl --user enable --now srstudio-catalog.path srstudio-catalog-web.service
+systemctl --user link "$PWD/srstudio-catalog.path" "$PWD/srstudio-catalog.service" "$PWD/srstudio-catalog-web.service" \
+    "$PWD/srstudio-usage.path" "$PWD/srstudio-usage.service"
+systemctl --user enable --now srstudio-catalog.path srstudio-catalog-web.service srstudio-usage.path
 journalctl --user -u srstudio-catalog.service   # each rebuild and its episode list
+journalctl --user -u srstudio-usage.service     # each measure; a failure names the episode
 ```
