@@ -314,9 +314,10 @@ def test_each_has_a_rig_at_version_2_and_none_at_version_1(name):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_a_rig_stays_proposed_until_the_operator_judges_the_clips(name):
+def test_each_rig_carries_the_operators_approval_of_its_clip(name):
     held = parts.get(f"toon-{name}").version(2).rig
-    assert held is not None and held.status == "proposed" and held.approval is None
+    assert held is not None and held.status == "approved"
+    assert held.approval.date == "2026-10-31" and held.approval.words == "rigs approved"
     assert held.proof == "generated/character-proofs/older-rigs/index.html"
 
 
@@ -326,9 +327,8 @@ def test_the_record_holds_the_drawing_the_proof_shows(name):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_a_proposed_rig_moves_no_reel(name):
-    with pytest.raises(ToonDataError, match=f"toon-{name} version 2's head rig is not approved"):
-        toon_rigs.rig_of(f"toon-{name}")
+def test_an_approved_rig_moves_the_default_drawing(name):
+    assert toon_rigs.rig_of(f"toon-{name}") is toon_rigs.RIGS[f"toon-{name}@2"]
 
 
 @pytest.mark.parametrize("name", NAMES)

@@ -1627,9 +1627,8 @@ arm, the inked fox's: only where it leaves the body or lies well over it.
 Any `toon_cast.Drawing` can use it. The older brush cast still draws the shared `_limb` arms.
 
 The sloth's, the goat's, the hamster's and the inked fox's heads can move on their own
-([docs/decisions/0050-organic-head-motion.md](decisions/0050-organic-head-motion.md)). The redrawn six carry head rigs
-too, proposed and refused to a reel until the operator approves each from its clip
-([docs/decisions/0059-older-cast-head-rigs.md](decisions/0059-older-cast-head-rigs.md)).
+([docs/decisions/0050-organic-head-motion.md](decisions/0050-organic-head-motion.md)). The redrawn six can too, from their
+version 2 drawings ([docs/decisions/0059-older-cast-head-rigs.md](decisions/0059-older-cast-head-rigs.md)).
 [src/srstudio/head_motion.py](../src/srstudio/head_motion.py) turns a `HeadStyle` and the `Speech` of a shot
 (`speech_of(alignment, at, path)`) into a `HeadPlan` with `plan(style, speeches, duration)`: spring-keyed nods on the
 accents of the line, a dip before a phrase, a two-octave idle, a breath tied to the pauses and glances, all

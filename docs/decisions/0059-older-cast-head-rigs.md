@@ -4,8 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0059: Head rigs for the redrawn six, with an open chin
 
-- Status: proposed (2026-10-31). The operator asked for the rigs ("build rigs"). Each rig stays proposed, and refused
-  to a reel, until the operator judges its clip. Implemented: `DOG_RIG` to `HEDGEHOG_RIG` in `srstudio.toon_redrawn`,
+- Status: accepted (2026-10-31). The operator asked for the rigs ("build rigs") and approved all six from their clips
+  ("rigs approved"). Implemented: `DOG_RIG` to `HEDGEHOG_RIG` in `srstudio.toon_redrawn`,
   their six `HeadStyle`s, `Split.open_chin` and `shade(above=)` in `srstudio.toon_critters`, the six `rig` records on the
   `toon-*` version 2 records; `tests/test_toon_redrawn.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
@@ -62,7 +62,7 @@ Two facts of the rig set the rest:
 
 ## Consequences
 
-- Reels can name the six in `heads=` as soon as the operator approves each rig, one at a time.
+- Reels can name the six in `heads=`.
 - `Split.open_chin` is available to any `toon_torso` character with a body that hides nothing at the neck.
 - `shade(above=)` and `open_chin` default to the old behaviour, so the sloth, goat, hamster and fox rigs keep their
   digests, and the flat version 2 drawings keep theirs.
