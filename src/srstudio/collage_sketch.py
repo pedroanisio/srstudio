@@ -55,8 +55,8 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 # reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
-# play on their beat; hiss:<seconds> lets the air out of something for that long
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss")
+# play on their beat; ring is one ring of a phone; hiss:<seconds> lets the air out of something for that long
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
 WHOOSH_GAIN_DB = -6.0
@@ -70,6 +70,7 @@ SWAT = 0.12  # seconds of a swat's whoosh: it lands on its beat
 DING_GAIN_DB = -8.0
 HISS_GAIN_DB = -9.0
 CRUNCH_GAIN_DB = -6.0
+RING_GAIN_DB = -11.0
 CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
@@ -362,8 +363,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 # -- the recording run ------------------------------------------------------------------------------------------------
 def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
-    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, chewing on ``crunch``
-    and air on ``hiss:<seconds>``."""
+    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a phone's ring on
+    ``ring``, chewing on ``crunch`` and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -395,6 +396,10 @@ def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: in
     if dings:
         ding = foley.write_tones(audio / "ding.wav", dings, end, notes=foley.DING)
         out.append(sketch.effect("ding", 0.0, DING_GAIN_DB, root, ding))
+    rings = [at for at, _ in sketch.events(beats, "ring")]
+    if rings:
+        ring = foley.write_tones(audio / "ring.wav", rings, end, notes=foley.RING)
+        out.append(sketch.effect("ring", 0.0, RING_GAIN_DB, root, ring))
     bites = [at for at, _ in sketch.events(beats, "crunch")]
     if bites:
         clicks = sorted(at + d for at in bites for d in CRUNCH)
