@@ -76,7 +76,7 @@ __all__ = [
     "manifest",
 ]
 
-CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog", "sloth", "goat", "hamster")
+CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog", "sloth", "goat", "hamster", "bento")
 LIP_SYNCED = (
     "dog",
     "frog",
@@ -88,6 +88,7 @@ LIP_SYNCED = (
     "sloth",
     "goat",
     "hamster",
+    "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends

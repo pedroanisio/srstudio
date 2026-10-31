@@ -6436,6 +6436,30 @@
         }
       ]
     },
+    "toon-bento": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The operator's own character, ported from his geometry: a capybara in a blazer with 36 moods, 12 eye states and 9 gestures. Proposed until the operator has seen him move.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/bento/index.html",
+          "approval": null,
+          "drawing": "b9ad7b402809bee1c2b7365b25bebab6aaf7fa932946fa05a81bea4185e903cf",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "His head over the blazer with its own chin, the muzzle riding in the face, each mood's tilt held. Proposed with the drawing.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/bento/index.html",
+            "approval": null,
+            "drawing": "e82a0f54d4f6caa1de25ca9866e3e6f4922f3bfe4c3969203ed3be34edd26517"
+          }
+        }
+      ]
+    },
     "toon-headset": {
       "kind": "prop",
       "style": "toon",

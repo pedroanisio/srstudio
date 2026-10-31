@@ -363,6 +363,7 @@ TOON = Style(
         "map_kit",
         "mind_kit",
         "toon",
+        "toon_bento",
         "toon_cars",
         "toon_cast",
         "toon_critters",

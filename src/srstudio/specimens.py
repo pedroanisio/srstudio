@@ -66,7 +66,7 @@ DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the d
     "shape": PLACE | PAINT | {"shape", "path", "width", "height", "radius", "dash", "effects"},
     "layer": frozenset({"asset", "x", "y"}),
     "animate": frozenset({"property", "defaultInterpolation", "timeBase"}),
-    "key": frozenset({"time", "value"}),
+    "key": frozenset({"time", "value", "stiffness", "damping", "mass", "carry"}),
     "effect": frozenset(
         {"type", "intensity", "radius", "color", "offsetX", "offsetY"}
         | {"threshold", "amount", "seed", "size", "softness"}
@@ -268,7 +268,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     "toon-cat": _traced_toon,
     **{f"toon-{name}": _brush_toon for name in TOON_BRUSH},
     "toon-fox@2": _newer_toon,
-    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster"), _newer_toon),
+    **dict.fromkeys(("toon-sloth", "toon-goat", "toon-hamster", "toon-bento"), _newer_toon),
     **{f"toon-{name}@2": _newer_toon for name in TOON_REDRAWN},
     **{f"collage-{name}": _paper for name in collage.LOOKS},
     **{f"gloss-{name}": _guest for name in ("nadia", "gus", "tamsin", "sunny")},
