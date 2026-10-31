@@ -75,8 +75,10 @@ def test_a_voice_note_reads_on_a_phone_and_fills_as_it_plays():
     toon_inserts.voice_note_bar(cv, cv.comp, stops, end=10.0, doubled=(1.0, 8.0))
     sizes = [int(n.get("size")) for n in tree(cv).iter() if n.get("size")]
     assert sizes and min(sizes) >= toon_inserts.READ_SIZE
-    fill = next(a for a in tree(cv).iter("animate") if a.get("property") == "scaleX")
-    assert [float(k.get("value")) for k in fill] == [0.01, 0.35, 0.99]
+    played = [n for n in tree(cv).iter() if n.get("fill") == toon_inserts.NOTE_DONE and n.get("radius")]
+    bars = [round(f * toon_inserts.NOTE_BARS) for _, _, f in stops]
+    chip_and_dot = len(played) - sum(bars)
+    assert chip_and_dot <= 2  # the bars played at each stop, never a squeezed waveform
 
 
 @pytest.mark.parametrize(

@@ -148,7 +148,7 @@ def voice_note_bar(
     doubled: tuple[float, float] | None = None,
 ) -> None:
     """The player across the frame at reference ``y``. ``stops`` are ``(project second, time shown, fraction played)``,
-    from 0, rising in both; the fill moves between them and the time steps. ``doubled`` is the span of seconds it plays
+    from 0, rising in both; the played bars and the time step at each. ``doubled`` is the span of seconds it plays
     at double speed, shown as a 2x chip."""
     if not stops or stops[0][0] != 0 or not (checks.number(end) and end > stops[-1][0]):
         raise ToonDataError(f"a voice note's stops start at 0 and end before {end!r}, got {stops!r}")
@@ -163,25 +163,16 @@ def voice_note_bar(
     cv.ellipse(g, fx(40), fy(y + 26), fh(64), fh(64), NOTE_DONE)
     left, width = 122.0, 430.0
 
-    def bars(colour: str, into) -> None:
-        for k in range(NOTE_BARS):
+    def bars(colour: str, into, count: int) -> None:
+        for k in range(count):
             high = NOTE_SHAPE[k % len(NOTE_SHAPE)]
             x = left + k * width / NOTE_BARS
             cv.rect(into, fx(x), fy(y + 58 - 3 * high), fh(9), fh(6 * high), colour, radius=fh(4))
 
-    bars(NOTE_LEFT, g)
-    x0 = fx(left)
-    done = cv.group(g, cv.uid("g"), x=x0, y=0.0, anchorX=x0, anchorY=0.0)
-    bars(NOTE_DONE, done)
-    cv.keys(
-        done,
-        "scaleX",
-        [(t, round(max(f, 0.001), 4)) for t, f in zip(seconds, played, strict=True)],
-        hold=False,
-        local=False,
-    )
-    for (at, shown, _), stop in zip(stops, [*seconds[1:], end], strict=True):
+    bars(NOTE_LEFT, g, NOTE_BARS)
+    for (at, shown, fraction), stop in zip(stops, [*seconds[1:], end], strict=True):
         step = cv.group(g, cv.uid("g"), start=at, end=stop)
+        bars(NOTE_DONE, step, round(fraction * NOTE_BARS))
         cv.text(
             step,
             cv.uid("note-time"),
