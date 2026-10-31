@@ -1,0 +1,3385 @@
+{
+ "schema_version": "1.0.0",
+ "generated_by": {
+  "model": "claude-opus-5-5",
+  "tool": "Claude Code"
+ },
+ "created": "2026-10-31",
+ "batch": "A",
+ "lane": "okay-oct31",
+ "rules": "LESSONS L1-L15: no music bed, a line within 0.5 s, the trouble clear by 3 s, one key line on screen, nothing after the peak.",
+ "scripts": [
+  {
+   "slug": "the-last-guy",
+   "title": "The Last Guy",
+   "style": "toon",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "money-services",
+   "cause": "other-person",
+   "emotion": "recognition",
+   "opening": "mid-exchange",
+   "mechanism": "status reversal",
+   "ending": "new order",
+   "observation": "Every tradesperson breathes in through their teeth at the last person's work, and it is never their own.",
+   "key_line": "Who did this to you?",
+   "caption_question": "Who did this to you?",
+   "cast": [
+    [
+     "Rex",
+     "rex",
+     "Charlie"
+    ],
+    [
+     "Fern",
+     "fern",
+     "Matilda"
+    ]
+   ],
+   "sets": "toon-kitchen",
+   "reuse": "toon-sink, toon-worktop",
+   "new": "a dripping pipe under the sink, a yellow invoice insert, a business card insert",
+   "beats": [
+    {
+     "picture": "Held frame: Rex's head out from under the sink, torch in mouth taken away. A slow drip beside him. Fern, arms folded.",
+     "lines": [
+      [
+       "REX",
+       "Oh, no. Who did this to you?"
+      ],
+      [
+       "FERN",
+       "Is it bad?"
+      ]
+     ],
+     "sound": "long breath in through teeth, drip",
+     "camera": "hold",
+     "hold": 0.4
+    },
+    {
+     "picture": "He shines the torch back under. The drip quickens.",
+     "lines": [
+      [
+       "REX",
+       "A child did this. A child, in the dark."
+      ],
+      [
+       "REX",
+       "Whoever did this should not own a wrench."
+      ]
+     ],
+     "sound": "drip, drip",
+     "camera": "slow push on Rex",
+     "hold": 0.0
+    },
+    {
+     "picture": "He takes a photo of the pipe with his phone.",
+     "lines": [
+      [
+       "REX",
+       "I'm sending this to the guys. They'll want to see this."
+      ]
+     ],
+     "sound": "phone shutter, ding",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Fern lays a yellow invoice on the floor beside him. Insert: REX'S PLUMBING, March, signed Rex.",
+     "lines": [
+      [
+       "FERN",
+       "You did this."
+      ]
+     ],
+     "sound": "paper slap",
+     "camera": "insert, held to read",
+     "hold": 1.6
+    },
+    {
+     "picture": "Rex looks at it. Looks at the pipe. The drip lands on the invoice.",
+     "lines": [
+      [
+       "REX",
+       "Anyone can type Rex."
+      ]
+     ],
+     "sound": "drip",
+     "camera": "cut back to Rex",
+     "hold": 0.8
+    },
+    {
+     "picture": "He wipes his paws and slides a card across the floor. Insert: REX. WE FIX WHAT THE LAST GUY DID.",
+     "lines": [
+      [
+       "REX",
+       "You need a specialist."
+      ]
+     ],
+     "sound": "card on tile",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Fern's face, not moving. The pipe gives a small spray behind her.",
+     "lines": [],
+     "sound": "hiss, then sting",
+     "camera": "hold on Fern",
+     "hold": 1.0
+    }
+   ],
+   "number": 1,
+   "spoken_words": 49,
+   "estimated_seconds": 27.4,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "wave-back",
+   "title": "Wave Back",
+   "style": "stick",
+   "recipient": "b",
+   "first": "b",
+   "to": "best friend",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "embarrassment",
+   "opening": "action",
+   "mechanism": "escalating consequences",
+   "ending": "callback",
+   "observation": "You wave back at someone who was waving at the person behind you, then your arm has to become something else.",
+   "key_line": "He wasn't waving at you.",
+   "caption_question": "Ever waved back at someone who wasn't waving at you?",
+   "cast": [
+    [
+     "Noor",
+     "noor",
+     "Jessica"
+    ],
+    [
+     "the man",
+     "",
+     "Callum"
+    ],
+    [
+     "a passer-by",
+     "",
+     "Lily"
+    ]
+   ],
+   "sets": "stick-street-lens, stick-gym",
+   "reuse": "stick-name-badge, stick-card",
+   "new": "none",
+   "beats": [
+    {
+     "picture": "Noor walking, a man ahead throws up an arm and grins. She beams and waves back, arm high.",
+     "lines": [
+      [
+       "MAN",
+       "Hey! Over here!"
+      ],
+      [
+       "NOOR",
+       "Hey!"
+      ]
+     ],
+     "sound": "footsteps",
+     "camera": "medium, walking with her",
+     "hold": 0.0
+    },
+    {
+     "picture": "He walks straight past her and hugs someone behind her. Her arm stays up.",
+     "lines": [],
+     "sound": "a small sting",
+     "camera": "hold on the arm",
+     "hold": 1.5
+    },
+    {
+     "picture": "She slowly turns the wave into a stretch, for nobody.",
+     "lines": [
+      [
+       "NOOR",
+       "Stretching. Just stretching."
+      ]
+     ],
+     "sound": "a joint clicks",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "A passer-by stops and copies her.",
+     "lines": [
+      [
+       "PASSER-BY",
+       "Is this a class?"
+      ],
+      [
+       "NOOR",
+       "...Yes."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Same pavement: six people stretching in rows behind her.",
+     "lines": [
+      [
+       "NOOR",
+       "And reach. That's twenty dollars."
+      ]
+     ],
+     "sound": "coins",
+     "camera": "cut wider",
+     "hold": 0.0
+    },
+    {
+     "picture": "Card: THREE YEARS LATER. Her gym, a poster: STRETCH WITH NOOR. She wears a headset at the desk.",
+     "lines": [
+      [
+       "PASSER-BY",
+       "Four hundred members, Noor."
+      ]
+     ],
+     "sound": "phone rings at the desk",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The same man comes through the door, sees her, and waves. She checks behind her. Nobody there. She looks back. Her arm stays down.",
+     "lines": [
+      [
+       "MAN",
+       "Noor! Hey!"
+      ]
+     ],
+     "sound": "door chime",
+     "camera": "cut in on Noor",
+     "hold": 1.6
+    },
+    {
+     "picture": "His arm stays up. He slowly turns it into a stretch.",
+     "lines": [
+      [
+       "MAN",
+       "...Stretching."
+      ]
+     ],
+     "sound": "a joint clicks",
+     "camera": "hold on the man",
+     "hold": 0.0
+    }
+   ],
+   "number": 2,
+   "spoken_words": 24,
+   "estimated_seconds": 16.2,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "you-have-it",
+   "title": "You Have It",
+   "style": "collage",
+   "recipient": "b",
+   "first": "a",
+   "to": "best friend",
+   "territory": "relationships",
+   "cause": "other-person",
+   "emotion": "tension",
+   "opening": "surprising image",
+   "mechanism": "escalating consequences",
+   "ending": "consequence",
+   "observation": "Nobody will eat the last slice, but everyone will eat half of what is left of it.",
+   "key_line": "One slice left.",
+   "caption_question": "Who eats the last slice?",
+   "cast": [
+    [
+     "Priya",
+     "priya",
+     "Sarah"
+    ],
+    [
+     "Deb",
+     "deb",
+     "Jessica"
+    ]
+   ],
+   "sets": "collage-cafe",
+   "reuse": "collage-food, collage-flash, collage-gust",
+   "new": "a slice of cake in halving sizes, tweezers",
+   "beats": [
+    {
+     "picture": "Held frame: two friends, one plate, one slice of cake between them. Neither blinks.",
+     "lines": [
+      [
+       "PRIYA",
+       "You have it."
+      ],
+      [
+       "DEB",
+       "No, you have it."
+      ]
+     ],
+     "sound": "cafe room tone",
+     "camera": "held two-shot",
+     "hold": 0.0
+    },
+    {
+     "picture": "Priya takes the knife, cuts it in half, eats one half. The plate goes back to the middle.",
+     "lines": [
+      [
+       "PRIYA",
+       "I'll just even it up."
+      ],
+      [
+       "DEB",
+       "You have it."
+      ]
+     ],
+     "sound": "knife on plate",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Deb cuts what is left in half and eats it. Smaller each time.",
+     "lines": [
+      [
+       "DEB",
+       "Just a sliver."
+      ],
+      [
+       "PRIYA",
+       "You have it."
+      ]
+     ],
+     "sound": "knife on plate",
+     "camera": "punch-in on the plate",
+     "hold": 0.0
+    },
+    {
+     "picture": "Deb takes out tweezers. Priya holds her breath. A crumb is parted.",
+     "lines": [
+      [
+       "PRIYA",
+       "Careful."
+      ],
+      [
+       "DEB",
+       "I couldn't possibly."
+      ]
+     ],
+     "sound": "a tiny click",
+     "camera": "macro insert",
+     "hold": 0.0
+    },
+    {
+     "picture": "A speck on the plate. Priya lowers the point of a pin onto it. Silence.",
+     "lines": [
+      [
+       "DEB",
+       "Half?"
+      ]
+     ],
+     "sound": "",
+     "camera": "slow push",
+     "hold": 1.5
+    },
+    {
+     "picture": "A tiny ping. A hum. The pendant lamps dim. The window goes white. The whole frame blows back.",
+     "lines": [],
+     "sound": "ping, rising hum, a huge muffled boom",
+     "camera": "flash, shake",
+     "hold": 0.0
+    },
+    {
+     "picture": "Smoke clears: hair blown flat, soot on both faces, table gone, plate still in Priya's hand, the speck still on it.",
+     "lines": [
+      [
+       "PRIYA",
+       "...You have it."
+      ]
+     ],
+     "sound": "a distant car alarm",
+     "camera": "hold on the two of them",
+     "hold": 1.4
+    }
+   ],
+   "number": 3,
+   "spoken_words": 29,
+   "estimated_seconds": 18.4,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "how-is-everything",
+   "title": "How Is Everything",
+   "style": "cutout",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "money-services",
+   "cause": "institution",
+   "emotion": "triumph",
+   "opening": "action",
+   "mechanism": "physical comedy",
+   "ending": "smallest reaction",
+   "observation": "The waiter only ever asks how everything is at the second your mouth is full.",
+   "key_line": "How is everything?",
+   "caption_question": "How does the waiter always know?",
+   "cast": [
+    [
+     "Milo",
+     "milo",
+     "Liam"
+    ],
+    [
+     "Ava",
+     "ava",
+     "Jessica"
+    ]
+   ],
+   "sets": "cafe",
+   "reuse": "coffee-cup, chair-back",
+   "new": "a sandwich, a paper napkin",
+   "beats": [
+    {
+     "picture": "Milo bites a sandwich. Ava is instantly at his elbow.",
+     "lines": [
+      [
+       "AVA",
+       "How is everything?"
+      ],
+      [
+       "MILO",
+       "Mmf."
+      ]
+     ],
+     "sound": "bite, a whip of air",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "She is gone. He chews, swallows, watches her wipe a far table. He lifts the sandwich slowly. Bites. She is at his elbow.",
+     "lines": [
+      [
+       "AVA",
+       "How is everything?"
+      ],
+      [
+       "MILO",
+       "Mmf."
+      ]
+     ],
+     "sound": "whip of air",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "He tests her. Opens wide, bites nothing, chews air. He looks round. Nobody comes. He smiles.",
+     "lines": [
+      [
+       "MILO",
+       "Got you."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 1.3
+    },
+    {
+     "picture": "He takes a real bite. She is there.",
+     "lines": [
+      [
+       "AVA",
+       "How is everything?"
+      ],
+      [
+       "MILO",
+       "Mmf!"
+      ]
+     ],
+     "sound": "whip of air",
+     "camera": "punch-in on Milo",
+     "hold": 0.0
+    },
+    {
+     "picture": "Plate empty. Mouth empty. He waves for the bill. She walks past. He calls. She looks straight through him.",
+     "lines": [
+      [
+       "MILO",
+       "Excuse me? Hello? Check, please?"
+      ]
+     ],
+     "sound": "room tone",
+     "camera": "hold",
+     "hold": 1.2
+    },
+    {
+     "picture": "He looks at the napkin. He looks at her. He puts it in his mouth and bites.",
+     "lines": [],
+     "sound": "paper crunch",
+     "camera": "crash zoom on Milo",
+     "hold": 1.2
+    },
+    {
+     "picture": "She is at his elbow. He holds up his card, chewing.",
+     "lines": [
+      [
+       "AVA",
+       "How is everything?"
+      ],
+      [
+       "MILO",
+       "Mmf."
+      ]
+     ],
+     "sound": "whip of air, card reader beep",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "She leaves with the card. He keeps chewing the napkin, eyes wet, undefeated.",
+     "lines": [],
+     "sound": "slow chewing",
+     "camera": "hold on Milo",
+     "hold": 1.2
+    }
+   ],
+   "number": 4,
+   "spoken_words": 23,
+   "estimated_seconds": 18.5,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "eye-chart",
+   "title": "Eye Chart",
+   "style": "collage",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "money-services",
+   "cause": "other-person",
+   "emotion": "relief",
+   "opening": "question",
+   "mechanism": "escalating consequences",
+   "ending": "recovery",
+   "observation": "At the eye test one and two look identical, and the optician's calm makes it feel like an exam on your whole life.",
+   "key_line": "Better with one, or two?",
+   "caption_question": "Better with one, or two?",
+   "cast": [
+    [
+     "Deb",
+     "deb",
+     "Jessica"
+    ],
+    [
+     "Dr. Feld",
+     "",
+     "Alice"
+    ]
+   ],
+   "sets": "collage-therapy",
+   "reuse": "collage-bill",
+   "new": "an eye chart whose lower rows sharpen when a lens clicks, a lens frame",
+   "beats": [
+    {
+     "picture": "Held frame: Deb behind a lens frame, Dr. Feld's hand on the dial, the chart a blur behind her.",
+     "lines": [
+      [
+       "FELD",
+       "Better with one? Or two?"
+      ],
+      [
+       "DEB",
+       "They're the same."
+      ]
+     ],
+     "sound": "lens click, click",
+     "camera": "close on Deb",
+     "hold": 0.0
+    },
+    {
+     "picture": "Click. A row snaps sharp.",
+     "lines": [
+      [
+       "FELD",
+       "Read me that line."
+      ],
+      [
+       "DEB",
+       "Call... your... sister."
+      ]
+     ],
+     "sound": "lens click",
+     "camera": "cut to the chart",
+     "hold": 0.0
+    },
+    {
+     "picture": "Deb frowns. Feld writes. Click. The next row sharpens.",
+     "lines": [
+      [
+       "DEB",
+       "That was not... a small mistake."
+      ],
+      [
+       "FELD",
+       "Good. Next line."
+      ]
+     ],
+     "sound": "pen, lens click",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Click. Deb's voice drops.",
+     "lines": [
+      [
+       "DEB",
+       "He is not... going to change."
+      ]
+     ],
+     "sound": "lens click",
+     "camera": "slow push on Deb",
+     "hold": 0.0
+    },
+    {
+     "picture": "Feld, unbothered, turns the dial one last notch. The bottom row, tiny, comes clear.",
+     "lines": [
+      [
+       "FELD",
+       "Bottom line."
+      ]
+     ],
+     "sound": "lens click",
+     "camera": "",
+     "hold": 0.8
+    },
+    {
+     "picture": "Insert: YOUR MOTHER WAS RIGHT. Deb reads it. Nobody speaks.",
+     "lines": [
+      [
+       "DEB",
+       "Your mother... was right."
+      ]
+     ],
+     "sound": "",
+     "camera": "insert, then hold on Deb",
+     "hold": 1.8
+    },
+    {
+     "picture": "Feld, pen ready.",
+     "lines": [
+      [
+       "FELD",
+       "Better? Or worse?"
+      ],
+      [
+       "DEB",
+       "Can I go back to one?"
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Click. The chart melts to a blur. Deb's whole face relaxes. She smiles at nothing.",
+     "lines": [],
+     "sound": "lens click, a small contented sigh",
+     "camera": "hold on Deb",
+     "hold": 1.4
+    }
+   ],
+   "number": 5,
+   "spoken_words": 45,
+   "estimated_seconds": 26.6,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "mosquito",
+   "title": "Mosquito",
+   "style": "toon",
+   "recipient": "b",
+   "first": "b",
+   "to": "partner",
+   "territory": "relationships",
+   "cause": "protagonist",
+   "emotion": "tension",
+   "opening": "action",
+   "mechanism": "physical comedy",
+   "ending": "consequence",
+   "observation": "One mosquito in a dark bedroom can defeat a grown adult at 2 a.m., and it vanishes the moment the light goes on.",
+   "key_line": "It's in here.",
+   "caption_question": "Who else has lost a night to one mosquito?",
+   "cast": [
+    [
+     "Bruno",
+     "bruno",
+     "Bill"
+    ],
+    [
+     "Mae",
+     "mae",
+     "Sarah"
+    ]
+   ],
+   "sets": "toon-bedroom",
+   "reuse": "toon-quilt, toon-clock",
+   "new": "a mosquito speck with a wandering path, a rolled towel",
+   "beats": [
+    {
+     "picture": "Dark. Bruno's eyes are already open, a whine passing his ear. He says it at once, then slaps his own ear hard.",
+     "lines": [
+      [
+       "BRUNO",
+       "It's in here."
+      ]
+     ],
+     "sound": "bzzz, slap",
+     "camera": "close on Bruno",
+     "hold": 0.0
+    },
+    {
+     "picture": "Light on: nothing. Light off: the whine is back. On: nothing. Mae, face in the pillow.",
+     "lines": [
+      [
+       "MAE",
+       "It's two a.m."
+      ]
+     ],
+     "sound": "switch, bzzz, switch, silence, switch",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Light on: Bruno on his feet on the bed, towel rolled, breathing through his mouth.",
+     "lines": [
+      [
+       "BRUNO",
+       "It's him or me."
+      ]
+     ],
+     "sound": "bed springs",
+     "camera": "low angle, wide enough for the whole body",
+     "hold": 0.0
+    },
+    {
+     "picture": "He swings at the air. He slaps his forehead, then his cheek. It whines on, unharmed.",
+     "lines": [
+      [
+       "BRUNO",
+       "He's laughing."
+      ]
+     ],
+     "sound": "slap, slap, bzzz",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Silence. He turns. The mosquito lands on sleeping Mae's forehead. He lifts the towel.",
+     "lines": [
+      [
+       "BRUNO",
+       "I love you."
+      ]
+     ],
+     "sound": "the whine stops",
+     "camera": "slow push to Mae's forehead",
+     "hold": 1.5
+    },
+    {
+     "picture": "Whack.",
+     "lines": [],
+     "sound": "a huge wet slap, sting",
+     "camera": "crash zoom",
+     "hold": 0.0
+    },
+    {
+     "picture": "Mae's eyes are open. He shows her his paw, a small red dot on it, proud.",
+     "lines": [
+      [
+       "BRUNO",
+       "Got him. You're safe now."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the two of them",
+     "hold": 1.3
+    },
+    {
+     "picture": "Mae says nothing. He clicks off the light and lies down, content. Dark. Then, faintly, one whine. His eyes open.",
+     "lines": [],
+     "sound": "click, silence, bzzz",
+     "camera": "hold on the eyes",
+     "hold": 1.2
+    }
+   ],
+   "number": 6,
+   "spoken_words": 21,
+   "estimated_seconds": 15.7,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "did-you-pack",
+   "title": "Did You Pack",
+   "style": "stick",
+   "recipient": "b",
+   "first": "a",
+   "to": "family",
+   "territory": "family",
+   "cause": "other-person",
+   "emotion": "affection",
+   "opening": "mid-exchange",
+   "mechanism": "misunderstanding",
+   "ending": "reveal",
+   "observation": "A grandmother hears 'I'm full' as 'more, please', and a meal follows you to the airport.",
+   "key_line": "You look thin.",
+   "caption_question": "Did you pack this bag yourself?",
+   "cast": [
+    [
+     "Dev",
+     "dev",
+     "Will"
+    ],
+    [
+     "Grandma",
+     "",
+     "Lily"
+    ],
+    [
+     "the officer",
+     "",
+     "Eric"
+    ]
+   ],
+   "sets": "stick-kitchen, stick-gate",
+   "reuse": "stick-table, stick-carry-on, stick-gate-podium",
+   "new": "an x-ray screen insert, a foil parcel with a note",
+   "beats": [
+    {
+     "picture": "Held frame: Dev at the table, plate piled high, Grandma standing over him with a spoon.",
+     "lines": [
+      [
+       "GRANDMA",
+       "You look thin."
+      ],
+      [
+       "DEV",
+       "I'm full, Grandma."
+      ]
+     ],
+     "sound": "spoon on plate",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Another spoonful lands.",
+     "lines": [
+      [
+       "GRANDMA",
+       "You ate nothing."
+      ],
+      [
+       "DEV",
+       "That was four plates."
+      ]
+     ],
+     "sound": "splat",
+     "camera": "punch-in on the plate",
+     "hold": 0.0
+    },
+    {
+     "picture": "At the door he has a coat on. She zips something into his bag.",
+     "lines": [
+      [
+       "DEV",
+       "I have a plane."
+      ],
+      [
+       "GRANDMA",
+       "For the road."
+      ],
+      [
+       "DEV",
+       "It's a two-hour flight."
+      ],
+      [
+       "GRANDMA",
+       "Exactly."
+      ]
+     ],
+     "sound": "zip, heavy thud",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Airport. The bag on the belt. The officer stops it.",
+     "lines": [
+      [
+       "OFFICER",
+       "Did you pack this bag yourself?"
+      ],
+      [
+       "DEV",
+       "...No."
+      ]
+     ],
+     "sound": "belt stops, a beep",
+     "camera": "medium on the officer",
+     "hold": 1.3
+    },
+    {
+     "picture": "Insert: x-ray: a whole chicken, a tray of lasagna, a rolling pin.",
+     "lines": [
+      [
+       "OFFICER",
+       "Who packed it?"
+      ],
+      [
+       "DEV",
+       "My grandmother."
+      ]
+     ],
+     "sound": "",
+     "camera": "insert, held to read",
+     "hold": 0.0
+    },
+    {
+     "picture": "The officer opens the bag. On top, a foil parcel with a note. Insert: FOR THE MAN AT SECURITY. YOU LOOK THIN.",
+     "lines": [],
+     "sound": "foil crinkle",
+     "camera": "insert, held to read",
+     "hold": 1.8
+    },
+    {
+     "picture": "He looks at the note. He looks down at himself. His chin wobbles. He takes a bite and waves Dev through.",
+     "lines": [
+      [
+       "OFFICER",
+       "...She's right."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the officer",
+     "hold": 1.0
+    }
+   ],
+   "number": 7,
+   "spoken_words": 39,
+   "estimated_seconds": 24.7,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "sinking-chair",
+   "title": "Sinking Chair",
+   "style": "cutout",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "office",
+   "cause": "institution",
+   "emotion": "embarrassment",
+   "opening": "mid-exchange",
+   "mechanism": "physical comedy",
+   "ending": "consequence",
+   "observation": "The office chair slowly lowers you during a serious meeting, and nobody ever says a word about it.",
+   "key_line": "Let's talk about your growth.",
+   "caption_question": "Has your chair ever done this in a meeting?",
+   "cast": [
+    [
+     "the Candidate",
+     "candidate",
+     "Will"
+    ],
+    [
+     "the Boss",
+     "manager",
+     "Eric"
+    ]
+   ],
+   "sets": "office-reverse, office-desk",
+   "reuse": "squeak-mark, papers",
+   "new": "a typed chair drop on the existing cut",
+   "beats": [
+    {
+     "picture": "Across the desk, level with the Boss. The chair gives a sigh and he drops an inch.",
+     "lines": [
+      [
+       "BOSS",
+       "Let's talk about your growth."
+      ],
+      [
+       "CANDIDATE",
+       "I've really grown this year."
+      ]
+     ],
+     "sound": "pssht",
+     "camera": "medium, eyeline level",
+     "hold": 0.0
+    },
+    {
+     "picture": "He keeps his chin up. Another inch.",
+     "lines": [
+      [
+       "CANDIDATE",
+       "I'm ready to step up."
+      ]
+     ],
+     "sound": "pssht",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "His shoulders reach the desk. He pulls at the lever behind him, smiling.",
+     "lines": [
+      [
+       "CANDIDATE",
+       "I've risen to every challenge."
+      ]
+     ],
+     "sound": "lever clicks, nothing, pssht",
+     "camera": "hold, the desk edge now cuts his chest",
+     "hold": 0.0
+    },
+    {
+     "picture": "The Boss has not looked up from his notes.",
+     "lines": [
+      [
+       "BOSS",
+       "And long term?"
+      ]
+     ],
+     "sound": "pen",
+     "camera": "",
+     "hold": 1.0
+    },
+    {
+     "picture": "Only his eyes and quiff clear the desk.",
+     "lines": [
+      [
+       "CANDIDATE",
+       "I see myself... higher."
+      ]
+     ],
+     "sound": "pssht",
+     "camera": "hold, low and small in the frame",
+     "hold": 1.5
+    },
+    {
+     "picture": "The Boss finally looks over the edge of the desk, down at him.",
+     "lines": [
+      [
+       "BOSS",
+       "Three years in that chair. You've never said a word."
+      ],
+      [
+       "CANDIDATE",
+       "Is there a raise?"
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to the Boss, high angle",
+     "hold": 0.0
+    },
+    {
+     "picture": "The Boss goes back to his notes.",
+     "lines": [
+      [
+       "BOSS",
+       "Your salary works the same way."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.8
+    },
+    {
+     "picture": "The last of the quiff slides below the desk. The Boss writes on.",
+     "lines": [],
+     "sound": "one long pssht, a soft clunk",
+     "camera": "hold on the empty desk edge",
+     "hold": 1.2
+    }
+   ],
+   "number": 8,
+   "spoken_words": 47,
+   "estimated_seconds": 27.5,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "sensor",
+   "title": "Sensor",
+   "style": "collage",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "everyday-tech",
+   "cause": "institution",
+   "emotion": "tension",
+   "opening": "surprising image",
+   "mechanism": "visual reveal",
+   "ending": "smallest reaction",
+   "observation": "Automatic taps, soap and doors do not believe you exist, and you end up waving at a sink.",
+   "key_line": "Hello? I'm right here.",
+   "caption_question": "Why do automatic taps ignore you?",
+   "cast": [
+    [
+     "Jun",
+     "jun",
+     "Will"
+    ],
+    [
+     "Omar",
+     "omar",
+     "Daniel"
+    ],
+    [
+     "Kai",
+     "kai",
+     "River"
+    ]
+   ],
+   "sets": "collage-bathroom",
+   "reuse": "collage-arm",
+   "new": "a sensor tap, a soap dispenser and a hand dryer on the existing wall",
+   "beats": [
+    {
+     "picture": "Held frame: Jun at a sink, both hands up, frozen mid-wave under a dry tap.",
+     "lines": [
+      [
+       "JUN",
+       "Hello? I'm right here."
+      ]
+     ],
+     "sound": "a faint hum",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "He tries the soap: nothing. The dryer: nothing. He jumps. The light clicks off. He waves in the dark. It clicks on.",
+     "lines": [
+      [
+       "JUN",
+       "Oh, come on."
+      ]
+     ],
+     "sound": "click, click",
+     "camera": "wider for the whole body",
+     "hold": 0.0
+    },
+    {
+     "picture": "At the next sink, not looking up, Omar waves one slow hand, the wave of a man with a routine.",
+     "lines": [
+      [
+       "OMAR",
+       "It doesn't see you."
+      ]
+     ],
+     "sound": "",
+     "camera": "reveal: a move right onto Omar",
+     "hold": 1.2
+    },
+    {
+     "picture": "Jun laughs.",
+     "lines": [
+      [
+       "JUN",
+       "It's just broken."
+      ],
+      [
+       "OMAR",
+       "How long have you been in here?"
+      ],
+      [
+       "JUN",
+       "Ten minutes."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Omar keeps waving.",
+     "lines": [
+      [
+       "OMAR",
+       "I came in to wash my hands in 1987."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Omar",
+     "hold": 1.6
+    },
+    {
+     "picture": "Jun goes to the door. It does not open. He waves at it. Then Kai walks in. Tap on. Soap. Dryer. Door opens by itself as he leaves.",
+     "lines": [
+      [
+       "JUN",
+       "No. Wait. Wait!"
+      ]
+     ],
+     "sound": "whoosh, squirt, roar, door sigh",
+     "camera": "wide, no cut during the gag",
+     "hold": 0.0
+    },
+    {
+     "picture": "The door shuts one inch from Jun's fingers. Silence. Omar has not turned.",
+     "lines": [
+      [
+       "OMAR",
+       "Every time."
+      ]
+     ],
+     "sound": "soft door click",
+     "camera": "hold",
+     "hold": 1.2
+    }
+   ],
+   "number": 9,
+   "spoken_words": 37,
+   "estimated_seconds": 22.1,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "fitted-sheet",
+   "title": "Fitted Sheet",
+   "style": "toon",
+   "recipient": "b",
+   "first": "b",
+   "to": "family",
+   "territory": "family",
+   "cause": "protagonist",
+   "emotion": "affection",
+   "opening": "question",
+   "mechanism": "visual reveal",
+   "ending": "callback",
+   "observation": "No adult can fold a fitted sheet, and everyone privately believes they are the only one who just balls it up.",
+   "key_line": "How do you fold a fitted sheet?",
+   "caption_question": "How do you fold a fitted sheet?",
+   "cast": [
+    [
+     "Mae",
+     "mae",
+     "Sarah"
+    ],
+    [
+     "Mae's mother",
+     "",
+     "Lily"
+    ],
+    [
+     "Bruno",
+     "bruno",
+     "Bill"
+    ]
+   ],
+   "sets": "toon-hallway",
+   "reuse": "toon-closet, toon-laundry-pile",
+   "new": "a padlock and key on the closet, balled sheets, a perfectly square folded sheet",
+   "beats": [
+    {
+     "picture": "Mae wrestling a sheet, arms lost in it, her mother (the hedgehog) passing behind her.",
+     "lines": [
+      [
+       "MAE",
+       "Mom, how do you fold a fitted sheet?"
+      ]
+     ],
+     "sound": "cloth flap",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "Her mother stops dead. She shuts the door behind them, very quietly.",
+     "lines": [
+      [
+       "MOM",
+       "Who sent you?"
+      ],
+      [
+       "MAE",
+       "Nobody. There's a video."
+      ]
+     ],
+     "sound": "door latch",
+     "camera": "",
+     "hold": 1.0
+    },
+    {
+     "picture": "Her mother draws a key from round her neck.",
+     "lines": [
+      [
+       "MOM",
+       "You're thirty-four. It's time."
+      ],
+      [
+       "MOM",
+       "My mother showed me. Her mother showed her."
+      ]
+     ],
+     "sound": "",
+     "camera": "slow push on the mother",
+     "hold": 0.0
+    },
+    {
+     "picture": "The closet: neat folded towels in front, a padlock. She turns the key. Hold.",
+     "lines": [],
+     "sound": "click",
+     "camera": "hold",
+     "hold": 1.4
+    },
+    {
+     "picture": "The door opens. Balled sheets roll out, then pour out, burying Mae to the waist. Her mother stands in them, serene.",
+     "lines": [
+      [
+       "MOM",
+       "We ball it up. We shove it in."
+      ]
+     ],
+     "sound": "a long soft avalanche",
+     "camera": "wide, no cut",
+     "hold": 0.0
+    },
+    {
+     "picture": "Mae, whispering, sheets to her waist.",
+     "lines": [
+      [
+       "MAE",
+       "All of them?"
+      ],
+      [
+       "MOM",
+       "Every woman you have ever met."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the two of them",
+     "hold": 0.8
+    },
+    {
+     "picture": "The door opens. Bruno, cheerful, holds a perfectly square folded sheet.",
+     "lines": [
+      [
+       "BRUNO",
+       "Hey, I folded the sheet."
+      ]
+     ],
+     "sound": "door, a small sting",
+     "camera": "cut to Bruno",
+     "hold": 1.5
+    },
+    {
+     "picture": "Both women slowly turn.",
+     "lines": [
+      [
+       "MOM",
+       "Who sent you?"
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the two faces",
+     "hold": 0.0
+    }
+   ],
+   "number": 10,
+   "spoken_words": 52,
+   "estimated_seconds": 30.1,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "seat-belt-sign",
+   "title": "Seat Belt Sign",
+   "style": "stick",
+   "recipient": "b",
+   "first": "a",
+   "to": "partner",
+   "territory": "relationships",
+   "cause": "protagonist",
+   "emotion": "triumph",
+   "opening": "question",
+   "mechanism": "status reversal",
+   "ending": "new order",
+   "observation": "The plane lands and everyone stands up to wait, bent under the bins, for twenty minutes.",
+   "key_line": "Why are you standing?",
+   "caption_question": "Why does everyone stand up when the plane lands?",
+   "cast": [
+    [
+     "Dev",
+     "dev",
+     "Will"
+    ],
+    [
+     "Noor",
+     "noor",
+     "Jessica"
+    ],
+    [
+     "the cabin announcement",
+     "",
+     "Alice"
+    ]
+   ],
+   "sets": "stick-cabin",
+   "reuse": "stick-carry-on, stick-armrests",
+   "new": "none",
+   "beats": [
+    {
+     "picture": "Held frame: row 31. Noor seated with a book. Dev bent double under the bins, head on one side, neck against a stranger's bag.",
+     "lines": [
+      [
+       "NOOR",
+       "Why are you standing?"
+      ],
+      [
+       "DEV",
+       "Head start."
+      ]
+     ],
+     "sound": "seat belt ding",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "He squeezes up the aisle past two people.",
+     "lines": [
+      [
+       "NOOR",
+       "The doors aren't open."
+      ],
+      [
+       "DEV",
+       "It's strategy."
+      ]
+     ],
+     "sound": "bags, grunts",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Row 14. A stranger's armpit at his ear. A chip reads 9 minutes.",
+     "lines": [
+      [
+       "DEV",
+       "We moved!"
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to Dev, tight",
+     "hold": 0.0
+    },
+    {
+     "picture": "A chip reads 16 minutes. His arm has gone. Someone's bag rests on his neck. A child stares at him from below.",
+     "lines": [
+      [
+       "DEV",
+       "I can't feel my neck."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 1.2
+    },
+    {
+     "picture": "A chime.",
+     "lines": [
+      [
+       "ANNOUNCEMENT",
+       "Today we'll be leaving by the rear door."
+      ]
+     ],
+     "sound": "chime",
+     "camera": "hold on Dev",
+     "hold": 1.5
+    },
+    {
+     "picture": "Every head turns round. At row 31, Noor closes her book, stands, stretches and picks up her bag.",
+     "lines": [
+      [
+       "NOOR",
+       "See you at baggage."
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to Noor, upright, the only straight spine on board",
+     "hold": 0.0
+    },
+    {
+     "picture": "Dev, at the far end of a hundred people, face in the armpit.",
+     "lines": [],
+     "sound": "a door sighs open far behind him",
+     "camera": "hold on Dev",
+     "hold": 1.4
+    }
+   ],
+   "number": 11,
+   "spoken_words": 31,
+   "estimated_seconds": 20.0,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "headphones",
+   "title": "Headphones",
+   "style": "cutout",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "embarrassment",
+   "opening": "mid-exchange",
+   "mechanism": "misunderstanding",
+   "ending": "reveal",
+   "observation": "With headphones in you have no idea how loud you are, so the whole aisle hears your private call.",
+   "key_line": "THE RASH IS BETTER.",
+   "caption_question": "How loud are you with headphones in?",
+   "cast": [
+    [
+     "Rosa",
+     "rosa",
+     "Lily"
+    ],
+    [
+     "Milo",
+     "milo",
+     "Liam"
+    ],
+    [
+     "the shop's loudspeaker",
+     "",
+     "Daniel"
+    ]
+   ],
+   "sets": "store-aisle",
+   "reuse": "shopping-cart, hand-basket, shelf-goods",
+   "new": "earbuds on Rosa, as a prop",
+   "beats": [
+    {
+     "picture": "Rosa wheels into frame, earbuds in, serene, shouting. Milo beside her freezes with a box in his hand.",
+     "lines": [
+      [
+       "ROSA",
+       "THE RASH IS BETTER."
+      ]
+     ],
+     "sound": "cart wheels",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "She reads a tin.",
+     "lines": [
+      [
+       "ROSA",
+       "NO, THE OTHER RASH."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Milo, not moving",
+     "hold": 0.8
+    },
+    {
+     "picture": "Milo edges away. She follows the same way.",
+     "lines": [
+      [
+       "ROSA",
+       "I TOLD HIM. HAROLD, I SAID, THAT IS NOT A MOLE."
+      ]
+     ],
+     "sound": "a far shelf stops rattling",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Down the aisle, other shoppers have stopped.",
+     "lines": [
+      [
+       "ROSA",
+       "HE WON'T SHOW THE DOCTOR. HE SHOWED THE NEIGHBOURS."
+      ]
+     ],
+     "sound": "",
+     "camera": "cut wider, shelves of still people",
+     "hold": 0.0
+    },
+    {
+     "picture": "Milo taps her arm and mimes the earbuds.",
+     "lines": [
+      [
+       "MILO",
+       "Ma'am? You're very loud."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "She takes one out. Her real voice is tiny.",
+     "lines": [
+      [
+       "ROSA",
+       "Am I, dear?"
+      ]
+     ],
+     "sound": "",
+     "camera": "punch-in on Rosa",
+     "hold": 1.5
+    },
+    {
+     "picture": "She looks down the aisle at all of them. All of them look back.",
+     "lines": [],
+     "sound": "",
+     "camera": "hold, no sound at all",
+     "hold": 1.2
+    },
+    {
+     "picture": "The loudspeaker clicks on, soft and kind.",
+     "lines": [
+      [
+       "LOUDSPEAKER",
+       "Oatmeal baths are on aisle nine."
+      ]
+     ],
+     "sound": "tannoy chime",
+     "camera": "hold on Rosa",
+     "hold": 0.0
+    }
+   ],
+   "number": 12,
+   "spoken_words": 41,
+   "estimated_seconds": 23.4,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "one-symptom",
+   "title": "One Symptom",
+   "style": "toon",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "tension",
+   "opening": "mid-exchange",
+   "mechanism": "status reversal",
+   "ending": "new order",
+   "observation": "You look up one headache at 1 a.m. and by 1:05 you are writing a will.",
+   "key_line": "You have a headache.",
+   "caption_question": "Why did you look it up?",
+   "cast": [
+    [
+     "the patient (hedgehog)",
+     "",
+     "Callum"
+    ],
+    [
+     "the doctor (sloth)",
+     "",
+     "Brian"
+    ]
+   ],
+   "sets": "toon-surgery",
+   "reuse": "toon-phone, toon-desk, toon-clipboard",
+   "new": "none",
+   "beats": [
+    {
+     "picture": "Held frame: the patient on the edge of the couch, phone in both hands, the doctor opposite.",
+     "lines": [
+      [
+       "PATIENT",
+       "It's late-stage tongue rot. Eleven known cases."
+      ],
+      [
+       "DOCTOR",
+       "You have a headache."
+      ]
+     ],
+     "sound": "room tone",
+     "camera": "held two-shot",
+     "hold": 0.0
+    },
+    {
+     "picture": "The patient scrolls.",
+     "lines": [
+      [
+       "PATIENT",
+       "That's how it starts."
+      ],
+      [
+       "DOCTOR",
+       "Did you look this up?"
+      ],
+      [
+       "PATIENT",
+       "At one a.m. I've written a will."
+      ]
+     ],
+     "sound": "phone taps",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The doctor sighs, holds out a hand, takes the phone and reads, slowly.",
+     "lines": [
+      [
+       "DOCTOR",
+       "Give me that. Headache. Dry mouth. Tingling left thumb."
+      ]
+     ],
+     "sound": "one tap",
+     "camera": "cut to the doctor",
+     "hold": 0.0
+    },
+    {
+     "picture": "He stops. He looks at his left thumb. It twitches. He swallows, dryly.",
+     "lines": [],
+     "sound": "a very small click of the throat",
+     "camera": "slow push on the doctor",
+     "hold": 1.8
+    },
+    {
+     "picture": "He looks up.",
+     "lines": [
+      [
+       "DOCTOR",
+       "...How long have I got?"
+      ]
+     ],
+     "sound": "sting",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Same room: they have swapped. The doctor on the couch with his coat on. The patient at the desk with the phone, reading from it.",
+     "lines": [
+      [
+       "PATIENT",
+       "Four days. But there's a forum."
+      ]
+     ],
+     "sound": "phone tap",
+     "camera": "reverse of shot 1",
+     "hold": 0.6
+    },
+    {
+     "picture": "The doctor nods, very small.",
+     "lines": [
+      [
+       "DOCTOR",
+       "Is it a good forum?"
+      ],
+      [
+       "PATIENT",
+       "They're very supportive."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the doctor",
+     "hold": 1.2
+    }
+   ],
+   "number": 13,
+   "spoken_words": 56,
+   "estimated_seconds": 30.7,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "the-tongs",
+   "title": "The Tongs",
+   "style": "soft",
+   "recipient": "b",
+   "first": "b",
+   "to": "family",
+   "territory": "family",
+   "cause": "other-person",
+   "emotion": "recognition",
+   "opening": "action",
+   "mechanism": "status reversal",
+   "ending": "callback",
+   "observation": "At a barbecue one person holds the tongs and nobody else may touch the meat.",
+   "key_line": "Nobody touches the grill.",
+   "caption_question": "Who runs the grill at your family barbecue?",
+   "cast": [
+    [
+     "Bo",
+     "bo",
+     "Eric"
+    ],
+    [
+     "Pip",
+     "pip",
+     "Will"
+    ],
+    [
+     "Juno",
+     "juno",
+     "Laura"
+    ]
+   ],
+   "sets": "soft-park",
+   "reuse": "soft-bench, soft-phone",
+   "new": "a grill, tongs, a pizza box, a sauce bottle",
+   "beats": [
+    {
+     "picture": "Bo clicks a pair of tongs twice at the camera, a grill smoking beside him.",
+     "lines": [
+      [
+       "BO",
+       "Nobody touches the grill."
+      ]
+     ],
+     "sound": "click click, sizzle",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "He leaves for the sauce. Smoke thickens. Pip looks round, picks up the spare tongs and turns one burger. Juno, on the bench with her phone, does not look up.",
+     "lines": [
+      [
+       "JUNO",
+       "Pip. Don't."
+      ]
+     ],
+     "sound": "a soft flip",
+     "camera": "hold",
+     "hold": 0.8
+    },
+    {
+     "picture": "Bo is back. The lawn goes silent. A bird stops.",
+     "lines": [
+      [
+       "BO",
+       "Put them down."
+      ]
+     ],
+     "sound": "the birdsong cuts out",
+     "camera": "close on Bo's eyes",
+     "hold": 1.5
+    },
+    {
+     "picture": "Standoff across the grill, tongs at hip height.",
+     "lines": [
+      [
+       "PIP",
+       "It was burning."
+      ],
+      [
+       "BO",
+       "That's a sear."
+      ],
+      [
+       "PIP",
+       "That's a fire."
+      ]
+     ],
+     "sound": "click click",
+     "camera": "cut, close on Pip",
+     "hold": 0.0
+    },
+    {
+     "picture": "Bo reaches slowly behind his back and draws a second pair of tongs.",
+     "lines": [
+      [
+       "JUNO",
+       "He has two."
+      ]
+     ],
+     "sound": "click click click",
+     "camera": "low angle on Bo",
+     "hold": 1.2
+    },
+    {
+     "picture": "They circle. Behind them the burgers turn black and the flames rise. Juno walks in between them with a flat box from the gate.",
+     "lines": [
+      [
+       "JUNO",
+       "Pizza's here."
+      ]
+     ],
+     "sound": "a car door, a far dog",
+     "camera": "wide, the whole lawn",
+     "hold": 0.0
+    },
+    {
+     "picture": "Both tongs droop. Pip walks to the box. Bo's tongs come down gently on the lid.",
+     "lines": [
+      [
+       "BO",
+       "Nobody touches the pizza."
+      ]
+     ],
+     "sound": "click click",
+     "camera": "hold on Bo",
+     "hold": 1.0
+    }
+   ],
+   "number": 14,
+   "spoken_words": 27,
+   "estimated_seconds": 18.3,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "first-sip",
+   "title": "First Sip",
+   "style": "collage",
+   "recipient": "b",
+   "first": "a",
+   "to": "partner",
+   "territory": "relationships",
+   "cause": "protagonist",
+   "emotion": "embarrassment",
+   "opening": "surprising image",
+   "mechanism": "misunderstanding",
+   "ending": "recovery",
+   "observation": "The waiter pours a little and you swirl and nod as if you could tell, and everyone at the table lets you.",
+   "key_line": "Bold.",
+   "caption_question": "Can anyone actually taste the difference?",
+   "cast": [
+    [
+     "Brent",
+     "brent",
+     "Brian"
+    ],
+    [
+     "Deb",
+     "deb",
+     "Jessica"
+    ],
+    [
+     "Omar, the waiter",
+     "omar",
+     "Daniel"
+    ]
+   ],
+   "sets": "collage-cafe",
+   "reuse": "collage-tablecloth",
+   "new": "a wine glass, a water jug",
+   "beats": [
+    {
+     "picture": "Held frame: Brent's nose deep in a glass, eyes shut. Omar stands by, white cloth over his arm. Deb watches.",
+     "lines": [
+      [
+       "BRENT",
+       "Hmm."
+      ]
+     ],
+     "sound": "a long sniff",
+     "camera": "close on Brent",
+     "hold": 0.0
+    },
+    {
+     "picture": "He swirls it. Some goes on the cloth.",
+     "lines": [
+      [
+       "BRENT",
+       "Bold. Stony. A little leather."
+      ]
+     ],
+     "sound": "slosh",
+     "camera": "medium two-shot",
+     "hold": 0.0
+    },
+    {
+     "picture": "He sips and gargles softly. Holds up a finger.",
+     "lines": [
+      [
+       "BRENT",
+       "There it is. Plum. Regret."
+      ],
+      [
+       "DEB",
+       "Regret?"
+      ]
+     ],
+     "sound": "gargle",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "He offers her the glass. She sips.",
+     "lines": [
+      [
+       "BRENT",
+       "You get that?"
+      ],
+      [
+       "DEB",
+       "I think so, yes."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "He leans back, a man at home in the world.",
+     "lines": [
+      [
+       "BRENT",
+       "Wet dog, in the finish. What year?"
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.6
+    },
+    {
+     "picture": "Omar has not moved.",
+     "lines": [
+      [
+       "OMAR",
+       "This morning, sir."
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to Omar",
+     "hold": 1.0
+    },
+    {
+     "picture": "Omar tips the jug in his other hand, so it can be seen.",
+     "lines": [
+      [
+       "OMAR",
+       "That's the water. I was topping you up."
+      ]
+     ],
+     "sound": "ice in a jug",
+     "camera": "hold",
+     "hold": 1.8
+    },
+    {
+     "picture": "Brent looks at the glass. Deb looks at Brent. He puts it down and straightens his tie.",
+     "lines": [
+      [
+       "BRENT",
+       "Send it back."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Brent",
+     "hold": 1.0
+    }
+   ],
+   "number": 15,
+   "spoken_words": 40,
+   "estimated_seconds": 24.0,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "warranty",
+   "title": "Warranty",
+   "style": "soft",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "money-services",
+   "cause": "institution",
+   "emotion": "tension",
+   "opening": "action",
+   "mechanism": "escalating consequences",
+   "ending": "consequence",
+   "observation": "Every appliance breaks the day after its warranty ends.",
+   "key_line": "The warranty ends at midnight.",
+   "caption_question": "Why does it always die the day after?",
+   "cast": [
+    [
+     "Pip",
+     "pip",
+     "Will"
+    ],
+    [
+     "Juno",
+     "juno",
+     "Laura"
+    ]
+   ],
+   "sets": "soft-home",
+   "reuse": "soft-shovel, soft-time-card as the clock card",
+   "new": "a washing machine, a brick, a bowling ball",
+   "beats": [
+    {
+     "picture": "Pip drops a brick into a running washing machine and slams the door. Card: 11:41.",
+     "lines": [
+      [
+       "JUNO",
+       "What are you doing?"
+      ],
+      [
+       "PIP",
+       "The warranty ends at midnight."
+      ]
+     ],
+     "sound": "thud, door",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "He loads a second brick.",
+     "lines": [
+      [
+       "PIP",
+       "It's going to die the second it's over. They always do. So it dies now. While it's free."
+      ]
+     ],
+     "sound": "thud",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The machine hums, gently, perfectly. He shoves in a bowling ball.",
+     "lines": [
+      [
+       "PIP",
+       "Spin, you coward."
+      ]
+     ],
+     "sound": "a soft purr",
+     "camera": "punch-in on the drum",
+     "hold": 0.0
+    },
+    {
+     "picture": "Card: 11:56. Juno has joined him, pouring in a bag of coins, then the shovel. It purrs on.",
+     "lines": [
+      [
+       "JUNO",
+       "It's never run better."
+      ]
+     ],
+     "sound": "coins, a contented hum",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Card: 11:59. They sit on the floor, spent, watching it. It finishes its cycle with a little tune.",
+     "lines": [],
+     "sound": "a cheerful five-note chime",
+     "camera": "hold",
+     "hold": 1.4
+    },
+    {
+     "picture": "Card: 12:00. A tiny click. The machine stops. A thread of smoke.",
+     "lines": [
+      [
+       "PIP",
+       "Oh, you little..."
+      ]
+     ],
+     "sound": "click, a sigh of air",
+     "camera": "slow push",
+     "hold": 1.0
+    },
+    {
+     "picture": "Across the room, one at a time: the lamp goes out. The TV. The fridge stops humming.",
+     "lines": [],
+     "sound": "click, click, click",
+     "camera": "hold on the two of them, the room dimming",
+     "hold": 1.5
+    },
+    {
+     "picture": "Near dark. A long pause.",
+     "lines": [
+      [
+       "JUNO",
+       "When did we buy the house?"
+      ],
+      [
+       "PIP",
+       "Same day."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.8
+    },
+    {
+     "picture": "A long creak overhead. Dust falls on Pip's sprout. They look up.",
+     "lines": [],
+     "sound": "one long creak",
+     "camera": "hold",
+     "hold": 1.2
+    }
+   ],
+   "number": 16,
+   "spoken_words": 45,
+   "estimated_seconds": 29.0,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "best-day",
+   "title": "Best Day",
+   "style": "collage",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "own-worst-enemy",
+   "cause": "other-person",
+   "emotion": "triumph",
+   "opening": "narration",
+   "mechanism": "visual reveal",
+   "ending": "new order",
+   "observation": "You find the spinach in your teeth at 5 p.m. and replay every smile you got that day.",
+   "key_line": "Today, I am magnetic.",
+   "caption_question": "Why does nobody ever tell you?",
+   "cast": [
+    [
+     "Deb",
+     "deb",
+     "Jessica"
+    ],
+    [
+     "Brent",
+     "brent",
+     "Brian"
+    ],
+    [
+     "Gary, silent",
+     "gary",
+     "no line"
+    ]
+   ],
+   "sets": "collage-bus-stop, collage-boardroom, collage-bathroom",
+   "reuse": "collage-chart",
+   "new": "a spinach leaf on the teeth",
+   "beats": [
+    {
+     "picture": "Held frame: Deb at the bus stop, lips closed, chin up, the only person in colour with the sun on her. Her voice over it.",
+     "lines": [
+      [
+       "DEB",
+       "Today, I am magnetic."
+      ]
+     ],
+     "sound": "",
+     "camera": "close, lips shut, the teeth not seen",
+     "hold": 0.0
+    },
+    {
+     "picture": "Gary, at the stop, looks at her mouth and smiles. She smiles back, turned from the camera.",
+     "lines": [
+      [
+       "DEB",
+       "Strangers smile at me."
+      ]
+     ],
+     "sound": "a bus passes",
+     "camera": "from behind her shoulder",
+     "hold": 0.0
+    },
+    {
+     "picture": "Boardroom. She presents, seen from behind. Brent cannot stop staring at her mouth.",
+     "lines": [
+      [
+       "DEB",
+       "Brent could not look away."
+      ]
+     ],
+     "sound": "",
+     "camera": "over her shoulder",
+     "hold": 0.0
+    },
+    {
+     "picture": "Brent slides a napkin across the table towards her and taps his own tooth.",
+     "lines": [
+      [
+       "DEB",
+       "He gave me his number."
+      ]
+     ],
+     "sound": "paper slide",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Bathroom, evening. She looks in the mirror, proud, and smiles her biggest smile.",
+     "lines": [
+      [
+       "DEB",
+       "Best day of my life."
+      ]
+     ],
+     "sound": "tap drip",
+     "camera": "the mirror, her face full on",
+     "hold": 0.8
+    },
+    {
+     "picture": "Across both front teeth: a whole, wide leaf of spinach. Her smile stays where it is.",
+     "lines": [],
+     "sound": "sting, then nothing",
+     "camera": "hold",
+     "hold": 2.0
+    },
+    {
+     "picture": "Same smile, tiny voice.",
+     "lines": [
+      [
+       "DEB",
+       "...The bus."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Next morning, bus stop. Brent arrives, beaming, a leaf across his teeth. She looks at it. She smiles at him and says nothing.",
+     "lines": [
+      [
+       "DEB",
+       "He's magnetic."
+      ]
+     ],
+     "sound": "",
+     "camera": "close on Deb",
+     "hold": 1.2
+    }
+   ],
+   "number": 17,
+   "spoken_words": 27,
+   "estimated_seconds": 17.9,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "bin-day",
+   "title": "Bin Day",
+   "style": "stick",
+   "recipient": "b",
+   "first": "b",
+   "to": "roommate",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "embarrassment",
+   "opening": "action",
+   "mechanism": "physical comedy",
+   "ending": "consequence",
+   "observation": "You hear the bin truck from bed and run down the street in your robe while the neighbours watch.",
+   "key_line": "He's left it very late.",
+   "caption_question": "Who else has chased the bin truck in a robe?",
+   "cast": [
+    [
+     "Dev",
+     "dev",
+     "Will"
+    ],
+    [
+     "Walt, next door",
+     "",
+     "George"
+    ],
+    [
+     "Margaret, next door",
+     "",
+     "Lily"
+    ],
+    [
+     "the driver",
+     "",
+     "Bill"
+    ]
+   ],
+   "sets": "stick-home-street",
+   "reuse": "stick-mug",
+   "new": "a wheelie bin, a bin truck, a robe",
+   "beats": [
+    {
+     "picture": "Dev bursts out of the front door in a robe, dragging a bin. In a window above, two neighbours with mugs.",
+     "lines": [
+      [
+       "WALT",
+       "And he's out of the door. Robe only."
+      ],
+      [
+       "MARGARET",
+       "He's left it very late, Walt."
+      ]
+     ],
+     "sound": "reversing beeps, door bang",
+     "camera": "medium on Dev, cut to the window",
+     "hold": 0.0
+    },
+    {
+     "picture": "He runs. A slipper flies off.",
+     "lines": [
+      [
+       "WALT",
+       "He's lost a slipper."
+      ],
+      [
+       "MARGARET",
+       "That's the left. He's never been strong on the left."
+      ]
+     ],
+     "sound": "slap of one bare foot",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The truck pulls away. A wheel comes off the bin. He drags it, sparks.",
+     "lines": [
+      [
+       "WALT",
+       "Forty yards. One wheel."
+      ],
+      [
+       "MARGARET",
+       "You can't teach this."
+      ]
+     ],
+     "sound": "scrape",
+     "camera": "wide, no cut",
+     "hold": 0.0
+    },
+    {
+     "picture": "He dives, slides, and the bin hits the back of the truck. He gets up with both arms in the air.",
+     "lines": [
+      [
+       "WALT",
+       "He's done it!"
+      ]
+     ],
+     "sound": "a clang, a faint cheer from an upstairs window",
+     "camera": "hold on his arms",
+     "hold": 1.0
+    },
+    {
+     "picture": "The driver leans out and looks at the bin.",
+     "lines": [
+      [
+       "DRIVER",
+       "Recycling's next week."
+      ]
+     ],
+     "sound": "air brakes",
+     "camera": "cut to the driver",
+     "hold": 1.5
+    },
+    {
+     "picture": "The truck drives off. Dev stands in the road, one slipper, arms slowly coming down.",
+     "lines": [],
+     "sound": "the beeps fade",
+     "camera": "wide, Dev small in the road",
+     "hold": 1.5
+    },
+    {
+     "picture": "In the window, Margaret sips.",
+     "lines": [
+      [
+       "MARGARET",
+       "Oh, that's heartbreaking."
+      ],
+      [
+       "WALT",
+       "Same time next week."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.0
+    }
+   ],
+   "number": 18,
+   "spoken_words": 49,
+   "estimated_seconds": 28.1,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "slept-wrong",
+   "title": "Slept Wrong",
+   "style": "toon",
+   "recipient": "b",
+   "first": "a",
+   "to": "best friend",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "recognition",
+   "opening": "mid-exchange",
+   "mechanism": "callback",
+   "ending": "callback",
+   "observation": "After forty you can be injured by sneezing, bending for a sock or sleeping, and friends trade those stories like war veterans.",
+   "key_line": "Sneezed. Lost the whole left side.",
+   "caption_question": "What's the stupidest way you've hurt your back?",
+   "cast": [
+    [
+     "the sloth",
+     "",
+     "Brian"
+    ],
+    [
+     "the goat",
+     "",
+     "George"
+    ],
+    [
+     "the young waiter (hamster)",
+     "",
+     "Liam"
+    ]
+   ],
+   "sets": "toon-restaurant",
+   "reuse": "toon-table, toon-mug",
+   "new": "none",
+   "beats": [
+    {
+     "picture": "Held frame: two old friends in a booth, staring into their drinks like men back from a war.",
+     "lines": [
+      [
+       "SLOTH",
+       "Sneezed. Tuesday. Lost the whole left side."
+      ]
+     ],
+     "sound": "low room tone",
+     "camera": "held two-shot",
+     "hold": 0.0
+    },
+    {
+     "picture": "The goat nods slowly.",
+     "lines": [
+      [
+       "GOAT",
+       "I bent down for a sock."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 0.8
+    },
+    {
+     "picture": "",
+     "lines": [
+      [
+       "SLOTH",
+       "Did you get it?"
+      ],
+      [
+       "GOAT",
+       "It's still down there."
+      ]
+     ],
+     "sound": "ice shifts in a glass",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The young waiter bounces in with a tray.",
+     "lines": [
+      [
+       "WAITER",
+       "What happened to you guys? Rugby?"
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to the waiter",
+     "hold": 1.2
+    },
+    {
+     "picture": "Nobody answers. The sloth turns his head, slowly, to the goat.",
+     "lines": [
+      [
+       "SLOTH",
+       "Tell him."
+      ],
+      [
+       "GOAT",
+       "...I slept."
+      ]
+     ],
+     "sound": "",
+     "camera": "slow push",
+     "hold": 1.0
+    },
+    {
+     "picture": "",
+     "lines": [
+      [
+       "SLOTH",
+       "You slept?"
+      ],
+      [
+       "GOAT",
+       "On my side."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 1.5
+    },
+    {
+     "picture": "The sloth raises his glass, very slowly.",
+     "lines": [],
+     "sound": "a far chair scrapes, as if the room had stood",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The waiter laughs and bends to pick up a dropped napkin. A small click. He stops halfway down. He does not come back up.",
+     "lines": [
+      [
+       "WAITER",
+       "Ow."
+      ]
+     ],
+     "sound": "one small click",
+     "camera": "wide on the waiter, no cut",
+     "hold": 1.4
+    },
+    {
+     "picture": "Neither old friend looks round.",
+     "lines": [
+      [
+       "GOAT",
+       "Sock?"
+      ],
+      [
+       "WAITER",
+       "...Napkin."
+      ],
+      [
+       "SLOTH",
+       "Sit down, son."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on the booth",
+     "hold": 0.0
+    }
+   ],
+   "number": 19,
+   "spoken_words": 42,
+   "estimated_seconds": 27.8,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "shortest-line",
+   "title": "Shortest Line",
+   "style": "cutout",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "money-services",
+   "cause": "other-person",
+   "emotion": "tension",
+   "opening": "mid-exchange",
+   "mechanism": "misunderstanding",
+   "ending": "new order",
+   "observation": "Whichever checkout line you pick becomes the slowest one, and switching only moves the problem with you.",
+   "key_line": "I've just got a few.",
+   "caption_question": "Why is the line you pick always the slowest?",
+   "cast": [
+    [
+     "Milo",
+     "milo",
+     "Liam"
+    ],
+    [
+     "Rosa",
+     "rosa",
+     "Lily"
+    ]
+   ],
+   "sets": "shop-till",
+   "reuse": "checkout-lane, hand-basket, shopping-cart, paper-bag",
+   "new": "a coin purse, a tin of peas",
+   "beats": [
+    {
+     "picture": "Milo slides into the shortest line, one item in hand. Rosa's cart rolls in just ahead of him.",
+     "lines": [
+      [
+       "ROSA",
+       "I've just got a few, dear."
+      ]
+     ],
+     "sound": "cart wheels",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "She opens a purse and starts counting. He glances at the next lane, empty, and moves.",
+     "lines": [
+      [
+       "MILO",
+       "Sorry. I'll just..."
+      ]
+     ],
+     "sound": "coin, coin, coin",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Rosa's cart rolls in ahead of him again.",
+     "lines": [
+      [
+       "ROSA",
+       "Hello again."
+      ]
+     ],
+     "sound": "cart wheels",
+     "camera": "same framing",
+     "hold": 0.8
+    },
+    {
+     "picture": "He moves to a third lane. He looks left. Rosa is there. He looks right. She is in front of him.",
+     "lines": [
+      [
+       "MILO",
+       "You were over there."
+      ],
+      [
+       "ROSA",
+       "Was I?"
+      ]
+     ],
+     "sound": "cart wheels",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "She counts one coin onto the belt. Then a second, after a while.",
+     "lines": [
+      [
+       "ROSA",
+       "One."
+      ]
+     ],
+     "sound": "coin",
+     "camera": "punch-in on the coin",
+     "hold": 1.5
+    },
+    {
+     "picture": "He looks in her cart. One tin of peas.",
+     "lines": [
+      [
+       "MILO",
+       "You don't need anything, do you?"
+      ]
+     ],
+     "sound": "",
+     "camera": "insert, then back",
+     "hold": 0.0
+    },
+    {
+     "picture": "She turns her head. The glasses catch the light.",
+     "lines": [
+      [
+       "ROSA",
+       "I'm seventy-nine, dear. I've got nowhere to be."
+      ]
+     ],
+     "sound": "",
+     "camera": "close on Rosa",
+     "hold": 0.8
+    },
+    {
+     "picture": "She leans in.",
+     "lines": [
+      [
+       "ROSA",
+       "I like your face when it happens."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Milo",
+     "hold": 1.4
+    },
+    {
+     "picture": "She rolls on. Over her shoulder.",
+     "lines": [
+      [
+       "ROSA",
+       "Same time tomorrow?"
+      ]
+     ],
+     "sound": "cart wheels",
+     "camera": "hold on Milo",
+     "hold": 0.0
+    }
+   ],
+   "number": 20,
+   "spoken_words": 42,
+   "estimated_seconds": 25.0,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "the-scale",
+   "title": "The Scale",
+   "style": "collage",
+   "recipient": "a",
+   "first": "a",
+   "to": "",
+   "territory": "own-worst-enemy",
+   "cause": "protagonist",
+   "emotion": "embarrassment",
+   "opening": "surprising image",
+   "mechanism": "physical comedy",
+   "ending": "callback",
+   "observation": "Everyone takes off shoes, belt and watch before the doctor's scale, as if a watch were the problem.",
+   "key_line": "Hop on the scale.",
+   "caption_question": "How much does a watch weigh?",
+   "cast": [
+    [
+     "Gary",
+     "gary",
+     "Chris"
+    ],
+    [
+     "Priya, the nurse",
+     "priya",
+     "Sarah"
+    ]
+   ],
+   "sets": "collage-therapy",
+   "reuse": "collage-phone",
+   "new": "a doctor's scale with a height bar, shoes, a belt, a watch, keys",
+   "beats": [
+    {
+     "picture": "Held frame: Gary with one foot raised over a scale, frozen, a pile of nothing yet on the chair. Priya with a clipboard.",
+     "lines": [
+      [
+       "PRIYA",
+       "Hop on."
+      ],
+      [
+       "GARY",
+       "One second."
+      ]
+     ],
+     "sound": "",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "Shoes off, one at a time, and set on the chair.",
+     "lines": [
+      [
+       "PRIYA",
+       "You can leave those on."
+      ],
+      [
+       "GARY",
+       "Shoes are heavy."
+      ]
+     ],
+     "sound": "thud, thud",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Belt. He lays his watch on the pile like evidence.",
+     "lines": [
+      [
+       "GARY",
+       "This watch is three pounds."
+      ]
+     ],
+     "sound": "buckle, clink",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Wallet. Keys. Phone. Glasses.",
+     "lines": [
+      [
+       "PRIYA",
+       "Can you see the number?"
+      ],
+      [
+       "GARY",
+       "I don't want to."
+      ]
+     ],
+     "sound": "clink, clink",
+     "camera": "the pile grows in the corner of the frame",
+     "hold": 0.0
+    },
+    {
+     "picture": "He takes out his gum and hands it to her. He breathes all the way out and steps on, leaning back.",
+     "lines": [],
+     "sound": "a long exhale",
+     "camera": "hold",
+     "hold": 1.3
+    },
+    {
+     "picture": "",
+     "lines": [
+      [
+       "PRIYA",
+       "Two-oh-one."
+      ],
+      [
+       "GARY",
+       "Is that with the clipboard?"
+      ]
+     ],
+     "sound": "beep",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "She lowers the height bar onto his head.",
+     "lines": [
+      [
+       "PRIYA",
+       "Five nine."
+      ],
+      [
+       "GARY",
+       "I'm five eleven."
+      ],
+      [
+       "PRIYA",
+       "Not any more."
+      ]
+     ],
+     "sound": "a small metal click",
+     "camera": "punch-in on Gary",
+     "hold": 1.4
+    },
+    {
+     "picture": "He looks at her. He looks at the pile on the chair. He picks up one shoe and holds it to his chest.",
+     "lines": [
+      [
+       "GARY",
+       "It's in the shoes."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Gary",
+     "hold": 1.0
+    }
+   ],
+   "number": 21,
+   "spoken_words": 44,
+   "estimated_seconds": 26.4,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "quiet-please",
+   "title": "Quiet Please",
+   "style": "soft",
+   "recipient": "b",
+   "first": "b",
+   "to": "best friend",
+   "territory": "relationships",
+   "cause": "other-person",
+   "emotion": "affection",
+   "opening": "surprising image",
+   "mechanism": "callback",
+   "ending": "new order",
+   "observation": "Your stomach only speaks in silent rooms, and across a silent room another stomach answers.",
+   "key_line": "QUIET PLEASE",
+   "caption_question": "Why does it only happen in silent rooms?",
+   "cast": [
+    [
+     "Pip",
+     "pip",
+     "stomach foley"
+    ],
+    [
+     "Juno",
+     "juno",
+     "stomach foley"
+    ],
+    [
+     "Bo",
+     "bo",
+     "Eric"
+    ]
+   ],
+   "sets": "soft-meeting-room",
+   "reuse": "soft-chair",
+   "new": "a QUIET PLEASE sign, books",
+   "beats": [
+    {
+     "picture": "Bo, a finger to his lips, turns to the room. A silent reading room. Pip with a book, Juno far across from him.",
+     "lines": [
+      [
+       "BO",
+       "Shh."
+      ]
+     ],
+     "sound": "a clock, one page",
+     "camera": "medium on Bo under the sign, cut to Pip",
+     "hold": 0.0
+    },
+    {
+     "picture": "Pip's belly wobbles. Bo's eyes slide over. Tinted caption, small: 'hello?'",
+     "lines": [],
+     "sound": "a long rising growl",
+     "camera": "close on Pip",
+     "hold": 1.0
+    },
+    {
+     "picture": "Across the room, Juno's belly wobbles. Caption in a second tint: 'hello.' Both of them look up.",
+     "lines": [],
+     "sound": "a shorter growl in reply",
+     "camera": "cut to Juno",
+     "hold": 1.0
+    },
+    {
+     "picture": "Captions, back and forth: 'he skipped breakfast' / 'she had a rice cake' / 'a what?' / 'i know'.",
+     "lines": [],
+     "sound": "four growls, two pitches",
+     "camera": "cross-cut, held faces",
+     "hold": 0.0
+    },
+    {
+     "picture": "They hold each other's eye. A blush on each. Captions: 'are you seeing anyone?' / 'just a yogurt'.",
+     "lines": [],
+     "sound": "two soft gurgles",
+     "camera": "hold",
+     "hold": 1.0
+    },
+    {
+     "picture": "Bo walks up between them, slowly. Finger rises.",
+     "lines": [
+      [
+       "BO",
+       "Shh!"
+      ]
+     ],
+     "sound": "footsteps",
+     "camera": "hold",
+     "hold": 1.2
+    },
+    {
+     "picture": "A vast, deep growl from Bo. The table shakes. A big caption: 'HELLO.' Everyone looks at his belly.",
+     "lines": [],
+     "sound": "a very long low growl",
+     "camera": "crash zoom on Bo's belly",
+     "hold": 1.2
+    },
+    {
+     "picture": "Bo's caption: 'NOTHING SINCE TUESDAY. WHO HAS SNACKS?' Bo keeps his finger on his lips. Pip slides a yogurt along the table.",
+     "lines": [
+      [
+       "BO",
+       "...Shh."
+      ]
+     ],
+     "sound": "a small squeak of plastic",
+     "camera": "hold on Bo",
+     "hold": 1.0
+    }
+   ],
+   "number": 22,
+   "spoken_words": 3,
+   "estimated_seconds": 19.4,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "some-assembly",
+   "title": "Some Assembly",
+   "style": "stick",
+   "recipient": "b",
+   "first": "a",
+   "to": "partner",
+   "territory": "relationships",
+   "cause": "institution",
+   "emotion": "tension",
+   "opening": "narration",
+   "mechanism": "visual reveal",
+   "ending": "reveal",
+   "observation": "Flat-pack furniture ends with four spare screws and a review of the relationship.",
+   "key_line": "Step one: two people, smiling.",
+   "caption_question": "Has flat-pack furniture ever nearly ended a relationship?",
+   "cast": [
+    [
+     "Noor",
+     "noor",
+     "Jessica"
+    ],
+    [
+     "Dev",
+     "dev",
+     "Will"
+    ]
+   ],
+   "sets": "stick-studio-flat",
+   "reuse": "stick-card",
+   "new": "a flat-pack wardrobe in stages, a manual with drawn steps as inserts",
+   "beats": [
+    {
+     "picture": "Held frame: Noor on the floor with an open manual, Dev among planks. Insert: two drawn figures, smiling.",
+     "lines": [
+      [
+       "NOOR",
+       "Step one. Two people, smiling."
+      ],
+      [
+       "DEV",
+       "Easy."
+      ]
+     ],
+     "sound": "paper",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "The wardrobe half up. A door is on backwards.",
+     "lines": [
+      [
+       "DEV",
+       "That's the wrong way round."
+      ],
+      [
+       "NOOR",
+       "You said you measured."
+      ]
+     ],
+     "sound": "drill stops",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Noor looks down. Insert, step 9: two figures, a speech bubble: YOU SAID YOU MEASURED. They both stare.",
+     "lines": [
+      [
+       "NOOR",
+       "...Step nine."
+      ]
+     ],
+     "sound": "",
+     "camera": "insert, held to read",
+     "hold": 1.6
+    },
+    {
+     "picture": "She turns the page. Insert, step 10: one figure, arms crossed.",
+     "lines": [
+      [
+       "DEV",
+       "It's fine."
+      ],
+      [
+       "NOOR",
+       "It says you say that."
+      ]
+     ],
+     "sound": "page",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "Insert, step 14: one figure on a sofa. Insert, step 22: a suitcase. Noor's phone rings: MOM.",
+     "lines": [
+      [
+       "NOOR",
+       "Step twenty-three: Call your mother."
+      ]
+     ],
+     "sound": "page, page, phone rings",
+     "camera": "hold on Noor",
+     "hold": 1.2
+    },
+    {
+     "picture": "Later. It stands. They stand, arm in arm. Four screws in Dev's hand. Insert, step 40: two figures hugging, four small screws.",
+     "lines": [
+      [
+       "DEV",
+       "That's normal, right?"
+      ],
+      [
+       "NOOR",
+       "It says that's normal."
+      ]
+     ],
+     "sound": "",
+     "camera": "wide on the wardrobe",
+     "hold": 0.0
+    },
+    {
+     "picture": "Dev turns the last page. Insert, step 41: one figure alone, happy, on a new sofa. The figure has a bun.",
+     "lines": [
+      [
+       "DEV",
+       "There's one more."
+      ]
+     ],
+     "sound": "page",
+     "camera": "insert, held to read",
+     "hold": 1.6
+    },
+    {
+     "picture": "Dev looks at the page. He looks up.",
+     "lines": [
+      [
+       "DEV",
+       "...That's your bun."
+      ]
+     ],
+     "sound": "",
+     "camera": "cut to Dev",
+     "hold": 0.8
+    },
+    {
+     "picture": "Noor is reading it very closely, with the smallest smile.",
+     "lines": [],
+     "sound": "",
+     "camera": "hold on Noor",
+     "hold": 1.2
+    }
+   ],
+   "number": 23,
+   "spoken_words": 42,
+   "estimated_seconds": 28.0,
+   "model": "claude-opus-5-5"
+  },
+  {
+   "slug": "one-more-taste",
+   "title": "One More Taste",
+   "style": "toon",
+   "recipient": "a",
+   "first": "b",
+   "to": "",
+   "territory": "money-services",
+   "cause": "other-person",
+   "emotion": "recognition",
+   "opening": "question",
+   "mechanism": "callback",
+   "ending": "callback",
+   "observation": "The person ahead of you in the ice cream queue tries every flavour while the line grows behind them.",
+   "key_line": "Can I try the pistachio?",
+   "caption_question": "Can I try the pistachio?",
+   "cast": [
+    [
+     "the fox",
+     "",
+     "Alice"
+    ],
+    [
+     "the server (hamster)",
+     "",
+     "Liam"
+    ],
+    [
+     "Bruno",
+     "bruno",
+     "Bill"
+    ],
+    [
+     "the goat",
+     "",
+     "George"
+    ]
+   ],
+   "sets": "toon-parlour-front",
+   "reuse": "toon-parlour-case, toon-cone",
+   "new": "tiny tasting spoons in a growing pile",
+   "beats": [
+    {
+     "picture": "The fox leans over the case, tiny spoon going in. The server already holding the next one. Bruno behind her.",
+     "lines": [
+      [
+       "FOX",
+       "Can I try the pistachio?"
+      ]
+     ],
+     "sound": "spoon clink",
+     "camera": "medium",
+     "hold": 0.0
+    },
+    {
+     "picture": "Spoons pile on the counter.",
+     "lines": [
+      [
+       "FOX",
+       "Can I try the mango? The other mango?"
+      ]
+     ],
+     "sound": "clink, clink",
+     "camera": "hold",
+     "hold": 0.0
+    },
+    {
+     "picture": "The line behind Bruno has grown: the goat, a rabbit, a raccoon, out of the door.",
+     "lines": [
+      [
+       "GOAT",
+       "Is she buying a house?"
+      ]
+     ],
+     "sound": "the door bell, again",
+     "camera": "cut wider",
+     "hold": 0.0
+    },
+    {
+     "picture": "A hill of spoons. The server is grey with effort.",
+     "lines": [
+      [
+       "SERVER",
+       "We have eleven flavours."
+      ],
+      [
+       "FOX",
+       "Can I try the first one again?"
+      ]
+     ],
+     "sound": "clink",
+     "camera": "punch-in on the spoons",
+     "hold": 1.2
+    },
+    {
+     "picture": "Bruno, shaking slightly, very quiet.",
+     "lines": [
+      [
+       "BRUNO",
+       "Please."
+      ]
+     ],
+     "sound": "",
+     "camera": "hold on Bruno",
+     "hold": 0.8
+    },
+    {
+     "picture": "The fox lifts one finger. The whole line leans in.",
+     "lines": [
+      [
+       "FOX",
+       "You know what?"
+      ]
+     ],
+     "sound": "",
+     "camera": "hold, the line leaning",
+     "hold": 1.5
+    },
+    {
+     "picture": "",
+     "lines": [
+      [
+       "FOX",
+       "I'm actually pretty full. Thanks!"
+      ]
+     ],
+     "sound": "door bell, she leaves",
+     "camera": "hold on the server",
+     "hold": 0.0
+    },
+    {
+     "picture": "Silence. Bruno steps up to the case. The whole line breathes out.",
+     "lines": [
+      [
+       "SERVER",
+       "What can I get you?"
+      ]
+     ],
+     "sound": "",
+     "camera": "hold",
+     "hold": 1.3
+    },
+    {
+     "picture": "Bruno studies the case. He picks one up with great care.",
+     "lines": [
+      [
+       "BRUNO",
+       "Can I try the pistachio?"
+      ]
+     ],
+     "sound": "a distant groan from the line",
+     "camera": "hold on Bruno",
+     "hold": 0.0
+    }
+   ],
+   "number": 24,
+   "spoken_words": 48,
+   "estimated_seconds": 27.9,
+   "model": "claude-opus-5-5"
+  }
+ ]
+}
