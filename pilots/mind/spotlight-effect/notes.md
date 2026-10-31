@@ -38,7 +38,9 @@ pilot. The channel sting is a function, not a registered part.
 - The mechanism runs three lines. A viewer who only wants the joke gets a slower middle than the opening; cutting
   "You are the center of your own attention." would need the beam to carry that idea alone.
 - The fox appears only in the row. A pilot with room for a third reaction could use it at the end.
-- The shirt sits in front of the arms' upper edge. It reads as a shirt, but a clothing layer under the arms would be
-  cleaner if shirts come back in the series.
+- The shirt is drawn over the figure, from the chest down, so its hem covers the inner edge of the paws. It reads as a
+  shirt, but a clothing layer under the arms would be cleaner if shirts come back in the series.
+- The goat's clipboard covers his mouth while he speaks, so his lip sync does not show until it drops. A smaller board
+  set lower would show it.
 - The name lands at 37% of the way in, a little ahead of the 40% target. A longer hold on her reaction would close that
   gap, at the cost of pace.

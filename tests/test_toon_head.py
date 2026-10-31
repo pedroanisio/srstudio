@@ -394,3 +394,14 @@ def test_the_fox_cheek_has_no_ink_line_under_it(x):
     fox = toon_rigs.rig_of("toon-fox")
     top = next(y for y in (y / 2 for y in range(1320, 1440)) if _top_colour(fox.skull(), x, y) is None)
     assert all(_top_colour(fox.skull(), x, y) == toon_inked.FOX.coat for y in (top - 2.0, top - 4.0, top - 6.0))
+
+
+@EVERY_RIG
+def test_the_chest_is_under_the_head_wherever_the_head_goes(rig):
+    x, y = toon_head.chest(rig)
+    assert x == rig.neck[0]
+    for turn, drop in toon_head._bounds(rig):
+        a = math.radians(turn)
+        for px, py in rig.head:
+            dx, dy = px - rig.neck[0], py - rig.neck[1]
+            assert rig.neck[1] + dx * math.sin(a) + dy * math.cos(a) + drop <= y + 1e-9

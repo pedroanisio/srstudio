@@ -103,6 +103,19 @@ def reach(rig: HeadRig) -> HeadPlan:
     return HeadPlan(turn=Channel(turns), nod=Channel(drops))
 
 
+def chest(rig: HeadRig) -> Point:
+    """The top of the chest in the figure's own reference pixels: on the neck's line, under the lowest the head
+    reaches at any corner of what its style can do. Something worn from here clears the face whatever the head does,
+    at any scale, as long as it is drawn in the figure's coordinates (:func:`srstudio.toon_sketch.figure_group`)."""
+    lowest = 0.0
+    for turn, drop in _bounds(rig):
+        a = math.radians(turn)
+        for x, y in rig.head:
+            dx, dy = x - rig.neck[0], y - rig.neck[1]
+            lowest = max(lowest, rig.neck[1] + dx * math.sin(a) + dy * math.cos(a) + drop)
+    return (rig.neck[0], lowest)
+
+
 def open_seam(rig: HeadRig) -> list[tuple[Point, float, float]]:
     """Where the seam opens: every ``(point, turn, drop)`` on the cover line (:data:`SEAM_ROOM` above it for a ruff),
     more than :attr:`HeadRig.free` from its ends, that the head does not reach behind with every channel at its limit.
