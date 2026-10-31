@@ -5,6 +5,7 @@ Each test feeds the loader one broken file next to a good one, and asserts the t
 
 import copy
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -200,3 +201,30 @@ def test_verify_refuses_a_reel_that_is_not_published_and_does_not_hide_a_seen_fa
     releases = {"cleaning-fee": release("cleaning-fee")}
     problems = bible.verify(loaded, releases, {"cleaning-fee"}, episodes, characters=set())
     assert problems == ["rex: reels not published: pilot-one"]
+
+
+def test_verify_flags_a_name_that_only_a_voice_credit_gives_and_no_reel_says(tmp_path):
+    episodes = tmp_path / "episodes"
+    (episodes / "cleaning-fee").mkdir(parents=True)
+    (episodes / "cleaning-fee" / "script.json").write_text(json.dumps([{"speaker": "boss", "text": "Teamwork!"}]))
+    document = cast_document()
+    document["characters"][0]["name"] = "Eric"
+    loaded = bible.load(write(tmp_path / "bible", document))
+    gift = release("cleaning-fee", parts={"toon-dog": 1})
+    credit = replace(gift, post=replace(gift.post, credit="ElevenLabs premade voice Eric."))
+    problems = bible.verify(loaded, {"cleaning-fee": credit}, {"cleaning-fee"}, episodes, characters={"toon-dog"})
+    assert problems == ["rex: the name 'Eric' is in no title, description, line or speaker of its reels"]
+
+
+def test_verify_accepts_a_name_a_speaker_or_a_line_gives_with_or_without_the_article(tmp_path):
+    episodes = tmp_path / "episodes"
+    (episodes / "cleaning-fee").mkdir(parents=True)
+    (episodes / "cleaning-fee" / "script.json").write_text(
+        json.dumps([{"speaker": "x", "text": "Teamwork! Ask the Boss."}])
+    )
+    document = cast_document()
+    document["characters"][0]["name"] = "The Boss"
+    document["characters"][1]["name"] = "Teamwork (the second)"  # a bracketed label is the bible's, not the reel's
+    loaded = bible.load(write(tmp_path / "bible", document))
+    releases = {"cleaning-fee": release("cleaning-fee")}
+    assert bible.verify(loaded, releases, {"cleaning-fee"}, episodes, characters=set()) == []

@@ -572,4 +572,8 @@ def verify(
         gone = sorted(set(c.reels) - set(published))
         if gone:
             problems.append(f"{c.slug}: reels not published: {', '.join(gone)}")
+        elif c.status == "canon" and not any(
+            bible_inventory.named_in(c.name, episodes / slug, releases[slug]) for slug in c.reels if slug in releases
+        ):
+            problems.append(f"{c.slug}: the name {c.name!r} is in no title, description, line or speaker of its reels")
     return problems
