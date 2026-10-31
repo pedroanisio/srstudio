@@ -380,6 +380,8 @@ def main(argv=None):
                 print(f"  clipped line {line}: {lost:.2f} s of speech lost")
             for at, gap in r.crowded:
                 print(f"  crowded line at {at:.2f}: {gap:.2f} s after the line before")
+            for t in r.short:
+                print(f"  short text at {t.start:.2f}: {t.text!r} for {t.seconds:.3f} s, under {craft.MIN_DISPLAY} s")
             for start, end in r.opening:
                 print(f"  opening silence {start:.2f}–{end:.2f}  {end - start:.2f} s")
             if not r.opening:

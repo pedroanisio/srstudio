@@ -12,6 +12,7 @@ blind to the wait before the first line. :func:`holding` lists every stretch of 
 :func:`crowded` lists the lines that start with no breath after the one before, which :func:`pauses` cannot see.
 :func:`flashing` lists every stretch of a render that flashes, where the strict encode's check names only the first; it
 says where to look, and the encode stays the verdict.
+:func:`short_text` lists the text a scene shows too briefly to read, from the document alone, before an encode.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
 
@@ -62,12 +63,13 @@ __all__ = [
     "measure",
 ]
 
-SCHEMA = "1.5.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still;
+SCHEMA = "1.6.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still;
 # 1.4.0: the lines a recording cut short
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 STATEMENT_BY = 3.0  # seconds: the first statement is finished by here, so the trouble is clear by second 3
 PAUSE = 0.8  # seconds between lines that count as a pause
+MIN_DISPLAY = 0.8333  # seconds: the engine's default minDisplayTime (5/6 s) for a text layer
 BREATH = 0.15  # seconds: a line that starts sooner than this after the last one runs into it
 OPENING = 5.0  # seconds of a reel that have to hold a stranger
 OPENING_LIMIT = 1.0  # seconds without a line that the opening can afford
@@ -134,6 +136,16 @@ class Hold:
 
 
 @dataclass(frozen=True)
+class Short:
+    """A text layer on screen for less than the engine lets through, as :func:`short_text` reads the scene."""
+
+    layer: str
+    text: str
+    start: float
+    seconds: float
+
+
+@dataclass(frozen=True)
 class Craft:
     slug: str
     moves: list[Move]
@@ -143,6 +155,7 @@ class Craft:
     holds: list[Hold] = field(default_factory=list)
     clipped: list[tuple[str, float]] = field(default_factory=list)
     crowded: list[tuple[float, float]] = field(default_factory=list)
+    short: list[Short] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -163,6 +176,7 @@ class Craft:
             "holds": [asdict(h) for h in self.holds],
             "clipped": [{"line": line, "lost": lost} for line, lost in self.clipped],
             "crowded": [{"start": at, "gap": gap} for at, gap in self.crowded],
+            "short": [asdict(s) for s in self.short],
         }
 
 
@@ -218,6 +232,42 @@ def doubled_captions(document: bytes) -> list[str]:
         for a, b in zip(held, held[1:], strict=False)
         if a[1] > b[0] + DOUBLED
     ]
+
+
+def short_text(document: bytes) -> list[Short]:
+    """The text layers of the scene ``document`` that its legibility check will refuse, read without rendering. A
+    layer's window is absolute, cut by each ancestor's window and by the project's end, and counted in whole frames, as
+    the engine counts it; a layer that is never drawn is not listed. Opacity and conditions are not read, so the strict
+    encode stays the verdict. A scene with the check off has no short text."""
+    try:
+        root = ET.fromstring(document)
+    except ET.ParseError as e:
+        raise CraftError(f"not a scene document: {e}") from None
+    project = root.find("project")
+    access = root.find("metadata/accessibility")
+    if project is None or access is None or access.get("legibilityCheck", "off") == "off":
+        return []
+    fps, duration = _seconds(project, "fps"), _seconds(project, "duration")
+    least = float(access.get("minDisplayTime", MIN_DISPLAY))
+    words = {a.get("id"): a.get("text", "") for a in root.iterfind("assets/text")}
+    shifts = _sequence_shifts(root)
+    parents = {child: node for node in root.iter() for child in node}
+    found = []
+    for layer in root.iter("layer"):
+        if layer.get("asset") not in words:
+            continue
+        start, end = 0.0, duration
+        node: ET.Element | None = layer
+        while node is not None:
+            shift = shifts.get(node, 0.0)
+            start = max(start, shift + _seconds(node, "start"))
+            if node.get("end") is not None:
+                end = min(end, shift + _seconds(node, "end"))
+            node = parents.get(node)
+        frames = math.ceil(end * fps - 1e-9) - math.ceil(start * fps - 1e-9)
+        if 0 < frames and frames / fps < least:
+            found.append(Short(layer.get("id", ""), words[layer.get("asset")], round(start, 3), round(frames / fps, 3)))
+    return found
 
 
 def _sequence_shifts(root: ET.Element) -> dict[ET.Element, float]:
@@ -560,4 +610,5 @@ def measure(
         holds,
         clipped(project),
         crowded(spoken),
+        short_text(scene.read_bytes()),
     )

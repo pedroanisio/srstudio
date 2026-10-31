@@ -292,6 +292,68 @@ def test_the_report_and_the_command_name_a_crowded_line(tmp_path, monkeypatch, c
     assert "crowded line at 1.05: 0.05 s after the line before" in capsys.readouterr().out
 
 
+SHORT_SCENE = """<scene version="1.1">
+  <project width="1080" height="1920" fps="30" duration="3"/>
+  <metadata title="t" description="t"><accessibility description="t" {check}/></metadata>
+  <assets>
+    <text id="a" text="NESTED"/><text id="b" text="GROUP"/><text id="c" text="CLAMPED"/><text id="d" text="FINE"/>
+    <image id="p" src="p.png"/>
+  </assets>
+  <composition>
+    <group id="ga" start="1" end="2"><layer id="la" asset="a" start="0.2" end="0.7"/></group>
+    <group id="gb" start="0.5" end="1"><layer id="lb" asset="b"/></group>
+    <layer id="lc" asset="c" start="2.7" end="4"/>
+    <layer id="ld" asset="d" start="0" end="2"/>
+    <layer id="lp" asset="p" start="0" end="0.1"/>
+  </composition>
+</scene>"""
+
+
+def short_scene(check: str = 'legibilityCheck="warn"') -> bytes:
+    return SHORT_SCENE.format(check=check).encode()
+
+
+def test_short_text_agrees_with_the_engine_on_a_scene_it_encoded():
+    """scene-render 0.8.0 reported lb at 0.500 s and lc at 0.300 s on this document, and nothing for la, which a group
+    closed before it could start, or ld. Windows are absolute, cut by the ancestors and by the project's end."""
+    assert craft.short_text(short_scene()) == [
+        craft.Short("lb", "GROUP", 0.5, 0.5),
+        craft.Short("lc", "CLAMPED", 2.7, 0.3),
+    ]
+
+
+def test_a_stated_minimum_replaces_the_default():
+    assert [s.layer for s in craft.short_text(short_scene('legibilityCheck="warn" minDisplayTime="0.4"'))] == ["lc"]
+
+
+@pytest.mark.parametrize("check", ["", 'legibilityCheck="off"'])
+def test_a_scene_with_the_check_off_has_no_short_text(check):
+    assert craft.short_text(short_scene(check)) == []
+
+
+def test_short_text_refuses_what_is_not_a_scene():
+    with pytest.raises(craft.CraftError, match="not a scene"):
+        craft.short_text(b"<scene")
+
+
+def test_a_window_counts_whole_frames_as_the_engine_does():
+    window = b'start="0" end="2"'
+    assert craft.Short("ld", "FINE", 0.0, 0.8) in craft.short_text(
+        short_scene().replace(window, b'start="0" end="0.79"')
+    )
+    assert "ld" not in [s.layer for s in craft.short_text(short_scene().replace(window, b'start="0" end="0.82"'))]
+
+
+def test_the_report_and_the_command_name_short_text(tmp_path, monkeypatch, capsys):
+    folder = project(tmp_path)
+    (folder / f"{folder.name}.scene.xml").write_bytes(short_scene())
+    report = craft.measure(folder)
+    assert [s["layer"] for s in report.to_dict()["short"]] == ["lb", "lc"]
+    monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
+    assert main(["craft", str(folder)]) == 0
+    assert "short text at 0.50: 'GROUP' for 0.500 s" in capsys.readouterr().out
+
+
 def test_measure_without_a_video_leaves_levels_unmeasured(tmp_path):
     report = craft.measure(project(tmp_path))
     assert report.pauses == [craft.Pause(1.0, 3.0, None)]
@@ -451,7 +513,7 @@ def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path,
     folder = project(tmp_path)
     monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
     report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.5.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.6.0"
     assert report.to_dict()["flashes"][0]["share"] == 1.0
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
