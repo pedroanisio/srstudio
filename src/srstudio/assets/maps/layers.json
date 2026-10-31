@@ -1,0 +1,57 @@
+{
+  "generated-by": "tools/maps/build_layers.py",
+  "layers": {
+    "borders": {
+      "bytes": 310063,
+      "input_sha256": "2faac4f6b34386f3d21b6e018cf151f241f00e5c936d44dd17d7d9bfb147fa48",
+      "licence": "public domain",
+      "sha256": "881787ddee499340e90ecc9630a974bb73f348d8740a38c04932673ec69d92e9",
+      "source": "Natural Earth 1:50m ne_50m_admin_0_boundary_lines_land.geojson, nvkelso/natural-earth-vector v5.1.2 (f1890d9f152c896d250a77557a5751a93d494776)"
+    },
+    "dots": {
+      "bytes": 123543,
+      "centres": {
+        "adelaide": [
+          -34.92866,
+          138.59863
+        ],
+        "inside": [
+          21.70282,
+          99.34224
+        ]
+      },
+      "dots": {
+        "adelaide": 44,
+        "inside": 3954,
+        "rest": 4194
+      },
+      "input_sha256": "6a3dac929afc5f5f77893c81b6e2a0c4771d76e267d2a2a19ade526f0e25ddc2",
+      "licence": "CC BY 4.0, European Commission JRC: summed inside circles, drawn as dots, recoloured",
+      "people": {
+        "adelaide": 43750398,
+        "inside": 3954047236,
+        "rest": 4194190902
+      },
+      "people_per_dot": 1000000,
+      "radius_km": 3300.0,
+      "seed": 2025,
+      "sha256": "4b65e8c8ac02797af2df22d62d0aca8132fd7107091941b058ab35ce3f1b54a8",
+      "source": "GHS-POP R2023A, epoch 2025, 30 arc-seconds (GHS_POP_E2025_GLOBE_R2023A_4326_30ss_V1_0)"
+    },
+    "lakes": {
+      "bytes": 261098,
+      "input_sha256": "d350b75978b26fe839b797c2c529b2fb8f47fb3983c03f4964e36d5df9378a52",
+      "licence": "public domain",
+      "sha256": "b33691e5e96111fe1422504fccb60ceeb2e1c55038f00fde203f26031c639914",
+      "source": "Natural Earth 1:50m ne_50m_lakes.geojson, nvkelso/natural-earth-vector v5.1.2 (f1890d9f152c896d250a77557a5751a93d494776)"
+    },
+    "land": {
+      "bytes": 1012453,
+      "input_sha256": "e874b27a51d146452be360cafb3cc50c86001074a67d534113e6534682f9826b",
+      "licence": "public domain",
+      "sha256": "9ad7541851f92e6a2978da6b85b6fba306e48614823b03ddf52ce3bbd422c012",
+      "source": "Natural Earth 1:50m ne_50m_land.geojson, nvkelso/natural-earth-vector v5.1.2 (f1890d9f152c896d250a77557a5751a93d494776)"
+    }
+  },
+  "schema_version": "1.0.0"
+}
