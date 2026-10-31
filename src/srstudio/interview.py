@@ -69,6 +69,7 @@ FPS = 30
 LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: a line's gain
 VOICE_PEAK = 0.78  # the loudest moment of the dialogue, before the master's loudness pass
 ROOM_TONE = 0.00018  # standard deviation of the room tone
+MIN_LINE_GAIN = -24.0  # the furthest a line sits under the others, in dB: below this it is gone, not quiet
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
 
 
@@ -85,6 +86,7 @@ class Spoken:
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
+    gain: float = 0.0  # dB from the other lines, for one said under them: a whisper, a word over the shoulder
 
 
 @dataclass(frozen=True)
@@ -156,6 +158,8 @@ class Interview:
                 raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
             if not (checks.number(line.gain) and LEVELS[0] <= line.gain <= LEVELS[1]):
                 raise InterviewError(f"line {i}: gain {line.gain!r} must lie in {LEVELS}")
+            if not (checks.number(line.gain) and MIN_LINE_GAIN <= line.gain <= 0):
+                raise InterviewError(f"line {i}: gain must be {MIN_LINE_GAIN}..0 dB, got {line.gain!r}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
