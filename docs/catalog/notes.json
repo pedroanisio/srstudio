@@ -981,7 +981,15 @@
     },
     "toon-stuck-note": {
       "title": "Bilhete colado"
-    }
+    },
+    "toon-car-inside": {"title": "Dentro do carro"},
+    "toon-car-seat": {"title": "Banco do carro"},
+    "toon-side-car": {"title": "Carro de lado"},
+    "toon-school-bus": {"title": "Ônibus escolar"},
+    "toon-banana": {"title": "Banana"},
+    "toon-dash-vents": {"title": "Painel do carro"},
+    "toon-steering-wheel": {"title": "Volante"},
+    "toon-tally-pad": {"title": "Bloco de contagem"}
   },
   "gallery": [
     {

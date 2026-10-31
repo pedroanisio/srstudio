@@ -84,7 +84,8 @@ TV_DEAD, TV_FACE_DEAD, CRACK = "#15161c", "#262a33", "#c8d6e6"
 GULL_WHITE, GULL_GREY, GULL_BEAK, GULL_LEG = "#fbfbf8", "#a9b2bd", "#f0b429", "#e98a3c"
 REMOTE, REMOTE_KEY = "#23252b", "#e2483d"
 SNORE_INK = "#ffffff"
-HELD = ("remote", "note", "keys", "torch", "")
+HELD = ("remote", "note", "keys", "torch", "pencil", "")
+PENCIL_REACH, PENCIL_DROP = 104.0, 30.0  # from the fist to the point
 KEY_METAL, KEY_BRASS, TORCH, TORCH_GLOW = "#c3cad3", "#e0b13e", "#3b3f4a", "#ffe680"
 KEY_SWING, KEY_PERIOD = 14.0, 0.5  # degrees each way, seconds a swing
 SNORE_RISE = 90.0  # how far a Z rises, reference pixels
@@ -465,6 +466,16 @@ def paw(
             _keys(cv, g, tip - 4, y + 22, start, end)
         elif holding == "torch":
             _torch(cv, g, tip, y)
+        elif holding == "pencil":
+            _pencil(cv, g, tip - side * 30, y - 4, -side)
+
+
+def _pencil(cv: Canvas, g, x: float, y: float, forward: float) -> None:
+    """A pencil in the fist at ``x``, ``y``, its point ``forward`` of it and a little down."""
+    tip = (x + forward * PENCIL_REACH, y + PENCIL_DROP)
+    _line(cv, g, [(x - forward * 30, y - 20), tip], 20.0)
+    _line(cv, g, [(x - forward * 28, y - 19), tip], 13.0, "#f2c14e")
+    _line(cv, g, [(tip[0] - forward * 12, tip[1] - 4), tip], 9.0)
 
 
 def _keys(cv: Canvas, g, x: float, y: float, start: float, end: float) -> None:

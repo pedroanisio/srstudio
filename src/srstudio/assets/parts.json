@@ -5651,6 +5651,23 @@
         }
       ]
     },
+    "toon-banana": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One banana on its side. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "455140f25ca16f3868f2188b8dfc9facc6d47e3ff578dbfebc986d8cfcf8417b",
+          "rig": null
+        }
+      ]
+    },
     "toon-bear": {
       "kind": "character",
       "style": "toon",
@@ -5788,6 +5805,40 @@
           "proof": "",
           "approval": null,
           "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "toon-car-inside": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Inside a car from the dashboard: its paint round one wide window with the road going past. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f3471d5bc852a3723a4621288cf4b012fc0b721fe536ff577be752518ce22c0",
+          "rig": null
+        }
+      ]
+    },
+    "toon-car-seat": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A car seat's back and headrest, behind whoever sits in it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e3b6fcadffd6cf1a7a2777b7e6e34d3d9160e9a382e29a9a4c8a93d5cef435a0",
           "rig": null
         }
       ]
@@ -5930,6 +5981,23 @@
           "proof": "",
           "approval": null,
           "drawing": "4879ac4de13faad771051abe60ed899119e1da9991a2a0c43ff9e48f8927cd26",
+          "rig": null
+        }
+      ]
+    },
+    "toon-dash-vents": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dashboard's front: two air vents and a glovebox. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c3f76df26f224dd4e683fa152ee686c58086c73f9516a3b5e7180924b51264d1",
           "rig": null
         }
       ]
@@ -7016,6 +7084,23 @@
         }
       ]
     },
+    "toon-school-bus": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long yellow bus from the side, stripes and no lettering. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "02ed61e373c1d389419844d97015041124058ad454ca803acdfbf70e1c6d0604",
+          "rig": null
+        }
+      ]
+    },
     "toon-shower": {
       "kind": "prop",
       "style": "toon",
@@ -7032,6 +7117,23 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "7c7d76c73852fd7f63bd06bbdf93ac68936f6d8d919d876f5f6242c0491f2518",
+          "rig": null
+        }
+      ]
+    },
+    "toon-side-car": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain small car from the side, in any paint, with no badge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f02c9199a4f5b8b7c0ca1644f2ef1618b28c79243a5eae60ebe9f60d6e5ec4f7",
           "rig": null
         }
       ]
@@ -7183,6 +7285,23 @@
         }
       ]
     },
+    "toon-steering-wheel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain round steering wheel, front on, three spokes and no badge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "00f2e9b7f7ecb700bef0211621a65a6e0be68ffbecc311cd2ff72f218660b91b",
+          "rig": null
+        }
+      ]
+    },
     "toon-stuck-note": {
       "kind": "prop",
       "style": "toon",
@@ -7253,6 +7372,23 @@
           "proof": "",
           "approval": null,
           "drawing": "4483160973d64d15cc28ec7b60e0a0fa73b67b2deea8a7ead038b450f6197fe8",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tally-pad": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A spiral pad that keeps a count in fives, stroke by stroke. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "212ec03f160c7a7355a3bb4779f3e6c0c54ac20e3d4c00a1db94e9376a984c3f",
           "rig": null
         }
       ]
