@@ -8491,6 +8491,29 @@
               "words": "operator, Slack 1793476335.465559 (thread 1793475817.480469): \"no, it will not have any intermediary approvel, the request is clear, apply it\""
             }
           }
+        },
+        {
+          "number": 3,
+          "date": "2026-10-31",
+          "note": "The same drawing on smaller face limits: every mark stays on his skin at the turn and nod limits.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-head/seabird-heads-3.mp4",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
+          },
+          "drawing": "f2facc5f5cc62c63123d9056fe37a1d6dc80a9f4f6328ad0bf42601db509fe14",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the same turn and nods, the face sliding 8 px on a turn, not 24, and dropping 0.2 of a nod, not 0.8, so the blush, the freckles and the gape stay on his skin.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-head/seabird-heads-3.mp4",
+            "drawing": "607516b527a9931cc73ae391ad473fc96aa2419f1f83524e9781f929c2fe15af",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
+            }
+          }
         }
       ]
     },
@@ -8770,6 +8793,29 @@
             "approval": {
               "date": "2026-10-31",
               "words": "operator, Slack 1793476335.465559 (thread 1793475817.480469): \"no, it will not have any intermediary approvel, the request is clear, apply it\""
+            }
+          }
+        },
+        {
+          "number": 3,
+          "date": "2026-10-31",
+          "note": "The same drawing on smaller face limits: every mark stays on her skin at the turn and nod limits.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-head/seabird-heads-3.mp4",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
+          },
+          "drawing": "e468bfc52db44e37bc8bed1b621c42756c0aee43c0091db3b7a69ebe2e80702c",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the same turn and nods, the face sliding 9 px on a turn, not 13, and dropping 0.6 of a nod, not 0.8, so the blush and the mouth stay on her skin.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-head/seabird-heads-3.mp4",
+            "drawing": "827c727ab52e50853f638c450a755d3d27541cf648a44ff880ff67d68c7b40c7",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793483857.840949: \"Approved: new versions of news-gus and news-vera with the smaller limits, drawings unchanged.\""
             }
           }
         }

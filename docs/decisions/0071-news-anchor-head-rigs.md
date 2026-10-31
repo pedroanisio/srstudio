@@ -79,6 +79,28 @@ Facts that shaped the design:
 - **A version 3.** No published reel moved these heads, so version 2 may gain its rig once (`parts.py`). Its drawing does
   not change.
 
+## Version 3: the face stays on the skin
+
+On 2026-10-31 Gus's blush was seen over his jaw line on a full turn. The face slides as one piece, and the old check
+compared the eyes and the mouth with the skin's widest x at any height, so it never saw a mark low on the cheek, where
+the head narrows, and never added the nod, which drops the face further toward that narrowing. Measured on the drawn
+skin, Gus's blush has 12.1 px of room at rest and the rig took it 25.2 px past the contour at its limits; Vera's blush
+went 4.8 px past.
+
+Every limit that is not the face's stays the same: the turn, the nods, the seed and the timing. Only the slide and the
+face's drop change: Vera `glance_face` 13 to 9 and `face_slide` 0.8 to 0.6, Gus `glance_face` 24 to 8 and `face_slide`
+0.8 to 0.2. The rig digest draws those limits, so this is a new version, `news-vera@3` and `news-gus@3`, on arc4d3's
+post Slack 1793483857.840949, with the same drawing digest as version 2. The test measures every mark at each of its
+own heights with the slide and the nod at their limits together, and holds a floor on the slide so that the fix cannot
+pass by removing the turn.
+
+`stage` draws each anchor's latest approved version. `stage(acts, version=2)` keeps the old numbers, and a reel whose
+delivered master is on them names it, so a rebuild draws what went out.
+
+Rejected: clamping the slide inside the reels and leaving the style alone. The digest would hold while the specimen
+still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
+is built, not to its limits, and more than this fix needs.
+
 ## Consequences
 
 - A rebuild of a delivered News reel now draws moving heads. A reel that must stay as published needs `heads=False`.

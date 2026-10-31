@@ -233,7 +233,7 @@ def _actor(entry: registry.Entry) -> Canvas:
 def _anchor(entry: registry.Entry) -> Canvas:
     cv = _stage("toon", HOLD)
     who = entry.name.removeprefix("news-").split("@")[0]
-    draw = news_inked.perform if entry.name.endswith("@2") else news_kit.perform
+    draw = news_inked.perform if "@" in entry.name else news_kit.perform
     acts = tuple(
         (HOLD * n / len(news_kit.ARMS), news_kit.Pose(eyes, "talk", arms))
         for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
@@ -317,7 +317,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
     **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
     "pigeon": _pigeon,
-    **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2"), _anchor),
+    **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2", "news-vera@3", "news-gus@3"), _anchor),
     "host-lint": _moth,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
@@ -457,7 +457,7 @@ def rig_digest(name: str, number: int = 1) -> str:
     part = parts.part_name(name, number)
     if part in news_inked.RIGS:
         cv = _stage("toon", HOLD)
-        news_inked.rig_specimen(cv, news_inked.RIGS[part].who, HOLD)
+        news_inked.rig_specimen(cv, news_inked.RIGS[part].who, HOLD, number)
         return fingerprint(cv.scene.to_bytes(layout="pretty"))
     if part not in toon_rigs.RIGS:
         raise SpecimenError(f"{name} version {number} has no head rig")
