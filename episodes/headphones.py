@@ -188,7 +188,7 @@ def shoppers(g):
         (cast.Candidate, -120.0, {"legs": "standing"}, 648.0),
         (cast.Customer, 60.0, {}, 489.0),
         (cast.Manager, 330.0, {"legs": "standing"}, 648.0),
-        (cast.Barista, 570.0, {"name": None}, 489.0),
+        (cast.Barista, 570.0, {"name": None, "legs": True}, 489.0),
         (cast.Candidate, 780.0, {"legs": "standing"}, 648.0),
         (cast.Customer, 1040.0, {}, 489.0),
         (cast.Manager, 1220.0, {"legs": "standing"}, 648.0),

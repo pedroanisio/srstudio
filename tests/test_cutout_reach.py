@@ -81,6 +81,19 @@ def body(actor, seated=False, **extras) -> str:
     return cv.scene.to_bytes().decode()
 
 
+def test_the_barista_stands_on_legs_only_when_asked():
+    apron = "M-43 119 L-54 327"
+    assert "M15 462" not in body(cast.Barista) and body(cast.Barista, legs=False) == body(cast.Barista)
+    drawn = body(cast.Barista, legs=True)
+    assert drawn.index("M-53 310") < drawn.index(apron)  # the legs come out from under the apron
+    assert "M15 462" in drawn
+
+
+def test_the_barista_refuses_legs_that_are_not_a_yes_or_no():
+    with pytest.raises(cast.CastError, match="True or False"):
+        body(cast.Barista, legs="standing")
+
+
 def test_a_free_arm_leaves_out_the_arm_and_the_hand_on_that_side():
     drawn = body(cast.Barista, free_arms=("right",))
     assert "M68 141 L101 205 L117 208" not in drawn and "M-66 140 L-104 212 L-119 229" in drawn
