@@ -7736,7 +7736,7 @@
       ],
       "shot": {
         "episode": "loaded-right",
-        "at": 12.0
+        "at": 11.0
       },
       "text": "O cesto de cima de perto: fileiras de canecas, todas na mesma inclinação."
     },
@@ -7748,7 +7748,7 @@
       ],
       "shot": {
         "episode": "long-goodbye",
-        "at": 16.0
+        "at": 15.3
       },
       "text": "Uma pilha de potes de sopa que cresce a cada parada."
     },
@@ -7772,7 +7772,7 @@
       ],
       "shot": {
         "episode": "sorry-what",
-        "at": 23.5
+        "at": 22.5
       },
       "text": "Um soprador de folhas que treme enquanto funciona."
     },
@@ -7784,7 +7784,7 @@
       ],
       "shot": {
         "episode": "sorry-what",
-        "at": 3.0
+        "at": 6.5
       },
       "text": "Onde estaria a legenda, um rabisco: palavras que ninguém entendeu."
     },
@@ -7805,14 +7805,25 @@
       "section": "props",
       "name": "Receptor da babá",
       "parts": [
-        "toon-monitor-receiver",
+        "toon-monitor-receiver"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 23.0
+      },
+      "text": "A metade dos pais: cinco barras verdes que pulam."
+    },
+    {
+      "section": "props",
+      "name": "Lasanha",
+      "parts": [
         "toon-lasagna"
       ],
       "shot": {
         "episode": "baby-monitor",
-        "at": 9.0
+        "at": 24.6
       },
-      "text": "A metade dos pais: cinco barras verdes que pulam, ao lado de uma lasanha."
+      "text": "Uma lasanha numa travessa com alças, servida na mesa."
     },
     {
       "section": "props",
@@ -7822,7 +7833,7 @@
       ],
       "shot": {
         "episode": "call-your-mother",
-        "at": 26.0
+        "at": 16.0
       },
       "text": "Duas torradas num prato."
     },
@@ -7834,7 +7845,7 @@
       ],
       "shot": {
         "episode": "the-profiles",
-        "at": 7.0
+        "at": 0.2
       },
       "text": "A tela de quem está assistindo, com um a seis nomes."
     },
@@ -7870,7 +7881,7 @@
       ],
       "shot": {
         "episode": "pajama-day",
-        "at": 20.0
+        "at": 24.5
       },
       "text": "Uma bandeja de cupcakes com bandeirinhas, em fileiras."
     },
