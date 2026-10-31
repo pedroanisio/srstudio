@@ -202,6 +202,15 @@ def test_the_lens_tints_what_it_passes_over():
     assert [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "x"]
 
 
+def test_the_lens_leaves_what_it_passes_over_bright():
+    """Noticing sharpens a thing: a tint heavy enough to dull a car inside the glass says the opposite."""
+    cv = canvas()
+    mind_kit.lens(cv, cv.comp, (300, 900), 1.0, 5.0)
+    glass = [n.get("fill") for n in tree(cv).iter() if (n.get("fill") or "").startswith(mind_kit.SPOT)]
+    assert glass == [mind_kit.SPOT + mind_kit.GLASS]
+    assert int(mind_kit.GLASS, 16) / 255 <= 0.15
+
+
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [
