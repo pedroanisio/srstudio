@@ -267,24 +267,37 @@ def arms(releases: Mapping[str, Release], test: str) -> dict[str, list[str]]:
     return found
 
 
-def arm_problems(releases: Mapping[str, Release], test: str, order: Sequence[str] = ()) -> list[str]:
-    """What keeps ``test`` from reading as a fair split: arms of unequal size and, given the delivery ``order``, a slug
-    outside the test, one the order leaves out, or two running on one arm."""
+def arm_problems(
+    releases: Mapping[str, Release], test: str, order: Sequence[str] = (), share: float = 0.5
+) -> list[str]:
+    """What keeps ``test`` from reading as a fair split: arms off the split it declares and, given the delivery
+    ``order``, a slug outside the test, one the order leaves out, or two running on one arm.
+
+    ``share`` is the part of the test on arm a. An even split wants both arms equal and neither to run; a declared
+    share, as a decided test keeping one reel in five as its control, wants that count and keeps the smaller arm apart.
+    """
+    if not 0 < share < 1:
+        raise ReleaseError(f"share {share} must lie between 0 and 1: both arms need reels to compare")
     split = arms(releases, test)
     sizes = [len(split[arm]) for arm in ARMS]
-    problems = (
-        [] if len(set(sizes)) == 1 else [" and ".join(f"arm {a} has {n}" for a, n in zip(ARMS, sizes, strict=True))]
-    )
+    told = " and ".join(f"arm {a} has {n}" for a, n in zip(ARMS, sizes, strict=True))
+    wanted = round(sum(sizes) * share)
+    even = share == 0.5
+    if even:
+        problems = [] if len(set(sizes)) == 1 else [told]
+    else:
+        problems = [] if sizes[0] == wanted else [f"{told}, not {wanted} and {sum(sizes) - wanted}"]
     if not order:
         return problems
     arm_of = {slug: arm for arm, slugs in split.items() for slug in slugs}
     problems += [f"{slug} is not in the test" for slug in order if slug not in arm_of]
     problems += [f"{slug} is not in the order" for slug in arm_of if slug not in order]
     run = [slug for slug in order if slug in arm_of]
+    smaller = ARMS[0] if share < 0.5 else ARMS[1]
     problems += [
         f"{b} follows {a} on the same arm {arm_of[a]}"
         for a, b in zip(run, run[1:], strict=False)
-        if arm_of[a] == arm_of[b]
+        if arm_of[a] == arm_of[b] and (even or arm_of[a] == smaller)
     ]
     return problems
 

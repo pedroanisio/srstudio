@@ -395,6 +395,27 @@ def test_a_lopsided_test_and_a_broken_order_are_named():
     ]
 
 
+def test_a_declared_share_replaces_the_even_split():
+    run = {slug: tagged(slug, "a" if slug == "a" else "b") for slug in "abcde"}
+    order = ["b", "a", "c", "d", "e"]
+    assert releases.arm_problems(run, "sp-hook_motion", order, share=0.2) == []
+    assert releases.arm_problems(run, "sp-hook_motion") == ["arm a has 1 and arm b has 4"]
+
+
+def test_a_declared_share_is_held_to_its_count_and_keeps_the_smaller_arm_apart():
+    run = {slug: tagged(slug, "a" if slug in "ab" else "b") for slug in "abcdefghij"}
+    assert releases.arm_problems(run, "sp-hook_motion", share=0.1) == ["arm a has 2 and arm b has 8, not 1 and 9"]
+    assert releases.arm_problems(run, "sp-hook_motion", list("abcdefghij"), share=0.2) == [
+        "b follows a on the same arm a"
+    ]
+
+
+@pytest.mark.parametrize("share", [0.0, 1.0, -0.2, 1.2, float("nan")])
+def test_a_share_that_leaves_an_arm_empty_is_refused(share):
+    with pytest.raises(releases.ReleaseError, match="share"):
+        releases.arm_problems({}, "sp-hook_motion", share=share)
+
+
 def test_an_order_with_a_stranger_or_a_gap_is_named():
     run = {"p": tagged("p", "a"), "q": tagged("q", "b")}
     assert releases.arm_problems(run, "sp-hook_motion", ["p", "z"]) == ["z is not in the test", "q is not in the order"]
