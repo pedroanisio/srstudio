@@ -110,6 +110,7 @@ def main(argv=None):
     measured.add_argument("video", type=Path)
     measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
     measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
+    measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
     measured.add_argument("--json", action="store_true")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
@@ -454,7 +455,7 @@ def main(argv=None):
 
 def _proof(args: argparse.Namespace) -> int:
     try:
-        made = proof.report(args.video, args.at, args.sheet)
+        made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
     except proof.ProofError as exc:
         print(f"srstudio proof: {exc}", file=sys.stderr)
         return 1
