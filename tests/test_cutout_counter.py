@@ -114,3 +114,40 @@ def test_a_poster_that_cannot_be_drawn_is_refused(kw, pattern):
     cv = canvas()
     with pytest.raises(CHECKED, match=pattern):
         cutout_counter.paper_poster(cv, cv.comp, 0, 0, **kw)
+
+
+def test_a_clock_is_still_until_a_jump_and_then_twenty_minutes_on():
+    cv = canvas()
+    cutout_counter.jump_clock(cv, cv.comp, 540, 300, start=(3, 10), jumps=((4.0, 20), (9.0, 20)))
+    keys = animations(cv, "jump-clock-minute", "rotation")
+    assert keys[0] == (0, 60)
+    assert keys[1] == (4.0, 60)
+    assert keys[2] == (pytest.approx(4.0 + cutout_counter.CLOCK_SPIN), 180)
+    assert keys[3] == (9.0, 180)
+    assert keys[4][1] == 300
+    assert errors(cv) == []
+
+
+def test_the_hour_hand_goes_a_twelfth_as_far():
+    cv = canvas()
+    cutout_counter.jump_clock(cv, cv.comp, jumps=((4.0, 60),))
+    keys = animations(cv, "jump-clock-hour", "rotation")
+    assert keys[-1][1] - keys[1][1] == pytest.approx(30)
+
+
+@pytest.mark.parametrize(
+    ("kw", "pattern"),
+    [
+        (dict(start=(13, 0)), "hour"),
+        (dict(start=(3, 60)), "hour"),
+        (dict(radius=0), "radius"),
+        (dict(spin=0), "positive time"),
+        (dict(jumps=((1.0, 0),)), "jump is"),
+        (dict(jumps=((-1.0, 5),)), "jump is"),
+        (dict(jumps=((1.0, 5), (1.2, 5))), "stopped"),
+    ],
+)
+def test_a_clock_that_cannot_be_drawn_is_refused(kw, pattern):
+    cv = canvas()
+    with pytest.raises(CHECKED, match=pattern):
+        cutout_counter.jump_clock(cv, cv.comp, **kw)

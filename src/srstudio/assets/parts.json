@@ -8691,7 +8691,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "e8c44528d9685a9615947c43c12ff621ead74119ef9f12606be6445f0166a617",
+          "drawing": "f6973e54a36f10be6736429972d8e2a22f3b153067dcaa5877f4a732280f7fea",
           "rig": null
         }
       ]
@@ -8930,6 +8930,23 @@
           "proof": "",
           "approval": null,
           "drawing": "d08c6302455d087e8e9113caa7153c4988e568855f1a219cace2c1525d773294",
+          "rig": null
+        }
+      ]
+    },
+    "jump-clock": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wall clock whose hands race on between one shot and the next. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3dc38155ecdcf73e9c50a2e314f3393461af05cf103767cbc3334d2f9228682d",
           "rig": null
         }
       ]

@@ -15,7 +15,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["ChainRun", "CutoutCounterError", "chain_run", "paper_poster", "pen_on_chain"]
+__all__ = ["ChainRun", "CutoutCounterError", "chain_run", "jump_clock", "paper_poster", "pen_on_chain"]
 
 Point = tuple[float, float]
 Grip = tuple[float, float, float]  # time, x, y
@@ -29,6 +29,7 @@ CHAIN_SAG = 0.42  # how far a slack chain hangs, of half its slack
 CHAIN_LOOP = 34  # how wide a slack chain opens, px
 CHAIN_METAL = "#8D949B"
 PEN_BODY = "#1F2B4A"
+CLOCK_SPIN = 0.75  # seconds a jump takes the hands, whatever the minutes
 
 
 class CutoutCounterError(SrstudioError, ValueError):
@@ -220,4 +221,64 @@ def paper_poster(
     for cx, cy in ((left, top), (-left, top)):
         cv.rect(g, cx - 22, cy - 9, 44, 18, "#E9DFAE", opacity=0.85)
     cv.text(g, f"{id}-words", text, left + 8, top + 34, width - 16, height - 42, size, "#1F2B4A")
+    return g
+
+
+@register(
+    "prop", "jump-clock", style="cutout", summary="A wall clock whose hands race on between one shot and the next"
+)
+def jump_clock(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=300,
+    *,
+    start: tuple[int, int] = (3, 10),
+    jumps: Sequence[tuple[float, float]] = (),
+    spin: float = CLOCK_SPIN,
+    radius: float = 80,
+    id: str = "jump-clock",
+):
+    """A clock centred on (``x``, ``y``) reading ``start`` (hour, minute). Each jump ``(time, minutes)`` takes the hands
+    on that many minutes over ``spin`` seconds from its time, the hour hand in step, and then they stop: the wait the
+    next shot picks up from. Between jumps it is still. Jumps rise, never overlap, and go forward."""
+    hour, minute = start
+    if not (isinstance(hour, int) and isinstance(minute, int) and 1 <= hour <= 12 and 0 <= minute < 60):
+        raise CutoutCounterError(f"a clock starts at an hour 1 to 12 and a minute under 60, got {start!r}")
+    if not (checks.number(radius) and radius > 0):
+        raise CutoutCounterError(f"a clock's radius is positive, got {radius!r}")
+    if not (checks.number(spin) and spin > 0):
+        raise CutoutCounterError(f"a jump takes a positive time, got {spin!r}")
+    if not all(len(j) == 2 and checks.number(j[0]) and j[0] >= 0 and checks.number(j[1]) and j[1] > 0 for j in jumps):
+        raise CutoutCounterError(f"a jump is (time, minutes), with both positive, got {jumps!r}")
+    if any(b[0] < a[0] + spin for a, b in zip(jumps, jumps[1:], strict=False)):
+        raise CutoutCounterError(f"a jump starts after the one before it has stopped, got {jumps!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y)
+    cv.ellipse(g, -radius - 7, -radius - 3, 2 * radius + 14, 2 * radius + 14, "#2A2018", opacity=0.28)
+    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, "#FFFDF4", ink, radius * 0.09)
+    for k in range(12):
+        angle = math.radians(30 * k)
+        inner = radius * (0.76 if k % 3 == 0 else 0.84)
+        cv.line(
+            g,
+            inner * math.sin(angle),
+            -inner * math.cos(angle),
+            radius * 0.9 * math.sin(angle),
+            -radius * 0.9 * math.cos(angle),
+            ink,
+            radius * (0.05 if k % 3 == 0 else 0.03),
+        )
+    hours = cv.group(g, f"{id}-hour")
+    minutes = cv.group(g, f"{id}-minute")
+    gone, big, small = 0.0, [(0.0, 6.0 * minute)], [(0.0, 30.0 * hour + 0.5 * minute)]
+    for at, more in jumps:
+        big += [(at, 6.0 * minute + 6 * gone), (at + spin, 6.0 * minute + 6 * (gone + more))]
+        small += [(at, 30.0 * hour + 0.5 * (minute + gone)), (at + spin, 30.0 * hour + 0.5 * (minute + gone + more))]
+        gone += more
+    cv.keys(minutes, "rotation", big, hold=False)
+    cv.keys(hours, "rotation", small, hold=False)
+    cv.line(hours, 0, radius * 0.1, 0, -radius * 0.5, ink, radius * 0.1)
+    cv.line(minutes, 0, radius * 0.14, 0, -radius * 0.74, "#B03A2E", radius * 0.07)
+    cv.ellipse(g, -radius * 0.08, -radius * 0.08, radius * 0.16, radius * 0.16, ink)
     return g
