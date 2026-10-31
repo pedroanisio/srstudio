@@ -81,7 +81,7 @@ BEATS, END = timed(
         (1.3, "gary", 10, "wide", "smile", "shrug"),
         (2.4, "priya", 11, "half", "smug", "hold"),
         (1.0, "gary", "", "sad", "frown", "down"),
-        (0.0, "gary", 12, "closed", "flat", "fist", "reveal:shoe"),
+        (0.0, "gary", 12, "closed", "flat", "hold", "reveal:shoe"),
     ),
     tail=2.0,
 )
@@ -128,17 +128,11 @@ def dress(shot) -> None:
             )
     collage_sets.sign(cv, cv.group(front, cv.uid("g"), start=weigh), "201 LB", 690, 1450, 280, 110, size=58)
     if app.end > shoe:
-        cv.rect(
-            cv.group(front, cv.uid("g"), start=shoe),
-            250.0,
-            1560.0,
-            200.0,
-            86.0,
-            ITEMS[0][0],
-            collage.INK,
-            4.0,
-            radius=20.0,
-        )
+        held = cv.group(front, cv.uid("g"), start=shoe)
+        cv.rect(held, 230.0, 1590.0, 200.0, 70.0, ITEMS[0][0], collage.INK, 4.0, radius=26.0)
+        cv.rect(held, 216.0, 1652.0, 228.0, 20.0, "#2b2119", collage.INK, 4.0, radius=8.0)
+        for lace in (290.0, 330.0, 370.0):
+            cv.rect(held, lace, 1596.0, 14.0, 34.0, "#fffaf0", collage.INK, 2.0, radius=4.0)
 
 
 def sounds(beats, end: float) -> list[Sound]:
