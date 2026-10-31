@@ -64,6 +64,7 @@ LEDGES = {
     "oak": ("#c98f55", "#a56f3e", "#b57d48", "#7c5029"),
     "white": ("#f4f1ea", "#dcd7cc", "#e8e3d8", "#a59f92"),
     "steel": ("#c9d3dc", "#a4b0bc", "#b4bfca", "#73808e"),
+    "dash": ("#4e5478", "#2a2d44", "#343854", "#a6acc6"),  # a car's dashboard
 }
 LEDGE_TOP = 801  # as the desk's, so a character's arms rest where they do on it
 
