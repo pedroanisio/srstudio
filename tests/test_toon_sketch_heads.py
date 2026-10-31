@@ -288,3 +288,16 @@ def test_a_character_s_timeline_runs_on_through_the_cuts(pinned_fonts, tmp_path)
 
 def test_the_rig_is_the_module_the_build_draws_with():
     assert toon_sketch.toon_head is toon_head
+
+
+def test_on_face_reaches_only_the_character_it_names(pinned_fonts, tmp_path):
+    root = project(tmp_path / "ep", pinned_fonts)
+    seen = []
+
+    def foam(cv, app, beats, face) -> None:
+        seen.append(app.who)
+        cv.ellipse(face, 0, 0, 10, 10, "#123456")
+
+    ep = toon_sketch.build(root, staged(heads=BOTH, on_face={"goat": foam}), set())
+    assert seen and set(seen) == {"goat"}
+    assert sum(1 for s in tree(ep).iter("shape") if s.get("fill") == "#123456") == len(seen)
