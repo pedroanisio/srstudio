@@ -151,10 +151,7 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
 def hush(cv, track, spoken: Sequence[tuple[float, float]], gain: float) -> None:
     """Lower ``track`` (at ``gain`` dB) by :data:`HUSH` through every pause between the ``spoken`` lines that
     :func:`srstudio.craft.pauses` measures, falling and rising over :data:`HUSH_RAMP` inside the pause."""
-    keys = [(0.0, gain)]
-    for start, end in craft.pauses(spoken):
-        keys += [(start, gain), (start + HUSH_RAMP, gain + HUSH), (end - HUSH_RAMP, gain + HUSH), (end, gain)]
-    cv.keys(track, "gain", [(round(t, 6), round(v, 6)) for t, v in keys], hold=False, local=False)
+    craft.hush(cv, track, spoken, gain, drop=HUSH, ramp=HUSH_RAMP)
 
 
 def _draw(cv, parent, p: Place, said, end: float) -> None:

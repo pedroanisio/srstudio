@@ -3,6 +3,7 @@
 import json
 import math
 import subprocess
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
@@ -681,3 +682,29 @@ def test_a_statement_that_cannot_be_measured_is_an_error_never_a_pass(tmp_path, 
 def test_a_project_without_takes_is_an_error(tmp_path):
     with pytest.raises(craft.CraftError):
         craft.statement(tmp_path, ("01",))
+
+
+# -- the hush ------------------------------------------------------------------------------------------------
+def hushed(spoken, gain=-10.0, **kw):
+    cv = canvas()
+    track = cv.group(cv.comp, "bed")
+    craft.hush(cv, track, spoken, gain, **kw)
+    animate = ET.fromstring(cv.scene.to_bytes(layout="pretty")).find(".//animate[@property='gain']")
+    assert animate.get("defaultInterpolation") == "linear" and animate.get("timeBase") is None
+    return [(float(k.get("time")), float(k.get("value"))) for k in animate.findall("key")]
+
+
+def test_a_bed_stays_flat_through_a_gap_under_the_threshold_and_drops_through_a_pause():
+    assert hushed([(0.0, 2.0), (2.5, 4.0)]) == [(0.0, -10.0)]
+    assert hushed([(0.0, 2.0), (4.0, 5.0)]) == [(0.0, -10.0), (2.0, -10.0), (2.15, -22.0), (3.85, -22.0), (4.0, -10.0)]
+
+
+def test_a_short_hold_keeps_its_ramps_inside_it():
+    keys = hushed([(0.0, 1.0), (1.3, 2.0)], threshold=0.25, ramp=0.15)
+    assert keys == [(0.0, -10.0), (1.0, -10.0), (1.1, -22.0), (1.2, -22.0), (1.3, -10.0)]
+
+
+@pytest.mark.parametrize("kw, match", [({"drop": 3.0}, "drop"), ({"drop": 0}, "drop"), ({"ramp": 0}, "ramp")])
+def test_a_hush_refuses_a_rise_or_no_ramp(kw, match):
+    with pytest.raises(craft.CraftError, match=match):
+        hushed([(0.0, 1.0)], **kw)
