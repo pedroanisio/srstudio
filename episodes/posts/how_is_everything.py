@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Cutout sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Liam (Milo) and Jessica (Ava). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Liam (Milo) and Jessica (Ava). Foley synthesized.",
         hashtags=("#restaurant", "#waiter", "#relatable", "#animatedshorts", "#comedyshorts"),
         thumbnail=Thumbnail("How is\neverything?", 5.6, "Okayville"),
     ),
