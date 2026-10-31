@@ -19,7 +19,7 @@ RELEASE = Release(
             "Foley synthesized."
         ),
         hashtags=('#trashday', '#neighbors', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Left it\nvery late", 4.0, "Stick 23"),
+        thumbnail=Thumbnail("Left it\nvery late", 4.0, "Stick"),
     ),
     cover=True,
     tags=Tags(

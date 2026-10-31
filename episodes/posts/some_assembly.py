@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Jessica (Noor) and Will (Dev). Foley synthesized.",
         hashtags=('#flatpack', '#couples', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Step nine.", 11.5, "Stick 24"),
+        thumbnail=Thumbnail("Step nine.", 11.5, "Stick"),
     ),
     cover=True,
     tags=Tags(

@@ -19,7 +19,7 @@ RELEASE = Release(
             "Foley synthesized."
         ),
         hashtags=('#awkward', '#wavingback', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Stretching.\nJust stretching.", 7.9, "Stick 20"),
+        thumbnail=Thumbnail("Stretching.\nJust stretching.", 7.9, "Stick"),
     ),
     cover=True,
     tags=Tags(

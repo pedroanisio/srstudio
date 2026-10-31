@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Charlie (Rex) and Matilda (Fern). Foley synthesized.",
         hashtags=('#plumber', '#homerepair', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Who did this?", 13.0, "Toon 30"),
+        thumbnail=Thumbnail("Who did this?", 13.0, "Toon"),
     ),
     tags=Tags(
         "money-services",

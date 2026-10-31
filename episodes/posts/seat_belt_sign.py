@@ -19,7 +19,7 @@ RELEASE = Release(
             "Foley synthesized."
         ),
         hashtags=('#travel', '#airplane', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Why are you\nstanding?", 3.0, "Stick 22", place="top"),
+        thumbnail=Thumbnail("Why are you\nstanding?", 3.0, "Stick", place="top"),
     ),
     cover=True,
     tags=Tags(
