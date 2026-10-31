@@ -559,6 +559,11 @@
     }
   },
   "parts": {
+    "soft-hush-finger": {"title": "A raised finger"},
+    "soft-rumble": {"title": "A rumbling belly"},
+    "soft-yogurt": {"title": "A yogurt"},
+    "soft-book": {"title": "A book"},
+    "soft-notice": {"title": "A notice on the wall"},
     "soft-dimmer": {"title": "A room going dark"},
     "soft-dust": {"title": "Falling dust"},
     "soft-home-fridge": {"title": "A fridge that dies"},
