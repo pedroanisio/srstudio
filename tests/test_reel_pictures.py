@@ -7,7 +7,7 @@ import sys
 from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -22,6 +22,7 @@ from srstudio import (
     toon_house,
     toon_sketch,
 )
+from srstudio.collage_group import Place
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -330,3 +331,174 @@ def test_the_steamed_frog_stands_behind_the_ledge_and_hides_the_shelf() -> None:
     base = mod.GHOST_AT[1] + mod.GHOST_SCALE * (toon_sketch.SEAT[1] - toon_extras.SEAT[1])
     assert base >= toon_house.LEDGE_TOP
     assert mod.GHOST_OPACITY >= 0.7
+
+
+def test_free_right_leaves_the_screen_right_arm_to_the_scene() -> None:
+    look = collage.LOOKS["brent"]
+    under, over = collage._arms(look, "free-right")
+    both, _ = collage._arms(look, "down")
+    assert len(under) * 2 == len(both) and not over
+    assert under == both[: len(under)]
+
+
+def test_a_shoulder_is_on_the_side_asked_for() -> None:
+    left, right = collage_everyday.shoulder("brent"), collage_everyday.shoulder("brent", 1)
+    assert left[1] == right[1]
+    assert left[0] + right[0] == 2 * collage.CX
+    assert left[0] < right[0]
+
+
+def test_eased_follows_keys_and_holds_outside_them() -> None:
+    keys = [(1.0, 0.0), (2.0, 10.0)]
+    assert collage_everyday.eased(keys, 0.0, "sine-in-out") == 0.0
+    assert collage_everyday.eased(keys, 3.0, "sine-in-out") == 10.0
+    assert collage_everyday.eased(keys, 1.5, "sine-in-out") == pytest.approx(5.0)
+    assert collage_everyday.eased(keys, 1.5, "cubic-in") == pytest.approx(1.25)
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.eased(keys, 1.5, "bounce")
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.eased([], 1.0, "cubic-in")
+
+
+def test_frames_runs_each_span_with_both_ends_and_no_repeats() -> None:
+    assert collage_everyday.frames((0.0, 0.1), (0.1, 0.2), step=0.05) == [0.0, 0.05, 0.1, 0.15, 0.2]
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.frames((1.0, 1.0))
+
+
+class _Keyed:
+    """A canvas of plain groups that keeps what is keyed on them, for an arm's angle and length."""
+
+    def __init__(self) -> None:
+        self.keyed: dict[tuple[int, str], list[tuple[float, float]]] = {}
+        self.ink = "#000000"
+
+    def uid(self, prefix: str) -> str:
+        return prefix
+
+    def group(self, parent: object, id: str, **kw: object) -> SimpleNamespace:
+        return SimpleNamespace(**kw)
+
+    def keys(self, node: object, prop: str, values: list[tuple[float, float]], *a: object, **kw: object) -> None:
+        self.keyed[(id(node), prop)] = values
+
+
+def test_reach_keeps_the_arm_on_the_shoulder_and_the_hand_on_its_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    drawn: list[object] = []
+    monkeypatch.setattr(collage_everyday, "arm", lambda *a, **kw: drawn.append(a[2:]) or SimpleNamespace())
+    monkeypatch.setattr(collage_everyday, "draw_shapes", lambda *a: None)
+    cv = _Keyed()
+    frm = (100.0, 100.0)
+    spots = {0.0: (100.0, 400.0), 1.0: (400.0, 100.0), 2.0: (-200.0, 100.0)}
+    hand = collage_everyday.reach(cv, object(), "brent", frm, spots.__getitem__, sorted(spots))
+    assert drawn
+    by_prop = {prop: values for (_, prop), values in cv.keyed.items()}
+    assert [v for _, v in by_prop["rotation"]] == pytest.approx([0.0, -90.0, 90.0])
+    assert [v for _, v in by_prop["x"]] == [100.0, 400.0, -200.0]
+    assert [v for _, v in by_prop["y"]] == [400.0, 100.0, 100.0]
+    lengths = {t: collage_everyday.REACH_DRAWN * v for t, v in by_prop["scaleY"]}
+    short = 300.0 - collage_everyday.REACH_CUFF
+    assert lengths == pytest.approx({0.0: short, 1.0: short, 2.0: short})
+    assert hand is not None
+
+
+def test_reach_refuses_a_hand_on_the_shoulder_and_no_times() -> None:
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (0.0, 0.0), [0.0])
+    with pytest.raises(collage_everyday.EverydayError):
+        collage_everyday.reach(_Keyed(), object(), "brent", (0.0, 0.0), lambda t: (1.0, 1.0), [])
+
+
+def _shoulder_on_screen(place: Place, who: str, side: int) -> tuple[float, float]:
+    (ox, oy), scale = (place.x - 540.0 * place.scale, place.base - 1920.0 * place.scale), place.scale
+    x, y = collage_everyday.shoulder(who, side)
+    return (ox + x * scale, oy + y * scale)
+
+
+def _reaches(monkeypatch: pytest.MonkeyPatch, mod: ModuleType) -> dict[str, tuple[float, float]]:
+    """Whose arm the reel's scene draws, and from where."""
+    drawn: dict[str, tuple[float, float]] = {}
+
+    def reach(cv: object, parent: object, who: str, frm: tuple[float, float], *a: object, **kw: object) -> object:
+        drawn[who] = frm
+        return SimpleNamespace()
+
+    monkeypatch.setattr(collage_everyday, "reach", reach)
+    monkeypatch.setattr(mod, "collage_things", SimpleNamespace(**dict.fromkeys(_THINGS, lambda *a, **kw: None)))
+    monkeypatch.setattr(mod.collage_everyday, "tablecloth", lambda *a, **kw: None)
+    return drawn
+
+
+_THINGS = ("fork", "tiny_cup", "receipt", "desk_phone")
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_forks_at_any_news_come_down_on_their_owners_arms(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("any_news")
+    drawn = _reaches(monkeypatch, mod)
+    shot = SimpleNamespace(cv=_Keyed(), app=SimpleNamespace(start=20.0, end=26.8), front=object())
+    mod._forks(shot)
+    assert drawn == {
+        "brent": _shoulder_on_screen(mod.TWO["brent"], "brent", 1),
+        "gary": _shoulder_on_screen(mod.TWO["gary"], "gary", -1),
+    }
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_two_brothers_at_the_bill_tug_with_their_own_arms(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("ill_get_this")
+    drawn = _reaches(monkeypatch, mod)
+    beat = SimpleNamespace(start=9.0, who="gary", line=None, events=("crunch",), reveal="", name="")
+    monkeypatch.setattr(mod, "events", lambda beats, name: [(9.0, beat)])
+    shot = SimpleNamespace(cv=_Keyed(), app=SimpleNamespace(start=0.0, end=2.0), beats=[beat], front=object())
+    mod._table(shot)
+    assert drawn == {
+        "gary": _shoulder_on_screen(mod.TABLE["gary"], "gary", 1),
+        "omar": _shoulder_on_screen(mod.TABLE["omar"], "omar", -1),
+    }
+
+
+@pytest.mark.usefixtures("reels")
+@pytest.mark.parametrize(("reel", "places", "who", "arms"), [
+    ("any_news", "TWO", "brent", "free-right"),
+    ("any_news", "TWO", "gary", "free"),
+    ("ill_get_this", "TABLE", "gary", "free-right"),
+    ("ill_get_this", "TABLE", "omar", "free"),
+])  # fmt: skip
+def test_who_reaches_gives_up_the_posed_arm(reel: str, places: str, who: str, arms: str) -> None:
+    mod = _data(reel)
+    assert mod.REACHING[who] == arms and who in getattr(mod, places)
+
+
+@pytest.mark.usefixtures("reels")
+def test_brent_slides_the_phone_with_his_own_arm(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _data("fluent")
+    drawn = _reaches(monkeypatch, mod)
+    cv = _Keyed()
+    cv.gate = lambda *a: None
+    cv.rect = lambda *a, **kw: None
+    mod._slide_arm(cv, object(), 10.0)
+    assert drawn == {"brent": _shoulder_on_screen(mod.PLACES["brent"], "brent", 1)}
+    assert mod.SLIDING == "free-right"
+
+
+@pytest.mark.usefixtures("reels")
+@pytest.mark.parametrize("reel", ["any_news", "ill_get_this"])
+def test_a_speaker_in_the_shot_frees_the_arm_too(reel: str) -> None:
+    mod = _data(reel)
+    who, arms = next(iter(mod.REACHING.items()))
+    app = Appearance(who, 1.0, 3.0, [{"start": 0.0, "eyes": "open", "mouth": "flat", "arms": "hold"}])
+    assert [p["arms"] for p in mod._reaching(app).poses] == [arms]
+
+
+@pytest.mark.usefixtures("reels")
+def test_brent_speaking_over_the_slide_frees_the_arm_until_it_lets_go() -> None:
+    mod = _data("fluent")
+    row = {"eyes": "open", "mouth": "flat"}
+    poses = [{"start": 0.0, **row, "arms": "down"}, {"start": 5.0, **row, "arms": "hold"}]
+    app = Appearance("brent", 10.0, 17.0, poses)
+    freed = mod._sliding(app, 10.0)
+    lets_go = mod._speed(10.0)[1] + 0.25 - 10.0
+    assert [(p["start"], p["arms"]) for p in freed.poses] == [(0.0, "free-right"), (lets_go, "down"), (5.0, "hold")]
+    assert mod._sliding(Appearance("deb", 10.0, 17.0, poses), 10.0).poses == poses
+    assert mod._sliding(Appearance("brent", 2.0, 4.0, poses), 10.0).poses == poses

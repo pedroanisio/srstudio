@@ -39,6 +39,8 @@ TABLE = {"rosa": Place(540.0, 1500.0, 0.6), "gary": Place(215.0, 1640.0, 0.72), 
 TABLE_TOP = 1340.0
 BILL = (540.0, 1640.0)
 SLAM = (0.0, 0.12)  # the two hands land on the bill: the first frames of the reel
+RAISED = 300.0  # px over the bill that the hands come down from
+REACHING = {"gary": "free-right", "omar": "free"}  # the poses that leave each the arm on the bill
 TUG = 46.0  # px the bill goes each way
 BACK = {"jun": Place(540.0, 1530.0, 0.6)}
 FRONT = {"gary": Place(215.0, 1790.0, 0.74), "omar": Place(865.0, 1790.0, 0.74)}
@@ -99,6 +101,11 @@ def _pose(start: float, eyes: str, mouth: str, arms: str) -> dict:
     return {"start": round(start, 6), "eyes": eyes, "mouth": mouth, "arms": arms}
 
 
+def _reaching(app: Appearance) -> Appearance:
+    """The speaker at the table with the arm on the bill freed, whatever the recording's poses say."""
+    return replace(app, poses=[{**p, "arms": REACHING[app.who]} for p in app.poses]) if app.who in REACHING else app
+
+
 def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     """Everyone at the table until Jun comes over; three at the counter after the whip, Jun behind it, the brothers in
     front, panting; alone otherwise."""
@@ -110,8 +117,8 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     table = Lineup(
         TABLE,
         {
-            "gary": [_pose(0, "angry", "flat", "hold"), _pose(tear, "angry", "frown", "hold")],
-            "omar": [_pose(0, "angry", "flat", "hold"), _pose(tear, "angry", "frown", "hold")],
+            "gary": [_pose(0, "angry", "flat", REACHING["gary"]), _pose(tear, "angry", "frown", REACHING["gary"])],
+            "omar": [_pose(0, "angry", "flat", REACHING["omar"]), _pose(tear, "angry", "frown", REACHING["omar"])],
             "rosa": [_pose(0, "half", "smile", "down")],
         },
         ((0.0, jun_first),),
@@ -152,7 +159,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
             return solo(cv, parent, replace(app, poses=poses), mouths)
         if table.staged(app):
             chewing = collage_everyday.chew(mouths.get("rosa", ()), tear, tear + 1.3)
-            return table(cv, parent, app, {**mouths, "rosa": chewing})
+            return table(cv, parent, _reaching(app), {**mouths, "rosa": chewing})
         face = solo(cv, parent, app, mouths)
         if app.start <= zoom < app.end:
             return collage_sets.zoom_pivot(ROOM, face, ZOOM_SCALE)
@@ -170,16 +177,25 @@ def _table(shot) -> None:
     collage_things.tiny_cup(cv, front, 540.0, TABLE_TOP + 110.0, 110.0)
     tug = cv.group(front, cv.uid("tug"))
     pulls = [(0.0, 0.0)]
+    moving = [SLAM]
     for b in beats:
         if b.line is not None and b.start < tear:
             pulls += [(b.start + 0.05, pulls[-1][1]), (b.start + 0.25, -TUG if b.who == "gary" else TUG)]
+            moving.append((b.start + 0.05, b.start + 0.25))
     cv.keys(tug, "x", pulls, kind="sine-in-out", local=False)
     collage_things.receipt(cv, tug, *BILL, 250.0, 300.0, torn=app.start >= tear)
-    hands = cv.group(tug, cv.uid("g"))
-    if app.start < SLAM[1]:
-        cv.keys(hands, "y", [(SLAM[0], 520.0), (SLAM[1], 0.0)], kind="cubic-in", local=False)
-    collage_everyday.arm(cv, hands, "gary", (-60.0, 1980.0), (BILL[0] - 110.0, BILL[1] + 40.0))
-    collage_everyday.arm(cv, hands, "omar", (1140.0, 1980.0), (BILL[0] + 110.0, BILL[1] + 40.0))
+    seen = [span for span in moving if span[0] < app.end and span[1] > app.start]
+    times = sorted({app.start, app.end, *collage_everyday.frames(*seen)})
+    slam = [(SLAM[0], -RAISED), (SLAM[1], 0.0)]
+    for who, side in (("gary", 1), ("omar", -1)):
+        x = BILL[0] - side * 110.0
+
+        def hand(t: float, x: float = x) -> collage.Point:
+            y = BILL[1] + 40.0 + collage_everyday.eased(slam, t, "cubic-in")
+            return x + collage_everyday.eased(pulls, t, "sine-in-out"), y
+
+        frm = TABLE[who].seen(collage_everyday.shoulder(who, side))
+        collage_everyday.reach(cv, front, who, frm, hand, times)
 
 
 def _cup(shot) -> None:

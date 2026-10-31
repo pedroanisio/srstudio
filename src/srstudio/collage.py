@@ -72,7 +72,7 @@ __all__ = [
 INK = PAPER.ink
 EYES = ("open", "side", "up", "half", "closed", "wide", "angry", "sad")
 MOUTHS = ("flat", "smile", "frown", "o", "grin", "smug")
-ARMS = ("down", "point", "shrug", "hold", "face", "fist", "free")
+ARMS = ("down", "point", "shrug", "hold", "face", "fist", "free", "free-right")
 HAIRS = ("bald", "balding", "short", "long", "bun", "ponytail", "beanie", "curly")
 BUILDS = ("slim", "broad", "round", "kid")
 ACCENTS = ("tie", "glasses", "cane", "headset", "moustache", "pearls", "hoodie", "blazer")
@@ -747,6 +747,8 @@ def _arms(look: Look, arms: str) -> tuple[list[Shape], list[Shape]]:
         over += _hand(look, "rh", ex - 4, ey + 6, r=74, side=-1)
     elif arms == "free":
         under += down(1, rs, low_r, "r")  # the screen-left arm is the scene's to draw, with what it holds
+    elif arms == "free-right":
+        under += down(-1, ls, low_l, "l")  # the same, for a figure whose scene is on its screen-right
     elif arms == "fist":
         under += down(-1, ls, low_l, "l")
         elbow, hand = (CX + hw + 50, sy + 120), (CX + hw + 30, HEAD_Y - 140)

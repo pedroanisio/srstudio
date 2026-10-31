@@ -56,6 +56,9 @@ HOLDING = tuple(ELBOWS)
 TWO = {"brent": Place(285.0, 1640.0, 0.72), "gary": Place(800.0, 1640.0, 0.72)}
 TWO_TABLE = 1340.0
 LOWERED = 300.0  # px the forks come down
+FORK_Y = 1400.0  # the two forks' height, stopped halfway up
+FORKS = {"brent": 430.0, "gary": 650.0}  # the x of each
+REACHING = {"brent": "free-right", "gary": "free"}  # the poses that leave each the arm with the fork
 
 LINES = (
     Line("deb", "Are you seeing anyone?"),
@@ -112,18 +115,25 @@ def _pose(start: float, eyes: str, mouth: str, arms: str) -> dict:
     return {"start": round(start, 6), "eyes": eyes, "mouth": mouth, "arms": arms}
 
 
+def _reaching(app: Appearance) -> Appearance:
+    """The speaker of the two-shot with the arm the scene draws freed, whatever the recording's poses say."""
+    return replace(app, poses=[{**p, "arms": REACHING[app.who]} for p in app.poses]) if app.who in REACHING else app
+
+
 def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     """A single each; Gary chewing until he has swallowed; Rosa frozen until she speaks; the brothers side by side."""
     slide, still, forks = _at(beats, "slide"), _at(beats, "still"), _at(beats, "forks")
     swallow, zoom = _at(beats, "swallow"), events(beats, "zoom")[0][0]
     speak = next(b.start for b in beats if b.line == 10)
     two = Lineup(
-        TWO, {"brent": [_pose(0, "wide", "frown", "hold")], "gary": [_pose(0, "wide", "flat", "hold")]}, ((forks, end),)
+        TWO,
+        {"brent": [_pose(0, "wide", "frown", REACHING["brent"])], "gary": [_pose(0, "wide", "flat", REACHING["gary"])]},
+        ((forks, end),),
     )
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if two.staged(app):
-            return two(cv, parent, app, mouths)
+            return two(cv, parent, _reaching(app), mouths)
         if app.who in HOLDING:  # the arm with the glass or the fork is the shot's, whatever the recording's poses say
             app = replace(app, poses=[{**p, "arms": "free"} for p in app.poses])
         if app.start == still:
@@ -192,12 +202,17 @@ def _forks(shot) -> None:
     cv, app, front = shot.cv, shot.app, shot.front
     collage_everyday.tablecloth(cv, front, TWO_TABLE)
     down = (app.start + 0.5, app.start + 1.4)
-    both = cv.group(front, cv.uid("g"))
-    cv.keys(both, "y", [(down[0], 0.0), (down[1], LOWERED)], kind="sine-in-out", local=False)
-    collage_everyday.arm(cv, both, "brent", (40.0, 2040.0), (430.0, 1400.0), width=60.0)
-    collage_things.fork(cv, both, 430.0, 1400.0, 260.0)
-    collage_everyday.arm(cv, both, "gary", (1040.0, 2040.0), (650.0, 1400.0), width=60.0)
-    collage_things.fork(cv, both, 650.0, 1400.0, 260.0)
+    times = sorted({app.start, app.end, *collage_everyday.frames(down)})
+    lowering = [(down[0], 0.0), (down[1], LOWERED)]
+    for who, side in (("brent", 1), ("gary", -1)):
+        x = FORKS[who]
+
+        def hand(t: float, x: float = x) -> collage.Point:
+            return x, FORK_Y + collage_everyday.eased(lowering, t, "sine-in-out")
+
+        frm = TWO[who].seen(collage_everyday.shoulder(who, side))
+        held = collage_everyday.reach(cv, front, who, frm, hand, times, width=60.0)
+        collage_things.fork(cv, held, 0.0, 0.0, 260.0)
 
 
 def dress(shot) -> None:

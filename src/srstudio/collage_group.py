@@ -44,6 +44,11 @@ class Place:
         """The offset of the character's group: its single-shot drawing moved and scaled into this place."""
         return self.x - collage.CX * self.scale, self.base - FRAME_H * self.scale
 
+    def seen(self, point: collage.Point) -> collage.Point:
+        """Where ``point`` of the single-shot drawing lands on screen in this place."""
+        x, y = self.transform()
+        return x + point[0] * self.scale, y + point[1] * self.scale
+
 
 @dataclass(frozen=True)
 class Lineup:

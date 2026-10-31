@@ -42,6 +42,7 @@ DESK = (1465.0, "#4a2f1f", "#6f4e37", "#3b2a1e")  # the table's edge, front, sla
 PHONE_Y = 1600.0
 NEAR_BRENT, NEAR_DEB = 500.0, 690.0  # the phone's x before and after the slide
 PHONE_W = 300.0
+SLIDING = "free-right"  # Brent's pose while his arm is on the phone
 SHEET = dict(x=190.0, y=1680.0, w=230.0, tilt=-8.0)  # the CV on the table
 HELD = dict(x=540.0, y=1520.0, w=430.0)  # the CV in his hands
 INSERT = dict(x=540.0, y=1560.0, w=920.0, display="PARIS OFFICE", size=92)
@@ -103,6 +104,39 @@ def _pose(start: float, eyes: str, mouth: str, arms: str) -> dict:
     return {"start": round(start, 6), "eyes": eyes, "mouth": mouth, "arms": arms}
 
 
+def _speed(slide: float) -> tuple[float, float]:
+    """When the phone runs across the table, from the beat of the slide."""
+    return slide + 0.2, slide + 1.3
+
+
+def _slide_arm(cv, front, slide: float) -> None:
+    """Brent's own arm, from his shoulder to one finger behind the phone, across the table with it."""
+    speed = _speed(slide)
+    arm = cv.group(front, cv.uid("g"))
+    cv.gate(arm, [(slide, speed[1] + 0.25)])
+    fingertip = (NEAR_BRENT - PHONE_W * 0.42, PHONE_Y - 60.0)
+    across = [(speed[0], 0.0), (speed[1], NEAR_DEB - NEAR_BRENT)]
+
+    def hand(t: float) -> collage.Point:
+        return fingertip[0] - 80.0 + collage_everyday.eased(across, t, "sine-in-out"), fingertip[1] + 20.0
+
+    frm = PLACES["brent"].seen(collage_everyday.shoulder("brent", 1))
+    times = sorted({slide, speed[1] + 0.25, *collage_everyday.frames(speed)})
+    held = collage_everyday.reach(cv, arm, "brent", frm, hand, times, width=60.0)
+    cv.rect(held, 20.0, -22.0, 74.0, 28.0, collage.LOOKS["brent"].skin, collage.INK, 3, radius=14)
+
+
+def _sliding(app: Appearance, slide: float) -> Appearance:
+    """Brent speaking over the slide with the arm on the phone freed until it lets go, whatever the recording says."""
+    lets_go = _speed(slide)[1] + 0.25 - app.start
+    if app.who != "brent" or app.start < slide or lets_go <= 0.0:
+        return app
+    held = [{**p, "arms": SLIDING} for p in app.poses if p["start"] <= lets_go]
+    after = [p for p in app.poses if p["start"] > lets_go]
+    back = [{**[p for p in app.poses if p["start"] <= lets_go][-1], "start": lets_go}]
+    return replace(app, poses=held + (back if lets_go < app.end - app.start else []) + after)
+
+
 def _lineup(beats: Sequence[Beat], end: float) -> Lineup:
     """The two of them at the table: from the top to her close, from the nod to the insert, from the slide to her
     last close. The listener's face changes with the news."""
@@ -111,7 +145,12 @@ def _lineup(beats: Sequence[Beat], end: float) -> Lineup:
     breath = next(b.start for b in beats if b.eyes == "closed")
     ring = events(beats, "ring")[0][0]
     reactions = {
-        "brent": [_pose(0, "open", "smile", "hold"), _pose(nod, "half", "flat", "hold")],
+        "brent": [
+            _pose(0, "open", "smile", "hold"),
+            _pose(nod, "half", "flat", "hold"),
+            _pose(slide, "half", "flat", SLIDING),
+            _pose(_speed(slide)[1] + 0.25, "half", "flat", "hold"),
+        ],
         "deb": [
             _pose(0, "open", "smile", "hold"),
             _pose(nod, "half", "flat", "hold"),
@@ -129,6 +168,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     """The lineup, nodding on the nod; the speaker alone in a close; nobody over the insert."""
     lineup = _lineup(beats, end)
     nod, insert, ear = _at(beats, "nod"), _at(beats, "insert"), _at(beats, "ear")
+    slide = next(b.start for b in beats if b.start > insert)
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if app.start == insert:
@@ -138,7 +178,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
                 app = replace(app, poses=[{**p, "arms": "free"} for p in app.poses])
             return solo(cv, parent, app, mouths)
         if app.start != nod:
-            return lineup(cv, parent, app, mouths)
+            return lineup(cv, parent, _sliding(app, slide), mouths)
         depth, seconds = NOD
         both = cv.group(parent, cv.uid("g"))
         cv.keys(
@@ -195,20 +235,13 @@ def dress(shot) -> None:
         _shaken(cv, collage_things.desk_phone(cv, front, NEAR_BRENT, PHONE_Y, PHONE_W), rings, insert)
         return
     # the slide: one finger, the phone across the table, ringing, until she lifts the handset off it
-    speed = (slide + 0.2, slide + 1.3)
+    speed = _speed(slide)
     on_hook = cv.group(front, cv.uid("g"))
     cv.gate(on_hook, [(slide, lift)])
     phone = collage_things.desk_phone(cv, on_hook, NEAR_BRENT, PHONE_Y, PHONE_W)
     cv.keys(phone, "x", [(speed[0], NEAR_BRENT), (speed[1], NEAR_DEB)], kind="sine-in-out", local=False)
     _shaken(cv, phone, rings[1:], lift)
-    arm = cv.group(front, cv.uid("g"))
-    cv.gate(arm, [(slide, speed[1] + 0.25)])
-    fingertip = (NEAR_BRENT - PHONE_W * 0.42, PHONE_Y - 60.0)
-    collage_everyday.arm(cv, arm, "brent", (160.0, 1980.0), (fingertip[0] - 80.0, fingertip[1] + 20.0), width=60.0)
-    cv.rect(
-        arm, fingertip[0] - 60.0, fingertip[1] - 2.0, 74.0, 28.0, collage.LOOKS["brent"].skin, collage.INK, 3, radius=14
-    )
-    cv.keys(arm, "x", [(speed[0], 0.0), (speed[1], NEAR_DEB - NEAR_BRENT)], kind="sine-in-out", local=False)
+    _slide_arm(cv, front, slide)
     off_hook = cv.group(front, cv.uid("g"))
     cv.gate(off_hook, [(lift, app.end)])
     collage_things.desk_phone(cv, off_hook, NEAR_DEB, PHONE_Y, PHONE_W, off_hook=True)
