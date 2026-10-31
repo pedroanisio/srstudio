@@ -23,7 +23,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from . import brush
 from .canvas import Canvas
@@ -204,9 +204,11 @@ def figure(
     enter: float = 0.0,
     stickers: Sequence[Layer] = (),
     mouths: Mouths = (),
+    on_face: Callable[[Any], None] | None = None,
 ):
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
-    ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`. Returns the outermost group."""
+    ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
+    group last, so what it adds moves with the head. Returns the outermost group."""
     from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
 
     look = rig.look
@@ -268,4 +270,6 @@ def figure(
             _draw(cv, body, _place(under, arms))
         if over:
             _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
+    if on_face is not None:
+        on_face(face)
     return lean

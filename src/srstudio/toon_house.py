@@ -65,6 +65,7 @@ LEDGES = {
     "white": ("#f4f1ea", "#dcd7cc", "#e8e3d8", "#a59f92"),
     "steel": ("#c9d3dc", "#a4b0bc", "#b4bfca", "#73808e"),
     "dash": ("#4e5478", "#2a2d44", "#343854", "#a6acc6"),  # a car's dashboard
+    "parlour": ("#fff6ee", "#f59ab5", "#ef86a5", "#8a2f4e"),  # an ice cream parlour's counter
 }
 LEDGE_TOP = 801  # as the desk's, so a character's arms rest where they do on it
 
@@ -105,19 +106,22 @@ def _rise(times: Sequence[float], what: str) -> None:
 @register(
     "prop", "toon-ledge", summary="A plain surface in the desk's place, in oak, white or steel, signed as the desk is"
 )
-def ledge(cv: Canvas, parent, finish: str = "oak") -> None:
+def ledge(cv: Canvas, parent, finish: str = "oak", inset: float = 0.0) -> None:
     """A surface with no laptop on it, in front of the character as the desk is, in one of :data:`LEDGES`, with the
-    cactus on its top and the code on its front where the desk has them."""
+    cactus on its top and the code on its front where the desk has them, ``inset`` pixels in from there for a shot
+    that pushes in far enough to lose them."""
     if finish not in LEDGES:
         raise ToonDataError(f"a ledge is one of {sorted(LEDGES)}, got {finish!r}")
+    if not (checks.number(inset) and inset >= 0):
+        raise ToonDataError(f"a ledge's marks are inset by 0 or more, got {inset!r}")
     top, front, side, code = LEDGES[finish]
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, fx(-10), fy(LEDGE_TOP + 47), fh(612), fh(300), front, cv.clear, 0, radius=0)
     cv.rect(g, fx(-10), fy(LEDGE_TOP + 47), fh(106), fh(300), side, cv.clear, 0, radius=0)
     cv.rect(g, fx(-10), fy(LEDGE_TOP), fh(612), fh(47), cv.ink, cv.clear, 0, radius=0)
     cv.rect(g, fx(-10), fy(LEDGE_TOP + 12), fh(612), fh(31), top, cv.clear, 0, radius=0)
-    signature.cactus(cv, g, fx(548), fy(838), 0.7)
-    signature.code(cv, g, fx(580), fy(866), 14, color=code, opacity=0.9, align="end")
+    signature.cactus(cv, g, fx(548 - inset), fy(838), 0.7)
+    signature.code(cv, g, fx(580 - inset), fy(866), 14, color=code, opacity=0.9, align="end")
 
 
 @register(

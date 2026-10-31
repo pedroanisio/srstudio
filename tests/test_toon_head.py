@@ -405,3 +405,16 @@ def test_the_chest_is_under_the_head_wherever_the_head_goes(rig):
         for px, py in rig.head:
             dx, dy = px - rig.neck[0], py - rig.neck[1]
             assert rig.neck[1] + dx * math.sin(a) + dy * math.cos(a) + drop <= y + 1e-9
+
+
+def test_on_face_draws_inside_the_face_group_and_unset_changes_nothing():
+    marks = []
+
+    def mark(face) -> None:
+        marks.append(face.get("id") if hasattr(face, "get") else face)
+
+    plain = ET.tostring(drawn(hm_plan()))
+    assert not marks
+    assert ET.tostring(drawn(hm_plan(), on_face=None)) == plain
+    drawn(hm_plan(), on_face=mark)
+    assert len(marks) == 1
