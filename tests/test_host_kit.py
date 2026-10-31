@@ -251,6 +251,28 @@ def test_a_silent_master_spreads_the_words_through_their_cue():
     assert [w.start for w in host_kit.caption_cues(LINES[:1])[0].words] == pytest.approx([0.0, 1 / 3, 2 / 3])
 
 
+def test_a_line_too_long_for_the_band_breaks_at_its_sentence_on_the_word_said():
+    text = "They didn't ask. They're already walking away."
+    said = tuple((1.0 + 0.2 * k, 1.15 + 0.2 * k, word) for k, word in enumerate(text.split()))
+    first, second = host_kit.caption_cues([toon.Line("a", text, 1.0, 2.5)], said)
+    assert first.text == "They didn't ask."
+    assert second.text == "They're already walking away."
+    assert (first.start, first.end) == (1.0, pytest.approx(1.6))
+    assert (second.start, second.end) == (pytest.approx(1.6), 2.5)
+    assert first.words[-1].end == pytest.approx(second.words[0].start)
+
+
+def test_a_line_that_fits_the_band_stays_one_cue_whatever_its_sentences():
+    text = "Rule one. You say good. Whatever happened."
+    assert [c.text for c in host_kit.caption_cues([toon.Line("a", text, 0.0, 2.0)])] == [text]
+
+
+def test_a_long_line_with_no_sentence_to_break_at_is_refused_by_the_track():
+    text = "nobody ever wrote down a single word of any of this for anybody at all"
+    cues = host_kit.caption_cues([toon.Line("a", text, 0.0, 2.0)])
+    assert [c.text for c in cues] == [text]  # one cue: native.caption_track says it does not fit
+
+
 def test_a_caption_that_arrives_after_its_voice_stops_the_build():
     late = [replace(LINES[0], start=SAID[0][0] + host_kit.CAPTION_LATE + 0.01), *LINES[1:]]
     with pytest.raises(host_kit.HostKitError, match="after its voice"):
