@@ -455,6 +455,9 @@ RECIPES: dict[str, Recipe] = {
     "toon-toast": Recipe(part((toon_props.Toast(0.0, SECONDS, "Fern", "Are you free?"),))),
     "toon-board-text": Recipe(part("LOGO v1")),
     "toon-badge": Recipe(part("Fern calling", 0.0, SECONDS, lambda text: 16.0 * len(text))),
+    "collage-cake-slice": Recipe(part(540.0, 960.0, (1.0, 2.0))),
+    "collage-eye-chart": Recipe(part(200.0, 500.0, ("TOP ROW", "SECOND ROW"), (1.0, 2.0), end=SECONDS)),
+    "collage-lens-frame": Recipe(part(540.0, 960.0)),
 }  # fmt: skip
 
 FIRST_POSE = Recipe(lambda cv, g, e, ctx: None, at=0.0)  # a character's drawing is srstudio.specimens' alone
