@@ -61,7 +61,9 @@ reel), so those shows have no character that recurs on a published reel and the 
 **The loader and the check are code.** `srstudio.bible` parses both files into frozen types and refuses unknown fields,
 a canon character with no fact or no approved drawing, a pair that is not alphabetical or not unique, a relationship to
 a character the bible lacks, and files that disagree on their version. `bible.verify` looks up every cited line, voice
-and drawing in the published project (a `seen` fact is listed, never accepted by code). `srstudio bible check` is
+and drawing in the published project (a `seen` fact is listed, never accepted by code), and requires each canon
+character's name to be a word of a title, description, line or speaker of its reels: the credit's voice names do not
+count, which caught the Cutout manager, whose "Eric" is only his ElevenLabs voice and who is now The Boss. `srstudio bible check` is
 deterministic and calls no model: it flags a release that names a character the bible lacks, or gives a known one
 another drawing or voice, and a brief with no `Cast: slug, slug` line or with a slug the bible lacks.
 `episodes/instagram_posts.write_all` runs it on a first delivery, after the hashtag cap, and a video already in the
