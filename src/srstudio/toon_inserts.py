@@ -221,18 +221,16 @@ def gull_stare(
     done = turn + seconds
     x, y, r = at[0], at[1], 170.0 * scale
     g = cv.group(parent, cv.uid("gull-stare"), end=end)
-    _inked(
-        cv,
-        g,
-        [
-            (x - 150 * scale, y + r * 3),
-            (x - 130 * scale, y + r),
-            (x + 130 * scale, y + r),
-            (x + 190 * scale, y + r * 3),
-        ],
-        GULL_GREY,
-        FINE_W,
-    )
+    below = y + r * 3
+    body = [(x - 150 * scale, below), (x - 130 * scale, y + r), (x + 130 * scale, y + r), (x + 190 * scale, below)]
+    _inked(cv, g, body, GULL_WHITE, FINE_W)
+    wing = [
+        (x + 60 * scale, below),
+        (x + 80 * scale, y + r * 1.5),
+        (x + 150 * scale, y + r * 1.6),
+        (x + 190 * scale, below),
+    ]
+    _inked(cv, g, wing, GULL_GREY, FINE_W)
     cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), GULL_WHITE, cv.ink, FINE_W)
     slide = fh(150 * scale)
     beak_x = fx(x - r * 0.8)
@@ -241,10 +239,12 @@ def gull_stare(
     cv.keys(beak, "scaleX", [(turn, 1.0), (done, 0.42)], kind="sine-in-out", local=False)
     _inked(cv, beak, [(x - r * 0.75, y - 22), (x - r * 1.75, y + 22), (x - r * 0.75, y + 66)], GULL_BEAK, FINE_W)
     eye = cv.group(g, cv.uid("g"), x=0.0, y=0.0)
-    cv.keys(eye, "x", [(turn, 0.0), (done, slide * 1.1)], kind="sine-in-out", local=False)
-    w = 58 * scale
+    cv.keys(eye, "x", [(turn, 0.0), (done, slide * 0.85)], kind="sine-in-out", local=False)
+    w = 84 * scale
     cv.ellipse(eye, fx(x - r * 0.55 - w / 2), fy(y - 70 * scale - w / 2), fh(w), fh(w), STARE_IRIS, cv.ink, FINE_W)
     cv.ellipse(eye, fx(x - r * 0.55 - w / 4), fy(y - 70 * scale - w / 4), fh(w / 2), fh(w / 2), cv.ink)
+    brow = [(x - r * 0.55 - w * 0.75, y - 70 * scale - w * 0.75), (x - r * 0.55 + w * 0.7, y - 70 * scale - w * 0.42)]
+    _line(cv, eye, brow, 12.0 * scale)
 
 
 LIST_PANEL, LIST_ROW, LIST_NEW, LIST_TEXT, LIST_BAR = "#f6f6f2", "#ffffff", "#ffe27a", "#1d232b", "#3f7fbf"
