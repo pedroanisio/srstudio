@@ -20,7 +20,17 @@ Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "rain", "reception_glass", "voice_note_bar", "wifi_list"]
+__all__ = [
+    "READ_SIZE",
+    "eye_drops",
+    "gnome",
+    "gull_stare",
+    "noodle_box",
+    "rain",
+    "reception_glass",
+    "voice_note_bar",
+    "wifi_list",
+]
 
 
 def _second(value: object, what: str) -> float:
@@ -361,3 +371,48 @@ def rain(
             x = left + ((k * RAIN_STEP) % 1.0) * (right - left)
             y = top + (row + k / RAIN_STREAKS) * RAIN_TILE
             _line(cv, fall, [(x, y), (x - 7, y + 46)], 3.0, RAIN, opacity)
+
+
+GNOME_HAT, GNOME_COAT, GNOME_BEARD, GNOME_FACE, GNOME_BOOT = "#d83a34", "#3468b4", "#f7f2e6", "#f2c9a8", "#5a4632"
+NOODLE_BOX, NOODLE_RED, NOODLE, CHOPSTICK = "#f7f4ec", "#c8352c", "#f0d27a", "#b98a4e"
+
+
+@register("prop", "toon-gnome", summary="A garden gnome, red hat and white beard", style="toon")
+def gnome(cv: Canvas, parent, at: Point = (300.0, 800.0), scale: float = 1.0) -> None:
+    """A gnome standing on ``at`` (its feet), about 230 reference pixels tall at scale 1."""
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a gnome's scale is over 0, got {scale!r}")
+    x, y = at
+    g = cv.group(parent, cv.uid("gnome"))
+
+    def p(*points: Point) -> list[Point]:
+        return [(x + dx * scale, y + dy * scale) for dx, dy in points]
+
+    _inked(cv, g, p((-34, 0), (-34, -16), (34, -16), (34, 0)), GNOME_BOOT, FINE_W, 2)
+    _inked(cv, g, p((-44, -14), (-36, -92), (36, -92), (44, -14)), GNOME_COAT, FINE_W)
+    _inked(cv, g, p((-34, -118), (-30, -40), (0, -14), (30, -40), (34, -118)), GNOME_BEARD, FINE_W)
+    r = 26 * scale
+    cv.ellipse(g, fx(x - r), fy(y - 130 * scale - r), fh(2 * r), fh(2 * r), GNOME_FACE, cv.ink, FINE_W)
+    cv.ellipse(g, fx(x - 12 * scale - 4), fy(y - 138 * scale), fh(8), fh(8), cv.ink)
+    cv.ellipse(g, fx(x + 12 * scale - 4), fy(y - 138 * scale), fh(8), fh(8), cv.ink)
+    _inked(cv, g, p((-40, -140), (-6, -230), (40, -140)), GNOME_HAT, FINE_W)
+
+
+@register("prop", "toon-noodle-box", summary="A takeout box of noodles with chopsticks, heaped to empty", style="toon")
+def noodle_box(cv: Canvas, parent, at: Point = (300.0, 800.0), scale: float = 1.0, full: float = 1.0) -> None:
+    """A takeout box standing on ``at``. ``full`` is how much is left: 1 heaped, 0 empty."""
+    if not (checks.number(scale) and scale > 0 and checks.number(full) and 0 <= full <= 1):
+        raise ToonDataError(f"a noodle box has a scale over 0 and is 0 to 1 full, got {scale!r}, {full!r}")
+    x, y = at
+    g = cv.group(parent, cv.uid("noodle-box"))
+
+    def p(*points: Point) -> list[Point]:
+        return [(x + dx * scale, y + dy * scale) for dx, dy in points]
+
+    if full > 0:
+        heap = 44 * full
+        _inked(cv, g, p((-52, -90), (-30, -90 - heap), (30, -90 - heap), (52, -90)), NOODLE, FINE_W)
+    _line(cv, g, p((14, -90), (74, -190)), 7.0 * scale, CHOPSTICK)
+    _line(cv, g, p((28, -90), (92, -176)), 7.0 * scale, CHOPSTICK)
+    _inked(cv, g, p((-44, 0), (-62, -96), (62, -96), (44, 0)), NOODLE_BOX, FINE_W)
+    _inked(cv, g, p((-30, -30), (-36, -70), (36, -70), (30, -30)), NOODLE_RED, FINE_W / 2)

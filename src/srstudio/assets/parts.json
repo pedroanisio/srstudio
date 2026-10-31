@@ -9307,6 +9307,40 @@
           "rig": null
         }
       ]
+    },
+    "toon-gnome": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A garden gnome. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e906ba93d9b3790b13c0c06b8bd6e539fac3515ce9fd253e6eea7170d92214c5",
+          "rig": null
+        }
+      ]
+    },
+    "toon-noodle-box": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A takeout box of noodles, heaped to empty. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "84505ab446b2e673c6ace4753a9a5b07f3757808a5061a5fff8d4d1dd55c2b0d",
+          "rig": null
+        }
+      ]
     }
   }
 }

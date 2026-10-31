@@ -175,3 +175,27 @@ def test_rain_refuses_a_span_it_cannot_fall_over(bad):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.rain(cv, cv.comp, **bad)
+
+
+def test_a_gnome_and_a_noodle_box_are_parts_and_a_box_empties():
+    specimens.load_parts()
+    assert registry.get("prop", "toon-gnome").builder is toon_inserts.gnome
+    assert registry.get("prop", "toon-noodle-box").builder is toon_inserts.noodle_box
+    heaped, empty = canvas(), canvas()
+    toon_inserts.noodle_box(heaped, heaped.comp, full=1.0)
+    toon_inserts.noodle_box(empty, empty.comp, full=0.0)
+    assert len(tree(heaped).findall(".//*")) > len(tree(empty).findall(".//*"))
+
+
+@pytest.mark.parametrize("bad", [{"scale": 0.0}, {"scale": -1.0}])
+def test_a_gnome_refuses_a_scale_it_cannot_stand_at(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.gnome(cv, cv.comp, **bad)
+
+
+@pytest.mark.parametrize("bad", [{"scale": 0.0}, {"full": 1.5}, {"full": -0.1}])
+def test_a_noodle_box_refuses_what_it_cannot_hold(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.noodle_box(cv, cv.comp, **bad)
