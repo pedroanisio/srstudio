@@ -23,9 +23,7 @@ def canvas() -> Canvas:
 
 
 def stage(cv: Canvas):
-    return (
-        cv.comp if hasattr(cv, "comp") else cv.scene.add_composition(id="root", width=1080, height=1920, duration=12.0)
-    )
+    return cv.comp
 
 
 def tree(cv: Canvas):
