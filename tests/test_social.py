@@ -981,6 +981,46 @@ def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
 
 
+def _new_reel(posts, monkeypatch, tmp_path, repo):
+    renders = unpinned_release(posts, monkeypatch, tmp_path)
+    post = next(iter(posts.POSTS.values()))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
+    monkeypatch.setattr(posts, "REPO", repo)
+    monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
+    return renders
+
+
+def test_a_first_delivery_without_an_enhancement_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    monkeypatch.setattr(
+        posts.auto_enhance, "refused", lambda videos, repo: [Drift(videos["new-reel"], "no enhancement")]
+    )
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="New_Reel: no enhancement"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_auto_enhance_off_just_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_video_already_delivered_owes_no_enhancement(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
 def test_the_published_delivery_has_not_drifted():
     """The publish gate: with ``SRSTUDIO_RENDERS`` (the rendered videos, delivered into ``<renders>/ig``) and
     ``SRSTUDIO_FONTS`` (the pinned headline font) set, every video's ig.txt and cover must match its render and post."""

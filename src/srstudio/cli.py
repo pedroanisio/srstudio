@@ -1,8 +1,8 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog site, ``srstudio serve`` serves it, and ``srstudio parts`` lists the part versions
-and checks the pins."""
+rebuilds the catalog site, ``srstudio serve`` serves it, ``srstudio parts`` lists the part versions
+and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode and ledger."""
 
 from __future__ import annotations
 
@@ -19,7 +19,19 @@ from pathlib import Path
 
 from sr_core.scene import SchemaValueError
 
-from . import catalog_page, catalog_server, catalog_specimens, craft, fonts, lipsync, parts, registry, releases, usage
+from . import (
+    auto_enhance,
+    catalog_page,
+    catalog_server,
+    catalog_specimens,
+    craft,
+    fonts,
+    lipsync,
+    parts,
+    registry,
+    releases,
+    usage,
+)
 from .episode import SceneCheckError
 from .errors import SrstudioError
 from .soundtrack import INK_MOUTH
@@ -65,6 +77,11 @@ def main(argv=None):
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
+    enhance = sub.add_parser(
+        "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
+    )
+    enhance.add_argument("action", nargs="?", choices=("status", "kinds", "on", "off"), default="status")
+    enhance.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     versions = sub.add_parser("parts", help="list each part's versions, print a digest, check the pins")
     versions.add_argument("--json", action="store_true")
     versions.add_argument("--digest", metavar="NAME[@N]", help="the digest of a drawing, for its version record")
@@ -158,6 +175,8 @@ def main(argv=None):
         for example in info['examples']:
             print(f"\nExample (ep is an existing Episode):\n{example}")
         return 0
+    if args.cmd == "enhance":
+        return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -386,6 +405,25 @@ def _parts(args: argparse.Namespace) -> int:
     for name, part in table.items():
         numbers = ",".join(f"{v.number}{'' if v.status == 'approved' else '?'}" for v in part.versions)
         print(f"{name:<{width}} {part.kind:<9} {part.style:<7} {part.default or '-':<3} {numbers}")
+    return 0
+
+
+def _enhance(action: str, repo: Path) -> int:
+    if action == "kinds":
+        for kind, what in auto_enhance.KINDS.items():
+            print(f"{kind:<10} {what}")
+        return 0
+    try:
+        if action != "status":
+            auto_enhance.set_mode(repo, on=action == "on")
+        print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
+        rows = auto_enhance.ledger(repo) if action == "status" else []
+    except auto_enhance.EnhanceError as exc:
+        print(f"srstudio enhance: {exc}", file=sys.stderr)
+        return 2
+    for row in rows:
+        verdict = "; ".join(row.problems) or "counts"
+        print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
     return 0
 
 

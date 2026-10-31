@@ -35,7 +35,7 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import caption_gate, fonts, outbox, releases
+from srstudio import auto_enhance, caption_gate, fonts, outbox, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -47,10 +47,12 @@ from srstudio.social import (
     check_delivery,
     migrate_manifest,
     publish,
+    read_manifest,
 )
 
 THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two big lines fit a portrait cover
 
+REPO = Path(__file__).resolve().parent.parent  # its history holds the enhancements, its settings the mode (ADR 0056)
 RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file per episode: posts/<slug>.py
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
@@ -100,7 +102,8 @@ def write_all(
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
-    print over each other, is a :class:`DeliveryError` before anything is written."""
+    print over each other, or a first delivery with no enhancement behind it (ADR 0056), is a :class:`DeliveryError`
+    before anything is written."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -110,6 +113,11 @@ def write_all(
         *releases.unpinned(chosen, _beside(renders), delivering),
         *releases.doubled_captions(chosen, _beside(renders), delivering),
     ]
+    if refused:
+        raise DeliveryError("; ".join(map(str, refused)))
+    done = read_manifest(out)
+    first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
+    refused = auto_enhance.refused(first, REPO)
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
@@ -166,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"deliver: {exc}") from None
     for folder in written:
         print(folder / "ig.txt", folder / "cover.jpg")
+    if written and not auto_enhance.enabled(REPO):
+        print("auto-enhance off: nothing asked of these videos")
     if args.only:
         left = [d for d in check_all(args.out, args.renders, fonts_dir=args.fonts) if d.name not in args.only]
         print(f"delivered {', '.join(args.only)}; {len(left)} drift(s) left elsewhere, see check")
