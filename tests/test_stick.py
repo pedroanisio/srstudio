@@ -249,6 +249,10 @@ def test_the_style_value(tmp_path):
     assert parts == {
         "stick-room",
         "stick-yard",
+        "stick-wheelie-bin",
+        "stick-trash-truck",
+        "stick-sparks",
+        "stick-slipper",
         "stick-queue",
         "stick-duffel",
         "stick-book",

@@ -10567,6 +10567,74 @@
           "rig": null
         }
       ]
+    },
+    "stick-wheelie-bin": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wheeled trash bin that can lose its wheels. First drawn for bin-day; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5f9696c2784cc57a81dfac8ef5d09fe8ad8be7f3a9b7dc35f841124bb746153c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-trash-truck": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A trash truck from the side, with a window for its driver. First drawn for bin-day; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "923a1437bb3ae88a85d4eba5b4d5f2a21cfad212d9b4d5c4d6e073f4713d4bcf",
+          "rig": null
+        }
+      ]
+    },
+    "stick-slipper": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One bedroom slipper. First drawn for bin-day; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7f1ed7173d1b4a63c85a6da7535f66742f1799d2a39b89f435b01ced3b7a38dc",
+          "rig": null
+        }
+      ]
+    },
+    "stick-sparks": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flickering spray of sparks. First drawn for bin-day; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c63f44fd33c2efcc366b06670d72cdd55854592f2b68ba1ab326ed49bc38eb98",
+          "rig": null
+        }
+      ]
     }
   }
 }

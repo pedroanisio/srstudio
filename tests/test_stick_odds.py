@@ -137,3 +137,32 @@ def test_a_double_take_needs_time(step):
 def test_a_double_take_starts_in_the_shot():
     with pytest.raises(stick.StickDataError, match="starts in the shot"):
         stick_odds.double_take(-0.1, "stand", stick.Face(), stick.Face(), stick.Face())
+
+
+def test_a_bin_can_lose_its_wheels_but_no_more():
+    cv = canvas()
+    assert stick_odds.wheelie_bin(cv, cv.comp, 500, 900, wheels=0) is not None
+    with pytest.raises(stick.StickDataError, match="wheels"):
+        stick_odds.wheelie_bin(cv, cv.comp, 0, 0, wheels=3)
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick_odds.wheelie_bin(cv, cv.comp, 0, 0, scale=0)
+
+
+def test_a_truck_and_a_slipper_need_a_positive_scale():
+    cv = canvas()
+    for draw in (stick_odds.trash_truck, stick_odds.slipper):
+        assert draw(cv, cv.comp, 100, 900) is not None
+        with pytest.raises(stick.StickDataError, match="scale"):
+            draw(cv, cv.comp, 0, 0, scale=-1)
+
+
+def test_sparks_turn_about_and_refuse_what_cannot_flicker():
+    cv = canvas()
+    group = stick_odds.sparks(cv, cv.comp, 500, 900, 1.0)
+    assert len(group.elements()) == 2
+    with pytest.raises(stick.StickDataError, match="seconds"):
+        stick_odds.sparks(cv, cv.comp, 0, 0, 0.0)
+    with pytest.raises(stick.StickDataError, match="rate"):
+        stick_odds.sparks(cv, cv.comp, 0, 0, 1.0, rate=0)
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick_odds.sparks(cv, cv.comp, 0, 0, 1.0, scale=0)
