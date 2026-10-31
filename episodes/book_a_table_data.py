@@ -9,6 +9,7 @@ held first frame (the sp-hook_motion test's arm a). ElevenLabs premade voices, l
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 
 from srstudio import collage, collage_everyday, collage_photo, collage_sets, collage_things
 from srstudio.collage_group import Lineup, Place
@@ -40,6 +41,11 @@ HIDING = {"priya": Place(370.0, 1790.0, 0.72), "deb": Place(730.0, 1790.0, 0.72)
 STOOL = (390.0, 1700.0, 460.0)
 PHONE = dict(x=305.0, y=1290.0, w=170.0, h=300.0)
 TOWEL = dict(x=835.0, y=1215.0, w=150.0, h=340.0, tilt=-4.0)
+TOWEL_CLOSE = dict(x=714.2, y=1336.7, w=227.3, h=515.2, tilt=-4.0)  # the same towel on her shoulder, in her single
+DEB_LEGS = (((660.0, 1590.0), (648.0, 1835.0)), ((835.0, 1590.0), (850.0, 1835.0)))  # hem to floor, behind the stool
+PRIYA_LEGS = (((300.0, 1740.0), (286.0, 1960.0)), ((480.0, 1740.0), (494.0, 1960.0)))  # the stool's seat to off frame
+TROUSERS = "#2b2d42"
+SHOE = "#1d1a24"
 POST = dict(x=1000.0, y=840.0, h=780.0)
 BACKREST = (1270.0, "#588157", "#a3b18a", "#3a5a40")  # the sofa's back, its top and its seams, seen from the front
 SEAT_PHONE = dict(x=470.0, y=1560.0, w=150.0, h=250.0)
@@ -113,10 +119,10 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
         {
             "priya": [_pose(0, "wide", "flat", "hold")],
             "deb": [
-                _pose(0, "open", "smile", "hold"),
-                _pose(dial, "wide", "flat", "hold"),
+                _pose(0, "open", "smile", "down"),
+                _pose(dial, "wide", "flat", "down"),
                 _pose(fists, "angry", "grin", "fist"),
-                _pose(zoom, "wide", "flat", "hold"),
+                _pose(zoom, "wide", "flat", "down"),
                 _pose(shake, "sad", "frown", "down"),
                 _pose(throw, "wide", "flat", "down"),
             ],
@@ -141,6 +147,16 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
         return face
 
     return draw
+
+
+def _legs(cv, parent) -> None:
+    """Hers from the hem to the floor, in the back with the corner; Priya's from behind the seat, past the frame."""
+    deb, priya = collage.LOOKS["deb"], collage.LOOKS["priya"]
+    for hip, ankle in DEB_LEGS:
+        collage_everyday.arm(cv, parent, replace(deb, top=deb.skin), hip, ankle, width=62.0, hand=False)
+        cv.ellipse(parent, ankle[0] - 58.0, ankle[1] - 14.0, 112.0, 46.0, SHOE, cv.ink, 5.0)
+    for hip, ankle in PRIYA_LEGS:
+        collage_everyday.arm(cv, parent, replace(priya, top=TROUSERS), hip, ankle, width=74.0, hand=False)
 
 
 def _phone_in_hand(shot) -> None:
@@ -180,8 +196,9 @@ def dress(shot) -> None:
         return
     collage_things.ring_corner(cv, back, **POST)
     if app.start == _at(beats, "shake"):
-        collage_things.towel(cv, front, **TOWEL)
+        collage_things.towel(cv, front, **TOWEL_CLOSE)
         return
+    _legs(cv, back)
     collage_things.stool(cv, front, *STOOL)
     collage_things.towel(cv, front, **TOWEL)
     if app.start <= _at(beats, "throw"):
@@ -189,7 +206,7 @@ def dress(shot) -> None:
 
 
 _FIRST = _pose(0, "open", "frown", "hold")
-_HELD = Lineup(PLACES, {"priya": [_FIRST], "deb": [_pose(0, "open", "smile", "hold")]}, ((0.0, STILL),))
+_HELD = Lineup(PLACES, {"priya": [_FIRST], "deb": [_pose(0, "open", "smile", "down")]}, ((0.0, STILL),))
 STAGING = Staging(
     sketch=SKETCH,
     seed=SEED,

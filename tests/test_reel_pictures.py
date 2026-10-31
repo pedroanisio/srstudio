@@ -239,3 +239,19 @@ def test_moms_plate_stands_clear_of_the_cactus_and_she_sits_on_the_ledge() -> No
     plate_right = mod.PLATE_AT[0] + 104.0
     pot_left = 548.0 - 36.0 * 0.7
     assert plate_right + 8.0 <= pot_left
+
+
+@pytest.mark.usefixtures("reels")
+def test_book_a_tables_two_stand_on_legs_and_the_towel_stays_on_her_shoulder() -> None:
+    mod = _data("book_a_table")
+    hem = mod.PLACES["deb"].base
+    for hip, ankle in mod.DEB_LEGS:
+        assert hip[1] <= hem < ankle[1] <= HEIGHT, "her legs run from under the hem to the floor"
+    for hip, ankle in mod.PRIYA_LEGS:
+        assert hip[1] < mod.STOOL[1] + 0.2 * mod.STOOL[2] and ankle[1] >= HEIGHT, "behind the seat, out of the frame"
+    towel, place = mod.TOWEL_CLOSE, mod.PLACES["deb"]
+    x0, y0 = place.transform()
+    assert towel["x"] * place.scale + x0 == pytest.approx(mod.TOWEL["x"], abs=0.1)
+    assert towel["y"] * place.scale + y0 == pytest.approx(mod.TOWEL["y"], abs=0.1)
+    assert towel["w"] * place.scale == pytest.approx(mod.TOWEL["w"], abs=0.1)
+    assert towel["h"] * place.scale == pytest.approx(mod.TOWEL["h"], abs=0.1)
