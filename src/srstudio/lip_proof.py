@@ -2,9 +2,9 @@
 
 Lip sync can only be judged on the file that ships, looking at a mouth in the middle of a word. :func:`instants` reads
 a project's recording and picks those moments, spread evenly over the reel: the middle of each chosen word's longest
-sounded letter, on the master's clock, with the pose the mouth track holds there. :func:`frames` pulls each one out of
-the master at full size. A person compares them; :attr:`Instant.suspect` only names the plainest defect, a mouth shut
-on a vowel.
+sounded letter, on the master's clock, moved to the frame nearest it, with the pose the mouth track holds on that frame.
+:func:`frames` pulls exactly that frame out of the master at full size. A person compares them;
+:attr:`Instant.suspect` only names the plainest defect, a mouth shut on a vowel.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from .errors import SrstudioError
 __all__ = ["COUNT", "Instant", "LipProofError", "frames", "instants"]
 
 COUNT = 16
+FPS = 30
 VOWELS = "aeiou"
 SHUT = "closed"
 Run = Callable[[list[str]], None]
@@ -89,8 +90,8 @@ def _shown(track: Sequence[Sequence[Any]], at: float) -> str:
     return held
 
 
-def instants(project: Path, *, count: int = COUNT) -> list[Instant]:
-    """Up to ``count`` instants of the project's recording, evenly spread over its words."""
+def instants(project: Path, *, count: int = COUNT, fps: int = FPS) -> list[Instant]:
+    """Up to ``count`` instants of the project's recording, evenly spread over its words, each on a frame of ``fps``."""
     if count < 1:
         raise LipProofError(f"count must be at least 1, got {count}")
     voiced = Path(project) / "voiced"
@@ -100,9 +101,10 @@ def instants(project: Path, *, count: int = COUNT) -> list[Instant]:
     step = max(len(said) / count, 1.0)
     out = []
     for k in range(min(count, len(said))):
-        who, word, letter, at = said[int(k * step)]
+        who, word, letter, middle = said[int(k * step)]
         if who not in mouths:
             raise LipProofError(f"no mouth track for {who!r}")
+        at = round(middle * fps) / fps
         out.append(Instant(who, word, letter, at, _shown(mouths[who], at)))
     return out
 
@@ -112,15 +114,17 @@ def _ffmpeg(cmd: list[str]) -> None:
 
 
 def frames(
-    picks: Sequence[Instant], master: Path, out: Path, *, crop: str | None = None, run: Run = _ffmpeg
+    picks: Sequence[Instant], master: Path, out: Path, *, crop: str | None = None, fps: int = FPS, run: Run = _ffmpeg
 ) -> list[Path]:
-    """Each instant's frame of ``master``, written to ``out`` as ``lipNN.png``. ``crop`` is ffmpeg's ``w:h:x:y``."""
+    """Each instant's frame of ``master``, written to ``out`` as ``lipNN.png``. ``crop`` is ffmpeg's ``w:h:x:y``. The
+    seek is half a frame early, as ffmpeg gives the first frame at or after it and a frame's own time may round past."""
     Path(out).mkdir(parents=True, exist_ok=True, mode=0o700)
     made = []
     for n, pick in enumerate(picks):
         path = Path(out) / f"lip{n:02d}.png"
         extra = ["-vf", f"crop={crop}"] if crop else []
-        cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{pick.at:.3f}", "-i", str(master), "-frames:v", "1"]
+        seek = max(pick.at - 0.5 / fps, 0.0)
+        cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{seek:.3f}", "-i", str(master), "-frames:v", "1"]
         try:
             run([*cmd, *extra, str(path)])
         except (OSError, subprocess.CalledProcessError) as exc:

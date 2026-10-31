@@ -37,10 +37,10 @@ def project(tmp_path: Path, takes: list[dict], mouths: list | None = None) -> Pa
 
 
 def test_each_instant_is_the_middle_of_a_words_longest_letter_on_the_masters_clock(tmp_path):
-    held = take("01", 2.0, "Nobody", clip_in=0.5)
+    held = take("01", 2.05, "Nobody", clip_in=0.5)
     held["ends"][3] = 0.6  # the second o is the long one
     found = lip_proof.instants(project(tmp_path, [held]), count=1)
-    assert found == [Instant("lint", "Nobody", "o", 1.95, "open")]
+    assert found == [Instant("lint", "Nobody", "o", 2.0, "open")]
 
 
 def test_instants_spread_over_the_reel_and_stop_at_the_words_there_are(tmp_path):
@@ -65,6 +65,15 @@ def test_a_silent_final_e_is_not_the_letter_to_look_at(tmp_path):
 def test_the_shown_pose_is_the_one_the_track_holds_at_that_second(tmp_path):
     root = project(tmp_path, [take("01", 0.0, "ab")], [[0.0, "closed"], [0.05, "round"], [9.0, "open"]])
     assert lip_proof.instants(root, count=1)[0].shown == "round"
+
+
+def test_an_instant_lands_on_a_frame_and_names_the_pose_on_that_frame(tmp_path):
+    late = take("01", 0.0, "ab")
+    late["starts"], late["ends"] = [0.6, 0.7], [0.738, 0.8]  # the letter's middle, 0.669, sits between frames 20 and 21
+    root = project(tmp_path, [late], [[0.0, "closed"], [0.683, "wide"]])
+    pick = lip_proof.instants(root, count=1)[0]
+    assert pick.at == pytest.approx(20 / 30)
+    assert pick.shown == "closed"
 
 
 def test_a_shut_vowel_is_called_out_and_a_shut_consonant_is_not():
@@ -109,7 +118,7 @@ def test_frames_are_pulled_one_each_from_the_master_in_order(tmp_path):
     picks = [Instant("lint", "a", "a", 1.5, "open"), Instant("lint", "b", "b", 2.0, "closed")]
     names = lip_proof.frames(picks, tmp_path / "m.mp4", out, crop="600:480:240:520", run=run)
     assert [p.name for p in names] == ["lip00.png", "lip01.png"]
-    assert calls[0][calls[0].index("-ss") + 1] == "1.500"
+    assert calls[0][calls[0].index("-ss") + 1] == "1.483"  # half a frame early: ffmpeg gives the first frame after it
     assert "crop=600:480:240:520" in calls[0]
 
 
