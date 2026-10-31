@@ -430,7 +430,7 @@ def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path,
     folder = project(tmp_path)
     monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
     report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.3.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.4.0"
     assert report.to_dict()["flashes"][0]["share"] == 1.0
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
@@ -495,3 +495,60 @@ def test_measure_lists_the_holds_of_a_render_and_the_command_says_so(tmp_path, m
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
     assert "hold 0.00–2.50  2.50 s" in capsys.readouterr().out
+
+
+# -- a line the recording cut short -----------------------------------------------------------------------------------
+def narrated(tmp_path, items) -> object:
+    root = project(tmp_path)
+    (root / "dialogue.json").unlink()
+    (root / "narration.json").write_text(json.dumps({"items": items}))
+    return root
+
+
+def said(id: str = "01", speech: float = 2.0, kept: float = 2.0, cut: bool = False, phase: str = "line") -> dict:
+    return {"id": id, "phase": phase, "start": 0.0, "speech_duration": speech, "duration": kept, "cut": cut}
+
+
+def test_a_line_cut_short_is_reported_with_what_it_lost(tmp_path):
+    root = narrated(tmp_path, [said("01"), said("03", 2.5, 2.41, True)])
+    assert craft.clipped(root) == [("03", 0.09)]
+    assert craft.measure(root).clipped == [("03", 0.09)]
+    assert craft.measure(root).to_dict()["clipped"] == [{"line": "03", "lost": 0.09}]
+
+
+def test_the_command_names_the_line_that_lost_its_tail(tmp_path, capsys):
+    root = narrated(tmp_path, [said("03", 2.5, 2.41, True)])
+    assert main(["craft", str(root)]) == 0
+    assert "clipped line 03: 0.09 s of speech lost" in capsys.readouterr().out
+
+
+def test_a_line_that_ran_whole_is_not_reported(tmp_path):
+    assert craft.clipped(narrated(tmp_path, [said(), said("02", 1.0, 1.4)])) == []
+
+
+def test_an_episode_without_a_narration_has_nothing_to_clip(tmp_path):
+    assert craft.clipped(project(tmp_path)) == []
+
+
+def test_an_item_that_is_not_a_line_is_not_read(tmp_path):
+    assert craft.clipped(narrated(tmp_path, [{"phase": "intro"}, said()])) == []
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "a string",
+        {"phase": "line", "id": "01", "speech_duration": 1.0, "duration": 1.0},
+        {"phase": "line", "id": "01", "speech_duration": 1.0, "duration": 1.0, "cut": "yes"},
+        {"phase": "line", "id": "01", "speech_duration": "long", "duration": 1.0, "cut": True},
+        {"phase": "line", "id": 7, "speech_duration": 1.0, "duration": 0.5, "cut": True},
+    ],
+)
+def test_a_narration_that_cannot_be_read_is_an_error_not_a_clean_report(tmp_path, item):
+    with pytest.raises(craft.CraftError):
+        craft.clipped(narrated(tmp_path, [item]))
+
+
+def test_items_that_are_no_list_are_an_error(tmp_path):
+    with pytest.raises(craft.CraftError, match="items must be a list"):
+        craft.clipped(narrated(tmp_path, {"phase": "line"}))

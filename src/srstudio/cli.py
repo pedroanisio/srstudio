@@ -330,6 +330,8 @@ def main(argv=None):
                     "unmeasured" if p.level_db is None else f"{p.level_db:.1f} dB, {'quiet' if p.quiet else 'filled'}"
                 )
                 print(f"  pause {p.start:.2f}–{p.end:.2f}  {p.end - p.start:.2f} s  {level}")
+            for line, lost in r.clipped:
+                print(f"  clipped line {line}: {lost:.2f} s of speech lost")
             for start, end in r.opening:
                 print(f"  opening silence {start:.2f}–{end:.2f}  {end - start:.2f} s")
             if not r.opening:

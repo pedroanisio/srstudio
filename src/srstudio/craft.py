@@ -50,6 +50,7 @@ __all__ = [
     "lines",
     "pauses",
     "opening_silences",
+    "clipped",
     "levels",
     "luminance",
     "flashing",
@@ -57,7 +58,8 @@ __all__ = [
     "measure",
 ]
 
-SCHEMA = "1.3.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still
+SCHEMA = "1.4.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still;
+# 1.4.0: the lines a recording cut short
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 PAUSE = 0.8  # seconds between lines that count as a pause
@@ -133,6 +135,7 @@ class Craft:
     opening: list[tuple[float, float]]
     flashes: list[Flash] = field(default_factory=list)
     holds: list[Hold] = field(default_factory=list)
+    clipped: list[tuple[str, float]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -151,6 +154,7 @@ class Craft:
             "opening": [{"start": a, "end": b} for a, b in self.opening],
             "flashes": [asdict(f) for f in self.flashes],
             "holds": [asdict(h) for h in self.holds],
+            "clipped": [{"line": line, "lost": lost} for line, lost in self.clipped],
         }
 
 
@@ -302,6 +306,32 @@ def lines(project: Path) -> list[tuple[float, float]]:
         if end < start:
             raise CraftError(f"{project}: a line ends ({end}) before it starts ({start})")
     return sorted(spans)
+
+
+def clipped(project: Path) -> list[tuple[str, float]]:
+    """The spoken lines of ``project`` a recording cut short because the next line starts too soon, as ``(line id,
+    seconds of speech lost)``. A clipped punchline sounds like a bad take and passes every other check, so it is named
+    here. Empty for an episode without a ``narration.json``; an item that cannot be read raises :class:`CraftError`."""
+    path = Path(project) / "narration.json"
+    if not path.is_file():
+        return []
+    rows = _read(path).get("items")
+    if not isinstance(rows, list):
+        raise CraftError(f"{path}: items must be a list")
+    out = []
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise CraftError(f"{path}: item {i} is not an object")
+        if row.get("phase") != "line":
+            continue
+        line, cut = row.get("id"), row.get("cut")
+        if not isinstance(line, str) or not isinstance(cut, bool):
+            raise CraftError(f"{path}: item {i} needs a text id and a true or false cut")
+        speech = _number(row.get("speech_duration"), f"item {i} speech_duration")
+        kept = _number(row.get("duration"), f"item {i} duration")
+        if cut and speech > kept:
+            out.append((line, round(speech - kept, 3)))
+    return out
 
 
 def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> list[tuple[float, float]]:
@@ -473,4 +503,5 @@ def measure(
         [(round(a, 3), round(b, 3)) for a, b in opening_silences(spoken)],
         flashes,
         holds,
+        clipped(project),
     )
