@@ -324,3 +324,47 @@ def test_captions_that_meet_or_sit_in_other_bands_are_not_doubled():
 def test_doubled_captions_refuse_what_is_not_a_scene():
     with pytest.raises(craft.CraftError, match="not a scene"):
         craft.doubled_captions(b"<scene")
+
+
+# -- the opening ------------------------------------------------------------------------------------------------------
+def test_the_opening_counts_the_silence_before_the_first_line():
+    assert craft.opening_silences([(3.0, 4.5)]) == [(0.0, 3.0)]
+
+
+def test_the_opening_counts_gaps_and_the_silence_after_the_last_line():
+    assert craft.opening_silences([(0.0, 1.0), (2.5, 3.0)]) == [(1.0, 2.5), (3.0, 5.0)]
+
+
+def test_a_gap_is_cut_off_where_the_opening_ends():
+    assert craft.opening_silences([(0.0, 3.5), (9.0, 10.0)]) == [(3.5, 5.0)]
+
+
+def test_lines_after_the_opening_leave_it_silent():
+    assert craft.opening_silences([(6.0, 7.0)]) == [(0.0, 5.0)]
+
+
+def test_no_lines_at_all_is_a_silent_opening():
+    assert craft.opening_silences([]) == [(0.0, 5.0)]
+
+
+def test_a_gap_under_the_limit_is_no_silence():
+    assert craft.opening_silences([(0.5, 2.0), (2.5, 5.0)]) == []
+
+
+def test_overlapping_lines_are_one_line():
+    assert craft.opening_silences([(0.0, 4.0), (1.0, 2.0), (4.5, 5.5)]) == []
+
+
+@pytest.mark.parametrize("kw", [{"within": 0}, {"limit": 0}, {"limit": float("nan")}])
+def test_an_opening_that_is_not_one_is_refused(kw):
+    with pytest.raises(craft.CraftError):
+        craft.opening_silences([], **kw)
+
+
+def test_measure_reports_the_opening_and_the_command_says_so(tmp_path, capsys):
+    folder = project(tmp_path)
+    report = craft.measure(folder)
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.1.0"
+    assert report.to_dict()["opening"] == [{"start": a, "end": b} for a, b in report.opening]
+    assert main(["craft", str(folder)]) == 0
+    assert "opening" in capsys.readouterr().out
