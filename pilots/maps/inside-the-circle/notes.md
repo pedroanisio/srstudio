@@ -44,6 +44,19 @@ true during the slide. The rest of the staging is this reel's own: the crowd, th
 
 The cover's headline sits over the ring's tag. The two ripples outside the ring are faint under its veil.
 
+## Standing rules
+
+Taken: L5, the first line is spoken from 0.0 s. L7, the dots start moving in the first second. L10, the evidence is a
+stamp over a moving map. L11, the surprise is the first line. L13, 23.3 s. L15, the caption's first line is a question.
+L16, the watch gate below.
+
+Partly: L6, the claim is one short line on screen from frame 0, but the shot is a wide map, not a close reacting face.
+L12, the reel returns to frame 1 by a clean cut after the ring refills, then holds frame 1 for 1.5 s.
+
+Not taken: L4, the claim is clear by 3 s but the trouble, a hamster among the dots, comes at 4.4 s. L8, one running
+joke. L9, the map carries the reel, not two characters talking. L17, `pilotcheck.py` is not on this branch and did not
+run.
+
 ## Watch gate
 
 Watch gate: Pedro, after delivery

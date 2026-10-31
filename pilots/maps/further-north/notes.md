@@ -42,6 +42,10 @@ The Toon stage and sketch build (`toon_sketch`, `sketch`, `scripting`), ElevenLa
 The Calgary frame is mostly empty land, because that is what is there. The gap is what the shot is about, and it holds
 for 1.7 s, but it is the weakest picture in the reel.
 
+## Standing rules
+
+L15 was already met: the caption's first line is the reel's question. The other rules were not reviewed for this reel.
+
 ## Watch gate
 
 Watch gate: Pedro, after delivery

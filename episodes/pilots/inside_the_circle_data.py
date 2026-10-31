@@ -67,7 +67,7 @@ RECOLOUR = 0.8  # seconds the first circle's dots take to stop being what the re
 FALL = 1.1  # seconds the 44 dots take to fall in
 LEAVE = 0.4  # seconds the 44 take to go as the map leaves, while they are still in frame
 REFILL = 0.9  # seconds the first circle's dots take to come back
-COUNTED = 0.95  # seconds between the ripples that count the dots: two inside, two outside
+LEAST_APART = 0.6  # seconds between the ripples that count the dots: two inside, two outside, along the line
 RIPPLE = 1.1  # seconds one ripple runs
 RIPPLE_OUT = 2.7  # how many ring radii a ripple outside the ring reaches
 # The 2013 circle: "centred in the South China Sea and about 4,000 km in radius" (Quah). He gives no point, so this one
@@ -108,7 +108,7 @@ STAGGER = 0.05  # seconds between them
 PRESS = 0.14  # share of the way to the hamster a big dot leans over the rest of the shot
 FAR_DOT = (930.0, 640.0, 1130.0, 16.0)  # the nearest million, a long way off: rest x, y, from x, and its radius
 
-END = 23.6
+END = 22.7
 
 LINES = (
     Line("narrator", "Nearly half of all people live inside this circle."),
@@ -129,21 +129,21 @@ FACE = ("wide", "flat", "desk")  # nobody is drawn on a map shot, and a beat sti
 BEATS = (
     say(0.0, CARD, 0, *FACE),
     say(2.8, CARD, 1, *FACE, "dots"),
-    say(4.4, "hamster", 2, "shock", "flat", "desk", "crowd"),
+    say(4.2, "hamster", 2, "shock", "flat", "desk", "crowd"),
     say(6.2, CARD, 3, *FACE, "count"),
-    say(10.2, CARD, 4, *FACE, "origin"),
-    say(14.1, CARD, 5, *FACE, "slide"),
-    say(16.3, CARD, 6, *FACE, "fall"),
+    say(9.4, CARD, 4, *FACE, "origin"),
+    say(13.2, CARD, 5, *FACE, "slide"),
+    say(15.6, CARD, 6, *FACE, "fall"),
     say(17.4, "hamster", 7, "side", "flat", "desk", "alone"),
     say(18.6, CARD, 8, *FACE, "many"),
-    hold(22.2, CARD, LINES[0].text, *FACE, "first"),
+    hold(21.8, CARD, LINES[0].text, *FACE, "first"),
 )
 SKETCH = Sketch(SLUG, TITLE, (map_kit.NARRATOR, HAMSTER), LINES, BEATS, END, cast=map_kit.MAPS_CAST)
 EVENTS = ("dots", "crowd", "count", "origin", "slide", "fall", "alone", "many", "first")
 TINTS = {"narrator": map_kit.PAPER, "ham": map_kit.PIN}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 POST = InstagramPost(
-    title="Slide this circle over Australia and it holds 44 million",
+    title="Why does one circle hold 3.95 billion here and 44 million there?",
     description=(
         "Around Mong Khet the same circle holds nearly half of everyone alive. The centre in Australia, Adelaide, was "
         "chosen so the circle holds the country and largely misses Java; about 19 million of the 44 live outside "
@@ -269,12 +269,11 @@ def _ripple(shot, at: float, reach: tuple[float, float]) -> None:
 def _ripples(shot) -> None:
     """While the line counts them: two ripples over the dots inside the ring, then two over the dots outside it."""
     count, origin = _at(shot.beats)["count"], _at(shot.beats)["origin"]
-    if origin - count < 4 * COUNTED:
-        raise sketch.SketchError(f"the count needs {4 * COUNTED} s of line, got {origin - count} s")
-    _ripple(shot, count, (0.05, 1.0))
-    _ripple(shot, count + COUNTED, (0.05, 1.0))
-    _ripple(shot, count + 2 * COUNTED, (1.0, RIPPLE_OUT))
-    _ripple(shot, count + 3 * COUNTED, (1.0, RIPPLE_OUT))
+    apart = (origin - count) / 4
+    if apart < LEAST_APART:
+        raise sketch.SketchError(f"the count needs {4 * LEAST_APART} s of line, got {origin - count} s")
+    for n, reach in enumerate(((0.05, 1.0), (0.05, 1.0), (1.0, RIPPLE_OUT), (1.0, RIPPLE_OUT))):
+        _ripple(shot, count + n * apart, reach)
 
 
 def first_drawn() -> tuple[float, float, float]:

@@ -96,6 +96,10 @@ def test_the_caption_says_how_the_second_circle_was_placed():
     assert "Lambert equal-area." in text and "GHS-POP 2025" in text
 
 
+def test_the_captions_first_line_is_a_question():
+    assert pilot.POST.title.endswith("?")
+
+
 def test_the_credits_are_in_the_caption():
     credit = pilot.POST.credit
     for owed in ("GHS-POP R2023A, European Commission JRC, CC BY 4.0", "GeoNames", "Made with Natural Earth."):
