@@ -37,6 +37,7 @@ RELEASE = Release(
         "soft-bowling-ball": 1,
         "soft-brick": 1,
         "soft-coin-bag": 1,
+        "soft-dimmer": 1,
         "soft-dust": 1,
         "soft-home": 1,
         "soft-home-fridge": 1,

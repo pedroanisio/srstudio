@@ -30,9 +30,11 @@ RELEASE = Release(
     ),
     style="Cutout",
     parts={
+        "ballpoint": 1,
         "candidate": 1,
         "captions": 1,
         "chair": 1,
+        "chair-lever": 1,
         "laptop": 1,
         "manager": 1,
         "office-art": 1,
