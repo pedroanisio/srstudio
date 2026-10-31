@@ -856,6 +856,30 @@
     "map-captions": {
       "title": "Legendas dos mapas"
     },
+    "host-wardrobe": {
+      "title": "Dentro do guarda-roupa"
+    },
+    "host-phone": {
+      "title": "Prateleira e celular deitado"
+    },
+    "host-lint": {
+      "title": "Lint, a traça no guarda-roupa"
+    },
+    "host-label": {
+      "title": "Etiqueta bordada"
+    },
+    "host-captions": {
+      "title": "Legendas do apresentador"
+    },
+    "host-sign-off": {
+      "title": "Etiqueta de despedida"
+    },
+    "host-screen": {
+      "title": "Tela do grupo"
+    },
+    "host-punch": {
+      "title": "Cortes de enquadramento do apresentador"
+    },
     "toon-tee": {
       "title": "Camiseta constrangedora"
     },
