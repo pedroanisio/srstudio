@@ -42,6 +42,7 @@ def test_the_style_is_registered_with_its_parts_and_font():
         "collage_odds",
         "collage_photo",
         "collage_sets",
+        "collage_things",
     ) and COLLAGE.palettes == (collage.PAPER,)
     assert (COLLAGE.width, COLLAGE.height, COLLAGE.fps) == (1080, 1920, 24)
     assert COLLAGE.font.google.family == "Luckiest Guy" and COLLAGE.font.id == "luckiest-guy"

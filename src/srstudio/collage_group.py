@@ -92,6 +92,21 @@ class Lineup:
         out += [{**r, "start": round(r["start"] - app.start, 6)} for r in reactions if app.start < r["start"] < app.end]
         return out
 
+    def held(self, cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
+        """The whole group in its first poses, keying nothing (:func:`srstudio.collage.figure`'s ``still``): the cast
+        of a still opening, a :class:`srstudio.collage_sketch.Staging` ``opening``, that shows the room and everyone
+        in it, not one face. Returns the speaker's face in its place."""
+        if app.who not in self.places:
+            raise GroupError(f"{app.who} opens a group shot at {app.start} s but has no place in the lineup")
+        for name, place in self.places.items():
+            x, y = place.transform()
+            g = cv.group(parent, cv.uid(f"lineup-{name}"), x=x, y=y, scaleX=place.scale, scaleY=place.scale)
+            poses = collage.parse_poses(self.poses(name, app)[:1], f"poses of {name} from {app.start} s")
+            collage.DRAWERS[name](cv, g, poses, app.end, (), enter=app.start, still=True)
+        fx, fy = collage.face(collage.LOOKS[app.who])
+        x, y = self.places[app.who].transform()
+        return x + fx * self.places[app.who].scale, y + fy * self.places[app.who].scale
+
     def __call__(self, cv: Canvas, parent, app: sketch.Appearance, mouths: sketch.Mouths) -> collage.Point:
         """Draw the shot's cast; returns the speaker's face in its place, the pivot of a zoom onto it."""
         if not self.staged(app):
