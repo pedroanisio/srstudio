@@ -27,6 +27,7 @@ from . import (
     catalog_versions,
     craft,
     fonts,
+    lip_proof,
     lipsync,
     parts,
     registry,
@@ -95,6 +96,12 @@ def main(argv=None):
         default=Path(os.environ.get("SRSTUDIO_EPISODES") or "generated/episodes"),
         help="folder of projects, for a part's font and traced data",
     )
+    lip = sub.add_parser("lip-proof", help="the mid-word instants of a recorded reel, and their frames of its master")
+    lip.add_argument("project", type=Path)
+    lip.add_argument("--count", type=int, default=lip_proof.COUNT, help="how many instants, spread over the reel")
+    lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
+    lip.add_argument("--out", type=Path, help="folder for the frames")
+    lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -187,6 +194,8 @@ def main(argv=None):
         return 0
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
+    if args.cmd == "lip-proof":
+        return _lip_proof(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -389,6 +398,21 @@ def main(argv=None):
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
+
+
+def _lip_proof(args: argparse.Namespace) -> int:
+    try:
+        picks = lip_proof.instants(args.project, count=args.count)
+        made = lip_proof.frames(picks, args.master, args.out, crop=args.crop) if args.master and args.out else []
+    except lip_proof.LipProofError as exc:
+        print(f"srstudio lip-proof: {exc}", file=sys.stderr)
+        return 2
+    for pick in picks:
+        flag = "  <- vowel on a shut mouth" if pick.suspect else ""
+        print(f"{pick.at:7.3f}  {pick.who:10} {pick.word:14} {pick.letter}  {pick.shown}{flag}")
+    shut = sum(pick.suspect for pick in picks)
+    print(f"{len(picks)} instants, {shut} vowel{'' if shut == 1 else 's'} on a shut mouth, {len(made)} frames written")
+    return 0
 
 
 def _parts(args: argparse.Namespace) -> int:
