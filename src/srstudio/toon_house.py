@@ -40,6 +40,7 @@ __all__ = [
     "quilt",
     "rope",
     "sink",
+    "tee",
     "thermostat",
     "vent",
     "watering_can",
@@ -560,3 +561,47 @@ def watering_can(
         cv.ellipse(drop, -fh(5), -fh(7), fh(10), fh(14), DROP, cv.ink, FINE_W * 0.3)
         fall = [(0.0, fy(y + 20)), (DROP_EVERY * 0.9, fy(y + 20 + DROP_FALL))]
         cv.keys(drop, "y", cycle_keys(fall, DROP_EVERY, pour, end, phase=k * 0.11), hold=False, local=False)
+
+
+TEE_LOUD = "#b7e04a"
+TEE_BODY = "M -30 0 L -78 16 L -66 140 L 66 140 L 78 16 L 30 0 C 22 24 -22 24 -30 0 Z"
+TEE_COLLAR = "M -30 0 C -22 24 22 24 30 0"
+TEE_HEART = "M 0 124 C -68 76 -54 34 -20 40 C -9 42 -2 49 0 58 C 2 49 9 42 20 40 C 54 34 68 76 0 124 Z"
+TEE_MOUSTACHE = (
+    "M 0 84 C -8 76 -18 78 -24 86 C -28 92 -34 88 -31 83 C -34 96 -14 98 0 90 "
+    "C 14 98 34 96 31 83 C 34 88 28 92 24 86 C 18 78 8 76 0 84 Z"
+)
+
+
+@register(
+    "prop", "toon-tee", summary="A loud T-shirt front with an invented portrait in a heart, between a figure's arms"
+)
+def tee(
+    cv: Canvas,
+    parent,
+    at: object,
+    scale: float = 1.0,
+    colour: str = TEE_LOUD,
+    start: float | None = None,
+    end: float | None = None,
+    id: str = "tee",
+) -> None:
+    """The front of a T-shirt whose collar's middle is on reference ``at``, drawn over a figure's chest. Its print is
+    the same smug moustached potato in a pink heart on everyone: an invented face, with no word on it."""
+    x, y = _point(at, "a tee's place")
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a tee's scale is over 0, got {scale!r}")
+    if not (isinstance(colour, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", colour)):
+        raise ToonDataError(f"a tee's colour is a #rrggbb colour, got {colour!r}")
+    timing = {} if start is None else {"start": start, "end": end}
+    outer = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale, **timing)
+    g = cv.group(outer, cv.uid("g"), scaleX=fh(1), scaleY=fh(1))
+    line = INK_W / fh(1)
+    cv.path(g, TEE_BODY, colour, cv.ink, line)
+    cv.path(g, TEE_COLLAR, cv.clear, cv.ink, line * 1.6)
+    cv.path(g, TEE_HEART, "#ff4f8b", cv.ink, line * 0.7)
+    cv.ellipse(g, -22, 42, 44, 56, "#d8b078", cv.ink, line * 0.6)
+    cv.ellipse(g, -13, 62, 7, 7, cv.ink)
+    cv.ellipse(g, 6, 62, 7, 7, cv.ink)
+    cv.path(g, "M -5 76 C -2 80 2 80 5 76", cv.clear, cv.ink, line * 0.5)
+    cv.path(g, TEE_MOUSTACHE, "#3a2a1a", cv.clear, 0)

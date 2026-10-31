@@ -28,6 +28,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 from sr_core.scene import Project
 
@@ -53,6 +54,7 @@ from .canvas import Canvas
 from .narration import effect_cues, manifest_duration, require_consent
 from .provider import KEY_ENV
 from .staging import StagingError
+from .styles import Style
 from .voice import MODEL, ElevenLabsClient
 
 TYPING_PEAK = 0.70
@@ -96,7 +98,11 @@ class Staging:
     :mod:`srstudio.craft` counts its moves as camera. ``heads`` names the characters that move their heads
     (:mod:`srstudio.toon_rigs`); everyone else is drawn flat. ``figures`` frames a character closer than the desk's
     medium: ``{who: (scale, dx)}`` draws it that much larger about its seat (:data:`SEAT`) and moves it ``dx``
-    reference pixels sideways, set and desk staying where they are, so a small character can fill a shot."""
+    reference pixels sideways, set and desk staying where they are, so a small character can fill a shot.
+    A channel that shares Toon's cast and sets but not its letters, clock or master brings its own ``style``;
+    ``bare`` names who is drawn with no figure, a card playing as a shot of its own; ``captions`` letters the cues
+    instead of Toon's pills, each fitted by that drawer; ``output`` is the master's path under the project's render
+    root and ``crf`` its quality."""
 
     sketch: sketch.Sketch
     seed: int
@@ -112,6 +118,14 @@ class Staging:
     camera: Callable[[Shot, object], None] | None = None
     heads: tuple[str, ...] = ()
     figures: Mapping[str, tuple[float, float]] = field(default_factory=dict)
+    style: Style = TOON
+    bare: tuple[str, ...] = ()
+    captions: Callable[[Canvas, object, Sequence[toon.Line], Callable[..., float], Mapping[str, str]], Any] | None = (
+        None
+    )
+    finish: Callable[[Canvas, object], None] | None = None  # the style's grade over each shot; none on the Toon reels
+    output: str | None = None
+    crf: str = "17"
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -192,7 +206,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     sk = staging.sketch
     check_heads(sk, staging.heads, staging.versions)
     if "--init" in flags:
-        sketch.write_project(root, sk, TOON.google_font())
+        sketch.write_project(root, sk, staging.style.google_font())
         return None
     voiced = "--voice" in flags
     mouths: sketch.Mouths = {}
@@ -211,14 +225,15 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             description=staging.description + " " + (staging.narration if voiced else "Silent master."),
             root=root,
             seed=staging.seed,
-            style=TOON,
+            style=staging.style,
             dialogue="voiced/script.json" if voiced else "script.json",
             language="en-US",
+            output=staging.output,
             output_options=dict(
                 codec="h264",
                 container="mp4",
-                fps="24",
-                crf="17",
+                fps=str(staging.style.fps),
+                crf=staging.crf,
                 preset="medium",
                 pixelFormat="yuv420p",
                 faststart=True,
@@ -249,9 +264,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"narration.json runs {manifest_duration(manifest)} s, voiced/beats.json {sk.end} s")
         effects = effect_cues(manifest, root)
         taps = tuple(at for fx in effects if fx.id == "typing" for at in fx.taps)
-    if TOON.font is None:  # pragma: no cover - a property of the style, tested there
-        raise StagingError("the Toon style has no font to measure its captions in")
-    font = (root / TOON.font.src).read_bytes()
+    if staging.style.font is None:  # pragma: no cover - a property of the style, tested there
+        raise StagingError(f"the {staging.style.name} style has no font to measure its captions in")
+    font = (root / staging.style.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
     for n, app in enumerate(sketch.appearances(sk.beats, sk.end), 1):
         g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
@@ -259,7 +274,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
-        if app.who in heads:
+        if app.who in staging.bare:
+            pass  # a card: the dress draws the whole frame
+        elif app.who in heads:
             rig, plan = heads[app.who]
             shot_plan = plan.during(app.start, app.end)
             toon_head.figure(cv, body, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
@@ -272,9 +289,16 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         staging.dress(shot)
         if staging.camera is not None:
             staging.camera(shot, g)
+        if staging.finish is not None:
+            staging.finish(cv, g)
     lines = toon.load_script(root / ep.spec.dialogue)
-    fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
-    toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
+    if staging.captions is not None:
+        drawn = staging.captions(cv, ep.comp, lines, measure, staging.tints)
+        if drawn is not None:
+            ep.hide_on_cover(drawn)
+    else:
+        fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
+        toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
     if voiced:
         ep.audio(narration=manifest)
         for fx in effects:

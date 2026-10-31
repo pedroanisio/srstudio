@@ -360,6 +360,7 @@ TOON = Style(
     ),
     mouths={},
     parts=(
+        "mind_kit",
         "toon",
         "toon_cast",
         "toon_critters",

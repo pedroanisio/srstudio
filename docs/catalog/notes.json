@@ -802,6 +802,33 @@
     "stick-ride": {
       "title": "Balanço do carro"
     },
+    "mind-name-card": {
+      "title": "Cartão do nome"
+    },
+    "mind-evidence-card": {
+      "title": "Cartão da evidência"
+    },
+    "mind-captions": {
+      "title": "Legendas do canal"
+    },
+    "mind-stage": {
+      "title": "Fundo do canal"
+    },
+    "mind-spotlight": {
+      "title": "Feixe de atenção"
+    },
+    "mind-memory-shelf": {
+      "title": "Prateleira da memória"
+    },
+    "mind-two-lines": {
+      "title": "Esperado contra real"
+    },
+    "mind-lens": {
+      "title": "Lente do viés"
+    },
+    "toon-tee": {
+      "title": "Camiseta constrangedora"
+    },
     "toon-clipboard": {
       "title": "Prancheta"
     },
