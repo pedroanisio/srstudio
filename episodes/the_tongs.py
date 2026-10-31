@@ -275,7 +275,7 @@ camera.reframe(
         (P[4].start, *frame(2.5, BO_AT[0] + 40, FLOOR - 400)),
         (P[5].start, *frame(2.5, PIP_AT[0], FLOOR - 400)),
         (WIDE, 1.0, 0.0, 0.0),
-        (ON_BO, *frame(1.3, 590.0, 1270.0)),
+        (ON_BO, *frame(1.3, 590.0, 1180.0)),  # lower and the frame runs off the bottom of the set
     ],
 )
 
