@@ -36,9 +36,13 @@ def points(shapes):
 # -- the style and the cast -------------------------------------------------------------------------------------------
 def test_the_style_is_registered_with_its_parts_and_font():
     assert STYLES["collage"] is COLLAGE
-    assert COLLAGE.parts == ("collage", "collage_everyday", "collage_photo", "collage_sets") and COLLAGE.palettes == (
-        collage.PAPER,
-    )
+    assert COLLAGE.parts == (
+        "collage",
+        "collage_everyday",
+        "collage_photo",
+        "collage_sets",
+        "collage_things",
+    ) and COLLAGE.palettes == (collage.PAPER,)
     assert (COLLAGE.width, COLLAGE.height, COLLAGE.fps) == (1080, 1920, 24)
     assert COLLAGE.font.google.family == "Luckiest Guy" and COLLAGE.font.id == "luckiest-guy"
     assert COLLAGE.font.src == f"assets/fonts/{COLLAGE.font.google.slug}.ttf"
