@@ -41,7 +41,8 @@ orders in total, in a quarter when the whole company handled 993 million orders.
 ## Limits the reel keeps
 
 - "Several hundred" is the CEO's rounded figure. The reel gives no exact count.
-- It covers third-party ("outside") agents, not DoorDash's own. The reel says "outside AI agents".
+- It covers third-party ("outside") agents, not DoorDash's own. The reel says "outside AI orders", and its ticker
+  "outside AI agents".
 - The two numbers cover different periods: several hundred since the agents went live, 993 million in one quarter, for
   the whole platform including Deliveroo. The reel gives each with its own period and never as a share.
 - Anything after the straight statement is comedy, spoken by the anchors about themselves or as a guess, and is not

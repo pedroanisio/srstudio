@@ -67,10 +67,11 @@ LOWERS = (  # the beat it arrives on, its kicker, its one line; a name only whil
     (12, VERA_NAME, "IN FAIRNESS"),
     (13, GUS_NAME, "HAS NOW SEEN THE DELIVERY FEE"),
 )
-END = 25.0
+END = 23.48
 
+FIRST_STATEMENT = ("01",)  # the take that must be finished by craft.STATEMENT_BY
 LINES = (
-    Line("vera", "Outside AI agents placed several hundred DoorDash orders. In total."),
+    Line("vera", "Several hundred outside AI orders. In total."),
     Line("gus", "That's just me!"),
     Line("vera", "Last quarter, DoorDash handled 993 million orders."),
     Line("gus", "So I'm beating the robots. In a bathrobe."),
@@ -87,24 +88,21 @@ READ = Pose(mouth="talk")
 STILL = Pose(eyes="side")
 TYPING = Pose(eyes="down", arms="phone", mouth="flat")
 ROWS: tuple[tuple[sketch.Beat, Act], ...] = (
-    (
-        first(0.0, "vera", 0, "Outside AI agents placed several hundred DoorDash orders.", *PLACEHOLDER, "card"),
-        Act(READ, TYPING),
-    ),
-    (part(3.05, "vera", 0, 8, "In total.", *PLACEHOLDER), Act(READ, TYPING)),
-    (say(4.28, "gus", 1, *PLACEHOLDER), Act(STILL, Pose("wide", "talk", "chest", -6.0))),
-    (first(5.2, "vera", 2, "Last quarter, DoorDash handled", *PLACEHOLDER), Act(READ, Pose("wide", "gape", "chest"))),
-    (part(6.8, "vera", 2, 4, "993 million orders.", *PLACEHOLDER), Act(READ, Pose("wide", "gape", "chest"))),
-    (say(9.05, "desk", 3, *PLACEHOLDER), Act(Pose("side", "flat"), Pose("side", "talk", "phone", -4.0))),
-    (say(11.35, "vera", 4, *PLACEHOLDER), Act(Pose("over", "talk", head=4.0), Pose("side", "grin", "phone"))),
-    (say(12.7, "desk", 5, *PLACEHOLDER), Act(Pose("over", "flat", head=4.0), Pose("wide", "talk", "up", -5.0))),
-    (say(14.0, "desk", 6, *PLACEHOLDER), Act(Pose("side", "talk"), Pose("side", "grin", "up"))),
-    (first(15.0, "gus", 7, "He brought the food.", *PLACEHOLDER), Act(STILL, Pose("level", "talk", "chest", 5.0))),
-    (part(16.1, "gus", 7, 4, "To both weddings.", *PLACEHOLDER), Act(STILL, Pose("wide", "talk", "up", -5.0))),
-    (hold(17.5, "vera", "", *PLACEHOLDER, "stare"), Act(Pose("level", "flat"), Pose("level", "smirk", "phone"))),
-    (say(18.9, "vera", 8, *PLACEHOLDER), Act(Pose("over", "talk", head=3.0), Pose("level", "smirk", "phone"))),
-    (hold(22.4, "gus", "", *PLACEHOLDER, "down"), Act(Pose("over", "flat"), Pose("down", "flat", "phone"))),
-    (hold(23.6, "gus", "", *PLACEHOLDER, "face-down"), Act(Pose("over", "flat"), Pose("level", "frown", "rest"))),
+    (first(0.0, "vera", 0, "Several hundred outside AI orders.", *PLACEHOLDER, "card"), Act(READ, TYPING)),
+    (part(2.1, "vera", 0, 5, "In total.", *PLACEHOLDER), Act(READ, TYPING)),
+    (say(2.76, "gus", 1, *PLACEHOLDER), Act(STILL, Pose("wide", "talk", "chest", -6.0))),
+    (first(3.69, "vera", 2, "Last quarter, DoorDash handled", *PLACEHOLDER), Act(READ, Pose("wide", "gape", "chest"))),
+    (part(5.29, "vera", 2, 4, "993 million orders.", *PLACEHOLDER), Act(READ, Pose("wide", "gape", "chest"))),
+    (say(7.54, "desk", 3, *PLACEHOLDER), Act(Pose("side", "flat"), Pose("side", "talk", "phone", -4.0))),
+    (say(9.83, "vera", 4, *PLACEHOLDER), Act(Pose("over", "talk", head=4.0), Pose("side", "grin", "phone"))),
+    (say(11.18, "desk", 5, *PLACEHOLDER), Act(Pose("over", "flat", head=4.0), Pose("wide", "talk", "up", -5.0))),
+    (say(12.48, "desk", 6, *PLACEHOLDER), Act(Pose("side", "talk"), Pose("side", "grin", "up"))),
+    (first(13.48, "gus", 7, "He brought the food.", *PLACEHOLDER), Act(STILL, Pose("level", "talk", "chest", 5.0))),
+    (part(14.58, "gus", 7, 4, "To both weddings.", *PLACEHOLDER), Act(STILL, Pose("wide", "talk", "up", -5.0))),
+    (hold(15.98, "vera", "", *PLACEHOLDER, "stare"), Act(Pose("level", "flat"), Pose("level", "smirk", "phone"))),
+    (say(17.38, "vera", 8, *PLACEHOLDER), Act(Pose("over", "talk", head=3.0), Pose("level", "smirk", "phone"))),
+    (hold(20.88, "gus", "", *PLACEHOLDER, "down"), Act(Pose("over", "flat"), Pose("down", "flat", "phone"))),
+    (hold(22.09, "gus", "", *PLACEHOLDER, "face-down"), Act(Pose("over", "flat"), Pose("level", "frown", "rest"))),
 )
 BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
@@ -119,7 +117,7 @@ POST = InstagramPost(
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#doordash", "#aiagents", "#fooddelivery", "#technews"),
     thumbnail=Thumbnail(
-        "Several hundred.\nIn total.", 10.0, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
+        "Several hundred.\nIn total.", 8.48, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
     ),
 )
 

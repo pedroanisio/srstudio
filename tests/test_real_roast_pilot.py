@@ -3,6 +3,7 @@ stays outside the @tuxmeme publishing path."""
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -13,7 +14,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, news_kit, sketch
+from srstudio import Canvas, craft, news_kit, sketch
 from srstudio.news_kit import NewsKitError
 from srstudio.sketch import Line, SketchError
 from srstudio.thumbnail import Thumbnail
@@ -79,11 +80,11 @@ def test_every_number_on_screen_is_in_the_sources(fact):
 
 def test_the_opening_states_the_fact_before_anyone_jokes():
     assert pilot.LINES[0].speaker == "vera"
-    assert pilot.LINES[0].text == "Outside AI agents placed several hundred DoorDash orders. In total."
+    assert pilot.LINES[0].text == "Several hundred outside AI orders. In total."
 
 
 def test_it_says_outside_agents_because_the_figure_excludes_doordashs_own():
-    assert "Outside AI agents" in pilot.LINES[0].text and "OUTSIDE AI AGENTS" in " ".join(pilot.TICKER)
+    assert "outside AI" in pilot.LINES[0].text and "OUTSIDE AI AGENTS" in " ".join(pilot.TICKER)
 
 
 @pytest.mark.parametrize("claim", ["percent", "%", " share", "fraction", "one in ", "per cent", "ratio", "only "])
@@ -194,3 +195,14 @@ def test_a_lower_third_names_only_who_is_speaking_or_alone_on_screen(window):
     for beat in pilot.BEATS[index:stop]:
         speaking = None if beat.line is None else pilot.LINES[beat.line].speaker
         assert speaking == name or beat.who == name, (kicker, beat.start)
+
+
+def test_the_first_statement_ends_by_second_three_on_the_recorded_take():
+    """L4: the trouble is clear by second 3. Read from the take the master was built from, so no constant can agree
+    with itself here; the text check refuses a project recorded from an older script."""
+    episodes = os.environ.get("SRSTUDIO_EPISODES")
+    if not episodes:
+        pytest.skip("needs SRSTUDIO_EPISODES and the recorded project")
+    said = craft.statement(Path(episodes) / "pilots" / "news" / pilot.SLUG, pilot.FIRST_STATEMENT)
+    assert said.text == pilot.LINES[0].text
+    assert said.end <= craft.STATEMENT_BY

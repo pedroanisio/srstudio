@@ -4,7 +4,7 @@ main-trigger: freshness
 to: the friend who orders dinner more than anyone should
 type: real
 story-date: 2026-10-29
-comedy-author: 16
+comedy-author: 17
 comedy-reviewer: 15
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
@@ -24,8 +24,9 @@ the opening: the agents may simply have seen the delivery fee. Gus puts his phon
 
 ## What is claimed, and what is comedy
 
-- "Outside AI agents placed several hundred DoorDash orders. In total." is the earnings call's figure, as both sources
-  report it. "Outside" keeps it to third-party agents, which is what the figure covers.
+- "Several hundred outside AI orders. In total." is the earnings call's figure, as both sources report it. "Outside"
+  keeps it to third-party agents, which is what the figure covers, and "in total" is the CEO's own phrase. DoorDash is
+  named on the source card over the same words and in the next line.
 - "Last quarter, DoorDash handled 993 million orders." is the company's reported total for the third quarter.
 - The two figures cover different periods, so no line, lower-third or ticker turns them into a share.
 - Everything Gus says is about himself. His order count, bathrobe and weddings are invented, and a co-host's boast is
