@@ -81,6 +81,26 @@ def test_declarations_name_every_line_and_effect_and_pin_the_voice():
     assert lines[0].license.endswith("Eric")
 
 
+def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
+    plain = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x")])
+    quiet = make(
+        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", level=-6)]
+    )
+    assert I.declarations(plain) == I.declarations(quiet)
+    before = I.place(plain, pins_for(tmp_path, plain, [1.0, 0.8]), back_to_back)
+    after = I.place(quiet, pins_for(tmp_path, quiet, [1.0, 0.8]), back_to_back)
+    gains = [[clip.placement.gain_db for clip in placed.clips] for placed in (before, after)]
+    assert gains[1][0] == gains[0][0] and gains[1][1] == pytest.approx(gains[0][1] - 6)
+    starts = [[clip.placement.start for clip in placed.clips] for placed in (before, after)]
+    assert starts[0] == starts[1]
+
+
+@pytest.mark.parametrize("level", [0.5, -12.5, float("nan"), float("inf")])
+def test_a_level_outside_the_mix_is_refused_when_made(level):
+    with pytest.raises(I.InterviewError, match="level"):
+        make(lines=[I.Spoken("manager", "Hi.", "Hi.", level=level), I.Spoken("candidate", "Hi.", "Hi.")])
+
+
 def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
     """A re-take changes one line's request: its own seed; every other line keeps the interview's."""
     retake = make(
