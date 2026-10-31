@@ -8,8 +8,10 @@ bag, in glowing false colour (:data:`XRAY_ITEMS`), under a moving scan line. :fu
 pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same. :func:`aisle` looks down a
 plane's aisle in one-point perspective and :func:`queue` stands a line of people in it who can all turn round at once;
 :func:`book` and :func:`duffel` are what a passenger carries. :func:`wheelie_bin`, :func:`trash_truck`, :func:`slipper`
-and :func:`sparks` are trash day. :func:`double_take` is not a drawing: it is the keys of a look, a look away and a snap
-back, for any figure in any shot.
+and :func:`sparks` are trash day. :func:`planks`, :func:`wardrobe`, :func:`drill`, :func:`screws` and
+:func:`manual_page` are flat-pack furniture, from the pile to the manual's last page (:data:`MANUAL_DRAWINGS`);
+:func:`caller` is a phone ringing with a name on it. :func:`double_take` is not a drawing: it is the keys of a look, a
+look away and a snap back, for any figure in any shot.
 """
 
 from __future__ import annotations
@@ -23,24 +25,32 @@ from .stick import HEAD_R, Face, Gradient, RigKey, RigPose, StickDataError, _gat
 
 __all__ = [
     "BELT_TOP",
+    "MANUAL_DRAWINGS",
     "NOTE_BOX",
+    "WARDROBE_STAGES",
     "XRAY_ITEMS",
     "aisle",
     "book",
+    "caller",
     "double_take",
+    "drill",
     "duffel",
     "foil_note",
     "foil_parcel",
     "headset",
+    "manual_page",
+    "planks",
     "plate",
     "poster",
     "queue",
     "robe",
     "scan_belt",
+    "screws",
     "slipper",
     "sparks",
     "spoon",
     "trash_truck",
+    "wardrobe",
     "wheelie_bin",
     "xray",
 ]
@@ -72,6 +82,11 @@ AISLE_ROWS = 12
 RECEDE = 0.24  # how fast the rows shrink: each is 1 / (1 + RECEDE * depth) the near one
 BIN_BODY, BIN_LID, TRUCK_BODY, TRUCK_DARK, CAB, TYRE = "#3f6b52", "#2f5240", "#6f8f5a", "#3b4a35", "#f0ece2", "#23252b"
 GLASS, PLUSH, SPARK, SPARK_CORE = "#bcd8e6", "#c98fa2", "#ffb400", "#fff4c2"
+OAK, OAK_DARK, OAK_LIGHT, CHIPBOARD, CARDBOARD = "#c79a62", "#94693a", "#dcb782", "#e8dcc3", "#c8a877"
+TOOL, TOOL_DARK, MANUAL_PAPER, RING_GREEN, RING_RED = "#d9622b", "#3a3f47", "#fbfaf5", "#39a85b", "#d0453b"
+WARDROBE_STAGES = ("half", "done")
+WARDROBE_W, WARDROBE_H = 410.0, 860.0
+MANUAL_DRAWINGS = ("smiling", "argument", "crossed", "sofa", "suitcase", "hug", "bun")
 TRUCK_LENGTH, CAB_WINDOW = 1000.0, (830.0, -400.0, 130.0, 130.0)  # x, y, w, h from the truck's rear wheel on the road
 GLOW = 16.0  # px of blur on the copy of a scanned object that makes it glow
 BELT_TOP = 1200  # the belt's top: what stands on it has its feet here
@@ -363,17 +378,17 @@ def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS
 
 
 @register("prop", "stick-book", tags=("book", "reading", "hand-prop"))
-def book(cv: Canvas, parent, x: float, y: float, *, shut: bool = False, scale: float = 1.0):
-    """A paperback centred on ``x, y``, seen from its cover: open and held up to read, or ``shut``."""
+def book(cv: Canvas, parent, x: float, y: float, *, shut: bool = False, scale: float = 1.0, colour: str = COVER):
+    """A paperback centred on ``x, y``, seen from its ``colour`` cover: open and held up to read, or ``shut``."""
     if scale <= 0:
         raise StickDataError(f"a book's scale is positive, got {scale!r}")
     g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     if shut:
-        box(cv, g, -44, -62, 88, 124, COVER, 5, r=6)
+        box(cv, g, -44, -62, 88, 124, colour, 5, r=6)
         return g
     box(cv, g, -92, -66, 184, 8, PAGES, 3)
-    shape(cv, g, "M 0 -62 L -96 -72 L -96 62 L 0 66 Z", COVER, 5, stroke=cv.ink)
-    shape(cv, g, "M 0 -62 L 96 -72 L 96 62 L 0 66 Z", COVER, 5, stroke=cv.ink)
+    shape(cv, g, "M 0 -62 L -96 -72 L -96 62 L 0 66 Z", colour, 5, stroke=cv.ink)
+    shape(cv, g, "M 0 -62 L 96 -72 L 96 62 L 0 66 Z", colour, 5, stroke=cv.ink)
     return g
 
 
@@ -471,4 +486,245 @@ def sparks(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 
             shape(cv, one, f"M {dx * 0.4} {dy * 0.4} L {dx * 0.8} {dy * 0.8}", sw=3, stroke=SPARK_CORE)
         spans = [(k * step, min((k + 1) * step, end)) for k in range(which, int(end / step) + 1, 2) if k * step < end]
         cv.gate(one, spans)
+    return g
+
+
+@register("prop", "stick-planks", tags=("furniture", "flat-pack", "home", "planks"))
+def planks(cv: Canvas, parent, x: float, floor: float, *, scale: float = 1.0):
+    """What a flat-pack is before it is anything: panels leaning on the wall and the flat box they came in, its left
+    edge at ``x`` and its foot on ``floor``."""
+    if scale <= 0:
+        raise StickDataError(f"a pile's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=floor, scaleX=scale, scaleY=scale)
+    for lean, height, colour in ((150, 830, OAK_DARK), (210, 880, OAK), (270, 760, OAK_LIGHT), (320, 690, CHIPBOARD)):
+        shape(cv, g, f"M {lean} 0 L {lean + 34} {-height} L {lean + 96} {-height + 6} L {lean + 62} 0 Z", colour, 5,
+              stroke=cv.ink)  # fmt: skip
+    box(cv, g, 10, -110, 400, 110, CARDBOARD, 5, r=4)
+    shape(cv, g, "M 10 -110 L -36 -176 L 214 -176 L 214 -110", CARDBOARD, 5, stroke=cv.ink)
+    shape(cv, g, "M 30 -56 L 390 -56", sw=9, stroke=OAK_DARK)
+    for i, dx in enumerate((-90, -40, 8)):  # a few loose boards on the floor
+        box(cv, g, dx, 18 + i * 26, 250 - i * 40, 22, OAK if i % 2 else OAK_LIGHT, 4, r=4)
+    return g
+
+
+@register("prop", "stick-wardrobe", tags=("furniture", "flat-pack", "home", "wardrobe", "stages", "font"))
+def wardrobe(cv: Canvas, parent, x: float, floor: float, stage: str = "done", *, scale: float = 1.0):
+    """A flat-pack wardrobe with its left edge at ``x`` and its foot on ``floor``: ``"half"`` up, with no top and its
+    right door hung backwards, raw side out with the hinges showing and the label meant for the inside, or ``"done"``,
+    two doors shut and standing."""
+    if stage not in WARDROBE_STAGES:
+        raise StickDataError(f"a wardrobe's stage is one of {WARDROBE_STAGES}, got {stage!r}")
+    if scale <= 0:
+        raise StickDataError(f"a wardrobe's scale is positive, got {scale!r}")
+    w, h = WARDROBE_W, WARDROBE_H
+    half = w / 2
+    g = _group(cv, parent, x=x, y=floor, scaleX=scale, scaleY=scale)
+    box(cv, g, 0, -h, w, h, OAK_DARK, 5, r=4)
+    box(cv, g, 14, -h + 16, w - 28, h - 30, CHIPBOARD)
+    if stage == "done":
+        box(cv, g, -8, -h - 16, w + 16, 26, OAK, 5, r=4)
+    _door(cv, g, 14, -h + 16, half - 16, h - 44)
+    if stage == "done":
+        _door(cv, g, half + 2, -h + 16, half - 16, h - 44, handle=-1)
+        box(cv, g, 0, -32, w, 32, OAK_DARK, 4)
+        return g
+    box(cv, g, half + 2, -h + 16, half - 16, h - 44, CHIPBOARD, 5, r=4)
+    for dy in (70, h - 150):  # the hinges, on the side nobody is meant to see
+        oval(cv, g, half + 16, -h + 16 + dy, 54, 54, STEEL, sw=4, stroke=cv.ink)
+        box(cv, g, half + 44, -h + 34 + dy, 50, 18, STEEL_DARK, 3, r=4)
+    for dy in (260, 300, 340, 380):
+        oval(cv, g, w - 60, -h + dy, 16, 16, OAK_DARK)
+    cv.require_font("the wardrobe's label is lettered in it")
+    label = _group(cv, g, x=half + 12, y=-h / 2 + 30)
+    box(cv, label, 0, 0, 160, 110, "#ffffff", 4, r=4)
+    name = cv.uid("text")
+    cv.assets.add_text(id=name, text="THIS SIDE IN", width=144, height=96, size=38, fontAsset=cv.font_asset, weight=700,
+                       color=LETTER, align="center", verticalAlign="middle", wrap="balance", lineHeight="1.05",
+                       maxLines=2)  # fmt: skip
+    label.add_layer(id=cv.uid("layer"), asset=name, x=8, y=6)
+    box(cv, g, 0, -32, w, 32, OAK_DARK, 4)
+    return g
+
+
+def _door(cv: Canvas, parent, x: float, y: float, w: float, h: float, handle: int = 1) -> None:
+    box(cv, parent, x, y, w, h, OAK, 5, r=4)
+    box(cv, parent, x + 26, y + 30, w - 52, h - 60, OAK_LIGHT, 3, r=4)
+    box(cv, parent, x + (w - 26 if handle > 0 else 12), y + h / 2 - 50, 14, 100, STEEL_DARK, r=6)
+
+
+@register("prop", "stick-drill", tags=("tool", "drill", "hand-prop", "home"))
+def drill(cv: Canvas, parent, x: float, y: float, *, flip: bool = False, scale: float = 1.0):
+    """A cordless drill with its grip at ``x, y``, the bit pointing right (``flip``: left)."""
+    if scale <= 0:
+        raise StickDataError(f"a drill's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    box(cv, g, -26, -10, 54, 104, TOOL_DARK, 5, r=10)
+    box(cv, g, -40, 88, 82, 34, TOOL, 5, r=6)
+    box(cv, g, -44, -62, 148, 62, TOOL, 5, r=14)
+    box(cv, g, 104, -48, 34, 34, TOOL_DARK, 4, r=4)
+    box(cv, g, 138, -36, 62, 10, STEEL, 3, r=2)
+    return g
+
+
+@register("prop", "stick-screws", tags=("tool", "screws", "small", "flat-pack"))
+def screws(cv: Canvas, parent, x: float, y: float, *, count: int = 4, scale: float = 1.0):
+    """``count`` loose screws in a row, the first centred on ``x, y``: small enough to matter."""
+    if count < 1:
+        raise StickDataError(f"there is at least one screw, got {count!r}")
+    if scale <= 0:
+        raise StickDataError(f"a screw's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    for i in range(count):
+        dx = i * 44
+        tilt = (-8, 6, -4, 10)[i % 4]
+        oval(cv, g, dx - 16, -30, 32, 16, STEEL, sw=3, stroke=cv.ink)
+        shape(cv, g, f"M {dx} -14 L {dx + tilt} 26", sw=9, stroke=STEEL_DARK)
+        shape(cv, g, f"M {dx - 7} -2 L {dx + 8} 4 M {dx - 7} 10 L {dx + 8} 16", sw=3, stroke=cv.ink)
+    return g
+
+
+def _pictogram(cv: Canvas, parent, x: float, foot: float, *, mouth: str = "smile", arms: str = "down",
+               bun: bool = False, scale: float = 1.0):  # fmt: skip
+    """One of a manual's little people: a round head on a blank round body, feet on ``foot``."""
+    g = _group(cv, parent, x=x, y=foot, scaleX=scale, scaleY=scale)
+    for dx in (-30, 30):
+        box(cv, g, dx - 20, -150, 40, 150, MANUAL_PAPER, 6, r=20)
+    _bust(cv, g, -300, mouth=mouth, arms=arms, bun=bun)
+    return g
+
+
+def _bust(cv: Canvas, g, top: float, *, mouth: str, arms: str, bun: bool) -> None:
+    """A pictogram from the hips up, the top of its body at ``top``."""
+    box(cv, g, -66, top, 132, 180, MANUAL_PAPER, 6, r=60)
+    arm_paths = {
+        "down": ((-60, 26, -94, 150), (60, 26, 94, 150)),
+        "crossed": ((-60, 40, 46, 92), (60, 40, -46, 92)),
+        "right": ((-60, 26, -94, 150), (60, 30, 170, 40)),
+        "left": ((60, 26, 94, 150), (-60, 30, -170, 40)),
+        "lap": ((-60, 30, -30, 130), (60, 30, 30, 130)),
+    }
+    for x0, y0, x1, y1 in arm_paths[arms]:
+        shape(cv, g, f"M {x0} {top + y0} L {x1} {top + y1}", sw=30, stroke=cv.ink)
+        shape(cv, g, f"M {x0} {top + y0} L {x1} {top + y1}", sw=18, stroke=MANUAL_PAPER)
+    if bun:
+        oval(cv, g, -34, top - 196, 68, 68, cv.ink)
+    oval(cv, g, -74, top - 150, 148, 148, MANUAL_PAPER, sw=6, stroke=cv.ink)
+    for dx in (-28, 28):
+        oval(cv, g, dx - 8, top - 92, 16, 16, cv.ink)
+    curve = {"smile": 30, "flat": 0, "frown": -24}[mouth]
+    shape(cv, g, f"M -32 {top - 50} Q 0 {top - 50 + curve} 32 {top - 50}", sw=7, stroke=cv.ink)
+
+
+def _sofa(cv: Canvas, parent, x: float, foot: float, *, fine: bool = False, sitter: str = "flat", bun: bool = False,
+          scale: float = 1.0):  # fmt: skip
+    """A sofa with someone on it, seen from the front: a plain one, or a ``fine`` new one with cushions and a lamp."""
+    g = _group(cv, parent, x=x, y=foot, scaleX=scale, scaleY=scale)
+    w = 720 if fine else 560
+    box(cv, g, -w / 2, -340, w, 260, MANUAL_PAPER, 6, r=40)
+    sitting = _group(cv, g, y=90.0, scaleX=1.45, scaleY=1.45) if fine else g
+    _bust(cv, sitting, -360, mouth=sitter, arms="lap", bun=bun)
+    box(cv, g, -w / 2, -170, w, 130, MANUAL_PAPER, 6, r=26)
+    for side in (-1, 1):
+        box(cv, g, side * w / 2 - 50, -240, 100, 200, MANUAL_PAPER, 6, r=40)
+        box(cv, g, side * (w / 2 - 70) - 12, -44, 24, 44, cv.ink)
+    if fine:
+        for side in (-1, 1):
+            box(cv, g, side * 214 - 60, -270, 120, 110, "#ffd34d", 6, r=26)
+        shape(cv, g, "M 460 0 L 460 -470", sw=10, stroke=cv.ink)
+        shape(cv, g, "M 400 -440 L 520 -440 L 490 -540 L 430 -540 Z", "#ffd34d", 6, stroke=cv.ink)
+        shape(cv, g, "M 420 0 L 500 0", sw=10, stroke=cv.ink)
+
+
+def _suitcase(cv: Canvas, parent, x: float, foot: float) -> None:
+    g = _group(cv, parent, x=x, y=foot)
+    shape(
+        cv, g, "M -90 -440 L -90 -530 Q -90 -560 -60 -560 L 60 -560 Q 90 -560 90 -530 L 90 -440", sw=20, stroke=cv.ink
+    )
+    box(cv, g, -280, -440, 560, 400, MANUAL_PAPER, 7, r=30)
+    for dx in (-150, 150):
+        shape(cv, g, f"M {dx} -440 L {dx} -40", sw=14, stroke=cv.ink)
+    for dx in (-210, 210):
+        oval(cv, g, dx - 26, -44, 52, 52, MANUAL_PAPER, sw=7, stroke=cv.ink)
+
+
+def _speech(cv: Canvas, parent, text: str) -> None:
+    """The speech bubble across the top of a page's drawing, its tail down to the left-hand figure's mouth."""
+    x, y, w, h = 120, 470, 840, 300
+    shape(cv, parent, f"M 300 {y + h - 6} L 300 {y + h + 150} L 410 {y + h - 6}", MANUAL_PAPER, 6, stroke=cv.ink)
+    box(cv, parent, x, y, w, h, MANUAL_PAPER, 6, r=70)
+    box(cv, parent, 306, y + h - 12, 100, 18, MANUAL_PAPER)
+    name = cv.uid("text")
+    cv.assets.add_text(id=name, text=text, width=w - 80, height=h - 40, size=86, fontAsset=cv.font_asset, weight=700,
+                       color=NOTE_INK, align="center", verticalAlign="middle", wrap="balance", lineHeight="1.1",
+                       maxLines=3)  # fmt: skip
+    parent.add_layer(id=cv.uid("layer"), asset=name, x=x + 40, y=y + 20)
+
+
+@register("prop", "stick-manual-page", tags=("insert", "fullscreen", "flat-pack", "manual", "font"))
+def manual_page(cv: Canvas, parent, step: int, drawing: str, *, bubble: str = ""):
+    """The frame given over to one page of an assembly manual: the step's number and one of :data:`MANUAL_DRAWINGS`
+    in its wordless little people. Only ``"argument"`` has words, its ``bubble``, and it must have them."""
+    cv.require_font("the manual's step numbers are set in it")
+    if drawing not in MANUAL_DRAWINGS:
+        raise StickDataError(f"a manual page draws one of {MANUAL_DRAWINGS}, got {drawing!r}")
+    if step < 1:
+        raise StickDataError(f"a manual's steps start at 1, got {step!r}")
+    if (drawing == "argument") != bool(bubble.strip()):
+        raise StickDataError("a speech bubble belongs on the argument page, and only there")
+    g = _group(cv, parent)
+    box(cv, g, 0, 0, cv.width, cv.height, MANUAL_PAPER)
+    box(cv, g, 0, 0, 44, cv.height, "#000000", opacity=0.07)
+    box(cv, g, 84, 250, 912, 1240, "#00000000", 5, r=8)
+    name = cv.uid("text")
+    cv.assets.add_text(id=name, text=str(step), width=320, height=190, size=170, fontAsset=cv.font_asset, weight=700,
+                       color=NOTE_INK, align="start", verticalAlign="middle", maxLines=1)  # fmt: skip
+    g.add_layer(id=cv.uid("layer"), asset=name, x=124, y=272)
+    foot = 1400.0
+    if drawing == "smiling":
+        _pictogram(cv, g, 330, foot, scale=1.45)
+        _pictogram(cv, g, 750, foot, scale=1.45)
+    elif drawing == "argument":
+        _speech(cv, g, bubble)
+        _pictogram(cv, g, 330, foot, mouth="frown", arms="right", scale=1.0)
+        _pictogram(cv, g, 750, foot, mouth="frown", arms="left", scale=1.0)
+    elif drawing == "crossed":
+        _pictogram(cv, g, 540, foot, mouth="flat", arms="crossed", scale=1.6)
+    elif drawing == "sofa":
+        _sofa(cv, g, 540, foot, sitter="frown", scale=1.35)
+    elif drawing == "suitcase":
+        _suitcase(cv, g, 540, foot - 120)
+    elif drawing == "hug":
+        _pictogram(cv, g, 420, foot - 110, arms="right", scale=1.25)
+        _pictogram(cv, g, 650, foot - 110, arms="left", scale=1.25)
+        screws(cv, g, 460, foot - 30, scale=1.3)
+    else:
+        _sofa(cv, g, 470, foot, fine=True, sitter="smile", bun=True, scale=1.0)
+    return g
+
+
+@register("prop", "stick-caller", tags=("phone", "ringing", "hand-prop", "font"))
+def caller(cv: Canvas, parent, x: float, y: float, name: str, *, ring: Sequence[float] = (), scale: float = 1.0):
+    """A phone centred on ``x, y`` ringing with ``name`` across its screen, the answer and decline buttons under it;
+    it shakes for a moment at each time in ``ring`` (seconds on the parent's clock)."""
+    cv.require_font("the caller's name is set in it")
+    if not name.strip():
+        raise StickDataError("a ringing phone says who is calling")
+    if scale <= 0:
+        raise StickDataError(f"a phone's scale is positive, got {scale!r}")
+    if any(not (checks.number(t) and t >= 0) for t in ring) or list(ring) != sorted(ring):
+        raise StickDataError(f"ring times must be non-negative and in order, got {list(ring)!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    box(cv, g, -100, -190, 200, 380, "#1f2430", 5, r=26)
+    box(cv, g, -86, -170, 172, 340, "#dff0ff", 0, r=14)
+    text = cv.uid("text")
+    cv.assets.add_text(id=text, text=name, width=160, height=70, size=54, fontAsset=cv.font_asset, weight=700,
+                       color=NOTE_INK, align="center", verticalAlign="middle", maxLines=1)  # fmt: skip
+    g.add_layer(id=cv.uid("layer"), asset=text, x=-80, y=-120)
+    oval(cv, g, -66, 74, 56, 56, RING_RED)
+    oval(cv, g, 10, 74, 56, 56, RING_GREEN)
+    if ring:
+        keys = [(0.0, x)]
+        for t in ring:
+            keys += [(t, x), (t + 0.05, x - 9), (t + 0.1, x + 9), (t + 0.15, x - 7), (t + 0.2, x + 7), (t + 0.25, x)]
+        cv.keys(g, "x", keys, kind="linear")
     return g

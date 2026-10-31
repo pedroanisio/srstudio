@@ -166,3 +166,73 @@ def test_sparks_turn_about_and_refuse_what_cannot_flicker():
         stick_odds.sparks(cv, cv.comp, 0, 0, 1.0, rate=0)
     with pytest.raises(stick.StickDataError, match="scale"):
         stick_odds.sparks(cv, cv.comp, 0, 0, 1.0, scale=0)
+
+
+def test_a_wardrobe_half_up_shows_its_mistake_and_a_finished_one_does_not():
+    half, done = canvas(), canvas()
+    stick_odds.wardrobe(half, half.comp, 100, 1500, "half")
+    stick_odds.wardrobe(done, done.comp, 100, 1500, "done")
+    assert b"THIS SIDE IN" in half.scene.to_bytes(layout="pretty")
+    assert b"THIS SIDE IN" not in done.scene.to_bytes(layout="pretty")
+
+
+def test_a_wardrobe_has_only_its_stages():
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match="stage"):
+        stick_odds.wardrobe(cv, cv.comp, 100, 1500, "nearly")
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick_odds.wardrobe(cv, cv.comp, 100, 1500, "done", scale=0)
+
+
+@pytest.mark.parametrize("drawing", [d for d in stick_odds.MANUAL_DRAWINGS if d != "argument"])
+def test_a_manual_page_is_wordless_but_for_its_number(drawing):
+    cv = canvas()
+    stick_odds.manual_page(cv, cv.comp, 14, drawing)
+    assert b'text="14"' in cv.scene.to_bytes(layout="pretty")
+
+
+def test_the_speech_bubble_belongs_on_the_argument_page_and_only_there():
+    cv = canvas()
+    stick_odds.manual_page(cv, cv.comp, 9, "argument", bubble="YOU SAID YOU MEASURED")
+    assert b"YOU SAID YOU MEASURED" in cv.scene.to_bytes(layout="pretty")
+    with pytest.raises(stick.StickDataError, match="bubble"):
+        stick_odds.manual_page(cv, cv.comp, 9, "argument")
+    with pytest.raises(stick.StickDataError, match="bubble"):
+        stick_odds.manual_page(cv, cv.comp, 14, "sofa", bubble="NO")
+
+
+def test_a_manual_page_refuses_what_a_manual_does_not_have():
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match="draws one of"):
+        stick_odds.manual_page(cv, cv.comp, 3, "dragon")
+    with pytest.raises(stick.StickDataError, match="start at 1"):
+        stick_odds.manual_page(cv, cv.comp, 0, "sofa")
+
+
+def test_a_ringing_phone_says_who_and_only_shakes_when_it_rings():
+    still, ringing = canvas(), canvas()
+    stick_odds.caller(still, still.comp, 540, 960, "MOM")
+    stick_odds.caller(ringing, ringing.comp, 540, 960, "MOM", ring=(0.0, 0.5))
+    assert b"MOM" in still.scene.to_bytes(layout="pretty")
+    assert ringing.scene.to_bytes(layout="pretty") != still.scene.to_bytes(layout="pretty")
+    with pytest.raises(stick.StickDataError, match="who is calling"):
+        stick_odds.caller(still, still.comp, 540, 960, "  ")
+    with pytest.raises(stick.StickDataError, match="in order"):
+        stick_odds.caller(still, still.comp, 540, 960, "MOM", ring=(2.0, 1.0))
+
+
+def test_screws_count_and_small_props_refuse_a_bad_scale():
+    cv = canvas()
+    with pytest.raises(stick.StickDataError, match="at least one"):
+        stick_odds.screws(cv, cv.comp, 0, 0, count=0)
+    for draw in (stick_odds.screws, stick_odds.drill, stick_odds.planks):
+        with pytest.raises(stick.StickDataError, match="scale"):
+            draw(cv, cv.comp, 0, 0, scale=-1)
+
+
+def test_a_book_takes_a_cover_colour():
+    plain, manual = canvas(), canvas()
+    stick_odds.book(plain, plain.comp, 0, 0)
+    stick_odds.book(manual, manual.comp, 0, 0, colour="#f4f1ea")
+    assert b"#f4f1ea" in manual.scene.to_bytes(layout="pretty")
+    assert b"#f4f1ea" not in plain.scene.to_bytes(layout="pretty")

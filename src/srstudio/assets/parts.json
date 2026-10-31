@@ -9239,6 +9239,108 @@
           "rig": null
         }
       ]
+    },
+    "stick-planks": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Flat-pack panels leaning on the wall, with their flat box. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "88bda137f88086e0f1ec3624d1fe68a68d64d45bd66fcd89be8ec9d01c5e66e2",
+          "rig": null
+        }
+      ]
+    },
+    "stick-wardrobe": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat-pack wardrobe half up with a door on backwards, or standing. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5a9df99dbc58f79ef7a5d0fbe8acd411732fccb72e44338b06ada262c3038162",
+          "rig": null
+        }
+      ]
+    },
+    "stick-drill": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A cordless drill for a figure's hand. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c0df60c2b8689db066f36e683134eab386e3be69885ce9baae7e1b3af9855010",
+          "rig": null
+        }
+      ]
+    },
+    "stick-screws": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A few loose screws. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "312cb49a07ccd6570651d5ff5f29c4885a824f38e232a99403bee1ebe68bf129",
+          "rig": null
+        }
+      ]
+    },
+    "stick-manual-page": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The frame given over to a numbered assembly-manual page and its wordless little people. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fd67f8abec199e3d99a15a0a4b324f2c3e4736e87c842e44ad2fe2b7c2f48de1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-caller": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone ringing with the caller's name on its screen. First drawn for some-assembly; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ccfdb1db8e8078a5cfced8ee715b0f0bfe88e6cfcbdbac028efa30a84cf166f2",
+          "rig": null
+        }
+      ]
     }
   }
 }
