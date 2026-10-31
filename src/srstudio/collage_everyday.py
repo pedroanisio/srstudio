@@ -23,6 +23,7 @@ __all__ = [
     "BED_TOP",
     "CHIPS",
     "EverydayError",
+    "FLIP",
     "FOODS",
     "LASAGNA_LAYERS",
     "TABLE_TOP",
@@ -37,6 +38,7 @@ __all__ = [
     "chip_bag",
     "confetti",
     "duvet",
+    "flip_card",
     "food",
     "gust",
     "lasagna",
@@ -61,6 +63,11 @@ LASAGNA_LAYERS = (  # top of each layer and its colour, drawn from the crust dow
     (-18.0, "#f2c14e"),
     (8.0, "#c1121f"),
 )
+FLIP = 0.2  # the seconds a flip card takes to turn
+CARD_PAD = 30.0  # a flip card's margin round its type
+CARD_GLYPH = 0.62  # a capital's width as a share of the type size
+CARD_LEADING = 1.2  # a row's height as a share of the type size
+CARD_FILLS = ("#fffaf0", "#ffe9a8")  # its sides, in turn: a card turned over shows it has
 LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 
 
@@ -156,6 +163,64 @@ def lasagna(cv: Canvas, parent, x: float = 540.0, y: float = 1400.0, w: float = 
     dish = [(-260, 26), (260, 26), (226, 112), (-226, 112)]
     draw_shapes(cv, g, _paper(_cut("lasagna-dish", dish, 2), "#c8553d"))
     cv.rect(g, -274, 16, 548, 24, "#e07a5f", INK, 4, radius=10)
+    return g
+
+
+# -- a flip card ------------------------------------------------------------------------------------------------------
+def _wrapped(text: str, per_line: int) -> list[str]:
+    """``text`` greedily broken into rows of at most ``per_line`` characters."""
+    rows: list[str] = []
+    for word in text.split():
+        if rows and len(rows[-1]) + 1 + len(word) <= per_line:
+            rows[-1] += " " + word
+        else:
+            rows.append(word)
+    return rows
+
+
+def _check_fits(text: str, w: float, h: float, size: float) -> None:
+    """Refuse a side too long to read at its size: the card exists to be read, and a clipped word cannot be."""
+    per_line = int((w - 2 * CARD_PAD) / (size * CARD_GLYPH))
+    rows = _wrapped(text, per_line)
+    if not rows or max(len(row) for row in rows) > per_line or len(rows) * size * CARD_LEADING > h - CARD_PAD:
+        raise EverydayError(f"{text!r} does not fit a {w} by {h} card at {size} px")
+
+
+@register("prop", "collage-flip-card", summary="A big paper card held up to be read, which flips to its other side")
+def flip_card(
+    cv: Canvas,
+    parent,
+    sides: Sequence[tuple[float, str]] = ((0.0, "NO THANKS"),),
+    x: float = 540.0,
+    y: float = 1500.0,
+    w: float = 760.0,
+    h: float = 420.0,
+    *,
+    size: float = 84.0,
+    tilt: float = 0.0,
+) -> object:
+    """A card ``w`` by ``h`` centred on ``x, y``, showing each of ``sides`` (``(from, text)``, project seconds) in
+    turn, in type that is measured against the card: it turns edge-on over :data:`FLIP` seconds at each change, so the
+    change reads as the card being turned, and refuses a side it could not show whole."""
+    if not sides:
+        raise EverydayError("a flip card needs at least one side")
+    times = [at for at, _ in sides]
+    if times != sorted(set(times)):
+        raise EverydayError(f"a flip card's sides run forward in time, got {times}")
+    _size(w, "a card's width"), _size(h, "a card's height"), _size(size, "a card's type size")
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt)
+    for i, (at, text) in enumerate(sides):
+        _check_fits(text, w, h, size)
+        side = cv.group(g, cv.uid("g"))
+        cv.gate(side, [(at, times[i + 1] if i + 1 < len(sides) else FOREVER)])
+        draw_shapes(cv, side, _paper(_cut(f"flip-card-{i}", _box(w, h), 3), CARD_FILLS[i % len(CARD_FILLS)]))
+        cv.rect(side, -w / 2 + 16, -h / 2 + 16, w - 32, h - 32, "#ffffff00", "#c1121f", 6, radius=10)
+        _letter(cv, side, "flip-card", text, -w / 2 + CARD_PAD, -h / 2, w - 2 * CARD_PAD, h, size, color=INK)
+    if len(sides) > 1:
+        turns = [(times[0], 1.0)]
+        for at in times[1:]:
+            turns += [(at - FLIP / 2, 1.0), (at, 0.0), (at + FLIP / 2, 1.0)]
+        cv.keys(g, "scaleX", turns, local=False)
     return g
 
 

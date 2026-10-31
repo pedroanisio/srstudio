@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "collage-flip-card": {"title": "Cartão virável"},
     "back-room": {"title": "Sala dos fundos"},
     "sandwich": {"title": "Sanduíche mordido"},
     "jump-clock": {"title": "Relógio que salta"},
@@ -7701,6 +7702,7 @@
     {"section": "props", "name": "Lasanha de papel", "parts": ["collage-lasagna"], "shot": {"episode": "your-lasagna", "at": 18.5}, "text": "A lasanha inteira, de lado: massa, molho, queijo e a travessa."},
     {"section": "props", "name": "Relógio que salta", "parts": ["jump-clock"], "shot": {"episode": "my-manager", "at": 4.6}, "text": "Um relógio de parede cujos ponteiros correm vinte minutos entre um plano e outro."},
     {"section": "props", "name": "Sanduíche mordido", "parts": ["sandwich"], "shot": {"episode": "my-manager", "at": 24.3}, "text": "Um sanduíche com uma mordida a menos, para quem come escondido."},
-    {"section": "locations", "name": "Sala dos fundos", "parts": ["back-room"], "shot": {"episode": "my-manager", "at": 23.0}, "text": "Uma porta com plaqueta e, atrás dela, um armário com prateleiras, lâmpada nua e duas cadeiras dobráveis."}
+    {"section": "locations", "name": "Sala dos fundos", "parts": ["back-room"], "shot": {"episode": "my-manager", "at": 23.0}, "text": "Uma porta com plaqueta e, atrás dela, um armário com prateleiras, lâmpada nua e duas cadeiras dobráveis."},
+    {"section": "props", "name": "Cartão virável", "parts": ["collage-flip-card"], "shot": {"episode": "no-thanks", "at": 7.5}, "text": "Um cartão grande para ler em voz alta: o texto é medido e ele vira para o outro lado."}
   ]
 }

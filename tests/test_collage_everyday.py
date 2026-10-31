@@ -252,3 +252,42 @@ def test_a_lasagna_refuses_a_width_it_cannot_draw(w):
     cv = canvas()
     with pytest.raises(EverydayError):
         collage_everyday.lasagna(cv, cv.comp, w=w)
+
+
+# -- the flip card ----------------------------------------------------------------------------------------------------
+TWO_SIDES = ((0.0, "NO THANKS, I HATE SAVING MONEY"), (3.0, "YES, MY FAMILY DESERVES LESS"))
+
+
+def test_the_flip_card_is_registered():
+    assert registry.get("prop", "collage-flip-card").builder is collage_everyday.flip_card
+
+
+def test_a_flip_card_shows_each_side_in_its_own_stretch():
+    one, two = canvas(), canvas()
+    collage_everyday.flip_card(one, one.comp, TWO_SIDES[:1])
+    collage_everyday.flip_card(two, two.comp, TWO_SIDES)
+    assert body(two).count(b"<group") == body(one).count(b"<group") + 1
+
+
+def test_a_flip_card_turns_only_when_it_has_another_side():
+    one, two = canvas(), canvas()
+    collage_everyday.flip_card(one, one.comp, TWO_SIDES[:1])
+    collage_everyday.flip_card(two, two.comp, TWO_SIDES)
+    assert b"scaleX" in body(two)
+
+
+@pytest.mark.parametrize(
+    "sides",
+    [
+        (),
+        ((3.0, "A"), (1.0, "B")),
+        ((1.0, "A"), (1.0, "B")),
+        ((0.0, "A" * 30),),  # one word wider than the card
+        ((0.0, " ".join(["WORD"] * 40)),),  # more rows than the card
+        ((0.0, "   "),),
+    ],
+)
+def test_a_flip_card_refuses_a_side_it_could_not_show_whole(sides):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.flip_card(cv, cv.comp, sides)

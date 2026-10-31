@@ -8984,6 +8984,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-flip-card": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A big card held up to be read, measured against its type, which flips to its other side. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3d5ee994f7fdc01a652364f5a37c5047bd12df5d5623aac0fd46e06728d3329",
+          "rig": null
+        }
+      ]
     }
   }
 }
