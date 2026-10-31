@@ -9168,6 +9168,23 @@
           "rig": null
         }
       ]
+    },
+    "cv-folder": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A manila CV folder, shut or open on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "329cb7e72ac5f960c4b8634d4a2a872b8920d2016d3a434876f78de734ff85c1",
+          "rig": null
+        }
+      ]
     }
   }
 }
