@@ -1,5 +1,5 @@
-"""More Tired as data: the reel holds its first frame (arm A), both fall asleep before anyone goes up, each keeps one
-eye on the other, and his eye shutting is the last thing that happens."""
+"""More Tired as data: the reel pushes in from its first frame (arm B), both fall asleep before anyone goes up, each
+keeps one eye on the other, and his eye shutting is the last thing that happens."""
 
 import importlib.util
 import sys
@@ -65,11 +65,11 @@ def test_every_voice_is_a_distinct_premade_one(data):
     assert len(set(data.SCRIPT.voices.values())) == 2
 
 
-def test_the_release_is_arm_a_on_the_floor_with_five_tags():
+def test_the_release_is_arm_b_on_the_floor_with_five_tags():
     spec = importlib.util.spec_from_file_location("tired_post", EPISODES / "posts" / "more_tired.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     release = module.RELEASE
-    assert release.tags.test == "sp-hook_motion" and release.tags.arm == "a"
+    assert release.tags.test == "sp-hook_motion" and release.tags.arm == "b"
     assert len(release.post.hashtags) == 5 and "#okayville" in release.post.hashtags
     assert release.post.title.endswith("?") and release.comedy.author == 15 and release.comedy.reviewer == 18
