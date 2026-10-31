@@ -892,6 +892,9 @@
     "news-missing-card": {
       "title": "Cartaz de desaparecido"
     },
+    "news-live-door": {
+      "title": "Porta ao vivo"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
     },
@@ -7717,6 +7720,24 @@
         "at": 1.0
       },
       "text": "Um cartaz de desaparecido para um objeto: o desenho dele e o nome, ao lado de quem apresenta."
+    },
+    {
+      "section": "graphics",
+      "name": "Porta ao vivo",
+      "parts": [
+        "news-live-door"
+      ],
+      "shot": {
+        "episode": "came-in-for",
+        "at": 1.0,
+        "box": [
+          780,
+          470,
+          260,
+          320
+        ]
+      },
+      "text": "Uma entrada ao vivo de uma porta onde nada acontece, ao lado de quem apresenta, até a porta bater."
     },
     {
       "section": "locations",
