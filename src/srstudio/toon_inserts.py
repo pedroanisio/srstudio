@@ -18,7 +18,7 @@ Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops", "reception_glass"]
+__all__ = ["READ_SIZE", "eye_drops", "reception_glass", "voice_note_bar"]
 
 
 def _second(value: object, what: str) -> float:
@@ -111,3 +111,79 @@ def reception_glass(cv: Canvas, parent, left: float = -10.0, right: float = 602.
     cv.ellipse(g, fx(mid - 38), fy(top + 190), fh(76), fh(76), "#ffffff", GLASS_EDGE, FINE_W, opacity=0.5)
     for dx, dy in ((-16, 0), (16, 0), (0, -16), (0, 16), (0, 0)):
         cv.ellipse(g, fx(mid + dx - 4), fy(top + 228 + dy - 4), fh(8), fh(8), GLASS_EDGE)
+
+
+NOTE_PANEL, NOTE_LEFT, NOTE_DONE, NOTE_TEXT = "#20262e", "#5a6472", "#3ecf8e", "#ffffff"
+NOTE_BARS = 26  # the waveform's bars
+NOTE_SIZE = 60  # frame pixels of the time
+NOTE_SHAPE = (3, 5, 9, 6, 4, 8, 7, 3, 5, 9, 4, 6, 8, 5)  # the waveform, repeating
+
+
+@register(
+    "graphic",
+    "toon-voice-note-bar",
+    summary="A voice note's player, large enough to read on a phone: the waveform and the time against the total",
+    style="toon",
+)
+def voice_note_bar(
+    cv: Canvas,
+    parent,
+    stops: Sequence[tuple[float, str, float]] = ((0.0, "0:04", 0.01), (1.0, "0:31", 0.04)),
+    total: str = "11:47",
+    end: float = 2.0,
+    y: float = 930.0,
+    doubled: tuple[float, float] | None = None,
+) -> None:
+    """The player across the frame at reference ``y``. ``stops`` are ``(project second, time shown, fraction played)``,
+    from 0, rising in both; the fill moves between them and the time steps. ``doubled`` is the span of seconds it plays
+    at double speed, shown as a 2x chip."""
+    if not stops or stops[0][0] != 0 or not (checks.number(end) and end > stops[-1][0]):
+        raise ToonDataError(f"a voice note's stops start at 0 and end before {end!r}, got {stops!r}")
+    seconds = [_second(s[0], "a stop") for s in stops]
+    played = [s[2] for s in stops]
+    if seconds != sorted(set(seconds)) or played != sorted(played) or not all(0 <= f <= 1 for f in played):
+        raise ToonDataError(f"a voice note's stops rise, each played fraction 0 to 1, got {stops!r}")
+    if doubled is not None and not (0 <= doubled[0] < doubled[1] <= end):
+        raise ToonDataError(f"a voice note doubles over a span of its seconds, got {doubled!r}")
+    g = cv.group(parent, cv.uid("voice-note"))
+    cv.rect(g, fx(20), fy(y), fh(552), fh(150), NOTE_PANEL, cv.ink, FINE_W, radius=fh(30))
+    cv.ellipse(g, fx(40), fy(y + 26), fh(64), fh(64), NOTE_DONE)
+    left, width = 122.0, 430.0
+
+    def bars(colour: str, into) -> None:
+        for k in range(NOTE_BARS):
+            high = NOTE_SHAPE[k % len(NOTE_SHAPE)]
+            x = left + k * width / NOTE_BARS
+            cv.rect(into, fx(x), fy(y + 58 - 3 * high), fh(9), fh(6 * high), colour, radius=fh(4))
+
+    bars(NOTE_LEFT, g)
+    x0 = fx(left)
+    done = cv.group(g, cv.uid("g"), x=x0, y=0.0, anchorX=x0, anchorY=0.0)
+    bars(NOTE_DONE, done)
+    cv.keys(
+        done,
+        "scaleX",
+        [(t, round(max(f, 0.001), 4)) for t, f in zip(seconds, played, strict=True)],
+        hold=False,
+        local=False,
+    )
+    for (at, shown, _), stop in zip(stops, [*seconds[1:], end], strict=True):
+        step = cv.group(g, cv.uid("g"), start=at, end=stop)
+        cv.text(
+            step,
+            cv.uid("note-time"),
+            f"{shown} / {total}",
+            fh(120),
+            fy(y + 92),
+            int(fh(330)),
+            int(fh(50)),
+            NOTE_SIZE,
+            NOTE_TEXT,
+            "start",
+        )
+    if doubled is not None:
+        chip = cv.group(g, cv.uid("g"), start=doubled[0], end=doubled[1])
+        cv.rect(chip, fx(470), fy(y + 92), fh(86), fh(46), NOTE_DONE, radius=fh(12))
+        cv.text(
+            chip, cv.uid("note-chip"), "2x", fx(470), fy(y + 92), int(fh(86)), int(fh(46)), NOTE_SIZE - 8, NOTE_PANEL
+        )

@@ -65,3 +65,32 @@ def test_the_glass_stands_on_the_counter_and_refuses_to_stand_above_nothing():
     for bad in ({"left": 300.0, "right": 100.0}, {"top": 900.0}, {"top": float("nan")}):
         with pytest.raises(ToonDataError):
             toon_inserts.reception_glass(cv, cv.comp, **bad)
+
+
+def test_a_voice_note_reads_on_a_phone_and_fills_as_it_plays():
+    specimens.load_parts()
+    assert registry.get("graphic", "toon-voice-note-bar").builder is toon_inserts.voice_note_bar
+    cv = canvas()
+    stops = ((0.0, "0:04", 0.01), (5.0, "4:10", 0.35), (9.0, "11:44", 0.99))
+    toon_inserts.voice_note_bar(cv, cv.comp, stops, end=10.0, doubled=(1.0, 8.0))
+    sizes = [int(n.get("size")) for n in tree(cv).iter() if n.get("size")]
+    assert sizes and min(sizes) >= toon_inserts.READ_SIZE
+    fill = next(a for a in tree(cv).iter("animate") if a.get("property") == "scaleX")
+    assert [float(k.get("value")) for k in fill] == [0.01, 0.35, 0.99]
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"stops": ()},
+        {"stops": ((1.0, "0:04", 0.0),)},
+        {"stops": ((0.0, "0:04", 0.5), (1.0, "0:05", 0.1))},
+        {"stops": ((0.0, "0:04", 1.5),)},
+        {"stops": ((0.0, "0:04", 0.1),), "end": 0.0},
+        {"doubled": (3.0, 1.0)},
+    ],
+)
+def test_a_voice_note_refuses_stops_it_cannot_show(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.voice_note_bar(cv, cv.comp, **bad)

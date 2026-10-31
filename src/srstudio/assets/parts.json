@@ -9239,6 +9239,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-voice-note-bar": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A voice note's player, readable on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f5527f23f8059b88d2d4c479a1cceb613fe79cb5684278116e0111e3e48381c6",
+          "rig": null
+        }
+      ]
     }
   }
 }
