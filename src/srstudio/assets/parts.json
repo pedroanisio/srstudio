@@ -10380,6 +10380,125 @@
           "rig": null
         }
       ]
+    },
+    "stick-xray": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A scanner's screen filling the frame, objects in glowing false color under a moving scan line. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "80c30887668358e54e72b5beceaf74f900af734195441e045c0331805bdcd0c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-plate": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dinner plate from the side under up to three tiers of food. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "80e8445c8fbdc66be540a6c4af49c2679b67f83502a79427540dbeb48e466d12",
+          "rig": null
+        }
+      ]
+    },
+    "stick-spoon": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A big serving spoon, empty or with a helping. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5f4275b2099779b0c29bd2ff654645831d80ed171b6ebd9e1bd39027decbb9c5",
+          "rig": null
+        }
+      ]
+    },
+    "stick-robe": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A robe or a long coat that follows a figure's rig keys. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d4f9db169e7036f562d33568ce324aa714849d7d3bc384dba67fc93765bd1ab1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-scan-belt": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A security belt running out of its scanner. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "413c220e0c1d1567bbdb50dffb37e191285b4114cff482802879ecd0501ac530",
+          "rig": null
+        }
+      ]
+    },
+    "stick-foil-parcel": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A crumpled foil parcel of leftovers. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ddde4644dba6215e23a6cd2b0582ba6abab3950ccc9d9b0a5d873ac533646b20",
+          "rig": null
+        }
+      ]
+    },
+    "stick-foil-note": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The frame given over to foil and the note taped to it. First drawn for did-you-pack; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7b9224b3cb0cd6fd40566bc59463339080b0cc8c19765c95ef5ddb01820cadee",
+          "rig": null
+        }
+      ]
     }
   }
 }
