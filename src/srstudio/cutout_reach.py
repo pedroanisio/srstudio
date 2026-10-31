@@ -55,6 +55,12 @@ def _check(shoulder, track) -> None:
         raise ReachError(f"a hand on the shoulder {shoulder!r} has no arm to draw")
 
 
+def _samples(track: Sequence[tuple[float, float, float]]) -> list[float]:
+    """The times an arm on ``track`` is keyed at: every frame from its start, and its points."""
+    start, end = track[0][0], track[-1][0]
+    return sorted({round(start + k / RATE, 4) for k in range(int((end - start) * RATE) + 1)} | {p[0] for p in track})
+
+
 def reach(
     cv: Canvas,
     parent,
@@ -71,8 +77,7 @@ def reach(
     is a colour for a cloth arm, wider than the ink line. Returns (arm group, hand group): gate them both, or the
     parent, to show it, and hang what the hand carries from the hand group."""
     _check(shoulder, track)
-    start, end = track[0][0], track[-1][0]
-    points = sorted({round(start + k / RATE, 4) for k in range(int((end - start) * RATE) + 1)} | {p[0] for p in track})
+    points = _samples(track)
     sx, sy = shoulder
     at = [(t, *hand_at(track, t)) for t in points]
     x0, y0 = at[0][1], at[0][2]
@@ -116,8 +121,7 @@ def carried(
         raise ReachError(f"the hand is on its track from {track[0][0]} to {track[-1][0]}, got {take} to {put}")
     if not all(checks.number(v) for v in (*rest, *(lands or ()))):
         raise ReachError(f"a carried thing rests at finite places, got {rest!r} and {lands!r}")
-    samples = sorted({round(take + k / RATE, 4) for k in range(int((put - take) * RATE) + 1) if k} | {put})
-    path = [(t, hand_at(track, t)) for t in samples if t < put]
+    path = [(t, hand_at(track, t)) for t in _samples(track) if take < t < put]
     last = lands if lands is not None else hand_at(track, put)
     for axis, prop in enumerate(("x", "y")):
         keys = [(0.0, rest[axis]), (take, rest[axis]), *((t, at[axis]) for t, at in path), (put, last[axis])]
