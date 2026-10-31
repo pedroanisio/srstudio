@@ -9001,6 +9001,278 @@
           "rig": null
         }
       ]
+    },
+    "collage-handset": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone's handset with a coiled cord. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a950efa5832020a98a6e9cc610aec6ebdaf4e917fe56f42dca22d5dc0a5af8f8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-desk-phone": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A desk phone with a display, on or off the hook. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "94d530135e6ce41dbb985aa0fa680f8c58fc49fb38ed9494147a9d1349bf90be",
+          "rig": null
+        }
+      ]
+    },
+    "collage-resume": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A CV whose back is blank when turned. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a94705c64762382463e322a1fcad77e45048ba573be16f48383767b557fb4cce",
+          "rig": null
+        }
+      ]
+    },
+    "collage-fork": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A fork. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6c6cf970bcfc64fcd7faaf9a6b5f1666cb5c54d4ac3e9e445874b20ec4a1fd0f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-gravy-boat": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A gravy boat with forks taped round it, held like a press microphone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dfbf5b463c80f7eb6d90fbfa60ec40e022ce3ab61296cd9a4a5e35399bb20e80",
+          "rig": null
+        }
+      ]
+    },
+    "collage-tiny-cup": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A very small coffee cup. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "18eb8df543ede0bffce96785f366702191192451941bdf5c261c45f7245f03fc",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wine-glass": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wine glass. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c5586543af75ae7d071c93f6ffeacc7df5707259f280286e91ef96d2f36bf07c",
+          "rig": null
+        }
+      ]
+    },
+    "collage-bank-card": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bank card with its holder's name. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "752e999166073a093cb265c0743fd259c7dcc40c4d20328a4a3908b125a25995",
+          "rig": null
+        }
+      ]
+    },
+    "collage-receipt": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A till receipt, whole or torn across its foot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1d2731c86f4e1c34beeb4c6ae6bca6cfe301997edb0b6e5354396b914f94efee",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wallet": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An open wallet with one empty card slot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bd176e75dcb85d5d4da47f3ed389c3c96b6cb6d8fc9aa659e7a4014e24fc33dd",
+          "rig": null
+        }
+      ]
+    },
+    "collage-counter": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A shop counter across the frame. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "70fb79ddcb08512c8a003c4d8cfa674dda304f535b2a03c06509d404a352f047",
+          "rig": null
+        }
+      ]
+    },
+    "collage-till": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A till with a lit readout. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "15322194740fcd8b6a7461a65badcf7c3dc2d6f2a5cd968be8f8a072b1614804",
+          "rig": null
+        }
+      ]
+    },
+    "collage-stool": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A corner stool. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e596795f5af79dbfef16bdfe67aea843374e11f90299a5be8c3ea1e3c41eb716",
+          "rig": null
+        }
+      ]
+    },
+    "collage-towel": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A striped towel with a fringe. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "70230d727d0f6d2ce1c8df20e46c3ae15b3785c84662b4edf64b63e17b9e0c52",
+          "rig": null
+        }
+      ]
+    },
+    "collage-ring-corner": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A boxing ring's padded corner post and three ropes. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3de3ab42293c74c2cc5e0cbc750a0a210e09127c905b649ad4d41ac9b851dc3f",
+          "rig": null
+        }
+      ]
+    },
+    "collage-eye-twitch": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One eyelid twitching over a held smile. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "95df65b6f3d3b90302dfc730f2b6e5ff907b0e0e43e69d4c2be01e47356a46d1",
+          "rig": null
+        }
+      ]
     }
   }
 }
