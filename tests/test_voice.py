@@ -394,6 +394,33 @@ def test_malformed_transcripts_are_rejected(body, match):
 
 
 @pytest.mark.parametrize(
+    "heard, script",
+    [
+        ("It was $187", "It was a hundred and eighty-seven dollars."),
+        ("It was 187 dollars.", "It was one hundred eighty-seven dollars."),
+        ("It was $250.", "It was two hundred and fifty dollars."),
+        ("It was a hundred dollars.", "It was $100."),
+    ],
+)
+def test_a_dollar_amount_is_the_same_words_however_the_recogniser_writes_it(heard, script):
+    check_transcript(parse_transcript(transcript(heard)), script)
+
+
+@pytest.mark.parametrize(
+    "heard, script",
+    [
+        ("It was $186", "It was a hundred and eighty-seven dollars."),
+        ("It was 187 pounds.", "It was a hundred and eighty-seven dollars."),
+        ("It was $287", "It was a hundred and eighty-seven dollars."),
+        ("It was $187.40", "It was a hundred and eighty-seven dollars."),
+    ],
+)
+def test_another_amount_or_another_money_is_still_a_mismatch(heard, script):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), script)
+
+
+@pytest.mark.parametrize(
     "heard", ["No. Just the chair.", "no just the chair", "No, just the chair!", "No… Just the chair."]
 )
 def test_transcript_matching_the_script_passes(heard):
