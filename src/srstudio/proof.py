@@ -203,9 +203,11 @@ def arm_of(moved: Motion) -> str:
     return "a" if moved.changed <= STILL else "b"
 
 
-def hook(video: Path, fps: float) -> dict:
-    """How the master's first :data:`ARM_HOLD` seconds moved, and the arm that makes it; one too slow to have a frame
-    there is refused."""
+def hook(video: Path, seconds: float, fps: float) -> dict:
+    """How the master's first :data:`ARM_HOLD` seconds moved, and the arm that makes it; one too short or too slow to
+    have a frame there is refused."""
+    if seconds <= ARM_HOLD:
+        raise ProofError(f"a master of {seconds} s is shorter than the hold of {ARM_HOLD} s")
     if ARM_HOLD < 1 / fps:
         raise ProofError(f"at {fps} fps a master has no frame at {ARM_HOLD} s")
     moved = difference(frame(video, 0.0), frame(video, ARM_HOLD))
@@ -228,7 +230,7 @@ def report(video: Path, asked: Iterable[float] = (), out: Path | None = None, *,
     made = {**asdict(measures), "moments": [round(t, 3) for t in times]}
     if arm is None:
         return made
-    shown = hook(video, measures.fps)
+    shown = hook(video, measures.seconds, measures.fps)
     if shown["arm"] != arm:
         raise ProofError(f"{Path(video).name} shows arm {shown['arm']}, not {arm}: {shown}")
     looped = seam(video, measures.seconds, measures.fps)
