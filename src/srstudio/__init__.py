@@ -72,6 +72,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_dinner,
     toon_everyday,
     toon_extras,
+    toon_homeware,
     toon_flat,
     toon_head,
     toon_house,
