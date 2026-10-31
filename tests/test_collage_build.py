@@ -174,18 +174,38 @@ def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
     return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
 
 
-def test_a_pushed_opening_is_checked():
-    check_staging(still_staging(still=0.0, push=1.06))
+def test_a_push_runs_from_the_first_frame_across_the_cuts_inside_it(pinned_fonts, tmp_path):
+    ep = built(tmp_path, still_staging(STILL_BEATS, 0.0, push=(2.0, 1.05)), pinned_fonts)
+    xml = ep.scene.to_bytes(layout="pretty")
+    assert xml.count(b'property="scaleX"') >= 2
+
+
+@pytest.mark.parametrize(("push", "match"), [((-1.0, 1.1), "seconds"), ((1.0, 0.9), "scale")])
+def test_a_push_refuses_what_is_no_push(push, match):
+    with pytest.raises(collage_sketch.StagingError, match=match):
+        collage_sketch.check_push(push, STILL_BEATS, "x")
+
+
+def test_a_push_keeps_clear_of_a_zoom():
+    beats = (sketch.Beat(0.0, "gary", "", "h", "f", "d"), sketch.Beat(1.0, "gary", "", "h", "f", "d", event="zoom"))
+    with pytest.raises(collage_sketch.StagingError, match="inside the push"):
+        collage_sketch.check_push((2.0, 1.1), beats, "x")
+    collage_sketch.check_push((1.0, 1.1), beats, "x")
+
+
+def test_a_pushed_first_shot_is_checked():
+    check_staging(still_staging(still=0.0, first_shot_push=1.06))
     for kw, match in (
-        ({"still": 0.0, "push": 0.9}, "grow"),
-        ({"still": 0.0, "push": float("nan")}, "grow"),
-        ({"still": 1.0, "push": 1.06}, "not both"),
+        ({"still": 0.0, "first_shot_push": 0.9}, "grow"),
+        ({"still": 0.0, "first_shot_push": float("nan")}, "grow"),
+        ({"still": 1.0, "first_shot_push": 1.06}, "not both"),
+        ({"still": 0.0, "first_shot_push": 1.06, "push": (2.0, 1.05)}, "same keys"),
     ):
         with pytest.raises(collage_sketch.StagingError, match=match):
             check_staging(still_staging(**kw))
     zoomed = (replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:])
     with pytest.raises(collage_sketch.StagingError, match="crash zoom"):
-        check_staging(still_staging(beats=zoomed, still=0.0, push=1.06))
+        check_staging(still_staging(beats=zoomed, still=0.0, first_shot_push=1.06))
 
 
 def test_a_still_opening_is_checked():

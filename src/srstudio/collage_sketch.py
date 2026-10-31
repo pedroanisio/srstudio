@@ -63,6 +63,7 @@ EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "
 # on the beat a new shot starts, whips the camera from the shot before it to that one
 EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip")
 ZOOM_SCALE = 1.55
+PUSH_AT = (540.0, 960.0)  # the middle of the frame
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
 FLASH_GAP = 1.0  # seconds kept between two flashes: nearer is a strobe (three a second is the seizure limit)
 WHIP_PAPER = ("#fffaf0", "#e8dcc6", "#c9bda6", "#8d99ae", "#6b5b4b")  # the streaks of a whip: paper greys, any set
@@ -231,6 +232,9 @@ class Staging:
     # the scale the first shot pushes in to across its length, for a reel that opens on a silent beat and on movement
     # (arm b, on a recording that kept its silent head); 0 leaves the shot where it stands
     push: float = 0.0
+    # a slow push from the first frame, (until, scale): every shot before ``until`` keeps to one move over the frame's
+    # middle, so a cut inside it is not a jump, and a silent lead-in moves as a reel's first line would (L7)
+    push: tuple[float, float] = (0.0, 1.0)
     # the set of a shot, from the beats the build draws and its appearance, for a reel that changes rooms; a name of
     # collage_sets.SETS. None keeps every character on its ``sets`` entry
     setting: Callable[[Sequence[Beat], Appearance], str] | None = None
@@ -268,6 +272,13 @@ def check_push(beats: Sequence[sketch.Beat], staging: Staging, name: str) -> Non
     first = sketch.appearances(beats, beats[-1].start + 1.0)[0]
     if any(at < first.end for at, _ in sketch.events(beats, "zoom")):
         raise StagingError(f"{name}: a crash zoom in the first shot would take the keys of its push")
+def check_push(push: tuple[float, float], beats: Sequence[sketch.Beat], name: str) -> None:
+    """A push is a move over the frame's middle and a zoom pivots on a face: a shot has one or the other."""
+    until, scale = push
+    if not (checks.number(until) and until >= 0 and checks.number(scale) and scale >= 1.0):
+        raise StagingError(f"{name}: push {push!r} needs seconds from 0 and a scale from 1")
+    if any(at < until for at, _ in sketch.events(beats, "zoom")):
+        raise StagingError(f"{name}: a zoom comes inside the push, which ends at {until} s")
 
 
 def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
@@ -326,6 +337,7 @@ def check_staging(staging: Staging) -> None:
             raise StagingError(f"{sk.slug}: unknown set for {app.who} at {app.start} s")
     check_still(sk.beats, staging.still, sk.slug)
     check_push(sk.beats, staging, sk.slug)
+    check_push(staging.push, sk.beats, sk.slug)
     if not (type(staging.bitrate) is int and staging.bitrate >= 0):
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
 
@@ -356,6 +368,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     sketch.check(sk)
     check_still(sk.beats, staging.still, sk.slug)
     check_push(sk.beats, staging, sk.slug)
+    check_push(staging.push, sk.beats, sk.slug)
     check_flashes(sk.beats, sk.slug)
     ep = Episode(
         EpisodeSpec(
@@ -428,6 +441,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         if staging.push and app.start == 0:
             camera.anchor(g, *face, place=True)
             camera.push_in(cv, g, scale=[(0.0, 1.0), (app.end, staging.push)])
+        if app.start < staging.push[0]:
+            camera.anchor(g, *PUSH_AT, place=True)
+            camera.push_in(cv, g, scale=[(0.0, 1.0), staging.push])
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
