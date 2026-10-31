@@ -7717,6 +7717,188 @@
         "at": 1.0
       },
       "text": "Um cartaz de desaparecido para um objeto: o desenho dele e o nome, ao lado de quem apresenta."
+    },
+    {
+      "section": "locations",
+      "name": "Estúdio do News Compiler (versão 2)",
+      "parts": [
+        "news-set@2",
+        "news-desk@2"
+      ],
+      "shot": {
+        "episode": "where-to-eat",
+        "at": 1.0,
+        "box": [
+          0,
+          100,
+          1080,
+          1045
+        ]
+      },
+      "text": "A sala iluminada, a parede de monitores com imagens e a treliça no alto. A bancada polida tem borda, frente acesa e um piso embaixo."
+    },
+    {
+      "section": "graphics",
+      "name": "Faixa BREAKING (versão 2)",
+      "parts": [
+        "news-banner@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1146,
+          1080,
+          76
+        ]
+      },
+      "text": "Mais fina, encostada no terceiro inferior; as setas laranja não param de andar."
+    },
+    {
+      "section": "graphics",
+      "name": "Terceiro inferior (versão 2)",
+      "parts": [
+        "news-lower-third@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1222,
+          1080,
+          130
+        ]
+      },
+      "text": "Uma etiqueta menta sobre uma linha da matéria, colada no letreiro; muda a cada virada da história."
+    },
+    {
+      "section": "graphics",
+      "name": "Letreiro do rodapé (versão 2)",
+      "parts": [
+        "news-ticker@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1352,
+          1080,
+          64
+        ]
+      },
+      "text": "Logo abaixo do terceiro inferior, com a aba cortada em seta e os fatos pequenos da notícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Marca do programa e selo PARODY (versão 2)",
+      "parts": [
+        "news-bug@2",
+        "news-parody-tag@2"
+      ],
+      "shot": {
+        "episode": "you-too",
+        "at": 3.0,
+        "box": [
+          0,
+          220,
+          1080,
+          90
+        ]
+      },
+      "text": "O nome do programa e o selo PARODY na fileira de cima, em etiquetas do mesmo desenho; o selo fica na tela o vídeo inteiro quando a história é fictícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas do programa (versão 2)",
+      "parts": [
+        "news-captions@2"
+      ],
+      "shot": {
+        "episode": "where-to-eat",
+        "at": 8.0,
+        "box": [
+          150,
+          310,
+          780,
+          170
+        ]
+      },
+      "text": "Uma ou duas linhas de diálogo no painel do programa, com uma cor para cada âncora: papel claro para Vera, tangerina para Gus."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão da fonte (versão 2)",
+      "parts": [
+        "news-source-card@2"
+      ],
+      "shot": {
+        "episode": "seabird-jet-lag",
+        "at": 1.0,
+        "box": [
+          30,
+          995,
+          1020,
+          310
+        ]
+      },
+      "text": "Quando a história é real: veículo, data e manchete num cartão, que depois vira uma etiqueta na fileira de cima."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa no celular do Gus",
+      "parts": [
+        "news-route"
+      ],
+      "shot": {
+        "episode": "seabird-jet-lag",
+        "at": 5.5,
+        "box": [
+          150,
+          470,
+          780,
+          860
+        ]
+      },
+      "text": "Um mapa no celular: mar, costa, um trajeto que se desenha sozinho e alfinetes com os nomes."
+    },
+    {
+      "section": "cast",
+      "name": "Vera Stillman, a âncora séria (versão 2)",
+      "parts": [
+        "news-vera@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 2.0,
+        "box": [
+          180,
+          470,
+          720,
+          680
+        ]
+      },
+      "text": "Desenhada de novo: cabelo prateado repartido, óculos de meia-lua e pescoço. Continua sem reação nenhuma."
+    },
+    {
+      "section": "cast",
+      "name": "Gus Bellows, o coanfitrião (versão 2)",
+      "parts": [
+        "news-gus@2"
+      ],
+      "shot": {
+        "episode": "one-more-episode",
+        "at": 1.0,
+        "box": [
+          180,
+          480,
+          760,
+          640
+        ]
+      },
+      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade."
     }
   ]
 }
