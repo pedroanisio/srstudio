@@ -416,11 +416,14 @@ def _read(path: Path) -> dict[str, Any]:
     version = data.get("version")
     if not isinstance(version, str) or not SEMVER.fullmatch(version):
         raise _fail(str(path), f"version {version!r} is not a semantic version")
+    label = data.get("generated_by", "x")
+    if not isinstance(label, str) or not label.strip():
+        raise _fail(str(path), "generated_by names the model and the tool that wrote the file; it is nonempty text")
     return data
 
 
 def _top(data: dict[str, Any], where: str, allowed: tuple[str, ...]) -> None:
-    unknown = sorted(set(data) - {"schema", "version", *allowed})
+    unknown = sorted(set(data) - {"schema", "version", "generated_by", *allowed})
     if unknown:
         raise _fail(where, f"unknown field(s) {', '.join(unknown)}")
     missing = sorted(set(allowed) - set(data))
