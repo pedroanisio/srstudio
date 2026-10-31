@@ -20,6 +20,7 @@ from . import (  # noqa: F401  (registers builders)
     cutout_counter,
     cutout_hiring,
     cutout_home,
+    cutout_odds,
     cutout_office,
     cutout_shop,
     cutout_store,
