@@ -43,6 +43,7 @@ from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
 __all__ = [
+    "PHONE_SPEAKER",
     "SketchError",
     "Speaker",
     "Line",
@@ -117,6 +118,10 @@ VISEME_OF = {
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
+# what a phone's small speaker leaves of a voice: the speech band, a little pushed
+PHONE_SPEAKER = "highpass=f=380,highpass=f=380,lowpass=f=3000,lowpass=f=3000,volume=4dB"
+
+
 class SketchError(SrstudioError, ValueError):
     """The sketch (or a placement or recording of it) is inconsistent."""
 
@@ -136,12 +141,15 @@ class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
     Every take is levelled to one peak, so a line meant to come out small is only small in the mix with a ``gain``:
-    dB under the others, within :data:`LINE_LEVELS`; the take stays the same."""
+    dB under the others, within :data:`LINE_LEVELS`; the take stays the same.
+    ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
+    as it was said, and only the audio in the reel is band-limited."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
     gain: float = 0.0  # dB against the others in the mix
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -762,6 +770,7 @@ def record(
             continue
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
+        colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
             spoken.wav,
             dst,
@@ -770,6 +779,7 @@ def record(
             kept,
             gain_to_peak(trim.peak, VOICE_PEAK) + line.gain,
             ffmpeg,
+            **colour,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
