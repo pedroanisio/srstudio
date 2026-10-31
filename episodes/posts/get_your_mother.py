@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=("#dadsbelike", "#phonecalls", "#family", "#animatedshorts", "#okayville"),
         thumbnail=Thumbnail("She called\nme.", 27.5, "Okayville"),
     ),
-    tags=Tags("family", "other-person", "affection", recurring=("fern",), test="sp-hook_motion", arm="a"),
+    tags=Tags("family", "other-person", "affection", recurring=("fern",), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
         "signature-cactus": 1,
