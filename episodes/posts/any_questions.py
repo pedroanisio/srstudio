@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=('#jobinterview', '#jobhunting', '#careerhumor', '#animatedshorts', '#okayville'),
         thumbnail=Thumbnail("Are you\nhappy here?", 4.0, "Okayville"),
     ),
-    tags=Tags("job-hunting", "other-person", "triumph", test="sp-hook_motion", arm="a"),
+    tags=Tags("job-hunting", "other-person", "triumph", test="sp-hook_motion", arm="b"),
     style="Cutout",
     cover=True,
     parts={

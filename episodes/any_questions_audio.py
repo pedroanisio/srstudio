@@ -10,8 +10,8 @@ All LLM output must be treated as untrusted and validated explicitly.
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, where each line sits
 (:func:`schedule`) and its cuts (:func:`extra`). An interview ends on the usual question, the candidate asks the one
 nobody asks, and the two of them end up in each other's chairs. Eric is the manager and Will the candidate, as in the
-interview reels. There is no music, and the foley is synthesized in the build. Its first frames are held (arm A of the
-``sp-hook_motion`` test): nothing moves until the line at 0.5 s.
+interview reels. There is no music, and the foley is synthesized in the build. The camera moves from its first frame
+(arm B of the ``sp-hook_motion`` test), the first line at 0.5 s.
 """
 
 from __future__ import annotations
