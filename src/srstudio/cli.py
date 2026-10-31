@@ -121,6 +121,11 @@ def main(argv=None):
     page.add_argument(
         "--packages", type=Path, default=packages, required=not packages, help="folder of <name>-<version> packages"
     )
+    cards = sub.add_parser("cards", help="write the cast's story cards, drawn through the engine")
+    cards.add_argument("out", type=Path, help="the folder the <name>.png files go in")
+    cards.add_argument("--fonts", type=Path, default=os.environ.get("SRSTUDIO_FONTS"), help="the pinned fonts folder")
+    cards.add_argument("--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render"))
+    cards.add_argument("--only", nargs="+", default=[], help="these names alone, lower-case")
     web = sub.add_parser("serve", help="serve a catalog site, read-only, with the byte ranges video seeking needs")
     web.add_argument("site", type=Path, help="the folder srstudio page --site wrote")
     web.add_argument("--host", default=catalog_server.HOST, help="there is no authentication: keep it on loopback")
@@ -228,6 +233,8 @@ def main(argv=None):
         style = " italic" if got.italic else ""
         print(f"{got.path}  {got.family} {got.weight}{style}  {got.license}  sha256 {got.sha256}")
         return 0
+    if args.cmd == "cards":
+        return _cards(args)
     if args.cmd == "page":
         try:
             notes = catalog_page.load_notes(args.notes) if args.notes else None
@@ -444,6 +451,24 @@ def _enhance(action: str, repo: Path) -> int:
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
         print(f"{row.commit[:7]} {','.join(row.slugs)} [{','.join(row.kinds)}] {row.subject}: {verdict}")
+    return 0
+
+
+def _cards(args) -> int:
+    from . import cast_card  # the card table imports every style: only this command pays for that
+
+    if args.fonts is None or args.engine is None:
+        print("srstudio cards: set --fonts and --engine, or SRSTUDIO_FONTS and SRSTUDIO_ENGINE", file=sys.stderr)
+        return 2
+    try:
+        written = cast_card.render_all(
+            args.out, cast_card.Lettering.installed(args.fonts), args.engine, frozenset(args.only)
+        )
+    except SrstudioError as exc:
+        print(f"srstudio cards: {exc}", file=sys.stderr)
+        return 1
+    for path in written:
+        print(path)
     return 0
 
 

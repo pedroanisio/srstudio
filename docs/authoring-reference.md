@@ -374,6 +374,15 @@ Only then does it write `<family>-<weight>.ttf`, the licence and `fonts.lock.jso
 runs verify the pinned SHA-256 and do not touch the network; a file that changed is refused. An episode whose
 style font is missing stops with the `srstudio fonts add` command that fetches it.
 
+### Cast cards: `srstudio.cast_card`
+
+`srstudio cards FOLDER` writes one 1080×1920 PNG per character in `cast_card.CAST`: the approved drawing rendered
+through the engine, a name, one line and the wordmark, in Fredoka 600 and DM Sans 700. `--only rex` narrows it. A
+`Card` is typed data (name, line, drawing, `Pose`, `Frame`, backdrop). Before anything is written the card is
+refused if the drawing is unknown or unapproved, the line reads as engagement bait, the letters leave the story safe
+zone (no text in the top 250 px or the bottom 340 px, measured from the rendered letters) or the figure is too small
+to read. Folders are mode 700, files mode 600.
+
 ## New episodes with generated audio: *Five Years* (06)
 
 [episodes/five_years.py](../episodes/five_years.py) is the first episode made on the library rather than ported to it.

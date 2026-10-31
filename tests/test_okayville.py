@@ -21,6 +21,7 @@ TREES = ("src", "episodes", "pilots", "examples", "tools/govern/processes")  # w
 SKILL = ROOT / ".claude/skills/funny-reels/SKILL.md"
 GUIDES = ("docs/authoring-reference.md", "docs/slack-channel.md")  # what an author copies from
 RECORDS = ("notes.md", "sources.md")  # what a pilot's author wrote down about its build: never drawn or captioned
+GUARDS = ["src/srstudio/cast_card.py"]  # holds the name to refuse it on a card: test_cast_card proves that refusal
 
 
 def carrying(root: Path, trees: tuple[str, ...]) -> list[str]:
@@ -45,7 +46,7 @@ def shipped_releases() -> dict:
 
 
 def test_no_source_a_reel_is_built_from_carries_the_old_name():
-    assert carrying(ROOT, TREES) == []
+    assert carrying(ROOT, TREES) == GUARDS
 
 
 def test_the_search_reads_the_trees_it_claims():
