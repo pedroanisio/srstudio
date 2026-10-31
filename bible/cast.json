@@ -12469,7 +12469,7 @@
    ],
    "open": [
     {
-     "question": "Vera of the News Compiler show has no published reel yet; the polished look arrives with the first of six new news episodes.",
+     "question": "Vera of the News Compiler show has no published reel yet; the polished look (part news-vera version 2, on develop) is drawn but no published reel shows it.",
      "proposal": "Fill this sheet from the first published reel that shows them."
     }
    ]
@@ -12519,7 +12519,7 @@
    ],
    "open": [
     {
-     "question": "The News Compiler's Gus is a placeholder until the first of six new news episodes lands; the name Gus is also used in Gloss and Collage.",
+     "question": "The News Compiler's Gus is a placeholder until a published reel shows the polished look (part news-gus version 2, on develop); the name Gus is also used in Gloss and Collage. The unpublished seabird-jet-lag gives him a wife, which is not canon until that reel is published.",
      "proposal": "Fill this sheet from the first published reel that shows them."
     }
    ]

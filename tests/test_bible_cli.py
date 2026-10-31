@@ -12,7 +12,7 @@ from support.bible_docs import write
 
 
 def release(slug: str, *recurring: str) -> Release:
-    post = InstagramPost(title="t", description="Rex spoke.", hashtags=("#a",))
+    post = InstagramPost(title="t", description="Rex and Fern spoke.", hashtags=("#a",))
     return Release(slug, post, tags=Tags("money-services", "other-person", "recognition", recurring=recurring))
 
 
