@@ -22,7 +22,7 @@ Cast: ava, bo, brent, bruno, candidate, deb, dev, fern, gary, jun, juno, kai, ma
 | 3 | you-have-it | collage | b/a | best friend | relationships | other-person | tension | surprising image | escalating consequences | consequence | 29 | 18.4 s |
 | 4 | how-is-everything | cutout | a/b |  | money-services | institution | triumph | action | physical comedy | smallest reaction | 23 | 18.5 s |
 | 5 | eye-chart | collage | a/a |  | money-services | other-person | relief | question | escalating consequences | recovery | 45 | 26.6 s |
-| 6 | mosquito | toon | b/b | partner | relationships | protagonist | tension | action | physical comedy | consequence | 21 | 15.7 s |
+| 6 | mosquito | toon | b/b | partner | relationships | protagonist | tension | action | physical comedy | consequence | 16 | 13.3 s |
 | 7 | did-you-pack | stick | b/a | family | family | other-person | affection | mid-exchange | misunderstanding | reveal | 39 | 24.7 s |
 | 8 | sinking-chair | cutout | a/b |  | office | institution | embarrassment | mid-exchange | physical comedy | consequence | 47 | 27.5 s |
 | 9 | sensor | collage | a/a |  | everyday-tech | institution | tension | surprising image | visual reveal | smallest reaction | 37 | 22.1 s |
@@ -70,7 +70,7 @@ Voices: Noor (Jessica); the man (Callum); a passer-by (Lily). Set: stick-street-
 - He walks straight past her and hugs someone behind her. Her arm stays up. (sound: a small sting; camera: hold on the arm, hold 1.5 s)
 - She slowly turns the wave into a stretch, for nobody. NOOR: "Stretching. Just stretching." (sound: a joint clicks)
 - A passer-by stops and copies her. PASSER-BY: "Is this a class?" NOOR: "...Yes."
-- Same pavement: six people stretching in rows behind her. NOOR: "And reach. That's twenty dollars." (sound: coins; camera: cut wider)
+- Same sidewalk: six people stretching in rows behind her. NOOR: "And reach. That's twenty dollars." (sound: coins; camera: cut wider)
 - Card: THREE YEARS LATER. Her gym, a poster: STRETCH WITH NOOR. She wears a headset at the desk. PASSER-BY: "Four hundred members, Noor." (sound: phone rings at the desk)
 - The same man comes through the door, sees her, and waves. She checks behind her. Nobody there. She looks back. Her arm stays down. MAN: "Noor! Hey!" (sound: door chime; camera: cut in on Noor, hold 1.6 s)
 - His arm stays up. He slowly turns it into a stretch. MAN: "...Stretching." (sound: a joint clicks; camera: hold on the man)
@@ -134,13 +134,12 @@ Key line: "It's in here." Caption opens: "Who else has lost a night to one mosqu
 Voices: Bruno (Bill); Mae (Sarah). Set: toon-bedroom. New: a mosquito speck with a wandering path, a rolled towel.
 
 - Dark. Bruno's eyes are already open, a whine passing his ear. He says it at once, then slaps his own ear hard. BRUNO: "It's in here." (sound: bzzz, slap; camera: close on Bruno)
-- Light on: nothing. Light off: the whine is back. On: nothing. Mae, face in the pillow. MAE: "It's two a.m." (sound: switch, bzzz, switch, silence, switch)
+- Light on: nothing. Light off: the whine is back. On: nothing. Mae, face in the pillow. MAE: "It's two in the morning." (sound: switch, bzzz, switch, silence, switch)
 - Light on: Bruno on his feet on the bed, towel rolled, breathing through his mouth. BRUNO: "It's him or me." (sound: bed springs; camera: low angle, wide enough for the whole body)
 - He swings at the air. He slaps his forehead, then his cheek. It whines on, unharmed. BRUNO: "He's laughing." (sound: slap, slap, bzzz)
-- Silence. He turns. The mosquito lands on sleeping Mae's forehead. He lifts the towel. BRUNO: "I love you." (sound: the whine stops; camera: slow push to Mae's forehead, hold 1.5 s)
-- Whack. (sound: a huge wet slap, sting; camera: crash zoom)
-- Mae's eyes are open. He shows her his paw, a small red dot on it, proud. BRUNO: "Got him. You're safe now." (camera: hold on the two of them, hold 1.3 s)
-- Mae says nothing. He clicks off the light and lies down, content. Dark. Then, faintly, one whine. His eyes open. (sound: click, silence, bzzz; camera: hold on the eyes, hold 1.2 s)
+- Bruno stands frozen on the bed, towel raised. The whine stops. It lands on his own forehead. His eyes cross. (sound: the whine stops; camera: slow push to Bruno's forehead, hold 1.5 s)
+- Mae, face in the pillow and not waking, lifts one arm and whacks it. MAE: "Got him." (sound: a huge wet slap, sting; camera: hold on the two of them, hold 1.3 s)
+- He sways. She has not moved. The light clicks off. Dark. Then, faintly, one whine. His eyes open. (sound: click, silence, bzzz; camera: hold on the eyes, hold 1.2 s)
 
 ## 7. Did You Pack
 
@@ -235,11 +234,11 @@ Voices: Rosa (Lily); Milo (Liam); the shop's loudspeaker (Daniel). Set: store-ai
 - Rosa wheels into frame, earbuds in, serene, shouting. Milo beside her freezes with a box in his hand. ROSA: "THE RASH IS BETTER." (sound: cart wheels; camera: medium)
 - She reads a tin. ROSA: "NO, THE OTHER RASH." (camera: hold on Milo, not moving, hold 0.8 s)
 - Milo edges away. She follows the same way. ROSA: "I TOLD HIM. HAROLD, I SAID, THAT IS NOT A MOLE." (sound: a far shelf stops rattling)
-- Down the aisle, other shoppers have stopped. ROSA: "HE WON'T SHOW THE DOCTOR. HE SHOWED THE NEIGHBOURS." (camera: cut wider, shelves of still people)
+- Down the aisle, other shoppers have stopped. ROSA: "HE WON'T SHOW THE DOCTOR. HE SHOWED THE NEIGHBORS." (camera: cut wider, shelves of still people)
 - Milo taps her arm and mimes the earbuds. MILO: "Ma'am? You're very loud."
 - She takes one out. Her real voice is tiny. ROSA: "Am I, dear?" (camera: punch-in on Rosa, hold 1.5 s)
 - She looks down the aisle at all of them. All of them look back. (camera: hold, no sound at all, hold 1.2 s)
-- The loudspeaker clicks on, soft and kind. LOUDSPEAKER: "Oatmeal baths are on aisle nine." (sound: tannoy chime; camera: hold on Rosa)
+- The loudspeaker clicks on, soft and kind. LOUDSPEAKER: "Oatmeal baths are on aisle nine." (sound: loudspeaker chime; camera: hold on Rosa)
 
 ## 13. One Symptom
 
@@ -316,7 +315,7 @@ Key line: "Today, I am magnetic." Caption opens: "Why does nobody ever tell you?
 
 Voices: Deb (Jessica); Brent (Brian); Gary, silent (no line). Set: collage-bus-stop, collage-boardroom, collage-bathroom. New: a spinach leaf on the teeth.
 
-- Held frame: Deb at the bus stop, lips closed, chin up, the only person in colour with the sun on her. Her voice over it. DEB: "Today, I am magnetic." (camera: close, lips shut, the teeth not seen)
+- Held frame: Deb at the bus stop, lips closed, chin up, the only person in color with the sun on her. Her voice over it. DEB: "Today, I am magnetic." (camera: close, lips shut, the teeth not seen)
 - Gary, at the stop, looks at her mouth and smiles. She smiles back, turned from the camera. DEB: "Strangers smile at me." (sound: a bus passes; camera: from behind her shoulder)
 - Boardroom. She presents, seen from behind. Brent cannot stop staring at her mouth. DEB: "Brent could not look away." (camera: over her shoulder)
 - Brent slides a napkin across the table towards her and taps his own tooth. DEB: "He gave me his number." (sound: paper slide)
@@ -327,13 +326,13 @@ Voices: Deb (Jessica); Brent (Brian); Gary, silent (no line). Set: collage-bus-s
 
 ## 18. Bin Day
 
-Observation: You hear the bin truck from bed and run down the street in your robe while the neighbours watch.
+Observation: You hear the bin truck from bed and run down the street in your robe while the neighbors watch.
 
 Key line: "He's left it very late." Caption opens: "Who else has chased the bin truck in a robe?"
 
 Voices: Dev (Will); Walt, next door (George); Margaret, next door (Lily); the driver (Bill). Set: stick-home-street. New: a wheelie bin, a bin truck, a robe.
 
-- Dev bursts out of the front door in a robe, dragging a bin. In a window above, two neighbours with mugs. WALT: "And he's out of the door. Robe only." MARGARET: "He's left it very late, Walt." (sound: reversing beeps, door bang; camera: medium on Dev, cut to the window)
+- Dev bursts out of the front door in a robe, dragging a bin. In a window above, two neighbors with mugs. WALT: "And he's out of the door. Robe only." MARGARET: "He's left it very late, Walt." (sound: reversing beeps, door bang; camera: medium on Dev, cut to the window)
 - He runs. A slipper flies off. WALT: "He's lost a slipper." MARGARET: "That's the left. He's never been strong on the left." (sound: slap of one bare foot)
 - The truck pulls away. A wheel comes off the bin. He drags it, sparks. WALT: "Forty yards. One wheel." MARGARET: "You can't teach this." (sound: scrape; camera: wide, no cut)
 - He dives, slides, and the bin hits the back of the truck. He gets up with both arms in the air. WALT: "He's done it!" (sound: a clang, a faint cheer from an upstairs window; camera: hold on his arms, hold 1.0 s)
@@ -431,7 +430,7 @@ Voices: Noor (Jessica); Dev (Will). Set: stick-studio-flat. New: a flat-pack war
 
 ## 24. One More Taste
 
-Observation: The person ahead of you in the ice cream queue tries every flavour while the line grows behind them.
+Observation: The person ahead of you in the ice cream line tries every flavor while the line grows behind them.
 
 Key line: "Can I try the pistachio?" Caption opens: "Can I try the pistachio?"
 
@@ -440,7 +439,7 @@ Voices: the fox (Alice); the server (hamster) (Liam); Bruno (Bill); the goat (Ge
 - The fox leans over the case, tiny spoon going in. The server already holding the next one. Bruno behind her. FOX: "Can I try the pistachio?" (sound: spoon clink; camera: medium)
 - Spoons pile on the counter. FOX: "Can I try the mango? The other mango?" (sound: clink, clink)
 - The line behind Bruno has grown: the goat, a rabbit, a raccoon, out of the door. GOAT: "Is she buying a house?" (sound: the door bell, again; camera: cut wider)
-- A hill of spoons. The server is grey with effort. SERVER: "We have eleven flavours." FOX: "Can I try the first one again?" (sound: clink; camera: punch-in on the spoons, hold 1.2 s)
+- A hill of spoons. The server is grey with effort. SERVER: "We have eleven flavors." FOX: "Can I try the first one again?" (sound: clink; camera: punch-in on the spoons, hold 1.2 s)
 - Bruno, shaking slightly, very quiet. BRUNO: "Please." (camera: hold on Bruno, hold 0.8 s)
 - The fox lifts one finger. The whole line leans in. FOX: "You know what?" (camera: hold, the line leaning, hold 1.5 s)
 - FOX: "I'm actually pretty full. Thanks!" (sound: door bell, she leaves; camera: hold on the server)
