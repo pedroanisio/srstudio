@@ -90,8 +90,10 @@ __all__ = [
     "STANDING",
     "check_keys",
     "rig",
+    "between",
     "camera",
     "card",
+    "dolly",
     "Tile",
     "Mail",
     "SPEAKING",
@@ -874,6 +876,7 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
 
 # -- the rig: a drawn, posable figure for new episodes ------------------------------------------------------
 Point = tuple[float, float]
+Framing = tuple[Point, float, Point]  # focus, zoom, where the focus lands: what a camera is told
 EYES = ("open", "wide", "half", "closed", "happy")
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
@@ -1330,6 +1333,46 @@ def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float =
     if push:
         for prop, a, b in (("scaleX", 1, zoom), ("scaleY", 1, zoom), ("x", fx, to[0]), ("y", fy, to[1])):
             cv.keys(g, prop, [(0, a), (push, b)], kind="sine-in-out")
+    return g
+
+
+def _framing(frame: Framing, what: str) -> tuple[float, float, float, float, float]:
+    """``frame`` as numbers, refused unless it is a real framing."""
+    try:
+        (fx, fy), zoom, (tx, ty) = frame
+    except (TypeError, ValueError):
+        raise StickDataError(f"{what} is (focus, zoom, to), got {frame!r}") from None
+    numbers = (fx, fy, zoom, tx, ty)
+    if not (all(_is_number(n) for n in numbers) and zoom > 0):
+        raise StickDataError(f"{what} needs finite numbers and a positive zoom, got {frame!r}")
+    return numbers
+
+
+def between(a: Framing, b: Framing, at: float) -> Framing:
+    """The framing ``at`` of the way (0..1) from ``a`` to ``b``, eased like :func:`dolly`, each focus and landing point
+    moving straight: a long move crossing several shots is one :func:`dolly` per shot between two of these."""
+    if not (_is_number(at) and 0 <= at <= 1):
+        raise StickDataError(f"a move's point is 0 to 1, got {at!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    u = (1 - math.cos(math.pi * at)) / 2
+    mix = lambda p, q: p + (q - p) * u  # noqa: E731
+    return (mix(fx, fx2), mix(fy, fy2)), mix(zoom, zoom2), (mix(tx, tx2), mix(ty, ty2))
+
+
+def dolly(cv: Canvas, parent, a: Framing, b: Framing, seconds: float, *, start: float = 0.0, kind: str = "sine-in-out"):
+    """A group that holds framing ``a`` until ``start``, moves to ``b`` over ``seconds`` and stays there. A framing is
+    (focus, zoom, to), as :func:`camera` takes them, and either way round: in to a face, or back out to show what the
+    frame was hiding, down to a zoom under 1 on a set wider than the frame."""
+    if not (_is_number(seconds) and seconds > 0 and _is_number(start) and start >= 0):
+        raise StickDataError(f"a move starts at 0 or later and lasts some seconds, got {start!r}, {seconds!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    # the anchor stays on the first focus, so the second framing is where that point must land for it to hold
+    x2, y2 = tx2 + (fx - fx2) * zoom2, ty2 + (fy - fy2) * zoom2
+    g = _group(cv, parent, anchorX=fx, anchorY=fy, x=tx, y=ty, scaleX=zoom, scaleY=zoom)
+    for prop, p, q in (("scaleX", zoom, zoom2), ("scaleY", zoom, zoom2), ("x", tx, x2), ("y", ty, y2)):
+        cv.keys(g, prop, [*([(0, p)] if start else []), (start, p), (start + seconds, q)], kind=kind)
     return g
 
 
