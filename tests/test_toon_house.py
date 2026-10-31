@@ -267,6 +267,29 @@ def test_each_stage_of_a_pan_comes_at_its_second_and_stays():
     assert starts == {"sink-skin": ("1", "8"), "sink-frog": ("4", "8")}
 
 
+def test_a_sink_with_no_inset_is_drawn_as_it_was():
+    plain, zero = canvas(), canvas()
+    toon_house.sink(plain, plain.comp)
+    toon_house.sink(zero, zero.comp, inset=0.0)
+    assert plain.scene.to_bytes(layout="pretty") == zero.scene.to_bytes(layout="pretty")
+
+
+def test_a_sinks_inset_moves_its_marks_in(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(toon_house.signature, "cactus", lambda cv, g, x, y, scale: seen.update(cactus=x))
+    monkeypatch.setattr(toon_house.signature, "code", lambda cv, g, x, y, size, **kw: seen.update(code=x))
+    cv = canvas()
+    toon_house.sink(cv, cv.comp, inset=40.0)
+    assert seen == {"cactus": pytest.approx(toon.fx(508)), "code": pytest.approx(toon.fx(540))}
+
+
+@pytest.mark.parametrize("inset", [-1.0, float("nan")])
+def test_a_sink_refuses_an_inset_it_cannot_draw(inset):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="inset"):
+        toon_house.sink(cv, cv.comp, inset=inset)
+
+
 def test_the_tiny_frog_waves_only_in_a_timed_sink():
     moving, still = canvas(), canvas()
     toon_house.sink(moving, moving.comp, [(1.0, "frog")], 8.0)

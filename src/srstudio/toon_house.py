@@ -446,10 +446,15 @@ DROP_FALL, DROP_EVERY = 118.0, 0.36
 
 
 @register("prop", "toon-sink", summary="A counter seen from above with a sink, a pan left in it and what the pan grows")
-def sink(cv: Canvas, parent, stages: Sequence[tuple[float, str]] = (), end: float = 0.0, id: str = "sink") -> None:
+def sink(
+    cv: Canvas, parent, stages: Sequence[tuple[float, str]] = (), end: float = 0.0, id: str = "sink", inset: float = 0.0
+) -> None:
     """In front of the character in the desk's place, signed as it is: a pale counter, a steel sink and a pan in dirty
     water. Each ``(second, stage)`` of ``stages``, in the order of :data:`SOAK_STAGES`, comes and stays until ``end``;
-    in a still (``end`` 0) every stage named shows."""
+    in a still (``end`` 0) every stage named shows. The marks sit ``inset`` pixels in, as a :func:`ledge`'s do, for a
+    shot that pushes in far enough to lose them."""
+    if not (checks.number(inset) and inset >= 0):
+        raise ToonDataError(f"a sink's marks are inset by 0 or more, got {inset!r}")
     names = [stage[1] for stage in stages]
     if any(n not in SOAK_STAGES for n in names) or names != [n for n in SOAK_STAGES if n in names]:
         raise ToonDataError(f"a pan's stages come in the order {SOAK_STAGES}, each once, got {names}")
@@ -466,8 +471,8 @@ def sink(cv: Canvas, parent, stages: Sequence[tuple[float, str]] = (), end: floa
     cv.ellipse(g, fx(128), fy(876), fh(264), fh(126), WATER, PAN_RIM, FINE_W)
     for i, (x0, x1, y) in enumerate(((176, 248, 912), (280, 356, 952), (196, 262, 972))):
         _line(cv, g, [(x0, y), ((x0 + x1) / 2, y + 5), (x1, y)], 3.0, PAN_RIM, 0.45 + 0.1 * i)
-    signature.cactus(cv, g, fx(548), fy(838), 0.7)
-    signature.code(cv, g, fx(580), fy(866), 14, color=CODE_SHADE, opacity=0.9, align="end")
+    signature.cactus(cv, g, fx(548 - inset), fy(838), 0.7)
+    signature.code(cv, g, fx(580 - inset), fy(866), 14, color=CODE_SHADE, opacity=0.9, align="end")
     drawers = {"skin": _skin, "plant": _sprout, "mail": _mailbox, "frog": _tiny_frog}
     for start, name in stages:
         layer = cv.group(g, f"{id}-{name}", start=start, end=end) if end else cv.group(g, f"{id}-{name}")
