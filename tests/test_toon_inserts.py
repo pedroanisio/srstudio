@@ -199,3 +199,10 @@ def test_a_noodle_box_refuses_what_it_cannot_hold(bad):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.noodle_box(cv, cv.comp, **bad)
+
+
+def test_a_face_reads_through_the_glass():
+    cv = canvas()
+    toon_inserts.reception_glass(cv, cv.comp)
+    pane = next(n for n in tree(cv).iter() if n.get("fill") == toon_inserts.GLASS)
+    assert float(pane.get("opacity")) <= 0.2

@@ -90,6 +90,7 @@ def eye_drops(
 
 
 GLASS, GLASS_EDGE, TRAY = "#d7eef2", "#8fb0b6", "#e7e2d6"
+GLASS_OPACITY = 0.14  # a face behind the glass has to read
 
 
 @register(
@@ -114,7 +115,7 @@ def reception_glass(cv: Canvas, parent, left: float = -10.0, right: float = 602.
         GLASS_EDGE,
         FINE_W,
         radius=0,
-        opacity=0.28,
+        opacity=GLASS_OPACITY,
     )
     for x in (left + (right - left) * 0.2, left + (right - left) * 0.62):  # two glints, so the pane reads as glass
         _line(cv, g, [(x, top + 40), (x + 70, top + 150)], 6.0, "#ffffff", 0.55)
