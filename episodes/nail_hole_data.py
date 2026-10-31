@@ -199,7 +199,7 @@ def dress(shot) -> None:
     if app.start < alone:
         cv.rect(shot.back, 590.0, 820.0, 470.0, 1100.0, "#5b4636", collage.INK, 8.0)
         cv.rect(shot.back, 620.0, 850.0, 410.0, 1070.0, "#2b2d42")
-        cv.ellipse(shot.back, 470.0, 1200.0, 18.0, 18.0, "#2b2d42")
+        cv.ellipse(shot.back, HOLE[0] - 16.0, HOLE[1] - 16.0, 32.0, 32.0, "#2b2d42")
         _boxes(cv, shot.front)
         times = (bill, *(more + d for d in MORE))
         for (text, x, y), t in zip(BILLS, times, strict=True):
