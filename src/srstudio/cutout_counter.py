@@ -15,7 +15,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["ChainRun", "CutoutCounterError", "chain_run", "pen_on_chain"]
+__all__ = ["ChainRun", "CutoutCounterError", "chain_run", "paper_poster", "pen_on_chain"]
 
 Point = tuple[float, float]
 Grip = tuple[float, float, float]  # time, x, y
@@ -189,3 +189,35 @@ def pen_on_chain(
     cv.rect(pen, -6 * scale, -66 * scale, 12 * scale, 12 * scale, "#C9A24E", ink, 2)  # the end the chain is fixed to
     cv.path(pen, f"M{-5 * scale} {8 * scale} L0 {20 * scale} L{5 * scale} {8 * scale}Z", "#D8D2C4", ink, 2)
     return run
+
+
+@register("prop", "paper-poster", style="cutout", summary="A cheerful paper poster taped up, a little crooked")
+def paper_poster(
+    cv: Canvas,
+    parent,
+    x=700,
+    y=590,
+    *,
+    text: str = "WE'RE\nHERE\nFOR YOU",
+    width: float = 210,
+    height: float = 240,
+    size: int = 36,
+    tilt: float = -2.5,
+    id: str = "paper-poster",
+):
+    """A sheet ``width`` by ``height`` with its top left at (``x``, ``y``), taped at the corners, lettered ``text``."""
+    if not text.strip():
+        raise CutoutCounterError("a poster says something")
+    if not (checks.number(width) and checks.number(height) and width > 0 and height > 0):
+        raise CutoutCounterError(f"a poster has a positive size, got {width!r} by {height!r}")
+    if not (checks.number(size) and size > 0) or not checks.number(tilt):
+        raise CutoutCounterError(f"a poster's size is positive and its tilt finite, got {size!r}, {tilt!r}")
+    g = cv.group(parent, id, x=x + width / 2, y=y + height / 2, rotation=tilt)
+    left, top = -width / 2, -height / 2
+    cv.rect(g, left + 6, top + 8, width, height, "#2A2018", opacity=0.3)
+    cv.rect(g, left, top, width, height, "#FFFDF4", cv.ink, 3)
+    cv.rect(g, left, top, width, 18, "#D9472B")
+    for cx, cy in ((left, top), (-left, top)):
+        cv.rect(g, cx - 22, cy - 9, 44, 18, "#E9DFAE", opacity=0.85)
+    cv.text(g, f"{id}-words", text, left + 8, top + 34, width - 16, height - 42, size, "#1F2B4A")
+    return g

@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "paper-poster": {"title": "Cartaz de papel"},
     "pen-on-chain": {"title": "Caneta na corrente"},
     "stick-palm": {"title": "Palmeira"},
     "stick-coat-ball": {"title": "Bola de casacos"},
@@ -7681,6 +7682,7 @@
     {"section": "props", "name": "Balança de bagagem", "parts": ["stick-bag-scale"], "shot": {"episode": "four-coats", "at": 2.0}, "text": "Uma balança no piso do portão, com um mostrador vermelho que se lê no celular."},
     {"section": "props", "name": "Bola de casacos", "parts": ["stick-coat-ball"], "shot": {"episode": "four-coats", "at": 15.5}, "text": "Tudo o que o passageiro tem, vestido: uma bola de casacos com chapéus, cachecóis e sapatos nos bolsos."},
     {"section": "props", "name": "Palmeira", "parts": ["stick-palm"], "shot": {"episode": "four-coats", "at": 20.0}, "text": "Uma palmeira de tronco torto e sete folhas, na outra ponta do voo."},
-    {"section": "props", "name": "Caneta na corrente", "parts": ["pen-on-chain"], "shot": {"episode": "low-balance", "at": 28.3}, "text": "A caneta do balcão presa à corrente: segue a mão, para no fim da corrente e volta sozinha."}
+    {"section": "props", "name": "Caneta na corrente", "parts": ["pen-on-chain"], "shot": {"episode": "low-balance", "at": 28.3}, "text": "A caneta do balcão presa à corrente: segue a mão, para no fim da corrente e volta sozinha."},
+    {"section": "props", "name": "Cartaz de papel", "parts": ["paper-poster"], "shot": {"episode": "low-balance", "at": 3.0}, "text": "Um cartaz de papel colado na parede, meio torto, com o que você mandar escrever."}
   ]
 }

@@ -8814,6 +8814,23 @@
           "rig": null
         }
       ]
+    },
+    "paper-poster": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A paper poster taped up a little crooked. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "76aba7868f2f1d620aa9eb7194f0f33decda44d404c82839815cf6f47e9b0329",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -97,3 +97,20 @@ def test_a_chain_that_cannot_be_drawn_is_refused(kw, pattern):
     args = dict(length=480, grip=WALK) | kw
     with pytest.raises(CHECKED, match=pattern):
         cutout_counter.pen_on_chain(cv, cv.comp, 300, 1000, **args)
+
+
+def test_the_poster_says_what_it_is_given():
+    cv = canvas()
+    cutout_counter.paper_poster(cv, cv.comp, 100, 100, text="HERE FOR YOU")
+    assert errors(cv) == []
+    assert b"HERE FOR YOU" in cv.scene.to_bytes()
+
+
+@pytest.mark.parametrize(
+    ("kw", "pattern"),
+    [(dict(text=" "), "says"), (dict(width=0), "size"), (dict(size=0), "tilt"), (dict(tilt=float("inf")), "tilt")],
+)
+def test_a_poster_that_cannot_be_drawn_is_refused(kw, pattern):
+    cv = canvas()
+    with pytest.raises(CHECKED, match=pattern):
+        cutout_counter.paper_poster(cv, cv.comp, 0, 0, **kw)
