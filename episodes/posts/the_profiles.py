@@ -26,15 +26,15 @@ RELEASE = Release(
     ),
     style="Toon",
     parts={
-        # toon-device-list, toon-profiles also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-captions": 1,
+        "toon-device-list": 1,
         "toon-dog": 2,
         "toon-hamster": 1,
         "toon-ledge": 1,
         "toon-phone": 1,
+        "toon-profiles": 1,
         "toon-rabbit": 2,
         "toon-restaurant": 1,
         "toon-table": 1,

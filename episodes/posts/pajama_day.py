@@ -24,14 +24,13 @@ RELEASE = Release(
     tags=Tags("family", "protagonist", "recognition", recurring=('mae', 'bruno'), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
-        # toon-cupcakes also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-bear": 2,
         "toon-captions": 1,
-        "toon-kitchen": 1,
+        "toon-cupcakes": 1,
         "toon-hamster": 1,
+        "toon-kitchen": 1,
         "toon-ledge": 1,
         "toon-phone": 1,
         "toon-rabbit": 2,

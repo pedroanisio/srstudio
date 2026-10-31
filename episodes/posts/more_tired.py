@@ -31,6 +31,7 @@ RELEASE = Release(
         "stick-fridge-open": 1,
         "stick-key": 1,
         "stick-kitchen": 1,
+        "stick-lights-low": 1,
         "stick-mug": 1,
         "stick-rig": 1,
         "stick-table": 1,

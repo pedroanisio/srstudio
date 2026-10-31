@@ -24,7 +24,7 @@ RELEASE = Release(
     tags=Tags("family", "other-person", "recognition", test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
-        # toon-car-inside, toon-soup-tubs also drawn:
+        # toon-car-inside also drawn:
         # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
@@ -37,6 +37,7 @@ RELEASE = Release(
         "toon-lounge": 1,
         "toon-porch": 1,
         "toon-road": 1,
+        "toon-soup-tubs": 1,
         "toon-speaker": 1,
         "toon-worktop": 1,
         "toon-yard": 1,
