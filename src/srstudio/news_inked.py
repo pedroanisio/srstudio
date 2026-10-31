@@ -20,11 +20,11 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any
 
-from . import brush, head_motion, look, news_head, news_kit, toon, toon_head
+from . import brush, head_motion, look, news_head, news_kit, parts, toon, toon_head
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
-from .news_head import GUS_MOTION, VERA_MOTION, AnchorRig
+from .news_head import GUS_MOTION, GUS_MOTION_3, VERA_MOTION, VERA_MOTION_3, AnchorRig
 from .news_kit import (
     BUG_H,
     BUG_Y,
@@ -1284,13 +1284,17 @@ GUS_RIG = AnchorRig(
     back=0.3,
     **_rig_of((0.0, NECK_Y), GUS_HEAD, GUS_CLOUD, 48.0),
 )
-RIGS: Mapping[str, AnchorRig] = MappingProxyType({"news-vera@2": VERA_RIG, "news-gus@2": GUS_RIG})
+VERA_RIG_3 = replace(VERA_RIG, style=VERA_MOTION_3, face_slide=0.6)
+GUS_RIG_3 = replace(GUS_RIG, style=GUS_MOTION_3, face_slide=0.2)  # his nod is big: the face stays by the skull on it
+RIGS: Mapping[str, AnchorRig] = MappingProxyType(
+    {"news-vera@2": VERA_RIG, "news-gus@2": GUS_RIG, "news-vera@3": VERA_RIG_3, "news-gus@3": GUS_RIG_3}
+)
 
 
-def rig_specimen(cv: Canvas, who: str, seconds: float) -> None:
-    """Every eye, arm and mouth state of ``who`` on the rig, the head at each corner of what it can reach, and the face
-    at the end of its slide: what the rig's digest holds."""
-    rig = RIGS[f"news-{who}@2"]
+def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
+    """Every eye, arm and mouth state of ``who`` on the rig of version ``number``, the head at each corner of what it
+    can reach, and the face at the end of its slide: what the rig's digest holds."""
+    rig = RIGS[f"news-{who}@{number}"]
     count = len(news_kit.ARMS)
     acts = tuple(
         (seconds * n / count, Pose(eyes, "talk", arms))
@@ -1319,6 +1323,34 @@ def vera(
 
 @register("character", "news-gus@2", summary="Gus Bellows, inked: curls, a pulled tie, sleeves with elbows, real hands")
 def gus(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Gus at the desk in one pose."""
+    return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
+
+
+@register("character", "news-vera@3", summary="Vera on the rig whose face stays on her skin: the same drawing as @2")
+def vera_3(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Vera at the desk in one pose."""
+    return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths)
+
+
+@register("character", "news-gus@3", summary="Gus on the rig whose face stays on his skin: the same drawing as @2")
+def gus_3(
     cv: Canvas,
     parent,
     pose: Pose | None = None,
@@ -1366,11 +1398,14 @@ def _seat(cv: Canvas, front, who: str, x: float, scale: float) -> None:
     look.pool(cv, shadow, "news2-contact", "#160a30b0", left + 20, DESK_Y + 26 * min(scale, 1.2), wide - 40, 40)
 
 
-def stage(acts: Sequence[Act], end_scan: float = 30.0, heads: bool = True) -> Callable[[Any], None]:
+def stage(
+    acts: Sequence[Act], end_scan: float = 30.0, heads: bool = True, version: int | None = None
+) -> Callable[[Any], None]:
     """The dress of every shot: the room, then both anchors in the two-shot (``desk``), one close (``vera``, ``gus``)
     or nobody (``phone``, which :func:`phone_insert` fills), each with their forearms over the desk. ``acts`` runs
     parallel to the sketch's beats. Their heads move on the takes (:mod:`srstudio.news_head`), on a rig whose record
-    must be approved; ``heads=False`` draws them still."""
+    must be approved; ``heads=False`` draws them still. ``version`` is the rig: by default each anchor's latest approved
+    version, and a reel delivered on an older one names it, so a rebuild draws what went out."""
 
     def dress(shot: Any) -> None:
         if len(acts) != len(shot.beats):
@@ -1394,9 +1429,12 @@ def stage(acts: Sequence[Act], end_scan: float = 30.0, heads: bool = True) -> Ca
             motion: Motion = None
             looks: list[tuple[float, float]] = []
             if heads:
-                rig = RIGS[f"news-{who}@2"]
-                if not news_head.approved(who):
-                    raise NewsKitError(f"news-{who}@2's head rig is not approved: stage with heads=False until it is")
+                number = parts.latest(f"news-{who}").number if version is None else version
+                rig = RIGS[f"news-{who}@{number}"]
+                if not news_head.approved(who, number):
+                    raise NewsKitError(
+                        f"news-{who}@{number}'s head rig is not approved: stage with heads=False until it is"
+                    )
                 said = shot.said()
                 motion = (rig, news_head.plan_of(who, rig, said, holds, shot.end).during(app.start, app.end))
                 looks = [(on, off) for on, off, _ in news_head.facing(who, rig, said, holds, shot.end)]

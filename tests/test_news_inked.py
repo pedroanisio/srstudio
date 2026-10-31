@@ -86,7 +86,7 @@ def shot(cv: Canvas, who: str) -> SimpleNamespace:
 @pytest.mark.parametrize(("kind", "name"), DRAWINGS)
 def test_every_part_has_an_approved_second_version_and_keeps_its_first(kind, name):
     part = parts.get(name)
-    assert [v.number for v in part.versions] == [1, 2]
+    assert [v.number for v in part.versions] == ([1, 2, 3] if name in ("news-vera", "news-gus") else [1, 2])
     newest = part.version(2)
     assert newest.status == "approved"
     assert "1793475342.947029" in newest.approval.words
