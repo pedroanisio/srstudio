@@ -20,6 +20,12 @@ def mutated(edit) -> dict:
     return document
 
 
+def test_a_file_may_name_the_model_and_tool_that_wrote_it(tmp_path):
+    document = cast_document()
+    document["generated_by"] = "Claude Sonnet 5.5 in Claude Code"
+    assert bible.load(write(tmp_path, document)).version == "1.0.0"
+
+
 def test_a_good_bible_loads_with_every_section(tmp_path):
     loaded = bible.load(write(tmp_path))
     assert loaded.version == "1.0.0"
@@ -54,6 +60,8 @@ def test_a_good_bible_loads_with_every_section(tmp_path):
         (lambda d: d.update(characters={}), "expected a list"),
         (lambda d: d.update(version="1.0"), "semantic version"),
         (lambda d: d.update(schema="2.0.0"), "schema"),
+        (lambda d: d.update(generated_by="  "), "generated_by names the model"),
+        (lambda d: d.update(generated_by=3), "generated_by names the model"),
         (lambda d: d["rules"][0].update(status="law"), "not one of"),
         (lambda d: d["clashes"][0].update(scope="somewhere"), "not one of"),
         (lambda d: d["places"][0].update(found="rex"), "expected a list"),
