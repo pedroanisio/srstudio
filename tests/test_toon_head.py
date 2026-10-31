@@ -394,3 +394,35 @@ def test_the_fox_cheek_has_no_ink_line_under_it(x):
     fox = toon_rigs.rig_of("toon-fox")
     top = next(y for y in (y / 2 for y in range(1320, 1440)) if _top_colour(fox.skull(), x, y) is None)
     assert all(_top_colour(fox.skull(), x, y) == toon_inked.FOX.coat for y in (top - 2.0, top - 4.0, top - 6.0))
+
+
+def _long_spring(keys: int):
+    scene, cv = stage()
+    group = cv.group(cv.comp, "head")
+    spring = group.add_animate(property="y", defaultInterpolation="spring")
+    for i in range(keys):
+        spring.add_key(time=i, value="0", stiffness="50", damping="10", mass="1", carry="true" if i else None)
+    return group, spring
+
+
+def test_a_long_shot_keeps_its_runs_of_carried_springs_short():
+    group, spring = _long_spring(25)
+    toon_head.rest_springs(group)
+    carried, longest = 0, 0
+    for key in spring.iter("key"):
+        carried = carried + 1 if key.carry else 0
+        longest = max(longest, carried)
+    assert 0 < longest < toon_head.SPRING_RUN
+
+
+def test_a_short_shot_keeps_every_carried_spring():
+    group, spring = _long_spring(toon_head.SPRING_RUN)
+    toon_head.rest_springs(group)
+    assert sum(1 for key in spring.iter("key") if key.carry) == toon_head.SPRING_RUN - 1
+
+
+@pytest.mark.parametrize("run", [0, 1, -3])
+def test_a_run_too_short_to_carry_anything_is_refused(run):
+    group, _ = _long_spring(3)
+    with pytest.raises(ToonDataError, match="run"):
+        toon_head.rest_springs(group, run)
