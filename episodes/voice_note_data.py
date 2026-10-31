@@ -69,6 +69,7 @@ STOPS = {  # the event, the time on the bar, how much of it has played
     "ring": ("11:47", 1.0),
 }
 PUSH = 1.12
+MARKS_IN = 44.0  # how far in the sink's marks sit so that the push keeps them in frame
 SINK_FALL = 1.1  # seconds the phone takes to go down
 SINK_DROP = 340.0  # reference pixels it goes
 RING = foley.Burst(0.9, 300.0, attack=0.01, decay=0.5, tone_hz=880.0, tone_end_hz=880.0, tone=0.8, flutter_hz=20.0)
@@ -163,7 +164,7 @@ def opening(shot) -> None:
 
     toon_world.placed(cv, shot.back, SEAT, FIGURES["hedgehog"][0], draw, pivot=SEAT)
     phone(shot, shot.front)
-    toon_house.sink(cv, shot.front, id=cv.uid("sink"))
+    toon_house.sink(cv, shot.front, id=cv.uid("sink"), inset=MARKS_IN)
     bar(shot)
 
 
@@ -201,7 +202,7 @@ def dress(shot) -> None:
     back, front = scene(shot, app.start, laundry)  # the sink, last night
     toon_sets.kitchen(cv, back)
     phone(shot, front)
-    toon_house.sink(cv, front, id=cv.uid("sink"))
+    toon_house.sink(cv, front, id=cv.uid("sink"), inset=MARKS_IN)
 
     back, front = scene(shot, laundry, teeth)  # the laundry: the shirt he is folding, held up
     toon_sets.home(cv, back)
@@ -229,7 +230,7 @@ def dress(shot) -> None:
     sinking = cv.group(front, cv.uid("g"), x=0.0, y=0.0)
     cv.keys(sinking, "y", [(down, 0.0), (down + SINK_FALL, toon.fh(SINK_DROP))], kind="sine-in-out", local=False)
     phone(shot, sinking, ring=ring)
-    toon_house.sink(cv, front, id=cv.uid("sink"))
+    toon_house.sink(cv, front, id=cv.uid("sink"), inset=MARKS_IN)
     bubbles(shot, down + SINK_FALL - 0.2)
     bar(shot)
 
