@@ -12,7 +12,7 @@ never said a word." "Is there a raise?" Back to his notes: "Your salary works th
 slides below the desk, one long pssht, a soft clunk. The Boss writes on over an empty desk edge.
 
 The first frame already moves (arm B of the ``sp-hook_motion`` test): the chair is letting go. It declares no engine
-safe area, so captions are placed inside x 80–920 by hand, at the top: the desk is the joke, and its papers are on it.
+safe area, so captions are placed inside x 80–920 by hand, on the desk, in the band of the approved Cutout look.
 """
 
 import dataclasses
@@ -154,7 +154,7 @@ for n, at in enumerate(DROPS):
     graphics.squeak_mark(cv, finish, "pssht", (at, at + 0.7), x=860, y=420, id=f"pssht-{n}")
 graphics.squeak_mark(cv, finish, "psssssht", (SINKS, CLUNK), x=540, y=1000, id="pssht-long")
 
-spoken = ep.captions(ep.spoken_captions(), x=80, y=230, width=920, size=54)
+spoken = ep.captions(ep.spoken_captions(), x=80, y=1440, width=920, size=60)
 ep.hide_on_cover(*spoken)
 ep.markers(extra=[("marker-lever", LEVER, "The lever"), ("marker-sink", SINKS, "The last of the quiff")])
 ep.instagram(POSTS["sinking-chair"])
