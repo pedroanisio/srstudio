@@ -25,7 +25,7 @@ from real_roast_data import (
     validate,
 )
 
-from srstudio import news_kit
+from srstudio import news_inked, news_kit
 from srstudio.toon_sketch import Staging, build
 
 validate(SKETCH)
@@ -36,12 +36,12 @@ STAGING = Staging(
     accessibility=ACCESSIBILITY,
     narration=NARRATION,
     tints=TINTS,
-    dress=news_kit.stage(ACTS),
+    dress=news_inked.stage(ACTS),
     versions=VERSIONS,
-    desk=news_kit.desk,
+    desk=news_inked.desk,
     style=news_kit.NEWS,
     bare=news_kit.NEWS_CAST.characters,
-    captions=news_kit.captions,
+    captions=news_inked.captions,
     finish=news_kit.finish,
     overlay=overlay,
     output=OUTPUT,

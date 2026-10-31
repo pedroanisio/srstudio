@@ -363,6 +363,7 @@ TOON = Style(
         "host_kit",
         "map_kit",
         "mind_kit",
+        "news_inked",
         "news_kit",
         "toon",
         "toon_bento",

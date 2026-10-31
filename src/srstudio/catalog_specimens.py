@@ -456,6 +456,21 @@ RECIPES: dict[str, Recipe] = {
     "toon-board-text": Recipe(part("LOGO v1")),
     "toon-badge": Recipe(part("Fern calling", 0.0, SECONDS, lambda text: 16.0 * len(text))),
 }  # fmt: skip
+RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
+    {
+        f"{name}@2": RECIPES[name]
+        for name in (
+            "news-captions",
+            "news-bug",
+            "news-parody-tag",
+            "news-source-card",
+            "news-lower-third",
+            "news-banner",
+            "news-ticker",
+            "news-phone",
+        )
+    }
+)
 
 FIRST_POSE = Recipe(lambda cv, g, e, ctx: None, at=0.0)  # a character's drawing is srstudio.specimens' alone
 REFUSED: dict[str, Refused] = {

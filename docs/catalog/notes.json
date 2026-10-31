@@ -862,38 +862,74 @@
     "news-set": {
       "title": "Estúdio do telejornal"
     },
+    "news-set@2": {
+      "title": "Estúdio do telejornal, versão 2"
+    },
     "news-desk": {
       "title": "Bancada do telejornal"
+    },
+    "news-desk@2": {
+      "title": "Bancada do telejornal, versão 2"
     },
     "news-vera": {
       "title": "Vera Stillman, a âncora"
     },
+    "news-vera@2": {
+      "title": "Vera Stillman, a âncora, versão 2"
+    },
     "news-gus": {
       "title": "Gus Bellows, o coapresentador"
+    },
+    "news-gus@2": {
+      "title": "Gus Bellows, o coapresentador, versão 2"
     },
     "news-bug": {
       "title": "Marca do programa"
     },
+    "news-bug@2": {
+      "title": "Marca do programa, versão 2"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
+    },
+    "news-parody-tag@2": {
+      "title": "Selo de paródia, versão 2"
     },
     "news-source-card": {
       "title": "Cartão da fonte"
     },
+    "news-source-card@2": {
+      "title": "Cartão da fonte, versão 2"
+    },
     "news-lower-third": {
       "title": "Tarja inferior"
+    },
+    "news-lower-third@2": {
+      "title": "Tarja inferior, versão 2"
     },
     "news-banner": {
       "title": "Faixa de urgente"
     },
+    "news-banner@2": {
+      "title": "Faixa de urgente, versão 2"
+    },
     "news-ticker": {
       "title": "Letreiro corrido"
+    },
+    "news-ticker@2": {
+      "title": "Letreiro corrido, versão 2"
     },
     "news-captions": {
       "title": "Legendas do telejornal"
     },
+    "news-captions@2": {
+      "title": "Legendas do telejornal, versão 2"
+    },
     "news-phone": {
       "title": "Celular do Gus"
+    },
+    "news-phone@2": {
+      "title": "Celular do Gus, versão 2"
     },
     "host-wardrobe": {
       "title": "Dentro do guarda-roupa"

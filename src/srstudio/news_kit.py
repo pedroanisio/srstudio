@@ -1,5 +1,8 @@
 """The news kit: the desk, the two anchors and the graphics of News Compiler, the parody desk (ADR 0060).
 
+Version 1 of the show's drawings, which stay drawable, and everything the versions share. A new reel draws
+:mod:`srstudio.news_inked`, version 2 of the set, the anchors and the graphics, and takes :func:`finish` from here.
+
 A show is not a style of its own here, as with :mod:`srstudio.mind_kit`: :data:`NEWS` is Toon's frame and recording
 road on its own clock, master and letters, and everything in this module wears the show's palette. Every episode is a
 script, two voices and one graphic, so the kit holds what repeats:

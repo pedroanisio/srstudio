@@ -2,7 +2,7 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.21.0
+schema_version: 1.22.0
 changelog: "1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
@@ -388,8 +388,9 @@ Pick the style whose description fits the joke, not the one used last.
 Every registered part has numbered versions (ADR 0047), of every kind. A new reel draws each part's latest approved
 version by default, and asks for an older one by pinning it in its release: `parts={"<registered name>": 1}`. Pass
 `versions=PINS[SKETCH.slug]` to a Toon `Staging`. `srstudio build <slug> <project>` records every part it drew in the
-project's `parts.json`, and `deliver` compares that with the pins, so build with it, not by running the script. Only Toon's characters take a second version today; any other part
-is refused by name until its kind and style are in `parts.ROUTED`.
+project's `parts.json`, and `deliver` compares that with the pins, so build with it, not by running the script. Toon's characters take a second version, and so does a show's kit named in `parts.KIT_VERSIONS`, whose new
+version is a module the reel calls by name (`news_inked`, not `news_kit`, for a new News Compiler reel); any other part is
+refused by name until its kind and style are in `parts.ROUTED`.
 
 To improve a drawing, add a version: a record in `assets/parts.json`, the drawing registered as `<name>@<N>`, a
 specimen entry or recipe, and its digest from `srstudio parts --digest <name>@<N>`. An approved look is never revised in

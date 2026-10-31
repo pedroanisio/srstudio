@@ -69,3 +69,42 @@ Both anchors keep the same look and voices in every episode. Whatever Gus says a
 - New parts cannot be pinned by a release until they are approved.
 - The field-reporter frame in the show's brief is for later episodes and is not built here.
 - The delivery tool learns the series `news` from the coordinator after the map pilots merge.
+
+## Amendment: the polish pass (2026-10-31)
+
+The operator approved the voices and asked for the picture to be refined. In their words, on 2026-10-31: "run an refine
+/ polish pass on the news caracter, props and location. voice aproved." That approval covers the voices of Vera and Gus
+as recorded for the two pilots, and nothing else. The look stays proposed: its approval is arc4d3's, by the delegation
+above, so this ADR's status does not change and no version here records an approval.
+
+The two pilots looked flat beside the approved inked Toon cast: a wall of nine plain gradients, a dead band over it, no
+shadow where anything met the desk, a desk that was a strip and a tall lettered panel, and two figures with no necks and
+hose arms. Every drawing that changed is a new version, status proposed, and version 1 still draws:
+
+- `news-set@2`, `news-desk@2`, `news-vera@2`, `news-gus@2`: the room in planes behind a far blur, a desk with thickness
+  and a floor, a camera out of focus in the foreground, and anchors in the cast's pressed line with shade away from the
+  key light, necks, jointed sleeves and hands. Their forearms lie over the desk, on a contact shadow.
+- `news-bug@2`, `news-parody-tag@2`, `news-source-card@2`, `news-lower-third@2`, `news-banner@2`, `news-ticker@2`,
+  `news-captions@2`, `news-phone@2`: one system, with one corner, one shadow, one chip height on the top row, and a
+  bottom stack that is flush. The tangerine rule on the lower-third is gone. The desk's lettering is gone, so the Reels
+  safe zone carries nothing a viewer needs.
+
+The desk's top moves up 38 px, to 1082, and the banner moves down 50 px, to 1146, so it sits under the top and the hands
+on the desk stay in the picture. The stack is shorter, so the ticker's foot moves down only 14 px, to 1416, and stays
+over the safe zone. The close-ups pull back, to 1.22 and 1.14, so a head clears a two-line cue.
+
+These parts live in `srstudio.news_inked`, and new reels of the show call it. `finish` stays in `news_kit` with its
+numbers unchanged, because the polish needed no change to the grade. `parts.KIT_VERSIONS` lets a kit's parts take a second
+version: nothing reads a pin for them, because a reel chooses by calling the module.
+
+The re-cut changes no script, line, take, timing or cut, so it owes no auto-enhance commit and no new comedy score. The
+delivered masters are unchanged on disk until a decision to replace them, which is not taken here.
+
+### Rejected alternatives
+
+- **Redraw `news_kit` in place.** Version 1 would stop drawing, and the delivered masters could not be rebuilt.
+- **Adding `(prop, toon)`, `(location, toon)` and `(graphic, toon)` to `parts.ROUTED`.** Those builds read no pin, so a
+  second version of any Toon prop would draw for every reel. The check against that stays in force for all of them.
+- **Keeping the desk at 1120 with the banner above it.** The banner covered the desk's whole top and every hand on it.
+- **A brighter wall to make the set read.** Screens that bright compete with a face, so the room's level comes down and
+  the anchors take the light.

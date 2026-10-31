@@ -40,6 +40,7 @@ from . import (  # noqa: F401  (registers builders)
     mind_kit,
     music,
     native,
+    news_inked,
     news_kit,
     props,
     registry,
