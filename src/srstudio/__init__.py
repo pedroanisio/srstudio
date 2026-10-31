@@ -99,6 +99,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_house,
     toon_inserts,
     toon_laptop,
+    toon_lyra,
     toon_odds,
     toon_orbit,
     toon_parlour,

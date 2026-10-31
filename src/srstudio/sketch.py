@@ -33,7 +33,19 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks, fonts, lipsync, parts, soundtrack, toon, toon_cast, toon_critters, toon_inked, toon_redrawn  # noqa: F401 - they register
+from . import (  # noqa: F401 - they register
+    checks,
+    fonts,
+    lipsync,
+    parts,
+    soundtrack,
+    toon,
+    toon_cast,
+    toon_critters,
+    toon_inked,
+    toon_lyra,
+    toon_redrawn,
+)
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -79,7 +91,21 @@ __all__ = [
     "manifest",
 ]
 
-CHARACTERS = ("cat", "dog", "frog", "bear", "rabbit", "fox", "raccoon", "hedgehog", "sloth", "goat", "hamster", "bento")
+CHARACTERS = (
+    "cat",
+    "dog",
+    "frog",
+    "bear",
+    "rabbit",
+    "fox",
+    "raccoon",
+    "hedgehog",
+    "sloth",
+    "goat",
+    "hamster",
+    "bento",
+    "lyra",
+)
 LIP_SYNCED = (
     "dog",
     "frog",
@@ -92,6 +118,7 @@ LIP_SYNCED = (
     "goat",
     "hamster",
     "bento",
+    "lyra",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
 LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
