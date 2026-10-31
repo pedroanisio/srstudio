@@ -8797,6 +8797,23 @@
           "rig": null
         }
       ]
+    },
+    "pen-on-chain": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A counter pen on its ball chain, keyed link by link. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bb7f531d06928e5f0ed886448958f357083999f08ef0fbd26610d9989bc334b9",
+          "rig": null
+        }
+      ]
     }
   }
 }
