@@ -31,13 +31,13 @@ Cast: ava, bo, brent, bruno, candidate, deb, dev, fern, gary, jun, juno, kai, ma
 | 12 | headphones | cutout | a/b |  | own-worst-enemy | protagonist | embarrassment | mid-exchange | misunderstanding | reveal | 41 | 23.4 s |
 | 13 | one-symptom | toon | a/a |  | own-worst-enemy | protagonist | tension | mid-exchange | status reversal | new order | 57 | 31.1 s |
 | 14 | the-tongs | soft | b/b | family | family | other-person | recognition | action | status reversal | callback | 27 | 18.3 s |
-| 15 | first-sip | collage | b/a | partner | relationships | protagonist | embarrassment | surprising image | misunderstanding | recovery | 40 | 24.0 s |
+| 15 | first-sip | collage | b/a | partner | relationships | protagonist | embarrassment | surprising image | misunderstanding | recovery | 41 | 24.5 s |
 | 16 | warranty | soft | a/b |  | money-services | institution | tension | action | escalating consequences | consequence | 45 | 29.0 s |
 | 17 | best-day | collage | a/a |  | own-worst-enemy | other-person | triumph | narration | visual reveal | new order | 27 | 17.9 s |
 | 18 | bin-day | stick | b/b | roommate | own-worst-enemy | protagonist | embarrassment | action | physical comedy | consequence | 49 | 28.1 s |
 | 19 | slept-wrong | toon | b/a | best friend | own-worst-enemy | protagonist | recognition | mid-exchange | callback | callback | 42 | 27.8 s |
 | 20 | shortest-line | cutout | a/b |  | money-services | other-person | tension | mid-exchange | misunderstanding | new order | 42 | 25.0 s |
-| 21 | the-scale | collage | a/a |  | own-worst-enemy | protagonist | embarrassment | surprising image | physical comedy | callback | 44 | 26.4 s |
+| 21 | the-scale | collage | a/a |  | own-worst-enemy | protagonist | embarrassment | surprising image | physical comedy | callback | 47 | 27.7 s |
 | 22 | quiet-please | soft | b/b | best friend | relationships | other-person | affection | surprising image | callback | new order | 3 | 19.4 s |
 | 23 | some-assembly | stick | b/a | partner | relationships | institution | tension | narration | visual reveal | reveal | 42 | 28.0 s |
 | 24 | one-more-taste | toon | a/b |  | money-services | other-person | recognition | question | callback | callback | 48 | 27.9 s |
@@ -280,11 +280,11 @@ Key line: "Bold." Caption opens: "Can anyone actually taste the difference?"
 
 Voices: Brent (Brian); Deb (Jessica); Omar, the waiter (Daniel). Set: collage-cafe. New: a wine glass, a water jug.
 
-- Held frame: Brent's nose deep in a glass, eyes shut. Omar stands by, white cloth over his arm. Deb watches. BRENT: "Hmm." (sound: a long sniff; camera: close on Brent)
+- Held frame: Brent's nose deep in a glass, eyes shut. Omar stands by, white cloth over his arm. Deb watches. BRENT: "Interesting." (sound: a long sniff; camera: close on Brent)
 - He swirls it. Some goes on the cloth. BRENT: "Bold. Stony. A little leather." (sound: slosh; camera: medium two-shot)
 - He sips and gargles softly. Holds up a finger. BRENT: "There it is. Plum. Regret." DEB: "Regret?" (sound: gargle)
 - He offers her the glass. She sips. BRENT: "You get that?" DEB: "I think so, yes."
-- He leans back, a man at home in the world. BRENT: "Wet dog, in the finish. What year?" (camera: hold, hold 0.6 s)
+- He leans back, a man at home in the world. BRENT: "Some wet dog at the end. What year?" (camera: hold, hold 0.6 s)
 - Omar has not moved. OMAR: "This morning, sir." (camera: cut to Omar, hold 1.0 s)
 - Omar tips the jug in his other hand, so it can be seen. OMAR: "That's the water. I was topping you up." (sound: ice in a jug; camera: hold, hold 1.8 s)
 - Brent looks at the glass. Deb looks at Brent. He puts it down and straightens his tie. BRENT: "Send it back." (camera: hold on Brent, hold 1.0 s)
@@ -389,7 +389,7 @@ Voices: Gary (Chris); Priya, the nurse (Sarah). Set: collage-therapy. New: a doc
 - Belt. He lays his watch on the pile like evidence. GARY: "This watch is three pounds." (sound: buckle, clink)
 - Wallet. Keys. Phone. Glasses. PRIYA: "Can you see the number?" GARY: "I don't want to." (sound: clink, clink; camera: the pile grows in the corner of the frame)
 - He takes out his gum and hands it to her. He breathes all the way out and steps on, leaning back. (sound: a long exhale; camera: hold, hold 1.3 s)
-- PRIYA: "Two-oh-one." GARY: "Is that with the clipboard?" (sound: beep)
+- PRIYA: "Two hundred and one." GARY: "Is that with the clipboard?" (sound: beep)
 - She lowers the height bar onto his head. PRIYA: "Five nine." GARY: "I'm five eleven." PRIYA: "Not any more." (sound: a small metal click; camera: punch-in on Gary, hold 1.4 s)
 - He looks at her. He looks at the pile on the chair. He picks up one shoe and holds it to his chest. GARY: "It's in the shoes." (camera: hold on Gary, hold 1.0 s)
 
