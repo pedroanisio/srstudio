@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, Canvas, flat_counter, registry
+from srstudio import PEACH, Canvas, flat_counter, registry, toon_odds
 from srstudio.styles import STYLES
 from srstudio.toon import ToonDataError
 
@@ -22,14 +22,37 @@ def tree(cv: Canvas):
     return ET.fromstring(cv.scene.to_bytes(layout="pretty"))
 
 
-@pytest.mark.parametrize("name", ["toon-pipe", "toon-paper-insert"])
+@pytest.mark.parametrize("name", ["toon-pipe", "toon-paper-insert", "toon-mosquito", "toon-rolled-towel"])
 def test_every_prop_is_registered_for_toon(name):
     entry = registry.get("prop", name)
     assert entry.style == "toon" and entry.module == "srstudio.toon_odds"
     assert "toon_odds" in STYLES["toon"].parts
 
 
-@pytest.mark.parametrize("call", [])
+def test_a_mosquito_lives_from_its_first_key_to_its_end():
+    cv = canvas()
+    toon_odds.mosquito(cv, cv.comp, [(1.0, 100.0, 300.0), (2.0, 200.0, 500.0), (3.0, 200.0, 500.0)], 3.0)
+    g = next(g for g in tree(cv).iter("group") if g.get("start"))
+    assert float(g.get("start")) == 1.0 and float(g.get("end")) == 3.0
+
+
+@pytest.mark.parametrize(
+    "path, end",
+    [([(1.0, 0.0, 0.0)], 4.0), ([(2.0, 0.0, 0.0), (1.0, 0.0, 0.0)], 4.0), ([(5.0, 0.0, 0.0), (6.0, 0.0, 0.0)], 4.0)],
+)
+def test_a_mosquito_refuses_a_path_it_cannot_fly(path, end):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_odds.mosquito(cv, cv.comp, path, end)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda cv: toon_odds.rolled_towel(cv, cv.comp, swings=()),
+        lambda cv: toon_odds.rolled_towel(cv, cv.comp, start=2.0, end=1.0),
+    ],
+)
 def test_a_prop_refuses_bad_data(call):
     with pytest.raises(ToonDataError):
         call(canvas())
