@@ -15,8 +15,7 @@ RELEASE = Release(
             "A Stick sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
         credit=(
-            "Voices: ElevenLabs premade voices Lily (Grandma), Will (Dev) and Eric (the officer). "
-            "Foley synthesized."
+            "Voices: ElevenLabs premade voices Lily (Grandma), Will (Dev) and Eric (the officer). Foley synthesized."
         ),
         hashtags=('#grandma', '#airport', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("You look thin.", 2.0, "Stick 21"),

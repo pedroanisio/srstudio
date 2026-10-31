@@ -14,7 +14,10 @@ RELEASE = Release(
             "\n"
             "A Stick sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Jessica (Noor), Callum (the man) and Lily (the passer-by). Foley synthesized.",
+        credit=(
+            "Voices: ElevenLabs premade voices Jessica (Noor), Callum (the man) and Lily (the passer-by). "
+            "Foley synthesized."
+        ),
         hashtags=('#awkward', '#wavingback', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Stretching.\nJust stretching.", 7.9, "Stick 20"),
     ),
