@@ -42,9 +42,12 @@ LEAP = (760.0, 120.0, 0.32)  # the opening: how far right and down he starts, an
 CARD_FIRST = "NO THANKS, I HATE SAVING MONEY"
 CARD_SECOND = "YES, MY FAMILY DESERVES LESS"
 CARD = dict(x=540.0, y=1560.0, w=760.0, h=420.0, size=78.0)
-SHORT = dict(x=540.0, y=1470.0, w=430.0, h=250.0, size=84.0)
+SHORT = dict(y=1470.0, w=430.0, h=250.0, size=84.0)
+SHORT_X = 540.0
 SLIDE = 600.0  # how far Brent slides in at the till, or out at the door
 LOWER = 170.0  # how far down Priya lies and Brent sits
+AT_THE_FOOT = 130.0  # Brent sits this far right of center, so the zoom on him keeps his head and the shelf in frame
+ZOOM_ON_HIM = 960.0  # where it pivots across the frame
 DARK = "#141a3a"
 SHOE_AT = (820.0, 1590.0)
 
@@ -136,7 +139,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
                 if app.start == slides:
                     cv.keys(brent, "x", [(slides, x + SLIDE), (slides + 0.3, x)], kind="cubic-out", local=False)
             return PRIYA.x, 1200.0
-        moved = cv.group(parent, cv.uid("g"))
+        moved = cv.group(parent, cv.uid("g"), x=0.0 if app.who == "priya" else AT_THE_FOOT)
         if app.who == "priya":
             if app.start >= up:
                 cv.keys(moved, "y", [(up, LOWER), (up + 0.35, 0.0)], kind="cubic-out", local=False)
@@ -146,7 +149,8 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
             cv.keys(moved, "y", [(shoe, 0.0), (shoe + 0.4, LOWER)], kind="sine-in-out", local=False)
         collage.DRAWERS[app.who](cv, moved, collage.parse_poses(app.poses, "the dark"), app.end, (), enter=app.start,
                                  mouths=mouths.get(app.who, ()))  # fmt: skip
-        return collage.face(collage.LOOKS[app.who])
+        x, y = collage.face(collage.LOOKS[app.who])
+        return (x, y) if app.who == "priya" else (ZOOM_ON_HIM, y)
 
     return draw
 
@@ -158,7 +162,7 @@ def _bulb(cv, parent) -> None:
 
 
 def _shoe(cv, parent, t: float) -> None:
-    g = cv.group(parent, cv.uid("g"), x=SHOE_AT[0], y=SHOE_AT[1])
+    g = cv.group(parent, cv.uid("g"), x=SHOE_AT[0] + AT_THE_FOOT, y=SHOE_AT[1])
     cv.gate(g, [(t, 86400.0)])
     cv.rect(g, -90.0, -36.0, 180.0, 62.0, "#6b4226", collage.INK, 6.0, radius=26.0)
     cv.rect(g, -96.0, 22.0, 192.0, 16.0, "#2b2d42", collage.INK, 4.0, radius=6.0)
@@ -179,14 +183,17 @@ def dress(shot) -> None:
         if app.who == "brent":
             _shoe(cv, shot.front, events(beats, "thud")[0][0])
         dark = cv.grad("collage-no-thanks-dark", [(0, DARK + "00"), (0.2, DARK + "aa"), (1, DARK + "cc")], (0, 0, 0, 1))
-        cv.rect(shot.front, 0, 790, cv.width, 1130, dark)
+        cv.rect(shot.back if app.who == "brent" else shot.front, 0, 790, cv.width, 1130, dark)  # he sits in the light
+        if app.who == "brent":
+            hem = cv.grad("collage-no-thanks-hem", [(0, DARK + "00"), (1, DARK + "cc")], (0, 0, 0, 1))
+            cv.rect(shot.front, 0, 1590, cv.width, 330, hem)  # the duvet stays in the dark
         if app.who == "brent" and app.start >= foot:
             glow = cv.grad(
                 "collage-no-thanks-glow", [(0, "#ffd16600"), (0.5, "#ffd16648"), (1, "#ffd16600")], (0, 0, 0, 1)
             )
-            cv.rect(shot.front, 0, 1060, cv.width, 860, glow)
+            cv.rect(shot.back, 0, 1060, cv.width, 860, glow)  # behind him: over his navy suit it hid the suit
             if app.start < shoe:
-                collage_everyday.flip_card(cv, shot.front, ((0.0, "10% OFF"),), **SHORT)
+                collage_everyday.flip_card(cv, shot.front, ((0.0, "10% OFF"),), **SHORT, x=SHORT_X + AT_THE_FOOT)
 
 
 STAGING = Staging(
