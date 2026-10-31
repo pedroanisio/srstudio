@@ -12032,6 +12032,57 @@
           "rig": null
         }
       ]
+    },
+    "cue-cards": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A stack of cue cards held up, the top card lettered by hand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "876f764bdd4030f43bbf11eb896f3206f9099a5e3272fc95bc41052b398fd3e5",
+          "rig": null
+        }
+      ]
+    },
+    "banknotes": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A pair of plain banknotes, fanned, lettered with their value. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e566849cd365c70b6499b5c8d0f8ac9b74441228c7b2d54bcec891134e0e5cfd",
+          "rig": null
+        }
+      ]
+    },
+    "robe-and-blazer": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A blazer over a bathrobe, worn on a Cutout actor. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ae6d14b0ede07ca99c055e78112131a903f7b94a790e2fef851fa30521e8f5e7",
+          "rig": null
+        }
+      ]
     }
   }
 }
