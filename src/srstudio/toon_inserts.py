@@ -265,7 +265,7 @@ SPIN = 1.2  # seconds a turn of the searching wheel
 def wifi_list(
     cv: Canvas,
     parent,
-    states: Sequence[tuple[float, Sequence[str]]] = ((0.0, ("BRUNO-HOME", "LINKSYS-204", "TURN IT DOWN")),),
+    states: Sequence[tuple[float, Sequence[str]]] = ((0.0, ("BRUNO-HOME", "MODEM-204", "TURN IT DOWN")),),
     end: float = 2.0,
     top: float = 330.0,
     title: str = "Wi-Fi",

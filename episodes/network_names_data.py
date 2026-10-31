@@ -23,7 +23,7 @@ DESCRIPTION = (
     "their Wi-Fi network names, until he tells them how the finale ends."
 )
 ACCESSIBILITY = (
-    "A list of Wi-Fi networks on a phone changes to read Bruno Home, Linksys 204, Turn It Down. A cartoon rabbit asks"
+    "A list of Wi-Fi networks on a phone changes to read Bruno Home, Modem 204, Turn It Down. A cartoon rabbit asks"
     " who that is. On the sofa with the TV on, a cartoon bear says it is the neighbor he has never met. The list "
     "changes to I Know Its You Bruno. The bear types and his network becomes Sorry. The neighbor's becomes Its OK, "
     "Rough Week. They like him. The bear types On The Finale and they settle in, she leans on his shoulder, music "
@@ -58,7 +58,7 @@ SCREEN = "#10202c"
 RENAMED = 0.7  # the neighbor has just renamed his network
 DRIFT = 1.04
 TOP = 308.0  # the list clears the caption above and the marks below
-THE_LIST = {"mine": "BRUNO-HOME", "other": "LINKSYS-204", "his": "TURN IT DOWN"}
+THE_LIST = {"mine": "BRUNO-HOME", "other": "MODEM-204", "his": "TURN IT DOWN"}
 MURMUR = 8.0  # seconds of the TV in one stretch, the longest one burst lasts
 END = 34.62
 
@@ -124,7 +124,7 @@ def states(shot) -> tuple[tuple[float, tuple[str, str, str]], ...]:
     """Three names, one of them changing at each step: his, and the neighbor's."""
     his, other = THE_LIST["mine"], THE_LIST["other"]
     return (
-        (0.0, (his, other, "NETGEAR-88")),
+        (0.0, (his, other, "ROUTER-88")),
         (RENAMED, (his, other, THE_LIST["his"])),
         (at(shot, "accused"), (his, other, "I KNOW ITS YOU BRUNO")),
         (at(shot, "sorry"), ("SORRY", other, "I KNOW ITS YOU BRUNO")),
