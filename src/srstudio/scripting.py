@@ -7,12 +7,28 @@ at that moment is refused when the script is imported, never in the render.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 
 from .sketch import Beat, Line, SketchError, events
 
-__all__ = ["Script", "changes", "exactly_once", "first", "hold", "off_screen", "only_events", "part", "say", "spans"]
+__all__ = [
+    "Script",
+    "at",
+    "changes",
+    "every",
+    "exactly_once",
+    "first",
+    "hold",
+    "off_screen",
+    "only_events",
+    "part",
+    "say",
+    "spans",
+    "speaks_by",
+    "times",
+]
 
 
 def say(
@@ -183,3 +199,33 @@ def only_events(beats: Sequence[Beat], kinds: Collection[str]) -> None:
     unknown = {b.event.split(":")[0] for b in beats if b.event} - set(kinds)
     if unknown:
         raise SketchError(f"unknown events {sorted(unknown)}")
+
+
+def times(beats: Sequence[Beat], kind: str) -> list[float]:
+    """When every ``kind`` event comes: the moments a sound or a prop lands on."""
+    return [when for when, _ in events(beats, kind)]
+
+
+def at(beats: Sequence[Beat], kind: str) -> float:
+    """When the first ``kind`` event comes. Raises :class:`~srstudio.sketch.SketchError` if none does."""
+    found = times(beats, kind)
+    if not found:
+        raise SketchError(f"no {kind} event")
+    return found[0]
+
+
+def every(start: float, stop: float, step: float) -> list[float]:
+    """Moments ``step`` apart from ``start`` to before ``stop``: the bed of drips, footsteps or ticks a foley writes."""
+    if step <= 0:
+        raise SketchError(f"a bed needs a positive step, got {step!r}")
+    count = max(0, math.ceil(round((stop - start) / step, 9)))
+    return [round(start + n * step, 3) for n in range(count)]
+
+
+def speaks_by(beats: Sequence[Beat], limit: float) -> None:
+    """Refuse a sketch whose first spoken beat comes after ``limit`` seconds: the opening every reel's hook needs."""
+    first_spoken = next((b.start for b in beats if b.spoken), None)
+    if first_spoken is None:
+        raise SketchError("no line is spoken")
+    if first_spoken > limit:
+        raise SketchError(f"the first line starts at {first_spoken:.2f} s, after {limit:.2f} s")
