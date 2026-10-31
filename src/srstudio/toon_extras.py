@@ -8,6 +8,7 @@ timeline and lip-synced when the recording has a track for it. The pins and the 
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 from . import checks, sketch, toon
@@ -19,13 +20,13 @@ SEAT = (185.0, 812.0)  # where a character sits, the point a figure is placed by
 Pose = tuple[float, str, str, str]  # project seconds, eyes, mouth, arms
 
 
-def poses_of(poses: Sequence[Pose], enter: float) -> list[toon.Pose]:
+def poses_of(poses: Sequence[Pose], enter: float, leave: float = math.inf) -> list[toon.Pose]:
     """The poses in project seconds, counted from ``enter`` as a drawer wants them; a pose at or before ``enter`` is
     the one it enters in, the last of them winning."""
     if not poses:
         raise ToonDataError("a figure needs at least one pose")
     before = [p for p in poses if p[0] <= enter]
-    after = [p for p in poses if p[0] > enter]
+    after = [p for p in poses if enter < p[0] < leave]
     if sorted(p[0] for p in poses) != [p[0] for p in poses]:
         raise ToonDataError("a figure's poses rise in time")
     first = before[-1] if before else poses[0]
@@ -57,7 +58,7 @@ def figure(
     leave = shot.app.end if end is None else end
     if leave <= enter:
         raise ToonDataError(f"a figure must leave after it enters, got {enter}..{leave}")
-    drawn = poses_of(poses, enter)
+    drawn = poses_of(poses, enter, leave)
     cv = shot.cv
     g = cv.group(parent, cv.uid("g"), scaleX=-scale if mirror else scale, scaleY=scale)
     g.anchorX, g.anchorY = fx(SEAT[0]), fy(SEAT[1])
