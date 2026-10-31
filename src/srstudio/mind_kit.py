@@ -97,7 +97,7 @@ STING: tuple[foley.Glide, ...] = ((523.25, 523.25, 0.09), (783.99, 783.99, 0.09)
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")
 _BANNED = re.compile(
     r"\b(?:send (?:this|it) to|tag|follow|comment|science (?:proves|says)|always|never fails|ocd|narcissis\w*|"
-    r"trauma\w*|bipolar|diagnos\w*|disorder|therapy|cure\w*)\b",
+    r"trauma\w*|bipolar|adhd|autis\w*|diagnos\w*|disorder|therapy|cure\w*)\b",
     re.IGNORECASE,
 )
 
