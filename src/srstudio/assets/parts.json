@@ -8729,6 +8729,74 @@
           "rig": null
         }
       ]
+    },
+    "collage-router": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A home router with a keyed status light, two aerials and a wall plug that can be pulled. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9395f590e02f72eb47f3ea1fc288fd2fc03edce923bd001d437287423f9d2639",
+          "rig": null
+        }
+      ]
+    },
+    "stick-bag-scale": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bag scale set in the floor, with a red readout that reads at phone size. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "52e97cdb015335e95f1628e8ae79306a10f836c1ac57085811f7cc5a185a2f5f",
+          "rig": null
+        }
+      ]
+    },
+    "stick-coat-ball": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Everything a passenger owns, worn: a ball of coats under the chin, with hats, scarves, trousers and shoes. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9713a63b86e0df58e04caebf346da4d5ebc3b14cf6c381bf912a3e1e4fbf3c97",
+          "rig": null
+        }
+      ]
+    },
+    "stick-palm": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A palm with a bent trunk and seven fronds. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6763f2b78014c77793f0d44b57d19066d25f7d72fecd94b929ceb62bd58ade90",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -559,6 +559,10 @@
     }
   },
   "parts": {
+    "stick-palm": {"title": "Palmeira"},
+    "stick-coat-ball": {"title": "Bola de casacos"},
+    "stick-bag-scale": {"title": "Balança de bagagem"},
+    "collage-router": {"title": "Roteador de papel"},
     "soft-parcels": {"title": "Pilha de encomendas"},
     "soft-whisk": {"title": "Batedor minúsculo"},
     "soft-glare-lamp": {"title": "Abajur pequeno de brilho enorme"},
@@ -7671,6 +7675,10 @@
     {"section": "props", "name": "Roda solta que sai rolando", "parts": ["toon-loose-wheel"], "shot": {"episode": "the-noise", "at": 25.0}, "text": "A roda da frente larga o eixo e sai rolando, girando o tanto que anda; o carro cai sobre o eixo nu."},
     {"section": "props", "name": "Abajur pequeno de brilho enorme", "parts": ["soft-glare-lamp"], "shot": {"episode": "still-bright", "at": 40.0}, "text": "Um abajur de doze dólares: a base cabe na mão, a luz toma metade do quadro."},
     {"section": "props", "name": "Batedor minúsculo", "parts": ["soft-whisk"], "shot": {"episode": "free-shipping", "at": 30.0}, "text": "Um batedor minúsculo, erguido contra a luz."},
-    {"section": "props", "name": "Pilha de encomendas", "parts": ["soft-parcels"], "shot": {"episode": "free-shipping", "at": 30.0}, "text": "Encomendas empilhadas à mão até o teto."}
+    {"section": "props", "name": "Pilha de encomendas", "parts": ["soft-parcels"], "shot": {"episode": "free-shipping", "at": 30.0}, "text": "Encomendas empilhadas à mão até o teto."},
+    {"section": "props", "name": "Roteador de papel", "parts": ["collage-router"], "shot": {"episode": "its-gone", "at": 9.5}, "text": "O roteador de papel: luz com estados no tempo e um plugue que sai da tomada."},
+    {"section": "props", "name": "Balança de bagagem", "parts": ["stick-bag-scale"], "shot": {"episode": "four-coats", "at": 2.0}, "text": "Uma balança no piso do portão, com um mostrador vermelho que se lê no celular."},
+    {"section": "props", "name": "Bola de casacos", "parts": ["stick-coat-ball"], "shot": {"episode": "four-coats", "at": 15.5}, "text": "Tudo o que o passageiro tem, vestido: uma bola de casacos com chapéus, cachecóis e sapatos nos bolsos."},
+    {"section": "props", "name": "Palmeira", "parts": ["stick-palm"], "shot": {"episode": "four-coats", "at": 20.0}, "text": "Uma palmeira de tronco torto e sete folhas, na outra ponta do voo."}
   ]
 }

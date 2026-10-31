@@ -188,3 +188,41 @@ def test_a_night_set_paints_no_warm_light():
     cv = canvas()
     collage_sets.SETS["bedroom"](cv, cv.comp)
     assert b"collage-light" not in body(cv)
+
+
+# -- the router -------------------------------------------------------------------------------------------------------
+def test_the_router_is_registered():
+    assert registry.get("prop", "collage-router").builder is collage_everyday.router
+
+
+def test_a_router_keys_one_lamp_per_stretch_of_its_light():
+    one, two = canvas(), canvas()
+    collage_everyday.router(one, one.comp, light=((0.0, "off"),))
+    collage_everyday.router(two, two.comp, light=((0.0, "off"), (3.0, "green"), (9.0, "off")))
+    assert body(two).count(b"<group") - body(one).count(b"<group") == 2
+    assert b'time="3' in body(two) and b'time="9' in body(two)
+
+
+def test_a_router_with_its_plug_pulled_draws_the_cord_hanging():
+    plugged, pulled = canvas(), canvas()
+    collage_everyday.router(plugged, plugged.comp)
+    collage_everyday.router(pulled, pulled.comp, unplugged=4.0)
+    assert body(pulled).count(b"<group") == body(plugged).count(b"<group") + 1
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"light": ()},
+        {"light": ((1.0, "green"),)},
+        {"light": ((0.0, "purple"),)},
+        {"light": ((0.0, "off"), (0.0, "green"))},
+        {"light": ((0.0, "off"), (5.0, "green"), (2.0, "off"))},
+        {"unplugged": -1.0},
+        {"w": 0.0},
+    ],
+)
+def test_a_router_refuses_what_it_cannot_draw(kwargs):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.router(cv, cv.comp, **kwargs)

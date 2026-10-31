@@ -39,6 +39,7 @@ __all__ = [
     "food",
     "gust",
     "phone",
+    "router",
     "salt_shaker",
     "snapshot",
     "tablecloth",
@@ -50,6 +51,8 @@ TABLE_TOP = 1600.0  # the tablecloth's top edge
 BEZEL = 26.0  # the phone's frame round its screen
 CONFETTI = ("#e63946", "#ffca3a", "#8ac926", "#1982c4", "#ff7ab6", "#fffaf0")
 CHEW = 0.24  # seconds of one chew, open and shut
+FOREVER = 86400.0  # the end of a span that runs on: past any reel
+LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 
 
 class EverydayError(SrstudioError, ValueError):
@@ -124,6 +127,73 @@ def food(cv: Canvas, parent, kind: str, x: float, y: float, size: float = 240.0,
     k = round(_size(size, "a food's size") / 240.0, 4)
     g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt, scaleX=k, scaleY=k)
     FOODS[kind](cv, g)
+    return g
+
+
+# -- a router ---------------------------------------------------------------------------------------------------------
+def _light_spans(light: Sequence[tuple[float, str]]) -> list[tuple[str, float, float | None]]:
+    """``(state, from, to)`` of each stretch of ``light``; the last runs on (``to`` None)."""
+    if not light or light[0][0] != 0:
+        raise EverydayError(f"a router's light is known from second 0, got {light!r}")
+    times = [at for at, _ in light]
+    if not all(checks.number(t) for t in times) or times != sorted(set(times)):
+        raise EverydayError(f"a router's light changes in rising seconds, got {times!r}")
+    unknown = sorted({state for _, state in light} - set(LIGHTS))
+    if unknown:
+        raise EverydayError(f"no router light {unknown}; one of {sorted(LIGHTS)}")
+    ends: list[float | None] = [*times[1:], None]
+    return [(state, at, stop) for (at, state), stop in zip(light, ends, strict=True)]
+
+
+@register(
+    "prop",
+    "collage-router",
+    summary="A paper home router with two aerials, one big status light keyed on cue, and a cord that can be pulled",
+)
+def router(
+    cv: Canvas,
+    parent,
+    x: float = 540.0,
+    y: float = 1400.0,
+    w: float = 320.0,
+    *,
+    light: Sequence[tuple[float, str]] = ((0.0, "green"),),
+    unplugged: float | None = None,
+) -> object:
+    """A router ``w`` wide centred on ``x, y``, its cord running right to a wall socket. ``light`` is ``(project second,
+    state)`` from 0, a state one of :data:`LIGHTS`, big enough to read on a phone. From ``unplugged`` the plug hangs
+    out of the socket; the light is the caller's to change."""
+    spans = _light_spans(light)
+    width = _size(w, "a router's width")
+    if unplugged is not None and not (checks.number(unplugged) and unplugged >= 0):
+        raise EverydayError(f"a router is unplugged from second 0 on, got {unplugged!r}")
+    k = round(width / 320.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k)
+    for dx, lean in ((-104, -9), (104, 9)):
+        cv.line(g, dx, -46, dx + lean, -190, INK, 11)
+    socket = (232.0, 8.0)
+    cv.rect(g, socket[0] - 36, socket[1] - 46, 72, 92, "#fffaf0", INK, 4, radius=8)
+    for side in (-12, 12):
+        cv.rect(g, socket[0] + side - 3, socket[1] - 14, 6, 26, INK)
+    draw_shapes(cv, g, _paper(_cut("router-case", [(-160, -56), (160, -56), (160, 56), (-160, 56)], 2), "#2f3e5b"))
+    cv.rect(g, -128, 30, 180, 6, "#5c6f94")
+    cv.rect(g, -128, 14, 180, 6, "#5c6f94")
+    for state, at, stop in spans:
+        lamp = cv.group(g, cv.uid("g"))
+        cv.gate(lamp, [(at, FOREVER if stop is None else stop)])
+        if state != "off":
+            cv.ellipse(lamp, 54, -70, 140, 140, LIGHTS[state], opacity=0.35)
+        cv.ellipse(lamp, 84, -40, 80, 80, LIGHTS[state], INK, 5)
+    plugged = cv.group(g, cv.uid("g"))
+    cv.line(plugged, 160, 40, socket[0] - 20, 40, INK, 8)
+    cv.line(plugged, socket[0] - 20, 40, socket[0], 8, INK, 8)
+    cv.rect(plugged, socket[0] - 18, socket[1] - 20, 36, 40, "#23202b", radius=6)
+    if unplugged is not None:
+        cv.gate(plugged, [(0.0, unplugged)])
+        hanging = cv.group(g, cv.uid("g"))
+        cv.gate(hanging, [(unplugged, FOREVER)])
+        cv.line(hanging, 160, 40, 190, 120, INK, 8)
+        cv.rect(hanging, 172, 118, 36, 40, "#23202b", radius=6)
     return g
 
 
