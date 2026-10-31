@@ -3,7 +3,7 @@ adults trade the only two words they have, and close the deal. Then the desk pho
 the first shot rings, and the screen says Paris.
 
 Collage style (ADR 0026), the boardroom; the group shot of ADR 0036 for the two of them, a close for each when a word
-lands. The reel opens on a held first frame (the sp-hook_motion test's arm a). ElevenLabs premade voices, lip-synced.
+lands. The reel opens on a slow push (the sp-hook_motion test's arm b). ElevenLabs premade voices, lip-synced.
 """
 
 from __future__ import annotations
@@ -32,9 +32,10 @@ ACCESSIBILITY = (
 )
 NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synthesized phone ring."
 NOTE = "ElevenLabs premade voices Brian and Jessica at their natural pace; no reference-voice cloning."
-BITRATE = 5_800_000  # two passes: a master under 20 MB, and a still opening that stays still
+BITRATE = 5_800_000  # two passes: a master under 20 MB
 
-STILL = 0.45  # the held first frame: the sp-hook_motion test's arm a
+LEAD = 0.45  # the silence before the first word
+PUSHED, PUSH = 2.0, 1.06  # the opening's slow push: until when, and how far
 PLACES = {"brent": Place(285.0, 1565.0, 0.72), "deb": Place(800.0, 1565.0, 0.72)}
 DESK = (1465.0, "#4a2f1f", "#6f4e37", "#3b2a1e")  # the table's edge, front, slab and seams, before the two of them
 PHONE_Y = 1600.0
@@ -65,7 +66,7 @@ LINES = (
 BEATS, END = timed(
     LINES,
     (
-        (STILL, "deb", "", "open", "smile", "hold"),  # the table, the CV, the phone
+        (LEAD, "deb", "", "open", "smile", "hold"),  # the table, the CV, the phone
         (2.2, "brent", 0, "open", "smile", "hold"),
         (0.85, "deb", 1, "open", "grin", "hold"),
         (1.05, "brent", 2, "open", "smile", "hold"),
@@ -214,8 +215,6 @@ def dress(shot) -> None:
     collage_everyday.arm(cv, reach, "deb", SHOULDER_NEAR, (EAR_NEAR[0] - 8.0, EAR_NEAR[1] + 70.0), width=52.0)
 
 
-_FIRST = _pose(0, "open", "smile", "hold")
-_OPENING = Lineup(PLACES, {"brent": [_FIRST], "deb": [_FIRST]}, ((0.0, STILL),))
 STAGING = Staging(
     sketch=SKETCH,
     seed=SEED,
@@ -226,8 +225,7 @@ STAGING = Staging(
     sets={"brent": ROOM, "deb": ROOM},
     dress=dress,
     cast=casting,
-    still=STILL,
-    opening=_OPENING.held,
+    push=(PUSHED, PUSH),
     bitrate=BITRATE,
     loudness="-14",
 )
