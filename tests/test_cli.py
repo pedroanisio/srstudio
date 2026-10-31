@@ -272,3 +272,15 @@ def test_arms_prints_the_split_and_fails_on_a_lopsided_one(tmp_path, monkeypatch
     order = tmp_path / "order.txt"
     order.write_text("p\nq\n")
     assert main(["arms", "sp-hook_motion", "--scripts", str(tmp_path), "--order", str(order)]) == 0
+
+
+def test_arms_reads_a_declared_share_and_refuses_an_impossible_one(tmp_path, monkeypatch, capsys):
+    post = InstagramPost(title="A title", description="A description.")
+    split = {"p": "a", "q": "b", "r": "b", "s": "b", "t": "b"}
+    tagged = {s: Tags("family", "protagonist", "recognition", test="sp-hook_motion", arm=a) for s, a in split.items()}
+    run = {slug: Release(f"{slug}-x", post, tags=tag) for slug, tag in tagged.items()}
+    monkeypatch.setattr(releases, "load", lambda folder: run)
+    assert main(["arms", "sp-hook_motion", "--scripts", str(tmp_path), "--share", "0.2"]) == 0
+    capsys.readouterr()
+    assert main(["arms", "sp-hook_motion", "--scripts", str(tmp_path), "--share", "1"]) == 1
+    assert "share" in capsys.readouterr().err
