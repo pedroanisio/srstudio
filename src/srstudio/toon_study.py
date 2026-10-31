@@ -44,7 +44,7 @@ PAGE, OLD_PAGE = "#fbf6e9", "#efe2c2"
 LETTER, SCRAWL = "#23222e", "#6d6a72"
 COVER, COVER_EDGE = "#2f6f73", "#23565a"
 FOLD = "#b9a67f"
-STAR, CIRCLE = "#f2b632", "#d0402a"
+STAR, CIRCLE = "#f2b632", "#96210f"  # the circle keeps 4.5:1 on the old paper and under its letters
 MARKER_BODY, MARKER_CAP = "#ffd21f", "#2f6f73"
 
 BOOK_ROWS = 16  # the rows of text on the two pages of an open book, left page first
@@ -361,10 +361,13 @@ def quiz_sheet(
     scale: float = 1.0,
     tilt: float = 2.0,
     start: float | None = None,
+    end: float | None = None,
+    answers_lettered: bool = True,
     id: str = "quiz-sheet",
 ) -> None:
     """A sheet of old paper centred on frame point ``at``, showing its folds: its ``title`` rows, four circled answers,
-    the ``rule`` that scores them and the ``result``, circled in red with a gold star. It is on from ``start``."""
+    the ``rule`` that scores them and the ``result``, circled in red with a gold star. It is on from ``start`` to
+    ``end``. ``answers_lettered=False`` leaves the letters out of the answers, for a sheet too small to read them."""
     x, y = _point(at, "a sheet's place")
     if not (checks.number(scale) and scale > 0 and checks.number(tilt)):
         raise ToonDataError(f"a sheet's scale is over 0 and its tilt a number, got {scale!r}, {tilt!r}")
@@ -375,7 +378,7 @@ def quiz_sheet(
     for text, size in ((rule, 58.0), (result, 92.0), *((row, QUIZ_SIZE) for row in title)):
         if not (isinstance(text, str) and text.strip()) or measure(text, size) > inner:
             raise ToonDataError(f"a sheet's words fit {inner} px at {size}: {text!r}")
-    timing = {} if start is None else {"start": start}
+    timing = {key: value for key, value in (("start", start), ("end", end)) if value is not None}
     g = cv.group(parent, id, x=x, y=y, rotation=tilt, scaleX=scale, scaleY=scale, **timing)
     left, top = -wide / 2, -tall / 2
     cv.rect(g, left + 12, top + 14, wide, tall, "#000000", radius=6.0, opacity=0.3)
@@ -404,18 +407,19 @@ def quiz_sheet(
             cx, cy = margin + 76 + column * 170.0, top + 272 + row * 74.0
             ticked = column == 0 or (row == 1 and column == 2)
             cv.ellipse(g, cx - 28, cy - 28, 56, 56, CIRCLE if ticked else OLD_PAGE, LETTER, FINE_W)
-            cv.text(
-                g,
-                cv.uid("quiz-text"),
-                letter,
-                cx - 28,
-                cy - 22,
-                56,
-                44,
-                34.0,
-                color=OLD_PAGE if ticked else LETTER,
-                wrap="none",
-            )
+            if answers_lettered:
+                cv.text(
+                    g,
+                    cv.uid("quiz-text"),
+                    letter,
+                    cx - 28,
+                    cy - 22,
+                    56,
+                    44,
+                    34.0,
+                    color="#ffffff" if ticked else LETTER,
+                    wrap="none",
+                )
     cv.text(
         g,
         cv.uid("quiz-text"),
