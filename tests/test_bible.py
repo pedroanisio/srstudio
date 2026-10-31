@@ -1,0 +1,325 @@
+"""The bible loader parses ``cast.json`` and ``relationships.json`` strictly and enforces the bible's own rules (ADR 0069).
+
+Each test feeds the loader one broken file next to a good one, and asserts the typed refusal that names the fault.
+"""
+
+import copy
+import json
+from pathlib import Path
+
+import pytest
+
+from srstudio import bible
+from srstudio.releases import Release, Tags
+from srstudio.social import InstagramPost
+
+
+def fact(field: str, quote: str = "Teamwork!", reel: str = "cleaning-fee", kind: str = "line") -> dict:
+    return {"fact": f"{field} fact", "field": field, "reel": reel, "kind": kind, "quote": quote}
+
+
+STATED = {
+    "voice.provider": "ElevenLabs",
+    "voice.voice": "Charlie",
+    "voice.settings": "stability 0.5",
+    "voice.pace": "quick",
+    "voice.tics": "says teamwork",
+    "voice.uses": "teamwork",
+    "voice.never_uses": "proposal: never swears",
+    "who.age_range": "adult",
+    "who.job": "open: what does he do?",
+    "who.home": "proposal: a flat",
+    "who.normal_day": "open: unknown",
+    "who.wants": "to win",
+    "who.flaw": "never listens",
+    "who.habit": "proposal: pacing",
+    "who.pov": "everything is a team",
+    "comic.role": "instigator",
+    "comic.under_pressure": "cheers",
+    "comic.always_gets_them": "the fence",
+    "look.palette": "brown",
+    "look.outfits": "a badge",
+    "look.never_changes": "the ears",
+}
+
+
+def character(slug: str = "rex", **over: object) -> dict:
+    backed = [fact(name) for name, text in STATED.items() if not text.startswith(("open:", "proposal:"))]
+    base = {
+        "slug": slug,
+        "name": slug.capitalize(),
+        "world": "okayville",
+        "status": "canon",
+        "kind": "animal",
+        "reels": ["cleaning-fee"],
+        "look": {
+            "drawing": [{"part": "toon-dog", "version": 1}],
+            "palette": STATED["look.palette"],
+            "outfits": STATED["look.outfits"],
+            "never_changes": STATED["look.never_changes"],
+        },
+        "voice": {k.split(".")[1]: v for k, v in STATED.items() if k.startswith("voice.")},
+        "who": {k.split(".")[1]: v for k, v in STATED.items() if k.startswith("who.")},
+        "comic": {k.split(".")[1]: v for k, v in STATED.items() if k.startswith("comic.")},
+        "canon": backed,
+        "never": ["proposal: lie", "proposal: leave", "proposal: whisper"],
+        "open": [{"question": "who is his boss?", "proposal": "the cleaner"}],
+    }
+    base.update(over)
+    return base
+
+
+def pair(a: str = "fern", b: str = "rex", **over: object) -> dict:
+    base = {
+        "a": a,
+        "b": b,
+        "relation": "neighbours",
+        "how_they_know": "the fence",
+        "dynamic": "Fern wins",
+        "tension": "the fee",
+        "meet": "the rental",
+        "history": [fact("relationship")],
+        "status": "canon",
+        "reels": ["cleaning-fee"],
+    }
+    base.update(over)
+    return base
+
+
+def cast_document() -> dict:
+    return {
+        "schema": "1.0.0",
+        "version": "1.0.0",
+        "characters": [character("rex"), character("fern")],
+        "roles": ["narrator"],
+        "places": [
+            {
+                "slug": "rental",
+                "name": "The rental",
+                "world": "okayville",
+                "description": "a holiday rental",
+                "found": ["rex", "fern"],
+                "cites": [fact("world")],
+            }
+        ],
+        "rules": [{"id": "talk", "rule": "animals talk", "status": "proposal", "cites": []}],
+        "clashes": [
+            {
+                "id": "rex-name",
+                "kind": "name",
+                "scope": "within-world",
+                "subject": "Rex",
+                "evidence": [fact("identity")],
+                "proposal": "rename the other",
+            }
+        ],
+    }
+
+
+def pairs_document() -> dict:
+    return {"schema": "1.0.0", "version": "1.0.0", "relationships": [pair()]}
+
+
+def write(folder: Path, cast: dict | None = None, pairs: dict | None = None) -> Path:
+    folder.mkdir(exist_ok=True)
+    (folder / "cast.json").write_text(json.dumps(cast if cast is not None else cast_document()))
+    (folder / "relationships.json").write_text(json.dumps(pairs if pairs is not None else pairs_document()))
+    return folder
+
+
+def mutated(edit) -> dict:
+    document = copy.deepcopy(cast_document())
+    edit(document)
+    return document
+
+
+def test_a_good_bible_loads_with_every_section(tmp_path):
+    loaded = bible.load(write(tmp_path))
+    assert loaded.version == "1.0.0"
+    assert [c.slug for c in loaded.characters] == ["rex", "fern"]
+    assert loaded.character("rex").voice.voice == "Charlie"
+    assert loaded.relationships[0].a == "fern"
+    assert loaded.named("REX")[0].slug == "rex" and loaded.named("nobody") == []
+    assert len(loaded.facts()) == len(loaded.characters[0].canon) * 2 + 1 + 1 + 1
+
+
+@pytest.mark.parametrize(
+    "edit, message",
+    [
+        (lambda d: d.update(extra=1), "unknown field"),
+        (lambda d: d.pop("roles"), "missing field"),
+        (lambda d: d["characters"][0].update(nickname="x"), "unknown field.*nickname"),
+        (lambda d: d["characters"][0]["voice"].update(accent="x"), "unknown field.*accent"),
+        (lambda d: d["characters"][0]["look"].update(hat="x"), "unknown field.*hat"),
+        (lambda d: d["characters"][0]["canon"][0].update(page=3), "unknown field.*page"),
+        (lambda d: d["characters"][0].pop("never"), "missing field.*never"),
+        (lambda d: d["characters"][0].update(world="mars"), "not one of"),
+        (lambda d: d["characters"][0].update(slug="Rex"), "not a lowercase slug"),
+        (lambda d: d["characters"][0]["comic"].update(role="hero"), "not one of"),
+        (lambda d: d["characters"][0]["canon"][0].update(field="who.shoe"), "not one of"),
+        (lambda d: d["characters"][0]["canon"][0].update(kind="hunch"), "not one of"),
+        (lambda d: d["characters"][0]["voice"].update(pace="  "), "nonempty text"),
+        (lambda d: d["characters"][0]["voice"].update(pace=3), "nonempty text"),
+        (lambda d: d["characters"][0]["look"]["drawing"][0].update(version=0), "version number"),
+        (lambda d: d["characters"][0]["look"]["drawing"][0].update(version=True), "version number"),
+        (lambda d: d["characters"][0].update(since="v1"), "not a semantic version"),
+        (lambda d: d["characters"][0].update(reels="cleaning-fee"), "expected a list"),
+        (lambda d: d.update(characters={}), "expected a list"),
+        (lambda d: d.update(version="1.0"), "semantic version"),
+        (lambda d: d.update(schema="2.0.0"), "schema"),
+        (lambda d: d["rules"][0].update(status="law"), "not one of"),
+        (lambda d: d["clashes"][0].update(scope="somewhere"), "not one of"),
+        (lambda d: d["places"][0].update(found="rex"), "expected a list"),
+    ],
+)
+def test_a_malformed_cast_file_is_refused_with_a_typed_error_that_names_the_fault(tmp_path, edit, message):
+    with pytest.raises(bible.BibleError, match=message):
+        bible.load(write(tmp_path, mutated(edit)))
+
+
+@pytest.mark.parametrize(
+    "edit, message",
+    [
+        (lambda d: d["characters"][0].update(never=["a", "b"]), "exactly three"),
+        (lambda d: d["characters"][0].update(canon=[]), "no fact"),
+        (lambda d: d["characters"][1].update(slug="rex"), "appears twice"),
+        (
+            lambda d: d["characters"][0]["canon"].pop(0),
+            "who.age_range|voice.provider|look.palette|comic.role|voice.voice",
+        ),
+        (lambda d: d["characters"][0]["who"].update(job="a fireman"), "who.job is marked yet|who.job is stated"),
+        (lambda d: d["characters"][0]["look"].update(drawing=[]), "no approved drawing"),
+        (lambda d: d["places"][0].update(found=["rex", "ghost"]), "ghost is not a character"),
+        (lambda d: d["places"].append(copy.deepcopy(d["places"][0])), "appears twice"),
+        (lambda d: d["rules"].append(copy.deepcopy(d["rules"][0])), "appears twice"),
+    ],
+)
+def test_the_rules_of_the_bible_refuse_what_the_schema_cannot_express(tmp_path, edit, message):
+    with pytest.raises(bible.BibleError, match=message):
+        bible.load(write(tmp_path, mutated(edit)))
+
+
+def test_a_stated_field_with_no_fact_behind_it_is_refused_and_the_message_names_it(tmp_path):
+    document = cast_document()
+    document["characters"][0]["canon"] = [f for f in document["characters"][0]["canon"] if f["field"] != "who.flaw"]
+    with pytest.raises(bible.BibleError, match="who.flaw is stated with no fact behind it"):
+        bible.load(write(tmp_path, document))
+
+
+def test_a_marked_field_that_also_has_a_fact_is_refused(tmp_path):
+    document = cast_document()
+    document["characters"][0]["canon"].append(fact("who.job"))
+    with pytest.raises(bible.BibleError, match="who.job is marked yet has a fact behind it"):
+        bible.load(write(tmp_path, document))
+
+
+def placeholder(slug: str) -> dict:
+    marked = {k: "open: waiting for the reel" for k in STATED}
+    return character(
+        slug,
+        status="placeholder",
+        canon=[],
+        look={
+            "drawing": [],
+            "palette": marked["look.palette"],
+            "outfits": marked["look.outfits"],
+            "never_changes": marked["look.never_changes"],
+        },
+        voice={k.split(".")[1]: v for k, v in marked.items() if k.startswith("voice.")},
+        who={k.split(".")[1]: v for k, v in marked.items() if k.startswith("who.")},
+        comic={k.split(".")[1]: v for k, v in marked.items() if k.startswith("comic.")},
+    )
+
+
+def test_a_placeholder_is_all_open_and_holds_no_canon(tmp_path):
+    document = cast_document()
+    document["characters"].append(placeholder("vera"))
+    loaded = bible.load(write(tmp_path, document))
+    assert loaded.character("vera").status == "placeholder"
+
+
+def test_a_placeholder_that_states_something_or_holds_a_fact_is_refused(tmp_path):
+    stated = cast_document()
+    stated["characters"].append(placeholder("vera"))
+    stated["characters"][-1]["who"]["job"] = "a presenter"
+    with pytest.raises(bible.BibleError, match="who.job"):
+        bible.load(write(tmp_path, stated))
+    holding = cast_document()
+    holding["characters"].append(placeholder("vera"))
+    holding["characters"][-1]["canon"] = [fact("identity")]
+    with pytest.raises(bible.BibleError, match="no canon"):
+        bible.load(write(tmp_path, holding))
+
+
+@pytest.mark.parametrize(
+    "edit, message",
+    [
+        (lambda p: p["relationships"][0].update(a="rex", b="fern"), "alphabetically"),
+        (lambda p: p["relationships"][0].update(a="rex", b="rex"), "themself"),
+        (lambda p: p["relationships"][0].update(b="ghost"), "ghost is not a character"),
+        (lambda p: p["relationships"][0].update(status="maybe"), "not one of"),
+        (lambda p: p["relationships"][0].update(history=[]), "no history fact"),
+        (lambda p: p["relationships"][0].update(tension="open: unknown"), "its status is proposal"),
+        (lambda p: p["relationships"][0].update(extra=1), "unknown field"),
+        (lambda p: p["relationships"].append(copy.deepcopy(p["relationships"][0])), "appears twice"),
+        (lambda p: p.update(version="1.1.0"), "relationships.json"),
+    ],
+)
+def test_a_malformed_relationship_file_is_refused(tmp_path, edit, message):
+    document = pairs_document()
+    edit(document)
+    with pytest.raises(bible.BibleError, match=message):
+        bible.load(write(tmp_path, pairs=document))
+
+
+def test_a_proposed_relationship_may_be_open_and_have_no_history(tmp_path):
+    document = pairs_document()
+    document["relationships"][0].update(status="proposal", tension="open: unknown", history=[])
+    assert bible.load(write(tmp_path, pairs=document)).relationships[0].status == "proposal"
+
+
+@pytest.mark.parametrize("raw", ["not json", "[]", '{"schema": "1.0.0"}'])
+def test_a_file_that_is_not_the_bible_is_refused(tmp_path, raw):
+    write(tmp_path)
+    (tmp_path / "cast.json").write_text(raw)
+    with pytest.raises(bible.BibleError):
+        bible.load(tmp_path)
+
+
+def test_a_missing_file_is_refused_and_named(tmp_path):
+    with pytest.raises(bible.BibleError, match="cast.json"):
+        bible.load(tmp_path)
+
+
+def release(slug: str, **kw: object) -> Release:
+    return Release(
+        slug,
+        InstagramPost(title="t", description="Fern paid.", hashtags=("#a",)),
+        tags=Tags("money-services", "other-person", "recognition"),
+        **kw,
+    )
+
+
+def test_verify_lists_each_fact_its_reel_does_not_bear_out(tmp_path):
+    episodes = tmp_path / "episodes"
+    (episodes / "cleaning-fee").mkdir(parents=True)
+    (episodes / "cleaning-fee" / "script.json").write_text(json.dumps([{"speaker": "rex", "text": "Teamwork!"}]))
+    document = cast_document()
+    document["characters"][0]["canon"][0]["quote"] = "Not a line anywhere"
+    loaded = bible.load(write(tmp_path / "bible", document))
+    releases = {"cleaning-fee": release("cleaning-fee", parts={"toon-dog": 1})}
+    problems = bible.verify(loaded, releases, {"cleaning-fee"}, episodes, characters={"toon-dog"})
+    assert problems == ["rex: cleaning-fee: no line says 'Not a line anywhere'"]
+
+
+def test_verify_refuses_a_reel_that_is_not_published_and_does_not_hide_a_seen_fact(tmp_path):
+    episodes = tmp_path / "episodes"
+    (episodes / "cleaning-fee").mkdir(parents=True)
+    (episodes / "cleaning-fee" / "script.json").write_text(json.dumps([{"speaker": "rex", "text": "Teamwork!"}]))
+    document = cast_document()
+    document["characters"][0]["reels"] = ["cleaning-fee", "pilot-one"]
+    document["characters"][0]["canon"][1].update(kind="seen", quote="t=1 a badge")
+    loaded = bible.load(write(tmp_path / "bible", document))
+    releases = {"cleaning-fee": release("cleaning-fee")}
+    problems = bible.verify(loaded, releases, {"cleaning-fee"}, episodes, characters=set())
+    assert problems == ["rex: reels not published: pilot-one"]
