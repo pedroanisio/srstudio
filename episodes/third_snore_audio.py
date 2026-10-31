@@ -143,6 +143,9 @@ CX, CY = 1480.0, 1290.0  # the middle of the bed, the couple's heads
 CLOSE_FROM = ((CX, CY), 1.8, (540.0, 860.0))
 CLOSE_TO = ((CX, CY), 2.0, (540.0, 860.0))
 WIDE = ((CX, 1400.0), 1.45, (540.0, 900.0))
+# the marks sit on a shelf between the couple's heads: no take frames the counter or the floor the flat keeps them on
+MARKS_AT, MARKS_SCALE = (CX - 20.0, 1262.0), 0.5
+CODE_AT, CODE_H = (CX + 8.0, 1266.0), 11.0
 PUSH_TAKES = 8  # the push runs through the first eight takes, to the moment they stop
 AT = {"dev": (878.0, 450.0), "noor": (2082.0, 450.0)}  # with scale SCALE, Noor flipped: heads at CX -/+ 170
 SCALE = 0.8

@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pytest
 
-from srstudio import collage, collage_everyday
+from srstudio import collage, collage_everyday, signature
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -208,3 +208,24 @@ def test_deb_answers_the_phone_with_an_arm_she_stops_hanging(monkeypatch: pytest
     assert lineup.reactions["deb"][-1]["arms"] == "free"
     assert lineup.reactions["deb"][-1]["start"] > lift  # she keeps the arm until the one with the handset comes in
     assert collage_everyday.shoulder("deb") == mod.SHOULDER_CLOSE
+
+
+def _seen(framing: tuple, x: float, y: float) -> bool:
+    """Whether a stick set's point lands inside the frame under ``((fx, fy), zoom, (tx, ty))``."""
+    (fx, fy), zoom, (tx, ty) = framing
+    return 0 <= tx + zoom * (x - fx) <= WIDTH and 0 <= ty + zoom * (y - fy) <= HEIGHT
+
+
+def test_third_snore_shows_its_marks_in_every_framing() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("third_snore_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    x, y = audio.MARKS_AT
+    for framing in (audio.CLOSE_FROM, audio.CLOSE_TO, audio.WIDE):
+        assert _seen(framing, x, y)
+        assert _seen(framing, x, y - 152.0 * audio.MARKS_SCALE)
+        assert _seen(framing, *audio.CODE_AT)
+        assert _seen(framing, audio.CODE_AT[0] + signature.text_width("SR-1028", audio.CODE_H), audio.CODE_AT[1])
+        assert not _seen(framing, 330.0, 1150.0), "the studio's own cactus is out of every shot of the bed"

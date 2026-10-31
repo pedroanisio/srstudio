@@ -15,7 +15,7 @@ import os
 
 from _common import project_root
 from instagram_posts import POSTS
-from srstudio import SPEECH_MOUTH, Episode, stick, stick_bed, stick_flat, stick_reel
+from srstudio import SPEECH_MOUTH, Episode, signature, stick, stick_bed, stick_flat, stick_reel
 from third_snore_audio import (
     AT,
     BIG_BREATH,
@@ -23,11 +23,15 @@ from third_snore_audio import (
     BREATH_PX,
     CLOSE_FROM,
     CLOSE_TO,
+    CODE_AT,
+    CODE_H,
     CX,
     DEV,
     GARY,
     GARY_HEAD,
     HOOK,
+    MARKS_AT,
+    MARKS_SCALE,
     NOOR,
     PARTS,
     PHONE_AT,
@@ -103,15 +107,24 @@ def framed(g, take, end: float):
     return stick.dolly(cv, g, WIDE, WIDE, end)
 
 
+def marks(frame) -> None:
+    """A shelf over the bed's head, between the couple, with the cactus and the code: the only wall a take sees."""
+    x, y = MARKS_AT
+    stick.box(cv, frame, x - 62.0, y, 174.0, 22.0, "#7a5a35", 3, r=3)
+    signature.cactus(cv, frame, x, y, scale=MARKS_SCALE)
+    signature.code(cv, frame, *CODE_AT, CODE_H, color="#f5ead0")
+
+
 def stage(take) -> None:
     g = ep.shot(shots, take)
     end = take.duration
     frame = framed(g, take, end)
-    stick_flat.studio(cv, frame)
+    stick_flat.studio(cv, frame, marks=False)
     shown = take.shot != "close"
     talk = ((0.0, round(take.speech_duration, 3)),) if take.actor == "gary" else ()
     # behind the mound he is not drawn at all: his snoring letters would stand between the couple
     stick_flat.murphy_bed(cv, frame, end, drop_at=0.0, sleeper=GARY if shown else None, talk=talk)
+    marks(frame)
     if shown:
         stick_bed.eye_mask(cv, frame, *GARY_HEAD, scale=0.8)
     blinks = (0.9,) if end > 1.6 else ()
