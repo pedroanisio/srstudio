@@ -462,10 +462,12 @@ TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text wri
 
 MAX_READINGS = 4096  # readings of one text compared at most: each digit string has up to three
 ON_THE_HOUR = re.compile(r"\b(1[0-2]|0?[1-9]):00\b")  # speech-to-text writes a spoken "three a.m." as "3:00 AM"
+DOLLARS = re.compile(r"\$(\d+)\b(?!\.\d)")  # and a spoken "a hundred dollars" as "$100"
 
 
 def _tokens(text: str) -> list[str]:
     text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
+    text = DOLLARS.sub(r"\1 dollars", text)
     cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
     return [token for token in (t.strip("'") for t in cleaned.split()) if token]
 
@@ -480,9 +482,21 @@ def normalize_words(text: str) -> list[str]:
     return [word for token in _tokens(text) for word in _word(token)]
 
 
+def _hundreds(n: int) -> list[str]:
+    """The ways a speaker says the hundreds of ``n``, 100..999, besides its cardinal: "and" after them, and "a" for
+    "one" ("a hundred and eighty seven"). Empty outside that range: the number stays what it is."""
+    if not 100 <= n <= 999:
+        return []
+    rest = _spell(n % 100) if n % 100 else []
+    heads = ["one", "a"] if n // 100 == 1 else [_ONES[n // 100]]
+    joined = [[head, "hundred", *([word] if word else []), *rest] for head in heads for word in ("and", "")]
+    return ["".join(words) for words in joined if rest or words[0] == "a"]
+
+
 def _readings(text: str) -> set[str]:
     """Every way ``text`` may be read aloud, its words joined: a digit string read as its cardinal or digit by
-    digit, 0 as "zero" or as "oh" ("1028": "one thousand twenty eight", "one zero two eight", "one oh two eight").
+    digit, 0 as "zero" or as "oh" ("1028": "one thousand twenty eight", "one zero two eight", "one oh two eight"),
+    and a number in the hundreds as it is said (:func:`_hundreds`).
     More than :data:`MAX_READINGS` combinations raise :class:`TranscriptMismatch` before any is built."""
     options: list[list[str]] = []
     for token in _tokens(text):
@@ -490,6 +504,7 @@ def _readings(text: str) -> set[str]:
         if token.isdecimal():
             for zero in ("zero", "oh"):
                 alternatives.append("".join(zero if d == 0 else _ONES[d] for d in map(int, token)))
+            alternatives += _hundreds(int(token))
         options.append(sorted(set(alternatives)))
     if math.prod(len(o) for o in options) > MAX_READINGS:
         raise TranscriptMismatch(f"{text!r} has too many numbers to compare (more than {MAX_READINGS} readings)")
