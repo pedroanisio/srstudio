@@ -1124,6 +1124,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-lights-low": {"title": "Luz baixa"},
+    "stick-recorder": {"title": "Celular gravando"},
+    "stick-eye-mask": {"title": "Máscara de dormir"},
+    "stick-duvet": {"title": "Edredom com monte"},
     "cv-folder": {"title": "Pasta do currículo"},
     "toon-plate-of-toast": {"title": "Prato de torradas"},
     "toon-swing-door": {"title": "Porta vaivém"},
@@ -7849,6 +7853,54 @@
         "at": 14.6
       },
       "text": "A pasta de quem se candidata: fechada na mesa, aberta quando alguém resolve ler."
+    },
+    {
+      "section": "props",
+      "name": "Edredom com monte",
+      "parts": [
+        "stick-duvet"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um edredom sobre a cama, com um monte no meio que respira e pode afundar."
+    },
+    {
+      "section": "props",
+      "name": "Máscara de dormir",
+      "parts": [
+        "stick-eye-mask"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Uma máscara de dormir sobre a cabeça, com os olhos bordados fechados."
+    },
+    {
+      "section": "props",
+      "name": "Celular gravando",
+      "parts": [
+        "stick-recorder"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um celular deitado, com um traço na tela para cada som que gravou."
+    },
+    {
+      "section": "props",
+      "name": "Luz baixa",
+      "parts": [
+        "stick-lights-low"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Qualquer cenário baixado para a noite, com uma poça de luz em volta de um ponto."
     }
   ]
 }
