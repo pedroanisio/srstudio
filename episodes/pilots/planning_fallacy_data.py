@@ -99,7 +99,7 @@ SMALL, SMALL_Y, SMALL_X = 0.46, 720.0, 540.0  # the rabbit under the bars: her f
 BARS_Y = 520.0
 PUSH_TO, PUNCH = 1.08, 1.16
 PIVOT = (1000.0, 1000.0)  # this far right keeps both signature marks whole at PUNCH
-END = 44.8
+END = 43.8
 
 LINES = (
     Line("mia", "Five minutes away."),
@@ -151,13 +151,13 @@ BEATS = (
     on_card(say(24.8, CARD, 10, "wide", "flat", "desk", "said")),
     on_card(say(26.8, CARD, 11, "wide", "flat", "desk", "took")),
     say(28.9, "bear", 12, "half", "flat", "desk", "turn"),
-    say(32.9, "bear", 13, "half", "flat", "desk"),
-    say(35.4, "bear", 14, "half", "flat", "desk"),
-    say(38.4, "bear", 15, "half", "flat", "desk", "table"),
-    say(40.1, "rabbit", 16, "shock", "flat", "desk", "seven"),
-    hold(41.4, "bear", "", "half", "flat", "desk", "punch"),
-    say(42.6, "bear", 17, "half", "smirk", "desk"),
-    hold(43.3, "rabbit", "", "wide", "grin", "desk", "again"),  # the water again, and the first frame comes round
+    say(32.3, "bear", 13, "half", "flat", "desk"),
+    say(34.8, "bear", 14, "half", "flat", "desk"),
+    say(37.4, "bear", 15, "half", "flat", "desk", "table"),
+    say(39.1, "rabbit", 16, "shock", "flat", "desk", "seven"),
+    hold(40.4, "bear", "", "half", "flat", "desk", "punch"),
+    say(41.6, "bear", 17, "half", "smirk", "desk"),
+    hold(42.3, "rabbit", "", "wide", "grin", "desk", "again"),  # the water again, and the first frame comes round
 )
 SKETCH = Sketch(SLUG, TITLE, (NARRATOR, MIA, BRUNO), LINES, BEATS, END, cast=mind_kit.MIND_CAST)
 EVENTS = (
