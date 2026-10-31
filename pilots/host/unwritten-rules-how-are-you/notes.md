@@ -11,7 +11,8 @@ comedy-reviewer: pending
 
 [Back to the library README](../../../README.md)
 
-A script ready to record. Nothing has been recorded, and neither his look nor his voice has been approved.
+A script ready to record. His look is approved: "Rafa is approved", the operator, 2026-10-31. His voice is not chosen,
+and the pilot has not been recorded.
 
 ## Persona sheet
 
@@ -73,7 +74,7 @@ without a take, and Ending because the sign-off follows "Good.", the stronger li
 
 ## Voice candidates
 
-Three premade voices the library already uses. None has been auditioned for this part, and each has been heard in older
+Three premade voices the library already uses. None has been chosen for this part, and each has been heard in older
 reels, so none is exclusive to him as Harry was to Lint. These are the operator's to choose from.
 
 - **Chris** (`iP95p4xoKVk53GoZ742B`): casual and down to earth, the man at the worktop. Best for the deadpan rules.
