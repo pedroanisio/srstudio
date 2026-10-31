@@ -263,4 +263,10 @@ def readme(bible: Bible, *, model: str, sheets: Sequence[str]) -> str:
             link = f"[{c.name}](characters/{c.slug}.md)" if c.slug in sheets else c.name
             lines.append(f"- {link}{tag}: {len(c.reels)} published reels")
         lines.append("")
+    waiting = [c for c in bible.characters if c.status == "placeholder"]
+    if waiting:
+        lines += ["## Placeholders", "", "Nothing about these is canon until a published reel establishes it.", ""]
+        for c in waiting:
+            lines.append(f"- {c.name} ({WORLD_TITLE[c.world]}): {c.open[0].question if c.open else 'no question'}")
+        lines.append("")
     return "\n".join(lines).rstrip() + "\n"
