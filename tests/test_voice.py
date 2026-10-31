@@ -825,3 +825,37 @@ def test_uncached_transcript_without_key_is_a_clear_error(tmp_path):
     with pytest.raises(RuntimeError, match="ELEVENLABS_API_KEY"):
         ElevenLabsClient(tmp_path, key="", multipart_transport=multipart).transcribe(wav)
     assert multipart.calls == []
+
+
+@pytest.mark.parametrize(
+    ("heard", "script"),
+    [
+        ("He thinks about it every night at 3:00 AM", "He thinks about it every night at three a.m."),
+        ("3:00 AM, Vera?", "Three a.m., Vera."),
+        ("Lunch is at 12:00 PM.", "Lunch is at twelve p.m."),
+        ("Back at 3:00.", "Back at three."),
+    ],
+)
+def test_speech_to_text_writes_an_hour_as_a_clock_and_the_hour_still_matches(heard, script):
+    check_transcript(parse_transcript(transcript(heard)), script)
+
+
+@pytest.mark.parametrize(
+    "heard",
+    [
+        "He called at 3:30 AM",  # other minutes are other words
+        "He called at 4:00 AM",  # another hour
+        "He called at 3:00 PM",  # the other half of the day
+        "He called at 3:00",  # the words dropped
+        "He called at 300 AM",  # not a clock
+        "He called at 13:00 AM",  # a clock the line did not say
+        "He called at 3:000 AM",  # not a clock either
+    ],
+)
+def test_a_clock_reading_changes_no_other_word(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(parse_transcript(transcript(heard)), "He called at three a.m.")
+
+
+def test_a_script_that_says_the_zeros_still_hears_them():
+    check_transcript(parse_transcript(transcript("Room 3:00")), "Room three oh oh")
