@@ -182,15 +182,18 @@ def conform(
     gain_db: float,
     ffmpeg: str = "ffmpeg",
     tempo: float = 1.0,
+    effect: str = "",
 ) -> float:
     """Cuts ``clip_in..clip_out`` of ``src``, levels it, plays it ``tempo`` times faster (pitch kept, 1..1.5), pads
     or trims it to ``length`` seconds with short fades, writes 48 kHz mono 16-bit PCM and returns the length
-    actually written (checked to the sample)."""
+    actually written (checked to the sample). ``effect`` is an ffmpeg filter chain run after the level, the way
+    :data:`srstudio.sketch.PHONE_SPEAKER` puts a voice on a phone."""
     if not 1.0 <= tempo <= 1.5:
         raise NarrationError(f"tempo must be within 1..1.5, got {tempo}")
     faster = f"atempo={tempo:.6f}," if tempo > 1.0 else ""
+    extra = f"{effect}," if effect else ""
     filters = (
-        f"atrim=start={clip_in:.6f}:end={clip_out:.6f},asetpts=PTS-STARTPTS,volume={gain_db:.4f}dB,{faster}"
+        f"atrim=start={clip_in:.6f}:end={clip_out:.6f},asetpts=PTS-STARTPTS,volume={gain_db:.4f}dB,{extra}{faster}"
         f"apad,atrim=duration={length:.6f},afade=t=in:d=0.006,afade=t=out:st={max(0.0, length - 0.012):.6f}:d=0.012"
     )
     subprocess.run(
