@@ -21,7 +21,18 @@ from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, REF_W, ToonDataError, _path, fh, fx, fy
 from .toon_sets import SHADOW, _glow
 
-__all__ = ["DISHES", "SPECIAL_MAX", "SCREEN_MAX", "TABLE_Y", "TONES", "card_reader", "dishes", "restaurant", "table"]
+__all__ = [
+    "DISHES",
+    "SPECIAL_MAX",
+    "SCREEN_MAX",
+    "TABLE_Y",
+    "TONES",
+    "card_reader",
+    "dishes",
+    "mint",
+    "restaurant",
+    "table",
+]
 
 WALL = (("0", "#8c4a3f"), ("0.6", "#a85d4c"), ("1", "#c27a5e"))
 WAINSCOT, WAINSCOT_PANEL, RAIL = "#5a3426", "#6b3f2e", "#7d4b36"
@@ -46,9 +57,12 @@ TONES = {"idle": ("#d9ecf2", "#1e293b"), "bad": ("#ffd6d2", "#b42318"), "good": 
     summary="A bistro booth: a terracotta wall, a dark wainscot, a framed seascape, a sconce, a chalk SPECIALS "
     "board and a red leather banquette behind the character",
 )
-def restaurant(cv: Canvas, parent, special: tuple[str, str] = ("LOBSTER", "MARKET\nPRICE")) -> None:
+def restaurant(
+    cv: Canvas, parent, special: tuple[str, str] = ("LOBSTER", "MARKET\nPRICE"), lettering: bool = True
+) -> None:
     """The backdrop of a dinner shot; ``special`` is the board's dish (1 to :data:`SPECIAL_MAX` characters) and its
-    price (one or two lines of up to :data:`PRICE_LINE`)."""
+    price (one or two lines of up to :data:`PRICE_LINE`). ``lettering=False`` leaves the board's words out, for a shot
+    in which something stands in front of them: the engine measures a text layer even when it is covered."""
     dish, price = special
     lines = price.split("\n")
     if not dish.strip() or len(dish) > SPECIAL_MAX or not price.strip() or len(lines) > 2:
@@ -76,11 +90,13 @@ def restaurant(cv: Canvas, parent, special: tuple[str, str] = ("LOBSTER", "MARKE
     cv.rect(g, fx(388), fy(488), fh(196), fh(176), SHADOW, cv.clear, 0, radius=fh(4), opacity=0.25)
     cv.rect(g, fx(380), fy(480), fh(196), fh(176), WOOD, ink, INK_W * 0.8, radius=fh(4))
     cv.rect(g, fx(390), fy(490), fh(176), fh(156), CHALK_BOARD, ink, FINE_W * 0.6, radius=fh(2))
-    cv.text(g, cv.uid("special-title"), "SPECIALS", fx(390), fy(494), int(fh(176)), int(fh(32)), 34,
-            color=CHALK_ACCENT)  # fmt: skip
+    if lettering:
+        cv.text(g, cv.uid("special-title"), "SPECIALS", fx(390), fy(494), int(fh(176)), int(fh(32)), 34,
+                color=CHALK_ACCENT)  # fmt: skip
     _path(cv, g, f"M {fx(420)} {fy(528)} L {fx(536)} {fy(528)}", None, FINE_W * 0.5, CHALK)
-    cv.text(g, cv.uid("special-dish"), dish, fx(390), fy(534), int(fh(176)), int(fh(44)), 40, color=CHALK)
-    cv.text(g, cv.uid("special-price"), price, fx(390), fy(578), int(fh(176)), int(fh(62)), 32, color=CHALK)
+    if lettering:
+        cv.text(g, cv.uid("special-dish"), dish, fx(390), fy(534), int(fh(176)), int(fh(44)), 40, color=CHALK)
+        cv.text(g, cv.uid("special-price"), price, fx(390), fy(578), int(fh(176)), int(fh(62)), 32, color=CHALK)
     # the wainscot, its rail and panels
     cv.rect(g, fx(-10), fy(640), fh(612), fh(220), WAINSCOT, ink, FINE_W, radius=0)
     for x in range(10, 592, 118):
@@ -249,6 +265,49 @@ def dishes(cv: Canvas, parent, items: Sequence[tuple], id: str = "dish") -> None
             cv.keys(g, "opacity", [(0, 0), (at, 1)])
         cv.ellipse(g, fh(-50), fh(-6), fh(100), fh(12), SHADOW, opacity=0.14)
         DISHES[kind](cv, g)
+
+
+# -- the mint --------------------------------------------------------------------------------------------------------
+@register(
+    "prop",
+    "toon-mint",
+    summary="A small saucer with one striped mint in a twisted wrapper, set down on cue, or the empty wrapper",
+)
+def mint(
+    cv: Canvas,
+    parent,
+    at: tuple[float, float] = (300, TABLE_Y),
+    scale: float = 1.0,
+    start: float = 0.0,
+    eaten: bool = False,
+    id: str = "mint",
+) -> None:
+    """The saucer stands at reference ``at``, ``scale`` times its size, shown from ``start`` seconds; ``eaten`` leaves
+    only the wrapper on it. What a restaurant hands over with the bill."""
+    x, y = at
+    if not (checks.number(x) and checks.number(y) and checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a mint stands at a reference point at a scale over 0, got {at!r}, {scale!r}")
+    if not (checks.number(start) and start >= 0):
+        raise ToonDataError(f"a mint arrives at a time >= 0, got {start!r}")
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    if start:
+        cv.keys(g, "opacity", [(0, 0), (start, 1)])
+    cv.ellipse(g, fh(-74), fh(-4), fh(148), fh(18), SHADOW, opacity=0.18)
+    cv.ellipse(g, fh(-68), fh(-22), fh(136), fh(34), "#fbf8f2", cv.ink, INK_W * 0.8)
+    cv.ellipse(g, fh(-42), fh(-14), fh(84), fh(18), CLOTH_FOLD, cv.ink, FINE_W * 0.4)
+    wrapper = "#f4f1e8" if eaten else "#ffffff"
+    for side in (-1, 1):  # the wrapper's twists
+        tip = 62 if not eaten else 40
+        _local(cv, g, f"M {side * 22} -22 L {side * tip} -36 L {side * (tip - 4)} -8 Z", wrapper, FINE_W * 0.7)
+    if eaten:
+        _local(cv, g, "M -26 -8 Q -8 -30 0 -14 Q 10 -32 26 -8 Q 0 2 -26 -8 Z", wrapper, FINE_W * 0.7)
+        return
+    cv.ellipse(g, fh(-28), fh(-52), fh(56), fh(50), "#fff7f2", cv.ink, INK_W * 0.8)
+    for dx in (-18, 0, 18):  # the stripes curve round it, as a boiled sweet's do
+        _local(cv, g, f"M {dx - 6} -49 Q {dx + 12} -27 {dx - 6} -5 L {dx + 4} -5 Q {dx + 22} -27 {dx + 4} -49 Z",
+               CLOTH_STRIPE, 0)  # fmt: skip
+    cv.ellipse(g, fh(-28), fh(-52), fh(56), fh(50), cv.clear, cv.ink, INK_W * 0.8)
+    cv.ellipse(g, fh(-14), fh(-44), fh(16), fh(9), "#ffffff", opacity=0.8)
 
 
 # -- the card reader -------------------------------------------------------------------------------------------------
