@@ -11,7 +11,17 @@ from types import ModuleType
 
 import pytest
 
-from srstudio import collage, collage_everyday, signature, stick, stick_reel, stick_windshield
+from srstudio import (
+    collage,
+    collage_everyday,
+    signature,
+    stick,
+    stick_reel,
+    stick_windshield,
+    toon_extras,
+    toon_house,
+    toon_sketch,
+)
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -312,3 +322,11 @@ def test_any_questions_code_is_seen_under_the_push_and_clear_of_the_folder() -> 
     for scale, offset in ((1.0, 0.0), (1.324, -15.0)):
         assert 0.0 <= offset + scale * left and offset + scale * right <= 1080.0
     assert y + height <= audio.FOLDER[1] - 150.0  # the folder's top edge, open
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_steamed_frog_stands_behind_the_ledge_and_hides_the_shelf() -> None:
+    mod = _data("shower_argument")
+    base = mod.GHOST_AT[1] + mod.GHOST_SCALE * (toon_sketch.SEAT[1] - toon_extras.SEAT[1])
+    assert base >= toon_house.LEDGE_TOP
+    assert mod.GHOST_OPACITY >= 0.7

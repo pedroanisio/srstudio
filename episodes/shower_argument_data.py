@@ -33,9 +33,9 @@ FERN = speaker("fern", "Matilda", "frog")
 MIA = speaker("mia", "River")
 TINTS = tinted(REX, FERN, MIA)
 PIVOT = (980.0, 1420.0)
-GHOST_AT = (430.0, 760.0)
+GHOST_AT = (430.0, 788.0)  # her base behind the ledge, where the base of whoever stands in this shower goes
 GHOST_SCALE = 0.95
-GHOST_OPACITY = 0.42
+GHOST_OPACITY = 0.72  # steam, but thick enough to hide the shelf behind her
 BOTTLE = dict(at=(322.0, 800.0), scale=0.72)
 HANDS = Burst(1.4, 3400.0, attack=0.15, decay=0.8, tone_hz=0.0, tone_end_hz=0.0, tone=0.0, flutter_hz=19.0)
 GURGLE = Burst(0.3, 500.0, attack=0.02, decay=0.4, tone_hz=240.0, tone_end_hz=520.0, tone=0.6, flutter_hz=14.0)
