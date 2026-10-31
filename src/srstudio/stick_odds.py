@@ -7,8 +7,9 @@ bag, in glowing false colour (:data:`XRAY_ITEMS`), under a moving scan line. :fu
 :func:`foil_parcel` what is in the bag and :func:`foil_note` the note on it, filling the frame. Everything is in frame
 pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same. :func:`aisle` looks down a
 plane's aisle in one-point perspective and :func:`queue` stands a line of people in it who can all turn round at once;
-:func:`book` and :func:`duffel` are what a passenger carries. :func:`double_take` is not a drawing: it is the keys of a
-look, a look away and a snap back, for any figure in any shot.
+:func:`book` and :func:`duffel` are what a passenger carries. :func:`wheelie_bin`, :func:`trash_truck`, :func:`slipper`
+and :func:`sparks` are trash day. :func:`double_take` is not a drawing: it is the keys of a look, a look away and a snap
+back, for any figure in any shot.
 """
 
 from __future__ import annotations
@@ -36,7 +37,11 @@ __all__ = [
     "queue",
     "robe",
     "scan_belt",
+    "slipper",
+    "sparks",
     "spoon",
+    "trash_truck",
+    "wheelie_bin",
     "xray",
 ]
 
@@ -65,6 +70,9 @@ SKIN, HAIRS, COATS = (
 HORIZON = 620  # the aisle's vanishing point on the frame's height
 AISLE_ROWS = 12
 RECEDE = 0.24  # how fast the rows shrink: each is 1 / (1 + RECEDE * depth) the near one
+BIN_BODY, BIN_LID, TRUCK_BODY, TRUCK_DARK, CAB, TYRE = "#3f6b52", "#2f5240", "#6f8f5a", "#3b4a35", "#f0ece2", "#23252b"
+GLASS, PLUSH, SPARK, SPARK_CORE = "#bcd8e6", "#c98fa2", "#ffb400", "#fff4c2"
+TRUCK_LENGTH, CAB_WINDOW = 1000.0, (830.0, -400.0, 130.0, 130.0)  # x, y, w, h from the truck's rear wheel on the road
 GLOW = 16.0  # px of blur on the copy of a scanned object that makes it glow
 BELT_TOP = 1200  # the belt's top: what stands on it has its feet here
 BELT_X = (300.0, 1080.0)
@@ -389,3 +397,78 @@ def double_take(at: float, pose: str, first: Face, away: Face, second: Face, *, 
     if at < 0:
         raise StickDataError(f"a double take starts in the shot, got {at!r}")
     return [RigKey(at, pose, first), RigKey(at + step, pose, away), RigKey(at + 2 * step, pose, second)]
+
+
+@register("prop", "stick-wheelie-bin", tags=("trash", "street", "bin", "home"))
+def wheelie_bin(cv: Canvas, parent, x: float, y: float, *, wheels: int = 2, lean: float = 0.0, scale: float = 1.0):
+    """A wheeled trash bin standing on ``x, y``, its handle at the top right, tipped ``lean`` degrees onto its wheels.
+    ``wheels`` is how many it still has: with none it stands on its corner."""
+    if wheels not in (0, 1, 2):
+        raise StickDataError(f"a bin has 0 to 2 wheels, got {wheels!r}")
+    if scale <= 0:
+        raise StickDataError(f"a bin's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale, rotation=lean)
+    shape(cv, g, "M -92 -300 L 92 -300 L 76 -24 L -76 -24 Z", BIN_BODY, 5, stroke=cv.ink)
+    box(cv, g, -108, -326, 216, 30, BIN_LID, 5, r=8)
+    box(cv, g, 92, -330, 40, 16, cv.ink, r=6)
+    for k in range(wheels):
+        oval(cv, g, 40 - k * 120, -44, 58, 58, TYRE)
+    return g
+
+
+@register("prop", "stick-trash-truck", tags=("trash", "street", "truck", "vehicle"))
+def trash_truck(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
+    """A trash truck heading right, its rear on ``x`` and its wheels on the road at ``y``: the hopper, the body and the
+    cab, :data:`TRUCK_LENGTH` long. The cab's window is :data:`CAB_WINDOW`, so a driver can be drawn in it."""
+    if scale <= 0:
+        raise StickDataError(f"a truck's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    box(cv, g, 0, -420, 300, 340, TRUCK_DARK, 5, r=10)
+    box(cv, g, 34, -380, 200, 200, "#14181c", r=8)
+    box(cv, g, 260, -540, 520, 460, TRUCK_BODY, 5, r=14)
+    for rib in range(340, 780, 110):
+        shape(cv, g, f"M {rib} -520 L {rib} -100", sw=6, stroke=TRUCK_DARK)
+    nose = TRUCK_LENGTH
+    shape(cv, g, f"M 780 -440 L 930 -440 Q {nose} -420 {nose} -300 L {nose} -80 L 780 -80 Z", CAB, 5,
+          stroke=cv.ink)  # fmt: skip
+    cx, cy, cw, ch = CAB_WINDOW
+    box(cv, g, cx, cy, cw, ch, GLASS, 5, r=10)
+    box(cv, g, -20, -90, TRUCK_LENGTH + 40, 30, cv.ink, r=8)
+    for wheel in (150, 620, 870):
+        oval(cv, g, wheel - 78, -128, 156, 156, TYRE)
+        oval(cv, g, wheel - 30, -80, 60, 60, STEEL)
+    return g
+
+
+@register("prop", "stick-slipper", tags=("clothes", "home", "slipper", "shoe"))
+def slipper(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
+    """One bedroom slipper centred on ``x, y``, toe to the right; key the group to throw it."""
+    if scale <= 0:
+        raise StickDataError(f"a slipper's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    shape(cv, g, "M -70 22 Q -74 -12 -30 -10 L 26 -28 Q 76 -24 78 22 Z", PLUSH, 5, stroke=cv.ink)
+    shape(cv, g, "M -78 26 L 84 26", sw=9, stroke=cv.ink)
+    return g
+
+
+@register("prop", "stick-sparks", tags=("effect", "sparks", "scrape", "metal"))
+def sparks(cv: Canvas, parent, x: float, y: float, end: float, *, rate: float = 12.0, scale: float = 1.0):
+    """A spray of sparks thrown back from ``x, y``, redrawn ``rate`` times a second for ``end`` seconds: two sprays turn
+    about, so it flickers the same on every render."""
+    if not (checks.number(end) and end > 0):
+        raise StickDataError(f"sparks last some seconds, got {end!r}")
+    if not (checks.number(rate) and rate > 0):
+        raise StickDataError(f"sparks flicker a positive rate, got {rate!r}")
+    if scale <= 0:
+        raise StickDataError(f"sparks' scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
+    sprays = (((-120, -40), (-70, -90), (-160, -14), (-30, -60)), ((-90, -70), (-150, -36), (-44, -96), (-110, -10)))
+    step = 1 / rate
+    for which, spray in enumerate(sprays):
+        one = _group(cv, g)
+        for dx, dy in spray:
+            shape(cv, one, f"M 0 0 L {dx} {dy}", sw=6, stroke=SPARK)
+            shape(cv, one, f"M {dx * 0.4} {dy * 0.4} L {dx * 0.8} {dy * 0.8}", sw=3, stroke=SPARK_CORE)
+        spans = [(k * step, min((k + 1) * step, end)) for k in range(which, int(end / step) + 1, 2) if k * step < end]
+        cv.gate(one, spans)
+    return g
