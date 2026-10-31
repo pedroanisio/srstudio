@@ -248,9 +248,9 @@ def _sneak(shot, at: dict[str, float]) -> None:
 
 
 def _stamp(shot, at: dict[str, float]) -> None:
-    """The evidence, stamped on the picture: one line and its source, for as long as it takes to read them."""
+    """The evidence, stamped on the picture: one line and its source, gone when he tastes what the fox gave him."""
     cv = shot.cv
-    start, end = at["stamp"], at["tasted"] + 0.6
+    start, end = at["stamp"], at["tasted"]
     x, y = round((cv.width - STAMP_W) / 2, 2), STAMP_Y
     mid = y + STAMP_H / 2
     g = cv.group(

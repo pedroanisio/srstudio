@@ -125,6 +125,21 @@ def test_the_swap_lands_while_the_stamp_is_still_being_said():
     assert sneak.line == 4 and sneak.word > 0
 
 
+def test_the_stamp_is_gone_when_he_tastes_the_toothpaste(monkeypatch):
+    """The stamp sits across the tube, so it must not outstay the moment the tube pays off."""
+    cv = canvas()
+    ends = []
+    group = cv.group
+
+    def recording(parent, name, **kw):
+        ends.append(kw.get("end"))
+        return group(parent, name, **kw)
+
+    monkeypatch.setattr(cv, "group", recording)
+    pilot._stamp(SimpleNamespace(cv=cv, front=cv.comp), SCRIPTED)
+    assert SCRIPTED["sneak"] < ends[0] <= SCRIPTED["tasted"]
+
+
 def test_the_fox_leaves_with_the_mint_she_took(monkeypatch):
     seen = []
     monkeypatch.setattr(toon_parlour, "cone", lambda cv, g, at, flavour: seen.append(flavour))
