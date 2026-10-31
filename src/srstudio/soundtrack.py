@@ -301,6 +301,7 @@ class PhonemeStyle:
     close_bilabials: bool = False  # every b, m, p closes the mouth on its nearest sample
     lead: float = 0.0  # seconds the mouth shows a sound early
     min_rest: float = 0.0  # a pause between letters shorter than this keeps the pose before it
+    fine: bool = False  # two more poses for a mouth seen large: wide for e, i and y, lip for f and v
 
     def __post_init__(self):
         if isinstance(self.rate, bool) or not isinstance(self.rate, int) or self.rate <= 0:

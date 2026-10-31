@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import TOON, camera, craft, parts, sketch, toon, toon_sketch, usage
+from srstudio.layout import VERTICAL
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -178,6 +179,37 @@ def test_a_bare_who_gets_no_figure(pinned_fonts, tmp_path):
     bare = built(tmp_path / "bare", st, pinned_fonts)[1]
     assert drawn and skipped  # the dress still runs: it draws the whole frame of a bare shot
     assert len(list(bare.iter())) < len(list(full.iter()))
+
+
+def test_an_overlay_is_drawn_once_over_every_shot_and_under_the_captions(pinned_fonts, tmp_path):
+    order, seen = [], []
+
+    def overlay(cv, parent, beats, end, measure):
+        order.append("overlay")
+        seen.append((parent, tuple(beats), end, measure("x", 10.0)))
+        cv.group(parent, "over-every-shot")
+
+    def captions(cv, parent, lines, measure, tints):
+        order.append("captions")
+
+    st = replace(silent(stage_sketch()), overlay=overlay, captions=captions, finish=lambda cv, node: None)
+    ep, xml = built(tmp_path, st, pinned_fonts)
+    assert order == ["overlay", "captions"]
+    parent, beats, end, width = seen[0]
+    assert parent is ep.comp and end == END and width > 0 and len(beats) == 2
+    assert [n for n in xml.iter() if n.get("id") == "over-every-shot"]
+
+
+def test_a_dress_is_handed_the_mouths_of_the_recording_only_when_there_is_one(pinned_fonts, tmp_path):
+    seen = []
+    st = replace(silent(stage_sketch()), dress=lambda shot: seen.append(shot.mouths))
+    built(tmp_path, st, pinned_fonts)
+    assert seen and all(mouths == {} for mouths in seen)
+
+
+def test_a_staging_can_declare_the_safe_area_a_show_keeps_its_text_in(pinned_fonts, tmp_path):
+    ep, _ = built(tmp_path, replace(silent(stage_sketch()), safe_area=VERTICAL), pinned_fonts)
+    assert ep.spec.safe_area is VERTICAL
 
 
 def test_a_staging_can_bring_its_own_captions_grade_output_and_frame_rate(pinned_fonts, tmp_path):

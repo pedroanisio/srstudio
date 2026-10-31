@@ -103,7 +103,15 @@ BEAT_FIELDS = ("start", "who", "caption", "eyes", "mouth", "arms", "line", "word
 VISEME_RATE = 12  # viseme samples per second of speech
 MOUTH_STYLE = soundtrack.PhonemeStyle(rate=VISEME_RATE, round_letters="ouw")
 _TAKE_FIELDS = frozenset(("id", "who", "at", "kept", "characters", "starts", "ends"))
-VISEME_OF = {"closed": "closed", "open": "open", "round": "round", "teeth": "teeth", "shout": "open"}
+VISEME_OF = {
+    "closed": "closed",
+    "open": "open",
+    "round": "round",
+    "teeth": "teeth",
+    "shout": "open",
+    "wide": "wide",
+    "lip": "lip",
+}
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
@@ -165,6 +173,7 @@ class Cast:
     mouths: tuple[str, ...]
     arms: tuple[str, ...]
     wear: tuple[str, ...] = ()
+    visemes: tuple[str, ...] = toon_cast.VISEMES  # the mouths its viseme tracks may hold
 
     def __post_init__(self) -> None:
         if not (self.characters and self.eyes and self.mouths and self.arms):
@@ -501,8 +510,7 @@ def load_beats(path: Path) -> tuple[list[Beat], float]:
 def load_mouths(path: Path, cast: Cast = TOON_CAST) -> tuple[Mouths, float]:
     """The viseme track per character and the project end from ``voiced/mouths.json``: typed, every character one
     of ``cast``'s lip-synced ones (:data:`LIP_SYNCED` by default), every state ``[second, viseme]`` with the
-    visemes of :data:`srstudio.toon_cast.VISEMES`,
-    in strictly rising time within the project."""
+    cast's visemes (:data:`srstudio.toon_cast.VISEMES` by default), in strictly rising time within the project."""
     try:
         data = json.loads(Path(path).read_text())
     except (OSError, ValueError) as exc:
@@ -525,8 +533,8 @@ def load_mouths(path: Path, cast: Cast = TOON_CAST) -> tuple[Mouths, float]:
             t, v = state
             if not (checks.number(t) and 0 <= t <= end):
                 raise SketchError(f"{path} {who} state {i}: the second must lie within 0..{end}")
-            if v not in toon_cast.VISEMES:
-                raise SketchError(f"{path} {who} state {i}: viseme {v!r} is not one of {toon_cast.VISEMES}")
+            if v not in cast.visemes:
+                raise SketchError(f"{path} {who} state {i}: viseme {v!r} is not one of {cast.visemes}")
             if track and t <= track[-1][0]:
                 raise SketchError(f"{path} {who} state {i}: seconds must rise")
             track.append((float(t), v))
