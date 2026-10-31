@@ -8088,6 +8088,176 @@
           "rig": null
         }
       ]
+    },
+    "map-ground": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The channel's bright ground behind a globe. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4d10890e91fb695d6922f8d951213b5db78821504a8e9d5d4c2506f6a65755eb",
+          "rig": null
+        }
+      ]
+    },
+    "map-globe": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An orthographic globe that turns. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "848d70e91c0e2345feed3a1e89ffefc982f462608e55f931681090ec3b51fe06",
+          "rig": null
+        }
+      ]
+    },
+    "map-flat": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An equirectangular map with a camera that flies. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3878390ec802949afb797ffe8e495e2afd72b051fbcbbacc1c7e113a3277a1b9",
+          "rig": null
+        }
+      ]
+    },
+    "map-equal-area": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A Lambert azimuthal equal-area map, re-centred as it moves. First drawn for inside-the-circle.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f7cc3efaf2b81ef76aaa8aeefb1b8c39d70ec234b6618caedc6f52e851486c8",
+          "rig": null
+        }
+      ]
+    },
+    "map-pin": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A pin with its name and latitude on a label that rides with it. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "13256e6f05de86c82e0e9898b1bc2efcb94577595fc4c7de32d2a078cb217f70",
+          "rig": null
+        }
+      ]
+    },
+    "map-parallel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One line of latitude with its tag. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "005673a7b53a5c240f4afa7372e12eb1fdf8e72658c5529d0d867ae6a11170c1",
+          "rig": null
+        }
+      ]
+    },
+    "map-population": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One dot per million people, by zone and in waves. First drawn for inside-the-circle.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b4f438977089dd3fee14c439f2b6f47482d63d9478b1617cf5cce9c0a8beb6e7",
+          "rig": null
+        }
+      ]
+    },
+    "map-ring": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A circle of a true great-circle radius with a veil outside it. First drawn for inside-the-circle.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5698381ac773ef555557a74b912483436d3ab6ff51a6801b02bdb68dc081bf92",
+          "rig": null
+        }
+      ]
+    },
+    "map-stamp": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The one line of evidence: figure, dataset, year. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "89f1a6c55e3ae8214c2ed15a9179f173c1e5f6c0bda808ad1857c42f0057cb30",
+          "rig": null
+        }
+      ]
+    },
+    "map-captions": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The channel's captions: a paper box at the top of the map. First drawn for further-north.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5db15743ded830685255b28cb84fb8b8c1dfc80c4976122e46e9504e16126d51",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -40,6 +40,7 @@ from . import (
     gloss_sets,
     ink_meter,
     ink_phone,
+    map_kit,
     mind_kit,
     parts,
     registry,
@@ -85,6 +86,7 @@ class Context:
 
     font: bytes  # the style's font
     episodes: Path  # where the projects are, for the parts drawn from a project's traced data
+    work: Path  # the folder the document renders in, for the files a part reads beside it
 
     def assets(self, project: str) -> Path:
         folder = self.episodes / project / "assets"
@@ -153,6 +155,27 @@ def auto(entry: registry.Entry) -> Recipe | None:
         return None
     filled = {name: FILLED[name] for name in needed}
     return Recipe(lambda cv, g, e, ctx: e(cv, g, **filled))
+
+
+_ROME = map_kit.Place("Rome", 41.89193, 12.51133)
+_SPIN = ((0.0, -30.0), (SECONDS, -10.0))
+_HOT = {"inside": map_kit.PIN}
+
+
+def _maps(ctx: Context) -> bool:
+    """Put the layers a map part reads beside its document."""
+    map_kit.install(ctx.work)
+    return True
+
+
+def _on_flat(cv: Canvas, parent: Any, ctx: Context) -> Any:
+    _maps(ctx)
+    return map_kit.flat(cv, parent, 12.0, 42.0, 2.5, 0.0, SECONDS)
+
+
+def _on_area(cv: Canvas, parent: Any, ctx: Context) -> Any:
+    _maps(ctx)
+    return map_kit.equal_area(cv, parent, 99.0, 21.0, 1.6, 0.0, SECONDS)
 
 
 def part(*args, **kwargs) -> Draw:
@@ -325,6 +348,23 @@ RECIPES: dict[str, Recipe] = {
     "mind-memory-shelf": Recipe(lettered(("One", "Two", "Three"))),
     "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
     "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
+    "map-globe": Recipe(lambda cv, g, e, ctx: e(cv, g, -20.0, 30.0, 0.0, SECONDS, spin=_SPIN) if _maps(ctx) else None),
+    "map-flat": Recipe(lambda cv, g, e, ctx: e(cv, g, -30.0, 45.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
+    "map-equal-area": Recipe(lambda cv, g, e, ctx: e(cv, g, 99.0, 21.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
+    "map-pin": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx).id, _ROME, 0.0, SECONDS, ctx.measure)
+    ),
+    "map-parallel": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx), _ROME, 0.0, SECONDS, tag_from=0.0, measure=ctx.measure)
+    ),
+    "map-population": Recipe(
+        lambda cv, g, e, ctx: e(cv, _on_area(cv, g, ctx), {"inside": (0.0, 0.5), "rest": (0.0, 0.5)}, _HOT)
+    ),
+    "map-ring": Recipe(part(map_kit.ring_px(3300.0, 1.6), 0.0, SECONDS)),
+    "map-stamp": Recipe(lettered("A line of evidence. Source, 2026.", 0.0, SECONDS)),
+    "map-captions": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "narrator"),), ctx.measure, {})
+    ),
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
@@ -478,7 +518,7 @@ def document(entry: registry.Entry, recipe: Recipe, font: bytes | None, episodes
             _add_font(cv, style, "caption", font, work)
         return cv.scene.to_bytes()
     cv = _stage(style, font, work)
-    recipe.draw(cv, cv.comp, entry, Context(font or b"", episodes))
+    recipe.draw(cv, cv.comp, entry, Context(font or b"", episodes, work))
     return cv.scene.to_bytes()
 
 

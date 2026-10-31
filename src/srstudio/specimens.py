@@ -78,6 +78,13 @@ DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the d
     "radialGradient": GRADIENT,
     "stop": frozenset({"color", "offset"}),
     "text": LETTERS | {"fontAsset"},
+    "geo": frozenset({"src", "sha256", "license", "credit"}),
+    "map": frozenset({"width", "height", "projection", "centerLon", "centerLat", "zoom", "background"})
+    | {"fitPadding", "outline", "outlineWidth"},
+    "geoLayer": frozenset({"geo", "filter", "fill", "stroke", "strokeWidth", "opacity", "pointRadius"}),
+    "graticule": frozenset({"step", "stroke", "strokeWidth"}),
+    "route": frozenset({"points", "stroke", "strokeWidth", "progress", "opacity"}),
+    "flyTo": frozenset({"begin", "duration", "lon", "lat", "zoom", "rho"}),
 }
 IGNORED = frozenset({"id"})  # an id says nothing about what is drawn
 UNDRAWN_ASSETS = frozenset({"font"})  # an asset that is not drawing: what it shapes is in the document already

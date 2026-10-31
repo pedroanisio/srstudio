@@ -826,6 +826,36 @@
     "mind-lens": {
       "title": "Lente do viés"
     },
+    "map-ground": {
+      "title": "Céu do globo"
+    },
+    "map-globe": {
+      "title": "Globo que gira"
+    },
+    "map-flat": {
+      "title": "Mapa plano com câmera"
+    },
+    "map-equal-area": {
+      "title": "Mapa de área igual"
+    },
+    "map-pin": {
+      "title": "Alfinete com etiqueta"
+    },
+    "map-parallel": {
+      "title": "Paralelo rotulado"
+    },
+    "map-population": {
+      "title": "População em pontos"
+    },
+    "map-ring": {
+      "title": "Círculo de raio real"
+    },
+    "map-stamp": {
+      "title": "Selo da evidência"
+    },
+    "map-captions": {
+      "title": "Legendas dos mapas"
+    },
     "toon-tee": {
       "title": "Camiseta constrangedora"
     },

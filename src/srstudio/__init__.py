@@ -35,6 +35,7 @@ from . import (  # noqa: F401  (registers builders)
     layout,
     lipsync,
     locations,
+    map_kit,
     mind_kit,
     music,
     native,
