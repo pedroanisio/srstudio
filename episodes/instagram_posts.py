@@ -35,7 +35,7 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import auto_enhance, caption_gate, fonts, outbox, releases
+from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -102,8 +102,8 @@ def write_all(
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
-    print over each other, or a first delivery with no enhancement behind it (ADR 0056), is a :class:`DeliveryError`
-    before anything is written."""
+    print over each other, or a first delivery with no enhancement behind it (ADR 0056) or under the comedy floor
+    (ADR 0064), is a :class:`DeliveryError` before anything is written."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -117,6 +117,7 @@ def write_all(
         raise DeliveryError("; ".join(map(str, refused)))
     done = read_manifest(out)
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
+    comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
     refused = auto_enhance.refused(first, REPO)
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))

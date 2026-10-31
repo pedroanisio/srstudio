@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import craft
+from .comedy_floor import Scores
 from .errors import SrstudioError
 from .parts import PartError, pin, read_record
 from .social import COVER_VARIANT, Drift, InstagramPost, Item
@@ -120,7 +121,8 @@ class Release:
     (ADR 0048); a release published before the gate needs none. ``parts`` pins the version of every part it
     draws, by registered name: ``None`` while the reel is being written, when it draws each part's default,
     and refused at delivery (:func:`unpinned`), so a shipped reel never changes when a new version is approved
-    (ADR 0047)."""
+    (ADR 0047). ``comedy`` holds its two scores on the skill's rubric: a reel's first delivery refuses them under
+    the floor, or none at all, and a release already delivered needs none (:mod:`srstudio.comedy_floor`, ADR 0064)."""
 
     slug: str
     post: InstagramPost
@@ -132,6 +134,7 @@ class Release:
     frozen: str = ""
     style: str = ""
     parts: Mapping[str, int] | None = None
+    comedy: Scores | None = None
 
     def __post_init__(self) -> None:
         if not SLUG.fullmatch(self.slug):
@@ -150,6 +153,8 @@ class Release:
             raise ReleaseError(f"{self.slug}: frozen {self.frozen!r} is not a cover fingerprint (64 lowercase hex)")
         if self.parts is not None:
             self._check_pins(self.parts)
+        if self.comedy is not None and not isinstance(self.comedy, Scores):
+            raise ReleaseError(f"{self.slug}: comedy is a {type(self.comedy).__name__}, not Scores")
 
     def _check_pins(self, pins: Mapping[str, int]) -> None:
         if not isinstance(pins, Mapping):

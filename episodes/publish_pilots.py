@@ -16,8 +16,9 @@ Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @tuxmeme, and 
 pushes to it through the ``srstudio-drive`` unit. So this tool only uploads under ``gdrive:srstudio/pilots/``, judged on
 the normalised remote it hands to rclone; only stages in ``generated/pilots/<series>``; and refuses a slug released on
 @tuxmeme. A series never crosses another: its stage and remote are the only ones it accepts, and a slug with a folder
-under another series' ``pilots/`` in this repository is refused. A refused run stages and uploads nothing and exits 2,
-as does a failed upload.
+under another series' ``pilots/`` in this repository is refused. A new pilot of a comedy series needs ``comedy-author``
+and ``comedy-reviewer`` in the frontmatter of its ``notes.md``, the lower at the floor or above (ADR 0064); a series in
+:data:`NOT_COMEDY` owes none. A refused run stages and uploads nothing and exits 2, as does a failed upload.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ import re
 import sys
 from pathlib import Path
 
-from srstudio import auto_enhance, outbox
+from srstudio import auto_enhance, comedy_floor, outbox
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -41,11 +42,13 @@ REMOTE_NAME = "gdrive"
 ROOT = ("srstudio", "pilots")
 NEVER = "ready-to-publish"
 STAGE = Path("generated/pilots/mind")
-SERIES = ("mind", "maps")  # the first is the default
+SERIES = ("mind", "maps", "news")  # the first is the default
+NOT_COMEDY = frozenset({"mind", "maps"})  # the operator's line (ADR 0064): any other series owes the comedy floor
 MANIFEST = "manifest.json"
 PACKAGE = "vpkg.zip"
-ALSO = ("cover.jpg", "ig.txt", PACKAGE, "sources.md", "notes.md")  # what follows <slug>.mp4 in a pilot's folder
-WRITTEN = ("sources.md", "notes.md")  # blank is empty for these: a file of spaces says nothing
+NOTES = "notes.md"
+ALSO = ("cover.jpg", "ig.txt", PACKAGE, "sources.md", NOTES)  # what follows <slug>.mp4 in a pilot's folder
+WRITTEN = ("sources.md", NOTES)  # blank is empty for these: a file of spaces says nothing
 _SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 _WATCHED = (("generated", "renders", "ig"), ("generated", "outbox"))
 
@@ -189,6 +192,22 @@ def unenhanced(ready: list[outbox.Bundle], remote: str, rclone: str) -> None:
         raise PilotError("; ".join(map(str, refused)))
 
 
+def unfunny(ready: list[outbox.Bundle], series: str, remote: str, rclone: str) -> None:
+    """Refuse a new pilot of a comedy series short of the floor (ADR 0064). A series in :data:`NOT_COMEDY` owes
+    nothing, nor does a pilot already on Drive. Drive is read only for a pilot that falls short, so a scored set needs
+    no rclone."""
+    if series in NOT_COMEDY:
+        return
+    notes = {p.name: dict(zip(p.names, p.files, strict=True))[NOTES] for p in ready}
+    short = {slug: why for slug, path in notes.items() if (why := comedy_floor.notes_shortfall(path.read_bytes()))}
+    if short:
+        on_drive = delivered(remote, rclone)
+        try:
+            comedy_floor.refuse({slug: why for slug, why in short.items() if slug not in on_drive})
+        except comedy_floor.ComedyError as e:
+            raise PilotError(str(e)) from e
+
+
 def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
     """What is in the pilot's folder and not delivered, as ``slug/name``."""
     chosen = {f.name for f in pilot.files}
@@ -221,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         for pilot in ready:
             for name in left_behind(pilot, source):
                 print(f"left behind: {name}")
+        unfunny(ready, args.series, remote, args.rclone)
         unenhanced(ready, remote, args.rclone)
         stage.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         stage.parent.chmod(0o700)

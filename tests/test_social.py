@@ -5,6 +5,7 @@ import hashlib
 import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import asdict
@@ -13,7 +14,8 @@ from pathlib import Path
 import pytest
 
 from srstudio import Episode, EpisodeSpec, parts, sketch, social, thumbnail
-from srstudio.releases import Release
+from srstudio.comedy_floor import ComedyError, Scores
+from srstudio.releases import Release, ReleaseError
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -909,6 +911,9 @@ def test_a_toon_reel_outside_the_sketch_builder_stays_on_version_one():
     assert all(number == 1 for pins in outside.values() for number in pins.values())
 
 
+ON_THE_FLOOR = Scores(15, 14)
+
+
 def unpinned_release(posts, monkeypatch, tmp_path) -> Path:
     """The shipped delivery with one release added that pins nothing, and nothing else to compare."""
     post = next(iter(posts.POSTS.values()))
@@ -981,10 +986,11 @@ def test_an_unreadable_manifest_means_every_video_is_being_delivered(monkeypatch
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
 
 
-def _new_reel(posts, monkeypatch, tmp_path, repo):
+def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR):
     renders = unpinned_release(posts, monkeypatch, tmp_path)
     post = next(iter(posts.POSTS.values()))
-    monkeypatch.setattr(posts, "RELEASES", {"new-reel": Release("new-reel", post, video="New_Reel", parts={})})
+    release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
@@ -1019,6 +1025,80 @@ def test_a_video_already_delivered_owes_no_enhancement(monkeypatch, tmp_path):
     assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
         "written"
     ]
+
+
+@pytest.mark.parametrize(
+    "scores, says",
+    [
+        (None, "new-reel: no comedy scores"),
+        (Scores(13, 13), "new-reel: comedy score 13 "),
+        (Scores(20, 13), "new-reel: comedy score 13 "),
+        (Scores(13, 20), "new-reel: comedy score 13 "),
+        (Scores(21, 15), "new-reel: comedy-author 21 is not between 0 and 20"),
+        (Scores(15, -1), "new-reel: comedy-reviewer -1 is not between 0 and 20"),
+        (Scores("15", 15), "new-reel: comedy-author '15' is not a whole number"),
+    ],
+)
+def test_a_first_delivery_short_of_the_comedy_floor_is_refused_before_it_writes(monkeypatch, tmp_path, scores, says):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, scores)
+    posts.auto_enhance.set_mode(tmp_path, on=False)  # the floor has no mode: turning auto-enhance off does not lift it
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(ComedyError, match="comedy floor refuses.*" + re.escape(says)):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: the comedy floor refuses.*" + re.escape(says)):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_new_reel_owes_the_floor_even_when_the_delivery_finds_it_by_drift(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, None)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [Drift("New_Reel", "never delivered")])
+    with pytest.raises(ComedyError, match="new-reel"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine")
+
+
+@pytest.mark.parametrize("scores", [Scores(14, 14), Scores(14, 20), Scores(20, 14)])
+def test_a_first_delivery_on_the_comedy_floor_delivers(monkeypatch, tmp_path, scores):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, scores)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+@pytest.mark.parametrize("scores", [None, Scores(3, 3)])
+def test_a_video_already_delivered_owes_no_comedy_score(monkeypatch, tmp_path, scores):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, scores)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_delivering_another_video_answers_for_no_comedy_score(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, None)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["Other"]) == ["written"]
+
+
+def test_the_check_gate_asks_no_comedy_score(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, None)
+    assert posts.check_all(renders / "ig", renders, fonts_dir=tmp_path) == []
+
+
+def test_a_release_holds_its_scores_typed():
+    post = next(iter(shipped_posts().POSTS.values()))
+    assert Release("new-reel", post, comedy=Scores(15, 14)).comedy == Scores(15, 14)
+    with pytest.raises(ReleaseError, match="new-reel: comedy is a tuple, not Scores"):
+        Release("new-reel", post, comedy=(15, 14))
 
 
 def test_the_published_delivery_has_not_drifted():

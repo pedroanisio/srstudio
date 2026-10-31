@@ -3,6 +3,7 @@ folder that posts to @tuxmeme. Everything refused is refused before anything is 
 
 import hashlib
 import json
+import re
 import stat
 import subprocess
 import sys
@@ -509,6 +510,8 @@ def test_each_series_defaults_to_its_own_stage_and_remote(tool):
     assert (tool.stage_of("mind"), tool.remote_of("mind")) == (tool.STAGE, tool.REMOTE)
     assert tool.stage_of("maps") == Path("generated/pilots/maps")
     assert tool.remote_of("maps") == "gdrive:srstudio/pilots/maps"
+    assert tool.stage_of("news") == Path("generated/pilots/news")
+    assert tool.remote_of("news") == "gdrive:srstudio/pilots/news"
 
 
 @pytest.mark.parametrize(
@@ -573,3 +576,113 @@ def test_the_released_list_still_binds_the_maps_series(tool, world, capsys):
     pilot(world / "in", "i-cleaned")
     assert tool.main(maps_args(world, "--stage-only")) == 2
     assert "released" in capsys.readouterr().err
+
+
+# -- the comedy floor: news owes two scores, Mind and Maps owe none (ADR 0064) -----------------------------------------
+def news_args(world: Path, *extra: str) -> list[str]:
+    argv = args(world, "--series", "news", *extra)
+    argv[argv.index("--stage") + 1] = str(world / "generated/pilots/news")
+    return argv
+
+
+def scored(world: Path, slug: str, *lines: str) -> None:
+    (world / "in" / slug / "notes.md").write_text("\n".join(("---", f"pilot: {slug}", *lines, "---", "", "# Notes\n")))
+
+
+def both_scored(world: Path, author: int = 15, reviewer: int = 14) -> None:
+    for slug in ("the-tell", "second-pilot"):
+        scored(world, slug, f"comedy-author: {author}", f"comedy-reviewer: {reviewer}")
+
+
+def test_only_news_owes_the_floor(tool):
+    assert set(tool.SERIES) - tool.NOT_COMEDY == {"news"}
+    assert tool.NOT_COMEDY == {"mind", "maps"}
+
+
+def test_scored_news_stages_in_its_own_folder_pushes_to_its_own_remote_and_never_reads_drive(tool, world, monkeypatch):
+    both_scored(world)
+    runner = Runner(0, 0)
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    assert tool.main(news_args(world)) == 0
+    assert (world / "generated/pilots/news/the-tell/the-tell.mp4").is_file()
+    assert [call[1] for call in runner.calls] == ["copy", "check"]
+    assert all("gdrive:srstudio/pilots/news" in call for call in runner.calls)
+
+
+@pytest.mark.parametrize(
+    "lines, says",
+    [
+        ((), "the-tell: .*comedy-author is missing"),
+        (("comedy-author: 15",), "the-tell: .*comedy-reviewer is missing"),
+        (("comedy-reviewer: 15",), "the-tell: .*comedy-author is missing"),
+        (("comedy-author: 15", "comedy-reviewer: 14/20"), "the-tell: .*comedy-reviewer .*not a whole number"),
+        (("comedy-author: 15", "comedy-reviewer: 21"), "the-tell: .*comedy-reviewer 21 is not between 0 and 20"),
+        (("comedy-author: 15", "comedy-reviewer: 13"), "the-tell: .*comedy score 13 .*below the floor of 14"),
+        (("comedy-author: 13", "comedy-reviewer: 20"), "the-tell: .*comedy score 13 .*below the floor of 14"),
+    ],
+)
+def test_news_short_of_the_floor_stages_and_uploads_nothing(tool, world, monkeypatch, capsys, lines, says):
+    both_scored(world)
+    scored(world, "the-tell", *lines)
+    answer = Manifest(code=3)  # no manifest on Drive yet: everything is new
+    monkeypatch.setattr(tool.outbox, "_run", answer)
+    assert tool.main(news_args(world)) == 2
+    err = capsys.readouterr().err
+    assert re.search(says, err), err
+    assert "second-pilot" not in err
+    assert [call[1] for call in answer.calls] == ["cat"]
+    assert not (world / "generated/pilots").exists()
+
+
+def test_notes_that_are_not_text_are_refused_for_news(tool, world, monkeypatch, capsys):
+    both_scored(world)
+    (world / "in/the-tell/notes.md").write_bytes(b"\xff\xfe not text\n")
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    assert tool.main(news_args(world, "--stage-only")) == 2
+    assert "the-tell" in capsys.readouterr().err
+    assert not (world / "generated/pilots").exists()
+
+
+def test_news_already_on_drive_owes_no_score_and_a_new_one_still_does(tool, world, monkeypatch, capsys):
+    text = json.dumps({"version": "1.0.0", "videos": {"the-tell": {}}})
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(text))
+    assert tool.main(news_args(world, "--stage-only")) == 2
+    err = capsys.readouterr().err
+    assert "second-pilot" in err and "the-tell" not in err
+    both_scored(world)
+    scored(world, "the-tell", "comedy-author: 1", "comedy-reviewer: 1")
+    assert tool.main(news_args(world, "--stage-only")) == 0
+
+
+@pytest.mark.parametrize("answer", [Manifest("not json"), Manifest(code=1)])
+def test_a_drive_that_cannot_be_read_clears_no_short_pilot(tool, world, monkeypatch, capsys, answer):
+    monkeypatch.setattr(tool.outbox, "_run", answer)
+    assert tool.main(news_args(world, "--stage-only")) == 2
+    assert not (world / "generated/pilots").exists()
+
+
+@pytest.mark.parametrize("series", ["mind", "maps"])
+@pytest.mark.parametrize("lines", [(), ("comedy-author: 2", "comedy-reviewer: 2"), ("comedy-author: nonsense",)])
+def test_mind_and_maps_are_exempt_whatever_their_notes_say(tool, world, monkeypatch, series, lines):
+    scored(world, "the-tell", *lines)
+    runner = Runner()
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    argv = args(world, "--series", series, "--stage-only")
+    argv[argv.index("--stage") + 1] = str(world / "generated/pilots" / series)
+    assert tool.main(argv) == 0
+    assert runner.calls == []
+    assert (world / "generated/pilots" / series / "the-tell/the-tell.mp4").is_file()
+
+
+def test_a_series_added_later_owes_the_floor_until_someone_says_otherwise(tool, world, monkeypatch):
+    monkeypatch.setattr(tool, "SERIES", (*tool.SERIES, "sport"))
+    monkeypatch.setattr(tool.outbox, "_run", Manifest(code=3))
+    with pytest.raises(tool.PilotError, match="comedy floor refuses"):
+        tool.unfunny(tool.bundles(world / "in", set()), "sport", "gdrive:srstudio/pilots/sport", "rclone")
+
+
+def test_an_unknown_series_is_refused_with_scores_in_order(tool, world):
+    both_scored(world)
+    with pytest.raises(SystemExit):
+        tool.main(args(world, "--series", "sport", "--stage-only"))
+    assert not (world / "generated/pilots").exists()

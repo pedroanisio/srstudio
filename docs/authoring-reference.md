@@ -2086,15 +2086,18 @@ error is `InstagramPostError`, with every problem listed.
   its failure path.
 - **Pilots** ([ADR 0054](../docs/decisions/0054-pilots-have-their-own-road-to-drive.md)). A pilot for a future channel is
   not published and must never reach @tuxmeme, so it has its own road: `python3 episodes/publish_pilots.py FOLDER`
-  (`--stage-only`, `--dry-run`). `FOLDER` holds one folder per slug with `<slug>.mp4`, `cover.jpg`, `ig.txt`,
+  (`--series`, `--stage-only`, `--dry-run`). `FOLDER` holds one folder per slug with `<slug>.mp4`, `cover.jpg`, `ig.txt`,
   `sources.md`, `notes.md` and a package, `vpkg.zip` or `<slug>-<version>.vpkg.zip`, delivered as `vpkg.zip`. It stages
-  `generated/pilots/mind/` (folders 700, files 600) with `manifest.json` beside the folders, shaped like `outbox.json`,
-  and uploads to `gdrive:srstudio/pilots/mind` with `outbox.push`: `rclone copy`, then `rclone check`, never a delete.
+  `generated/pilots/<series>/` (folders 700, files 600; `mind` by default, or `maps` or `news`) with `manifest.json`
+  beside the folders, shaped like `outbox.json`, and uploads to `gdrive:srstudio/pilots/<series>` with `outbox.push`:
+  `rclone copy`, then `rclone check`, never a delete.
   It refuses a missing or empty file, blank `sources.md` or `notes.md`, a slug that is not one plain name, a slug
   @tuxmeme has used (release slugs, video names, folders in `generated/renders/ig`), any staging folder but
-  `generated/pilots/mind`, and any remote outside `gdrive:srstudio/pilots/`. The remote is judged after normalising,
-  and rclone is given the normal form, so `pilots/../ready-to-publish` is refused. No systemd unit watches the staging
-  folder and none runs this tool. `FOLDER` is the whole set: staging replaces the last stage.
+  `generated/pilots/<series>`, any remote outside `gdrive:srstudio/pilots/<series>`, and a new News pilot short of the
+  comedy floor ([ADR 0064](../docs/decisions/0064-comedy-floor.md)): `comedy-author` and `comedy-reviewer` in the frontmatter of
+  its `notes.md`, the lower at 14 or above. The remote is judged after normalising, and rclone is given the normal form,
+  so `pilots/../ready-to-publish` is refused. No systemd unit watches the staging folder and none runs this tool.
+  `FOLDER` is the whole set: staging replaces the last stage.
 
 ## Verification
 
