@@ -136,3 +136,14 @@ def test_a_carry_refuses_what_the_hand_is_not_there_for(take, put, rest):
     cv = canvas()
     with pytest.raises(ReachError):
         carried(cv, cv.group(cv.comp, "cup"), TRACK, take, put, rest=rest)
+
+
+def test_a_carried_thing_is_keyed_on_the_frames_the_arm_is_keyed_on():
+    cv = canvas()
+    track = [(0.04, 300.0, 700.0), (1.0, 700.0, 900.0)]
+    arm, _ = reach(cv, cv.comp, "arm", (100.0, 100.0), track)
+    carried(cv, cv.group(cv.comp, "cup"), track, 0.3, 0.8, rest=(0.0, 0.0))
+    root = scene(cv)
+    arm_times = {round(t, 4) for t in keyed(root, "arm", "rotation")}
+    inside = [t for t in keyed(root, "cup", "x") if 0.3 < t < 0.8]
+    assert inside and all(round(t, 4) in arm_times for t in inside)
