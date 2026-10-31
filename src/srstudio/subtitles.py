@@ -9,6 +9,7 @@ from pathlib import Path
 from .errors import SrstudioError
 
 Cue = tuple[float, float, str]
+_SRT_TIMES = re.compile(r"(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)")
 
 
 class SubtitleError(SrstudioError, ValueError):
@@ -98,3 +99,20 @@ def write_srt(path: Path, cues: Sequence[Cue]) -> Path:
     body = "\n\n".join(f"{i + 1}\n{srt_stamp(s)} --> {srt_stamp(e)}\n{text}" for i, (s, e, text) in enumerate(cues))
     path.write_text(body + "\n")
     return path
+
+
+def _split(found: re.Match[str]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    return found.groups()[:4], found.groups()[4:]
+
+
+def read_srt(path: Path) -> list[Cue]:
+    """The cues of a file :func:`write_srt` wrote. Raises :class:`SubtitleError` for a block with no time line."""
+    cues: list[Cue] = []
+    for block in filter(str.strip, Path(path).read_text().split("\n\n")):
+        lines = block.strip().splitlines()
+        found = _SRT_TIMES.fullmatch(lines[1]) if len(lines) > 1 else None
+        if found is None:
+            raise SubtitleError(f"{path}: not a subtitle block: {block.strip()!r}")
+        stamps = [float(h) * 3600 + float(m) * 60 + float(s) + float(ms) / 1000 for h, m, s, ms in _split(found)]
+        cues.append((stamps[0], stamps[1], "\n".join(lines[2:])))
+    return cues
