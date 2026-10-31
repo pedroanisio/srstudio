@@ -5651,6 +5651,23 @@
         }
       ]
     },
+    "toon-bathroom": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tiled shower wall with a chrome shower head, hose and a shelf of bottles. First drawn for planning-fallacy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "41956ba865b52f7c06b4957ea9c255bba047082ac65d7f36a51b00afaafa9d51",
+          "rig": null
+        }
+      ]
+    },
     "toon-bear": {
       "kind": "character",
       "style": "toon",
@@ -7036,6 +7053,23 @@
         }
       ]
     },
+    "toon-shower-water": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Shower water fanning from the rose in stepped streaks that stop short of a face. First drawn for planning-fallacy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "63dac4032f603233cdf1d2bad6eeb6fb8aecde391fd321f7f0cad46eb4ce622e",
+          "rig": null
+        }
+      ]
+    },
     "toon-sink": {
       "kind": "prop",
       "style": "toon",
@@ -7203,6 +7237,23 @@
         }
       ]
     },
+    "toon-suds": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A heap of shampoo on someone's head. First drawn for planning-fallacy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "239ff78514a4126e7200bdde2d41f89d5e1c7ce0c23046e575307b51e4e10e8a",
+          "rig": null
+        }
+      ]
+    },
     "toon-surgery": {
       "kind": "location",
       "style": "toon",
@@ -7347,6 +7398,23 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "e1a3feeaf633f40d0842b2269376784398c16644b11b0d62da4f9a854a973e86",
+          "rig": null
+        }
+      ]
+    },
+    "toon-towel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A towel wrapped round someone's head. First drawn for planning-fallacy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b3407f461325ab93bc7f0b9f340bf1c6bdca8f3d53522a5ea03d7617280b7020",
           "rig": null
         }
       ]

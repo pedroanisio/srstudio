@@ -29,7 +29,11 @@ __all__ = [
     "KEY_LINE_SIZE",
     "KEY_LINE_TOP",
     "LEDGES",
+    "SHOWER_HEAD",
     "SOAK_STAGES",
+    "WATER_PERIOD",
+    "WATER_PHASES",
+    "bathroom",
     "bedroom",
     "day_card",
     "finger",
@@ -39,10 +43,15 @@ __all__ = [
     "ledge",
     "quilt",
     "rope",
+    "shower_water",
     "sink",
+    "streaks",
+    "suds",
     "tee",
     "thermostat",
+    "towel",
     "vent",
+    "water_dashes",
     "watering_can",
 ]
 
@@ -605,3 +614,156 @@ def tee(
     cv.ellipse(g, 6, 62, 7, 7, cv.ink)
     cv.path(g, "M -5 76 C -2 80 2 80 5 76", cv.clear, cv.ink, line * 0.5)
     cv.path(g, TEE_MOUSTACHE, "#3a2a1a", cv.clear, 0)
+
+
+# -- the bathroom ------------------------------------------------------------------------------------------------------
+BATH_WALL = ((0, "#d7ecea"), (1, "#a8cfd0"))
+BATH_GROUT = "#8fbcbf"
+BATH_TILE = 74  # reference pixels between grout lines
+CHROME, CHROME_DARK = "#d5dde3", "#8d9aa6"
+BOTTLES = ((430, 92, 46, "#f28fa8"), (484, 74, 38, "#f5c04e"), (528, 104, 42, "#8fd0a0"))  # x, height, width, colour
+SHELF_Y = 626
+SHOWER_HEAD = (256.0, 190.0)  # the rose's middle: above the caption and over where a head stands
+WATER_PERIOD, WATER_PHASES = 0.24, 3  # seconds a dash takes to fall one dash and a gap, in this many steps
+WATER_DASH, WATER_GAP = 110.0, 70.0  # along the fall, in reference pixels
+WATER_FROM, WATER_TO = 12.0, 830.0  # the fall begins this far under the rose and ends behind the ledge
+WATER_SPREAD = 0.12  # how wide a column's first dash starts, as a share of how far out it ends
+WATER_XS = tuple(range(-304, 817, 56))  # where each column lands at the fall's foot; the fan runs off the frame
+WATER_COLOUR, WATER_W, WATER_OPACITY = "#4fa8d8", 6.0, 0.75
+SUDS_PUFFS = ((-62, -6, 58), (-22, -34, 72), (28, -28, 66), (66, -2, 52), (-4, 10, 74), (34, 14, 46), (-40, 18, 44))
+SUDS_LINE, SUDS_SHADE = "#9db8c4", "#dfeef4"
+TOWEL_COLOUR, TOWEL_SHADE, TOWEL_LINE = "#f7efe2", "#e2d4bf", "#8a7a68"
+TOWEL_DOME = "M -128 20 C -136 -52 -70 -96 0 -98 C 70 -96 136 -52 128 20 C 84 44 -84 44 -128 20 Z"
+TOWEL_FOLDS = ("M -112 -14 C -60 -2 40 -46 112 -36", "M -74 -62 C -30 -52 30 -76 78 -72")
+TOWEL_TAIL = "M 60 -86 C 92 -128 138 -124 150 -92 C 132 -86 112 -74 104 -52 Z"
+
+
+@register("location", "toon-bathroom", summary="A tiled shower wall with a chrome shower head and a shelf of bottles")
+def bathroom(cv: Canvas, parent) -> None:
+    """The wall of a shower, tile from edge to edge, the arm of the rose coming in from the right and three plain
+    bottles on a shelf: :func:`shower_water` falls in front of the character from :data:`SHOWER_HEAD`, and a white
+    :func:`ledge` is the rim of the bath."""
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(
+        g, 0, 0, cv.width, cv.height, cv.grad("toon-bathroom-wall", [(float(o), c) for o, c in BATH_WALL], (0, 0, 0, 1))
+    )
+    for x in range(BATH_TILE // 2, 620, BATH_TILE):
+        cv.rect(g, fx(x), 0, fh(2.5), cv.height, BATH_GROUT, opacity=0.8)
+    for y in range(70 + BATH_TILE // 2, 1140, BATH_TILE):
+        cv.rect(g, 0, fy(y), cv.width, fh(2.5), BATH_GROUT, opacity=0.8)
+    rose_x, rose_y = SHOWER_HEAD
+    _line(cv, g, [(620, rose_y - 34), (rose_x, rose_y - 34), (rose_x, rose_y - 12)], 12.0, CHROME_DARK)
+    _line(cv, g, [(620, rose_y - 34), (rose_x, rose_y - 34), (rose_x, rose_y - 12)], 6.0, CHROME)
+    cv.ellipse(g, fx(rose_x - 58), fy(rose_y - 16), fh(116), fh(32), CHROME, cv.ink, FINE_W)
+    cv.rect(g, fx(404), fy(SHELF_Y), fh(186), fh(12), CHROME, cv.ink, FINE_W, radius=fh(4))
+    for bx, h, w, colour in BOTTLES:
+        cv.rect(g, fx(bx), fy(SHELF_Y - h), fh(w), fh(h), colour, cv.ink, FINE_W, radius=fh(10))
+        cv.rect(g, fx(bx + w / 2 - 8), fy(SHELF_Y - h - 14), fh(16), fh(16), colour, cv.ink, FINE_W, radius=fh(3))
+
+
+def streaks(clear: tuple[float, float] | None) -> tuple[float, ...]:
+    """Where each column of water lands, without those in ``clear``, the span kept free so a face stays seen."""
+    return tuple(float(x) for x in WATER_XS if clear is None or not clear[0] <= x <= clear[1])
+
+
+def water_dashes(foot: float, phase: int, stop: float = WATER_TO) -> list[tuple[Point, Point]]:
+    """The dashes of the column that lands at ``foot``, on one ``phase`` of the fall: a straight line out of the rose,
+    never above it, so the water does not read as rain, and ending at reference y ``stop``."""
+    rose_x, rose_y = SHOWER_HEAD
+    top, length = rose_y + WATER_FROM, WATER_TO - rose_y - WATER_FROM
+    period = WATER_DASH + WATER_GAP
+
+    def along(y: float) -> Point:
+        reach = WATER_SPREAD + (1 - WATER_SPREAD) * (y - top) / length
+        return (round(rose_x + (foot - rose_x) * reach, 2), round(y, 2))
+
+    dashes = []
+    y = top + phase * period / WATER_PHASES + (foot * 7) % period / WATER_PHASES
+    while y < stop:
+        dashes.append((along(y), along(min(y + WATER_DASH, stop))))
+        y += period
+    return dashes
+
+
+@register("prop", "toon-shower-water", summary="Shower water falling in streaks while the tap is on, and only then")
+def shower_water(
+    cv: Canvas,
+    parent,
+    spans: Sequence[tuple[float, float]],
+    clear: tuple[float, float] | None = None,
+    stop: float | None = None,
+    id: str = "water",
+) -> None:
+    """Water falling down the frame through each ``(start, end)`` in rising project seconds, gone at once between
+    them, in a group ``{id}-{n}`` each. ``clear`` is the span of the fall's foot left dry, so nothing runs across a
+    face; with ``stop`` the columns in it fall as far as that reference y and land on the head instead."""
+    if not spans:
+        raise ToonDataError("water needs at least one span")
+    last = 0.0
+    for span in spans:
+        if not (len(span) == 2 and all(checks.number(v) for v in span) and last <= span[0] < span[1]):
+            raise ToonDataError(f"water's spans are rising (start, end) seconds, got {spans!r}")
+        last = span[1]
+    if clear is not None and not (len(clear) == 2 and all(checks.number(v) for v in clear) and clear[0] < clear[1]):
+        raise ToonDataError(f"water's clear span is (left, right), got {clear!r}")
+    columns = [(foot, WATER_TO) for foot in streaks(clear)]
+    if clear is not None and stop is not None:
+        columns += [(float(foot), stop) for foot in WATER_XS if clear[0] <= foot <= clear[1]]
+    for n, (start, end) in enumerate(spans):
+        g = cv.group(parent, f"{id}-{n}", start=start, end=end)
+        step = WATER_PERIOD / WATER_PHASES
+        for phase in range(WATER_PHASES):
+            shown = cv.group(g, cv.uid("g"), opacity=WATER_OPACITY)
+            cycle = cycle_keys([(0.0, WATER_OPACITY), (step, 0.0)], WATER_PERIOD, start, end, phase=phase * step)
+            cv.keys(shown, "opacity", cycle, local=False)
+            for foot, last in columns:
+                for a, b in water_dashes(foot, phase, last):
+                    _line(cv, shown, [a, b], WATER_W, WATER_COLOUR)
+
+
+def _worn(cv: Canvas, parent, at: object, scale: float, start, end, id: str, what: str):
+    """The scaled group of something a head wears, in units of a reference pixel about ``at``."""
+    x, y = _point(at, f"{what}'s place")
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"{what}'s scale is over 0, got {scale!r}")
+    timing = {} if start is None else {"start": start, "end": end}
+    outer = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale, **timing)
+    return cv.group(outer, cv.uid("g"), scaleX=fh(1), scaleY=fh(1))
+
+
+@register("prop", "toon-suds", summary="A heap of shampoo on someone's head")
+def suds(
+    cv: Canvas,
+    parent,
+    at: object,
+    scale: float = 1.0,
+    start: float | None = None,
+    end: float | None = None,
+    id: str = "suds",
+) -> None:
+    """A heap of foam with its middle on reference ``at``, drawn into the figure's group."""
+    g = _worn(cv, parent, at, scale, start, end, id, "suds")
+    line = FINE_W / fh(1)
+    for x, y, r in SUDS_PUFFS:
+        cv.ellipse(g, x - r / 2, y - r / 2, r, r, "#ffffff", SUDS_LINE, line)
+    for x, y, r in SUDS_PUFFS[:3]:
+        cv.ellipse(g, x - r / 6, y + r / 10, r / 3, r / 4, SUDS_SHADE)
+
+
+@register("prop", "toon-towel", summary="A towel wrapped round someone's head")
+def towel(
+    cv: Canvas,
+    parent,
+    at: object,
+    scale: float = 1.0,
+    start: float | None = None,
+    end: float | None = None,
+    id: str = "towel",
+) -> None:
+    """A towel wound round a head, the middle of its lower edge on reference ``at``, drawn into the figure's group."""
+    g = _worn(cv, parent, at, scale, start, end, id, "a towel")
+    line = INK_W / fh(1)
+    cv.path(g, TOWEL_TAIL, TOWEL_SHADE, cv.ink, line)
+    cv.path(g, TOWEL_DOME, TOWEL_COLOUR, cv.ink, line)
+    for fold in TOWEL_FOLDS:
+        cv.path(g, fold, cv.clear, TOWEL_LINE, line * 0.5)
