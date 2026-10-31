@@ -396,6 +396,16 @@ def _ball(cv: Canvas, parent, x: float, y: float, rx: float, ry: float, fill: st
 
 
 @dataclass(frozen=True)
+class Jaw:
+    """A mouth state drawn somewhere of its own: its height on the face, its width and how far it opens below that."""
+
+    state: str
+    y: float
+    wide: float
+    tall: float | None = None
+
+
+@dataclass(frozen=True)
 class Face:
     """What makes the two faces different at the same places: eye spacing and size, brow weight, mouth width and the
     side of the frame the other anchor is on (+1: to the right)."""
@@ -413,6 +423,7 @@ class Face:
     mouth_w: float
     toward: float
     glasses: bool = False
+    jaws: tuple[Jaw, ...] = ()
 
 
 VERA_FACE = Face(
@@ -509,7 +520,8 @@ def _eyes(cv: Canvas, head, face: Face, track: Track, start: float, end: float) 
             _specs(cv, g, face, 26.0 if state == "over" else 0.0)
 
 
-def _mouth(cv: Canvas, parent, face: Face, state: str) -> None:
+def _mouth(cv: Canvas, parent, face: Face, state: str, drop: float | None = None) -> None:
+    """A mouth in ``state``; ``drop``, how far the grin, the gape, the open or the round one reach below its height."""
     y, w = face.mouth_y, face.mouth_w
     if state in ("flat", "closed"):
         _stroke(cv, parent, f"M {-w * 0.5} {y} L {w * 0.5} {y}", face.lip, 7.0)
@@ -518,10 +530,11 @@ def _mouth(cv: Canvas, parent, face: Face, state: str) -> None:
     elif state == "frown":
         _stroke(cv, parent, f"M {-w * 0.55} {y + 12} Q 0 {y - 16} {w * 0.55} {y + 12}", face.lip, 7.0)
     elif state == "grin":
+        low = 40.0 if drop is None else drop
         cv.path(
             parent,
             f"M {-w * 0.75} {y - 12} Q 0 {y + 6} {w * 0.75} {y - 12} Q {w * 0.55} "
-            f"{y + 40} 0 {y + 40} Q {-w * 0.55} {y + 40} {-w * 0.75} {y - 12} Z",
+            f"{y + low} 0 {y + low} Q {-w * 0.55} {y + low} {-w * 0.75} {y - 12} Z",
             "#ffffff",
             PLUM_DEEP,
             5.0,
@@ -536,9 +549,9 @@ def _mouth(cv: Canvas, parent, face: Face, state: str) -> None:
             5.0,
         )
     elif state == "round":
-        _ball(cv, parent, 0, y + 2, w * 0.27, w * 0.34, "#4a1420", 5.0)
+        _ball(cv, parent, 0, y + 2, w * 0.27, w * 0.34 if drop is None else drop, "#4a1420", 5.0)
     else:  # open, gape
-        tall = 62.0 if state == "gape" else 36.0
+        tall = drop if drop is not None else 62.0 if state == "gape" else 36.0
         d = (
             f"M {-w * 0.55} {y - 12} Q 0 {y - 20} {w * 0.55} {y - 12} "
             f"Q {w * 0.5} {y + tall} 0 {y + tall} Q {-w * 0.5} {y + tall} {-w * 0.55} {y - 12} Z"

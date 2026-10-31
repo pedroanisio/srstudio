@@ -234,12 +234,16 @@ def _actor(entry: registry.Entry) -> Canvas:
 def _anchor(entry: registry.Entry) -> Canvas:
     cv = _stage("toon", HOLD)
     who = entry.name.removeprefix("news-").split("@")[0]
-    draw = news_inked.perform if "@" in entry.name else news_kit.perform
     acts = tuple(
         (HOLD * n / len(news_kit.ARMS), news_kit.Pose(eyes, "talk", arms))
         for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
     )
-    draw(cv, cv.comp, who, 540.0, acts, 0.0, HOLD)
+    if "@" not in entry.name:
+        news_kit.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD)
+        return cv
+    number = int(entry.name.split("@")[1])
+    mouths = news_inked.mouths_shown(HOLD, number) if number >= 4 else ()
+    news_inked.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD, mouths, number=number)
     return cv
 
 
@@ -331,7 +335,19 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
     **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
     "pigeon": _pigeon,
-    **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2", "news-vera@3", "news-gus@3"), _anchor),
+    **dict.fromkeys(
+        (
+            "news-vera",
+            "news-gus",
+            "news-vera@2",
+            "news-gus@2",
+            "news-vera@3",
+            "news-gus@3",
+            "news-vera@4",
+            "news-gus@4",
+        ),
+        _anchor,
+    ),
     "host-lint": _moth,
     "rafa": _clay,
     "doodle": _inked,

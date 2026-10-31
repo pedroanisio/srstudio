@@ -111,6 +111,25 @@ defects of version 3 are therefore: the gape past the chin on both anchors, Vera
 (6.4 px and 4.8 px), and Gus's round mouth over the bottom of his nose. In the same post arc4d3 agreed to a redraw:
 "Yes to v4: redraw the gape inside the chin and lift the round mouth clear of the nose."
 
+## Version 4: the mouths fit the face
+
+Between Gus's nose and his chin there are 63 px at rest, and the mouths of version 2 were drawn taller than that: the
+gape 78 px, the round mouth 60 px with the open mouth 52 px starting above the nose. Version 4, `news-vera@4` and
+`news-gus@4`, redraws those states and nothing else. The gape ends inside the chin with the face at the end of its drop, at -45 on
+Gus and -43 on Vera, and it takes in width what it gives up in height: 114 px wide on Gus and 86 on Vera, against 97 and
+68 for speech, so a shout still shows at least a quarter more mouth than a word. Gus's open mouth and his round mouth start at -91, clear of
+his nose. Vera's grin ends 7 px higher, which keeps it on the skin at both limits. The rig is the one of version 3.
+
+Two faults stay, named in the test: Gus's gape still covers the bottom of his nose, because lifting it clear leaves no
+height to tell a shout from a word, and his `teeth` mouth touches the nose's ink by the width of its own line.
+
+A specimen of version 4 draws every mouth state, in its drawing digest and in its rig digest, because the states it
+changes are ones the specimens of versions 2 and 3 never showed. Those two keep their digests. A delivered reel names
+`version=3` in its `stage` call, so that approving version 4 changes no rebuild of it.
+
+Rejected: redrawing the chin, a longer jaw or a lower chin line, which changes the head. Smaller limits, which cannot
+help a mouth that is past the skin at rest.
+
 Rejected: clamping the slide inside the reels and leaving the style alone. The digest would hold while the specimen
 still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
 is built, not to its limits, and more than this fix needs.

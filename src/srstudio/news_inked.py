@@ -57,6 +57,7 @@ from .news_kit import (
     Act,
     Bubble,
     Face,
+    Jaw,
     Measure,
     NewsKitError,
     Pose,
@@ -644,6 +645,19 @@ VERA_SKIN, VERA_TONE, VERA_DEEP = "#9a6240", "#75462b", "#5b3420"
 GUS_SKIN, GUS_TONE, GUS_DEEP = "#ffd5ae", "#e2a67c", "#b97a50"
 VERA_INKED = replace(VERA_FACE, skin=VERA_SKIN)
 GUS_INKED = replace(GUS_FACE, skin=GUS_SKIN)
+# Version 4: every mouth between the nose and the chin, with the face at the end of its drop on the rig. The shout has
+# less height there than it had, so it takes width: it is the widest mouth on the face.
+VERA_REDRAWN = replace(VERA_INKED, jaws=(Jaw("gape", -80.0, 78.0, 37.0), Jaw("grin", -78.0, 62.0, 33.0)))
+GUS_REDRAWN = replace(
+    GUS_INKED, jaws=(Jaw("gape", -84.0, 104.0, 39.0), Jaw("open", -75.0, 88.0, 31.0), Jaw("round", -69.5, 88.0, 23.5))
+)
+
+
+def inked(who: str, number: int = 2) -> Face:
+    """The face of version ``number`` of ``who``: every version before 4 draws the same one."""
+    if who == "vera":
+        return VERA_REDRAWN if number >= 4 else VERA_INKED
+    return GUS_REDRAWN if number >= 4 else GUS_INKED
 
 
 def _tear(cv: Canvas, parent, x: float, y: float, r: float) -> None:
@@ -742,7 +756,9 @@ def _mouths(cv: Canvas, head, face: Face, track: Track, start: float, end: float
     for state, spans in _spans(track, start, end).items():
         g = cv.group(head, cv.uid("g"), opacity=0.0)
         cv.gate(g, spans)
-        y, w = face.mouth_y, face.mouth_w
+        jaw = next((j for j in face.jaws if j.state == state), None)
+        drawn = replace(face, mouth_y=jaw.y, mouth_w=jaw.wide) if jaw else face
+        y, w = drawn.mouth_y, drawn.mouth_w
         if state in ("flat", "closed"):
             _line(cv, g, ((-w * 0.52, y + 1), (0, y - 1), (w * 0.52, y + 1)), face.lip, 9.0)
         elif state == "smirk":
@@ -766,7 +782,7 @@ def _mouths(cv: Canvas, head, face: Face, track: Track, start: float, end: float
                 0,
             )
         else:
-            _mouth(cv, g, face, state)
+            _mouth(cv, g, drawn, state, jaw.tall if jaw else None)
 
 
 TEAL, TEAL_TONE, TEAL_LAPEL = "#16857f", "#0d5a5e", "#1fa79c"
@@ -921,8 +937,9 @@ VERA_HEAD: tuple[Point, ...] = (
 )
 
 
-def _vera_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None) -> None:
-    face = VERA_INKED
+def _vera_head(
+    cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None, face: Face = VERA_INKED
+) -> None:
     _form(cv, g, VERA_BACK, SILVER_TONE, "#7f7ba1", 41.0, depth=26.0)
     _form(cv, g, VERA_HEAD, VERA_SKIN, VERA_TONE, 43.0, depth=30.0, amount=0.4)
     under = _slides(cv, g, motion)
@@ -1107,8 +1124,9 @@ GUS_HEAD: tuple[Point, ...] = (
 )
 
 
-def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None) -> None:
-    face = GUS_INKED
+def _gus_head(
+    cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None, face: Face = GUS_INKED
+) -> None:
     _form(cv, g, GUS_CLOUD, HAIR, HAIR_TONE, 81.0, depth=26.0, amount=1.0)
     for side, x in ((-1.0, -122.0), (1.0, 122.0)):
         _form(
@@ -1177,11 +1195,13 @@ def perform(
     over=None,
     motion: Motion = None,
     looks: Sequence[tuple[float, float]] = (),
+    number: int = 2,
 ):
     """``who`` at the desk from ``start`` to ``end``, centred on frame ``x``: ``acts`` is the :class:`Pose` from each
     second on and ``mouths`` the take's visemes. The arms and hands go in ``over``, the plane in front of the desk,
     when there is one, so a forearm lies across the desk's top and a head stays behind its edge. ``motion`` puts the
-    head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it."""
+    head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it. ``number`` is the
+    version drawn."""
     _span(start, end, "an anchor")
     if who not in ("vera", "gus"):
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
@@ -1194,18 +1214,18 @@ def perform(
     eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
     mouth = mouth_track(acts, mouths, end)
     if motion is not None:
-        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion)
+        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number))
         return g
     neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
     if who == "vera":
         _vera_body(cv, g)
         head = cv.group(g, cv.uid("g"), **neck)
-        _vera_head(cv, head, eyes, mouth, start, end)
+        _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
         _vera_arms(cv, hands, arms)
     else:
         _gus_body(cv, g)
         head = cv.group(g, cv.uid("g"), **neck)
-        _gus_head(cv, head, eyes, mouth, start, end)
+        _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
         _gus_arms(cv, hands, arms)
     cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
     return g
@@ -1238,6 +1258,7 @@ def _on_rig(
     start: float,
     end: float,
     motion: tuple[AnchorRig, HeadPlan],
+    face: Face,
 ) -> None:
     """An anchor whose head moves. The nesting is :mod:`srstudio.toon_head`'s, one kind of motion a group, outermost
     first: over the body, which does not move, the beat's tilt, the plan's turn and nod, with all the hair and the
@@ -1252,7 +1273,7 @@ def _on_rig(
     nod = cv.group(turn, cv.uid("head-nod"), **pivot)
     toon_head._animate(cv, nod, "rotation", plan.roll)
     toon_head._animate(cv, nod, "y", plan.nod, 1.0, CHIN_Y)
-    (_vera_head if who == "vera" else _gus_head)(cv, nod, eyes, mouth, start, end, motion)
+    (_vera_head if who == "vera" else _gus_head)(cv, nod, eyes, mouth, start, end, motion, face)
     (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
 
 
@@ -1288,8 +1309,21 @@ GUS_RIG = AnchorRig(
 VERA_RIG_3 = replace(VERA_RIG, style=VERA_MOTION_3, face_slide=0.6)
 GUS_RIG_3 = replace(GUS_RIG, style=GUS_MOTION_3, face_slide=0.2)  # his nod is big: the face stays by the skull on it
 RIGS: Mapping[str, AnchorRig] = MappingProxyType(
-    {"news-vera@2": VERA_RIG, "news-gus@2": GUS_RIG, "news-vera@3": VERA_RIG_3, "news-gus@3": GUS_RIG_3}
+    {
+        "news-vera@2": VERA_RIG,
+        "news-gus@2": GUS_RIG,
+        "news-vera@3": VERA_RIG_3,
+        "news-gus@3": GUS_RIG_3,
+        "news-vera@4": VERA_RIG_3,
+        "news-gus@4": GUS_RIG_3,
+    }
 )
+
+
+def mouths_shown(seconds: float, number: int) -> Track:
+    """The mouths a specimen of version ``number`` draws: from version 4, whose mouths are its change, every one."""
+    states = news_kit.EXPRESSIONS if number >= 4 else ("closed", "open")
+    return tuple((seconds * n / len(states), state) for n, state in enumerate(states))
 
 
 def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
@@ -1303,7 +1337,9 @@ def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
     )
     slide = head_motion.limit(rig.style, "face_x")
     plan = replace(toon_head.reach(rig), face_x=Channel(((0.0, -slide), (seconds, slide))))
-    perform(cv, cv.comp, who, 540.0, acts, 0.0, seconds, ((0.0, "closed"), (seconds / 2, "open")), motion=(rig, plan))
+    perform(
+        cv, cv.comp, who, 540.0, acts, 0.0, seconds, mouths_shown(seconds, number), motion=(rig, plan), number=number
+    )
 
 
 @register(
@@ -1362,6 +1398,34 @@ def gus_3(
 ):
     """Gus at the desk in one pose."""
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
+
+
+@register("character", "news-vera@4", summary="Vera with the shout inside her chin, the rig of @3")
+def vera_4(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Vera at the desk in one pose."""
+    return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=4)
+
+
+@register("character", "news-gus@4", summary="Gus with the shout inside his chin and his mouths clear of his nose")
+def gus_4(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Gus at the desk in one pose."""
+    return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=4)
 
 
 def _phone_down(cv: Canvas, parent, x: float, spans: Spans) -> None:
@@ -1429,8 +1493,8 @@ def stage(
             _seat(cv, shot.front, who, x, scale)
             motion: Motion = None
             looks: list[tuple[float, float]] = []
+            number = parts.latest(f"news-{who}").number if version is None else version
             if heads:
-                number = parts.latest(f"news-{who}").number if version is None else version
                 rig = RIGS[f"news-{who}@{number}"]
                 if not news_head.approved(who, number):
                     raise NewsKitError(
@@ -1452,6 +1516,7 @@ def stage(
                 over=shot.front,
                 motion=motion,
                 looks=looks,
+                number=number,
             )
             if who == "gus":
                 down = _spans([(at, pose.arms) for at, pose in during], app.start, app.end).get("rest")
