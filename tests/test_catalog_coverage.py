@@ -17,7 +17,8 @@ from srstudio import registry
 
 NOTES = Path(__file__).resolve().parent.parent / "docs" / "catalog" / "notes.json"
 
-# Measured with `srstudio usage` on 2026-10-31 (133 episodes); drop a part from here when its gallery item is added.
+# From `srstudio usage` on 2026-10-31 (133 episodes) and a search of the scripts for the parts added since (the news
+# kit, toon-bento); drop a part from here when its gallery item is added.
 PACKAGE_ONLY = [
     "answer-bubble",
     "connected-card",
@@ -27,6 +28,20 @@ PACKAGE_ONLY = [
     "quiz-card",
     "silent-phone",
     "talking-printer",
+]
+PILOT_ONLY = [
+    "news-banner",
+    "news-bug",
+    "news-captions",
+    "news-desk",
+    "news-gus",
+    "news-lower-third",
+    "news-parody-tag",
+    "news-phone",
+    "news-set",
+    "news-source-card",
+    "news-ticker",
+    "news-vera",
 ]
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 NO_EPISODE = [
@@ -50,6 +65,7 @@ NO_EPISODE = [
     "mind-two-lines",
     "toon-banana",
     "toon-bathroom",
+    "toon-bento",
     "toon-bow-tie",
     "toon-car-inside",
     "toon-car-seat",
@@ -80,6 +96,7 @@ NO_EPISODE = [
 ]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
+    **dict.fromkeys(PILOT_ONLY, "only the News pilots (episodes/pilots) build it, and no pilot is in the library yet"),
     **dict.fromkeys(SUPERSEDED, "the first drawing, replaced by its @2 version, which the gallery shows"),
     **dict.fromkeys(NO_EPISODE, "no library episode builds it yet"),
 }
