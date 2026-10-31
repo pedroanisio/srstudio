@@ -478,3 +478,98 @@ def test_auto_enhance_off_reads_nothing_and_just_delivers(tool, world, monkeypat
     assert tool.main(args(world)) == 0
     assert not [c for c in run.calls if c[1] == "cat"]
     assert "auto-enhance off" in capsys.readouterr().out
+
+
+# -- series: each has its own stage and remote, and neither reaches the other ------------------------------------------
+def maps_args(world: Path, *extra: str) -> list[str]:
+    argv = args(world, "--series", "maps", *extra)
+    argv[argv.index("--stage") + 1] = str(world / "generated/pilots/maps")
+    return argv
+
+
+def test_the_maps_series_stages_in_its_own_folder_and_pushes_to_its_own_remote(tool, world, monkeypatch):
+    runner = Runner(0, 0)
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    assert tool.main(maps_args(world)) == 0
+    assert (world / "generated/pilots/maps/the-tell/the-tell.mp4").is_file()
+    assert not (world / "generated/pilots/mind").exists()
+    assert "gdrive:srstudio/pilots/maps" in runner.calls[0]
+    assert all("gdrive:srstudio/pilots/mind" not in call for call in runner.calls)
+
+
+def test_the_default_series_stays_mind(tool, world, monkeypatch):
+    runner = Runner(0, 0)
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    assert tool.main(args(world)) == 0
+    assert (world / "generated/pilots/mind/the-tell/the-tell.mp4").is_file()
+    assert "gdrive:srstudio/pilots/mind" in runner.calls[0]
+
+
+def test_each_series_defaults_to_its_own_stage_and_remote(tool):
+    assert (tool.stage_of("mind"), tool.remote_of("mind")) == (tool.STAGE, tool.REMOTE)
+    assert tool.stage_of("maps") == Path("generated/pilots/maps")
+    assert tool.remote_of("maps") == "gdrive:srstudio/pilots/maps"
+
+
+@pytest.mark.parametrize(
+    "series, remote",
+    [
+        ("maps", "gdrive:srstudio/pilots/mind"),
+        ("mind", "gdrive:srstudio/pilots/maps"),
+        ("maps", "gdrive:srstudio/pilots/maps/../mind"),
+        ("mind", "gdrive:srstudio/pilots/other"),
+        ("maps", "gdrive:srstudio/pilots"),
+        ("maps", "gdrive:srstudio/ready-to-publish"),
+        ("maps", "gdrive:srstudio/pilots/maps/ready-to-publish"),
+    ],
+)
+def test_a_remote_of_another_series_is_refused(tool, series, remote):
+    with pytest.raises(tool.PilotError):
+        tool.pilots_remote(remote, series)
+
+
+def test_a_folder_below_a_series_remote_stays_in_the_series(tool):
+    assert tool.pilots_remote("gdrive:srstudio/pilots/maps/round-2", "maps") == "gdrive:srstudio/pilots/maps/round-2"
+
+
+def test_the_stage_of_another_series_is_refused_before_anything_is_written(tool, world, capsys):
+    mind_stage = world / "generated/pilots/mind"
+    assert tool.main(args(world, "--series", "maps", "--stage-only")) == 2  # args() points --stage at mind
+    assert "staging folder" in capsys.readouterr().err
+    assert not mind_stage.exists()
+    assert tool.main([*args(world, "--stage-only"), "--stage", str(world / "generated/pilots/maps")]) == 2
+    assert "staging folder" in capsys.readouterr().err
+    assert not (world / "generated/pilots/maps").exists()
+
+
+def test_a_remote_of_another_series_stages_and_uploads_nothing(tool, world, monkeypatch, capsys):
+    runner = Runner()
+    monkeypatch.setattr(tool.outbox, "_run", runner)
+    assert tool.main(maps_args(world, "--remote", "gdrive:srstudio/pilots/mind")) == 2
+    assert not runner.calls
+    assert not (world / "generated/pilots/maps").exists()
+
+
+def test_an_unknown_series_is_refused(tool, world):
+    with pytest.raises(SystemExit):
+        tool.main(args(world, "--series", "ready-to-publish"))
+    with pytest.raises(tool.PilotError):
+        tool.stage_of("other")
+
+
+def test_a_pilot_of_another_series_cannot_ride_this_one(tool, world, capsys):
+    (tool.REPO / "pilots/mind/the-tell").mkdir(parents=True)
+    assert tool.main(maps_args(world, "--stage-only")) == 2
+    assert "the-tell belongs to the mind series" in capsys.readouterr().err
+    assert not (world / "generated/pilots/maps").exists()
+
+
+def test_a_pilot_of_its_own_series_passes(tool, world):
+    (tool.REPO / "pilots/maps/the-tell").mkdir(parents=True)
+    assert tool.main(maps_args(world, "--stage-only")) == 0
+
+
+def test_the_released_list_still_binds_the_maps_series(tool, world, capsys):
+    pilot(world / "in", "i-cleaned")
+    assert tool.main(maps_args(world, "--stage-only")) == 2
+    assert "released" in capsys.readouterr().err

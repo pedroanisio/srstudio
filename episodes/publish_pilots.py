@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Copy finished pilots to their own folder on Google Drive. A pilot is not published and can never reach @tuxmeme.
 
-    python3 publish_pilots.py FOLDER               # stage generated/pilots/mind, push it to gdrive:srstudio/pilots/mind
-    python3 publish_pilots.py FOLDER --dry-run     # stage, then only preview what rclone would upload
-    python3 publish_pilots.py FOLDER --stage-only  # stage, push nothing
+    python3 publish_pilots.py FOLDER                # stage generated/pilots/mind, push to gdrive:srstudio/pilots/mind
+    python3 publish_pilots.py FOLDER --series maps  # the same for generated/pilots/maps and gdrive:srstudio/pilots/maps
+    python3 publish_pilots.py FOLDER --dry-run      # stage, then only preview what rclone would upload
+    python3 publish_pilots.py FOLDER --stage-only   # stage, push nothing
 
 FOLDER holds one folder per slug, each with ``<slug>.mp4``, ``cover.jpg``, ``ig.txt``, ``sources.md``, ``notes.md`` and
 a package, ``vpkg.zip`` or ``<slug>-<version>.vpkg.zip`` (the highest version wins), delivered as ``vpkg.zip``. Anything
@@ -13,8 +14,10 @@ else in a slug's folder is listed and left behind. ``manifest.json`` goes beside
 
 Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @tuxmeme, and a write to ``generated/renders/ig``
 pushes to it through the ``srstudio-drive`` unit. So this tool only uploads under ``gdrive:srstudio/pilots/``, judged on
-the normalised remote it hands to rclone; only stages in ``generated/pilots/mind``; and refuses a slug released on
-@tuxmeme. A refused run stages and uploads nothing and exits 2, as does a failed upload.
+the normalised remote it hands to rclone; only stages in ``generated/pilots/<series>``; and refuses a slug released on
+@tuxmeme. A series never crosses another: its stage and remote are the only ones it accepts, and a slug with a folder
+under another series' ``pilots/`` in this repository is refused. A refused run stages and uploads nothing and exits 2,
+as does a failed upload.
 """
 
 from __future__ import annotations
@@ -38,6 +41,7 @@ REMOTE_NAME = "gdrive"
 ROOT = ("srstudio", "pilots")
 NEVER = "ready-to-publish"
 STAGE = Path("generated/pilots/mind")
+SERIES = ("mind", "maps")  # the first is the default
 MANIFEST = "manifest.json"
 PACKAGE = "vpkg.zip"
 ALSO = ("cover.jpg", "ig.txt", PACKAGE, "sources.md", "notes.md")  # what follows <slug>.mp4 in a pilot's folder
@@ -50,27 +54,54 @@ class PilotError(outbox.OutboxError):
     """A remote, a staging folder or a pilot that this tool will not touch."""
 
 
-def pilots_remote(remote: str) -> str:
-    """``remote`` in normal form, the only form rclone is given, if it is on ``gdrive:`` under ``srstudio/pilots/``."""
+def _known(series: str) -> str:
+    if series not in SERIES:
+        raise PilotError(f"{series!r} is not a series; there are {', '.join(SERIES)}")
+    return series
+
+
+def stage_of(series: str) -> Path:
+    """The only staging folder of ``series``."""
+    return STAGE.parent / _known(series)
+
+
+def remote_of(series: str) -> str:
+    """The default remote of ``series``."""
+    return f"{REMOTE_NAME}:{'/'.join(ROOT)}/{_known(series)}"
+
+
+def pilots_remote(remote: str, series: str = SERIES[0]) -> str:
+    """``remote`` in normal form, the only form rclone is given, if it is on ``gdrive:`` under
+    ``srstudio/pilots/<series>``."""
     if any(c.isspace() or c == "\\" for c in remote):
         raise PilotError(f"{remote!r}: a pilots remote has no spaces or backslashes")
     name, colon, path = remote.partition(":")
     parts = [part for part in posixpath.normpath("/" + path).split("/") if part]
     if NEVER in (part.casefold() for part in parts):
         raise PilotError(f"{remote!r} is {NEVER}, which posts to @tuxmeme: a pilot never goes there")
-    if not colon or name != REMOTE_NAME or tuple(parts[: len(ROOT)]) != ROOT or len(parts) <= len(ROOT):
-        raise PilotError(f"{remote!r} is not under {REMOTE_NAME}:{'/'.join(ROOT)}/")
+    home = (*ROOT, _known(series))
+    if not colon or name != REMOTE_NAME or tuple(parts[: len(home)]) != home:
+        raise PilotError(f"{remote!r} is not under {REMOTE_NAME}:{'/'.join(home)}")
     return f"{name}:{'/'.join(parts)}"
 
 
-def staging_folder(folder: Path) -> Path:
-    """``folder``, links resolved, if it is a ``generated/pilots/mind`` outside the folders that reach @tuxmeme."""
+def staging_folder(folder: Path, series: str = SERIES[0]) -> Path:
+    """``folder``, links resolved, if it is ``generated/pilots/<series>`` outside the folders that reach @tuxmeme."""
     resolved = Path(folder).resolve()
     parts = resolved.parts
+    home = stage_of(series)
     watched = any(parts[i : i + len(w)] == w for w in _WATCHED for i in range(len(parts)))
-    if watched or parts[-len(STAGE.parts) :] != STAGE.parts:
-        raise PilotError(f"the staging folder must be {STAGE} and outside the delivery folders, got {folder}")
+    if watched or parts[-len(home.parts) :] != home.parts:
+        raise PilotError(f"the staging folder must be {home} and outside the delivery folders, got {folder}")
     return resolved
+
+
+def foreign(ready: list[outbox.Bundle], series: str) -> None:
+    """Refuse a pilot that this repository keeps under another series."""
+    for pilot in ready:
+        for other in SERIES:
+            if other != series and (REPO / "pilots" / other / pilot.name).exists():
+                raise PilotError(f"{pilot.name} belongs to the {other} series, not {series}")
 
 
 def released(deliveries: Path) -> set[str]:
@@ -167,11 +198,12 @@ def left_behind(pilot: outbox.Bundle, root: Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("folder", type=Path, help="one folder per slug")
-    parser.add_argument("--stage", type=Path, default=WORKSPACE / STAGE, help=f"default {STAGE}, the only name allowed")
+    parser.add_argument("--series", choices=SERIES, default=SERIES[0], help=f"default {SERIES[0]}")
+    parser.add_argument("--stage", type=Path, help="default generated/pilots/<series>, the only name allowed")
     parser.add_argument(
         "--deliveries", type=Path, default=WORKSPACE / "generated/renders/ig", help="read for the slugs already used"
     )
-    parser.add_argument("--remote", default=REMOTE, help=f"rclone destination under pilots/ (default {REMOTE})")
+    parser.add_argument("--remote", help="rclone destination under pilots/<series>, which is the default")
     parser.add_argument("--rclone", default="rclone")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="stage, then only preview the upload")
@@ -179,12 +211,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        remote = pilots_remote(args.remote)
-        stage = staging_folder(args.stage)
+        remote = pilots_remote(args.remote or remote_of(args.series), args.series)
+        stage = staging_folder(args.stage or WORKSPACE / stage_of(args.series), args.series)
         source = args.folder.resolve()
         if source.is_relative_to(stage) or stage.is_relative_to(source):
             raise PilotError(f"the input {source} and the staging folder {stage} overlap")
         ready = bundles(source, released(args.deliveries))
+        foreign(ready, args.series)
         for pilot in ready:
             for name in left_behind(pilot, source):
                 print(f"left behind: {name}")
