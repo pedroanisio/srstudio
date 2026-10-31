@@ -9273,6 +9273,74 @@
           "rig": null
         }
       ]
+    },
+    "phone-post": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone, full frame, on an old post: a dish, an empty heart, no likes; the heart fills, a message slides in. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e0b1961fefa0691cb9cc00d5f356c75708b7ba58667c9daf82341d2c1bc24234",
+          "rig": null
+        }
+      ]
+    },
+    "big-thumb": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A thumb close to the lens, its tip on a point. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "77ce87ef223af4b79556691d00434cd79df19604755a2b175143a69ec9ab231f",
+          "rig": null
+        }
+      ]
+    },
+    "coat-over": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long coat that goes on over a Cutout actor, one side, then the other. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b6db241aec38837b0e1f9ff3cc2a63d4a9648740597a29f6c0905d40bb22496",
+          "rig": null
+        }
+      ]
+    },
+    "cafe-door": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A glass cafe door with a bar handle, its sign reading from the inside. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1c32f0e36e4e10f3bf1b61449a0d09ca4f5b9355239705ff6df209f6463bbad0",
+          "rig": null
+        }
+      ]
     }
   }
 }
