@@ -8687,11 +8687,45 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A small desk lamp that throws a white glare many times its size. Proposed: awaiting the operator's decision.",
+          "note": "A small lamp with a far larger white glare Proposed: awaiting the operator's decision.",
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "9f503cdd6b8325e4dfdbcce9955513dc3b41c84ecfd86e5a6673a17be1f5a288",
+          "drawing": "e8c44528d9685a9615947c43c12ff621ead74119ef9f12606be6445f0166a617",
+          "rig": null
+        }
+      ]
+    },
+    "soft-parcels": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Cardboard parcels stacked by hand, as high as the room Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "dc30beaa6541a5452dc58c5cac9ee15d561bbd0ff8cf44bdfb89c7a2904b0d21",
+          "rig": null
+        }
+      ]
+    },
+    "soft-whisk": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tiny kitchen whisk, for holding to the light Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2f21d6374c3ced84d0c4da50b5ac24fb99210eafae988fb04f4983dbf5cbabb6",
           "rig": null
         }
       ]

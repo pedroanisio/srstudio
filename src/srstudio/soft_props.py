@@ -31,11 +31,13 @@ __all__ = [
     "hive",
     "month_view",
     "necktie",
+    "parcels",
     "phone",
     "review_view",
     "shovel",
     "status_badge",
     "time_card",
+    "whisk",
 ]
 
 _NAME = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -507,6 +509,65 @@ def glare_lamp(
         cv.ellipse(glare, cx - r, cy - r, 2 * r, 2 * r, "#FFFFFF", opacity=GLARE_LEVEL)
     core = 56 * scale
     cv.ellipse(glare, cx - core, cy - core, 2 * core, 2 * core, "#FFFFFF")
+    return g
+
+
+CARDBOARD = ("#D8AE7C", "#C99C69", "#E2BC8E")  # the same box from three suppliers
+TAPE, LABEL = "#B98A56", "#F7F2E8"
+STACK_LEAN = (-14.0, 9.0, -5.0, 16.0, -9.0, 3.0, 12.0)  # px each row sits off true: stacked by a person, in a hurry
+
+
+@register(
+    "prop",
+    "soft-parcels",
+    summary="Cardboard parcels stacked by hand, row on row, taped and labelled: as high as the room if asked",
+)
+def parcels(
+    cv: Canvas,
+    parent,
+    x: float,
+    floor: float,
+    *,
+    columns: int = 4,
+    rows: int = 5,
+    size: float = 170,
+    id: str = "soft-parcels",
+):
+    """``columns`` by ``rows`` parcels of about ``size`` px from the left edge ``x`` up from ``floor``: each row a
+    little off the one under it and each box its own width and height, the same every build."""
+    for name, count in (("columns", columns), ("rows", rows)):
+        if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+            raise SoftPropError(f"parcels need a whole number of {name} of at least 1, got {count!r}")
+    if not (checks.number(size) and size > 0):
+        raise SoftPropError(f"a parcel's size must be a positive number, got {size!r}")
+    g = cv.group(parent, id)
+    for row in range(rows):
+        left = x + STACK_LEAN[row % len(STACK_LEAN)]
+        for col in range(columns):
+            n = row * columns + col + 1
+            w = size * (0.94 + 0.05 * ((row + 2 * col) % 3))
+            h = size * (0.92 + 0.06 * ((2 * row + col) % 3))
+            box = cv.group(g, f"{id}-{n}", x=left + col * size, y=floor - (row + 1) * size + (size - h))
+            cv.rect(box, 0, 0, w, h, CARDBOARD[n % 3], cv.ink, 5, radius=6)
+            cv.rect(box, w / 2 - size * 0.06, 0, size * 0.12, h, TAPE)
+            if n % 3 == 0:
+                cv.rect(box, w * 0.58, h * 0.56, w * 0.32, h * 0.26, LABEL, cv.ink, 2, radius=3)
+    return g
+
+
+@register(
+    "prop", "soft-whisk", summary="A tiny kitchen whisk, a handle and a cage of wire loops, for holding to the light"
+)
+def whisk(cv: Canvas, parent, x: float, y: float, *, scale: float = 1, id: str = "soft-whisk"):
+    """The whisk, about 150 px tall at ``scale`` 1, with the end of its handle on (``x``, ``y``), the wires up."""
+    if not (checks.number(scale) and scale > 0):
+        raise SoftPropError(f"a whisk's scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -7, -66, 14, 66, "#C68A4E", ink, 3, radius=6)
+    for spread in (34, 20, 7):
+        for side in (-1, 1):
+            cv.path(g, f"M 0 -66 C {side * spread} -92 {side * spread} -150 0 -150", stroke="#6E777D", sw=3)
     return g
 
 
