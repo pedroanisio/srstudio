@@ -217,6 +217,9 @@ class Staging:
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
+    # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
+    # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
+    keep_signature: bool = False
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -346,6 +349,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         face = (staging.opening if opening else cast)(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
+        if staging.keep_signature:
+            face = collage_sets.zoom_pivot(
+                staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP
+            )
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
