@@ -270,7 +270,7 @@ SOFT = Style(
         google=GoogleFont("Poppins", 700),
     ),
     mouths={WARM.name: SOFT_MOUTH},
-    parts=("blob", "soft_bedtime", "soft_props", "soft_sets"),
+    parts=("blob", "soft_bedtime", "soft_odds", "soft_props", "soft_sets"),
 )
 
 CEL = Style(
@@ -325,6 +325,7 @@ STICK = Style(
         "stick_flat",
         "stick_gym",
         "stick_home",
+        "stick_odds",
         "stick_office",
         "stick_roadtrip",
         "stick_school",
@@ -378,6 +379,7 @@ TOON = Style(
         "toon_house",
         "toon_surgery",
         "toon_inked",
+        "toon_odds",
         "toon_parlour",
         "toon_props",
         "toon_redrawn",
@@ -449,7 +451,7 @@ COLLAGE = Style(
         google=GoogleFont("Luckiest Guy", 400),
     ),
     mouths={},
-    parts=("collage", "collage_everyday", "collage_photo", "collage_sets", "collage_things"),
+    parts=("collage", "collage_everyday", "collage_odds", "collage_photo", "collage_sets", "collage_things"),
     namer=partial(flat_counter, "c"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # like the Toon: the expression is pose data, the voices are narration over the captions

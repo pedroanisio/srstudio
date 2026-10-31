@@ -21,7 +21,7 @@ from .canvas import Canvas
 from .collage_sketch import solo
 from .errors import SrstudioError
 
-__all__ = ["FRAME_H", "GroupError", "Place", "Lineup"]
+__all__ = ["FRAME_H", "GroupError", "Lineup", "Place", "pair", "place_of"]
 
 FRAME_H = 1920.0  # the Collage frame's height: a scaled bust keeps its cut-off bottom on its place's base
 
@@ -122,3 +122,17 @@ class Lineup:
         p = self.places[app.who]
         x, y = p.transform()
         return x + fx * p.scale, y + fy * p.scale
+
+
+def pair(places: Mapping[str, Place], *spans: tuple[float, float], listening=("open", "flat", "down")) -> Lineup:
+    """A :class:`Lineup` of a two-hander: everyone in ``places`` holds ``listening`` (eyes, mouth, arms) while someone
+    else speaks, through ``spans``."""
+    eyes, mouth, arms = listening
+    pose = {"start": 0.0, "eyes": eyes, "mouth": mouth, "arms": arms}
+    return Lineup(places, {name: [dict(pose)] for name in places}, spans)
+
+
+def place_of(place: Place, point: tuple[float, float]) -> tuple[float, float]:
+    """Where a point of a single-shot drawing lands on screen when its character stands at ``place``."""
+    x, y = place.transform()
+    return x + point[0] * place.scale, y + point[1] * place.scale

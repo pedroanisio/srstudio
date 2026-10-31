@@ -206,3 +206,14 @@ def test_the_face_is_read_where_the_zoom_puts_it():
 def test_a_box_that_is_no_box_is_refused(face):
     with pytest.raises(ThumbnailError, match="keep-clear box"):
         covered(TOP, FONT.read_bytes(), *SIZE, [face])
+
+
+def test_a_headline_refuses_a_backslash_that_was_meant_as_a_line_break():
+    """An over-escaped ``\\\\n`` is two printable characters: it would be drawn as "LEFT IT\\NVERY LATE"."""
+    assert any("backslash" in problem for problem in Thumbnail("Left it\\nvery late", 1.0).problems())
+    with pytest.raises(ThumbnailError, match="backslash"):
+        Thumbnail("Left it\\nvery late", 1.0).validate()
+
+
+def test_a_real_line_break_is_two_lines():
+    assert Thumbnail("Left it\nvery late", 1.0).validate().lines == ["LEFT IT", "VERY LATE"]

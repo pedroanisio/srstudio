@@ -76,7 +76,7 @@ def test_declarations_name_every_line_and_effect_and_pin_the_voice():
 def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
     plain = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x")])
     quiet = make(
-        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", level=-6)]
+        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", gain=-6)]
     )
     assert I.declarations(plain) == I.declarations(quiet)
     before = I.place(plain, pins_for(tmp_path, plain, [1.0, 0.8]), back_to_back)
@@ -90,7 +90,7 @@ def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
 @pytest.mark.parametrize("level", [0.5, -12.5, float("nan"), float("inf")])
 def test_a_level_outside_the_mix_is_refused_when_made(level):
     with pytest.raises(I.InterviewError, match="level"):
-        make(lines=[I.Spoken("manager", "Hi.", "Hi.", level=level), I.Spoken("candidate", "Hi.", "Hi.")])
+        make(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=level), I.Spoken("candidate", "Hi.", "Hi.")])
 
 
 def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
@@ -199,6 +199,23 @@ def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):
     assert [c.generated.id for c in placed.clips] == ["line-1", "line-2", "squeak"]
     assert {c.placement.role for c in placed.clips} == {"dialogue", "effects"}
     assert [e["name"] for e in placed.sound_effects] == ["squeak"]
+
+
+@pytest.mark.parametrize("gain", [float("nan"), -30.0, 3.0, "quiet", None])
+def test_a_line_s_gain_is_a_drop_the_mix_can_play(gain):
+    with pytest.raises(I.InterviewError, match="gain must be"):
+        make(lines=[I.Spoken("manager", "A short line.", "A short line.", gain=gain)])
+
+
+def test_a_quiet_line_drops_alone_and_leaves_the_level_of_the_others(tmp_path):
+    loud = make(lines=[I.Spoken("manager", "One.", "One."), I.Spoken("candidate", "Two.", "Two.")])
+    quiet = make(lines=[I.Spoken("manager", "One.", "One."), I.Spoken("candidate", "Two.", "Two.", gain=-12.0)])
+    pins = pins_for(tmp_path, loud, [1.0, 1.0])
+    level = [c.placement.gain_db for c in I.place(loud, pins, back_to_back).clips]
+    dropped = [c.placement.gain_db for c in I.place(quiet, pins, back_to_back).clips]
+    assert dropped[0] == level[0]
+    assert dropped[1] == pytest.approx(level[1] - 12.0)
+    assert dropped[2] == level[2]  # the effect is not a line
 
 
 @pytest.mark.parametrize(

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import COLLAGE, collage, collage_sketch, sketch
+from srstudio import COLLAGE, collage, collage_sketch, foley, sketch
 from srstudio.collage_group import Lineup, Place
 from srstudio.collage_sketch import Staging, check_staging, make_sketch, solo, sound_effects, timed
 
@@ -167,6 +167,21 @@ def test_a_push_keeps_clear_of_a_zoom():
     collage_sketch.check_push((1.0, 1.1), beats, "x")
 
 
+def test_a_pushed_first_shot_is_checked():
+    check_staging(still_staging(still=0.0, first_shot_push=1.06))
+    for kw, match in (
+        ({"still": 0.0, "first_shot_push": 0.9}, "grow"),
+        ({"still": 0.0, "first_shot_push": float("nan")}, "grow"),
+        ({"still": 1.0, "first_shot_push": 1.06}, "not both"),
+        ({"still": 0.0, "first_shot_push": 1.06, "push": (2.0, 1.05)}, "same keys"),
+    ):
+        with pytest.raises(collage_sketch.StagingError, match=match):
+            check_staging(still_staging(**kw))
+    zoomed = (replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:])
+    with pytest.raises(collage_sketch.StagingError, match="crash zoom"):
+        check_staging(still_staging(beats=zoomed, still=0.0, first_shot_push=1.06))
+
+
 def test_a_still_opening_is_checked():
     check_staging(still_staging())
     check_staging(still_staging(still=0.0))  # no still opening: any first beat
@@ -216,3 +231,12 @@ def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinn
     for bad in (-1, 2.5, "5M", True):
         with pytest.raises(collage_sketch.StagingError, match="bitrate"):
             check_staging(still_staging(bitrate=bad))
+
+
+def test_a_staging_s_own_sound_is_written_once_and_skipped_when_it_has_no_cue(tmp_path):
+    burst = foley.Burst(0.2, 800.0)
+    own = (collage_sketch.Sound("knock", burst, (1.0,), -6.0), collage_sketch.Sound("none", burst, ()))
+    effects = sound_effects(BEATS, END, tmp_path, 7, own)
+    assert [e["id"] for e in effects][-1] == "knock"
+    assert "none" not in [e["id"] for e in effects]
+    assert (tmp_path / effects[-1]["audio"]).is_file()

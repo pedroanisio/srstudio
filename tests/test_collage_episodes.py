@@ -105,11 +105,13 @@ def test_each_sketch_opens_on_its_hook(mods, name):
         f"{sk.slug}: a still opening is the still arm's, and only its"
     )
     first, second = sk.beats[0], sk.beats[1]
-    pushed = data[name].STAGING.push[1] > 1.0
+    staging = data[name].STAGING
+    pushed = staging.push[1] > 1.0 or staging.first_shot_push > 0  # arm b; these recordings kept their silent head
     assert not (still and pushed), f"{sk.slug}: a still opening does not push"
-    assert first.start == 0.0 and first.line == (None if still or pushed else 0)
+    silent_head = still or pushed
+    assert first.start == 0.0 and first.line == (None if silent_head else 0)
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
-    if still or pushed:
+    if silent_head:
         assert second.line == 0, f"{sk.slug}: the silent shot cuts to the first line"
 
 
@@ -183,6 +185,21 @@ def test_recording_needs_consent(mods, tmp_path):
     builder, data = mods
     with pytest.raises(ConsentError, match="SRSTUDIO_ALLOW_CLOUD"):
         builder.record_episode(data["book_report"].STAGING, tmp_path, {}, "ffmpeg", "note")
+
+
+def test_a_recording_keeps_the_seed_its_takes_were_made_on(mods, tmp_path, monkeypatch):
+    builder, data = mods
+    seeds = []
+
+    def client(cache, key, *, model, seed):
+        seeds.append(seed)
+        raise ConsentError("stop here: the client is all this test wants")
+
+    monkeypatch.setattr(builder, "ElevenLabsClient", client)
+    st = data["first_sip"].STAGING
+    with pytest.raises(ConsentError, match="stop here"):
+        builder.record_episode(st, tmp_path, {"SRSTUDIO_ALLOW_CLOUD": "1"}, "ffmpeg", "note")
+    assert seeds == [st.recording_seed] and st.recording_seed != st.seed
 
 
 TILT_MARGIN = 24.0  # a card turned a few degrees reaches this far past its box

@@ -92,16 +92,36 @@ def test_a_free_arm_leaves_out_what_that_hand_holds():
     assert "customer-park-phone" not in drawn and "coffee-cup" not in drawn
 
 
+@pytest.mark.parametrize("actor", [cast.Rosa, cast.Candidate, cast.Manager])
+def test_an_office_actor_leaves_out_a_free_arm_alone(actor):
+    both = body(actor)
+    assert body(actor, free_arms=()) == both
+    left, right = f"M-66 148 L-87 235 L-79 {actor.bottom}", f"M67 148 L86 233 L77 {actor.bottom}"
+    assert left in both and right in both
+    one = body(actor, free_arms=("right",))
+    assert left in one and right not in one
+    assert left not in body(actor, free_arms=("left", "right"))
+
+
+def test_an_office_arm_that_is_articulated_cannot_be_left_out():
+    cv = canvas()
+    with pytest.raises(CastError, match="articulated arm cannot be left out"):
+        cast.Candidate(cv).build(
+            cv.comp, 540, 900, perf=Performance(extras={"free_arms": ("right",), "arms": "articulated"})
+        )
+
+
 def test_without_it_the_arms_are_the_drawn_ones():
     assert body(cast.Barista, free_arms=()) == body(cast.Barista)
     assert "M-66 140 L-104 212 L-119 229 M68 141 L101 205 L117 208" in body(cast.Barista)
 
 
 @pytest.mark.parametrize("free", ["left", ("up",), ("left", "down")])
-def test_a_side_that_is_not_one_is_refused(free):
+@pytest.mark.parametrize("actor", [cast.Barista, cast.Rosa])
+def test_a_side_that_is_not_one_is_refused(actor, free):
     cv = canvas()
     with pytest.raises(CastError, match="free_arms names screen sides"):
-        cast.Barista(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
+        actor(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
 
 
 def test_a_carried_thing_rests_rides_the_hand_and_lands():

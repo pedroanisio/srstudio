@@ -84,7 +84,7 @@ class Spoken:
     speed: float = 1.0
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
-    level: float = 0.0  # dB under the other lines, a choice in the mix: the take and the timing do not change
+    gain: float = 0.0  # dB from the other lines, for one said under them: a whisper, a word over the shoulder
 
 
 @dataclass(frozen=True)
@@ -182,8 +182,8 @@ class Interview:
                 raise InterviewError(f"line {i}: seed must be an integer in 0..2**32-1, got {line.seed!r}")
             if not isinstance(line.heard, tuple) or not all(isinstance(h, str) and h.strip() for h in line.heard):
                 raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
-            if not (checks.number(line.level) and LEVELS[0] <= line.level <= LEVELS[1]):
-                raise InterviewError(f"line {i}: level {line.level} must lie in {LEVELS} dB")
+            if not (checks.number(line.gain) and LEVELS[0] <= line.gain <= LEVELS[1]):
+                raise InterviewError(f"line {i}: gain must be within the mix's levels {LEVELS} dB, got {line.gain!r}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -361,7 +361,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
             start=round(start, 6),
             clip_in=trim.clip_in,
             clip_out=trim.clip_out,
-            gain_db=round(voice_gain + line.level, 4),
+            gain_db=round(voice_gain + line.gain, 4),
             role="dialogue",
             language="en",
         )
