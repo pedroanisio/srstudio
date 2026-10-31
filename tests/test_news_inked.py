@@ -3,6 +3,7 @@ system of graphics. Version 1 stays drawable, and the look is tested like any ot
 
 from __future__ import annotations
 
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -158,6 +159,85 @@ def test_no_signature_mark_sits_under_a_blur():
     assert len(blurred(root)) == 2  # the far plane and the foreground
     for far in blurred(root):
         assert not any((n.get("id") or "").startswith(signature.MARKS) for n in far.iter())
+
+
+Box = tuple[float, float, float, float]  # left, top, right, foot, in frame pixels
+PAIR = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def placed(node: ET.Element, x: float, y: float, sx: float, sy: float, turn: float) -> tuple:
+    """The transform a group's children draw in: its own on top of what it sits in."""
+    gx, gy = float(node.get("x") or 0.0), float(node.get("y") or 0.0)
+    ax, ay = float(node.get("anchorX") or 0.0), float(node.get("anchorY") or 0.0)
+    scale_x, scale_y = float(node.get("scaleX") or 1.0), float(node.get("scaleY") or 1.0)
+    own = math.radians(float(node.get("rotation") or 0.0))
+    cos, sin = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+    return (
+        x + (gx * cos - gy * sin) * sx,
+        y + (gx * sin + gy * cos) * sy,
+        sx * scale_x,
+        sy * scale_y,
+        turn + math.degrees(own),
+        ax,
+        ay,
+    )
+
+
+def outline(shape: ET.Element) -> list[tuple[float, float]]:
+    """The points of a shape, a curve's control points with them, so a box over them can only be too generous."""
+    if shape.get("shape") == "path":
+        numbers = [float(n) for n in PAIR.findall(shape.get("path") or "")]
+        return list(zip(numbers[::2], numbers[1::2], strict=False))
+    x, y = float(shape.get("x") or 0.0), float(shape.get("y") or 0.0)
+    w, h = float(shape.get("width") or 0.0), float(shape.get("height") or 0.0)
+    return [(x, y), (x + w, y), (x, y + h), (x + w, y + h)]
+
+
+def solids(node: ET.Element, at: tuple = (0.0, 0.0, 1.0, 1.0, 0.0)) -> list[Box]:
+    """A box in frame pixels round every solid drawn under ``node``. A gradient pool is a shadow or a sheen, and a
+    shadow may fall where it likes."""
+    boxes: list[Box] = []
+    for child in node:
+        if child.tag == "group":
+            x, y, sx, sy, turn, ax, ay = placed(child, *at)
+            boxes += solids(child, (x - ax * sx, y - ay * sy, sx, sy, turn))
+        elif child.tag == "shape" and not (child.get("fill") or "").startswith("url("):
+            x, y, sx, sy, turn = at
+            cos, sin = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+            spots = [(x + (px * cos - py * sin) * sx, y + (px * sin + py * cos) * sy) for px, py in outline(child)]
+            xs, ys = [p[0] for p in spots], [p[1] for p in spots]
+            boxes.append((min(xs), min(ys), max(xs), max(ys)))
+    return boxes
+
+
+def desk_shot(who: str, arms: str) -> tuple[Box, list[Box]]:
+    """The box round the mug on the desk, and every solid an anchor draws in shot ``who`` with Gus's arms ``arms``."""
+    cv = canvas()
+    desk = cv.group(cv.comp, "desk-plane")
+    news_inked.desk(cv, desk)
+    news_inked.stage((Act(Pose(), Pose(arms=arms)),))(shot(cv, who))
+    root = tree(cv)
+    mug = next(n for n in root.iter() if (n.get("id") or "").startswith("news-mug"))
+    drawn = solids(mug, placed(mug, 0.0, 0.0, 1.0, 1.0, 0.0)[:5])
+    box = min(b[0] for b in drawn), min(b[1] for b in drawn), max(b[2] for b in drawn), max(b[3] for b in drawn)
+    anchors = [n for n in root.iter() if (n.get("id") or "").startswith(("anchor", "hands"))]
+    return box, [b for node in anchors for b in solids(node, placed(node, 0.0, 0.0, 1.0, 1.0, 0.0)[:5])]
+
+
+@pytest.mark.parametrize("who", ["desk", "vera", "gus"])
+@pytest.mark.parametrize("arms", news_kit.ARMS)
+def test_no_anchor_touches_the_mug_in_any_shot_or_pose(who, arms):
+    mug, solid = desk_shot(who, arms)
+    touching = [b for b in solid if b[0] < mug[2] and mug[0] < b[2] and b[1] < mug[3] and mug[1] < b[3]]
+    assert not touching, f"{who} with Gus's arms {arms}: {mug} under {touching[:3]}"
+
+
+def test_the_mug_stays_on_the_desk_and_in_the_picture():
+    (left, top, right, foot), _ = desk_shot("desk", "rest")
+    assert news_inked.DESK_Y - 60.0 < top < news_inked.LIP_Y
+    assert foot <= news_inked.LIP_Y + 6.0  # standing on the top, not hanging off its lip
+    assert left < 1020.0  # a mug, not a sliver at the frame's edge
+    assert (1080.0 - left) / (right - left) > 0.5
 
 
 def test_the_desk_carries_no_word_a_viewer_could_need():

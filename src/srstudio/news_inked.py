@@ -50,7 +50,6 @@ from .news_kit import (
     TEXT_RIGHT,
     TEXT_WIDE,
     TICKER_SPEED,
-    TWO_SHOT,
     VERA_FACE,
     Act,
     Bubble,
@@ -86,10 +85,14 @@ __all__ = [
     "FRAMING",
     "LOWER_H",
     "LOWER_Y",
+    "MUG_SIZE",
+    "MUG_X",
+    "MUG_Y",
     "NEAR_BLUR",
     "NECK_Y",
     "TICKER_H",
     "TICKER_Y",
+    "TWO_SHOT",
     "banner",
     "bug",
     "captions",
@@ -115,6 +118,8 @@ NECK_Y, COLLAR_Y, CHIN_TIP = (
     -166.0,
     -20.0,
 )  # the head's pivot, the jacket's closure, the chin's lowest point on the head
+TWO_SHOT = {"vera": 262.0, "gus": 742.0}  # they fill the desk, so they sit left of the middle and leave the right edge
+MUG_X, MUG_Y, MUG_SIZE = 1052.0, 1118.0, 0.82  # the one stretch of desk no sleeve reaches, in any shot or pose
 FRAMING = {"vera": (540.0, 1.22), "gus": (560.0, 1.14)}  # (x, scale) of each close-up: the head clears a two-line cue
 BANNER_Y, BANNER_H = 1146.0, 76.0  # under the desk's top, so the hands on it stay in the picture
 LOWER_Y, LOWER_H = 1222.0, 130.0
@@ -485,15 +490,15 @@ def studio(cv: Canvas, parent, end: float = 10.0) -> None:
     look.pool(cv, parent, "news2-key", "#ffd9a830", -340, 120, 1100, 1000)
 
 
-def _mug(cv: Canvas, parent, x: float, y: float) -> None:
-    look.pool(cv, parent, "news2-mug-shadow", "#160a3099", x - 66, y - 6, 132, 30)
-    _form(
-        cv, parent, ((x + 26, y - 50), (x + 62, y - 46), (x + 60, y - 18), (x + 28, y - 16)), cv.clear, None, 7.0, 6.0
-    )
+def _mug(cv: Canvas, parent, x: float, y: float, size: float) -> None:
+    """A mug with its foot at ``(x, y)``, its handle away from the anchors and past the frame's edge."""
+    g = cv.group(parent, cv.uid("news-mug"), x=x, y=y, scaleX=size, scaleY=size)
+    look.pool(cv, g, "news2-mug-shadow", "#160a3099", -66, -6, 132, 30)
+    _form(cv, g, ((26, -50), (62, -46), (60, -18), (28, -16)), cv.clear, None, 7.0, 6.0)
     _form(
         cv,
-        parent,
-        ((x - 40, y - 74), (x + 40, y - 74), (x + 37, y - 6), (x + 22, y + 6), (x - 22, y + 6), (x - 37, y - 6)),
+        g,
+        ((-40, -74), (40, -74), (37, -6), (22, 6), (-22, 6), (-37, -6)),
         CREAM,
         "#d9c6b0",
         5.0,
@@ -501,8 +506,8 @@ def _mug(cv: Canvas, parent, x: float, y: float) -> None:
         depth=14.0,
         amount=0.2,
     )
-    _oval(cv, parent, x, y - 74, 38, 9, "#4a2413")
-    cv.rect(parent, x - 37, y - 50, 74, 12, TANGERINE)
+    _oval(cv, g, 0, -74, 38, 9, "#4a2413")
+    cv.rect(g, -37, -50, 74, 12, TANGERINE)
 
 
 def _notepad(cv: Canvas, parent, x: float, y: float) -> None:
@@ -562,7 +567,7 @@ def desk(cv: Canvas, parent) -> None:
     cv.rect(g, -40, LIP_Y, cv.width + 80, FRONT_Y - LIP_Y, lip)
     cv.rect(g, -40, FRONT_Y, cv.width + 80, 6, PLUM_DEEP)
     _notepad(cv, g, 96.0, DESK_Y + 28.0)
-    _mug(cv, g, 1000.0, DESK_Y + 32.0)
+    _mug(cv, g, MUG_X, MUG_Y, MUG_SIZE)
     _camera(cv, g)
 
 
