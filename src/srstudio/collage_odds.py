@@ -130,6 +130,17 @@ def sensor_tap(cv: Canvas, parent, x: float, y: float, runs: Sequence[tuple[floa
     return g
 
 
+@register("prop", "collage-spinach", summary="A wide leaf of spinach to stick across someone's teeth", style="collage")
+def spinach(cv: Canvas, parent, x: float, y: float, width: float = 110.0):
+    """A dark leaf ``width`` wide, centred on ``x, y``."""
+    if not (checks.number(width) and width > 0):
+        raise CollageOddsError(f"a leaf has a width, got {width!r}")
+    g = cv.group(parent, cv.uid("g"))
+    cv.ellipse(g, x - width / 2, y - width * 0.2, width, width * 0.42, "#2f7a35", INK, 2.0)
+    cv.rect(g, x - width * 0.34, y - 1, width * 0.68, 2.5, "#5fae5f", radius=1.0)
+    return g
+
+
 @register("prop", "collage-wine-glass", summary="A wine glass, as full as you like", style="collage")
 def wine_glass(cv: Canvas, parent, x: float, y: float, full: float = 0.5, colour: str = WINE, scale: float = 1.0):
     """A glass whose foot stands on ``x, y``, its bowl ``full`` of ``colour``."""

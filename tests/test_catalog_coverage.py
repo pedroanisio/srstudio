@@ -53,6 +53,7 @@ NO_EPISODE = [
     "collage-eye-chart",
     "collage-lens-frame",
     "collage-sensor-tap",
+    "collage-spinach",
     "collage-water-jug",
     "collage-wine-glass",
 ]
