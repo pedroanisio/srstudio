@@ -34,6 +34,10 @@ def tree(cv: Canvas):
         ("prop", "toon-ledge", toon_house.ledge),
         ("graphic", "toon-key-line", toon_house.key_line),
         ("location", "toon-hallway", toon_house.hallway),
+        ("location", "toon-bathroom", toon_house.bathroom),
+        ("prop", "toon-shower-water", toon_house.shower_water),
+        ("prop", "toon-suds", toon_house.suds),
+        ("prop", "toon-towel", toon_house.towel),
         ("prop", "toon-horse", toon_house.horse),
         ("prop", "toon-thermostat", toon_house.thermostat),
         ("prop", "toon-finger", toon_house.finger),
@@ -397,3 +401,92 @@ def test_a_bow_tie_refuses_what_it_cannot_draw(at, scale):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_house.bow_tie(cv, cv.comp, at, scale)
+
+
+def test_a_bathroom_is_a_set_with_no_lettering():
+    cv = canvas()
+    toon_house.bathroom(cv, cv.comp)
+    assert tree(cv).findall(".//*")
+    assert not [n for n in tree(cv).iter() if n.tag.endswith("text")]
+
+
+def water(cv) -> list:
+    return [n for n in tree(cv).iter() if (n.get("id") or "").startswith("water-")]
+
+
+def test_water_runs_only_in_its_spans():
+    cv = canvas()
+    toon_house.shower_water(cv, cv.comp, [(0.0, 0.4), (1.7, 3.0)])
+    assert [(float(g.get("start")), float(g.get("end"))) for g in water(cv)] == [(0.0, 0.4), (1.7, 3.0)]
+
+
+def test_water_falls_for_as_long_as_it_runs():
+    cv = canvas()
+    toon_house.shower_water(cv, cv.comp, [(1.0, 3.0)])
+    tracks = [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "opacity"]
+    assert len(tracks) == toon_house.WATER_PHASES
+    for track in tracks:
+        times = [float(k.get("time")) for k in track]
+        assert times[0] == 1.0 and times[-1] == 3.0
+        assert len(times) > 2 * (3.0 - 1.0) / toon_house.WATER_PERIOD  # it flickers down; it does not hold
+
+
+def test_water_starts_at_the_rose_and_never_above_it():
+    assert toon_house.water_dashes(100.0, 0) == toon_house.water_dashes(100.0, 0)
+    rose_x, rose_y = toon_house.SHOWER_HEAD
+    for phase in range(toon_house.WATER_PHASES):
+        dashes = toon_house.water_dashes(40.0, phase)
+        assert dashes and all(y >= rose_y for (_, y), _ in dashes)
+        assert all(x <= rose_x for (x, _), _ in dashes)
+
+
+def test_water_in_the_clear_span_stops_where_it_is_told():
+    assert all(y <= 300.0 for dash in toon_house.water_dashes(250.0, 1, 300.0) for _, y in dash)
+    cv, dry = canvas(), canvas()
+    toon_house.shower_water(cv, cv.comp, [(0.0, 2.0)], clear=(120.0, 300.0), stop=300.0)
+    toon_house.shower_water(dry, dry.comp, [(0.0, 2.0)], clear=(120.0, 300.0))
+    assert len(list(tree(cv).iter())) > len(list(tree(dry).iter()))
+
+
+def test_water_keeps_off_the_span_it_is_told_to_clear():
+    cv = canvas()
+    toon_house.shower_water(cv, cv.comp, [(0.0, 2.0)], clear=(120.0, 300.0))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert all(not 120.0 <= x <= 300.0 for x in toon_house.streaks((120.0, 300.0)))
+    assert drawn
+    assert len(toon_house.streaks((120.0, 300.0))) < len(toon_house.streaks(None))
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"spans": []}, "at least one span"),
+        ({"spans": [(2.0, 1.0)]}, "rising"),
+        ({"spans": [(0.0, 2.0), (1.0, 3.0)]}, "rising"),
+        ({"spans": [(0.0, 1.0)], "clear": (5.0, 1.0)}, "clear"),
+    ],
+)
+def test_water_refuses_what_it_cannot_draw(kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_house.shower_water(cv, cv.comp, **kwargs)
+
+
+@pytest.mark.parametrize("builder", [toon_house.suds, toon_house.towel])
+def test_what_a_head_wears_in_the_bathroom_scales_about_its_place_and_keeps_to_its_span(builder):
+    cv = canvas()
+    builder(cv, cv.comp, (200, 500), scale=0.5, start=1.0, end=3.0, id="worn")
+    group = next(n for n in tree(cv).iter() if n.get("id") == "worn")
+    assert float(group.get("scaleX")) == float(group.get("scaleY")) == 0.5
+    assert (float(group.get("start")), float(group.get("end"))) == (1.0, 3.0)
+    assert not [n for n in tree(cv).iter() if n.tag.endswith("text")]
+
+
+@pytest.mark.parametrize("builder", [toon_house.suds, toon_house.towel])
+@pytest.mark.parametrize(
+    ("kwargs", "match"), [({"at": "x"}, "reference point"), ({"at": (200, 500), "scale": 0}, "scale")]
+)
+def test_what_a_head_wears_in_the_bathroom_refuses_what_it_cannot_draw(builder, kwargs, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        builder(cv, cv.comp, **kwargs)
