@@ -2,9 +2,9 @@
 negotiates harder than you ever would. She takes the laptop, says nothing for a while, and fifty-five becomes seventy.
 
 Three voices (ElevenLabs premade Jessica as Dana, Liam as the son, Laura as his mother): Dana in the meeting room with
-her phone on the desk, the son in his childhood bedroom, Mom's face filling the laptop. The first frame is held (the
-``sp-hook_motion`` test's arm A). :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its
-camera and :func:`foley` its sound.
+her phone on the desk, the son in his childhood bedroom, Mom's face filling the laptop. The first shot pushes in from
+its first frame (the ``sp-hook_motion`` test's arm B). :func:`validate` checks the events; :func:`dress` draws each
+shot, :func:`lens` its camera and :func:`foley` its sound.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ SON = speaker("son", "Liam", "fox")
 MOM = speaker("mom", "Laura", "cat", "deadpan")
 TINTS = tinted(DANA, SON, MOM)
 FIGURES = {"cat": (1.3, 40.0)}  # her face fills the laptop
-STILL = 0.45
+LEAD = 0.45  # the silence before the first word
 PIVOT = (980.0, 1420.0)
 PHONE = dict(at=(452, 838), scale=0.9)
 KEY_LINE = "Interviewing from your mom's."
@@ -56,7 +56,7 @@ say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 BEATS = (
     hold(0.0, "dog", "", "half", "flat", "desk"),
-    first(STILL, "dog", 0, "And what salary", "half", "open", "desk"),
+    first(LEAD, "dog", 0, "And what salary", "half", "open", "desk"),
     part(1.5, "dog", 0, 3, "are you looking for?", "half", "open", "desk"),
     say(2.8, "fox", 1, "half", "grin", "desk"),
     hold(4.6, "fox", "", "side", "flat", "desk", "door"),
@@ -83,11 +83,11 @@ SKETCH = Sketch(SLUG, TITLE, (DANA, SON, MOM), LINES, BEATS, END)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
-    """The sketch is consistent; the first frame is held, a line by 0.5 s; the door opens once, the lid shuts once, on
+    """The sketch is consistent; it opens silent, a line by 0.5 s; the door opens once, the lid shuts once, on
     Dana's shot, after every line but hers."""
     sketch.check(sk)
     if sk.beats[0].spoken or sk.beats[1].start > 0.5:
-        raise sketch.SketchError("the first frame is held, a line by 0.5 s")
+        raise sketch.SketchError("it opens silent, a line by 0.5 s")
     for kind in ("door", "shut", "tick"):
         scripting.exactly_once(sk.beats, kind, f"{kind} comes once")
     scripting.only_events(sk.beats, {"door", "shut", "tick"})
@@ -115,8 +115,10 @@ def dress(shot) -> None:
 
 
 def lens(shot, setup) -> None:
-    """Still; a slow push on Mom through the silence."""
+    """A slow push from the first frame; a slow push on Mom through the silence."""
     camera.anchor(setup, *PIVOT, place=True)
+    if shot.app.start == 0.0:
+        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, 1.05)])
     if shot.app.who == "cat":
         a = shot.app.start
         camera.push_in(shot.cv, setup, scale=[(a, 1.0), (a + 2.0, 1.05)])
