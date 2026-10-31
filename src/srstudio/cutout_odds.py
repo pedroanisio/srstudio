@@ -15,6 +15,7 @@ from .registry import register
 
 __all__ = [
     "CutoutOddsError",
+    "ballpoint",
     "bistro_table",
     "chair_lever",
     "coin_purse",
@@ -308,4 +309,16 @@ def chair_lever(
     cv.rect(arm, 0, -5, 74, 10, "#3B3D40", cv.ink, 2.5, radius=4)
     cv.ellipse(arm, 62, -14, 28, 28, "#23262A", cv.ink, 2.5)
     cv.ellipse(g, -10, -10, 20, 20, "#6F747B", cv.ink, 2.5)
+    return g
+
+
+@register("prop", "ballpoint", style="cutout", summary="A plain ballpoint pen, held to write")
+def ballpoint(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "ballpoint"):
+    """Its nib is on (``x``, ``y``), the barrel 120 long, up and to the right."""
+    _check_scale(scale)
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale, rotation=35)
+    cv.path(g, "M0 0 L-5 -16 L5 -16Z", "#3B3D40", ink, 2)
+    cv.rect(g, -6, -112, 12, 96, "#2F5D8C", ink, 2.5, radius=3)
+    cv.rect(g, -6, -120, 12, 12, "#23262A", ink, 2, radius=3)
     return g

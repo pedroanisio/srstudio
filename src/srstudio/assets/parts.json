@@ -9137,6 +9137,23 @@
           "rig": null
         }
       ]
+    },
+    "ballpoint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain ballpoint pen, held to write. First drawn for sinking-chair; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3b81fe41ae57d3c78916ed7e1ba9761ee349e2c3dd330f5dff418b9598cfe100",
+          "rig": null
+        }
+      ]
     }
   }
 }
