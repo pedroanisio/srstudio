@@ -83,6 +83,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_study,
     toon_surgery,
     toon_torso,
+    toon_voices,
     toon_world,
 )
 from .canvas import (
