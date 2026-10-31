@@ -8505,7 +8505,7 @@
           "drawing": "f2facc5f5cc62c63123d9056fe37a1d6dc80a9f4f6328ad0bf42601db509fe14",
           "rig": {
             "date": "2026-10-31",
-            "note": "Head rig: the same turn and nods, the face sliding 8 px on a turn, not 24, and dropping 0.2 of a nod, not 0.8, so the blush, the freckles and the gape stay on his skin.",
+            "note": "Head rig: the same turn and nods, the face sliding 8 px on a turn, not 24, and dropping 0.2 of a nod, not 0.8, so the blush, the freckles and the brows stay on his skin.",
             "status": "approved",
             "proof": "generated/character-proofs/news-head/seabird-heads-3.mp4",
             "drawing": "607516b527a9931cc73ae391ad473fc96aa2419f1f83524e9781f929c2fe15af",

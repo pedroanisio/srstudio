@@ -103,6 +103,14 @@ and 16.7 px on Vera, and with the limits 28.0 px and 22.3 px; Vera's grin stays 
 his nose by 17.1 px at any turn, because the mouth and the nose slide together. No limit answers any of these, or none
 that the approval covers: the fix is a change to a drawing. The test names the gape and the grin, so they stay visible.
 
+The approval came before these were measured, and its condition was that every face mark stays inside at the limits.
+arc4d3 decided on Slack 1793486162.509569: "Option 1: `news-gus@3` and `news-vera@3` stay approved, with the gape,
+Vera's grin at both limits, and the round mouth over the nose recorded as open drawing defects. I looked at the frames:
+the shout reads as a normal cartoon jaw-drop at phone size, and it's in the original drawings, not new." The open
+defects of version 3 are therefore: the gape past the chin on both anchors, Vera's grin past the skin at both limits
+(6.4 px and 4.8 px), and Gus's round mouth over the bottom of his nose. In the same post arc4d3 agreed to a redraw:
+"Yes to v4: redraw the gape inside the chin and lift the round mouth clear of the nose."
+
 Rejected: clamping the slide inside the reels and leaving the style alone. The digest would hold while the specimen
 still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
 is built, not to its limits, and more than this fix needs.
