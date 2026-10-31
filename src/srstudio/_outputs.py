@@ -1,16 +1,34 @@
-"""Stage related output files and restore existing files if installation fails."""
+"""Stage related output files and preserve recoverable versions if installation fails."""
 
 from __future__ import annotations
 
 import os
 import shutil
+import stat
 import tempfile
 from contextlib import ExitStack
+from dataclasses import dataclass
 from pathlib import Path
 
 
+@dataclass
+class _Change:
+    target: Path
+    backup: Path | None = None
+    installed: bool = False
+
+
 def write_outputs(outputs: list[tuple[Path, bytes]], *, overwrite: bool) -> None:
-    """Install each file from its own filesystem, restoring earlier files on an ordinary OS error."""
+    """Install related files without deleting published paths during error recovery.
+
+    A prior version that cannot be restored without replacing another writer's file remains in its
+    private backup directory. The exception identifies any published files and retained backups.
+    """
+    if not overwrite:
+        for target, _ in outputs:
+            if target.exists() or target.is_symlink():
+                raise FileExistsError(f'{target}: already exists; use overwrite=True to replace it')
+
     with ExitStack() as stack:
         preserve = False
         folders: list[Path] = []
@@ -30,7 +48,8 @@ def write_outputs(outputs: list[tuple[Path, bytes]], *, overwrite: bool) -> None
             source, backup = folder / 'new', folder / 'old'
             source.write_bytes(content)
             staged.append((target, source, backup))
-        installed: list[tuple[Path, Path, Path | None]] = []
+
+        changes: list[_Change] = []
         try:
             for target, source, backup in staged:
                 if not overwrite:
@@ -38,39 +57,48 @@ def write_outputs(outputs: list[tuple[Path, bytes]], *, overwrite: bool) -> None
                         os.link(source, target)
                     except FileExistsError as exc:
                         raise FileExistsError(f'{target}: already exists; use overwrite=True to replace it') from exc
-                    installed.append((target, source, None))
+                    changes.append(_Change(target, installed=True))
                     continue
-                saved = None
+                change = _Change(target)
                 if target.exists() or target.is_symlink():
                     # A reserved regular file prevents accidentally moving a directory into the backup.
                     backup.touch()
                     os.replace(target, backup)
-                    saved = backup
-                if saved is not None:
-                    installed.append((target, source, saved))
-                os.replace(source, target)
-                if saved is None:
-                    installed.append((target, source, None))
-        except OSError as original_error:
-            rollback_errors = []
-            for target, source, saved in reversed(installed):
+                    change.backup = backup
+                    changes.append(change)
+                    source.chmod(stat.S_IMODE(backup.stat().st_mode))
                 try:
-                    if saved is not None:
-                        os.replace(saved, target)
-                    elif overwrite:
-                        target.unlink(missing_ok=True)
-                    else:
-                        if os.path.samestat(target.lstat(), source.stat()):
-                            target.unlink()
-                except FileNotFoundError:
-                    if saved is not None:
-                        rollback_errors.append(f'{target}: backup disappeared')
-                except OSError as exc:
-                    rollback_errors.append(f'{target}: {exc}')
-            if rollback_errors:
+                    os.link(source, target)
+                except FileExistsError as exc:
+                    raise FileExistsError(f'{target}: appeared during output installation') from exc
+                change.installed = True
+                if change.backup is None:
+                    changes.append(change)
+        except OSError as original_error:
+            retained: list[str] = []
+            preserved_outputs: list[str] = []
+            for change in reversed(changes):
+                if change.backup is None:
+                    if change.installed:
+                        preserved_outputs.append(str(change.target))
+                    continue
+                # Restore only if the destination is absent. Never replace a path another writer may own.
+                try:
+                    os.link(change.backup, change.target, follow_symlinks=False)
+                except OSError:
+                    retained.append(str(change.backup))
+                    if change.installed:
+                        preserved_outputs.append(str(change.target))
+            if retained:
                 preserve = True
-                raise OSError(
-                    f"output rollback failed ({'; '.join(rollback_errors)}); backups retained in "
-                    f"{', '.join(str(folder) for folder in folders)}"
-                ) from original_error
+            messages = []
+            if preserved_outputs:
+                messages.append(f"preserved published output(s): {', '.join(preserved_outputs)}")
+            if retained:
+                messages.append(f"prior output backup(s) retained at: {', '.join(retained)}")
+            if messages:
+                message = f"{original_error}; {'; '.join(messages)}"
+                if isinstance(original_error, FileExistsError):
+                    raise FileExistsError(message) from original_error
+                raise OSError(message) from original_error
             raise

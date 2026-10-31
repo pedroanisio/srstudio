@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import shutil
 import struct
 import tempfile
@@ -21,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from . import checks
+from ._outputs import write_outputs
 from .errors import SrstudioError
 from .fonts import FontError, inspect_ttf
 from .timeline import Timeline, TimelineError
@@ -188,45 +188,9 @@ def write_sample_project(
             (stage / "dialogue.json").write_text(json.dumps(data, indent=2) + "\n")
             write_wav(stage / "assets" / "dialogue.wav", [(p["start"], p["end"]) for p in phrases], data["duration"])
             copy_dejavu(source, stage / "assets")
-            root.mkdir(parents=True, exist_ok=True)
-            (root / "assets").mkdir(parents=True, exist_ok=True)
-            backups = Path(temporary) / "backups"
-            backups.mkdir()
-            installed: list[tuple[Path, Path | None]] = []
-            try:
-                for i, relative in enumerate(artifacts):
-                    target = root / relative
-                    if not overwrite:
-                        try:
-                            os.link(stage / relative, target)
-                        except FileExistsError as exc:
-                            raise FileExistsError(
-                                f"{target}: already exists; pass overwrite=True to replace sample artifacts"
-                            ) from exc
-                        installed.append((target, None))
-                        continue
-                    backup = backups / str(i) if target.exists() or target.is_symlink() else None
-                    if backup is not None:
-                        os.replace(target, backup)
-                    try:
-                        os.replace(stage / relative, target)
-                    except OSError:
-                        if backup is not None:
-                            os.replace(backup, target)
-                        raise
-                    installed.append((target, backup))
-            except OSError:
-                for target, backup in reversed(installed):
-                    if backup is None:
-                        if overwrite:
-                            target.unlink(missing_ok=True)
-                        elif target.exists() and os.path.samestat(
-                            target.lstat(), (stage / target.relative_to(root)).stat()
-                        ):
-                            target.unlink()
-                    else:
-                        os.replace(backup, target)
-                raise
+            write_outputs(
+                [(root / relative, (stage / relative).read_bytes()) for relative in artifacts], overwrite=overwrite
+            )
     except OSError as exc:
         raise SampleError(f"{root}: cannot write sample project: {exc}") from exc
     return data

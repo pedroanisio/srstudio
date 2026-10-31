@@ -1,6 +1,7 @@
 """Scaffolding safety, SDK diagnostics and approved character lookup."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -97,21 +98,25 @@ def test_approved_version_refuses_unverified_replacement(monkeypatch):
     assert parts.drawing('toon-fox', 1).name == 'toon-fox'
 
 
-def test_failed_commit_restores_all_existing_sample_artifacts(tmp_path, monkeypatch):
+def test_failed_commit_preserves_prior_sample_artifacts_for_recovery(tmp_path, monkeypatch):
     root = tmp_path / 'project'
     sample.write_sample_project(root, [sample.Line('a', 'old')])
     before = {p.relative_to(root): p.read_bytes() for p in root.rglob('*') if p.is_file()}
-    replace = sample.os.replace
+    link = os.link
+    failed = False
 
-    def fail_on_audio(src, dst):
-        if Path(src).name == 'dialogue.wav' and Path(src).parent.name == 'assets':
+    def fail_on_audio(src, dst, *args, **kwargs):
+        nonlocal failed
+        if Path(dst) == root / 'assets/dialogue.wav' and Path(src).name == 'new' and not failed:
+            failed = True
             raise OSError('cannot install audio')
-        return replace(src, dst)
+        return link(src, dst, *args, **kwargs)
 
-    monkeypatch.setattr(sample.os, 'replace', fail_on_audio)
-    with pytest.raises(SampleError, match='cannot install audio'):
+    monkeypatch.setattr(os, 'link', fail_on_audio)
+    with pytest.raises(SampleError, match='backup'):
         sample.write_sample_project(root, [sample.Line('a', 'new')], overwrite=True)
-    assert {p.relative_to(root): p.read_bytes() for p in root.rglob('*') if p.is_file()} == before
+    assert (root / 'assets/dialogue.wav').read_bytes() == before[Path('assets/dialogue.wav')]
+    assert any(path.read_bytes() == before[Path('dialogue.json')] for path in root.glob('.srstudio-output-*/old'))
 
 
 def test_example_requires_explicit_overwrite_and_supports_project_font(tmp_path):

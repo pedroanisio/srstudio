@@ -70,6 +70,17 @@ def _signature(builder: Callable[..., Any]) -> inspect.Signature:
         raise RegistryError(f"cannot inspect this builder's signature: {exc}") from exc
 
 
+@dataclass(frozen=True)
+class _OriginalEntry:
+    builder: Callable[..., Any]
+    summary: str
+    tags: tuple[str, ...]
+    module: str
+    style: str
+    slots: tuple[str, ...]
+    examples: tuple[str, ...]
+
+
 @dataclass
 class Entry:
     kind: str
@@ -83,11 +94,19 @@ class Entry:
     examples: tuple[str, ...] = ()  # Python snippets; ep is an existing Episode
     replacement: bool = False
     _registered_builder: Callable[..., Any] = field(init=False, repr=False, compare=False)
+    _original: _OriginalEntry | None = field(init=False, repr=False, compare=False)
     _verified_builder: Callable[..., Any] | None = field(default=None, init=False, repr=False, compare=False)
     _verified_drawing: str | None = field(default=None, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         self._registered_builder = self.builder
+        self._original = (
+            None
+            if self.replacement
+            else _OriginalEntry(
+                self.builder, self.summary, self.tags, self.module, self.style, self.slots, self.examples
+            )
+        )
 
     def __call__(self, *args, **kwargs):
         return self.builder(*args, **kwargs)
@@ -235,9 +254,13 @@ def register(
         from .styles import style_of_module  # here, not at import: styles imports canvas and soundtrack
 
         resolved = style_of_module(obj.__module__) if style is None else style
-        _REGISTRY[kind][name] = Entry(
+        previous = _REGISTRY[kind].get(name)
+        entry = Entry(
             kind, name, obj, doc, tuple(tags), obj.__module__, resolved, tuple(slots), tuple(examples), replace
         )
+        if previous is not None:
+            entry._original = previous._original
+        _REGISTRY[kind][name] = entry
         return obj
 
     return wrap

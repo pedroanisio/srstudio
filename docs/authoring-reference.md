@@ -11,6 +11,9 @@ Run the commands below from the srstudio repository root.
 `TimelineError` with the field or file to correct. These examples describe timing only; an `Episode` also needs the
 assets and font selected by its `EpisodeSpec` and style.
 
+Choose one object format: `phrases` for dialogue or `items` for takes. An object containing both is rejected so
+take audio cannot be silently ignored.
+
 A dialogue object has a positive `duration` and a `phrases` list. Each phrase needs a nonempty `role` and `text`
 and an ordered `start`/`end` inside the duration. Optional `camera_cuts` must have strictly increasing times inside
 the duration; `angle` selects intervals through `timeline.shots("wide")`. Optional named beats such as

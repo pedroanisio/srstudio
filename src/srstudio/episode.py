@@ -758,8 +758,13 @@ class Episode:
         report_rows = [{"severity": f.severity, "code": f.code, "message": str(f)} for f in findings]
         errors = [f for f in findings if f.severity == "error"]
         if errors or (strict and findings):
-            write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
-            raise SceneCheckError(findings)
+            check_error = SceneCheckError(findings)
+            try:
+                write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
+            except OSError as exc:
+                check_error.args = (f"{check_error}\nvalidation report could not be written: {exc}",)
+                raise check_error from exc
+            raise check_error
         document = _document_at(self.scene, self.root, out.parent)
         if self.cv.signature is not None and (absent := signature.missing(document)):
             error = signature.SignatureError(
@@ -767,7 +772,11 @@ class Episode:
                 "both marks (ADR 0001), or the episode passes signature=False because its package predates them"
             )
             report_rows.append({"severity": "error", "code": "srstudio:signature", "message": str(error)})
-            write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
+            try:
+                write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
+            except OSError as exc:
+                error.args = (f"{error}\nvalidation report could not be written: {exc}",)
+                raise error from exc
             raise error
         report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
         write_outputs([(out, document), (report, report_data)], overwrite=overwrite)

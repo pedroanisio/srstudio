@@ -21,10 +21,12 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import os
 import pkgutil
 import re
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable
+from pathlib import Path
 from typing import Any
 
 from sr_core.scene import Scene
@@ -344,29 +346,55 @@ def fingerprint(document: bytes) -> str:
     return hashlib.sha256(json.dumps(flat, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
 
 
-def digest(name: str, number: int = 1) -> str:
-    """The digest of what version ``number`` of ``name`` draws in its specimen."""
+def digest(name: str, number: int = 1, *, episodes: Path | None = None) -> str:
+    """The drawing's digest; non-character specimens use project assets from ``episodes``."""
+    recorded = parts.get(name)
+    if recorded.refused is not None:
+        raise SpecimenError(f"{name} has no standalone specimen ({recorded.refused.reason.value})")
+    if recorded.kind != "character":
+        from . import catalog_specimens
+
+        projects = (
+            Path(episodes)
+            if episodes is not None
+            else Path(os.environ.get("SRSTUDIO_EPISODES") or "generated/episodes")
+        )
+        try:
+            return catalog_specimens.digest(name, number, projects)
+        except catalog_specimens.SpecimenRenderError as exc:
+            raise SpecimenError(
+                f"{name}: {exc}; pass episodes=Path('/path/to/projects') or set SRSTUDIO_EPISODES"
+            ) from exc
     part = parts.part_name(name, number)
     if part not in SPECIMENS:
         raise SpecimenError(f"{part} has no specimen; add it to specimens.SPECIMENS")
     return fingerprint(SPECIMENS[part](registry.get("character", part)).scene.to_bytes(layout="pretty"))
 
 
-def check(name: str, number: int = 1) -> None:
-    """Check an approved drawing and verify its current registered builder for this process."""
-    version = parts.get(name).version(number)
+def check(name: str, number: int = 1, *, episodes: Path | None = None) -> None:
+    """Verify an approved builder; non-character specimens use project assets from ``episodes``."""
+    part = parts.get(name)
+    version = part.version(number)
     if version.status != "approved":
         return
-    entry = registry.get(parts.get(name).kind, parts.part_name(name, number))
+    entry = registry.get(part.kind, parts.part_name(name, number))
+    if part.refused is not None:
+        if entry._original is None:
+            raise SpecimenError(f"{name} has no standalone specimen and no original builder was recorded")
+        raise SpecimenError(f"{name} has no standalone specimen; use parts.restore({name!r}, {number})")
     builder = entry.builder
     entry._verified_builder = None
     entry._verified_drawing = None
-    if digest(name, number) != version.drawing:
+    if episodes is None:
+        actual = digest(name, number)
+    else:
+        actual = digest(name, number, episodes=episodes)
+    if actual != version.drawing:
         raise DrawingChangedError(
             f"{name} version {number} is approved and immutable, and it no longer draws what was approved. "
             f"Restore its drawing and add a version: an approved look is never revised in place"
         )
-    if registry.get(parts.get(name).kind, parts.part_name(name, number)) is not entry or entry.builder is not builder:
+    if registry.get(part.kind, parts.part_name(name, number)) is not entry or entry.builder is not builder:
         raise SpecimenError(f"{name} version {number}: registered builder changed during specimen check; retry")
     entry._verified_builder = builder
     entry._verified_drawing = version.drawing

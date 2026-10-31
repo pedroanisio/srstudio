@@ -220,7 +220,9 @@ class Timeline:
         if isinstance(data, list):
             return cls.from_captions(data, root)
         data = _record(data, "timeline", ("duration",))
-        if "items" in data and "phrases" not in data:
+        if "items" in data and "phrases" in data:
+            raise TimelineError("timeline: choose either 'phrases' or 'items', not both")
+        if "items" in data:
             return cls.from_takes(data, root)
         data = _record(data, "timeline", ("phrases",))
         phrase_rows = _rows(data["phrases"], "phrases", ("role", "text", "start", "end"))

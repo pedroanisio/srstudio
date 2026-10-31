@@ -90,7 +90,14 @@ def validate_wav(path: Path) -> None:
                     if length < 16:
                         raise ValueError("invalid fmt chunk")
                     fmt = struct.unpack("<HHIIHH", source.read(16))
-                    if fmt[0] == 0xFFFE:
+                    if fmt[0] == 0x11:
+                        extension = source.read(min(length - 16, 4))
+                        if len(extension) < 4:
+                            raise ValueError("invalid IMA ADPCM format extension")
+                        extra_size, samples_per_block = struct.unpack("<HH", extension)
+                        if extra_size < 2 or extra_size > length - 18 or not samples_per_block or fmt[5] != 4:
+                            raise ValueError("invalid IMA ADPCM format extension")
+                    elif fmt[0] == 0xFFFE:
                         extension = source.read(min(length - 16, 24))
                         if len(extension) < 24 or struct.unpack_from("<H", extension)[0] < 22:
                             raise ValueError("invalid extensible WAV format")
@@ -108,7 +115,7 @@ def validate_wav(path: Path) -> None:
             encoding, channels, rate, _, alignment, bits = fmt
             if not encoding or not channels or not rate or not alignment or not bits:
                 raise ValueError("invalid audio format")
-            if encoding not in (1, 3, 6, 7, 0xFFFE):
+            if encoding not in (1, 3, 6, 7, 0x11, 0xFFFE):
                 raise ValueError(f"unsupported WAV encoding 0x{encoding:04x}; convert to PCM or IEEE float")
             if any(length % alignment for length in data_sizes):
                 raise ValueError("truncated audio frame")

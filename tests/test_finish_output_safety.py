@@ -27,26 +27,27 @@ def test_finish_scene_failure_preserves_existing_report(project, tmp_path):
     assert report.read_text() == 'previous report'
 
 
-def test_finish_rolls_back_scene_if_report_commit_fails(project, tmp_path, monkeypatch):
+def test_finish_preserves_scene_and_backup_if_report_commit_fails(project, tmp_path, monkeypatch):
     ep = episode(project)
     out = tmp_path / 'scene.xml'
     report = tmp_path / 'report.json'
     out.write_text('previous scene')
     report.write_text('previous report')
-    original = os.replace
+    original = os.link
     failed = False
 
-    def fail_once(source, target):
+    def fail_once(source, target, *args, **kwargs):
         nonlocal failed
         if Path(target) == report and not failed:
             failed = True
             raise OSError('injected report failure')
-        return original(source, target)
+        return original(source, target, *args, **kwargs)
 
-    monkeypatch.setattr(os, 'replace', fail_once)
-    with pytest.raises(OSError, match='injected report failure'):
+    monkeypatch.setattr(os, 'link', fail_once)
+    with pytest.raises(OSError, match='backup'):
         ep.finish(out=out, report=report)
-    assert out.read_text() == 'previous scene'
+    assert '<scene ' in out.read_text()
+    assert any(path.read_text() == 'previous scene' for path in tmp_path.glob('.srstudio-output-*/old'))
     assert report.read_text() == 'previous report'
 
 
@@ -56,14 +57,14 @@ def test_finish_keeps_backup_if_restoration_fails(project, tmp_path, monkeypatch
     report = tmp_path / 'report.json'
     out.write_text('previous scene')
     report.write_text('previous report')
-    original = os.replace
+    original = os.link
 
-    def fail_report(source, target):
+    def fail_report(source, target, *args, **kwargs):
         if Path(target) == report:
             raise OSError('report is unavailable')
-        return original(source, target)
+        return original(source, target, *args, **kwargs)
 
-    monkeypatch.setattr(os, 'replace', fail_report)
+    monkeypatch.setattr(os, 'link', fail_report)
     with pytest.raises(OSError, match='backup'):
         ep.finish(out=out, report=report)
     backups = list(tmp_path.glob('.srstudio-output-*/old'))

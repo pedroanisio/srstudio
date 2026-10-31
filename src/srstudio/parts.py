@@ -67,6 +67,7 @@ __all__ = [
     "read",
     "read_record",
     "resolved",
+    "restore",
     "write_record",
 ]
 
@@ -361,6 +362,19 @@ def _approved_entry(name: str, number: int) -> registry.Entry:
     except registry.NotRegisteredError as exc:
         raise PartError(f"{name} version {number}: drawing {drawn_as!r} is not registered") from exc
     if registry._unverified(entry):
+        part = get(name)
+        if part.refused is not None:
+            if entry._original is None:
+                raise UnverifiedBuilderError(
+                    f"{name} version {number}: registered builder is unverified, has no standalone specimen, and "
+                    "no original builder was recorded; reload the shipped registration in a fresh process, or "
+                    "use parts.drawing(..., allow_unverified=True) for proof work"
+                )
+            raise UnverifiedBuilderError(
+                f"{name} version {number}: registered builder is unverified and has no standalone specimen; "
+                "use parts.restore(name, number) to restore the original builder, or "
+                "parts.drawing(..., allow_unverified=True) for proof work"
+            )
         raise UnverifiedBuilderError(
             f"{name} version {number}: registered builder is unverified; use specimens.check to compare "
             "the drawing, or parts.drawing(..., allow_unverified=True) for proof work"
@@ -372,6 +386,28 @@ def pin(name: str, number: int) -> Version:
     version = get(name).pinned(number)
     _approved_entry(name, version.number)
     return version
+
+
+def restore(name: str, number: int = 1) -> registry.Entry:
+    """Restore the first registered builder for a version, discarding its current replacement."""
+    part = get(name)
+    part.version(number)
+    entry = registry.get(part.kind, part_name(name, number))
+    original = entry._original
+    if original is None:
+        raise PartError(f"{name} version {number}: no original builder was recorded")
+    entry.builder = original.builder
+    entry._registered_builder = original.builder
+    entry.summary = original.summary
+    entry.tags = original.tags
+    entry.module = original.module
+    entry.style = original.style
+    entry.slots = original.slots
+    entry.examples = original.examples
+    entry._verified_builder = None
+    entry._verified_drawing = None
+    entry.replacement = False
+    return entry
 
 
 def part_name(name: str, number: int) -> str:
