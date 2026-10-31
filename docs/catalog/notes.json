@@ -1124,6 +1124,7 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "cv-folder": {"title": "Pasta do currículo"},
     "toon-plate-of-toast": {"title": "Prato de torradas"},
     "toon-swing-door": {"title": "Porta vaivém"},
     "toon-soup-tubs": {"title": "Potes de sopa"},
@@ -7836,6 +7837,18 @@
         "at": 20.0
       },
       "text": "Uma bandeja de cupcakes com bandeirinhas, em fileiras."
+    },
+    {
+      "section": "props",
+      "name": "Pasta do currículo",
+      "parts": [
+        "cv-folder"
+      ],
+      "shot": {
+        "episode": "any-questions",
+        "at": 14.6
+      },
+      "text": "A pasta de quem se candidata: fechada na mesa, aberta quando alguém resolve ler."
     }
   ]
 }
