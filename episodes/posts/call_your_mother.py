@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=('#salary', '#jobinterview', '#momsbelike', '#animatedshorts', '#okayville'),
         thumbnail=Thumbnail("He is not\nflexible.", 16.5, "Okayville"),
     ),
-    tags=Tags("job-hunting", "other-person", "triumph", recurring=('dana',), test="sp-hook_motion", arm="a"),
+    tags=Tags("job-hunting", "other-person", "triumph", recurring=('dana',), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
         # toon-plate-of-toast also drawn:
