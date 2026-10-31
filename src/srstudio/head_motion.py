@@ -43,12 +43,15 @@ __all__ = [
     "AVERT_BACK",
     "CHANNELS",
     "DUCK",
+    "FACE_DOWN",
+    "FACE_UP",
     "GAZES",
     "INTENSIFIER_GAIN",
     "LISTEN_SHARE",
     "LOUD_RATE",
     "Accent",
     "Channel",
+    "Facing",
     "HeadMotionError",
     "HeadPlan",
     "HeadStyle",
@@ -72,6 +75,7 @@ __all__ = [
 ]
 
 Key: TypeAlias = tuple[float, float]
+Facing: TypeAlias = tuple[float, float, float]  # on, off, the side of the frame the head stays turned to
 
 LOUD_RATE = 100  # loudness samples a second
 PAUSE = 0.25  # the silence, in seconds, that starts a new breath
@@ -79,6 +83,7 @@ DUCK = 0.4  # how much of the idle wander is left while speaking
 INTENSIFIER_GAIN = 1.5  # how much bigger a nod on an intensifier is
 LISTEN_SHARE = 0.35  # how big a listener's nod is, as a share of a full nod
 LISTEN_LAG = 0.15  # how long after the other's accent the listener's nod starts
+FACE_UP, FACE_DOWN = 0.5, 0.6  # how long a turn takes to arrive and to come back
 AVERT_BACK = 0.1  # how long before a line's first word the eyes are back
 AVERT = 0.7  # how long before a line's first word they leave
 ANTICIPATE = 0.08  # seconds of the small opposite move before a nod
@@ -766,11 +771,28 @@ def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> Non
                 raise HeadMotionError(f"speech runs to {last!r}, past the shot's {duration!r} s")
 
 
-def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float, heard: Sequence[Speech] = ()) -> HeadPlan:
+def _check_facing(facing: Sequence[Facing]) -> None:
+    ordered = sorted(facing)
+    for on, off, side in ordered:
+        if off - on < FACE_UP or abs(side) != 1.0:
+            raise HeadMotionError(f"a turn lasts {FACE_UP} s at least, to one side (1 or -1), got {(on, off, side)!r}")
+    if any(b[0] < a[1] for a, b in zip(ordered, ordered[1:], strict=False)):
+        raise HeadMotionError(f"turns do not overlap, got {ordered!r}")
+
+
+def plan(
+    style: HeadStyle,
+    speeches: Sequence[Speech],
+    duration: float,
+    heard: Sequence[Speech] = (),
+    facing: Sequence[Facing] = (),
+) -> HeadPlan:
     """The head's motion over a shot of ``duration`` seconds with these takes, the same every build; ``heard`` is what
-    the others say meanwhile (:func:`listening`)."""
+    the others say meanwhile (:func:`listening`), and ``facing`` the ``(on, off, side)`` the head stays turned to a side
+    of the frame, the most its style turns, for staging that knows who is talking to whom."""
     _check(style, speeches, duration)
     _check(style, heard, duration)
+    _check_facing(facing)
     spans = [span for speech in speeches for span in _breaths(speech)]
     busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
     nodded = [nod for k, speech in enumerate(speeches) for nod in nods(speech, style, k)]
@@ -800,6 +822,9 @@ def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float, heard: S
         side = GAZES[name][0] / GAZES["right"][0]
         turned.append((on + lag, 0.5, off, 0.6, style.glance_turn * side))
         slid.append((on + lag, 0.5, off, 0.6, style.glance_face * side))
+    for on, off, side in facing:
+        turned.append((on, FACE_UP, off, FACE_DOWN, style.glance_turn * side))
+        slid.append((on, FACE_UP, off, FACE_DOWN, style.glance_face * side))
     gaze = [state for on, off, name in looks for state in ((on, name), (off, "ahead"))]
     return HeadPlan(
         lean=Channel(_trapezoids(leans, duration), style.body),

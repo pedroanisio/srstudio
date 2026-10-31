@@ -101,6 +101,7 @@ GRADE: dict[str, dict[str, Any]] = {  # over every shot: a little lift on the sc
 FAR_BLUR = 2.2  # px on the monitor wall
 
 DESK_Y = 1120.0  # the desk's top edge, which a framing keeps in place
+ANCHORS = ("vera", "gus")
 NECK_Y, CHIN_Y = -170.0, -40.0  # a bust's neck, and the point of the head drawing that sits on it
 FRAMING: dict[str, tuple[float, float]] = {"vera": (540.0, 1.34), "gus": (560.0, 1.22)}  # close shots: x, scale
 TWO_SHOT: dict[str, float] = {"vera": 290.0, "gus": 780.0}
@@ -224,11 +225,31 @@ class Pose:
 
 
 @dataclass(frozen=True)
+class Hold:
+    """From its beat, ``who`` stays facing ``to`` (the other anchor, or ``"camera"``) until the next beat whose event is
+    ``until``, whatever is said meanwhile: an override of how version 2 turns the heads (:mod:`srstudio.news_head`)."""
+
+    who: str
+    to: str
+    until: str
+
+    def __post_init__(self) -> None:
+        if self.who not in ANCHORS:
+            raise NewsKitError(f"a hold is on one of {ANCHORS}, got {self.who!r}")
+        if self.to == self.who or self.to not in (*ANCHORS, "camera"):
+            raise NewsKitError(f"{self.who} faces the other anchor or the camera, got {self.to!r}")
+        if not self.until:
+            raise NewsKitError(f"{self.who}'s hold needs an until: the event of the beat that ends it")
+
+
+@dataclass(frozen=True)
 class Act:
-    """Both anchors through one beat. A beat of a sketch holds one figure's pose, and a two-shot has two."""
+    """Both anchors through one beat. A beat of a sketch holds one figure's pose, and a two-shot has two. ``holds`` are
+    the turns this beat starts that the speech alone would not make."""
 
     vera: Pose = Pose()
     gus: Pose = Pose()
+    holds: tuple[Hold, ...] = ()
 
 
 @dataclass(frozen=True)

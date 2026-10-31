@@ -455,6 +455,10 @@ def check(name: str, number: int = 1, *, episodes: Path | None = None) -> None:
 def rig_digest(name: str, number: int = 1) -> str:
     """The digest of the head rig of version ``number`` of ``name``, a drawing outside that version's own digest."""
     part = parts.part_name(name, number)
+    if part in news_inked.RIGS:
+        cv = _stage("toon", HOLD)
+        news_inked.rig_specimen(cv, news_inked.RIGS[part].who, HOLD)
+        return fingerprint(cv.scene.to_bytes(layout="pretty"))
     if part not in toon_rigs.RIGS:
         raise SpecimenError(f"{name} version {number} has no head rig")
     return fingerprint(_rigged(toon_rigs.RIGS[part]).scene.to_bytes(layout="pretty"))

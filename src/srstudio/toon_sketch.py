@@ -26,7 +26,7 @@ import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from functools import partial
+from functools import cache, partial
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +84,7 @@ class Shot:
     light: object | None = None  # a lit staging's light layer, between the character and the desk (ADR 0043)
     versions: Mapping[str, int] = field(default_factory=dict)  # the pins, for a further character drawn in the shot
     mouths: Mapping[str, Sequence[tuple[float, str]]] = field(default_factory=dict)  # for a figure the dress draws
+    said: Callable[[], Sequence[tuple[str | None, head_motion.Speech]]] = tuple  # the takes, for a head the dress draws
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -161,6 +162,19 @@ def check_heads(sk: sketch.Sketch, heads: Sequence[str], versions: Mapping[str, 
             raise StagingError(f"heads names {who!r}, who is not in this sketch ({sorted(shown)})")
 
 
+def spoken_takes(root: Path, sk: sketch.Sketch, voiced: bool) -> list[tuple[str | None, head_motion.Speech]]:
+    """Who said each take of ``voiced/speech.json`` and the take as head motion reads it; in a silent build, nothing."""
+    if not voiced:
+        return []
+    path = root / "voiced" / "speech.json"
+    if not path.is_file():
+        raise StagingError(f"heads need {path}, written by the recording run: record again")
+    takes, end = sketch.load_speech(path, sk.cast)
+    if end != sk.end:
+        raise StagingError(f"voiced/speech.json runs {end} s, voiced/beats.json {sk.end} s: record again")
+    return [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
+
+
 def head_plans(
     root: Path, sk: sketch.Sketch, heads: Sequence[str], voiced: bool, versions: Mapping[str, int]
 ) -> dict[str, tuple[toon_head.HeadRig, head_motion.HeadPlan]]:
@@ -168,15 +182,7 @@ def head_plans(
     of ``voiced/speech.json``, its own lines to speak and everyone else's to hear; in a silent one, idle."""
     if not heads:
         return {}
-    spoken: list[tuple[str | None, head_motion.Speech]] = []
-    path = root / "voiced" / "speech.json"
-    if voiced:
-        if not path.is_file():
-            raise StagingError(f"heads need {path}, written by the recording run: record again")
-        takes, end = sketch.load_speech(path, sk.cast)
-        if end != sk.end:
-            raise StagingError(f"voiced/speech.json runs {end} s, voiced/beats.json {sk.end} s: record again")
-        spoken = [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
+    spoken = spoken_takes(root, sk, voiced)
     out = {}
     for who in heads:
         rig = _rig(who, versions)
@@ -227,6 +233,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
     heads = head_plans(root, sk, staging.heads, voiced, staging.versions)
+    said = cache(partial(spoken_takes, root, sk, voiced))  # read once, and only by a dress that asks
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
@@ -297,7 +304,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions, mouths)
+        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions, mouths, said)
         staging.dress(shot)
         if staging.camera is not None:
             staging.camera(shot, g)

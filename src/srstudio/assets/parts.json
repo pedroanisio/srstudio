@@ -8480,7 +8480,17 @@
             "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
           },
           "drawing": "f2facc5f5cc62c63123d9056fe37a1d6dc80a9f4f6328ad0bf42601db509fe14",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: big and late on a loose neck, nods that swing past the word, a wide turn to Vera when she speaks, the jacket along, no idle.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-head/index.html",
+            "drawing": "67762a16933fa28b025bb0efc6e019139f563832ac99f02d6026ee98d5be08c4",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "operator, Slack 1793476335.465559 (thread 1793475817.480469): \"no, it will not have any intermediary approvel, the request is clear, apply it\""
+            }
+          }
         }
       ]
     },
@@ -8751,7 +8761,17 @@
             "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
           },
           "drawing": "e468bfc52db44e37bc8bed1b621c42756c0aee43c0091db3b7a69ebe2e80702c",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: small and rare, a dip on the word that matters, a small turn to Gus when he speaks and back to camera for her line, no idle.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-head/index.html",
+            "drawing": "3868953978014b4d103faf1518d3f44eede3c6b9fd36ffc01f220f8888cf27bd",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "operator, Slack 1793476335.465559 (thread 1793475817.480469): \"no, it will not have any intermediary approvel, the request is clear, apply it\""
+            }
+          }
         }
       ]
     },

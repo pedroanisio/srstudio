@@ -72,7 +72,14 @@ def shot(cv: Canvas, who: str) -> SimpleNamespace:
     beats = (SimpleNamespace(start=0.0),)
     app = SimpleNamespace(who=who, start=0.0, end=4.0)
     return SimpleNamespace(
-        cv=cv, app=app, beats=beats, back=cv.group(cv.comp, "back"), front=cv.group(cv.comp, "front"), mouths={}
+        cv=cv,
+        app=app,
+        beats=beats,
+        back=cv.group(cv.comp, "back"),
+        front=cv.group(cv.comp, "front"),
+        mouths={},
+        end=4.0,
+        said=tuple,
     )
 
 

@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import pytest
 
-from srstudio import catalog_specimens, parts, registry, sketch, specimens, toon_inked, toon_rigs
+from srstudio import catalog_specimens, news_inked, parts, registry, sketch, specimens, toon_inked, toon_rigs
 from srstudio.parts import (
     Approval,
     NotApprovedError,
@@ -313,7 +313,7 @@ def test_every_rig_has_a_record_and_every_record_a_rig():
     recorded = {
         parts.part_name(name, v.number) for name, p in parts.load().items() for v in p.versions if v.rig is not None
     }
-    assert recorded == set(toon_rigs.RIGS)
+    assert recorded == {*toon_rigs.RIGS, *news_inked.RIGS}
 
 
 def test_the_approved_rigs_quote_the_operator():

@@ -85,6 +85,27 @@ class Glancing(Protocol):
     def looking(self, dx: float, dy: float) -> Glancing: ...
 
 
+class Seam(Protocol):
+    """What the seam checks read of a rig, whatever draws it."""
+
+    @property
+    def neck(self) -> Point: ...
+    @property
+    def tilt(self) -> float: ...
+    @property
+    def head(self) -> tuple[Point, ...]: ...
+    @property
+    def cover(self) -> tuple[Point, ...]: ...
+    @property
+    def style(self) -> HeadStyle: ...
+    @property
+    def head_over(self) -> bool: ...
+    @property
+    def free(self) -> float: ...
+    @property
+    def tilt_reach(self) -> tuple[float, float]: ...
+
+
 @dataclass(frozen=True)
 class HeadRig:
     """A character split at the neck, from what its drawing supplies. ``look`` is its look with an untilted head and a
@@ -114,7 +135,7 @@ class HeadRig:
     face_slide: float = FACE_SLIDE
 
 
-def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
+def _bounds(rig: Seam) -> list[tuple[float, float]]:
     """The turns (degrees, the rest tilt included) and drops (reference pixels) at the corners of what ``rig``'s style
     can reach."""
     style = rig.style
@@ -127,7 +148,7 @@ def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
     ]
 
 
-def reach(rig: HeadRig) -> HeadPlan:
+def reach(rig: Seam) -> HeadPlan:
     """The head at rest, then at every corner of what ``rig``'s style can reach, a second each: what a rig's specimen
     shows of it (:func:`srstudio.specimens.rig_digest`)."""
     corners = _bounds(rig)
@@ -149,7 +170,7 @@ def chest(rig: HeadRig) -> Point:
     return (rig.neck[0], lowest)
 
 
-def open_seam(rig: HeadRig) -> list[tuple[Point, float, float]]:
+def open_seam(rig: Seam) -> list[tuple[Point, float, float]]:
     """Where the seam opens: every ``(point, turn, drop)`` on the cover line (:data:`SEAM_ROOM` above it for a ruff),
     more than :attr:`HeadRig.free` from its ends, that the head does not reach behind with every channel at its limit.
     Empty is a rig that holds."""

@@ -17,11 +17,14 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from types import MappingProxyType
 from typing import Any
 
-from . import brush, look, toon
+from . import brush, head_motion, look, news_head, news_kit, toon, toon_head
 from .brush import Point
 from .canvas import Canvas
+from .head_motion import Channel, HeadPlan
+from .news_head import GUS_MOTION, VERA_MOTION, AnchorRig
 from .news_kit import (
     BUG_H,
     BUG_Y,
@@ -771,6 +774,20 @@ ORANGE, ORANGE_TONE, ORANGE_LAPEL = "#ffa548", "#dd6f12", "#ffb96c"
 HAIR, HAIR_TONE, HAIR_SHINE = "#4a2413", "#2f1409", "#8a5230"
 
 
+Motion = tuple[AnchorRig, HeadPlan] | None  # a head on its rig and what it does in this shot; None, the drawing at rest
+
+
+def _slides(cv: Canvas, head, motion: Motion):
+    """Where what slides across the head goes: the head itself when it does not move, else a group of its own."""
+    if motion is None:
+        return head
+    rig, plan = motion
+    face = cv.group(head, cv.uid("head-face"))
+    toon_head._animate(cv, face, "x", plan.face_x)
+    toon_head._animate(cv, face, "y", plan.nod, rig.face_slide)
+    return face
+
+
 def _neck(cv: Canvas, g, skin: str, tone: str, deep: str, wide: float) -> None:
     _form(
         cv,
@@ -867,49 +884,52 @@ def _vera_arms(cv: Canvas, parent, spans: Mapping[str, Spans]) -> None:
             )
 
 
-def _vera_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float) -> None:
+VERA_BACK: tuple[Point, ...] = (
+    (-58, -324),
+    (12, -334),
+    (84, -318),
+    (142, -268),
+    (172, -196),
+    (176, -128),
+    (160, -74),
+    (122, -52),
+    (98, -74),
+    (0, -90),
+    (-98, -74),
+    (-126, -48),
+    (-164, -70),
+    (-180, -128),
+    (-172, -204),
+    (-130, -278),
+)
+VERA_HEAD: tuple[Point, ...] = (
+    (-110, -178),
+    (-106, -118),
+    (-80, -68),
+    (-38, -40),
+    (0, -33),
+    (38, -40),
+    (80, -68),
+    (106, -118),
+    (110, -178),
+    (98, -236),
+    (52, -270),
+    (0, -278),
+    (-52, -270),
+    (-98, -236),
+)
+
+
+def _vera_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None) -> None:
     face = VERA_INKED
-    back = (
-        (-58, -324),
-        (12, -334),
-        (84, -318),
-        (142, -268),
-        (172, -196),
-        (176, -128),
-        (160, -74),
-        (122, -52),
-        (98, -74),
-        (0, -90),
-        (-98, -74),
-        (-126, -48),
-        (-164, -70),
-        (-180, -128),
-        (-172, -204),
-        (-130, -278),
-    )
-    _form(cv, g, back, SILVER_TONE, "#7f7ba1", 41.0, depth=26.0)
-    skin = (
-        (-110, -178),
-        (-106, -118),
-        (-80, -68),
-        (-38, -40),
-        (0, -33),
-        (38, -40),
-        (80, -68),
-        (106, -118),
-        (110, -178),
-        (98, -236),
-        (52, -270),
-        (0, -278),
-        (-52, -270),
-        (-98, -236),
-    )
-    _form(cv, g, skin, VERA_SKIN, VERA_TONE, 43.0, depth=30.0, amount=0.4)
-    cv.path(g, "M -92 -116 Q -74 -98 -50 -106 Q -74 -128 -92 -116 Z", "#b3603c50", cv.clear, 0)
-    cv.path(g, "M 92 -116 Q 74 -98 50 -106 Q 74 -128 92 -116 Z", "#b3603c50", cv.clear, 0)
-    _line(cv, g, ((-5, -152), (-15, -118), (-3, -104), (15, -108)), VERA_DEEP, 6.0)
-    _line(cv, g, ((-60, -98), (-52, -82)), VERA_TONE, 3.6)
-    _line(cv, g, ((60, -98), (52, -82)), VERA_TONE, 3.6)
+    _form(cv, g, VERA_BACK, SILVER_TONE, "#7f7ba1", 41.0, depth=26.0)
+    _form(cv, g, VERA_HEAD, VERA_SKIN, VERA_TONE, 43.0, depth=30.0, amount=0.4)
+    under = _slides(cv, g, motion)
+    cv.path(under, "M -92 -116 Q -74 -98 -50 -106 Q -74 -128 -92 -116 Z", "#b3603c50", cv.clear, 0)
+    cv.path(under, "M 92 -116 Q 74 -98 50 -106 Q 74 -128 92 -116 Z", "#b3603c50", cv.clear, 0)
+    _line(cv, under, ((-5, -152), (-15, -118), (-3, -104), (15, -108)), VERA_DEEP, 6.0)
+    _line(cv, under, ((-60, -98), (-52, -82)), VERA_TONE, 3.6)
+    _line(cv, under, ((60, -98), (52, -82)), VERA_TONE, 3.6)
     left = (
         (36, -306),
         (-30, -312),
@@ -948,8 +968,9 @@ def _vera_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: floa
     ):
         _line(cv, g, line, SILVER_LINE, 4.6)
     cv.path(g, "M -100 -248 Q -54 -290 8 -296 Q -46 -270 -84 -226 Z", "#ffffff66", cv.clear, 0)
-    _eyes(cv, g, face, eyes, start, end)
-    _mouths(cv, g, face, mouth, start, end)
+    over = _slides(cv, g, motion)
+    _eyes(cv, over, face, eyes, start, end)
+    _mouths(cv, over, face, mouth, start, end)
 
 
 def _gus_body(cv: Canvas, g) -> None:
@@ -1047,29 +1068,47 @@ CURLS: tuple[tuple[float, float, float], ...] = (  # the fringe: x, y, radius
 )
 
 
-def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float) -> None:
+GUS_CLOUD: tuple[Point, ...] = (
+    (-146, -128),
+    (-172, -160),
+    (-160, -204),
+    (-180, -246),
+    (-146, -286),
+    (-126, -322),
+    (-74, -330),
+    (-40, -352),
+    (14, -344),
+    (58, -354),
+    (100, -328),
+    (146, -316),
+    (160, -280),
+    (182, -240),
+    (164, -200),
+    (176, -160),
+    (146, -128),
+    (0, -160),
+)
+GUS_HEAD: tuple[Point, ...] = (
+    (-120, -178),
+    (-114, -116),
+    (-84, -60),
+    (-38, -40),
+    (2, -32),
+    (44, -40),
+    (86, -62),
+    (114, -116),
+    (120, -178),
+    (106, -240),
+    (58, -278),
+    (0, -284),
+    (-58, -278),
+    (-106, -240),
+)
+
+
+def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float, motion: Motion = None) -> None:
     face = GUS_INKED
-    cloud = (
-        (-146, -128),
-        (-172, -160),
-        (-160, -204),
-        (-180, -246),
-        (-146, -286),
-        (-126, -322),
-        (-74, -330),
-        (-40, -352),
-        (14, -344),
-        (58, -354),
-        (100, -328),
-        (146, -316),
-        (160, -280),
-        (182, -240),
-        (164, -200),
-        (176, -160),
-        (146, -128),
-        (0, -160),
-    )
-    _form(cv, g, cloud, HAIR, HAIR_TONE, 81.0, depth=26.0, amount=1.0)
+    _form(cv, g, GUS_CLOUD, HAIR, HAIR_TONE, 81.0, depth=26.0, amount=1.0)
     for side, x in ((-1.0, -122.0), (1.0, 122.0)):
         _form(
             cv,
@@ -1082,25 +1121,10 @@ def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float
             8.0,
         )
         _line(cv, g, ((x + side * 18, -156), (x + side * 8, -130), (x + side * 12, -116)), GUS_DEEP, 3.8)
-    skin = (
-        (-120, -178),
-        (-114, -116),
-        (-84, -60),
-        (-38, -40),
-        (2, -32),
-        (44, -40),
-        (86, -62),
-        (114, -116),
-        (120, -178),
-        (106, -240),
-        (58, -278),
-        (0, -284),
-        (-58, -278),
-        (-106, -240),
-    )
-    _form(cv, g, skin, GUS_SKIN, GUS_TONE, 85.0, depth=26.0, amount=0.5)
-    cv.path(g, "M -100 -112 Q -76 -88 -50 -102 Q -76 -128 -100 -112 Z", "#f0805a40", cv.clear, 0)
-    cv.path(g, "M 100 -112 Q 76 -88 50 -102 Q 76 -128 100 -112 Z", "#f0805a40", cv.clear, 0)
+    _form(cv, g, GUS_HEAD, GUS_SKIN, GUS_TONE, 85.0, depth=26.0, amount=0.5)
+    under = _slides(cv, g, motion)
+    cv.path(under, "M -100 -112 Q -76 -88 -50 -102 Q -76 -128 -100 -112 Z", "#f0805a40", cv.clear, 0)
+    cv.path(under, "M 100 -112 Q 76 -88 50 -102 Q 76 -128 100 -112 Z", "#f0805a40", cv.clear, 0)
     for x, y, r in (
         (-68, -122, 4.6),
         (-84, -112, 3.8),
@@ -1113,8 +1137,8 @@ def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float
         (-12, -130, 3.0),
         (14, -132, 3.0),
     ):
-        _oval(cv, g, x, y, r, r, "#c9875a")
-    _line(cv, g, ((-10, -156), (-26, -118), (-10, -98), (24, -106)), GUS_DEEP, 6.5)
+        _oval(cv, under, x, y, r, r, "#c9875a")
+    _line(cv, under, ((-10, -156), (-26, -118), (-10, -98), (24, -106)), GUS_DEEP, 6.5)
     for cx, cy, cr in CURLS:
         _inked_oval(cv, g, cx, cy, cr, cr * 0.9, HAIR, 6.0)
         _oval(cv, g, cx + cr * 0.3, cy + cr * 0.4, cr * 0.62, cr * 0.42, HAIR_TONE)
@@ -1133,8 +1157,9 @@ def _gus_head(cv: Canvas, g, eyes: Track, mouth: Track, start: float, end: float
         )
     for x, y in ((-140, -240), (-108, -306), (-40, -326), (40, -330), (112, -304), (150, -236)):
         _line(cv, g, ((x - 14, y + 8), (x, y - 12), (x + 16, y - 2), (x + 4, y + 10)), HAIR_SHINE, 5.0, FUR)
-    _eyes(cv, g, face, eyes, start, end)
-    _mouths(cv, g, face, mouth, start, end)
+    over = _slides(cv, g, motion)
+    _eyes(cv, over, face, eyes, start, end)
+    _mouths(cv, over, face, mouth, start, end)
 
 
 def perform(
@@ -1149,10 +1174,13 @@ def perform(
     id: str | None = None,
     scale: float = 1.0,
     over=None,
+    motion: Motion = None,
+    looks: Sequence[tuple[float, float]] = (),
 ):
     """``who`` at the desk from ``start`` to ``end``, centred on frame ``x``: ``acts`` is the :class:`Pose` from each
     second on and ``mouths`` the take's visemes. The arms and hands go in ``over``, the plane in front of the desk,
-    when there is one, so a forearm lies across the desk's top and a head stays behind its edge."""
+    when there is one, so a forearm lies across the desk's top and a head stays behind its edge. ``motion`` puts the
+    head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it."""
     _span(start, end, "an anchor")
     if who not in ("vera", "gus"):
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
@@ -1162,8 +1190,11 @@ def perform(
     g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
     hands = g if over is None else cv.group(over, cv.uid("hands"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
     arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
-    eyes = eye_track(acts, end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
+    eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
     mouth = mouth_track(acts, mouths, end)
+    if motion is not None:
+        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion)
+        return g
     neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
     if who == "vera":
         _vera_body(cv, g)
@@ -1177,6 +1208,97 @@ def perform(
         _gus_arms(cv, hands, arms)
     cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
     return g
+
+
+def side_eyes(
+    acts: Sequence[tuple[float, Pose]], looks: Sequence[tuple[float, float]], end: float
+) -> Sequence[tuple[float, Pose]]:
+    """``acts`` with level eyes on the other anchor through ``looks``: any other eyes are the beat's, and stay."""
+    if not looks:
+        return acts
+    times = sorted({*(at for at, _ in acts), *(t for span in looks for t in span if acts[0][0] < t < end)})
+    rows = []
+    for t in times:
+        pose = next(p for at, p in reversed(acts) if at <= t)
+        looking = any(on <= t < off for on, off in looks)
+        rows.append((t, replace(pose, eyes="side") if looking and pose.eyes == "level" else pose))
+    return rows
+
+
+def _on_rig(
+    cv: Canvas,
+    g,
+    hands,
+    who: str,
+    acts: Sequence[tuple[float, Pose]],
+    arms: Mapping[str, Spans],
+    eyes: Track,
+    mouth: Track,
+    start: float,
+    end: float,
+    motion: tuple[AnchorRig, HeadPlan],
+) -> None:
+    """An anchor whose head moves. The nesting is :mod:`srstudio.toon_head`'s, one kind of motion a group, outermost
+    first: over the body, which does not move, the beat's tilt, the plan's turn and nod, with all the hair and the
+    ears, and the face that slides over those."""
+    rig, plan = motion
+    pivot = dict(x=0.0, y=CHIN_Y, anchorX=0.0, anchorY=CHIN_Y)  # a group that turns on the point the head sits on
+    (_vera_body if who == "vera" else _gus_body)(cv, g)
+    tilt = cv.group(g, cv.uid("head-tilt"), x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)
+    cv.keys(tilt, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
+    turn = cv.group(tilt, cv.uid("head-turn"), **pivot)
+    toon_head._animate(cv, turn, "rotation", plan.turn)
+    nod = cv.group(turn, cv.uid("head-nod"), **pivot)
+    toon_head._animate(cv, nod, "rotation", plan.roll)
+    toon_head._animate(cv, nod, "y", plan.nod, 1.0, CHIN_Y)
+    (_vera_head if who == "vera" else _gus_head)(cv, nod, eyes, mouth, start, end, motion)
+    (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
+
+
+def _rig_of(body: tuple[float, float], skin: tuple[Point, ...], hair: tuple[Point, ...], wide: float, **move) -> dict:
+    x, y = body
+    return dict(
+        neck=(x, y),
+        head=tuple((px, py + y - CHIN_Y) for px, py in skin),
+        cover=((-wide, _NECK_TOP), (0.0, _NECK_TOP), (wide, _NECK_TOP)),
+        skin=skin,
+        outline=hair,
+        **move,
+    )
+
+
+_NECK_TOP = -262.0
+VERA_RIG = AnchorRig(
+    who="vera",
+    style=VERA_MOTION,
+    toward=VERA_FACE.toward,
+    lag=0.15,
+    back=0.45,
+    **_rig_of((0.0, NECK_Y), VERA_HEAD, VERA_BACK, 42.0),
+)
+GUS_RIG = AnchorRig(
+    who="gus",
+    style=GUS_MOTION,
+    toward=GUS_FACE.toward,
+    lag=0.4,
+    back=0.3,
+    **_rig_of((0.0, NECK_Y), GUS_HEAD, GUS_CLOUD, 48.0),
+)
+RIGS: Mapping[str, AnchorRig] = MappingProxyType({"news-vera@2": VERA_RIG, "news-gus@2": GUS_RIG})
+
+
+def rig_specimen(cv: Canvas, who: str, seconds: float) -> None:
+    """Every eye, arm and mouth state of ``who`` on the rig, the head at each corner of what it can reach, and the face
+    at the end of its slide: what the rig's digest holds."""
+    rig = RIGS[f"news-{who}@2"]
+    count = len(news_kit.ARMS)
+    acts = tuple(
+        (seconds * n / count, Pose(eyes, "talk", arms))
+        for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
+    )
+    slide = head_motion.limit(rig.style, "face_x")
+    plan = replace(toon_head.reach(rig), face_x=Channel(((0.0, -slide), (seconds, slide))))
+    perform(cv, cv.comp, who, 540.0, acts, 0.0, seconds, ((0.0, "closed"), (seconds / 2, "open")), motion=(rig, plan))
 
 
 @register(
@@ -1244,16 +1366,18 @@ def _seat(cv: Canvas, front, who: str, x: float, scale: float) -> None:
     look.pool(cv, shadow, "news2-contact", "#160a30b0", left + 20, DESK_Y + 26 * min(scale, 1.2), wide - 40, 40)
 
 
-def stage(acts: Sequence[Act], end_scan: float = 30.0) -> Callable[[Any], None]:
+def stage(acts: Sequence[Act], end_scan: float = 30.0, heads: bool = True) -> Callable[[Any], None]:
     """The dress of every shot: the room, then both anchors in the two-shot (``desk``), one close (``vera``, ``gus``)
     or nobody (``phone``, which :func:`phone_insert` fills), each with their forearms over the desk. ``acts`` runs
-    parallel to the sketch's beats."""
+    parallel to the sketch's beats. Their heads move on the takes (:mod:`srstudio.news_head`), on a rig whose record
+    must be approved; ``heads=False`` draws them still."""
 
     def dress(shot: Any) -> None:
         if len(acts) != len(shot.beats):
             raise NewsKitError(f"{len(acts)} acts for {len(shot.beats)} beats")
         cv, app = shot.cv, shot.app
         studio(cv, shot.back, end_scan)
+        holds = news_head.holds_of(acts, shot.beats) if any(act.holds for act in acts) else ()
         seats = {
             "desk": tuple((who, x, 1.0) for who, x in TWO_SHOT.items()),
             "vera": (("vera", *FRAMING["vera"]),),
@@ -1267,6 +1391,15 @@ def stage(acts: Sequence[Act], end_scan: float = 30.0) -> Callable[[Any], None]:
             ]
             look.pool(cv, shot.back, "news2-behind-anchor", "#0c052070", x - 330 * scale, 420, 660 * scale, 760)
             _seat(cv, shot.front, who, x, scale)
+            motion: Motion = None
+            looks: list[tuple[float, float]] = []
+            if heads:
+                rig = RIGS[f"news-{who}@2"]
+                if not news_head.approved(who):
+                    raise NewsKitError(f"news-{who}@2's head rig is not approved: stage with heads=False until it is")
+                said = shot.said()
+                motion = (rig, news_head.plan_of(who, rig, said, holds, shot.end).during(app.start, app.end))
+                looks = [(on, off) for on, off, _ in news_head.facing(who, rig, said, holds, shot.end)]
             perform(
                 cv,
                 shot.back,
@@ -1278,6 +1411,8 @@ def stage(acts: Sequence[Act], end_scan: float = 30.0) -> Callable[[Any], None]:
                 shot.mouths.get(who, ()),
                 scale=scale,
                 over=shot.front,
+                motion=motion,
+                looks=looks,
             )
             if who == "gus":
                 down = _spans([(at, pose.arms) for at, pose in during], app.start, app.end).get("rest")
