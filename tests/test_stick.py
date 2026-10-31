@@ -233,12 +233,14 @@ def test_the_style_value(tmp_path):
     assert STICK.facts()["parts"] == [
         "stick",
         "stick_airport",
+        "stick_bed",
         "stick_car",
         "stick_door",
         "stick_flat",
         "stick_gym",
         "stick_home",
         "stick_office",
+        "stick_roadtrip",
         "stick_school",
         "stick_shop",
         "stick_street",
@@ -246,6 +248,13 @@ def test_the_style_value(tmp_path):
     ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
     assert parts == {
+        "stick-blinker",
+        "stick-duvet",
+        "stick-eye-mask",
+        "stick-lights-low",
+        "stick-rear-view",
+        "stick-recorder",
+        "stick-swim-ring",
         "stick-room",
         "stick-yard",
         "stick-figure",
@@ -615,3 +624,41 @@ def test_stick_refusals_are_srstudio_errors_and_still_value_errors():
         stick.card(cv, cv.comp, "hook")
     for error in (caught.value, silent.value):
         assert isinstance(error, SrstudioError) and isinstance(error, ValueError)
+
+
+def _eye_canvas() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background="#d9d2c4")
+    return Canvas(scene, DAYLIGHT, font_asset="inter", namer=flat_counter("n"))
+
+
+SHUT_EYE = b"Q 0 9 15 0"
+
+
+def test_a_peek_shuts_the_eye_away_from_x_and_opens_the_other():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(SHUT_EYE) < drawn.index(b"ellipse"), "the shut eye is the one at -x"
+
+
+def test_a_peek_is_a_face_the_rig_draws_and_a_blink_leaves_it_alone():
+    assert "peek" in stick.EYES
+    cv = _eye_canvas()
+    stick.rig(cv, cv.comp, [stick.RigKey(0, "lean", stick.Face("peek"))], 1.0, blinks=(0.5,), flip=True)
+    assert cv.scene.to_bytes(layout="pretty").count(SHUT_EYE) == 1
+
+
+def test_a_wink_is_not_a_known_eye():
+    with pytest.raises(stick.StickDataError, match="eyes"):
+        stick.check_face(stick.Face("wink"))
+
+
+def test_a_peek_back_opens_the_eye_a_figure_that_is_not_flipped_turns_left():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek-back"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(b"ellipse") < drawn.index(SHUT_EYE), "the shut eye is the one at +x"
+    assert "peek-back" in stick.EYES

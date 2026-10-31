@@ -20,17 +20,29 @@ import importlib.util
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import craft
+from . import craft, subtitles
 from .comedy_floor import Scores
 from .errors import SrstudioError
 from .parts import PartError, pin, read_record
 from .social import COVER_VARIANT, Drift, InstagramPost, Item
 
-__all__ = ["Release", "ReleaseError", "Tags", "doubled_captions", "grandfathered", "load", "items", "unpinned"]
+__all__ = [
+    "Release",
+    "ReleaseError",
+    "Tags",
+    "arm_problems",
+    "arms",
+    "caption_on_cover",
+    "doubled_captions",
+    "grandfathered",
+    "load",
+    "items",
+    "unpinned",
+]
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -228,6 +240,66 @@ def doubled_captions(releases: Mapping[str, Release], episodes: Path, delivering
         if release.video_name in delivering and scene.is_file():
             drift.extend(Drift(release.video_name, why) for why in craft.doubled_captions(scene.read_bytes()))
     return drift
+
+
+def caption_on_cover(releases: Mapping[str, Release], episodes: Path, delivering: Collection[str]) -> list[Drift]:
+    """Every cover drawn from a frame of the video that carries a spoken caption, so the headline competes with the
+    words under it. A cover from the scene's cover variant has its captions hidden; a published video is frozen."""
+    drift: list[Drift] = []
+    for release in releases.values():
+        srt = Path(episodes) / release.slug / f"{release.slug}.srt"
+        thumb = release.post.thumbnail
+        if release.video_name not in delivering or release.cover or thumb is None or not srt.is_file():
+            continue
+        words = [text for start, end, text in subtitles.read_srt(srt) if start <= thumb.at < end]
+        drift.extend(
+            Drift(release.video_name, f'the cover frame at {thumb.at:.2f} s carries the caption "{w}"') for w in words
+        )
+    return drift
+
+
+def arms(releases: Mapping[str, Release], test: str) -> dict[str, list[str]]:
+    """The slugs on each arm of ``test``, each arm in slug order."""
+    found: dict[str, list[str]] = {arm: [] for arm in ARMS}
+    for slug, release in sorted(releases.items()):
+        if release.tags is not None and release.tags.test == test:
+            found[release.tags.arm].append(slug)
+    return found
+
+
+def arm_problems(
+    releases: Mapping[str, Release], test: str, order: Sequence[str] = (), share: float = 0.5
+) -> list[str]:
+    """What keeps ``test`` from reading as a fair split: arms off the split it declares and, given the delivery
+    ``order``, a slug outside the test, one the order leaves out, or two running on one arm.
+
+    ``share`` is the part of the test on arm a. An even split wants both arms equal and neither to run; a declared
+    share, as a decided test keeping one reel in five as its control, wants that count and keeps the smaller arm apart.
+    """
+    if not 0 < share < 1:
+        raise ReleaseError(f"share {share} must lie between 0 and 1: both arms need reels to compare")
+    split = arms(releases, test)
+    sizes = [len(split[arm]) for arm in ARMS]
+    told = " and ".join(f"arm {a} has {n}" for a, n in zip(ARMS, sizes, strict=True))
+    wanted = round(sum(sizes) * share)
+    even = share == 0.5
+    if even:
+        problems = [] if len(set(sizes)) == 1 else [told]
+    else:
+        problems = [] if sizes[0] == wanted else [f"{told}, not {wanted} and {sum(sizes) - wanted}"]
+    if not order:
+        return problems
+    arm_of = {slug: arm for arm, slugs in split.items() for slug in slugs}
+    problems += [f"{slug} is not in the test" for slug in order if slug not in arm_of]
+    problems += [f"{slug} is not in the order" for slug in arm_of if slug not in order]
+    run = [slug for slug in order if slug in arm_of]
+    smaller = ARMS[0] if share < 0.5 else ARMS[1]
+    problems += [
+        f"{b} follows {a} on the same arm {arm_of[a]}"
+        for a, b in zip(run, run[1:], strict=False)
+        if arm_of[a] == arm_of[b] and (even or arm_of[a] == smaller)
+    ]
+    return problems
 
 
 def _package(folder: Path) -> str:

@@ -73,6 +73,26 @@ def test_declarations_name_every_line_and_effect_and_pin_the_voice():
     assert lines[0].license.endswith("Eric")
 
 
+def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
+    plain = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x")])
+    quiet = make(
+        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", level=-6)]
+    )
+    assert I.declarations(plain) == I.declarations(quiet)
+    before = I.place(plain, pins_for(tmp_path, plain, [1.0, 0.8]), back_to_back)
+    after = I.place(quiet, pins_for(tmp_path, quiet, [1.0, 0.8]), back_to_back)
+    gains = [[clip.placement.gain_db for clip in placed.clips] for placed in (before, after)]
+    assert gains[1][0] == gains[0][0] and gains[1][1] == pytest.approx(gains[0][1] - 6)
+    starts = [[clip.placement.start for clip in placed.clips] for placed in (before, after)]
+    assert starts[0] == starts[1]
+
+
+@pytest.mark.parametrize("level", [0.5, -12.5, float("nan"), float("inf")])
+def test_a_level_outside_the_mix_is_refused_when_made(level):
+    with pytest.raises(I.InterviewError, match="level"):
+        make(lines=[I.Spoken("manager", "Hi.", "Hi.", level=level), I.Spoken("candidate", "Hi.", "Hi.")])
+
+
 def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
     """A re-take changes one line's request: its own seed; every other line keeps the interview's."""
     retake = make(
@@ -290,3 +310,42 @@ def test_five_years_times_its_reaction_and_end_card_from_the_published_rounded_l
     assert (fields["reaction_start"], fields["end_card_start"]) == (7.336708, 8.386708)
     cuts = {c["angle"]: c["time"] for c in fields["camera_cuts"]}
     assert (cuts["manager-reaction"], cuts["candidate-ending"]) == (7.336708, 8.386708)
+
+
+def test_beats_lays_lines_end_to_end_with_their_gaps():
+    schedule = I.beats([1.0, 2.0, 0.5], 0.5, [0.25, 1.5])
+    assert schedule.lines == pytest.approx([0.5, 1.75, 5.25])
+    assert schedule.effects == {}
+
+
+def test_a_slow_take_moves_every_line_after_it():
+    fast, slow = I.beats([1.0, 1.0, 1.0], 0.0, [0.5, 0.5]), I.beats([1.0, 1.5, 1.0], 0.0, [0.5, 0.5])
+    assert slow.lines[1] == fast.lines[1] and slow.lines[2] == fast.lines[2] + 0.5
+
+
+@pytest.mark.parametrize(
+    ("start", "gaps", "match"),
+    [
+        (0.0, [0.1], "2 gaps between them, got 1"),
+        (0.0, [0.1, 0.1, 0.1], "2 gaps between them, got 3"),
+        (-0.1, [0.1, 0.1], "non-negative seconds"),
+        (0.0, [0.1, -0.1], "non-negative seconds"),
+        (float("nan"), [0.1, 0.1], "non-negative seconds"),
+    ],
+)
+def test_beats_refuses_a_column_that_does_not_add_up(start, gaps, match):
+    with pytest.raises(I.InterviewError, match=match):
+        I.beats([1.0, 1.0, 1.0], start, gaps)
+
+
+def test_a_chain_of_beats_reads_as_a_column_of_offsets():
+    assert I.chain(10.0, book=0.0, snore=0.5, wave=2.0) == {"book": 10.0, "snore": 10.5, "wave": 12.5}
+
+
+@pytest.mark.parametrize(
+    ("start", "gaps"),
+    [(float("nan"), {"a": 1.0}), (-1.0, {"a": 1.0}), (1.0, {"a": -0.1}), (1.0, {"a": float("inf")}), (1.0, {})],
+)
+def test_a_chain_refuses_what_is_not_a_time(start, gaps):
+    with pytest.raises(I.InterviewError):
+        I.chain(start, **gaps)

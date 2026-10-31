@@ -15,7 +15,22 @@ from collections.abc import Callable, Sequence
 
 from . import checks, collage
 from .canvas import Canvas
-from .collage import INK, LOOKS, Look, Point, _cut, _hand, _paper, _ring, _sleeve, _smooth, draw_shapes
+from .collage import (
+    CX,
+    HALF_WIDTH,
+    INK,
+    LOOKS,
+    SHOULDER_Y,
+    Look,
+    Point,
+    _cut,
+    _hand,
+    _paper,
+    _ring,
+    _sleeve,
+    _smooth,
+    draw_shapes,
+)
 from .errors import SrstudioError
 from .registry import register
 
@@ -395,13 +410,21 @@ def confetti(
     return g
 
 
+def shoulder(who: str | Look) -> Point:
+    """Where ``who``'s screen-left arm starts in a single, for an arm drawn by the scene over the ``free`` pose."""
+    look = LOOKS[who] if isinstance(who, str) else who
+    return (CX - HALF_WIDTH[look.build] + 46, SHOULDER_Y[look.build] + 50)
+
+
 @register("prop", "collage-arm", summary="A character's arm on its own, sleeve and hand, for reaching past the pose")
-def arm(cv: Canvas, parent, who: str | Look, frm: Point, to: Point, *, width: float = 72.0) -> object:
+def arm(
+    cv: Canvas, parent, who: str | Look, frm: Point, to: Point, *, width: float = 72.0, hand: bool = True
+) -> object:
     """``who``'s arm from ``frm`` (off the frame, usually) to its hand at ``to``; returns the group, which a caller
-    keys to bring it in."""
+    keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from."""
     look = LOOKS[who] if isinstance(who, str) else who
     g = cv.group(parent, cv.uid("g"))
-    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + _hand(look, "reach-hand", *to, r=38))
+    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_hand(look, "reach-hand", *to, r=38) if hand else []))
     return g
 
 

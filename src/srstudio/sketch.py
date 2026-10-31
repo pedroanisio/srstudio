@@ -38,11 +38,13 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
+from .hearing import blind_lines
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
 __all__ = [
+    "PHONE_SPEAKER",
     "SketchError",
     "Speaker",
     "Line",
@@ -116,6 +118,10 @@ VISEME_OF = {
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
+# what a phone's small speaker leaves of a voice: the speech band, a little pushed
+PHONE_SPEAKER = "highpass=f=380,highpass=f=380,lowpass=f=3000,lowpass=f=3000,volume=4dB"
+
+
 class SketchError(SrstudioError, ValueError):
     """The sketch (or a placement or recording of it) is inconsistent."""
 
@@ -133,11 +139,14 @@ class Speaker:
 @dataclass(frozen=True)
 class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
-    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest."""
+    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
+    ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
+    as it was said, and only the audio in the reel is band-limited."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -721,8 +730,12 @@ def record(
     """Every line said by its speaker's voice (cached by the client), trimmed, placed at its own pace, heard back
     and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and, under ``voiced/``, the viseme tracks, read
     with ``mouth``, and the kept takes (:func:`load_speech`).
-    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried)."""
+    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried), and refuses a
+    line no transcript could confirm (:func:`~srstudio.hearing.blind_lines`) before the first take is paid for."""
     check(sketch)
+    blind = blind_lines(sketch.lines)
+    if blind:
+        raise SketchError("reword these lines or pass heard=(...) on them:\n" + "\n".join(blind))
     root = Path(root)
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
@@ -755,8 +768,16 @@ def record(
             continue
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
+        colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
-            spoken.wav, dst, trim.clip_in, trim.clip_in + kept, kept, gain_to_peak(trim.peak, VOICE_PEAK), ffmpeg
+            spoken.wav,
+            dst,
+            trim.clip_in,
+            trim.clip_in + kept,
+            kept,
+            gain_to_peak(trim.peak, VOICE_PEAK),
+            ffmpeg,
+            **colour,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
