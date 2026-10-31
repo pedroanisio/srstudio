@@ -15,7 +15,24 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["SoftOddError", "bottle", "grill", "in_hand", "pizza_box", "smoke", "tongs"]
+__all__ = [
+    "LOADS",
+    "SoftOddError",
+    "bottle",
+    "bowling_ball",
+    "brick",
+    "coin_bag",
+    "dimmer",
+    "dust",
+    "grill",
+    "home_fridge",
+    "in_hand",
+    "pizza_box",
+    "smoke",
+    "tongs",
+    "tv",
+    "washer",
+]
 
 METAL, METAL_LIGHT, METAL_DARK = blob.METAL, blob.METAL_LIGHT, blob.METAL_DARK
 CHAR = "#2A211C"
@@ -26,6 +43,10 @@ FLAME_LEVELS = 4  # none, licks, flames, a fire
 SMOKE_LEVELS = 4  # none, a thread, smoke, thick
 SMOKE_RISE = 1.9  # seconds a puff takes to rise and go
 SMOKE_PUFFS = (0, 2, 5, 9)  # puffs going at once at each level
+DRUM_TURN = 1.6  # seconds a washer's drum takes to go round
+TV_STEP = 0.4  # seconds a TV picture holds before it shifts
+TV_FLICKER = (0.2, 0.75, 0.4, 1.0, 0.1, 0.6)  # how far the picture has shifted, step by step
+DUST_SPECKS = 14
 
 
 class SoftOddError(SrstudioError, ValueError):
@@ -274,4 +295,276 @@ def bottle(
     )
     cv.rect(g, -30, -30, 60, 80, "#FBF7EE", ink, 3, radius=8)
     cv.path(g, "M -30 -66 L -30 -40", None, "#FFFFFF", 6)
+    return g
+
+
+@register(
+    "prop",
+    "soft-washer",
+    summary="A front-loading washing machine with a round glass door, a drum that turns on cue and a light that dies; "
+    "what has been put in rides round in the drum",
+)
+def washer(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    end: float,
+    scale: float = 1,
+    stop: float | None = None,
+    open_at: Sequence[tuple[float, float]] = (),
+    loads: Sequence[tuple[float, str]] = (),
+    id: str = "soft-washer",
+):
+    """A washer 460 px wide and 560 high at ``scale`` 1, its feet at (``x``, ``y``). The drum turns from 0 until
+    ``stop`` (to ``end`` when None) and its green light goes out with it; the door stands open through ``open_at``;
+    ``loads`` are (time, kind) rows, each kind one of :data:`LOADS`, in the drum from that time."""
+    _place("a washer", x, y, scale)
+    checks.positive(end, SoftOddError, f"a washer's end must be a positive number of seconds, got {end!r}")
+    last = end if stop is None else stop
+    if not (checks.number(last) and 0 < last <= end):
+        raise SoftOddError(f"a washer stops within {end}, got {stop!r}")
+    for start, close in open_at:
+        if not (checks.number(start) and checks.number(close) and 0 <= start < close <= end):
+            raise SoftOddError(f"a washer's door opens within {end}, got {list(open_at)!r}")
+    for time, kind in loads:
+        if kind not in LOADS or not (checks.number(time) and 0 <= time < end):
+            raise SoftOddError(f"a load is a time within {end} and one of {LOADS}, got {(time, kind)!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    for dx in (-190, 150):
+        cv.rect(g, dx, -18, 40, 18, "#4A4F58", ink, 3, radius=4)
+    cv.rect(g, -230, -560, 460, 546, "#F4F2EC", ink, 5, radius=26)
+    cv.rect(g, -230, -560, 460, 92, "#E3E0D8", ink, 4, radius=24)
+    cv.ellipse(g, -196, -544, 60, 60, "#FFFFFF", ink, 4)  # the dial
+    cv.line(g, -166, -514, -166, -538, ink, 5)
+    cv.rect(g, -110, -536, 150, 40, "#2B3038", ink, 3, radius=8)  # the display
+    light = cv.group(g, f"{id}-light")
+    cv.gate(light, [(0.0, last)])
+    cv.ellipse(light, 90, -530, 28, 28, "#6BD08A", ink, 3)
+    cv.rect(light, -96, -526, 40, 20, "#6BD08A", radius=4)
+    cv.ellipse(g, 150, -530, 28, 28, "#C9C5BB", ink, 3)
+    cv.ellipse(g, -176, -420, 352, 352, "#D5D2C9", ink, 5)  # the door's seat
+    cv.ellipse(g, -142, -386, 284, 284, "#232833", ink, 4)  # the mouth of the drum
+    drum = cv.group(g, f"{id}-drum", x=0, y=-244)
+    if last > 0:
+        cv.keys(drum, "rotation", [(0.0, 0.0), (last, 360.0 * last / DRUM_TURN)], False)
+    for k in range(3):
+        rib = cv.group(drum, f"{id}-rib-{k + 1}", rotation=120 * k)
+        cv.rect(rib, -12, -142, 24, 44, "#6E777D", ink, 3, radius=6)
+    cv.ellipse(drum, -80, 10, 118, 84, "#8FB3D0", ink, 3)  # the washing
+    cv.ellipse(drum, -16, -92, 104, 74, "#E8A6A0", ink, 3)
+    for k, (time, kind) in enumerate(loads):
+        item = cv.group(drum, f"{id}-load-{k + 1}")
+        cv.gate(item, [(time, end)])
+        LOAD_SHAPES[kind](cv, item, k)
+    glass = cv.group(g, f"{id}-door")
+    cv.gate(glass, _closed(open_at, end))
+    cv.ellipse(glass, -160, -404, 320, 320, "#BFD9E688", "#7C8791", 16)
+    cv.path(glass, "M -98 -326 Q -70 -368 -28 -372", None, "#FFFFFF", 9)
+    cv.rect(glass, 142, -270, 34, 58, "#C9C5BB", ink, 3, radius=8)  # the handle
+    swung = cv.group(g, f"{id}-door-open")
+    cv.gate(swung, open_at)
+    cv.ellipse(swung, -296, -404, 96, 320, "#BFD9E6", "#7C8791", 12)
+    return g
+
+
+def _closed(open_at: Sequence[tuple[float, float]], end: float) -> list[tuple[float, float]]:
+    """The spans of ``0..end`` outside the ``open_at`` spans."""
+    out, at = [], 0.0
+    for start, close in sorted(open_at):
+        if start > at:
+            out.append((at, start))
+        at = close
+    return [*out, (at, end)] if at < end else out
+
+
+def _load_brick(cv: Canvas, g, k: int) -> None:
+    turn = cv.group(g, f"load-turn-{k + 1}", x=60 - 30 * k, y=70 - 44 * k, rotation=20 + 70 * k)
+    cv.rect(turn, -66, -30, 132, 60, "#B5533C", cv.ink, 4, radius=6)
+
+
+def _load_ball(cv: Canvas, g, k: int) -> None:
+    cv.ellipse(g, -48, -88, 112, 112, "#3C2A6B", cv.ink, 4)
+    cv.ellipse(g, -2, -66, 16, 16, "#120B25")
+    cv.ellipse(g, 22, -66, 16, 16, "#120B25")
+
+
+def _load_coins(cv: Canvas, g, k: int) -> None:
+    for n in range(9):
+        cv.ellipse(g, -90 + 24 * n, 44 - 26 * (n % 3), 26, 26, "#E9B949", cv.ink, 3)
+
+
+def _load_shovel(cv: Canvas, g, k: int) -> None:
+    turn = cv.group(g, f"load-shovel-{k + 1}", rotation=-30)
+    cv.rect(turn, -8, -128, 16, 170, "#A5713F", cv.ink, 3, radius=5)
+    cv.path(turn, "M -42 34 L 42 34 L 30 96 L 0 124 L -30 96 Z", "#A9B3BA", cv.ink, 4)
+
+
+LOAD_SHAPES = {"brick": _load_brick, "ball": _load_ball, "coins": _load_coins, "shovel": _load_shovel}
+LOADS = tuple(LOAD_SHAPES)
+
+
+@register("prop", "soft-brick", summary="A red house brick with two rows of holes on its face")
+def brick(
+    cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, angle: float = 0, id: str = "soft-brick"
+):
+    """A brick 180 x 84 px at ``scale`` 1, centred on (``x``, ``y``)."""
+    _place("a brick", x, y, scale)
+    g = cv.group(parent, id, x=x, y=y, rotation=angle, scaleX=scale, scaleY=scale)
+    cv.rect(g, -90, -42, 180, 84, "#B5533C", cv.ink, 4, radius=6)
+    cv.rect(g, -90, -42, 180, 20, "#C96A52", radius=6)
+    for k in range(3):
+        cv.ellipse(g, -56 + 44 * k, -6, 24, 24, "#8A3E2C", cv.ink, 3)
+    return g
+
+
+@register("prop", "soft-bowling-ball", summary="A dark purple bowling ball with its three finger holes and a shine")
+def bowling_ball(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-bowling-ball"):
+    """A ball 190 px across at ``scale`` 1, centred on (``x``, ``y``)."""
+    _place("a ball", x, y, scale)
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -95, -95, 190, 190, "#3C2A6B", cv.ink, 5)
+    cv.path(g, "M -60 -30 Q -50 -62 -22 -70", None, "#7A63B5", 9)
+    for dx, dy in ((14, -30), (46, -24), (30, 6)):
+        cv.ellipse(g, dx, dy, 22, 24, "#120B25")
+    return g
+
+
+@register("prop", "soft-coin-bag", summary="A burlap sack tied at the neck with a dollar sign on it")
+def coin_bag(cv: Canvas, parent, x: float = 0, y: float = 0, *, scale: float = 1, id: str = "soft-coin-bag"):
+    """A sack 190 x 220 px at ``scale`` 1, centred on (``x``, ``y``)."""
+    _place("a sack", x, y, scale)
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M -30 -74 Q -96 -30 -94 44 Q -92 110 0 110 Q 92 110 94 44 Q 96 -30 30 -74 Z", "#C9A66B", cv.ink, 5)
+    cv.path(g, "M -30 -74 L -46 -108 L 46 -108 L 30 -74 Z", "#B8925C", cv.ink, 4)
+    cv.rect(g, -36, -84, 72, 14, "#7A5A36", cv.ink, 3, radius=6)
+    cv.path(g, "M 26 -10 Q 0 -30 -24 -12 Q -36 8 0 18 Q 36 28 24 50 Q 0 66 -26 46 M 0 -36 L 0 72", None, "#7A5A36", 9)
+    return g
+
+
+@register(
+    "prop", "soft-tv", summary="A flat television on a low stand: its picture changes color until it goes dark on cue"
+)
+def tv(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    end: float,
+    off: float | None = None,
+    scale: float = 1,
+    id: str = "soft-tv",
+):
+    """A set 420 px wide on a stand, its feet at (``x``, ``y``); the picture flickers until ``off`` (or the end)."""
+    _place("a TV", x, y, scale)
+    checks.positive(end, SoftOddError, f"a TV's end must be a positive number of seconds, got {end!r}")
+    last = end if off is None else off
+    if not (checks.number(last) and 0 < last <= end):
+        raise SoftOddError(f"a TV goes off within {end}, got {off!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -170, -72, 340, 72, blob.WOOD_FRONT, blob.WOOD_LINE, 4, radius=8)
+    cv.rect(g, -40, -96, 80, 24, "#2B2E36", ink, 3)
+    cv.rect(g, -210, -340, 420, 250, "#23262C", ink, 5, radius=14)
+    cv.rect(g, -194, -324, 388, 218, "#10131A", radius=6)
+    lit = cv.group(g, f"{id}-picture")
+    cv.gate(lit, [(0.0, last)])
+    cv.rect(lit, -194, -324, 388, 218, "#7FB6DA", radius=6)
+    glow = cv.group(lit, f"{id}-flicker")
+    cv.rect(glow, -194, -220, 388, 114, "#8FBB7C", radius=6)
+    cv.ellipse(glow, -60, -280, 120, 120, "#F4D06F")
+    steps = int(last / TV_STEP) + 1
+    cv.keys(glow, "opacity", [(n * TV_STEP, TV_FLICKER[n % len(TV_FLICKER)]) for n in range(steps)])
+    return g
+
+
+@register(
+    "prop",
+    "soft-home-fridge",
+    summary="A front-on two-door kitchen fridge that stands anywhere, with a small green light that dies on cue",
+)
+def home_fridge(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    end: float,
+    off: float | None = None,
+    scale: float = 1,
+    id: str = "soft-home-fridge",
+):
+    """A fridge 300 x 760 px at ``scale`` 1, its feet at (``x``, ``y``); its light is on until ``off``."""
+    _place("a fridge", x, y, scale)
+    checks.positive(end, SoftOddError, f"a fridge's end must be a positive number of seconds, got {end!r}")
+    last = end if off is None else off
+    if not (checks.number(last) and 0 < last <= end):
+        raise SoftOddError(f"a fridge dies within {end}, got {off!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -150, -760, 300, 750, "#E6EEF0", ink, 5, radius=24)
+    cv.line(g, -150, -520, 150, -520, ink, 4)
+    cv.rect(g, -124, -610, 16, 64, "#9AA3A8", ink, 3, radius=6)
+    cv.rect(g, -124, -490, 16, 90, "#9AA3A8", ink, 3, radius=6)
+    cv.rect(g, 40, -440, 60, 46, "#F2A93B", ink, 3, radius=4)  # a magnet and its note
+    light = cv.group(g, f"{id}-light")
+    cv.gate(light, [(0.0, last)])
+    cv.ellipse(light, 100, -730, 22, 22, "#6BD08A", ink, 3)
+    return g
+
+
+@register("prop", "soft-dust", summary="Specks of dust that fall from overhead on cue and thin out")
+def dust(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    start: float = 0,
+    *,
+    end: float,
+    width: float = 240,
+    fall: float = 700,
+    id: str = "soft-dust",
+):
+    """Specks falling from (``x``, ``y``) across ``width`` px, ``fall`` px down, from ``start`` until ``end``; the same
+    every build."""
+    _place("dust", x, y, 1.0)
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end):
+        raise SoftOddError(f"dust falls from a time before its end, got {start!r}, {end!r}")
+    g = cv.group(parent, id, x=x, y=y)
+    cv.gate(g, [(start, end)])
+    for k in range(DUST_SPECKS):
+        at = -width / 2 + width * ((k * 7) % DUST_SPECKS) / DUST_SPECKS
+        begin = start + 0.09 * k
+        speck = cv.group(g, f"{id}-{k + 1}", x=at)
+        cv.keys(speck, "y", [(begin, 0.0), (begin + 0.9, fall)], False)
+        cv.ellipse(speck, -6, -6, 12 + 3 * (k % 3), 12 + 3 * (k % 3), "#C9B8A0", "#8A7A64", 2)
+    return g
+
+
+@register(
+    "graphic",
+    "soft-dimmer",
+    summary="A veil over the whole frame that deepens step by step: a room whose lights go out one at a time",
+)
+def dimmer(
+    cv: Canvas,
+    parent,
+    rows: Sequence[tuple[float, float]] = ((0.0, 0.5),),
+    *,
+    color: str = "#0B1026",
+    id: str = "soft-dimmer",
+):
+    """A full-frame veil: ``rows`` are (time, opacity) from 0, each opacity holding until the next."""
+    times = [row[0] for row in rows]
+    if not rows or times[0] != 0 or not all(b > a for a, b in zip(times, times[1:], strict=False)):
+        raise SoftOddError(f"a dimmer's rows run from 0 in rising time, got {list(rows)!r}")
+    if not all(checks.number(level) and 0 <= level <= 1 for _, level in rows):
+        raise SoftOddError(f"a dimmer's levels are 0..1, got {list(rows)!r}")
+    g = cv.group(parent, id)
+    cv.rect(g, -100, -100, 1280, 2120, color)
+    cv.keys(g, "opacity", list(rows))
     return g

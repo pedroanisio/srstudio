@@ -27,7 +27,7 @@ def keys(group, prop: str) -> list[tuple[float, float]]:
 def test_the_module_is_a_part_of_the_soft_style():
     assert "soft_odds" in SOFT.parts
     entries = {e.name: e for e in registry.entries()}
-    for name in ("soft-tongs", "soft-grill", "soft-smoke", "soft-pizza-box", "soft-bottle"):
+    for name in ("soft-tongs", "soft-grill", "soft-smoke", "soft-pizza-box", "soft-bottle", "soft-washer", "soft-tv"):
         assert entries[name].kind == "prop" and entries[name].style == "soft"
 
 
@@ -132,6 +132,104 @@ def test_a_pizza_box_has_no_lettering_to_leave_the_safe_area_and_a_bottle_takes_
     assert "#E2B64E" in ET.tostring(t, encoding="unicode")
     with pytest.raises(SoftOddError, match="positive scale"):
         soft_odds.pizza_box(cv, cv.comp, 540, 900, scale=-1)
+
+
+def opacity(group) -> list[tuple[float, float]]:
+    return keys(group, "opacity")
+
+
+def test_a_washer_turns_until_it_stops_and_its_light_dies_with_it():
+    cv = canvas()
+    soft_odds.washer(cv, cv.comp, 300, 1500, end=END, stop=4.0)
+    g = groups(cv)
+    turn = keys(g["soft-washer-drum"], "rotation")
+    assert turn == [(0.0, 0.0), (4.0, 360.0 * 4.0 / soft_odds.DRUM_TURN)]
+    assert opacity(g["soft-washer-light"]) == [(0.0, 1.0), (4.0, 0.0)]
+
+
+def test_a_washer_runs_to_the_end_unless_it_is_told_to_stop():
+    cv = canvas()
+    soft_odds.washer(cv, cv.comp, 300, 1500, end=END)
+    assert keys(groups(cv)["soft-washer-drum"], "rotation")[-1][0] == END
+
+
+def test_what_goes_into_a_washer_rides_the_drum_from_its_cue_and_the_door_swings():
+    cv = canvas()
+    loads = [(1.0, "brick"), (2.0, "ball"), (3.0, "coins"), (4.0, "shovel")]
+    soft_odds.washer(cv, cv.comp, 300, 1500, end=END, open_at=[(0.5, 1.0), (3.5, 4.0)], loads=loads)
+    g = groups(cv)
+    for k, (time, _) in enumerate(loads, start=1):
+        assert opacity(g[f"soft-washer-load-{k}"])[:2] == [(0.0, 0.0), (time, 1.0)]
+    assert opacity(g["soft-washer-door-open"])[1:3] == [(0.5, 1.0), (1.0, 0.0)]
+    assert opacity(g["soft-washer-door"])[:3] == [(0.0, 1.0), (0.5, 0.0), (1.0, 1.0)]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"stop": 99.0}, "stops within"),
+        ({"open_at": [(5.0, 2.0)]}, "door opens"),
+        ({"loads": [(1.0, "cat")]}, "a load is"),
+        ({"loads": [(99.0, "brick")]}, "a load is"),
+    ],
+)
+def test_a_washer_refuses_what_it_cannot_do(kwargs, match):
+    cv = canvas()
+    with pytest.raises(SoftOddError, match=match):
+        soft_odds.washer(cv, cv.comp, 300, 1500, end=END, **kwargs)
+
+
+def test_a_tv_flickers_until_it_goes_off_and_a_fridge_light_dies():
+    cv = canvas()
+    soft_odds.tv(cv, cv.comp, 300, 1500, end=END, off=2.0)
+    soft_odds.home_fridge(cv, cv.comp, 800, 1500, end=END, off=3.0)
+    g = groups(cv)
+    assert opacity(g["soft-tv-picture"]) == [(0.0, 1.0), (2.0, 0.0)]
+    assert opacity(g["soft-home-fridge-light"]) == [(0.0, 1.0), (3.0, 0.0)]
+    steps = opacity(g["soft-tv-flicker"])
+    assert len(steps) == 6 and steps[-1][0] <= 2.0 and len({v for _, v in steps}) > 1
+
+
+@pytest.mark.parametrize("draw", [soft_odds.tv, soft_odds.home_fridge])
+def test_a_set_dies_within_the_reel(draw):
+    cv = canvas()
+    with pytest.raises(SoftOddError, match="within"):
+        draw(cv, cv.comp, 300, 1500, end=END, off=END + 1)
+
+
+def test_dust_falls_from_its_cue_the_same_every_build():
+    def built():
+        cv = canvas()
+        soft_odds.dust(cv, cv.comp, 500, 300, 2.0, end=END, id="d")
+        return cv
+
+    a, b = built(), built()
+    assert a.scene.to_bytes(layout="pretty") == b.scene.to_bytes(layout="pretty")
+    g = groups(a)
+    assert sum(i.startswith("d-") for i in g) == soft_odds.DUST_SPECKS
+    assert keys(g["d-1"], "y")[0] == (2.0, 0.0)
+    assert opacity(g["d"]) == [(0.0, 0.0), (2.0, 1.0), (END, 0.0)]
+    cv = canvas()
+    with pytest.raises(SoftOddError, match="before its end"):
+        soft_odds.dust(cv, cv.comp, 500, 300, END, end=END)
+
+
+def test_a_dimmer_steps_down_and_refuses_rows_out_of_order():
+    cv = canvas()
+    soft_odds.dimmer(cv, cv.comp, ((0.0, 0.0), (2.0, 0.3), (4.0, 0.6)))
+    assert opacity(groups(cv)["soft-dimmer"]) == [(0.0, 0.0), (2.0, 0.3), (4.0, 0.6)]
+    for rows, match in ((((1.0, 0.1),), "rising time"), (((0.0, 2.0),), "0..1")):
+        with pytest.raises(SoftOddError, match=match):
+            soft_odds.dimmer(cv, cv.comp, rows)
+
+
+@pytest.mark.parametrize("draw", [soft_odds.brick, soft_odds.bowling_ball, soft_odds.coin_bag])
+def test_a_thing_to_put_in_a_washer_is_drawn_where_it_is_asked_and_refuses_a_bad_scale(draw):
+    cv = canvas()
+    draw(cv, cv.comp, 540, 900, id="thing")
+    assert groups(cv)["thing"].get("x") in ("540", "540.0")
+    with pytest.raises(SoftOddError, match="positive scale"):
+        draw(cv, cv.comp, 540, 900, scale=0)
 
 
 def test_a_burger_lies_on_the_grate_until_it_is_turned():

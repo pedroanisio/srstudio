@@ -1053,6 +1053,30 @@
     "toon-mint": {
       "title": "Bala de hortelã no pires"
     },
+    "soft-dimmer": {
+      "title": "A room going dark"
+    },
+    "soft-dust": {
+      "title": "Falling dust"
+    },
+    "soft-home-fridge": {
+      "title": "A fridge that dies"
+    },
+    "soft-tv": {
+      "title": "A TV that goes off"
+    },
+    "soft-coin-bag": {
+      "title": "A sack of coins"
+    },
+    "soft-bowling-ball": {
+      "title": "A bowling ball"
+    },
+    "soft-brick": {
+      "title": "A brick"
+    },
+    "soft-washer": {
+      "title": "A washer that takes anything"
+    },
     "soft-bottle": {
       "title": "Frasco de molho"
     },
