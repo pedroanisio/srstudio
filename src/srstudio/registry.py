@@ -47,6 +47,16 @@ class CharacterVersionDetails(TypedDict):
     default_name: str | None
 
 
+class PartVersionDetails(TypedDict):
+    part: str
+    version: int
+    status: str
+    record_status: str
+    default_status: str | None
+    default_version: int | None
+    default_name: str | None
+
+
 class PartDetails(TypedDict):
     kind: str
     name: str
@@ -60,6 +70,7 @@ class PartDetails(TypedDict):
     documentation: str
     call_template: str
     examples: list[str]
+    part_version: PartVersionDetails | None
     character_version: CharacterVersionDetails | None
 
 
@@ -150,30 +161,29 @@ class Entry:
             "documentation": inspect.getdoc(self.builder) or "",
             "call_template": f"part({', '.join(arguments)})",
             "examples": list(self.examples),
+            "part_version": _part_version(self),
             "character_version": _character_version(self),
         }
 
 
-def _character_version(entry: Entry) -> CharacterVersionDetails | None:
-    """Version metadata for shipped characters; plugin characters may have no version record."""
-    if entry.kind != "character":
-        return None
+def _part_version(entry: Entry) -> PartVersionDetails | None:
+    """Version metadata for a recorded part; plugins may have no matching record."""
     from . import parts
 
     base, separator, number = entry.name.partition("@")
-    character = parts.load().get(base)
-    if character is None or (separator and not number.isdecimal()):
+    part = parts.load().get(base)
+    if part is None or part.kind != entry.kind or (separator and not number.isdecimal()):
         return None
     version_number = int(number) if separator else 1
-    version = next((v for v in character.versions if v.number == version_number), None)
+    version = next((v for v in part.versions if v.number == version_number), None)
     if version is None:
         return None
     try:
-        default = character.latest().number
+        default = part.latest().number
     except parts.NotApprovedError:
         default = None
     default_name = parts.part_name(base, default) if default is not None else None
-    default_entry = _REGISTRY["character"].get(default_name) if default_name is not None else None
+    default_entry = _REGISTRY[entry.kind].get(default_name) if default_name is not None else None
     default_status = (
         None
         if default is None
@@ -184,13 +194,31 @@ def _character_version(entry: Entry) -> CharacterVersionDetails | None:
         else "approved"
     )
     return {
-        "character": base,
+        "part": base,
         "version": version.number,
         "status": "unverified" if _unverified(entry) else version.status,
         "record_status": version.status,
         "default_status": default_status,
         "default_version": default,
         "default_name": default_name,
+    }
+
+
+def _character_version(entry: Entry) -> CharacterVersionDetails | None:
+    """Legacy character-only view retained for existing catalog clients."""
+    if entry.kind != "character":
+        return None
+    info = _part_version(entry)
+    if info is None:
+        return None
+    return {
+        "character": info["part"],
+        "version": info["version"],
+        "status": info["status"],
+        "record_status": info["record_status"],
+        "default_status": info["default_status"],
+        "default_version": info["default_version"],
+        "default_name": info["default_name"],
     }
 
 
@@ -300,6 +328,7 @@ def catalog(style: str | None = None, *, kind: str | None = None) -> list[dict]:
             "tags": list(e.tags),
             "module": e.module,
             "style": e.style,
+            "part_version": _part_version(e),
             "character_version": _character_version(e),
         }
         for e in entries(kind, style)

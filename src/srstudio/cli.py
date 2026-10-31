@@ -37,7 +37,7 @@ def _load_plugins(modules, command: str) -> bool:
     return True
 
 
-def _version_text(info: registry.CharacterVersionDetails | None) -> str:
+def _version_text(info: registry.PartVersionDetails | None) -> str:
     if info is None:
         return ""
     default = info["default_name"] or "none approved"
@@ -146,8 +146,8 @@ def main(argv=None):
             print(json.dumps(info, indent=2, ensure_ascii=False))
             return 0
         print(f"{info['kind']} {info['name']} ({info['style'] or 'any'}): {info['summary']}")
-        if version := _version_text(info["character_version"]):
-            print(f"Character: {version}")
+        if version := _version_text(info["part_version"]):
+            print(f"{'Character' if info['kind'] == 'character' else 'Part'}: {version}")
         print(f"Module: {info['module']}")
         print(f"Signature: {info['signature']}")
         print(f"Callback slots (receive the parent group): {', '.join(info['slots']) or 'none'}")
@@ -178,7 +178,7 @@ def main(argv=None):
         width = max((len(e.name) for e in rows), default=4)
         for e in rows:
             eps = f"  [{','.join(measured.used_by(e.name)) or '-'}]" if measured is not None else ""
-            version = _version_text(registry._character_version(e))
+            version = _version_text(registry._part_version(e))
             suffix = f"  ({version})" if version else ""
             print(f"{e.kind:<10} {e.style or 'any':<7} {e.name:<{width}}{eps}  {e.summary}{suffix}")
         return 0
