@@ -31,6 +31,10 @@ PACKAGE_ONLY = [
 ]
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 NO_EPISODE = [
+    "stick-queue",
+    "stick-duffel",
+    "stick-book",
+    "stick-aisle",
     "stick-xray",
     "stick-spoon",
     "stick-scan-belt",

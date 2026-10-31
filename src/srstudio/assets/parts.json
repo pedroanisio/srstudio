@@ -9103,6 +9103,74 @@
           "rig": null
         }
       ]
+    },
+    "stick-aisle": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plane's aisle in one-point perspective, from the back of the cabin. First drawn for seat-belt-sign; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fbe0bb99b41dddf853812de1016d1cc686119d878806b919e197229064c43ebe",
+          "rig": null
+        }
+      ]
+    },
+    "stick-queue": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A line of passengers down the aisle who all turn round at once. First drawn for seat-belt-sign; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3139e707e5811b5c204ad887f5e13120aa7c7f285f31e7001598a68e386590e9",
+          "rig": null
+        }
+      ]
+    },
+    "stick-book": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A paperback, open or shut. First drawn for seat-belt-sign; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "19ffb40c37f21e161593180466dcb9491f31ce671dc9fdff997bdf929a20ec6c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-duffel": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A soft duffel bag. First drawn for seat-belt-sign; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d595150940569a0c09aefe418580e1eb69c3269b0ac634a6518edafe7f9599df",
+          "rig": null
+        }
+      ]
     }
   }
 }

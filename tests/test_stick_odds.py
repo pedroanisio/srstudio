@@ -4,6 +4,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import DAYLIGHT, Canvas, flat_counter, stick, stick_odds
+from srstudio.canvas import Signature
 
 
 def canvas() -> Canvas:
@@ -81,3 +82,30 @@ def test_the_spoon_the_belt_and_the_note_draw():
     assert stick_odds.foil_note(cv, cv.comp, "FOR THE MAN AT SECURITY.") is not None
     with pytest.raises(stick.StickDataError, match="words"):
         stick_odds.foil_note(cv, cv.comp, " ")
+
+
+def test_the_aisle_is_signed_like_any_location():
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=6.0, background="#d9d2c4")
+    cv = Canvas(scene, DAYLIGHT, font_asset="inter", namer=flat_counter("n"), signature=Signature())
+    stick_odds.aisle(cv, cv.comp)
+    assert cv._sig_ids["sig-cactus"] == 1 and cv._sig_ids["sig-code"] == 1
+
+
+def test_a_queue_turns_inside_its_shot_and_fits_the_aisle():
+    cv = canvas()
+    assert stick_odds.queue(cv, cv.comp, 2.0, turn=1.0, rows=3) is not None
+    with pytest.raises(stick.StickDataError, match="inside the shot"):
+        stick_odds.queue(cv, cv.comp, 2.0, turn=3.0)
+    with pytest.raises(stick.StickDataError, match="rows"):
+        stick_odds.queue(cv, cv.comp, 2.0, turn=1.0, rows=0)
+
+
+def test_a_book_is_open_or_shut_and_a_bag_needs_a_scale():
+    cv = canvas()
+    assert len(stick_odds.book(cv, cv.comp, 0, 0).elements()) > len(
+        stick_odds.book(cv, cv.comp, 0, 0, shut=True).elements()
+    )
+    for draw in (stick_odds.book, stick_odds.duffel):
+        with pytest.raises(stick.StickDataError, match="scale"):
+            draw(cv, cv.comp, 0, 0, scale=-1)
