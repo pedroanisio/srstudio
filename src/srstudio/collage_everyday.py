@@ -220,7 +220,7 @@ def flip_card(
         turns = [(times[0], 1.0)]
         for at in times[1:]:
             turns += [(at - FLIP / 2, 1.0), (at, 0.0), (at + FLIP / 2, 1.0)]
-        cv.keys(g, "scaleX", turns, local=False)
+        cv.keys(g, "scaleX", turns, hold=False, local=False)
     return g
 
 

@@ -273,7 +273,8 @@ def test_a_flip_card_turns_only_when_it_has_another_side():
     one, two = canvas(), canvas()
     collage_everyday.flip_card(one, one.comp, TWO_SIDES[:1])
     collage_everyday.flip_card(two, two.comp, TWO_SIDES)
-    assert b"scaleX" in body(two)
+    assert b'property="scaleX"' in body(two)
+    assert b'property="scaleX" defaultInterpolation="hold"' not in body(two)
 
 
 @pytest.mark.parametrize(
