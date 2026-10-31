@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Bill (Bruno) and Sarah (Mae). Foley synthesized.",
         hashtags=('#mosquito', '#insomnia', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("It's in here.", 2.0, "Toon 31"),
+        thumbnail=Thumbnail("It's in here.", 2.0, "Toon"),
     ),
     tags=Tags(
         "relationships",

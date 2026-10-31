@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Brian, George and Liam. Foley synthesized.",
         hashtags=('#gettingold', '#backpain', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("I slept.", 17.0, "Toon 34"),
+        thumbnail=Thumbnail("I slept.", 17.0, "Toon"),
     ),
     tags=Tags(
         "own-worst-enemy", "protagonist", "recognition", test="sp-hook_motion", arm="a", recipient="b", to="best friend"

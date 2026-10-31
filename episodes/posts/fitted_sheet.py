@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Sarah (Mae), Lily (her mother) and Bill (Bruno). Foley synthesized.",
         hashtags=('#fittedsheet', '#laundry', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Who sent you?", 19.6, "Toon 32"),
+        thumbnail=Thumbnail("Who sent you?", 19.6, "Toon"),
     ),
     tags=Tags(
         "family",

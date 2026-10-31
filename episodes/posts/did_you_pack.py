@@ -18,7 +18,7 @@ RELEASE = Release(
             "Voices: ElevenLabs premade voices Lily (Grandma), Will (Dev) and Eric (the officer). Foley synthesized."
         ),
         hashtags=('#grandma', '#airport', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("You look thin.", 2.0, "Stick 21"),
+        thumbnail=Thumbnail("You look thin.", 2.0, "Stick"),
     ),
     cover=True,
     tags=Tags(

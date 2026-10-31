@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Alice, Liam, Bill and George. Foley synthesized.",
         hashtags=('#icecream', '#waitinginline', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Can I try\nthe pistachio?", 9.8, "Toon 35"),
+        thumbnail=Thumbnail("Can I try\nthe pistachio?", 9.8, "Toon"),
     ),
     tags=Tags(
         "money-services",
@@ -38,6 +38,7 @@ RELEASE = Release(
         "toon-goat": 1,
         "toon-hamster": 1,
         "toon-key-line": 1,
+        "toon-ledge": 1,
         "toon-parlour-back": 1,
         "toon-parlour-case": 1,
         "toon-parlour-front": 1,
