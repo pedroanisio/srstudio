@@ -1138,15 +1138,32 @@ def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple
 
 def caption_cues(lines: Sequence[toon.Line], words: Sequence[Word] = (), skip: Sequence[str] = ()) -> list[native.Cue]:
     """The engine cues of ``lines``, each word on its own sound, a cue held to the next (:func:`_timed` stops a build
-    whose words run ahead of the voice). ``skip`` names cues another graphic shows."""
+    whose words run ahead of the voice). A line too long for the band breaks at its sentences, each its own cue, and
+    the track refuses one still too long. ``skip`` names cues another graphic shows."""
     cues = []
     for line, timed in zip(lines, _timed(lines, words), strict=True):
         if line.text in skip:
             continue
         ends = [at for at, _ in timed[1:]] + [line.end]
-        said = tuple(native.Word(token, at, end) for (at, token), end in zip(timed, ends, strict=True))
-        cues.append(native.Cue(line.start, line.end, line.text, said))
+        said = [native.Word(token, at, end) for (at, token), end in zip(timed, ends, strict=True)]
+        for k, part in enumerate(parts := _sentences(said)):
+            start = part[0].start if k else line.start
+            end = parts[k + 1][0].start if k + 1 < len(parts) else line.end
+            cues.append(native.Cue(start, end, " ".join(w.text for w in part), tuple(part)))
     return cues
+
+
+def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
+    """``said`` whole when it fits the band's rows, or else cut after each word that ends a sentence."""
+    text = " ".join(w.text for w in said)
+    if len(native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+        return [list(said)]
+    parts: list[list[native.Word]] = [[]]
+    for k, word in enumerate(said):
+        parts[-1].append(word)
+        if word.text.endswith((".", "!", "?")) and k + 1 < len(said):
+            parts.append([])
+    return parts
 
 
 @register("graphic", "host-captions", summary="Word-level engine captions on an ink band, the sung words in amber")
