@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from fakes import make_mp3
+from srstudio import outbox
 from srstudio.sample import Line, write_sample_project
 
 LINES = [
@@ -14,6 +15,30 @@ LINES = [
     Line("manager", "Seventeen times nineteen?", 1.2),
     Line("candidate", "Forty-two.", 0.8),
 ]
+
+
+RCLONE_REFUSED = 97  # what the stand-in for rclone exits with
+
+
+def _no_real_rclone(cmd, **_):
+    """``outbox._run`` under test. ``pytest.fail`` is no ``Exception``, so no ``except`` in the code under test can turn
+    a forgotten fake into a pass, and a test that wants rclone patches ``outbox._run`` or passes ``run=``."""
+    pytest.fail(f"a test reached real rclone: {cmd!r}; fake outbox._run, not subprocess.run")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def rclone_is_unreachable(tmp_path_factory):
+    """No test can touch the real remote, which is the operator's Drive: every rclone call in the library goes through
+    ``outbox._run``, and a stand-in that refuses comes first on the ``PATH`` for any child process. Session scope, so
+    it stands before every other fixture; a test's own ``monkeypatch.setattr(outbox, "_run", ...)`` still wins."""
+    stand_in = tmp_path_factory.mktemp("no-rclone") / "rclone"
+    stand_in.write_text(f'#!/bin/sh\necho "a test reached rclone: $*" >&2\nexit {RCLONE_REFUSED}\n')
+    stand_in.chmod(0o755)
+    guard = pytest.MonkeyPatch()
+    guard.setattr(outbox, "_run", _no_real_rclone)
+    guard.setenv("PATH", f"{stand_in.parent}{os.pathsep}{os.environ['PATH']}")
+    yield
+    guard.undo()
 
 
 @pytest.fixture(scope="session")

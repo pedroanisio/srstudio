@@ -264,8 +264,11 @@ def test_push_refuses_anything_but_a_named_remote(tmp_path, remote):
 
 
 def test_push_refuses_a_missing_rclone(tmp_path):
+    def absent(cmd, **kw):
+        return subprocess.run(cmd, **kw)  # a path that does not exist: raises as a missing rclone does
+
     with pytest.raises(OutboxError, match="rclone"):
-        push(tmp_path, "gdrive:x", rclone=str(tmp_path / "no-rclone"))
+        push(tmp_path, "gdrive:x", rclone=str(tmp_path / "no-rclone"), run=absent)
 
 
 # -- the command ---------------------------------------------------------------------------------------------------
