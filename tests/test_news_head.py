@@ -290,7 +290,7 @@ def test_the_body_and_the_hands_have_no_motion_of_their_own(who):
     assert set(keyed) <= {"opacity"}
 
 
-def viseme_gates(cv: Canvas) -> list[list[tuple[str, str]]]:
+def viseme_gates(cv: Canvas) -> list[list[tuple[str | None, str | None]]]:
     return [
         [(k.get("time"), k.get("value")) for k in a.iter("key")]
         for a in tree(cv).iter("animate")
@@ -422,10 +422,10 @@ def face_of(who: str, number: int):
     news_inked.rig_specimen(cv, who, 4.0, number)
     nod = group(tree(cv), "head-nod")[0]
     colour = (news_inked.VERA_SKIN if who == "vera" else news_inked.GUS_SKIN).lower()
-    skins = [traced(s.get("path")) for s in nod if s.get("path") and s.get("fill", "").lower() == colour]
+    skins = [traced(s.attrib["path"]) for s in nod if s.get("path") and s.get("fill", "").lower() == colour]
     contour = max(skins, key=lambda c: max(x for x, _ in c) - min(x for x, _ in c))
-    shapes = {s.get("path"): s.get("fill") for f in group(nod, "head-face") for s in f.iter() if s.get("path")}
-    return rig, contour, [(fill, traced(d)) for d, fill in shapes.items()]
+    shapes = {s.attrib["path"]: s.get("fill") for f in group(nod, "head-face") for s in f.iter() if s.get("path")}
+    return rig, contour, [(fill or "", traced(d)) for d, fill in shapes.items()]
 
 
 def off_skin(who: str, number: int) -> list[str]:
@@ -477,6 +477,51 @@ def test_what_the_drawing_lays_past_the_skin_at_rest_is_only_her_spectacle_arms(
 )
 def test_the_mark_check_fails_on_the_rig_that_slid_them_off(who, kind):
     assert any(row.startswith(kind) for row in off_skin(who, 2))
+
+
+def mouth_of(who: str, state: str) -> list[tuple[float, float]]:
+    """What a mouth state draws, through the code a reel draws it with: paths walked, an ellipse at its extremes."""
+    cv = canvas(1.0)
+    drawn = cv.group(cv.comp, "mouth-check", opacity=0.0)
+    face = news_inked.VERA_INKED if who == "vera" else news_inked.GUS_INKED
+    news_inked._mouths(cv, drawn, face, ((0.0, state),), 0.0, 1.0)
+    points: list[tuple[float, float]] = []
+    for shape in group(tree(cv), "mouth-check")[0].iter("shape"):
+        if path := shape.get("path"):
+            points += traced(path)
+        else:
+            x, y, wide, tall = (float(shape.attrib[k]) for k in ("x", "y", "width", "height"))
+            points += [(x, y + tall / 2), (x + wide, y + tall / 2), (x + wide / 2, y), (x + wide / 2, y + tall)]
+    return points
+
+
+def mouths_past_the_skin(who: str, number: int, *corners: tuple[float, float]) -> list[str]:
+    _, contour, _ = face_of(who, number)
+    return [
+        state
+        for state in news_kit.EXPRESSIONS
+        if not all(on_skin(contour, x + dx, y + dy) for x, y in mouth_of(who, state) for dx, dy in corners)
+    ]
+
+
+# Past the skin at the limits on version 3, what the slide cannot answer: not a pass, the open defects by name. A change
+# that fixes one fails here until it comes off the list, and a mouth that joins it fails here too.
+MOUTHS_PAST_AT_THE_LIMITS = {"vera": ["grin", "gape"], "gus": ["gape"]}
+
+
+@anchors
+def test_only_the_named_mouths_leave_the_skin_with_the_turn_and_the_nod_at_their_limits(who):
+    rig, *_ = face_of(who, 3)
+    slide = head_motion.limit(rig.style, "face_x")
+    drop = head_motion.limit(rig.style, "nod") * rig.face_slide
+    corners = [(side * slide, d) for side in (-1.0, 1.0) for d in (0.0, drop)]
+    assert mouths_past_the_skin(who, 3, *corners) == MOUTHS_PAST_AT_THE_LIMITS[who]
+
+
+@anchors
+@pytest.mark.parametrize("number", [2, 3])
+def test_the_gape_is_the_one_mouth_the_drawing_lays_past_the_chin_at_rest(who, number):
+    assert mouths_past_the_skin(who, number, (0.0, 0.0)) == ["gape"]
 
 
 @anchors
