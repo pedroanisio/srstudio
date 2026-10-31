@@ -23,7 +23,7 @@ from one_more_page_audio import INTERVIEW
 from srstudio import SOFT, Episode, EpisodeSpec, blob, foley, layout, soft_bedtime, soft_props, soft_sets
 from srstudio.soft_bedtime import BookSlide
 from srstudio.soft_props import TimeState
-from srstudio.soft_sets import Light, Shot
+from srstudio.soft_sets import Light, Shot, hall_light
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -55,8 +55,6 @@ LAMP_X = 975.0
 LAMP_AT = (LAMP_X, 1480.0)
 CASE_AT = (760.0, 1610.0)
 FLOOR = 1880.0
-HALL = (-300.0, 1300.0)  # the door is off the left of the frame and the hall light comes through it
-CLOSES = (-760.0, 1300.0)  # the same light as the door swings to
 STEP = 0.18
 
 snores = [SNORE + 1.3 * n for n in range(8) if SNORE + 1.3 * n < FRIDGE - 0.3]
@@ -266,12 +264,7 @@ shots = [
     Shot(BOOK + 0.8, 1.35, 420.0, 1240.0),
     Shot(WAVE - 0.3),
 ]
-lights = [
-    Light(0.0, "lamp", *LAMP_AT),
-    Light(CLICK, "lamp", *HALL),
-    Light(DOOR - 0.25, "lamp", *CLOSES),
-    Light(DOOR, "dark"),
-]
+lights = [Light(0.0, "lamp", *LAMP_AT), *hall_light(CLICK, DOOR)]
 
 graded = soft_sets.finish(cv, ep.comp)
 soft_sets.bedroom(cv, graded, lights=lights, shots=shots, cast=cast, held=held)
