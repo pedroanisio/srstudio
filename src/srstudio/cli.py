@@ -109,6 +109,10 @@ def main(argv=None):
     measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
     measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
     measured.add_argument("--json", action="store_true")
+    split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
+    split.add_argument("test", choices=releases.TESTS)
+    split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
+    split.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -205,6 +209,8 @@ def main(argv=None):
         return _lip_proof(args)
     if args.cmd == "proof":
         return _proof(args)
+    if args.cmd == "arms":
+        return _arms(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -407,6 +413,21 @@ def main(argv=None):
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
+
+
+def _arms(args: argparse.Namespace) -> int:
+    try:
+        loaded = releases.load(args.scripts / "posts")
+    except releases.ReleaseError as exc:
+        print(f"srstudio arms: {exc}", file=sys.stderr)
+        return 1
+    order = args.order.read_text().split() if args.order else []
+    for arm, slugs in releases.arms(loaded, args.test).items():
+        print(f"{arm} {len(slugs):>3}  {' '.join(slugs)}")
+    problems = releases.arm_problems(loaded, args.test, order)
+    for problem in problems:
+        print(f"srstudio arms: {problem}", file=sys.stderr)
+    return 1 if problems else 0
 
 
 def _proof(args: argparse.Namespace) -> int:
