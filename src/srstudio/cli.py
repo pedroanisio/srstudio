@@ -33,6 +33,7 @@ from . import (
     lipsync,
     overlap,
     parts,
+    proof,
     registry,
     releases,
     usage,
@@ -105,6 +106,11 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
+    measured.add_argument("video", type=Path)
+    measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
+    measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
+    measured.add_argument("--json", action="store_true")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -210,6 +216,8 @@ def main(argv=None):
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "proof":
+        return _proof(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -442,6 +450,19 @@ def main(argv=None):
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
+
+
+def _proof(args: argparse.Namespace) -> int:
+    try:
+        made = proof.report(args.video, args.at, args.sheet)
+    except proof.ProofError as exc:
+        print(f"srstudio proof: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(made))
+    else:
+        print(" ".join(f"{k}={v}" for k, v in made.items()))
+    return 0
 
 
 def _lip_proof(args: argparse.Namespace) -> int:
