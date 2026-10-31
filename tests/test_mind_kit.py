@@ -286,6 +286,9 @@ def test_the_sting_is_a_short_wav(tmp_path):
         "What a narcissist",
         "Pure trauma",
         "He's bipolar about it",
+        "So ADHD of you",
+        "A bit autistic about it",
+        "Pure autism",
     ],
 )
 def test_the_copy_check_refuses_bait_overclaiming_and_clinical_words(bad):
