@@ -39,7 +39,9 @@ ACCESSIBILITY = (
 NARRATION = "Voiced with the ElevenLabs premade voice Harry; synthesised buzz and button click; no music."
 NOTE = "ElevenLabs premade voice Harry at its natural pace; no reference-voice cloning."
 TINTS = {"lint": BONE}
-MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12, fine=True)
+MOUTH = replace(
+    sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12, fine=True, first_sound=True
+)
 VERSIONS: dict[str, int] = {}
 END = 29.6
 SIGN_OFF = "You know what you did."
