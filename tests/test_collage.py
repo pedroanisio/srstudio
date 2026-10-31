@@ -331,6 +331,31 @@ def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():
     assert all(g.get("effects") == "collage-caption-shadow" for g in groups)  # each pill lifts off the set
 
 
+def test_a_cue_can_take_its_pill_somewhere_else():
+    cv = canvas()
+    lines = [toon.Line("01", "Better?", 0.0, 1.5, "brent"), toon.Line("02", "Worse.", 1.5, 3.0, "rosa")]
+    collage.captions(cv, cv.comp, lines, measure, tops={"Worse.": 815.0})
+    root = tree(cv)
+    rects = [s for s in root.iter("shape") if s.get("shape") == "rect"]
+    assert [float(r.get("y")) for r in rects] == [collage.CAPTION_TOP, 815.0]
+    first, second = (float(layer.get("y")) for layer in root.iter("layer"))
+    assert second - 815.0 == first - collage.CAPTION_TOP
+
+
+def test_a_blink_under_a_hat_stays_below_its_band():
+    jun = collage.LOOKS["jun"]
+    assert jun.hair == "beanie"
+    band = collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    heights = [float(y) for shape in collage.lid_shapes(jun) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+    assert min(heights) >= band
+
+
+def test_a_blink_with_no_hat_covers_the_whole_eye():
+    deb = collage.LOOKS["deb"]
+    heights = [float(y) for shape in collage.lid_shapes(deb) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+    assert min(heights) < collage._eye_centres(deb)[0][1] - 60  # up past the top of the eye
+
+
 def test_captions_need_the_style_font():
     scene = Scene(version="auto")
     scene.add_project(width=1080, height=1920, fps="24", duration=D, background="#ffffff")
