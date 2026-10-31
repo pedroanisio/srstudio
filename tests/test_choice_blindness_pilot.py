@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from srstudio import mind_kit, sketch, toon_parlour
+from srstudio import mind_kit, sketch, toon_cast, toon_critters, toon_parlour
 from srstudio.sketch import Line
 from support.toon_props import canvas
 
@@ -138,6 +138,12 @@ def test_the_stamp_is_gone_when_he_tastes_the_toothpaste(monkeypatch):
     monkeypatch.setattr(cv, "group", recording)
     pilot._stamp(SimpleNamespace(cv=cv, front=cv.comp), SCRIPTED)
     assert SCRIPTED["sneak"] < ends[0] <= SCRIPTED["tasted"]
+
+
+def test_the_arms_are_the_colour_of_the_animals_they_belong_to():
+    assert pilot.GOAT_COAT == toon_critters.GOAT.coat
+    assert pilot.GOAT_HOOF == toon_critters.GOAT_HOOF
+    assert pilot.FOX_COAT == toon_cast.FOX.coat
 
 
 def test_the_fox_leaves_with_the_mint_she_took(monkeypatch):
