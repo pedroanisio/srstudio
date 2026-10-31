@@ -321,6 +321,9 @@ RECIPES: dict[str, Recipe] = {
     "toon-notes": Recipe(part(("REPORT!", "9 AM", "DO NOT", "FORGET"))),
     "toon-note-insert": Recipe(part("IT MOVED.", 0.0, SECONDS)),
     "toon-calendar": Recipe(part(((0.0, "OCT 27"),))),
+    "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
+    "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
+    "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s
     # -- graphics -------------------------------------------------------------------------------------------------
     "signature-code": Recipe(part(540, 960, height=40)),
     "episode-slate": Recipe(part("08", "CAMERA OFF"), at=0.4),  # it fades out by one second
