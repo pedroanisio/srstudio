@@ -1,10 +1,27 @@
-"""The wording checks: figures in a spoken line."""
+"""The wording checks: British spellings on a US account, and figures in a spoken line."""
 
 from __future__ import annotations
 
 import pytest
 
 from srstudio import wording
+
+
+@pytest.mark.parametrize(
+    "text, found",
+    [
+        ("Hello, NEIGHBOURS", [("NEIGHBOURS", "neighbor")]),
+        ("a new flavour on the pavement", [("flavour", "flavor"), ("pavement", "sidewalk")]),
+        ("I realised, over the tannoy", [("realised", "realiz"), ("tannoy", "loudspeaker")]),
+    ],
+)
+def test_british_words_are_found_with_their_us_stem(text, found):
+    assert wording.british(text) == found
+
+
+@pytest.mark.parametrize("text", ["My neighbors like the color gray.", "An emphasis on summer meters."])
+def test_us_spelling_passes(text):
+    assert wording.british(text) == []
 
 
 @pytest.mark.parametrize(
@@ -27,7 +44,15 @@ def test_spelled_numbers_pass():
 
 def test_the_command_reports_file_and_line_and_fails(tmp_path, capsys):
     script = tmp_path / "script.txt"
-    script.write_text("fine\nAt 2:00 AM\n", encoding="utf-8")
-    assert wording.main([str(script)]) == 0
+    script.write_text("fine\nA colour at 2:00 AM\n", encoding="utf-8")
+    assert wording.main([str(script)]) == 1
+    assert capsys.readouterr().out == f"{script}:2: colour: use color\n"
     assert wording.main(["--spoken", str(script)]) == 1
-    assert capsys.readouterr().out == f"{script}:2: 2:00 AM: spell it out\n"
+    assert "2:00 AM: spell it out" in capsys.readouterr().out
+
+
+def test_the_command_passes_a_clean_file(tmp_path, capsys):
+    script = tmp_path / "script.txt"
+    script.write_text("A color at 2:00 AM\n", encoding="utf-8")
+    assert wording.main([str(script)]) == 0
+    assert capsys.readouterr().out == ""
