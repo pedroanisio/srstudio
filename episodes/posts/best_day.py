@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Jessica (Deb). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Jessica (Deb). Foley synthesized.",
         hashtags=('#foodinteeth', '#embarrassing', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Today,\nI am magnetic.", 0.6, "Collage 34"),
     ),

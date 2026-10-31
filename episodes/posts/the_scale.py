@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Chris (Gary) and Sarah (Priya). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Chris (Gary) and Sarah (Priya). Foley synthesized.",
         hashtags=('#doctorvisit', '#weighin', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Hop on.", 8.9, "Collage 35"),
     ),

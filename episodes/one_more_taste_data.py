@@ -39,7 +39,7 @@ GOAT = Speaker(
 )
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 TINTS = {"fox": "#fbdcbc", "server": "#f7e0b5", "bruno": "#eccfae", "goat": "#e9e2d0"}
-KEY_LINE = "Can I try the pistachio?"
+KEY_LINE = "Just one more taste."
 CLINK = foley.Burst(0.09, 3800.0, attack=0.001, decay=0.5, tone_hz=2600.0, tone_end_hz=2500.0, tone=0.6)
 EVENTS = {"finger", "leaves"}
 SPOONS = tuple(round(0.8 + k * 0.55, 2) for k in range(22))

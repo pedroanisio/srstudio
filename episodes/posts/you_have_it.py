@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Sarah (Priya) and Jessica (Deb). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Sarah (Priya) and Jessica (Deb). Foley synthesized.",
         hashtags=('#lastslice', '#friends', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("You have it.", 14.9, "Collage 30"),
     ),

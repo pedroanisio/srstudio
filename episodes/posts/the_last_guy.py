@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Charlie (Rex) and Matilda (Fern). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Charlie (Rex) and Matilda (Fern). Foley synthesized.",
         hashtags=('#plumber', '#homerepair', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Who did this?", 13.0, "Toon 30"),
     ),

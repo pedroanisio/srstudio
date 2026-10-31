@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Sarah (Mae), Lily (her mother) and Bill (Bruno). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Sarah (Mae), Lily (her mother) and Bill (Bruno). Foley synthesized.",
         hashtags=('#fittedsheet', '#laundry', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Who sent you?", 19.6, "Toon 32"),
     ),

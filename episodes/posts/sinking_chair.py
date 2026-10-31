@@ -18,6 +18,7 @@ RELEASE = Release(
         hashtags=("#office", "#performancereview", "#relatable", "#animatedshorts", "#comedyshorts"),
         thumbnail=Thumbnail("Has your chair\never done this?", 5.9, "Okayville"),
     ),
+    cover=True,
     tags=Tags(
         "office",
         "institution",

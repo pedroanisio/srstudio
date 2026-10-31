@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Alice, Liam, Bill and George. Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Alice, Liam, Bill and George. Foley synthesized.",
         hashtags=('#icecream', '#waitinginline', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Can I try\nthe pistachio?", 9.8, "Toon 35"),
     ),

@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Brian, George and Liam. Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Brian, George and Liam. Foley synthesized.",
         hashtags=('#gettingold', '#backpain', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("I slept.", 17.0, "Toon 34"),
     ),

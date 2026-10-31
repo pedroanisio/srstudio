@@ -19,6 +19,7 @@ RELEASE = Release(
         hashtags=("#headphones", "#supermarket", "#relatable", "#animatedshorts", "#comedyshorts"),
         thumbnail=Thumbnail("How loud are you\nwith headphones in?", 3.0, "Okayville"),
     ),
+    cover=True,
     tags=Tags(
         "own-worst-enemy",
         "protagonist",

@@ -18,6 +18,7 @@ RELEASE = Release(
         hashtags=("#restaurant", "#waiter", "#relatable", "#animatedshorts", "#comedyshorts"),
         thumbnail=Thumbnail("How is\neverything?", 5.6, "Okayville"),
     ),
+    cover=True,
     tags=Tags(
         "money-services",
         "institution",
