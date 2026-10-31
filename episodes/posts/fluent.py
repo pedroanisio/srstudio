@@ -26,7 +26,8 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={
-        # collage-counter, collage-desk-phone, collage-eye-twitch, collage-handset, collage-resume also drawn: a release cannot pin a proposed version, so they join once approved.
+        # collage-counter, collage-desk-phone, collage-eye-twitch, collage-handset, collage-resume also drawn:
+        # a release cannot pin a proposed version, so they join once approved.
         "collage-arm": 1,
         "collage-boardroom": 1,
         "collage-brent": 1,

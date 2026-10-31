@@ -70,7 +70,7 @@ BEATS, END = timed(
         (0.85, "deb", 1, "open", "grin", "hold"),
         (1.05, "brent", 2, "open", "smile", "hold"),
         (2.0, "deb", "", "open", "smile", "hold", "reveal:close"),  # her smile does not move; one eye does
-        (1.0, "deb", 3, "open", "smile", "hold"),
+        (1.0, "deb", 3, "open", "smile", "hold", "zoom"),
         (2.0, "brent", "", "half", "flat", "hold", "reveal:sheet"),  # he turns it over: nothing
         (1.2, "brent", 4, "half", "flat", "hold"),
         (0.95, "deb", 5, "half", "flat", "hold"),
@@ -83,8 +83,9 @@ BEATS, END = timed(
         (1.2, "brent", 7, "open", "smile", "down", "ring"),
         (1.5, "brent", "", "open", "smile", "down", "reveal:lift"),
         (1.1, "deb", 8, "wide", "smile", "down", "reveal:ear"),
+        (0.8, "deb", "", "wide", "smile", "down", "sting"),
     ),
-    tail=1.3,
+    tail=0.6,
 )
 SKETCH = make_sketch(SLUG, TITLE, NAMES, LINES, BEATS, END)
 
