@@ -45,6 +45,13 @@ __all__ = [
     "CHOPPER",
     "GULL",
     "PLATES",
+    "BITE",
+    "CHEW",
+    "PAPER_CRUNCH",
+    "COIN",
+    "GAS_LIFT",
+    "CART_WHEELS",
+    "PEN",
     "STING",
     "whoosh",
     "write_whoosh",
@@ -415,6 +422,13 @@ GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880
 SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
+BITE = Burst(0.1, 3200.0, attack=0.001, decay=0.3, tone_hz=210.0, tone_end_hz=120.0, tone=0.3)  # teeth through bread
+CHEW = Burst(0.2, 800.0, attack=0.03, decay=0.5, tone_hz=120.0, tone_end_hz=85.0, tone=0.3, flutter_hz=23.0)
+PAPER_CRUNCH = Burst(0.42, 7500.0, attack=0.005, decay=0.45, flutter_hz=47.0)  # a napkin, between the teeth
+COIN = Burst(0.26, 9000.0, attack=0.001, decay=0.3, tone_hz=4300.0, tone_end_hz=4240.0, tone=0.55)  # one, on a counter
+GAS_LIFT = Burst(0.6, 6500.0, attack=0.015, decay=0.65)  # an office chair letting go; ``seconds`` sets how far it drops
+CART_WHEELS = Burst(1.1, 1300.0, attack=0.06, decay=1.6, tone_hz=95.0, tone_end_hz=95.0, tone=0.15, flutter_hz=19.0)
+PEN = Burst(0.5, 3800.0, attack=0.03, decay=0.8, flutter_hz=29.0)  # a nib on paper, unhurried
 
 
 def bursts(

@@ -1,5 +1,6 @@
 """Keyboard foley: keystroke bursts where the tracked hand moves, synthesised deterministically."""
 
+import dataclasses
 import wave
 
 import pytest
@@ -104,12 +105,52 @@ def test_a_burst_is_seeded_levelled_and_lands_on_its_cues():
     assert not any(a[:800]) and any(a[800:840]) and not any(a[1200:3200]) and any(a[3200:3240])
 
 
+def _brightness(samples):
+    """How much of the sound is sample-to-sample change: the higher, the brighter."""
+    change = sum(abs(b - a) for a, b in zip(samples, samples[1:], strict=False))
+    return change / max(sum(abs(v) for v in samples), 1e-9)
+
+
+def test_table_sounds_differ_where_the_ear_tells_them_apart():
+    bite, chew = (foley.bursts([0.0], 0.5, s, rate=16000) for s in (foley.BITE, foley.CHEW))
+    assert _brightness(bite) > 1.5 * _brightness(chew)
+    paper = foley.bursts([0.0], 0.5, foley.PAPER_CRUNCH, rate=16000)
+    assert _brightness(paper) > _brightness(bite)
+
+
+def test_a_coin_rings_on_and_a_bite_is_over_at_once():
+    assert foley.COIN.tone > 0.5 and foley.COIN.tone_hz > 3000
+    assert foley.BITE.seconds <= 0.12
+    assert foley.GAS_LIFT.tone == 0.0  # a hiss holds no pitch
+
+
+def test_a_longer_gas_lift_is_the_same_hiss_held():
+    held = dataclasses.replace(foley.GAS_LIFT, seconds=2.4)
+    long, short = (foley.bursts([0.0], 3.0, s, rate=8000) for s in (held, foley.GAS_LIFT))
+    assert sum(abs(v) for v in long[12000:16000]) > sum(abs(v) for v in short[12000:16000]) == 0.0
+
+
 def test_a_burst_cut_by_the_end_of_the_bed_stops_there():
     assert len(foley.bursts([0.55], 0.6, foley.SNORE, rate=8000)) == 4800
 
 
 @pytest.mark.parametrize(
-    "sound", [foley.REMOTE_CLICK, foley.SCRAPE, foley.SNORE, foley.ROAD, foley.CHOPPER, foley.GULL]
+    "sound",
+    [
+        foley.REMOTE_CLICK,
+        foley.SCRAPE,
+        foley.SNORE,
+        foley.ROAD,
+        foley.CHOPPER,
+        foley.GULL,
+        foley.BITE,
+        foley.CHEW,
+        foley.PAPER_CRUNCH,
+        foley.COIN,
+        foley.GAS_LIFT,
+        foley.CART_WHEELS,
+        foley.PEN,
+    ],
 )
 def test_the_named_sounds_are_sound(sound):
     assert any(foley.bursts([0.0], 0.5, sound, rate=8000))
