@@ -4,7 +4,9 @@
 row of gate seats under it, the boarding sign (the gate and the group being called, ``now``) and the carpet. The
 passenger stands at the left in a :data:`srstudio.stick.STANDING` pose, his :func:`carry_on` beside him with its
 group tag; the agent stands mirrored at :data:`AGENT_AT`, and :func:`podium` is drawn after her so it hides her
-legs. :func:`cabin` is the back layer of a row seen from the aisle: overhead bins labelled with the row and its
+legs. :func:`bag_scale` weighs a bag on the floor and shows the weight on a readout big enough for a phone, and
+:func:`coat_ball` is everything a passenger owns, worn. :func:`palm` stands at the other end of the flight.
+:func:`cabin` is the back layer of a row seen from the aisle: overhead bins labelled with the row and its
 seats, three seat backs at :data:`SEATS` and the floor; the passengers sit in :data:`SQUEEZED` poses, one per seat
 (``at=(seat - 540, 0)``), and :func:`armrests` is the front layer between the seats. Everything is in frame pixels
 of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same.
@@ -27,15 +29,22 @@ __all__ = [
     "NOW_CHARS",
     "PODIUM_TOP",
     "PODIUM_X",
+    "READOUT",
+    "READOUT_CHARS",
+    "READOUT_SIZE",
     "SEATS",
     "SEAT_STEP",
     "SQUEEZED",
     "TAG_CHARS",
     "TAG_SPAN",
     "armrests",
+    "bag_scale",
     "cabin",
     "carry_on",
+    "coat_ball",
     "gate",
+    "now_size",
+    "palm",
     "podium",
 ]
 
@@ -61,6 +70,15 @@ ARMRESTS = (390, 690)  # between the seats
 ARMREST_W = 40
 ARMREST_TOP = 1220
 SEAT_TOP, CUSHION = 640, 1270
+READOUT = (672, 1215, 376, 170)  # x, y, w, h of the scale's readout, on the podium's front above the caption band
+READOUT_CHARS, READOUT_SIZE = 5, 124  # a weight a viewer reads on a phone, across the frame from the bag
+LED, LED_BACK, PLATTER, PLATTER_DARK = "#ff3b30", "#16080a", "#b7c0c7", "#7d868e"
+COATS = ("#3f5c7a", "#6b4f3a", "#4d6a4f", "#7a3f52")  # the outermost coat first
+SCARVES = ("#d9a441", "#c0453b", "#2a9d8f")
+HATS = ("#55607a", "#a8743a", "#3a3f47", "#9c4a4a")
+SHOE, POCKET, BARK, FROND = "#8a5a33", "#2c4258", "#8a6a48", "#2f8a5b"
+HEAD_TOP = 184  # from a STANDING chin to the top of the head
+MAX_LAYERS, MAX_HATS, MAX_SCARVES = 4, 4, 3
 
 
 _label = partial(look.text, weight=700)  # one line, no cut
@@ -88,6 +106,11 @@ def _plane(cv: Canvas, parent) -> None:
     shape(s, g, "M 200 892 L 200 1000 M 440 892 L 440 1000", sw=6, stroke=s.ink)  # the gear
     for x in (186, 228, 426):
         oval(s, g, x, 990, 30, 30, s.ink)
+
+
+def now_size(now: str) -> float:
+    """The letter size of the sign's second line: ten characters fill it, and a longer call shrinks to fit."""
+    return 72 * min(1.0, 10 / len(now))
 
 
 @register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
@@ -120,7 +143,7 @@ def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1") -> None:
     box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
     _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
     _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, 38, SIGN_TEXT, align="start")
-    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, 72, SIGN_TEXT)
+    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
     # the gate seats under the window: a row joined on one beam
     box(s, parent, 30, 1420, 560, 16, SEAT_DARK)
     for k in range(4):
@@ -182,6 +205,110 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
     box(s, g, tag_x, y - 384, tag_w, 64, TAG, 4, r=10)
     if tag is not None:
         _label(s, g, tag, tag_x, y - 384, tag_w, 64, 34, s.ink)
+    return g
+
+
+@register("prop", "stick-bag-scale", tags=("airport", "scale", "luggage", "readout", "weight", "font"))
+def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, float, float, float] = READOUT):
+    """A bag scale: its platter set in the floor under ``x, y`` and its red readout at ``readout``, on the podium's
+    front by default. ``readings`` are ``(start, weight)`` in rising order, the first from the shot's start; each
+    shows until the next and the last until ``end``. A weight has 1 to :data:`READOUT_CHARS` characters, lit at
+    :data:`READOUT_SIZE` so it reads at phone size. Draw it after the podium and before the bag."""
+    cv.require_font("the readout is set in it")
+    readings = tuple(readings)
+    if not readings:
+        raise StickDataError("a scale shows at least one reading")
+    starts = [start for start, _ in readings]
+    if starts[0] != 0 or any(b <= a for a, b in zip(starts, starts[1:], strict=False)) or starts[-1] >= end:
+        raise StickDataError(f"readings start at 0 and rise before the end, got {starts} to {end}")
+    for _, weight in readings:
+        if not weight.strip() or len(weight) > READOUT_CHARS:
+            raise StickDataError(f"a reading has 1 to {READOUT_CHARS} characters, got {weight!r}")
+    s = cv
+    g = _group(s, parent)
+    box(s, g, x - 170, y - 22, 340, 44, PLATTER_DARK, 4, r=8)
+    box(s, g, x - 150, y - 34, 300, 22, PLATTER, 4, r=8)
+    rx, ry, rw, rh = readout
+    box(s, g, rx, ry, rw, rh, LED_BACK, 5, r=16)
+    for (start, weight), until in zip(readings, [*starts[1:], end], strict=True):
+        lit = _group(s, g)
+        _label(s, lit, weight, rx, ry, rw, rh, READOUT_SIZE, LED)
+        s.gate(lit, [(start, until)])
+    return g
+
+
+@register("prop", "stick-coat-ball", tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"))
+def coat_ball(cv: Canvas, parent, x, chin, radius, *, layers=3, hats=0, scarves=0, trousers=False, shoes=False):
+    """Everything a passenger owns, worn: a ball of ``radius`` hanging from the chin at ``x, chin``, drawn after a
+    STANDING figure so only the head shows. ``layers`` of coat (1 to :data:`MAX_LAYERS`) show as hems around it, a
+    sleeve stands out at each side, ``scarves`` wind under the chin, ``hats`` pile on the head, ``trousers`` swell
+    the legs to the floor and ``shoes`` stick out of the pockets."""
+    if radius < 100:
+        raise StickDataError(f"a ball under a chin has a radius of at least 100, got {radius}")
+    if not 1 <= layers <= MAX_LAYERS:
+        raise StickDataError(f"a ball wears 1 to {MAX_LAYERS} coats, got {layers}")
+    if not 0 <= hats <= MAX_HATS or not 0 <= scarves <= MAX_SCARVES:
+        raise StickDataError(f"at most {MAX_HATS} hats and {MAX_SCARVES} scarves, got {hats} and {scarves}")
+    s = cv
+    g = _group(s, parent)
+    cy = chin + radius - 8
+    if trousers:
+        for lx in (x - 110, x + 12):
+            box(s, g, lx, cy, 98, FLOOR_FEET - cy - 8, "#3a4152", 4, r=30)
+    for side in (-1, 1):  # the sleeves, too full to bend
+        sx = x + side * (radius - 10)
+        oval(s, g, sx - 34 + side * 28, cy - 40, 68, 118, COATS[0])
+        box(s, g, sx - 22 + side * 42, cy + 58, 44, 34, "#e9c7a4", 4, r=14)
+    oval(s, g, x - radius, cy - radius, radius * 2, radius * 2, COATS[0])
+    shape(s, g, f"M {x} {cy - radius} L {x} {cy + radius}", sw=5, stroke=s.ink)
+    for i in range(layers - 1):  # the hem of each coat under the one over it
+        r = radius * (0.97 - 0.05 * i)
+        drop = cy + r * (0.62 + 0.09 * i)
+        side = r * (1 - (0.62 + 0.09 * i) ** 2) ** 0.5
+        shape(s, g, f"M {x - side} {drop} Q {x} {drop + r * 0.34} {x + side} {drop}", sw=14, stroke=COATS[i + 1])
+    for by in range(int(chin + radius * 0.5), int(cy + radius * 0.7), int(radius * 0.4)):  # the buttons, straining
+        oval(s, g, x - 13, by, 26, 26, "#e8dcc2")
+    if shoes:
+        for side in (-1, 1):
+            sx = x + side * radius * 0.62
+            box(s, g, sx - 62, cy + radius * 0.16, 124, 66, POCKET, 4, r=10)
+            shape(s, g, _shoe(sx, cy + radius * 0.16, side), SHOE, 4, stroke=s.ink)
+    for i in range(scarves):
+        y = chin + 6 + 30 * i
+        wide = min(radius * 0.72, 160 + 26 * i)
+        box(s, g, x - wide, y - 20, wide * 2, 44, SCARVES[i], 4, r=20)
+    for i in range(hats):  # bottom hat first, each sitting on the one before
+        y = chin - HEAD_TOP - 46 * i
+        box(s, g, x - 118 + 8 * i, y + 8, 236 - 16 * i, 18, HATS[i], 4, r=8)
+        box(s, g, x - 74 + 6 * i, y - 34, 148 - 12 * i, 46, HATS[i], 4, r=10)
+    return g
+
+
+def _shoe(x, y, side) -> str:
+    """A shoe heel-down in a pocket at ``x, y``, its toe out to ``side``."""
+    heel, ankle, toe = x - side * 30, x + side * 20, x + side * 70
+    return f"M {heel} {y + 12} L {heel} {y - 70} L {ankle} {y - 70} Q {toe} {y - 30} {toe} {y + 12} Z"
+
+
+@register("prop", "stick-palm", tags=("palm", "tree", "tropics", "arrivals", "holiday"))
+def palm(cv: Canvas, parent, x, y, *, height=560):
+    """A palm standing on ``x, y``: a bent trunk ``height`` tall and seven fronds. Nothing about it is cold."""
+    if height < 120:
+        raise StickDataError(f"a palm is at least 120 tall, got {height}")
+    s = cv
+    g = _group(s, parent)
+    top = y - height
+    lean = height * 0.16
+    shape(s, g, f"M {x} {y} Q {x - lean} {y - height * 0.5} {x + lean * 0.4} {top}", sw=34, stroke=BARK)
+    for i in range(1, 7):
+        ty = y - height * i / 7
+        tx = x - lean * 0.9 * (1 - abs(i / 7 - 0.5) * 2) + lean * 0.3 * i / 7
+        shape(s, g, f"M {tx - 20} {ty} L {tx + 20} {ty}", sw=5, stroke="#6c5238")
+    cx = x + lean * 0.4
+    for dx, dy in ((-230, 30), (-170, -120), (-40, -180), (90, -170), (210, -90), (240, 40), (-120, 120)):
+        ex, ey = cx + dx * height / 560, top + dy * height / 560
+        mx, my = (cx + ex) / 2, min(top, ey) - 60 * height / 560
+        shape(s, g, f"M {cx} {top} Q {mx} {my} {ex} {ey} Q {mx} {my + 56} {cx} {top} Z", FROND, 4, stroke=s.ink)
     return g
 
 

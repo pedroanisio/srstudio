@@ -32,7 +32,8 @@ def shapes(cv: Canvas) -> int:
 
 def test_the_parts_are_registered_for_the_stick_style():
     for kind, name in (("location", "stick-gate"), ("prop", "stick-gate-podium"), ("prop", "stick-carry-on"),
-                       ("location", "stick-cabin"), ("prop", "stick-armrests")):  # fmt: skip
+                       ("location", "stick-cabin"), ("prop", "stick-armrests"), ("prop", "stick-bag-scale"),
+                       ("prop", "stick-coat-ball"), ("prop", "stick-palm")):  # fmt: skip
         assert registry.get(kind, name).style == "stick"
 
 
@@ -138,3 +139,73 @@ def test_a_close_up_can_leave_the_plate_and_the_tag_unlettered():
     stick_airport.podium(cv, cv.comp, gate="B9", plate=False)
     stick_airport.carry_on(cv, cv.comp, 480, stick_airport.FLOOR_FEET, tag=None)
     assert texts(cv) == []
+
+
+def test_the_scale_lights_one_weight_at_a_time_at_phone_size():
+    cv = canvas()
+    readings = ((0.0, "23.4"), (2.0, "22.9"))
+    stick_airport.bag_scale(cv, cv.comp, 540, 1700, readings, 4.0)
+    assert texts(cv) == ["23.4", "22.9"]
+    assert stick_airport.READOUT_SIZE >= 110  # a phone's width of 1080 pixels is about 7 cm
+    keyed = [k for k in xml(cv).iter() if k.tag.endswith("keyframe") or k.tag.endswith("key")]
+    assert keyed, "each reading is lit only for its own time"
+
+
+@pytest.mark.parametrize(
+    "readings, end, match",
+    [
+        ((), 4.0, "at least one"),
+        (((1.0, "23.4"),), 4.0, "start at 0"),
+        (((0.0, "23.4"), (0.0, "23.3")), 4.0, "start at 0"),
+        (((0.0, "23.4"), (5.0, "23.3")), 4.0, "start at 0"),
+        (((0.0, "123.45"),), 4.0, "1 to 5"),
+        (((0.0, "  "),), 4.0, "1 to 5"),
+    ],
+)
+def test_the_scale_refuses_readings_it_cannot_show(readings, end, match):
+    cv = canvas()
+    with pytest.raises(StickDataError, match=match):
+        stick_airport.bag_scale(cv, cv.comp, 540, 1700, readings, end)
+
+
+def test_the_scale_needs_the_font():
+    cv = canvas(None)
+    with pytest.raises(Exception, match="readout"):
+        stick_airport.bag_scale(cv, cv.comp, 540, 1700, ((0.0, "1"),), 4.0)
+
+
+def test_the_ball_grows_with_what_it_wears():
+    bare = canvas()
+    stick_airport.coat_ball(bare, bare.comp, 400, 842, 170, layers=1)
+    full = canvas()
+    stick_airport.coat_ball(full, full.comp, 400, 842, 320, layers=4, hats=3, scarves=3, trousers=True, shoes=True)
+    assert shapes(full) > shapes(bare) + 8
+
+
+@pytest.mark.parametrize(
+    "radius, kw, match",
+    [
+        (60, {}, "radius"),
+        (200, {"layers": 0}, "coats"),
+        (200, {"layers": 9}, "coats"),
+        (200, {"hats": 9}, "hats"),
+        (200, {"scarves": -1}, "scarves"),
+    ],
+)
+def test_the_ball_refuses_what_it_cannot_wear(radius, kw, match):
+    cv = canvas()
+    with pytest.raises(StickDataError, match=match):
+        stick_airport.coat_ball(cv, cv.comp, 400, 842, radius, **kw)
+
+
+def test_the_palm_stands_and_refuses_a_stump():
+    cv = canvas()
+    stick_airport.palm(cv, cv.comp, 300, 1200)
+    assert shapes(cv) >= 14
+    with pytest.raises(StickDataError, match="at least 120"):
+        stick_airport.palm(cv, cv.comp, 300, 1200, height=60)
+
+
+def test_a_long_call_shrinks_to_stay_on_the_sign():
+    assert stick_airport.now_size("GROUP 1") == stick_airport.now_size("FINAL CALL") == 72
+    assert stick_airport.now_size("WELCOME 38°") < 66
