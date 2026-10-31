@@ -9290,6 +9290,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-rain": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Rain over a span of the frame, on a loop that never shows. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6ac944954a7fc823ae50cf668e9b3dc86fbd4fe4f26cae0ff807efe969978a56",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -20,7 +20,7 @@ Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "reception_glass", "voice_note_bar", "wifi_list"]
+__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "rain", "reception_glass", "voice_note_bar", "wifi_list"]
 
 
 def _second(value: object, what: str) -> float:
@@ -320,3 +320,44 @@ def wifi_list(
                     LIST_TEXT,
                     "start",
                 )
+
+
+RAIN = "#b9d4ee"
+RAIN_TILE = 300.0  # reference height of the pattern that repeats
+RAIN_CYCLE = 0.4  # seconds it takes to fall one tile
+RAIN_STREAKS = 16  # streaks in a tile
+RAIN_STEP = 0.618  # of the width: the golden step spreads them without a seed
+
+
+@register("prop", "toon-rain", summary="Rain over a span of the frame, on a loop that never shows", style="toon")
+def rain(
+    cv: Canvas,
+    parent,
+    start: float = 0.0,
+    end: float = 4.0,
+    left: float = -10.0,
+    right: float = 602.0,
+    top: float = -120.0,
+    bottom: float = 1000.0,
+    opacity: float = 0.6,
+) -> None:
+    """Streaks falling from ``start`` to ``end`` between the four edges. What stands in front of the rain is drawn
+    after it in the shot."""
+    start, end = _second(start, "the rain's start"), _second(end, "the rain's end")
+    if not (end > start and right > left and bottom > top and 0 < opacity <= 1):
+        raise ToonDataError(
+            f"rain falls over time and space: {start!r}..{end!r}, {left!r}..{right!r}, {top!r}..{bottom!r}"
+        )
+    g = cv.group(parent, cv.uid("rain"), start=start, end=end)
+    fall = cv.group(g, cv.uid("g"), x=0.0, y=0.0)
+    span, keys, at = fh(RAIN_TILE), [], start
+    while at < end:
+        keys += [(round(at, 3), -span), (round(at + RAIN_CYCLE - 0.002, 3), 0.0)]
+        at += RAIN_CYCLE
+    cv.keys(fall, "y", keys, hold=False, local=False)
+    rows = int((bottom - top) / RAIN_TILE) + 2
+    for row in range(rows):
+        for k in range(RAIN_STREAKS):
+            x = left + ((k * RAIN_STEP) % 1.0) * (right - left)
+            y = top + (row + k / RAIN_STREAKS) * RAIN_TILE
+            _line(cv, fall, [(x, y), (x - 7, y + 46)], 3.0, RAIN, opacity)

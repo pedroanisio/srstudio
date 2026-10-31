@@ -147,3 +147,31 @@ def test_a_wifi_list_refuses_what_it_cannot_show(states):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.wifi_list(cv, cv.comp, states, end=4.0)
+
+
+def test_rain_loops_inside_its_time_and_never_goes_back_up_on_screen():
+    specimens.load_parts()
+    assert registry.get("prop", "toon-rain").builder is toon_inserts.rain
+    cv = canvas()
+    toon_inserts.rain(cv, cv.comp, start=1.0, end=3.0)
+    fall = next(a for a in tree(cv).iter("animate") if a.get("property") == "y")
+    times = [float(k.get("time")) for k in fall]
+    values = [float(k.get("value")) for k in fall]
+    assert times == sorted(set(times)) and times[0] == 1.0 and times[-1] < 3.0 + toon_inserts.RAIN_CYCLE
+    assert values[0] < 0.0 and values[1] == 0.0 and values[2] == values[0]  # one tile down, then the jump it hides
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"start": 2.0, "end": 1.0},
+        {"left": 5.0, "right": 5.0},
+        {"top": 9.0, "bottom": 1.0},
+        {"opacity": 0.0},
+        {"start": -1.0},
+    ],
+)
+def test_rain_refuses_a_span_it_cannot_fall_over(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.rain(cv, cv.comp, **bad)
