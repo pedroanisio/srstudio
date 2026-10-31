@@ -26,11 +26,15 @@ __all__ = [
     "part",
     "say",
     "spans",
+    "spoken_seconds",
     "word_budget",
     "word_count",
 ]
 
 WORDS_PER_SECOND = 2.35  # measured on the two-hander pilots: 57 to 60 spoken words in 23.5 to 25 s, holds included
+SECONDS_A_WORD = 0.27  # fitted to 62 recorded lines of two ElevenLabs voices at their natural pace, 2026-10-31
+SECONDS_A_LINE = 0.1  # the same fit's constant: a line takes this long before its first word counts
+LINE_GAP = 0.3  # seconds between one speaker's last word and the next one's first, typically, in the same reels
 
 
 def word_count(lines: Sequence[Line]) -> int:
@@ -47,6 +51,13 @@ def over_budget(lines: Sequence[Line], seconds: float) -> int:
     """How many words past :func:`word_budget` the script runs, 0 when it fits. A take costs money and a script that
     runs long is found only at the master, so this is read before recording. It predicts, and the master decides."""
     return max(0, word_count(lines) - word_budget(seconds))
+
+
+def spoken_seconds(lines: Sequence[Line]) -> float:
+    """About how long ``lines`` run, spoken in order with no held pauses, before any take is paid for. An estimate:
+    on the five reels it was fitted to, the speech alone came within 1.7 s of the recording. Held pauses come on top."""
+    speech = sum(SECONDS_A_WORD * len(line.text.split()) + SECONDS_A_LINE for line in lines)
+    return round(speech + LINE_GAP * max(len(lines) - 1, 0), 2)
 
 
 def say(

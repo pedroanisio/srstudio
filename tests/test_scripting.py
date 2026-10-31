@@ -95,3 +95,13 @@ def test_only_events_refuses_an_unknown_kind():
     scripting.only_events(BEATS, {"board", "toast", "hangup"})
     with pytest.raises(SketchError, match=r"unknown events \['hangup', 'toast'\]"):
         scripting.only_events(BEATS, {"board"})
+
+
+def test_a_script_is_timed_from_its_words_and_its_turns():
+    lines = (Line("a", "one two three four"), Line("b", "five six"))
+    assert scripting.spoken_seconds(lines) == pytest.approx(0.27 * 6 + 0.1 * 2 + 0.3)
+
+
+def test_no_lines_take_no_time_and_one_line_has_no_gap():
+    assert scripting.spoken_seconds(()) == 0.0
+    assert scripting.spoken_seconds((Line("a", "one"),)) == pytest.approx(0.37)
