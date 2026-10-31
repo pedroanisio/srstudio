@@ -1025,7 +1025,12 @@
     "toon-banana": {"title": "Banana"},
     "toon-dash-vents": {"title": "Painel do carro"},
     "toon-steering-wheel": {"title": "Volante"},
-    "toon-tally-pad": {"title": "Bloco de contagem"}
+    "toon-tally-pad": {"title": "Bloco de contagem"},
+    "toon-cone": {"title": "Casquinha de sorvete"},
+    "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
+    "toon-parlour-case": {"title": "Vitrine de sorvetes"},
+    "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
+    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"}
   },
   "gallery": [
     {
