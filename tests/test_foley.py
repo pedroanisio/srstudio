@@ -194,3 +194,25 @@ def test_write_water_writes_a_wave(tmp_path):
     path = foley.write_water(tmp_path / "water.wav", [(0.0, 0.2)], 0.3, rate=8000)
     with wave.open(str(path)) as w:
         assert w.getframerate() == 8000 and w.getnframes() == 2400
+
+
+def test_a_door_slam_cracks_at_its_cue_and_booms_lower_than_a_knock():
+    rate = 8000
+    out = foley.bursts([0.5], 1.5, foley.SLAM, rate=rate, seed=3)
+    assert not any(out[: int(0.5 * rate)])  # nothing before the door shuts
+    onset = next(i for i, v in enumerate(out) if abs(v) > 0.1)
+    assert onset < int(0.51 * rate)  # the crack is at once, not a swell
+    assert max(abs(v) for v in out) == pytest.approx(foley.PEAK)
+    assert any(abs(v) > 0.02 for v in out[int(0.7 * rate) :])  # the room rings on, as a knock does not
+    assert foley.SLAM.seconds > foley.KNOCK.seconds and foley.SLAM.tone_end_hz < foley.KNOCK.tone_end_hz
+
+
+def test_a_door_slam_is_the_same_for_the_same_seed():
+    a = foley.bursts([0.1], 1.0, foley.SLAM, rate=8000, seed=3)
+    assert a == foley.bursts([0.1], 1.0, foley.SLAM, rate=8000, seed=3)
+    assert a != foley.bursts([0.1], 1.0, foley.SLAM, rate=8000, seed=4)
+
+
+def test_a_door_slam_cue_past_the_bed_is_refused():
+    with pytest.raises(foley.FoleyError, match="cue"):
+        foley.bursts([2.0], 1.0, foley.SLAM, rate=8000)
