@@ -8318,6 +8318,210 @@
           "rig": null
         }
       ]
+    },
+    "news-banner": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The moving BREAKING banner. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c4ddffe3d2ef774df25db04e7af65f2f0b6e3c0927b0212748f8e5a5c1c220f3",
+          "rig": null
+        }
+      ]
+    },
+    "news-bug": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The show's name in the corner. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "cfdd5bea2d1fa4907af9fcef83735f6a8bb5c5520e106162c3bc88c2d036f08c",
+          "rig": null
+        }
+      ]
+    },
+    "news-captions": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The show's dialogue captions. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5a4177540ce1b9c2a0763efa68ea272443d17a10347c4a9913ebb6a91de316c8",
+          "rig": null
+        }
+      ]
+    },
+    "news-desk": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The long anchor desk with the show's name on its front. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5940d8432dff347c85e4e49be36e486d38b99589a6e1f3f7862c0ceb7689918e",
+          "rig": null
+        }
+      ]
+    },
+    "news-gus": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Gus Bellows, the co-host who cannot let anything go. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1513dcdb005e3f8402c4e2f17077eb64a55e8825355cc9ad2b35c05c99d1f8a3",
+          "rig": null
+        }
+      ]
+    },
+    "news-lower-third": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kicker over one line of story. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1de6eb4c045f25b8740535e44ee40afc51bca6e7ca4f05b13ddee8ebf8b66e15",
+          "rig": null
+        }
+      ]
+    },
+    "news-parody-tag": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The PARODY tag of a fictional reel. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a66999296ede1b88bd1a3f134eed20be1640bc29899bc627fab97349158c6610",
+          "rig": null
+        }
+      ]
+    },
+    "news-phone": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Gus's phone with its messages arriving. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9d0f52c601f08ba713846508463309f5f0299a0de274d4cb935688c0202db32e",
+          "rig": null
+        }
+      ]
+    },
+    "news-set": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The plum studio and its bright monitor wall. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8af7ed07445662efbcbc55a8bd14536e8893e8a5012636a9c3305d5bc1e8630a",
+          "rig": null
+        }
+      ]
+    },
+    "news-source-card": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A real story's source, large and then small. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6040d3f2923e21100fb67a194f2905bd301c1c62ff2e654fc537e00f59a8d414",
+          "rig": null
+        }
+      ]
+    },
+    "news-ticker": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The ticker along the foot of the safe zone. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e11443bb9111fccd9148bd8d35d735a6a96a4daa9b5dc922c8d58f98013959c3",
+          "rig": null
+        }
+      ]
+    },
+    "news-vera": {
+      "kind": "character",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Vera Stillman, the straight anchor. First drawn for real-roast.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b9e79e58a3d4ab150ecf06251c8ed319aeaadd649e8171b19ec796b8e21802ee",
+          "rig": null
+        }
+      ]
     }
   }
 }

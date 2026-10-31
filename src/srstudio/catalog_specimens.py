@@ -42,6 +42,7 @@ from . import (
     ink_phone,
     map_kit,
     mind_kit,
+    news_kit,
     parts,
     registry,
     saga_sets,
@@ -365,6 +366,18 @@ RECIPES: dict[str, Recipe] = {
     "map-captions": Recipe(
         lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "narrator"),), ctx.measure, {})
     ),
+    "news-captions": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "vera"),), ctx.measure, {})
+    ),
+    "news-bug": Recipe(lettered(0.0, SECONDS)),
+    "news-parody-tag": Recipe(lettered(0.0, SECONDS)),
+    "news-source-card": Recipe(
+        lettered(news_kit.Source("The Outlet", "Oct 30, 2026", "A headline, word for word"), 0.0, 1.8, SECONDS)
+    ),
+    "news-lower-third": Recipe(lettered("THE KICKER", "ONE LINE OF THE STORY", 0.0, SECONDS)),
+    "news-banner": Recipe(lettered(0.0, SECONDS)),
+    "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
+    "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),

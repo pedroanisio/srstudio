@@ -859,6 +859,42 @@
     "map-captions": {
       "title": "Legendas dos mapas"
     },
+    "news-set": {
+      "title": "Estúdio do telejornal"
+    },
+    "news-desk": {
+      "title": "Bancada do telejornal"
+    },
+    "news-vera": {
+      "title": "Vera Stillman, a âncora"
+    },
+    "news-gus": {
+      "title": "Gus Bellows, o coapresentador"
+    },
+    "news-bug": {
+      "title": "Marca do programa"
+    },
+    "news-parody-tag": {
+      "title": "Selo de paródia"
+    },
+    "news-source-card": {
+      "title": "Cartão da fonte"
+    },
+    "news-lower-third": {
+      "title": "Tarja inferior"
+    },
+    "news-banner": {
+      "title": "Faixa de urgente"
+    },
+    "news-ticker": {
+      "title": "Letreiro corrido"
+    },
+    "news-captions": {
+      "title": "Legendas do telejornal"
+    },
+    "news-phone": {
+      "title": "Celular do Gus"
+    },
     "toon-tee": {
       "title": "Camiseta constrangedora"
     },

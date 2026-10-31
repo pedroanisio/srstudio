@@ -31,7 +31,7 @@ from typing import Any
 
 from sr_core.scene import Scene
 
-from . import blob, cel, collage, gloss, parts, registry, rig, stick, toon, toon_head, toon_rigs
+from . import blob, cel, collage, gloss, news_kit, parts, registry, rig, stick, toon, toon_head, toon_rigs
 from .canvas import Canvas, flat_counter
 from .errors import SrstudioError
 from .timeline import Take
@@ -215,6 +215,17 @@ def _actor(entry: registry.Entry) -> Canvas:
     return cv
 
 
+def _anchor(entry: registry.Entry) -> Canvas:
+    cv = _stage("toon", HOLD)
+    who = entry.name.removeprefix("news-")
+    acts = tuple(
+        (HOLD * n / len(news_kit.ARMS), news_kit.Pose(eyes, "talk", arms))
+        for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
+    )
+    news_kit.perform(cv, cv.comp, who, 540.0, acts, 0.0, HOLD)
+    return cv
+
+
 def _pigeon(entry: registry.Entry) -> Canvas:
     cv = _stage("cutout", HOLD)
     entry(cv, cv.comp, nods=[(0.0, 0.0), (1.0, 8.0)])
@@ -276,6 +287,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
     **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
     "pigeon": _pigeon,
+    **dict.fromkeys(("news-vera", "news-gus"), _anchor),
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
     "stick-figure": _traced_stick,

@@ -362,6 +362,7 @@ TOON = Style(
     parts=(
         "map_kit",
         "mind_kit",
+        "news_kit",
         "toon",
         "toon_bento",
         "toon_cars",

@@ -82,6 +82,7 @@ class Shot:
     measure: Callable[..., float]  # the advance width of a text at a size, in the style's font
     light: object | None = None  # a lit staging's light layer, between the character and the desk (ADR 0043)
     versions: Mapping[str, int] = field(default_factory=dict)  # the pins, for a further character drawn in the shot
+    mouths: Mapping[str, Sequence[tuple[float, str]]] = field(default_factory=dict)  # for a figure the dress draws
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -129,6 +130,9 @@ class Staging:
     on_face: Mapping[str, Callable[..., None]] = field(default_factory=dict)
     """Per character in ``heads``: ``(cv, appearance, beats, face)`` draws into that shot's face group, so it moves with
     the head."""
+    overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
+    """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
+    camera's reach, from the beats the build placed: a show's graphics."""
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -216,7 +220,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     if voiced:
         beats, end = sketch.load_beats(root / "voiced" / "beats.json")
         sk = replace(sk, beats=tuple(beats), end=end)
-        mouths, mouths_end = sketch.load_mouths(root / "voiced" / "mouths.json")
+        mouths, mouths_end = sketch.load_mouths(root / "voiced" / "mouths.json", sk.cast)
         if mouths_end != end:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
@@ -275,7 +279,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
-        extra = sketch.drawer_extras(app.who, staging.stickers, mouths)
+        extra = {} if app.who in staging.bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
         if app.who in staging.bare:
             pass  # a card: the dress draws the whole frame
@@ -290,13 +294,15 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions)
+        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions, mouths)
         staging.dress(shot)
         if staging.camera is not None:
             staging.camera(shot, g)
         if staging.finish is not None:
             staging.finish(cv, g)
     lines = toon.load_script(root / ep.spec.dialogue)
+    if staging.overlay is not None:
+        staging.overlay(cv, ep.comp, sk.beats, sk.end, measure)
     if staging.captions is not None:
         drawn = staging.captions(cv, ep.comp, lines, measure, staging.tints)
         if drawn is not None:
