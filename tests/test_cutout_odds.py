@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from srstudio import cutout_odds, registry
+from srstudio import cutout_odds, locations, registry
 from support.tip_tablet import canvas
 
 CHECKED = cutout_odds.CutoutOddsError
@@ -33,6 +33,7 @@ DRAWN = [
     ("small-coin", cutout_odds.small_coin),
     ("lane-sign", cutout_odds.lane_sign),
     ("glasses-glint", cutout_odds.glasses_glint),
+    ("chair-lever", cutout_odds.chair_lever),
 ]
 
 
@@ -151,3 +152,67 @@ def test_a_glint_covers_each_lens():
     cutout_odds.glasses_glint(cv, cv.comp, [(-30, 0), (30, 0), (90, 0)], at=1.0)
     drawn = [e for e in root(cv).iter() if e.get("id") == "glasses-glint"]
     assert len(drawn) == 1 and not errors(cv)
+
+
+def test_a_gas_lift_goes_past_its_depth_and_settles_on_it():
+    keys = cutout_odds.gas_lift_keys([(1.0, 0.5, 100.0), (3.0, 0.5, 50.0)], y=10.0)
+    assert keys[0] == (0.0, 10.0)
+    times = [t for t, _ in keys]
+    assert times == sorted(times) and len(set(times)) == len(times)
+    assert max(v for t, v in keys if t < 3.0) > 110.0
+    assert keys[-1][1] == 160.0
+    assert dict(keys)[3.0] == 110.0
+
+
+def test_a_drop_from_the_first_frame_has_one_first_key():
+    keys = cutout_odds.gas_lift_keys([(0.0, 0.4, 30.0)])
+    assert [t for t, _ in keys].count(0.0) == 1
+
+
+def test_a_long_drop_settles_as_fast_as_a_short_one():
+    short = cutout_odds.gas_lift_keys([(0.0, 0.4, 30.0)])
+    long = cutout_odds.gas_lift_keys([(0.0, 2.4, 30.0)])
+    assert long[-1][0] - long[-2][0] == pytest.approx(short[-1][0] - short[-2][0])
+
+
+def test_gas_lift_keys_the_group_and_says_where_it_rests():
+    cv = canvas()
+    g = cv.group(cv.comp, "seat")
+    assert cutout_odds.gas_lift(cv, g, [(0.5, 0.4, 40.0), (2.0, 0.4, 60.0)], y=5.0) == 105.0
+    assert not errors(cv)
+
+
+@pytest.mark.parametrize(
+    ("drops", "match"),
+    [
+        ([], "at least one"),
+        ([(1.0, 0.5)], "drop 0 is"),
+        ([(float("nan"), 0.5, 10.0)], "drop 0 is"),
+        ([(1.0, 0.5, float("inf"))], "drop 0 is"),
+        ([("soon", 0.5, 10.0)], "drop 0 is"),
+        ([(1.0, 0.0, 10.0)], "positive"),
+        ([(1.0, 0.5, 0.0)], "positive"),
+        ([(1.0, 0.5, -10.0)], "positive"),
+        ([(-1.0, 0.5, 10.0)], "starts after"),
+        ([(1.0, 0.5, 10.0), (1.2, 0.5, 10.0)], "drop 1 starts after"),
+    ],
+)
+def test_a_gas_lift_refuses_drops_it_cannot_make(drops, match):
+    with pytest.raises(CHECKED, match=match):
+        cutout_odds.gas_lift_keys(drops)
+
+
+def test_a_lever_tips_on_each_pull_and_refuses_pulls_out_of_order():
+    cv = canvas()
+    cutout_odds.chair_lever(cv, cv.comp, pulls=[1.0, 3.0])
+    assert not errors(cv)
+    with pytest.raises(CHECKED, match="pulls"):
+        cutout_odds.chair_lever(cv, cv.comp, pulls=[3.0, 1.0], id="other")
+
+
+def test_the_reverse_angle_can_leave_its_chair_to_the_slot():
+    with_chair, without = canvas(), canvas()
+    locations.office_reverse(with_chair, with_chair.comp)
+    locations.office_reverse(without, without.comp, chair=False)
+    assert "M197 1404" in with_chair.scene.to_bytes().decode()
+    assert "M197 1404" not in without.scene.to_bytes().decode()

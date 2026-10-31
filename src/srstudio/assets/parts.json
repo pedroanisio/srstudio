@@ -9120,6 +9120,23 @@
           "rig": null
         }
       ]
+    },
+    "chair-lever": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An office chair's height lever, which tips on each pull. First drawn for sinking-chair; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fb35055ca63fa63d871661a59d6da491e4ef8d15f5443902ec509323404b2c8c",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -16,9 +16,12 @@ from .registry import register
 __all__ = [
     "CutoutOddsError",
     "bistro_table",
+    "chair_lever",
     "coin_purse",
     "earbud",
     "eaten_sandwich",
+    "gas_lift",
+    "gas_lift_keys",
     "glasses_glint",
     "lane_sign",
     "paper_napkin",
@@ -28,6 +31,9 @@ __all__ = [
 ]
 
 BREAD = "#F2E2BE"
+LIFT_PAST = 0.06  # how far past its depth a gas lift goes, of the drop
+LIFT_SETTLE = 0.3  # how long it takes to come back up, of the drop
+LIFT_SETTLE_MOST = 0.12  # and no longer than this, in seconds, however long the drop
 
 
 class CutoutOddsError(SrstudioError, ValueError):
@@ -244,4 +250,62 @@ def glasses_glint(
     cv.keys(star, "scaleX", size, hold=False)
     cv.keys(star, "scaleY", size, hold=False)
     cv.path(star, "M0 -42 Q4 -4 42 0 Q4 4 0 42 Q-4 4 -42 0 Q-4 -4 0 -42Z", "#FFFFFF", cv.ink, 2)
+    return g
+
+
+def gas_lift_keys(drops: Sequence[tuple[float, float, float]], y: float = 0.0) -> list[tuple[float, float]]:
+    """The y keys of something that sinks on a gas lift, from ``y``: each drop is ``(start, seconds, depth)``.
+
+    It lets go slowly, falls, goes a little too far and settles at the depth, so a stack of small drops reads as one
+    chair letting go again and again. Drops run in order and do not overlap. Every refusal is a
+    :class:`CutoutOddsError`.
+    """
+    if not drops:
+        raise CutoutOddsError("a gas lift needs at least one drop")
+    keys = [(0.0, float(y))]
+    at, level = 0.0, float(y)
+    for n, drop in enumerate(drops):
+        if len(drop) != 3 or not all(checks.number(v) for v in drop):
+            raise CutoutOddsError(f"drop {n} is (start, seconds, depth), got {drop!r}")
+        start, seconds, depth = drop
+        if start < at:
+            raise CutoutOddsError(f"drop {n} starts after the last one ends, got {drop!r}")
+        if seconds <= 0 or depth <= 0:
+            raise CutoutOddsError(f"drop {n} has a positive length and depth, got {drop!r}")
+        settle = min(seconds * LIFT_SETTLE, LIFT_SETTLE_MOST)
+        if start > keys[-1][0]:
+            keys.append((start, level))
+        keys += [
+            (start + seconds * 0.25, level + depth * 0.1),
+            (start + seconds, level + depth * (1 + LIFT_PAST)),
+            (start + seconds + settle, level + depth),
+        ]
+        at, level = start + seconds + settle, level + depth
+    return keys
+
+
+def gas_lift(cv: Canvas, group, drops: Sequence[tuple[float, float, float]], y: float = 0.0) -> float:
+    """Keys ``group``'s y through :func:`gas_lift_keys` and returns where it comes to rest."""
+    keys = gas_lift_keys(drops, y)
+    cv.keys(group, "y", keys, hold=False)
+    return keys[-1][1]
+
+
+@register("prop", "chair-lever", style="cutout", summary="An office chair's height lever, which tips on each pull")
+def chair_lever(
+    cv: Canvas, parent, x=540, y=900, *, pulls: Sequence[float] = (), scale: float = 1.0, id: str = "chair-lever"
+):
+    """The pivot is on (``x``, ``y``), the knob 80 out to the right. Each of ``pulls`` tips it down and lets it back."""
+    _check_scale(scale)
+    _rising(pulls, "pulls")
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    arm = cv.group(g, f"{id}-arm", rotation=-8)
+    if pulls:
+        tips = [(0.0, -8.0)]
+        for at in pulls:
+            tips += [(at, -8.0), (at + 0.08, 24.0), (at + 0.3, 24.0), (at + 0.42, -8.0)]
+        cv.keys(arm, "rotation", tips, hold=False)
+    cv.rect(arm, 0, -5, 74, 10, "#3B3D40", cv.ink, 2.5, radius=4)
+    cv.ellipse(arm, 62, -14, 28, 28, "#23262A", cv.ink, 2.5)
+    cv.ellipse(g, -10, -10, 20, 20, "#6F747B", cv.ink, 2.5)
     return g
