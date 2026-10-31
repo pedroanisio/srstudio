@@ -8712,6 +8712,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-sensor-tap": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A chrome sensor tap over a basin, running on cue. First drawn for sensor; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "faf58aa252d33e305aed1acd8b2a90a96d397fc0ba75b77ffb4c4039037349de",
+          "rig": null
+        }
+      ]
     }
   }
 }

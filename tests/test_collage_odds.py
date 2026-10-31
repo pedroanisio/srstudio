@@ -26,7 +26,9 @@ def shapes(cv: Canvas) -> int:
     return sum(1 for e in tree(cv).iter() if e.tag.rsplit("}", 1)[-1] not in ("group", "scene", "project"))
 
 
-@pytest.mark.parametrize("name", ["collage-cake-slice", "collage-eye-chart", "collage-lens-frame"])
+@pytest.mark.parametrize(
+    "name", ["collage-cake-slice", "collage-eye-chart", "collage-lens-frame", "collage-sensor-tap"]
+)
 def test_every_prop_is_registered_for_collage(name):
     entry = registry.get("prop", name)
     assert entry.style == "collage" and entry.module == "srstudio.collage_odds"
@@ -39,12 +41,20 @@ def test_every_prop_is_registered_for_collage(name):
         lambda cv: collage_odds.cake_slice(cv, cv.comp, 500, 500, (1.0, 2.0)),
         lambda cv: collage_odds.eye_chart(cv, cv.comp, 200, 400, ("E", "FP"), (1.0, 2.0), 6.0, 5.0),
         lambda cv: collage_odds.lens_frame(cv, cv.comp, 500, 500),
+        lambda cv: collage_odds.sensor_tap(cv, cv.comp, 500, 1500, ((1.0, 2.0),)),
     ],
 )
 def test_every_prop_draws_something_valid(draw):
     cv = canvas()
     draw(cv)
     assert shapes(cv) > 0
+
+
+def test_a_tap_runs_only_in_its_runs():
+    dry, wet = canvas(), canvas()
+    collage_odds.sensor_tap(dry, dry.comp, 500, 1500)
+    collage_odds.sensor_tap(wet, wet.comp, 500, 1500, ((1.0, 2.0),))
+    assert shapes(wet) > shapes(dry)
 
 
 @pytest.mark.parametrize(
