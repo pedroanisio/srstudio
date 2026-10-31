@@ -3,6 +3,10 @@
 A report before delivery quotes the same numbers and shows the same frames each time: the first frame, the one at two
 seconds, the last, and any moment named (the payoff, a caption). :func:`measure` reads them from the master itself,
 never from the project that made it, and a tool that gave no number is a :class:`ProofError`, not a blank in a report.
+
+Asked for an arm, :func:`report` also reads the first-second test off the picture: :func:`hook` compares the first
+frame with the one at :data:`ARM_HOLD` and :func:`seam` the last frame with the first, what a looping reel cuts across.
+A master that does not look like the arm its release claims is refused, and the number says by how much.
 """
 
 from __future__ import annotations
@@ -17,11 +21,36 @@ from pathlib import Path
 
 from .errors import SrstudioError
 
-__all__ = ["CELL", "Measures", "ProofError", "loudness", "measure", "moments", "picture", "report", "sheet"]
+__all__ = [
+    "ARM_H",
+    "ARM_HOLD",
+    "ARM_W",
+    "CELL",
+    "NOTICED",
+    "STILL",
+    "Measures",
+    "Motion",
+    "ProofError",
+    "arm_of",
+    "difference",
+    "frame",
+    "hook",
+    "loudness",
+    "measure",
+    "moments",
+    "picture",
+    "report",
+    "seam",
+    "sheet",
+]
 
 CELL = 300  # px: a sheet's cell, wide enough to judge staging and narrow enough to keep the sheet light
 EARLY = 2.0  # seconds: the frame a viewer decides on
 TIMEOUT = 300  # seconds: the bound on one ffmpeg run
+ARM_HOLD = 0.3  # seconds: an arm a master still shows its first frame here; an arm b one has moved
+ARM_W, ARM_H = 270, 480  # the size frames are compared at
+NOTICED = 12  # of 255: a smaller change of one pixel is encoder grain, not motion
+STILL = 0.002  # the share of pixels that may change in a frame that held
 _NUMBER = r"(-?\d+(?:\.\d+)?)"
 _LOUDNESS = (("I", "LUFS"), ("LRA", "LU"), ("Peak", "dBFS"))
 
@@ -44,13 +73,23 @@ class Measures:
     peak_dbfs: float
 
 
-def _run(cmd: Sequence[str], what: str) -> subprocess.CompletedProcess:
+@dataclass(frozen=True)
+class Motion:
+    """What changed between two frames: the mean luminance difference out of 255, and the share of pixels that moved
+    by more than :data:`NOTICED`."""
+
+    mean: float
+    changed: float
+
+
+def _run(cmd: Sequence[str], what: str, *, text: bool = True) -> subprocess.CompletedProcess:
     try:
-        done = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, check=False)
+        done = subprocess.run(cmd, capture_output=True, text=text, timeout=TIMEOUT, check=False)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise ProofError(f"{what}: {e}") from None
     if done.returncode:
-        raise ProofError(f"{what}: {done.stderr.strip()[-300:]}")
+        err = done.stderr if text else done.stderr.decode("utf-8", "replace")
+        raise ProofError(f"{what}: {err.strip()[-300:]}")
     return done
 
 
@@ -142,10 +181,55 @@ def sheet(video: Path, times: Sequence[float], out: Path, *, width: int = CELL) 
     return out
 
 
-def report(video: Path, asked: Iterable[float] = (), out: Path | None = None) -> dict:
-    """The master's measures and moments, and its sheet when ``out`` names one."""
+def frame(video: Path, at: float) -> bytes:
+    """The frame at ``at`` seconds as :data:`ARM_W` by :data:`ARM_H` bytes of luminance."""
+    size = f"scale={ARM_W}:{ARM_H},format=gray"
+    instant = f"{math.floor(at * 1000) / 1000:.3f}"
+    cmd = ["ffmpeg", "-v", "error", "-ss", instant, "-i", str(video), "-frames:v", "1", "-vf", size]
+    return _run([*cmd, "-f", "rawvideo", "-"], f"the frame of {Path(video).name} at {at}", text=False).stdout
+
+
+def difference(first: bytes, second: bytes) -> Motion:
+    """What changed between two frames from :func:`frame`."""
+    pixels = ARM_W * ARM_H
+    if len(first) != pixels or len(second) != pixels:
+        raise ProofError(f"a frame is {pixels} bytes, got {len(first)} and {len(second)}")
+    steps = [abs(a - b) for a, b in zip(first, second, strict=True)]
+    return Motion(sum(steps) / pixels, sum(step > NOTICED for step in steps) / pixels)
+
+
+def arm_of(moved: Motion) -> str:
+    """The arm of the first-second test that this much motion before :data:`ARM_HOLD` shows."""
+    return "a" if moved.changed <= STILL else "b"
+
+
+def hook(video: Path, fps: float) -> dict:
+    """How the master's first :data:`ARM_HOLD` seconds moved, and the arm that makes it; one too slow to have a frame
+    there is refused."""
+    if ARM_HOLD < 1 / fps:
+        raise ProofError(f"at {fps} fps a master has no frame at {ARM_HOLD} s")
+    moved = difference(frame(video, 0.0), frame(video, ARM_HOLD))
+    return {"arm": arm_of(moved), "mean": round(moved.mean, 2), "changed": round(moved.changed, 4)}
+
+
+def seam(video: Path, seconds: float, fps: float) -> dict:
+    """What the loop cuts across: how far the last frame is from the first."""
+    moved = difference(frame(video, seconds - 1 / fps), frame(video, 0.0))
+    return {"mean": round(moved.mean, 2), "changed": round(moved.changed, 4)}
+
+
+def report(video: Path, asked: Iterable[float] = (), out: Path | None = None, *, arm: str | None = None) -> dict:
+    """The master's measures and moments, and its sheet when ``out`` names one. With ``arm``, the arm it shows and its
+    loop seam too; a master that shows the other arm is refused."""
     measures = measure(video)
     times = moments(measures.seconds, measures.fps, asked)
     if out is not None:
         sheet(video, times, out)
-    return {**asdict(measures), "moments": [round(t, 3) for t in times]}
+    made = {**asdict(measures), "moments": [round(t, 3) for t in times]}
+    if arm is None:
+        return made
+    shown = hook(video, measures.fps)
+    if shown["arm"] != arm:
+        raise ProofError(f"{Path(video).name} shows arm {shown['arm']}, not {arm}: {shown}")
+    looped = seam(video, measures.seconds, measures.fps)
+    return {**made, **shown, "seam_mean": looped["mean"], "seam_changed": looped["changed"]}
