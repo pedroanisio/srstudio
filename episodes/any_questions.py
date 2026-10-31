@@ -4,13 +4,13 @@
     srstudio record any-questions PROJECT   # generated clips, resolved and pinned by the engine
     srstudio build any-questions PROJECT    # → PROJECT/any-questions.scene.xml
 
-Held frame: the manager tall behind the desk, the candidate small in front of it. "Do you have any questions for us?"
+A slow push: the manager tall behind the desk, the candidate small in front of it. "Do you have any questions for us?"
 "Just one. Are you happy here?" The smile holds, and goes on one side only. A clock. "We have free fruit." "When was
 your last vacation?" "What year is it?" The candidate slides the water across, the manager drinks with both hands.
 "It's just bananas. Since March." Cut: same room, the chairs swapped, the manager small, the tie down. "What's your
 greatest weakness?" "I stayed." The folder shuts. "We'll be in touch." A slow push on the small man. "Will you?"
 
-The first frames are still (arm A of the ``sp-hook_motion`` test): nothing moves until the line at 0.5 s. No music: the
+The camera moves from the first frame (arm B of the ``sp-hook_motion`` test), the first line at 0.5 s. No music: the
 clock, the glass and the folder are foley synthesized here. It declares no engine safe area, so captions are placed
 inside x 80–920 by hand.
 """
@@ -179,14 +179,16 @@ cv.keys(glass, "scaleX", [(SLIDE, 1.0), (DRINK, 1.5)], hold=False)
 cv.keys(glass, "scaleY", [(SLIDE, 1.0), (DRINK, 1.5)], hold=False)
 props.water_glass(cv, glass)
 
-# The camera: one slow push on the manager through the hold, and it stays there until the chairs swap.
+# The camera: moving from the first frame, one slow push on the manager through the hold, and it stays there until the
+# chairs swap.
 at, size = (TALL[0], TALL[1] + 40), 1.32
 x, y = 540 - at[0] * size, 700 - at[1] * size
+EARLY = 0.14  # how much of the push is done by the fall of the smile: the first, slow part
 for prop, values in (
-    ("scaleX", [(0.0, 1.0), (FALL, 1.0), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
-    ("scaleY", [(0.0, 1.0), (FALL, 1.0), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
-    ("x", [(0.0, 0.0), (FALL, 0.0), (L[2].start, x), (SWAP - EPS, x), (SWAP, 0.0)]),
-    ("y", [(0.0, 0.0), (FALL, 0.0), (L[2].start, y), (SWAP - EPS, y), (SWAP, 0.0)]),
+    ("scaleX", [(0.0, 1.0), (FALL, 1 + (size - 1) * EARLY), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
+    ("scaleY", [(0.0, 1.0), (FALL, 1 + (size - 1) * EARLY), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
+    ("x", [(0.0, 0.0), (FALL, x * EARLY), (L[2].start, x), (SWAP - EPS, x), (SWAP, 0.0)]),
+    ("y", [(0.0, 0.0), (FALL, y * EARLY), (L[2].start, y), (SWAP - EPS, y), (SWAP, 0.0)]),
 ):
     cv.keys(office, prop, values, hold=False)
 PUSH = (SUNK[0], SUNK[1] + 40)
