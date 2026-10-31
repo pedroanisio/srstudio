@@ -78,6 +78,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_head,
     toon_house,
     toon_inserts,
+    toon_odds,
     toon_parlour,
     toon_props,
     toon_redrawn,

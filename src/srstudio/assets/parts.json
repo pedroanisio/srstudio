@@ -10193,6 +10193,40 @@
           "rig": null
         }
       ]
+    },
+    "toon-pipe": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wall pipe that drips on cue and sprays once. First drawn for the-last-guy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8cb16ee56ca88faad225738ee71f2709326d80d963fb014fa1941ea2cddc5ddd",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paper-insert": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A handwritten sheet that fills the frame: a title and short lines. First drawn for the-last-guy; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "401e1fe200e1b753cc6e2a2207b8d97b95f8c0e1734593669c3e6381635b953f",
+          "rig": null
+        }
+      ]
     }
   }
 }

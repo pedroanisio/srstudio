@@ -499,6 +499,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-wine-glass": Recipe(part(540.0, 1100.0)),
     "collage-water-jug": Recipe(part(540.0, 1100.0)),
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
+    "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {
