@@ -20,7 +20,19 @@ import os
 from _common import project_root
 from instagram_posts import POSTS
 from shortest_line_audio import INTERVIEW
-from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_home, cutout_odds, cutout_store, foley, locations
+from srstudio import (
+    CAFE,
+    Episode,
+    EpisodeSpec,
+    camera,
+    cast,
+    cutout_home,
+    cutout_odds,
+    cutout_store,
+    foley,
+    locations,
+    signature,
+)
 from srstudio import interview as iv_audio
 from srstudio.cutout_reach import reach
 
@@ -221,6 +233,8 @@ cutout_odds.lane_sign(cv, shot, 540, 250, scale=1.4, numbers=[(0.0, "4"), (LANE_
 milo(shot)
 rosa(shot)
 cutout_store.checkout_lane(cv, shot, LANE_TOP, running=(0.0, 0.6))
+signature.cactus(cv, shot, 570, LANE_TOP + 4, 0.5)  # on the belt's rail: the lane's own marks are behind its front
+signature.code(cv, shot, 640, LANE_TOP + 118, 10, color="#9AA0A6", align="end")
 coins(shot)
 rosa_hands(shot)
 insert(finish)

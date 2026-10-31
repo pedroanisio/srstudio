@@ -104,9 +104,12 @@ def dress(shot) -> None:
     toon_house.hallway(cv, shot.back, door="none")
     if app.who == "hedgehog":
         toon_flat.closet(cv, shot.back, opened if opened > app.start else 0.5)
-    toon_house.ledge(cv, shot.front, "oak")
     if app.who == "rabbit" and app.end <= opened:
         toon_odds.wrestled_sheet(cv, shot.front, app.start, app.end)
+    if app.who != "bear" and app.end > opened:
+        rise = opened if app.start <= opened < app.end - toon_odds.SHEETS_RISE else None
+        toon_odds.balled_sheets(cv, shot.front, SHEET_TOP, rise, app.end)
+    toon_house.ledge(cv, shot.front, "oak")  # after the sheets, which would bury its signature marks
     if app.who == "hedgehog" and app.start < opened:
         toon_odds.padlock(cv, shot.back, (372.0, 560.0), app.start, min(opened, app.end), app.end)
         if app.start <= key < app.end:
@@ -114,9 +117,6 @@ def dress(shot) -> None:
     if app.who == "bear":
         toon_odds.balled_sheets(cv, shot.front, BRUNO_SHEETS, None, app.end)
         toon_odds.folded_sheet(cv, shot.front, (190.0, 830.0), "#a9744f", app.start, app.end)
-    if app.who != "bear" and app.end > opened:
-        rise = opened if app.start <= opened < app.end - toon_odds.SHEETS_RISE else None
-        toon_odds.balled_sheets(cv, shot.front, SHEET_TOP, rise, app.end)
     if app.start == 0:
         toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 2.3, measure=shot.measure)
 

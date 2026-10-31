@@ -34,7 +34,7 @@ from seat_belt_sign_audio import (
     STRANGERS,
     UPWARD,
 )
-from srstudio import SPEECH_MOUTH, Episode, stick, stick_airport, stick_odds, stick_reel
+from srstudio import SPEECH_MOUTH, Episode, signature, stick, stick_airport, stick_odds, stick_reel
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -75,6 +75,8 @@ def row(parent, number: str) -> None:
     """The cabin, hung lower: what shows over the bins is the ceiling."""
     stick.box(cv, parent, 0, 0, cv.width, SHIFT + 20, stick_airport.CABIN_TOP)
     stick_airport.cabin(cv, cv.group(parent, cv.uid("row"), y=SHIFT), row=number)
+    signature.cactus(cv, parent, 1022, 742, scale=0.42)  # the cabin signs its aisle, not this view across the seats
+    signature.code(cv, parent, 40, 1880, 9, color="#8a7f99")
 
 
 def noor_seated(parent, take, end: float, *, face, keys=None) -> None:
@@ -99,7 +101,7 @@ def wedged(parent, take, end: float, pose: str, face, *, bag: bool) -> None:
                     colour=COATS[0], belt="#3b4048")  # fmt: skip
     figure(parent, [K(0, pose, face)], end, DEV, 620.0, take, who="dev", scale=BIG, floor=BIG_DROP)
     if bag:
-        stick_odds.duffel(cv, parent, 380.0, 960.0, scale=1.3)
+        stick_odds.duffel(cv, parent, 442.0, 690.0, scale=1.3)  # by its strap, from the stranger's raised hand
 
 
 def stage(take) -> None:
@@ -111,7 +113,7 @@ def stage(take) -> None:
         noor_seated(g, take, end, face=CALM if take.actor == "noor" else READING)
         stick_odds.book(cv, g, *BOOK_AT)
         figure(g, [K(0, "bent", SMUG)], end, DEV, DEV_X, take, who="dev")
-        stick_odds.duffel(cv, g, 490.0, 880.0, scale=0.9)
+        stick_odds.duffel(cv, g, 540.0, 1450.0, scale=0.9)  # by its strap, from Dev's hand
     elif take.shot == "squeeze":
         row(g, "31")
         strangers(g, end)

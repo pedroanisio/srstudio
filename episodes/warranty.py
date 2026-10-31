@@ -16,7 +16,19 @@ from dataclasses import replace
 
 from _common import project_root
 from instagram_posts import POSTS
-from srstudio import SOFT, Episode, EpisodeSpec, blob, camera, foley, layout, soft_odds, soft_props, soft_sets
+from srstudio import (
+    SOFT,
+    Episode,
+    EpisodeSpec,
+    blob,
+    camera,
+    foley,
+    layout,
+    signature,
+    soft_odds,
+    soft_props,
+    soft_sets,
+)
 from warranty_audio import INTERVIEW
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -165,6 +177,8 @@ soft_odds.washer(
     open_at=[(0.0, FIRST_IN + 0.08), (SECOND, SECOND_IN + 0.08), (BALL, BALL_IN + 0.08), (FEEDING, SHOVEL_IN + 0.12)],
     loads=[(FIRST_IN, "brick"), (SECOND_IN, "brick"), (BALL_IN, "ball"), (COINS_IN, "coins"), (SHOVEL_IN, "shovel")],
 )
+signature.cactus(cv, room, 900, 582, 0.6)  # on the fridge: the home's own marks are behind the washer and the cast
+signature.code(cv, room, 1000, 930, 14, color="#8C99A3", align="end")
 soft_odds.smoke(
     cv,
     room,

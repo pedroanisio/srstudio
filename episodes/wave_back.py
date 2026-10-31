@@ -179,6 +179,7 @@ def stage(take) -> None:
             keys = [K(0, "wave-high", BEAMING), K(0.3, "reach-1", DYING)]
         else:
             keys = [K(0, "reach-1", DYING), K(0.2, "reach-2", CAUGHT), K(0.45, "reach-3", CAUGHT)]
+        desk(g, end, None, [K(0, "stand", LEVEL)])  # the rack and treadmill stand behind it: without it they float
         figure(g, keys, end, MAN, 300.0, take, who="man", scale=1.3, floor=1900.0, blinks=(0.9,) if end > 1.2 else ())
 
 

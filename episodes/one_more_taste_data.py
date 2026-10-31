@@ -10,9 +10,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import foley, scripting, signature, sketch, toon_house, toon_odds, toon_parlour, toon_world
+from srstudio import foley, scripting, sketch, toon_house, toon_odds, toon_parlour, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
-from srstudio.toon import fx, fy
 from srstudio.toon_sketch import Sound, opening_push
 from srstudio.voice import Voice, VoiceSettings
 
@@ -102,12 +101,11 @@ def dress(shot) -> None:
         toon_parlour.parlour_back(cv, shot.back)
     else:
         toon_parlour.parlour_front(cv, shot.back, 0.0, shot.end)
+    toon_house.ledge(cv, shot.front, "oak")  # the counter they stand behind, with the signature marks on it
     toon_parlour.case(cv, shot.front)
-    signature.cactus(cv, shot.front, fx(548), fy(900), 0.7)
-    signature.code(cv, shot.front, fx(580), fy(928), 14, color="#6b5a4d", opacity=0.9, align="end")
     fallen = tuple(t for t in SPOONS if t < app.end)
     if fallen:
-        toon_odds.tasting_spoons(cv, shot.front, fallen, at=(395.0, 880.0), end=app.end)
+        toon_odds.tasting_spoons(cv, shot.front, fallen, at=(330.0, 836.0), end=app.end)
     if app.start == 0:
         toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 1.5, measure=shot.measure)
 
