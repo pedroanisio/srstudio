@@ -45,7 +45,7 @@ LINES = (
     Line("rex", "Oh, no. Who did this to you?"),
     Line("fern", "Is it bad?"),
     Line("rex", "A child did this. A child, in the dark."),
-    Line("rex", "Whoever did this should not own a wrench."),
+    Line("rex", "Whoever did this should not own a wrench.", gain=-6.0),
     Line("rex", "I'm sending this to the guys. They'll want to see this."),
     Line("fern", "You did this."),
     Line("rex", "Anyone can type Rex."),

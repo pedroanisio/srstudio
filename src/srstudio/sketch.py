@@ -142,6 +142,7 @@ class Line:
     text: str
     heard: tuple[str, ...] = ()
     gain: float = 0.0  # dB against the others in the mix
+    gain: float = 0.0  # dB under the other lines, zero or less: a line said low, set in the mix on its take
 
 
 @dataclass(frozen=True)
@@ -231,6 +232,8 @@ def check(sketch: Sketch) -> None:
         raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
+    if any(not (checks.number(line.gain) and line.gain <= 0) for line in sketch.lines):
+        raise SketchError("a line's gain is zero or less: the other lines set the level")
     for i, line in enumerate(sketch.lines):
         if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
             raise SketchError(f"line {i}: gain {line.gain!r} is outside {LINE_LEVELS}")

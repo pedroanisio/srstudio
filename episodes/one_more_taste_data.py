@@ -51,7 +51,7 @@ LINES = (
     Line("goat", "Is she buying a house?"),
     Line("server", "We have eleven flavors."),
     Line("fox", "Can I try the first one again?"),
-    Line("bruno", "Please."),
+    Line("bruno", "Please.", gain=-8.0),
     Line("fox", "You know what?"),
     Line("fox", "I'm actually pretty full. Thanks!"),
     Line("server", "What can I get you?"),

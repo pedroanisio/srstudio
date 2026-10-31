@@ -27,13 +27,13 @@ VOICES = {
 SCRIPT = [  # role, text, caption, speed
     Spoken("bo", "Nobody touches the grill.", "Nobody touches the grill.", 0.92),
     Spoken("juno", "Pip. Don't.", "Pip. Don't.", 0.95),
-    Spoken("bo", "Put them down.", "Put them down.", 0.85),
+    Spoken("bo", "Put them down.", "Put them down.", 0.85, gain=-6.0),
     Spoken("pip", "It was burning.", "It was burning.", 1.0),
     Spoken("bo", "That's searing.", "That's searing.", 0.92),
     Spoken("pip", "That's a fire.", "That's a fire.", 1.0),
     Spoken("juno", "He has two.", "He has two.", 0.95),
     Spoken("juno", "Pizza's here.", "Pizza's here.", 1.0),
-    Spoken("bo", "Nobody touches the pizza.", "Nobody touches the pizza.", 0.9),
+    Spoken("bo", "Nobody touches the pizza.", "Nobody touches the pizza.", 0.9, gain=-6.0),
 ]
 INTERVIEW = Interview(
     slug="the-tongs",
