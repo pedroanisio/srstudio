@@ -56,7 +56,7 @@ BEATS, END = timed(
         (2.3, "brent", 3, "wide", "grin", "point", "reveal:note"),
         (2.2, "deb", 4, "open", "flat", "down", "reveal:bath"),
         (2.4, "deb", "", "wide", "grin", "down", "zoom"),
-        (1.6, "deb", 5, "wide", "grin", "down"),
+        (1.6, "deb", 5, "wide", "grin", "down", "sting"),
         (2.3, "brent", 6, "wide", "grin", "down", "reveal:morning"),
     ),
     tail=2.1,

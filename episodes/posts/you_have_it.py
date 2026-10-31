@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Sarah (Priya) and Jessica (Deb). Foley synthesised.",
         hashtags=('#lastslice', '#friends', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("You have it.", 2.6, "Collage 30"),
+        thumbnail=Thumbnail("You have it.", 14.9, "Collage 30"),
     ),
     tags=Tags(
         "relationships",

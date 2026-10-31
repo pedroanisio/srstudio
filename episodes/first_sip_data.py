@@ -12,7 +12,8 @@ from srstudio.collage_group import Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, solo, timed, voices_note
 from srstudio.sketch import Appearance, Line, Mouths, events
 
-SEED = 4123
+SEED = 4127
+RECORDING_SEED = 4123  # the takes were made on it; regards-dad had it first
 SLUG = "first-sip"
 TITLE = "First sip - Brent (Collage)"
 NAMES = ("brent", "deb", "omar")
@@ -61,8 +62,8 @@ BEATS, END = timed(
         (3.2, "brent", 6, "closed", "smug", "down"),
         (2.2, "omar", 7, "half", "flat", "hold"),
         (3.4, "omar", 8, "half", "flat", "hold", "reveal:jug"),
-        (1.5, "brent", "", "side", "flat", "down"),
-        (0.0, "brent", 9, "half", "smug", "down"),
+        (1.5, "brent", "", "side", "flat", "down", "zoom"),
+        (0.0, "brent", 9, "half", "smug", "down", "sting"),
     ),
     tail=1.9,
 )
@@ -117,6 +118,7 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     push=PUSH,
+    recording_seed=RECORDING_SEED,
     bitrate=BITRATE,
     sounds=sounds,
 )

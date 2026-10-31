@@ -181,6 +181,21 @@ def test_recording_needs_consent(mods, tmp_path):
         builder.record_episode(data["book_report"].STAGING, tmp_path, {}, "ffmpeg", "note")
 
 
+def test_a_recording_keeps_the_seed_its_takes_were_made_on(mods, tmp_path, monkeypatch):
+    builder, data = mods
+    seeds = []
+
+    def client(cache, key, *, model, seed):
+        seeds.append(seed)
+        raise ConsentError("stop here: the client is all this test wants")
+
+    monkeypatch.setattr(builder, "ElevenLabsClient", client)
+    st = data["first_sip"].STAGING
+    with pytest.raises(ConsentError, match="stop here"):
+        builder.record_episode(st, tmp_path, {"SRSTUDIO_ALLOW_CLOUD": "1"}, "ffmpeg", "note")
+    assert seeds == [st.recording_seed] and st.recording_seed != st.seed
+
+
 TILT_MARGIN = 24.0  # a card turned a few degrees reaches this far past its box
 
 

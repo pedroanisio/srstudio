@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Brian (Brent), Jessica (Deb) and Daniel (Omar). Foley synthesised.",
         hashtags=('#winetasting', '#dinnerdate', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Bold.", 3.0, "Collage 33"),
+        thumbnail=Thumbnail("Bold.", 6.0, "Collage 33"),
     ),
     tags=Tags(
         "relationships",

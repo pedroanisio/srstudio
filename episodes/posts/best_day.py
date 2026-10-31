@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Jessica (Deb). Foley synthesised.",
         hashtags=('#foodinteeth', '#embarrassing', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Today,\nI am magnetic.", 1.5, "Collage 34"),
+        thumbnail=Thumbnail("Today,\nI am magnetic.", 0.6, "Collage 34"),
     ),
     tags=Tags(
         "own-worst-enemy",

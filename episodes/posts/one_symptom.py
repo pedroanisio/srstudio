@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Callum (the patient) and Brian (the doctor). Foley synthesised.",
         hashtags=('#webmd', '#doctor', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("You have a headache.", 3.4, "Toon 33"),
+        thumbnail=Thumbnail("You have a headache.", 14.0, "Toon 33"),
     ),
     tags=Tags("own-worst-enemy", "protagonist", "tension", test="sp-hook_motion", arm="b", recipient="a"),
     style="Toon",
