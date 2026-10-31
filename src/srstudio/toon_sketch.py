@@ -51,6 +51,7 @@ from . import (
     toon_rigs,
 )
 from .canvas import Canvas
+from .layout import SafeArea
 from .narration import effect_cues, manifest_duration, require_consent
 from .provider import KEY_ENV
 from .staging import StagingError
@@ -133,6 +134,7 @@ class Staging:
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
+    safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -236,6 +238,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             dialogue="voiced/script.json" if voiced else "script.json",
             language="en-US",
             output=staging.output,
+            safe_area=staging.safe_area,
             output_options=dict(
                 codec="h264",
                 container="mp4",

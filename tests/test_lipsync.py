@@ -78,6 +78,16 @@ def test_spelling_reads_english_letters_as_the_mouth_makes_them():
     assert letter_poses("Hi, you!", SPEECH_MOUTH) == ["open", "open", None, None, "open", "round", "round", None]
 
 
+def test_a_mouth_seen_large_reads_the_finer_poses_by_spelling():
+    fine = replace(SKETCH_MOUTH, spelling=True, close_bilabials=True, fine=True)
+    plain = replace(fine, fine=False)
+    assert [
+        letter_poses(word, fine)[i] for word, i in (("me", 1), ("live", 2), ("read", 2), ("phone", 0), ("just", 1))
+    ] == ["wide", "lip", "wide", "lip", "open"]
+    assert letter_poses("group", fine) == letter_poses("group", plain)  # the u of a vowel pair stays round
+    assert "wide" not in letter_poses("me live read", plain) and "lip" not in letter_poses("live", plain)
+
+
 def test_without_spelling_letters_keep_their_plain_poses():
     assert letter_poses("phone", INK_MOUTH) == ["closed", "open", "round", "teeth", "open"]
     assert letter_poses("wow", INK_MOUTH) == ["teeth", "round", "teeth"]

@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from srstudio import TOON, camera, craft, parts, sketch, toon, toon_sketch, usage
+from srstudio.layout import VERTICAL
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
 
@@ -204,6 +205,11 @@ def test_a_dress_is_handed_the_mouths_of_the_recording_only_when_there_is_one(pi
     st = replace(silent(stage_sketch()), dress=lambda shot: seen.append(shot.mouths))
     built(tmp_path, st, pinned_fonts)
     assert seen and all(mouths == {} for mouths in seen)
+
+
+def test_a_staging_can_declare_the_safe_area_a_show_keeps_its_text_in(pinned_fonts, tmp_path):
+    ep, _ = built(tmp_path, replace(silent(stage_sketch()), safe_area=VERTICAL), pinned_fonts)
+    assert ep.spec.safe_area is VERTICAL
 
 
 def test_a_staging_can_bring_its_own_captions_grade_output_and_frame_rate(pinned_fonts, tmp_path):

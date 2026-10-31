@@ -12,7 +12,8 @@ Two drivers share one reading of the letters (:func:`letter_poses`):
   - ``close_bilabials``: every *b*, *m* and *p* closes the mouth on the sample nearest it, so a quick bilabial that
     falls between two samples is never lost (a scream stays open);
   - ``lead``: the mouth shows each sound this many seconds early, as animators lead the track;
-  - ``min_rest``: a pause between two letters shorter than this keeps the pose before it instead of snapping shut.
+  - ``min_rest``: a pause between two letters shorter than this keeps the pose before it instead of snapping shut;
+  - ``fine``: two more poses for a mouth seen large, ``wide`` for *e*, *i* and *y* and ``lip`` for *f*, *v* and *ph*.
 
   With the fields at their defaults the samples are the ones the shipped packages were built from
   (:data:`~srstudio.soundtrack.INK_MOUTH` reproduces the Ink package sample for sample).
@@ -40,6 +41,7 @@ from .soundtrack import PhonemeStyle
 
 SPEECH_MOUTH = PhonemeStyle(spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 VOWELS = "aeiouy"
+FINE_WIDE, FINE_LIP = "eiy", "fv"  # the letters ``PhonemeStyle.fine`` reads as its two more poses
 _HOLD = "hold"  # a silent letter: the pose before it
 
 
@@ -96,7 +98,24 @@ def letter_poses(text: Sequence[str], style: PhonemeStyle) -> list[str | None]:
                 i = j
             else:
                 i += 1
+    if style.fine:
+        out = [_fine(pose, low, i) for i, pose in enumerate(out)]
     return out
+
+
+def _fine(pose: str | None, low: Sequence[str], i: int) -> str | None:
+    """The finer pose of the letter ``low[i]`` read as ``pose``, as its neighbours spell it: a spread vowel (and the a
+    of an *ea*), teeth on the lip, and the u of *just*, an open vowel however it is spelled."""
+    before = low[i - 1] if i else ""
+    if pose == "open" and (low[i] in FINE_WIDE or (low[i] == "a" and before == "e")):
+        return "wide"
+    if pose == "teeth" and (low[i] in FINE_LIP or (low[i] == "p" and low[i + 1 : i + 2] == ["h"])):
+        return "lip"
+    after = low[i + 1 : i + 3]
+    if pose == "round" and low[i] == "u" and before.isalpha() and before not in VOWELS:
+        if len(after) == 2 and all(c.isalpha() and c not in VOWELS for c in after):
+            return "open"
+    return pose
 
 
 def _moody(pose: str, mood: str, style: PhonemeStyle) -> str:
