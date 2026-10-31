@@ -250,6 +250,15 @@ def readme(bible: Bible, *, model: str, sheets: Sequence[str]) -> str:
         "character differently. A reel already published is never refused. Code reads names, drawings, voices and "
         "the cast line; it cannot tell that a paragraph contradicts a canon fact in other words.",
         "",
+        "## Keeping it stable, and extending it",
+        "",
+        "`bible/lock.json` pins every record to the bible's version. A persona, pair, place, rule or clash edited "
+        "without a new version is refused by `srstudio bible verify` and by every first delivery. To extend: run "
+        "`srstudio bible gaps` (names on 2 or more published reels with no sheet, and sheets that lag their reels), "
+        "write the new records from the published reels with a cited fact for each stated field, raise the version "
+        "in `cast.json` and `relationships.json` (a new record is a minor version, a correction a patch), add a "
+        "`## <version>` section to `CHANGELOG.md`, run `srstudio bible verify`, then `srstudio bible lock`.",
+        "",
         "## Characters",
         "",
     ]

@@ -117,6 +117,17 @@ def write(folder: Path, cast: dict | None = None, pairs: dict | None = None) -> 
     return folder
 
 
+def locked(folder: Path, cast: dict | None = None, pairs: dict | None = None) -> Path:
+    """A library with a changelog section for its version and a lock, as the shipped ``bible/`` has."""
+    write(folder, cast, pairs)
+    version = json.loads((folder / "cast.json").read_text())["version"]
+    (folder / "CHANGELOG.md").write_text(f"# Changelog\n\n## {version}\n\nThe first version.\n")
+    from srstudio import bible_lock
+
+    bible_lock.write(folder)
+    return folder
+
+
 def placeholder(slug: str) -> dict:
     marked = {k: "open: waiting for the reel" for k in STATED}
     return character(

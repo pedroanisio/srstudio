@@ -8,7 +8,7 @@ import pytest
 from srstudio import bible_cli
 from srstudio.releases import Release, Tags
 from srstudio.social import InstagramPost
-from support.bible_docs import write
+from support.bible_docs import locked
 
 
 def release(slug: str, *recurring: str) -> Release:
@@ -31,7 +31,7 @@ def world(tmp_path, monkeypatch):
     outbox.write_text(json.dumps({"version": 1, "videos": {"cleaning-fee": {}}}))
     found = {"cleaning-fee": release("cleaning-fee", "rex"), "new-reel": release("new-reel", "bruno")}
     monkeypatch.setattr(bible_cli.releases, "load", lambda folder: found)
-    library = write(tmp_path / "bible")
+    library = locked(tmp_path / "bible")
     base = [
         "--library",
         str(library),
@@ -107,3 +107,29 @@ def test_render_without_fonts_or_engine_is_an_input_error(world, monkeypatch, ca
     args = parse(*base, "render", str(tmp / "out"), "--model", "m", "--cache", str(tmp), "--work", str(tmp))
     assert bible_cli.run(args) == 2
     assert "set --fonts and --engine" in capsys.readouterr().err
+
+
+def test_lock_writes_the_lock_and_verify_names_a_bible_that_drifted_from_it(world, capsys):
+    base, _, tmp = world
+    (tmp / "bible" / "lock.json").unlink()
+    assert bible_cli.run(parse(*base, "lock")) == 0
+    assert "locked" in capsys.readouterr().out and (tmp / "bible" / "lock.json").exists()
+    assert bible_cli.run(parse(*base, "verify")) == 0
+    document = json.loads((tmp / "bible" / "cast.json").read_text())
+    document["characters"][0]["look"]["palette"] = "purple"
+    (tmp / "bible" / "cast.json").write_text(json.dumps(document))
+    assert bible_cli.run(parse(*base, "verify")) == 1
+    assert "changed without a version bump" in capsys.readouterr().out
+    assert bible_cli.run(parse(*base, "lock")) == 2  # refused: the persona changed and the version did not
+    assert "changed without a version bump" in capsys.readouterr().err
+
+
+def test_gaps_lists_a_name_that_recurs_with_no_sheet_and_exits_1(world, capsys):
+    base, found, _ = world
+    found["cleaning-fee"] = release("cleaning-fee", "rex", "bruno")
+    found["other-reel"] = release("other-reel", "rex", "bruno")
+    (world[2] / "outbox.json").write_text(json.dumps({"version": 1, "videos": {"cleaning-fee": {}, "other-reel": {}}}))
+    assert bible_cli.run(parse(*base, "gaps")) == 1
+    out = capsys.readouterr().out
+    assert "missing: bruno (okayville) is on 2 published reels with no sheet" in out
+    assert "placeholders waiting" in out
