@@ -26,13 +26,15 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={
-        # collage-counter, collage-ring-corner, collage-stool, collage-towel also drawn: a release cannot pin
-        # a proposed version, so they join once approved.
+        "collage-counter": 1,
         "collage-deb": 1,
         "collage-living-room": 1,
         "collage-phone": 1,
         "collage-priya": 1,
+        "collage-ring-corner": 1,
         "collage-sofa": 1,
+        "collage-stool": 1,
+        "collage-towel": 1,
         "signature-cactus": 1,
         "signature-code": 1,
     },

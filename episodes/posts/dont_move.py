@@ -25,13 +25,14 @@ RELEASE = Release(
     style="Cutout",
     cover=True,
     parts={
-        # big-thumb, cafe-door, coat-over, phone-post also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "barista": 1,
         "bean-jar": 1,
+        "big-thumb": 1,
         "cafe": 1,
+        "cafe-door": 1,
         "cafe-window": 1,
         "captions": 1,
+        "coat-over": 1,
         "coffee-cup": 1,
         "customer": 1,
         "espresso-machine": 1,
@@ -39,6 +40,7 @@ RELEASE = Release(
         "menu-board": 1,
         "pastry-stand": 1,
         "pendant-light": 1,
+        "phone-post": 1,
         "signature-cactus": 1,
         "signature-code": 1,
     },

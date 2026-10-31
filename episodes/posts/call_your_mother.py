@@ -24,8 +24,6 @@ RELEASE = Release(
     tags=Tags("job-hunting", "other-person", "triumph", recurring=('dana',), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
-        # toon-plate-of-toast also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-bedroom": 1,
@@ -38,6 +36,7 @@ RELEASE = Release(
         "toon-ledge": 1,
         "toon-meeting": 1,
         "toon-phone": 1,
+        "toon-plate-of-toast": 1,
     },
     comedy=Scores(author=15, reviewer=19),
 )

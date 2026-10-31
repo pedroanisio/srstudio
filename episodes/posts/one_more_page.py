@@ -27,17 +27,21 @@ RELEASE = Release(
     style="Soft",
     cover=True,
     parts={
-        # soft-bedside-lamp, soft-handshake, soft-open-briefcase, soft-picture-book, soft-quilt-pull and soft-wall-clock
-        # are also drawn: a release cannot pin a proposed version, so they join once approved.
         "bo": 1,
         "captions": 1,
         "pip": 1,
         "signature-cactus": 1,
         "signature-code": 1,
         "soft-bedroom": 1,
+        "soft-bedside-lamp": 1,
         "soft-briefcase": 1,
+        "soft-handshake": 1,
         "soft-necktie": 1,
+        "soft-open-briefcase": 1,
+        "soft-picture-book": 1,
+        "soft-quilt-pull": 1,
         "soft-time-card": 1,
+        "soft-wall-clock": 1,
     },
     comedy=Scores(author=15, reviewer=18),
 )
