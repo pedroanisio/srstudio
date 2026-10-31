@@ -367,6 +367,17 @@ class CafeActor(Actor):
     def arms_left_out(self, perf: Performance) -> frozenset[str]:
         """The screen sides this actor does not draw an arm on: a limb track's, or a reel's own."""
         return self.replaced_arms(perf) | frozenset(_free_sides(perf))
+    SIDES = ("left", "right")
+
+    def validate_performance(self, perf: Performance) -> None:
+        _options(perf, self.extra_options)
+        free = perf.extras.get("free_arms", ())
+        if isinstance(free, str) or not set(free) <= set(self.SIDES):
+            raise CastError(f"free_arms names screen sides, {' and '.join(self.SIDES)}; got {free!r}")
+
+    def arms_left_out(self, perf: Performance) -> frozenset[str]:
+        """The screen sides this actor does not draw an arm on: a limb track's, or a reel's own."""
+        return self.replaced_arms(perf) | frozenset(perf.extras.get("free_arms", ()))
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
         role = role or self.role
