@@ -195,6 +195,9 @@ class Sketch:
     beats: tuple[Beat, ...]
     end: float
     cast: Cast = TOON_CAST
+    tail: float = (
+        TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
+    )
 
 
 @dataclass(frozen=True)
@@ -215,6 +218,8 @@ def check(sketch: Sketch) -> None:
     names = [s.name for s in sketch.speakers]
     if not names or len(set(names)) != len(names):
         raise SketchError("speakers need distinct names")
+    if not (checks.number(sketch.tail) and sketch.tail >= 0):
+        raise SketchError(f"tail {sketch.tail!r} must be a non-negative number of seconds")
     cast = sketch.cast
     played = [s.character for s in sketch.speakers if s.character is not None]
     if any(c not in cast.characters for c in played) or len(set(played)) != len(played):
@@ -780,7 +785,7 @@ def record(
     if failures:
         raise SketchError("speech check failed:\n" + "\n".join(failures))
     beats = place(sketch, word_starts, [p.end for p in placed])
-    end = round(max(needed, beats[-1].start + TAIL_AFTER_LAST), 6)
+    end = round(max(needed, beats[-1].start + sketch.tail), 6)
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)

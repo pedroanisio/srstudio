@@ -481,3 +481,38 @@ def test_voiced_beats_round_trip_and_bad_files_are_refused(tmp_path):
             sketch.load_beats(path)
     with pytest.raises(sketch.SketchError, match="missing.json"):
         sketch.load_beats(tmp_path / "missing.json")
+
+
+def held_sketch(tail: float) -> sketch.Sketch:
+    """``SK`` with a last beat that says nothing, so the tail alone sets where the project ends."""
+    last = SK.beats[-1]
+    silent = replace(last, start=SK.end + 20.0, line=None, word=None, caption="")
+    return replace(SK, beats=(*SK.beats, silent), end=SK.end + 20.2, tail=tail)
+
+
+@pytest.mark.parametrize("tail", [0.25, 0.6])
+def test_a_sketch_can_cut_on_its_last_beat_instead_of_holding(tmp_path, tail):
+    held = held_sketch(tail)
+    rec = sketch.record(held, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    assert rec.end == pytest.approx(max(held.end, rec.beats[-1].start + tail), abs=1e-6)
+    assert rec.end < rec.beats[-1].start + sketch.TAIL_AFTER_LAST
+
+
+def test_a_sketch_keeps_the_full_tail_unless_it_asks_otherwise(tmp_path):
+    held = held_sketch(sketch.TAIL_AFTER_LAST)
+    rec = sketch.record(held, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    assert SK.tail == sketch.TAIL_AFTER_LAST
+    assert rec.end == pytest.approx(rec.beats[-1].start + sketch.TAIL_AFTER_LAST, abs=1e-6)
+
+
+def test_a_short_tail_never_cuts_a_take_short(tmp_path):
+    rec = sketch.record(
+        replace(SK, tail=0.0), tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip
+    )
+    assert rec.end >= max(q["start"] + q["duration"] for q in rec.items)
+
+
+@pytest.mark.parametrize("bad", [-0.1, float("nan"), float("inf"), True, "1"])
+def test_a_tail_that_is_no_length_stops_the_sketch(bad):
+    with pytest.raises(sketch.SketchError, match="tail"):
+        sketch.check(replace(SK, tail=bad))
