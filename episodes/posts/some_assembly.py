@@ -37,6 +37,7 @@ RELEASE = Release(
         "stick-caller": 1,
         "stick-card": 1,
         "stick-drill": 1,
+        "stick-manual-page": 1,
         "stick-planks": 1,
         "stick-rig": 1,
         "stick-screws": 1,

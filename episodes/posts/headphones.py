@@ -36,6 +36,7 @@ RELEASE = Release(
         "captions": 1,
         "coffee-cup": 1,
         "customer": 1,
+        "earbud": 1,
         "hand-basket": 1,
         "manager": 1,
         "rosa": 1,
@@ -44,6 +45,8 @@ RELEASE = Release(
         "signature-cactus": 1,
         "signature-code": 1,
         "store-aisle": 1,
+        "store-box": 1,
+        "tin-of-peas": 1,
     },
     comedy=Scores(18, 19),
 )

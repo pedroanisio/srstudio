@@ -9190,10 +9190,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A plane's aisle in one-point perspective, from the back of the cabin. First drawn for seat-belt-sign; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A plane's aisle in one-point perspective, from the back of the cabin. First drawn for seat-belt-sign.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "fbe0bb99b41dddf853812de1016d1cc686119d878806b919e197229064c43ebe",
           "rig": null
         }
@@ -9207,10 +9210,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A line of passengers down the aisle who all turn round at once. First drawn for seat-belt-sign; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A line of passengers down the aisle who all turn round at once. First drawn for seat-belt-sign.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "3139e707e5811b5c204ad887f5e13120aa7c7f285f31e7001598a68e386590e9",
           "rig": null
         }
@@ -9424,10 +9430,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The frame given over to a numbered assembly-manual page and its wordless little people. First drawn for some-assembly; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "The frame given over to a numbered assembly-manual page and its wordless little people. First drawn for some-assembly.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "fd67f8abec199e3d99a15a0a4b324f2c3e4736e87c842e44ad2fe2b7c2f48de1",
           "rig": null
         }
@@ -9461,10 +9470,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A long sandwich in hand that loses a mouthful at every bite. First drawn for how-is-everything; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A long sandwich in hand that loses a mouthful at every bite. First drawn for how-is-everything.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "034d0f9aa1d84e6a754e1a677dc9be33337e5139de8b3052b60cccb459567fae",
           "rig": null
         }
@@ -9478,10 +9490,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A folded white paper napkin. First drawn for how-is-everything; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A folded white paper napkin. First drawn for how-is-everything.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "e32af7e90906f56851484d9fc2105540b2000aeaf5f0eb8a57421be1b875b481",
           "rig": null
         }
@@ -9495,10 +9510,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A small round bistro table on one leg, seen side on. First drawn for how-is-everything; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A small round bistro table on one leg, seen side on. First drawn for how-is-everything.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "ac1a9dd5afb36860a4cf31b91e55acfa6b237b8b344a21bc6096279448baa777",
           "rig": null
         }
@@ -9512,10 +9530,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A white wireless earbud with a short stem. First drawn for headphones; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A white wireless earbud with a short stem. First drawn for headphones.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "2e548d4baabc226c1a987b11c1cc1299d875282f8451a44db6234557689e8784",
           "rig": null
         }
@@ -9529,10 +9550,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A tin of peas with a green label. First drawn for headphones; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A tin of peas with a green label. First drawn for headphones.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "4f9582597ee1948c58484dd16e2c7f66f8559e6230514942803001a66e74fcbb",
           "rig": null
         }
@@ -9546,10 +9570,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A plain supermarket box of crackers. First drawn for headphones; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A plain supermarket box of crackers. First drawn for headphones.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "5b76429123bb67df4f1583517a9536ad71eb642de24edc9c54364e63ced9bf70",
           "rig": null
         }
@@ -9563,10 +9590,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A clasp coin purse that opens on the coins inside it. First drawn for shortest-line; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A clasp coin purse that opens on the coins inside it. First drawn for shortest-line.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "a767111320c6e08e44accdc515d9f3eb129872452a4153f96f0b7f1bcce48e66",
           "rig": null
         }
@@ -9580,10 +9610,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "One small coin. First drawn for shortest-line; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "One small coin. First drawn for shortest-line.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "c97d2443e065f37a7f1947a8bf1e5f538cc8559e1d5b321843fd7d529e7797e5",
           "rig": null
         }
@@ -9597,10 +9630,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A checkout lane's lit number, hung from the ceiling, changing on its times. First drawn for shortest-line; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A checkout lane's lit number, hung from the ceiling, changing on its times. First drawn for shortest-line.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "7fe5d007fc444f5a548a9c45a6e4a506fe4755663f2f8ec1f710c3132a516883",
           "rig": null
         }
@@ -9614,10 +9650,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The light catching a pair of round glasses, once. First drawn for shortest-line; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "The light catching a pair of round glasses, once. First drawn for shortest-line.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "09c8cbd28664166f71185a3fc95d486c97c965f2f9899dc30d387a1f3daf3889",
           "rig": null
         }
@@ -9631,10 +9670,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An office chair's height lever, which tips on each pull. First drawn for sinking-chair; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "An office chair's height lever, which tips on each pull. First drawn for sinking-chair.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "fb35055ca63fa63d871661a59d6da491e4ef8d15f5443902ec509323404b2c8c",
           "rig": null
         }
@@ -9648,10 +9690,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A plain ballpoint pen, held to write. First drawn for sinking-chair; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A plain ballpoint pen, held to write. First drawn for sinking-chair.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "3b81fe41ae57d3c78916ed7e1ba9761ee349e2c3dd330f5dff418b9598cfe100",
           "rig": null
         }
@@ -9905,10 +9950,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A full-frame veil that deepens in steps. Proposed: awaiting a decision.",
-          "status": "proposed",
+          "note": "A full-frame veil that deepens in steps.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "fd3fb0a6a479d6da5c95e67bd7a556fad52b2f5ca0117b8e414292e3e41e9e19",
           "rig": null
         }
@@ -9982,10 +10030,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "Curved lines either side of a belly, shaking while it talks. Proposed: awaiting a decision.",
-          "status": "proposed",
+          "note": "Curved lines either side of a belly, shaking while it talks.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "f15945f73a24b654c585428d110eb1c99be3d6ade2bfc1699317030b68d49c14",
           "rig": null
         }
@@ -9999,10 +10050,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "One short finger that curls up from a raised hand. Proposed: awaiting a decision.",
-          "status": "proposed",
+          "note": "One short finger that curls up from a raised hand.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
           "drawing": "11f1b8234580846804598788cafd5472fc8bce38232887e12de73fdcf5995650",
           "rig": null
         }
