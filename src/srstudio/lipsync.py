@@ -13,7 +13,9 @@ Two drivers share one reading of the letters (:func:`letter_poses`):
     falls between two samples is never lost (a scream stays open);
   - ``lead``: the mouth shows each sound this many seconds early, as animators lead the track;
   - ``min_rest``: a pause between two letters shorter than this keeps the pose before it instead of snapping shut;
-  - ``fine``: two more poses for a mouth seen large, ``wide`` for *e*, *i* and *y* and ``lip`` for *f*, *v* and *ph*.
+  - ``fine``: two more poses for a mouth seen large, ``wide`` for *e*, *i* and *y* and ``lip`` for *f*, *v* and *ph*;
+  - ``first_sound``: a trimmed take opens on the sound due at its first second (:func:`due_pose`). The samples run on
+    the clock of the file, so a trim drops the one at its second 0 and the mouth would stay shut until the next.
 
   With the fields at their defaults the samples are the ones the shipped packages were built from
   (:data:`~srstudio.soundtrack.INK_MOUTH` reproduces the Ink package sample for sample).
@@ -160,6 +162,15 @@ def phoneme_states(
                 j = min(max(j, 0), count - 1)
                 out[j] = (out[j][0], "closed")
     return out
+
+
+def due_pose(phones: Sequence[dict], at: float, style: PhonemeStyle) -> str:
+    """The pose of the sound due at second ``at`` of a take: the letter sounding there, or the next one when it starts
+    within one sample, and ``closed`` when nothing is due that soon."""
+    for z, pose in zip(phones, letter_poses([z["c"] for z in phones], style), strict=True):
+        if pose is not None and z["end"] > at:
+            return pose if z["start"] < at + 1 / style.rate else "closed"
+    return "closed"
 
 
 def letter_track(text: str, frames: int) -> list[str]:

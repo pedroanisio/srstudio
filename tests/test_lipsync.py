@@ -11,10 +11,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from srstudio import INK_MOUTH, OFFICE_MOUTH, Soundtrack, Timeline, lipsync, mouth_states, phoneme_states
+from srstudio import INK_MOUTH, OFFICE_MOUTH, Soundtrack, Timeline, lipsync, mouth_states, phoneme_states, sketch
 from srstudio.lipsync import SPEECH_MOUTH, letter_poses
 from srstudio.sketch import MOUTH_STYLE as SKETCH_MOUTH
-from srstudio.soundtrack import PhonemeStyle
+from srstudio.soundtrack import PhonemeStyle, SoundtrackError
+from srstudio.voice import Alignment
 
 
 def phones(text, step=0.08, at=0.0):
@@ -218,9 +219,6 @@ def test_the_command_scores_the_takes_of_timelines_with_both_mouths(tmp_path, ca
 
 
 def test_a_toon_sketch_can_record_its_visemes_with_the_speech_mouth():
-    from srstudio import sketch
-    from srstudio.voice import Alignment
-
     quick_m = Alignment(("a", "m", "a"), (0.0, 0.1, 0.13), (0.1, 0.13, 0.4))
     shipped = [v for _, v in sketch.visemes(quick_m, 1.0, 0.0, 0.4)]
     assert shipped == ["open", "closed"]  # the m falls between samples: one open run, then the end
@@ -302,3 +300,56 @@ def test_a_track_with_an_end_and_no_outside_message_says_where_it_ends():
 def test_a_take_cut_mid_word_closes_the_mouth_at_its_end():
     states = lipsync.talk(spoken("aaaaaaaaaaaaaaaaaaaa", duration=1.0), SPEECH_MOUTH)
     assert states[-1] == (1.0, "closed") and states[-2][1] != "closed"
+
+
+TRIMMED = Alignment(tuple("I go"), (0.0, 0.066, 0.18, 0.3), (0.066, 0.18, 0.3, 0.5))  # the "I" of a host take
+FIRST_SOUND = replace(SPEECH_MOUTH, rate=12, first_sound=True)
+
+
+def test_a_trimmed_take_stays_shut_until_its_second_sample_by_default():
+    # the trim drops the sample at the file's second 0, so the first one left is 0.083 s in: pinned as published
+    track = sketch.visemes(TRIMMED, 2.0, 0.03, 0.47, style=replace(FIRST_SOUND, first_sound=False))
+    assert track[:2] == [(2.0, "closed"), (2.053333, "open")]
+
+
+def test_every_shipped_style_leaves_first_sound_off():
+    assert not any(s.first_sound for s in (INK_MOUTH, SPEECH_MOUTH, sketch.MOUTH_STYLE, PhonemeStyle()))
+
+
+def held(track, second):
+    return [pose for at, pose in track if at <= second][-1]
+
+
+@pytest.mark.parametrize("clip_in", [0.0, 0.03, 0.08])
+def test_first_sound_changes_nothing_from_the_first_sample_on(clip_in):
+    off = sketch.visemes(TRIMMED, 2.0, clip_in, 0.4, style=replace(FIRST_SOUND, first_sound=False))
+    on = sketch.visemes(TRIMMED, 2.0, clip_in, 0.4, style=FIRST_SOUND)
+    first = off[0][0] if clip_in == 0.0 else off[1][0]
+    seconds = [first + n * 0.01 for n in range(round((2.0 + 0.4 - first) / 0.01))]
+    assert [held(on, t) for t in seconds] == [held(off, t) for t in seconds]
+
+
+def test_first_sound_opens_a_trimmed_take_on_the_sound_already_due():
+    assert sketch.visemes(TRIMMED, 2.0, 0.03, 0.47, style=FIRST_SOUND)[0] == (2.0, "open")
+    fine = replace(FIRST_SOUND, fine=True)
+    assert sketch.visemes(TRIMMED, 2.0, 0.03, 0.47, style=fine)[0] == (2.0, "wide")
+
+
+def test_first_sound_keeps_a_take_that_starts_on_a_bilabial_shut():
+    said = Alignment(tuple("me"), (0.0, 0.1), (0.1, 0.3))
+    assert sketch.visemes(said, 2.0, 0.03, 0.27, style=FIRST_SOUND)[0] == (2.0, "closed")
+
+
+def test_first_sound_does_not_open_on_a_sound_that_is_not_due_yet():
+    late = Alignment(tuple("go"), (0.5, 0.6), (0.6, 0.8))
+    assert sketch.visemes(late, 2.0, 0.03, 0.77, style=FIRST_SOUND)[0] == (2.0, "closed")
+
+
+def test_first_sound_shows_the_sound_before_a_shut_second_sample():
+    said = Alignment(tuple("am"), (0.0, 0.07), (0.07, 0.3))
+    assert [v for _, v in sketch.visemes(said, 2.0, 0.03, 0.27, style=FIRST_SOUND)][:2] == ["open", "closed"]
+
+
+def test_first_sound_is_a_real_bool():
+    with pytest.raises(SoundtrackError, match="first_sound"):
+        PhonemeStyle(first_sound=1)

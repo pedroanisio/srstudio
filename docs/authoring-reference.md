@@ -120,6 +120,9 @@ ep.mouth("candidate", style=replace(OFFICE_MOUTH, letters=True))  # amplitude mo
   *qu* round, a silent final *e* or *gh* holds the pose before it), closes the mouth on every *b*, *m* and *p* even
   when the sound falls between two samples, shows each sound 0.04 s early, and keeps the mouth open over a pause
   between words shorter than 0.12 s.
+- `PhonemeStyle(first_sound=True)`, off by default, opens a take the trim cut on the sound due at its first second.
+  Samples run on the clock of the file, so a trim drops the sample at its second 0 and the mouth would otherwise stay
+  shut until the next one, about 0.08 s into the first sound.
 - `MouthStyle(letters=True)` spreads the line's letters in order over the frames where it is voiced (a vowel weighs
   twice a consonant). The letters choose round, closed or open; the amplitude still chooses how open. Without it,
   the round mouth comes from a clock pattern, unrelated to the words.

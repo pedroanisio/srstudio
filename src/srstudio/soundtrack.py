@@ -302,6 +302,7 @@ class PhonemeStyle:
     lead: float = 0.0  # seconds the mouth shows a sound early
     min_rest: float = 0.0  # a pause between letters shorter than this keeps the pose before it
     fine: bool = False  # two more poses for a mouth seen large: wide for e, i and y, lip for f and v
+    first_sound: bool = False  # a trimmed take opens on the sound due at its first second, not shut until a sample
 
     def __post_init__(self):
         if isinstance(self.rate, bool) or not isinstance(self.rate, int) or self.rate <= 0:
@@ -312,6 +313,8 @@ class PhonemeStyle:
             value = getattr(self, name)
             if not checks.number(value) or value < 0:
                 raise SoundtrackError(f"a phoneme style's {name} is a finite number of seconds >= 0, got {value!r}")
+        if not isinstance(self.first_sound, bool):
+            raise SoundtrackError(f"a phoneme style's first_sound is True or False, got {self.first_sound!r}")
 
 
 INK_MOUTH = PhonemeStyle()

@@ -33,7 +33,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks, fonts, parts, soundtrack, toon, toon_cast, toon_critters, toon_inked, toon_redrawn  # noqa: F401 - they register
+from . import checks, fonts, lipsync, parts, soundtrack, toon, toon_cast, toon_critters, toon_inked, toon_redrawn  # noqa: F401 - they register
 from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
@@ -549,7 +549,8 @@ def visemes(
     """The viseme states of one take placed in the project: the take's character timestamps sampled at
     :data:`VISEME_RATE` Hz over ``[clip_in, clip_in + kept)`` of the take (what was kept of it), moved to start at
     ``at`` (project seconds), consecutive repeats dropped, the mouth closed at the end. ``style`` reads the letters
-    (:data:`srstudio.lipsync.SPEECH_MOUTH` for English spelling, closed bilabials, a lead and bridged word joins)."""
+    (:data:`srstudio.lipsync.SPEECH_MOUTH` for English spelling, closed bilabials, a lead and bridged word joins). A
+    trimmed take opens shut until its first sample, or on the sound due then under ``style.first_sound``."""
     if not (
         checks.number(at) and at >= 0 and checks.number(clip_in) and clip_in >= 0 and checks.number(kept) and kept > 0
     ):
@@ -567,10 +568,11 @@ def visemes(
         if not out or out[-1][1] != state[1]:
             out.append(state)
     start = round(at, 6)  # compared rounded, like the states: a take speaking from its first sample adds no key
-    if out and out[0][1] == "closed":
-        out[0] = (start, "closed")  # the take opens closed: from its first second, not the first sample
+    opening = VISEME_OF[lipsync.due_pose(phones, clip_in, style)] if style.first_sound else "closed"
+    if out and out[0][1] == opening:
+        out[0] = (start, opening)  # the take opens on this pose: from its first second, not the first sample
     elif not out or out[0][0] > start:
-        out.insert(0, (start, "closed"))
+        out.insert(0, (start, opening))
     stop = round(at + kept, 6)
     if out[-1][1] != "closed":
         out.append((stop, "closed"))
