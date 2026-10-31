@@ -9443,6 +9443,108 @@
           "rig": null
         }
       ]
+    },
+    "soft-wall-clock": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A round wall clock with no numbers, reading the time it is given. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a34ac233daa10ff075cd3085078de5e312b9cc03d07d8c4261a59a3c5530452f",
+          "rig": null
+        }
+      ]
+    },
+    "soft-picture-book": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A picture book held open, its cover to us, that can slide away. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "84c4d9e66a56e4113ba857bb8fc399bf08d8ce01ce48b3216a927ca9bcf78c73",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bedside-lamp": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small bedside lamp, lit until it clicks off. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7512be32a0445bb3024b6fda020d68b0c08ea4a619aac3ccd6fd8c73f138b3d9",
+          "rig": null
+        }
+      ]
+    },
+    "soft-open-briefcase": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A briefcase open on a quilt, a contract inside, that can shut. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ab0f3a0e4a3fe2722ef28c3e052b38d7c7d3c7943bda4eab0eeb9d01ed9ca0db",
+          "rig": null
+        }
+      ]
+    },
+    "soft-handshake": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A close shot of a deal: a small hand and a big one, shaking on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "55ae6ba7bcc6c66d8c1557757ded5f2f6f0c9e0633fad22564b923340d054997",
+          "rig": null
+        }
+      ]
+    },
+    "soft-quilt-pull": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The top of a quilt, drawn up over whoever is asleep under it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2c572dd4414155d31e4aaaacaa61da2cfb30d42cb8095989bc4cf7b65b5e9b81",
+          "rig": null
+        }
+      ]
     }
   }
 }
