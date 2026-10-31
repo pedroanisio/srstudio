@@ -139,6 +139,11 @@ class Staging:
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(
+        default_factory=dict
+    )
+    """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
+    character's seat, so a figure can bend, sink or sway while its set stays put."""
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -295,6 +300,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
+        if app.who in staging.moves:
+            x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
+            body = cv.group(body, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+            staging.moves[app.who](cv, body, app, sk.beats)
         if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:
