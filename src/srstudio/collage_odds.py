@@ -169,3 +169,24 @@ def water_jug(cv: Canvas, parent, x: float, y: float, scale: float = 1.0):
     for dx, dy in ((-50, -210), (20, -180), (-20, -130)):
         cv.rect(g, x + dx, y + dy, 58, 58, "#eef8fb", INK, 2.0, radius=8.0)
     return g
+
+
+@register(
+    "prop", "collage-doctor-scale", summary="A clinic scale with a height bar that lowers on cue", style="collage"
+)
+def doctor_scale(
+    cv: Canvas, parent, x: float, base: float, bar_at: float | None = None, bar_to: float = 900.0, end: float = 4.0
+):
+    """A scale at ``x`` on the floor line ``base``; its height bar drops to ``bar_to`` at ``bar_at``, if it does."""
+    if not (checks.number(base) and checks.number(bar_to) and bar_to < base):
+        raise CollageOddsError(f"a height bar stands above the floor, got {bar_to!r} over {base!r}")
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, x - 18, 640, 36, base - 640, STEEL, INK, EDGE, radius=6.0)
+    cv.rect(g, x - 220, base - 40, 440, 60, "#3b4148", INK, EDGE, radius=14.0)
+    bar = cv.group(g, cv.uid("g"))
+    cv.rect(bar, x - 18, 620, 220, 22, STEEL, INK, EDGE, radius=6.0)
+    if bar_at is not None:
+        if not (checks.number(bar_at) and 0 <= bar_at < end):
+            raise CollageOddsError(f"a bar drops at a time before {end}, got {bar_at!r}")
+        cv.keys(bar, "y", [(bar_at, 0.0), (bar_at + 0.35, bar_to - 620.0)], hold=False, kind="cubic-out", local=False)
+    return g

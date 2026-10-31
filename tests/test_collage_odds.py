@@ -36,6 +36,7 @@ def shapes(cv: Canvas) -> int:
         "collage-spinach",
         "collage-wine-glass",
         "collage-water-jug",
+        "collage-doctor-scale",
     ],
 )
 def test_every_prop_is_registered_for_collage(name):
@@ -54,6 +55,7 @@ def test_every_prop_is_registered_for_collage(name):
         lambda cv: collage_odds.spinach(cv, cv.comp, 500, 500),
         lambda cv: collage_odds.wine_glass(cv, cv.comp, 500, 1500),
         lambda cv: collage_odds.water_jug(cv, cv.comp, 500, 1500),
+        lambda cv: collage_odds.doctor_scale(cv, cv.comp, 400, 1880, 3.0, 1100.0, 6.0),
     ],
 )
 def test_every_prop_draws_something_valid(draw):
@@ -69,11 +71,18 @@ def test_a_tap_runs_only_in_its_runs():
     assert shapes(wet) > shapes(dry)
 
 
+def test_a_scale_without_a_drop_stays_where_it_is_drawn():
+    cv = canvas()
+    collage_odds.doctor_scale(cv, cv.comp, 400, 1880)
+    assert shapes(cv) > 0
+
+
 @pytest.mark.parametrize(
     "draw",
     [
         lambda cv: collage_odds.cake_slice(cv, cv.comp, 500, 500, (2.0, 1.0)),
         lambda cv: collage_odds.eye_chart(cv, cv.comp, 200, 400, ("E",), (1.0, 2.0), 6.0, 5.0),
+        lambda cv: collage_odds.doctor_scale(cv, cv.comp, 400, 1880, 7.0, 1100.0, 6.0),
     ],
 )
 def test_a_prop_refuses_cues_it_cannot_play(draw):
