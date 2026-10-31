@@ -9,12 +9,12 @@ from typing import Any, Protocol
 
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
-from .compile import BakeOptions, _frame_count, _resolve_options
+from .compile import BakeOptions, _frame_count, _resolve_options, _scene_time
 from .correctives import ContourCorrection
 from .errors import LimbError
 from .geometry import ProjectedPose, path, project_pose
 from .math3d import Frame, Vec3
-from .motion import Motion, TransformTrack
+from .motion import Motion, TransformTrack, sample_motion
 from .projection import Affine, Camera
 from .validation import MotionReport, audit
 
@@ -173,7 +173,7 @@ def bake_interaction(
             raise LimbError("attached props need a finite scene duration") from exc
         if not math.isfinite(project_end) or project_end < 0 or math.ulp(project_end) > 1e-6:
             raise LimbError("attached props need a representable scene duration")
-        if math.floor(project_end * 1e6 + 1e-9) > math.floor((options.offset + duration) * 1e6 + 1e-9):
+        if _scene_time(project_end) > _scene_time(options.offset + duration):
             released_hold_end = project_end
     frame_total = count + int(released_hold_end is not None)
     if frame_total > options.max_frames:
@@ -196,7 +196,7 @@ def bake_interaction(
             or "contour" not in adapter.capabilities.deformation
         ):
             raise LimbError(f"adapter {participant.style} cannot draw the requested interaction", code="capability")
-        samples = tuple(participant.motion.sample(time) for time in times)
+        samples = tuple(sample_motion(participant.motion, time, track=participant.name) for time in times)
         poses = tuple(
             project_pose(
                 s,
@@ -238,8 +238,7 @@ def bake_interaction(
             start, end = options.offset + duration, released_hold_end
         else:
             start, end = options.offset + i / options.fps, options.offset + min(duration, (i + 1) / options.fps)
-        start = math.floor(start * 1e6 + 1e-9) / 1e6
-        end = math.floor(end * 1e6 + 1e-9) / 1e6
+        start, end = _scene_time(start), _scene_time(end)
         cv.gate(group, [(start, end)])
         for j, surface in enumerate(frame):
             if surface.participant is not None and surface.pose is not None:

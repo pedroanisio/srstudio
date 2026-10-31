@@ -253,10 +253,13 @@ def _held_tilts(spans: Sequence[tuple[Pose, float, float]], tilt_of: Callable[[s
 
 
 def rest_springs(setup, run: int = SPRING_RUN) -> None:
-    """Start every ``run``-th carried spring key under ``setup`` from rest. Spring keys carry their momentum from key
-    to key, and the engine's time for a frame can double or worse with each carried key before it: a still 9 s into one
-    long shot took over two minutes. Each move in a head plan starts from rest anyway, so call this on a shot long
-    enough to feel it; a restart moves nothing a viewer can see. Reels that do not call it are unchanged."""
+    """Apply a lossy compatibility optimization by resetting every ``run``-th carried spring key under ``setup``.
+
+    Removing carried momentum changes the trajectory and may introduce visible velocity changes. Preview any
+    result that uses this helper. New callers should use ``figure`` or ``Channel.during``: those paths automatically
+    sample long spring chains while preserving carried motion, within their sampling precision and work budget.
+    This helper remains available for existing scenes that intentionally use spring resets.
+    """
     if run < 2:
         raise ToonDataError(f"a run of {run} carried keys carries nothing: use 2 or more")
     for animate in setup.iter("animate"):

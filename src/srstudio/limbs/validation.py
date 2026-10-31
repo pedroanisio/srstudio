@@ -72,7 +72,8 @@ def audit(
     for a, b in zip(samples, samples[1:], strict=False):
         if b.time <= a.time:
             raise LimbError("quality samples must be in strictly increasing time order")
-        velocities.append((b.time, (b.arm.wrist - a.arm.wrist) / (b.time - a.time)))
+        # Each secant velocity belongs to its interval midpoint, including a short final held-pose interval.
+        velocities.append((a.time + (b.time - a.time) / 2, (b.arm.wrist - a.arm.wrist) / (b.time - a.time)))
         elbow_speeds.append(a.arm.elbow.distance(b.arm.elbow) / (b.time - a.time))
         rotation = a.hand.frame.rotation.inverse() * b.hand.frame.rotation
         angle = 2 * math.atan2(math.hypot(rotation.x, rotation.y, rotation.z), abs(rotation.w))

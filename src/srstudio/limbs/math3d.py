@@ -29,7 +29,9 @@ def items(value: object, name: str) -> tuple[object, ...]:
 def bounded(value: object, low: float, high: float, name: str) -> float:
     value = number(value, name)
     if not low <= value <= high:
-        raise LimbError(f"{name} must be within {low}..{high}, got {value}", code="joint-limit")
+        raise LimbError(
+            f"{name} must be within {low}..{high}, got {value}", code="joint-limit", context={'field': name}
+        )
     return value
 
 

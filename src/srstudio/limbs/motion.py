@@ -506,6 +506,17 @@ class Motion:
     def sample(self, time: float) -> Sample:
         if number(time, "sample time") < 0:
             raise LimbError("motion sample time must be non-negative")
+        try:
+            return self._sample(time)
+        except LimbError as error:
+            context: dict[str, str | int | float] = {'time': time, 'side': self.arm.side}
+            for index, action in enumerate(self.actions):
+                if action.start <= time < action.end:
+                    context.update(action=action.name, action_index=index)
+                    break
+            raise error.with_context(**context) from error
+
+    def _sample(self, time: float) -> Sample:
         goal, control, action, phase = self._request(time)
         orientation: Quaternion | None = None
         local_orientation = False
@@ -606,3 +617,11 @@ class Motion:
                     return attachment.initial
                 return self.sample(min(time, attachment.release)).hand.frame.compose(attachment.offset)
         raise LimbError(f"unknown attached prop {name!r}")
+
+
+def sample_motion(motion: Motion, time: float, *, track: str) -> Sample:
+    """Sample a named compilation input while retaining the originating motion's error context."""
+    try:
+        return motion.sample(time)
+    except LimbError as error:
+        raise error.with_context(track=track) from error
