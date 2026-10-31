@@ -464,14 +464,20 @@ def _clash(data: object, where: str) -> Clash:
     )
 
 
-def load(folder: Path) -> Bible:
-    """Read ``cast.json`` and ``relationships.json`` of ``folder``; refuse anything the bible's rules do not allow."""
+def documents(folder: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The two JSON documents of ``folder`` with their top-level keys and one shared version checked, nothing more."""
     cast = _read(Path(folder) / "cast.json")
     pairs = _read(Path(folder) / "relationships.json")
     _top(cast, "cast.json", ("characters", "roles", "places", "rules", "clashes"))
     _top(pairs, "relationships.json", ("relationships",))
     if cast["version"] != pairs["version"]:
         raise _fail("bible", f"cast.json is version {cast['version']} and relationships.json {pairs['version']}")
+    return cast, pairs
+
+
+def load(folder: Path) -> Bible:
+    """Read ``cast.json`` and ``relationships.json`` of ``folder``; refuse anything the bible's rules do not allow."""
+    cast, pairs = documents(folder)
     characters = tuple(
         Character.parse(c, f"cast.json.characters[{i}]") for i, c in enumerate(_list(cast, "characters", "cast.json"))
     )

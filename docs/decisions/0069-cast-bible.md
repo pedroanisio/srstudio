@@ -80,6 +80,31 @@ are written from the data and never hold a fact it does not. The diagram is draw
 Sans, with a layout found by code that keeps every name apart, splits each world into its connected groups and
 prefers fewer lines through names and fewer crossings.
 
+## Stability and extension
+
+**The lock.** `bible/lock.json` holds a sha256 digest of every record (each character, pair, place, rule and clash, and
+the unnamed roles) for one version. `srstudio.bible_lock` refuses a bible that moved away from it: a record edited,
+added or removed under the locked version; a version that went down; a new version with no `## <version>` section in
+`CHANGELOG.md`; a new record under a patch version (a new record is a minor version, a correction a patch); a lock
+that is missing, malformed or for another schema. `srstudio bible lock` rewrites the lock under the same rules, so it
+cannot bless a drifted persona. `srstudio bible verify` reports lock problems with the fact problems, and the delivery
+gate reads the lock, so a first delivery is refused while the bible has drifted. The lock stops a silent edit; it does
+not stop a hand edit of `lock.json`, which is a diff a reviewer reads.
+
+**Gaps.** `srstudio bible gaps` recounts the published reels and lists the names on 2 or more of them in one world
+with no sheet (`missing`), the sheets that do not list a published reel that names the character (`stale`), the
+placeholders still waiting, and how many published reels name no character of the bible. A reel that a recorded clash
+cites, or names in its subject, is not stale: it waits for the operator, not for an author. The exit status is 1 when
+anything is missing or stale. Today: 0 missing, 0 stale.
+
+**To extend:** run `bible gaps`; write each new character, pair or fact from the published reels with the reel and a
+quotation; raise the version in both files; add the changelog section; `bible verify`; `bible lock`; `bible render`.
+A new reel gets its characters by a `Cast: slug, slug` line in the brief, checked by `bible check --brief`, and becomes
+canon only when it is published.
+
+**What stays human.** Which side of a clash wins, who a placeholder becomes, and whether a joke contradicts a canon
+fact in other words.
+
 ## Verification of what the models drafted
 
 Models drafted the persona sheets from the published reels. They are untrusted, and the five controls hold:
@@ -87,11 +112,11 @@ Models drafted the persona sheets from the published reels. They are untrusted, 
 1. A typed parse (`bible.load`) refuses unknown fields and every shape the schema forbids.
 2. Semantic validation: backed-or-marked fields, the approved drawing, alphabetical unique pairs, places and pairs that
    name real characters.
-3. A defined failure path: `BibleError`, `InventoryError`, `BibleBuildError` and `BibleCheckError`, each typed, and a
+3. A defined failure path: `BibleError`, `LockError`, `InventoryError`, `BibleBuildError` and `BibleCheckError`, each typed, and a
    delivery refused with a `DeliveryError`.
 4. Tests that feed malformed and adversarial files to each (`tests/test_bible.py`, `test_bible_inventory.py`,
-   `test_bible_check.py`, `test_bible_render.py`, `test_bible_diagram.py`, `test_bible_cli.py`, and the gate tests in
-   `tests/test_social.py`).
+   `test_bible_check.py`, `test_bible_lock.py`, `test_bible_gaps.py`, `test_bible_render.py`, `test_bible_diagram.py`,
+   `test_bible_cli.py`, and the gate tests in `tests/test_social.py`).
 5. Deterministic bounds: the layout tries a fixed number of seeds and the separation pass a fixed number of rounds.
 
 Each model's fragment was verified by `bible_inventory.cite` before it was merged, and `bible.verify` ran over the

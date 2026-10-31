@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import bible, bible_diagram
+from srstudio import bible, bible_diagram, bible_lock
 from srstudio.cast_card import CAST
 
 LIBRARY = Path(__file__).resolve().parent.parent / "bible"
@@ -52,3 +52,7 @@ def test_the_diagram_can_be_drawn_from_the_shipped_pairs(shipped):
 @pytest.mark.parametrize("name", ["cast.json", "relationships.json", "CHANGELOG.md"])
 def test_no_file_of_the_library_names_a_retired_account_or_font(name):
     assert not RETIRED.search((LIBRARY / name).read_text()), name
+
+
+def test_the_shipped_bible_matches_its_lock_so_no_persona_changed_without_a_new_version():
+    assert bible_lock.problems(LIBRARY) == []

@@ -39,6 +39,7 @@ from srstudio import (
     auto_enhance,
     bible,
     bible_check,
+    bible_lock,
     caption_gate,
     comedy_floor,
     figure_gates,
@@ -111,6 +112,7 @@ def bible_findings(first: dict[str, str], chosen: dict[str, releases.Release], e
         return {}
     try:
         library = bible.load(BIBLE_DIR)
+        bible_lock.check(BIBLE_DIR)  # a persona edited without a new version is drift, and nothing is delivered on it
     except bible.BibleError as exc:
         raise DeliveryError(f"the cast bible cannot be read: {exc}") from exc
     known = {e.name for e in registry.entries("character")}

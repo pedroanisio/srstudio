@@ -1054,7 +1054,7 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)
-    monkeypatch.setattr(posts, "BIBLE_DIR", bible_docs.write(tmp_path / "bible"))
+    monkeypatch.setattr(posts, "BIBLE_DIR", bible_docs.locked(tmp_path / "bible"))
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
@@ -1345,4 +1345,16 @@ def test_a_bible_that_cannot_be_read_refuses_the_first_delivery_instead_of_passi
     posts.auto_enhance.set_mode(tmp_path, on=False)
     monkeypatch.setattr(posts, "BIBLE_DIR", tmp_path / "nowhere")
     with pytest.raises(DeliveryError, match="the cast bible cannot be read"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_bible_edited_without_a_new_version_refuses_the_first_delivery(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    cast = tmp_path / "bible" / "cast.json"
+    cast.write_text(cast.read_text().replace("a holiday rental", "a cabin by a lake"))  # drift: no bump, no lock
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible cannot be read.*place:.*changed without a version bump"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
