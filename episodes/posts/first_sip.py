@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Brian (Brent), Jessica (Deb) and Daniel (Omar). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Brian (Brent), Jessica (Deb) and Daniel (Omar). Foley synthesized.",
         hashtags=('#winetasting', '#dinnerdate', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Bold.", 6.0, "Collage 33"),
     ),

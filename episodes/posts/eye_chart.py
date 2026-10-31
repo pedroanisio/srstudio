@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Jessica (Deb) and Alice (Dr. Feld). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Jessica (Deb) and Alice (Dr. Feld). Foley synthesized.",
         hashtags=('#eyeexam', '#adulting', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Better with one,\nor two?", 0.5, "Collage 31"),
     ),

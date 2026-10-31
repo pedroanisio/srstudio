@@ -18,6 +18,7 @@ RELEASE = Release(
         hashtags=("#checkout", "#supermarket", "#relatable", "#animatedshorts", "#comedyshorts"),
         thumbnail=Thumbnail("Why is your line\nalways the slowest?", 5.4, "Okayville"),
     ),
+    cover=True,
     tags=Tags(
         "money-services",
         "other-person",

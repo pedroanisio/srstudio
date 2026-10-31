@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Collage sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Will (Jun) and Daniel (Omar). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Will (Jun) and Daniel (Omar). Foley synthesized.",
         hashtags=('#sensor', '#publicrestroom', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("Hello?\nI'm right here.", 3.2, "Collage 32"),
     ),

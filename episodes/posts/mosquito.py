@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Bill (Bruno) and Sarah (Mae). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Bill (Bruno) and Sarah (Mae). Foley synthesized.",
         hashtags=('#mosquito', '#insomnia', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("It's in here.", 2.0, "Toon 31"),
     ),

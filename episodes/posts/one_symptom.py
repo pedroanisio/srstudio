@@ -14,7 +14,7 @@ RELEASE = Release(
             "\n"
             "A Toon sketch voiced with ElevenLabs premade voices; original characters drawn in code."
         ),
-        credit="Voices: ElevenLabs premade voices Callum (the patient) and Brian (the doctor). Foley synthesised.",
+        credit="Voices: ElevenLabs premade voices Callum (the patient) and Brian (the doctor). Foley synthesized.",
         hashtags=('#webmd', '#doctor', '#relatable', '#animatedshorts', '#comedyshorts'),
         thumbnail=Thumbnail("You have a headache.", 14.0, "Toon 33"),
     ),

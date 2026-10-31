@@ -10,7 +10,8 @@ Back to the [library README](../../README.md). Twenty-four original reels in del
 
 Every reel: no music bed, foley and stings only, dialogue captions burned in, one key line on screen within 2 s, a first
 line inside 0.5 s, nothing after the peak. Arms follow the running cycle of `sp-hook_motion` and the recipient test: first
-second A is one held frame, B moves; recipient B exaggerates a behaviour and names who it is sent to.
+second A is one held frame, B moves; recipient B exaggerates a behavior and names who it is sent to.
+After L7 (Slack 1793478640.563219) five reels stay on a still opening: the-scale, eye-chart, slept-wrong, seat-belt-sign and did-you-pack. The others open on movement, so a "Held frame" below names the picture, not the arm.
 
 Cast: ava, bo, brent, bruno, candidate, deb, dev, fern, gary, jun, juno, kai, mae, manager, milo, noor, omar, pip, priya, rex, rosa
 
