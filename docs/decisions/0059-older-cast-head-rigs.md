@@ -6,7 +6,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 - Status: proposed (2026-10-31). The operator asked for the rigs ("build rigs"). Each rig stays proposed, and refused
   to a reel, until the operator judges its clip. Implemented: `DOG_RIG` to `HEDGEHOG_RIG` in `srstudio.toon_redrawn`,
-  their six `HeadStyle`s, `Split.open_chin` and `shade(only=)` in `srstudio.toon_critters`, the six `rig` records on the
+  their six `HeadStyle`s, `Split.open_chin` and `shade(above=)` in `srstudio.toon_critters`, the six `rig` records on the
   `toon-*` version 2 records; `tests/test_toon_redrawn.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0047](0047-character-versions.md), [ADR 0050](0050-organic-head-motion.md) and
@@ -40,8 +40,10 @@ Two facts of the rig set the rest:
    stopping the ink early left a stretch of bare fill.
 3. **The chin runs above the belly.** Each chin is traced just over the top of the character's belly or chest, so the
    head cannot hide what the flat drawing shows. A test holds that at rest.
-4. **Shade follows the outline, not the chin.** `shade(only=)` stops the head's shade at the joins, so no band of shade
-   runs along an edge that carries no ink.
+4. **The head's shade is the drawing's band, cut along the chin.** The neck is a concave corner, and a band stopped
+   there leaves a pale wedge where the drawing's band runs on unbroken. So the band is taken from the whole silhouette
+   and `shade(above=)` keeps what lies over the chin, lapping 2 reference pixels past it (`CHIN_LAP`) so no line of coat
+   shows between the head's piece and the body's. No band runs along the chin itself.
 5. **The neck runs up behind the head's own edge.** Each `top` starts on the head's outline, so turning the head never
    shows a gap between the body's ink and the head's.
 6. **Each character moves its own way.** `HeadStyle`s, with the seed unique across all rigs: the dog eager and bouncing,
@@ -62,7 +64,7 @@ Two facts of the rig set the rest:
 
 - Reels can name the six in `heads=` as soon as the operator approves each rig, one at a time.
 - `Split.open_chin` is available to any `toon_torso` character with a body that hides nothing at the neck.
-- `shade(only=)` and `open_chin` default to the old behaviour, so the sloth, goat, hamster and fox rigs keep their
+- `shade(above=)` and `open_chin` default to the old behaviour, so the sloth, goat, hamster and fox rigs keep their
   digests, and the flat version 2 drawings keep theirs.
 - At the deepest nod the chin's edge crosses the belly in a small corner. That is a limit of a rigid head over a body
   that does not move, and it shows only at the bound.

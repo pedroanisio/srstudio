@@ -375,6 +375,40 @@ def test_at_rest_what_the_flat_drawing_shows_under_the_chin_the_rig_shows_too(na
         assert _top([*rig.skull(), *rig.face()], x, y) == seen, (name, x, y)
 
 
+def _at_rest(rig, x: float, y: float) -> str | None:
+    """The colour a rig shows at a reference point with its head at rest: tilted about the neck, over the body."""
+    a = math.radians(-rig.tilt)
+    dx, dy = x - rig.neck[0], y - rig.neck[1]
+    held = (rig.neck[0] + dx * math.cos(a) - dy * math.sin(a), rig.neck[1] + dx * math.sin(a) + dy * math.cos(a))
+    return _top([*rig.skull(), *rig.face()], *held) or _top(rig.trunk(), x, y)
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_at_rest_the_shade_runs_down_the_neck_as_the_flat_drawing_has_it(name):
+    """A band stopped at the neck joins leaves a pale wedge in the corner, where the drawing's band runs on unbroken."""
+    look, rig = REDRAWN[name], rig_of(name)
+    flat = [layer for layer, _ in look.drawing.parts()]
+    join_x, join_y = rig.cover[-1]
+    shaded = [
+        (x, y)
+        for x in range(int(join_x) - 50, int(join_x) + 20, 2)
+        for y in range(int(join_y) - 14, int(join_y) + 15, 2)
+        if _top(flat, float(x), float(y)) == look.drawing.shade
+    ]
+    assert len(shaded) > 30, name
+    kept = sum(_at_rest(rig, float(x), float(y)) == look.drawing.shade for x, y in shaded)
+    assert kept / len(shaded) >= 0.8, (name, kept, len(shaded))
+
+
+def test_a_band_cut_along_a_chin_keeps_what_lies_over_it_and_ends_on_it():
+    square = ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0))
+    whole = toon_critters.shade(square, 20.0, "#000000", steps=8)
+    cut = toon_critters.shade(square, 20.0, "#000000", steps=8, above=lambda x: 50.0)
+    assert cut and max(y for shape, _ in cut for _, y in points(shape)) <= 50.0
+    assert max(y for shape, _ in whole for _, y in points(shape)) > 50.0
+    assert toon_critters.shade(square, 20.0, "#000000", steps=8, above=lambda x: -500.0) == []
+
+
 def _take() -> head_motion.Alignment:
     text = "Everyone knows I rested and nobody asked why"
     spans = ((i * 0.08, (i + 1) * 0.08) for i in range(len(text)))

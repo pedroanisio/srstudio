@@ -31,6 +31,7 @@ The designs are original: generic animals drawn from their anatomy, not any phot
 from __future__ import annotations
 
 import math
+from bisect import bisect_left
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache
@@ -102,17 +103,21 @@ def drifted(
 
 
 def shade(
-    points: Sequence[Point], depth: float, colour: str, least: float = 0.2, steps: int = 4, only: int | None = None
+    points: Sequence[Point],
+    depth: float,
+    colour: str,
+    least: float = 0.2,
+    steps: int = 4,
+    above: Callable[[float], float] | None = None,
 ) -> list[Layer]:
     """The shade tone along every run of a closed contour that faces away from the light: a band from the edge
-    inward, ``depth`` deep where the edge faces straight away and nothing where it stops facing away. ``only`` keeps
-    it to the run through that many of the first points, for a contour whose last points are hidden from the light."""
+    inward, ``depth`` deep where the edge faces straight away and nothing where it stops facing away. ``above`` gives
+    the lowest a band reaches at an ``x``, for a band cut along a chin: what lies under it goes, what crosses it ends
+    on it."""
     ring = brush.facing(points, steps)
     n = len(ring)
     lx, ly = LIGHT_FROM
     depths = [depth * max(0.0, (-(nx * lx + ny * ly) - least) / (1 - least)) ** 0.8 for _, (nx, ny) in ring]
-    if only is not None:
-        depths[(only - 1) * steps :] = [0.0] * (n - (only - 1) * steps)
     start = next((i for i in range(n) if depths[i] == 0), None)
     if start is None:
         raise brush.BrushError("a shade needs part of the contour to face the light")
@@ -128,9 +133,29 @@ def shade(
             inner = [
                 (ring[j][0][0] - ring[j][1][0] * depths[j], ring[j][0][1] - ring[j][1][1] * depths[j]) for j in run
             ]
-            layers.append((brush.outline([*edge, *inner[::-1]], steps=1), colour))
+            if above is not None:
+                pairs = [(e, i) for e, i in zip(edge, inner, strict=True) if e[1] < above(e[0]) or i[1] < above(i[0])]
+                edge = [(x, min(y, above(x))) for (x, y), _ in pairs]
+                inner = [(x, min(y, above(x))) for _, (x, y) in pairs]
+            if edge:
+                layers.append((brush.outline([*edge, *inner[::-1]], steps=1), colour))
         run = []
     return layers
+
+
+def _along(line: Sequence[Point]) -> Callable[[float], float]:
+    """The height of a line at any ``x``, the height of its nearer end past its ends."""
+    ordered = sorted(line)
+    xs = [x for x, _ in ordered]
+
+    def at(x: float) -> float:
+        k = bisect_left(xs, x)
+        if k == 0 or k == len(ordered):
+            return ordered[min(k, len(ordered) - 1)][1]
+        (ax, ay), (bx, by) = ordered[k - 1], ordered[k]
+        return ay + (by - ay) * (x - ax) / (bx - ax)
+
+    return at
 
 
 def _fur(points: Sequence[Point], weight: float = FINE * 1.15, pressure: brush.Pressure = FUR) -> Layer:
@@ -451,6 +476,7 @@ class Critter:
 
 CHIN_ROOM = 30.0  # how far inside the head an open chin's ink closes, reference pixels
 CHIN_PEEL = (7.0, 4.0, 1.5)  # how far inside the head an open chin's ink lies at the points above each join
+CHIN_LAP = 2.0  # how far a head's shade laps past its chin onto the body's, so no line of coat shows between them
 CHIN_TAIL = brush.Pressure(0.04, 1.0, 0.2, 0.0, 1.0)  # the line that carries the ink on to the join, tapering out
 
 
@@ -463,7 +489,7 @@ class Split:
     ``trunk`` what sits on the body. With ``head_over`` the body goes under the head and ``top`` runs up behind the
     head; without it, the body goes over the head and ``top`` is a ruff. With ``open_chin`` a head runs on into its body
     with no chin line, as its drawing does: the head's ink tapers out at the joins, where ``top`` runs up the same edge
-    behind it and carries the contour on, and its shade stops at them."""
+    behind it and carries the contour on, and its shade is the drawing's, cut along the chin."""
 
     chin: tuple[Point, ...]
     top: tuple[Point, ...]
@@ -516,7 +542,9 @@ def torso_rig(
             brush.stroke(drawn[count - 2 : count - ends - 1 : -1], INK * 1.05, CHIN_TAIL, steps=6),
         ]
         fill: list[Layer] = [*((line, "ink") for line in ink), (brush.outline(drawn, steps=3), coat)]
-        return fill + shade(drawn, 22.0, shading, only=count)
+        ring = [point for point, _ in brush.facing(drawn, 3)]
+        chin = _along((*ring[(count - 1) * 3 :], ring[0]))
+        return fill + shade(torso.under(drawn[:count]), 22.0, shading, above=lambda x: chin(x) + CHIN_LAP)
 
     @lru_cache(maxsize=1)
     def skull() -> tuple[Layer, ...]:
