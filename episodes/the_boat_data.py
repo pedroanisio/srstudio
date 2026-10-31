@@ -38,7 +38,10 @@ ACCESSIBILITY = (
     "on and they shush him, and he comes down and joins them. The phone shows one percent and goes black. Four heads "
     "turn to her. Lines appear in tinted pills."
 )
-NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)} and Laura (the phone); a synthesized bus, whoosh and sting."
+NARRATION = (
+    f"Voiced with ElevenLabs premade voices {voices_note(NAMES)} and Laura (the phone);"
+    " a synthesized bus, whoosh and sting."
+)
 NOTE = "ElevenLabs premade voices Jessica, Daniel, Sarah, Will, Brian and Laura at their natural pace; no cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 

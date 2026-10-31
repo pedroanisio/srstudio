@@ -350,9 +350,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
         if staging.keep_signature:
-            face = collage_sets.zoom_pivot(
-                staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP
-            )
+            face = collage_sets.zoom_pivot(staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP)
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
