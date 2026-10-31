@@ -8730,6 +8730,23 @@
         }
       ]
     },
+    "collage-spinach": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wide leaf of spinach to stick across someone's teeth. First drawn for best-day; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "621631d0fe0595f6e1a15bc44d91d2cc7194baf7be467b57e79f189708024c28",
+          "rig": null
+        }
+      ]
+    },
     "collage-wine-glass": {
       "kind": "prop",
       "style": "collage",
