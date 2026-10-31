@@ -35,6 +35,7 @@ RELEASE = Release(
         "collage-jun": 1,
         "collage-kai": 1,
         "collage-omar": 1,
+        "collage-sensor-tap": 1,
         "signature-cactus": 1,
         "signature-code": 1,
     },

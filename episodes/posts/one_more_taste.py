@@ -41,6 +41,7 @@ RELEASE = Release(
         "toon-parlour-back": 1,
         "toon-parlour-case": 1,
         "toon-parlour-front": 1,
+        "toon-tasting-spoons": 1,
     },
     comedy=Scores(18, 18),
 )

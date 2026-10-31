@@ -29,6 +29,7 @@ RELEASE = Release(
     ),
     style="Collage",
     parts={
+        "collage-doctor-scale": 1,
         "collage-gary": 1,
         "collage-priya": 1,
         "collage-sign": 1,

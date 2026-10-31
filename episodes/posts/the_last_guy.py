@@ -37,6 +37,8 @@ RELEASE = Release(
         "toon-key-line": 1,
         "toon-kitchen": 1,
         "toon-ledge": 1,
+        "toon-paper-insert": 1,
+        "toon-pipe": 1,
     },
     comedy=Scores(18, 18),
 )

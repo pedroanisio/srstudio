@@ -36,9 +36,11 @@ RELEASE = Release(
         "toon-bedroom": 1,
         "toon-captions": 1,
         "toon-key-line": 1,
+        "toon-mosquito": 1,
         "toon-paw": 1,
         "toon-quilt": 1,
         "toon-rabbit": 2,
+        "toon-rolled-towel": 1,
     },
     comedy=Scores(19, 18),
 )
