@@ -11,7 +11,8 @@ The pipeline is :mod:`srstudio.interview`; this file is the episode: its script,
 (:func:`schedule`) and its cuts (:func:`extra`). An interview ends on the usual question, the candidate asks the one
 nobody asks, and the two of them end up in each other's chairs. Eric is the manager and Will the candidate, as in the
 interview reels. There is no music, and the foley is synthesized in the build. The camera moves from its first frame
-(arm B of the ``sp-hook_motion`` test), the first line at 0.5 s.
+(arm B of the ``sp-hook_motion`` test), the first line at 0.5 s. The manager's voice falls as the desk stops being his:
+each ``level`` is a choice in the mix, so the takes and the timing stay as recorded.
 """
 
 from __future__ import annotations
@@ -27,20 +28,21 @@ VOICES = {
 SCRIPT = [  # role, text, caption, speed
     Spoken("manager", "Do you have any questions for us?", "Do you have any questions for us?", 1.02),
     Spoken("candidate", "Just one. Are you happy here?", "Just one.\nAre you happy here?", 1.00),
-    Spoken("manager", "We have free fruit.", "We have free fruit.", 0.95),
+    Spoken("manager", "We have free fruit.", "We have free fruit.", 0.95, level=-2),
     Spoken("candidate", "When was your last vacation?", "When was your last vacation?", 1.00),
-    Spoken("manager", "What year is it?", "What year is it?", 0.92),
+    Spoken("manager", "What year is it?", "What year is it?", 0.92, level=-3),
     Spoken("candidate", "Take your time.", "Take your time.", 0.95),
     Spoken(
         "manager",
         "It's just bananas. Since March. Just bananas.",
         "It's just bananas.\nSince March.\nJust bananas.",
         0.92,
+        level=-4,
     ),  # fmt: skip
     Spoken("candidate", "What's your greatest weakness?", "What's your greatest weakness?", 1.00),
-    Spoken("manager", "I stayed.", "I stayed.", 0.88),
+    Spoken("manager", "I stayed.", "I stayed.", 0.88, level=-7),
     Spoken("candidate", "We'll be in touch.", "We'll be in touch.", 1.00),
-    Spoken("manager", "Will you?", "Will you?", 0.90),
+    Spoken("manager", "Will you?", "Will you?", 0.90, level=-5),
 ]
 START = 0.50  # the first word, on the held frame's last moment
 FALL = 2.0  # the smile holds, and goes on one side
