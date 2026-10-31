@@ -198,15 +198,18 @@ def _gazing(look: Look, name: str) -> Look:
     return replace(look, drawing=drawing.looking(dx, dy))
 
 
-def _animate(cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, base: float = 0.0) -> None:
-    """Emit engine keys, sampling long carried springs to bound renderer evaluation."""
+def _animate(
+    cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, base: float = 0.0, carried: bool = False
+) -> None:
+    """Emit engine keys, sampling long carried springs to bound renderer work; ``carried`` keeps them as they are."""
     if not channel.keys:
         return
     if cv._frozen:
         hold = channel.spring is None and channel.curve == "hold"
         cv.keys(node, prop, [(t, round(base + value * scale, 4)) for t, value in channel.keys], hold=hold, local=False)
         return
-    channel = _bake_spring(channel)
+    if not carried:
+        channel = _bake_spring(channel)
     curve = "spring" if channel.spring else channel.curve
     a = node.add_animate(property=prop, defaultInterpolation=curve)
     attrs = channel.spring.attributes() if channel.spring else {}
@@ -285,8 +288,6 @@ def figure(
         for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
             if channel is not None and channel.keys:
                 _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
-    elif pose_tilt is not None:
-        pose_tilt = _bake_spring(pose_tilt)
     seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
     neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
     seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
@@ -302,7 +303,7 @@ def figure(
     held = turn
     if pose_tilt is not None:
         held = cv.group(turn, cv.uid("tilt"), **neck)
-        _animate(cv, held, "rotation", pose_tilt)
+        _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
     nod = cv.group(held, cv.uid("nod"), **neck)
     _animate(cv, nod, "rotation", plan.roll)
     _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
