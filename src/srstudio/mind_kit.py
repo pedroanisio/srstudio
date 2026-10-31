@@ -25,8 +25,9 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
 from .registry import register
-from .sketch import TOON_CAST
+from .sketch import TOON_CAST, Speaker
 from .styles import TOON, Font, Mix
+from .voice import Voice, VoiceSettings
 
 __all__ = [
     "CARD",
@@ -35,6 +36,7 @@ __all__ = [
     "INK",
     "MIND",
     "MIND_CAST",
+    "NARRATOR",
     "MindKitError",
     "NAME_MIN",
     "PAPER",
@@ -120,6 +122,12 @@ MIND = replace(
     mix=Mix(loudness="-14"),
 )
 MIND_CAST = replace(TOON_CAST, name="Mind", characters=(*TOON_CAST.characters, CARD, STAGE))
+# The same narrator in every episode, heard only: the series' voice, ElevenLabs premade (ADR 0055).
+NARRATOR = Speaker(
+    "narrator",
+    Voice(role="narrator", id="hpp4J3VqNfWAUOO0d1Us", name="Bella"),
+    VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15),
+)
 
 
 class MindKitError(SrstudioError, ValueError):

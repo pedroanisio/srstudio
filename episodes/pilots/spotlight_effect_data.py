@@ -6,7 +6,7 @@ than you think. And the goat, who has been holding his own clipboard up all alon
 words, in the same kitchen, so the end cuts back to the first frame.
 
 Text on screen carries every key point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade
-Daniel; the two characters are ElevenLabs premade River and Bill. ``SKETCH`` is checked by
+Bella; the two characters are ElevenLabs premade River and Bill. ``SKETCH`` is checked by
 :func:`srstudio.sketch.check`; :func:`validate` checks the events and every word on screen against
 :func:`srstudio.mind_kit.check_copy`; :func:`dress` draws each shot and :func:`foley` its sound.
 
@@ -57,8 +57,8 @@ ACCESSIBILITY = (
     "the shirt. She lowers the clipboard. The goat lowers his, wearing the same shirt, and looks down at it in the "
     "kitchen as she did."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Daniel (narrator), River and Bill; synthesised effects."
-NOTE = "ElevenLabs premade voices Daniel, River and Bill at their natural pace; no reference-voice cloning."
+NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), River and Bill; synthesised effects."
+NOTE = "ElevenLabs premade voices Bella, River and Bill at their natural pace; no reference-voice cloning."
 
 STUDY = mind_kit.Evidence(
     "Gilovich, Medvec & Savitsky",
@@ -69,8 +69,7 @@ STUDY = mind_kit.Evidence(
 GUESSED = ("Guessed could say who was on it", 0.46, "46%")  # Study 1: p. 215, footnote 3
 COULD = ("Really could", 0.23, "23%")  # the same footnote; each bar is its share of the room
 
-DANIEL = Voice(role="narrator", id="onwK4e9ZLuTAKqWW03F9", name="Daniel")
-NARRATOR = Speaker("narrator", DANIEL, VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15))
+NARRATOR = mind_kit.NARRATOR
 HAMSTER = Speaker(
     "ham",
     Voice(role="ham", id="SAz9YHcvj6GT2YYXdXww", name="River"),
@@ -348,7 +347,7 @@ POST = InstagramPost(
         "embarrassing T-shirt guessed 46% of the room could say who was on it. 23% could.\n"
         "Source: Gilovich, Medvec & Savitsky (2000), Journal of Personality and Social Psychology 78(2)."
     ),
-    credit="Voices: ElevenLabs premade voices Daniel, River and Bill. Original characters, drawn in code.",
+    credit="Voices: ElevenLabs premade voices Bella, River and Bill. Original characters, drawn in code.",
     hashtags=("#psychology", "#spotlighteffect", "#howpeoplethink", "#everydaylife"),
     thumbnail=Thumbnail(
         "It was\na gift.", 1.0, "There's a name for that", focus=(350.0, 1020.0), zoom=1.25, place="top"
