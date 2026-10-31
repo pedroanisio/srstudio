@@ -8,34 +8,40 @@ import shutil
 import stat
 import tempfile
 from collections.abc import Iterator
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 
 
 @contextmanager
 def pinned_directories(paths: tuple[Path, ...], *, private: bool = False) -> Iterator[dict[Path, int]]:
-    """Keep output directories open from the input checks through installation."""
+    """Keep output directories open from the input checks through installation; a failure inside the block takes back
+    the directories made here that stayed empty, so a build that wrote nothing leaves no folder."""
     with ExitStack() as stack:
         result: dict[Path, int] = {}
+        created: list[Path] = []
         for path in paths:
             parent = path.parent
             if parent in result:
                 continue
-            if private:
-                missing: list[Path] = []
-                directory = parent
-                while not directory.exists():
-                    missing.append(directory)
-                    directory = directory.parent
-                for directory in reversed(missing):
-                    directory.mkdir(mode=0o700, exist_ok=True)
-            else:
-                parent.mkdir(parents=True, exist_ok=True)
+            missing: list[Path] = []
+            directory = parent
+            while not directory.exists():
+                missing.append(directory)
+                directory = directory.parent
+            for directory in reversed(missing):
+                directory.mkdir(mode=0o700 if private else 0o777, exist_ok=True)
+                created.append(directory)
             fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
             stack.callback(os.close, fd)
             result[parent] = fd
-        yield result
+        try:
+            yield result
+        except BaseException:
+            for directory in reversed(created):
+                with suppress(OSError):  # a directory holding a report stays, and so do its parents
+                    directory.rmdir()
+            raise
 
 
 def _check_directory(path: Path, fd: int) -> None:
