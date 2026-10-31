@@ -171,4 +171,5 @@ STAGING = Staging(
     cast=casting,
     setting=setting,
     bitrate=BITRATE,
+    keep_signature=True,
 )

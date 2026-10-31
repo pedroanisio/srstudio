@@ -244,6 +244,7 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     bitrate=BITRATE,
+    keep_signature=True,
     still=STILL,
     opening=opening,
 )

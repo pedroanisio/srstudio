@@ -72,12 +72,12 @@ BEATS, END = timed(
         (1.15, "deb", 5, "wide", "frown", "shrug"),
         (2.8, "feld", 6, "open", "smile", "point", "reveal:more"),
         (1.4, "deb", 7, "angry", "flat", "hold"),
-        (1.0, "feld", 8, "half", "smug", "hold"),
+        (1.0, "feld", 8, "half", "smug", "hold", "zoom"),  # a cut ends it; the listing stays wide
         (1.0, "deb", "", "sad", "flat", "down", "reveal:leave"),
         (1.3, "feld", "", "side", "flat", "hold", "thud"),  # alone
         (0.5, "feld", "", "half", "smile", "point", "flash"),
         (2.7, "feld", 9, "half", "smile", "point"),
-        (0.5, "feld", "", "half", "grin", "point", "zoom"),  # with love
+        (0.5, "feld", "", "half", "grin", "point"),  # with love
         (2.2, "feld", 10, "half", "smug", "point"),
         (0.9, "feld", "", "half", "smile", "point", "reveal:listing"),
         (0.5, "feld", "", "half", "smile", "point", "sting"),
@@ -226,4 +226,5 @@ STAGING = Staging(
     dress=dress,
     cast=casting,
     bitrate=BITRATE,
+    keep_signature=True,
 )
