@@ -42,6 +42,7 @@ __all__ = [
     "food",
     "gust",
     "lasagna",
+    "magnifying_glass",
     "phone",
     "router",
     "salt_shaker",
@@ -221,6 +222,21 @@ def flip_card(
         for at in times[1:]:
             turns += [(at - FLIP / 2, 1.0), (at, 0.0), (at + FLIP / 2, 1.0)]
         cv.keys(g, "scaleX", turns, hold=False, local=False)
+    return g
+
+
+@register("prop", "collage-magnifying-glass", summary="A paper magnifying glass: a ring, a tinted lens and a handle")
+def magnifying_glass(
+    cv: Canvas, parent, x: float = 540.0, y: float = 1100.0, size: float = 420.0, tilt: float = -30.0
+) -> object:
+    """A glass whose lens is ``size`` across, centred on ``x, y``, its handle running away at ``tilt`` degrees: the
+    lens is see-through, so what is drawn under it shows; returns the group, which a caller keys to move."""
+    k = round(_size(size, "a lens's size") / 420.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k, rotation=tilt)
+    draw_shapes(cv, g, _paper(_cut("glass-handle", [(-34, 200), (34, 200), (44, 520), (-44, 520)], 2), "#6b4226"))
+    cv.ellipse(g, -210, -210, 420, 420, "#cfe8ff40", "#2b2d42", 26)
+    cv.ellipse(g, -180, -180, 360, 360, "#ffffff00", "#ffffff99", 6)
+    cv.path(g, "M-120 -96 Q-82 -148 -22 -152", stroke="#ffffffcc", sw=16)
     return g
 
 

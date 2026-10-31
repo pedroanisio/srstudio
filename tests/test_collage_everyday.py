@@ -292,3 +292,21 @@ def test_a_flip_card_refuses_a_side_it_could_not_show_whole(sides):
     cv = canvas()
     with pytest.raises(EverydayError):
         collage_everyday.flip_card(cv, cv.comp, sides)
+
+
+# -- the magnifying glass ---------------------------------------------------------------------------------------------
+def test_the_magnifying_glass_is_registered():
+    assert registry.get("prop", "collage-magnifying-glass").builder is collage_everyday.magnifying_glass
+
+
+def test_a_magnifying_glass_has_a_lens_that_shows_what_is_under_it():
+    cv = canvas()
+    collage_everyday.magnifying_glass(cv, cv.comp)
+    assert b'fill="#cfe8ff40"' in body(cv)
+
+
+@pytest.mark.parametrize("size", [0.0, -1.0, float("inf")])
+def test_a_magnifying_glass_refuses_a_lens_it_cannot_draw(size):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.magnifying_glass(cv, cv.comp, size=size)

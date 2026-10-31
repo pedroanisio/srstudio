@@ -9018,6 +9018,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-magnifying-glass": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A magnifying glass with a see-through tinted lens, a ring and a handle. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "def36f61f07795cf06e84f18260cf4dbe814daa56ca461bbb3722e4e49abe355",
+          "rig": null
+        }
+      ]
     }
   }
 }
