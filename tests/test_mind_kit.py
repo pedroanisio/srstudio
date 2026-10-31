@@ -1,0 +1,309 @@
+"""The mind kit: the channel's cards, its four mechanism visuals, its captions, its sting and its copy check."""
+
+from __future__ import annotations
+
+import wave
+import xml.etree.ElementTree as ET
+
+import pytest
+from sr_core.scene import Scene
+
+from srstudio import PEACH, Canvas, flat_counter, mind_kit, registry, toon
+from srstudio.styles import TOON
+
+
+def measure(text: str, size: float) -> float:
+    return 0.55 * size * len(text)
+
+
+def canvas() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=12.0, background=PEACH.background)
+    return Canvas(scene, PEACH, font_asset="fraunces", namer=flat_counter("k"))
+
+
+def tree(cv: Canvas):
+    return ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+
+
+def texts(cv: Canvas) -> list[str]:
+    return [node.get("text") or (node.text or "") for node in tree(cv).iter() if node.tag.endswith("text")]
+
+
+def study() -> mind_kit.Evidence:
+    return mind_kit.Evidence("Lee & Ray", "2001", "Students wore a loud hat.", "Fewer noticed than they guessed.")
+
+
+@pytest.mark.parametrize(
+    ("kind", "name", "builder"),
+    [
+        ("graphic", "mind-name-card", mind_kit.name_card),
+        ("graphic", "mind-evidence-card", mind_kit.evidence_card),
+        ("graphic", "mind-captions", mind_kit.captions),
+        ("location", "mind-stage", mind_kit.stage),
+        ("prop", "mind-spotlight", mind_kit.spotlight),
+        ("prop", "mind-memory-shelf", mind_kit.memory_shelf),
+        ("prop", "mind-two-lines", mind_kit.two_lines),
+        ("prop", "mind-lens", mind_kit.lens),
+    ],
+)
+def test_the_parts_are_registered(kind, name, builder):
+    assert registry.get(kind, name).builder is builder
+
+
+def test_the_channel_keeps_the_toon_cast_but_not_its_letters_or_clock():
+    assert mind_kit.MIND.font.family != TOON.font.family
+    assert mind_kit.MIND.font.google is not None
+    assert mind_kit.MIND.fps == 30
+    assert mind_kit.MIND.mix.loudness == "-14"
+    assert mind_kit.MIND.width == TOON.width and mind_kit.MIND.height == TOON.height
+    assert TOON.fps == 24 and TOON.mix.loudness == "-16"
+
+
+def test_a_card_stands_in_for_a_character_only_in_the_channels_cast():
+    assert mind_kit.CARD in mind_kit.MIND_CAST.characters
+    assert mind_kit.CARD not in mind_kit.MIND_CAST.lip_synced
+
+
+def test_the_name_card_carries_the_catchphrase_and_the_name_once():
+    cv = canvas()
+    mind_kit.name_card(cv, cv.comp, "The Spotlight Effect", 1.0, 2.0, 5.0, measure)
+    words = " ".join(texts(cv))
+    assert words.count(mind_kit.CATCHPHRASE) == 1
+    assert words.count("Spotlight") == 1
+
+
+def test_the_name_waits_for_its_reveal():
+    cv = canvas()
+    mind_kit.name_card(cv, cv.comp, "The Spotlight Effect", 1.0, 2.0, 5.0, measure)
+    named = next(n for n in tree(cv).iter() if n.get("id") == "name-card-name")
+    assert float(named.get("start")) == 2.0
+
+
+def test_the_name_fills_the_card_at_any_length():
+    short, long = mind_kit.name_lines("Priming", measure), mind_kit.name_lines("The Baader Meinhof Phenomenon", measure)
+    assert short[1] > long[1]
+    assert long[1] >= mind_kit.NAME_MIN
+
+
+@pytest.mark.parametrize(
+    ("name", "start", "reveal", "end", "match"),
+    [
+        ("", 1.0, 2.0, 5.0, "a name card needs"),
+        ("Effect", 3.0, 2.0, 5.0, "start < reveal < end"),
+        ("Effect", 1.0, 6.0, 5.0, "start < reveal < end"),
+        ("Effect", 1.0, 4.8, 5.0, "the name holds"),
+        ("Pneumonoultramicroscopicsilicovolcanoconiosis", 1.0, 2.0, 5.0, "too long"),
+    ],
+)
+def test_a_name_card_refuses_what_it_cannot_show(name, start, reveal, end, match):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.name_card(cv, cv.comp, name, start, reveal, end, measure)
+
+
+def test_the_evidence_card_says_who_what_result_and_when():
+    cv = canvas()
+    mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 5.0, measure)
+    words = " ".join(" ".join(texts(cv)).split())
+    for part in ("Lee & Ray", "2001", "Students wore a loud hat.", "Fewer noticed than they guessed."):
+        assert part in words
+
+
+@pytest.mark.parametrize(
+    ("who", "year", "what", "result", "match"),
+    [
+        ("", "2001", "A", "B", "needs who"),
+        ("Lee", "01", "A", "B", "a year of four digits"),
+        ("Lee", "2001", "word " * 30, "B", "reads in about"),
+        ("Lee", "2001", "A", "word " * 30, "reads in about"),
+    ],
+)
+def test_evidence_refuses_what_a_viewer_cannot_read_in_time(who, year, what, result, match):
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.Evidence(who, year, what, result)
+
+
+def test_an_evidence_card_holds_long_enough_to_read():
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match="an evidence card holds"):
+        mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 2.0, measure)
+
+
+def test_the_beam_arrives_at_its_start_and_can_sweep():
+    cv = canvas()
+    mind_kit.spotlight(cv, cv.comp, (300, 900), 1.0, 5.0, sweep=((1.0, 300.0), (2.0, 700.0)))
+    assert [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "x"]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"foot": "here"}, "a beam's foot"),
+        ({"start": 5.0, "end": 1.0}, "a beam needs"),
+        ({"radius": 0.0}, "a beam's radius"),
+        ({"sweep": ((1.0, 300.0), (1.0, 700.0))}, "a sweep"),
+    ],
+)
+def test_a_beam_refuses_what_it_cannot_do(kwargs, match):
+    cv = canvas()
+    args = {"foot": (300, 900), "start": 1.0, "end": 5.0} | kwargs
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.spotlight(cv, cv.comp, args.pop("foot"), args.pop("start"), args.pop("end"), **args)
+
+
+def test_the_shelf_labels_its_files_and_pulls_one_out():
+    cv = canvas()
+    mind_kit.memory_shelf(cv, cv.comp, ("Keys", "Names"), pull=(1, 2.0), measure=measure)
+    assert {"Keys", "Names"} <= set(texts(cv))
+    assert [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "y"]
+
+
+@pytest.mark.parametrize(
+    ("labels", "pull", "match"),
+    [
+        ((), None, "a shelf holds"),
+        (("a", "b", "c", "d", "e"), None, "a shelf holds"),
+        (("a",), (3, 1.0), "pulls out a file it has"),
+        (("a",), (0, -1.0), "pulls out a file it has"),
+    ],
+)
+def test_a_shelf_refuses_what_it_cannot_hold(labels, pull, match):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.memory_shelf(cv, cv.comp, labels, pull=pull, measure=measure)
+
+
+def test_the_two_lines_stay_in_proportion():
+    cv = canvas()
+    mind_kit.two_lines(cv, cv.comp, ("Guessed", 0.5, "half"), ("Actually", 0.25, "a quarter"), 1.0, 5.0, measure)
+    bars = {n.get("id"): n.find("./*[@width]") for n in tree(cv).iter() if str(n.get("id")).endswith("-bar")}
+    wide = {name: float(shape.get("width")) for name, shape in bars.items()}
+    assert wide["two-lines-expected-bar"] == pytest.approx(2 * wide["two-lines-actual-bar"])
+
+
+@pytest.mark.parametrize(
+    ("expected", "actual", "match"),
+    [
+        (("Guessed", 1.5, ""), ("Actually", 0.2, ""), "a line's value"),
+        (("Guessed", 0.0, ""), ("Actually", 0.2, ""), "a line's value"),
+        (("", 0.5, ""), ("Actually", 0.2, ""), "a line needs a label"),
+    ],
+)
+def test_two_lines_refuse_what_they_cannot_draw(expected, actual, match):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.two_lines(cv, cv.comp, expected, actual, 1.0, 5.0, measure)
+
+
+def test_the_lens_tints_what_it_passes_over():
+    cv = canvas()
+    mind_kit.lens(cv, cv.comp, (300, 900), 1.0, 5.0, path=((1.0, 300.0), (3.0, 700.0)))
+    assert [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "x"]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"radius": -1.0}, "a lens's radius"),
+        ({"tint": "yellow"}, "a lens's tint"),
+        ({"path": ((3.0, 0.0), (1.0, 2.0))}, "a lens's path"),
+    ],
+)
+def test_a_lens_refuses_what_it_cannot_do(kwargs, match):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.lens(cv, cv.comp, (300, 900), 1.0, 5.0, **kwargs)
+
+
+def test_captions_wrap_to_two_lines_and_mark_the_narrator():
+    cv = canvas()
+    lines = [
+        toon.Line("a", "You are at the centre of your own attention, all day.", 0.0, 2.0, "narrator"),
+        toon.Line("b", "What is?", 2.0, 3.0, "goat"),
+    ]
+    mind_kit.captions(cv, cv.comp, lines, measure, {"narrator": mind_kit.INK, "goat": mind_kit.SPOT})
+    assert any("\n" in t for t in texts(cv))
+
+
+def test_a_caption_that_cannot_fit_two_lines_stops_the_build():
+    cv = canvas()
+    lines = [toon.Line("a", "word " * 40, 0.0, 2.0, "narrator")]
+    with pytest.raises(mind_kit.MindKitError, match="caption"):
+        mind_kit.captions(cv, cv.comp, lines, measure, {})
+
+
+def test_the_sting_is_a_short_wav(tmp_path):
+    path = mind_kit.write_sting(tmp_path / "sting.wav", [1.0], 3.0)
+    with wave.open(str(path)) as w:
+        assert w.getnframes() / w.getframerate() == pytest.approx(3.0, abs=0.01)
+    assert sum(seconds for *_, seconds in mind_kit.STING) < 1.0
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "Send this to a friend",
+        "Tag someone who does this",
+        "Follow for more",
+        "Comment below",
+        "Science proves it",
+        "You always do this",
+        "That is so OCD",
+        "What a narcissist",
+        "Pure trauma",
+        "He's bipolar about it",
+    ],
+)
+def test_the_copy_check_refuses_bait_overclaiming_and_clinical_words(bad):
+    with pytest.raises(mind_kit.MindKitError, match="copy"):
+        mind_kit.check_copy(bad)
+
+
+@pytest.mark.parametrize("fine", ["People notice you less than you think.", "One tiny stain.", "Commentary"])
+def test_the_copy_check_lets_plain_sentences_through(fine):
+    assert mind_kit.check_copy(fine) == fine
+
+
+def test_an_evidence_card_can_hold_its_result_back():
+    cv = canvas()
+    mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure, reveal=3.5)
+    late = [g for g in tree(cv).iter() if g.get("id") == "evidence-card-result"]
+    assert len(late) == 1 and float(late[0].get("start")) == 3.5
+    assert len(late[0]) >= 1  # the group holds the lettering; the words live in the document's text assets
+    assert "guessed." in " ".join(" ".join(texts(cv)).split())
+
+
+def test_an_evidence_card_shows_its_result_with_the_card_by_default():
+    cv = canvas()
+    mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure)
+    assert [g.get("start") for g in tree(cv).iter() if g.get("id") == "evidence-card-result"] == [None]
+
+
+@pytest.mark.parametrize("reveal", [0.5, 1.0, 6.0, 7.0])
+def test_a_held_back_result_comes_inside_the_card(reveal):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match="result"):
+        mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure, reveal=reveal)
+
+
+def test_the_finish_grades_a_node_and_blurs_nothing():
+    cv = canvas()
+    node = cv.group(cv.comp, "shot-001")
+    mind_kit.finish(cv, node)
+    kinds = {e.get("type") for e in tree(cv).iter() if e.tag.endswith("effect")}
+    assert {"bloom", "vignette", "film-grain"} <= kinds and "blur" not in kinds
+
+
+def test_a_far_plane_is_out_of_focus_and_the_key_is_light_only():
+    cv = canvas()
+    far = mind_kit.far(cv, cv.comp)
+    cv.rect(far, 0, 0, 10, 10, "#ffffff")
+    mind_kit.key(cv, cv.comp)
+    assert {"blur"} <= {e.get("type") for e in tree(cv).iter() if e.tag.endswith("effect")}
+    assert not any("sig-" in (node.get("id") or "") for node in tree(cv).iter())
+
+
+def test_the_channel_keeps_a_stage_name_apart_from_a_card():
+    assert {mind_kit.CARD, mind_kit.STAGE} <= set(mind_kit.MIND_CAST.characters)
+    assert mind_kit.CARD != mind_kit.STAGE

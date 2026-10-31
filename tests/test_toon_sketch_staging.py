@@ -150,3 +150,61 @@ def test_a_staging_refuses_a_framing_it_cannot_draw(pinned_fonts, tmp_path, fram
     staging = replace(silent(sk), figures={"rabbit": framing})
     with pytest.raises(toon_sketch.StagingError, match="framing"):
         built(tmp_path, staging, pinned_fonts)
+
+
+def stage_sketch() -> Sketch:
+    beats = (
+        Beat(0.0, "rabbit", "She is still typing.", "wide", "flat", "desk", 0, 0),
+        Beat(3.0, "bear", "Pepperoni.", "half", "smirk", "desk", 1, 0),
+    )
+    return Sketch("still-test", "Still test", SPEAKERS, LINES, beats, END)
+
+
+def test_the_defaults_of_a_staging_change_nothing_for_a_toon_reel():
+    st = silent(stage_sketch())
+    assert (st.style, st.bare, st.captions, st.finish, st.output, st.crf) == (TOON, (), None, None, None, "17")
+
+
+def test_a_bare_who_gets_no_figure(pinned_fonts, tmp_path):
+    drawn, skipped = [], []
+
+    def dress(shot):
+        (skipped if shot.app.who == "bear" else drawn).append(shot.app.who)
+
+    st = replace(silent(stage_sketch()), dress=dress, bare=("bear",))
+    (tmp_path / "full").mkdir()
+    (tmp_path / "bare").mkdir()
+    full = built(tmp_path / "full", replace(st, bare=()), pinned_fonts)[1]
+    bare = built(tmp_path / "bare", st, pinned_fonts)[1]
+    assert drawn and skipped  # the dress still runs: it draws the whole frame of a bare shot
+    assert len(list(bare.iter())) < len(list(full.iter()))
+
+
+def test_a_staging_can_bring_its_own_captions_grade_output_and_frame_rate(pinned_fonts, tmp_path):
+    seen = []
+    graded = []
+    st = replace(
+        silent(stage_sketch()),
+        style=replace(TOON, fps=30),
+        captions=lambda cv, parent, lines, measure, tints: seen.extend(line.text for line in lines),
+        finish=lambda cv, node: graded.append(node),
+        output="renders/pilots/still-test.mp4",
+        crf="21",
+    )
+    _, xml = built(tmp_path, st, pinned_fonts)
+    assert seen == [q.text for q in LINES] and len(graded) == 2
+    outputs = [n for n in xml.iter() if n.tag.endswith("output")]
+    assert len(outputs) == 1
+    assert (outputs[0].get("path"), outputs[0].get("fps"), outputs[0].get("crf")) == (
+        "renders/pilots/still-test.mp4",
+        "30",
+        "21",
+    )
+
+
+def test_captions_a_staging_brings_stay_off_the_cover(pinned_fonts, tmp_path):
+    def captions(cv, parent, lines, measure, tints):
+        return cv.group(parent, "my-captions")
+
+    ep, _ = built(tmp_path, replace(silent(stage_sketch()), captions=captions), pinned_fonts)
+    assert ("my-captions", "visible", "false") in ep._cover_hidden  # written into the cover variant by finish()

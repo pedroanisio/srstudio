@@ -40,6 +40,7 @@ from . import (
     gloss_sets,
     ink_meter,
     ink_phone,
+    mind_kit,
     parts,
     registry,
     saga_sets,
@@ -47,6 +48,7 @@ from . import (
     specimens,
     stick,
     stick_shop,
+    toon,
     toon_everyday,
     toon_props,
 )
@@ -308,6 +310,22 @@ RECIPES: dict[str, Recipe] = {
     "toon-card-reader": Recipe(part(((0.0, "TAP CARD", "idle"),))),
     "toon-phone": Recipe(lettered(PHONE_SCREENS)),
     "toon-speaker": Recipe(part(((0.0, "listen"),), SECONDS)),
+    "mind-name-card": Recipe(lettered("A Long Name", 0.0, 0.2, SECONDS)),
+    "mind-evidence-card": Recipe(
+        lettered(
+            mind_kit.Evidence("Lee & Ray", "2001", "Students wore a loud hat.", "Fewer saw it than guessed."),
+            0.0,
+            SECONDS,
+        )
+    ),
+    "mind-captions": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "narrator"),), ctx.measure, {})
+    ),
+    "mind-spotlight": Recipe(part((540.0, 1400.0), 0.0, SECONDS)),
+    "mind-memory-shelf": Recipe(lettered(("One", "Two", "Three"))),
+    "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
+    "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
+    "toon-tee": Recipe(part((180, 660))),
     "toon-receipt": Recipe(lettered((("Coffee", "3.00"), ("Cup fee", "0.75")), total=("TOTAL", "3.75"))),
     "toon-take-a-number": Recipe(lettered(((0.0, 47),))),
     "toon-clipboard": Recipe(
