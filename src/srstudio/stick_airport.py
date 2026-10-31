@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from functools import partial
 
-from . import look, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .registry import register
 from .stick import Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -25,6 +25,7 @@ __all__ = [
     "AGENT_AT",
     "ARMRESTS",
     "ARMREST_W",
+    "BOARDING_SIZE",
     "FLOOR_FEET",
     "NOW_CHARS",
     "PODIUM_TOP",
@@ -59,6 +60,7 @@ FLOOR_Y = 1480  # the wall meets the carpet
 FLOOR_FEET = 1700  # where a STANDING figure's feet are
 WINDOW = (40, 300, 480, 880)  # x, y, w, h of the window on the apron
 SIGN_BOX = (540, 290, 400, 250)  # x, y, w, h of the boarding sign, clear of the standing heads
+BOARDING_SIZE = 25  # the sign's first line, which fits the room beside the gate letters even in a wide bold
 GATE_CHARS, NOW_CHARS, TAG_CHARS, ROW_CHARS = 4, 12, 8, 3
 TAG_SPAN = (40, 200)  # the luggage tag's left and right edges, from the carry-on's middle
 PODIUM_X = (640, 1080)  # the podium, from its left end to past the frame
@@ -114,12 +116,14 @@ def now_size(now: str) -> float:
 
 
 @register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
-def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1") -> None:
+def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = BOARDING_SIZE) -> None:
     """The boarding gate: the terminal wall, the window on the apron with a parked airliner, the gate seats under it,
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
-    (ADR 0001)."""
+    (ADR 0001). ``boarding_size`` letters the sign's first line; a published reel keeps the size it was drawn at."""
     cv.require_font("the boarding sign is set in it")
+    if not (checks.number(boarding_size) and boarding_size > 0):
+        raise StickDataError(f"the sign's first line has a size above 0, got {boarding_size!r}")
     if not gate.strip() or len(gate) > GATE_CHARS:
         raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
     if not now.strip() or len(now) > NOW_CHARS:
@@ -142,7 +146,7 @@ def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1") -> None:
     box(s, parent, sx, sy, sw_, sh, SIGN, r=14)
     box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
     _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
-    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, 38, SIGN_TEXT, align="start")
+    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, boarding_size, SIGN_TEXT, align="start")
     _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
     # the gate seats under the window: a row joined on one beam
     box(s, parent, 30, 1420, 560, 16, SEAT_DARK)

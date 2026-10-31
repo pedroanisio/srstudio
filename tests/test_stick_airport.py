@@ -7,9 +7,13 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import DAYLIGHT, Canvas, flat_counter, registry, stick, stick_airport
+from srstudio import DAYLIGHT, Canvas, flat_counter, fonts, registry, stick, stick_airport
 from srstudio.canvas import Signature
+from srstudio.sample import SYSTEM_FONTS
 from srstudio.stick import StickDataError
+
+WIDE_BOLD = next((f for f in SYSTEM_FONTS if f.exists()), None)
+needs_font = pytest.mark.skipif(WIDE_BOLD is None, reason="DejaVu Sans Bold is required")
 
 
 def canvas(font: str | None = "inter") -> Canvas:
@@ -45,11 +49,26 @@ def test_the_gate_letters_its_sign_and_signs_its_floor():
     assert any("sig-code" in (g.get("id") or "") for g in xml(cv).iter())
 
 
+@needs_font
+def test_the_signs_first_line_fits_beside_the_gate_letters():
+    assert WIDE_BOLD is not None
+    width = stick_airport.SIGN_BOX[2] - 170
+    assert fonts.text_width(WIDE_BOLD.read_bytes(), "NOW BOARDING", stick_airport.BOARDING_SIZE) <= width
+
+
+@pytest.mark.parametrize(("kw", "size"), [({}, str(stick_airport.BOARDING_SIZE)), ({"boarding_size": 38}, "38")])
+def test_a_reel_can_keep_the_size_its_sign_was_drawn_at(kw, size):
+    cv = canvas()
+    stick_airport.gate(cv, cv.comp, gate="B9", now="GROUP 4", **kw)
+    assert [t.get("size") for t in xml(cv).iter("text") if t.get("text") == "NOW BOARDING"] == [size]
+
+
 @pytest.mark.parametrize(
     ("kw", "match"),
     [
         (dict(gate=""), "gate"),
         (dict(gate="B999X"), "gate"),
+        (dict(boarding_size=0), "size"),
         (dict(now=""), "sign"),
         (dict(now="X" * (stick_airport.NOW_CHARS + 1)), "sign"),
     ],

@@ -136,7 +136,7 @@ for take in t.takes:
         frame = stick.camera(cv, g, BAG_FOCUS, zoom=BAG_ZOOM, to=BAG_TO)
     else:
         frame = stick.camera(cv, g, (540, 960), to=(540, 960))  # the whole gate, one to one
-    stick_airport.gate(cv, frame, gate=GATE, now=now_at(ids, take.id))
+    stick_airport.gate(cv, frame, gate=GATE, now=now_at(ids, take.id), boarding_size=38)
     close = take.shot in ("sam", "agent")  # the caption band crosses the plate and the tag: leave them unlettered
     stick_airport.carry_on(cv, frame, BAG_X, stick_airport.FLOOR_FEET, tag=None if close else BAG_TAG)
     stick.rig(cv, frame, rig_keys(last_before(SAM_PART, ids, take.id)), end, look=look, poses=stick.STANDING,
