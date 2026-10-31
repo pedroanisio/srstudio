@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import PEACH, Canvas, Signature, flat_counter, registry, signature, toon_house
+from srstudio import PEACH, Canvas, Signature, flat_counter, registry, signature, toon, toon_house
 from srstudio.toon import ToonDataError
 
 
@@ -375,3 +375,25 @@ def test_a_tee_refuses_bad_data(kwargs, match):
     args = dict(kwargs)
     with pytest.raises(ToonDataError, match=match):
         toon_house.tee(cv, cv.comp, args.pop("at"), **args)
+
+
+def test_a_bow_tie_is_registered_and_is_a_picture_with_no_word_on_it():
+    cv = canvas()
+    toon_house.bow_tie(cv, cv.comp, (180, 640))
+    assert registry.get("prop", "toon-bow-tie").builder is toon_house.bow_tie
+    assert not [n for n in tree(cv).iter() if n.tag.endswith("text")]
+
+
+def test_a_bow_tie_scales_about_its_knot():
+    cv = canvas()
+    toon_house.bow_tie(cv, cv.comp, (180, 640), 2.0, id="tie")
+    tie = next(g for g in tree(cv).iter("group") if g.get("id") == "tie")
+    assert (float(tie.get("x")), float(tie.get("y"))) == (toon.fx(180), toon.fy(640))
+    assert float(tie.get("scaleX")) == 2.0
+
+
+@pytest.mark.parametrize(("at", "scale"), [("here", 1.0), ((1, 2, 3), 1.0), ((180, 640), 0), ((180, 640), -1.0)])
+def test_a_bow_tie_refuses_what_it_cannot_draw(at, scale):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_house.bow_tie(cv, cv.comp, at, scale)
