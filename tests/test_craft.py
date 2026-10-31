@@ -430,8 +430,68 @@ def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path,
     folder = project(tmp_path)
     monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
     report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.2.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.3.0"
     assert report.to_dict()["flashes"][0]["share"] == 1.0
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
     assert "flash" in capsys.readouterr().out
+
+
+def still(seconds: float, level: float = 0.5, fps: float = 30.0) -> np.ndarray:
+    """A picture that does not change."""
+    return np.full((round(seconds * fps), 40, 40), level)
+
+
+def test_a_picture_that_stands_is_one_hold():
+    assert craft.holding(still(3.0), 30.0) == [craft.Hold(0.0, 3.0)]
+
+
+def test_a_moving_picture_holds_nowhere():
+    frames = still(3.0)
+    for i in range(len(frames)):
+        frames[i, i % 40, :] = 1.0
+    assert craft.holding(frames, 30.0) == []
+
+
+def test_a_hold_shorter_than_the_least_is_not_listed():
+    assert craft.holding(still(0.9), 30.0) == []
+
+
+def test_a_cut_ends_a_hold_and_starts_the_next():
+    frames = np.concatenate([still(1.5, 0.2), still(2.0, 0.8)])
+    assert craft.holding(frames, 30.0) == [craft.Hold(0.0, 1.5), craft.Hold(1.5, 3.5)]
+
+
+def test_a_keyframe_does_not_break_a_hold():
+    """An encoder repaints the picture a level or two at each keyframe: frame to frame that looks like change."""
+    frames = still(4.0)
+    frames[60:] += 0.002
+    assert craft.holding(frames, 30.0) == [craft.Hold(0.0, 4.0)]
+
+
+def test_a_slow_change_breaks_a_hold_though_no_two_frames_differ_much():
+    frames = still(4.0, 0.2) + (np.arange(120) * 0.001)[:, None, None]
+    assert craft.holding(frames, 30.0) == []
+
+
+def test_a_small_thing_moving_breaks_a_hold():
+    frames = still(3.0)
+    frames[45:, 0, 0] = 1.0  # one pixel in 1,600, and still more than the picture's share at this scan
+    frames[45:, 0, 1:4] = 1.0
+    frames[45:, 1, 0:4] = 1.0
+    assert craft.holding(frames, 30.0) == [craft.Hold(0.0, 1.5), craft.Hold(1.5, 3.0)]
+
+
+def test_a_picture_with_no_frames_has_no_holds():
+    with pytest.raises(craft.CraftError):
+        craft.holding(np.zeros((0, 4, 4)), 30.0)
+
+
+def test_measure_lists_the_holds_of_a_render_and_the_command_says_so(tmp_path, monkeypatch, capsys):
+    folder = project(tmp_path)
+    monkeypatch.setattr(craft, "luminance", lambda path: (still(2.5), 30.0))
+    report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
+    assert report.to_dict()["holds"] == [{"start": 0.0, "end": 2.5}]
+    monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
+    assert main(["craft", str(folder)]) == 0
+    assert "hold 0.00–2.50  2.50 s" in capsys.readouterr().out

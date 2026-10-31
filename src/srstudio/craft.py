@@ -8,8 +8,9 @@ and marked as the camera when the group is a location, an angle, a shot or a set
 :func:`pauses` finds the silences between the lines of ``dialogue.json``, ``narration.json`` or a takes
 ``timeline.json``, and :func:`levels` measures the rendered sound inside each one, so a pause meant to be awkward is
 shown to be quiet, or filled. :func:`opening_silences` measures the first seconds as well, where :func:`pauses` is
-blind to the wait before the first line. :func:`flashing` lists every stretch of a render that flashes, where the
-strict encode's check names only the first; it says where to look, and the encode stays the verdict.
+blind to the wait before the first line. :func:`holding` lists every stretch of a render that stands still.
+:func:`flashing` lists every stretch of a render that flashes, where the strict encode's check names only the first; it
+says where to look, and the encode stays the verdict.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
 
@@ -34,6 +35,7 @@ from .errors import SrstudioError
 DOUBLED = 0.001  # seconds of shared band below any frame, so a rounded time is not an overlap
 
 __all__ = [
+    "Hold",
     "SCHEMA",
     "CUT",
     "MIN_RATIO",
@@ -51,10 +53,11 @@ __all__ = [
     "levels",
     "luminance",
     "flashing",
+    "holding",
     "measure",
 ]
 
-SCHEMA = "1.2.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes
+SCHEMA = "1.3.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 PAUSE = 0.8  # seconds between lines that count as a pause
@@ -67,6 +70,9 @@ FLASHES_A_SECOND = 3  # the guideline's limit; a flash is a pair of opposing swi
 SWING = 0.1  # of white, in linear light: the least a swing can be
 BRIGHT = 0.8  # of white: a swing whose darker side is at or above this does not count
 FLASH_SHARE = 0.05  # of the picture over the limit in one second, from which a stretch is worth listing
+HOLD_LEAST = 1.0  # seconds a picture must stand to be listed
+HOLD_CHANGE = 0.01  # of white, in linear light: more than an encoder repaints at a keyframe
+HOLD_SHARE = 0.002  # of the picture changed, past which it no longer stands
 CAMERA = re.compile(r"location-.+|.+-angle|shot-.+|setup-.+")
 _MEAN = re.compile(r"mean_volume:\s*(-?inf|-?\d+(?:\.\d+)?) dB")
 _run = subprocess.run
@@ -112,12 +118,21 @@ class Flash:
 
 
 @dataclass(frozen=True)
+class Hold:
+    """A stretch of a render in which the picture stands: every frame is still the first one."""
+
+    start: float
+    end: float
+
+
+@dataclass(frozen=True)
 class Craft:
     slug: str
     moves: list[Move]
     pauses: list[Pause]
     opening: list[tuple[float, float]]
     flashes: list[Flash] = field(default_factory=list)
+    holds: list[Hold] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -135,6 +150,7 @@ class Craft:
             ],
             "opening": [{"start": a, "end": b} for a, b in self.opening],
             "flashes": [asdict(f) for f in self.flashes],
+            "holds": [asdict(h) for h in self.holds],
         }
 
 
@@ -410,6 +426,22 @@ def flashing(frames: np.ndarray, fps: float, share: float = FLASH_SHARE) -> list
     return out
 
 
+def holding(frames: np.ndarray, fps: float) -> list[Hold]:
+    """The stretches of ``frames`` (see :func:`luminance`) of at least :data:`HOLD_LEAST` seconds in which the picture
+    stands. Each frame is compared with the first of the stretch and not with the one before: a slow change adds up
+    against it, and a keyframe, which repaints every pixel a little, does not read as motion."""
+    if len(frames) == 0:
+        raise CraftError("a picture with no frames cannot be scanned")
+    out: list[Hold] = []
+    start = 0
+    for i in range(1, len(frames) + 1):
+        if i == len(frames) or (np.abs(frames[i] - frames[start]) > HOLD_CHANGE).mean() > HOLD_SHARE:
+            if (i - start) / fps >= HOLD_LEAST:
+                out.append(Hold(round(start / fps, 3), round(i / fps, 3)))
+            start = i
+    return out
+
+
 def measure(
     project: Path,
     *,
@@ -418,7 +450,7 @@ def measure(
     levels: Callable[[Path, Sequence[tuple[float, float]]], Sequence[float]] = levels,
 ) -> Craft:
     """The craft report of the episode project ``project`` (``<slug>.scene.xml`` inside it); with ``video`` (its
-    render) each pause carries the measured level, and the stretches that flash are listed."""
+    render) each pause carries the measured level, and the stretches that flash or stand still are listed."""
     project = Path(project)
     scene = project / f"{project.name}.scene.xml"
     if not scene.is_file():
@@ -427,15 +459,18 @@ def measure(
     gaps = pauses(spoken, threshold)
     measured: Sequence[float | None] = [None] * len(gaps)
     flashes: list[Flash] = []
+    holds: list[Hold] = []
     if video is not None:
         measured = list(levels(Path(video), gaps))
         if len(measured) != len(gaps):
             raise CraftError(f"{len(measured)} levels for {len(gaps)} pauses")
-        flashes = flashing(*luminance(Path(video)))
+        frames, fps = luminance(Path(video))
+        flashes, holds = flashing(frames, fps), holding(frames, fps)
     return Craft(
         project.name,
         moves(scene.read_bytes()),
         list(Pause(round(a, 3), round(b, 3), level) for (a, b), level in zip(gaps, measured, strict=True)),
         [(round(a, 3), round(b, 3)) for a, b in opening_silences(spoken)],
         flashes,
+        holds,
     )

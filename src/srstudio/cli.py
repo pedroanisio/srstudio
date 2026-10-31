@@ -328,6 +328,8 @@ def main(argv=None):
                 print(f"  opening: no silence of {craft.OPENING_LIMIT:g} s or more in the first {craft.OPENING:g} s")
             for f in r.flashes:
                 print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
+            for h in r.holds:
+                print(f"  hold {h.start:.2f}–{h.end:.2f}  {h.end - h.start:.2f} s")
         return 0
     if args.cmd == "record":
         try:
