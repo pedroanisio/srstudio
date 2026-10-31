@@ -97,7 +97,7 @@ ROW_SCALE, ROW_Y, ROW_FOOT = 0.56, 560.0, 1405.0  # the row of people on the sta
 ROW_BOARD = {"foot": 868, "scale": 1.2}  # at this size its smallest lettering still holds its contrast on screen
 BEAM_FOOT = 1420.0
 PUNCH, PIVOT = 1.14, (880.0, 1000.0)  # the pivot this far right keeps the code in frame
-END = 40.9
+END = 39.6
 
 LINES = (
     Line("narrator", "One embarrassing shirt."),
@@ -143,13 +143,13 @@ BEATS = (
     say(17.5, "hamster", 9, "up", "flat", "desk", "beam"),
     say(20.1, STAGE, 10, "half", "flat", "desk"),
     say(22.5, STAGE, 11, "half", "flat", "desk", "split"),
-    on_card(say(25.1, CARD, 12, "wide", "flat", "desk", "study")),
-    on_card(say(29.7, CARD, 13, "wide", "flat", "desk", "guess")),
-    on_card(say(32.5, CARD, 14, "wide", "flat", "desk", "real")),
-    say(34.5, "hamster", 15, "side", "smirk", "desk", "lower"),
-    hold(36.5, "goat", "", "side", "flat", "desk", "drop"),
-    say(37.9, "goat", 16, "down", "frown", "desk", "kitchen"),  # the same frame as the first, and the same shirt
-    hold(39.5, "goat", "", "down", "frown", "desk"),
+    on_card(say(24.75, CARD, 12, "wide", "flat", "desk", "study")),
+    on_card(say(28.4, CARD, 13, "wide", "flat", "desk", "guess")),
+    on_card(say(31.2, CARD, 14, "wide", "flat", "desk", "real")),
+    say(33.2, "hamster", 15, "side", "smirk", "desk", "lower"),
+    hold(35.2, "goat", "", "side", "flat", "desk", "drop"),
+    say(36.6, "goat", 16, "down", "frown", "desk", "kitchen"),  # the same frame as the first, and the same shirt
+    hold(38.2, "goat", "", "down", "frown", "desk"),
 )
 SKETCH = Sketch(SLUG, TITLE, (NARRATOR, HAMSTER, GOAT), LINES, BEATS, END, cast=mind_kit.MIND_CAST)
 EVENTS = ("desk", "punch", "name", "reveal", "beam", "split", "study", "guess", "real", "lower", "drop", "kitchen")

@@ -174,26 +174,26 @@ BEATS = (
     hold(6.15, "cat", "", "half", "flat", "desk", "blank"),  # the silence is the laugh
     say(6.85, STAGE, 4, "wide", "flat", "desk", "quiz"),
     say(8.95, STAGE, 5, "wide", "flat", "desk", "told"),
-    hold(13.0, STAGE, BELIEF, "wide", "flat", "desk", "believed"),  # read, not said: more sheets are still landing
+    hold(12.5, STAGE, BELIEF, "wide", "flat", "desk", "believed"),  # read, not said: more sheets are still landing
     on_card(say(14.7, CARD, 6, "wide", "flat", "desk", "name")),
     on_card(say(15.85, CARD, 7, "wide", "flat", "desk", "reveal")),
     on_card(say(17.45, CARD, 8, "wide", "flat", "desk", "word")),
     say(18.85, STAGE, 9, "wide", "flat", "desk", "shelf"),
     say(20.15, STAGE, 10, "wide", "flat", "desk", "felt"),
-    say(23.4, STAGE, 11, "wide", "flat", "desk", "recalled"),
-    on_card(say(24.85, CARD, 12, "wide", "flat", "desk", "study")),
-    on_card(replace(say(27.5, CARD, 12, "wide", "flat", "desk", "verdict"), word=7)),  # the card's result, on "Their"
-    on_card(say(30.5, CARD, 13, "wide", "flat", "desk", "caveat")),
-    hold(36.6, "hedgehog", "", "side", "flat", "desk", "turn"),
-    say(36.8, "hedgehog", 14, "down", "flat", "desk", "shut"),  # the book shuts on "Test"
-    *ask(39.15, 15, "again"),
-    hold(40.0, "hedgehog", "", "up", "flat", "desk", "think"),
-    say(41.05, "hedgehog", 16, "wide", "grin", "desk"),
-    hold(42.3, "hedgehog", "", "down", "flat", "desk", "mark"),
-    say(42.55, "hedgehog", 17, "down", "grin", "desk"),
-    hold(43.3, "hedgehog", "", "down", "grin", "desk"),
+    say(22.75, STAGE, 11, "wide", "flat", "desk", "recalled"),
+    on_card(say(24.2, CARD, 12, "wide", "flat", "desk", "study")),
+    on_card(replace(say(26.85, CARD, 12, "wide", "flat", "desk", "verdict"), word=7)),  # the card's result, on "Their"
+    on_card(say(29.85, CARD, 13, "wide", "flat", "desk", "caveat")),
+    hold(35.95, "hedgehog", "", "side", "flat", "desk", "turn"),
+    say(36.15, "hedgehog", 14, "down", "flat", "desk", "shut"),  # the book shuts on "Test"
+    *ask(38.5, 15, "again"),
+    hold(39.35, "hedgehog", "", "up", "flat", "desk", "think"),
+    say(40.4, "hedgehog", 16, "wide", "grin", "desk"),
+    hold(41.65, "hedgehog", "", "down", "flat", "desk", "mark"),
+    say(41.9, "hedgehog", 17, "down", "grin", "desk"),
+    hold(42.65, "hedgehog", "", "down", "grin", "desk"),
 )
-END = 44.0
+END = 43.35
 SKETCH = Sketch(SLUG, TITLE, (NARRATOR, HOG, CAT), LINES, BEATS, END, cast=mind_kit.MIND_CAST)
 EVENTS = (
     "page",
@@ -475,5 +475,5 @@ POST = InstagramPost(
     ),
     credit="Voices: ElevenLabs premade voices Bella, Jessica and Laura. Original characters, drawn in code.",
     hashtags=("#psychology", "#learningstyles", "#howpeoplethink", "#studytips"),
-    thumbnail=Thumbnail("It's important.", 36.9, "There's a name for that", place="top"),
+    thumbnail=Thumbnail("It's important.", 36.25, "There's a name for that", place="top"),
 )
