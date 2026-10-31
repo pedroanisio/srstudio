@@ -108,6 +108,14 @@ def placed(cv: Canvas, parent, at: Point, scale: float, draw: Callable[[object],
 
 
 # -- what stands in front of the character -----------------------------------------------------------------------------
+def marks(cv: Canvas, parent, code: str = LEDGE_CODE) -> None:
+    """The signature (ADR 0001) where the desk has it, standing on whatever is there: for a shot with nothing in front
+    of the character to carry it, such as open ground."""
+    g = cv.group(parent, cv.uid("g"))
+    signature.cactus(cv, g, fx(548), fy(838), 0.7)
+    signature.code(cv, g, fx(580), fy(866), 14, color=code, opacity=0.9, align="end")
+
+
 @register("prop", "toon-sofa-back", summary="The sofa's back behind a character, for a sofa that is not in the lounge")
 def sofa_back(cv: Canvas, parent) -> None:
     g = cv.group(parent, cv.uid("g"))

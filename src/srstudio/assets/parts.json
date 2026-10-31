@@ -8661,6 +8661,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-loose-wheel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A car wheel that lets go of its axle and rolls away, turning as it goes. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3b35dad2435b4537aa203ca9991f26f65a5fe85915cc9222dd7422eab05e065c",
+          "rig": null
+        }
+      ]
     }
   }
 }

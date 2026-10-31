@@ -3,6 +3,7 @@ cannot draw, and nothing is drawn before its time."""
 
 from __future__ import annotations
 
+import math
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -10,6 +11,7 @@ from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, registry, specimens, toon_cars, toon_house, toon_world
 from srstudio.toon import ToonDataError
+from srstudio.signature import Signature
 from srstudio.toon_cars import Passing
 
 
@@ -33,6 +35,7 @@ def groups(cv: Canvas, prefix: str) -> list[ET.Element]:
         ("location", "toon-car-inside", toon_cars.car_inside),
         ("prop", "toon-car-seat", toon_cars.seat),
         ("prop", "toon-side-car", toon_cars.side_car),
+        ("prop", "toon-loose-wheel", toon_cars.loose_wheel),
         ("prop", "toon-school-bus", toon_cars.school_bus),
         ("prop", "toon-banana", toon_cars.banana),
         ("prop", "toon-dash-vents", toon_cars.dash_vents),
@@ -140,3 +143,49 @@ def test_a_wheel_needs_a_radius():
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_cars.steering_wheel(cv, cv.comp, radius=0.0)
+
+
+def shapes(cv: Canvas) -> int:
+    return sum(1 for _ in tree(cv).iter("shape"))
+
+
+def test_a_car_can_lose_a_wheel_and_only_a_wheel_it_has():
+    whole, short = canvas(), canvas()
+    toon_cars.side_car(whole, whole.comp)
+    toon_cars.side_car(short, short.comp, wheels=("rear",))
+    assert shapes(whole) - shapes(short) == 2  # the tire and its hub
+    with pytest.raises(ToonDataError, match="wheels"):
+        toon_cars.side_car(whole, whole.comp, wheels=("spare",))
+    with pytest.raises(ToonDataError, match="wheels"):
+        toon_cars.side_car(whole, whole.comp, wheels=("rear", "rear"))
+
+
+def test_a_loose_wheel_stays_on_its_axle_until_it_lets_go_then_turns_as_far_as_it_rolls():
+    cv = canvas()
+    toon_cars.loose_wheel(cv, cv.comp, at=(296.0, 780.0), start=2.0, to=0.0, seconds=4.0, id="wheel")
+    wheel = next(n for n in tree(cv).iter("group") if n.get("id") == "wheel")
+    tracks = {
+        a.get("property"): [(float(k.get("time")), float(k.get("value"))) for k in a] for a in wheel.iter("animate")
+    }
+    assert [t for t, _ in tracks["x"]] == [0.0, 2.0, 6.0]
+    assert tracks["x"][0][1] == tracks["x"][1][1] == float(wheel.get("x"))
+    assert tracks["x"][2][1] < tracks["x"][1][1]
+    distance = tracks["x"][2][1] - tracks["x"][1][1]
+    radius = toon_cars.fh(30.0)
+    assert tracks["rotation"][2][1] == pytest.approx(math.degrees(distance / radius), abs=0.01)
+
+
+@pytest.mark.parametrize(("start", "seconds"), [(-1.0, 3.0), (0.0, 0.0), (0.0, -2.0)])
+def test_a_loose_wheel_refuses_a_time_it_cannot_keep(start, seconds):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_cars.loose_wheel(cv, cv.comp, start=start, seconds=seconds)
+
+
+def test_the_marks_can_stand_on_open_ground():
+    cv = canvas()
+    cv.signature = Signature()
+    toon_world.marks(cv, cv.comp)
+    ids = [n.get("id", "") for n in tree(cv).iter()]
+    assert any(i.startswith("sig-cactus") for i in ids)
+    assert any(i.startswith("sig-code") for i in ids)

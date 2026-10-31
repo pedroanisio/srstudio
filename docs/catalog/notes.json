@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "toon-loose-wheel": {"title": "Roda solta que sai rolando"},
     "candidate": {
       "title": "O candidato"
     },
@@ -7663,6 +7664,7 @@
         "at": 26.0
       },
       "text": "O telefone ocupa o quadro: o nome de uma conversa e as mensagens, uma de cada vez."
-    }
+    },
+    {"section": "props", "name": "Roda solta que sai rolando", "parts": ["toon-loose-wheel"], "shot": {"episode": "the-noise", "at": 25.0}, "text": "A roda da frente larga o eixo e sai rolando, girando o tanto que anda; o carro cai sobre o eixo nu."}
   ]
 }
