@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from srstudio import collage, collage_group, collage_odds, collage_sets, foley
 from srstudio.collage_group import Place
-from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, timed, voices_note
+from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, timed, voices_note, zooms
 from srstudio.sketch import Appearance, Line, Mouths, events
 
 SEED = 4125
@@ -126,7 +126,11 @@ def dress(shot) -> None:
                 4.0,
                 radius=14.0,
             )
-    collage_sets.sign(cv, cv.group(front, cv.uid("g"), start=weigh), "201 LB", 690, 1450, 280, 110, size=58)
+    reading = cv.group(front, cv.uid("g"), start=weigh)
+    if zooms(beats, app):  # the crash zoom would carry the usual card off the frame's right edge
+        collage_sets.sign(cv, reading, "201 LB", 611, 1450, 190, 90, size=40)
+    else:
+        collage_sets.sign(cv, reading, "201 LB", 690, 1450, 280, 110, size=58)
     if app.end > shoe:
         held = cv.group(front, cv.uid("g"), start=shoe)
         cv.rect(held, 230.0, 1590.0, 200.0, 70.0, ITEMS[0][0], collage.INK, 4.0, radius=26.0)

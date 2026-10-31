@@ -93,6 +93,7 @@ def checkpoint(parent) -> None:
     """The terminal, with the checkpoint's own sign hung where the boarding sign was."""
     stick_airport.gate(cv, parent, gate="S1", now="SECURITY")
     stick_odds.poster(cv, parent, *SIGN, "SECURITY", size=74)
+    cv.line(parent, 243, 892, 243, 1000, cv.ink, 6)  # the rear gear's own leg is behind the window's bar
 
 
 def lane(parent, end: float, *, bag: float, keys, dev_keys, take=None) -> None:
@@ -146,7 +147,7 @@ def stage(take) -> None:
         checkpoint(g)
         keys = [K(i * 0.3, "bite-wave" if i % 2 else "bite", FED) for i in range(int(end / 0.3) + 1)]
         figure(g, keys, end, OFFICER, 540.0, flip=True, scale=1.2, floor=1960.0)
-        stick_odds.foil_parcel(cv, g, 450.0, 930.0, scale=0.8)
+        stick_odds.foil_parcel(cv, g, 440.0, 992.0, scale=0.8)  # at his hand, clear of his face
 
 
 for take in t.takes:

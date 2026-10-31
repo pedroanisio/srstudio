@@ -101,7 +101,7 @@ POSES: dict[str, stick.RigPose] = {
     "read": _floor((470, 1210), (456, 1317), ((540, 1460), (560, 1480)), ((640, 1400), (660, 1420))),
     "lean": _floor((500, 1230), (476, 1335), ((560, 1470), (580, 1490)), ((640, 1400), (660, 1420))),
     "stand": UP,
-    "hold-up": stick._seat((540, 756), UP.neck, UP.hip, UP.knees, UP.feet, ((500, 1040), (620, 1040)),
+    "hold-up": stick._seat((540, 756), UP.neck, UP.hip, UP.knees, UP.feet, ((500, 1040), (630, 1005)),
                            ((620, 950), (660, 960))),
     "work": stick._seat((540, 750), UP.neck, UP.hip, UP.knees, UP.feet, ((510, 1040), (640, 1020)),
                         ((502, 1195), (740, 980))),
