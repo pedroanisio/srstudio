@@ -1124,6 +1124,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "robe-and-blazer": {"title": "Blazer sobre roupão"},
+    "banknotes": {"title": "Duas notas"},
+    "cue-cards": {"title": "Cartões de deixa"},
     "stick-blinker": {"title": "Seta do carro"},
     "stick-swim-ring": {"title": "Boia inflável"},
     "stick-rear-view": {"title": "Retrovisor"},
@@ -8101,6 +8104,42 @@
         "at": 4.5
       },
       "text": "A seta âmbar do painel, que acende a cada clique."
+    },
+    {
+      "section": "props",
+      "name": "Cartões de deixa",
+      "parts": [
+        "cue-cards"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 7.1
+      },
+      "text": "Uma pilha de cartões com a fala que ele quer ouvir."
+    },
+    {
+      "section": "props",
+      "name": "Duas notas",
+      "parts": [
+        "banknotes"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 12.0
+      },
+      "text": "Duas notas em leque, com o valor escrito."
+    },
+    {
+      "section": "props",
+      "name": "Blazer sobre roupão",
+      "parts": [
+        "robe-and-blazer"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 2.0
+      },
+      "text": "O blazer por cima do roupão: a roupa de quem atende em casa."
     }
   ]
 }
