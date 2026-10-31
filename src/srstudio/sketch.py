@@ -38,6 +38,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
+from .hearing import blind_lines
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
@@ -729,8 +730,12 @@ def record(
     """Every line said by its speaker's voice (cached by the client), trimmed, placed at its own pace, heard back
     and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and, under ``voiced/``, the viseme tracks, read
     with ``mouth``, and the kept takes (:func:`load_speech`).
-    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried)."""
+    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried), and refuses a
+    line no transcript could confirm (:func:`~srstudio.hearing.blind_lines`) before the first take is paid for."""
     check(sketch)
+    blind = blind_lines(sketch.lines)
+    if blind:
+        raise SketchError("reword these lines or pass heard=(...) on them:\n" + "\n".join(blind))
     root = Path(root)
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
