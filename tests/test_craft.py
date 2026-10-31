@@ -552,3 +552,49 @@ def test_a_narration_that_cannot_be_read_is_an_error_not_a_clean_report(tmp_path
 def test_items_that_are_no_list_are_an_error(tmp_path):
     with pytest.raises(craft.CraftError, match="items must be a list"):
         craft.clipped(narrated(tmp_path, {"phase": "line"}))
+
+
+# -- when the first statement ends ------------------------------------------------------------------------------------
+def spoken(tmp_path, *takes) -> object:
+    (tmp_path / "voiced").mkdir(exist_ok=True)
+    (tmp_path / "voiced" / "speech.json").write_text(json.dumps({"end": 9.0, "takes": list(takes)}))
+    return tmp_path
+
+
+def take(id: str, at: float, text: str, ends: list[float]) -> dict:
+    return {"id": id, "who": "vera", "at": at, "kept": ends[-1], "characters": list(text), "starts": ends, "ends": ends}
+
+
+def test_a_statement_ends_on_its_last_letter_not_on_the_full_stop(tmp_path):
+    root = spoken(tmp_path, take("01", 0.0, "In total.", [0.1 * n for n in range(1, 10)]))
+    assert craft.statement(root, ("01",)) == craft.Statement("In total.", 0.8)
+
+
+def test_a_statement_of_two_lines_ends_with_the_second_in_the_masters_time(tmp_path):
+    root = spoken(tmp_path, take("01", 0.0, "Hi.", [0.1, 0.2, 0.3]), take("02", 2.0, "No!", [0.1, 0.2, 0.3]))
+    assert craft.statement(root, ("01", "02")) == craft.Statement("Hi. No!", 2.2)
+
+
+def test_only_the_named_lines_count(tmp_path):
+    root = spoken(tmp_path, take("01", 0.0, "Hi.", [0.1, 0.2, 0.3]), take("02", 2.0, "No!", [0.1, 0.2, 0.3]))
+    assert craft.statement(root, ("01",)).end == 0.2
+
+
+@pytest.mark.parametrize(
+    "lines, takes, needle",
+    [
+        (("09",), [take("01", 0.0, "Hi.", [0.1, 0.2, 0.3])], "no take"),
+        ((), [take("01", 0.0, "Hi.", [0.1, 0.2, 0.3])], "at least one line"),
+        (("01",), [take("01", 0.0, "...", [0.1, 0.2, 0.3])], "no letters"),
+        (("01",), [{"id": "01", "at": 0.0, "characters": ["H"], "ends": []}], "a time for every letter"),
+        (("01",), [take("01", "soon", "Hi.", [0.1, 0.2, 0.3])], "must be a number"),  # type: ignore[arg-type]
+    ],
+)
+def test_a_statement_that_cannot_be_measured_is_an_error_never_a_pass(tmp_path, lines, takes, needle):
+    with pytest.raises(craft.CraftError, match=needle):
+        craft.statement(spoken(tmp_path, *takes), lines)
+
+
+def test_a_project_without_takes_is_an_error(tmp_path):
+    with pytest.raises(craft.CraftError):
+        craft.statement(tmp_path, ("01",))

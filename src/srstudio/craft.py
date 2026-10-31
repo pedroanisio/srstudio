@@ -47,10 +47,13 @@ __all__ = [
     "Craft",
     "doubled_captions",
     "moves",
+    "STATEMENT_BY",
     "lines",
     "pauses",
     "opening_silences",
     "clipped",
+    "Statement",
+    "statement",
     "levels",
     "luminance",
     "flashing",
@@ -62,6 +65,7 @@ SCHEMA = "1.4.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes
 # 1.4.0: the lines a recording cut short
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
+STATEMENT_BY = 3.0  # seconds: the first statement is finished by here, so the trouble is clear by second 3
 PAUSE = 0.8  # seconds between lines that count as a pause
 OPENING = 5.0  # seconds of a reel that have to hold a stranger
 OPENING_LIMIT = 1.0  # seconds without a line that the opening can afford
@@ -332,6 +336,42 @@ def clipped(project: Path) -> list[tuple[str, float]]:
         if cut and speech > kept:
             out.append((line, round(speech - kept, 3)))
     return out
+
+
+@dataclass(frozen=True)
+class Statement:
+    """The words a reel opens on, as recorded, and when in the master the last of them stops."""
+
+    text: str
+    end: float
+
+
+def statement(project: Path, lines: Sequence[str]) -> Statement:
+    """The statement made of ``lines``, the line ids a pilot names (``FIRST_STATEMENT``), read from the takes the master
+    was built from (``voiced/speech.json``). It ends where the last letter of the last named line ends: closing
+    punctuation has no sound of its own. Raises :class:`CraftError` for no lines, an unknown id or a take with no
+    letters, so a missing measure is never a pass."""
+    path = Path(project) / "voiced" / "speech.json"
+    takes = _read(path).get("takes")
+    if not isinstance(takes, list):
+        raise CraftError(f"{path}: takes must be a list")
+    if not lines:
+        raise CraftError(f"{path}: a statement needs at least one line")
+    named = {take.get("id"): take for take in takes if isinstance(take, dict)}
+    texts, end = [], 0.0
+    for line in lines:
+        take = named.get(line)
+        if take is None:
+            raise CraftError(f"{path}: no take {line!r}")
+        characters, ends = take.get("characters"), take.get("ends")
+        if not (isinstance(characters, list) and isinstance(ends, list) and len(characters) == len(ends)):
+            raise CraftError(f"{path}: take {line} needs a time for every letter")
+        spoken = [i for i, c in enumerate(characters) if isinstance(c, str) and c.isalnum()]
+        if not spoken:
+            raise CraftError(f"{path}: take {line} has no letters")
+        texts.append("".join(str(c) for c in characters))
+        end = _number(take.get("at"), f"take {line} at") + _number(ends[spoken[-1]], f"take {line} end")
+    return Statement(" ".join(texts), round(end, 3))
 
 
 def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> list[tuple[float, float]]:
