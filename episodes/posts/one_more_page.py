@@ -25,6 +25,7 @@ RELEASE = Release(
     ),
     tags=Tags("family", "other-person", "affection", test="sp-hook_motion", arm="a"),
     style="Soft",
+    cover=True,
     parts={
         # soft-bedside-lamp, soft-handshake, soft-open-briefcase, soft-picture-book, soft-quilt-pull and soft-wall-clock
         # are also drawn: a release cannot pin a proposed version, so they join once approved.
