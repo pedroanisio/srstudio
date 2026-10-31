@@ -877,11 +877,17 @@
     "news-vera@2": {
       "title": "Vera Stillman, a âncora, versão 2"
     },
+    "news-vera@3": {
+      "title": "Vera Stillman, a âncora, versão 3"
+    },
     "news-gus": {
       "title": "Gus Bellows, o coapresentador"
     },
     "news-gus@2": {
       "title": "Gus Bellows, o coapresentador, versão 2"
+    },
+    "news-gus@3": {
+      "title": "Gus Bellows, o coapresentador, versão 3"
     },
     "news-bug": {
       "title": "Marca do programa"
@@ -7866,9 +7872,9 @@
     },
     {
       "section": "cast",
-      "name": "Vera Stillman, a âncora séria (versão 2)",
+      "name": "Vera Stillman, a âncora séria (versão 3)",
       "parts": [
-        "news-vera@2"
+        "news-vera@3"
       ],
       "shot": {
         "episode": "security-question",
@@ -7880,13 +7886,13 @@
           680
         ]
       },
-      "text": "Desenhada de novo: cabelo prateado repartido, óculos de meia-lua e pescoço. Continua sem reação nenhuma."
+      "text": "Desenhada de novo: cabelo prateado repartido, óculos de meia-lua e pescoço. Continua sem reação nenhuma, mas a cabeça acena e vira."
     },
     {
       "section": "cast",
-      "name": "Gus Bellows, o coanfitrião (versão 2)",
+      "name": "Gus Bellows, o coanfitrião (versão 3)",
       "parts": [
-        "news-gus@2"
+        "news-gus@3"
       ],
       "shot": {
         "episode": "one-more-episode",
@@ -7898,7 +7904,7 @@
           640
         ]
       },
-      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade."
+      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade. A cabeça acena e vira, e leva a boca junto."
     }
   ]
 }
