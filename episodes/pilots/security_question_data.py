@@ -102,13 +102,14 @@ BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
 SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, cast=news_kit.NEWS_CAST)
 EVENTS = ("first", "stare", "wrong", "again", "dawn", "wait", "farm")
+FACES = ((300.0, 475.0, 490.0, 385.0),)  # Vera's head on the cover's frame: its headline stays off it
 POST = InstagramPost(
     title="What did your parents tell you about your first pet?",
     description="Parody.",
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#forgotpassword", "#securityquestion", "#everydaylife"),
     thumbnail=Thumbnail(
-        "Incorrect password.\nFourth attempt.", 5.0, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
+        "Incorrect password.\nFourth attempt.", 5.0, "News Compiler", focus=(540.0, 400.0), zoom=1.6, place="top"
     ),
 )
 

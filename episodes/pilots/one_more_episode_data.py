@@ -110,13 +110,14 @@ BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
 SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, cast=news_kit.NEWS_CAST, tail=TAIL)
 EVENTS = ("first", "three", "two", "one", "loop")
+FACES = ((300.0, 475.0, 490.0, 385.0),)  # Vera's head on the cover's frame: its headline stays off it
 POST = InstagramPost(
     title="What are you still watching that you don't even like?",
     description="Parody.",
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#bingewatching", "#onemoreepisode", "#everydaylife"),
     thumbnail=Thumbnail(
-        "One more episode.\nSeven episodes ago.", 3.0, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
+        "One more episode.\nSeven episodes ago.", 3.0, "News Compiler", focus=(540.0, 400.0), zoom=1.6, place="top"
     ),
 )
 

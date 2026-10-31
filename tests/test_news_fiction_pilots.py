@@ -17,7 +17,7 @@ from sr_core.scene import Scene
 from srstudio import Canvas, craft, news_kit, sketch
 from srstudio.news_kit import NewsKitError
 from srstudio.sketch import Line, SketchError
-from srstudio.thumbnail import Thumbnail
+from srstudio.thumbnail import Thumbnail, covered
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOTS = ROOT / "episodes" / "pilots"
@@ -134,6 +134,14 @@ def test_the_cover_does_not_show_the_payoff(pilot):
     event, word = next(v for k, v in REELS.items() if load(k) is pilot)
     assert cover(pilot).at < sketch.events(pilot.BEATS, event)[0][0]
     assert word not in cover(pilot).headline.lower()
+
+
+def test_the_cover_headline_stays_off_the_heads(pilot):
+    episodes = os.environ.get("SRSTUDIO_EPISODES")
+    font = Path(episodes or "") / "pilots" / "news" / pilot.SLUG / "assets" / "fonts" / "barlow-condensed-700.ttf"
+    if not episodes or not font.exists():
+        pytest.skip("needs SRSTUDIO_EPISODES and the project's pinned font")
+    assert covered(cover(pilot), font.read_bytes(), 1080, 1920, pilot.FACES) == []
 
 
 def test_the_caption_opens_on_a_question_and_says_parody(pilot):

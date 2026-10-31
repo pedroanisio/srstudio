@@ -98,13 +98,14 @@ BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
 SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, cast=news_kit.NEWS_CAST)
 EVENTS = ("first", "look", "slip", "zero", "button", "last")
+FACES = ((300.0, 475.0, 490.0, 385.0),)  # Vera's head on the cover's frame: its headline stays off it
 POST = InstagramPost(
     title="What's the 'you too' you still think about at 3 a.m.?",
     description="Parody.",
     credit="Voices: ElevenLabs premade voices Matilda and Charlie. Original characters, drawn in code.",
     hashtags=("#parodynews", "#awkwardmoments", "#overthinking", "#everydaylife"),
     thumbnail=Thumbnail(
-        "Enjoy your meal.\nYou too.", 5.2, "News Compiler", focus=(540.0, 400.0), zoom=1.15, place="top"
+        "Enjoy your meal.\nYou too.", 5.2, "News Compiler", focus=(540.0, 400.0), zoom=1.7, place="top"
     ),
 )
 

@@ -96,6 +96,7 @@ BEATS = tuple(row[0] for row in ROWS)
 ACTS = tuple(row[1] for row in ROWS)
 SKETCH = Sketch(SLUG, TITLE, (news_kit.VERA, news_kit.GUS), LINES, BEATS, END, cast=news_kit.NEWS_CAST, tail=TAIL)
 EVENTS = ("first", "board", "call")
+FACES = ((145.0, 640.0, 240.0, 250.0), (610.0, 640.0, 260.0, 250.0))  # both heads on the cover's frame, kept clear
 POST = InstagramPost(
     title="Who in your house says 'I don't mind' and means it?",
     description="Parody.",
