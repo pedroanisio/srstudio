@@ -175,10 +175,6 @@ def test_no_hearing_was_written():
     assert all(isinstance(q, Line) and not q.heard for q in pilot.LINES)
 
 
-def test_the_narrator_is_the_channels_voice():
-    assert pilot.DANIEL.id == "onwK4e9ZLuTAKqWW03F9"
-
-
 def test_the_post_keeps_to_the_format():
     assert 3 <= len(pilot.POST.hashtags) <= 5
 

@@ -7,7 +7,7 @@ before saying a time. And the bear speaks for the first time: the table is at 8:
 The reel ends with the water running, on the frame it opens on, so the first second comes round again.
 
 The viewer sends this to the friend who says "five minutes away" from the shower. Text on screen carries every key
-point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade Daniel; the two characters are
+point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade Bella; the two characters are
 ElevenLabs premade Alice and Bill. ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate` checks the
 events and every word on screen against :func:`srstudio.mind_kit.check_copy`; :func:`dress` draws each shot and
 :func:`foley` its sound.
@@ -51,8 +51,8 @@ ACCESSIBILITY = (
     "days taken. The bear says the table is at 8:15, she says you said seven, and he says I know. The shower "
     "is running again."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Daniel (narrator), Alice and Bill; synthesised effects."
-NOTE = "ElevenLabs premade voices Daniel, Alice and Bill at their natural pace; no reference-voice cloning."
+NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), Alice and Bill; synthesised effects."
+NOTE = "ElevenLabs premade voices Bella, Alice and Bill at their natural pace; no reference-voice cloning."
 
 STUDY = mind_kit.Evidence(
     "Buehler, Griffin & Ross",
@@ -66,8 +66,7 @@ TOOK = ("Average took, from that call", 55.5 / DAYS, "55.5 days")  # the same ta
 PLAN = ("The plan", 0.12, "shower, door")  # the mechanism's picture: the character's, not a measurement
 PAST = ("Last time", 0.94, "shower, other shirt, keys")
 
-DANIEL = Voice(role="narrator", id="onwK4e9ZLuTAKqWW03F9", name="Daniel")
-NARRATOR = Speaker("narrator", DANIEL, VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15))
+NARRATOR = mind_kit.NARRATOR
 MIA = Speaker(
     "mia",
     Voice(role="mia", id="Xb7hH8MSUJpSbSDYk0k2", name="Alice"),
@@ -365,7 +364,7 @@ POST = InstagramPost(
         "went away. They did not finish any sooner.\n"
         "Source: Buehler, Griffin & Ross (1994), Journal of Personality and Social Psychology 67(3)."
     ),
-    credit="Voices: ElevenLabs premade voices Daniel, Alice and Bill. Original characters, drawn in code.",
+    credit="Voices: ElevenLabs premade voices Bella, Alice and Bill. Original characters, drawn in code.",
     hashtags=("#psychology", "#planningfallacy", "#howpeoplethink", "#everydaylife"),
     thumbnail=Thumbnail(
         "Five minutes\naway.", 1.0, "There's a name for that", focus=(540.0, 760.0), zoom=1.0, place="bottom"

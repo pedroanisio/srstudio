@@ -34,6 +34,8 @@ series is not @tuxmeme: a pilot must not be able to reach the publishing path by
 7. A worn thing is placed from `toon_head.chest`, in the figure's own coordinates and inside the figure's own transform,
    so one placement holds at every scale a shot gives that figure. The anchor comes from the rig: the neck's line, under
    the lowest the head can reach.
+8. The narrator is one constant, `mind_kit.NARRATOR`, ElevenLabs premade Bella, and no pilot's cast shares her voice. The
+   operator chose Bella over Roger and Lily from the same lines recorded in each.
 
 ## Rejected alternatives
 
@@ -42,6 +44,7 @@ series is not @tuxmeme: a pilot must not be able to reach the publishing path by
 - **The pilot drawing its own cards.** Every pilot would repeat the same copy limits and the same timing rules, and a
   limit kept in one episode is not kept in the next.
 - **A release for each pilot.** Anything with a release can reach ready-to-publish and post to @tuxmeme.
+- **Daniel as the narrator.** The first five pilots used this premade broadcaster voice; the operator did not approve it.
 - **The held-back result as a strip of its own.** It adds a second object to read beside the card, and the card would
   need a layout rule for it. Growing one paper keeps one thing on screen.
 - **Bars without figures on the evidence card.** A bar's length is a claim, so `two_lines` draws to scale from values

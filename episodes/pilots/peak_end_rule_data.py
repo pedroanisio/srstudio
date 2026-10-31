@@ -7,7 +7,7 @@ viewer a mint: the viewer has been sitting in the raccoon's seat for every one o
 the reel loops into "Five stars."
 
 Text on screen carries every key point, for a muted viewer. The narrator is the channel's voice, ElevenLabs premade
-Daniel; the two characters are ElevenLabs premade voices. ``SKETCH`` is checked by :func:`srstudio.sketch.check`;
+Bella; the two characters are ElevenLabs premade voices. ``SKETCH`` is checked by :func:`srstudio.sketch.check`;
 :func:`validate` checks the events and every word on screen against :func:`srstudio.mind_kit.check_copy`; :func:`dress`
 draws each shot and :func:`foley` its sound.
 
@@ -61,8 +61,8 @@ ACCESSIBILITY = (
     "chose to repeat the longer one. A note on a fridge reads buy mints. The sloth sets a mint in front of the viewer "
     "and says thank you for waiting."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Daniel (narrator), Brian and Charlie; synthesised effects."
-NOTE = "ElevenLabs premade voices Daniel, Brian and Charlie; no reference-voice cloning."
+NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), Brian and Charlie; synthesised effects."
+NOTE = "ElevenLabs premade voices Bella, Brian and Charlie; no reference-voice cloning."
 
 STUDY = mind_kit.Evidence(
     "Kahneman, Fredrickson, Schreiber & Redelmeier",
@@ -73,8 +73,7 @@ STUDY = mind_kit.Evidence(
 SHORT = ("One hand", 60 / 90, "60 s")  # p. 402: 14 °C for 60 s; each bar is its share of the longer trial
 LONG = ("Other hand, ends slightly warmer", 1.0, "90 s")  # pp. 402-403: the same 60 s, then 30 s rising
 
-DANIEL = Voice(role="narrator", id="onwK4e9ZLuTAKqWW03F9", name="Daniel")
-NARRATOR = Speaker("narrator", DANIEL, VoiceSettings(stability=0.60, similarity_boost=0.75, style=0.15))
+NARRATOR = mind_kit.NARRATOR
 SLOTH = Speaker(
     "sloth",
     Voice(role="sloth", id="nPczCjzI2devNBz1zQrb", name="Brian"),
@@ -404,7 +403,7 @@ POST = InstagramPost(
         "so treat it as a thing to try.\n"
         "Source: Kahneman, Fredrickson, Schreiber & Redelmeier (1993), Psychological Science 4(6)."
     ),
-    credit="Voices: ElevenLabs premade voices Daniel, Brian and Charlie. Original characters, drawn in code.",
+    credit="Voices: ElevenLabs premade voices Bella, Brian and Charlie. Original characters, drawn in code.",
     hashtags=("#psychology", "#peakendrule", "#howpeoplethink", "#everydaylife"),
     thumbnail=Thumbnail("Five stars.\nFor a mint.", 1.0, "There's a name for that", place="bottom"),
 )
