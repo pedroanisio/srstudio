@@ -404,3 +404,47 @@ def test_a_failed_stage_keeps_the_previous_outbox_and_leaves_no_scratch(delivere
         "outbox",
         "renders",
     ]
+
+
+def test_a_bundle_can_stage_a_file_under_another_name(tmp_path):
+    source = tmp_path / "pilot-1.0.0.vpkg.zip"
+    source.write_text("package\n")
+    manifest = stage([Bundle("pilot", (source,), names=("vpkg.zip",))], tmp_path / "out")
+    assert (manifest.parent / "pilot/vpkg.zip").read_text() == "package\n"
+    assert not (manifest.parent / "pilot" / source.name).exists()
+    assert list(json.loads(manifest.read_text())["videos"]["pilot"]) == ["vpkg.zip"]
+
+
+def test_staged_names_must_match_the_files_and_each_other(tmp_path):
+    one, two = tmp_path / "one.txt", tmp_path / "two.txt"
+    one.write_text("1\n")
+    two.write_text("2\n")
+    with pytest.raises(OutboxError, match="names"):
+        stage([Bundle("pilot", (one, two), names=("only.txt",))], tmp_path / "out")
+    with pytest.raises(OutboxError, match="share one name"):
+        stage([Bundle("pilot", (one, two), names=("same.txt", "same.txt"))], tmp_path / "out")
+
+
+@pytest.mark.parametrize("name", ["a/b.txt", "../b.txt", "..", ""])
+def test_a_staged_name_cannot_leave_its_folder(tmp_path, name):
+    source = tmp_path / "one.txt"
+    source.write_text("1\n")
+    with pytest.raises(OutboxError, match="file name"):
+        stage([Bundle("pilot", (source,), names=(name,))], tmp_path / "out")
+
+
+def test_the_manifest_can_have_another_name_and_a_restage_recognises_it(tmp_path):
+    source = tmp_path / "one.txt"
+    source.write_text("1\n")
+    manifest = stage([Bundle("pilot", (source,))], tmp_path / "out", manifest="manifest.json")
+    assert manifest == tmp_path / "out/manifest.json" and not (tmp_path / "out" / MANIFEST).exists()
+    assert stage([Bundle("pilot", (source,))], tmp_path / "out", manifest="manifest.json") == manifest
+    with pytest.raises(OutboxError, match="not an outbox"):
+        stage([Bundle("pilot", (source,))], tmp_path / "out")
+
+
+def test_a_files_own_name_is_not_judged_only_a_chosen_one(tmp_path):
+    source = tmp_path / "Printer Recreation (1).mp4"
+    source.write_text("video\n")
+    manifest = stage([Bundle("printer", (source,))], tmp_path / "out")
+    assert (manifest.parent / "printer" / source.name).is_file()

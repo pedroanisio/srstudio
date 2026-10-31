@@ -4,7 +4,8 @@
 each one with its ``ig.txt``, its ``cover.jpg`` and its ``.vpkg.zip`` package (received with a recreation, packed by
 :mod:`srstudio.package` for an original episode); a video that drifted, or that has no package, is held back and
 reported. :func:`stage` copies the bundles into one private folder per video, with an ``ab.json`` naming the
-A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s, replacing the previous outbox whole,
+A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s (a pilot's folder uses the same stage and
+push under another manifest name: ``episodes/publish_pilots.py``), replacing the previous outbox whole,
 so the folder holds exactly what is ready now; the operator's own top-level dot-files (``.ignore``) are carried
 over and uploaded with it.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
@@ -72,11 +73,17 @@ class Arm:
 @dataclass(frozen=True)
 class Bundle:
     """One video ready to publish: its folder name in the outbox, the files that go in it, video first, and the
-    :class:`Arm` of the A/B tests it is in, if any."""
+    :class:`Arm` of the A/B tests it is in, if any. ``names`` gives what each of ``files`` is staged as, in order; left
+    empty, each keeps its own name."""
 
     name: str
     files: tuple[Path, ...]
     ab: Arm | None = None
+    names: tuple[str, ...] = ()
+
+    @property
+    def staged_names(self) -> tuple[str, ...]:
+        return self.names or tuple(f.name for f in self.files)
 
 
 def latest_package(folder: Path, slug: str) -> Path | None:
@@ -159,7 +166,12 @@ def _check(bundles: Sequence[Bundle]) -> None:
     if twice:
         raise OutboxError(f"two bundles are named {', '.join(twice)}: a name can be staged only once, not twice")
     for b in bundles:
-        files = [f.name for f in b.files]
+        if b.names and len(b.names) != len(b.files):
+            raise OutboxError(f"{b.name}: {len(b.names)} names for {len(b.files)} files")
+        unusable = sorted(f for f in b.names if not _NAME.fullmatch(f))
+        if unusable:
+            raise OutboxError(f"{b.name}: {unusable[0]!r} is not a usable file name")
+        files = list(b.staged_names)
         if len(set(files)) != len(files):
             raise OutboxError(f"{b.name}: two files share one name, so one would be staged twice")
         if b.ab is not None and AB_NAME in files:
@@ -173,16 +185,16 @@ def _dot_files(folder: Path) -> list[Path]:
     return sorted(p for p in folder.iterdir() if p.name.startswith(".") and p.is_file() and not p.is_symlink())
 
 
-def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
-    """Replace ``folder`` with one private folder per bundle and ``outbox.json``; returns the manifest's path.
+def stage(bundles: Sequence[Bundle], folder: Path, *, manifest: str = MANIFEST) -> Path:
+    """Replace ``folder`` with one private folder per bundle and the ``manifest`` of hashes; returns its path.
 
     The new outbox is built beside ``folder`` and swapped in, so a failure leaves the previous one in place. A
     ``folder`` that holds anything but a previous outbox is refused and left untouched. The operator's top-level
     dot-files in ``folder`` (``.ignore``) are kept as they are, content and mode."""
     _check(bundles)
     folder = Path(folder)
-    if folder.exists() and any(folder.iterdir()) and not (folder / MANIFEST).is_file():
-        raise OutboxError(f"{folder} is not an outbox (no {MANIFEST}); refusing to replace it")
+    if folder.exists() and any(folder.iterdir()) and not (folder / manifest).is_file():
+        raise OutboxError(f"{folder} is not an outbox (no {manifest}); refusing to replace it")
     folder.parent.mkdir(parents=True, exist_ok=True)
     build = Path(tempfile.mkdtemp(prefix=f".{folder.name}-", dir=folder.parent))  # mode 700
     try:
@@ -191,9 +203,9 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
             target = build / b.name
             target.mkdir(mode=0o700)
             hashes = {}
-            for source in b.files:
+            for source, staged in zip(b.files, b.staged_names, strict=True):
                 before = digest.sha256(source)
-                copy = target / source.name
+                copy = target / staged
                 shutil.copyfile(source, copy)
                 copy.chmod(0o600)
                 hashes[copy.name] = digest.sha256(copy)
@@ -205,9 +217,9 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
                 arm.chmod(0o600)
                 hashes[AB_NAME] = digest.sha256(arm)
             videos[b.name] = hashes
-        manifest = build / MANIFEST
-        manifest.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")
-        manifest.chmod(0o600)
+        document = build / manifest
+        document.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")
+        document.chmod(0o600)
         for kept in _dot_files(folder):
             shutil.copy2(kept, build / kept.name)
         if folder.exists():
@@ -220,7 +232,7 @@ def stage(bundles: Sequence[Bundle], folder: Path) -> Path:
     except BaseException:
         shutil.rmtree(build, ignore_errors=True)
         raise
-    return folder / MANIFEST
+    return folder / manifest
 
 
 def push(
