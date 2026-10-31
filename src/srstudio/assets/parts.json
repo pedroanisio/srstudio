@@ -9593,6 +9593,57 @@
           "rig": null
         }
       ]
+    },
+    "stick-rear-view": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The whole frame as a rear-view mirror on its stem, its masked glass showing what is drawn into it, the same by day and by night. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "86eeed4bb4bc87a01a77900a5554413383e3fd0d3c669338378a23c3b173181f",
+          "rig": null
+        }
+      ]
+    },
+    "stick-swim-ring": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An inflated ring in a band color and white, squashed flat when its radii differ. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ff6663a18a5b9e40945560ff431da3b2138f045439122d6c22c7fe162a9622ed",
+          "rig": null
+        }
+      ]
+    },
+    "stick-blinker": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The indicator's amber arrow, dark, lit at each time it clicks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14092fe29026cf6fdcba586b287028475b310eed1f13edf2175ae26a2832b867",
+          "rig": null
+        }
+      ]
     }
   }
 }

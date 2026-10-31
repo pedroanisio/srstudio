@@ -1166,6 +1166,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-blinker": {"title": "Seta do carro"},
+    "stick-swim-ring": {"title": "Boia inflável"},
+    "stick-rear-view": {"title": "Retrovisor"},
     "cafe-door": {"title": "Porta do café"},
     "coat-over": {"title": "Casaco vestido em cena"},
     "big-thumb": {"title": "Polegar gigante"},
@@ -8296,6 +8299,42 @@
         "at": 24.4
       },
       "text": "O casaco que veste um lado de cada vez, e a porta com a placa lida por dentro."
+    },
+    {
+      "section": "props",
+      "name": "Retrovisor",
+      "parts": [
+        "stick-rear-view"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 1.0
+      },
+      "text": "O quadro inteiro é um retrovisor: só os olhos de quem dirige cabem no vidro."
+    },
+    {
+      "section": "props",
+      "name": "Boia inflável",
+      "parts": [
+        "stick-swim-ring"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 7.5
+      },
+      "text": "Uma boia branca e colorida, amassada contra o vidro do carro."
+    },
+    {
+      "section": "props",
+      "name": "Seta do carro",
+      "parts": [
+        "stick-blinker"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 4.5
+      },
+      "text": "A seta âmbar do painel, que acende a cada clique."
     }
   ]
 }
