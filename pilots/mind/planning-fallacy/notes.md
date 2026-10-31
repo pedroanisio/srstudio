@@ -48,7 +48,7 @@ in `srstudio.foley`, not a registered part.
 
 ## What I would change
 
-- The name lands at 37.8% of the way in, a little ahead of the 40% target. A fourth voice note would close the gap, at
+- The name lands at 38.7% of the way in, a little ahead of the 40% target. A fourth voice note would close the gap, at
   the cost of pace.
 - The narrator never says "on average". The bars do, on screen, so a viewer listening without looking loses that word.
 - The opening shows no line until 0.4 s, because the water has to run first. It is the only stretch of the hook with no
