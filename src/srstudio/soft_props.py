@@ -478,8 +478,12 @@ def review_view(cv: Canvas, g, name: str, stars: int, *, id: str = "soft-review"
         cv.rect(g, -56, 8 + row * 22, width, 10, "#D9DDE1", radius=5)
 
 
-GLARE_RINGS = 9  # how many steps the light falls away in; fewer show as bands
-GLARE_LEVEL = 0.12  # the opacity of each ring
+GLARE = (
+    (0.0, "#FFFFFF"),
+    (0.2, "#FFFFFFF2"),
+    (0.55, "#FFFFFF80"),
+    (1.0, "#FFFFFF00"),
+)  # white, falling away to nothing
 
 
 @register(
@@ -490,25 +494,20 @@ GLARE_LEVEL = 0.12  # the opacity of each ring
 def glare_lamp(
     cv: Canvas, parent, x: float, y: float, *, scale: float = 1, reach: float = 620, id: str = "soft-glare-lamp"
 ):
-    """The lamp with its base on (``x``, ``y``), about 150 px tall at ``scale`` 1, and over it the glare, ``reach`` px
-    from the bulb to where the light gives out. Draw whoever squints at it first: the glare falls on them."""
+    """The glare, ``reach`` px from the bulb to where the light gives out, and in it the lamp with its base on (``x``,
+    ``y``), about 150 px tall at ``scale`` 1. Draw whoever squints at it first: the glare falls on them."""
     if not (checks.number(scale) and scale > 0):
         raise SoftPropError(f"a lamp's scale must be a positive number, got {scale!r}")
     if not (checks.number(reach) and reach > 0):
         raise SoftPropError(f"a glare's reach must be a positive number, got {reach!r}")
     ink = cv.ink
     g = cv.group(parent, id)
+    cx, cy = x, y - 92 * scale
+    cv.ellipse(g, cx - reach, cy - reach, 2 * reach, 2 * reach, cv.rgrad(f"{id}-light", GLARE))
     body = cv.group(g, f"{id}-body", x=x, y=y, scaleX=scale, scaleY=scale)
     cv.ellipse(body, -46, -14, 92, 28, "#6E777D", ink, 4)
     cv.path(body, "M 0 -8 L 0 -96", stroke=ink, sw=7)
     cv.path(body, "M -52 -96 L 52 -96 L 30 -150 L -30 -150 Z", "#F6E3B4", ink, 4)
-    cx, cy = x, y - 92 * scale
-    glare = cv.group(g, f"{id}-glare")
-    for k in range(GLARE_RINGS):
-        r = reach * (GLARE_RINGS - k) / GLARE_RINGS
-        cv.ellipse(glare, cx - r, cy - r, 2 * r, 2 * r, "#FFFFFF", opacity=GLARE_LEVEL)
-    core = 56 * scale
-    cv.ellipse(glare, cx - core, cy - core, 2 * core, 2 * core, "#FFFFFF")
     return g
 
 

@@ -158,15 +158,14 @@ def test_the_glare_lamp_is_registered_for_the_soft_style():
     assert entry.kind == "prop" and entry.style == "soft"
 
 
-def test_the_glare_is_far_larger_than_the_lamp_and_drawn_over_it():
+def test_the_glare_is_far_larger_than_the_lamp_and_the_lamp_stands_in_it():
     cv = canvas()
     soft_props.glare_lamp(cv, cv.comp, 540, 1400, reach=700)
-    groups = {g.get("id"): g for g in tree(cv).iter("group")}
-    lamp, glare = groups["soft-glare-lamp-body"], groups["soft-glare-lamp-glare"]
-    order = [g.get("id") for g in tree(cv).iter("group")]
-    assert order.index("soft-glare-lamp-body") < order.index("soft-glare-lamp-glare")
-    assert len(list(glare)) == soft_props.GLARE_RINGS + 1  # the rings and the white core
-    assert len(list(lamp)) >= 3
+    lamp = next(g for g in tree(cv).iter("group") if g.get("id") == "soft-glare-lamp")
+    light, body = list(lamp)
+    assert light.tag == "shape" and float(light.get("width")) == 1400  # about ten times the 150 px lamp
+    assert light.get("fill") == "url(#soft-glare-lamp-light)"
+    assert body.get("id") == "soft-glare-lamp-body"  # the lamp itself stays visible in its own light
 
 
 @pytest.mark.parametrize("kw", [{"reach": 0}, {"reach": float("nan")}, {"scale": 0}, {"scale": float("inf")}])
