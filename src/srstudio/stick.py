@@ -877,7 +877,8 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
 # -- the rig: a drawn, posable figure for new episodes ------------------------------------------------------
 Point = tuple[float, float]
 Framing = tuple[Point, float, Point]  # focus, zoom, where the focus lands: what a camera is told
-EYES = ("open", "wide", "half", "closed", "happy", "peek")
+EYES = ("open", "wide", "half", "closed", "happy", "peek", "peek-back")
+PEEKS = {"peek": ("closed", "open"), "peek-back": ("open", "closed")}  # the eyes at -x and at +x
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
 HEAD_R = 92
@@ -1175,11 +1176,12 @@ def _crescent(r: float) -> str:
 
 def _eyes(cv: Canvas, parent, face: Face) -> None:
     """The two eyes. ``peek`` keeps the one at -x shut and opens the one at +x: the one a figure, flipped or not, turns
-    toward whoever it faces."""
+    toward whoever it faces. ``peek-back`` is the other way round, for a figure seated facing the camera with the one
+    it is checking on at its left, as a driver is."""
     lx, ly = face.look
-    for ex in (-30, 30):
+    for side, ex in enumerate((-30, 30)):
         e = _group(cv, parent, x=ex, y=-12)
-        state = ("closed" if ex < 0 else "open") if face.eyes == "peek" else face.eyes
+        state = PEEKS[face.eyes][side] if face.eyes in PEEKS else face.eyes
         if state in ("closed", "happy"):
             d = "M -15 0 Q 0 9 15 0" if state == "closed" else "M -15 5 Q 0 -10 15 5"
             shape(cv, e, d, sw=5, stroke=cv.ink)

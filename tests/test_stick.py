@@ -702,3 +702,12 @@ def test_a_peek_is_a_face_the_rig_draws_and_a_blink_leaves_it_alone():
 def test_a_wink_is_not_a_known_eye():
     with pytest.raises(stick.StickDataError, match="eyes"):
         stick.check_face(stick.Face("wink"))
+
+
+def test_a_peek_back_opens_the_eye_a_figure_that_is_not_flipped_turns_left():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek-back"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(b"ellipse") < drawn.index(SHUT_EYE), "the shut eye is the one at +x"
+    assert "peek-back" in stick.EYES
