@@ -208,4 +208,4 @@ def test_the_palm_stands_and_refuses_a_stump():
 
 def test_a_long_call_shrinks_to_stay_on_the_sign():
     assert stick_airport.now_size("GROUP 1") == stick_airport.now_size("FINAL CALL") == 72
-    assert stick_airport.now_size("WELCOME 38°") < 66
+    assert stick_airport.now_size("WELCOME 38°") < 54

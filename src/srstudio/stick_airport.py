@@ -109,8 +109,8 @@ def _plane(cv: Canvas, parent) -> None:
 
 
 def now_size(now: str) -> float:
-    """The letter size of the sign's second line: ten characters fill it, and a longer call shrinks to fit."""
-    return 72 * min(1.0, 10 / len(now))
+    """The letter size of the sign's second line: ten characters fill it, and a longer call shrinks to stay inside."""
+    return 72 if len(now) <= 10 else 72 * 8 / len(now)
 
 
 @register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
