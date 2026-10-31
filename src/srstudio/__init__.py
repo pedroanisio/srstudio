@@ -62,6 +62,7 @@ from . import (  # noqa: F401  (registers builders)
     styles,
     subtitles,
     toon,
+    toon_cars,
     toon_cast,
     toon_critters,
     toon_dinner,
