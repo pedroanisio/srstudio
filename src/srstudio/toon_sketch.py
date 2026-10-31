@@ -139,9 +139,7 @@ class Staging:
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
-    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(
-        default_factory=dict
-    )
+    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
     character's seat, so a figure can bend, sink or sway while its set stays put."""
 
