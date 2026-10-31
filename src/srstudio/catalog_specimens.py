@@ -494,6 +494,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-cake-slice": Recipe(part(540.0, 960.0, (1.0, 2.0))),
     "collage-eye-chart": Recipe(part(200.0, 500.0, ("TOP ROW", "SECOND ROW"), (1.0, 2.0), end=SECONDS)),
     "collage-lens-frame": Recipe(part(540.0, 960.0)),
+    "collage-sensor-tap": Recipe(part(540.0, 960.0, ((0.0, SECONDS),))),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {

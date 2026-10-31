@@ -111,3 +111,20 @@ def lens_frame(cv: Canvas, parent, x: float, y: float, spread: float = 150.0):
         cv.ellipse(g, x + side * spread / 2 - 56 + side * 60, y - 56, 112, 112, GLASS, INK, EDGE, opacity=0.65)
     cv.ellipse(g, x - 26, y - 26, 52, 52, "#5c6670", INK, EDGE)
     return g
+
+
+@register("prop", "collage-sensor-tap", summary="A chrome sensor tap over a basin, running on cue", style="collage")
+def sensor_tap(cv: Canvas, parent, x: float, y: float, runs: Sequence[tuple[float, float]] = ()):
+    """A basin with its rim at ``y``, a tap at ``x``, water falling through each ``(start, end)`` of ``runs``."""
+    if not all(checks.number(a) and checks.number(b) and 0 <= a < b for a, b in runs):
+        raise CollageOddsError(f"a tap runs forward in time, got {runs!r}")
+    g = cv.group(parent, cv.uid("g"))
+    cv.rect(g, x - 210, y, 420, 170, "#f4f6f4", INK, EDGE, radius=26.0)
+    cv.rect(g, x - 16, y - 120, 32, 124, STEEL, INK, EDGE, radius=8.0)
+    cv.rect(g, x - 16, y - 136, 110, 34, STEEL, INK, EDGE, radius=14.0)
+    cv.ellipse(g, x - 9, y - 96, 18, 18, "#d93a3a", INK, 2.0)
+    if runs:
+        water = cv.group(g, cv.uid("g"))
+        cv.gate(water, list(runs))
+        cv.rect(water, x + 70, y - 104, 16, 110, "#8ccdf0", opacity=0.9, radius=6.0)
+    return g
