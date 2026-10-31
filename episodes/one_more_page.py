@@ -183,7 +183,11 @@ pip_out = quiet(
 
 
 def cast(g):
-    soft_bedtime.wall_clock(cv, g, 250, 590, time="8:40", scale=0.9)
+    before, after = cv.group(g, "clock-at-the-deal"), cv.group(g, "clock-at-the-end")
+    cv.gate(before, [(0.0, CARD)])
+    cv.gate(after, [(CARD, DURATION)])
+    soft_bedtime.wall_clock(cv, before, 250, 590, time="8:40", scale=0.9, id="clock-840")
+    soft_bedtime.wall_clock(cv, after, 250, 590, time="9:40", scale=0.9, id="clock-940")
     bed = cv.group(g, "in-bed")
     cv.gate(bed, [(CARD, DURATION)])
     blob.bo(cv, bed, bo_bed, end=DURATION, scale=BO_SCALE, mouth_states=ep.mouth("bo"), fps=FPS, shadow=False)
