@@ -1165,7 +1165,22 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"}
+    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-plate-of-toast": {"title": "Prato de torradas"},
+    "toon-swing-door": {"title": "Porta vaivém"},
+    "toon-soup-tubs": {"title": "Potes de sopa"},
+    "toon-shampoo": {"title": "Frasco de xampu"},
+    "toon-scribble": {"title": "Rabisco no lugar da legenda"},
+    "toon-rack": {"title": "Cesto da lava-louças"},
+    "toon-profiles": {"title": "Perfis do streaming"},
+    "toon-mower": {"title": "Cortador de grama"},
+    "toon-monitor-receiver": {"title": "Receptor da babá"},
+    "toon-lasagna": {"title": "Lasanha"},
+    "toon-dishwasher": {"title": "Lava-louças"},
+    "toon-device-list": {"title": "Lista de aparelhos"},
+    "toon-cupcakes": {"title": "Bandeja de cupcakes"},
+    "toon-blower": {"title": "Soprador de folhas"},
+    "toon-baby-monitor": {"title": "Babá eletrônica"}
   },
   "gallery": [
     {
@@ -7898,7 +7913,163 @@
           640
         ]
       },
-      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade."
+      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade.",
+      "section": "props",
+      "name": "Lava-louças aberta",
+      "parts": [
+        "toon-dishwasher"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 5.0
+      },
+      "text": "Uma lava-louças aberta que ganha um prato a cada carga."
+    },
+    {
+      "section": "props",
+      "name": "Cesto de canecas",
+      "parts": [
+        "toon-rack"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 12.0
+      },
+      "text": "O cesto de cima de perto: fileiras de canecas, todas na mesma inclinação."
+    },
+    {
+      "section": "props",
+      "name": "Potes de sopa",
+      "parts": [
+        "toon-soup-tubs"
+      ],
+      "shot": {
+        "episode": "long-goodbye",
+        "at": 16.0
+      },
+      "text": "Uma pilha de potes de sopa que cresce a cada parada."
+    },
+    {
+      "section": "props",
+      "name": "Cortador de grama",
+      "parts": [
+        "toon-mower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 3.0
+      },
+      "text": "Um cortador de grama que treme enquanto funciona."
+    },
+    {
+      "section": "props",
+      "name": "Soprador de folhas",
+      "parts": [
+        "toon-blower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 23.5
+      },
+      "text": "Um soprador de folhas que treme enquanto funciona."
+    },
+    {
+      "section": "graphics",
+      "name": "Rabisco no lugar da legenda",
+      "parts": [
+        "toon-scribble"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 3.0
+      },
+      "text": "Onde estaria a legenda, um rabisco: palavras que ninguém entendeu."
+    },
+    {
+      "section": "props",
+      "name": "Babá eletrônica",
+      "parts": [
+        "toon-baby-monitor",
+        "toon-swing-door"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 3.0
+      },
+      "text": "A babá eletrônica na prateleira, e a porta vaivém entre a cozinha e a sala."
+    },
+    {
+      "section": "props",
+      "name": "Receptor da babá",
+      "parts": [
+        "toon-monitor-receiver",
+        "toon-lasagna"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 9.0
+      },
+      "text": "A metade dos pais: cinco barras verdes que pulam, ao lado de uma lasanha."
+    },
+    {
+      "section": "props",
+      "name": "Prato de torradas",
+      "parts": [
+        "toon-plate-of-toast"
+      ],
+      "shot": {
+        "episode": "call-your-mother",
+        "at": 26.0
+      },
+      "text": "Duas torradas num prato."
+    },
+    {
+      "section": "graphics",
+      "name": "Perfis do streaming",
+      "parts": [
+        "toon-profiles"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 7.0
+      },
+      "text": "A tela de quem está assistindo, com um a seis nomes."
+    },
+    {
+      "section": "graphics",
+      "name": "Lista de aparelhos",
+      "parts": [
+        "toon-device-list"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 14.0
+      },
+      "text": "A lista de aparelhos conectados, em tela cheia."
+    },
+    {
+      "section": "props",
+      "name": "Frasco de xampu",
+      "parts": [
+        "toon-shampoo"
+      ],
+      "shot": {
+        "episode": "shower-argument",
+        "at": 17.0
+      },
+      "text": "Um frasco de xampu que solta uma bolha."
+    },
+    {
+      "section": "props",
+      "name": "Bandeja de cupcakes",
+      "parts": [
+        "toon-cupcakes"
+      ],
+      "shot": {
+        "episode": "pajama-day",
+        "at": 20.0
+      },
+      "text": "Uma bandeja de cupcakes com bandeirinhas, em fileiras."
     }
   ]
 }
