@@ -24,7 +24,8 @@ RELEASE = Release(
     tags=Tags("own-worst-enemy", "protagonist", "tension", test="sp-hook_motion", arm="b"),
     style="Cutout",
     parts={
-        # big-thumb, cafe-door, coat-over, phone-post also drawn: a release cannot pin a proposed version, so they join once approved.
+        # big-thumb, cafe-door, coat-over, phone-post also drawn:
+        # a release cannot pin a proposed version, so they join once approved.
         "barista": 1,
         "bean-jar": 1,
         "cafe": 1,
