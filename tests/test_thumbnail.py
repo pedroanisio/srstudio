@@ -8,7 +8,18 @@ from pathlib import Path
 import pytest
 
 from srstudio.sample import SYSTEM_FONTS
-from srstudio.thumbnail import BLOCK, MARGIN, MAX_SIZE, Thumbnail, ThumbnailError, compose, grid_box, layout, render
+from srstudio.thumbnail import (
+    BLOCK,
+    MARGIN,
+    MAX_SIZE,
+    Thumbnail,
+    ThumbnailError,
+    compose,
+    covered,
+    grid_box,
+    layout,
+    render,
+)
 
 FONT = next(f for f in SYSTEM_FONTS if f.exists())  # DejaVu Sans Bold, the fixture font
 GOOD = Thumbnail("See my\nscreen?", 1.0, kicker="Stick 02", focus=(300, 800), zoom=1.5)
@@ -135,3 +146,63 @@ def test_a_failing_engine_raises_and_writes_nothing(tmp_path):
         render(Thumbnail("Hi", 0), backdrop(tmp_path / "b.png"), tmp_path / "cover.jpg", font=FONT, engine=fake,
                width=270, height=480)  # fmt: skip
     assert not (tmp_path / "cover.jpg").exists()
+
+
+# -- a headline over a face -----------------------------------------------------------------------------------------
+TOP = Thumbnail("Five minutes\naway", 1.0, kicker="News", place="top")
+SIZE = (1080, 1920)
+
+
+def test_a_face_under_the_headline_is_named():
+    lay = layout(TOP, FONT.read_bytes(), *SIZE)
+    top, _ = lay.lines[0]
+    face = (440.0, top + 10.0, 200.0, 200.0)
+    assert covered(TOP, FONT.read_bytes(), *SIZE, [face]) == [face]
+
+
+def test_a_face_under_the_kicker_is_named():
+    lay = layout(TOP, FONT.read_bytes(), *SIZE)
+    assert lay.kicker is not None
+    x, y, w, h = lay.kicker
+    face = (float(x), float(y), float(w), float(h))
+    assert covered(TOP, FONT.read_bytes(), *SIZE, [face]) == [face]
+
+
+def test_a_face_in_the_picture_area_is_clear():
+    px, py, pw, ph = layout(TOP, FONT.read_bytes(), *SIZE).picture
+    face = (px + pw / 2 - 100.0, py + ph / 2 - 100.0, 200.0, 200.0)
+    assert covered(TOP, FONT.read_bytes(), *SIZE, [face]) == []
+
+
+def test_a_face_beside_a_short_line_is_clear():
+    """Only the width the words take counts, not the whole band."""
+    short = Thumbnail("Hi", 1.0)
+    lay = layout(short, FONT.read_bytes(), *SIZE)
+    top, _ = lay.lines[0]
+    assert covered(short, FONT.read_bytes(), *SIZE, [(0.0, float(top), 100.0, 100.0)]) == []
+
+
+def test_the_face_is_read_where_the_zoom_puts_it():
+    """A face in the frame's lower half is clear unzoomed; the zoom and the focus carry it up under the headline."""
+    px, py, pw, ph = layout(TOP, FONT.read_bytes(), *SIZE).picture
+    top = layout(TOP, FONT.read_bytes(), *SIZE).lines[0][0]
+    zoomed = Thumbnail(TOP.headline, 1.0, kicker="News", place="top", zoom=2.0, focus=(540.0, 1400.0))
+    below = (440.0, (top - (py + ph / 2 - 2.0 * 1400.0)) / 2.0, 200.0, 40.0)
+    assert covered(TOP, FONT.read_bytes(), *SIZE, [below]) == []
+    assert covered(zoomed, FONT.read_bytes(), *SIZE, [below]) == [below]
+
+
+@pytest.mark.parametrize(
+    "face",
+    [
+        (0.0, 0.0, 0.0, 10.0),
+        (0.0, 0.0, 10.0, -1.0),
+        (float("nan"), 0.0, 10.0, 10.0),
+        (True, 0.0, 10.0, 10.0),
+        ("0", 0.0, 10.0, 10.0),
+        (0.0, 0.0, 10.0),
+    ],
+)
+def test_a_box_that_is_no_box_is_refused(face):
+    with pytest.raises(ThumbnailError, match="keep-clear box"):
+        covered(TOP, FONT.read_bytes(), *SIZE, [face])

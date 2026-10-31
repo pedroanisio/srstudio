@@ -26,7 +26,7 @@ import re
 import struct
 import subprocess
 import tempfile
-from collections.abc import Callable, Collection, Iterator, Mapping
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -35,7 +35,7 @@ from typing import Any, NamedTuple
 from . import checks, digest
 from . import thumbnail as drawing
 from .errors import SrstudioError
-from .thumbnail import Thumbnail, ThumbnailError, render
+from .thumbnail import Thumbnail, ThumbnailError, covered, render
 
 __all__ = [
     "InstagramPost",
@@ -364,13 +364,16 @@ class InstagramPost:
         ffmpeg: str = "ffmpeg",
         ffprobe: str = "ffprobe",
         scene: Path | None = None,
+        keep_clear: Iterable[tuple[float, float, float, float]] = (),
     ) -> tuple[Path, Path]:
         """Write ``ig.txt`` and ``cover.jpg`` (the :attr:`thumbnail` over its frame of ``video``, drawn from the
         ``cover`` variant of ``scene`` when one is given) into ``folder``.
 
         The cover is drawn before the caption is written: a post without a thumbnail, an invalid post, a time outside
         the video, a blank frame, a headline that does not fit or a failed render raise, and leave no file. ``font``
-        is the headline's TrueType file and ``engine`` the scene-render binary."""
+        is the headline's TrueType file and ``engine`` the scene-render binary. ``keep_clear`` names boxes of the
+        frame, in px, that must stay visible (the faces): a headline or kicker landing on one raises in the same way,
+        and it reads no part of the post's fingerprint."""
         problems = self.problems() + (
             ["thumbnail is missing; a delivery needs a cover"] if self.thumbnail is None else []
         )
@@ -393,6 +396,9 @@ class InstagramPost:
                 if (width, height) != (info.width, info.height):
                     raise CoverError(f"{Path(video).name} decodes at {info.width}x{info.height}, but its index says "
                                      f"{width}x{height}")  # fmt: skip
+                hidden = covered(self.thumbnail, Path(font).read_bytes(), width, height, keep_clear)
+                if hidden:
+                    raise ThumbnailError(f"the headline or kicker covers {hidden}; move the focus or the place")
                 cover = render(self.thumbnail, backdrop, folder / COVER_NAME, font=font, engine=engine,
                                width=info.width, height=info.height, ffmpeg=ffmpeg)  # fmt: skip
         except BaseException:  # whatever fails, a folder made for this delivery is not left behind

@@ -197,6 +197,20 @@ def test_deliver_leaves_no_folder_when_the_engine_fails(tmp_path):
     assert not (tmp_path / "ig" / "v").exists()
 
 
+def test_deliver_refuses_a_headline_over_a_face_and_writes_nothing(tmp_path):
+    with pytest.raises(thumbnail.ThumbnailError, match="headline or kicker covers"):
+        post().deliver(tmp_path / "ig" / "v", tall(tmp_path / "v.mp4"), font=FONT, engine=engine(),
+                       keep_clear=[(0.0, 0.0, 540.0, 960.0)])  # fmt: skip
+    assert not (tmp_path / "ig" / "v").exists()
+
+
+def test_deliver_draws_the_cover_when_the_faces_are_clear(tmp_path):
+    clip = tall(tmp_path / "v.mp4")
+    caption, cover = post().deliver(tmp_path / "ig" / "v", clip, font=FONT, engine=engine(),
+                                    keep_clear=[(0.0, 0.0, 10.0, 10.0)])  # fmt: skip
+    assert caption.exists() and cover.exists()
+
+
 # -- a cover from the scene, without the video's burned-in text -------------------------------------------------
 def scene_doc(path: Path, *, hide: bool = True, size=(540, 960)) -> Path:
     """A one-second picture at 4 fps: a red and dark red field (the picture) under a white band (burned-in text) at

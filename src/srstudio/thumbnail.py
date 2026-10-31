@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -36,6 +37,7 @@ __all__ = [
     "grid_box",
     "layout",
     "compose",
+    "covered",
     "render",
     "BACKDROP_FILE",
     "FONT_FILE",
@@ -194,6 +196,37 @@ def _backdrop_placement(thumb: Thumbnail, lay: Layout, width: int, height: int) 
     x = min(0.0, max(width - z * width, px + pw / 2 - z * fx))
     y = min(0.0, max(height - z * height, py + ph / 2 - z * fy))
     return x, y, z
+
+
+def _text_boxes(thumb: Thumbnail, lay: Layout, width: int) -> list[tuple[float, float, float, float]]:
+    """``(x, y, w, h)`` on the cover of the kicker pill and of each headline line with its outline."""
+    boxes: list[tuple[float, float, float, float]] = []
+    if lay.kicker is not None:
+        kx, ky, kw, kh = lay.kicker
+        boxes.append((float(kx), float(ky), float(kw), float(kh)))
+    pitch = round(lay.size * LEADING)
+    for top, text in lay.lines:
+        boxes.append(((width - text) / 2 - OUTLINE, float(top) - OUTLINE, text + 2.0 * OUTLINE, pitch + 2.0 * OUTLINE))
+    return boxes
+
+
+def covered(
+    thumb: Thumbnail, font: bytes, width: int, height: int, faces: Iterable[tuple[float, float, float, float]]
+) -> list[tuple[float, float, float, float]]:
+    """Those of ``faces``, ``(x, y, w, h)`` boxes in px of the video frame, that the headline or the kicker lands on
+    once the frame is zoomed and placed. The focus moves a face, so a cover chosen on the frame alone can still put
+    the words over a head. Raises :class:`ThumbnailError` for a box with no area or a value that is no number."""
+    lay = layout(thumb, font, width, height)
+    x0, y0, z = _backdrop_placement(thumb, lay, width, height)
+    boxes = _text_boxes(thumb, lay, width)
+    out = []
+    for face in faces:
+        if len(face) != 4 or not all(checks.number(v) for v in face) or face[2] <= 0 or face[3] <= 0:
+            raise ThumbnailError(f"keep-clear box {face!r} needs x, y and a positive width and height")
+        fx, fy, fw, fh = x0 + z * face[0], y0 + z * face[1], z * face[2], z * face[3]
+        if any(fx < x + w and x < fx + fw and fy < y + h and y < fy + fh for x, y, w, h in boxes):
+            out.append(face)
+    return out
 
 
 def compose(thumb: Thumbnail, *, backdrop: str, font: str, font_bytes: bytes, width: int, height: int) -> Scene:
