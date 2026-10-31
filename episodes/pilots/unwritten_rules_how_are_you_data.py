@@ -65,7 +65,7 @@ BEATS: tuple[Beat, ...] = (
     Beat("good", "Good.", "public-smile", "rafa-mug", hold=0.7),
     Beat("off", SIGN_OFF, "public-smile", "rafa-mug", "close"),
 )
-VOICE_CANDIDATES = (  # premade voices already used in this library; none has been auditioned for this part
+VOICE_CANDIDATES = (  # premade voices already used in this library; one audition take of each, none chosen
     ("Chris", "iP95p4xoKVk53GoZ742B", "casual and down to earth, the man at the worktop; carries the deadpan rules"),
     (
         "Eric",

@@ -76,6 +76,7 @@ without a take, and Ending because the sign-off follows "Good.", the stronger li
 
 Three premade voices the library already uses. None has been chosen for this part, and each has been heard in older
 reels, so none is exclusive to him as Harry was to Lint. These are the operator's to choose from.
+One take of each, the same words and settings on his face, is on the proof page, `generated/character-proofs/rafa/`.
 
 - **Chris** (`iP95p4xoKVk53GoZ742B`): casual and down to earth, the man at the worktop. Best for the deadpan rules.
 - **Eric** (`cjVigY5qzO86Huf0OWal`): smooth and friendly, a customer-service smile with further to fall at the bread.
