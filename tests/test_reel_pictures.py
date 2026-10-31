@@ -255,3 +255,14 @@ def test_book_a_tables_two_stand_on_legs_and_the_towel_stays_on_her_shoulder() -
     assert towel["y"] * place.scale + y0 == pytest.approx(mod.TOWEL["y"], abs=0.1)
     assert towel["w"] * place.scale == pytest.approx(mod.TOWEL["w"], abs=0.1)
     assert towel["h"] * place.scale == pytest.approx(mod.TOWEL["h"], abs=0.1)
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_baby_monitor_stands_on_the_counter_and_the_mitts_have_arms() -> None:
+    mod = _data("baby_monitor")
+    door_frame_left = mod.DOOR["at"][0] - 14.0
+    assert mod.MONITOR["at"][0] + 36.0 * mod.MONITOR["scale"] <= door_frame_left
+    mitts = {side: mod.DISH["at"][0] + side * 196.0 * mod.DISH["scale"] for side in (-1, 1)}
+    for shoulder, hand, side in mod.ARMS:
+        assert 0 < shoulder[0] < WIDTH and shoulder[1] < hand[1], "from her body, down to the dish"
+        assert hand[0] * 592.0 / 1080.0 == pytest.approx(mitts[side], abs=40.0)

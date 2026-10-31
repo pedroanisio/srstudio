@@ -10,7 +10,17 @@ each shot, :func:`lens` its camera and :func:`foley` its sound.
 
 from __future__ import annotations
 
-from srstudio import camera, scripting, sketch, toon_dinner, toon_extras, toon_homeware, toon_house, toon_sets
+from srstudio import (
+    camera,
+    scripting,
+    sketch,
+    toon_cast,
+    toon_dinner,
+    toon_extras,
+    toon_homeware,
+    toon_house,
+    toon_sets,
+)
 from srstudio import foley as synth
 from srstudio.sketch import Line, Sketch
 from srstudio.toon_voices import speaker, tinted
@@ -33,7 +43,10 @@ BRUNO = speaker("bruno", "Bill", "bear")
 MOTHER = speaker("mother", "Laura", "goat", "deadpan")
 TINTS = tinted(MAE, BRUNO, MOTHER)
 PIVOT = (980.0, 1420.0)
-MONITOR = dict(at=(338.0, 500.0), scale=0.9)
+MONITOR = dict(at=(296.0, 500.0), scale=0.82)  # on the counter, all of it, between her ear and the door frame
+DISH = dict(at=(190.0, 850.0), scale=1.0)
+ARMS = (((196.0, 1120.0), (8.0, 1330.0), -1), ((488.0, 1120.0), (690.0, 1330.0), 1))  # shoulder, mitt, side; screen px
+ARM_W, ARM_INK = 66.0, 7.0
 BRUNO_AT = (470.0, 806.0)
 BRUNO_SCALE = 0.86
 DOOR = dict(at=(346.0, 90.0), size=(210.0, 700.0))
@@ -110,6 +123,14 @@ def validate(sk: Sketch = SKETCH) -> None:
     scripting.only_events(sk.beats, {"door", "step", "gulp", "hangup"})
 
 
+def _arms(cv, parent) -> None:
+    """Hers to the mitts, in her coat: the outline starts short of the shoulder, so the arm grows out of her body."""
+    coat = toon_cast.LOOKS["rabbit"].coat
+    for (sx, sy), (hx, hy), _ in ARMS:
+        cv.line(parent, sx + (hx - sx) * 0.22, sy + (hy - sy) * 0.22, hx, hy, cv.ink, ARM_W + 2 * ARM_INK)
+        cv.line(parent, sx, sy, hx, hy, coat, ARM_W)
+
+
 def dress(shot) -> None:
     """The kitchen with the door and the monitor, both of them in it; the table with the guests and the receiver; each
     of them at the door with the dish."""
@@ -135,7 +156,8 @@ def dress(shot) -> None:
         toon_extras.figure(shot, shot.back, "bear", BRUNO_AT, BRUNO_SCALE, tuple(poses), mirror=True)
     toon_house.ledge(cv, shot.front, "oak")
     if app.who == "rabbit" and app.start > steps[0]:
-        toon_homeware.lasagna(cv, shot.front, at=(190.0, 850.0), scale=1.0)
+        _arms(cv, shot.front)
+        toon_homeware.lasagna(cv, shot.front, **DISH)
 
 
 def lens(shot, setup) -> None:
