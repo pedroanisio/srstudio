@@ -358,3 +358,16 @@ def test_a_slow_take_moves_every_line_after_it():
 def test_beats_refuses_a_column_that_does_not_add_up(start, gaps, match):
     with pytest.raises(I.InterviewError, match=match):
         I.beats([1.0, 1.0, 1.0], start, gaps)
+
+
+def test_a_chain_of_beats_reads_as_a_column_of_offsets():
+    assert I.chain(10.0, book=0.0, snore=0.5, wave=2.0) == {"book": 10.0, "snore": 10.5, "wave": 12.5}
+
+
+@pytest.mark.parametrize(
+    ("start", "gaps"),
+    [(float("nan"), {"a": 1.0}), (-1.0, {"a": 1.0}), (1.0, {"a": -0.1}), (1.0, {"a": float("inf")}), (1.0, {})],
+)
+def test_a_chain_refuses_what_is_not_a_time(start, gaps):
+    with pytest.raises(I.InterviewError):
+        I.chain(start, **gaps)
