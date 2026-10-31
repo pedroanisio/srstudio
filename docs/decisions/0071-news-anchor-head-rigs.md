@@ -97,6 +97,12 @@ pass by removing the turn.
 `stage` draws each anchor's latest approved version. `stage(acts, version=2)` keeps the old numbers, and a reel whose
 delivered master is on them names it, so a rebuild draws what went out.
 
+Version 3 does not put every mouth on the skin. The gape passes the chin at rest on the drawing itself, 9.9 px on Gus
+and 16.7 px on Vera, and with the limits 28.0 px and 22.3 px; Vera's grin stays on the skin at rest and passes it by
+6.4 px with the turn and the nod at their limits together. Gus's round mouth stays on the skin and covers the bottom of
+his nose by 17.1 px at any turn, because the mouth and the nose slide together. No limit answers any of these, or none
+that the approval covers: the fix is a change to a drawing. The test names the gape and the grin, so they stay visible.
+
 Rejected: clamping the slide inside the reels and leaving the style alone. The digest would hold while the specimen
 still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
 is built, not to its limits, and more than this fix needs.
