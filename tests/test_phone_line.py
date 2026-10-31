@@ -9,7 +9,7 @@ import pytest
 
 from srstudio import narration, sketch
 from srstudio.sketch import Line
-from support.sketch import SK
+from support.sketch import SK, FakeClient, confirm_stub
 
 
 def _tone(path, hz: float, rate: int = 48000, seconds: float = 0.5) -> None:
@@ -54,8 +54,6 @@ def test_the_speech_band_stays_on_a_phone(tmp_path):
 
 
 def test_record_passes_the_phone_only_for_a_phone_line(tmp_path):
-    from test_sketch import FakeClient, confirm_stub
-
     lines = (Line(SK.lines[0].speaker, SK.lines[0].text, phone=True), *SK.lines[1:])
     seen: list[str] = []
 
