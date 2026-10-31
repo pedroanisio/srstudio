@@ -67,10 +67,10 @@ If the reel wants to link its demo to the study, this wording holds: "Researcher
 | 8 | Slow colour changes were even harder to catch than sudden ones after an interruption. Adding or removing an object went the other way, possibly because of visible artefacts. | "even higher for gradual changes than for disruption changes" (colour); no figure | David et al. 2006, describing Simons et al. 2000 | pp. 254–255, 264–265 | secondary source only |
 | 9 | In a later study, only 15% caught a slow change in an actor's facial expression, even though they were told to look for it. | 15%; 12 s movies; 20 subjects in the gradual condition; 85 undergraduates in all, Université Libre de Bruxelles. This is a separate study of faces, not the 2000 result. | David et al. 2006 | Method pp. 256, 259–261; result p. 264 | full text |
 | 10 | In that study, interrupted changes were caught about three times as often as slow ones. | "three times as many successful detections" | David et al. 2006 | p. 264 | full text |
-| 11 | A stranger talking to a pedestrian was secretly replaced by a different person, and only half of the pedestrians noticed. | "Only half of the pedestrians detected the change." No counts in the abstract | Simons & Levin 1998 | abstract | abstract |
-| 12 | Who noticed depended on social group. | "pedestrians from the same social group as the experimenters detected the change but those from a different social group did not" | Simons & Levin 1998 | abstract | abstract |
-| 13 | A second experiment looked further at social group. | No result stated in the abstract beyond the closing sentence | Simons & Levin 1998 | abstract | abstract |
-| 14 | The setup: someone asked for directions on the Cornell campus, two people carrying a door passed between them, and the swap happened behind the door. | Same gender and age for the two experimenters; "construction workers" | ISLE textbook site, https://isle.hanover.edu/isle3/Ch09Attention/Ch09ChangeBlindness.html (which misdates the study 1997 and links the 1998 clip); directions and door also in Mind Hacks, https://mindhacks.com/2012/06/08/berlin-plan-1-the-change-blindess-experiment/ | not paginated | secondary source only |
+| 11 | A stranger talking to a pedestrian was secretly replaced by a different person, and only half of the pedestrians noticed. | "Only half of the pedestrians detected the change." (p. 644); "only 7 of the 15 pedestrians reported noticing the change of experimenters" (p. 646). One more claimed it only when asked directly; the authors say such subjects "probably did not notice" (p. 648) | Simons & Levin 1998 | 644, 646, 648 | full text |
+| 12 | Who noticed depended on social group. | "pedestrians from the same social group as the experimenters detected the change but those from a different social group did not" (abstract). In Experiment 1 the split was by age and student status; social group is "One possible explanation for this difference" (p. 646), tested in a follow-up of 12. Never say social group decided it | Simons & Levin 1998 | 644, 646 | full text |
+| 13 | A second experiment looked further at social group. | The experimenters dressed as construction workers; all 12 pedestrians were students; "only 4 of the 12 pedestrians in Experiment 2 reported noticing the switch" (p. 647), "only 33% of the time" (p. 648) | Simons & Levin 1998 | 647, 648 | full text |
+| 14 | The setup: someone asked for directions on the Cornell campus, two people carrying a door passed between them, and the swap happened behind the door. | Confirmed at p. 645: "two other experimenters carrying a door", about 1 s out of view, experimenters who "differed in height by approximately 5 cm". "Construction workers" is Experiment 2 only. "Same gender and age" is secondary and not in the paper | Simons & Levin 1998, p. 645; ISLE textbook site, https://isle.hanover.edu/isle3/Ch09Attention/Ch09ChangeBlindness.html (which misdates the study 1997 and links the 1998 clip); directions and door also in Mind Hacks, https://mindhacks.com/2012/06/08/berlin-plan-1-the-change-blindess-experiment/ | 645 | full text; age and gender secondary only |
 
 ## Not verified: do not print
 
@@ -79,8 +79,8 @@ If the reel wants to link its demo to the study, this wording holds: "Researcher
 | Simons et al. 2000: what share missed the change | Not found. "Many observers" is as far as the sources go. No percentage. |
 | Simons et al. 2000: number of subjects, per-experiment results, full list of what changed | Not found. |
 | Simons et al. 2000: whether subjects were told to look for a change | Not verified. |
-| Simons & Levin 1998: exact counts per experiment | Not found. A count of 7 of 15 appeared in a search snippet with no traceable source, so it is not usable. |
-| Simons & Levin 1998: who the participants were | "Pedestrians" (abstract). Campus location is secondary. Age, students or not, and what the social groups were: not verified. |
+| Simons & Levin 1998: exact counts per experiment | Found. Experiment 1: 7 of 15 (p. 646). Experiment 2: 4 of 12 (p. 647). |
+| Simons & Levin 1998: who the participants were | Experiment 1: 15 pedestrians on the Cornell campus, "approximate age from 20 to 65" (p. 645). Experiment 2: 12 students (p. 647). |
 
 ## Wrong or weaker versions to avoid
 
@@ -90,7 +90,7 @@ If the reel wants to link its demo to the study, this wording holds: "Researcher
 | "X% miss a gradual change." | No verified figure for the 2000 study. | "Many observers" (row 5). |
 | "Only 15% notice slow changes." | That figure is David et al., for facial expressions, not Simons et al. and not changes in general. | Leave it out, or name the study and say faces. |
 | "A study changed a wall colour." | Not in anything read. | "A study changed photographs." |
-| "7 of 15 people." | No traceable source. | "Only half." |
+| "7 of 15 people." | True of Experiment 1 (p. 646), but it needs the study named beside it. | "Only half." |
 | "Half of everyone would miss it." | One experiment, pedestrians, and the abstract says the result split by social group. | "In one study, only half noticed." |
 | "You're blind to what's in front of you." | The claim is about slow or masked changes, not sight in general, and clinical-sounding wording is barred by the brief. | "Slow changes can slip past you." |
 | The flicker method on screen, or Rensink as the stamp | Background only in the brief, and flashing is barred. | Gradual change only. |
@@ -107,6 +107,6 @@ If the reel wants to link its demo to the study, this wording holds: "Researcher
 1. **"Most people miss it" and "Most should miss it".** The first is unsourced as a claim. The second is a hope, and the watch gate can test one viewer only. Keep both off the screen.
 2. **"About 8–12 seconds".** Only 12 s is documented. Prefer 12 s.
 3. **"A missing picture, a different mug".** See the analogue section. Colour is the best-supported of the three.
-4. **"About half didn't notice".** Supported by the abstract ("Only half"). The counts and per-experiment figures remain unverified, so print no count.
+4. **"About half didn't notice".** Supported by the abstract ("Only half") and by the count, 7 of 15 (p. 646). The paper says "only half", so that stays the wording.
 5. **"People miss bigger things than a wall colour".** Fine as framing, but no study compared the two. Don't attach a citation to that sentence.
 6. **Rensink et al.** Confirmed background only: "Identification of changes becomes extremely difficult, even when changes are large and made repeatedly" (abstract). It describes displays with brief blank fields, which is the flicker the reel must not use.
