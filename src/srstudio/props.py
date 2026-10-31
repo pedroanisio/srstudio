@@ -327,7 +327,12 @@ def cafe_paints(cv: Canvas) -> dict[str, str]:
     }
 
 
-@register("prop", "coffee-cup", summary="Takeaway cup with lid and a foam heart")
+@register(
+    "prop",
+    "coffee-cup",
+    summary="Takeaway cup with lid and a foam heart",
+    examples=('from srstudio import get\ncup = get("prop", "coffee-cup")(ep.cv, ep.comp, 540, 960)',),
+)
 def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0):
     ink, clear, white = cv.ink, cv.clear, cv.white
     g = cv.group(parent, cv.uid("coffee-cup"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)

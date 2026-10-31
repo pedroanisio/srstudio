@@ -126,6 +126,69 @@ def test_spring_keys_are_the_engine_s_own_and_carry_their_momentum_after_the_fir
     assert keys[1].get("stiffness") == STYLE.head.attributes()["stiffness"]
 
 
+def test_spring_cut_after_restart_matches_in_renderer(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    scene = Scene(version='auto')
+    scene.add_project(width=100, height=100, fps='24', duration=12)
+    cv = Canvas(scene, font_asset=None)
+    channel = head_motion.Channel(tuple((float(i), float(i % 2) * 10) for i in range(13)), head_motion.Spring(0.5, 0.2))
+    toon_head._animate(cv, cv.group(cv.comp, 'first'), 'y', channel.during(0, 8.5))
+    toon_head._animate(cv, cv.group(cv.comp, 'second'), 'y', channel.during(8.5, 12))
+    path = tmp_path / 'cut.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    for time in (8.49, 8.5, 8.51):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        values = {node['id']: node['world'][5] for node in nodes if node['id'] in ('first', 'second')}
+        assert values['first'] == pytest.approx(values['second'], abs=1e-5)
+
+
+@pytest.mark.parametrize('damping', [0.2, 1.0, 1.4])
+def test_long_spring_preserves_carried_motion_at_restart(tmp_path, scene_render, damping):
+    import json
+    import subprocess
+
+    scene = Scene(version='auto')
+    scene.add_project(width=100, height=100, fps='24', duration=12)
+    cv = Canvas(scene, font_asset=None)
+    channel = head_motion.Channel(
+        tuple((float(i), float(i % 2) * 10) for i in range(13)), head_motion.Spring(0.5, damping)
+    )
+    toon_head._animate(cv, cv.group(cv.comp, 'actual'), 'y', channel)
+    expected = cv.group(cv.comp, 'expected')
+    a = expected.add_animate(property='y', defaultInterpolation='spring')
+    for i, (t, value) in enumerate(channel.keys):
+        a.add_key(time=t, value=str(value), **channel.spring.attributes(), **({'carry': 'true'} if i else {}))
+    path = tmp_path / 'spring.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    for time in (7.99, 8.001, 8.1, 8.5):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        values = {node['id']: node['world'][5] for node in nodes if node['id'] in ('actual', 'expected')}
+        assert values['actual'] == pytest.approx(values['expected'], abs=0.01)
+
+
+def test_long_spring_budget_failure_does_not_mutate_scene():
+    scene, cv = stage()
+    before = scene.to_bytes()
+    channel = head_motion.Channel(tuple((float(i * 100), float(i)) for i in range(10)), head_motion.Spring(0.5, 0.7))
+    with pytest.raises(HeadMotionError, match='sampling budget'):
+        toon_head.figure(cv, cv.comp, RIG, POSES, 8, HeadPlan(turn=channel))
+    assert scene.to_bytes() == before
+
+
 def _take():
     text = "Everyone knows I rested"
     return head_motion.Alignment(
@@ -137,6 +200,111 @@ def test_a_still_plan_draws_the_same_figure_with_nothing_moving_on_the_head():
     root = drawn(HeadPlan.still())
     for name in ("lean", "breath", "turn", "nod", "idle", "lift", "face"):
         assert animates(group(root, name)) == {}
+
+
+def test_frozen_canvas_holds_spring_head_motion(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    scene, cv = stage()
+    channel = head_motion.Channel(((0.0, 0.0), (1.0, 10.0), (2.0, 0.0)), head_motion.Spring(1.0, 0.8))
+    with cv.frozen():
+        toon_head.figure(cv, cv.comp, RIG, [Pose(0, 'wide', 'flat', 'desk')], 2, HeadPlan(nod=channel))
+    assert scene.check(schema=True) == []
+    nod = next(n.id for n in scene.iter('group') if str(n.id).startswith('nod-'))
+    path = tmp_path / 'head.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    values = []
+    for time in (0, 0.5, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        values.append(next(n['world'][5] for n in nodes if n['id'] == nod))
+    assert values == pytest.approx([values[0]] * len(values), abs=1e-5)
+
+
+def test_frozen_head_rejects_curve_across_zero_before_scene_mutation():
+    from srstudio.canvas import CanvasError
+
+    scene, cv = stage()
+    channel = head_motion.Channel(((-0.5, 0), (0.5, 10)), head_motion.Spring(1, 0.8))
+    before = scene.to_bytes()
+    with cv.frozen(), pytest.raises(CanvasError, match='across 0'):
+        toon_head.figure(cv, cv.comp, RIG, [Pose(0, 'wide', 'flat', 'desk')], 2, HeadPlan(nod=channel))
+    assert scene.to_bytes() == before
+
+
+def test_frozen_head_does_not_sample_unused_future_spring_history():
+    scene, cv = stage()
+    channel = head_motion.Channel(tuple((float(i * 100), float(i)) for i in range(10)), head_motion.Spring(0.5, 0.7))
+    with cv.frozen():
+        toon_head.figure(cv, cv.comp, RIG, [Pose(0, 'wide', 'flat', 'desk')], 2, HeadPlan(nod=channel))
+    assert all(len(list(a.iter('key'))) == 1 for a in scene.iter('animate'))
+
+
+@pytest.mark.parametrize('rigged', [False, True])
+def test_frozen_toon_character_keeps_its_initial_pose(tmp_path, scene_render, rigged):
+    import json
+    import subprocess
+
+    scene, cv = stage()
+    poses = [Pose(0, 'wide', 'flat', 'desk'), Pose(0.5, 'sleepy', 'yawn', 'sigh')]
+    with cv.frozen():
+        if rigged:
+            toon_head.figure(cv, cv.comp, RIG, poses, 2, HeadPlan.still())
+        else:
+            toon_cast.dog(cv, cv.comp, poses, 2)
+    path = tmp_path / 'character.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    frames = []
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        frames.append(
+            {
+                n['id']
+                for n in nodes
+                if n.get('kind') == 'shape' and n.get('draw', True) and n.get('world_opacity', 1) > 0.5
+            }
+        )
+    assert frames[0] and frames[0] == frames[1]
+
+
+@pytest.mark.parametrize('rigged', [False, True])
+def test_frozen_toon_character_entering_later_stays_hidden(tmp_path, scene_render, rigged):
+    import json
+    import subprocess
+
+    scene, cv = stage()
+    poses = [Pose(0, 'wide', 'flat', 'desk')]
+    with cv.frozen():
+        if rigged:
+            toon_head.figure(cv, cv.comp, RIG, poses, 2, HeadPlan.still(), enter=0.5)
+        else:
+            toon_cast.dog(cv, cv.comp, poses, 2, enter=0.5)
+    path = tmp_path / 'later.scene.xml'
+    path.write_bytes(scene.to_bytes())
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        visible = [
+            n for n in nodes if n.get('kind') == 'shape' and n.get('draw', True) and n.get('world_opacity', 1) > 0.5
+        ]
+        assert not visible
 
 
 def test_the_face_slides_further_than_the_skull_on_a_nod():

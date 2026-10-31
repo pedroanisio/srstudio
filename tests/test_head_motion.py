@@ -533,9 +533,33 @@ def test_what_is_heard_is_checked_like_what_is_said():
 # -- a shot's keys -----------------------------------------------------------------------------------------------------
 def test_a_channel_during_a_shot_keeps_its_keys_and_one_either_side():
     channel = Channel(((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0), (4.0, 4.0)), STYLE.head)
-    assert channel.during(1.5, 2.5).keys == ((1.0, 1.0), (2.0, 2.0), (3.0, 3.0))
-    assert channel.during(2.0, 3.0).keys == ((2.0, 2.0), (3.0, 3.0))
+    assert channel.during(1.5, 2.5).keys == ((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0))
+    assert channel.during(2.0, 3.0).keys == ((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0))
     assert channel.during(1.5, 2.5).spring is STYLE.head
+
+
+def test_spring_during_keeps_the_same_position_and_velocity_at_a_shot_cut():
+    channel = Channel(((0.0, 0.0), (1.0, 10.0), (2.0, 0.0), (3.0, 10.0)), hm.Spring(0.5, 0.2))
+    first, second = channel.during(0.0, 1.5), channel.during(1.5, 3.0)
+    for t in (1.49, 1.5, 1.51):
+        assert sample(first, t) == pytest.approx(sample(second, t), abs=1e-8)
+
+
+def test_catmull_rom_during_keeps_neighboring_keys_for_matching_tangents():
+    channel = Channel(tuple((float(i), float(i % 2)) for i in range(8)), curve='catmull-rom')
+    assert channel.during(3.5, 4.5).keys == channel.keys[2:7]
+
+
+def test_long_carried_spring_rejects_work_above_its_sampling_budget():
+    channel = Channel(tuple((float(i * 100), float(i)) for i in range(10)), Spring(0.5, 0.7))
+    with pytest.raises(HeadMotionError, match='sampling budget'):
+        channel.during(0, 1)
+
+
+def test_long_spring_rejects_unrepresentable_frequency_with_typed_error():
+    channel = Channel(tuple((float(i), float(i)) for i in range(10)), Spring(1e308, 0.7))
+    with pytest.raises(HeadMotionError, match='sampling budget'):
+        channel.during(0, 1)
 
 
 def test_a_shot_past_the_last_key_keeps_the_last_key():
@@ -547,6 +571,11 @@ def test_a_plan_during_a_shot_moves_the_same_and_keeps_every_gaze_state():
     shot = plan.during(3.0, 5.0)
     assert shot.gaze == plan.gaze
     for name in ("lean", "turn", "nod", "roll", "face_x", "idle_roll", "idle_y", "breath"):
-        kept, whole = getattr(shot, name).keys, getattr(plan, name).keys
-        assert set(kept) <= set(whole)
-        assert len(kept) <= len(whole)
+        kept, whole = getattr(shot, name), getattr(plan, name)
+        if whole.spring and len(whole.keys) > hm.SPRING_RUN:
+            assert kept.spring is None and kept.curve == "linear"
+            assert kept.keys[0][0] <= max(3, whole.keys[0][0])
+            assert kept.keys[-1][0] >= min(5, whole.keys[-1][0])
+        else:
+            assert set(kept.keys) <= set(whole.keys)
+            assert len(kept.keys) <= len(whole.keys)

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import camera, checks, native
+from ._transaction import scene_transaction
 from .errors import SrstudioError
 
 __all__ = [
@@ -153,20 +154,70 @@ def blackout(cv, parent, spans: Spans):
 
 
 def freeze(shot) -> None:
-    """Hold everything drawn in ``shot`` still, as it stands at the shot's start: each ``<animate>`` is replaced by
-    its property set to the value it has at second 0 (the first key's value, which a property also holds before its
-    first key). A text animator or an expression has no single value to keep, so either is a
-    :class:`StagingError`."""
+    """Hold everything drawn in ``shot`` still, as it stands at the shot's start.
+
+    Ordinary animations become fixed properties. For a property with additive animations, its animations retain
+    one static key each so the renderer preserves their composition. Descendant lifetimes hold their initial
+    visibility; the shot's own schedule stays intact. A text animator, expression or interpolated curve crossing
+    the freeze point raises :class:`StagingError`; a failure leaves the original scene unchanged.
+    """
+    changes = []
+    additive = set()
+    lifetimes = []
+    scene = shot
+    while scene.owner is not None:
+        scene = scene.owner
+    project = next(scene.iter('project'), None)
     for node in list(shot.iter()):
+        if node is not shot and hasattr(node, 'start') and hasattr(node, 'end'):
+            start, end = node.start, node.end
+            if start is not None or end is not None:
+                lifetimes.append((node, (start is None or start <= 0) and (end is None or end > 0)))
         for child in node.elements():
             if child.xml_name in ("textAnimator", "expression"):
                 raise StagingError(f"a frozen shot cannot hold the {child.xml_name} on {node.id!r} still")
             if child.xml_name == "animate":
+                start = float(getattr(node, 'start', None) or 0)
+                clock = 0.0
+                if child.timeBase in ('local', 'normalized'):
+                    clock -= start
+                if child.timeBase == 'normalized':
+                    end = getattr(node, 'end', None)
+                    if end is None:
+                        end = project.duration if project is not None else None
+                    if end is None:
+                        raise StagingError('a frozen normalized animation needs a node end or project duration')
+                    span = float(end) - start
+                    clock = clock / span if span > 0 else 0
                 keys = sorted(child.elements(), key=lambda k: float(k.time))
-                at_start = [k for k in keys if float(k.time) <= 0]
-                value = (at_start[-1] if at_start else keys[0]).value
+                if not keys:
+                    raise StagingError(f'a frozen shot cannot hold empty keys on {node.id!r} still')
+                at_start = [k for k in keys if float(k.time) <= clock]
+                key = at_start[-1] if at_start else keys[0]
+                interpolation = key.interpolation or child.defaultInterpolation or 'linear'
+                if at_start and float(key.time) < clock < float(keys[-1].time) and interpolation != 'hold':
+                    raise StagingError(f'a frozen shot cannot hold a curve across {clock:g} on {node.id!r} still')
+                value = key.value
+                changes.append((node, child, value))
+                if child.additive:
+                    additive.add((id(node), child.property))
+    with scene_transaction(scene):
+        for node, child, value in changes:
+            if (id(node), child.property) in additive:
+                for key in list(child.elements()):
+                    child.remove(key)
+                child.add_key(time=0, value=value)
+            else:
                 setattr(node, child.property, value)
                 node.remove(child)
+        for node, visible in lifetimes:
+            node.start = None
+            node.end = None
+            if not visible:
+                node.visible = False
+                for child in list(node.elements()):
+                    if child.xml_name == 'animate' and child.property == 'visible':
+                        node.remove(child)
 
 
 def crossfades(takes: Sequence[Any], closing: Callable[[str], bool], longest: float = CROSSFADE) -> dict[str, float]:

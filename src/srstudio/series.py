@@ -25,7 +25,6 @@ scene. A series' own ``Reel`` subclass names its :class:`Series`::
 
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -165,10 +164,11 @@ def record(reel: Reel) -> int:
 
 def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: Sequence[str] | None = None) -> Path:
     """Build ``reel`` from the recording in the project named on the command line (beside ``file`` without one)
-    into ``<project>/<slug>.scene.xml``, with its Instagram post from ``posts`` when there is one."""
+    into ``<project>/<slug>.scene.xml``, with its Instagram post from ``posts`` when there is one. Scene and report
+    output are private without changing the caller's process umask; stage callbacks control their own file permissions.
+    """
     s = reel._series()
     argv = sys.argv if argv is None else argv
-    os.umask(0o077)  # generated outputs are private: folders 700, files 600
     root = Path(argv[1]).resolve() if len(argv) > 1 else Path(file).resolve().parent
     ep = Episode(
         EpisodeSpec(
@@ -192,4 +192,4 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
     ep.hide_on_cover(made["hook"], made["captions"])
     if posts and reel.slug in posts:
         ep.instagram(posts[reel.slug])
-    return ep.finish(root / f"{reel.slug}.scene.xml", root / "qa" / "sdk-validation.json")
+    return ep.finish(root / f"{reel.slug}.scene.xml", root / "qa" / "sdk-validation.json", private=True)

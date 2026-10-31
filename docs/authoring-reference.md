@@ -365,6 +365,16 @@ caption look). Each episode is a `Reel` subclass's instance; `series.record` rec
 builds it ([ADR 0031](../docs/decisions/0031-shared-look-and-caption-primitives.md)). `episodes/_saga.py` is the
 worked example.
 
+`staging.freeze(shot)` preserves the shot's starting pose and leaves the scene unchanged on failure. Properties with
+additive animation retain static one-key animations so the renderer can compose them with their base values.
+Timed descendants retain their opening visibility throughout the frozen shot; the shot's own schedule is
+preserved. Animation sampling respects `timeBase`: composition time zero, local time minus the node's start,
+or that local time divided by the node's duration for normalized keys. An omitted normalized end uses project
+duration; if neither is available, freezing is refused. A curve spanning the resulting freeze point without a
+key there is refused unless that segment uses hold interpolation. Provide an explicit key at that point with
+the intended opening value before freezing. Expressions and text animators are also refused; these failures
+leave the scene unchanged.
+
 ### Google Fonts
 
 A style's caption face can name a Google Font (`Font(google=GoogleFont("Poppins", 700))`). Fetch and pin it once:
@@ -1654,7 +1664,10 @@ version 2 drawings ([docs/decisions/0059-older-cast-head-rigs.md](decisions/0059
 [src/srstudio/head_motion.py](../src/srstudio/head_motion.py) turns a `HeadStyle` and the `Speech` of a shot
 (`speech_of(alignment, at, path)`) into a `HeadPlan` with `plan(style, speeches, duration)`: spring-keyed nods on the
 accents of the line, a dip before a phrase, a two-octave idle, a breath tied to the pauses and glances, all
-deterministic and bounded by `limit(style, name)`. [src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
+deterministic and bounded by `limit(style, name)`. Head plans keep the spring history and Catmull-Rom neighbors needed
+to preserve motion across shot cuts. Long carried-spring channels are sampled into linear keys at at least 240 Hz
+to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
+[src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
 `HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
 neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](../src/srstudio/toon_rigs.py)
 holds the rigs, and `rig_of` refuses a character with none by name. In a sketch, one line turns it on:

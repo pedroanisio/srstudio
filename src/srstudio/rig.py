@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from sr_core.scene import Composition, Group
@@ -90,6 +90,13 @@ class Actor(ABC):
             raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
         self.validate_performance(perf)
         cv = self.cv
+        if perf.limbs:
+            project = next(cv.scene.iter("project"), None)
+            duration = project.attributes().get("duration") if project is not None else None
+            if duration is not None:
+                from .limbs.integration import prepare_tracks
+
+                perf = replace(perf, limbs=prepare_tracks(cv, tuple(perf.limbs), float(duration)))
         self.group = g = cv.group(parent, self.tag, x=x, y=y, scaleX=scale, scaleY=scale)
         behind = cv.group(g, f"{self.tag}-limbs-behind") if perf.limbs else None
         self.draw_body(g, perf)

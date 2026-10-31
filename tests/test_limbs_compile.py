@@ -7,9 +7,9 @@ from sr_core.scene import Scene
 
 from srstudio import Canvas
 from srstudio.limbs.compile import BakeOptions, LayerTargets, Occlusion, bake
-from srstudio.limbs.math3d import Vec3
+from srstudio.limbs.math3d import Frame, Vec3
 from srstudio.limbs.model import HUMAN, ArmProfile, LimbError
-from srstudio.limbs.motion import Action, Motion, Target
+from srstudio.limbs.motion import Action, Motion, Target, TransformKey, TransformTrack
 from srstudio.limbs.projection import Camera
 
 
@@ -45,6 +45,32 @@ def test_bake_emits_every_sample_on_its_interval_and_no_duplicate_ids():
             if value:
                 visible.append(j)
         assert visible == [i], "rounding must not leave a stale frame visible at a sampling boundary"
+
+
+def test_default_bake_fps_follows_scene_clock():
+    cv = canvas()
+    next(cv.scene.iter('project')).fps = '30'
+    motion = Motion(ArmProfile(), HUMAN, (Action('point', duration=1),))
+    assert bake(cv, cv.comp, motion, id='arm').frames == 30
+
+
+def test_explicit_bake_fps_overrides_scene_clock():
+    cv = canvas()
+    next(cv.scene.iter('project')).fps = '30'
+    motion = Motion(ArmProfile(), HUMAN, (Action('point', duration=1),))
+    assert bake(cv, cv.comp, motion, id='arm', options=BakeOptions(fps=12)).frames == 12
+
+
+def test_character_hold_continues_sampling_a_moving_root():
+    cv = canvas()
+    root = TransformTrack((TransformKey(0, Frame()), TransformKey(2, Frame(origin=Vec3(1, 0, 0)))))
+    motion = Motion(ArmProfile(), HUMAN, (Action('point', duration=1),), root=root)
+    result = bake(cv, cv.comp, motion, id='arm', options=BakeOptions(fps=4), hold_until=2)
+    assert result.frames == 8
+    xml = ET.fromstring(cv.scene.to_bytes())
+    frames = xml.findall(".//group[@id='arm']/group")
+    assert len(frames) == 8
+    assert frames[4].find('.//shape').get('path') != frames[7].find('.//shape').get('path')
 
 
 @pytest.mark.parametrize("options", [BakeOptions(fps=24, max_frames=2), BakeOptions(max_nodes=1)])

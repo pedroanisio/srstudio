@@ -166,3 +166,55 @@ def test_toon_pose_changes_do_not_restart_limb_animation_on_a_local_clock(tmp_pa
         nodes = json.loads(result.stdout)["result"]["nodes"]
         visible = [n["id"] for n in nodes if "-frame-" in n["id"] and n.get("opacity", 0) > 0.5]
         assert len(visible) == 1 and f"-frame-{expected:06d}-" in visible[0]
+
+
+@pytest.mark.parametrize('offset', [0, 0.5])
+def test_replacement_arm_stays_visible_after_short_gesture(tmp_path, scene_render, offset):
+    import json
+    import subprocess
+
+    cv = canvas()
+    short = replace(
+        track('toon'),
+        motion=Motion(ArmProfile(), HUMAN, (Action('point', duration=1),)),
+        options=BakeOptions(fps=2, offset=offset),
+    )
+    toon_cast.dog(cv, cv.comp, (Pose(0, 'wide', 'flat', 'desk'),), 2, limbs=(short,))
+    path = tmp_path / 'scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for t in (0.25, 0.75, 1.75):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(t), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        visible = [n for n in nodes if '-frame-' in n['id'] and n.get('opacity', 0) > 0.5]
+        assert len(visible) == 1
+
+
+def test_replacement_arm_keeps_following_a_root_after_its_gesture(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    from srstudio.limbs.math3d import Frame, Vec3
+    from srstudio.limbs.motion import TransformKey, TransformTrack
+
+    cv = canvas()
+    root = TransformTrack((TransformKey(0, Frame()), TransformKey(2, Frame(origin=Vec3(0.2, 0, 0)))))
+    motion = Motion(ArmProfile(), HUMAN, (Action('point', duration=1),), root=root)
+    tracked = replace(track('toon'), motion=motion, options=BakeOptions(fps=4))
+    toon_cast.dog(cv, cv.comp, (Pose(0, 'wide', 'flat', 'desk'),), 2, limbs=(tracked,))
+    path = tmp_path / 'moving-root.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for t, frame in ((1.1, 4), (1.9, 7)):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(t), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        visible = [n['id'] for n in nodes if '-frame-' in n['id'] and n.get('opacity', 0) > 0.5]
+        assert len(visible) == 1 and f'-frame-{frame:06d}-' in visible[0]

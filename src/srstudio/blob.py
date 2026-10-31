@@ -2115,6 +2115,7 @@ def _counter(cv: Canvas, g) -> None:
     "soft-coffee-machine",
     summary="A drip coffee machine on the break-room counter: tower, hood with a lit button, a glass carafe half "
     "full, and a mug steaming beside it",
+    examples=('from srstudio import get\nmachine = get("prop", "soft-coffee-machine")(ep.cv, ep.comp)',),
 )
 def coffee_machine(cv: Canvas, parent, id: str = "soft-coffee-machine"):
     g = cv.group(parent, id)

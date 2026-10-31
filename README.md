@@ -87,6 +87,11 @@ The default Cutout project uses `dialogue.json`, `assets/dialogue.wav` and a cap
 
 `finish()` raises `SceneCheckError` on scene-check errors and, by default, on any finding; a missing signature raises `SignatureError`. If the diagnostic report cannot be written, the validation exception still describes the problem and chains the file error as its cause. The underlying SDK may also raise `sr_core.scene.SchemaValueError` during construction. Pass `strict=False` to allow warnings. Existing outputs are replaced by default; pass `overwrite=False` to refuse replacement, including files created during the build. Output and report paths must not alias the timeline, narration manifests, take or timing files, pinned clips, or scene-declared local assets, even when replacing outputs. If publishing one output succeeds and a later write fails, the exception identifies any published output and retained backup; inspect those paths before retrying. Custom `out=` and `report=` paths can use separate directories; their parents are created as needed. Relative input paths in the written scene are adjusted to continue resolving against the project root. See [audio, captions and episode workflows](docs/authoring-reference.md) for more options.
 
+For numbered image, mesh, or volume sequences, the relative path from the output directory back to the project must not contain `%` or `#`: the renderer uses those characters as frame placeholders. Choose a different output directory if `finish()` reports this conflict.
+
+When overwriting, `finish()` follows output symlinks that exist when it starts and checks their targets against project inputs. A symlink created at an output file after that check is replaced rather than followed.
+Output directories are held open during installation; if a directory changes, the write fails instead of following the replacement. Pass `private=True` to restrict scene and report files and newly created output directories to the owner without changing the process umask.
+
 ## The parts
 
 Explore the registered characters, locations, props and graphics from the command line:
@@ -95,10 +100,11 @@ Explore the registered characters, locations, props and graphics from the comman
 srstudio styles
 srstudio catalog --style cutout --kind location
 srstudio inspect location office-wide
+srstudio inspect prop coffee-cup --json
 srstudio inspect character manager --json
 ```
 
-`inspect` shows the actual signature, parameter defaults, callback slots, documentation and a call template. Catalog and inspection results also show the registered version and latest approved default for each recorded part. In JSON these appear under `part_version`; character results also retain the legacy `character_version` field. A plain registered name identifies version 1; use `srstudio.parts.drawing(name)` for the latest approved drawing or pass a version explicitly. Version metadata reports the approval record separately; a replaced builder is marked unverified and cannot be used as an approved default or pin. Run `specimens.check(name, version)` to compare it with the approved drawing; proposed versions raise `NotApprovedError`. Non-character specimens use projects under `generated/episodes` by default, or the path supplied by `episodes=Path('/path/to/projects')` or `SRSTUDIO_EPISODES`. A successful check verifies that builder for the current process. Parts without a standalone specimen cannot be checked this way: `parts.restore(name, version)` restores their original registered builder, and `parts.drawing(name, version, allow_unverified=True)` permits proof work. Selected parts include runnable examples. Use `--plugins my_package.parts` to import a plugin before listing or inspecting its parts. `srstudio catalog --json` returns the listing as JSON.
+`inspect` shows the actual signature, parameter defaults, callback slots, documentation and a call template. Catalog and inspection results also show the registered version and latest approved default for each recorded part. In JSON these appear under `part_version`; character results also retain the legacy `character_version` field. A plain registered name identifies version 1; use `srstudio.parts.drawing(name)` for the latest approved drawing or pass a version explicitly. Version metadata reports the approval record separately; a replaced builder is marked unverified and cannot be used as an approved default or pin. Run `specimens.check(name, version)` to compare it with the approved drawing; proposed versions raise `NotApprovedError`. Non-character specimens use projects under `generated/episodes` by default, or the path supplied by `episodes=Path('/path/to/projects')` or `SRSTUDIO_EPISODES`. A successful check verifies that builder for the current process. Parts without a standalone specimen cannot be checked this way: `parts.restore(name, version)` restores their original registered builder, and `parts.drawing(name, version, allow_unverified=True)` permits proof work. Selected parts include runnable examples using an existing `ep`; try `coffee-cup`, `office-mug`, `stick-mug`, `toon-mug`, or `soft-coffee-machine`. Use `--plugins my_package.parts` to import a plugin before listing or inspecting its parts. `srstudio catalog --json` returns the listing as JSON.
 
 The same information is available in Python:
 
@@ -114,7 +120,7 @@ builder = get("location", "office-wide")
 
 ## Styles
 
-A `Style` supplies defaults for frame size, timing, input files, palette, captions and audio. Choose one with `EpisodeSpec(style=...)`; explicit spec fields override its defaults. Use `srstudio styles --json` for the current values.
+A `Style` supplies defaults for frame size, timing, input files, palette, captions and audio. Choose one with a value such as `EpisodeSpec(style=TOON)` after `from srstudio import TOON`; explicit spec fields override its defaults. Use `srstudio styles --json` for the current values, and look up a slug in `srstudio.styles.STYLES` when configuring Python code from JSON.
 
 | Style | Main use |
 | --- | --- |

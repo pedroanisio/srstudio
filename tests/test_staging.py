@@ -210,7 +210,148 @@ def test_a_shot_with_a_text_animator_or_an_expression_cannot_be_frozen():
         staging.freeze(shot)
 
 
+def test_freeze_rejects_unsupported_content_without_changing_prior_animations():
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    earlier = cv.group(shot, 'animated')
+    cv.keys(earlier, 'x', [(0, 1), (1, 10)], hold=False)
+    cv.expression(cv.group(shot, 'unsupported'), 'x', 'time * 10')
+    before = cv.scene.to_bytes()
+    with pytest.raises(StagingError, match='expression'):
+        staging.freeze(shot)
+    assert cv.scene.to_bytes() == before
+    assert list(earlier.iter('animate'))
+
+
+def test_freeze_rolls_back_if_an_animated_value_cannot_be_assigned():
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    earlier = cv.group(shot, 'first')
+    cv.keys(earlier, 'x', [(0, 1)])
+    cv.keys(cv.group(shot, 'invalid'), 'x', [(0, 'not-a-number')])
+    before = cv.scene.to_bytes()
+    with pytest.raises(ValueError):
+        staging.freeze(shot)
+    assert cv.scene.to_bytes() == before
+    assert list(earlier.iter('animate'))
+
+
+@pytest.mark.parametrize('base_animation', [False, True])
+def test_freeze_preserves_composed_additive_start_value(tmp_path, scene_render, base_animation):
+    import json
+    import subprocess
+
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    node = cv.group(shot, 'animated', x=5)
+    if base_animation:
+        cv.keys(node, 'x', [(0, 3), (1, 8)], hold=False)
+    animation = node.add_animate(property='x', additive=True, defaultInterpolation='linear')
+    animation.add_key(time=0, value='2')
+    animation.add_key(time=1, value='4')
+    path = tmp_path / 'scene.xml'
+
+    def position(time):
+        path.write_bytes(cv.scene.to_bytes())
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        return next(n['world'][4] for n in nodes if n['id'] == 'animated')
+
+    expected = position(0)
+    staging.freeze(shot)
+    assert position(0) == pytest.approx(expected)
+    assert position(0.8) == pytest.approx(expected)
+
+
+def test_freeze_rolls_back_static_additive_keys_if_a_later_value_is_invalid():
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    node = cv.group(shot, 'animated', x=5)
+    animation = node.add_animate(property='x', additive=True)
+    animation.add_key(time=0, value='2')
+    animation.add_key(time=1, value='4')
+    cv.keys(cv.group(shot, 'invalid'), 'x', [(0, 'not-a-number')])
+    before = cv.scene.to_bytes()
+    with pytest.raises(ValueError):
+        staging.freeze(shot)
+    assert cv.scene.to_bytes() == before
+    assert len(list(animation.iter('key'))) == 2
+
+
 # -- closing ----------------------------------------------------------------------------------------------------------
+def test_freeze_holds_timed_drawings_and_preserves_shot_schedule(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot', start=0, end=3)
+    early = cv.group(shot, 'early', start=0, end=1)
+    first = cv.rect(early, 0, 0, 20, 20, '#FF0000')
+    late = cv.group(shot, 'late', start=1, end=3)
+    cv.rect(late, 40, 0, 20, 20, '#0000FF')
+    # A visible animation must not resurrect a drawing absent at the opening.
+    cv.keys(late, 'visible', [(0, 'true')])
+    cv.rect(shot, 80, 0, 20, 20, '#00FF00', start=1, end=2)
+    path = tmp_path / 'frozen.xml'
+
+    def visible(time):
+        path.write_bytes(cv.scene.to_bytes())
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        shape_ids = {n.id for n in shot.iter('shape')}
+        return {n['id'] for n in json.loads(result.stdout)['result']['nodes'] if n['id'] in shape_ids and n['draw']}
+
+    expected = visible(0)
+    assert first.id in expected
+    staging.freeze(shot)
+    assert (shot.start, shot.end) == (0, 3)
+    assert visible(0) == visible(1.5) == visible(2.5) == expected
+    assert not visible(3.5)
+
+
+@pytest.mark.parametrize('kind', ['linear', 'sine-in-out'])
+@pytest.mark.parametrize('additive', [False, True])
+def test_freeze_refuses_crossing_curves_without_mutating_scene(kind, additive):
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    early = cv.group(shot, 'early', start=0, end=1)
+    cv.keys(early, 'y', [(0, 2), (1, 5)])
+    node = cv.group(shot, 'crossing')
+    animation = cv.keys(node, 'x', [(-1, 0), (1, 100)], kind=kind)
+    animation.additive = additive
+    before = cv.scene.to_bytes()
+    with pytest.raises(StagingError, match='curve'):
+        staging.freeze(shot)
+    assert cv.scene.to_bytes() == before
+
+
+@pytest.mark.parametrize('hold_override', [False, True])
+def test_freeze_respects_the_segment_interpolation_override(hold_override):
+    cv = canvas()
+    shot = cv.group(cv.comp, 'shot')
+    node = cv.group(shot, 'crossing')
+    animation = cv.keys(node, 'x', [(-1, 10), (1, 100)], hold=not hold_override)
+    first = next(animation.iter('key'))
+    first.interpolation = 'hold' if hold_override else 'linear'
+    if hold_override:
+        staging.freeze(shot)
+        assert node.x == 10
+    else:
+        before = cv.scene.to_bytes()
+        with pytest.raises(StagingError, match='curve'):
+            staging.freeze(shot)
+        assert cv.scene.to_bytes() == before
+
+
 def test_the_closing_card_is_crossfaded_into_at_most_half_of_either_shot():
     takes = [take("01", 2.0), take("02", 0.4), take("03", 3.0), take("04", 2.0)]
     closing = {"03", "04"}

@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import brush, checks, toon_everyday
-from .canvas import Canvas
+from .canvas import Canvas, _at_zero
 from .registry import register
 from .toon import CHAIR_D, FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
 from .toon_sets import _check_end, _fill, _glow, _inked, _line, cycle_keys
@@ -240,6 +240,13 @@ def _level(cv: Canvas, parent, keys: Sequence[Level], scale: float = 1.0, offset
     each key's curve (hold unless a fade)."""
     if len(keys) == 1:
         return cv.group(parent, cv.uid("g"), opacity=round(offset + scale * keys[0][1], 6), **kw)
+    if cv._frozen:
+        ordered = sorted(keys, key=lambda item: item[0])
+        before = [item for item in ordered if item[0] <= 0]
+        curve = (before[-1] if before else ordered[0])[2]
+        values = [(t, round(offset + scale * value, 6)) for t, value, _ in ordered]
+        opacity = _at_zero(values, curve == "hold", "opacity")
+        return cv.group(parent, cv.uid("g"), opacity=opacity, **kw)
     g = cv.group(parent, cv.uid("g"), **kw)
     clock = {"timeBase": "local"} if cv.local_time else {}
     a = g.add_animate(property="opacity", defaultInterpolation="hold", **clock)

@@ -124,7 +124,12 @@ def counter(cv: Canvas, parent):
     return g
 
 
-@register("prop", "stick-mug", tags=("office", "coffee", "mug"))
+@register(
+    "prop",
+    "stick-mug",
+    tags=("office", "coffee", "mug"),
+    examples=('from srstudio import get\nmug = get("prop", "stick-mug")(ep.cv, ep.comp, 540, 960)',),
+)
 def mug(cv: Canvas, parent, x: float, y: float, *, colour: str = "#f4f1e8"):
     """A mug in a hand at (``x``, ``y``)."""
     g = _group(cv, parent)

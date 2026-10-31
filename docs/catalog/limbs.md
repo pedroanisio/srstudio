@@ -26,6 +26,67 @@ compiled = compile_motion(
 pixels. Arm lengths, the shoulder anchor and the hand profile are independent of the style. The compiler
 returns the selected backend, numeric motion report and any automatic fallback diagnostic. Use `backend="native"`
 to require native planar IK, or `backend="baked"` to require frame-held contours.
+When `fps` is omitted, baking follows the scene project's integer frame rate; without a project it uses 24 fps.
+For a fractional project rate, choose an integer bake rate explicitly. Set `fps=` explicitly when a lower,
+held-frame look is intentional. This also applies to interaction bakes and character limb tracks.
+In the native backend, the arm's IK target, elbow pole and shoulder use the same held frames as the baked hand;
+use the scene frame rate for the smoothest available motion.
+Standalone compilation infers its duration from the latest action, root key or attachment release (`Motion.end`).
+Entirely static motion defaults to one second. `BakeOptions(duration=...)` deliberately crops those tracks.
+Character tracks clip root motion to the character's lifetime; actions and attachment releases must fit inside it.
+Prepared character tracks reuse their numeric samples, projections and reports during drawing. Changed motion,
+camera, timing or corrective inputs invalidate that preparation; IDs, budgets and adapter capabilities are still checked.
+
+## Time an expressive gesture to speech
+
+The stroke can land on a specific word without manually calculating its project time. This example is standalone;
+replace the sample `Take` with a recorded take from `ep.takes` and compile `motion` as above.
+
+<!-- expressive-motion:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Action, Motion, MotionStyle, WordRef
+from srstudio.timeline import Take
+
+take = Take(
+    "01", "actor", "wide", "No, no.", 3, 2,
+    words=({"text": "No,", "start": 0.1, "end": 0.4},
+           {"text": "no.", "start": 0.8, "end": 1.0}),
+)
+gesture = Action.on_word(
+    "point", WordRef("01", 1), [take], duration=1,
+    preparation=0.15, stroke=0.25, hold=0.35,
+    style=MotionStyle(speed=1.2, overshoot=0.08, settling=0.15, arc=0.08),
+)
+motion = Motion(ArmProfile(), HUMAN, (gesture,))
+assert gesture.stroke_at == 3.8  # take start plus the second word's relative start
+```
+<!-- expressive-motion:end -->
+
+`start` and `duration` are seconds. `preparation`, `stroke` and `hold` are fractions of duration; their sum must
+be below 1, leaving time for recovery, and stroke must be positive. `on_word` puts the end of the stroke at the
+word's start and raises `LimbError` if the reference is ambiguous or the required preparation starts before zero.
+Do not pass `start=` to `Action.on_word`; it derives the start from the word and rejects the conflicting option.
+`MotionStyle` accepts amplitude 0–2, speed 0.25–4, and tension, overshoot, asymmetry, settling and arc 0–1. Tune
+these to the character and preview the result: an exaggerated reaction and a quiet listening gesture need different
+amounts of movement. The numeric report checks geometry and timing; it does not score emotional readability.
+Set `preparation=0` to start a stroke at the resting pose without an anticipation. The `rest` action holds the
+resting pose throughout its interval; a moving root or an explicitly declared contact can still move the hand.
+An explicit `Action.pole` is a world-space elbow guide. Its direction eases in during preparation (or the stroke
+when preparation is zero), remains authored through the hold, and returns to the default during recovery.
+The transition rotates the elbow around the reach axis, so an opposing pole can require spatial motion and the
+baked backend. Settling eases in at the stroke-to-hold boundary and fades out before recovery, preserving velocity
+continuity. Contact transitions with an authored pole blend wrist offsets relative to the moving arm.
+
+The pole rotation branch is anchored to the action's starting pose, so crossing the signed-angle boundary as the
+root turns does not reverse the elbow's transition. Sampling order does not affect the result.
+
+`compiled.report.max_speed` and `max_acceleration` measure **wrist translation** in world canonical units per
+second and per second squared. `max_elbow_speed` measures elbow translation; `max_hand_angular_speed` measures
+the hand frame's rotation in radians per second. These are finite differences between sampled frames, not bounds
+on unsampled motion. `bounds` describes projected geometry in the drawing parent's coordinate system.
+`report.to_dict()` includes `metric_definitions` with each described metric's subject, space and units. These
+numbers do not certify whole-body biomechanics or emotional readability.
 
 ## Artist contours
 
@@ -71,6 +132,9 @@ A contact must start after its action starts, end before that action ends and le
 contact; the action eases the hand from rest into the lock and back out during those intervals. Contacts touching
 an action edge or another contact raise `LimbError`. Contacts enforce reach and wrist limits. `props.clearance` separately reports arm-capsule penetration against
 named spheres, or raises when `strict=True`; it does not silently displace a locked hand.
+Transitions match the moving contact's linear and angular velocity at acquisition and release, and the resting
+root's velocity at action boundaries. Tangents are estimated locally and blended with quintic corrections;
+reach and wrist limits remain enforced throughout the transition.
 
 An `Attachment` declares pickup and release times, an initial prop frame and a wrist-local grip offset.
 Acquisition rejects position or orientation jumps. The prop follows the hand while attached and retains its
@@ -82,6 +146,14 @@ a motion with its style, appearance and optional artist contours. `interaction.b
 participants and props through one camera, then sorts individual limb surfaces and prop faces together on
 every frame. This lets fingers pass behind and in front of different prop surfaces. It returns each arm's
 numeric report and the surface-depth order of every frame.
+
+Without an explicit `BakeOptions(duration=...)`, the interaction lasts through the latest participant action,
+root key, attachment release or built-in prop transform. A fully static interaction defaults to one second.
+Custom frame sources must supply an explicit duration; the compositor cannot infer when arbitrary `sample()`
+implementations finish. An explicit duration also lets an author deliberately crop a longer track.
+When an attached prop is present and the scene continues after all known tracks, the final composited pose holds
+through the scene's end. This adds one frame to the bake budget. If the scene has no duration, provide an explicit
+`BakeOptions(duration=...)`; an explicit duration controls the interval without an automatic hold.
 
 The compositor uses average surface depth. Split intersecting geometry into smaller faces when a single
 surface would need two different depth orders. It does not implement a spatial depth buffer or resolve
@@ -178,6 +250,11 @@ A track cannot extend beyond the character's end. A single-side replacement pres
 arm, facial expressions, speech and character details. `limbs=()` retains the existing drawing path. Toon
 also exposes `omit_arms=frozenset({"left", "right"})` on `figure_layers` and `figure_shapes` for callers that
 compose character artwork as data.
+
+The replacement arm holds its first pose before a track's offset and its final pose after the track ends,
+through the character's lifetime. With an implicit duration, a root track continues moving the arm through its
+last key or the character's end. An explicit duration crops the entire motion, including the root track.
+Standalone `compile_motion` retains its explicitly requested interval.
 
 ```sh
 PYTHONPATH=src python examples/limbs_cast.py ../generated/limbs/cast
