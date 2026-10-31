@@ -24,14 +24,19 @@ __all__ = [
     "RIGHT_AT",
     "SAFE",
     "TABLE_TOP",
+    "bedroom",
+    "chair",
     "fridge_open",
     "from_above",
     "handset",
     "key",
     "kitchen",
+    "mound",
     "plan",
     "reply",
     "safe_open",
+    "shovel",
+    "smoke_alarm",
     "table",
 ]
 
@@ -53,6 +58,8 @@ SAFE = (90.0, 380.0, 250.0, 250.0)  # x, y, w, h: above the heads, so nobody fli
 TABLE_TOP = 1240
 PLAN = (340.0, 520.0, 400.0, 720.0)  # x, y, w, h of the table from above
 SKIN = "#f3ead9"
+NIGHT_TOP, NIGHT_LOW, NIGHT_FLOOR, NIGHT_SKY = "#2b3358", "#1f2645", "#191d33", "#101633"
+STONE_CHARS = 6
 TABLE_X = (190.0, 890.0)
 LEFT_AT = (-140.0, 0.0)  # a pose here stands left of the table, facing right
 RIGHT_AT = (1360.0, 0.0)  # with flip=True, a pose here stands right of the table, facing left
@@ -233,6 +240,96 @@ def key(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0):
     oval(cv, g, x - 6 * scale, y - 6 * scale, 12 * scale, 12 * scale, "#00000000", stroke=cv.ink, sw=3)
     box(cv, g, x + 12 * scale, y - 4 * scale, 44 * scale, 8 * scale, brass)
     box(cv, g, x + 42 * scale, y + 2 * scale, 7 * scale, 10 * scale, brass)
+    return g
+
+
+@register("location", "stick-bedroom", tags=("home", "bedroom", "night", "bed", "moon"))
+def bedroom(cv: Canvas, parent) -> None:
+    """A bedroom at night: the moon in the window, and someone asleep in the bed at the left, eyes shut, whatever
+    happens. The floor starts at :data:`FLOOR_Y`; the frame's right half is clear for a figure."""
+    s = _group(cv, parent)
+    wall = paint(cv, Gradient("bedroom-wall", ((0, NIGHT_TOP), (1, NIGHT_LOW)), 0, 0, 0, FLOOR_Y))
+    box(cv, s, 0, 0, cv.width, FLOOR_Y, wall)
+    box(cv, s, 0, FLOOR_Y, cv.width, cv.height - FLOOR_Y, NIGHT_FLOOR)
+    box(cv, s, 600, 170, 340, 380, NIGHT_SKY, 6, r=6)
+    oval(cv, s, 780, 220, 110, 110, "#f0ecd2")
+    box(cv, s, 764, 170, 10, 380, NIGHT_LOW)
+    box(cv, s, 590, 540, 360, 18, WOOD_DARK)
+    signature.cactus(cv, s, 880, 540, scale=0.42)
+    box(cv, s, 30, 1040, 34, 480, WOOD_DARK, 5, r=10)  # the headboard
+    box(cv, s, 60, 1290, 560, 150, WOOD, 5, r=10)  # the frame
+    box(cv, s, 60, 1250, 560, 70, "#d7d3cc", 4, r=20)  # the mattress
+    box(cv, s, 72, 1160, 170, 100, "#efeadf", 4, r=34)  # the pillow
+    oval(cv, s, 110, 1062, 170, 170, SKIN, stroke=cv.ink, sw=7)
+    oval(cv, s, 84, 1100, 50, 50, cv.ink)  # her bun
+    for ex in (214, 250):  # eyes shut, then and always
+        shape(cv, s, f"M {ex - 16} 1132 Q {ex} 1146 {ex + 16} 1132", sw=6, stroke=cv.ink)
+    shape(cv, s, "M 190 1190 Q 210 1198 230 1190", sw=5, stroke=cv.ink)
+    shape(cv, s, "M 200 1236 Q 330 1140 620 1236 L 620 1320 L 200 1320 Z", "#5c6d94", 5, stroke=cv.ink)
+    signature.code(cv, s, 40, 1885, 9, color="#8b93ad")
+
+
+@register("prop", "stick-chair", tags=("home", "chair", "furniture"))
+def chair(cv: Canvas, parent, x, y):
+    """A wooden kitchen chair with its feet on ``y``, its seat 150 above it, the height a figure climbs."""
+    g = _group(cv, parent)
+    box(cv, g, x + 92, y - 470, 22, 470, WOOD_DARK, 4, r=6)  # the back
+    box(cv, g, x - 114, y - 170, 228, 34, WOOD, 4, r=8)  # the seat
+    for lx in (x - 104, x + 80):
+        box(cv, g, lx, y - 138, 24, 138, WOOD_DARK, 4, r=4)
+    box(cv, g, x + 40, y - 450, 74, 26, WOOD, 4, r=8)
+    box(cv, g, x + 40, y - 370, 74, 26, WOOD, 4, r=8)
+    return g
+
+
+@register("prop", "stick-smoke-alarm", tags=("home", "smoke-alarm", "battery", "ceiling", "sound"))
+def smoke_alarm(cv: Canvas, parent, x, y, *, scale: float = 1.0, flashes=()):
+    """A smoke alarm seen from below, centred on ``x, y``: a white disc, its vents and test button, and an LED lit
+    for a moment at each of ``flashes`` (seconds on the shot's clock), which is where the chirp comes from."""
+    if not (checks.number(scale) and scale > 0):
+        raise StickDataError(f"an alarm's scale is positive, got {scale!r}")
+    if any(not (checks.number(at) and at >= 0) for at in flashes):
+        raise StickDataError(f"a flash is at a time of at least 0, got {flashes!r}")
+    r = 90 * scale
+    g = _group(cv, parent)
+    oval(cv, g, x - r, y - r, r * 2, r * 2, "#f1efe8", stroke=cv.ink, sw=5)
+    oval(cv, g, x - r * 0.72, y - r * 0.72, r * 1.44, r * 1.44, "#dedbd0", stroke="#a7a498", sw=3)
+    for k in (-2, -1, 0, 1, 2):  # the vents
+        box(cv, g, x - r * 0.46, y + k * r * 0.2 - 3 * scale, r * 0.92, 6 * scale, "#a7a498")
+    box(cv, g, x - r * 0.18, y + r * 0.76, r * 0.36, r * 0.12, "#c9c5b8")  # the test button
+    oval(cv, g, x + r * 0.38, y - r * 0.68, r * 0.18, r * 0.18, "#5c2320")
+    if flashes:
+        led = _group(cv, g)
+        oval(cv, led, x + r * 0.33, y - r * 0.73, r * 0.28, r * 0.28, "#ff3b30")
+        cv.gate(led, [(at, at + 0.18) for at in flashes])
+    return g
+
+
+@register("prop", "stick-mound", tags=("yard", "grave", "earth", "burial", "font"))
+def mound(cv: Canvas, parent, x, y, *, words: str = "RIP"):
+    """A fresh mound of earth on the grass with its middle on ``x, y`` (its foot), and a small tombstone at its head
+    lettered ``words`` (1 to :data:`STONE_CHARS` characters)."""
+    cv.require_font("the tombstone is set in it")
+    if not words.strip() or len(words) > STONE_CHARS:
+        raise StickDataError(f"a small stone takes 1 to {STONE_CHARS} characters, got {words!r}")
+    g = _group(cv, parent)
+    box(cv, g, x + 40, y - 330, 150, 210, "#a7abb0", 5, r=40)
+    cv.text(g, cv.uid("stone"), words, x + 40, y - 270, 150, 70, 44, cv.ink)
+    shape(cv, g, f"M {x - 300} {y} Q {x - 150} {y - 190} {x} {y - 190} Q {x + 190} {y - 190} {x + 320} {y} Z",
+          "#6b4a2f", 5, stroke=cv.ink)  # fmt: skip
+    for dx, dy in ((-160, -60), (-40, -130), (70, -60), (180, -40), (-240, -20), (20, -30)):
+        oval(cv, g, x + dx, y + dy, 46, 24, "#59391f")
+    return g
+
+
+@register("prop", "stick-shovel", tags=("yard", "garden", "tool", "digging"))
+def shovel(cv: Canvas, parent, x, y):
+    """A long shovel standing with its blade in the ground at ``x, y``, its grip 620 above."""
+    g = _group(cv, parent)
+    box(cv, g, x - 9, y - 620, 18, 600, WOOD, 4, r=8)
+    box(cv, g, x - 48, y - 640, 96, 26, WOOD_DARK, 4, r=10)
+    shape(cv, g, f"M {x - 60} {y - 70} L {x + 60} {y - 70} L {x + 50} {y + 10} L {x} {y + 50} L {x - 50} {y + 10} Z",
+          STEEL, 5, stroke=cv.ink)  # fmt: skip
     return g
 
 

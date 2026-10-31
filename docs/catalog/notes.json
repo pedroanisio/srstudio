@@ -559,6 +559,11 @@
     }
   },
   "parts": {
+    "stick-shovel": {"title": "Pá"},
+    "stick-mound": {"title": "Monte de terra"},
+    "stick-smoke-alarm": {"title": "Detector de fumaça"},
+    "stick-chair": {"title": "Cadeira de madeira"},
+    "stick-bedroom": {"title": "Quarto à noite"},
     "paper-poster": {"title": "Cartaz de papel"},
     "pen-on-chain": {"title": "Caneta na corrente"},
     "stick-palm": {"title": "Palmeira"},
@@ -7683,6 +7688,11 @@
     {"section": "props", "name": "Bola de casacos", "parts": ["stick-coat-ball"], "shot": {"episode": "four-coats", "at": 15.5}, "text": "Tudo o que o passageiro tem, vestido: uma bola de casacos com chapéus, cachecóis e sapatos nos bolsos."},
     {"section": "props", "name": "Palmeira", "parts": ["stick-palm"], "shot": {"episode": "four-coats", "at": 20.0}, "text": "Uma palmeira de tronco torto e sete folhas, na outra ponta do voo."},
     {"section": "props", "name": "Caneta na corrente", "parts": ["pen-on-chain"], "shot": {"episode": "low-balance", "at": 28.3}, "text": "A caneta do balcão presa à corrente: segue a mão, para no fim da corrente e volta sozinha."},
-    {"section": "props", "name": "Cartaz de papel", "parts": ["paper-poster"], "shot": {"episode": "low-balance", "at": 3.0}, "text": "Um cartaz de papel colado na parede, meio torto, com o que você mandar escrever."}
+    {"section": "props", "name": "Cartaz de papel", "parts": ["paper-poster"], "shot": {"episode": "low-balance", "at": 3.0}, "text": "Um cartaz de papel colado na parede, meio torto, com o que você mandar escrever."},
+    {"section": "locations", "name": "Quarto à noite", "parts": ["stick-bedroom"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Um quarto de noite, com a lua na janela e alguém dormindo na cama."},
+    {"section": "props", "name": "Cadeira de madeira", "parts": ["stick-chair"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Uma cadeira de cozinha, de madeira, onde um personagem pode subir."},
+    {"section": "props", "name": "Detector de fumaça", "parts": ["stick-smoke-alarm"], "shot": {"episode": "the-chirp", "at": 9.5}, "text": "Um detector de fumaça cujo LED pisca quando ele apita."},
+    {"section": "props", "name": "Monte de terra", "parts": ["stick-mound"], "shot": {"episode": "the-chirp", "at": 18.0}, "text": "Um monte de terra fresca com uma pequena lápide."},
+    {"section": "props", "name": "Pá", "parts": ["stick-shovel"], "shot": {"episode": "the-chirp", "at": 18.0}, "text": "Uma pá comprida fincada no chão."}
   ]
 }

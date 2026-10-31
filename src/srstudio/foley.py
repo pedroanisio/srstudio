@@ -40,6 +40,9 @@ __all__ = [
     "SWISH",
     "DING",
     "THUD",
+    "CHIRP",
+    "CHIRP_SHUT",
+    "CHIRP_BURIED",
     "RUMBLE",
     "ROAD",
     "CHOPPER",
@@ -408,6 +411,9 @@ KNOCK = Burst(0.12, 900.0, attack=0.002, decay=0.3, tone_hz=170.0, tone_end_hz=1
 SNORE = Burst(1.1, 420.0, attack=0.35, decay=1.2, tone_hz=70.0, tone_end_hz=95.0, tone=0.35, flutter_hz=31.0)
 BELL = Burst(0.45, 200.0, attack=0.002, decay=0.45, tone_hz=1760.0, tone_end_hz=1760.0, tone=1.0)
 THUD = Burst(0.25, 500.0, attack=0.003, decay=0.35, tone_hz=90.0, tone_end_hz=55.0, tone=0.8)
+CHIRP = Burst(0.08, 200.0, attack=0.001, decay=0.09, tone_hz=3300.0, tone_end_hz=3300.0, tone=1.0)
+CHIRP_SHUT = Burst(0.1, 200.0, attack=0.003, decay=0.1, tone_hz=1100.0, tone_end_hz=1100.0, tone=0.5)  # behind a door
+CHIRP_BURIED = Burst(0.12, 200.0, attack=0.006, decay=0.12, tone_hz=620.0, tone_end_hz=620.0, tone=0.5)  # under earth
 RUMBLE = Burst(1.4, 700.0, attack=0.02, decay=0.9, tone_hz=60.0, tone_end_hz=45.0, tone=0.4, flutter_hz=11.0)
 ROAD = Burst(3.0, 380.0, attack=0.12, decay=4.0, tone_hz=64.0, tone_end_hz=72.0, tone=0.3, flutter_hz=7.0)
 CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.0, tone=0.4, flutter_hz=13.0)

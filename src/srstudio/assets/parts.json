@@ -8831,6 +8831,91 @@
           "rig": null
         }
       ]
+    },
+    "stick-bedroom": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bedroom at night: the moon in the window and someone asleep in the bed. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1afdb78595199e83ce41583c1a1b1b75e4b75ccb5e9ef7e35eac7c1bef7009dc",
+          "rig": null
+        }
+      ]
+    },
+    "stick-chair": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wooden kitchen chair a figure can stand on. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "85af4c0abdf243484a945ae5015d8adfdf97a9b6ad4612f43bcf26a0bae17834",
+          "rig": null
+        }
+      ]
+    },
+    "stick-smoke-alarm": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A smoke alarm with a keyed LED that flashes when it chirps. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bf0f235cc078651a7b22390a693fc00008e97bb2be61b5561ff6e9f2fab1c208",
+          "rig": null
+        }
+      ]
+    },
+    "stick-mound": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A fresh mound of earth with a small lettered tombstone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e615c716195c8ae74fdee8d0a4f4506557deb4060b81a3fb23eada0a73f3bb77",
+          "rig": null
+        }
+      ]
+    },
+    "stick-shovel": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long shovel standing in the ground. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b01aa5248a2b7e42f20c344957f951bacd1ed5615fd3459cabbd534a5c1316e3",
+          "rig": null
+        }
+      ]
     }
   }
 }

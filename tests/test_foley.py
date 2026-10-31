@@ -194,3 +194,15 @@ def test_write_water_writes_a_wave(tmp_path):
     path = foley.write_water(tmp_path / "water.wav", [(0.0, 0.2)], 0.3, rate=8000)
     with wave.open(str(path)) as w:
         assert w.getframerate() == 8000 and w.getnframes() == 2400
+
+
+def test_a_chirp_is_a_bright_blip_and_loses_its_top_through_a_door_and_then_through_earth():
+    assert foley.CHIRP.tone_hz > 3000 and foley.CHIRP.seconds < 0.1
+    assert foley.CHIRP.tone_hz > foley.CHIRP_SHUT.tone_hz > foley.CHIRP_BURIED.tone_hz
+    assert foley.CHIRP.tone > foley.CHIRP_SHUT.tone
+
+
+def test_a_chirp_at_a_time_sounds_there_and_nowhere_else():
+    samples = list(foley.bursts([0.5], 1.0, foley.CHIRP, 8000, 0))
+    assert max(abs(x) for x in samples[:3900]) == 0
+    assert max(abs(x) for x in samples[4000:4640]) > 0.1
