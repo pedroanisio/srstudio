@@ -215,6 +215,7 @@ class Staging:
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -350,7 +351,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     lines = toon.load_script(root / ep.spec.dialogue)
     collage.captions(cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints)
     if voiced:
-        ep.audio(narration=manifest)
+        ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
