@@ -8950,6 +8950,91 @@
           "rig": null
         }
       ]
+    },
+    "soft-tongs": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Long kitchen tongs that snap on cue. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e8ef395f09fc2120d0e2cad7382c4fa7a2eb93ec01e2767780e4c91c2d88a2bc",
+          "rig": null
+        }
+      ]
+    },
+    "soft-grill": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kettle grill whose burgers char and flames climb. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9402a28f5656038f4ad746baf923be5db03ebe15154fd6e5e89706a7eab31a12",
+          "rig": null
+        }
+      ]
+    },
+    "soft-smoke": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Puffs that rise and thicken on cue. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "288748098426f53e5e00dfe7f5d8a3f81238bfe2e703af50eb34185ea3dff90a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-pizza-box": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat pizza box with no lettering. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8955adea6286f839898b7da397c07fb270339dee3d43f966d4a6b05675a6ff38",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bottle": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A squeeze bottle, red unless asked otherwise. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1e4b13d8712710bb7b8bd3203fee59f475813d516ee916c5ad7539d9f8a6549c",
+          "rig": null
+        }
+      ]
     }
   }
 }
