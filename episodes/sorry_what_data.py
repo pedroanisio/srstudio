@@ -3,8 +3,8 @@ never heard. Gil says yes over a mower and gets a horse till spring. Then he say
 
 Four voices (ElevenLabs premade Chris as Gil, Roger as the neighbor, Jessica across the road). Words nobody catches are
 a scribble where the caption would be (``scrawl`` events in pairs, :func:`srstudio.toon_homeware.scribble`), the mouth
-moving under it. The first frame is held (the ``sp-hook_motion`` test's arm A). :func:`validate` checks the events;
-:func:`dress` draws each shot, :func:`lens` its camera and :func:`foley` its sound.
+moving under it. The first shot pushes in from its first frame (the ``sp-hook_motion`` test's arm B).
+:func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its camera and :func:`foley` its sound.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ ACROSS = speaker("across", "Jessica", "hedgehog")
 TINTS = tinted(GIL, NEIGHBOR, ACROSS)
 BARE = ("hamster",)  # the car, with Keith on it
 PIVOT = (980.0, 1420.0)
-STILL = 0.45
+LEAD = 0.45  # the silence before the first word
 ENGINE = Burst(1.3, 620.0, attack=0.02, decay=4.0, tone_hz=82.0, tone_end_hz=86.0, tone=0.35, flutter_hz=33.0)
 HISS = Burst(1.3, 5200.0, attack=0.02, decay=4.0, tone_hz=240.0, tone_end_hz=250.0, tone=0.1, flutter_hz=23.0)
 SUITCASE = "#b3734a"
@@ -71,7 +71,7 @@ def mumble(start: float, stop: float, who: str, eyes: str, extra: str = "") -> t
 
 BEATS = (
     hold(0.0, "sloth", "", "half", "open", "desk", "mower"),  # the held frame: the mower already roaring
-    *mumble(STILL, 2.0, "sloth", "half"),
+    *mumble(LEAD, 2.0, "sloth", "half"),
     hold(2.05, "frog", "", "half", "flat", "desk", "scrawl"),
     say(2.25, "frog", 0, "half", "open", "lean"),
     *mumble(3.0, 4.3, "sloth", "half"),
@@ -111,11 +111,11 @@ def scrawls(beats) -> list[tuple[float, float]]:
 
 
 def validate(sk: Sketch = SKETCH) -> None:
-    """The sketch is consistent; the first frame is held; every scribble ends; each machine stops once, after it
+    """The sketch is consistent; it opens silent; every scribble ends; each machine stops once, after it
     started; no other events."""
     sketch.check(sk)
-    if sk.beats[1].start < STILL:
-        raise sketch.SketchError(f"the first frame is held {STILL} s")
+    if sk.beats[1].start < LEAD:
+        raise sketch.SketchError(f"it opens silent for {LEAD} s")
     if len(sketch.events(sk.beats, "scrawl")) % 2:
         raise sketch.SketchError("every scribble ends")
     for kind in ("mower", "quiet", "calm", "keith", "bell", "hangup"):
@@ -168,8 +168,10 @@ def dress(shot) -> None:
 
 
 def lens(shot, setup) -> None:
-    """Still; a slow push onto Keith."""
+    """A slow push from the first frame; a slow push onto Keith."""
     camera.anchor(setup, *PIVOT, place=True)
+    if shot.app.start == 0.0:
+        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, 1.05)])
     if shot.app.who == "hamster":
         camera.anchor(setup, 540.0, 800.0, place=True)
         camera.push_in(shot.cv, setup, scale=[(shot.app.start, 1.0), (shot.app.start + 1.3, 1.08)])

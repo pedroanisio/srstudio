@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=('#neighbors', '#awkward', '#relatable', '#animatedshorts', '#okayville'),
         thumbnail=Thumbnail("You only\nget two.", 7.0, "Okayville"),
     ),
-    tags=Tags("own-worst-enemy", "protagonist", "tension", recurring=('gil', 'keith'), test="sp-hook_motion", arm="a"),
+    tags=Tags("own-worst-enemy", "protagonist", "tension", recurring=('gil', 'keith'), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
         # toon-blower, toon-mower, toon-scribble also drawn:
