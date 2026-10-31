@@ -638,23 +638,20 @@ def test_version_4_redraws_the_named_mouths_and_leaves_the_rest(who, redrawn):
 
 
 @anchors
-def test_version_4_is_proposed_and_its_specimen_shows_every_mouth(who):
+def test_version_4_is_approved_and_its_specimen_shows_every_mouth(who):
     name = f"news-{who}"
-    assert parts.get(name).version(4).status == "proposed"
-    assert parts.latest(name).number == 3
+    version = parts.get(name).version(4)
+    assert version.status == "approved"
+    assert version.rig.status == "approved"
+    assert version.approval.words == version.rig.approval.words
+    assert 'Slack 1793489634.822829: "*v4 mouths: approved* for both anchors."' in version.approval.words
+    assert parts.latest(name).number == 4
     assert specimens.digest(name, 4) == parts.get(name).version(4).drawing
     assert specimens.digest(name, 4) != specimens.digest(name, 3)
     assert specimens.rig_digest(name, 4) == parts.get(name).version(4).rig.drawing
     _, _, marks = face_of(who, 4)
     outlines = {tuple(points) for _, points in marks}
     assert {tuple(mouth_of(who, s, 4)) for s in ("gape", "grin")} <= outlines
-
-
-def test_a_proposed_redraw_reaches_no_reel():
-    cv = canvas(10.0)
-    beats = (SimpleNamespace(start=0.0, event=None),)
-    with pytest.raises(NewsKitError, match="news-gus@4"):
-        news_inked.stage((Act(Pose(), Pose()),), version=4)(shot(cv, "gus", beats=beats))
 
 
 @pytest.mark.parametrize(
@@ -682,7 +679,7 @@ def test_a_new_version_redraws_nothing_but_the_limits(who):
     assert specimens.rig_digest(name, 3) != specimens.rig_digest(name, 2)
 
 
-@pytest.mark.parametrize(("version", "number"), [(None, 3), (3, 3), (2, 2)])
+@pytest.mark.parametrize(("version", "number"), [(None, 4), (4, 4), (3, 3), (2, 2)])
 def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(version, number):
     used = []
     real = news_head.plan_of
@@ -699,12 +696,13 @@ def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(ve
     assert used == [news_inked.RIGS[f"news-gus@{number}"]]
 
 
-def test_a_rig_not_approved_stops_the_stage_on_its_version(monkeypatch):
-    monkeypatch.setattr(news_head, "approved", lambda who, number=2: number != 3)
+@pytest.mark.parametrize("number", [3, 4])
+def test_a_rig_not_approved_stops_the_stage_on_its_version(monkeypatch, number):
+    monkeypatch.setattr(news_head, "approved", lambda who, asked=2: asked != number)
     cv = canvas(10.0)
     beats = (SimpleNamespace(start=0.0, event=None),)
-    with pytest.raises(NewsKitError, match="news-gus@3"):
-        news_inked.stage((Act(Pose(), Pose()),), version=3)(shot(cv, "gus", beats=beats))
+    with pytest.raises(NewsKitError, match=f"news-gus@{number}"):
+        news_inked.stage((Act(Pose(), Pose()),), version=number)(shot(cv, "gus", beats=beats))
 
 
 @anchors

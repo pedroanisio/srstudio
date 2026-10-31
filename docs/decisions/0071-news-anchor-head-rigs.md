@@ -127,6 +127,10 @@ A specimen of version 4 draws every mouth state, in its drawing digest and in it
 changes are ones the specimens of versions 2 and 3 never showed. Those two keep their digests. A delivered reel names
 `version=3` in its `stage` call, so that approving version 4 changes no rebuild of it.
 
+arc4d3 approved both on Slack 1793489634.822829, by the operator's delegation of 2026-10-31: "*v4 mouths: approved* for
+both anchors." and "New News episodes build on v4, including fake-mars when it clears. Approved reels stay on v3, as
+agreed." So `stage` draws version 4 by default, and a delivered reel keeps its own `version=3`.
+
 Rejected: redrawing the chin, a longer jaw or a lower chin line, which changes the head. Smaller limits, which cannot
 help a mouth that is past the skin at rest.
 
