@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.16.0
-changelog: "1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.17.0
+changelog: "1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -520,6 +520,7 @@ it in `srstudio catalog` without this file changing.
    `releases.Tags` (territory, cause, emotion, recurring characters, and the A/B arm when it is in a test). Pin
    every part it draws with `parts={...}`, or `{}` if it draws none: `deliver` refuses a release without
    pins and `check` reports it, and each prints the pin to add for a Toon build. Rebuild after changing a pin.
+   While auto-enhance is on, the first delivery of a video also needs its enhancement (see *Auto-enhance*).
    Deliver only once your branch is merged into develop, from the workspace root with the main checkout's code,
    never from a branch or worktree: any write to `generated/renders/ig` fires the `srstudio-drive` unit, which
    checks and uploads with the main checkout's code and releases:
@@ -547,9 +548,59 @@ it in `srstudio catalog` without this file changing.
    (video, `ig.txt`, `cover.jpg`, package) and holds the drifted ones back. Leave it to the unit:
    `python3 episodes/publish_drive.py --dry-run` is not a read-only preview, since it stages `generated/outbox`
    (and packs `generated/vpkg`) before showing what rclone would upload.
-10. **Report.** The observation sentence and the tags of each episode, the batch variety table (below) when there
+10. **Report.** The enhancement each video landed, the observation sentence and the tags of each episode, the batch variety table (below) when there
    is more than one episode, the comedy and look rubric estimates, the cast (and who is new), parts reused versus
    added, gates run with their output, anything skipped and why.
+
+## Auto-enhance
+
+Every video leaves the process better for the next one. The mode is on by default; `srstudio enhance` shows it and the
+ledger of what every video added. When the mode is on, the agent that builds a video owns one enhancement, done when
+the video is finished and merged into develop before the video's first delivery. `deliver` and
+`episodes/publish_pilots.py` refuse a new video without it (ADR 0056). When it is off, deliver the video and do nothing
+else. Only the operator changes the mode, with `srstudio enhance off` or `on`; never turn it off to get past the gate.
+
+Start from what this video made hard, what looked weakest, or what you wished the library had, and write the change for
+the next video, not this one. The commit's `Enhancement-Kind` is one of these, listed by `srstudio enhance kinds`:
+
+| Kind | What it can be |
+|---|---|
+| `comedy` | a joke mechanism, a beat-timing helper, a hook or payoff rule in this file |
+| `story` | a stronger shape: a format, escalation, an ending, a replay loop, how premises are chosen |
+| `picture` | grade, light, depth, palette, composition, finish |
+| `motion` | gestures, walks, reactions, secondary motion, timing curves |
+| `effects` | transitions, engine effects, particles, text animators |
+| `camera` | moves, framing, cuts, parallax |
+| `music` | scores, stings, ducking, the mix |
+| `sound` | foley, ambience, impacts, room tone |
+| `voice` | casting, delivery settings, pacing, lip sync |
+| `character` | written descriptions, expressions, poses, wardrobe, rigs of the approved cast |
+| `props` | a new or better prop the next reel can use |
+| `sets` | a new or better location or room |
+| `readability` | captions and on-screen text: size, timing, placement, emphasis |
+| `covers` | headline, crop, contrast, the first frame |
+| `checks` | a new automatic check that catches a defect before delivery |
+| `speed` | a cheaper or faster build, render, take or reuse |
+| `insight` | a lesson from the account's numbers, turned into a rule or a default |
+
+What the gate reads, from the history of develop:
+
+- One commit, one video. It ends with these two trailers in its last paragraph, beside `Co-Authored-By`:
+
+  ```
+  Enhances: <slug>
+  Enhancement-Kind: <kind>
+  ```
+
+- It changes `src/srstudio/` or `tools/` and adds a test, or it changes this file and bumps `schema_version`.
+- It touches none of the video's own files: not its scripts, its release or its pilot folder. A batch of ten owes ten.
+- A video that has been delivered once owes nothing again.
+
+The gate proves a change landed. It cannot prove the change is an improvement, so the bar is yours: a real change the
+next video can use, never a comment, a rename or a test that cannot fail. The usual limits still bind. Published
+reels stay byte-identical, so a library change defaults to no change. A new part follows the approval rules, and new
+character looks, hearings, frozen reels and the caption looks stay the operator's. Never loosen a check as your
+enhancement.
 
 ## Review the batch for variety
 

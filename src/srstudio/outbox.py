@@ -49,6 +49,7 @@ NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 _REMOTE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*:.*")
 _run: Callable[..., subprocess.CompletedProcess] = subprocess.run
+_NOT_FOUND = (3, 4)  # rclone's exit codes for a missing directory and a missing file
 
 
 class OutboxError(SrstudioError, ValueError):
@@ -233,6 +234,24 @@ def stage(bundles: Sequence[Bundle], folder: Path, *, manifest: str = MANIFEST) 
         shutil.rmtree(build, ignore_errors=True)
         raise
     return folder / manifest
+
+
+def fetch(
+    remote: str, name: str, *, rclone: str = "rclone", run: Callable[..., subprocess.CompletedProcess] | None = None
+) -> str | None:
+    """The text of ``name`` in ``remote``, or None when it is not there. Any other failure is an
+    :class:`OutboxError`, so an unreachable remote never reads as an empty one."""
+    run = run or _run
+    try:
+        done = run([rclone, "cat", f"{remote}/{name}"], capture_output=True, text=True, check=False)
+    except FileNotFoundError as e:
+        raise OutboxError(f"rclone was not found at {rclone!r}") from e
+    if done.returncode in _NOT_FOUND:
+        return None
+    if done.returncode != 0:
+        reason = (done.stderr or done.stdout or "").strip().splitlines()[-1:] or ["no output"]
+        raise OutboxError(f"reading {name} from {remote} failed: {reason[0]}")
+    return str(done.stdout)
 
 
 def push(

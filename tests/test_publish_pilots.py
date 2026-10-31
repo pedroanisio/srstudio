@@ -17,13 +17,15 @@ FILES = ("cover.jpg", "ig.txt", "vpkg.zip", "sources.md", "notes.md")
 
 
 @pytest.fixture
-def tool(monkeypatch):
+def tool(monkeypatch, tmp_path):
     sys.path.insert(0, str(REPO / "episodes"))
     try:
         import publish_pilots
     finally:
         sys.path.pop(0)
     monkeypatch.setattr(publish_pilots.posts, "VIDEOS", {"i-cleaned": "i-cleaned", "the-report": "The_Report"})
+    monkeypatch.setattr(publish_pilots, "REPO", tmp_path / "repo")
+    publish_pilots.auto_enhance.set_mode(tmp_path / "repo", on=False)  # auto-enhance has its own tests below
     return publish_pilots
 
 
@@ -393,3 +395,86 @@ def test_the_drive_unit_watches_the_delivery_folder_this_tool_stays_out_of():
 def test_the_tool_is_not_wired_to_any_unit():
     for unit in (REPO / "tools/systemd").iterdir():
         assert "publish_pilots" not in unit.read_text(), unit
+
+
+class Manifest:
+    """Answers rclone's ``cat`` with ``text`` (or ``code``), and every other call with success."""
+
+    def __init__(self, text="", code=0):
+        self.text, self.code, self.calls = text, code, []
+
+    def __call__(self, cmd, **_):
+        self.calls.append(cmd)
+        if cmd[1] == "cat":
+            return subprocess.CompletedProcess(cmd, self.code, self.text, "rclone: broken\n")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+
+def gate_on(tool, monkeypatch, answer, drift=()):
+    tool.auto_enhance.set_mode(tool.REPO, on=True)
+    asked = {}
+
+    def refused(videos, repo):
+        asked.update(videos)
+        return list(drift)
+
+    monkeypatch.setattr(tool.auto_enhance, "refused", refused)
+    monkeypatch.setattr(tool.outbox, "_run", answer)
+    return asked
+
+
+def test_a_new_pilot_without_an_enhancement_is_refused_before_anything_is_staged(tool, world, monkeypatch, capsys):
+    drift = [outbox_drift("the-tell")]
+    gate_on(tool, monkeypatch, Manifest(code=3), drift)
+    assert tool.main(args(world)) == 2
+    assert "the-tell: no enhancement" in capsys.readouterr().err
+    assert not (world / "generated/pilots/mind").exists()
+
+
+def outbox_drift(name):
+    from srstudio.social import Drift
+
+    return Drift(name, "no enhancement")
+
+
+def test_a_pilot_already_on_drive_owes_no_enhancement(tool, world, monkeypatch):
+    text = json.dumps({"version": "1.0.0", "videos": {"the-tell": {}}})
+    asked = gate_on(tool, monkeypatch, Manifest(text))
+    assert tool.main(args(world)) == 0
+    assert asked == {"second-pilot": "second-pilot"}
+
+
+def test_the_first_delivery_of_all_owes_one_for_every_pilot(tool, world, monkeypatch):
+    asked = gate_on(tool, monkeypatch, Manifest(code=3))
+    assert tool.main(args(world)) == 0
+    assert set(asked) == {"the-tell", "second-pilot"}
+
+
+@pytest.mark.parametrize("text", ["not json", "[]", '{"version": "1.0.0"}'])
+def test_an_unreadable_drive_manifest_fails_closed(tool, world, monkeypatch, capsys, text):
+    gate_on(tool, monkeypatch, Manifest(text))
+    assert tool.main(args(world)) == 2
+    assert "manifest" in capsys.readouterr().err
+
+
+def test_a_failed_read_of_drive_fails_closed(tool, world, monkeypatch, capsys):
+    gate_on(tool, monkeypatch, Manifest(code=1))
+    assert tool.main(args(world)) == 2
+    assert "rclone: broken" in capsys.readouterr().err
+
+
+def test_rclone_absent_fails_closed(tool, world, monkeypatch, capsys):
+    def absent(cmd, **_):
+        raise FileNotFoundError(cmd[0])
+
+    gate_on(tool, monkeypatch, absent)
+    assert tool.main(args(world)) == 2
+    assert "rclone" in capsys.readouterr().err
+
+
+def test_auto_enhance_off_reads_nothing_and_just_delivers(tool, world, monkeypatch, capsys):
+    run = Manifest()
+    monkeypatch.setattr(tool.outbox, "_run", run)
+    assert tool.main(args(world)) == 0
+    assert not [c for c in run.calls if c[1] == "cat"]
+    assert "auto-enhance off" in capsys.readouterr().out

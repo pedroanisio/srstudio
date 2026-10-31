@@ -157,6 +157,8 @@ Signed episodes carry a small code and cactus. Built-in locations draw both auto
 
 Recording and generated audio use separate workflows and may require provider credentials and permission to send data. See the [audio reference](docs/authoring-reference.md#new-episodes-with-generated-audio-five-years-06), [episode scripts](episodes/) and [recording module](src/srstudio/recording.py). For captions, covers, release checks and outbox packaging, see the [delivery reference](docs/authoring-reference.md#instagram-captions). Pilots for a future channel go to their own Drive folder, never to @tuxmeme's: see [`publish_pilots.py`](episodes/publish_pilots.py).
 
+Auto-enhance is on by default: each video lands one real change to the process on `develop` before its first delivery, and both delivery commands refuse a new video without it. `srstudio enhance` shows the mode and the ledger, `srstudio enhance kinds` the possibilities, and `srstudio enhance off` is the operator's switch back to just delivering. See [ADR 0056](docs/decisions/0056-auto-enhance.md).
+
 ## Verification
 
 Run the local checks from the repository root:
