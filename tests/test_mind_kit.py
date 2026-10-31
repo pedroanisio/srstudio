@@ -274,6 +274,59 @@ def test_an_evidence_card_can_hold_its_result_back():
     assert "guessed." in " ".join(" ".join(texts(cv)).split())
 
 
+def papers(cv: Canvas) -> list[dict]:
+    """The card's paper, each with the moments it shows from its group."""
+    found = []
+    for group in tree(cv).iter("group"):
+        for shape in group:
+            if shape.tag == "shape" and shape.get("width") == "940":
+                found.append(
+                    {
+                        "start": float(group.get("start")),
+                        "end": float(group.get("end")),
+                        "top": float(shape.get("y")),
+                        "foot": float(shape.get("y")) + float(shape.get("height")),
+                    }
+                )
+    return found
+
+
+def lettering_feet(cv: Canvas) -> tuple[float, float]:
+    """How far down the card's lettering runs: without the held-back result, and with it."""
+    root = tree(cv)
+    heights = {a.get("id"): float(a.get("height")) for a in root.iter("text")}
+    foot = lambda layer: float(layer.get("y")) + heights[layer.get("asset")]  # noqa: E731
+    late = next(g for g in root.iter("group") if g.get("id") == "evidence-card-result")
+    held = {layer.get("id") for layer in late.iter("layer")}
+    layers = list(root.iter("layer"))
+    return max(foot(k) for k in layers if k.get("id") not in held), max(foot(k) for k in layers)
+
+
+def test_a_held_back_result_leaves_no_blank_paper_waiting_for_it():
+    cv = canvas()
+    mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure, reveal=3.5)
+    before, after = papers(cv)
+    pad = 44.0
+    without, whole = lettering_feet(cv)
+    assert before["foot"] == pytest.approx(without + pad, abs=1.0)  # the paper ends where its words do
+    assert after["foot"] == pytest.approx(whole + pad, abs=1.0)
+    assert before["top"] == after["top"]  # it grows downwards: what is on it does not move
+    assert (before["start"], before["end"], after["start"], after["end"]) == (1.0, 3.5, 3.5, 6.0)  # a snap, no gap
+
+
+def test_a_card_that_holds_nothing_back_is_one_paper():
+    cv = canvas()
+    mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure)
+    assert [(p["start"], p["end"]) for p in papers(cv)] == [(1.0, 6.0)]
+
+
+def test_a_card_is_the_same_size_once_its_result_is_on_it():
+    held, plain = canvas(), canvas()
+    mind_kit.evidence_card(held, held.comp, study(), 1.0, 6.0, measure, reveal=3.5)
+    mind_kit.evidence_card(plain, plain.comp, study(), 1.0, 6.0, measure)
+    assert papers(held)[-1]["foot"] == papers(plain)[0]["foot"]
+
+
 def test_an_evidence_card_shows_its_result_with_the_card_by_default():
     cv = canvas()
     mind_kit.evidence_card(cv, cv.comp, study(), 1.0, 6.0, measure)

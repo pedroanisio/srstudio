@@ -426,3 +426,14 @@ def test_a_run_too_short_to_carry_anything_is_refused(run):
     group, _ = _long_spring(3)
     with pytest.raises(ToonDataError, match="run"):
         toon_head.rest_springs(group, run)
+
+
+@EVERY_RIG
+def test_the_chest_is_under_the_head_wherever_the_head_goes(rig):
+    x, y = toon_head.chest(rig)
+    assert x == rig.neck[0]
+    for turn, drop in toon_head._bounds(rig):
+        a = math.radians(turn)
+        for px, py in rig.head:
+            dx, dy = px - rig.neck[0], py - rig.neck[1]
+            assert rig.neck[1] + dx * math.sin(a) + dy * math.cos(a) + drop <= y + 1e-9
