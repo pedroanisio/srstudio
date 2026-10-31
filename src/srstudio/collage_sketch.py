@@ -190,6 +190,17 @@ def alone(beats: Sequence[sketch.Beat], end: float) -> CastDrawer:
 
 
 @dataclass(frozen=True)
+class Sound:
+    """A sound a sketch adds to its events: ``sound`` at every ``at`` project second, on the track ``id``, at
+    ``gain_db``."""
+
+    id: str
+    sound: foley.Burst
+    at: tuple[float, ...]
+    gain_db: float = -4.0
+
+
+@dataclass(frozen=True)
 class Staging:
     """What an episode adds to its sketch: the set of each character, the props per shot, the pill tints."""
 
@@ -215,6 +226,8 @@ class Staging:
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
+    # the sketch's own sounds, from the placed beats; each is a foley.Burst at its project seconds on its own track
+    sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -359,7 +372,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 
 
 # -- the recording run ------------------------------------------------------------------------------------------------
-def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
+def sound_effects(
+    beats: Sequence[sketch.Beat], end: float, root: Path, seed: int, own: Sequence[Sound] = ()
+) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
     shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, chewing on ``crunch``
     and air on ``hiss:<seconds>``."""
@@ -402,6 +417,10 @@ def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: in
     for i, (at, seconds) in enumerate(sketch.events(beats, "hiss")):
         hiss = foley.write_air(audio / f"hiss-{i}.wav", [at], end, min(float(seconds), end - at), seed=seed + i)
         out.append(sketch.effect(f"hiss-{i}", 0.0, HISS_GAIN_DB, root, hiss))
+    for fx in own:
+        if fx.at:
+            path = foley.write_bursts(audio / f"{fx.id}.wav", fx.at, end, fx.sound, seed=seed)
+            out.append(sketch.effect(fx.id, 0.0, fx.gain_db, root, path))
     return out
 
 
@@ -423,7 +442,7 @@ def record_episode(
     key = env.get(KEY_ENV, "")
     client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=staging.seed)
     rec = sketch.record(sk, root, client, key=key, ffmpeg=ffmpeg, mouth=mouth)
-    effects = sound_effects(rec.beats, rec.end, root, staging.seed)
+    effects = sound_effects(rec.beats, rec.end, root, staging.seed, staging.sounds(rec.beats, rec.end))
     manifest = sketch.manifest(sk, rec, effects, MODEL, note)
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     for q in rec.items:
