@@ -108,7 +108,7 @@ def sweat(parent, end: float) -> None:
 
 
 def gate_shot(take, g, end: float) -> None:
-    stick_airport.gate(cv, g, gate="B9", now="LAST CALL")
+    stick_airport.gate(cv, g, gate="B9", now="LAST CALL", boarding_size=stick_airport.BOARDING_SIZE)
     face = DEADPAN
     agent(g, [stick.RigKey(0, "stand", face)], end, take)
     stick_airport.podium(cv, g, gate="B9", plate=False)
@@ -140,7 +140,7 @@ def gate_shot(take, g, end: float) -> None:
 
 
 def arrivals_shot(take, g, end: float) -> None:
-    stick_airport.gate(cv, g, gate="A1", now="WELCOME 38°")
+    stick_airport.gate(cv, g, gate="A1", now="WELCOME 38°", boarding_size=stick_airport.BOARDING_SIZE)
     stick.oval(cv, g, 310, 330, 170, 170, "#ffd23f")  # the sun in the window
     stick_airport.palm(cv, g, 200, 1180, height=640)
     stick.box(cv, g, 0, 0, cv.width, cv.height, "#ff9d2e", opacity=0.2)

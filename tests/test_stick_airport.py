@@ -56,8 +56,14 @@ def test_the_signs_first_line_fits_beside_the_gate_letters():
     assert fonts.text_width(WIDE_BOLD.read_bytes(), "NOW BOARDING", stick_airport.BOARDING_SIZE) <= width
 
 
-@pytest.mark.parametrize(("kw", "size"), [({}, str(stick_airport.BOARDING_SIZE)), ({"boarding_size": 38}, "38")])
-def test_a_reel_can_keep_the_size_its_sign_was_drawn_at(kw, size):
+@pytest.mark.parametrize(
+    ("kw", "size"),
+    [
+        ({}, str(stick_airport.APPROVED_BOARDING_SIZE)),
+        ({"boarding_size": stick_airport.BOARDING_SIZE}, str(stick_airport.BOARDING_SIZE)),
+    ],
+)
+def test_the_default_sign_is_the_approved_drawing_and_a_reel_can_ask_for_the_fitted_size(kw, size):
     cv = canvas()
     stick_airport.gate(cv, cv.comp, gate="B9", now="GROUP 4", **kw)
     assert [t.get("size") for t in xml(cv).iter("text") if t.get("text") == "NOW BOARDING"] == [size]

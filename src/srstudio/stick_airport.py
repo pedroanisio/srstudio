@@ -60,7 +60,8 @@ FLOOR_Y = 1480  # the wall meets the carpet
 FLOOR_FEET = 1700  # where a STANDING figure's feet are
 WINDOW = (40, 300, 480, 880)  # x, y, w, h of the window on the apron
 SIGN_BOX = (540, 290, 400, 250)  # x, y, w, h of the boarding sign, clear of the standing heads
-BOARDING_SIZE = 25  # the sign's first line, which fits the room beside the gate letters even in a wide bold
+APPROVED_BOARDING_SIZE = 38  # the first line stick-gate version 1 was approved with
+BOARDING_SIZE = 25  # the size that fits the room beside the gate letters even in a wide bold: a new reel asks for it
 GATE_CHARS, NOW_CHARS, TAG_CHARS, ROW_CHARS = 4, 12, 8, 3
 TAG_SPAN = (40, 200)  # the luggage tag's left and right edges, from the carry-on's middle
 PODIUM_X = (640, 1080)  # the podium, from its left end to past the frame
@@ -116,11 +117,14 @@ def now_size(now: str) -> float:
 
 
 @register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
-def gate(cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = BOARDING_SIZE) -> None:
+def gate(
+    cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = APPROVED_BOARDING_SIZE
+) -> None:
     """The boarding gate: the terminal wall, the window on the apron with a parked airliner, the gate seats under it,
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
-    (ADR 0001). ``boarding_size`` letters the sign's first line; a published reel keeps the size it was drawn at."""
+    (ADR 0001). ``boarding_size`` letters the sign's first line; the default is the drawing that was approved, and
+    a reel whose font runs wide passes :data:`BOARDING_SIZE`."""
     cv.require_font("the boarding sign is set in it")
     if not (checks.number(boarding_size) and boarding_size > 0):
         raise StickDataError(f"the sign's first line has a size above 0, got {boarding_size!r}")
