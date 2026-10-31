@@ -15,7 +15,7 @@ import pytest
 
 from srstudio import Episode, EpisodeSpec, parts, sketch, social, thumbnail
 from srstudio.comedy_floor import ComedyError, Scores
-from srstudio.releases import Release, ReleaseError
+from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -44,6 +44,7 @@ from srstudio.social import (
     video_size,
 )
 from srstudio.thumbnail import Thumbnail
+from support import bible_docs
 from support.social import FONT, engine, post, tall, video
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -1053,6 +1054,7 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)
+    monkeypatch.setattr(posts, "BIBLE_DIR", bible_docs.write(tmp_path / "bible"))
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
@@ -1223,3 +1225,52 @@ def test_the_published_delivery_has_not_drifted():
         pytest.skip("set SRSTUDIO_RENDERS and SRSTUDIO_FONTS to check the published delivery")
     drift = shipped_posts().check_all(Path(renders) / "ig", Path(renders), fonts_dir=Path(fonts_dir))
     assert drift == [], "the delivery drifted; run instagram_posts.py deliver:\n" + "\n".join(map(str, drift))
+
+
+def _naming(posts, monkeypatch, *names):
+    release = posts.RELEASES["new-reel"]
+    tags = Tags("money-services", "other-person", "recognition", recurring=names)
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": replace(release, tags=tags)})
+
+
+def test_a_first_delivery_naming_a_character_the_bible_lacks_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "bruno")
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible refuses.*new-reel: unknown-name: 'bruno'"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: .*new-reel: unknown-name: 'bruno'"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_first_delivery_that_names_only_the_bibles_characters_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_video_already_delivered_is_never_refused_by_the_bible(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "bruno")
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_bible_that_cannot_be_read_refuses_the_first_delivery_instead_of_passing_it(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "BIBLE_DIR", tmp_path / "nowhere")
+    with pytest.raises(DeliveryError, match="the cast bible cannot be read"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
