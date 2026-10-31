@@ -26,10 +26,9 @@ RELEASE = Release(
     ),
     style="Toon",
     parts={
-        # toon-baby-monitor, toon-lasagna, toon-monitor-receiver, toon-swing-door also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
+        "toon-baby-monitor": 1,
         "toon-bear": 2,
         "toon-captions": 1,
         "toon-dog": 2,
@@ -37,8 +36,11 @@ RELEASE = Release(
         "toon-hedgehog": 2,
         "toon-home": 1,
         "toon-kitchen": 1,
+        "toon-lasagna": 1,
         "toon-ledge": 1,
+        "toon-monitor-receiver": 1,
         "toon-rabbit": 2,
+        "toon-swing-door": 1,
         "toon-table": 1,
     },
     comedy=Scores(author=16, reviewer=18),

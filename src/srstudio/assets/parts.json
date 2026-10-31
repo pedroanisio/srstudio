@@ -8670,10 +8670,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A baby monitor unit, its small green light on. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A baby monitor unit, its small green light on.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "1eee931cb73a44952854fa8ef6c957a6a8b0448baf737b2425bff87370d3d5be",
           "rig": null
         }
@@ -8687,10 +8690,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A leaf blower that shudders while it runs. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A leaf blower that shudders while it runs.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "c7cedcc619e7fc52d5f4dae41f020d6cab53ba06cf676b6ba5c9b858b51a18d0",
           "rig": null
         }
@@ -8704,10 +8710,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A close tray of flagged cupcakes. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A close tray of flagged cupcakes.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "d2c90dc118f2b660bb49b4b30339dcadd8e52e7bacac7b7ac8a57c956c171426",
           "rig": null
         }
@@ -8721,10 +8730,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A streaming service's list of signed-in devices on a full screen. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A streaming service's list of signed-in devices on a full screen.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "4b0ed74bae606165badba8e5e4684dec735a933f89827c9ea8377aa1083d44bd",
           "rig": null
         }
@@ -8738,10 +8750,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An open dishwasher that gains one dish at each load. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An open dishwasher that gains one dish at each load.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "3564cbbf53d103b5a6098302f50d79f9d8973abab021eebb05d633df677a0d4c",
           "rig": null
         }
@@ -8755,10 +8770,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A lasagna in its dish. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A lasagna in its dish.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "b8f8375fcbd8a9e1e371590a1a7d26c1cc606820b259de4f53034f3d83e4b0db",
           "rig": null
         }
@@ -8772,10 +8790,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The parents' half of a baby monitor, five green bars that jump at each pulse. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The parents' half of a baby monitor, five green bars that jump at each pulse.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "b254b424a42aff054c9536cb414029ba0f684bd94f90d136b5acac4fa32c2687",
           "rig": null
         }
@@ -8789,10 +8810,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A lawn mower that shudders while it runs. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A lawn mower that shudders while it runs.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "d5c060a88750a7c1b614cb88879d6c90d32a7fccbd6816a118c720d73d10fc35",
           "rig": null
         }
@@ -8806,10 +8830,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A streaming service's who-is-watching screen, one to six named tiles. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A streaming service's who-is-watching screen, one to six named tiles.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "147af716636ea50be85f1b99385d2890cd413816b0177a337d7acb9343ea0bcb",
           "rig": null
         }
@@ -8823,10 +8850,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A dishwasher's top rack seen close: rows of mugs at one slant, rolling in. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A dishwasher's top rack seen close: rows of mugs at one slant, rolling in.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "b59caca88d4b65796b854cae7a5a45d8f4b39e7b0c71daf7b0dee0438c5e87e3",
           "rig": null
         }
@@ -8840,10 +8870,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A scribble in a caption pill, standing for words nobody caught. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A scribble in a caption pill, standing for words nobody caught.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "3f8751de3e085f4ae8634a8b1ac4ade95dab3eeb83a89f6ebd0e39052cbde8ca",
           "rig": null
         }
@@ -8857,10 +8890,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A shampoo bottle that gives up one bubble. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A shampoo bottle that gives up one bubble.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "fdcc26b19fdd811c90dd6406874f1d2645b80da4d840c312327a4d4ae6939361",
           "rig": null
         }
@@ -8874,10 +8910,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A stack of soup tubs that grows by count. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A stack of soup tubs that grows by count.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "cbaa1ea4027c9339aa38686f12de4da54ac9a93e5b48f3016fb72c40cafbd870",
           "rig": null
         }
@@ -8891,10 +8930,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A swing door between a kitchen and a dining room, opening on its spans. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A swing door between a kitchen and a dining room, opening on its spans.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "3dcc351b9bc17b9eeae072dcb8db47c64de2fa65ef0cb5e38e8eab089e1643cb",
           "rig": null
         }
@@ -8908,10 +8950,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A plate of toast, two slices. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plate of toast, two slices.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "3cbd517c2019fe4bd172d666f612737445a7412958c041e767841269c0166667",
           "rig": null
         }
@@ -8925,10 +8970,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A manila CV folder, shut or open on cue. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A manila CV folder, shut or open on cue.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "329cb7e72ac5f960c4b8634d4a2a872b8920d2016d3a434876f78de734ff85c1",
           "rig": null
         }
@@ -8942,10 +8990,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A duvet over a bed, heaped in a mound that breathes and can sink. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A duvet over a bed, heaped in a mound that breathes and can sink.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "96e19fa0b67f8e4a7211e8e6bf21a9728552dfd7ae92c570b30d086fbf430263",
           "rig": null
         }
@@ -8959,10 +9010,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A sleep mask on a head, its eyes stitched shut. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A sleep mask on a head, its eyes stitched shut.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "970f52554b504ed20e407f746b08990e2a9618c0c0288fc1eb0c52e036d1c511",
           "rig": null
         }
@@ -8976,10 +9030,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A phone lying face up, with a trace on its screen for each sound it caught. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A phone lying face up, with a trace on its screen for each sound it caught.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "a41eb99c1988129f155be5dc2e587236449c1f5cbb12ef24368f87bddf03fd40",
           "rig": null
         }
@@ -8993,10 +9050,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "Any set turned down to night, with a pool of light left around one point. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Any set turned down to night, with a pool of light left around one point.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "50f950c04a8c05780005caeea1693318f872a1e6e9fdc9cacc1eee04490c3975",
           "rig": null
         }
@@ -9010,10 +9070,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A phone's handset with a coiled cord. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A phone's handset with a coiled cord.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "a950efa5832020a98a6e9cc610aec6ebdaf4e917fe56f42dca22d5dc0a5af8f8",
           "rig": null
         }
@@ -9027,10 +9090,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A desk phone with a display, on or off the hook. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A desk phone with a display, on or off the hook.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "94d530135e6ce41dbb985aa0fa680f8c58fc49fb38ed9494147a9d1349bf90be",
           "rig": null
         }
@@ -9044,10 +9110,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A CV whose back is blank when turned. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A CV whose back is blank when turned.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "a94705c64762382463e322a1fcad77e45048ba573be16f48383767b557fb4cce",
           "rig": null
         }
@@ -9061,10 +9130,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A fork. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A fork.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "6c6cf970bcfc64fcd7faaf9a6b5f1666cb5c54d4ac3e9e445874b20ec4a1fd0f",
           "rig": null
         }
@@ -9078,10 +9150,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A gravy boat with forks taped round it, held like a press microphone. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A gravy boat with forks taped round it, held like a press microphone.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "dfbf5b463c80f7eb6d90fbfa60ec40e022ce3ab61296cd9a4a5e35399bb20e80",
           "rig": null
         }
@@ -9095,10 +9170,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A very small coffee cup. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A very small coffee cup.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "18eb8df543ede0bffce96785f366702191192451941bdf5c261c45f7245f03fc",
           "rig": null
         }
@@ -9112,10 +9190,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A wine glass. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A wine glass.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "c5586543af75ae7d071c93f6ffeacc7df5707259f280286e91ef96d2f36bf07c",
           "rig": null
         }
@@ -9129,10 +9210,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A bank card with its holder's name. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A bank card with its holder's name.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "752e999166073a093cb265c0743fd259c7dcc40c4d20328a4a3908b125a25995",
           "rig": null
         }
@@ -9146,10 +9230,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A till receipt, whole or torn across its foot. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A till receipt, whole or torn across its foot.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "1d2731c86f4e1c34beeb4c6ae6bca6cfe301997edb0b6e5354396b914f94efee",
           "rig": null
         }
@@ -9163,10 +9250,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An open wallet with one empty card slot. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An open wallet with one empty card slot.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "bd176e75dcb85d5d4da47f3ed389c3c96b6cb6d8fc9aa659e7a4014e24fc33dd",
           "rig": null
         }
@@ -9180,10 +9270,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A shop counter across the frame. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A shop counter across the frame.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "70fb79ddcb08512c8a003c4d8cfa674dda304f535b2a03c06509d404a352f047",
           "rig": null
         }
@@ -9197,10 +9290,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A till with a lit readout. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A till with a lit readout.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "15322194740fcd8b6a7461a65badcf7c3dc2d6f2a5cd968be8f8a072b1614804",
           "rig": null
         }
@@ -9214,10 +9310,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A corner stool. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A corner stool.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "e596795f5af79dbfef16bdfe67aea843374e11f90299a5be8c3ea1e3c41eb716",
           "rig": null
         }
@@ -9231,10 +9330,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A striped towel with a fringe. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A striped towel with a fringe.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "70230d727d0f6d2ce1c8df20e46c3ae15b3785c84662b4edf64b63e17b9e0c52",
           "rig": null
         }
@@ -9248,10 +9350,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A boxing ring's padded corner post and three ropes. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A boxing ring's padded corner post and three ropes.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "3de3ab42293c74c2cc5e0cbc750a0a210e09127c905b649ad4d41ac9b851dc3f",
           "rig": null
         }
@@ -9265,10 +9370,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "One eyelid twitching over a held smile. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "One eyelid twitching over a held smile.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "95df65b6f3d3b90302dfc730f2b6e5ff907b0e0e43e69d4c2be01e47356a46d1",
           "rig": null
         }
@@ -9282,10 +9390,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A phone, full frame, on an old post: a dish, an empty heart, no likes; the heart fills, a message slides in. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A phone, full frame, on an old post: a dish, an empty heart, no likes; the heart fills, a message slides in.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "e0b1961fefa0691cb9cc00d5f356c75708b7ba58667c9daf82341d2c1bc24234",
           "rig": null
         }
@@ -9299,10 +9410,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A thumb close to the lens, its tip on a point. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A thumb close to the lens, its tip on a point.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "77ce87ef223af4b79556691d00434cd79df19604755a2b175143a69ec9ab231f",
           "rig": null
         }
@@ -9316,10 +9430,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A long coat that goes on over a Cutout actor, one side, then the other. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A long coat that goes on over a Cutout actor, one side, then the other.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "0b6db241aec38837b0e1f9ff3cc2a63d4a9648740597a29f6c0905d40bb22496",
           "rig": null
         }
@@ -9333,10 +9450,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A glass cafe door with a bar handle, its sign reading from the inside. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A glass cafe door with a bar handle, its sign reading from the inside.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "1c32f0e36e4e10f3bf1b61449a0d09ca4f5b9355239705ff6df209f6463bbad0",
           "rig": null
         }
@@ -9350,10 +9470,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The whole frame as a rear-view mirror on its stem, its masked glass showing what is drawn into it, the same by day and by night. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The whole frame as a rear-view mirror on its stem, its masked glass showing what is drawn into it, the same by day and by night.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "86eeed4bb4bc87a01a77900a5554413383e3fd0d3c669338378a23c3b173181f",
           "rig": null
         }
@@ -9367,10 +9490,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "An inflated ring in a band color and white, squashed flat when its radii differ. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "An inflated ring in a band color and white, squashed flat when its radii differ.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "ff6663a18a5b9e40945560ff431da3b2138f045439122d6c22c7fe162a9622ed",
           "rig": null
         }
@@ -9384,10 +9510,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The indicator's amber arrow, dark, lit at each time it clicks. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The indicator's amber arrow, dark, lit at each time it clicks.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "14092fe29026cf6fdcba586b287028475b310eed1f13edf2175ae26a2832b867",
           "rig": null
         }
@@ -9401,10 +9530,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A stack of cue cards held up, the top card lettered by hand. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A stack of cue cards held up, the top card lettered by hand.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "876f764bdd4030f43bbf11eb896f3206f9099a5e3272fc95bc41052b398fd3e5",
           "rig": null
         }
@@ -9418,10 +9550,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A pair of plain banknotes, fanned, lettered with their value. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A pair of plain banknotes, fanned, lettered with their value.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "e566849cd365c70b6499b5c8d0f8ac9b74441228c7b2d54bcec891134e0e5cfd",
           "rig": null
         }
@@ -9435,10 +9570,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A blazer over a bathrobe, worn on a Cutout actor. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A blazer over a bathrobe, worn on a Cutout actor.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "ae6d14b0ede07ca99c055e78112131a903f7b94a790e2fef851fa30521e8f5e7",
           "rig": null
         }
@@ -9452,10 +9590,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A round wall clock with no numbers, reading the time it is given. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A round wall clock with no numbers, reading the time it is given.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "a34ac233daa10ff075cd3085078de5e312b9cc03d07d8c4261a59a3c5530452f",
           "rig": null
         }
@@ -9469,10 +9610,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A picture book held open, its cover to us, that can slide away. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A picture book held open, its cover to us, that can slide away.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "84c4d9e66a56e4113ba857bb8fc399bf08d8ce01ce48b3216a927ca9bcf78c73",
           "rig": null
         }
@@ -9486,10 +9630,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A small bedside lamp, lit until it clicks off. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A small bedside lamp, lit until it clicks off.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "7512be32a0445bb3024b6fda020d68b0c08ea4a619aac3ccd6fd8c73f138b3d9",
           "rig": null
         }
@@ -9503,10 +9650,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A briefcase open on a quilt, a contract inside, that can shut. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A briefcase open on a quilt, a contract inside, that can shut.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "ab0f3a0e4a3fe2722ef28c3e052b38d7c7d3c7943bda4eab0eeb9d01ed9ca0db",
           "rig": null
         }
@@ -9520,10 +9670,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A close shot of a deal: a small hand and a big one, shaking on it. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A close shot of a deal: a small hand and a big one, shaking on it.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "55ae6ba7bcc6c66d8c1557757ded5f2f6f0c9e0633fad22564b923340d054997",
           "rig": null
         }
@@ -9537,10 +9690,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "The top of a quilt, drawn up over whoever is asleep under it. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The top of a quilt, drawn up over whoever is asleep under it.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
           "drawing": "2c572dd4414155d31e4aaaacaa61da2cfb30d42cb8095989bc4cf7b65b5e9b81",
           "rig": null
         }

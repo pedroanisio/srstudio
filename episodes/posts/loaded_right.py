@@ -24,18 +24,18 @@ RELEASE = Release(
     tags=Tags("family", "other-person", "affection", recurring=('fern',), test="sp-hook_motion", arm="b"),
     style="Toon",
     parts={
-        # toon-dishwasher, toon-rack also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-captions": 1,
+        "toon-dishwasher": 1,
         "toon-frog": 2,
         "toon-goat": 1,
-        "toon-kitchen": 1,
         "toon-hamster": 1,
+        "toon-kitchen": 1,
         "toon-ledge": 1,
         "toon-paw": 1,
         "toon-raccoon": 2,
+        "toon-rack": 1,
     },
     comedy=Scores(author=16, reviewer=18),
 )

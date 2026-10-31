@@ -25,12 +25,11 @@ RELEASE = Release(
     style="Cutout",
     cover=True,
     parts={
-        # cv-folder also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "candidate": 1,
         "candidate-back": 1,
         "captions": 1,
         "chair": 1,
+        "cv-folder": 1,
         "hiring-office": 1,
         "manager": 1,
         "office-reverse": 1,

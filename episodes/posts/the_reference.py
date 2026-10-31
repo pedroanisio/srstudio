@@ -25,12 +25,13 @@ RELEASE = Release(
     style="Cutout",
     cover=True,
     parts={
-        # banknotes, cue-cards, robe-and-blazer also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
+        "banknotes": 1,
         "captions": 1,
+        "cue-cards": 1,
         "customer": 1,
         "home-study": 1,
         "papers": 1,
+        "robe-and-blazer": 1,
         "rosa": 1,
         "signature-cactus": 1,
         "signature-code": 1,
