@@ -10839,6 +10839,74 @@
           "rig": null
         }
       ]
+    },
+    "coin-purse": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clasp coin purse that opens on the coins inside it. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a767111320c6e08e44accdc515d9f3eb129872452a4153f96f0b7f1bcce48e66",
+          "rig": null
+        }
+      ]
+    },
+    "small-coin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One small coin. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c97d2443e065f37a7f1947a8bf1e5f538cc8559e1d5b321843fd7d529e7797e5",
+          "rig": null
+        }
+      ]
+    },
+    "lane-sign": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A checkout lane's lit number, hung from the ceiling, changing on its times. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fe5d007fc444f5a548a9c45a6e4a506fe4755663f2f8ec1f710c3132a516883",
+          "rig": null
+        }
+      ]
+    },
+    "glasses-glint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The light catching a pair of round glasses, once. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e30b15da7111e9b6191a012764ab9afdf5e668f3d4bd0af8a5ed772416e26bc3",
+          "rig": null
+        }
+      ]
     }
   }
 }

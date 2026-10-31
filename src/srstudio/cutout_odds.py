@@ -13,7 +13,19 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["CutoutOddsError", "bistro_table", "earbud", "eaten_sandwich", "paper_napkin", "store_box", "tin_of_peas"]
+__all__ = [
+    "CutoutOddsError",
+    "bistro_table",
+    "coin_purse",
+    "earbud",
+    "eaten_sandwich",
+    "glasses_glint",
+    "lane_sign",
+    "paper_napkin",
+    "small_coin",
+    "store_box",
+    "tin_of_peas",
+]
 
 BREAD = "#F2E2BE"
 
@@ -134,4 +146,102 @@ def store_box(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str =
     for dx in (-10, 2, 12):
         cv.ellipse(g, dx - 2, -18, 4, 4, ink)
     cv.rect(g, -40, 38, 80, 12, "#B96A25", radius=4)
+    return g
+
+
+@register("prop", "coin-purse", style="cutout", summary="A clasp coin purse that opens on the coins inside it")
+def coin_purse(
+    cv: Canvas, parent, x=540, y=900, *, opens: Sequence[tuple[float, float]] = (), scale: float = 1.0, id="coin-purse"
+):
+    """Centred on (``x``, ``y``), 110 wide. It is shut but for the ``(start, end)`` spans of ``opens``."""
+    _check_scale(scale)
+    _rising([t for span in opens for t in span], "opens")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M-46 -22 Q-66 44 -30 50 L30 50 Q66 44 46 -22Z", "#7B3F5E", ink, 3.5)
+    cv.path(g, "M-30 8 Q0 22 30 8 M-34 28 Q0 42 34 28", stroke="#9C5E7E", sw=2.5)
+    shut = cv.group(g, f"{id}-shut")
+    agape = cv.group(g, f"{id}-open")
+    if opens:
+        cv.gate(agape, opens)
+        edges = [0.0, *(t for span in opens for t in span), 1e6]
+        cv.gate(shut, [(a, b) for a, b in zip(edges[::2], edges[1::2], strict=True) if b > a])
+    else:
+        cv.gate(agape, [(1e6, 1e6 + 1)])
+    cv.path(shut, "M-46 -22 Q0 -34 46 -22", stroke="#D3A73A", sw=6)
+    cv.ellipse(shut, -14, -44, 13, 13, "#E6C25A", ink, 2)
+    cv.ellipse(shut, 1, -44, 13, 13, "#E6C25A", ink, 2)
+    cv.ellipse(agape, -46, -42, 92, 40, "#2A1A24", ink, 3)
+    for dx in (-22, 2, 20):
+        cv.ellipse(agape, dx - 9, -34, 18, 18, "#E6C25A", ink, 2)
+    cv.path(agape, "M-46 -22 Q0 -4 46 -22", stroke="#D3A73A", sw=6)
+    return g
+
+
+@register("prop", "small-coin", style="cutout", summary="One small coin")
+def small_coin(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "small-coin"):
+    """Centred on (``x``, ``y``), 44 wide."""
+    _check_scale(scale)
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.ellipse(g, -22, -22, 44, 44, "#E6C25A", cv.ink, 3)
+    cv.ellipse(g, -14, -14, 28, 28, cv.clear, "#B98F2E", 2)
+    return g
+
+
+@register("prop", "lane-sign", style="cutout", summary="A checkout lane's lit number, hung from the ceiling")
+def lane_sign(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=200,
+    *,
+    numbers: Sequence[tuple[float, str]] = ((0.0, "4"),),
+    scale: float = 1.0,
+    id: str = "lane-sign",
+):
+    """The sign's middle is (``x``, ``y``), 120 wide; ``numbers`` are ``(from time, number)``, the first from 0."""
+    _check_scale(scale)
+    if not numbers or numbers[0][0] != 0 or not all(isinstance(n, str) and n for _, n in numbers):
+        raise CutoutOddsError(f"numbers run from time 0 and are non-empty strings, got {list(numbers)!r}")
+    times = [t for t, _ in numbers]
+    _rising(times, "numbers")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M-40 -60 L-40 -500 M40 -60 L40 -500", stroke="#6F747B", sw=6)
+    cv.rect(g, -60, -60, 120, 120, "#23262A", ink, 4, radius=12)
+    cv.rect(g, -50, -50, 100, 100, "#2F7A5F", radius=6)
+    for n, ((begin, number), end) in enumerate(zip(numbers, [*times[1:], 1e6], strict=True)):
+        lit = cv.group(g, f"{id}-number-{n}")
+        cv.gate(lit, [(begin, end)])
+        cv.text(lit, f"{id}-text-{n}", number, -50, -46, 100, 90, 70, "#FFFFFF")
+    return g
+
+
+@register("prop", "glasses-glint", style="cutout", summary="The light catching a pair of round glasses, once")
+def glasses_glint(
+    cv: Canvas,
+    parent,
+    lenses: Sequence[tuple[float, float]] = ((-34, -18), (36, -18)),
+    *,
+    at: float = 0.5,
+    seconds: float = 0.5,
+    scale: float = 1.0,
+    id: str = "glasses-glint",
+):
+    """White over each lens at ``lenses``, and a star on the last, up to full at ``at`` and gone ``seconds`` later."""
+    _check_scale(scale)
+    if not lenses:
+        raise CutoutOddsError("a glint needs at least one lens")
+    checks.positive(seconds, CutoutOddsError, f"seconds must be positive, got {seconds!r}")
+    _rising([at], "at")
+    g = cv.group(parent, id, scaleX=scale, scaleY=scale)
+    cv.gate(g, [(max(at - 0.08, 0.0), at + seconds)])
+    for lens_x, lens_y in lenses:
+        cv.ellipse(g, lens_x - 22, lens_y - 20, 44, 40, "#FFFFFF", opacity=0.9)
+    star_x, star_y = lenses[-1]
+    star = cv.group(g, f"{id}-star", x=star_x + 16, y=star_y - 14)
+    size = [(at - 0.08, 0.3), (at, 1.2), (at + seconds, 0.2)]
+    cv.keys(star, "scaleX", size, hold=False)
+    cv.keys(star, "scaleY", size, hold=False)
+    cv.path(star, "M0 -42 Q4 -4 42 0 Q4 4 0 42 Q-4 4 -42 0 Q-4 -4 0 -42Z", "#FFFFFF", cv.ink, 2)
     return g

@@ -29,6 +29,10 @@ DRAWN = [
     ("earbud", cutout_odds.earbud),
     ("tin-of-peas", cutout_odds.tin_of_peas),
     ("store-box", cutout_odds.store_box),
+    ("coin-purse", cutout_odds.coin_purse),
+    ("small-coin", cutout_odds.small_coin),
+    ("lane-sign", cutout_odds.lane_sign),
+    ("glasses-glint", cutout_odds.glasses_glint),
 ]
 
 
@@ -93,3 +97,57 @@ def test_a_store_prop_with_a_scale_it_cannot_take_is_refused(draw, scale):
     cv = canvas()
     with pytest.raises(CHECKED, match="scale"):
         draw(cv, cv.comp, scale=scale)
+
+
+def test_a_purse_shows_its_coins_only_while_it_is_open():
+    cv = canvas()
+    cutout_odds.coin_purse(cv, cv.comp, opens=[(1.0, 2.0), (3.0, 4.0)])
+    assert not errors(cv)
+    assert {"coin-purse-open", "coin-purse-shut"} <= ids(cv)
+
+
+@pytest.mark.parametrize("opens", [[(2.0, 1.0)], [(1.0, 3.0), (2.0, 4.0)], [(float("nan"), 1.0)]])
+def test_a_purse_refuses_spans_that_do_not_run_forward(opens):
+    cv = canvas()
+    with pytest.raises(CHECKED, match="opens"):
+        cutout_odds.coin_purse(cv, cv.comp, opens=opens)
+
+
+def test_a_lane_sign_changes_number_on_its_times():
+    cv = canvas()
+    cutout_odds.lane_sign(cv, cv.comp, numbers=[(0.0, "4"), (2.0, "5"), (4.0, "6")])
+    assert {f"lane-sign-number-{n}" for n in range(3)} <= ids(cv)
+    assert "lane-sign-number-3" not in ids(cv)
+
+
+@pytest.mark.parametrize(
+    ("numbers", "match"),
+    [
+        ([], "run from time 0"),
+        ([(1.0, "4")], "run from time 0"),
+        ([(0.0, "")], "run from time 0"),
+        ([(0.0, 4)], "run from time 0"),
+        ([(0.0, "4"), (0.0, "5")], "rising"),
+    ],
+)
+def test_a_lane_sign_refuses_numbers_it_cannot_show(numbers, match):
+    cv = canvas()
+    with pytest.raises(CHECKED, match=match):
+        cutout_odds.lane_sign(cv, cv.comp, numbers=numbers)
+
+
+@pytest.mark.parametrize(
+    ("bad", "match"),
+    [(dict(lenses=()), "one lens"), (dict(seconds=0), "seconds"), (dict(at=float("nan")), "at"), (dict(at=-1), "at")],
+)
+def test_a_glint_refuses_what_it_cannot_draw(bad, match):
+    cv = canvas()
+    with pytest.raises(CHECKED, match=match):
+        cutout_odds.glasses_glint(cv, cv.comp, **bad)
+
+
+def test_a_glint_covers_each_lens():
+    cv = canvas()
+    cutout_odds.glasses_glint(cv, cv.comp, [(-30, 0), (30, 0), (90, 0)], at=1.0)
+    drawn = [e for e in root(cv).iter() if e.get("id") == "glasses-glint"]
+    assert len(drawn) == 1 and not errors(cv)
