@@ -101,3 +101,12 @@ def test_no_page_carries_the_retired_account_name(tmp_path):
     pages = [render.sheet(c, model=MODEL, version=b.version, order=[]) for c in b.characters]
     pages += [render.canon(b, model=MODEL), render.world(b, model=MODEL), render.open_decisions(b, model=MODEL)]
     assert not any("tuxmeme" in p.lower() for p in pages)
+
+
+def test_the_front_page_lists_each_world_links_the_sheets_and_names_the_placeholders(tmp_path):
+    b = loaded(tmp_path)
+    page = render.readme(b, model=MODEL, sheets=["rex", "fern"])
+    assert "[Rex](characters/rex.md)" in page and "![Who knows whom](relationships.png)" in page
+    assert "## Placeholders" in page and "Rafa (Okayville)" in page
+    assert "srstudio bible check" in page and "cannot tell that a paragraph" in page
+    assert render.readme(b, model=MODEL, sheets=[]).count("(characters/") == 0  # no link to a sheet not written
