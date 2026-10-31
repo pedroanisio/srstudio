@@ -18,7 +18,7 @@ import os
 from _common import project_root
 from how_is_everything_audio import INTERVIEW
 from instagram_posts import POSTS
-from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_odds, foley, locations, look
+from srstudio import CAFE, Episode, EpisodeSpec, camera, cast, cutout_odds, foley, locations, look, signature
 from srstudio import interview as iv_audio
 from srstudio.cutout_reach import reach
 
@@ -156,13 +156,7 @@ def spans_far():
 
 
 def far_side(g):
-    """The far table, and Ava at it whenever she is not at his elbow."""
-    cutout_odds.bistro_table(cv, g, 720, 1050, width=250, id="far-table")
-    cloth = cv.group(g, "far-cloth", x=690, y=1038)
-    cv.gate(cloth, spans_far())
-    wipe = [(0.25 * n, 660.0 if n % 2 else 780.0) for n in range(int(DURATION / 0.25))]
-    cv.keys(cloth, "x", wipe, hold=False)
-    cv.rect(cloth, -28, -8, 56, 14, "#F5EAD4", cv.ink, 2.5, radius=4)
+    """The far table, and Ava standing behind it whenever she is not at his elbow."""
     away = cv.group(g, "ava-far")
     cv.gate(away, spans_far())
     sway = [(0.0, 0.0)]
@@ -171,7 +165,15 @@ def far_side(g):
         sway += [(at + 0.25, -7.0), (at + 0.5, 7.0)]
         at += 0.5
     cv.keys(away, "rotation", sway, hold=False)
-    ep.perform(cast.Barista(cv, tag="ava-far-character"), away, 730, 840, 0.72, mouth=[(0.0, "rest")], name=None)
+    ep.perform(
+        cast.Barista(cv, tag="ava-far-character"), away, 730, 840, 0.72, mouth=[(0.0, "rest")], name=None, legs=True
+    )
+    cutout_odds.bistro_table(cv, g, 720, 1050, width=250, id="far-table")
+    cloth = cv.group(g, "far-cloth", x=690, y=1038)
+    cv.gate(cloth, spans_far())
+    wipe = [(0.25 * n, 660.0 if n % 2 else 780.0) for n in range(int(DURATION / 0.25))]
+    cv.keys(cloth, "x", wipe, hold=False)
+    cv.rect(cloth, -28, -8, 56, 14, "#F5EAD4", cv.ink, 2.5, radius=4)
 
 
 def milo_in_chair(g):
@@ -276,7 +278,9 @@ def walks_past(g):
     cv.keys(walk, "x", [(P[7].start - 0.1, 1400.0), (P[7].end + 0.2, -340.0)], hold=False)
     n = int((P[7].end - P[7].start) / 0.2) + 2
     cv.keys(walk, "y", [(P[7].start + 0.2 * k, 800.0 if k % 2 else 786.0) for k in range(n)], hold=False)
-    ep.perform(cast.Barista(cv, tag="ava-walking-character"), walk, 0, 0, 1.2, mouth=[(0.0, "rest")], name=None)
+    ep.perform(
+        cast.Barista(cv, tag="ava-walking-character"), walk, 0, 0, 1.2, mouth=[(0.0, "rest")], name=None, legs=True
+    )
 
 
 def behind(g):
@@ -296,6 +300,7 @@ zoom += [(LOOK, 1.0), (LOOK + 0.15, CRASH)]
 cv.keys(shot, "scaleX", zoom, hold=False)
 cv.keys(shot, "scaleY", zoom, hold=False)
 locations.cafe(cv, shot, behind_counter=behind, at_counter=on_table)
+signature.code(cv, shot, 760, 1600, 11, color="#D9B48A", align="end")  # Milo's head hides the one by the menu board
 
 spoken = ep.captions(ep.spoken_captions(), x=80, y=1420, width=920, size=60)
 ep.hide_on_cover(*spoken)

@@ -382,15 +382,25 @@ class CafeActor(Actor):
 
 @register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings")
 class Barista(CafeActor):
-    """extras: ``name`` on the badge (default AVA)."""
+    """extras: ``name`` on the badge (default AVA); ``legs`` = ``True`` draws her down to the soles, 489 under her
+    origin as the customer stands, for a shot with no counter in front of her (default: the counter hides them)."""
 
     role = "barista"
-    extra_options = CafeActor.extra_options | {"name"}
+    extra_options = CafeActor.extra_options | {"name", "legs"}
     skin = "#C28A65"
+
+    def validate_performance(self, perf: Performance) -> None:
+        super().validate_performance(perf)
+        if not isinstance(perf.extras.get("legs", False), bool):
+            raise CastError(f"legs is True or False, got {perf.extras['legs']!r}")
 
     def draw_body(self, g, perf):
         cv, ink = self.cv, self.cv.ink
         skin = perf.extras.get("skin", self.skin)
+        if perf.extras.get("legs"):
+            cv.path(g, "M-53 310 L-51 467 L-9 467 L4 344 L15 468 L57 468 L55 310Z", "#2F3A40", ink, 4)
+            cv.path(g, "M-54 462 Q-21 457 -6 475 L-4 489 L-66 489Z", "#2A211C", ink, 4)
+            cv.path(g, "M15 462 Q49 456 70 475 L72 489 L11 489Z", "#2A211C", ink, 4)
         cv.rect(g, -10, 91, 20, 39, skin, ink, 3)
         cv.path(g, "M-68 322 L-73 150 Q-74 121 -44 116 L43 116 Q74 121 75 150 L68 322Z", "#F5EAD4", ink, 4)
         cv.path(g, "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z", "#366761", ink, 3)
