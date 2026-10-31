@@ -18,6 +18,9 @@ __all__ = ["Pose", "figure", "poses_of"]
 
 SEAT = (185.0, 812.0)  # where a character sits, the point a figure is placed by
 Pose = tuple[float, str, str, str]  # project seconds, eyes, mouth, arms
+Key = tuple[float, float]  # project seconds, value
+RISE, FALL = 0.8, 1.4  # seconds an apparition takes to come up and to go
+FOG_SIDES = {"left": (0.0, 0.5), "right": (0.5, 0.5), "whole": (0.0, 1.0)}  # share of the frame: from, wide
 
 
 def poses_of(poses: Sequence[Pose], enter: float, leave: float = math.inf) -> list[toon.Pose]:
@@ -66,3 +69,66 @@ def figure(
     extra = sketch.drawer_extras(who, None, {who: shot.mouths[who]} if who in shot.mouths else None)
     sketch.drawer(who, shot.versions)(cv, g, drawn, leave, (), enter=enter, **extra)
     return g
+
+
+def fade_track(start: float, stop: float, opacity: float, *, rise: float = RISE, fall: float = FALL) -> list[Key]:
+    """Opacity keys of a thing that comes up over ``rise`` from ``start``, holds to ``stop`` and goes over ``fall``."""
+    if stop < start + rise:
+        raise ToonDataError(f"{start}..{stop} is too short for a whole fade of {rise} s")
+    if not 0.0 < opacity <= 1.0:
+        raise ToonDataError(f"an apparition's opacity must be in (0, 1], got {opacity!r}")
+    return [(start, 0.0), (start + rise, opacity), (stop, opacity), (round(stop + fall, 6), 0.0)]
+
+
+def fog_track(
+    start: float, stop: float, thin: float, thick: float, *, rise: float = RISE, fall: float = FALL
+) -> list[Key]:
+    """The keys of :func:`fade_track` thickening ``thin`` to ``thick`` from the first frame on, never to nothing."""
+    return [(0.0, thin), (start, thin), (start + rise, thick), (stop, thick), (round(stop + fall, 6), thin)]
+
+
+def apparition(
+    shot,
+    parent,
+    who: str,
+    at: tuple[float, float],
+    scale: float,
+    start: float,
+    stop: float,
+    *,
+    opacity: float = 0.4,
+    poses: Sequence[Pose] = ((0.0, "half", "flat", "desk"),),
+    rise: float = RISE,
+    fall: float = FALL,
+    mirror: bool = False,
+) -> object:
+    """``who`` seen and not there: a :func:`figure` that fades up at ``start``, stays faint to ``stop`` and fades out,
+    the way a thought, a memory or a ghost in the steam shows. Returns the figure's group."""
+    keys = fade_track(start, stop, opacity, rise=rise, fall=fall)
+    ghost = figure(shot, parent, who, at, scale, poses, start=start, end=keys[-1][0], mirror=mirror)
+    shot.cv.keys(ghost, "opacity", keys, hold=False)
+    return ghost
+
+
+def fog(
+    cv,
+    parent,
+    start: float,
+    stop: float,
+    *,
+    thin: float = 0.25,
+    thick: float = 0.6,
+    side: str = "right",
+    colour: str = "#f4fbff",
+    rise: float = RISE,
+    fall: float = FALL,
+) -> object:
+    """A pale panel over ``side`` of the frame ("left", "right" or "whole"), thin from the first frame, thickening
+    with an :func:`apparition` of the same ``start`` and ``stop``: steam on glass, a dream's edge. Returns its group."""
+    if side not in FOG_SIDES:
+        raise ToonDataError(f"fog side {side!r} is not one of {', '.join(FOG_SIDES)}")
+    panel = cv.group(parent, cv.uid("g"), opacity=0.0)
+    x, width = FOG_SIDES[side]
+    cv.rect(panel, cv.width * x, 0, cv.width * width, cv.height, colour)
+    cv.keys(panel, "opacity", fog_track(start, stop, thin, thick, rise=rise, fall=fall), hold=False)
+    return panel

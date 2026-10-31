@@ -61,3 +61,36 @@ def test_a_lip_synced_figure_takes_its_track():
     track = [(1.2, "open"), (1.6, "closed")]
     toon_extras.figure(shot(cv, {"raccoon": track}), cv.comp, "raccoon", (400, 800), mirror=True)
     assert cv.scene.to_bytes(layout="pretty")
+
+
+def test_an_apparition_fades_in_holds_and_fades_out():
+    cv = canvas()
+    plain = canvas()
+    toon_extras.figure(shot(plain), plain.comp, "raccoon", (400, 800), 0.8, start=2.0, end=4.9)
+    toon_extras.apparition(shot(cv), cv.comp, "raccoon", (400, 800), 0.8, 2.0, 3.5, opacity=0.4)
+    faded, solid = (c.scene.to_bytes(layout="pretty").count(b"opacity") for c in (cv, plain))
+    assert faded > solid
+    assert toon_extras.fade_track(2.0, 3.5, 0.4, rise=0.8, fall=1.4) == [
+        (2.0, 0.0), (2.8, 0.4), (3.5, 0.4), (4.9, 0.0)
+    ]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("start", "stop", "opacity", "match"),
+    [(3.0, 3.5, 0.4, "whole fade"), (2.0, 3.5, 0.0, "opacity"), (2.0, 3.5, 1.5, "opacity")],
+)
+def test_an_apparition_refuses_a_fade_it_cannot_show(start, stop, opacity, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_extras.apparition(shot(cv), cv.comp, "raccoon", (400, 800), 0.8, start, stop, opacity=opacity)
+
+
+def test_a_fog_panel_covers_its_side_and_thickens_with_the_apparition():
+    cv = canvas()
+    fog = toon_extras.fog(cv, cv.comp, 2.0, 3.5, thin=0.25, thick=0.6, side="right")
+    assert fog is not None
+    assert toon_extras.fog_track(2.0, 3.5, 0.25, 0.6, rise=0.8, fall=1.4) == [
+        (0.0, 0.25), (2.0, 0.25), (2.8, 0.6), (3.5, 0.6), (4.9, 0.25)
+    ]  # fmt: skip
+    with pytest.raises(ToonDataError, match="side"):
+        toon_extras.fog(cv, cv.comp, 2.0, 3.5, side="top")
