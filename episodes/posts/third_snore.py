@@ -17,7 +17,7 @@ RELEASE = Release(
         credit="Voices: ElevenLabs premade voices Jessica, Will and Callum. Original characters, drawn in code. Sound "
         "effects with ElevenLabs.",
         hashtags=("#snoring", "#marriagehumor", "#relationships", "#stickfigure", "#okayville"),
-        thumbnail=Thumbnail("Whose snore\nis that?", 11.5, "Okayville", (540, 860), 1.0, place="top"),
+        thumbnail=Thumbnail("Whose snore\nis that?", 11.5, "Okayville", (540, 860), 1.0, place="bottom"),
     ),
     cover=True,
     tags=Tags(
