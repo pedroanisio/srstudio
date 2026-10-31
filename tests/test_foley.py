@@ -2,6 +2,7 @@
 
 import math
 import dataclasses
+import hashlib
 import wave
 
 import pytest
@@ -337,3 +338,80 @@ def test_write_plop_writes_a_wave(tmp_path):
     path = foley.write_plop(tmp_path / "plop.wav", [0.1], 2.0, rate=8000, seed=1)
     with wave.open(str(path)) as w:
         assert w.getnframes() == 16000 and w.getframerate() == 8000
+OLD_SOUNDS = {  # sha256 of each bed rounded to 6 places, first 16 digits: published foley is rebuilt from these
+    "BELL": "410518bbfb58b7d1",
+    "CHOPPER": "0137230fbacc430c",
+    "GULL": "9ff8da1f9ed7ca36",
+    "KNOCK": "271cc5cb2dd1f414",
+    "PLATES": "b7df164d636ffba3",
+    "REMOTE_CLICK": "aff7ae9ee31bf695",
+    "ROAD": "40dc72c5132666d2",
+    "RUMBLE": "387718f960b71878",
+    "SCRAPE": "7ccb56a8f4a7a09f",
+    "SNORE": "899647ee575db7f9",
+    "SWISH": "230464ea74c6c7cd",
+    "THUD": "f55ee0f387e2fb91",
+}
+NAMED = (
+    foley.CLACK,
+    foley.FLAP,
+    foley.CLINK,
+    foley.SIZZLE,
+    foley.PURR,
+    foley.HUM,
+    foley.BIRD,
+    foley.BARK,
+    foley.CREAK,
+    foley.SQUEAK,
+    foley.GROWL,
+    foley.GROWL_REPLY,
+    foley.GROWL_SMALL,
+    foley.GROWL_VAST,
+)
+
+
+def _centre_hz(bed: list[float], rate: int) -> float:
+    """Upward zero crossings per second over the loud middle of a bed: rough, and all a comparison of pitch needs."""
+    loud = [v for v in bed if abs(v) > 0.02]
+    rises = sum(1 for a, b in zip(loud, loud[1:], strict=False) if a < 0 <= b)
+    return rises / (len(loud) / rate)
+
+
+@pytest.mark.parametrize("sound", NAMED)
+def test_a_named_sound_makes_a_levelled_bed_the_same_every_build(sound):
+    a = foley.bursts([0.1], sound.seconds + 0.5, sound, rate=16000, seed=4)
+    assert a == foley.bursts([0.1], sound.seconds + 0.5, sound, rate=16000, seed=4)
+    assert 0.49 <= max(abs(v) for v in a) <= 0.5
+    assert all(v == 0 for v in a[:1600])  # silence until its cue
+    assert all(v == 0 for v in a[int((sound.seconds + 0.11) * 16000) :])  # and after it has ended
+
+
+def test_a_click_is_over_at_once_and_a_motor_runs_on():
+    assert foley.CLACK.seconds < 0.1 and foley.CLINK.seconds < 0.1
+    for sound in (foley.SIZZLE, foley.PURR, foley.HUM):
+        bed = foley.bursts([0.0], sound.seconds, sound, rate=8000, seed=1)
+        half = [abs(v) for v in bed[int(1.5 * 8000) : int(2.5 * 8000)]]
+        assert max(half) > 0.15  # still going at half its length, so laid end to end it never dips to silence
+
+
+def test_two_bellies_answer_in_different_voices_and_the_vast_one_is_far_lower():
+    rate = 16000
+    first, reply = (foley.bursts([0.0], s.seconds, s, rate=rate, seed=2) for s in (foley.GROWL, foley.GROWL_REPLY))
+    vast = foley.bursts([0.0], foley.GROWL_VAST.seconds, foley.GROWL_VAST, rate=rate, seed=2)
+    assert foley.GROWL.tone_end_hz > foley.GROWL.tone_hz  # the first one rises, like a question
+    assert foley.GROWL_SMALL.tone_end_hz < foley.GROWL_SMALL.tone_hz  # the gurgle falls away
+    assert foley.GROWL_REPLY.tone_hz > foley.GROWL.tone_hz
+    assert _centre_hz(vast, rate) < _centre_hz(first, rate) < _centre_hz(reply, rate) * 1.5
+    assert foley.GROWL_VAST.seconds > 2 * foley.GROWL.seconds
+
+
+def test_the_appliance_tune_is_five_notes_that_end_high_and_held():
+    assert len(foley.CYCLE_DONE) == 5 and foley.CYCLE_DONE[-1][2] > foley.CYCLE_DONE[0][2]
+    bed = foley.tones([0.2], 1.5, foley.CYCLE_DONE, rate=8000)
+    assert 0.49 <= max(abs(v) for v in bed) <= 0.5 and all(v == 0 for v in bed[:1600])
+
+
+def test_the_named_sounds_of_published_reels_stay_as_they_were():
+    for name, digest in OLD_SOUNDS.items():
+        bed = [round(v, 6) for v in foley.bursts([0.1], 9.0, getattr(foley, name), rate=8000, seed=7)]
+        assert hashlib.sha256(repr(bed).encode()).hexdigest()[:16] == digest, name
