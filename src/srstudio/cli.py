@@ -22,6 +22,7 @@ from sr_core.scene import SchemaValueError
 
 from . import (
     auto_enhance,
+    bible_cli,
     catalog_page,
     catalog_server,
     catalog_specimens,
@@ -131,6 +132,7 @@ def main(argv=None):
     page.add_argument(
         "--packages", type=Path, default=packages, required=not packages, help="folder of <name>-<version> packages"
     )
+    bible_cli.add_parser(sub)
     cards = sub.add_parser("cards", help="write the cast's story cards, drawn through the engine")
     cards.add_argument("out", type=Path, help="the folder the <name>.png files go in")
     cards.add_argument("--fonts", type=Path, default=os.environ.get("SRSTUDIO_FONTS"), help="the pinned fonts folder")
@@ -256,6 +258,8 @@ def main(argv=None):
         style = " italic" if got.italic else ""
         print(f"{got.path}  {got.family} {got.weight}{style}  {got.license}  sha256 {got.sha256}")
         return 0
+    if args.cmd == "bible":
+        return bible_cli.run(args)
     if args.cmd == "cards":
         return _cards(args)
     if args.cmd == "page":

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from .bible import Bible, Character, Fact
 
-__all__ = ["FRONTMATTER", "canon", "open_decisions", "sheet", "world"]
+__all__ = ["FRONTMATTER", "canon", "open_decisions", "readme", "sheet", "world"]
 
 FRONTMATTER = "---\ngenerated-by: {model} in Claude Code\nbible-version: {version}\n---\n"
 WORLD_TITLE = {
@@ -215,3 +215,52 @@ def open_decisions(bible: Bible, *, model: str) -> str:
         marked += sum(1 for v in person.persona_fields().values() if v.startswith(("open:", "proposal:")))
     lines += [f"Persona fields still marked open or proposal across the cast: {marked}.", ""]
     return "\n".join(lines)
+
+
+def readme(bible: Bible, *, model: str, sheets: Sequence[str]) -> str:
+    """The front page of the folder: what is in it, how to read it, how to check a new reel against it."""
+    lines = [
+        _head(model, bible.version),
+        "# The cast bible",
+        "",
+        f"Version {bible.version}. {len(bible.characters)} characters, {len(bible.relationships)} pairs, "
+        f"{len(bible.places)} places, {len(bible.clashes)} open clashes.",
+        "",
+        "![Who knows whom](relationships.png)",
+        "",
+        "## What is here",
+        "",
+        "- `characters/<slug>.md`: one sheet per character, with the approved drawing.",
+        "- `relationships.json`, `relationships.png`: who is tied to whom, and the reels that show it.",
+        "- `world.md`: the places that come back and the rules each world follows.",
+        "- `canon.md`: every established fact, each beside the published reel that shows it.",
+        "- `open-decisions.md`: every clash and open question, each with a proposed resolution.",
+        "- `cast.json`: the same facts as data. `CHANGELOG.md`: what changed between versions.",
+        "",
+        "## How to read it",
+        "",
+        "A fact is canon only when a published reel shows it. A line starting **Open.** is not known yet; "
+        "a line starting **Proposal.** is a suggestion nobody has approved. Saga and Gloss are sealed worlds: "
+        "each keeps its own characters and shares no canon with Okayville or with the other.",
+        "",
+        "## How to use it",
+        "",
+        "Put a `Cast: slug, slug` line in the brief, then run `srstudio bible check` on the brief. "
+        "A first delivery is refused when a release names a character the bible lacks, or draws or voices a known "
+        "character differently. A reel already published is never refused. Code reads names, drawings, voices and "
+        "the cast line; it cannot tell that a paragraph contradicts a canon fact in other words.",
+        "",
+        "## Characters",
+        "",
+    ]
+    for key, title in WORLD_TITLE.items():
+        members = [c for c in bible.characters if c.world == key]
+        if not members:
+            continue
+        lines += [f"### {title}", ""]
+        for c in members:
+            tag = " (placeholder)" if c.status == "placeholder" else ""
+            link = f"[{c.name}](characters/{c.slug}.md)" if c.slug in sheets else c.name
+            lines.append(f"- {link}{tag}: {len(c.reels)} published reels")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
