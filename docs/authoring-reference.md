@@ -125,6 +125,9 @@ ep.mouth("candidate", style=replace(OFFICE_MOUTH, letters=True))  # amplitude mo
   the round mouth comes from a clock pattern, unrelated to the words.
 - `srstudio lipsync TIMELINE...` scores the shipped and the speech mouth over the takes of timelines with character
   timestamps: bilabials closed, word joins snapped shut, and pose changes a second.
+- `srstudio lip-proof PROJECT --master MP4 --out DIR` picks mid-word instants across a recorded reel, prints the pose
+  the mouth track holds at each one, names any vowel on a shut mouth, and pulls those frames from the master to compare
+  by eye.
 
 ### Engine-native captions, transitions, effects and text animators
 

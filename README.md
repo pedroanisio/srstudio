@@ -110,8 +110,6 @@ print(info["signature"], info["slots"])
 builder = get("location", "office-wide")
 ```
 
-`srstudio lip-proof PROJECT --master MP4 --out DIR` picks mid-word instants across a recorded reel, prints the pose the mouth track holds at each one, names any vowel on a shut mouth, and pulls those frames from the master to compare by eye.
-
 `srstudio usage` can measure which registered parts episode builds use; its JSON report can be supplied to `srstudio catalog --usage REPORT` and `srstudio page`. See the [catalog guide](docs/catalog/README.md).
 
 ## Styles
