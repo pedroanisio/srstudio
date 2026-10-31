@@ -5,7 +5,7 @@ python3 learning_styles.py PROJECT --init     # script.json, assets/poses.json a
 python3 learning_styles.py PROJECT            # the silent master on the scripted timing
 python3 learning_styles.py PROJECT --voice    # the narrated master from the recording (learning_styles_audio.py)
 
-A pilot, not a @tuxmeme reel: it has no release and no post, and it renders outside the Instagram folder.
+A pilot, not an Okayville reel: it has no release and no post, and it renders outside the Instagram folder.
 """
 
 import sys

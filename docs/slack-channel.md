@@ -6,7 +6,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 Back to the [library README](../README.md).
 
-The creation team and the @tuxmeme publishing side talk in one Slack channel. It carries briefs, requests, stats,
+The creation team and the Okayville publishing side talk in one Slack channel. It carries briefs, requests, stats,
 alerts and questions. Videos never travel through it: they go to Drive `srstudio/ready-to-publish` with `outbox.json`
 and `ab.json`.
 

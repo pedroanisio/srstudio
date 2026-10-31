@@ -5,7 +5,7 @@ python3 spotlight_effect.py PROJECT --init     # script.json, assets/poses.json 
 python3 spotlight_effect.py PROJECT            # the silent master on the scripted timing
 python3 spotlight_effect.py PROJECT --voice    # the narrated master from the recording (spotlight_effect_audio.py)
 
-A pilot, not a @tuxmeme reel: it has no release and no post, and it renders outside the Instagram folder.
+A pilot, not an Okayville reel: it has no release and no post, and it renders outside the Instagram folder.
 """
 
 import sys

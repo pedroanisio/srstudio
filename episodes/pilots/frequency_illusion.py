@@ -5,7 +5,7 @@ python3 frequency_illusion.py PROJECT --init     # script.json, assets/poses.jso
 python3 frequency_illusion.py PROJECT            # the silent master on the scripted timing
 python3 frequency_illusion.py PROJECT --voice    # the narrated master from the recording (frequency_illusion_audio.py)
 
-A pilot, not a @tuxmeme reel: it has no release and no post, and it renders outside the Instagram folder.
+A pilot, not an Okayville reel: it has no release and no post, and it renders outside the Instagram folder.
 """
 
 import sys

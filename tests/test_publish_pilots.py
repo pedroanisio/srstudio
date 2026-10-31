@@ -195,7 +195,7 @@ def test_a_slug_that_is_not_one_plain_name_is_refused(tool, world, slug):
 @pytest.mark.parametrize("slug", ["i-cleaned", "the-report"])
 def test_a_released_tuxmeme_slug_is_refused(tool, world, slug):
     pilot(world / "in", slug)
-    with pytest.raises(tool.PilotError, match="@tuxmeme"):
+    with pytest.raises(tool.PilotError, match="Okayville"):
         tool.bundle(world / "in", slug, tool.released(world / "generated/renders/ig"))
 
 

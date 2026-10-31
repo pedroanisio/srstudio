@@ -5,7 +5,7 @@ python3 further_north.py PROJECT --init     # script.json, assets/poses.json, th
 python3 further_north.py PROJECT            # the silent master on the scripted timing
 python3 further_north.py PROJECT --voice    # the narrated master from the recording (further_north_audio.py)
 
-A pilot, not a @tuxmeme reel: it has no release and no post, and it renders outside the Instagram folder.
+A pilot, not an Okayville reel: it has no release and no post, and it renders outside the Instagram folder.
 """
 
 import sys

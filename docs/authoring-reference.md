@@ -2026,6 +2026,8 @@ write when a limit is broken (title longer than the 125 characters the feed show
 hashtags, a malformed or duplicate hashtag, a caption over 2200 characters, an empty title or description). The
 error is `InstagramPostError`, with every problem listed.
 
+The account is Okayville, handle @okayville.tv, and the brand is everyday life, animated, not office cartoons.
+
 - Each shipped episode has a release, `episodes/posts/<slug with underscores>.py`, defining
   `RELEASE = srstudio.releases.Release(slug, post, video=, scene=, cover=, builder=)`
   ([ADR 0032](../docs/decisions/0032-releases-recorders-and-discovery.md)). `cover=True` says the cover is drawn from
@@ -2094,14 +2096,14 @@ error is `InstagramPostError`, with every problem listed.
   both places and both frame shapes, the size and height refusals, the composed scene, and the engine render with
   its failure path.
 - **Pilots** ([ADR 0054](../docs/decisions/0054-pilots-have-their-own-road-to-drive.md)). A pilot for a future channel is
-  not published and must never reach @tuxmeme, so it has its own road: `python3 episodes/publish_pilots.py FOLDER`
+  not published and must never reach Okayville, so it has its own road: `python3 episodes/publish_pilots.py FOLDER`
   (`--series`, `--stage-only`, `--dry-run`). `FOLDER` holds one folder per slug with `<slug>.mp4`, `cover.jpg`, `ig.txt`,
   `sources.md`, `notes.md` and a package, `vpkg.zip` or `<slug>-<version>.vpkg.zip`, delivered as `vpkg.zip`. It stages
   `generated/pilots/<series>/` (folders 700, files 600; `mind` by default, or `maps` or `news`) with `manifest.json`
   beside the folders, shaped like `outbox.json`, and uploads to `gdrive:srstudio/pilots/<series>` with `outbox.push`:
   `rclone copy`, then `rclone check`, never a delete.
   It refuses a missing or empty file, blank `sources.md` or `notes.md`, a slug that is not one plain name, a slug
-  @tuxmeme has used (release slugs, video names, folders in `generated/renders/ig`), any staging folder but
+  Okayville has used (release slugs, video names, folders in `generated/renders/ig`), any staging folder but
   `generated/pilots/<series>`, any remote outside `gdrive:srstudio/pilots/<series>`, and a new News pilot short of the
   comedy floor ([ADR 0064](../docs/decisions/0064-comedy-floor.md)): `comedy-author` and `comedy-reviewer` in the frontmatter of
   its `notes.md`, the lower at 14 or above. The remote is judged after normalising, and rclone is given the normal form,

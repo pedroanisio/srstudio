@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy finished pilots to their own folder on Google Drive. A pilot is not published and can never reach @tuxmeme.
+"""Copy finished pilots to their own folder on Google Drive. A pilot is not published and can never reach Okayville.
 
     python3 publish_pilots.py FOLDER                # stage generated/pilots/mind, push to gdrive:srstudio/pilots/mind
     python3 publish_pilots.py FOLDER --series maps  # the same for generated/pilots/maps and gdrive:srstudio/pilots/maps
@@ -12,13 +12,14 @@ else in a slug's folder is listed and left behind. ``manifest.json`` goes beside
 ``outbox.json``. Staging replaces the last stage whole, so FOLDER is the whole set; the upload is ``rclone copy`` then
 ``rclone check`` (:func:`srstudio.outbox.push`), which never deletes on Drive.
 
-Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @tuxmeme, and a write to ``generated/renders/ig``
-pushes to it through the ``srstudio-drive`` unit. So this tool only uploads under ``gdrive:srstudio/pilots/``, judged on
-the normalised remote it hands to rclone; only stages in ``generated/pilots/<series>``; and refuses a slug released on
-@tuxmeme. A series never crosses another: its stage and remote are the only ones it accepts, and a slug with a folder
-under another series' ``pilots/`` in this repository is refused. A new pilot of a comedy series needs ``comedy-author``
-and ``comedy-reviewer`` in the frontmatter of its ``notes.md``, the lower at the floor or above (ADR 0064); a series in
-:data:`NOT_COMEDY` owes none. A refused run stages and uploads nothing and exits 2, as does a failed upload.
+Anything in ``gdrive:srstudio/ready-to-publish`` can be posted to @okayville.tv, and a write to
+``generated/renders/ig`` pushes to it through the ``srstudio-drive`` unit. So this tool only uploads under
+``gdrive:srstudio/pilots/``, judged on the normalised remote it hands to rclone; only stages in
+``generated/pilots/<series>``; and refuses a slug released on Okayville. A series never crosses another: its stage and
+remote are the only ones it accepts, and a slug with a folder under another series' ``pilots/`` in this repository is
+refused. A new pilot of a comedy series needs ``comedy-author`` and ``comedy-reviewer`` in the frontmatter of its
+``notes.md``, the lower at the floor or above (ADR 0064); a series in :data:`NOT_COMEDY` owes none. A refused run
+stages and uploads nothing and exits 2, as does a failed upload.
 """
 
 from __future__ import annotations
@@ -81,7 +82,7 @@ def pilots_remote(remote: str, series: str = SERIES[0]) -> str:
     name, colon, path = remote.partition(":")
     parts = [part for part in posixpath.normpath("/" + path).split("/") if part]
     if NEVER in (part.casefold() for part in parts):
-        raise PilotError(f"{remote!r} is {NEVER}, which posts to @tuxmeme: a pilot never goes there")
+        raise PilotError(f"{remote!r} is {NEVER}, which posts to @okayville.tv: a pilot never goes there")
     home = (*ROOT, _known(series))
     if not colon or name != REMOTE_NAME or tuple(parts[: len(home)]) != home:
         raise PilotError(f"{remote!r} is not under {REMOTE_NAME}:{'/'.join(home)}")
@@ -89,7 +90,7 @@ def pilots_remote(remote: str, series: str = SERIES[0]) -> str:
 
 
 def staging_folder(folder: Path, series: str = SERIES[0]) -> Path:
-    """``folder``, links resolved, if it is ``generated/pilots/<series>`` outside the folders that reach @tuxmeme."""
+    """``folder``, links resolved, if it is ``generated/pilots/<series>`` outside the folders that reach Okayville."""
     resolved = Path(folder).resolve()
     parts = resolved.parts
     home = stage_of(series)
@@ -108,7 +109,7 @@ def foreign(ready: list[outbox.Bundle], series: str) -> None:
 
 
 def released(deliveries: Path) -> set[str]:
-    """Every name @tuxmeme has used, in lower case: release slugs, video names and folders in ``deliveries``."""
+    """Every name Okayville has used, in lower case: release slugs, video names and folders in ``deliveries``."""
     names = {*posts.VIDEOS, *posts.VIDEOS.values()}
     if not names:
         raise PilotError("the released videos could not be read, so no slug can be cleared")
@@ -131,7 +132,7 @@ def bundle(root: Path, slug: str, taken: set[str]) -> outbox.Bundle:
     if not _SLUG.fullmatch(slug):
         raise PilotError(f"{slug!r} is not a slug: lower-case letters, digits and hyphens, no path")
     if slug.casefold() in taken:
-        raise PilotError(f"{slug} is a released @tuxmeme video")
+        raise PilotError(f"{slug} is a released Okayville video")
     folder = Path(root) / slug
     if folder.is_symlink() or not folder.is_dir():
         raise PilotError(f"{slug}: not a folder in {root}")

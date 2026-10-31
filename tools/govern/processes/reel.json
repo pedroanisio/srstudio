@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "reel",
-  "description": "a batch of @tuxmeme reels, brief to delivered; automatic, every stage leaves on evidence, nobody reviews",
+  "description": "a batch of Okayville reels, brief to delivered; automatic, every stage leaves on evidence, nobody reviews",
   "setup": [
     {
       "commands": {
