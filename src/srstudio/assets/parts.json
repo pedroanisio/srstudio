@@ -7274,6 +7274,57 @@
         }
       ]
     },
+    "toon-mint": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A saucer with one striped wrapped mint, or its empty wrapper. First drawn for peak-end-rule; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f88596e5af62f1e45298f098b67a436a55589a8ba3b50fa48255552349f65e7d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-stars": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A row of five rating stars that fill one at a time. First drawn for peak-end-rule; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e42a5e9f085251e7d025fa1c8c0547084bb2badbc8d89d298a420f83b0ca6b44",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bow-tie": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A black bow tie worn under the chin. First drawn for peak-end-rule; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "02bf4a3be433ad1d7f50b94d1811e6fd3bdc371116a42dc2f0b6af12c21b36b2",
+          "rig": null
+        }
+      ]
+    },
     "toon-thermostat": {
       "kind": "prop",
       "style": "toon",

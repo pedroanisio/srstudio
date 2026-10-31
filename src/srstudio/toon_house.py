@@ -23,6 +23,7 @@ from .toon import FINE_W, INK_W, ToonDataError, _path, fh, fx, fy
 from .toon_sets import _glow, _inked, _line, _shadow, cycle_keys
 
 __all__ = [
+    "BOW_TIE",
     "DOORS",
     "HORSE_BLINK",
     "KEY_LINE_MAX",
@@ -31,6 +32,7 @@ __all__ = [
     "LEDGES",
     "SOAK_STAGES",
     "bedroom",
+    "bow_tie",
     "day_card",
     "finger",
     "hallway",
@@ -605,3 +607,28 @@ def tee(
     cv.ellipse(g, 6, 62, 7, 7, cv.ink)
     cv.path(g, "M -5 76 C -2 80 2 80 5 76", cv.clear, cv.ink, line * 0.5)
     cv.path(g, TEE_MOUSTACHE, "#3a2a1a", cv.clear, 0)
+
+
+BOW_TIE = "#1d1a26"
+
+
+@register("prop", "toon-bow-tie", summary="A black bow tie under a figure's chin, which makes anyone a waiter")
+def bow_tie(cv: Canvas, parent, at: object, scale: float = 1.0, id: str = "bow-tie") -> None:
+    """A bow tie whose knot is on reference ``at``, in the figure's own coordinates so it scales with the figure."""
+    x, y = _point(at, "a bow tie's place")
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a bow tie's scale is over 0, got {scale!r}")
+    outer = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    g = cv.group(outer, cv.uid("g"), scaleX=fh(1), scaleY=fh(1))
+    line = INK_W / fh(1)
+    for side in (-1, 1):
+        cv.path(
+            g,
+            f"M {side * 6} -6 C {side * 22} -14 {side * 40} -24 {side * 48} -22 "
+            f"C {side * 54} -8 {side * 54} 8 {side * 48} 22 C {side * 40} 24 {side * 22} 14 {side * 6} 6 Z",
+            BOW_TIE,
+            cv.ink,
+            line,
+        )
+        cv.path(g, f"M {side * 16} -5 L {side * 36} -11", cv.clear, "#4a4658", line * 0.7)
+    cv.rect(g, -10, -11, 20, 22, "#34303f", cv.ink, line, radius=5.0)

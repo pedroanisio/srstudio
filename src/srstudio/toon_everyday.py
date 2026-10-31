@@ -58,6 +58,7 @@ __all__ = [
     "phone",
     "receipt",
     "ring_keys",
+    "stars",
     "speaker",
     "take_a_number",
 ]
@@ -366,6 +367,49 @@ def phone(
             keys += [(t + dt, round(rest + fh(dx) * scale, 2)) for dt, dx in BUZZ_SHAKE if t + dt > 0]
         cv.keys(g, "x", keys, hold=False, local=False)
     return box
+
+
+# -- the rating --------------------------------------------------------------------------------------------------------
+STAR_FILL, STAR_EMPTY = "#ffcf33", "#59606b"
+STAR_R = 21.0  # a star's outer radius, reference pixels
+STAR_MAX = 5
+
+
+@register("prop", "toon-stars", summary="A row of rating stars that fill one at a time, for a phone's screen or a sign")
+def stars(
+    cv: Canvas,
+    parent,
+    filled: int,
+    *,
+    at: tuple[float, float] = (306, 600),
+    start: float = 0.0,
+    step: float = 0.14,
+    scale: float = 1.0,
+    id: str = "stars",
+) -> None:
+    """:data:`STAR_MAX` stars in a row centred on reference ``at``; the first ``filled`` fill one by one from ``start``
+    seconds, ``step`` apart."""
+    if isinstance(filled, bool) or not isinstance(filled, int) or not 0 <= filled <= STAR_MAX:
+        raise ToonDataError(f"a rating fills 0 to {STAR_MAX} stars, got {filled!r}")
+    if not (checks.number(start) and start >= 0 and checks.number(step) and step >= 0):
+        raise ToonDataError(f"a rating fills from a time >= 0, a step >= 0 apart, got {start!r}, {step!r}")
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a rating's scale is over 0, got {scale!r}")
+    x, y = at
+    g = cv.group(parent, id, x=fx(x), y=fy(y), scaleX=scale, scaleY=scale)
+    points = []
+    for k in range(10):
+        r, a = fh(STAR_R) * (1.0 if k % 2 == 0 else 0.45), math.radians(k * 36 - 90)
+        points.append(f"{r * math.cos(a):.2f} {r * math.sin(a):.2f}")
+    outline = "M " + " L ".join(points) + " Z"
+    pitch = fh(2.3 * STAR_R)
+    for k in range(STAR_MAX):
+        star = cv.group(g, f"{id}-{k}", x=(k - (STAR_MAX - 1) / 2) * pitch)
+        cv.path(star, outline, STAR_EMPTY, cv.ink, FINE_W * 0.6)
+        if k < filled:
+            lit = cv.group(star, f"{id}-{k}-lit")
+            cv.path(lit, outline, STAR_FILL, cv.ink, FINE_W * 0.6)
+            _shown(cv, lit, start + k * step, None)
 
 
 # -- the smart speaker -------------------------------------------------------------------------------------------------

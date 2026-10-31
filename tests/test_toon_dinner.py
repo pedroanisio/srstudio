@@ -139,3 +139,41 @@ def test_bad_card_reader_screens_are_refused(states, match):
     cv = canvas()
     with pytest.raises(ToonDataError, match=match):
         toon_dinner.card_reader(cv, cv.comp, states)
+
+
+def test_a_mint_is_registered_and_is_a_picture_with_no_word_on_it():
+    cv = canvas()
+    toon_dinner.mint(cv, cv.comp, (300, 820))
+    assert registry.get("prop", "toon-mint").builder is toon_dinner.mint
+    assert not texts(cv)
+
+
+def test_a_mint_arrives_on_cue():
+    cv = canvas()
+    toon_dinner.mint(cv, cv.comp, start=3.0, id="m")
+    node = next(g for g in tree(cv).iter("group") if g.get("id") == "m")
+    assert [float(k.get("time")) for k in node.find("animate")] == [0.0, 3.0]
+
+
+def test_an_eaten_mint_leaves_less_on_the_saucer():
+    whole, eaten = canvas(), canvas()
+    toon_dinner.mint(whole, whole.comp)
+    toon_dinner.mint(eaten, eaten.comp, eaten=True)
+    assert len(list(tree(eaten).iter())) < len(list(tree(whole).iter()))
+
+
+@pytest.mark.parametrize(
+    "kwargs", [{"at": (1, "x")}, {"scale": 0}, {"scale": -1.0}, {"start": -1.0}, {"start": float("nan")}]
+)
+def test_a_mint_refuses_what_it_cannot_draw(kwargs):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_dinner.mint(cv, cv.comp, **kwargs)
+
+
+def test_a_board_can_leave_its_words_out_and_keeps_them_by_default():
+    bare, lettered = canvas(), canvas()
+    toon_dinner.restaurant(bare, bare.comp, lettering=False)
+    toon_dinner.restaurant(lettered, lettered.comp)
+    assert not texts(bare)
+    assert {"SPECIALS", "LOBSTER"} <= set(texts(lettered))

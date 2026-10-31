@@ -538,3 +538,35 @@ def test_the_deep_stamp_tone_is_darker_than_the_tone_it_stands_in_for():
     cv = canvas()
     clipboard(cv, stamp=(1.0, "NO", "deep"), at=(300, 826))
     assert toon_everyday.STAMP_TONES["deep"] in ET.tostring(tree(cv), encoding="unicode")
+
+
+def test_a_rating_is_registered_and_fills_in_order():
+    cv = canvas()
+    toon_everyday.stars(cv, cv.comp, 3, start=1.0, step=0.5, id="r")
+    assert registry.get("prop", "toon-stars").builder is toon_everyday.stars
+    lit = [g for g in tree(cv).iter("group") if str(g.get("id")).endswith("-lit")]
+    assert [g.get("id") for g in lit] == ["r-0-lit", "r-1-lit", "r-2-lit"]
+    assert [float(g.find("animate")[1].get("time")) for g in lit] == [1.0, 1.5, 2.0]
+
+
+def test_a_rating_that_starts_at_zero_shows_its_first_star_at_once():
+    cv = canvas()
+    toon_everyday.stars(cv, cv.comp, 1, id="r")
+    lit = next(g for g in tree(cv).iter("group") if g.get("id") == "r-0-lit")
+    assert float(lit.find("animate")[0].get("value")) == 1.0
+
+
+def test_a_rating_can_fill_nothing():
+    cv = canvas()
+    toon_everyday.stars(cv, cv.comp, 0, id="r")
+    assert not [g for g in tree(cv).iter("group") if str(g.get("id")).endswith("-lit")]
+
+
+@pytest.mark.parametrize(
+    ("filled", "kwargs"),
+    [(6, {}), (-1, {}), (True, {}), (2.5, {}), (3, {"start": -1.0}), (3, {"step": -0.1}), (3, {"scale": 0})],
+)
+def test_a_rating_refuses_what_it_cannot_show(filled, kwargs):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_everyday.stars(cv, cv.comp, filled, **kwargs)

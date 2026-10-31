@@ -326,6 +326,8 @@ RECIPES: dict[str, Recipe] = {
     "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
     "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
     "toon-tee": Recipe(part((180, 660))),
+    "toon-bow-tie": Recipe(part((180, 640))),
+    "toon-stars": Recipe(part(5)),
     "toon-receipt": Recipe(lettered((("Coffee", "3.00"), ("Cup fee", "0.75")), total=("TOTAL", "3.75"))),
     "toon-take-a-number": Recipe(lettered(((0.0, 47),))),
     "toon-clipboard": Recipe(
