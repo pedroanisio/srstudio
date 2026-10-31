@@ -101,13 +101,18 @@ def drifted(
     return tuple((round(x, 2), round(y, 2)) for x, y in moved)
 
 
-def shade(points: Sequence[Point], depth: float, colour: str, least: float = 0.2, steps: int = 4) -> list[Layer]:
+def shade(
+    points: Sequence[Point], depth: float, colour: str, least: float = 0.2, steps: int = 4, only: int | None = None
+) -> list[Layer]:
     """The shade tone along every run of a closed contour that faces away from the light: a band from the edge
-    inward, ``depth`` deep where the edge faces straight away and nothing where it stops facing away."""
+    inward, ``depth`` deep where the edge faces straight away and nothing where it stops facing away. ``only`` keeps
+    it to the run through that many of the first points, for a contour whose last points are hidden from the light."""
     ring = brush.facing(points, steps)
     n = len(ring)
     lx, ly = LIGHT_FROM
     depths = [depth * max(0.0, (-(nx * lx + ny * ly) - least) / (1 - least)) ** 0.8 for _, (nx, ny) in ring]
+    if only is not None:
+        depths[(only - 1) * steps :] = [0.0] * (n - (only - 1) * steps)
     start = next((i for i in range(n) if depths[i] == 0), None)
     if start is None:
         raise brush.BrushError("a shade needs part of the contour to face the light")
@@ -444,6 +449,11 @@ class Critter:
         return layers + self.paw(look, at, way, toes)
 
 
+CHIN_ROOM = 30.0  # how far inside the head an open chin's ink closes, reference pixels
+CHIN_PEEL = (7.0, 4.0, 1.5)  # how far inside the head an open chin's ink lies at the points above each join
+CHIN_TAIL = brush.Pressure(0.04, 1.0, 0.2, 0.0, 1.0)  # the line that carries the ink on to the join, tapering out
+
+
 @dataclass(frozen=True)
 class Split:
     """What a :class:`~srstudio.toon_torso.Torso` character supplies beyond its torso to move its head (ADR 0050).
@@ -451,7 +461,9 @@ class Split:
     left neck join to its right; ``hand`` is the amount and the seed of the drift on both outlines. ``back`` draws what
     is behind the head's outline (ears, horns), ``skull`` what stays on the head, ``face`` what slides over it,
     ``trunk`` what sits on the body. With ``head_over`` the body goes under the head and ``top`` runs up behind the
-    head; without it, the body goes over the head and ``top`` is a ruff."""
+    head; without it, the body goes over the head and ``top`` is a ruff. With ``open_chin`` a head runs on into its body
+    with no chin line, as its drawing does: the head's ink tapers out at the joins, where ``top`` runs up the same edge
+    behind it and carries the contour on, and its shade stops at them."""
 
     chin: tuple[Point, ...]
     top: tuple[Point, ...]
@@ -461,6 +473,7 @@ class Split:
     trunk: Callable[[], Sequence[Layer]]
     back: Callable[[], Sequence[Layer]] = tuple
     head_over: bool = False
+    open_chin: bool = False
 
 
 def torso_rig(
@@ -484,9 +497,30 @@ def torso_rig(
         fill: list[Layer] = [(pressed(drawn, INK * 1.05, seed=seed), "ink"), (brush.outline(drawn, steps=3), coat)]
         return fill + shade(drawn, 22.0, shading)
 
+    def seamless() -> list[Layer]:
+        drawn = drifted(head, amount, seed)
+        count = len(torso.head)
+
+        def peeled(index: int, inset: float) -> Point:
+            x, y = drawn[index]
+            return (x + inset if x < torso.centre else x - inset, y)
+
+        left = [peeled(k + 1, inset) for k, inset in enumerate(CHIN_PEEL)]
+        right = [peeled(count - 2 - k, inset) for k, inset in enumerate(CHIN_PEEL)][::-1]
+        closing = [(x, y - CHIN_ROOM) for x, y in drawn[count + 1 : -1]]
+        crown = (*left, *drawn[len(CHIN_PEEL) + 1 : count - len(CHIN_PEEL) - 1], *right, *closing)
+        ends = len(CHIN_PEEL) + 2
+        ink = [
+            pressed(crown, INK * 1.05, seed=seed),
+            brush.stroke(drawn[1:ends], INK * 1.05, CHIN_TAIL, steps=6),
+            brush.stroke(drawn[count - 2 : count - ends - 1 : -1], INK * 1.05, CHIN_TAIL, steps=6),
+        ]
+        fill: list[Layer] = [*((line, "ink") for line in ink), (brush.outline(drawn, steps=3), coat)]
+        return fill + shade(drawn, 22.0, shading, only=count)
+
     @lru_cache(maxsize=1)
     def skull() -> tuple[Layer, ...]:
-        return (*split.back(), *outlined(head), *split.skull())
+        return (*split.back(), *(seamless() if split.open_chin else outlined(head)), *split.skull())
 
     @lru_cache(maxsize=1)
     def face() -> tuple[Layer, ...]:

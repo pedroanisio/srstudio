@@ -12,6 +12,7 @@ from srstudio import (
     Canvas,
     brush,
     flat_counter,
+    head_motion,
     parts,
     registry,
     sketch,
@@ -19,9 +20,13 @@ from srstudio import (
     toon,
     toon_cast,
     toon_critters,
+    toon_head,
     toon_redrawn,
+    toon_rigs,
 )
 from srstudio.toon import ToonDataError
+from srstudio.toon_torso import depth_in
+from support.spring_curve import sample
 from support.toon_contour import bends, inside, points, sharpest
 from support.toon_thumbnail import _inside, _polygon, apart, silhouette_rest, thumbnail
 
@@ -288,3 +293,143 @@ def test_typing_still_reaches_the_laptop_and_resting_paws_the_desk(name):
             assert any(b[0] <= px <= b[2] and b[1] <= py <= b[3] for b in boxes), (name, frame, px, py)
     under, _ = toon_cast._arms(look, "desk", 0)
     assert max(brush.bounds(s)[3] for s, _ in under) >= 794.0
+
+
+# -- the head rigs (ADR 0059) ------------------------------------------------------------------------------------------
+def rig_of(name: str) -> toon_head.HeadRig:
+    return toon_rigs.RIGS[f"toon-{name}@2"]
+
+
+def shut(rig: toon_head.HeadRig, name: str, x: float) -> float:
+    """The reference height of the chin at ``x``: the lowest the head's contour reaches there."""
+    edge = [p for p in brush.spline(rig.head, True, 6) if abs(p[0] - x) < 6.0]
+    assert edge, (name, x)
+    return max(y for _, y in edge)
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_each_has_a_rig_at_version_2_and_none_at_version_1(name):
+    assert f"toon-{name}@2" in toon_rigs.RIGS
+    assert f"toon-{name}" not in toon_rigs.RIGS
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_a_rig_stays_proposed_until_the_operator_judges_the_clips(name):
+    held = parts.get(f"toon-{name}").version(2).rig
+    assert held is not None and held.status == "proposed" and held.approval is None
+    assert held.proof == "generated/character-proofs/older-rigs/index.html"
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_record_holds_the_drawing_the_proof_shows(name):
+    assert parts.get(f"toon-{name}").version(2).rig.drawing == specimens.rig_digest(f"toon-{name}", 2)
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_a_proposed_rig_moves_no_reel(name):
+    with pytest.raises(ToonDataError, match=f"toon-{name} version 2's head rig is not approved"):
+        toon_rigs.rig_of(f"toon-{name}")
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_version_1_is_still_refused_by_name(name):
+    with pytest.raises(ToonDataError, match=f"toon-{name} version 1 has no head rig"):
+        toon_rigs.rig_of(f"toon-{name}", {f"toon-{name}": 1})
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_head_turns_about_the_neck_the_drawing_uses_and_keeps_its_tilt(name):
+    critter, rig = REDRAWN[name].drawing, rig_of(name)
+    assert (rig.neck, rig.tilt, rig.head[: len(critter.torso.head)]) == (critter.neck, critter.tilt, critter.torso.head)
+    assert rig.head_over
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_no_line_crosses_the_neck_the_approved_drawing_runs_on_through_it(name):
+    """Version 2 has no chin line: the head and the body read as one contour, and the rig has to keep that at rest."""
+    rig = rig_of(name)
+    for x in (150.0, 185.0, 220.0):
+        chin = shut(rig, name, x)
+        for y in (chin - 6.0, chin - 3.0, chin, chin + 3.0):
+            assert _top(rig.skull(), x, y) != "ink", (name, x, y)
+
+
+def _top(layers, x: float, y: float) -> str | None:
+    """The colour on top at a reference point: the last layer whose polygon holds it."""
+    for shape, colour in reversed(list(layers)):
+        if _inside(_polygon(shape), x, y):
+            return colour
+    return None
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_at_rest_what_the_flat_drawing_shows_under_the_chin_the_rig_shows_too(name):
+    """The throat and belly of the drawing run up past the neck: the head over the body must not cut them off."""
+    look, rig = REDRAWN[name], rig_of(name)
+    flat = list(look.drawing.parts())
+    for x in (150.0, 185.0, 220.0):
+        y = shut(rig, name, x) - 2.0
+        seen = _top([layer for layer, _ in flat], x, y)
+        if seen in (look.coat, look.drawing.shade):
+            continue
+        assert _top([*rig.skull(), *rig.face()], x, y) == seen, (name, x, y)
+
+
+def _take() -> head_motion.Alignment:
+    text = "Everyone knows I rested and nobody asked why"
+    spans = ((i * 0.08, (i + 1) * 0.08) for i in range(len(text)))
+    return head_motion.Alignment(tuple(text), *zip(*spans, strict=True))
+
+
+def _slides(rig: toon_head.HeadRig) -> tuple[float, float, float]:
+    """How far a loud line slides the face over the skull: across, down and up, in reference pixels."""
+    speech = head_motion.Speech(1.0, head_motion.words_of(_take(), 1.0), (-20.0,) * 300)
+    nod = head_motion.plan(rig.style, [speech], 8.0).nod
+    seen = [sample(nod, k / 100.0) * toon_head.FACE_SLIDE for k in range(800)]
+    return head_motion.limit(rig.style, "face_x"), max(seen), min(seen)
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_eyes_stay_on_the_head_however_far_the_face_slides(name):
+    """An eye slides over the skull with the face; past the outline it would paint over the ink."""
+    rig = rig_of(name)
+    across, down, up = _slides(rig)
+    reach = rig.look.eye_r + toon_cast.INK + 1.0
+    for ex, ey in rig.look.eyes:
+        for dx in (-across, across):
+            for dy in (up, down):
+                for k in range(16):
+                    a = 2.0 * math.pi * k / 16
+                    edge = (ex + dx + reach * math.cos(a), ey + dy + reach * math.sin(a))
+                    assert depth_in(rig.head, edge)[0] >= 0.0, (name, dx, dy, edge)
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_what_slides_with_the_face_stays_inside_the_head(name):
+    rig = rig_of(name)
+    across, down, up = _slides(rig)
+    for shape, _ in rig.face():
+        for x, y in points(shape):
+            for dx in (-across, across):
+                assert depth_in(rig.head, (x + dx, y + up))[0] >= 0.0, (name, x + dx, y + up)
+                assert depth_in(rig.head, (x + dx, y))[0] >= 0.0, (name, x + dx, y)
+
+
+def test_each_of_the_six_moves_its_own_way():
+    dog, frog, bear, rabbit, raccoon, hedgehog = (rig_of(name).style for name in NAMES)
+    assert frog.idle_roll == min(s.idle_roll for s in (dog, bear, rabbit, raccoon, hedgehog, frog))  # it sits still
+    # and then it jerks
+    assert frog.head.frequency == max(s.head.frequency for s in (dog, bear, rabbit, raccoon, hedgehog, frog))
+    assert bear.head.frequency == min(s.head.frequency for s in (dog, frog, rabbit, raccoon, hedgehog, bear))  # heavy
+    assert bear.nod_px == max(s.nod_px for s in (dog, frog, rabbit, raccoon, hedgehog, bear))
+    assert bear.breath_period == max(s.breath_period for s in (dog, frog, rabbit, raccoon, hedgehog, bear))
+    assert dog.signature == "~" and dog.head.damping < 0.6  # it bounces
+    assert rabbit.glance_every == min(s.glance_every for s in (dog, frog, bear, raccoon, hedgehog, rabbit))  # alert
+    assert raccoon.avert > dog.avert and raccoon.glance_turn >= max(s.glance_turn for s in (dog, frog, bear, hedgehog))
+    assert hedgehog.signature == "/" and hedgehog.head.anticipation >= 0.12  # it flinches first
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_a_rig_changes_nothing_of_the_approved_drawing(name):
+    assert rig_of(name).look != REDRAWN[name]
+    specimens.check(f"toon-{name}", 2)

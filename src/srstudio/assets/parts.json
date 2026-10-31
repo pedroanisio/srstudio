@@ -5718,7 +5718,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "ae5eb2e48d090ef98544c02f1bc59fa44fd36957d45e8884e992fed19ada5465",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The bear's head on its own neck: heavy and slow, head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "26aa8958b0c72788f4ea25f0f77ee6ca797720a7080850b32d724264965472a0"
+          }
         }
       ]
     },
@@ -6112,7 +6119,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "a9868aeb9e011a9eb73af5e9e8d7b3c37e287f0970a7554c0895ceba27bef1de",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The dog's head on its own neck: an eager settle, head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "f4b0e02615d3a01ba747af53f517e7d1aac3121710371ae32b347285d7a2e0e9"
+          }
         }
       ]
     },
@@ -6262,7 +6276,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "9bfec33787803e36e3157934b65cf561368ceca949e7e941242de459b642f30f",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The frog's head on its own neck: still, then sudden; head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "7dfbd3a9671a61effb6ef5a6d0c4b89e28fdf82825125cc6c85135763b5f98ed"
+          }
         }
       ]
     },
@@ -6452,7 +6473,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "22ded449a17751adcb7a6c73f6fa420f1dc7e807115069d96246d04def34972d",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The hedgehog's head on its own neck: timid, head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "578f8b9fd0da44c911d77d6488a1128f4b79facc9b35f35c29a39b5349cd55ac"
+          }
         }
       ]
     },
@@ -6952,7 +6980,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "df90292c7561be74df8d69f43848df89d59d64beb9ce9f9060357d570b5f67a6",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The rabbit's head on its own neck: alert and quick, head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "a82b61ee1a9a1a3229fa2546c038774fdda828ddd0cfb7cc1bda7ca4e5c936fe"
+          }
         }
       ]
     },
@@ -6982,7 +7017,14 @@
             "words": "all the old-cast approved on v2"
           },
           "drawing": "d7a0c78fae871b7e9d9b22de64dab088e12622e5e72e3fbaf0725764066ccd12",
-          "rig": null
+          "rig": {
+            "date": "2026-10-31",
+            "note": "The raccoon's head on its own neck: shifty, head drawn over the body, no chin line.",
+            "status": "proposed",
+            "proof": "generated/character-proofs/older-rigs/index.html",
+            "approval": null,
+            "drawing": "fcdbe524871d4213919d43160f34b7632a4c83e4cf0b96cbcde2b6e447583302"
+          }
         }
       ]
     },

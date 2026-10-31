@@ -10,6 +10,11 @@ pressed ink, a shade tone, open inner strokes, a tilted head, and pupils and paw
 
 Each is registered as ``name@2`` and approved (:mod:`srstudio.parts`): a new reel draws it by default, and every
 reel keeps the drawing it pins. :data:`srstudio.toon_cast.LOOKS` still holds version 1, unchanged.
+
+Each also has a head rig (ADR 0059): its head drawn over the body, the way the goat's is, and a
+:class:`~srstudio.head_motion.HeadStyle` of its own. The drawing has no chin line, so the rig has none: the head's ink
+stops at the neck joins (:attr:`~srstudio.toon_critters.Split.open_chin`), and its lower edge runs just above the belly
+(:func:`_chin`), so at rest the head and the body read as the one contour the drawing has.
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ from typing import TYPE_CHECKING
 from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
+from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import Pose
 from .toon_cast import BEAR as OLD_BEAR
@@ -31,7 +37,20 @@ from .toon_cast import FROG as OLD_FROG
 from .toon_cast import HEDGEHOG as OLD_HEDGEHOG
 from .toon_cast import RABBIT as OLD_RABBIT
 from .toon_cast import RACCOON as OLD_RACCOON
-from .toon_critters import CALM, Critter, Pupil, _fill, _fur, _inked, _oval, _pressed_paw, drifted, pressed, shade
+from .toon_critters import (
+    CALM,
+    Critter,
+    Pupil,
+    Split,
+    _fill,
+    _fur,
+    _inked,
+    _oval,
+    _pressed_paw,
+    drifted,
+    pressed,
+    shade,
+)
 from .toon_torso import Torso
 
 if TYPE_CHECKING:
@@ -46,6 +65,12 @@ __all__ = [
     "HEDGEHOG",
     "BEAR_CRITTER",
     "REDRAWN",
+    "DOG_RIG",
+    "FROG_RIG",
+    "BEAR_RIG",
+    "RABBIT_RIG",
+    "RACCOON_RIG",
+    "HEDGEHOG_RIG",
     "dog",
     "frog",
     "bear",
@@ -86,6 +111,22 @@ def _nose(points: Sequence[Point], colour: str, seed: float, glint: Point, size:
 def _shared_mouths(face: Look, kind: str) -> list[Layer] | None:
     """Every mouth is the shared one, placed on the untilted face and turned with the head."""
     return None
+
+
+def _chin(torso: Torso, tilt: float, line: Sequence[Point]) -> tuple[Point, ...]:
+    """A rig's chin from the right neck join to the left, through ``line``, a line placed where the head sits at rest
+    and turned back into the untilted head's own coordinates: a rig tilts its whole head about the neck, where the
+    drawing's tilt fades out above it. The two ends sit by the joins."""
+    a = math.radians(-tilt)
+    placed = (
+        (
+            round(CENTRE + (x - CENTRE) * math.cos(a) - (y - 700.0) * math.sin(a), 2),
+            round(700.0 + (x - CENTRE) * math.sin(a) + (y - 700.0) * math.cos(a), 2),
+        )
+        for x, y in line
+    )
+    (lx, ly), (rx, ry) = torso.head[0], torso.head[-1]
+    return ((rx - 9.0, ry + 3.0), *placed, (lx + 9.0, ly + 3.0))
 
 
 def _glossy(scale: float, iris: str | None = None) -> Pupil:
@@ -187,6 +228,60 @@ DOG_CRITTER = Critter(
     torso=_DOG_TORSO,
 )
 DOG = DOG_CRITTER.look()
+DOG_MOTION = HeadStyle(  # eager and loose: a bouncy spring past rest on every nod, quick breaths, easily distracted
+    seed=5049,
+    signature="~",
+    nod_px=10.0,
+    nod_roll=1.8,
+    head=Spring(2.8, 0.55, 0.06),
+    settle=Spring(1.8, 0.65),
+    body=Spring(1.8, 0.85),
+    min_gap=0.4,
+    lean=0.9,
+    idle_roll=1.2,
+    idle_px=1.0,
+    idle_hz=0.3,
+    breath_period=3.0,
+    breath_px=2.5,
+    glance_every=3.5,
+    glance_hold=0.8,
+    glance_turn=2.0,
+    glance_face=5.0,
+)
+_DOG_CHIN = _chin(_DOG_TORSO, 5.0, ((236.0, 708.0), (185.0, 710.0), (134.0, 708.0)))
+_DOG_NECK_TOP = ((92.0, 692.0), (90.0, 676.0), (114.0, 652.0), (140.0, 640.0),
+                 (185.0, 636.0), (230.0, 640.0), (258.0, 652.0), (278.0, 678.0), (278.0, 694.0))  # fmt: skip
+
+
+def _dog_skull() -> list[Layer]:
+    """The ears over the head and the fur on the crown and the ears."""
+    out: list[Layer] = []
+    for k, ear in enumerate(_DOG_EARS):
+        out += _inked(ear, OLD_DOG.dark, 53.0 + k, amount=0.9)
+    return out + [_fur(points) for points in (*_DOG_FUR[:3], *_DOG_FUR[4:6])]
+
+
+def _dog_face() -> list[Layer]:
+    """What slides across the dog's head: the muzzle, the nose and the groove under it."""
+    layers = [_fill(_DOG_MUZZLE, OLD_DOG.light, 51.0)]
+    layers += [layer for layer, _ in _nose(_DOG_NOSE, "#3a2a20", 52.0, (179.0, 602.0), (4.2, 2.6))]
+    return [*layers, _fur(_DOG_FUR[3])]
+
+
+DOG_RIG = DOG_CRITTER.rig(
+    Split(
+        chin=_DOG_CHIN,
+        top=_DOG_NECK_TOP,
+        open_chin=True,
+        hand=(1.1, 50.0),
+        skull=_dog_skull,
+        face=_dog_face,
+        trunk=lambda: [_fur(points) for points in _DOG_FUR[6:]],
+        head_over=True,
+    ),
+    DOG_MOTION,
+    free=24.0,
+)
 
 
 # -- the frog ----------------------------------------------------------------------------------------------------------
@@ -292,6 +387,53 @@ FROG_CRITTER = _Domed(
     torso=_FROG_TORSO,
 )
 FROG = FROG_CRITTER.look()
+FROG_MOTION = HeadStyle(  # stock still, then sudden: a stiff spring, long gaps, only the throat going all the time
+    seed=6050,
+    signature="^",
+    nod_px=4.0,
+    nod_roll=0.6,
+    head=Spring(5.0, 1.0),
+    settle=Spring(3.5, 1.0),
+    body=Spring(2.5, 1.0),
+    min_gap=0.9,
+    lean=0.3,
+    idle_roll=0.3,
+    idle_px=0.25,
+    idle_hz=0.1,
+    breath_period=2.4,
+    breath_px=2.0,
+    glance_every=5.0,
+    glance_hold=1.2,
+    glance_turn=1.0,
+    glance_face=2.0,
+)
+_FROG_CHIN = _chin(
+    _FROG_TORSO, -3.5, ((278.0, 692.0), (240.0, 680.0), (204.0, 667.0), (164.0, 668.0), (130.0, 686.0), (92.0, 698.0))
+)
+_FROG_NECK_TOP = ((69.0, 692.0), (66.0, 680.0), (84.0, 650.0), (130.0, 634.0),
+                  (185.0, 630.0), (240.0, 634.0), (286.0, 650.0), (304.0, 680.0), (302.0, 692.0))  # fmt: skip
+
+
+def _frog_skull() -> list[Layer]:
+    """The spots and the folds of the cheeks and the throat."""
+    layers = [_fill(spot, OLD_FROG.dark, 62.0 + k, amount=0.4) for k, spot in enumerate(_FROG_SPOTS)]
+    return layers + [_fur(points) for points in (*_FROG_FUR[2:4], *_FROG_FUR[6:8])]
+
+
+FROG_RIG = FROG_CRITTER.rig(
+    Split(
+        chin=_FROG_CHIN,
+        top=_FROG_NECK_TOP,
+        open_chin=True,
+        hand=(1.1, 60.0),
+        skull=_frog_skull,
+        face=lambda: [_fur(points) for points in (*_FROG_FUR[:2], *_FROG_FUR[4:6])],
+        trunk=lambda: [_fill(_FROG_BELLY, OLD_FROG.light, 61.0), *(_fur(points) for points in _FROG_FUR[8:])],
+        head_over=True,
+    ),
+    FROG_MOTION,
+    free=30.0,
+)
 
 
 # -- the bear ----------------------------------------------------------------------------------------------------------
@@ -390,6 +532,68 @@ BEAR_CRITTER = Critter(
     torso=_BEAR_TORSO,
 )
 BEAR = BEAR_CRITTER.look()
+BEAR_MOTION = HeadStyle(  # heavy and deliberate: a slow spring with weight behind it, one big nod, a long deep breath
+    seed=7051,
+    signature="^",
+    nod_px=12.0,
+    nod_roll=1.4,
+    head=Spring(1.1, 0.9, 0.1),
+    settle=Spring(0.8, 0.95),
+    body=Spring(0.8, 1.0),
+    min_gap=0.7,
+    lean=1.4,
+    idle_roll=1.4,
+    idle_px=1.2,
+    idle_hz=0.12,
+    breath_period=6.0,
+    breath_px=4.0,
+    glance_every=5.5,
+    glance_hold=1.4,
+    glance_turn=1.2,
+    glance_face=5.0,
+)
+_BEAR_CHIN = _chin(_BEAR_TORSO, 4.0, ((262.0, 698.0), (224.0, 685.0), (176.0, 683.0), (136.0, 696.0), (104.0, 694.0)))
+_BEAR_NECK_TOP = ((83.0, 690.0), (81.0, 680.0), (98.0, 650.0), (136.0, 636.0),
+                  (185.0, 632.0), (236.0, 636.0), (274.0, 650.0), (289.0, 680.0), (289.0, 692.0))  # fmt: skip
+
+
+def _bear_back() -> list[Layer]:
+    """The bear's ears, behind its head."""
+    out: list[Layer] = []
+    for k, ear in enumerate(_BEAR_EARS):
+        out += [
+            *_inked(ear, OLD_BEAR.coat, 70.0 + k, amount=0.6),
+            _fill(_BEAR_EAR_INNER[k], OLD_BEAR.light, 72.0 + k, 0.4),
+        ]
+    return out
+
+
+def _bear_face() -> list[Layer]:
+    """What slides across the bear's head: the muzzle, the blush, the nose and the groove under it."""
+    layers = [
+        _fill(_BEAR_MUZZLE, OLD_BEAR.light, 76.0),
+        (brush.ellipse(122.0, 636.0, 15.0, 8.0, 6.0), OLD_BEAR.blush),
+        (brush.ellipse(248.0, 636.0, 15.0, 8.0, -6.0), OLD_BEAR.blush),
+    ]
+    layers += [layer for layer, _ in _nose(_BEAR_NOSE, "#2e211b", 77.0, (180.0, 616.0), (4.0, 2.4))]
+    return [*layers, _fur(_BEAR_FUR[3])]
+
+
+BEAR_RIG = BEAR_CRITTER.rig(
+    Split(
+        chin=_BEAR_CHIN,
+        top=_BEAR_NECK_TOP,
+        open_chin=True,
+        hand=(1.1, 74.0),
+        back=_bear_back,
+        skull=lambda: [_fur(points) for points in (*_BEAR_FUR[:3], *_BEAR_FUR[4:8])],
+        face=_bear_face,
+        trunk=lambda: [_fill(_BEAR_BELLY, "#bf8a62", 75.0), *(_fur(points) for points in _BEAR_FUR[8:])],
+        head_over=True,
+    ),
+    BEAR_MOTION,
+    free=26.0,
+)
 
 
 # -- the rabbit --------------------------------------------------------------------------------------------------------
@@ -486,6 +690,69 @@ RABBIT_CRITTER = Critter(
     torso=_RABBIT_TORSO,
 )
 RABBIT = RABBIT_CRITTER.look()
+RABBIT_MOTION = HeadStyle(  # alert: a quick spring that twitches past rest, short breaths, always checking round it
+    seed=8052,
+    signature="~",
+    nod_px=7.0,
+    nod_roll=1.2,
+    head=Spring(5.0, 0.7),
+    settle=Spring(3.5, 0.8),
+    body=Spring(3.0, 0.9),
+    min_gap=0.35,
+    lean=0.5,
+    idle_roll=0.8,
+    idle_px=0.7,
+    idle_hz=0.4,
+    breath_period=2.2,
+    breath_px=1.8,
+    glance_every=1.8,
+    glance_hold=0.5,
+    glance_turn=2.0,
+    glance_face=5.0,
+)
+_RABBIT_CHIN = _chin(
+    _RABBIT_TORSO, -3.5, ((260.0, 700.0), (224.0, 693.0), (182.0, 689.0), (142.0, 698.0), (108.0, 696.0))
+)
+_RABBIT_NECK_TOP = ((89.0, 688.0), (87.0, 678.0), (102.0, 648.0), (140.0, 634.0),
+                    (185.0, 630.0), (230.0, 634.0), (262.0, 648.0), (280.0, 680.0), (280.0, 690.0))  # fmt: skip
+
+
+def _rabbit_back() -> list[Layer]:
+    """The rabbit's ears, behind its head."""
+    out: list[Layer] = []
+    for k, ear in enumerate(_RABBIT_EARS):
+        out += [
+            *_inked(ear, OLD_RABBIT.coat, 80.0 + k, amount=0.7),
+            _fill(_RABBIT_EAR_INNER[k], OLD_RABBIT.light, 82.0 + k, amount=0.5),
+        ]
+    return out
+
+
+def _rabbit_face() -> list[Layer]:
+    """What slides across the rabbit's head: the blush, the nose, the whiskers."""
+    layers: list[Layer] = [
+        (brush.ellipse(132.0, 606.0, 15.0, 8.0, 6.0), OLD_RABBIT.blush),
+        (brush.ellipse(238.0, 606.0, 15.0, 8.0, -6.0), OLD_RABBIT.blush),
+    ]
+    layers += [layer for layer, _ in _nose(_RABBIT_NOSE, "#f28fae", 86.0, (182.0, 598.0), (2.6, 1.6))]
+    return layers + [_fur(points) for points in (_RABBIT_FUR[0], *_RABBIT_FUR[3:9])]
+
+
+RABBIT_RIG = RABBIT_CRITTER.rig(
+    Split(
+        chin=_RABBIT_CHIN,
+        top=_RABBIT_NECK_TOP,
+        open_chin=True,
+        hand=(1.1, 86.5),
+        back=_rabbit_back,
+        skull=lambda: [_fur(points) for points in _RABBIT_FUR[1:3]],
+        face=_rabbit_face,
+        trunk=lambda: [_fill(_RABBIT_BELLY, "#faf5f8", 85.0), *(_fur(points) for points in _RABBIT_FUR[9:])],
+        head_over=True,
+    ),
+    RABBIT_MOTION,
+    free=24.0,
+)
 
 
 # -- the raccoon -------------------------------------------------------------------------------------------------------
@@ -585,6 +852,72 @@ RACCOON_CRITTER = Critter(
     torso=_RACCOON_TORSO,
 )
 RACCOON = RACCOON_CRITTER.look()
+RACCOON_MOTION = HeadStyle(  # shifty: a cocked head that turns away, the eyes off to the side before anyone else's
+    seed=9053,
+    signature="~",
+    nod_px=7.0,
+    nod_roll=2.0,
+    head=Spring(2.6, 0.7, 0.08),
+    settle=Spring(1.6, 0.8),
+    body=Spring(1.4, 0.9),
+    min_gap=0.45,
+    lean=0.8,
+    idle_roll=1.0,
+    idle_px=0.7,
+    idle_hz=0.22,
+    breath_period=4.0,
+    glance_every=2.2,
+    glance_hold=0.9,
+    glance_turn=2.4,
+    glance_face=4.0,
+    avert=0.8,
+)
+_RACCOON_CHIN = _chin(
+    _RACCOON_TORSO, 5.0, ((270.0, 702.0), (220.0, 695.0), (172.0, 692.0), (130.0, 695.0), (96.0, 700.0))
+)
+_RACCOON_NECK_TOP = ((72.0, 694.0), (70.0, 680.0), (90.0, 652.0), (130.0, 638.0),
+                     (185.0, 634.0), (240.0, 638.0), (282.0, 652.0), (300.0, 682.0), (300.0, 696.0))  # fmt: skip
+
+
+def _raccoon_back() -> list[Layer]:
+    """The raccoon's ears, behind its head."""
+    out: list[Layer] = []
+    for k, ear in enumerate(_RACCOON_EARS):
+        out += [
+            *_inked(ear, OLD_RACCOON.light, 90.0 + k, amount=0.5),
+            _fill(_RACCOON_EAR_INNER[k], "#4b5158", 92.0 + k, amount=0.3),
+        ]
+    return out
+
+
+def _raccoon_skull() -> list[Layer]:
+    """The cheeks and the mask, which reach the head's edge and so stay on the skull, and the fur on the brow and the
+    cheeks."""
+    layers = [_fill(_RACCOON_CHEEKS, OLD_RACCOON.light, 96.0), _fill(_RACCOON_MASK, RACCOON_MASK, 97.0, amount=0.7)]
+    return layers + [_fur(points) for points in (*_RACCOON_FUR[:3], *_RACCOON_FUR[4:6])]
+
+
+def _raccoon_face() -> list[Layer]:
+    """What slides across the raccoon's head: the nose and the groove under it."""
+    return [*(layer for layer, _ in _nose(_RACCOON_NOSE, "#1f2125", 98.0, (180.0, 613.0), (3.6, 2.2))),
+            _fur(_RACCOON_FUR[3])]  # fmt: skip
+
+
+RACCOON_RIG = RACCOON_CRITTER.rig(
+    Split(
+        chin=_RACCOON_CHIN,
+        top=_RACCOON_NECK_TOP,
+        open_chin=True,
+        hand=(0.9, 211.0),
+        back=_raccoon_back,
+        skull=_raccoon_skull,
+        face=_raccoon_face,
+        trunk=lambda: [_fill(_RACCOON_CHEST, "#b9bec4", 95.0), *(_fur(points) for points in _RACCOON_FUR[6:])],
+        head_over=True,
+    ),
+    RACCOON_MOTION,
+    free=30.0,
+)
 
 
 # -- the hedgehog ------------------------------------------------------------------------------------------------------
@@ -702,6 +1035,75 @@ HEDGEHOG_CRITTER = Critter(
     torso=_HEDGEHOG_TORSO,
 )
 HEDGEHOG = HEDGEHOG_CRITTER.look()
+HEDGEHOG_MOTION = HeadStyle(  # timid: a little flinch back before each small move, shallow breaths, eyes down and away
+    seed=10054,
+    signature="/",
+    nod_px=5.5,
+    nod_roll=0.9,
+    head=Spring(3.0, 0.8, 0.15),
+    settle=Spring(1.2, 0.9),
+    body=Spring(1.6, 1.0),
+    min_gap=0.6,
+    lean=0.4,
+    idle_roll=0.7,
+    idle_px=0.6,
+    idle_hz=0.3,
+    breath_period=2.8,
+    breath_px=1.8,
+    glance_every=2.6,
+    glance_hold=0.6,
+    glance_turn=1.2,
+    glance_face=3.5,
+    avert=0.85,
+)
+_HEDGEHOG_CHIN = _chin(
+    _HEDGEHOG_TORSO, -4.5, ((246.0, 702.0), (222.0, 692.0), (182.0, 689.0), (146.0, 696.0), (122.0, 698.0))
+)
+_HEDGEHOG_NECK_TOP = ((109.0, 684.0), (107.0, 674.0), (120.0, 648.0), (150.0, 634.0),
+                      (185.0, 630.0), (222.0, 634.0), (248.0, 648.0), (262.0, 676.0), (262.0, 686.0))  # fmt: skip
+
+
+def _hedgehog_back() -> list[Layer]:
+    """The crest of spines and the ears, behind the hedgehog's head."""
+    mantle = drifted(_mantle(), 0.7, 100.0)
+    out: list[Layer] = [(pressed(mantle, INK, seed=100.0), "ink"), (brush.outline(mantle, steps=2), OLD_HEDGEHOG.dark)]
+    out += [(brush.stroke(line, FINE, brush.EVEN, steps=3), "#a07a60") for line in _quill_lines()]
+    for k, ear in enumerate(_HEDGEHOG_EARS):
+        out += _inked(ear, OLD_HEDGEHOG.coat, 101.0 + k, amount=0.4)
+        inner = _oval(sum(p[0] for p in ear) / 8, sum(p[1] for p in ear) / 8 + 2.0, 9.0, 8.0, 8)
+        out.append((brush.outline(inner, steps=3), "#d99a86"))
+    return out
+
+
+def _hedgehog_face() -> list[Layer]:
+    """What slides across the hedgehog's head: the muzzle, the blush, the nose and the groove under it."""
+    layers = [
+        _fill(_HEDGEHOG_MUZZLE, OLD_HEDGEHOG.light, 105.0),
+        (brush.ellipse(128.0, 638.0, 14.0, 7.5, 6.0), OLD_HEDGEHOG.blush),
+        (brush.ellipse(242.0, 638.0, 14.0, 7.5, -6.0), OLD_HEDGEHOG.blush),
+    ]
+    layers += [layer for layer, _ in _nose(_HEDGEHOG_NOSE, "#2e211b", 106.0, (181.0, 619.0), (3.4, 2.2))]
+    return [*layers, _fur(_HEDGEHOG_FUR[0])]
+
+
+HEDGEHOG_RIG = HEDGEHOG_CRITTER.rig(
+    Split(
+        chin=_HEDGEHOG_CHIN,
+        top=_HEDGEHOG_NECK_TOP,
+        open_chin=True,
+        hand=(0.9, 103.0),
+        back=_hedgehog_back,
+        skull=lambda: [_fur(points) for points in _HEDGEHOG_FUR[1:6]],
+        face=_hedgehog_face,
+        trunk=lambda: [
+            _fill(_HEDGEHOG_BELLY, OLD_HEDGEHOG.light, 104.0),
+            *(_fur(points) for points in _HEDGEHOG_FUR[6:]),
+        ],
+        head_over=True,
+    ),
+    HEDGEHOG_MOTION,
+    free=20.0,
+)
 REDRAWN = {"dog": DOG, "frog": FROG, "bear": BEAR, "rabbit": RABBIT, "raccoon": RACCOON, "hedgehog": HEDGEHOG}
 
 
