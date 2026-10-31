@@ -5,6 +5,7 @@ to: the friend who orders dinner more than anyone should
 type: real
 story-date: 2026-10-29
 comedy-author: 16
+comedy-reviewer: 15
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
 ---

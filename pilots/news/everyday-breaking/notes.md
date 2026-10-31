@@ -4,6 +4,7 @@ main-trigger: recognition
 to: the friend who is always five minutes away
 type: fictional
 comedy-author: 19
+comedy-reviewer: 18
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
 ---
