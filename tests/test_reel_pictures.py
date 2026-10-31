@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pytest
 
-from srstudio import collage, collage_everyday, signature, stick
+from srstudio import collage, collage_everyday, signature, stick, stick_reel, stick_windshield
 from srstudio.sketch import Appearance
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -288,6 +288,17 @@ def test_more_tireds_marks_clear_the_card_in_every_framing() -> None:
 def _luminance(colour: str) -> float:
     r, g, b = (int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def test_turn_this_cars_code_reads_on_the_hood_above_the_captions_scrim() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("turn_this_car_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    x, y, height, colour = audio.CODE
+    assert 1462 < y < stick_reel.WORDS_Y - 60 and height >= 14
+    assert abs(_luminance(colour) - _luminance(stick_windshield.BODY_LIGHT)) > 0.35
 
 
 def test_any_questions_code_is_seen_under_the_push_and_clear_of_the_folder() -> None:

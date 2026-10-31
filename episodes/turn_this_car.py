@@ -19,6 +19,7 @@ from turn_this_car_audio import (
     ARROW,
     CLICK_GAIN,
     CLICKS,
+    CODE,
     DAD,
     ENGINE_TICK,
     HOOK,
@@ -105,7 +106,7 @@ def car(g, take, end: float) -> None:
     figure(g, "kid", take, end, scale=KID_SCALE)
     figure(g, "mom", take, end)
     figure(g, "dad", take, end)
-    ws.dashboard(cv, g, end)
+    ws.dashboard(cv, g, end, code=CODE)
     if take.id in CLICK_AT:
         stick_roadtrip.blinker(cv, g, *ARROW, end, CLICK_AT[take.id], scale=0.8)
     if take.shot in TONE:

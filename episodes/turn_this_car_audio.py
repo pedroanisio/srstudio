@@ -24,6 +24,7 @@ import sys
 from srstudio import foley, stick, takes
 from srstudio.voice import Voice, VoiceSettings
 
+CODE = (70.0, 1476.0, 16.0, "#fff3e6")  # on the hood's top, over the captions' scrim, light on the car's red
 SHOTS = ("mirror", "car", "beach", "uturn", "home", "dusk", "night")
 HOOK = "Five miles from the beach."
 HOUR_SIX, TWO_AM = "HOUR SIX.", "2 A.M. Their driveway."
