@@ -160,6 +160,6 @@ for take in t.takes:
     else:
         arrivals_shot(take, g, end)
 
-spoken = stick_reel.words(ep, t.takes)
+spoken = stick_reel.words(ep, t.takes, sentences=True)
 ep.audio(take=stick_reel.placing({}))
 stick_reel.close(ep, POSTS["four-coats"], spoken)

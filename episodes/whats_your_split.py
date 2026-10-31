@@ -172,6 +172,6 @@ for take in t.takes:
     else:
         best_shot(g, end)
 
-spoken = stick_reel.words(ep, t.takes)
+spoken = stick_reel.words(ep, t.takes, sentences=True)
 ep.audio(take=stick_reel.placing({}))
 stick_reel.close(ep, POSTS["whats-your-split"], spoken)
