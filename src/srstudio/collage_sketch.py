@@ -55,10 +55,12 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 # reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
-# play on their beat; ring is one ring of a phone; hiss:<seconds> lets the air out of something for that long
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring")
+# play on their beat; ring is one ring of a phone; hiss:<seconds> lets the air out of something for that long; whip,
+# on the beat a new shot starts, whips the camera from the shot before it to that one
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
+WHIP_PAPER = ("#fffaf0", "#e8dcc6", "#c9bda6", "#8d99ae", "#6b5b4b")  # the streaks of a whip: paper greys, any set
 WHOOSH_GAIN_DB = -6.0
 STING_GAIN_DB = -5.0
 BEEP_GAIN_DB = -9.0
@@ -239,6 +241,14 @@ def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
         raise StagingError(f"{name}: the opening holds still {still} s, but its next beat starts at {beats[1].start} s")
 
 
+def check_whips(beats: Sequence[sketch.Beat], end: float, name: str) -> None:
+    """A whip lands on a shot that holds: one that both arrives and leaves by whip has no x of its own to key."""
+    whips = {t for t, _ in sketch.events(beats, "whip")}
+    for app in sketch.appearances(beats, end):
+        if app.start in whips and app.end in whips:
+            raise StagingError(f"{name}: the shot at {app.start} s whips in and out")
+
+
 def check_staging(staging: Staging) -> None:
     """The sketch is on the Collage cast, every character on screen has a known set, and its events are known."""
     sk = staging.sketch
@@ -255,6 +265,7 @@ def check_staging(staging: Staging) -> None:
     for at, seconds in sketch.events(sk.beats, "hiss"):
         if not (seconds.replace(".", "", 1).isdigit() and float(seconds) > 0):
             raise StagingError(f"{sk.slug}: the hiss at {at} s runs for hiss:<seconds>, got {seconds!r}")
+    check_whips(sk.beats, sk.end, sk.slug)
     for app in sketch.appearances(sk.beats, sk.end):
         if staging.set_of(sk.beats, app) not in collage_sets.SETS:
             raise StagingError(f"{sk.slug}: unknown set for {app.who} at {app.start} s")
@@ -336,8 +347,16 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     font = (root / COLLAGE.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
     cast = staging.cast(sk.beats, sk.end)
+    whips = [at for at, _ in sketch.events(sk.beats, "whip")]
     for app in sketch.appearances(sk.beats, sk.end):
-        g = cv.group(ep.comp, cv.uid("g"), start=app.start, end=app.end)
+        arrive, leave = app.start in whips, app.end in whips
+        # a wrapper only for a shot that whips: its x is free of a zoom's anchor, and no other shot's ids change
+        holder = cv.group(ep.comp, cv.uid("whip")) if arrive or leave else ep.comp
+        if arrive:
+            camera.whip(cv, holder, app.start, leaving=False)
+        elif leave:
+            camera.whip(cv, holder, app.end, leaving=True)
+        g = cv.group(holder, cv.uid("g"), start=app.start, end=app.end)
         opening = app.start < staging.still  # the grain is drawn afresh every frame: a still shot goes without it
         if not opening:
             cv.apply(g, cv.effect("collage-grain", "film-grain", **GRAIN))  # the paper's tooth, over set and cast
@@ -349,6 +368,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
+    for i, at in enumerate(whips):
+        camera.whip_streaks(cv, ep.comp, at, WHIP_PAPER, seed=staging.seed + i)
     lines = toon.load_script(root / ep.spec.dialogue)
     collage.captions(cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints)
     if voiced:
@@ -362,16 +383,17 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 
 # -- the recording run ------------------------------------------------------------------------------------------------
 def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
-    """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
-    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a phone's ring on
-    ``ring``, chewing on ``crunch`` and air on ``hiss:<seconds>``."""
+    """The manifest's effects: a whoosh into every ``zoom`` and ``whip``, the sting on ``sting``, the headset on
+    ``beep``, the shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a
+    phone's ring on ``ring``, chewing on ``crunch`` and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
-    whooshes = [at for at, _ in sketch.events(beats, "zoom")]
-    if whooshes:
-        # the whoosh swells into the moment the zoom lands
-        cues = [max(0.0, round(at + ZOOM_SNAP - foley.WHOOSH, 6)) for at in whooshes]
+    # the whoosh swells into the moment the zoom lands, and into a whip's landing
+    landings = [at + ZOOM_SNAP for at, _ in sketch.events(beats, "zoom")]
+    landings += [at + camera.WHIP for at, _ in sketch.events(beats, "whip")]
+    if landings:
+        cues = sorted(max(0.0, round(at - foley.WHOOSH, 6)) for at in landings)
         whoosh = foley.write_whoosh(audio / "whoosh.wav", cues, end, seed=seed)
         out.append(sketch.effect("whoosh", 0.0, WHOOSH_GAIN_DB, root, whoosh))
     stings = [at for at, _ in sketch.events(beats, "sting")]
