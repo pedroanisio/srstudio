@@ -241,6 +241,7 @@ class Staging:
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
     # where the pill of a line goes, by its text, when a shot's picture fills the usual place; empty keeps them all
     caption_tops: Mapping[str, float] = field(default_factory=dict)
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -400,7 +401,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         cv, ep.comp, lines, partial(measure, size=collage.CAPTION_SIZE), tints=staging.tints, tops=staging.caption_tops
     )
     if voiced:
-        ep.audio(narration=manifest)
+        ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)

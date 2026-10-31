@@ -143,6 +143,7 @@ class Staging:
     moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
     character's seat, so a figure can bend, sink or sway while its set stays put."""
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -350,6 +351,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
     if voiced:
         ep.audio(narration=manifest)
         beds = []
+        ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             track = ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role=fx.role, gain=fx.gain_db)
