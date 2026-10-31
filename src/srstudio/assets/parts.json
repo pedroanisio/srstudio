@@ -10092,6 +10092,74 @@
         }
       ]
     },
+    "toon-wrestled-sheet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A sheet heaving in a losing fight. First drawn for fitted-sheet; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e8cb635191c51b856e78c6fc5c877aa76fa63d9b267d4031f3763c39962d27e7",
+          "rig": null
+        }
+      ]
+    },
+    "toon-balled-sheets": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A rising avalanche of balled-up sheets. First drawn for fitted-sheet; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4966e4031dbc2a50a27b0c86daa13288de88e0a7c88ec16b761c0ebced5b37e7",
+          "rig": null
+        }
+      ]
+    },
+    "toon-folded-sheet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One impossibly square folded sheet on two paws. First drawn for fitted-sheet; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b409d9159c509ccb50da93730af34ffddd18c5bb1f26ad554bc8e7c944928e65",
+          "rig": null
+        }
+      ]
+    },
+    "toon-padlock": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A brass padlock that drops when it is opened. First drawn for fitted-sheet; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c38a88b32e065f1a6495eb81b38495c831cc6d79cf118c29722c2d008e9615f6",
+          "rig": null
+        }
+      ]
+    },
     "collage-cake-slice": {
       "kind": "prop",
       "style": "collage",
