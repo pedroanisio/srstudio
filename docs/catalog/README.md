@@ -140,6 +140,14 @@ When the notes have a gallery, the build also stops when:
 
 So a new episode cannot leave the gallery out of date.
 
+That check needs the measured usage, which takes minutes, so it cannot run before a merge. A cheaper one does:
+`tests/test_catalog_coverage.py` requires every registered part to be shown by a gallery item or listed there, with the
+reason, as not shown (no project builds it, only a package does, its reels are not rendered yet). A branch that
+registers a part therefore fails its own tests until it adds a gallery item or declares the part, instead of the site
+stopping after the merge. It cannot see a declared part that a new episode starts to use: the build above still stops
+for that, `srstudio-catalog.service` shows as failed, and `journalctl --user -u srstudio-catalog.service` names the
+parts. Remove a part from the list when its item is added; the test fails on an entry that is shown or not registered.
+
 ## Keeping it up to date
 
 [`tools/systemd/`](../../tools/systemd/) has a user path unit that runs the command above whenever one of these
