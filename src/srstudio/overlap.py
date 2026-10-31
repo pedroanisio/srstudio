@@ -1,10 +1,11 @@
 """Lines that repeat another episode: a shared run of words, found before a take is paid for.
 
 A reel that reuses a line from an older one reads as a rerun, and grepping for it by hand finds only the wording you
-thought of. :func:`overlaps` compares a script's lines with every other episode's ``script.json`` under a folder and
-returns each shared run of at least :data:`LEAST` words, ignoring case and punctuation. An episode with no
-``script.json`` (one built from a dialogue or a narration file) is not compared. It reports; a callback inside a series
-is often meant, so the author decides. ``srstudio overlap`` prints the list.
+thought of. :func:`overlaps` compares a script's lines with every other episode's script under a folder and returns
+each shared run of at least :data:`LEAST` words, ignoring case and punctuation. A voiced episode is read from
+``voiced/script.json``, what was recorded, not from the silent draft beside it (:func:`project_script`). An episode with
+no script (one built from a dialogue or a narration file) is not compared. It reports; a callback inside a series is
+often meant, so the author decides. ``srstudio overlap`` prints the list.
 """
 
 from __future__ import annotations
@@ -17,9 +18,10 @@ from pathlib import Path
 
 from .errors import SrstudioError
 
-__all__ = ["LEAST", "Overlap", "OverlapError", "overlaps", "read_lines", "scripts"]
+__all__ = ["LEAST", "Overlap", "OverlapError", "overlaps", "project_script", "read_lines", "scripts"]
 
 LEAST = 4  # words: fewer than this is everyday speech
+VOICED = "voiced"  # the folder of an episode that holds what was recorded
 _WORD = re.compile(r"[a-z0-9']+")
 
 
@@ -69,10 +71,21 @@ def read_lines(path: Path) -> list[str]:
     return lines
 
 
+def project_script(project: Path) -> Path:
+    """The script of the episode in ``project``: what was recorded when it was voiced, else its ``script.json``."""
+    recorded = Path(project) / VOICED / "script.json"
+    return recorded if recorded.exists() else Path(project) / "script.json"
+
+
 def scripts(episodes: Path, *, skip: str = "") -> dict[str, list[str]]:
     """Every episode's lines under ``episodes``, by the name of its folder, without the episode named ``skip``."""
-    found = sorted(Path(episodes).rglob("script.json"))
-    return {path.parent.name: read_lines(path) for path in found if path.parent.name != skip}
+    best: dict[str, Path] = {}
+    for path in sorted(Path(episodes).rglob("script.json")):
+        recorded = path.parent.name == VOICED
+        slug = path.parent.parent.name if recorded else path.parent.name
+        if slug != skip and (recorded or slug not in best):
+            best[slug] = path
+    return {slug: read_lines(path) for slug, path in best.items()}
 
 
 def overlaps(lines: Iterable[str], others: dict[str, list[str]], least: int = LEAST) -> list[Overlap]:

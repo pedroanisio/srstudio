@@ -167,7 +167,7 @@ def main(argv=None):
     crafted.add_argument("--threshold", type=float, default=craft.PAUSE, help="seconds between lines that make a pause")
     crafted.add_argument("--json", action="store_true", help="print the reports as JSON")
     shared = sub.add_parser("overlap", help="find the lines of an episode that other episodes already said")
-    shared.add_argument("project", type=Path, help="the episode project folder (its script.json)")
+    shared.add_argument("project", type=Path, help="the episode project folder (its recorded script)")
     shared.add_argument("--episodes", type=Path, required=True, help="the folder of episode projects to compare with")
     shared.add_argument("--least", type=int, default=overlap.LEAST, help="words in a row that count as a repeat")
     build = sub.add_parser(
@@ -393,7 +393,7 @@ def main(argv=None):
         return 0
     if args.cmd == "overlap":
         try:
-            lines = overlap.read_lines(args.project / "script.json")
+            lines = overlap.read_lines(overlap.project_script(args.project))
             found = overlap.overlaps(lines, overlap.scripts(args.episodes, skip=args.project.name), args.least)
         except overlap.OverlapError as exc:
             print(f"srstudio overlap: {exc}", file=sys.stderr)

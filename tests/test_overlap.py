@@ -5,13 +5,19 @@ import json
 import pytest
 
 from srstudio.cli import main
-from srstudio.overlap import Overlap, OverlapError, overlaps, read_lines, scripts
+from srstudio.overlap import Overlap, OverlapError, overlaps, project_script, read_lines, scripts
 
 
 def script(folder, slug, *lines):
     (folder / slug).mkdir(parents=True)
     rows = [{"start": 0.0, "end": 1.0, "text": line} for line in lines]
     (folder / slug / "script.json").write_text(json.dumps(rows), encoding="utf-8")
+
+
+def voiced(folder, slug, *lines):
+    (folder / slug / "voiced").mkdir(parents=True)
+    rows = [{"start": 0.0, "end": 1.0, "text": line} for line in lines]
+    (folder / slug / "voiced" / "script.json").write_text(json.dumps(rows), encoding="utf-8")
 
 
 def test_a_shared_run_of_words_is_found_whatever_the_case_and_punctuation():
@@ -42,6 +48,39 @@ def test_scripts_reads_every_episode_and_skips_the_one_being_checked(tmp_path):
     script(tmp_path, "a", "first line")
     script(tmp_path / "pilots", "b", "second line")
     assert scripts(tmp_path, skip="a") == {"b": ["second line"]}
+
+
+def test_a_voiced_episode_is_read_from_what_was_recorded(tmp_path):
+    script(tmp_path, "a", "the silent draft")
+    voiced(tmp_path, "a", "the recorded line")
+    assert scripts(tmp_path) == {"a": ["the recorded line"]}
+
+
+def test_every_voiced_episode_keeps_its_own_name(tmp_path):
+    voiced(tmp_path, "a", "first line")
+    voiced(tmp_path, "b", "second line")
+    assert scripts(tmp_path) == {"a": ["first line"], "b": ["second line"]}
+
+
+def test_a_voiced_episode_being_checked_is_skipped(tmp_path):
+    script(tmp_path, "a", "the silent draft")
+    voiced(tmp_path, "a", "the recorded line")
+    voiced(tmp_path, "b", "second line")
+    assert scripts(tmp_path, skip="a") == {"b": ["second line"]}
+
+
+def test_an_episode_that_was_never_voiced_keeps_its_script(tmp_path):
+    script(tmp_path, "a", "first line")
+    assert project_script(tmp_path / "a") == tmp_path / "a" / "script.json"
+
+
+def test_a_voiced_episode_is_checked_on_what_was_recorded(tmp_path, capsys):
+    script(tmp_path, "a", "a line nobody ever said")
+    voiced(tmp_path, "a", "the same four words")
+    voiced(tmp_path, "b", "say the same four words")
+    assert project_script(tmp_path / "a") == tmp_path / "a" / "voiced" / "script.json"
+    assert main(["overlap", str(tmp_path / "a"), "--episodes", str(tmp_path)]) == 0
+    assert "the same four words" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("text", ["{", '{"text": "x"}', '[{"start": 0}]', "[1]", '[{"text": 3}]'])
