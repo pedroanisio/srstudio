@@ -134,6 +134,49 @@ def test_perform_refuses_a_face_the_sheet_does_not_hold(tmp_path):
         pedro_host.perform(cv, cv.comp, (Face(mouth="open"),), made, tmp_path / "project")
 
 
+@pytest.mark.parametrize("degrees", pedro_host.VIEWS)
+def test_every_view_turns_body_and_head_as_one(degrees):
+    placed = pedro_host.view(Face(), degrees).placed
+    assert placed[0].rotation_y == placed[1].rotation_y == pytest.approx(-degrees)
+
+
+def test_a_view_from_nowhere_is_refused():
+    with pytest.raises(PedroHostError, match="view"):
+        pedro_host.view(Face(), 12.0)
+
+
+def test_a_dress_he_has_no_clothes_for_is_refused():
+    with pytest.raises(PedroHostError, match="dress"):
+        pedro_host.view(Face(), dress="windbreaker")
+
+
+def names(plate: plates.Plate) -> set[str]:
+    return {mesh.material for group in plate.placed for mesh in group.meshes}
+
+
+def test_he_stands_in_the_blazer_over_the_tee_with_lapels():
+    worn = names(pedro_host.view(Face()))
+    assert {"blazer", "blazer-edge", "shirt"} <= worn
+    assert "nylon" not in worn
+    assert names(pedro_host.whole(Face())) >= {"blazer", "blazer-edge"}
+
+
+def test_the_tee_is_the_blazer_taken_off():
+    worn = names(pedro_host.view(Face(), dress="tee"))
+    assert "shirt" in worn and "blazer" not in worn
+
+
+def test_the_puffer_stays_an_alternative():
+    assert "nylon" in names(pedro_host.view(Face(), dress="puffer"))
+
+
+def test_the_glasses_are_off_unless_asked_and_on_no_plate_of_a_reel():
+    assert "frame" not in names(pedro_host.view(Face()))
+    assert "frame" in names(pedro_host.view(Face(), glasses=True))
+    for plate in (pedro_host.pose_plate(Face()), pedro_host.eye_plate(Face()), pedro_host.mouth_plate(Face())):
+        assert "frame" not in names(plate)
+
+
 def test_a_runs_list_keeps_every_frame():
     spans = plate_host.runs(["a", "a", "b", "a"], 10)
     assert spans["a"] == [(0.0, 0.2), (0.3, 0.4)]
@@ -141,7 +184,7 @@ def test_a_runs_list_keeps_every_frame():
 
 
 def test_the_catalog_shows_every_mood_mouth_lid_and_gaze():
-    assert len(pedro_host.part_plates("pedro")) == 3 + 6 + 2 + 2
+    assert len(pedro_host.part_plates("pedro")) == 4 + 6 + 2 + 2
     assert pedro_host.part_plates("rafa") == ()
 
 
