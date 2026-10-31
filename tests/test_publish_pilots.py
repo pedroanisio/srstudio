@@ -512,6 +512,8 @@ def test_each_series_defaults_to_its_own_stage_and_remote(tool):
     assert tool.remote_of("maps") == "gdrive:srstudio/pilots/maps"
     assert tool.stage_of("news") == Path("generated/pilots/news")
     assert tool.remote_of("news") == "gdrive:srstudio/pilots/news"
+    assert tool.stage_of("host") == Path("generated/pilots/host")
+    assert tool.remote_of("host") == "gdrive:srstudio/pilots/host"
 
 
 @pytest.mark.parametrize(
@@ -643,8 +645,8 @@ def both_scored(world: Path, author: int = 15, reviewer: int = 14) -> None:
         scored(world, slug, f"comedy-author: {author}", f"comedy-reviewer: {reviewer}")
 
 
-def test_only_news_owes_the_floor(tool):
-    assert set(tool.SERIES) - tool.NOT_COMEDY == {"news"}
+def test_only_news_and_host_owe_the_floor(tool):
+    assert set(tool.SERIES) - tool.NOT_COMEDY == {"news", "host"}
     assert tool.NOT_COMEDY == {"mind", "maps"}
 
 
