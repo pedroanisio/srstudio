@@ -855,7 +855,7 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
 # -- the rig: a drawn, posable figure for new episodes ------------------------------------------------------
 Point = tuple[float, float]
 Framing = tuple[Point, float, Point]  # focus, zoom, where the focus lands: what a camera is told
-EYES = ("open", "wide", "half", "closed", "happy")
+EYES = ("open", "wide", "half", "closed", "happy", "peek")
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
 HEAD_R = 92
@@ -1133,17 +1133,20 @@ def _crescent(r: float) -> str:
 
 
 def _eyes(cv: Canvas, parent, face: Face) -> None:
+    """The two eyes. ``peek`` keeps the one at -x shut and opens the one at +x: the one a figure, flipped or not, turns
+    toward whoever it faces."""
     lx, ly = face.look
     for ex in (-30, 30):
         e = _group(cv, parent, x=ex, y=-12)
-        if face.eyes in ("closed", "happy"):
-            d = "M -15 0 Q 0 9 15 0" if face.eyes == "closed" else "M -15 5 Q 0 -10 15 5"
+        state = ("closed" if ex < 0 else "open") if face.eyes == "peek" else face.eyes
+        if state in ("closed", "happy"):
+            d = "M -15 0 Q 0 9 15 0" if state == "closed" else "M -15 5 Q 0 -10 15 5"
             shape(cv, e, d, sw=5, stroke=cv.ink)
             continue
-        w, h, pupil = (22, 26, 7) if face.eyes == "wide" else (17, 20, 9)
+        w, h, pupil = (22, 26, 7) if state == "wide" else (17, 20, 9)
         cv.ellipse(e, -w, -h, 2 * w, 2 * h, cv.white, stroke=cv.ink, sw=4)
         oval(cv, e, lx * (w - pupil - 3) - pupil, ly * (h - pupil - 3) - pupil, 2 * pupil, 2 * pupil, cv.ink)
-        if face.eyes == "half":
+        if state == "half":
             shape(cv, e, f"M {-w - 2} {-h - 2} L {w + 2} {-h - 2} L {w + 2} -2 L {-w - 2} -2 Z", SKIN)
             shape(cv, e, f"M {-w} -2 L {w} -2", sw=4, stroke=cv.ink)
 
