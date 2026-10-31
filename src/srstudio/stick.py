@@ -1329,7 +1329,7 @@ def dolly(cv: Canvas, parent, a: Framing, b: Framing, seconds: float, *, start: 
     fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
     # the anchor stays on the first focus, so the second framing is where that point must land for it to hold
     x2, y2 = tx2 + (fx - fx2) * zoom2, ty2 + (fy - fy2) * zoom2
-    g = _group(cv, parent, anchorX=fx, anchorY=fy, x=tx, y=ty, scaleX=zoom, scaleY=zoom)
+    g = parent.add_group(id=f"setup-{cv.uid('dolly')}", anchorX=fx, anchorY=fy, x=tx, y=ty, scaleX=zoom, scaleY=zoom)
     for prop, p, q in (("scaleX", zoom, zoom2), ("scaleY", zoom, zoom2), ("x", tx, x2), ("y", ty, y2)):
         cv.keys(g, prop, [*([(0, p)] if start else []), (start, p), (start + seconds, q)], kind=kind)
     return g
