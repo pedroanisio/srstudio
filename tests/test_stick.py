@@ -248,6 +248,13 @@ def test_the_style_value(tmp_path):
     ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
     assert parts == {
+        "stick-blinker",
+        "stick-duvet",
+        "stick-eye-mask",
+        "stick-lights-low",
+        "stick-rear-view",
+        "stick-recorder",
+        "stick-swim-ring",
         "stick-room",
         "stick-yard",
         "stick-figure",
