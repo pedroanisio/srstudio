@@ -159,6 +159,30 @@ def test_the_shelf_labels_its_files_and_pulls_one_out():
     assert [n for n in tree(cv).iter() if n.tag.endswith("animate") and n.get("property") == "y"]
 
 
+def test_a_shelf_can_pull_out_more_than_one_file():
+    cv = canvas()
+    mind_kit.memory_shelf(cv, cv.comp, ("Keys", "Names", "Dates"), pull=(0, 1.0), also=((2, 3.0),), measure=measure)
+    moved = {n.get("id") for n in tree(cv).iter() if n.find("./*[@property='y']") is not None}
+    assert {"memory-shelf-file-0", "memory-shelf-file-2"} <= moved and "memory-shelf-file-1" not in moved
+
+
+def test_a_shelf_with_nothing_more_to_pull_draws_what_it_drew():
+    one, two = canvas(), canvas()
+    mind_kit.memory_shelf(one, one.comp, ("Keys", "Names"), pull=(1, 2.0), measure=measure)
+    mind_kit.memory_shelf(two, two.comp, ("Keys", "Names"), pull=(1, 2.0), measure=measure, also=())
+    assert ET.tostring(tree(one)) == ET.tostring(tree(two))
+
+
+@pytest.mark.parametrize(
+    ("also", "match"),
+    [(((5, 1.0),), "pulls out a file it has"), (((1, -1.0),), "pulls out a file it has"), (((0, 3.0),), "once")],
+)
+def test_a_shelf_refuses_a_further_pull_it_cannot_make(also, match):
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match=match):
+        mind_kit.memory_shelf(cv, cv.comp, ("Keys", "Names"), pull=(0, 1.0), also=also, measure=measure)
+
+
 @pytest.mark.parametrize(
     ("labels", "pull", "match"),
     [

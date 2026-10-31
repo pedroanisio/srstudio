@@ -376,13 +376,20 @@ def memory_shelf(
     pull: tuple[int, float] | None = None,
     y: float = 900.0,
     id: str = "memory-shelf",
+    also: Sequence[tuple[int, float]] = (),
 ) -> None:
     """A shelf at frame height ``y`` holding one file per label; ``pull`` is ``(index, seconds)``, the file that slides
-    up at that time. Memory as a store the mind reaches into."""
+    up at that time, and ``also`` any more pulled the same way, each a different file. Memory as a store the mind
+    reaches into."""
     if not 1 <= len(labels) <= SHELF_FILES:
         raise MindKitError(f"a shelf holds 1 to {SHELF_FILES} files, got {len(labels)}")
-    if pull is not None and not (0 <= pull[0] < len(labels) and checks.number(pull[1]) and pull[1] >= 0):
-        raise MindKitError(f"a shelf pulls out a file it has, at a time >= 0, got {pull!r}")
+    pulled = ([] if pull is None else [pull]) + list(also)
+    for one in pulled:
+        if not (0 <= one[0] < len(labels) and checks.number(one[1]) and one[1] >= 0):
+            raise MindKitError(f"a shelf pulls out a file it has, at a time >= 0, got {one!r}")
+    if len({index for index, _ in pulled}) != len(pulled):
+        raise MindKitError(f"a shelf pulls each file out once, got {pulled!r}")
+    lifts = dict(pulled)
     g = cv.group(parent, id)
     width = SAFE_WIDTH / len(labels)
     colours = (SPOT, CORAL, PAPER, "#8fd3c1")
@@ -393,8 +400,8 @@ def memory_shelf(
         cv.rect(file, x + 30, -344.0, width - 84, 8.0, INK, radius=4.0, opacity=0.25)
         lines, size = _fitted(measure, label, 46.0, 26.0, width - 56, 2, "a file's label")
         _block(cv, file, lines, x + 16, -240.0, width - 56, size, INK, "center")
-        if pull is not None and pull[0] == i:
-            cv.keys(file, "y", [(pull[1], y), (pull[1] + FILE_SLIDE, y - FILE_LIFT)], kind="cubic-out", local=False)
+        if i in lifts:
+            cv.keys(file, "y", [(lifts[i], y), (lifts[i] + FILE_SLIDE, y - FILE_LIFT)], kind="cubic-out", local=False)
     cv.rect(g, SAFE_LEFT - 30, y, SAFE_WIDTH + 60, 34.0, "#8a5a33", INK, 5.0, radius=8.0)
 
 
