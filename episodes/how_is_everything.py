@@ -30,7 +30,7 @@ ep = Episode(
         slug="how-is-everything",
         title=INTERVIEW.title,
         description="Service comedy: the waiter only ever asks how everything is when his mouth is full, so he bites "
-        "a napkin to get the check. Native vector animation; ElevenLabs dialogue, synthesised foley, no music.",
+        "a napkin to get the check. Native vector animation; ElevenLabs dialogue, synthesized foley, no music.",
         root=ROOT,
         **iv_audio.spec_font(INTERVIEW.font, ROOT),
         seed=26401,
