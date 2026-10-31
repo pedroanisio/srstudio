@@ -23,10 +23,9 @@ RELEASE = Release(
     style="Stick",
     comedy=Scores(author=19, reviewer=19),
     parts={
-        # stick-bedroom is drawn too and still proposed: a release cannot pin a proposed
-        # version.
         "signature-cactus": 1,
         "signature-code": 1,
+        "stick-bedroom": 1,
         "stick-chair": 1,
         "stick-fridge-open": 1,
         "stick-kitchen": 1,

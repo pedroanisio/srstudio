@@ -25,8 +25,6 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=18, reviewer=18),
     parts={
-        # toon-wifi-list is drawn too and still proposed: a release cannot pin a proposed
-        # version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-bear": 2,
@@ -36,5 +34,6 @@ RELEASE = Release(
         "toon-rabbit": 2,
         "toon-sofa": 1,
         "toon-speaker": 1,
+        "toon-wifi-list": 1,
     },
 )

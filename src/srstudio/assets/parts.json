@@ -8876,10 +8876,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A bedroom at night: the moon in the window and someone asleep in the bed. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A bedroom at night: the moon in the window and someone asleep in the bed. First drawn for the-chirp.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Batch B: all five approved: `stick-bedroom`, `back-room`, `toon-voice-note-bar`, `toon-wifi-list` and `toon-gull-stare`.\""
+          },
           "drawing": "1afdb78595199e83ce41583c1a1b1b75e4b75ccb5e9ef7e35eac7c1bef7009dc",
           "rig": null
         }
@@ -9033,10 +9036,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A door with a nameplate and a cupboard behind it, with a push through the door. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A door with a nameplate and a cupboard behind it, with a push through the door. First drawn for my-manager.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Batch B: all five approved: `stick-bedroom`, `back-room`, `toon-voice-note-bar`, `toon-wifi-list` and `toon-gull-stare`.\""
+          },
           "drawing": "43f725f735347c12b12b859f5e2640705726c1f68aac76373a99a32b275c094b",
           "rig": null
         }
@@ -9350,11 +9356,14 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A voice note's player, readable on a phone. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A voice note's player, readable on a phone. First drawn for voice-note.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
-          "drawing": "f5527f23f8059b88d2d4c479a1cceb613fe79cb5684278116e0111e3e48381c6",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Batch B: all five approved: `stick-bedroom`, `back-room`, `toon-voice-note-bar`, `toon-wifi-list` and `toon-gull-stare`.\""
+          },
+          "drawing": "f15232e946dc60c241bf175cd01a02811e48737bc3619bcdcd58807f41422818",
           "rig": null
         }
       ]
@@ -9367,11 +9376,14 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A gull's head filling the frame, turning until one eye has you. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A gull's head filling the frame, turning until one eye has you. First drawn for full-coverage.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
-          "drawing": "0b0d6c9c102793ae7043398f073a61b7718e9dac86a855f643efaaff29c272e3",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Batch B: all five approved: `stick-bedroom`, `back-room`, `toon-voice-note-bar`, `toon-wifi-list` and `toon-gull-stare`.\""
+          },
+          "drawing": "90f64d7e530fb11c997b353717852221bd038dd1a09b0c1b8aaf8127e996471b",
           "rig": null
         }
       ]
@@ -9384,10 +9396,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A Wi-Fi list that refreshes, lettered to read at phone size. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A Wi-Fi list that refreshes, lettered to read at phone size. First drawn for network-names.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Batch B: all five approved: `stick-bedroom`, `back-room`, `toon-voice-note-bar`, `toon-wifi-list` and `toon-gull-stare`.\""
+          },
           "drawing": "5ebfef644cdfde07802cacebfcb97feb8f273e615466b2d6ad7899b0d7d6212b",
           "rig": null
         }

@@ -23,8 +23,7 @@ RELEASE = Release(
     tags=Tags("money-services", "other-person", "triumph", test="sp-hook_motion", arm="b"),
     comedy=Scores(author=18, reviewer=19),
     parts={
-        # back-room is drawn too and still proposed: a release cannot pin a proposed
-        # version.
+        "back-room": 1,
         "captions": 1,
         "hiring-office": 1,
         "jump-clock": 1,
