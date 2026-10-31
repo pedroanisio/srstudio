@@ -9001,6 +9001,23 @@
           "rig": null
         }
       ]
+    },
+    "stick-message-insert": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One text message filling the frame, set big enough to read on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5f0631feea307ce6c34bb87ef8c196ef79566165e97e4ef155fab8a9e9299701",
+          "rig": null
+        }
+      ]
     }
   }
 }

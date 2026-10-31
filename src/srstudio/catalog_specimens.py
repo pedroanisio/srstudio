@@ -317,6 +317,7 @@ RECIPES: dict[str, Recipe] = {
     "stick-coat-ball": Recipe(part(540, 700, 320, layers=4, hats=3, scarves=3, trousers=True, shoes=True)),
     "stick-palm": Recipe(part(540, 1500)),
     "stick-bedroom": Recipe(part()),
+    "stick-message-insert": Recipe(part(sender="MOM", text="We need to talk.")),
     "stick-chair": Recipe(part(540, 1500)),
     "stick-smoke-alarm": Recipe(part(540, 960, scale=2.0)),
     "stick-mound": Recipe(part(540, 1300, words="ALL 5")),

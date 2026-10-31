@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "stick-message-insert": {"title": "Mensagem na tela"},
     "collage-flip-card": {"title": "Cartão virável"},
     "back-room": {"title": "Sala dos fundos"},
     "sandwich": {"title": "Sanduíche mordido"},
@@ -7697,12 +7698,13 @@
     {"section": "locations", "name": "Quarto à noite", "parts": ["stick-bedroom"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Um quarto de noite, com a lua na janela e alguém dormindo na cama."},
     {"section": "props", "name": "Cadeira de madeira", "parts": ["stick-chair"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Uma cadeira de cozinha, de madeira, onde um personagem pode subir."},
     {"section": "props", "name": "Detector de fumaça", "parts": ["stick-smoke-alarm"], "shot": {"episode": "the-chirp", "at": 9.5}, "text": "Um detector de fumaça cujo LED pisca quando ele apita."},
-    {"section": "props", "name": "Monte de terra", "parts": ["stick-mound"], "shot": {"episode": "the-chirp", "at": 18.0}, "text": "Um monte de terra fresca com uma pequena lápide."},
-    {"section": "props", "name": "Pá", "parts": ["stick-shovel"], "shot": {"episode": "the-chirp", "at": 18.0}, "text": "Uma pá comprida fincada no chão."},
+    {"section": "props", "name": "Monte de terra", "parts": ["stick-mound"], "shot": {"episode": "the-chirp", "at": 20.0}, "text": "Um monte de terra fresca com uma pequena lápide."},
+    {"section": "props", "name": "Pá", "parts": ["stick-shovel"], "shot": {"episode": "the-chirp", "at": 20.0}, "text": "Uma pá comprida fincada no chão."},
     {"section": "props", "name": "Lasanha de papel", "parts": ["collage-lasagna"], "shot": {"episode": "your-lasagna", "at": 18.5}, "text": "A lasanha inteira, de lado: massa, molho, queijo e a travessa."},
     {"section": "props", "name": "Relógio que salta", "parts": ["jump-clock"], "shot": {"episode": "my-manager", "at": 4.6}, "text": "Um relógio de parede cujos ponteiros correm vinte minutos entre um plano e outro."},
     {"section": "props", "name": "Sanduíche mordido", "parts": ["sandwich"], "shot": {"episode": "my-manager", "at": 24.3}, "text": "Um sanduíche com uma mordida a menos, para quem come escondido."},
     {"section": "locations", "name": "Sala dos fundos", "parts": ["back-room"], "shot": {"episode": "my-manager", "at": 23.0}, "text": "Uma porta com plaqueta e, atrás dela, um armário com prateleiras, lâmpada nua e duas cadeiras dobráveis."},
-    {"section": "props", "name": "Cartão virável", "parts": ["collage-flip-card"], "shot": {"episode": "no-thanks", "at": 7.5}, "text": "Um cartão grande para ler em voz alta: o texto é medido e ele vira para o outro lado."}
+    {"section": "props", "name": "Cartão virável", "parts": ["collage-flip-card"], "shot": {"episode": "no-thanks", "at": 7.5}, "text": "Um cartão grande para ler em voz alta: o texto é medido e ele vira para o outro lado."},
+    {"section": "props", "name": "Mensagem na tela", "parts": ["stick-message-insert"], "shot": {"episode": "whats-your-split", "at": 18.4}, "text": "Uma mensagem de texto na tela inteira, grande o bastante para ler no celular."}
   ]
 }

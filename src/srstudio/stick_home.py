@@ -11,7 +11,7 @@ redraws the same.
 
 from __future__ import annotations
 
-from . import checks, signature, stick_reel
+from . import checks, look, signature, stick_reel
 from .canvas import Canvas
 from .registry import register
 from .stick import STANDING, Gradient, RigPose, StickDataError, _group, _seat, box, oval, paint, shape
@@ -24,6 +24,8 @@ __all__ = [
     "RIGHT_AT",
     "SAFE",
     "TABLE_TOP",
+    "MESSAGE_CHARS",
+    "MESSAGE_SIZE",
     "bedroom",
     "chair",
     "fridge_open",
@@ -31,6 +33,7 @@ __all__ = [
     "handset",
     "key",
     "kitchen",
+    "message",
     "mound",
     "plan",
     "reply",
@@ -60,6 +63,7 @@ PLAN = (340.0, 520.0, 400.0, 720.0)  # x, y, w, h of the table from above
 SKIN = "#f3ead9"
 NIGHT_TOP, NIGHT_LOW, NIGHT_FLOOR, NIGHT_SKY = "#2b3358", "#1f2645", "#191d33", "#101633"
 STONE_CHARS = 6
+MESSAGE_CHARS, MESSAGE_SIZE, MESSAGE_BOX = 48, 104, (50, 640, 980, 520)  # a text that reads on a phone; x, y, w, h
 TABLE_X = (190.0, 890.0)
 LEFT_AT = (-140.0, 0.0)  # a pose here stands left of the table, facing right
 RIGHT_AT = (1360.0, 0.0)  # with flip=True, a pose here stands right of the table, facing left
@@ -330,6 +334,28 @@ def shovel(cv: Canvas, parent, x, y):
     box(cv, g, x - 48, y - 640, 96, 26, WOOD_DARK, 4, r=10)
     shape(cv, g, f"M {x - 60} {y - 70} L {x + 60} {y - 70} L {x + 50} {y + 10} L {x} {y + 50} L {x - 50} {y + 10} Z",
           STEEL, 5, stroke=cv.ink)  # fmt: skip
+    return g
+
+
+@register("prop", "stick-message-insert", tags=("phone", "text", "message", "reveal", "fullscreen", "font"))
+def message(cv: Canvas, parent, *, sender: str, text: str):
+    """The whole frame as a phone with one message on it, from ``sender``: a text message the audience must read in a
+    second, on a phone. It sets ``text`` at :data:`MESSAGE_SIZE` over at most three lines, and refuses a message of
+    more than :data:`MESSAGE_CHARS` characters rather than shrink it past reading."""
+    cv.require_font("the message is set in it")
+    if not (sender.strip() and text.strip()):
+        raise StickDataError("a message needs a sender and a text")
+    if len(text) > MESSAGE_CHARS:
+        raise StickDataError(f"a message that reads on a phone has at most {MESSAGE_CHARS} characters, got {len(text)}")
+    g = _group(cv, parent)
+    box(cv, g, 0, 0, cv.width, cv.height, SCREEN)
+    box(cv, g, 0, 0, cv.width, 480, "#f2f2f6")
+    oval(cv, g, 440, 130, 200, 200, "#b9bec9")
+    cv.text(g, cv.uid("message-sender"), sender, 140, 350, 800, 90, 72, SCREEN_INK)
+    x, y, w, h = MESSAGE_BOX
+    box(cv, g, x, y, w, h, BUBBLE_GOT, r=80)
+    look.text(cv, g, text, x + 50, y + 30, w - 100, h - 60, MESSAGE_SIZE, SCREEN_INK, weight=700, lines=3,
+                  line_height="1.15", asset="message-text", layer="message-layer")  # fmt: skip
     return g
 
 

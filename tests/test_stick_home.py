@@ -112,3 +112,23 @@ def test_the_chair_and_the_shovel_draw(draw):
     cv = canvas()
     draw(cv, cv.comp, 540, 1500)
     assert list(xml(cv).iter("shape"))
+
+
+def test_a_message_reads_at_phone_size_and_refuses_what_would_not():
+    cv = canvas()
+    stick_home.message(cv, cv.comp, sender="MOM", text="We need to talk.")
+    words = [t.get("text") for t in xml(cv).iter("text")]
+    assert "MOM" in words and "We need to talk." in words
+    assert stick_home.MESSAGE_SIZE >= 96  # 96 px of 1920 stays over 3 mm tall on a 15 cm phone
+    with pytest.raises(StickDataError, match="at most 48"):
+        stick_home.message(cv, cv.comp, sender="MOM", text="x" * (stick_home.MESSAGE_CHARS + 1))
+    with pytest.raises(StickDataError, match="sender and a text"):
+        stick_home.message(cv, cv.comp, sender=" ", text="hi")
+    with pytest.raises(StickDataError, match="sender and a text"):
+        stick_home.message(cv, cv.comp, sender="MOM", text=" ")
+
+
+def test_a_message_needs_the_font():
+    cv = canvas(font=None)
+    with pytest.raises(Exception, match="message"):
+        stick_home.message(cv, cv.comp, sender="MOM", text="hi")
