@@ -7901,6 +7901,91 @@
           "rig": null
         }
       ]
+    },
+    "toon-cone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An ice cream cone, vanilla or mint with chips, one big scoop. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "469a1761fe4fc1f9ad9a7ea5ed7fa9d53f996da43fc6b34c18658af91989c765",
+          "rig": null
+        }
+      ]
+    },
+    "toon-toothpaste-cone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A cone with a striped toothpaste swirl and the blank tube upended in it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "12389518a3e37cdaea5be7c37b9bb8d403c56b4121a03ea592121ecf9c8cdbec",
+          "rig": null
+        }
+      ]
+    },
+    "toon-parlour-case": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The glass case in a parlour counter, six tubs of ice cream, no words. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5f5e184c026a9b5f86e8195d06e5ba4d1c658adc2cd66c143fa22e7c09b493c3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-parlour-front": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An ice cream parlour from behind its counter: a shop window on a street with traffic going by. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "aa477fc4b0bc02fb8d1e0886b13587efcb75f1c79f98c2f664a157e47232eb6d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-parlour-back": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An ice cream parlour from the customer's side: shelves of tubs under a picture board with no words. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a8940f211f96e8572ab9fc1e679a23cbad052c260a8137e9a72a7308a2d74621",
+          "rig": null
+        }
+      ]
     }
   }
 }

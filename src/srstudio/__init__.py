@@ -70,6 +70,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_flat,
     toon_head,
     toon_house,
+    toon_parlour,
     toon_props,
     toon_redrawn,
     toon_rooms,

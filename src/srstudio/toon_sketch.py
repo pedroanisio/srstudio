@@ -126,6 +126,9 @@ class Staging:
     finish: Callable[[Canvas, object], None] | None = None  # the style's grade over each shot; none on the Toon reels
     output: str | None = None
     crf: str = "17"
+    on_face: Mapping[str, Callable[..., None]] = field(default_factory=dict)
+    """Per character in ``heads``: ``(cv, appearance, beats, face)`` draws into that shot's face group, so it moves with
+    the head."""
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -279,6 +282,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         elif app.who in heads:
             rig, plan = heads[app.who]
             shot_plan = plan.during(app.start, app.end)
+            if app.who in staging.on_face:
+                extra = {**extra, "on_face": partial(staging.on_face[app.who], cv, app, sk.beats)}
             toon_head.figure(cv, body, rig, poses, app.end, shot_plan, taps, enter=app.start, **extra)
         else:
             sketch.drawer(app.who, staging.versions)(cv, body, poses, app.end, taps, enter=app.start, **extra)
