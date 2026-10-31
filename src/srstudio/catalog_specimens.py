@@ -328,6 +328,9 @@ RECIPES: dict[str, Recipe] = {
     "toon-tee": Recipe(part((180, 660))),
     "toon-bow-tie": Recipe(part((180, 640))),
     "toon-stars": Recipe(part(5)),
+    "toon-shower-water": Recipe(part(((0.0, SECONDS),))),
+    "toon-suds": Recipe(part((540, 700))),
+    "toon-towel": Recipe(part((540, 700))),
     "toon-receipt": Recipe(lettered((("Coffee", "3.00"), ("Cup fee", "0.75")), total=("TOTAL", "3.75"))),
     "toon-take-a-number": Recipe(lettered(((0.0, 47),))),
     "toon-clipboard": Recipe(

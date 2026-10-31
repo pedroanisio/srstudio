@@ -53,6 +53,9 @@ __all__ = [
     "BELL",
     "air",
     "write_air",
+    "WATER_EDGE",
+    "water",
+    "write_water",
     "RATE",
     "THRESHOLD",
     "PEAK",
@@ -269,6 +272,49 @@ def write_air(
 ) -> Path:
     """The air bed for the given cue times, written to ``path``."""
     return write_wav(path, air(times, duration, length, rate, PEAK, seed), rate)
+
+
+WATER_EDGE = 0.02  # seconds a shower takes to come on or go off: a tap, not a fade
+
+
+def water(
+    spans: Sequence[tuple[float, float]], duration: float, rate: int = RATE, peak: float = PEAK, seed: int = 0
+) -> list[float]:
+    """A mono bed of ``duration`` seconds with a shower running through each ``(start, end)``: seeded noise with its
+    lows and its highest hiss taken off, steady while it runs, and silence between, so the tap is heard."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0):
+        raise FoleyError(f"duration {duration} must be over 0 s")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    last = 0.0
+    if not spans:
+        raise FoleyError("water needs at least one span")
+    for start, end in spans:
+        if not (checks.number(start) and checks.number(end) and last <= start < end <= duration):
+            raise FoleyError(f"water's spans rise within {duration} s, got span {start!r}..{end!r}")
+        last = end
+    rng = random.Random(seed)
+    out = [0.0] * int(round(duration * rate))
+    edge = max(1, int(WATER_EDGE * rate))
+    for start, end in spans:
+        first, stop = int(start * rate), min(int(end * rate), len(out))
+        low = high = 0.0
+        for k in range(first, stop):
+            noise = rng.uniform(-1.0, 1.0)
+            low += 0.06 * (noise - low)  # what is left after taking this off has no rumble
+            high += 0.5 * (noise - low - high)  # and this is it with the top rounded
+            out[k] = min(1.0, (k - first + 1) / edge, (stop - k) / edge) * high
+    top = max(abs(v) for v in out)
+    return [v * peak / top for v in out] if top > 0 else out
+
+
+def write_water(
+    path: Path, spans: Sequence[tuple[float, float]], duration: float, rate: int = RATE, seed: int = 0
+) -> Path:
+    """The shower bed for the given spans, written to ``path``."""
+    return write_wav(path, water(spans, duration, rate, PEAK, seed), rate)
 
 
 Glide = tuple[float, float, float]  # (start Hz, end Hz, seconds): one note that slides

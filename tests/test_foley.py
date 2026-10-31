@@ -159,3 +159,38 @@ def test_a_name_means_one_sound_a_phones_ding_stays_two_tones_and_the_bell_is_a_
 
 def test_no_sound_is_exported_twice():
     assert len(foley.__all__) == len(set(foley.__all__))
+
+
+def test_water_runs_in_its_spans_and_is_silent_outside_them():
+    rate = 8000
+    bed = foley.water([(0.5, 1.0), (1.5, 2.0)], 2.5, rate=rate, seed=3)
+    assert len(bed) == round(2.5 * rate)
+    assert max(abs(v) for v in bed[: int(0.5 * rate)]) == 0.0
+    assert max(abs(v) for v in bed[int(1.0 * rate) + 1 : int(1.5 * rate)]) == 0.0
+    assert max(abs(v) for v in bed[int(0.6 * rate) : int(0.9 * rate)]) > 0.1
+    assert bed == foley.water([(0.5, 1.0), (1.5, 2.0)], 2.5, rate=rate, seed=3)
+
+
+def test_water_stops_dead_when_the_tap_is_turned_off():
+    rate = 8000
+    bed = foley.water([(0.0, 1.0)], 2.0, rate=rate)
+    fade = int(foley.WATER_EDGE * rate)
+    assert max(abs(v) for v in bed[int(1.0 * rate) - fade // 2 : int(1.0 * rate)]) < max(
+        abs(v) for v in bed[: rate // 2]
+    )
+    assert all(v == 0.0 for v in bed[int(1.0 * rate) :])
+
+
+@pytest.mark.parametrize(
+    ("spans", "duration", "match"),
+    [([], 2.0, "span"), ([(1.0, 0.5)], 2.0, "span"), ([(0.0, 3.0)], 2.0, "span"), ([(0.0, 1.0)], 0, "duration")],
+)
+def test_water_refuses_spans_it_cannot_lay(spans, duration, match):
+    with pytest.raises(foley.FoleyError, match=match):
+        foley.water(spans, duration, rate=8000)
+
+
+def test_write_water_writes_a_wave(tmp_path):
+    path = foley.write_water(tmp_path / "water.wav", [(0.0, 0.2)], 0.3, rate=8000)
+    with wave.open(str(path)) as w:
+        assert w.getframerate() == 8000 and w.getnframes() == 2400
