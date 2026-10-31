@@ -66,6 +66,7 @@ from .voice import (
 
 RATE = 48000
 FPS = 30
+LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix
 VOICE_PEAK = 0.78  # the loudest moment of the dialogue, before the master's loudness pass
 ROOM_TONE = 0.00018  # standard deviation of the room tone
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
@@ -83,6 +84,7 @@ class Spoken:
     speed: float = 1.0
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
+    level_db: float = 0.0  # this line against the others in the mix; the take stays the same (:data:`LEVELS`)
 
 
 @dataclass(frozen=True)
@@ -152,6 +154,8 @@ class Interview:
                 raise InterviewError(f"line {i}: seed must be an integer in 0..2**32-1, got {line.seed!r}")
             if not isinstance(line.heard, tuple) or not all(isinstance(h, str) and h.strip() for h in line.heard):
                 raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
+            if not (checks.number(line.level_db) and LEVELS[0] <= line.level_db <= LEVELS[1]):
+                raise InterviewError(f"line {i}: level_db {line.level_db!r} must lie in {LEVELS}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:
@@ -329,7 +333,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
             start=round(start, 6),
             clip_in=trim.clip_in,
             clip_out=trim.clip_out,
-            gain_db=round(voice_gain, 4),
+            gain_db=round(voice_gain + line.level_db, 4),
             role="dialogue",
             language="en",
         )
