@@ -64,3 +64,11 @@ all default to no change: `toon_house.LEDGES["parlour"]`, `toon_house.ledge(inse
 - The arm with the cone is drawn apart from the rigged body, so it does not follow his head or his breathing.
 
 ## Watch gate
+
+Watch gate: Pedro watched it and approved it (31 Oct).
+
+The gate questions have no written answers.
+
+## Enhancement
+
+`srstudio craft` now reports silence in the first five seconds, including the wait before the first line. Kind: checks.

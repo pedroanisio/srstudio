@@ -79,6 +79,10 @@ None. The repainted door, the carried door, the pad and the stamps are the pilot
 
 ## Watch gate
 
-- At 2 seconds, did you want to keep watching?
-- Who would you send this to, if anyone?
-- Did the first-time viewer spot the change before the reveal?
+Watch gate: Pedro watched it and approved it (31 Oct).
+
+The gate questions have no written answers.
+
+## Enhancement
+
+This reel built with its own copy of `rest_springs`. The function is now in `toon_head` as well, so the next long shot can call it. Kind: speed.
