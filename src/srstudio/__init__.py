@@ -50,6 +50,7 @@ from . import (  # noqa: F401  (registers builders)
     saga_reel,
     saga_sets,
     signature,
+    soft_bedtime,
     soft_props,
     soft_sets,
     stick,
