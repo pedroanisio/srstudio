@@ -48,7 +48,9 @@ from .toon_cast import (
 )
 from .toon_torso import depth_in
 
-__all__ = ["FACE_SLIDE", "Glancing", "HeadRig", "figure", "gaze_states", "open_seam"]
+__all__ = ["FACE_SLIDE", "SPRING_RUN", "Glancing", "HeadRig", "figure", "gaze_states", "open_seam", "rest_springs"]
+
+SPRING_RUN = 8  # carried spring keys in a row before one restarts from rest, see rest_springs
 
 FACE_SLIDE = 0.8  # how much further than the skull the face drops on a nod
 SEAM_ROOM = 2.0  # how far above a seam cover's line a head must still be behind it, reference pixels
@@ -162,6 +164,19 @@ def _animate(cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, 
     for i, (t, value) in enumerate(channel.keys):
         carry = {"carry": "true"} if channel.spring and i else {}
         a.add_key(time=round(t, 6), value=str(round(base + value * scale, 4)), **attrs, **carry)
+
+
+def rest_springs(setup, run: int = SPRING_RUN) -> None:
+    """Start every ``run``-th carried spring key under ``setup`` from rest. Spring keys carry their momentum from key
+    to key, and the engine's time for a frame can double or worse with each carried key before it: a still 9 s into one
+    long shot took over two minutes. Each move in a head plan starts from rest anyway, so call this on a shot long
+    enough to feel it; a restart moves nothing a viewer can see. Reels that do not call it are unchanged."""
+    if run < 2:
+        raise ToonDataError(f"a run of {run} carried keys carries nothing: use 2 or more")
+    for animate in setup.iter("animate"):
+        chain = [key for key in animate.iter("key") if key.carry]
+        for key in chain[run - 1 :: run]:
+            key.carry = None
 
 
 def _eyes(cv: Canvas, parent, look: Look, kind: str, arms: str, gaze, start: float, end: float) -> None:
