@@ -39,6 +39,8 @@ NO_EPISODE = [
     "collage-eye-chart",
     "collage-lens-frame",
     "collage-sensor-tap",
+    "collage-water-jug",
+    "collage-wine-glass",
 ]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),

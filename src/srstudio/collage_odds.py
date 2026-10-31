@@ -128,3 +128,33 @@ def sensor_tap(cv: Canvas, parent, x: float, y: float, runs: Sequence[tuple[floa
         cv.gate(water, list(runs))
         cv.rect(water, x + 70, y - 104, 16, 110, "#8ccdf0", opacity=0.9, radius=6.0)
     return g
+
+
+@register("prop", "collage-wine-glass", summary="A wine glass, as full as you like", style="collage")
+def wine_glass(cv: Canvas, parent, x: float, y: float, full: float = 0.5, colour: str = WINE, scale: float = 1.0):
+    """A glass whose foot stands on ``x, y``, its bowl ``full`` of ``colour``."""
+    if not (checks.number(full) and 0 <= full <= 1 and checks.number(scale) and scale > 0):
+        raise CollageOddsError(f"a glass is 0..1 full at a scale above 0, got {full!r}, {scale!r}")
+    g = cv.group(parent, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y, scaleX=scale, scaleY=scale)
+    bowl_h = 170.0
+    fill = bowl_h * full
+    cv.rect(g, -60 + x, -16 + y, 120, 16, GLASS, INK, EDGE, radius=8.0)
+    cv.rect(g, -8 + x, -130 + y, 16, 118, GLASS, INK, EDGE, radius=4.0)
+    cv.ellipse(g, -80 + x, -130 - bowl_h + y, 160, bowl_h + 20, GLASS, INK, EDGE, opacity=0.75)
+    if full:
+        cv.ellipse(g, -70 + x, -120 - fill + y, 140, fill, colour, opacity=0.9)
+    return g
+
+
+@register("prop", "collage-water-jug", summary="A glass water jug with ice in it", style="collage")
+def water_jug(cv: Canvas, parent, x: float, y: float, scale: float = 1.0):
+    """A jug whose base stands on ``x, y``."""
+    if not (checks.number(scale) and scale > 0):
+        raise CollageOddsError(f"a jug has a scale above 0, got {scale!r}")
+    g = cv.group(parent, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, x - 100, y - 300, 200, 300, GLASS, INK, EDGE, radius=28.0, opacity=0.85)
+    cv.rect(g, x - 88, y - 230, 176, 218, "#b7def0", radius=20.0, opacity=0.85)
+    cv.rect(g, x + 96, y - 240, 62, 150, "#00000000", INK, EDGE * 2, radius=30.0)
+    for dx, dy in ((-50, -210), (20, -180), (-20, -130)):
+        cv.rect(g, x + dx, y + dy, 58, 58, "#eef8fb", INK, 2.0, radius=8.0)
+    return g

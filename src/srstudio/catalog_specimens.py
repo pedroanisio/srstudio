@@ -459,6 +459,8 @@ RECIPES: dict[str, Recipe] = {
     "collage-eye-chart": Recipe(part(200.0, 500.0, ("TOP ROW", "SECOND ROW"), (1.0, 2.0), end=SECONDS)),
     "collage-lens-frame": Recipe(part(540.0, 960.0)),
     "collage-sensor-tap": Recipe(part(540.0, 960.0, ((0.0, SECONDS),))),
+    "collage-wine-glass": Recipe(part(540.0, 1100.0)),
+    "collage-water-jug": Recipe(part(540.0, 1100.0)),
 }  # fmt: skip
 
 FIRST_POSE = Recipe(lambda cv, g, e, ctx: None, at=0.0)  # a character's drawing is srstudio.specimens' alone
