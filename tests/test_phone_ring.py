@@ -43,7 +43,7 @@ def test_a_ring_beat_writes_its_own_effect(tmp_path):
         rate, frames = wav.getframerate(), wav.readframes(wav.getnframes())
     samples = struct.unpack(f"<{len(frames) // 2}h", frames)
     assert len(samples) == 4 * rate
-    assert all(v == 0 for v in samples[: rate])  # silent until the first ring
+    assert all(v == 0 for v in samples[:rate])  # silent until the first ring
     assert any(samples[rate : 2 * rate])
 
 
