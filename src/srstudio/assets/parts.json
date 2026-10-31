@@ -9256,6 +9256,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-gull-stare": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A gull's head filling the frame, turning until one eye has you. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b0d6c9c102793ae7043398f073a61b7718e9dac86a855f643efaaff29c272e3",
+          "rig": null
+        }
+      ]
     }
   }
 }

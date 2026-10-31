@@ -13,12 +13,13 @@ from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, ToonDataError, fh, fx, fy
 from .toon_sets import _inked, _line
+from .toon_world import GULL_BEAK, GULL_GREY, GULL_WHITE
 
 Point = tuple[float, float]
 Measure = Callable[[str, float], float]
 READ_SIZE = 44  # frame pixels: under this a word on a phone is a texture
 
-__all__ = ["READ_SIZE", "eye_drops", "reception_glass", "voice_note_bar"]
+__all__ = ["READ_SIZE", "eye_drops", "gull_stare", "reception_glass", "voice_note_bar"]
 
 
 def _second(value: object, what: str) -> float:
@@ -187,3 +188,57 @@ def voice_note_bar(
         cv.text(
             chip, cv.uid("note-chip"), "2x", fx(470), fy(y + 92), int(fh(86)), int(fh(46)), NOTE_SIZE - 8, NOTE_PANEL
         )
+
+
+STARE_IRIS = "#f2c230"
+
+
+@register(
+    "prop",
+    "toon-gull-stare",
+    summary="A gull's head filling the frame that turns, slowly, until one eye has you",
+    style="toon",
+)
+def gull_stare(
+    cv: Canvas,
+    parent,
+    at: Point = (296.0, 640.0),
+    turn: float = 0.6,
+    seconds: float = 1.8,
+    end: float = 4.0,
+    scale: float = 1.0,
+) -> None:
+    """The head at ``at``, looking off to the left; from ``turn`` it comes round over ``seconds`` and stays to ``end``:
+    the beak shortens towards you and the yellow eye slides to the middle of the head."""
+    turn, seconds, end = _second(turn, "the turn"), _second(seconds, "the turn's length"), _second(end, "the end")
+    if not (seconds > 0 and turn + seconds <= end and checks.number(scale) and scale > 0):
+        raise ToonDataError(
+            f"a gull turns within its time at a scale over 0: {turn!r}, {seconds!r}, {end!r}, {scale!r}"
+        )
+    done = turn + seconds
+    x, y, r = at[0], at[1], 170.0 * scale
+    g = cv.group(parent, cv.uid("gull-stare"), end=end)
+    _inked(
+        cv,
+        g,
+        [
+            (x - 150 * scale, y + r * 3),
+            (x - 130 * scale, y + r),
+            (x + 130 * scale, y + r),
+            (x + 190 * scale, y + r * 3),
+        ],
+        GULL_GREY,
+        FINE_W,
+    )
+    cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), GULL_WHITE, cv.ink, FINE_W)
+    slide = fh(150 * scale)
+    beak_x = fx(x - r * 0.8)
+    beak = cv.group(g, cv.uid("g"), x=beak_x, y=0.0, anchorX=beak_x, anchorY=0.0)
+    cv.keys(beak, "x", [(turn, beak_x), (done, beak_x + slide)], kind="sine-in-out", local=False)
+    cv.keys(beak, "scaleX", [(turn, 1.0), (done, 0.42)], kind="sine-in-out", local=False)
+    _inked(cv, beak, [(x - r * 0.75, y - 22), (x - r * 1.75, y + 22), (x - r * 0.75, y + 66)], GULL_BEAK, FINE_W)
+    eye = cv.group(g, cv.uid("g"), x=0.0, y=0.0)
+    cv.keys(eye, "x", [(turn, 0.0), (done, slide * 1.1)], kind="sine-in-out", local=False)
+    w = 58 * scale
+    cv.ellipse(eye, fx(x - r * 0.55 - w / 2), fy(y - 70 * scale - w / 2), fh(w), fh(w), STARE_IRIS, cv.ink, FINE_W)
+    cv.ellipse(eye, fx(x - r * 0.55 - w / 4), fy(y - 70 * scale - w / 4), fh(w / 2), fh(w / 2), cv.ink)

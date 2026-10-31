@@ -94,3 +94,23 @@ def test_a_voice_note_refuses_stops_it_cannot_show(bad):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_inserts.voice_note_bar(cv, cv.comp, **bad)
+
+
+def test_a_gull_turns_inside_its_time_and_ends_with_its_eye_on_you():
+    specimens.load_parts()
+    assert registry.get("prop", "toon-gull-stare").builder is toon_inserts.gull_stare
+    cv = canvas()
+    toon_inserts.gull_stare(cv, cv.comp, turn=1.0, seconds=2.0, end=5.0)
+    slides = [a for a in tree(cv).iter("animate") if a.get("property") == "x"]
+    assert len(slides) == 2
+    assert all(float(a[0].get("time")) == 1.0 and float(a[-1].get("time")) == 3.0 for a in slides)
+    assert all(float(a[-1].get("value")) > float(a[0].get("value")) for a in slides)  # it comes round, never back
+
+
+@pytest.mark.parametrize(
+    "bad", [{"turn": 4.0, "seconds": 2.0, "end": 5.0}, {"seconds": 0.0}, {"turn": -1.0}, {"scale": 0.0}]
+)
+def test_a_gull_refuses_a_turn_it_has_no_time_for(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError):
+        toon_inserts.gull_stare(cv, cv.comp, **bad)
