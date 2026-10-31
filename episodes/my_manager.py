@@ -46,7 +46,12 @@ SALESMAN_AT = (540, 790, 1.15)
 ROSA_AT = (230, 1340, 1.55)
 CLOCK_AT = (838, 112, 78)
 GONE_X = 1290  # past the frame's right edge
-SITS_DOWN = ((0.0, -230), (0.55, 18), (0.72, -6), (0.86, 0))  # seconds, pixels: he drops into his chair, and settles
+SITS_DOWN = (
+    (0.0, -100),
+    (0.55, 18),
+    (0.72, -6),
+    (0.86, 0),
+)  # his torso stays behind the desk, first frame too  # seconds, pixels: he drops into his chair, and settles
 RETURNS = [CLOCKS[0] + JUMP - 0.1, CLOCKS[1] + JUMP - 0.1]  # he is walking back in as the clock lets go
 IN_ROOM_SALESMAN = (850, 1040, 1.1)
 IN_ROOM_ROSA = (230, 1040, 1.1)
