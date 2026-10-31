@@ -78,8 +78,10 @@ The transition rotates the elbow around the reach axis, so an opposing pole can 
 baked backend. Settling eases in at the stroke-to-hold boundary and fades out before recovery, preserving velocity
 continuity. Contact transitions with an authored pole blend wrist offsets relative to the moving arm.
 
-The pole rotation branch is anchored to the action's starting pose, so crossing the signed-angle boundary as the
-root turns does not reverse the elbow's transition. Sampling order does not affect the result.
+Pole transitions track rotation winding across root and contact keys, including turns beyond 180° and repeated
+turns. Preparation and recovery track their own winding, so recovery does not replay rotations accumulated
+during the hold. Sampling order does not affect the result. Each transition prepares 32 samples between keys,
+with a 100,000-sample limit; exceeding it raises `LimbError` with `code="budget"`.
 
 `compiled.report.max_speed` and `max_acceleration` measure **wrist translation** in world canonical units per
 second and per second squared. `max_elbow_speed` measures elbow translation; `max_hand_angular_speed` measures
@@ -304,6 +306,8 @@ elbow as the pole returns the same hand frame on both sides.
 The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
 without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions
 and fields are rejected. Both versions pass through the current numeric and resource validation.
+Decoding errors retain the nested field path, including optional objects: an invalid target coordinate reports
+`motion.actions[0].target.position.x` and the expected finite number, so an authoring agent can repair that field.
 `load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so
 an oversized, deeply nested or non-UTF-8 file raises `LimbError` instead of exhausting the parser. Profile,
 digit, action, contact, attachment and take identifiers are bounded to 128 characters. Custom digit labels

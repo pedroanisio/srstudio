@@ -80,6 +80,27 @@ Keys = Sequence[tuple[float, float | int | str]]
 Spans = Iterable[tuple[float, float]]
 
 
+def _visibility_keys(spans: Spans) -> list[tuple[float, int]]:
+    """One union of spans, shared by visibility gates and complementary rig layers."""
+    intervals = []
+    for start, end in spans:
+        if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
+            raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+        if end > start:
+            intervals.append((float(start), float(end)))
+    merged: list[tuple[float, float]] = []
+    for start, end in sorted(intervals):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    events = {0.0: 0}
+    for start, end in merged:
+        events[start] = 1
+        events[end] = 0
+    return sorted(events.items())
+
+
 class Canvas:
     """The scene plus the helpers every builder needs."""
 
@@ -414,23 +435,7 @@ class Canvas:
 
     def gate(self, node, spans: Spans):
         """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
-        intervals = []
-        for start, end in spans:
-            if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
-                raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
-            if end > start:
-                intervals.append((float(start), float(end)))
-        merged: list[tuple[float, float]] = []
-        for start, end in sorted(intervals):
-            if merged and start <= merged[-1][1]:
-                merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
-            else:
-                merged.append((start, end))
-        events = {0.0: 0}
-        for start, end in merged:
-            events[start] = 1
-            events[end] = 0
-        return self.keys(node, "opacity", sorted(events.items()))
+        return self.keys(node, "opacity", _visibility_keys(spans))
 
     def pop_in(
         self,

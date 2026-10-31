@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, fields, replace
+from functools import cached_property
 
 from .constraints import hand_pose, reach
 from .errors import Diagnostic, LimbError
@@ -390,6 +392,92 @@ class Motion:
         offset = hand_pose(self.hand, fingers, Frame(), side=self.arm.side).digit(contact.digit).points[-1]
         return frame.origin - frame.rotation.rotate(offset), frame.rotation
 
+    def _contact_position(self, action: Action, time: float, fallback: Vec3) -> Vec3:
+        contacts = [c for c in self.contacts if action.start < c.start < c.end < action.end]
+        active = next((c for c in contacts if c.start <= time <= c.end), None)
+        if active:
+            return self._contact_request(active, time, self._request(time)[1])[0]
+        if not contacts:
+            return fallback
+        previous = next((c for c in reversed(contacts) if c.end < time), None)
+        following = next((c for c in contacts if c.start > time), None)
+        start = previous.end if previous else action.start
+        end = following.start if following else action.end
+        span = end - start
+        u = (time - start) / span
+
+        def position(contact: Contact | None, at: float) -> Vec3:
+            if contact:
+                return self._contact_request(contact, at, self._request(at)[1])[0]
+            return self._relative(_GOALS['rest'], at)
+
+        def velocity(contact: Contact | None, at: float) -> Vec3:
+            h = min(1e-4, span * 1e-3)
+            lo, hi = max(0.0, at - h), at + h
+            return (position(contact, hi) - position(contact, lo)) / (hi - lo)
+
+        ta = u - 6 * u**3 + 8 * u**4 - 3 * u**5
+        tb = -4 * u**3 + 7 * u**4 - 3 * u**5
+        return (
+            position(previous, start).lerp(position(following, end), smooth(u))
+            + (velocity(previous, start) * ta + velocity(following, end) * tb) * span
+        )
+
+    def _pole_geometry(self, action: Action, time: float, goal: Vec3) -> tuple[Vec3, Vec3, float]:
+        root = self.root.sample(time)
+        shoulder = root.point(self.arm.shoulder)
+        default = root.point(self.arm.shoulder + Vec3(1 if self.arm.side == 'right' else -1, 0, 0))
+        delta = goal - shoulder
+        direction = delta.unit() if delta.length > 1e-12 else Vec3(0, 1, 0)
+
+        def bend(pole: Vec3) -> Vec3:
+            toward = pole - shoulder
+            projected = toward - direction * toward.dot(direction)
+            if projected.length < 1e-10:
+                axis = Vec3(1, 0, 0) if abs(direction.x) < 0.9 else Vec3(0, 0, 1)
+                projected = axis - direction * axis.dot(direction)
+            return projected.unit()
+
+        assert action.pole is not None
+        a, b = bend(default), bend(action.pole)
+        return direction, a, math.atan2(direction.dot(a.cross(b)), a.dot(b))
+
+    @cached_property
+    def _pole_paths(self) -> dict[tuple[int, float, float], tuple[tuple[float, ...], tuple[float, ...]]]:
+        # At most two transitions are retained; derived data never enters motion serialization or equality.
+        return {}
+
+    def _pole_path(self, action: Action, start: float, end: float) -> tuple[tuple[float, ...], tuple[float, ...]]:
+        key = (id(action), start, end)
+        if key in self._pole_paths:
+            return self._pole_paths[key]
+        knots = {start, end, action.stroke_at}
+        knots.update(k.time for k in self.root.keys)
+        for contact in self.contacts:
+            if action.start < contact.start < contact.end < action.end:
+                knots.update((contact.start, contact.end))
+                knots.update(k.time for k in contact.target.keys)
+        ordered = sorted(t for t in knots if start <= t <= end)
+        if (len(ordered) - 1) * 32 + 1 > 100000:
+            raise LimbError('pole winding exceeds its 100000-sample preparation budget', code='budget')
+        times = [ordered[0]]
+        for a, b in zip(ordered, ordered[1:], strict=False):
+            for i in range(1, 33):
+                t = b if i == 32 else a + (b - a) * i / 32
+                if t > times[-1]:
+                    times.append(t)
+        angles: list[float] = []
+        for t in times:
+            goal = self._contact_position(action, t, self._request(t)[0])
+            raw = self._pole_geometry(action, t, goal)[2]
+            previous = angles[-1] if angles else raw
+            angles.append(previous + math.atan2(math.sin(raw - previous), math.cos(raw - previous)))
+        result = (tuple(times), tuple(angles))
+        if len(self._pole_paths) >= 2:
+            self._pole_paths.clear()
+        self._pole_paths[key] = result
+        return result
+
     def _pole(self, action: Action | None, time: float, goal: Vec3) -> Vec3:
         root = self.root.sample(time)
         shoulder = root.point(self.arm.shoulder)
@@ -404,31 +492,16 @@ class Motion:
             return default
         if weight == 1:
             return action.pole
-        delta = goal - shoulder
-        direction = delta.unit() if delta.length > 1e-12 else Vec3(0, 1, 0)
-
-        def bend(pole: Vec3, shoulder: Vec3 = shoulder, direction: Vec3 = direction) -> Vec3:
-            toward = pole - shoulder
-            projected = toward - direction * toward.dot(direction)
-            if projected.length < 1e-10:
-                axis = Vec3(1, 0, 0) if abs(direction.x) < 0.9 else Vec3(0, 0, 1)
-                projected = axis - direction * axis.dot(direction)
-            return projected.unit()
-
-        # Rotate around the reach axis: linear pole blending can cross the axis and flip the elbow.
-        a, b = bend(default), bend(action.pole)
-        angle = math.atan2(direction.dot(a.cross(b)), a.dot(b))
-        # Anchor the branch to the authored action, not to the order in which frames happen to be sampled.
-        reference_root = self.root.sample(action.start)
-        reference_shoulder = reference_root.point(self.arm.shoulder)
-        reference_delta = self._request(action.start)[0] - reference_shoulder
-        reference_direction = reference_delta.unit() if reference_delta.length > 1e-12 else Vec3(0, 1, 0)
-        reference_default = reference_root.point(self.arm.shoulder + Vec3(1 if self.arm.side == 'right' else -1, 0, 0))
-        ra = bend(reference_default, reference_shoulder, reference_direction)
-        rb = bend(action.pole, reference_shoulder, reference_direction)
-        reference_angle = math.atan2(reference_direction.dot(ra.cross(rb)), ra.dot(rb))
-        angle += 2 * math.pi * round((reference_angle - angle) / (2 * math.pi))
-        return shoulder + Quaternion.axis_angle(direction, angle * weight).rotate(a)
+        start, end = (
+            (action.start, action.start + arrival * action.duration)
+            if u < arrival
+            else (action.start + recovery * action.duration, action.end)
+        )
+        times, angles = self._pole_path(action, start, end)
+        reference = angles[max(0, bisect_right(times, time) - 1)]
+        direction, bend, angle = self._pole_geometry(action, time, goal)
+        angle += 2 * math.pi * round((reference - angle) / (2 * math.pi))
+        return shoulder + Quaternion.axis_angle(direction, angle * weight).rotate(bend)
 
     def sample(self, time: float) -> Sample:
         if number(time, "sample time") < 0:
@@ -463,20 +536,9 @@ class Motion:
                 u = (time - start_time) / span
                 weight = smooth(u)
 
-                def velocity(contact: Contact | None, at: float) -> Vec3:
-                    h = min(1e-4, span * 1e-3)
-                    lo, hi = max(0.0, at - h), at + h
-                    if contact:
-                        p = self._contact_request(contact, lo, self._request(lo)[1])[0]
-                        q = self._contact_request(contact, hi, self._request(hi)[1])[0]
-                    else:
-                        p, q = self._relative(_GOALS['rest'], lo), self._relative(_GOALS['rest'], hi)
-                    return (q - p) / (hi - lo)
-
-                # Quintic Hermite tangent terms retain zero endpoint acceleration for the added correction.
+                # Quintic Hermite coefficients for matching endpoint angular velocity.
                 ta = u - 6 * u**3 + 8 * u**4 - 3 * u**5
                 tb = -4 * u**3 + 7 * u**4 - 3 * u**5
-                tangent = (velocity(previous, start_time) * ta + velocity(following, end_time) * tb) * span
                 if action.pole is not None:
                     # Blend wrist offsets in the moving arm frame, so the pole's turn does not become wrist twist.
                     def relative_rotation(at: float, target: Vec3, rotation: Quaternion) -> Quaternion:
@@ -487,7 +549,7 @@ class Motion:
                     qa = relative_rotation(start_time, a, qa)
                     qb = relative_rotation(end_time, b, qb)
                     local_orientation = True
-                goal, orientation = a.lerp(b, weight) + tangent, qa.slerp(qb, weight)
+                goal, orientation = self._contact_position(action, time, goal), qa.slerp(qb, weight)
 
                 def angular_velocity(contact: Contact | None, at: float) -> Vec3:
                     h = min(1e-4, span * 1e-3)

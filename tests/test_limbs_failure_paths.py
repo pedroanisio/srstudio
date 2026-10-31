@@ -432,10 +432,10 @@ def test_motion_documents_refuse_malformed_envelopes(document, match):
         parse_motion(document)
 
 
-def test_union_fields_refuse_values_matching_no_declared_type():
+def test_optional_fields_refuse_wrong_values_with_the_expected_object_type():
     document = _document()
     document["motion"]["actions"][0]["pole"] = "elbow-out"
-    with refused(r"motion.actions\[0\].pole: value does not match the declared union type"):
+    with refused(r"motion.actions\[0\].pole: expected a Vec3 object"):
         parse_motion(document)
 
 
