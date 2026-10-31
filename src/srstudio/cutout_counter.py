@@ -10,12 +10,21 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from . import checks
-from .canvas import Canvas
+from . import checks, locations, signature
+from .canvas import Canvas, Spans
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["ChainRun", "CutoutCounterError", "chain_run", "jump_clock", "paper_poster", "pen_on_chain"]
+__all__ = [
+    "ChainRun",
+    "CutoutCounterError",
+    "back_room",
+    "chain_run",
+    "jump_clock",
+    "paper_poster",
+    "pen_on_chain",
+    "sandwich",
+]
 
 Point = tuple[float, float]
 Grip = tuple[float, float, float]  # time, x, y
@@ -30,6 +39,9 @@ CHAIN_LOOP = 34  # how wide a slack chain opens, px
 CHAIN_METAL = "#8D949B"
 PEN_BODY = "#1F2B4A"
 CLOCK_SPIN = 0.75  # seconds a jump takes the hands, whatever the minutes
+ROOM_FAR = 0.5  # the back room's scale through its door, before the push
+HALL_NEAR = 3.6  # the hall's scale once the push has gone through it
+DOOR = (540, 960)  # the door's opening, width and height, about the frame's centre (540, 900)
 
 
 class CutoutCounterError(SrstudioError, ValueError):
@@ -281,4 +293,125 @@ def jump_clock(
     cv.line(hours, 0, radius * 0.1, 0, -radius * 0.5, ink, radius * 0.1)
     cv.line(minutes, 0, radius * 0.14, 0, -radius * 0.74, "#B03A2E", radius * 0.07)
     cv.ellipse(g, -radius * 0.08, -radius * 0.08, radius * 0.16, radius * 0.16, ink)
+    return g
+
+
+@register("prop", "sandwich", style="cutout", summary="A sandwich with a bite gone, on white bread")
+def sandwich(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "sandwich"):
+    """Centred on (``x``, ``y``), its bitten corner up."""
+    if not (checks.number(scale) and scale > 0):
+        raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    bread = "M-60 -22 Q-64 -44 -40 -42 L6 -42 Q2 -30 14 -28 Q30 -26 30 -40 L40 -40 Q62 -44 60 -22 Z"
+    cv.rect(g, -60, 12, 120, 26, "#F2E2BE", ink, 3, radius=9)
+    cv.path(g, "M-64 12 Q-46 0 -28 12 Q-10 0 8 12 Q26 0 44 12 Q56 2 66 12 L60 18 L-60 18Z", "#7FA45F", ink, 2.5)
+    cv.rect(g, -56, -6, 112, 12, "#C9573F", ink, 2.5, radius=4)
+    cv.rect(g, -58, -20, 116, 14, "#F0C655", ink, 2.5, radius=3)
+    cv.path(g, bread, "#F2E2BE", ink, 3)
+    return g
+
+
+def _folding_chair(cv: Canvas, g, x: float, floor: float, name: str) -> None:
+    ink = cv.ink
+    grey = "#9AA3A8"
+    chair = cv.group(g, name)
+    cv.path(
+        chair, f"M{x - 84} {floor} L{x + 74} {floor - 250} M{x + 84} {floor} L{x - 74} {floor - 250}", stroke=ink, sw=13
+    )
+    cv.path(
+        chair, f"M{x - 84} {floor} L{x + 74} {floor - 250} M{x + 84} {floor} L{x - 74} {floor - 250}", stroke=grey, sw=7
+    )
+    cv.rect(chair, x - 90, floor - 262, 180, 30, grey, ink, 4, radius=9)
+    cv.rect(chair, x - 74, floor - 520, 148, 90, grey, ink, 4, radius=12)
+    for side in (-1, 1):
+        cv.line(chair, x + side * 66, floor - 430, x + side * 66, floor - 240, ink, 9)
+
+
+@register(
+    "location",
+    "back-room",
+    style="cutout",
+    summary="A hall door with a nameplate, and behind it a cupboard: shelves, a bare bulb, two folding chairs",
+)
+def back_room(
+    cv: Canvas,
+    parent,
+    in_room: locations.Slot = None,
+    id="back-room",
+    shots: Spans | None = None,
+    *,
+    plate: str = "MANAGER",
+    push: tuple[float, float] = (0.0, 3.0),
+    opens: float = 0.0,
+):
+    """The door to a cupboard, seen from the hall. At ``opens`` the door swings in, and over ``push`` (start, end) the
+    hall goes past the frame and the room grows to fill it, the hall faster, so it is a push through a door and not a
+    zoom. ``in_room`` draws on the room's own 1080 by 1920, in front of its back wall and its chairs."""
+    start, end = push
+    if not (checks.number(start) and checks.number(end) and 0 <= start < end):
+        raise CutoutCounterError(f"a push runs from a start to a later end, got {push!r}")
+    if not (checks.number(opens) and 0 <= opens <= start):
+        raise CutoutCounterError(f"the door opens by the time the push starts, got {opens!r} for {push!r}")
+    if not plate.strip():
+        raise CutoutCounterError("a nameplate says something")
+    ink = cv.ink
+    g = cv.group(parent, id)
+    if shots is not None:
+        cv.gate(g, shots)
+    room = cv.group(g, f"{id}-room", x=540, y=900)
+    for prop in ("scaleX", "scaleY"):
+        cv.keys(room, prop, [(0, ROOM_FAR), (start, ROOM_FAR), (end, 1.0)], kind="sine-in-out")
+    inner = cv.group(room, f"{id}-inside", x=-540, y=-900)
+    wall = cv.grad(f"{id}-wall", [(0, "#8C8672"), (0.7, "#A8A18A"), (1, "#7E7966")], (0, 0, 0, 1))
+    floor = cv.grad(f"{id}-floor", [(0, "#6A5F50"), (1, "#8A7D6B")], (0, 0, 0, 1))
+    cv.rect(inner, -700, -700, 2480, 2120, wall)  # past the frame: the hall lets go of the room before it fills it
+    cv.rect(inner, -700, 1420, 2480, 1200, floor)
+    cv.line(inner, -700, 1420, 1780, 1420, ink, 4)
+    for yy in (330, 620):
+        cv.rect(inner, 40, yy, 1000, 20, "#B9A27E", ink, 4)
+        for xx in (70, 1000):
+            cv.path(inner, f"M{xx} {yy + 20} L{xx} {yy + 60} L{xx + 12} {yy + 20}Z", "#5C5546", ink, 2)
+    for x, y, w, h, paint in (
+        (90, 214, 190, 116, "#C8AE86"),
+        (300, 244, 120, 86, "#D9C39B"),
+        (700, 224, 170, 106, "#B99C74"),
+        (880, 270, 110, 60, "#D9C39B"),
+        (70, 540, 150, 80, "#D9C39B"),
+        (760, 500, 220, 120, "#C8AE86"),
+    ):
+        cv.rect(inner, x, y, w, h, paint, ink, 3.5)
+        cv.line(inner, x + w / 2, y, x + w / 2, y + h * 0.3, "#E9DFAE", 8)
+    signature.code(cv, inner, 868, 550, 11, color="#5C4D3E")
+    signature.cactus(cv, inner, 330, 618, 0.7)
+    cv.line(inner, 540, -40, 540, 96, ink, 4)
+    cv.rect(inner, 520, 96, 40, 26, "#3A3F46", ink, 3)
+    cv.ellipse(inner, 512, 118, 56, 66, "#FFF2C4", ink, 4)
+    cv.path(inner, "M360 180 L720 180 L1000 1420 L80 1420Z", "#FFF2C4", cv.clear, 0, opacity=0.12)  # under the bulb
+    _folding_chair(cv, inner, 230, 1560, f"{id}-chair-left")
+    _folding_chair(cv, inner, 850, 1560, f"{id}-chair-right")
+    locations._call(in_room, inner)
+    hall = cv.group(g, f"{id}-hall", x=540, y=900)
+    for prop in ("scaleX", "scaleY"):
+        cv.keys(hall, prop, [(0, 1.0), (start, 1.0), (end, HALL_NEAR)], kind="sine-in-out")
+    w, h = DOOR
+    paint = "#5F6F7C"
+    for x, y, rw, rh in (
+        (-1600, -1600, 3200, 1600 - h / 2),
+        (-1600, h / 2, 3200, 1600 - h / 2),
+        (-1600, -h / 2, 1600 - w / 2, h),
+        (w / 2, -h / 2, 1600 - w / 2, h),
+    ):
+        cv.rect(hall, x, y, rw, rh, paint)
+    cv.rect(hall, -w / 2 - 22, -h / 2 - 22, w + 44, h + 22, cv.clear, "#E4DFD0", 22)
+    cv.rect(hall, -w / 2 - 34, -h / 2 - 34, w + 68, h + 34, cv.clear, ink, 4)
+    cv.rect(hall, -1600, h / 2, 3200, 30, "#3A3F46", ink, 3)
+    door = cv.group(hall, f"{id}-door", x=-w / 2, y=0)
+    cv.keys(door, "scaleX", [(0, 1.0), (opens, 1.0), (opens + 0.5, 0.06)], kind="sine-in-out")
+    cv.rect(door, 0, -h / 2, w, h, "#A98B66", ink, 4)
+    for y in (-h / 2 + 50, 40):
+        cv.rect(door, 60, y, w - 120, h / 2 - 100, "#B99C74", ink, 3)
+    cv.rect(door, 120, -h / 2 + 110, w - 240, 84, "#E4DFD0", ink, 4, radius=8)
+    cv.text(door, f"{id}-plate", plate, 124, -h / 2 + 124, w - 248, 60, 42, "#1F2B4A")
+    cv.ellipse(door, w - 62, 30, 34, 34, "#D9B44A", ink, 3)
     return g

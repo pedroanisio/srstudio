@@ -8950,6 +8950,40 @@
           "rig": null
         }
       ]
+    },
+    "sandwich": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A sandwich with a bite gone, on white bread. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "234af86d5c803981f5fda2ddecacd4b25348b2446870d692715117c207602093",
+          "rig": null
+        }
+      ]
+    },
+    "back-room": {
+      "kind": "location",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A door with a nameplate and a cupboard behind it, with a push through the door. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "43f725f735347c12b12b859f5e2640705726c1f68aac76373a99a32b275c094b",
+          "rig": null
+        }
+      ]
     }
   }
 }

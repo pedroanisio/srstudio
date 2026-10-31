@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from srstudio import cutout_counter, registry
+from srstudio.signature import Signature
 from support.tip_tablet import canvas
 
 CHECKED = cutout_counter.CutoutCounterError
@@ -151,3 +152,38 @@ def test_a_clock_that_cannot_be_drawn_is_refused(kw, pattern):
     cv = canvas()
     with pytest.raises(CHECKED, match=pattern):
         cutout_counter.jump_clock(cv, cv.comp, **kw)
+
+
+def test_the_sandwich_draws_and_refuses_a_bad_scale():
+    cv = canvas()
+    cutout_counter.sandwich(cv, cv.comp, 100, 100)
+    assert errors(cv) == []
+    with pytest.raises(CHECKED, match="scale"):
+        cutout_counter.sandwich(cv, cv.comp, 100, 100, scale=0, id="other")
+
+
+def signed():
+    cv = canvas()
+    cv.signature = Signature()
+    return cv
+
+
+def test_the_back_room_is_a_door_then_a_push_with_the_hall_going_faster():
+    cv = signed()
+    cutout_counter.back_room(cv, cv.comp, opens=1.0, push=(1.2, 3.2), shots=[(0, 5)])
+    assert errors(cv) == []
+    room = animations(cv, "back-room-room", "scaleX")
+    hall = animations(cv, "back-room-hall", "scaleX")
+    assert (room[0][1], room[-1][1]) == (cutout_counter.ROOM_FAR, 1.0)
+    assert hall[-1][1] / hall[0][1] > room[-1][1] / room[0][1]
+    assert animations(cv, "back-room-door", "scaleX")[1] == (1.0, 1.0)
+
+
+@pytest.mark.parametrize(
+    ("kw", "pattern"),
+    [(dict(push=(3.0, 2.0)), "push"), (dict(opens=2.0, push=(1.0, 3.0)), "door opens"), (dict(plate=" "), "nameplate")],
+)
+def test_a_back_room_that_cannot_be_drawn_is_refused(kw, pattern):
+    cv = signed()
+    with pytest.raises(CHECKED, match=pattern):
+        cutout_counter.back_room(cv, cv.comp, **kw)
