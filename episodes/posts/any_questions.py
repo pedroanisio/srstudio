@@ -24,7 +24,8 @@ RELEASE = Release(
     tags=Tags("job-hunting", "other-person", "triumph", test="sp-hook_motion", arm="a"),
     style="Cutout",
     parts={
-        # cv-folder also drawn: a release cannot pin a proposed version, so they join once approved.
+        # cv-folder also drawn:
+        # a release cannot pin a proposed version, so they join once approved.
         "candidate": 1,
         "candidate-back": 1,
         "captions": 1,
