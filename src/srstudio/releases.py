@@ -20,7 +20,7 @@ import importlib.util
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +34,8 @@ __all__ = [
     "Release",
     "ReleaseError",
     "Tags",
+    "arm_problems",
+    "arms",
     "caption_on_cover",
     "doubled_captions",
     "grandfathered",
@@ -254,6 +256,37 @@ def caption_on_cover(releases: Mapping[str, Release], episodes: Path, delivering
             Drift(release.video_name, f'the cover frame at {thumb.at:.2f} s carries the caption "{w}"') for w in words
         )
     return drift
+
+
+def arms(releases: Mapping[str, Release], test: str) -> dict[str, list[str]]:
+    """The slugs on each arm of ``test``, each arm in slug order."""
+    found: dict[str, list[str]] = {arm: [] for arm in ARMS}
+    for slug, release in sorted(releases.items()):
+        if release.tags is not None and release.tags.test == test:
+            found[release.tags.arm].append(slug)
+    return found
+
+
+def arm_problems(releases: Mapping[str, Release], test: str, order: Sequence[str] = ()) -> list[str]:
+    """What keeps ``test`` from reading as a fair split: arms of unequal size and, given the delivery ``order``, a slug
+    outside the test, one the order leaves out, or two running on one arm."""
+    split = arms(releases, test)
+    sizes = [len(split[arm]) for arm in ARMS]
+    problems = (
+        [] if len(set(sizes)) == 1 else [" and ".join(f"arm {a} has {n}" for a, n in zip(ARMS, sizes, strict=True))]
+    )
+    if not order:
+        return problems
+    arm_of = {slug: arm for arm, slugs in split.items() for slug in slugs}
+    problems += [f"{slug} is not in the test" for slug in order if slug not in arm_of]
+    problems += [f"{slug} is not in the order" for slug in arm_of if slug not in order]
+    run = [slug for slug in order if slug in arm_of]
+    problems += [
+        f"{b} follows {a} on the same arm {arm_of[a]}"
+        for a, b in zip(run, run[1:], strict=False)
+        if arm_of[a] == arm_of[b]
+    ]
+    return problems
 
 
 def _package(folder: Path) -> str:
