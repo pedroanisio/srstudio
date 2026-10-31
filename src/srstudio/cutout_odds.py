@@ -13,7 +13,7 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
 
-__all__ = ["CutoutOddsError", "bistro_table", "eaten_sandwich", "paper_napkin"]
+__all__ = ["CutoutOddsError", "bistro_table", "earbud", "eaten_sandwich", "paper_napkin", "store_box", "tin_of_peas"]
 
 BREAD = "#F2E2BE"
 
@@ -91,4 +91,47 @@ def bistro_table(cv: Canvas, parent, x=540, y=1100, *, width: float = 300, id: s
     cv.rect(g, -width * 0.03, 8, width * 0.06, foot - 8, "#4A4C4A", ink, 3)
     cv.path(g, f"M{-half * 0.5:g} {foot:g} Q0 {foot - 24:g} {half * 0.5:g} {foot:g}Z", "#4A4C4A", ink, 3)
     cv.ellipse(g, -half, -14, width, 32, "#D9C7A6", ink, 4)
+    return g
+
+
+@register("prop", "earbud", style="cutout", summary="A white wireless earbud with its short stem")
+def earbud(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, flip: bool = False, id: str = "earbud"):
+    """The bud's middle is on (``x``, ``y``), the stem hanging 50 below it; ``flip`` turns it for the other ear."""
+    _check_scale(scale)
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    cv.rect(g, -2, 2, 13, 48, "#FBFBF8", ink, 2.5, radius=6)
+    cv.ellipse(g, -14, -14, 30, 28, "#FBFBF8", ink, 2.5)
+    cv.path(g, "M-8 -6 Q-12 0 -8 6", stroke="#B8BBC0", sw=2.5)
+    return g
+
+
+@register("prop", "tin-of-peas", style="cutout", summary="A tin of peas with a green label and a pod on it")
+def tin_of_peas(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "tin-of-peas"):
+    """Centred on (``x``, ``y``), 80 wide and 104 tall."""
+    _check_scale(scale)
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M-40 -42 L-40 42 Q0 62 40 42 L40 -42Z", "#C9CCD1", ink, 3.5)
+    cv.path(g, "M-40 -28 L-40 34 Q0 54 40 34 L40 -28 Q0 -8 -40 -28Z", "#3F8A4B", ink, 2.5)
+    cv.ellipse(g, -40, -56, 80, 28, "#DFE2E6", ink, 3.5)
+    cv.ellipse(g, -30, -50, 60, 16, "#C9CCD1", "#A9ADB3", 2)
+    cv.path(g, "M-27 20 Q0 -22 28 6 Q4 38 -27 20Z", "#BFE08F", ink, 2.5)
+    for dx, dy in ((-14, 10), (0, 3), (14, 0)):
+        cv.ellipse(g, dx - 7, dy - 7, 14, 14, "#6FB350", ink, 1.5)
+    return g
+
+
+@register("prop", "store-box", style="cutout", summary="A plain supermarket box of crackers, no brand")
+def store_box(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "store-box"):
+    """Centred on (``x``, ``y``), 130 wide and 180 tall."""
+    _check_scale(scale)
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -65, -90, 130, 180, "#E08A3C", ink, 4)
+    cv.path(g, "M-65 -44 L65 -44 L65 16 L-65 16Z", "#F7EBD2", ink, 3)
+    cv.ellipse(g, -26, -38, 52, 48, "#E9C37C", ink, 2.5)
+    for dx in (-10, 2, 12):
+        cv.ellipse(g, dx - 2, -18, 4, 4, ink)
+    cv.rect(g, -40, 38, 80, 12, "#B96A25", radius=4)
     return g

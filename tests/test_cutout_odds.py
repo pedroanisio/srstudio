@@ -26,6 +26,9 @@ DRAWN = [
     ("eaten-sandwich", cutout_odds.eaten_sandwich),
     ("paper-napkin", cutout_odds.paper_napkin),
     ("bistro-table", cutout_odds.bistro_table),
+    ("earbud", cutout_odds.earbud),
+    ("tin-of-peas", cutout_odds.tin_of_peas),
+    ("store-box", cutout_odds.store_box),
 ]
 
 
@@ -75,3 +78,18 @@ def test_a_napkin_and_a_table_refuse_a_size_of_nothing():
         cutout_odds.paper_napkin(cv, cv.comp, scale=0)
     with pytest.raises(CHECKED, match="width"):
         cutout_odds.bistro_table(cv, cv.comp, width=0)
+
+
+def test_a_flipped_earbud_mirrors_and_keeps_its_size():
+    cv = canvas()
+    cutout_odds.earbud(cv, cv.comp, 100, 200, scale=2.0, flip=True)
+    drawn = next(e for e in root(cv).iter() if e.get("id") == "earbud")
+    assert (drawn.get("scaleX"), drawn.get("scaleY")) == ("-2", "2")
+
+
+@pytest.mark.parametrize("draw", [cutout_odds.earbud, cutout_odds.tin_of_peas, cutout_odds.store_box])
+@pytest.mark.parametrize("scale", [0, -1, float("nan"), "big"])
+def test_a_store_prop_with_a_scale_it_cannot_take_is_refused(draw, scale):
+    cv = canvas()
+    with pytest.raises(CHECKED, match="scale"):
+        draw(cv, cv.comp, scale=scale)
