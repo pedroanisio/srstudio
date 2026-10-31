@@ -326,6 +326,8 @@ def main(argv=None):
                 print(f"  opening silence {start:.2f}–{end:.2f}  {end - start:.2f} s")
             if not r.opening:
                 print(f"  opening: no silence of {craft.OPENING_LIMIT:g} s or more in the first {craft.OPENING:g} s")
+            for f in r.flashes:
+                print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
         return 0
     if args.cmd == "record":
         try:

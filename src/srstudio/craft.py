@@ -8,7 +8,8 @@ and marked as the camera when the group is a location, an angle, a shot or a set
 :func:`pauses` finds the silences between the lines of ``dialogue.json``, ``narration.json`` or a takes
 ``timeline.json``, and :func:`levels` measures the rendered sound inside each one, so a pause meant to be awkward is
 shown to be quiet, or filled. :func:`opening_silences` measures the first seconds as well, where :func:`pauses` is
-blind to the wait before the first line.
+blind to the wait before the first line. :func:`flashing` lists every stretch of a render that flashes, where the
+strict encode's check names only the first; it says where to look, and the encode stays the verdict.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
 
@@ -20,8 +21,11 @@ import re
 import subprocess
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
+
+import numpy as np
 
 from . import checks
 from .camera import SNAP
@@ -45,10 +49,12 @@ __all__ = [
     "pauses",
     "opening_silences",
     "levels",
+    "luminance",
+    "flashing",
     "measure",
 ]
 
-SCHEMA = "1.1.0"  # 1.1.0: the opening's silences
+SCHEMA = "1.2.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 PAUSE = 0.8  # seconds between lines that count as a pause
@@ -56,6 +62,11 @@ OPENING = 5.0  # seconds of a reel that have to hold a stranger
 OPENING_LIMIT = 1.0  # seconds without a line that the opening can afford
 QUIET_DB = -35.0  # mean level at or under which a pause is quiet: no music or effect fills it
 FLOOR_DB = -120.0  # how digital silence (-inf) is written in the JSON report
+SCAN_WIDTH, SCAN_HEIGHT = 108, 192  # the picture is scanned this small: a flash is large by definition
+FLASHES_A_SECOND = 3  # the guideline's limit; a flash is a pair of opposing swings
+SWING = 0.1  # of white, in linear light: the least a swing can be
+BRIGHT = 0.8  # of white: a swing whose darker side is at or above this does not count
+FLASH_SHARE = 0.05  # of the picture over the limit in one second, from which a stretch is worth listing
 CAMERA = re.compile(r"location-.+|.+-angle|shot-.+|setup-.+")
 _MEAN = re.compile(r"mean_volume:\s*(-?inf|-?\d+(?:\.\d+)?) dB")
 _run = subprocess.run
@@ -92,11 +103,21 @@ class Pause:
 
 
 @dataclass(frozen=True)
+class Flash:
+    """A stretch of a render in which ``share`` of the picture, at its worst, flashes more than the limit allows."""
+
+    start: float
+    end: float
+    share: float
+
+
+@dataclass(frozen=True)
 class Craft:
     slug: str
     moves: list[Move]
     pauses: list[Pause]
     opening: list[tuple[float, float]]
+    flashes: list[Flash] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -113,6 +134,7 @@ class Craft:
                 for p in self.pauses
             ],
             "opening": [{"start": a, "end": b} for a, b in self.opening],
+            "flashes": [asdict(f) for f in self.flashes],
         }
 
 
@@ -325,6 +347,69 @@ def levels(
     return out
 
 
+def luminance(
+    video: Path, *, ffmpeg: str = "ffmpeg", ffprobe: str = "ffprobe", run: Callable[..., Any] | None = None
+) -> tuple[np.ndarray, float]:
+    """Every frame of ``video``, small, as linear relative luminance (frames × height × width, 0 to 1), and its fps.
+    Raises :class:`CraftError` when the video cannot be read."""
+    run = run or _run
+    probe = [ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate"]
+    probe += ["-of", "csv=p=0", str(video)]
+    read = [ffmpeg, "-v", "error", "-i", str(video), "-vf", f"scale={SCAN_WIDTH}:{SCAN_HEIGHT},format=gray"]
+    read += ["-f", "rawvideo", "-"]
+    try:
+        rate = run(probe, capture_output=True, text=True, check=False)
+        raw = run(read, capture_output=True, check=False)
+    except FileNotFoundError as e:
+        raise CraftError(f"ffmpeg or ffprobe was not found: {e}") from e
+    if rate.returncode != 0 or raw.returncode != 0 or not raw.stdout:
+        raise CraftError(f"ffmpeg could not read {video}")
+    top, _, bottom = rate.stdout.strip().partition("/")
+    fps = float(top) / float(bottom or 1)
+    picture = np.frombuffer(raw.stdout, np.uint8).reshape(-1, SCAN_HEIGHT, SCAN_WIDTH) / 255.0
+    return np.where(picture <= 0.04045, picture / 12.92, ((picture + 0.055) / 1.055) ** 2.4), fps
+
+
+def _swings(frames: np.ndarray) -> np.ndarray:
+    """Per frame and pixel, whether a swing in the opposite direction to the last one has just completed. The level a
+    pixel swings from follows it as it keeps going the same way, so a long slow change is one swing, not many."""
+    swings = np.zeros(frames.shape, bool)
+    level, going = frames[0].copy(), np.zeros(frames.shape[1:])
+    for i in range(1, len(frames)):
+        now = frames[i]
+        up = now - level >= SWING
+        down = (level - now >= SWING) & (np.minimum(now, level) < BRIGHT)
+        swings[i] = (up & (going <= 0)) | (down & (going >= 0))
+        going = np.where(up, 1.0, np.where(down, -1.0, going))
+        further = np.where(going > 0, np.maximum(level, now), np.where(going < 0, np.minimum(level, now), level))
+        level = np.where(up | down, now, further)
+    return swings
+
+
+def flashing(frames: np.ndarray, fps: float, share: float = FLASH_SHARE) -> list[Flash]:
+    """The stretches of ``frames`` (see :func:`luminance`) in which at least ``share`` of the picture flashes more than
+    :data:`FLASHES_A_SECOND` times within a second. The whole picture is the measure here, not the guideline's field of
+    view, so the numbers are a map of where to look: a render can list a stretch and pass the strict encode."""
+    if len(frames) == 0:
+        raise CraftError("a picture with no frames cannot be scanned")
+    second = max(1, round(fps))
+    running = _swings(frames).cumsum(axis=0)
+    over = [
+        (i, float((running[i] - running[max(0, i - second)] > 2 * FLASHES_A_SECOND).mean()))
+        for i in range(1, len(frames))
+    ]
+    out: list[Flash] = []
+    stretch: list[tuple[int, float]] = []
+    for i, part in [*over, (len(frames), 0.0)]:
+        if part >= share:
+            stretch.append((i, part))
+        elif stretch:
+            begins = max(0.0, stretch[0][0] / fps - 1.0)
+            out.append(Flash(round(begins, 3), round(stretch[-1][0] / fps, 3), round(max(p for _, p in stretch), 3)))
+            stretch = []
+    return out
+
+
 def measure(
     project: Path,
     *,
@@ -333,7 +418,7 @@ def measure(
     levels: Callable[[Path, Sequence[tuple[float, float]]], Sequence[float]] = levels,
 ) -> Craft:
     """The craft report of the episode project ``project`` (``<slug>.scene.xml`` inside it); with ``video`` (its
-    render) each pause carries the measured level."""
+    render) each pause carries the measured level, and the stretches that flash are listed."""
     project = Path(project)
     scene = project / f"{project.name}.scene.xml"
     if not scene.is_file():
@@ -341,13 +426,16 @@ def measure(
     spoken = lines(project)
     gaps = pauses(spoken, threshold)
     measured: Sequence[float | None] = [None] * len(gaps)
+    flashes: list[Flash] = []
     if video is not None:
         measured = list(levels(Path(video), gaps))
         if len(measured) != len(gaps):
             raise CraftError(f"{len(measured)} levels for {len(gaps)} pauses")
+        flashes = flashing(*luminance(Path(video)))
     return Craft(
         project.name,
         moves(scene.read_bytes()),
         list(Pause(round(a, 3), round(b, 3), level) for (a, b), level in zip(gaps, measured, strict=True)),
         [(round(a, 3), round(b, 3)) for a, b in opening_silences(spoken)],
+        flashes,
     )

@@ -4,6 +4,7 @@ import json
 import math
 import subprocess
 
+import numpy as np
 import pytest
 from sr_core.scene import Scene
 
@@ -258,8 +259,9 @@ def project(tmp_path):
     return root
 
 
-def test_measure_reports_moves_and_pauses_with_their_level(tmp_path):
+def test_measure_reports_moves_and_pauses_with_their_level(tmp_path, monkeypatch):
     root = project(tmp_path)
+    monkeypatch.setattr(craft, "luminance", lambda path: (np.zeros((3, 4, 4)), 30.0))
     report = craft.measure(root, levels=lambda video, spans: [-80.0 for _ in spans], video=tmp_path / "v.mp4")
     assert report.slug == "show"
     assert [m.kind for m in report.moves] == ["crash"]
@@ -364,7 +366,72 @@ def test_an_opening_that_is_not_one_is_refused(kw):
 def test_measure_reports_the_opening_and_the_command_says_so(tmp_path, capsys):
     folder = project(tmp_path)
     report = craft.measure(folder)
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.1.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA
     assert report.to_dict()["opening"] == [{"start": a, "end": b} for a, b in report.opening]
     assert main(["craft", str(folder)]) == 0
     assert "opening" in capsys.readouterr().out
+
+
+def steady(frames: int = 60) -> list:
+    return [np.full((4, 4), 0.5) for _ in range(frames)]
+
+
+def strobe(rate: float, seconds: float = 2.0, fps: int = 30) -> "np.ndarray":
+    """A picture that swings from dark to bright ``rate`` times a second."""
+    count = round(seconds * fps)
+    wave = (np.sin(2 * np.pi * rate * np.arange(count) / fps) > 0).astype(float)
+    return np.broadcast_to(wave[:, None, None] * 0.9, (count, 4, 4)).copy()
+
+
+def test_a_steady_picture_does_not_flash():
+    assert craft.flashing(np.array(steady()), 30.0) == []
+
+
+def test_five_flashes_a_second_are_found_and_placed():
+    found = craft.flashing(strobe(5.0), 30.0)
+    assert len(found) == 1 and found[0].share == 1.0
+    assert 0.0 <= found[0].start < found[0].end <= 2.0
+
+
+def test_three_flashes_a_second_are_within_the_limit():
+    assert craft.flashing(strobe(3.0), 30.0) == []
+
+
+def test_flashes_too_small_to_matter_are_left_out():
+    picture = strobe(5.0)
+    calm = np.full_like(picture, 0.5)
+    calm[:, 0, 0] = picture[:, 0, 0]  # one pixel in sixteen
+    assert craft.flashing(calm, 30.0, share=0.1) == []
+
+
+def test_a_swing_over_bright_ground_is_not_a_flash():
+    """Above 0.8 of white the guideline does not count the swing: both states are bright."""
+    assert craft.flashing(0.85 + strobe(5.0) / 9.0, 30.0) == []
+
+
+def test_two_bad_stretches_are_two_windows():
+    bad = strobe(5.0, seconds=1.5)
+    calm = np.zeros((90, 4, 4))
+    found = craft.flashing(np.concatenate([bad, calm, bad]), 30.0)
+    assert len(found) == 2 and found[0].end <= found[1].start
+
+
+def test_a_picture_with_no_frames_is_refused():
+    with pytest.raises(craft.CraftError):
+        craft.flashing(np.zeros((0, 4, 4)), 30.0)
+
+
+def test_luminance_refuses_a_video_ffmpeg_cannot_read(tmp_path):
+    with pytest.raises(craft.CraftError):
+        craft.luminance(tmp_path / "missing.mp4")
+
+
+def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path, monkeypatch, capsys):
+    folder = project(tmp_path)
+    monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
+    report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.2.0"
+    assert report.to_dict()["flashes"][0]["share"] == 1.0
+    monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
+    assert main(["craft", str(folder)]) == 0
+    assert "flash" in capsys.readouterr().out
