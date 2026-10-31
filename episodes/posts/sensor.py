@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Will (Jun) and Daniel (Omar). Foley synthesised.",
         hashtags=('#sensor', '#publicrestroom', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Hello?\nI'm right here.", 1.4, "Collage 32"),
+        thumbnail=Thumbnail("Hello?\nI'm right here.", 3.2, "Collage 32"),
     ),
     tags=Tags(
         "everyday-tech",

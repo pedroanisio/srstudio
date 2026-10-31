@@ -16,7 +16,7 @@ SEED = 4121
 SLUG = "eye-chart"
 TITLE = "Eye chart - Deb (Collage)"
 NAMES = ("deb", "feld")
-ROOM = "therapy"
+ROOM = "boardroom"
 STILL = 1.0
 BITRATE = 5_800_000  # two passes: a master under 20 MB; the grain, new every frame, is what costs the bits
 DESCRIPTION = "An eye test sharpens until the bottom line says what Deb has been avoiding."
@@ -29,7 +29,7 @@ NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; synthe
 NOTE = "ElevenLabs premade voices Jessica and Alice at their natural pace; no reference-voice cloning."
 PLACES = {"deb": Place(290.0, 1920.0, 0.72), "feld": Place(810.0, 1920.0, 0.72)}
 ROWS = ("CALL YOUR SISTER", "NOT A SMALL MISTAKE", "HE IS NOT GOING TO CHANGE", "YOUR MOTHER WAS RIGHT")
-CHART = (230.0, 480.0)
+CHART = (60.0, 480.0)  # left of the signature
 
 LINES = (
     Line("feld", "Better with one? Or two?"),
@@ -56,8 +56,8 @@ BEATS, END = timed(
         (1.3, "feld", 5, "open", "flat", "hold"),
         (2.5, "deb", 6, "sad", "flat", "down", "reveal:row"),
         (1.8, "feld", 7, "open", "flat", "point", "reveal:row"),
-        (3.6, "deb", 8, "sad", "flat", "down"),
-        (1.5, "feld", 9, "open", "smug", "hold"),
+        (3.6, "deb", 8, "sad", "flat", "down", "zoom"),
+        (1.5, "feld", 9, "open", "smug", "hold", "sting"),
         (1.8, "deb", 10, "wide", "flat", "down"),
         (0.0, "deb", "", "closed", "smile", "down", "reveal:blur"),
     ),

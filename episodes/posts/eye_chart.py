@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Jessica (Deb) and Alice (Dr. Feld). Foley synthesised.",
         hashtags=('#eyeexam', '#adulting', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Better with one,\nor two?", 1.4, "Collage 31"),
+        thumbnail=Thumbnail("Better with one,\nor two?", 0.5, "Collage 31"),
     ),
     tags=Tags(
         "money-services", "other-person", "relief", recurring=("deb",), test="sp-hook_motion", arm="a", recipient="a"

@@ -60,10 +60,10 @@ BEATS, END = timed(
         (1.4, "jun", 3, "open", "grin", "shrug"),
         (1.9, "omar", 4, "half", "flat", "fist"),
         (1.2, "jun", 5, "open", "smile", "shrug"),
-        (3.8, "omar", 6, "closed", "flat", "fist"),
+        (3.8, "omar", 6, "closed", "flat", "fist", "zoom"),
         (1.1, "kai", "", "open", "smile", "down", "reveal:kai"),
         (1.5, "jun", 7, "wide", "o", "down", "reveal:shut"),
-        (0.0, "omar", 8, "half", "smile", "fist"),
+        (0.0, "omar", 8, "half", "smile", "fist", "sting"),
     ),
     tail=2.0,
 )

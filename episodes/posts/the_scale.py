@@ -16,7 +16,7 @@ RELEASE = Release(
         ),
         credit="Voices: ElevenLabs premade voices Chris (Gary) and Sarah (Priya). Foley synthesised.",
         hashtags=('#doctorvisit', '#weighin', '#relatable', '#animatedshorts', '#comedyshorts'),
-        thumbnail=Thumbnail("Hop on.", 1.4, "Collage 35"),
+        thumbnail=Thumbnail("Hop on.", 8.9, "Collage 35"),
     ),
     tags=Tags(
         "own-worst-enemy",

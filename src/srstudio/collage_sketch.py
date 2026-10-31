@@ -234,6 +234,9 @@ class Staging:
     # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
     # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
     keep_signature: bool = False
+    # the seed the takes were recorded on, when it is not ``seed``: it is part of each take's cache key, so a seed
+    # moved after the recording keeps the takes and their foley by naming the old one here; 0 is ``seed``
+    recording_seed: int = 0
     # the sketch's own sounds, from the placed beats; each is a foley.Burst at its project seconds on its own track
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
 
@@ -474,9 +477,10 @@ def record_episode(
     root = Path(root)
     sk = staging.sketch
     key = env.get(KEY_ENV, "")
-    client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=staging.seed)
+    seed = staging.recording_seed or staging.seed
+    client = ElevenLabsClient(root / "assets" / "elevenlabs", key, model=MODEL, seed=seed)
     rec = sketch.record(sk, root, client, key=key, ffmpeg=ffmpeg, mouth=mouth)
-    effects = sound_effects(rec.beats, rec.end, root, staging.seed, staging.sounds(rec.beats, rec.end))
+    effects = sound_effects(rec.beats, rec.end, root, seed, staging.sounds(rec.beats, rec.end))
     manifest = sketch.manifest(sk, rec, effects, MODEL, note)
     (root / "narration.json").write_text(json.dumps(manifest, indent=2) + "\n")
     for q in rec.items:
