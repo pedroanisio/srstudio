@@ -187,3 +187,82 @@ def test_a_back_room_that_cannot_be_drawn_is_refused(kw, pattern):
     cv = signed()
     with pytest.raises(CHECKED, match=pattern):
         cutout_counter.back_room(cv, cv.comp, **kw)
+
+
+def test_a_qr_code_is_its_seed_and_changes_with_it():
+    def drawn(seed):
+        cv = canvas()
+        cutout_counter.qr_code(cv, cv.comp, 100, 100, seed=seed)
+        assert not errors(cv)
+        return cv.scene.to_bytes()
+
+    assert drawn(1) == drawn(1) and drawn(1) != drawn(2)
+
+
+@pytest.mark.parametrize(
+    ("draw", "kw"),
+    [
+        (cutout_counter.qr_code, {"size": 0}),
+        (cutout_counter.table_tent, {"label": ""}),
+        (cutout_counter.table_tent, {"label": "A VERY LONG TABLE"}),
+        (cutout_counter.cafe_table, {"width": 100}),
+        (cutout_counter.paper_menu, {"scale": 0}),
+        (cutout_counter.paper_menu, {"rotation": 500}),
+        (cutout_counter.soup_bowl, {"scale": -1}),
+        (cutout_counter.phone_screen, {"scale": 0}),
+        (cutout_counter.phone_screen, {"lines": ("a", "b", "c", "d")}),
+        (cutout_counter.phone_screen, {"lines": ("",)}),
+        (cutout_counter.reaching_hand, {"scale": 0}),
+        (cutout_counter.reaching_hand, {"rotation": 200}),
+        (cutout_counter.reaching_hand, {"grip": 0}),
+    ],
+)
+def test_the_cafe_props_refuse_what_they_cannot_draw(draw, kw):
+    cv = canvas()
+    with pytest.raises(CHECKED):
+        draw(cv, cv.comp, 100, 100, **kw)
+
+
+def test_the_cafe_props_draw_with_no_findings():
+    cv = canvas()
+    cutout_counter.table_tent(cv, cv.comp, 200, 900)
+    cutout_counter.cafe_table(cv, cv.comp, 540, 1000)
+    cutout_counter.paper_menu(cv, cv.comp, 200, 300, lying=True)
+    cutout_counter.soup_bowl(cv, cv.comp, 500, 300)
+    held = cutout_counter.reaching_hand(
+        cv, cv.comp, 800, 300, holds=lambda g: cutout_counter.phone_screen(cv, g, title="Rate Ava", lines=("Stars",))
+    )
+    assert held is not None and not errors(cv)
+
+
+def test_a_hand_draws_what_it_carries_between_its_palm_and_its_fingers():
+    cv = canvas()
+    cutout_counter.reaching_hand(cv, cv.comp, 800, 300, holds=lambda g: cutout_counter.soup_bowl(cv, g), id="hand")
+    hand = next(e for e in ET.fromstring(cv.scene.to_bytes()).iter() if e.get("id") == "hand")
+    order = [e.get("id") for e in hand if e.get("id")]
+    assert "soup-bowl" in order and order.index("soup-bowl") not in (0, len(order) - 1)
+
+
+def test_bubbles_leave_one_after_another_from_their_start_and_climb_their_height():
+    cv = canvas()
+    cutout_counter.rising_bubbles(cv, cv.comp, 100, 500, start=2.0, count=4, seconds=2.0, height=300, id="b")
+    keys = [animations(cv, f"b-{i}", "y") for i in range(4)]
+    assert [k[0][0] for k in keys] == [2.0, 2.5, 3.0, 3.5]
+    assert all(k[-1][1] == -300 for k in keys) and not errors(cv)
+
+
+@pytest.mark.parametrize("kw", [{"start": -1}, {"start": 1, "count": 0}, {"start": 1, "seconds": 0}])
+def test_bubbles_refuse_what_they_cannot_lay(kw):
+    cv = canvas()
+    with pytest.raises(CHECKED):
+        cutout_counter.rising_bubbles(cv, cv.comp, 100, 500, **kw)
+
+
+def test_a_splash_throws_its_beads_up_and_lets_them_fall():
+    cv = canvas()
+    cutout_counter.water_splash(cv, cv.comp, 100, 500, start=2.0, reach=100, id="s")
+    rows = animations(cv, "s-0", "y")
+    assert rows[0] == (2.0, 0) and min(v for _, v in rows) < -30 and rows[-1][1] > min(v for _, v in rows)
+    assert not errors(cv)
+    with pytest.raises(CHECKED):
+        cutout_counter.water_splash(cv, cv.comp, 100, 500, start=-1, id="t")

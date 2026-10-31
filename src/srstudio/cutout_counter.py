@@ -7,6 +7,7 @@ arguments it cannot be drawn from with :class:`CutoutCounterError`.
 from __future__ import annotations
 
 import math
+import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -19,11 +20,20 @@ __all__ = [
     "ChainRun",
     "CutoutCounterError",
     "back_room",
+    "cafe_table",
     "chain_run",
     "jump_clock",
+    "paper_menu",
     "paper_poster",
     "pen_on_chain",
+    "phone_screen",
+    "qr_code",
+    "reaching_hand",
+    "rising_bubbles",
     "sandwich",
+    "soup_bowl",
+    "table_tent",
+    "water_splash",
 ]
 
 Point = tuple[float, float]
@@ -42,6 +52,10 @@ CLOCK_SPIN = 0.75  # seconds a jump takes the hands, whatever the minutes
 ROOM_FAR = 0.5  # the back room's scale through its door, before the push
 HALL_NEAR = 3.6  # the hall's scale once the push has gone through it
 DOOR = (540, 960)  # the door's opening, width and height, about the frame's centre (540, 900)
+QR_CELLS = 21  # a version 1 code's side, with its three finder squares
+SCREEN_LINES = 3  # what a phone's screen can show under its title, big enough to read in a reel
+PHONE = (150, 290)  # a phone's outline before ``scale``
+DROPS = 7  # beads of a splash
 
 
 class CutoutCounterError(SrstudioError, ValueError):
@@ -309,6 +323,236 @@ def sandwich(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = 
     cv.rect(g, -56, -6, 112, 12, "#C9573F", ink, 2.5, radius=4)
     cv.rect(g, -58, -20, 116, 14, "#F0C655", ink, 2.5, radius=3)
     cv.path(g, bread, "#F2E2BE", ink, 3)
+    return g
+
+
+@register("prop", "qr-code", style="cutout", summary="A square QR code drawn from its seed, finder squares and all")
+def qr_code(cv: Canvas, parent, x=540, y=900, *, size: float = 200, seed: int = 0, id: str = "qr-code"):
+    """Centred on (``x``, ``y``) and ``size`` across, white margin included. One shape, however many modules."""
+    if not (checks.number(size) and size > 0):
+        raise CutoutCounterError(f"size must be a positive number, got {size!r}")
+    rng = random.Random(seed)
+    g = cv.group(parent, id, x=x, y=y)
+    cv.rect(g, -size / 2, -size / 2, size, size, "#FFFFFF", cv.ink, 3, radius=size * 0.03)
+    cell = size / (QR_CELLS + 2)
+    start = -size / 2 + cell
+
+    def finder(col: int, row: int) -> bool:
+        for fc, fr in ((0, 0), (QR_CELLS - 7, 0), (0, QR_CELLS - 7)):
+            dc, dr = col - fc, row - fr
+            if 0 <= dc < 7 and 0 <= dr < 7:
+                return dc in (0, 6) or dr in (0, 6) or (2 <= dc <= 4 and 2 <= dr <= 4)
+        return False
+
+    def reserved(col: int, row: int) -> bool:
+        return (col < 8 and row < 8) or (col >= QR_CELLS - 8 and row < 8) or (col < 8 and row >= QR_CELLS - 8)
+
+    cells = []
+    for row in range(QR_CELLS):
+        for col in range(QR_CELLS):
+            mark = rng.random() < 0.5  # drawn for every cell, so the seed's pattern never shifts
+            if finder(col, row) or (mark and not reserved(col, row)):
+                cells.append(
+                    f"M{start + col * cell:.2f} {start + row * cell:.2f} h{cell:.2f} v{cell:.2f} h{-cell:.2f}Z"
+                )
+    cv.path(g, " ".join(cells), cv.ink, cv.clear, 0)
+    return g
+
+
+@register("prop", "table-tent", style="cutout", summary="A folded table tent: a QR code over the table's number")
+def table_tent(cv: Canvas, parent, x=540, y=1240, *, label: str = "TABLE 4", seed: int = 0, id: str = "table-tent"):
+    """Standing on (``x``, ``y``), ``label`` lettered under the code."""
+    if not (isinstance(label, str) and 0 < len(label.strip()) <= 10):
+        raise CutoutCounterError(f"label is 1 to 10 characters, got {label!r}")
+    g = cv.group(parent, id, x=x, y=y)
+    cv.path(g, "M-96 0 L-82 -270 L82 -270 L96 0Z", "#FFF8EC", cv.ink, 4)
+    qr_code(cv, g, 0, -170, size=150, seed=seed, id=f"{id}-code")
+    cv.text(g, f"{id}-label", label, -86, -74, 172, 56, 34, "#1F2B4A")
+    return g
+
+
+@register(
+    "prop", "cafe-table", style="cutout", summary="A café table seen from its chair, a checked cloth to the floor"
+)
+def cafe_table(cv: Canvas, parent, x=540, y=1180, *, width: float = 900, id: str = "cafe-table"):
+    """Its far edge runs through (``x``, ``y``); the cloth hides whatever sits behind it, down to the floor."""
+    if not (checks.number(width) and width >= 200):
+        raise CutoutCounterError(f"width is a number of at least 200, got {width!r}")
+    ink = cv.ink
+    half = width / 2
+    g = cv.group(parent, id, x=x, y=y)
+    cloth = "#F4EBDD"
+    cv.rect(g, -half - 30, 120, width + 60, 760, cloth, ink, 5)
+    for i in range(1, int(width / 110) + 1):
+        cv.line(g, -half - 30 + i * 110, 120, -half - 30 + i * 110, 880, "#D8B98E", 5, opacity=0.6)
+    for yy in range(230, 880, 110):
+        cv.line(g, -half - 30, yy, half + 30, yy, "#D8B98E", 5, opacity=0.6)
+    cv.path(g, f"M{-half} 0 L{half} 0 L{half + 30} 120 L{-half - 30} 120Z", cloth, ink, 5)
+    return g
+
+
+@register("prop", "paper-menu", style="cutout", summary="A one-page paper menu, standing or lying flat")
+def paper_menu(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=900,
+    *,
+    scale: float = 1.0,
+    lying: bool = False,
+    rotation: float = 0,
+    id: str = "paper-menu",
+):
+    """Centred on (``x``, ``y``). ``lying`` foreshortens it onto a table seen from a chair."""
+    if not (checks.number(scale) and scale > 0):
+        raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
+    if not (checks.number(rotation) and -180 <= rotation <= 180):
+        raise CutoutCounterError(f"rotation is -180..180 degrees, got {rotation!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale * (0.42 if lying else 1.0), rotation=rotation)
+    cv.rect(g, -105, -150, 210, 300, "#FFF8EC", ink, 4, radius=4)
+    cv.text(g, f"{id}-title", "MENU", -90, -132, 180, 56, 40, "#1F2B4A")
+    for i, line in enumerate(("Soup", "Soup", "Bread")):
+        yy = -56 + i * 62
+        cv.text(g, f"{id}-line-{i}", line, -90, yy, 130, 40, 26, "#1F2B4A", "start")
+        cv.line(g, 28, yy + 26, 78, yy + 26, "#1F2B4A", 3, opacity=0.5)
+    return g
+
+
+@register("prop", "soup-bowl", style="cutout", summary="A wide bowl of tomato soup, a spoon standing in it")
+def soup_bowl(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "soup-bowl"):
+    """Standing on (``x``, ``y``)."""
+    if not (checks.number(scale) and scale > 0):
+        raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.path(g, "M40 -92 L92 -162", stroke=ink, sw=11)
+    cv.path(g, "M40 -92 L92 -162", stroke="#C9CED2", sw=5)
+    cv.ellipse(g, -110, -112, 220, 44, "#D2573B", ink, 4)
+    cv.path(g, "M-110 -90 Q-100 0 -36 0 L36 0 Q100 0 110 -90 Q0 -52 -110 -90Z", "#F4EBDD", ink, 4)
+    return g
+
+
+@register("prop", "phone-screen", style="cutout", summary="A phone held up to the lens, its screen big enough to read")
+def phone_screen(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=900,
+    *,
+    scale: float = 1.0,
+    title: str = "",
+    lines: tuple[str, ...] = (),
+    id: str = "phone-screen",
+):
+    """Centred on (``x``, ``y``): a ``title`` and up to :data:`SCREEN_LINES` short ``lines``, lit."""
+    if not (checks.number(scale) and scale > 0):
+        raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
+    if len(lines) > SCREEN_LINES or not all(isinstance(line, str) and line.strip() for line in lines):
+        raise CutoutCounterError(f"a screen shows up to {SCREEN_LINES} non-empty lines, got {lines!r}")
+    w, h = PHONE
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
+    cv.rect(g, -w / 2, -h / 2, w, h, "#293F49", cv.ink, 4, radius=20)
+    cv.rect(g, -w / 2 + 10, -h / 2 + 12, w - 20, h - 24, "#E8F4F0", radius=8)
+    if title:
+        cv.text(g, f"{id}-title", title, -w / 2 + 14, -h / 2 + 30, w - 28, 76, 25, "#1F2B4A")
+    for i, line in enumerate(lines):
+        cv.text(g, f"{id}-line-{i}", line, -w / 2 + 14, -h / 2 + 118 + i * 50, w - 28, 44, 23, "#3D6178")
+    return g
+
+
+@register("prop", "reaching-hand", style="cutout", summary="An arm in from off frame, gripping what it carries")
+def reaching_hand(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=900,
+    *,
+    scale: float = 1.0,
+    rotation: float = 0,
+    grip: float = 75,
+    skin: str = "#F1D0AA",
+    sleeve: str = "#527B90",
+    holds=None,
+    id: str = "reaching-hand",
+):
+    """The grip is at (``x``, ``y``) and the arm runs down from it, ``rotation`` degrees round. ``holds`` draws the
+    carried thing between palm and fingers; ``grip`` is its half width, where the fingers close."""
+    if not (checks.number(scale) and scale > 0):
+        raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
+    if not (checks.number(rotation) and -180 <= rotation <= 180):
+        raise CutoutCounterError(f"rotation is -180..180 degrees, got {rotation!r}")
+    if not (checks.number(grip) and grip > 0):
+        raise CutoutCounterError(f"grip must be a positive number, got {grip!r}")
+    ink = cv.ink
+    g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)
+    cv.rect(g, -58, 70, 116, 1500, sleeve, ink, 5)
+    cv.rect(g, -66, 70, 132, 34, sleeve, ink, 5, radius=8)
+    cv.path(g, f"M{-grip} 40 Q{-grip} 90 -40 74 L40 74 Q{grip} 90 {grip} 40 L{grip} -10 L{-grip} -10Z", skin, ink, 4)
+    locations._call(holds, g)
+    cv.rect(g, -grip - 26, -20, 44, 96, skin, ink, 4, radius=20)
+    for i in range(3):
+        cv.rect(g, grip - 18, -46 + i * 46, 44, 42, skin, ink, 4, radius=18)
+    return g
+
+
+@register("prop", "rising-bubbles", style="cutout", summary="Seeded bubbles climbing up through a glass of water")
+def rising_bubbles(
+    cv: Canvas,
+    parent,
+    x=540,
+    y=900,
+    *,
+    start: float = 0.0,
+    width: float = 60,
+    height: float = 200,
+    count: int = 9,
+    seconds: float = 1.5,
+    seed: int = 0,
+    id: str = "rising-bubbles",
+):
+    """They leave (``x``, ``y``) one after another from ``start``, over ``seconds``, and burst ``height`` higher."""
+    if not (checks.number(start) and start >= 0):
+        raise CutoutCounterError(f"start must be at least 0, got {start!r}")
+    for name, value in (("width", width), ("height", height), ("seconds", seconds)):
+        if not (checks.number(value) and value > 0):
+            raise CutoutCounterError(f"{name} must be a positive number, got {value!r}")
+    if not (isinstance(count, int) and count > 0):
+        raise CutoutCounterError(f"count must be a positive integer, got {count!r}")
+    rng = random.Random(seed)
+    g = cv.group(parent, id, x=x, y=y)
+    for i in range(count):
+        at = start + seconds * i / count
+        climb = rng.uniform(0.45, 0.7)
+        size = rng.uniform(9, 20)
+        bead = cv.group(g, f"{id}-{i}", x=rng.uniform(-width / 2, width / 2), y=0)
+        cv.gate(bead, [(at, at + climb)])
+        cv.keys(bead, "y", [(at, 0), (at + climb, -height)], hold=False)
+        cv.ellipse(bead, -size / 2, -size / 2, size, size, "#E8F4F0", cv.ink, 2)
+    return g
+
+
+@register("prop", "water-splash", style="cutout", summary="Beads of water thrown up at a moment and falling back")
+def water_splash(
+    cv: Canvas, parent, x=540, y=900, *, start: float = 0.0, reach: float = 120, seed: int = 0, id: str = "water-splash"
+):
+    """:data:`DROPS` beads leave (``x``, ``y``) at ``start``, rise up to ``reach`` and fall back past it."""
+    if not (checks.number(start) and start >= 0):
+        raise CutoutCounterError(f"start must be at least 0, got {start!r}")
+    if not (checks.number(reach) and reach > 0):
+        raise CutoutCounterError(f"reach must be a positive number, got {reach!r}")
+    rng = random.Random(seed)
+    g = cv.group(parent, id, x=x, y=y)
+    for i in range(DROPS):
+        fly = rng.uniform(0.32, 0.48)
+        out = reach * (i / (DROPS - 1) * 1.4 - 0.7) * rng.uniform(0.8, 1.1)
+        up = reach * rng.uniform(0.6, 1.0)
+        bead = cv.group(g, f"{id}-{i}", x=0, y=0)
+        cv.gate(bead, [(start, start + fly)])
+        cv.keys(bead, "x", [(start, 0), (start + fly, out)], hold=False)
+        rows = [(start + fly * k / 6, -up * 4 * (k / 6) * (1 - k / 6) + 30 * (k / 6)) for k in range(7)]
+        cv.keys(bead, "y", rows, hold=False)
+        cv.ellipse(bead, -7, -9, 14, 18, "#9FC0CA", cv.ink, 2)
     return g
 
 
