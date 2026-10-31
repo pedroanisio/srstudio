@@ -96,7 +96,7 @@ def test_the_cutaways_are_gags_of_at_most_a_second_and_a_half_as_scripted():
 
 
 def test_the_hold_before_the_sign_off_is_long_enough_to_land():
-    assert pilot.beat("sign").start - pilot.beat("press").start >= 1.2
+    assert round(pilot.beat("sign").start - pilot.beat("press").start, 6) >= 1.2  # 28.2 - 27.0 is 1.1999999999999993
 
 
 def test_the_post_asks_a_question_and_stops_at_five_hashtags():
