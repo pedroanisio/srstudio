@@ -409,6 +409,7 @@ PILOTS = (
     "peak_end_rule",
     "learning_styles",
     "choice_blindness",
+    "change_blindness",
 )
 
 
