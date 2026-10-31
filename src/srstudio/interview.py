@@ -105,6 +105,20 @@ class Schedule:
     effects: Mapping[str, float]
 
 
+def beats(speech: Sequence[float], start: float, gaps: Sequence[float]) -> Schedule:
+    """Lines one after another: the first at ``start``, each next one ``gaps[i]`` seconds after line ``i`` ends. A
+    reel's schedule is then its pauses, read in a column, and a slow take moves everything after it."""
+    if len(gaps) != len(speech) - 1:
+        raise InterviewError(f"{len(speech)} lines have {len(speech) - 1} gaps between them, got {len(gaps)}")
+    if not checks.number(start) or start < 0 or any(not checks.number(g) or g < 0 for g in gaps):
+        raise InterviewError(f"a start and its gaps are non-negative seconds, got {start!r} and {list(gaps)!r}")
+    cursor, starts = start, []
+    for i, length in enumerate(speech):
+        starts.append(cursor)
+        cursor += length + (gaps[i] if i < len(gaps) else 0.0)
+    return Schedule(starts, {})
+
+
 @dataclass(frozen=True)
 class Timing:
     """The placed phrases and effect starts with the beats that follow from them, for the episode's own fields."""
