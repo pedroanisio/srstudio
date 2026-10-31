@@ -31,8 +31,8 @@ ep = Episode(
     EpisodeSpec(
         slug="the-reference",
         title=INTERVIEW.title,
-        description="Job-hunting comedy: a reference on speakerphone, in a blazer over a bathrobe, renegotiated line by "
-        "line. Native vector animation; ElevenLabs dialogue, synthesized foley.",
+        description="Job-hunting comedy: a reference on speakerphone, in a blazer over a bathrobe, renegotiated line "
+        "by line. Native vector animation; ElevenLabs dialogue, synthesized foley.",
         root=ROOT,
         **iv_audio.spec_font(INTERVIEW.font, ROOT),
         seed=31282,

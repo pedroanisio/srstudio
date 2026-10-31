@@ -24,7 +24,8 @@ RELEASE = Release(
     tags=Tags("job-hunting", "other-person", "triumph", test="sp-hook_motion", arm="b"),
     style="Cutout",
     parts={
-        # banknotes, cue-cards, robe-and-blazer also drawn: a release cannot pin a proposed version, so they join once approved.
+        # banknotes, cue-cards, robe-and-blazer also drawn:
+        # a release cannot pin a proposed version, so they join once approved.
         "captions": 1,
         "customer": 1,
         "home-study": 1,
