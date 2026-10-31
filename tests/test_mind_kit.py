@@ -402,7 +402,14 @@ def test_the_channel_keeps_a_stage_name_apart_from_a_card():
     assert mind_kit.CARD != mind_kit.STAGE
 
 
-PILOTS = ("spotlight_effect", "planning_fallacy", "frequency_illusion", "peak_end_rule", "learning_styles")
+PILOTS = (
+    "spotlight_effect",
+    "planning_fallacy",
+    "frequency_illusion",
+    "peak_end_rule",
+    "learning_styles",
+    "choice_blindness",
+)
 
 
 def _pilot(module):
