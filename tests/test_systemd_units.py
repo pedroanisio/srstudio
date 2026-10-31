@@ -89,5 +89,8 @@ def test_a_new_episode_or_a_library_commit_starts_the_measure_and_a_new_report_t
     assert {"%h/worskpace/generated/episodes", "%h/worskpace/srstudio/.git/refs/heads"} <= measuring
     assert "Unit=srstudio-usage.service" in (UNITS / "srstudio-usage.path").read_text()
     assert "%h/worskpace/generated/catalog/usage.json" in watched("srstudio-catalog.path")
+    # a pilot's render and its project are in folders of their own (ADR 0054), which the top level does not show
+    assert "%h/worskpace/generated/renders/pilots" in watched("srstudio-catalog.path")
+    assert {f"%h/worskpace/generated/episodes/pilots{x}" for x in ("", "/mind", "/maps", "/news", "/host")} <= measuring
     # a report write must not start another measure
     assert "%h/worskpace/generated/catalog" not in measuring

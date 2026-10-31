@@ -6,6 +6,11 @@ Description=Watch the episodes and the srstudio library for the part-usage repor
 
 [Path]
 PathChanged=%h/worskpace/generated/episodes
+PathChanged=%h/worskpace/generated/episodes/pilots
+PathChanged=%h/worskpace/generated/episodes/pilots/mind
+PathChanged=%h/worskpace/generated/episodes/pilots/maps
+PathChanged=%h/worskpace/generated/episodes/pilots/news
+PathChanged=%h/worskpace/generated/episodes/pilots/host
 PathChanged=%h/worskpace/srstudio/.git/refs/heads
 Unit=srstudio-usage.service
 
