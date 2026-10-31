@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import DAYLIGHT, Canvas, flat_counter, stick
+from srstudio import DAYLIGHT, Canvas, craft, flat_counter, stick
 from srstudio.canvas import Signature
 from srstudio.stick import StickDataError
 
@@ -38,6 +38,11 @@ def test_a_pull_back_lands_the_second_focus_where_that_framing_puts_it():
     cv = canvas()
     stick.dolly(cv, cv.comp, CLOSE, WIDE, 2.0)
     assert landed(keys(cv), CLOSE[0], WIDE[0]) == pytest.approx(WIDE[2])
+
+
+def test_craft_counts_a_move_as_a_camera():
+    cv = canvas()
+    assert craft.CAMERA.fullmatch(stick.dolly(cv, cv.comp, CLOSE, WIDE, 2.0).id)
 
 
 def test_a_move_holds_the_first_framing_until_it_starts():
