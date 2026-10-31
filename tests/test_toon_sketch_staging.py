@@ -240,3 +240,18 @@ def test_captions_a_staging_brings_stay_off_the_cover(pinned_fonts, tmp_path):
 
     ep, _ = built(tmp_path, replace(silent(stage_sketch()), captions=captions), pinned_fonts)
     assert ("my-captions", "visible", "false") in ep._cover_hidden  # written into the cover variant by finish()
+
+
+def test_a_move_keys_the_body_of_that_character_on_every_shot_of_theirs(pinned_fonts, tmp_path):
+    """A figure can bend about its seat while the set stays still; the other character is left alone."""
+    calls = []
+
+    def bend(cv, body, app, beats):
+        calls.append(app.who)
+        cv.keys(body, "rotation", [(app.start, 0.0), (app.end, 20.0)], hold=False, local=False)
+
+    sk = Sketch("moved", "Moved", SPEAKERS, LINES, STILL, END)
+    _, moved = built(tmp_path / "moved", silent(sk, moves={"bear": bend}), pinned_fonts)
+    _, still = built(tmp_path / "still", silent(sk), pinned_fonts)
+    assert set(calls) == {"bear"}
+    assert ET.tostring(moved).count(b"rotation") > ET.tostring(still).count(b"rotation")
