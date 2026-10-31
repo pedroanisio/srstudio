@@ -9035,6 +9035,142 @@
           "rig": null
         }
       ]
+    },
+    "soft-washer": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-loader whose drum turns on cue, carries what is put in it, and whose light dies. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "44c4d2ebd64b3ed7971ba48da9666eb832a402d24f2f48bdba5c7523c339371b",
+          "rig": null
+        }
+      ]
+    },
+    "soft-brick": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A red house brick. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a459777759b68bdbde2897894a0ee6ee0b51c520fedf567ef064ea70d7d1936e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bowling-ball": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dark purple bowling ball. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c6c2cc9a6c3254b5f92dbcc7c56fc69fb4be9c05f8b244da70ef9ac2d632deb1",
+          "rig": null
+        }
+      ]
+    },
+    "soft-coin-bag": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A burlap sack with a dollar sign. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a6265c9e0b0452e8847bd1d8518def2e2a760b5f51f005c6d19e407e9b482b1c",
+          "rig": null
+        }
+      ]
+    },
+    "soft-tv": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat TV on a low stand whose picture flickers until it goes off. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "71fb83584a95500e5e9373cfa45f4e377066c8de04bc306f6490228945389148",
+          "rig": null
+        }
+      ]
+    },
+    "soft-home-fridge": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-on fridge that stands anywhere, its light dying on cue. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2116ebb7d1614a1e9214133414ad9b75baf68e22919ef28d0ede6c2042aed7c5",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dust": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Specks that fall from overhead on cue. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f9176e047d90f9f85192e303af76daef19c82c2acd7cdf21afdc939eea6567a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dimmer": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A full-frame veil that deepens in steps. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fd3fb0a6a479d6da5c95e67bd7a556fad52b2f5ca0117b8e414292e3e41e9e19",
+          "rig": null
+        }
+      ]
     }
   }
 }

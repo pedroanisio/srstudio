@@ -31,6 +31,14 @@ PACKAGE_ONLY = [
 ]
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 NO_EPISODE = [
+    "soft-dimmer",
+    "soft-dust",
+    "soft-home-fridge",
+    "soft-tv",
+    "soft-coin-bag",
+    "soft-bowling-ball",
+    "soft-brick",
+    "soft-washer",
     "soft-bottle",
     "soft-pizza-box",
     "soft-smoke",
