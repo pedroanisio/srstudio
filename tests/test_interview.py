@@ -334,3 +334,27 @@ def test_a_spoken_line_and_a_sketch_line_share_one_gain_field_in_db():
         names = {f.name for f in fields(kind)}
         assert "gain" in names and not names & {"level", "level_db"}
     assert I.LEVELS == sketch.LINE_LEVELS == (-12.0, 0.0)
+def test_beats_lays_lines_end_to_end_with_their_gaps():
+    schedule = I.beats([1.0, 2.0, 0.5], 0.5, [0.25, 1.5])
+    assert schedule.lines == pytest.approx([0.5, 1.75, 5.25])
+    assert schedule.effects == {}
+
+
+def test_a_slow_take_moves_every_line_after_it():
+    fast, slow = I.beats([1.0, 1.0, 1.0], 0.0, [0.5, 0.5]), I.beats([1.0, 1.5, 1.0], 0.0, [0.5, 0.5])
+    assert slow.lines[1] == fast.lines[1] and slow.lines[2] == fast.lines[2] + 0.5
+
+
+@pytest.mark.parametrize(
+    ("start", "gaps", "match"),
+    [
+        (0.0, [0.1], "2 gaps between them, got 1"),
+        (0.0, [0.1, 0.1, 0.1], "2 gaps between them, got 3"),
+        (-0.1, [0.1, 0.1], "non-negative seconds"),
+        (0.0, [0.1, -0.1], "non-negative seconds"),
+        (float("nan"), [0.1, 0.1], "non-negative seconds"),
+    ],
+)
+def test_beats_refuses_a_column_that_does_not_add_up(start, gaps, match):
+    with pytest.raises(I.InterviewError, match=match):
+        I.beats([1.0, 1.0, 1.0], start, gaps)
