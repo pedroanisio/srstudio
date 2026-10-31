@@ -8535,6 +8535,23 @@
         }
       ]
     },
+    "news-route": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A map on Gus's phone: sea, coast, a dashed direct line and a track that draws itself with a marker at its head, pins that stay up. First drawn for seabird-jet-lag.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
+    },
     "news-set": {
       "kind": "location",
       "style": "toon",

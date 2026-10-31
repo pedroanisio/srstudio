@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Any
 
 from . import brush, look, toon
@@ -90,6 +90,7 @@ __all__ = [
     "MUG_Y",
     "NEAR_BLUR",
     "NECK_Y",
+    "Pin",
     "TICKER_H",
     "TICKER_Y",
     "TWO_SHOT",
@@ -102,6 +103,7 @@ __all__ = [
     "parody_tag",
     "perform",
     "phone_insert",
+    "route_insert",
     "sign",
     "source_card",
     "stage",
@@ -126,6 +128,10 @@ LOWER_Y, LOWER_H = 1222.0, 130.0
 TICKER_Y, TICKER_H = 1352.0, 64.0
 CHIP = 10.0  # one corner for everything over the picture
 SHADOW = "#160a3066"
+PHONE_X, PHONE_Y, PHONE_W, PHONE_H = 190.0, 508.0, 700.0, 786.0  # the handset over the dimmed room
+MAP_TOP = 108.0  # the screen under the phone's header
+MAP_H = PHONE_H - MAP_TOP
+TEAR = "#a8e0ff"
 DROP = (6.0, 8.0)
 LIT, LIGHTER = "#ffffff30", "#ffffff18"
 
@@ -635,10 +641,20 @@ VERA_INKED = replace(VERA_FACE, skin=VERA_SKIN)
 GUS_INKED = replace(GUS_FACE, skin=GUS_SKIN)
 
 
+def _tear(cv: Canvas, parent, x: float, y: float, r: float) -> None:
+    """A tear running down the cheek from a shut eye, and the next one on its way."""
+    drop = ((x - r * 0.3, y + r * 0.7), (x, y), (x + r * 0.3, y + r * 0.7), (x, y + r * 1.2))
+    _form(cv, parent, drop, TEAR, "#3b83c9", 90.0, 3.0, 3.5, 0.1)
+    low = tuple((px, py + r * 1.5) for px, py in drop)
+    _form(cv, parent, low, TEAR, "#3b83c9", 90.0, 3.0, 3.5, 0.1)
+
+
 def _eye(cv: Canvas, parent, face: Face, side: float, state: str) -> None:
     x, y, r = side * face.eye_x, face.eye_y, face.eye_r
-    if state == "shut":
+    if state in ("shut", "weep"):
         _line(cv, parent, ((x - r, y + 1), (x, y + 10), (x + r, y + 1)), PLUM_DEEP, 7.0)
+        if state == "weep":
+            _tear(cv, parent, x, y + 14, r)
         return
     wide = 1.28 if state == "wide" else 1.0
     tall = {"wide": 1.45, "squint": 0.55, "down": 0.7}.get(state, 1.0)
@@ -1479,6 +1495,26 @@ def captions(
     return track
 
 
+def _handset(cv: Canvas, g, title: str) -> None:
+    """The phone over the dimmed room: case, buttons, screen and a header carrying ``title``."""
+    x, y, wide, tall = PHONE_X, PHONE_Y, PHONE_W, PHONE_H
+    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
+    case = cv.grad("news2-case", [(0, "#4b3a78"), (1, "#1a0e36")], (0, 0, 1, 1))
+    cv.rect(g, x - 12, y - 8, wide + 48, tall + 48, SHADOW, radius=60.0)
+    cv.rect(g, x - 20, y - 20, wide + 40, tall + 40, case, PLUM_DEEP, 5.0, radius=60.0)
+    cv.rect(g, x - 26, y + 150, 8, 96, "#2a1d44", radius=4.0)
+    cv.rect(g, x + wide + 18, y + 120, 8, 150, "#2a1d44", radius=4.0)
+    cv.rect(g, x, y, wide, tall, "#f7f1ff", radius=42.0)
+    head = cv.grad("news2-chat", [(0, MINT), (1, "#2cc9a3")], (0, 0, 0, 1))
+    cv.rect(g, x, y, wide, 108.0, head, radius=42.0)
+    cv.rect(g, x, y + 60.0, wide, 48.0, head)
+    cv.rect(g, x + wide / 2 - 70, y + 10, 140, 26, PLUM_DEEP, radius=13.0)
+    _oval(cv, g, x + 58, y + 62, 28, 28, PLUM)
+    _oval(cv, g, x + 58, y + 54, 10, 10, MINT)
+    _oval(cv, g, x + 58, y + 76, 16, 10, MINT)
+    _text(cv, g, title, x + 96, y + 34, wide - 192, 66.0, 48, PLUM_DEEP, "center")
+
+
 @register(
     "graphic", "news-phone@2", summary="Gus's phone, a real handset: bezel, buttons, a status row, tailed bubbles"
 )
@@ -1497,23 +1533,9 @@ def phone_insert(
     _span(start, end, "the phone")
     if not bubbles:
         raise NewsKitError("the phone needs a message to show")
-    x, y, wide, tall = 190.0, 508.0, 700.0, 786.0
+    x, y, wide = PHONE_X, PHONE_Y, PHONE_W
     g = cv.group(parent, id, start=start, end=end)
-    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
-    case = cv.grad("news2-case", [(0, "#4b3a78"), (1, "#1a0e36")], (0, 0, 1, 1))
-    cv.rect(g, x - 12, y - 8, wide + 48, tall + 48, SHADOW, radius=60.0)
-    cv.rect(g, x - 20, y - 20, wide + 40, tall + 40, case, PLUM_DEEP, 5.0, radius=60.0)
-    cv.rect(g, x - 26, y + 150, 8, 96, "#2a1d44", radius=4.0)
-    cv.rect(g, x + wide + 18, y + 120, 8, 150, "#2a1d44", radius=4.0)
-    cv.rect(g, x, y, wide, tall, "#f7f1ff", radius=42.0)
-    head = cv.grad("news2-chat", [(0, MINT), (1, "#2cc9a3")], (0, 0, 0, 1))
-    cv.rect(g, x, y, wide, 108.0, head, radius=42.0)
-    cv.rect(g, x, y + 60.0, wide, 48.0, head)
-    cv.rect(g, x + wide / 2 - 70, y + 10, 140, 26, PLUM_DEEP, radius=13.0)
-    _oval(cv, g, x + 58, y + 62, 28, 28, PLUM)
-    _oval(cv, g, x + 58, y + 54, 10, 10, MINT)
-    _oval(cv, g, x + 58, y + 76, 16, 10, MINT)
-    _text(cv, g, chat, x + 96, y + 34, wide - 192, 66.0, 48, PLUM_DEEP, "center")
+    _handset(cv, g, chat)
     top, size, row = y + 124.0, 46.0, 104.0
     for i, bubble in enumerate(bubbles):
         at = max(bubble.at, start)
@@ -1533,3 +1555,130 @@ def phone_insert(
         cv.path(box, f"M {root} {foot - 34} L {tip} {foot} L {root} {foot - 4} Z", fill, cv.clear, 0)
         cv.rect(box, left, top + i * row, w, row - 16.0, fill, radius=24.0)
         _text(cv, box, words, left, top + i * row, w, row - 16.0, size, PLUM_DEEP, "center")
+
+
+@dataclass(frozen=True)
+class Pin:
+    """A labelled place on the route's map, in pixels of the phone's screen under its header."""
+
+    x: float
+    y: float
+    label: str
+    fill: str
+    below: bool = False  # the label under the pin, when the route needs the room over it
+
+
+def _inside(x: float, y: float) -> bool:
+    return 0.0 <= x <= PHONE_W and 0.0 <= y <= MAP_H
+
+
+def _sea(cv: Canvas, g, x: float, y: float) -> None:
+    """The map under the route: sea, a coast top right and the swell's marks."""
+    r, foot = 42.0, y + MAP_H
+    sea = (
+        f"M {x} {y} L {x + PHONE_W} {y} L {x + PHONE_W} {foot - r} Q {x + PHONE_W} {foot} {x + PHONE_W - r} {foot} "
+        f"L {x + r} {foot} Q {x} {foot} {x} {foot - r} Z"
+    )
+    cv.path(g, sea, "#7cc6e0", "#00000000", 0.0)
+    land = (
+        (PHONE_W, 0.0),
+        (PHONE_W, 330.0),
+        (640.0, 300.0),
+        (600.0, 220.0),
+        (500.0, 190.0),
+        (450.0, 90.0),
+        (380.0, 60.0),
+        (360.0, 0.0),
+    )
+    coast = " L ".join(f"{x + px} {y + py}" for px, py in land)
+    cv.path(g, f"M {coast} Z", "#bfe6a8", "#3f7d5a", 5.0)
+    for px, py in ((90, 120), (220, 240), (70, 360), (330, 330), (480, 560), (250, 520)):
+        cv.path(g, f"M {x + px} {y + py} q 18 -12 36 0 t 36 0", None, "#ffffff66", 4.0)
+
+
+def _marker(cv: Canvas, m, kind: str) -> None:
+    """What moves along the route, on its own origin: a seabird from above, or a person's dot."""
+    if kind == "bird":
+        wings = "M -46 10 Q -22 -22 0 -6 Q 22 -22 46 10 Q 20 -2 0 12 Q -20 -2 -46 10 Z"
+        cv.path(m, wings, "#ffffff", PLUM_DEEP, 5.0)
+        cv.path(m, "M -6 -6 Q 0 -18 6 -6 L 0 16 Z", PLUM_DEEP, PLUM_DEEP, 2.0)
+    else:
+        _inked_oval(cv, m, 0.0, 0.0, 22.0, 22.0, TANGERINE, 5.0)
+
+
+@register("graphic", "news-route", summary="A route on Gus's phone: a sea, a coast, a track that draws itself, pins")
+def route_insert(
+    cv: Canvas,
+    parent,
+    title: str,
+    track: Sequence[Point],
+    pins: Sequence[Pin],
+    start: float,
+    end: float,
+    measure: Measure,
+    direct: tuple[Point, Point] | None = None,
+    marker: str = "bird",
+    draw: float | None = None,
+    id: str = "news-route",
+) -> None:
+    """A map on the phone from ``start`` to ``end``: ``track`` draws itself over ``draw`` seconds with ``marker`` at its
+    head, ``direct`` is the dashed line it should have taken, and ``pins`` stay up throughout. Points are pixels of the
+    screen under its header, so a track that leaves the screen stops the build, as a word the show keeps off it does."""
+    _span(start, end, "the route")
+    check_copy(title)
+    if len(track) < 2:
+        raise NewsKitError("a route needs a start and somewhere it went")
+    if marker not in ("bird", "dot"):
+        raise NewsKitError(f"a route's marker is 'bird' or 'dot', got {marker!r}")
+    seconds = min(2.4, end - start) if draw is None else draw
+    if not 0.0 < seconds <= end - start:
+        raise NewsKitError(f"a route draws itself in {seconds} s, in a phone that is up for {end - start} s")
+    size = 34.0
+    for pin in pins:
+        check_copy(pin.label)
+        if not _inside(pin.x, pin.y):
+            raise NewsKitError(f"pin {pin.label!r} is off the map")
+        if measure(pin.label, size) + 36.0 > PHONE_W:
+            raise NewsKitError(f"pin {pin.label!r} is too wide for the phone")
+    if not all(_inside(px, py) for px, py in track):
+        raise NewsKitError("a route that leaves the map cannot be shown")
+    g = cv.group(parent, id, start=start, end=end)
+    _handset(cv, g, title)
+    x, y = PHONE_X, PHONE_Y + MAP_TOP
+    _sea(cv, g, x, y)
+    if direct is not None:
+        (ax, ay), (bx, by) = direct
+        line = cv.group(g, f"{id}-direct")
+        steps = max(int(math.hypot(bx - ax, by - ay) / 34.0), 1)
+        for i in range(steps):
+            f, h = i / steps, (i + 0.55) / steps
+            cv.path(
+                line,
+                f"M {x + ax + (bx - ax) * f} {y + ay + (by - ay) * f} "
+                f"L {x + ax + (bx - ax) * h} {y + ay + (by - ay) * h}",
+                None,
+                CREAM,
+                7.0,
+            )
+    lengths = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(track, track[1:], strict=False)]
+    whole = sum(lengths)
+    if whole <= 0.0:
+        raise NewsKitError("a route has to go somewhere")
+    times, at = [start], start
+    for piece in lengths:
+        at += seconds * piece / whole
+        times.append(at)
+    for i, (a, b) in enumerate(zip(track, track[1:], strict=False)):
+        leg = cv.group(g, f"{id}-leg-{i}", start=round(times[i], 3), end=end)
+        cv.path(leg, f"M {x + a[0]} {y + a[1]} L {x + b[0]} {y + b[1]}", None, TANGERINE, 10.0)
+    for pin in pins:
+        wide = measure(pin.label, size) + 36.0
+        left = min(max(x + pin.x - wide / 2, x + 8.0), x + PHONE_W - wide - 8.0)
+        top = y + pin.y + 16.0 if pin.below or pin.y < 74.0 else y + pin.y - 72.0
+        _inked_oval(cv, g, x + pin.x, y + pin.y, 13.0, 13.0, pin.fill, 4.0)
+        cv.rect(g, left, top, wide, 56.0, pin.fill, PLUM_DEEP, 4.0, radius=CHIP)
+        _text(cv, g, pin.label, left, top, wide, 56.0, size, PLUM_DEEP, "center")
+    head = cv.group(g, f"{id}-marker", x=x + track[0][0], y=y + track[0][1])
+    _marker(cv, head, marker)
+    cv.keys(head, "x", [(round(t, 3), x + p[0]) for t, p in zip(times, track, strict=True)], hold=False, local=False)
+    cv.keys(head, "y", [(round(t, 3), y + p[1]) for t, p in zip(times, track, strict=True)], hold=False, local=False)

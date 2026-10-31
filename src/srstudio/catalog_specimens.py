@@ -43,6 +43,7 @@ from . import (
     ink_phone,
     map_kit,
     mind_kit,
+    news_inked,
     news_kit,
     parts,
     registry,
@@ -387,6 +388,15 @@ RECIPES: dict[str, Recipe] = {
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
+    "news-route": Recipe(
+        lettered(
+            "The Map",
+            ((80.0, 560.0), (300.0, 340.0), (560.0, 120.0)),
+            (news_inked.Pin(560.0, 120.0, "HOME", news_kit.MINT),),
+            0.0,
+            SECONDS,
+        )
+    ),
     "host-label": Recipe(lettered("THE GROUP CHAT HAS RULES", 0.0, SECONDS)),
     "host-sign-off": Recipe(lettered("You know what you did.", 0.0, SECONDS)),
     "host-screen": Recipe(lettered("The Group Chat", (host_kit.Bubble("haha"),), 0.0, SECONDS)),

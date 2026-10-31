@@ -39,6 +39,7 @@ NO_EPISODE = [
     "news-lower-third@2",
     "news-parody-tag@2",
     "news-phone@2",
+    "news-route",
     "news-set@2",
     "news-source-card@2",
     "news-ticker@2",

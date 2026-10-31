@@ -120,7 +120,7 @@ MOUTH_RATE = 0.2  # the silent master's stand-in for speech, seconds per mouth
 BLINK = 0.12
 VISEMES = ("closed", "open", "round", "teeth")
 EXPRESSIONS = ("flat", "grin", "gape", "frown", "smirk", *VISEMES)  # a mouth at rest, or "talk" for the track
-EYES = ("level", "side", "wide", "shut", "down", "over", "squint")
+EYES = ("level", "side", "wide", "shut", "down", "over", "squint", "weep")
 ARMS = ("rest", "up", "chest", "point", "phone")
 _DATE = re.compile(r"[A-Z][a-z]{2} [0-9]{1,2}, 20[0-9]{2}")
 _BANNED = re.compile(
@@ -427,7 +427,7 @@ GUS_FACE = Face(
 
 def _eye(cv: Canvas, parent, face: Face, side: float, state: str) -> None:
     x, y, r = side * face.eye_x, face.eye_y, face.eye_r
-    if state == "shut":
+    if state in ("shut", "weep"):  # the first drawing has no tears
         _stroke(cv, parent, f"M {x - r} {y + 2} Q {x} {y + 10} {x + r} {y + 2}", PLUM_DEEP, 5.0)
         return
     wide = 1.28 if state == "wide" else 1.0
