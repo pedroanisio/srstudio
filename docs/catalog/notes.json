@@ -925,6 +925,42 @@
     "toon-mint": {
       "title": "Bala de hortelã no pires"
     },
+    "ballpoint": {
+      "title": "Caneta esferográfica"
+    },
+    "chair-lever": {
+      "title": "Alavanca da cadeira"
+    },
+    "glasses-glint": {
+      "title": "Brilho nos óculos"
+    },
+    "lane-sign": {
+      "title": "Placa do caixa"
+    },
+    "small-coin": {
+      "title": "Moeda pequena"
+    },
+    "coin-purse": {
+      "title": "Porta-moedas de fecho"
+    },
+    "store-box": {
+      "title": "Caixa de biscoitos"
+    },
+    "tin-of-peas": {
+      "title": "Lata de ervilhas"
+    },
+    "earbud": {
+      "title": "Fone de ouvido sem fio"
+    },
+    "bistro-table": {
+      "title": "Mesinha de bistrô"
+    },
+    "paper-napkin": {
+      "title": "Guardanapo de papel"
+    },
+    "eaten-sandwich": {
+      "title": "Sanduíche comido a cada mordida"
+    },
     "stick-caller": {
       "title": "Celular tocando"
     },

@@ -9341,6 +9341,210 @@
           "rig": null
         }
       ]
+    },
+    "eaten-sandwich": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long sandwich in hand that loses a mouthful at every bite. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "034d0f9aa1d84e6a754e1a677dc9be33337e5139de8b3052b60cccb459567fae",
+          "rig": null
+        }
+      ]
+    },
+    "paper-napkin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A folded white paper napkin. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e32af7e90906f56851484d9fc2105540b2000aeaf5f0eb8a57421be1b875b481",
+          "rig": null
+        }
+      ]
+    },
+    "bistro-table": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small round bistro table on one leg, seen side on. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ac1a9dd5afb36860a4cf31b91e55acfa6b237b8b344a21bc6096279448baa777",
+          "rig": null
+        }
+      ]
+    },
+    "earbud": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white wireless earbud with a short stem. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2e548d4baabc226c1a987b11c1cc1299d875282f8451a44db6234557689e8784",
+          "rig": null
+        }
+      ]
+    },
+    "tin-of-peas": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tin of peas with a green label. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f9582597ee1948c58484dd16e2c7f66f8559e6230514942803001a66e74fcbb",
+          "rig": null
+        }
+      ]
+    },
+    "store-box": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain supermarket box of crackers. First drawn for headphones; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5b76429123bb67df4f1583517a9536ad71eb642de24edc9c54364e63ced9bf70",
+          "rig": null
+        }
+      ]
+    },
+    "coin-purse": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clasp coin purse that opens on the coins inside it. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a767111320c6e08e44accdc515d9f3eb129872452a4153f96f0b7f1bcce48e66",
+          "rig": null
+        }
+      ]
+    },
+    "small-coin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One small coin. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c97d2443e065f37a7f1947a8bf1e5f538cc8559e1d5b321843fd7d529e7797e5",
+          "rig": null
+        }
+      ]
+    },
+    "lane-sign": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A checkout lane's lit number, hung from the ceiling, changing on its times. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7fe5d007fc444f5a548a9c45a6e4a506fe4755663f2f8ec1f710c3132a516883",
+          "rig": null
+        }
+      ]
+    },
+    "glasses-glint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The light catching a pair of round glasses, once. First drawn for shortest-line; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e30b15da7111e9b6191a012764ab9afdf5e668f3d4bd0af8a5ed772416e26bc3",
+          "rig": null
+        }
+      ]
+    },
+    "chair-lever": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An office chair's height lever, which tips on each pull. First drawn for sinking-chair; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fb35055ca63fa63d871661a59d6da491e4ef8d15f5443902ec509323404b2c8c",
+          "rig": null
+        }
+      ]
+    },
+    "ballpoint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain ballpoint pen, held to write. First drawn for sinking-chair; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3b81fe41ae57d3c78916ed7e1ba9761ee349e2c3dd330f5dff418b9598cfe100",
+          "rig": null
+        }
+      ]
     }
   }
 }
