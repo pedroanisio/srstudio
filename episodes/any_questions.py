@@ -20,7 +20,7 @@ import os
 from _common import project_root
 from any_questions_audio import INTERVIEW
 from instagram_posts import POSTS
-from srstudio import OFFICE, Episode, EpisodeSpec, camera, cast, cutout_handed, cutout_hiring, foley, locations, props
+from srstudio import OFFICE, Episode, EpisodeSpec, cast, cutout_handed, cutout_hiring, foley, locations, props
 from srstudio import interview as iv_audio
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
@@ -181,13 +181,14 @@ props.water_glass(cv, glass)
 
 # The camera: one slow push on the manager through the hold, and it stays there until the chairs swap.
 at, size = (TALL[0], TALL[1] + 40), 1.32
-camera.push_in(
-    cv,
-    office,
-    x=[(0.0, 0.0), (FALL, 0.0), (L[2].start, 540 - at[0] * size), (SWAP, 0.0)],
-    y=[(0.0, 0.0), (FALL, 0.0), (L[2].start, 700 - at[1] * size), (SWAP, 0.0)],
-    scale=[(0.0, 1.0), (FALL, 1.0), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)],
-)
+x, y = 540 - at[0] * size, 700 - at[1] * size
+for prop, values in (
+    ("scaleX", [(0.0, 1.0), (FALL, 1.0), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
+    ("scaleY", [(0.0, 1.0), (FALL, 1.0), (L[2].start, size), (SWAP - EPS, size), (SWAP, 1.0)]),
+    ("x", [(0.0, 0.0), (FALL, 0.0), (L[2].start, x), (SWAP - EPS, x), (SWAP, 0.0)]),
+    ("y", [(0.0, 0.0), (FALL, 0.0), (L[2].start, y), (SWAP - EPS, y), (SWAP, 0.0)]),
+):
+    cv.keys(office, prop, values, hold=False)
 PUSH = (SUNK[0], SUNK[1] + 40)
 LAST = spans["chair-after"][-1][0]
 for prop, values in (
