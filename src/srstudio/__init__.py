@@ -57,6 +57,7 @@ from . import (  # noqa: F401  (registers builders)
     soft_sets,
     stick,
     stick_airport,
+    stick_bed,
     stick_car,
     stick_door,
     stick_flat,

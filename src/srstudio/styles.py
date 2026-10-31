@@ -319,6 +319,7 @@ STICK = Style(
     parts=(
         "stick",
         "stick_airport",
+        "stick_bed",
         "stick_car",
         "stick_door",
         "stick_flat",
