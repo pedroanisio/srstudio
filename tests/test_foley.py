@@ -2,6 +2,7 @@
 
 import dataclasses
 import hashlib
+import math
 import wave
 
 import pytest
@@ -315,3 +316,82 @@ def test_the_named_sounds_of_published_reels_stay_as_they_were():
     for name, digest in OLD_SOUNDS.items():
         bed = [round(v, 6) for v in foley.bursts([0.1], 9.0, getattr(foley, name), rate=8000, seed=7)]
         assert hashlib.sha256(repr(bed).encode()).hexdigest()[:16] == digest, name
+
+
+def test_a_chirp_is_a_bright_blip_and_loses_its_top_through_a_door_and_then_through_earth():
+    assert foley.CHIRP.tone_hz > 3000 and foley.CHIRP.seconds < 0.1
+    assert foley.CHIRP.tone_hz > foley.CHIRP_SHUT.tone_hz > foley.CHIRP_BURIED.tone_hz
+    assert foley.CHIRP.tone > foley.CHIRP_SHUT.tone
+
+
+def test_a_chirp_at_a_time_sounds_there_and_nowhere_else():
+    samples = list(foley.bursts([0.5], 1.0, foley.CHIRP, 8000, 0))
+    assert max(abs(x) for x in samples[:3900]) == 0
+    assert max(abs(x) for x in samples[4000:4640]) > 0.1
+
+
+def low_pass(samples, rate, hz=250.0):
+    smooth, low, out = 1.0 - math.exp(-2 * math.pi * hz / rate), 0.0, []
+    for v in samples:
+        low += smooth * (v - low)
+        out.append(low)
+    return out
+
+
+def energy(samples):
+    return sum(v * v for v in samples)
+
+
+def low_share(samples, rate):
+    """How much of the energy of ``samples`` lies under 250 Hz."""
+    return energy(low_pass(samples, rate)) / energy(samples)
+
+
+def test_a_plop_hits_low_and_carries_more_weight_than_a_thud_at_the_same_peak():
+    rate = 16000
+    bed = foley.plop([0.5], 3.0, rate=rate, seed=3)
+    hit = bed[int(0.5 * rate) : int(0.95 * rate)]
+    thud = foley.bursts([0.0], 0.45, foley.THUD, rate=rate, seed=3)
+    assert max(abs(v) for v in hit) == pytest.approx(foley.PEAK)
+    assert low_share(hit[: int(0.15 * rate)], rate) > 0.6
+    assert energy(low_pass(hit, rate)) > 1.5 * energy(low_pass(thud, rate))
+
+
+def test_a_plop_sounds_at_its_cue_and_stops_with_its_bubbles():
+    rate = 16000
+    bed = foley.plop([0.5], 3.0, rate=rate, seed=3)
+    assert not any(bed[: int(0.5 * rate)]) and not any(bed[int((0.5 + foley.PLOP) * rate) + 1 :])
+
+
+def test_the_bubbles_climb_after_the_hit_and_thin_out():
+    rate = 16000
+    bed = foley.plop([0.0], 2.0, rate=rate, seed=3)
+    seconds = [bed[int(a * rate) : int((a + 0.4) * rate)] for a in (0.4, 0.8, 1.2)]
+    loud = [max(abs(v) for v in part) for part in seconds]
+    assert all(v > 0 for v in loud) and loud[0] > loud[2]
+    assert low_share(seconds[0], rate) < low_share(bed[: int(0.15 * rate)], rate)  # bubbles sit above the hit
+
+
+def test_a_plop_repeats_for_its_seed_and_changes_with_it():
+    assert foley.plop([0.1], 2.0, rate=8000, seed=1) == foley.plop([0.1], 2.0, rate=8000, seed=1)
+    assert foley.plop([0.1], 2.0, rate=8000, seed=1) != foley.plop([0.1], 2.0, rate=8000, seed=2)
+
+
+@pytest.mark.parametrize(
+    "args, kw, match",
+    [
+        (([1.5], 2.0), {}, "duration"),
+        (([-0.1], 3.0), {}, "duration"),
+        (([0.1], 3.0), {"rate": 100}, "rate"),
+        (([0.1], 3.0), {"peak": 0}, "peak"),
+    ],
+)
+def test_a_plop_refuses_a_cue_or_a_level_it_cannot_lay(args, kw, match):
+    with pytest.raises(foley.FoleyError, match=match):
+        foley.plop(*args, **kw)
+
+
+def test_write_plop_writes_a_wave(tmp_path):
+    path = foley.write_plop(tmp_path / "plop.wav", [0.1], 2.0, rate=8000, seed=1)
+    with wave.open(str(path)) as w:
+        assert w.getnframes() == 16000 and w.getframerate() == 8000

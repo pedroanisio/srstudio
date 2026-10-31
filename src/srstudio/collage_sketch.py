@@ -54,10 +54,11 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
-# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
-# play on their beat; ring is one ring of a phone; hiss:<seconds> lets the air out of something for that long; whip,
-# on the beat a new shot starts, whips the camera from the shot before it to that one
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip")
+# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding, crunch and
+# thud (a door shutting, something heavy landing) play on their beat; ring is one ring of a phone; hiss:<seconds> lets
+# the air out of something for that long; whip, on the beat a new shot starts, whips the camera from the shot before
+# it to that one
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip", "thud")
 ZOOM_SCALE = 1.55
 PUSH_AT = (540.0, 960.0)  # the middle of the frame
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
@@ -75,6 +76,7 @@ DING_GAIN_DB = -8.0
 HISS_GAIN_DB = -9.0
 CRUNCH_GAIN_DB = -6.0
 RING_GAIN_DB = -11.0
+THUD_GAIN_DB = -4.0
 CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
@@ -243,6 +245,9 @@ class Staging:
     recording_seed: int = 0
     # the sketch's own sounds, from the placed beats; each is a foley.Burst at its project seconds on its own track
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
+    # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
+    # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
+    keep_signature: bool = False
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
@@ -436,6 +441,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         if staging.first_shot_push and app.start == 0:
             camera.anchor(g, *face, place=True)
             camera.push_in(cv, g, scale=[(0.0, 1.0), (app.end, staging.first_shot_push)])
+        if staging.keep_signature:
+            face = collage_sets.zoom_pivot(staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP)
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
@@ -458,7 +465,7 @@ def sound_effects(
 ) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom`` and ``whip``, the sting on ``sting``, the headset on
     ``beep``, the shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a
-    phone's ring on ``ring``, chewing on ``crunch`` and air on ``hiss:<seconds>``."""
+    phone's ring on ``ring``, chewing on ``crunch``, a thud on ``thud`` and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -500,6 +507,10 @@ def sound_effects(
         clicks = sorted(at + d for at in bites for d in CRUNCH)
         crunch = foley.write_typing(audio / "crunch.wav", clicks, end, seed=seed)
         out.append(sketch.effect("crunch", 0.0, CRUNCH_GAIN_DB, root, crunch))
+    thuds = [at for at, _ in sketch.events(beats, "thud")]
+    if thuds:
+        thud = foley.write_bursts(audio / "thud.wav", thuds, end, foley.THUD, seed=seed)
+        out.append(sketch.effect("thud", 0.0, THUD_GAIN_DB, root, thud))
     for i, (at, seconds) in enumerate(sketch.events(beats, "hiss")):
         hiss = foley.write_air(audio / f"hiss-{i}.wav", [at], end, min(float(seconds), end - at), seed=seed + i)
         out.append(sketch.effect(f"hiss-{i}", 0.0, HISS_GAIN_DB, root, hiss))

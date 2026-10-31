@@ -188,3 +188,168 @@ def test_a_night_set_paints_no_warm_light():
     cv = canvas()
     collage_sets.SETS["bedroom"](cv, cv.comp)
     assert b"collage-light" not in body(cv)
+
+
+# -- the router -------------------------------------------------------------------------------------------------------
+def test_the_router_is_registered():
+    assert registry.get("prop", "collage-router").builder is collage_everyday.router
+
+
+def test_a_router_keys_one_lamp_per_stretch_of_its_light():
+    one, two = canvas(), canvas()
+    collage_everyday.router(one, one.comp, light=((0.0, "off"),))
+    collage_everyday.router(two, two.comp, light=((0.0, "off"), (3.0, "green"), (9.0, "off")))
+    assert body(two).count(b"<group") - body(one).count(b"<group") == 2
+    assert b'time="3' in body(two) and b'time="9' in body(two)
+
+
+def test_a_router_with_its_plug_pulled_draws_the_cord_hanging():
+    plugged, pulled = canvas(), canvas()
+    collage_everyday.router(plugged, plugged.comp)
+    collage_everyday.router(pulled, pulled.comp, unplugged=4.0)
+    assert body(pulled).count(b"<group") == body(plugged).count(b"<group") + 1
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"light": ()},
+        {"light": ((1.0, "green"),)},
+        {"light": ((0.0, "purple"),)},
+        {"light": ((0.0, "off"), (0.0, "green"))},
+        {"light": ((0.0, "off"), (5.0, "green"), (2.0, "off"))},
+        {"unplugged": -1.0},
+        {"w": 0.0},
+    ],
+)
+def test_a_router_refuses_what_it_cannot_draw(kwargs):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.router(cv, cv.comp, **kwargs)
+
+
+# -- the lasagna ------------------------------------------------------------------------------------------------------
+def test_the_lasagna_is_registered():
+    assert registry.get("prop", "collage-lasagna").builder is collage_everyday.lasagna
+
+
+def test_a_lasagna_shows_every_layer_and_its_dish():
+    cv = canvas()
+    collage_everyday.lasagna(cv, cv.comp)
+    drawn = body(cv)
+    assert all(colour.encode() in drawn for _, colour in collage_everyday.LASAGNA_LAYERS)
+
+
+def test_a_lasagna_scales_with_its_width():
+    small, large = canvas(), canvas()
+    collage_everyday.lasagna(small, small.comp, w=260.0)
+    collage_everyday.lasagna(large, large.comp, w=1040.0)
+    assert b"0.5" in body(small) and b"2.0" in body(large) or b"scaleX=\"2" in body(large)
+
+
+@pytest.mark.parametrize("w", [0.0, -5.0, float("nan")])
+def test_a_lasagna_refuses_a_width_it_cannot_draw(w):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.lasagna(cv, cv.comp, w=w)
+
+
+# -- the flip card ----------------------------------------------------------------------------------------------------
+TWO_SIDES = ((0.0, "NO THANKS, I HATE SAVING MONEY"), (3.0, "YES, MY FAMILY DESERVES LESS"))
+
+
+def test_the_flip_card_is_registered():
+    assert registry.get("prop", "collage-flip-card").builder is collage_everyday.flip_card
+
+
+def test_a_flip_card_shows_each_side_in_its_own_stretch():
+    one, two = canvas(), canvas()
+    collage_everyday.flip_card(one, one.comp, TWO_SIDES[:1])
+    collage_everyday.flip_card(two, two.comp, TWO_SIDES)
+    assert body(two).count(b"<group") == body(one).count(b"<group") + 1
+
+
+def test_a_flip_card_turns_only_when_it_has_another_side():
+    one, two = canvas(), canvas()
+    collage_everyday.flip_card(one, one.comp, TWO_SIDES[:1])
+    collage_everyday.flip_card(two, two.comp, TWO_SIDES)
+    assert b'property="scaleX"' in body(two)
+    assert b'property="scaleX" defaultInterpolation="hold"' not in body(two)
+
+
+@pytest.mark.parametrize(
+    "sides",
+    [
+        (),
+        ((3.0, "A"), (1.0, "B")),
+        ((1.0, "A"), (1.0, "B")),
+        ((0.0, "A" * 30),),  # one word wider than the card
+        ((0.0, " ".join(["WORD"] * 40)),),  # more rows than the card
+        ((0.0, "   "),),
+    ],
+)
+def test_a_flip_card_refuses_a_side_it_could_not_show_whole(sides):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.flip_card(cv, cv.comp, sides)
+
+
+# -- the magnifying glass ---------------------------------------------------------------------------------------------
+def test_the_magnifying_glass_is_registered():
+    assert registry.get("prop", "collage-magnifying-glass").builder is collage_everyday.magnifying_glass
+
+
+def test_a_magnifying_glass_has_a_lens_that_shows_what_is_under_it():
+    cv = canvas()
+    collage_everyday.magnifying_glass(cv, cv.comp)
+    assert b'fill="#cfe8ff40"' in body(cv)
+
+
+@pytest.mark.parametrize("size", [0.0, -1.0, float("inf")])
+def test_a_magnifying_glass_refuses_a_lens_it_cannot_draw(size):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.magnifying_glass(cv, cv.comp, size=size)
+
+
+# -- the battery insert -----------------------------------------------------------------------------------------------
+def test_the_battery_insert_is_registered():
+    assert registry.get("prop", "collage-battery-insert").builder is collage_everyday.battery_insert
+
+
+def test_a_battery_insert_says_its_level_in_red_when_it_is_nearly_gone():
+    cv = canvas()
+    collage_everyday.battery_insert(cv, cv.comp, levels=((0.0, 1),))
+    drawn = body(cv)
+    assert b"1%" in drawn
+    assert collage_everyday.LOW_BATTERY.encode() in drawn
+
+
+def test_a_battery_insert_with_charge_left_is_not_red():
+    cv = canvas()
+    collage_everyday.battery_insert(cv, cv.comp, levels=((0.0, 80),))
+    assert collage_everyday.LOW_BATTERY.encode() not in body(cv)
+
+
+def test_a_battery_insert_goes_black_when_it_dies():
+    alive, dead = canvas(), canvas()
+    collage_everyday.battery_insert(alive, alive.comp)
+    collage_everyday.battery_insert(dead, dead.comp, dead=2.0)
+    assert collage_everyday.DEAD_SCREEN.encode() in body(dead)
+    assert collage_everyday.DEAD_SCREEN.encode() not in body(alive)
+
+
+@pytest.mark.parametrize(
+    "levels", [(), ((1.0, 5),), ((0.0, 101),), ((0.0, -1),), ((0.0, 5), (0.0, 4)), ((0.0, 5), (float("nan"), 4))]
+)
+def test_a_battery_insert_refuses_levels_it_cannot_show(levels):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.battery_insert(cv, cv.comp, levels=levels)
+
+
+@pytest.mark.parametrize("dead", [-1.0, float("inf")])
+def test_a_battery_insert_refuses_a_death_off_the_clock(dead):
+    cv = canvas()
+    with pytest.raises(EverydayError):
+        collage_everyday.battery_insert(cv, cv.comp, dead=dead)

@@ -319,6 +319,9 @@ RECIPES: dict[str, Recipe] = {
     "saga-holo": Recipe(typeset((saga_sets.Panel(0.0, "Ship's Log", "All systems nominal."),))),
     "soft-cake": Recipe(part("WE'LL MISS\nYOU", x=540, y=1000)),
     "soft-cane": Recipe(part(540, 1200)),
+    "soft-parcels": Recipe(part(120, 1500)),
+    "soft-whisk": Recipe(part(540, 1100, scale=4)),
+    "soft-glare-lamp": Recipe(part(540, 1400)),
     "soft-briefcase": Recipe(part(540, 900)),
     "soft-hive": Recipe(part(540, 1200)),
     "soft-necktie": Recipe(part(540, 900)),
@@ -335,6 +338,15 @@ RECIPES: dict[str, Recipe] = {
     "stick-cockpit": Recipe(part((stick.RigKey(0, "drive"),), SECONDS)),
     "stick-laptop": Recipe(part(540, 960, title="Sent", rows=("Re: budget", "Re: lunch"), badge="40")),
     "stick-phone": Recipe(part(sender="Boss", text="One more thing...")),
+    "stick-bag-scale": Recipe(part(540, 1500, ((0.0, "23.4"), (2.0, "22.9")), SECONDS)),
+    "stick-coat-ball": Recipe(part(540, 700, 320, layers=4, hats=3, scarves=3, trousers=True, shoes=True)),
+    "stick-palm": Recipe(part(540, 1500)),
+    "stick-bedroom": Recipe(part()),
+    "stick-message-insert": Recipe(part(sender="MOM", text="We need to talk.")),
+    "stick-chair": Recipe(part(540, 1500)),
+    "stick-smoke-alarm": Recipe(part(540, 960, scale=2.0)),
+    "stick-mound": Recipe(part(540, 1300, words="ALL 5")),
+    "stick-shovel": Recipe(part(540, 1300)),
     "stick-murphy-bed": Recipe(part(SECONDS)),
     "stick-gym-counter": Recipe(part(sign="NO REFUNDS*", fine="*EVER")),
     "stick-kiosk": Recipe(part((stick_shop.Screen(0.0, "Place item in the bagging area"),), SECONDS)),
@@ -477,6 +489,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
     "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
     "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s
+    "water-splash": Recipe(part(), at=0.2),  # every bead has fallen back by 0.48 s
     # -- graphics -------------------------------------------------------------------------------------------------
     "signature-code": Recipe(part(540, 960, height=40)),
     "episode-slate": Recipe(part("08", "CAMERA OFF"), at=0.4),  # it fades out by one second

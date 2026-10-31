@@ -13,6 +13,7 @@ is on the composition clock. Bad input is a :class:`srstudio.toon.ToonDataError`
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -130,10 +131,19 @@ def _wheel(cv: Canvas, g, x: float, y: float, r: float) -> None:
 
 @register("prop", "toon-side-car", summary="A plain small car from the side, facing left, in any paint, with no badge")
 def side_car(
-    cv: Canvas, parent, at: Point = (296.0, 780.0), colour: str = BODY, scale: float = 1.0, id: str | None = None
+    cv: Canvas,
+    parent,
+    at: Point = (296.0, 780.0),
+    colour: str = BODY,
+    scale: float = 1.0,
+    id: str | None = None,
+    wheels: tuple[str, ...] = ("front", "rear"),
 ) -> None:
-    """The car with its wheels on the ground at ``at``, ``scale`` times its size about that point."""
+    """The car with its wheels on the ground at ``at``, ``scale`` times its size about that point. ``wheels`` names
+    the wheels it still has: :func:`loose_wheel` plays the one it lost."""
     _colour(colour, "a car's paint")
+    if len(set(wheels)) != len(wheels) or not set(wheels) <= {"front", "rear"}:
+        raise ToonDataError(f"a car's wheels are distinct among front and rear, got {wheels!r}")
     g = _scaled(cv, parent, at, scale, id)
     x, y = at
     _shadow(cv, g, x, y, 330, 16, 0.3)
@@ -143,8 +153,43 @@ def side_car(
     _line(cv, g, [(x + 1, y - 84), (x + 1, y - 28)], 4.0)
     cv.rect(g, fx(x - 34), fy(y - 70), fh(24), fh(7), TRIM, radius=fh(3))
     cv.ellipse(g, fx(x - 156), fy(y - 66), fh(26), fh(20), LAMP, cv.ink, FINE_W / 2)
-    for wheel in (x - 96, x + 98):
-        _wheel(cv, g, wheel, y - 28, 30)
+    for name, wheel in (("front", x - 96), ("rear", x + 98)):
+        if name in wheels:
+            _wheel(cv, g, wheel, y - 28, 30)
+
+
+@register(
+    "prop",
+    "toon-loose-wheel",
+    summary="A car wheel that lets go of its axle at a set second and rolls away along the ground, turning as it goes",
+)
+def loose_wheel(
+    cv: Canvas,
+    parent,
+    at: Point = (296.0, 780.0),
+    start: float = 0.0,
+    to: float = -80.0,
+    seconds: float = 3.0,
+    scale: float = 1.0,
+    id: str | None = None,
+) -> None:
+    """A :func:`side_car`'s front wheel, for the car parked at ``at`` with ``wheels=("rear",)``: on its axle until
+    ``start``, then rolling to reference ``to`` along the ground over ``seconds``, turning the distance it covers."""
+    if not (checks.number(seconds) and seconds > 0):
+        raise ToonDataError(f"a wheel rolls for over 0 seconds, got {seconds!r}")
+    if not (checks.number(start) and start >= 0):
+        raise ToonDataError(f"a wheel lets go from second 0, got {start!r}")
+    x, y = at[0] - 96 * scale, at[1] - 28 * scale
+    r = 30 * scale
+    cx, cy = fx(x), fy(y)
+    g = cv.group(parent, id or cv.uid("wheel"), x=cx, y=cy, anchorX=cx, anchorY=cy)
+    _wheel(cv, g, x, y, r)
+    _line(cv, g, [(x, y - r / 2), (x, y + r / 2)], 3.0)  # a spoke, or a turning wheel would look still
+    travel = fx(to) - cx
+    turned = math.degrees(travel / fh(r))
+    keys = [(0.0, 0.0), (start, 0.0), (start + seconds, 1.0)]
+    cv.keys(g, "x", [(t, round(cx + travel * k, 3)) for t, k in keys], hold=False, local=False)
+    cv.keys(g, "rotation", [(t, round(turned * k, 3)) for t, k in keys], hold=False, local=False)
 
 
 @register("prop", "toon-school-bus", summary="A long yellow bus from the side, facing left, stripes and no lettering")

@@ -51,6 +51,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, speakers=(replace(SPEAKERS[0], character="owl"), SPEAKERS[1])), "distinct characters"),
         (lambda s: replace(s, speakers=(SPEAKERS[0], replace(SPEAKERS[1], character="dog"))), "distinct characters"),
         (lambda s: replace(s, lines=(*LINES, Line("nobody", "Hi."))), "known speaker"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=1.0), *LINES[1:])), "gain is zero or less"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=-13.0), *LINES[1:])), "gain is zero or less"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=2.0), *LINES[1:])), "gain is zero or less"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=float("nan")), *LINES[1:])), "gain is zero or less"),

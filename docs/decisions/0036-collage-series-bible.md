@@ -102,6 +102,8 @@ A release's `Tags.recurring` uses these short names: `gary`, `rosa` and `kai` ar
 - **A zoom keeps the signature.** `collage_sets.zoom_pivot(set, face, scale)` returns the face when a zoom on it
   keeps the whole signature box in frame, otherwise the nearest pivot that does. A set whose shelf is on the right
   needs the figure moved right in its shots for the zoom to land on the face.
+  `Staging.keep_signature` applies it to every zoom of a reel, with the shelf above the caption pill; published
+  reels leave it off and stay as they landed.
 - **A smaller master.** The paper grain changes every frame, so a Collage master at the published rate factor (17)
   runs to 40–58 MB, and still to 29–35 MB at a rate factor of 25. `Staging.bitrate` sets the video's average
   bitrate, encoded in two passes, so a master's size follows its length; the batch of 2026-10-30 sets 5.8 Mbit/s

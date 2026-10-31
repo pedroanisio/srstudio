@@ -955,7 +955,7 @@ def test_a_toon_sketch_pins_every_character_it_shows(script):
         sk = importlib.import_module(f"{script.stem}_data").SKETCH
     finally:
         sys.path.pop(0)
-    shown = {sketch.part_of(beat.who) for beat in sk.beats}
+    shown = {sketch.part_of(beat.who) for beat in sk.beats if beat.who not in sk.bare}
     assert shown <= set(posts.RELEASES[sk.slug].parts)
 
 

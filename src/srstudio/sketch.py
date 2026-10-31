@@ -93,6 +93,7 @@ LIP_SYNCED = (
     "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
+LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it
@@ -141,7 +142,8 @@ class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
     ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
-    as it was said, and only the audio in the reel is band-limited."""
+    as it was said, and only the audio in the reel is band-limited. ``gain`` plays it quieter than the others, within
+    :data:`LINE_LEVELS`."""
 
     speaker: str
     text: str
@@ -208,6 +210,7 @@ class Sketch:
     tail: float = (
         TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
     )
+    bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
 
 
 @dataclass(frozen=True)
@@ -236,9 +239,12 @@ def check(sketch: Sketch) -> None:
         raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
-    if any(not (checks.number(line.gain) and line.gain <= 0) for line in sketch.lines):
-        raise SketchError("a line's gain is zero or less: the other lines set the level")
     for i, line in enumerate(sketch.lines):
+        if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
+            raise SketchError(
+                f"line {i}: a line's gain is zero or less, within {LINE_LEVELS} dB: the other lines set the level, "
+                f"got {line.gain!r}"
+            )
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")

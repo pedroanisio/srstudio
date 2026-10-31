@@ -41,6 +41,9 @@ __all__ = [
     "DING",
     "RING",
     "THUD",
+    "CHIRP",
+    "CHIRP_SHUT",
+    "CHIRP_BURIED",
     "RUMBLE",
     "ROAD",
     "CHOPPER",
@@ -71,6 +74,9 @@ __all__ = [
     "whoosh",
     "write_whoosh",
     "WHOOSH",
+    "plop",
+    "write_plop",
+    "PLOP",
     "CHIME",
     "CYCLE_DONE",
     "BELL",
@@ -257,6 +263,58 @@ def write_whoosh(
     return write_wav(path, whoosh(times, duration, length, rate, PEAK, seed), rate)
 
 
+PLOP = 1.6  # seconds of one plop: the hit, then the bubbles climbing after it
+
+
+def plop(times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK) -> list[float]:
+    """A mono bed of ``duration`` seconds with something heavy dropped into water at each of ``times``. The weight is
+    a body sinking from 130 to 70 Hz with its octave, so it carries on a phone speaker, under a short splash; the
+    water closes over it in a bloop rising from 160 to 480 Hz; then seeded bubbles climb and thin out."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0 and all(0 <= t <= duration - PLOP for t in times)):
+        raise FoleyError(f"duration {duration} must leave {PLOP:.2f} s after every cue")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    rng = random.Random(seed)
+    out = [0.0] * int(round(duration * rate))
+    smooth = 1.0 - math.exp(-2 * math.pi * 1600.0 / rate)
+
+    def rising(begin: int, seconds: float, low_hz: float, high_hz: float, level: float) -> None:
+        phase = 0.0
+        n = int(seconds * rate)
+        for k in range(n):
+            x = k / n
+            phase += 2 * math.pi * (low_hz + (high_hz - low_hz) * x) / rate
+            out[begin + k] += level * math.sin(phase) * min(1.0, k / (0.004 * rate), 8 * (1 - x))
+
+    for at in sorted(times):
+        begin = int(at * rate)
+        low, body = 0.0, 0.0
+        for k in range(int(0.7 * rate)):
+            t = k / rate
+            body += 2 * math.pi * (70.0 + 60.0 * math.exp(-t / 0.08)) / rate
+            low += smooth * (rng.uniform(-1, 1) - low)
+            env = min(1.0, t / 0.003) * math.exp(-t / 0.24)
+            splash = 0.9 * low * math.exp(-t / 0.035)
+            out[begin + k] += env * (math.sin(body) + 0.3 * math.sin(2 * body) + splash)
+        rising(begin + int(0.09 * rate), 0.16, 160.0, 480.0, 0.5)
+        count = 9
+        for i in range(count):
+            when = 0.30 + (PLOP - 0.42) * (i + rng.uniform(0.0, 0.7)) / count
+            hz = rng.uniform(420.0, 900.0)
+            rising(begin + int(when * rate), 0.07, hz, hz * 1.5, 0.3 * (1 - 0.8 * i / count))
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_plop(path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`plop`, written to ``path``."""
+    return write_wav(path, plop(times, duration, rate, seed), rate)
+
+
 def air(
     times: Sequence[float], duration: float, length: float, rate: int = RATE, peak: float = PEAK, seed: int = 0
 ) -> list[float]:
@@ -440,6 +498,9 @@ KNOCK = Burst(0.12, 900.0, attack=0.002, decay=0.3, tone_hz=170.0, tone_end_hz=1
 SNORE = Burst(1.1, 420.0, attack=0.35, decay=1.2, tone_hz=70.0, tone_end_hz=95.0, tone=0.35, flutter_hz=31.0)
 BELL = Burst(0.45, 200.0, attack=0.002, decay=0.45, tone_hz=1760.0, tone_end_hz=1760.0, tone=1.0)
 THUD = Burst(0.25, 500.0, attack=0.003, decay=0.35, tone_hz=90.0, tone_end_hz=55.0, tone=0.8)
+CHIRP = Burst(0.08, 200.0, attack=0.001, decay=0.09, tone_hz=3300.0, tone_end_hz=3300.0, tone=1.0)
+CHIRP_SHUT = Burst(0.1, 200.0, attack=0.003, decay=0.1, tone_hz=1100.0, tone_end_hz=1100.0, tone=0.5)  # behind a door
+CHIRP_BURIED = Burst(0.12, 200.0, attack=0.006, decay=0.12, tone_hz=620.0, tone_end_hz=620.0, tone=0.5)  # under earth
 RUMBLE = Burst(1.4, 700.0, attack=0.02, decay=0.9, tone_hz=60.0, tone_end_hz=45.0, tone=0.4, flutter_hz=11.0)
 ROAD = Burst(3.0, 380.0, attack=0.12, decay=4.0, tone_hz=64.0, tone_end_hz=72.0, tone=0.3, flutter_hz=7.0)
 CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.0, tone=0.4, flutter_hz=13.0)
