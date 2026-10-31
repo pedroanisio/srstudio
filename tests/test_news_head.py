@@ -13,6 +13,7 @@ import re
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from itertools import pairwise
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -479,20 +480,25 @@ def test_the_mark_check_fails_on_the_rig_that_slid_them_off(who, kind):
     assert any(row.startswith(kind) for row in off_skin(who, 2))
 
 
-def mouth_of(who: str, state: str) -> list[tuple[float, float]]:
-    """What a mouth state draws, through the code a reel draws it with: paths walked, an ellipse at its extremes."""
+def mouth_of(who: str, state: str, number: int = 3) -> list[tuple[float, float]]:
+    """The outline a mouth state draws, through the code a reel draws it with: its largest shape, walked, an ellipse
+    all the way round."""
     cv = canvas(1.0)
     drawn = cv.group(cv.comp, "mouth-check", opacity=0.0)
-    face = news_inked.VERA_INKED if who == "vera" else news_inked.GUS_INKED
-    news_inked._mouths(cv, drawn, face, ((0.0, state),), 0.0, 1.0)
-    points: list[tuple[float, float]] = []
-    for shape in group(tree(cv), "mouth-check")[0].iter("shape"):
-        if path := shape.get("path"):
-            points += traced(path)
-        else:
-            x, y, wide, tall = (float(shape.attrib[k]) for k in ("x", "y", "width", "height"))
-            points += [(x, y + tall / 2), (x + wide, y + tall / 2), (x + wide / 2, y), (x + wide / 2, y + tall)]
-    return points
+    news_inked._mouths(cv, drawn, news_inked.inked(who, number), ((0.0, state),), 0.0, 1.0)
+    shape = next(group(tree(cv), "mouth-check")[0].iter("shape"))
+    if path := shape.get("path"):
+        return traced(path)
+    x, y, wide, tall = (float(shape.attrib[k]) for k in ("x", "y", "width", "height"))
+    turns = [2 * math.pi * k / 36 for k in range(36)]
+    return [(x + wide / 2 * (1 + math.cos(a)), y + tall / 2 * (1 + math.sin(a))) for a in turns]
+
+
+def corners_of(who: str, number: int) -> list[tuple[float, float]]:
+    rig, *_ = face_of(who, number)
+    slide = head_motion.limit(rig.style, "face_x")
+    drop = head_motion.limit(rig.style, "nod") * rig.face_slide
+    return [(side * slide, d) for side in (-1.0, 1.0) for d in (0.0, drop)]
 
 
 def mouths_past_the_skin(who: str, number: int, *corners: tuple[float, float]) -> list[str]:
@@ -500,28 +506,103 @@ def mouths_past_the_skin(who: str, number: int, *corners: tuple[float, float]) -
     return [
         state
         for state in news_kit.EXPRESSIONS
-        if not all(on_skin(contour, x + dx, y + dy) for x, y in mouth_of(who, state) for dx, dy in corners)
+        if not all(on_skin(contour, x + dx, y + dy) for x, y in mouth_of(who, state, number) for dx, dy in corners)
     ]
 
 
-# Past the skin at the limits on version 3, what the slide cannot answer: not a pass, the open defects by name. A change
-# that fixes one fails here until it comes off the list, and a mouth that joins it fails here too.
-MOUTHS_PAST_AT_THE_LIMITS = {"vera": ["grin", "gape"], "gus": ["gape"]}
+def enclosed(outline: list[tuple[float, float]], x: float, y: float) -> bool:
+    """Whether the point lies inside a shape that may be concave, as the top lip of a grin is."""
+    edges = [
+        ax + (y - ay) * (bx - ax) / (by - ay)
+        for (ax, ay), (bx, by) in zip(outline, (*outline[1:], outline[0]), strict=True)
+        if (ay > y) != (by > y)
+    ]
+    return sum(edge > x for edge in edges) % 2 == 1
+
+
+def nose_of(who: str, number: int) -> list[tuple[float, float]]:
+    """The nose as drawn, its ink's width with it: the long line of the face's own colour, below the eyes' top."""
+    _, _, marks = face_of(who, number)
+    deep = (news_inked.VERA_DEEP if who == "vera" else news_inked.GUS_DEEP).lower()
+    long = [p for f, p in marks if f.lower() == deep and max(x for x, _ in p) - min(x for x, _ in p) > 25]
+    return [point for points in long if min(y for _, y in points) < -140 for point in points]
+
+
+MOUTH_INK = 2.5  # half the width of the line round a mouth
+
+
+def mouths_over_the_nose(who: str, number: int) -> list[str]:
+    """Every mouth whose line reaches the nose's ink, the slide being shared: a fault of the drawing alone."""
+    nose = nose_of(who, number)
+    return [
+        state
+        for state in news_kit.EXPRESSIONS
+        if any(enclosed(mouth_of(who, state, number), x, y + MOUTH_INK) for x, y in nose)
+    ]
+
+
+def area_of(points: list[tuple[float, float]]) -> float:
+    return abs(sum(ax * by - bx * ay for (ax, ay), (bx, by) in zip(points, (*points[1:], points[0]), strict=True))) / 2
+
+
+# Past the skin or over the nose on a version: not a pass, the open defects by name. A change that fixes one fails here
+# until it comes off the list, and a mouth that joins a list fails here too.
+MOUTHS_PAST_AT_THE_LIMITS = {3: {"vera": ["grin", "gape"], "gus": ["gape"]}, 4: {"vera": [], "gus": []}}
+MOUTHS_OVER_THE_NOSE = {
+    3: {"vera": [], "gus": ["gape", "open", "round", "teeth"]},
+    4: {"vera": [], "gus": ["gape", "teeth"]},
+}
+SHOUT_ABOVE_TALK = 1.25  # how much more mouth a shout shows than a word, so that it stays a shout at phone size
 
 
 @anchors
-def test_only_the_named_mouths_leave_the_skin_with_the_turn_and_the_nod_at_their_limits(who):
-    rig, *_ = face_of(who, 3)
-    slide = head_motion.limit(rig.style, "face_x")
-    drop = head_motion.limit(rig.style, "nod") * rig.face_slide
-    corners = [(side * slide, d) for side in (-1.0, 1.0) for d in (0.0, drop)]
-    assert mouths_past_the_skin(who, 3, *corners) == MOUTHS_PAST_AT_THE_LIMITS[who]
+@pytest.mark.parametrize("number", [3, 4])
+def test_only_the_named_mouths_leave_the_skin_with_the_turn_and_the_nod_at_their_limits(who, number):
+    assert mouths_past_the_skin(who, number, *corners_of(who, number)) == MOUTHS_PAST_AT_THE_LIMITS[number][who]
 
 
 @anchors
-@pytest.mark.parametrize("number", [2, 3])
-def test_the_gape_is_the_one_mouth_the_drawing_lays_past_the_chin_at_rest(who, number):
-    assert mouths_past_the_skin(who, number, (0.0, 0.0)) == ["gape"]
+@pytest.mark.parametrize(("number", "past"), [(2, ["gape"]), (3, ["gape"]), (4, [])])
+def test_the_chin_holds_the_mouth_at_rest_from_version_4(who, number, past):
+    assert mouths_past_the_skin(who, number, (0.0, 0.0)) == past
+
+
+@anchors
+@pytest.mark.parametrize("number", [3, 4])
+def test_only_the_named_mouths_reach_the_nose(who, number):
+    assert mouths_over_the_nose(who, number) == MOUTHS_OVER_THE_NOSE[number][who]
+
+
+def room_at_the_limits(who: str, state: str, number: int) -> float:
+    """How far the mouth's line stays from the skin's edge at the worst corner of the rig, in the face's pixels."""
+    _, contour, _ = face_of(who, number)
+    edges = list(zip(contour, (*contour[1:], contour[0]), strict=True))
+
+    def apart(x: float, y: float) -> float:
+        rows = []
+        for (ax, ay), (bx, by) in edges:
+            dx, dy = bx - ax, by - ay
+            along = max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy or 1.0)))
+            rows.append(math.hypot(x - ax - along * dx, y - ay - along * dy))
+        return min(rows)
+
+    return min(
+        apart(x + dx, y + dy) if on_skin(contour, x + dx, y + dy) else -1.0
+        for x, y in mouth_of(who, state, number)
+        for dx, dy in corners_of(who, number)
+    )
+
+
+@anchors
+@pytest.mark.parametrize("state", ["gape", "open", "round", "grin"])
+def test_the_ink_of_a_redrawn_mouth_stays_on_the_skin_too(who, state):
+    assert round(room_at_the_limits(who, state, 4), 1) >= MOUTH_INK
+
+
+@anchors
+def test_a_shout_is_still_a_shout(who):
+    gape, talk = area_of(mouth_of(who, "gape", 4)), area_of(mouth_of(who, "open", 4))
+    assert gape >= SHOUT_ABOVE_TALK * talk
 
 
 @anchors
@@ -532,6 +613,65 @@ def test_a_turn_still_reads_as_a_turn_on_the_smaller_limits(who):
     face = news_inked.VERA_INKED if who == "vera" else news_inked.GUS_INKED
     above = news_kit.CHIN_Y - face.eye_y
     assert above * math.sin(math.radians(new.style.glance_turn)) + new.style.glance_face >= FLOOR_TRAVEL
+
+
+@anchors
+def test_version_4_keeps_the_limits_and_redraws_nothing_but_the_mouths(who):
+    def drawn(number: int) -> bytes:
+        cv = canvas(4.0)
+        poses = tuple(
+            (4.0 * n / len(news_kit.ARMS), Pose(eyes, "flat", arms))
+            for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
+        )
+        news_inked.perform(cv, cv.comp, who, 540.0, poses, 0.0, 4.0, number=number)
+        return cv.scene.to_bytes(layout="pretty")
+
+    assert drawn(4) == drawn(3)
+    assert news_inked.RIGS[f"news-{who}@4"].style == news_inked.RIGS[f"news-{who}@3"].style
+    assert news_inked.RIGS[f"news-{who}@4"].face_slide == news_inked.RIGS[f"news-{who}@3"].face_slide
+
+
+@pytest.mark.parametrize(("who", "redrawn"), [("gus", {"gape", "open", "round"}), ("vera", {"gape", "grin"})])
+def test_version_4_redraws_the_named_mouths_and_leaves_the_rest(who, redrawn):
+    changed = {s for s in news_kit.EXPRESSIONS if mouth_of(who, s, 4) != mouth_of(who, s, 3)}
+    assert changed == redrawn
+
+
+@anchors
+def test_version_4_is_proposed_and_its_specimen_shows_every_mouth(who):
+    name = f"news-{who}"
+    assert parts.get(name).version(4).status == "proposed"
+    assert parts.latest(name).number == 3
+    assert specimens.digest(name, 4) == parts.get(name).version(4).drawing
+    assert specimens.digest(name, 4) != specimens.digest(name, 3)
+    assert specimens.rig_digest(name, 4) == parts.get(name).version(4).rig.drawing
+    _, _, marks = face_of(who, 4)
+    outlines = {tuple(points) for _, points in marks}
+    assert {tuple(mouth_of(who, s, 4)) for s in ("gape", "grin")} <= outlines
+
+
+def test_a_proposed_redraw_reaches_no_reel():
+    cv = canvas(10.0)
+    beats = (SimpleNamespace(start=0.0, event=None),)
+    with pytest.raises(NewsKitError, match="news-gus@4"):
+        news_inked.stage((Act(Pose(), Pose()),), version=4)(shot(cv, "gus", beats=beats))
+
+
+@pytest.mark.parametrize(
+    "reel",
+    [
+        "seabird_jet_lag",
+        "space_haiku",
+        "you_too",
+        "one_more_episode",
+        "security_question",
+        "where_to_eat",
+        "missing_lid",
+    ],
+)
+def test_a_delivered_reel_names_the_version_it_went_out_on(reel):
+    source = (Path(__file__).parents[1] / "episodes" / "pilots" / f"{reel}.py").read_text()
+    assert "news_inked.stage(ACTS, version=3)" in source
 
 
 @anchors

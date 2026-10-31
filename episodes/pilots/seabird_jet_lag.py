@@ -37,7 +37,7 @@ STAGING = Staging(
     accessibility=ACCESSIBILITY,
     narration=NARRATION,
     tints=TINTS,
-    dress=news_inked.stage(ACTS),
+    dress=news_inked.stage(ACTS, version=3),
     versions=VERSIONS,
     desk=news_inked.desk,
     style=news_kit.NEWS,
