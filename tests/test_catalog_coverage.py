@@ -69,6 +69,7 @@ NO_EPISODE = [
     "stick-poster",
     "stick-headset",
     "bistro-table",
+    "chair-lever",
     "coin-purse",
     "earbud",
     "eaten-sandwich",
