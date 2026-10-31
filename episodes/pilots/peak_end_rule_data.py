@@ -109,7 +109,7 @@ SECOND_FILE = 1.1  # after the worst moment, on "the last"
 BEEP: tuple[synth.Glide, ...] = ((1760.0, 1760.0, 0.07), (1760.0, 1760.0, 0.07))
 CHIME: tuple[synth.Glide, ...] = ((1567.98, 1567.98, 0.22),)
 PUNCH, PIVOT = 1.12, (960.0, 1000.0)  # the pivot this far right keeps the code in frame
-END = 44.95
+END = 43.5
 
 LINES = (
     Line("narrator", "Five stars."),
@@ -157,15 +157,15 @@ BEATS = (
     on_card(say(15.3, CARD, 9, "wide", "flat", "desk", "name")),
     on_card(say(16.7, CARD, 10, "wide", "flat", "desk", "reveal")),
     say(18.3, STAGE, 11, "wide", "flat", "desk"),
-    say(21.2, STAGE, 12, "wide", "flat", "desk", "worst"),
-    say(23.15, STAGE, 13, "wide", "flat", "desk", "dim"),
-    on_card(say(24.7, CARD, 14, "wide", "flat", "desk", "study")),
-    on_card(say(28.35, CARD, 15, "wide", "flat", "desk", "long")),
-    on_card(say(32.3, CARD, 16, "wide", "flat", "desk", "result")),
-    say(35.2, "raccoon", 17, "up", "flat", "desk", "fridge"),
-    say(38.5, "raccoon", 18, "side", "smirk", "desk", "note"),
-    say(41.3, "sloth", 19, "sleepy", "flat", "desk", "last"),
-    hold(43.3, "sloth", "", "sleepy", "smirk", "desk"),
+    say(20.8, STAGE, 12, "wide", "flat", "desk", "worst"),
+    say(22.75, STAGE, 13, "wide", "flat", "desk", "dim"),
+    on_card(say(24.3, CARD, 14, "wide", "flat", "desk", "study")),
+    on_card(say(27.5, CARD, 15, "wide", "flat", "desk", "long")),
+    on_card(say(31.45, CARD, 16, "wide", "flat", "desk", "result")),
+    say(34.35, "raccoon", 17, "up", "flat", "desk", "fridge"),
+    say(37.05, "raccoon", 18, "side", "smirk", "desk", "note"),
+    say(39.85, "sloth", 19, "sleepy", "flat", "desk", "last"),
+    hold(41.85, "sloth", "", "sleepy", "smirk", "desk"),
 )
 SKETCH = Sketch(SLUG, TITLE, (NARRATOR, SLOTH, RACCOON), LINES, BEATS, END, cast=mind_kit.MIND_CAST)
 EVENTS = (
