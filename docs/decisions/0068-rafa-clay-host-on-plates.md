@@ -4,7 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0068: Rafa, a clay host shot as replacement plates
 
-- Status: proposed
+- Status: accepted (2026-10-31). The operator approved his look as drawn at the proof: "Rafa is approved". His voice is
+  still the operator's to choose.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Builds on [ADR 0066](0066-talking-head-host-kit.md) (the host kit), [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync)
   and [ADR 0050](0050-organic-head-motion.md) (head motion)
@@ -75,7 +76,8 @@ GPU, and a rebuild that reused them took under 130 s, a change of one prop inclu
 
 ## Consequences
 
-- `rafa` and his seven parts stay `proposed`. Look and voice are the operator's.
+- `rafa` and his seven parts are approved as drawn. Changing the look now means adding a version. His voice is the
+  operator's to choose.
 - The family cap in `tests/test_specimens.py` rises by one.
 - `host_kit.spoken` and `host_kit.head_plan` take the cast. Lint's cast and framings are untouched, and published reels
   stay byte-identical: no drawing they use changed.
