@@ -7,8 +7,8 @@ moves the skin, lips, goatee and every goatee stroke together: that is why the b
 it. A speaking mouth drops the jaw and cuts the skin along the seam of the lips, and behind it stand teeth, a tongue and
 a throat. The lids are surfaces that come down over a whole eye.
 
-His own left is the frame's right. All numbers are the sculpt's: a head 50 tall, y down from the crown, z away from the
-lens, carried into the scene at :data:`SCALE`.
+His own left is the frame's right. All numbers start as the sculpt's: a head 50 tall, y down from the crown, z away from
+the lens, carried into the scene at :data:`SCALE`.
 """
 
 from __future__ import annotations
@@ -45,7 +45,9 @@ __all__ = [
     "cap",
     "expression",
     "eyes",
+    "glasses",
     "goatee_picture",
+    "scalp_picture",
     "materials",
     "mood",
     "mouth",
@@ -55,8 +57,9 @@ __all__ = [
 ]
 
 SCALE = 0.81
-_SEAT = np.array((0.0, -183.0, -1.0))  # where the sculpt's crown goes in the scene
-NECK = (0.0, -150.0, 0.0)  # where his head turns and nods
+LEAN = 0.82  # how much narrower than the sculpt his head stands, every feature on it going in with it
+_SEAT = np.array((0.0, -179.5, -1.0))  # where the sculpt's crown goes in the scene: a real neck above the tee
+NECK = (0.0, -146.5, 0.0)  # where his head turns and nods
 GAZES = ("ahead", "left", "right")
 LIDS = ("open", "half", "shut")
 MOUTHS = ("rest", "closed", "open", "round", "teeth", "wide", "lip")
@@ -65,15 +68,23 @@ NODS = tuple(x * 1.5 for x in range(-2, 7))  # degrees: down is positive
 SHARES = (0.0, 0.25, 0.5, 0.75)  # how far a mood has gone towards the next
 GLANCE = 1.0  # how far his irises travel on a glance
 _CLOSE = {"open": 0.0, "half": 0.55, "shut": 1.0}  # how far the upper lid has come down
-_HALF, _LIP_Y = 6.4, 38.8  # half the mouth's width, and the height of the seam at its middle
+_HALF, _LIP_Y = 6.0, 38.8  # half the mouth's width, and the height of the seam at its middle
 _REST_CURVE = 0.27  # how far the corners of the sculpt's resting mouth rise
 _HINGE_Y, _HINGE_Z = 24.0, 10.0  # the jaw's hinge
 _SLIDE = 0.45  # how much of the swing's backward travel he keeps: a jaw slides forward as it opens
 _JAW_REACH = 7.5  # how far below the mouth's line the cheek takes to go with the jaw
 _STILL_ABOVE, _STILL_BEHIND = 29.0, 7.0  # the skin higher than the first or further back than the second never moves
-_EYE_X, _EYE_Y, _EYE_W = 7.65, 24.3, 4.24
+_EYE_X, _EYE_Y, _EYE_W = 8.0, 24.3, 3.6
 _LID, _LID_WIDE, _LID_ABOVE = 0.22, 1.14, 0.9  # a lid's thickness over the eye, and how far it spreads past the opening
 _BLINK_BROW = 0.2  # how far a shut eye pulls the brow down
+_STRANDS, _LOCKS = 7500, 260  # the hairs of his top, and the tufts they gather into
+_HAIRS = ("hair-dark", "hair-mid", "hair-grey", "hair-silver")
+_BEARD_HAIRS = 3000
+_BEARD_HANGS_FROM = 46.0  # below this the beard leaves his skin and hangs past the chin
+_BROW_HAIRS = 130
+_FRAME_Z = -17.4  # where the frames sit, in front of his brow
+_BEARD_DARK = ("hair-mid", "hair-dark")
+_GOATEE_TALL = 22.0  # how much of his face the goatee's picture covers, down from 32
 
 
 class PedroError(SrstudioError, ValueError):
@@ -82,8 +93,8 @@ class PedroError(SrstudioError, ValueError):
 
 @dataclass(frozen=True)
 class Mood:
-    """An expression as numbers: the eye's opening on each side, the lower lid, each brow's lift and the mouth's curve.
-    Negative lifts go up, because y runs down."""
+    """An expression as numbers: the eye's opening on each side, the lower lid, each brow's lift, the mouth's curve, and
+    how far the inner ends of the brows pull down and together. Negative lifts go up, because y runs down."""
 
     top_left: float
     top_right: float
@@ -91,15 +102,17 @@ class Mood:
     brow_left: float
     brow_right: float
     curve: float
+    knit: float = 0.0
 
     def towards(self, other: Mood, share: float) -> Mood:
         return Mood(*(getattr(self, f.name) * (1 - share) + getattr(other, f.name) * share for f in fields(Mood)))
 
 
-MOODS: dict[str, Mood] = {  # the sculpt's three states
-    "neutral": Mood(1.5, 1.5, 1.08, -0.3, 0.0, _REST_CURVE),
-    "smile": Mood(1.28, 1.28, 0.95, -0.3, 0.0, 0.9),
-    "raised-brow": Mood(1.95, 1.5, 1.08, -1.0, 0.0, _REST_CURVE),
+MOODS: dict[str, Mood] = {  # his brows are never level: the right one sits higher even at rest
+    "neutral": Mood(1.2, 1.25, 0.82, 0.05, -0.4, _REST_CURVE),
+    "smile": Mood(1.02, 1.05, 0.7, 0.05, -0.4, 0.9),
+    "raised-brow": Mood(1.6, 1.25, 0.82, -0.85, -0.4, _REST_CURVE),
+    "furrow": Mood(1.0, 1.15, 0.8, 0.35, -0.75, _REST_CURVE, 0.6),
 }
 
 
@@ -215,7 +228,10 @@ def _bake(model: Model, parts: Iterable[_Part], moved=None) -> None:
         normals, tris = part.normals, part.tris
         if normals is None:
             normals, tris = _facing(verts, tris, pedro_sculpt.CENTRE)
-        model.surface(part.material, verts * SCALE + _SEAT - NECK, normals, tris, part.uvs)
+        narrow = np.array((LEAN, 1.0, 1.0))
+        normals = normals / narrow
+        normals = normals / np.maximum(np.linalg.norm(normals, axis=1, keepdims=True), 1e-12)
+        model.surface(part.material, verts * narrow * SCALE + _SEAT - NECK, normals, tris, part.uvs)
 
 
 def _meshes(parts: Iterable[_Part], moved=None) -> tuple[Mesh, ...]:
@@ -232,7 +248,7 @@ def _ears() -> list[_Part]:
         sin = np.sin(polar)[:, None]
         volume = np.stack(
             (
-                side * 18.5 + 1.6 * sin * np.sin(around),
+                side * 18.8 + 1.2 * sin * np.sin(around),
                 26.2 - 4.85 * np.cos(polar)[:, None] * np.ones(33),
                 0.4 + 2.15 * sin * np.cos(around),
             ),
@@ -244,40 +260,67 @@ def _ears() -> list[_Part]:
         u = 2.0 * r * np.cos(a)
         w = 0.5 + 0.75 * np.exp(-(((r - 0.8) / 0.14) ** 2)) - 0.34 * np.exp(-((r / 0.5) ** 2))
         helix = np.stack(
-            (side * (18.5 + 0.6 * u + 0.8 * w), 26.1 + 4.4 * r * np.sin(a), 0.4 + 0.8 * u - 0.6 * w), axis=2
+            (side * (18.8 + 0.3 * u + 0.5 * w), 26.1 + 4.4 * r * np.sin(a), 0.4 + 0.8 * u - 0.6 * w), axis=2
         )
         out.append(_sheet("skin-warm", helix, wrap=True))
     return out
 
 
-def _scalp(u: np.ndarray, t: np.ndarray) -> np.ndarray:
-    """The hair's surface at ``u`` from crown (0) to hairline (1), round the head at ``t``."""
+def _hairline(t: np.ndarray) -> np.ndarray:
+    """How far down from the crown his hair comes, round the head: a peak over the forehead, temples gone back from it,
+    high on the sides, and a tail down the back of the crown."""
+    cos = np.cos(t)
+    forward = 4.0 + 2.6 * np.abs(cos) ** 6 + 0.9 * np.exp(-((t / 0.22) ** 2))
+    return np.where(cos >= 0.0, forward, 4.0 + 6.5 * np.abs(cos) ** 3)
+
+
+def _scalp(u: np.ndarray, t: np.ndarray, lift: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
+    """The hair's root surface at ``u`` from crown (0) to hairline (1), round the head at ``t``, with ``lift`` of its
+    height over the skull: its points, and the way out from the head at each."""
     cos, sin = np.cos(t), np.sin(t)
-    edge = 3.15 + np.where(cos >= 0.0, 5.55, 7.2) * np.abs(cos) ** 3
-    y = np.maximum(0.015, u * edge)
+    y = np.maximum(0.015, u * _hairline(t))
     x = pedro_sculpt.width(y) * sin
     z = np.where(cos >= 0.0, pedro_sculpt.front(x, y), pedro_sculpt._back(y) * np.abs(cos) ** 0.82)
     point = np.stack((x, y, z), axis=-1)
     normal = np.stack((x / 18.0, (y - 14.0) / 13.0, z / 16.0), axis=-1)
     normal = normal / np.linalg.norm(normal, axis=-1, keepdims=True)
-    swell = np.sin(np.pi * u)
-    lift = 5.8 * swell**1.3 * np.maximum(0.0, cos) ** 2
-    groove = 0.12 * np.sin(t * 37.0 + u * 3.5) * swell
-    sweep = np.stack((-1.2 * swell * np.maximum(0.0, cos), -lift, np.zeros_like(lift)), axis=-1)
-    return point + normal * (0.18 + 1.1 * (1.0 - u) + groove)[..., None] + sweep
+    swell = np.sin(np.pi * np.minimum(u, 1.0)) ** 0.8
+    rough = 0.2 * np.sin(t * 23.0 + u * 9.0) * np.sin(t * 9.0 - u * 13.0) * swell
+    height = (1.2 + 0.6 * np.maximum(0.0, cos)) * swell * lift
+    return point + normal * (0.1 + height + rough)[..., None], normal
 
 
 def _hair() -> list[_Part]:
-    us = np.linspace(0.005, 1.0, 48)[:, None]
-    ts = np.linspace(0.0, math.tau, 140)[None, :]
-    rows = _scalp(us * np.ones_like(ts), ts * np.ones_like(us))
-    groom: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {"hair-mid": [], "hair-grey": []}
-    for i, t in enumerate(np.linspace(-1.4, 1.4, 95)):
-        points = _scalp(np.linspace(0.91, 0.20, 15), np.full(15, t)) + (0.0, -0.035, -0.015)
-        groom["hair-grey" if i % 8 == 0 else "hair-mid"].append(tube(points, (0.010, 0.020, 0.018, 0.003), 25, 4))
+    """The dark mass of the top, cut sharp on the shaved sides, and the salt-and-pepper tufts that stand out of it,
+    swept up and back in clumps. Strands near the line stand up, not out, so the line stays a line."""
+    us = np.linspace(0.005, 0.9, 48)[:, None]
+    ts = np.linspace(-math.pi, math.pi, 200)[None, :]
+    rows, _ = _scalp(us * np.ones_like(ts), ts * np.ones_like(us), 0.35)
     out = [_sheet("hair-dark", rows)]
+    locks = stream(1072, _LOCKS * 5).reshape(_LOCKS, 5)
+    draw = stream(1071, _STRANDS * 7).reshape(_STRANDS, 7)
+    groom: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {name: [] for name in _HAIRS}
+    for a, b, c, d, e, f, g in draw:
+        lock_u, lock_t, lean, lift, bend = locks[int(a * _LOCKS)]
+        u = float(np.clip(0.1 + 0.92 * lock_u + 0.2 * (b - 0.5), 0.06, 1.0))
+        t = (lock_t * 2.0 - 1.0) * math.pi + 0.5 * (c - 0.5)
+        forward = max(0.0, math.cos(t))
+        root, normal = _scalp(np.array(u), np.array(t), 0.2 + 0.8 * g)
+        way = normal * (0.45, 0.8, 0.55) + (lean * 0.8 - 0.4, -0.4 * u**2, 0.55 * max(0.0, math.cos(t)) + 0.3)
+        way = way / np.linalg.norm(way)
+        reach = (1.1 + 1.0 * lift) * (0.85 + 0.4 * forward) * (0.75 + 0.5 * d)
+        side = np.array((way[2], 0.0, -way[0])) * (bend - 0.5) * 1.6
+        path = np.array(
+            (root, root + way * reach * 0.45 + side * 0.5, root + way * reach * 0.8 + side, root + way * reach)
+        )
+        path[3] += 0.35 * (np.array((e, f, b)) - 0.5)
+        grey = 0.42 + 0.2 * forward
+        material = (
+            "hair-silver" if e < 0.4 * grey else "hair-grey" if e < grey else "hair-mid" if f < 0.5 else "hair-dark"
+        )
+        groom[material].append(tube(path, (0.12, 0.09, 0.05, 0.005), 6, 4))
     for material, items in groom.items():
-        verts, normals, tris = strokes(items, 25, 4)
+        verts, normals, tris = strokes(items, 6, 4)
         out.append(_Part(material, verts, tris, normals))
     return out
 
@@ -291,9 +334,9 @@ def _nostrils() -> list[_Part]:
         px, py = 0.48 * np.sin(polar) * np.sin(around), -0.20 * np.cos(polar) * np.ones_like(around)
         rows = np.stack(
             (
-                side * 2.7 + px * math.cos(a) - py * math.sin(a),
-                33.6 + px * math.sin(a) + py * math.cos(a),
-                -17.15 + 0.13 * np.sin(polar) * np.cos(around),
+                side * 3.0 + px * math.cos(a) - py * math.sin(a),
+                34.85 + px * math.sin(a) + py * math.cos(a),
+                -17.35 + 0.13 * np.sin(polar) * np.cos(around),
             ),
             axis=2,
         )
@@ -306,12 +349,12 @@ def cap() -> tuple[Mesh, ...]:
     """What no expression moves: the top and back of his skin, his ears, hair and nostrils, about the neck."""
     points, tris = pedro_sculpt.grid()
     normals, wound = _facing(points, tris, pedro_sculpt.CENTRE)
-    still = _Part("skin", points, wound[~_lower(tris, points)], normals)
+    still = _Part("scalp", points, wound[~_lower(tris, points)], normals, _scalp_uvs())
     return _meshes((still, *_ears(), *_nostrils(), *_hair()))
 
 
 @register(
-    "character", "pedro", summary="Pedro: the operator's own likeness in 3D, navy jacket and salt-and-pepper goatee"
+    "character", "pedro", summary="Pedro: the operator's own likeness in 3D, navy blazer and salt-and-pepper goatee"
 )
 def body(m: Model) -> None:
     """Everything of him below the head: see :mod:`srstudio.pedro_wardrobe`."""
@@ -395,7 +438,7 @@ def _lips() -> list[_Part]:
     ts = np.concatenate((np.linspace(-1.0, -0.1, 6), np.linspace(0.0, 1.0, 18)))[:, None]
     out = []
     for upper in (True, False):
-        high = (0.52 if upper else 0.85) * thin
+        high = (0.85 if upper else 1.45) * thin
         if upper:
             high = high * (1.0 - 0.22 * np.exp(-((xs / 0.9) ** 2)))
         shift = (-1.0 if upper else 1.0) * high * np.maximum(ts, 0.0)
@@ -406,40 +449,95 @@ def _lips() -> list[_Part]:
     return out
 
 
+def _power(values: np.ndarray, exponent: float) -> np.ndarray:
+    return np.sign(values) * np.abs(values) ** exponent
+
+
+_BEARD_OUT = np.array(
+    (
+        (0.0, 36.3),
+        (2.5, 35.9),
+        (5.5, 36.3),
+        (8.5, 37.7),
+        (10.2, 39.9),
+        (10.5, 42.5),
+        (10.0, 45.5),
+        (8.3, 48.0),
+        (5.5, 50.2),
+        (2.7, 51.9),
+        (0.0, 52.4),
+    )
+)  # the goatee's outer edge down his right, from under the nose to the soft point past the chin
+_BEARD_IN = np.array(
+    (
+        (0.0, 37.75),
+        (2.4, 37.5),
+        (4.8, 37.85),
+        (6.1, 38.45),
+        (6.6, 39.0),
+        (6.5, 39.5),
+        (6.0, 39.95),
+        (4.8, 40.3),
+        (3.4, 40.55),
+        (1.6, 40.65),
+        (0.0, 40.65),
+    )
+)  # and its inner edge, close round his lips
+
+
+def _along(line: np.ndarray, s: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Where a beard edge is at ``s``, 0 under the nose to 1 past the chin: a Catmull-Rom curve through its points."""
+    knots = np.concatenate((line[1:2] * (-1.0, 1.0), line, line[-2:-1] * (-1.0, 1.0)))
+    place = np.clip(s, 0.0, 1.0) * (len(line) - 1)
+    k = np.minimum(place.astype(int), len(line) - 2)
+    u = (place - k)[..., None]
+    p0, p1, p2, p3 = knots[k], knots[k + 1], knots[k + 2], knots[k + 3]
+    point = 0.5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u**2 + (3 * p1 - p0 - 3 * p2 + p3) * u**3)
+    return point[..., 0], point[..., 1]
+
+
+def _hang(x: np.ndarray, y: np.ndarray, off) -> np.ndarray:
+    """Points of the beard: on his skin down to the jaw, and below that curling away under the chin."""
+    under = np.maximum(y - _BEARD_HANGS_FROM, 0.0)
+    points = lay(x, np.minimum(y, _BEARD_HANGS_FROM), off)
+    points[..., 1] = y
+    points[..., 2] += 0.2 * under * under
+    return points
+
+
 def _beard_point(r, t, off=0.0) -> np.ndarray:
-    r, t = np.asarray(r, float), np.asarray(t, float)
-    sin, cos = np.sin(t), np.cos(t)
-    x = 6.7 * sin * (1.0 - r) + 10.8 * sin * r
-    y = (38.8 - 3.0 * cos) * (1.0 - r) + (41.55 - 7.95 * cos) * r
-    swell = np.sin(np.pi * r)
-    depth = 0.055 + 0.74 * np.abs(swell) ** 0.8 + 0.35 * np.maximum(0.0, (y - 40.0) / 9.0) * swell
+    """A point of the beard: ``r`` from his lips (0) to its outer edge (1), ``t`` round his mouth from the nose."""
+    r, t = np.minimum(np.asarray(r, float), 1.06), np.asarray(t, float)
+    wrapped = np.arctan2(np.sin(t), np.cos(t))
+    s, side = np.abs(wrapped) / math.pi, np.where(wrapped < 0.0, -1.0, 1.0)
+    in_x, in_y = _along(_BEARD_IN, s)
+    out_x, out_y = _along(_BEARD_OUT, s)
+    x, y = side * (in_x * (1.0 - r) + out_x * r), in_y * (1.0 - r) + out_y * r
+    swell = np.sin(np.pi * np.minimum(r, 1.0))
+    depth = 0.055 + (0.5 + 0.8 * np.maximum(0.0, (y - 42.0) / 9.0)) * np.abs(swell) ** 0.8
     depth = depth + 0.07 * np.sin(x * 5.0 + y * 0.5) * swell
-    return lay(x, y, depth + off)
+    return _hang(x, y, depth + off)
 
 
 def _goatee() -> list[_Part]:
-    """The connected moustache and goatee, the soul patch, and the groom that gives them salt and pepper."""
+    """The connected moustache and goatee, and the groom: a dark moustache and a grey chin, with hairs
+    that run past the beard's edge so it has no printed line."""
     r, t = np.meshgrid(np.linspace(0.0, 1.0, 40), np.linspace(0.0, math.tau, 160), indexing="ij")
     rows = _beard_point(r, t)
-    uvs = np.stack((0.5 + rows[..., 0] / 24.0, 1.0 - (rows[..., 1] - 32.0) / 18.0), axis=-1).reshape(-1, 2)
+    uvs = np.stack((0.5 + rows[..., 0] / 24.0, 1.0 - (rows[..., 1] - 32.0) / _GOATEE_TALL), axis=-1).reshape(-1, 2)
     out = [_sheet("goatee", rows, uvs=uvs)]
-    ys = np.linspace(40.0, 43.2, 30)[:, None]
-    wide = 0.12 + 1.8 * np.sin((ys - 40.0) / 3.2 * np.pi / 2.0) ** 0.6
-    across = np.linspace(-1.0, 1.0, 20)[None, :]
-    out.append(_sheet("hair-dark", lay(wide * across, ys, 0.1 + 0.22 * np.sqrt(np.maximum(0.0, 1.0 - across**2)))))
-    draw = stream(441, 720 * 6).reshape(720, 6)
-    groom: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {"hair-mid": [], "hair-grey": [], "hair-silver": []}
+    draw = stream(441, _BEARD_HAIRS * 6).reshape(_BEARD_HAIRS, 6)
+    groom: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {name: [] for name in _HAIRS}
     for a, b, c, d, e, f in draw:
-        turn, start = a * math.tau, 0.10 + b * 0.86
+        turn, start = a * math.tau, 0.08 + b * 0.92
         at = _beard_point(start, turn)
-        if at[1] < 40.8 and c < 0.70:
-            continue
-        end = min(0.99, start + 0.055 + d * 0.105)
-        material = "hair-grey" if at[1] > 42.0 and e < 0.55 else "hair-mid"
-        if at[1] > 44.5 and f < 0.22:
-            material = "hair-silver"
-        path = np.array((at, _beard_point((start + end) / 2.0, turn, 0.045), _beard_point(end, turn, 0.01)))
-        groom[material].append(tube(path, (0.022, 0.030, 0.004), 5, 4))
+        chin = float(np.clip((at[1] - 42.0) / 7.0, 0.0, 1.0))
+        end = start + 0.08 + d * 0.16 + 0.03 * chin
+        material = (
+            "hair-silver" if e < 0.55 * chin else "hair-grey" if e < 0.06 + 0.92 * chin else _BEARD_DARK[int(c < 0.5)]
+        )
+        path = np.array((at, _beard_point((start + end) / 2.0, turn, 0.06 + 0.12 * f), _beard_point(end, turn, 0.02)))
+        groom[material].append(tube(path, (0.055, 0.055, 0.006), 5, 4))
     for material, items in groom.items():
         verts, normals, tris = strokes(items, 5, 4)
         out.append(_Part(material, verts, tris, normals))
@@ -574,12 +672,13 @@ def _disk(material: str, side: float, top: float, bottom: float, r: float, off: 
     """A flat disk on the eye, cut where the opening cuts it."""
     coords = np.linspace(-r, r, 65)
     dy, dx = np.meshgrid(coords, coords, indexing="ij")
-    verts = _eye_point(side, top, bottom, dx + shift, dy, off).reshape(-1, 3)
+    verts = _eye_point(side, top, bottom, dx / LEAN + shift, dy, off).reshape(-1, 3)
     tris = _grid_tris(65, 65)
 
     def shown(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        edge = np.where(y < 0.0, top, bottom) * np.sqrt(np.maximum(0.0, 1.0 - ((x + shift) / _EYE_W) ** 2))
-        return (x * x + y * y <= r * r) & (np.abs(y - 0.1 * ((x + shift) / _EYE_W) * side) <= edge - 0.035)
+        at = x / LEAN + shift  # the disk is drawn wide so that it stands round on a lean head
+        edge = np.where(y < 0.0, top, bottom) * np.sqrt(np.maximum(0.0, 1.0 - (at / _EYE_W) ** 2))
+        return (x * x + y * y <= r * r) & (np.abs(y - 0.1 * (at / _EYE_W) * side) <= edge - 0.035)
 
     flat_x, flat_y = dx.ravel(), dy.ravel()
     return _Part(material, verts, tris[shown(flat_x[tris], flat_y[tris]).all(axis=1)])
@@ -626,13 +725,14 @@ def _eye(side: float, top: float, bottom: float, gaze: str, close: float) -> lis
     out = [_sheet("sclera", _eye_point(side, top, bottom, du, dv))]
     shift = {"ahead": 0.0, "left": -GLANCE, "right": GLANCE}[gaze]
     out += [
-        _disk("iris-rim", side, top, bottom, 2.12, 0.035, shift),
-        _disk("iris", side, top, bottom, 1.92, 0.060, shift),
-        _disk("pupil", side, top, bottom, 1.12, 0.105, shift),
+        _disk("iris-rim", side, top, bottom, 1.88, 0.035, shift),
+        _disk("iris", side, top, bottom, 1.70, 0.060, shift),
+        _disk("pupil", side, top, bottom, 0.98, 0.105, shift),
     ]
     fibres = []
     for a in np.linspace(0.0, math.tau, 32, endpoint=False):
-        dx, dy = np.array((1.1, 1.45, 1.68)) * math.cos(a) + shift, np.array((1.1, 1.45, 1.68)) * math.sin(a)
+        dx = np.array((1.0, 1.3, 1.5)) * math.cos(a) / LEAN + shift
+        dy = np.array((1.0, 1.3, 1.5)) * math.sin(a)
         keep = np.abs(dy) < np.where(dy < 0.0, top, bottom) * np.sqrt(np.maximum(0.0, 1.0 - (dx / _EYE_W) ** 2)) - 0.09
         if keep.sum() > 1:
             fibres.append(tube(_eye_point(side, top, bottom, dx[keep], dy[keep], 0.078), 0.016, 4, 4))
@@ -640,9 +740,9 @@ def _eye(side: float, top: float, bottom: float, gaze: str, close: float) -> lis
         verts, normals, tris = strokes(fibres, 4, 4)
         out.append(_Part("iris-light", verts, tris, normals))
     if not close:  # a highlight stands proud of the eye, so the lid has to find it gone
-        out.append(_dot("glint", side, _eye_point(side, top, bottom, -0.48 + shift, -0.54, 0.14), (0.27, 0.31, 0.075)))
+        out.append(_dot("glint", side, _eye_point(side, top, bottom, -0.42 + shift, -0.46, 0.14), (0.26, 0.24, 0.07)))
     if close < 1.0:
-        out.append(_dot("glint", side, _eye_point(side, top, bottom, 0.58 + shift, 0.48, 0.14), (0.11, 0.13, 0.05)))
+        out.append(_dot("glint", side, _eye_point(side, top, bottom, 0.5 + shift, 0.4, 0.14), (0.11, 0.1, 0.05)))
     if close:
         out.append(_sheet("lid", _lid(side, top, bottom, close)))
     for upper in (True, False):
@@ -658,8 +758,10 @@ def _eye(side: float, top: float, bottom: float, gaze: str, close: float) -> lis
         path = lay(side * _EYE_X + _EYE_W * wide, _EYE_Y + _margin(top, bottom, close, wide, side), lifted)
         out.append(_tube_part("skin-warm", path, 0.17, 40, 8))
     wide = np.linspace(-1.0, 1.0, 15)
-    fold = lay(side * _EYE_X + 3.6 * wide, _EYE_Y + 2.13 + 0.25 * (1.0 - wide * wide), 0.035)
+    fold = lay(side * _EYE_X + 3.4 * wide, _EYE_Y + 1.75 + 0.3 * (1.0 - wide * wide), 0.035)
     out.append(_tube_part("skin-warm", fold, 0.048, 25, 5))
+    hood = lay(side * _EYE_X + 3.9 * wide, _EYE_Y - top - 0.62 + 0.42 * wide * wide + 0.12 * wide * side, 0.03)
+    out.append(_tube_part("skin-warm", hood, 0.06, 25, 5))
     return out
 
 
@@ -669,26 +771,64 @@ def _tube_part(material: str, path: np.ndarray, r: float, n: int, sides: int) ->
     return _Part(material, verts, tris, normals)
 
 
-def _brow_y(x, lift: float) -> np.ndarray:
-    u = (np.asarray(x, float) - 3.0) / 10.2
-    return 20.25 - 0.75 * np.sin(u * np.pi) + 0.4 * u + lift
+def _brow_y(x, lift: float, knit: float = 0.0) -> np.ndarray:
+    """The middle of a brow, its inner end pulled down by ``knit``."""
+    u = (np.asarray(x, float) - 2.8) / 10.6
+    return 20.0 - 0.95 * np.sin(np.clip(u, 0.0, 1.0) ** 0.8 * np.pi) + 0.1 * u + lift + knit * (1.0 - u) ** 2
 
 
-def _brow(side: float, lift: float) -> list[_Part]:
-    xs = np.linspace(3.0, 13.2, 60)
-    u = (xs - 3.0) / 10.2
-    wide = (1.15 * (1.0 - u) + 0.24) * np.sin(np.pi * (0.04 + 0.92 * u)) ** 0.35
+def _brow(side: float, lift: float, knit: float) -> list[_Part]:
+    """A strong brow: a dark band and the hairs that break its edge."""
+    xs = np.linspace(2.8, 13.4, 60)
+    u = (xs - 2.8) / 10.6
+    wide = (1.1 * (1.0 - u) + 0.45) * np.sin(np.pi * (0.04 + 0.92 * u)) ** 0.35
     vs = np.linspace(-1.0, 1.0, 14)[None, :]
-    rows = lay((side * xs)[:, None] * np.ones_like(vs), _brow_y(xs, lift)[:, None] + vs * wide[:, None],
-               0.08 + 0.30 * np.sqrt(np.maximum(0.0, 1.0 - vs * vs)))  # fmt: skip
+    drawn_in = xs - knit * 0.8 * (1.0 - u)
+    rows = lay(
+        (side * drawn_in)[:, None] * np.ones_like(vs),
+        _brow_y(xs, lift, knit)[:, None] + vs * wide[:, None],
+        0.08 + 0.30 * np.sqrt(np.maximum(0.0, 1.0 - vs * vs)),
+    )
     hairs = []
-    for x in np.linspace(3.4, 12.6, 45):
-        y = float(_brow_y(x, lift))
-        path = lay(np.array((side * (x - 0.20), side * x, side * (x + 0.18))), np.array((y + 0.33, y - 0.20, y - 0.48)),
-                   np.array((0.23, 0.38, 0.18)))  # fmt: skip
-        hairs.append(tube(path, (0.025, 0.03, 0.008), 5, 4))
+    draw = stream(675, _BROW_HAIRS * 3).reshape(_BROW_HAIRS, 3)
+    for a, b, c in draw:
+        x = 3.0 + a * 10.0
+        band = (b * 2.0 - 1.0) * float(np.interp(x, xs, wide))
+        y = float(_brow_y(x, lift, knit)) + band
+        x = x - knit * 0.8 * (1.0 - (x - 2.8) / 10.6)
+        slant, rise = 0.35 + 0.4 * c, 0.55 + 0.4 * c
+        path = lay(
+            np.array((side * (x - slant / 2.0), side * x, side * (x + slant))),
+            np.array((y + rise * 0.4, y - rise * 0.2, y - rise * 0.7)),
+            np.array((0.23, 0.40, 0.18)),
+        )
+        hairs.append(tube(path, (0.04, 0.045, 0.008), 5, 4))
     verts, normals, tris = strokes(hairs, 5, 4)
-    return [_sheet("brow", rows), _Part("hair-mid", verts, tris, normals)]
+    return [_sheet("brow", rows), _Part("hair-dark", verts, tris, normals)]
+
+
+@lru_cache(maxsize=1)
+def glasses() -> tuple[Mesh, ...]:
+    """His rectangular black frames with a thin blue line along the top of the rim: an option no plate of a reel draws.
+    The frames carry no lens, because a material here has no glass."""
+    parts = []
+    corners = np.linspace(0.0, math.tau, 121)
+    for side in (-1.0, 1.0):
+        cos, sin = np.cos(corners), np.sin(corners)
+        x = side * 7.9 + 5.5 * np.sign(cos) * np.abs(cos) ** 0.42
+        y = 24.15 - 3.5 * np.sign(sin) * np.abs(sin) ** 0.42
+        z = _FRAME_Z + 0.022 * x * x
+        rim = np.stack((x, y, z), axis=1)
+        parts.append(_tube_part("frame", rim[::2], 0.3, 120, 8))
+        top = rim[(sin > 0.3) & (np.abs(cos) < 0.95)]
+        top = top[np.argsort(top[:, 0])] + (0.0, -0.27, -0.14)
+        parts.append(_tube_part("frame-line", top[:: max(1, len(top) // 12)], 0.085, 60, 6))
+        hinge = rim[np.argmax(side * x)] + (side * 0.2, -1.6, 0.0)
+        arm = np.array((hinge, (side * 18.0, 22.3, -9.0), (side * 19.8, 22.4, -3.0), (side * 20.0, 22.6, 2.4)))
+        parts.append(_tube_part("frame", arm, 0.2, 36, 6))
+    bridge = np.array(((-2.6, 23.6, _FRAME_Z + 0.15), (0.0, 22.5, _FRAME_Z - 0.25), (2.6, 23.6, _FRAME_Z + 0.15)))
+    parts.append(_tube_part("frame", bridge, 0.3, 16, 8))
+    return _meshes(parts)
 
 
 def eyes(face: Face) -> tuple[Mesh, ...]:
@@ -701,8 +841,44 @@ def _eyes(look: Mood, gaze: str, lid: str) -> tuple[Mesh, ...]:
     parts: list[_Part] = []
     for side, top, lift in ((-1.0, look.top_right, look.brow_right), (1.0, look.top_left, look.brow_left)):
         parts += _eye(side, top, look.bottom, gaze, _CLOSE[lid])
-        parts += _brow(side, lift + _BLINK_BROW * _CLOSE[lid])
+        parts += _brow(side, lift + _BLINK_BROW * _CLOSE[lid], look.knit)
     return _meshes(parts)
+
+
+def _scalp_uvs() -> np.ndarray:
+    """Each point of the skin's place in :func:`scalp_picture`: its column and row of the grid."""
+    rows, cols = pedro_sculpt.ROWS, pedro_sculpt.COLS
+    v, u = np.meshgrid(np.linspace(1.0, 0.0, rows), np.linspace(0.0, 1.0, cols), indexing="ij")
+    return np.stack((u, v), axis=-1).reshape(-1, 2)
+
+
+def _shaved(points: np.ndarray) -> np.ndarray:
+    """How much stubble the skin at ``points`` carries, 0 to 1: all of it on the sides and back, none on the face,
+    a soft edge over the temple and down to a fade above the ears and on the nape."""
+    x, y, z = points[..., 0], points[..., 1], points[..., 2]
+    around = np.abs(np.arctan2(x, -z))
+    edge = np.interp(y, (0.0, 8.0, 14.0, 22.0, 30.0), (0.6, 0.95, 1.15, 1.35, 1.45))
+    sides = _smooth((around - edge) / 0.2) + 0.3 * _smooth((7.0 - y) / 4.0)
+    limit = np.interp(around, (1.2, 1.95, 2.3, math.pi), (24.0, 28.5, 37.0, 38.5))  # none where the jaw moves the skin
+    return np.minimum(sides, 1.0) * _smooth((limit - y) / 3.5)
+
+
+@lru_cache(maxsize=1)
+def scalp_picture() -> Texture:
+    """The upper skin as a picture: skin, greying into a close shave on the sides and back, a stipple of cut hairs."""
+    size = 1024
+    points = pedro_sculpt.grid()[0].reshape(pedro_sculpt.ROWS, pedro_sculpt.COLS, 3)
+    rows = np.round(np.linspace(0, pedro_sculpt.ROWS - 1, size)).astype(int)
+    cols = np.round(np.linspace(0, pedro_sculpt.COLS - 1, size)).astype(int)
+    shaved = _shaved(points[np.ix_(rows, cols)])
+    speck = stream(1024, size * size).reshape(size, size)
+    amount = shaved * (0.34 + 0.36 * speck * speck)
+    skin = np.array([int(_SKIN[i : i + 2], 16) for i in (1, 3, 5)], float)
+    mixed = skin * (1.0 - amount[..., None]) + np.array((86.0, 83.0, 80.0)) * amount[..., None]
+    picture = np.empty((size, size, 4), np.uint8)
+    picture[..., :3] = np.round(mixed)
+    picture[..., 3] = 255
+    return Texture(picture)
 
 
 @lru_cache(maxsize=1)
@@ -710,15 +886,15 @@ def goatee_picture() -> Texture:
     """The goatee's salt and pepper as a picture: dark, greying towards the chin, in thousands of short hairs."""
     height, width = 768, 1024
     y, x = np.mgrid[0:height, 0:width]
-    xx, yy = (x / width - 0.5) * 24.0, 32.0 + y / height * 18.0
-    grey = np.clip((yy - 41.0) / 7.0, 0.0, 1.0) * np.exp(-((xx / 8.0) ** 4))
-    level = 28.0 + 32.0 * grey
+    xx, yy = (x / width - 0.5) * 24.0, 32.0 + y / height * _GOATEE_TALL
+    grey = np.clip((yy - 43.0) / 7.0, 0.0, 1.0) * np.exp(-((xx / 9.0) ** 4))
+    level = 20.0 + 46.0 * grey
     count = 22000
     draw = stream(704, count * 5).reshape(count, 5)
     x0, y0 = draw[:, 0] * width, draw[:, 1] * height
-    ym, xm = 32.0 + y0 / height * 18.0, (x0 / width - 0.5) * 24.0
-    light = draw[:, 2] < 0.04 + np.clip((ym - 41.0) / 8.0, 0.0, 1.0) * 0.55 * np.exp(-((xm / 8.0) ** 4))
-    tone = np.where(light, 78.0 + draw[:, 3] * 50.0, 21.0 + draw[:, 3] * 28.0)
+    ym, xm = 32.0 + y0 / height * _GOATEE_TALL, (x0 / width - 0.5) * 24.0
+    light = draw[:, 2] < 0.02 + np.clip((ym - 43.0) / 7.0, 0.0, 1.0) * 0.72 * np.exp(-((xm / 9.0) ** 4))
+    tone = np.where(light, 92.0 + draw[:, 3] * 70.0, 15.0 + draw[:, 3] * 22.0)
     long = 5.0 + draw[:, 4] * 13.0
     ts = np.linspace(0.0, 1.0, 19)[None, :]
     px = np.clip((x0[:, None] - xm[:, None] * 0.2 * ts).astype(int), 0, width - 1)
@@ -735,32 +911,38 @@ def goatee_picture() -> Texture:
     return Texture(picture)
 
 
-COLORS: dict[str, tuple[str, float]] = {  # colour and roughness, the sculpt's, but for a matt iris that stays brown
-    "skin": ("#B78E75", 0.59),
-    "lid": ("#B78E75", 0.59),
-    "skin-warm": ("#AF7E65", 0.64),
-    "lip": ("#AD795F", 0.59),
+_SKIN = "#B0856A"
+COLORS: dict[str, tuple[str, float]] = {  # colour and roughness: the sculpt's, re-mixed by eye, and a matt iris
+    "skin": (_SKIN, 0.59),
+    "lid": (_SKIN, 0.59),
+    "scalp": ("#FFFFFF", 0.59),
+    "skin-warm": ("#A2745A", 0.64),
+    "lip": ("#AB7464", 0.5),
     "nostril": ("#71503D", 0.85),
-    "sclera": ("#CFC8B9", 0.25),
-    "iris-rim": ("#332A22", 0.8),
-    "iris": ("#4C3225", 0.8),
-    "iris-light": ("#755438", 0.8),
+    "sclera": ("#CFC8B9", 0.5),
+    "iris-rim": ("#1F1812", 0.8),
+    "iris": ("#38241A", 0.8),
+    "iris-light": ("#5A3E2A", 0.8),
     "pupil": ("#141818", 0.6),
     "glint": ("#FFFCED", 0.05),
     "goatee": ("#FFFFFF", 0.78),
-    "brow": ("#212321", 0.83),
-    "hair-dark": ("#212321", 0.83),
-    "hair-mid": ("#3C3D37", 0.79),
-    "hair-grey": ("#73736C", 0.70),
-    "hair-silver": ("#A5A59B", 0.73),
-    "nylon": ("#1D3046", 0.62),
-    "jacket-edge": ("#2A3C50", 0.66),
-    "jacket-shadow": ("#15263A", 0.7),
-    "shirt": ("#192027", 0.92),
+    "brow": ("#191A19", 0.83),
+    "hair-dark": ("#1A1B1A", 0.8),
+    "hair-mid": ("#2F2F2C", 0.76),
+    "hair-grey": ("#6E6D66", 0.68),
+    "hair-silver": ("#A6A59C", 0.66),
+    "blazer": ("#1B2540", 0.8),
+    "blazer-edge": ("#232E4C", 0.78),
+    "nylon": ("#152238", 0.58),
+    "jacket-edge": ("#1E2C42", 0.6),
+    "jacket-shadow": ("#0D1626", 0.7),
+    "shirt": ("#141517", 0.92),
     "stitch": ("#3C4D60", 0.86),
     "zip": ("#788693", 0.3),
     "seam": ("#654331", 0.86),
     "throat": ("#3A2520", 0.86),
+    "frame": ("#0D0E10", 0.28),
+    "frame-line": ("#2A3FA6", 0.3),
     "tooth": ("#CFC6B4", 0.38),
     "tongue": ("#8E5A52", 0.55),
 }
@@ -775,4 +957,5 @@ def materials() -> dict[str, Material]:
     out["zip"] = Material("zip", *COLORS["zip"], metallic=0.7)
     out["throat"] = Material("throat", *COLORS["throat"], emissive="#1E100C")
     out["goatee"] = Material("goatee", *COLORS["goatee"], color_map=goatee_picture())
+    out["scalp"] = Material("scalp", *COLORS["scalp"], subsurface=0.08, color_map=scalp_picture())
     return out

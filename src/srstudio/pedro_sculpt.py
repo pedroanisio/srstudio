@@ -1,10 +1,10 @@
 """Pedro's sculpt: the head as one continuous field, and the surfaces laid on it (ADR 0072).
 
-The numbers here are the sculpt's own, in its units: the head is 50 tall, y runs down from the crown, z runs away from
-the lens. :func:`front` is the face as a height over x and y, the place every lip, brow and goatee stroke is laid. The
-skin is the outer surface of :func:`field`, seen from inside the head and laid out on a fixed grid (:func:`grid`).
-A grid and not a voxel extraction, because speech needs one skin whose vertices stay the same vertices in every state:
-an open mouth moves them, it does not remesh them.
+The numbers start as the sculpt's and are corrected by eye: the head is 50 tall, y runs down from the crown, z runs away
+from the lens. :func:`front` is the face as a height over x and y, the place every lip, brow and goatee stroke is laid.
+The skin is the outer surface of :func:`field`, seen from inside the head and laid out on a fixed grid (:func:`grid`). A
+grid and not a voxel extraction, because speech needs one skin whose vertices stay the same vertices in every state: an
+open mouth moves them, it does not remesh them.
 """
 
 from __future__ import annotations
@@ -18,9 +18,9 @@ import numpy as np
 __all__ = ["CENTRE", "COLS", "ROWS", "field", "front", "grid", "lay", "stream", "strokes", "tube", "width"]
 
 _YS = np.array((0, 2, 5, 9, 15, 20, 25, 30, 35, 40, 44, 47, 49, 50), float)
-_WIDE = (0.08, 9.3, 14.5, 17.0, 18.1, 18.5, 18.7, 18.4, 17.2, 15.8, 13.9, 10.5, 5.5, 0.08)
+_WIDE = (0.08, 9.2, 14.4, 17.0, 17.9, 18.4, 19.0, 18.9, 17.9, 16.4, 14.5, 11.7, 7.0, 0.08)
 _FORE = (0.08, 7.4, 12.2, 14.0, 14.0, 13.4, 12.7, 12.8, 12.5, 12.2, 11.8, 10.2, 6.0, 0.08)
-_BACK = (0.08, 8.0, 13.0, 15.4, 16.0, 16.1, 15.6, 14.4, 13.0, 11.1, 9.3, 6.6, 3.0, 0.08)
+_BACK = (0.08, 7.6, 12.0, 14.0, 14.7, 14.7, 14.2, 12.8, 10.0, 7.0, 5.2, 3.6, 1.8, 0.08)
 CENTRE = np.array((0.0, 27.0, 0.0))  # the skin is star-shaped about this point
 ROWS, COLS = 361, 441
 _FACE_ROWS = (0.6, 2.75, 7.0)  # polar angles the face runs between, and how much denser its rows are than the rest
@@ -80,21 +80,21 @@ def front(x, y) -> np.ndarray:
     base = -_fore(y) * (1.0 - q * q) ** 0.36
     z = base.copy()
     for side in (-1.0, 1.0):
-        z = z + 0.85 * _g(x, y, side * 7.6, 24.1, 4.6, 3.0)
-        z = z - 1.1 * _g(x, y, side * 7.7, 19.4, 4.7, 1.6)
-        z = z - 1.15 * _g(x, y, side * 11, 29.4, 4.6, 3.2)
-        z = z - 0.45 * _g(x, y, side * 10.8, 34, 4.8, 4.0)
-        z = z + 0.22 * _g(x, y, side * 14, 36.5, 2.7, 3.7)
-        z = z - 0.7 * _g(x, y, side * 12.8, 41, 3.2, 3.0)
-    z = z - 1.35 * _g(x, y, 0, 27.1, 2.5, 4.5)  # a broad, rounded bridge and tip
-    z = z - 1.7 * _g(x, y, 0, 32.25, 3.5, 2.2)
-    z = z + 0.32 * _g(x, y, 0, 35.3, 2.2, 0.65)
-    z = z - 0.75 * _g(x, y, 0, 38.5, 6.5, 3.0) - 1.3 * _g(x, y, 0, 45.7, 7.8, 3.1)
-    for yy, wide in ((12.8, 10.8), (16.1, 10.2)):  # the two faint lines of his forehead
-        line = yy + 0.36 * np.cos(x / wide * np.pi)
-        z = z + 0.10 * np.exp(-(((y - line) / 0.60) ** 2)) * np.exp(-((x / wide) ** 8))
+        z = z + 1.3 * _g(x, y, side * 7.6, 24.1, 4.4, 2.8)  # eyes set deep
+        z = z - 1.7 * _g(x, y, side * 7.7, 19.4, 5.0, 1.5)  # under a strong ridge
+        z = z - 1.45 * _g(x, y, side * 11.5, 27.8, 4.0, 2.8)  # cheekbones
+        z = z + 0.8 * _g(x, y, side * 13.2, 36.4, 3.4, 3.4)  # and the hollow under them
+        z = z - 0.25 * _g(x, y, side * 10.0, 34, 4.2, 3.2)
+        z = z - 0.15 * _g(x, y, side * 12.8, 41, 3.2, 3.0)
+        z = z - 0.32 * _g(x, y, side * 7.7, 22.4, 4.2, 0.7)  # the fold that hoods the eye
+        z = z - 0.14 * _g(x, y, side * 7.7, 26.5, 3.8, 0.75)  # a soft bag under it
+        z = z + 0.07 * _g(x, y, side * 8.0, 27.7, 4.6, 0.32)
+    z = z - 1.35 * _g(x, y, 0, 27.6, 2.2, 5.0)  # a straight bridge
+    z = z - 1.7 * _g(x, y, 0, 33.0, 3.4, 2.2)  # to a broad tip
+    z = z + 0.32 * _g(x, y, 0, 36.2, 2.0, 0.6)
+    z = z - 0.75 * _g(x, y, 0, 38.5, 6.0, 3.0) - 1.3 * _g(x, y, 0, 45.7, 7.0, 3.1)
     for side in (-1.0, 1.0):
-        z = z + 0.12 * _g(x, y, side * 1.25, 20.1, 0.36, 1.55)
+        z = z + 0.20 * _g(x, y, side * 1.25, 20.1, 0.36, 1.55)
     return base + (z - base) * (1.0 - q * q) ** 0.35
 
 
@@ -115,10 +115,10 @@ def _union(a, b, k: float) -> np.ndarray:
 
 
 def _nose(x, y, z) -> np.ndarray:
-    d = _ball(x, y, z, (0, 27.4, -13.2), (2.15, 6.1, 2.4))
-    d = _union(d, _ball(x, y, z, (0, 32.3, -15.3), (3.3, 2.05, 2.8)), 1.1)
+    d = _ball(x, y, z, (0, 27.4, -13.6), (2.9, 7.2, 2.5))
+    d = _union(d, _ball(x, y, z, (0, 32.9, -15.0), (3.6, 2.3, 2.9)), 1.6)
     for side in (-1, 1):
-        d = _union(d, _ball(x, y, z, (side * 2.8, 33.1, -14.8), (1.7, 1.20, 1.75)), 0.85)
+        d = _union(d, _ball(x, y, z, (side * 3.7, 33.9, -14.7), (1.8, 1.3, 1.9)), 0.85)
     return d
 
 

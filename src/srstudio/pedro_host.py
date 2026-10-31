@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import clay, pedro, plate_host, plates
+from . import clay, pedro, pedro_wardrobe, plate_host, plates
 from .canvas import Canvas
 from .errors import SrstudioError
 from .head_motion import HeadPlan, HeadStyle, Spring
@@ -24,10 +24,12 @@ from .toon_head import _animate
 
 __all__ = [
     "CAMERA",
+    "DRESSES",
     "FPS",
     "HEIGHT",
     "LIGHTS",
     "MOTION",
+    "VIEWS",
     "WIDTH",
     "PedroHostError",
     "Sheet",
@@ -43,6 +45,7 @@ __all__ = [
     "posed",
     "project",
     "sheet",
+    "view",
     "whole",
 ]
 
@@ -56,6 +59,8 @@ LIGHTS = (  # the sculpt's rig, taken down to meet this renderer's exposure
     Light("rim", "sphere-area", "#DEE9F0", 8.5, (80.0, -215.0, 60.0), 48.0),
 )
 HEAD_BOX = (150, 190, 930, 1260)  # frame pixels a face patch stays inside, at every pose
+VIEWS = (0.0, 35.0, -35.0, 90.0, 145.0)  # degrees from the lens he can be shown at, whole
+DRESSES = ("blazer", "tee", "puffer")
 TWOS = 2  # his head holds each pose for this many frames
 BLEND_STEP = 2  # frames a mood holds each share of a change
 BLINK_FRAMES = ("half", "shut", "shut", "half")
@@ -119,6 +124,13 @@ def _body() -> tuple[clay.Mesh, ...]:
     return model.meshes()
 
 
+@lru_cache(maxsize=2)
+def _alternative(dress: str) -> tuple[clay.Mesh, ...]:
+    model = clay.Model()
+    {"tee": pedro_wardrobe.tee, "puffer": pedro_wardrobe.puffer}[dress](model)
+    return model.meshes()
+
+
 def _man(face: Face, *head: clay.Mesh) -> Plate:
     """All of him at ``face``'s pose. The engine's positive ``rotationY`` turns him to frame left."""
     meshes = (*_body(), *pedro.cap(), *head)
@@ -140,6 +152,26 @@ def eye_plate(face: Face) -> Plate:
 def mouth_plate(face: Face) -> Plate:
     """Him at ``face``'s pose with its mouth and no eyes."""
     return _man(face, *pedro.mouth_of(face))
+
+
+def view(face: Face, degrees: float = 0.0, *, dress: str = "blazer", glasses: bool = False) -> Plate:
+    """All of him turned ``degrees`` from the lens, ``dress`` on and with or without ``glasses``: how his shape and his
+    options are judged. A reel's plates carry neither option."""
+    if degrees not in VIEWS:
+        raise PedroHostError(f"a view is one of {VIEWS}, got {degrees!r}")
+    if dress not in DRESSES:
+        raise PedroHostError(f"a dress is one of {DRESSES}, got {dress!r}")
+    dressed = _body() if dress == "blazer" else _alternative(dress)
+    head = (*pedro.cap(), *pedro.mouth_of(face), *pedro.eyes(face), *(pedro.glasses() if glasses else ()))
+    used = plates.materials_of((*dressed, *head), pedro.materials())
+    return Plate(
+        WIDTH,
+        HEIGHT,
+        CAMERA,
+        LIGHTS,
+        (Placed(dressed, rotation_y=-degrees), Placed(head, pedro.NECK, face.nod, -face.turn - degrees)),
+        used,
+    )
 
 
 def whole(face: Face) -> Plate:

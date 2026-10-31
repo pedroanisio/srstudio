@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
-from srstudio import clay, parts, pedro, pedro_sculpt
+from srstudio import clay, parts, pedro, pedro_sculpt, pedro_wardrobe
 from srstudio.pedro import GAZES, LIDS, MOODS, MOUTHS, NODS, TURNS, Face, PedroError
 
 
@@ -17,8 +19,8 @@ def named(meshes: tuple[clay.Mesh, ...], material: str) -> clay.Mesh:
     return next(mesh for mesh in meshes if mesh.material == material)
 
 
-def test_the_sculpts_three_expressions_are_his_three_moods():
-    assert tuple(MOODS) == ("neutral", "smile", "raised-brow")
+def test_the_sculpts_three_expressions_lead_his_moods_and_the_furrow_follows():
+    assert tuple(MOODS) == ("neutral", "smile", "raised-brow", "furrow")
 
 
 @pytest.mark.parametrize(
@@ -59,11 +61,155 @@ def test_the_raised_brow_is_his_own_left_only():
     assert raised.top_left > plain.top_left
 
 
-def test_the_sculpts_outline_is_kept_in_the_rebuilt_interpolant():
-    assert pedro_sculpt.width(np.array([25.0]))[0] == pytest.approx(18.7)
-    assert pedro_sculpt.width(np.array([35.0]))[0] == pytest.approx(17.2)
+def test_the_outline_is_held_by_a_monotone_interpolant():
+    assert pedro_sculpt.width(np.array([25.0]))[0] == pytest.approx(19.0)
+    assert pedro_sculpt.width(np.array([35.0]))[0] == pytest.approx(17.9)
     points = pedro_sculpt.width(np.linspace(0.0, 50.0, 200))
-    assert points.max() <= 18.7 + 1e-9  # a monotone interpolant does not overshoot the sculpt
+    assert points.max() <= 19.0 + 1e-9  # a monotone interpolant does not overshoot its numbers
+
+
+def test_his_face_tapers_from_the_cheekbones_to_the_chin():
+    assert pedro_sculpt.width(np.array([44.0]))[0] < 0.8 * pedro_sculpt.width(np.array([25.0]))[0]
+
+
+def scene_of(mesh_names: tuple[str, ...], meshes) -> np.ndarray:
+    return np.concatenate([mesh.vertices for mesh in meshes if mesh.material in mesh_names]) + np.array(pedro.NECK)
+
+
+def test_his_face_is_clearly_longer_than_it_is_wide():
+    """A lean face at a glance: hairline to beard tip against the widest he is across the cheekbones."""
+    skin = scene_of(("skin", "scalp"), (*pedro.cap(), *pedro.skull()))
+    cheeks = 2.0 * np.abs(skin[:, 0]).max()
+    beard = scene_of(("goatee",), pedro.mouth("neutral", "rest"))
+    hairline = pedro._SEAT[1] + pedro._hairline(np.array(0.0)) * pedro.SCALE
+    assert 1.3 <= (beard[:, 1].max() - hairline) / cheeks <= 1.6
+
+
+def test_a_real_neck_shows_between_his_beard_and_his_tee():
+    beard = scene_of(("goatee",), pedro.mouth("neutral", "rest"))
+    crew_front = pedro_wardrobe._neckline()[:, 1].max()
+    assert crew_front - beard[:, 1].max() > 2.0
+    assert pedro_wardrobe._NECK[1][0] < 0.7 * pedro_sculpt.width(np.array([25.0]))[0] * pedro.LEAN * pedro.SCALE
+
+
+def test_the_goatee_leaves_his_cheeks_bare_and_runs_past_the_chin():
+    outline = pedro._BEARD_OUT
+    on_skin = outline[outline[:, 1] < pedro._BEARD_HANGS_FROM]
+    assert (on_skin[:, 0] < 0.76 * pedro_sculpt.width(on_skin[:, 1])).all()
+    assert outline[:, 1].max() > 50.0  # the chin is 50
+    assert outline[-2, 0] < outline[5, 0] / 3.0  # it ends in a soft point
+
+
+def test_his_forehead_carries_no_lines():
+    ys = np.linspace(8.0, 16.0, 81)
+    bend = np.diff(pedro_sculpt.front(np.full_like(ys, 3.0), ys), n=2)
+    assert np.count_nonzero(np.diff(np.sign(bend))) <= 3  # a line across it would bend the surface both ways
+
+
+def test_his_eyes_sit_deeper_than_the_ridge_over_them():
+    assert pedro_sculpt.front(7.7, 19.4) < pedro_sculpt.front(7.7, 24.1) - 1.0
+
+
+def test_his_iris_stands_round_on_a_lean_head():
+    iris = next(mesh for mesh in pedro.eyes(Face()) if mesh.material == "iris-rim").vertices
+    left = iris[iris[:, 0] > 0.0]
+    # the opening cuts its height, so the round disk shows in its width against the size it was drawn at
+    assert np.ptp(left[:, 0]) == pytest.approx(2 * 1.88 * pedro.SCALE, rel=0.04)
+
+
+@pytest.mark.parametrize("name", MOODS)
+def test_his_brows_are_never_level(name):
+    look = pedro.mood(name)
+    assert abs(look.brow_right - look.brow_left) > 0.3
+
+
+def test_the_furrow_brings_the_inner_ends_of_his_brows_down_and_lifts_nothing_else():
+    plain, cross = pedro.mood("neutral"), pedro.mood("furrow")
+    assert cross.knit > plain.knit == 0.0
+    inner = pedro._brow_y(3.0, 0.0, cross.knit) - pedro._brow_y(3.0, 0.0)
+    outer = pedro._brow_y(13.4, 0.0, cross.knit) - pedro._brow_y(13.4, 0.0)
+    assert inner > 0.4 and abs(outer) < 1e-9
+
+
+def test_a_blend_towards_the_furrow_carries_the_knit():
+    half = pedro.mood("neutral").towards(pedro.mood("furrow"), 0.5)
+    assert half.knit == pytest.approx(pedro.mood("furrow").knit / 2.0)
+
+
+def head_units(meshes) -> np.ndarray:
+    """Vertices back in the sculpt's own numbers: the head 50 tall from the crown."""
+    verts = np.concatenate([mesh.vertices for mesh in meshes])
+    return (verts + np.array(pedro.NECK) - np.array(pedro._SEAT)) / pedro.SCALE / (pedro.LEAN, 1.0, 1.0)
+
+
+def hair_points() -> np.ndarray:
+    return head_units(mesh for mesh in pedro.cap() if mesh.material in ("hair-grey", "hair-silver"))
+
+
+def test_his_hair_is_a_short_crop_that_stays_off_the_shaved_sides():
+    hair = hair_points()
+    assert -5.0 < hair[:, 1].min() < -1.0  # above the crown, which is y 0, and not far
+    outer = hair[np.abs(hair[:, 0]) > 12.0]
+    assert outer[:, 1].max() < 8.0  # at the sides it stops high
+
+
+def test_the_hairline_peaks_at_the_front_and_tails_down_the_back_above_the_sides():
+    front, side, back = pedro._hairline(np.array((0.0, math.pi / 2.0, math.pi)))
+    assert front > side + 3.0 and back > side + 6.0
+
+
+def test_the_hair_is_the_same_bytes_on_every_build():
+    first = pedro.cap()
+    pedro.cap.cache_clear()
+    assert [mesh.sha256 for mesh in first] == [mesh.sha256 for mesh in pedro.cap()]
+
+
+def skin_at(y: float, around: float, depth: float = 15.0) -> np.ndarray:
+    return np.array((depth * math.sin(around), y, -depth * math.cos(around)))
+
+
+@pytest.mark.parametrize(("y", "around"), ((12.0, 0.0), (20.0, 0.4), (24.0, 0.9), (36.0, 0.0), (32.0, 1.2)))
+def test_his_face_carries_no_stubble(y, around):
+    assert pedro._shaved(skin_at(y, around)) == 0.0
+
+
+@pytest.mark.parametrize(("y", "around"), ((14.0, 1.9), (20.0, 2.6), (30.0, 3.0)))
+def test_the_sides_and_back_of_his_head_are_shaved(y, around):
+    assert pedro._shaved(skin_at(y, around)) > 0.9
+
+
+def test_the_stubble_finishes_on_skin_no_expression_moves():
+    """Past that line the skin is another mesh, without the picture: a shave running over it stops in a block."""
+    points, tris = pedro_sculpt.grid()
+    corners = points[tris[pedro._lower(tris, points)]].reshape(-1, 3)
+    assert pedro._shaved(corners).max() < 0.01
+
+
+def test_the_scalp_picture_is_stable_and_bare_where_his_face_is():
+    picture = pedro.scalp_picture()
+    assert picture.sha256 == pedro.scalp_picture.__wrapped__().sha256
+    assert picture.pixels.shape == (1024, 1024, 4)
+    assert len({tuple(row) for row in picture.pixels[..., :3].reshape(-1, 3)[::97]}) > 2
+
+
+def test_his_moustache_is_darker_than_his_chin():
+    picture = pedro.goatee_picture().pixels[..., 0].astype(float)
+    height, width = picture.shape
+    moustache = picture[height // 4 : height // 3, width // 3 : 2 * width // 3].mean()
+    chin = picture[3 * height // 4 :, width // 3 : 2 * width // 3].mean()
+    assert moustache + 15.0 < chin
+
+
+def test_the_glasses_are_an_option_of_frames_alone():
+    used = {mesh.material for mesh in pedro.glasses()}
+    assert used == {"frame", "frame-line"}
+    assert not used & {mesh.material for mesh in (*pedro.cap(), *pedro.eyes(Face()))}
+
+
+def test_the_glasses_rest_on_his_head_and_never_sink_into_it():
+    frame = head_units(pedro.glasses())
+    assert frame[:, 2].max() > 2.0  # the arms reach his ears
+    assert (pedro_sculpt.field(*frame.T) > 0.0).all()
 
 
 def test_the_skin_is_the_same_bytes_on_every_build():
@@ -112,7 +258,9 @@ def test_the_goatee_stays_on_the_skin_when_the_jaw_drops():
     """Every goatee point stays in front of the skin it covers: the two move by the same field."""
     meshes = pedro.mouth("neutral", "open")
     skin, goatee = named(meshes, "skin"), named(meshes, "goatee")
-    pick = goatee.vertices[::97]
+    laid = named(pedro.mouth("neutral", "rest"), "goatee").vertices[:, 1] + pedro.NECK[1]
+    on_skin = laid < pedro._SEAT[1] + pedro._BEARD_HANGS_FROM * pedro.SCALE  # past that it hangs off the chin
+    pick = goatee.vertices[on_skin][::97]
     tree = skin.vertices[::1]
     for point in pick:
         near = tree[np.abs(tree[:, 0] - point[0]) + np.abs(tree[:, 1] - point[1]) < 0.6]
