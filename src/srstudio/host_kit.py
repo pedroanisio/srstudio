@@ -1,4 +1,4 @@
-"""The host kit: Lint, the moth in your wardrobe, and his talking-head show, The Unwritten Rules (ADR 0065).
+"""The host kit: Lint, the moth in your wardrobe, and his talking-head show, The Unwritten Rules (ADR 0066).
 
 One character talks straight to camera, so the mouth and the eyes carry the reel. A show is not a style of its own here,
 as with :mod:`srstudio.mind_kit`: :data:`HOST` is Toon's frame and recording road on its own clock, master and letters.
