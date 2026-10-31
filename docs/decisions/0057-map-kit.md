@@ -4,7 +4,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0057: the map kit
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-31). The operator approved the kit: "map kit approved"
 - **Deciders:** Pedro (operator)
 - Back to the [library README](../../README.md)
 

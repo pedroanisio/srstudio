@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import map_kit
+from srstudio import map_kit, parts
 from srstudio.canvas import Canvas
 from srstudio.map_kit import MapKitError, Move, Place
 from srstudio.toon import Line
@@ -395,3 +395,12 @@ def test_a_ring_with_a_tag_needs_the_fonts_measure():
     cv = canvas()
     with pytest.raises(MapKitError):
         map_kit.ring(cv, cv.comp, 430.0, 0.0, 5.0, label="3,300 km")
+
+
+def test_the_map_kit_carries_the_operators_approval():
+    kit = [name for name in parts.load() if name.startswith("map-")]
+    assert len(kit) == 10
+    for name in kit:
+        record = parts.latest(name)
+        assert record.status == "approved", name
+        assert record.approval.date == "2026-10-31" and record.approval.words == "map kit approved"

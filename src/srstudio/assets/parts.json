@@ -8098,9 +8098,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The channel's bright ground behind a globe. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "4d10890e91fb695d6922f8d951213b5db78821504a8e9d5d4c2506f6a65755eb",
           "rig": null
         }
@@ -8115,9 +8118,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "An orthographic globe that turns. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "a8a91b2aaaa60579ba19f9fdc2c5e537df18c2e6fcdc16f26bca8c056542e7d5",
           "rig": null
         }
@@ -8132,9 +8138,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "An equirectangular map with a camera that flies. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "902c3a54a1baa4470a2b4e22493e19b525755856c9a3208e4f2bd33f93b47af4",
           "rig": null
         }
@@ -8149,9 +8158,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A Lambert azimuthal equal-area map, re-centred as it moves. First drawn for inside-the-circle.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "d8369934d483ad6f0331a77d9670376e80c6494fa0a588c3c3e2d323d1bc414e",
           "rig": null
         }
@@ -8166,9 +8178,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A pin with its name and latitude on a label that rides with it. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "4d0d8bb900d0fb4422610711ac4a7afe74a69d7150613b98acad9eabda2f2376",
           "rig": null
         }
@@ -8183,9 +8198,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "One line of latitude with its tag. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "78620a81aa60390e2dbd7ee8cfc29d884a0a498a05efa26ee52f5e8e086d684f",
           "rig": null
         }
@@ -8200,9 +8218,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "One dot per million people, by zone and in waves. First drawn for inside-the-circle.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "fb19ad27205dd145b57210fb3fea068d4057240dba733d08880950787c9b2ebe",
           "rig": null
         }
@@ -8217,9 +8238,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A circle of a true great-circle radius with a veil outside it. First drawn for inside-the-circle.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "a20d27916a19303122eb17060e06aaa73811971186979517b09b34f1c80e3e0d",
           "rig": null
         }
@@ -8234,9 +8258,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The one line of evidence: figure, dataset, year. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "2bd045235e02dc602fcb3a8d00172befe50ebe7d7e1fd6847d6b101cbf151443",
           "rig": null
         }
@@ -8251,9 +8278,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The channel's captions: a paper box at the top of the map. First drawn for further-north.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "map kit approved"
+          },
           "drawing": "5db15743ded830685255b28cb84fb8b8c1dfc80c4976122e46e9504e16126d51",
           "rig": null
         }
