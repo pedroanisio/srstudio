@@ -4,8 +4,8 @@ goes out to the fence, the phone in his hand, to tell the neighbor.
 
 Four voices (ElevenLabs premade Brian as Dad, Matilda as Fern, Laura as Mom, heard only, Roger as the neighbor): Dad
 in the kitchen with the phone on the worktop, Fern at home, then Dad at the fence with the sloth and his hose. The
-sketch opens on a held frame with the phone ringing (the ``sp-hook_motion`` test's arm A). ``SKETCH`` is checked by
-:func:`srstudio.sketch.check`; :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its
+sketch opens silent on a slow push with the phone ringing (the ``sp-hook_motion`` test's arm B). ``SKETCH`` is checked
+by :func:`srstudio.sketch.check`; :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its
 camera and :func:`foley` its sound.
 """
 
@@ -60,7 +60,7 @@ NEIGHBOR = Speaker(
 TINTS = {"dad": "#ecdcc4", "fern": "#d6f0c8", "mom": "#ffd9e4", "neighbor": "#d9e8ff"}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 KEY_LINE = "Calling Dad on purpose."
-STILL = 0.45  # the held first frame: the sp-hook_motion test's arm a
+LEAD = 0.45  # the silence before the first word, the phone ringing
 PHONE = dict(at=(432, 838), scale=0.9)
 HELD = dict(at=(330, 838), scale=0.9, hand="#d9d2c7")
 HOSE = [(610, 792), (556, 830), (512, 770), (478, 778)]
@@ -94,7 +94,7 @@ say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 BEATS = (
     hold(0.0, "goat", "", "half", "flat", "sigh", "ring"),  # the held frame: the phone rings, he has reached it
-    say(STILL, "goat", 0, "half", "flat", "sigh"),
+    say(LEAD, "goat", 0, "half", "flat", "sigh"),
     say(1.4, "frog", 1, "half", "grin", "desk"),
     say(2.3, "goat", 2, "half", "flat", "sigh"),
     first(3.7, "frog", 3, "No, Dad, wait.", "wide", "open", "lean"),
@@ -123,11 +123,11 @@ SKETCH = Sketch(SLUG, TITLE, (DAD, FERN, MOM, NEIGHBOR), LINES, BEATS, END)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
-    """The sketch is consistent; it opens silent and held with the phone ringing, speaks by 0.5 s; the fence comes
+    """The sketch is consistent; it opens silent with the phone ringing, speaks by 0.5 s; the fence comes
     once, after every line on the phone; the drip falls only in the silences; no other events."""
     sketch.check(sk)
     if sk.beats[0].spoken or sk.beats[0].caption or sk.beats[1].start > 0.5:
-        raise sketch.SketchError("the sketch opens on a held silent frame and speaks by 0.5 s")
+        raise sketch.SketchError("the sketch opens silent and speaks by 0.5 s")
     scripting.exactly_once(sk.beats, "ring", "the phone rings once")
     scripting.exactly_once(sk.beats, "fence", "Dad goes to the fence once")
     fence = sketch.events(sk.beats, "fence")[0][0]
@@ -171,8 +171,10 @@ def dress(shot) -> None:
 
 
 def lens(shot, setup) -> None:
-    """Still, then a slow push onto Dad's face at the fence for his last word."""
+    """A slow push from the first frame, then a slow push onto Dad's face at the fence for his last word."""
     camera.anchor(setup, *PIVOT, place=True)
+    if shot.app.start == 0.0:
+        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, 1.05)])
     if shot.app.start >= sketch.events(shot.beats, "fence")[0][0]:
         last = [b for b in shot.beats if b.line == 15][0].start
         camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (last - 1.2, 1.0), (last + 1.0, 1.12)])
