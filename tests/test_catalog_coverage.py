@@ -30,6 +30,7 @@ PACKAGE_ONLY = [
     "talking-printer",
 ]
 SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
+REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
     "news-phone@2",
     "rafa",
@@ -48,6 +49,7 @@ NO_EPISODE = [
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
     **dict.fromkeys(SUPERSEDED, "the first drawing, replaced by its @2 version, which the gallery shows"),
+    **dict.fromkeys(REPLACED_ON_SCREEN, "every reel showing it moved to @3, renders too: no still of it is left"),
     **dict.fromkeys(NO_EPISODE, "no library episode builds it yet"),
 }
 
