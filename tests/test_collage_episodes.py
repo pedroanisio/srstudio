@@ -49,6 +49,7 @@ PUBLISHED = (
 )
 OFF_SCREEN = {"the_boat": "phone"}  # a voice from a device, never on a set: outside the cast and its voices
 HOOK_SECONDS = 2.0  # funny-reels rubric #1, Hook: the premise reads in the first 1-2 s
+STILL_ARM = 0.45  # the shortest held first frame of the sp-hook_motion test's arm a
 RELEASES = releases.load(EPISODES / "posts")
 
 
@@ -101,7 +102,9 @@ def test_each_sketch_opens_on_its_hook(mods, name):
     tags = RELEASES[sk.slug].tags
     assert tags is not None, f"{sk.slug}: a new release carries its Tags"
     still = tags.test == "sp-hook_motion" and tags.arm == "a"
-    assert (data[name].STAGING.still >= 1.0) == still, f"{sk.slug}: a still opening is the still arm's, and only its"
+    assert (data[name].STAGING.still >= STILL_ARM) == still, (
+        f"{sk.slug}: a still opening is the still arm's, and only its"
+    )
     first, second = sk.beats[0], sk.beats[1]
     assert first.start == 0.0 and (first.line is None if still else first.line in (None, 0))
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
