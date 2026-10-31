@@ -11,8 +11,9 @@ version.
   character in it, carries a typed :class:`Refused` and no digest. It keeps its versions and its pins.
 - **The default.** A part's default is its latest approved version (:meth:`Part.latest`). A proposed version is drawn
   only on request, for its proof, is never the default and cannot be pinned.
-- **Approval.** Only the operator approves a version. Above version 1 an approved record carries the proof and the
-  operator's words (:class:`Approval`). An agent never writes one without the operator's decision.
+- **Approval.** The operator approves a version, or arc4d3 by the operator's delegation of 2026-10-31. Above version 1
+  an approved record carries the proof and the approver's words (:class:`Approval`). An agent never writes one without
+  that decision.
 - **Immutability.** An approved version is never revised in place: changing a look means adding a version. A test
   redraws every approved version and compares its digest.
 - **Head rigs.** A rig is a second drawing of a version (:class:`Rig`), recorded on it with the same rules. A version
@@ -21,7 +22,8 @@ version.
 - **Records.** ``srstudio build`` leaves what it drew in the project (:func:`write_record`, through
   :func:`srstudio.usage.recorded`), and a delivery compares that with the release's pins.
 - **Pins.** A release pins what it draws (:attr:`srstudio.releases.Release.parts`). Only the kinds and styles in
-  :data:`ROUTED` read a pin when they build, so only they may take a second version.
+  :data:`ROUTED` read a pin when they build, so they may take a second version. So may a show's kit in
+  :data:`KIT_VERSIONS`, whose new version is a module of its own that a reel calls by name (:func:`routed`).
 """
 
 from __future__ import annotations
@@ -43,6 +45,7 @@ from .errors import SrstudioError
 __all__ = [
     "RECORD",
     "RECORD_SCHEMA",
+    "KIT_VERSIONS",
     "ROUTED",
     "STATUSES",
     "TABLE_SCHEMA",
@@ -68,6 +71,7 @@ __all__ = [
     "read_record",
     "resolved",
     "restore",
+    "routed",
     "write_record",
 ]
 
@@ -77,6 +81,7 @@ TABLE_FILE = "assets/parts.json"
 RECORD = "parts.json"  # in a project: what its build drew, {part: version}
 STATUSES = ("approved", "proposed")
 ROUTED = (("character", "toon"),)  # the (kind, style) whose builds read a pin
+KIT_VERSIONS = ("news-",)  # parts whose second version is its own module: a reel names it, nothing reads a pin
 DIGEST = re.compile(r"[0-9a-f]{64}")
 
 
@@ -138,7 +143,7 @@ class Approval:
         if not _is_date(self.date):
             raise PartError(f"an approval's date is a YYYY-MM-DD day, got {self.date!r}")
         if not (isinstance(self.words, str) and self.words.strip()):
-            raise PartError("an approval holds the operator's words or a reference to them")
+            raise PartError("an approval holds the approver's words or a reference to them")
 
 
 @dataclass(frozen=True)
@@ -232,7 +237,7 @@ class Part:
         numbers = [v.number for v in self.versions]
         if numbers != list(range(1, len(numbers) + 1)) or not numbers:
             raise PartError(f"{self.name}: versions run 1, 2, 3... without a gap, got {numbers}")
-        if len(numbers) > 1 and (self.kind, self.style) not in ROUTED:
+        if len(numbers) > 1 and not routed(self.name, self.kind, self.style):
             raise PartError(
                 f"{self.name}: a {self.style or 'shared'} {self.kind} does not read pins, so a second version would "
                 f"draw for every reel; add it to parts.ROUTED first"
@@ -408,6 +413,12 @@ def restore(name: str, number: int = 1) -> registry.Entry:
     entry._verified_drawing = None
     entry.replacement = False
     return entry
+
+
+def routed(name: str, kind: str, style: str) -> bool:
+    """May ``name`` take a second version? Its builds read a pin, or a reel chooses the version by calling the module
+    that draws it, as a show's kit does: the reels on the first version keep their calls and cannot change."""
+    return (kind, style) in ROUTED or name.startswith(KIT_VERSIONS)
 
 
 def part_name(name: str, number: int) -> str:

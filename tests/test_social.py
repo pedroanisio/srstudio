@@ -955,7 +955,7 @@ def test_a_toon_sketch_pins_every_character_it_shows(script):
         sk = importlib.import_module(f"{script.stem}_data").SKETCH
     finally:
         sys.path.pop(0)
-    shown = {sketch.part_of(beat.who) for beat in sk.beats}
+    shown = {sketch.part_of(beat.who) for beat in sk.beats if beat.who not in sk.bare}
     assert shown <= set(posts.RELEASES[sk.slug].parts)
 
 
@@ -1055,6 +1055,7 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     monkeypatch.setattr(posts, "REPO", repo)
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
     return renders
 

@@ -4,8 +4,10 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0060: The news kit is a library module with its own set, anchors, graphics and letters
 
-- Status: proposed (2026-10-31). The show's approvals are delegated to arc4d3, and the kit's approval comes with
-  arc4d3's publish decision on both pilots
+- Status: accepted (2026-10-31). The show's approvals are delegated to arc4d3, and the kit's approval came with
+  arc4d3's publish decision on both pilots: real-roast (Slack 1793463409.801599) and everyday-breaking (Slack
+  1793473619.087319). arc4d3 approved the second version, with `news-missing-card` and `news-route`, in Slack
+  1793475342.947029
 - Deciders: arc4d3, by the operator's delegation; recorded by Claude Opus 5.5 in Claude Code
 - Applies [ADR 0047](0047-character-versions.md) to new parts, and does not extend
   [ADR 0053](0053-automatic-flow-new-parts.md)
@@ -69,3 +71,42 @@ Both anchors keep the same look and voices in every episode. Whatever Gus says a
 - New parts cannot be pinned by a release until they are approved.
 - The field-reporter frame in the show's brief is for later episodes and is not built here.
 - The delivery tool learns the series `news` from the coordinator after the map pilots merge.
+
+## Amendment: the polish pass (2026-10-31)
+
+The operator approved the voices and asked for the picture to be refined. In their words, on 2026-10-31: "run an refine
+/ polish pass on the news caracter, props and location. voice aproved." That approval covers the voices of Vera and Gus,
+and nothing else. The look's approval was arc4d3's, by the delegation above, and arc4d3 gave it the same day; every
+version is recorded in `parts.json` with its words.
+
+The same day the operator ruled that the two pilots are not re-cut: real-roast publishes on its delivered master, and
+both pilots stay as delivered and frozen. So they stay on version 1, and the polish is the default for new reels only.
+
+The two pilots looked flat beside the approved inked Toon cast: a wall of nine plain gradients, a dead band over it, no
+shadow where anything met the desk, a desk that was a strip and a tall lettered panel, and two figures with no necks and
+hose arms. Every drawing that changed is a new version, and version 1 still draws:
+
+- `news-set@2`, `news-desk@2`, `news-vera@2`, `news-gus@2`: the room in planes behind a far blur, a desk with thickness
+  and a floor, a camera out of focus in the foreground, and anchors in the cast's pressed line with shade away from the
+  key light, necks, jointed sleeves and hands. Their forearms lie over the desk, on a contact shadow.
+- `news-bug@2`, `news-parody-tag@2`, `news-source-card@2`, `news-lower-third@2`, `news-banner@2`, `news-ticker@2`,
+  `news-captions@2`, `news-phone@2`: one system, with one corner, one shadow, one chip height on the top row, and a
+  bottom stack that is flush. The tangerine rule on the lower-third is gone. The desk's lettering is gone, so the Reels
+  safe zone carries nothing a viewer needs.
+
+The desk's top moves up 38 px, to 1082, and the banner moves down 50 px, to 1146, so it sits under the top and the hands
+on the desk stay in the picture. The stack is shorter, so the ticker's foot moves down only 14 px, to 1416, and stays
+over the safe zone. The close-ups pull back, to 1.22 and 1.14, so a head clears a two-line cue.
+
+These parts live in `srstudio.news_inked`, new reels of the show call it, and the two pilots do not. `finish` stays in `news_kit` with its
+numbers unchanged, because the polish needed no change to the grade. `parts.KIT_VERSIONS` lets a kit's parts take a second
+version: nothing reads a pin for them, because a reel chooses by calling the module.
+
+### Rejected alternatives
+
+- **Redraw `news_kit` in place.** Version 1 would stop drawing, and the delivered masters could not be rebuilt.
+- **Adding `(prop, toon)`, `(location, toon)` and `(graphic, toon)` to `parts.ROUTED`.** Those builds read no pin, so a
+  second version of any Toon prop would draw for every reel. The check against that stays in force for all of them.
+- **Keeping the desk at 1120 with the banner above it.** The banner covered the desk's whole top and every hand on it.
+- **A brighter wall to make the set read.** Screens that bright compete with a face, so the room's level comes down and
+  the anchors take the light.

@@ -151,8 +151,9 @@ class FakeEpisode:
     def instagram(self, post):
         self.posted = post
 
-    def finish(self, scene, report):
+    def finish(self, scene, report, *, private=False):
         self.finished = (scene, report)
+        self.private = private
         return scene
 
 
@@ -180,7 +181,15 @@ def test_build_stages_the_recorded_takes_and_finishes_the_scene_in_the_project(p
     assert ep.posted is None
     assert out == project / "demo-reel.scene.xml"
     assert ep.finished == (out, project / "qa" / "sdk-validation.json")
-    assert os.umask(0o077) == 0o077  # outputs are private
+    assert ep.private
+    assert os.umask(0o022) == 0o022
+
+
+def test_build_failure_keeps_the_callers_umask(project):
+    (project / 'assets' / 'font.ttf').unlink()
+    with pytest.raises(FileNotFoundError):
+        series.build(reel(), 'unused.py', argv=['demo.py', str(project)])
+    assert os.umask(0o022) == 0o022
 
 
 def test_build_passes_the_reels_caption_look_and_its_post(project):

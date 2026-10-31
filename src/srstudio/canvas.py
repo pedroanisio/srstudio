@@ -80,6 +80,27 @@ Keys = Sequence[tuple[float, float | int | str]]
 Spans = Iterable[tuple[float, float]]
 
 
+def _visibility_keys(spans: Spans) -> list[tuple[float, int]]:
+    """One union of spans, shared by visibility gates and complementary rig layers."""
+    intervals = []
+    for start, end in spans:
+        if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
+            raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+        if end > start:
+            intervals.append((float(start), float(end)))
+    merged: list[tuple[float, float]] = []
+    for start, end in sorted(intervals):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    events = {0.0: 0}
+    for start, end in merged:
+        events[start] = 1
+        events[end] = 0
+    return sorted(events.items())
+
+
 class Canvas:
     """The scene plus the helpers every builder needs."""
 
@@ -115,6 +136,7 @@ class Canvas:
         self._effects: dict[str, tuple[str, dict[str, Any]]] = {}
         self._effect_root: Any = None
         self._frozen = 0  # inside Canvas.frozen(): every key holds its value at 0 s
+        self._frozen_hidden: set[Any] = set()
 
     @property
     def assets(self):
@@ -237,16 +259,18 @@ class Canvas:
         stroke = self.ink if stroke is None else stroke
         if sw and stroke != self.clear:
             kw.update(strokeCap="round", strokeJoin="round")
-        return parent.add_shape(
-            id=self.uid("path"),
-            shape="path",
-            path=d,
-            width=str(self.width),
-            height=str(self.height),
-            fill=fill,
-            stroke=stroke,
-            strokeWidth=sw,
-            **kw,
+        return self._freeze_lifetime(
+            parent.add_shape(
+                id=self.uid("path"),
+                shape="path",
+                path=d,
+                width=str(self.width),
+                height=str(self.height),
+                fill=fill,
+                stroke=stroke,
+                strokeWidth=sw,
+                **kw,
+            )
         )
 
     def rect(self, parent, x, y, w, h, fill, stroke: str | None = None, sw: float = 0, radius: float | None = 0, **kw):
@@ -254,32 +278,36 @@ class Canvas:
         stroke = self.clear if stroke is None else stroke
         if radius is not None:
             kw["radius"] = radius
-        return parent.add_shape(
-            id=self.uid("rect"),
-            shape="rect",
-            x=x,
-            y=y,
-            width=w,
-            height=h,
-            fill=fill,
-            stroke=stroke,
-            strokeWidth=sw,
-            **kw,
+        return self._freeze_lifetime(
+            parent.add_shape(
+                id=self.uid("rect"),
+                shape="rect",
+                x=x,
+                y=y,
+                width=w,
+                height=h,
+                fill=fill,
+                stroke=stroke,
+                strokeWidth=sw,
+                **kw,
+            )
         )
 
     def ellipse(self, parent, x, y, w, h, fill, stroke: str | None = None, sw: float = 0, **kw):
         stroke = self.clear if stroke is None else stroke
-        return parent.add_shape(
-            id=self.uid("ellipse"),
-            shape="ellipse",
-            x=x,
-            y=y,
-            width=w,
-            height=h,
-            fill=fill,
-            stroke=stroke,
-            strokeWidth=sw,
-            **kw,
+        return self._freeze_lifetime(
+            parent.add_shape(
+                id=self.uid("ellipse"),
+                shape="ellipse",
+                x=x,
+                y=y,
+                width=w,
+                height=h,
+                fill=fill,
+                stroke=stroke,
+                strokeWidth=sw,
+                **kw,
+            )
         )
 
     def line(self, parent, x1, y1, x2, y2, color: str | None = None, width: float = 3, **kw):
@@ -287,8 +315,18 @@ class Canvas:
             parent, f"M{x1:g} {y1:g} L{x2:g} {y2:g}", stroke=self.ink if color is None else color, sw=width, **kw
         )
 
+    def _freeze_lifetime(self, node):
+        if self._frozen and (node.start is not None or node.end is not None):
+            visible_at_zero = (node.start is None or node.start <= 0) and (node.end is None or node.end > 0)
+            node.start = None
+            node.end = None
+            if not visible_at_zero:
+                node.visible = False
+                self._frozen_hidden.add(node)
+        return node
+
     def group(self, parent, id: str, **kw):
-        return parent.add_group(id=id, **kw)
+        return self._freeze_lifetime(parent.add_group(id=id, **kw))
 
     # -- symbols --------------------------------------------------------------------------
     def symbol(self, id: str, draw: Callable[[Any], object]) -> str:
@@ -308,7 +346,7 @@ class Canvas:
         """Place ``symbol``; the engine scopes the ids inside it as ``id/inner``."""
         if symbol not in self._symbols:
             raise CanvasError(f"no symbol {symbol!r}: define it with Canvas.symbol first")
-        return parent.add_instance(id=id, symbol=symbol, **kw)
+        return self._freeze_lifetime(parent.add_instance(id=id, symbol=symbol, **kw))
 
     # -- text ---------------------------------------------------------------------------
     def require_font(self, what: str, error: type[Exception] = CanvasError) -> str:
@@ -367,6 +405,8 @@ class Canvas:
         ordered = sorted(values, key=lambda kv: kv[0])
         if self._frozen:
             ordered = [(0, _at_zero(ordered, hold and kind is None, prop))]
+            if prop == "visible" and node in self._frozen_hidden:
+                ordered = [(0, "false")]
         kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
@@ -378,14 +418,16 @@ class Canvas:
     @contextmanager
     def frozen(self) -> Iterator[Canvas]:
         """Draw still: inside the block every :meth:`keys` call (and so :meth:`gate` and :meth:`pop_in`) keeps one
-        key, its value at 0 s, so a shot drawn here stands as it would on its first frame and nothing in it moves
-        (a still opening, the ``sp-hook_motion`` test's arm A). An expression or a text animator cannot be held
-        still and is refused."""
+        key at its value at 0 s. Groups, shapes and instances created through the canvas hold their visibility at
+        0 s, including timed pose runs. Expressions and text animators cannot be held still and are refused.
+        Direct mutations through the underlying scene SDK bypass these canvas guarantees."""
         self._frozen += 1
         try:
             yield self
         finally:
             self._frozen -= 1
+            if not self._frozen:
+                self._frozen_hidden.clear()
 
     def _refuse_frozen(self, what: str) -> None:
         if self._frozen:
@@ -393,23 +435,7 @@ class Canvas:
 
     def gate(self, node, spans: Spans):
         """Visible in the union of finite, non-negative ``spans``; overlaps and touching spans merge."""
-        intervals = []
-        for start, end in spans:
-            if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
-                raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
-            if end > start:
-                intervals.append((float(start), float(end)))
-        merged: list[tuple[float, float]] = []
-        for start, end in sorted(intervals):
-            if merged and start <= merged[-1][1]:
-                merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
-            else:
-                merged.append((start, end))
-        events = {0.0: 0}
-        for start, end in merged:
-            events[start] = 1
-            events[end] = 0
-        return self.keys(node, "opacity", sorted(events.items()))
+        return self.keys(node, "opacity", _visibility_keys(spans))
 
     def pop_in(
         self,

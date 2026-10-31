@@ -141,7 +141,7 @@ def spinach(cv: Canvas, parent, x: float, y: float, width: float = 110.0):
     return g
 
 
-@register("prop", "collage-wine-glass", summary="A wine glass, as full as you like", style="collage")
+@register("prop", "collage-full-glass", summary="A wine glass, as full as you like", style="collage")
 def wine_glass(cv: Canvas, parent, x: float, y: float, full: float = 0.5, colour: str = WINE, scale: float = 1.0):
     """A glass whose foot stands on ``x, y``, its bowl ``full`` of ``colour``."""
     if not (checks.number(full) and 0 <= full <= 1 and checks.number(scale) and scale > 0):

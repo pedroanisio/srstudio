@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
-from .compile import BakeOptions, Compiled, LayerTargets, Occlusion, bake, compile_motion
+from .compile import (
+    BakeOptions,
+    Compiled,
+    LayerTargets,
+    Occlusion,
+    _motion_duration,
+    _Preparation,
+    _resolve_options,
+    bake,
+    compile_motion,
+)
 from .correctives import ContourCorrection
 from .errors import LimbError
 from .model import label
@@ -28,6 +38,8 @@ class LimbTrack:
     occlusion: tuple[Occlusion, ...] = ()
     correctives: tuple[ContourCorrection, ...] = ()
     deformation: str = "contour"
+    _character_end: float | None = field(default=None, repr=False, compare=False)
+    _prepared: _Preparation | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         adapter_for(self.style)
@@ -54,6 +66,8 @@ class LimbTrack:
                 layers=layers,
                 occlusion=self.occlusion,
                 correctives=self.correctives,
+                hold_until=self._character_end,
+                _prepared=self._prepared,
             )
         return compile_motion(
             cv,
@@ -67,6 +81,8 @@ class LimbTrack:
             backend=self.backend,
             correctives=self.correctives,
             deformation=self.deformation,
+            hold_until=self._character_end,
+            _prepared=self._prepared,
         )
 
 
@@ -102,8 +118,12 @@ def prepare_tracks(cv: Canvas, tracks: tuple[LimbTrack, ...], end: float) -> tup
     Performance(limbs=tracks)
     if number(end, "character end") <= 0:
         raise LimbError("character end must be positive")
+    tracks = tuple(
+        replace(track, _character_end=end, options=_resolve_options(cv, track.options), _prepared=_Preparation())
+        for track in tracks
+    )
     for track in tracks:
-        duration = track.options.duration or max((a.end for a in track.motion.actions), default=1.0)
+        duration = _motion_duration(track.motion, track.options, end)
         if track.options.offset + duration > end + 1e-9:
             raise LimbError("limb track exceeds the character performance duration")
     scratch = Canvas(Scene(version="auto"), cv.palette, width=cv.width, height=cv.height, font_asset=cv.font_asset)

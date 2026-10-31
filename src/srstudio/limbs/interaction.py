@@ -9,12 +9,12 @@ from typing import Any, Protocol
 
 from ..canvas import Canvas
 from .adapters import Appearance, adapter_for
-from .compile import BakeOptions, _frame_count
+from .compile import BakeOptions, _frame_count, _resolve_options
 from .correctives import ContourCorrection
 from .errors import LimbError
 from .geometry import ProjectedPose, path, project_pose
 from .math3d import Frame, Vec3
-from .motion import Motion
+from .motion import Motion, TransformTrack
 from .projection import Affine, Camera
 from .validation import MotionReport, audit
 
@@ -132,8 +132,13 @@ def bake_interaction(
 
     Meshes and hands must use the same canonical coordinate system. Attachment tracks can be sampled in any
     order. Sorting uses average surface depth (the painter algorithm); intersecting surfaces must be split into
-    separate faces by the author. There is no hidden physical simulation or renderer-dependent state.
+    separate faces by the author. The default duration covers known actions, roots, prop tracks and releases;
+    custom frame sources require an explicit duration. An implicitly timed attached prop holds its released
+    composited pose through the scene's end; without a scene duration it needs an explicit one. There is no hidden
+    physical simulation.
     """
+    options = _resolve_options(cv, options)
+    assert options.fps is not None
     _name(id)
     names = [p.name for p in participants] + [p.mesh.name for p in props]
     if not names or len(names) > 128 or len(names) != len(set(names)):
@@ -143,15 +148,44 @@ def bake_interaction(
         for n in cv.scene.iter()
     ):
         raise LimbError(f"interaction ID {id!r} is already in use")
-    duration = options.duration or max((a.end for p in participants for a in p.motion.actions), default=1.0)
+    released_hold_end: float | None = None
+    if options.duration is not None:
+        duration = options.duration
+    else:
+        ends = [p.motion.end for p in participants]
+        for prop in props:
+            if isinstance(prop.track, TransformTrack):
+                ends.append(prop.track.keys[-1].time)
+            elif isinstance(prop.track, AttachedProp):
+                ends.append(next(a.release for a in prop.track.motion.attachments if a.name == prop.track.name))
+            else:
+                raise LimbError(f"prop {prop.mesh.name}: custom frame sources require BakeOptions(duration=...)")
+        duration = max(ends, default=0) or 1.0
     count = _frame_count(duration, options)
+    if options.duration is None and any(isinstance(prop.track, AttachedProp) for prop in props):
+        project = next(cv.scene.iter("project"), None)
+        scene_duration = project.attributes().get("duration") if project is not None else None
+        if scene_duration is None:
+            raise LimbError("attached props need a scene duration or an explicit BakeOptions(duration=...)")
+        try:
+            project_end = float(scene_duration)
+        except (ValueError, TypeError, OverflowError) as exc:
+            raise LimbError("attached props need a finite scene duration") from exc
+        if not math.isfinite(project_end) or project_end < 0 or math.ulp(project_end) > 1e-6:
+            raise LimbError("attached props need a representable scene duration")
+        if math.floor(project_end * 1e6 + 1e-9) > math.floor((options.offset + duration) * 1e6 + 1e-9):
+            released_hold_end = project_end
+    frame_total = count + int(released_hold_end is not None)
+    if frame_total > options.max_frames:
+        raise LimbError("interaction frame budget exceeded", code="budget")
     surface_count = sum(3 + len(p.motion.hand.digits) for p in participants) + sum(len(p.mesh.faces) for p in props)
-    estimate = count * (2 + surface_count * 24) + 1
+    estimate = frame_total * (2 + surface_count * 24) + 1
     if estimate > options.max_nodes:
         raise LimbError(f"interaction budget exceeded: {count} frames, at most {estimate} nodes", code="budget")
     inverse = parent_transform.inverse()
     reports = []
-    frames: list[list[_Surface]] = [[] for _ in range(count)]
+    times = tuple(i / options.fps for i in range(count)) + ((duration,) if released_hold_end is not None else ())
+    frames: list[list[_Surface]] = [[] for _ in range(frame_total)]
     for participant in participants:
         adapter = adapter_for(participant.style)
         if (
@@ -162,7 +196,7 @@ def bake_interaction(
             or "contour" not in adapter.capabilities.deformation
         ):
             raise LimbError(f"adapter {participant.style} cannot draw the requested interaction", code="capability")
-        samples = tuple(participant.motion.sample(i / options.fps) for i in range(count))
+        samples = tuple(participant.motion.sample(time) for time in times)
         poses = tuple(
             project_pose(
                 s,
@@ -181,8 +215,8 @@ def bake_interaction(
                     _Surface(f"{participant.name}:{part.name}", part.depth, participant, pose.select({part.name}))
                 )
     for prop in props:
-        for i, frame in enumerate(frames):
-            transform = prop.track.sample(i / options.fps)
+        for time, frame in zip(times, frames, strict=True):
+            transform = prop.track.sample(time)
             for face in prop.mesh.faces:
                 projected = [camera.project(p, frame=transform) for p in face.vertices]
                 frame.append(
@@ -199,8 +233,13 @@ def bake_interaction(
     root = cv.group(parent, id)
     for i, frame in enumerate(frames):
         group = cv.group(root, f"{id}-frame-{i:06d}")
-        start = math.floor((options.offset + i / options.fps) * 1e6 + 1e-9) / 1e6
-        end = math.floor((options.offset + min(duration, (i + 1) / options.fps)) * 1e6 + 1e-9) / 1e6
+        if i == count:
+            assert released_hold_end is not None
+            start, end = options.offset + duration, released_hold_end
+        else:
+            start, end = options.offset + i / options.fps, options.offset + min(duration, (i + 1) / options.fps)
+        start = math.floor(start * 1e6 + 1e-9) / 1e6
+        end = math.floor(end * 1e6 + 1e-9) / 1e6
         cv.gate(group, [(start, end)])
         for j, surface in enumerate(frame):
             if surface.participant is not None and surface.pose is not None:
@@ -212,7 +251,7 @@ def bake_interaction(
     nodes = len(list(cv.scene.iter())) - before
     return InteractionResult(
         root,
-        count,
+        frame_total,
         tuple((name, replace(report, nodes=nodes)) for name, report in reports),
         nodes,
         tuple(tuple((surface.name, surface.depth) for surface in frame) for frame in frames),

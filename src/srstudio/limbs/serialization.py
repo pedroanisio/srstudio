@@ -29,6 +29,13 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
         raise LimbError(f"{where}: motion document exceeds its decoding bound", code="budget")
     origin, args = get_origin(kind), get_args(kind)
     if origin in (types.UnionType, Union):
+        # Optional fields have one real shape: a failed nested decode is actionable, not a union mismatch.
+        if type(None) in args:
+            if value is None:
+                return None
+            non_null = tuple(candidate for candidate in args if candidate is not type(None))
+            if len(non_null) == 1:
+                return _decode(non_null[0], value, where, budget, depth + 1)
         for candidate in args:
             try:
                 return _decode(candidate, value, where, budget, depth + 1)
@@ -77,9 +84,13 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
         if missing:
             raise LimbError(f"{where}: missing required fields {missing}")
         hints = get_type_hints(kind)
-        return kind(
-            **{name: _decode(hints[name], item, f"{where}.{name}", budget, depth + 1) for name, item in value.items()}
-        )
+        decoded = {
+            name: _decode(hints[name], item, f"{where}.{name}", budget, depth + 1) for name, item in value.items()
+        }
+        try:
+            return kind(**decoded)
+        except LimbError as error:
+            raise LimbError(f'{where}: {error}', code=error.code, residual=error.residual) from error
     raise LimbError(f"{where}: unsupported persisted type {kind}")
 
 

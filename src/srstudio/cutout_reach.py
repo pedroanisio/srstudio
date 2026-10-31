@@ -12,10 +12,11 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
 
-__all__ = ["ReachError", "hand_at", "reach"]
+__all__ = ["ReachError", "carried", "hand_at", "reach"]
 
 RATE = 30  # samples a second: the frame rate of a reel, so the arm never lags the hand by a frame
 UNIT = 100.0  # the length of the drawn arm before its scale
@@ -54,6 +55,12 @@ def _check(shoulder, track) -> None:
         raise ReachError(f"a hand on the shoulder {shoulder!r} has no arm to draw")
 
 
+def _samples(track: Sequence[tuple[float, float, float]]) -> list[float]:
+    """The times an arm on ``track`` is keyed at: every frame from its start, and its points."""
+    start, end = track[0][0], track[-1][0]
+    return sorted({round(start + k / RATE, 4) for k in range(int((end - start) * RATE) + 1)} | {p[0] for p in track})
+
+
 def reach(
     cv: Canvas,
     parent,
@@ -70,8 +77,7 @@ def reach(
     is a colour for a cloth arm, wider than the ink line. Returns (arm group, hand group): gate them both, or the
     parent, to show it, and hang what the hand carries from the hand group."""
     _check(shoulder, track)
-    start, end = track[0][0], track[-1][0]
-    points = sorted({round(start + k / RATE, 4) for k in range(int((end - start) * RATE) + 1)} | {p[0] for p in track})
+    points = _samples(track)
     sx, sy = shoulder
     at = [(t, *hand_at(track, t)) for t in points]
     x0, y0 = at[0][1], at[0][2]
@@ -95,3 +101,28 @@ def reach(
     cv.keys(grip, "y", [(t, y) for t, _, y in at], hold=False)
     cv.ellipse(grip, -hand / 2, -hand * 0.56, hand, hand * 1.12, skin, cv.ink, 3.5)
     return arm, grip
+
+
+def carried(
+    cv: Canvas,
+    node,
+    track: Sequence[tuple[float, float, float]],
+    take: float,
+    put: float,
+    *,
+    rest: tuple[float, float],
+    lands: tuple[float, float] | None = None,
+) -> None:
+    """Key ``node``'s x and y: at ``rest`` until the hand takes it at ``take``, in the hand along ``track`` until
+    ``put``, then at ``lands``, or where the hand let go. For a thing a hand picks up off one actor and sets down."""
+    if len(track) < 1 or not checks.number(take) or not checks.number(put) or not take < put:
+        raise ReachError(f"a hand takes a thing and puts it down later, got {take!r} and {put!r}")
+    if take < track[0][0] or put > track[-1][0]:
+        raise ReachError(f"the hand is on its track from {track[0][0]} to {track[-1][0]}, got {take} to {put}")
+    if not all(checks.number(v) for v in (*rest, *(lands or ()))):
+        raise ReachError(f"a carried thing rests at finite places, got {rest!r} and {lands!r}")
+    path = [(t, hand_at(track, t)) for t in _samples(track) if take < t < put]
+    last = lands if lands is not None else hand_at(track, put)
+    for axis, prop in enumerate(("x", "y")):
+        keys = [(0.0, rest[axis]), (take, rest[axis]), *((t, at[axis]) for t, at in path), (put, last[axis])]
+        cv.keys(node, prop, keys, hold=False)

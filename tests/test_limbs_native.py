@@ -56,6 +56,92 @@ def test_native_arm_and_hand_have_the_same_visibility_interval_with_an_offset():
     assert [(float(k.get("time")), float(k.get("value"))) for k in keys] == [(0, 0), (0.5, 1), (2.5, 0)]
 
 
+@pytest.mark.parametrize('deformation', ['contour', 'skin'])
+def test_native_arm_and_hand_use_the_same_held_frame_between_samples(tmp_path, scene_render, deformation):
+    cv = canvas()
+    camera = Camera(origin=(0, 0), scale=100)
+    m = motion()
+    compile_motion(
+        cv, cv.comp, m, id='arm', backend='native', camera=camera, options=BakeOptions(fps=2), deformation=deformation
+    )
+    path = tmp_path / 'held.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time, frame in ((0.05, 0), (0.3, 0), (0.49, 0), (0.51, 1), (0.9, 1)):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        target = next(n for n in nodes if n['id'] == 'arm-target')
+        pole = next(n for n in nodes if n['id'] == 'arm-pole')
+        expected = m.sample(frame / 2)
+        assert target['world'][4:6] == pytest.approx(camera.project(expected.arm.wrist).xy, abs=1e-3)
+        assert pole['world'][4:6] == pytest.approx(camera.project(expected.arm.elbow).xy, abs=1e-3)
+        visible = [n['id'] for n in nodes if 'arm-hand-frame-' in n['id'] and n.get('opacity', 0) > 0.5]
+        assert visible == [f'arm-hand-frame-{frame:06d}-body']
+
+
+def test_native_moving_shoulder_uses_the_hand_frame_clock(tmp_path, scene_render):
+    from srstudio.limbs.math3d import Frame
+    from srstudio.limbs.motion import TransformKey, TransformTrack
+
+    cv = canvas()
+    camera = Camera(origin=(0, 0), scale=100)
+    root = TransformTrack((TransformKey(0, Frame()), TransformKey(2, Frame(origin=Vec3(0.5, 0, 0)))))
+    m = Motion(ArmProfile(), HUMAN, (Action('point', duration=2, target=Target(Vec3(0.65, 0.3, 0))),), root=root)
+    compile_motion(cv, cv.comp, m, id='arm', backend='native', camera=camera, options=BakeOptions(fps=2))
+    path = tmp_path / 'shoulder.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time, frame in ((0.2, 0), (0.49, 0), (0.75, 1)):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        shoulder = next(n for n in nodes if n['id'] == 'arm-upper-draw')
+        assert shoulder['world'][4:6] == pytest.approx(camera.project(m.sample(frame / 2).arm.shoulder).xy, abs=1e-3)
+
+
+def test_native_arm_and_hand_hold_over_the_character_lifetime():
+    cv = canvas()
+    m = Motion(ArmProfile(), HUMAN, (Action("point", 0, 1, target=Target(Vec3(0.65, 0.3, 0))),))
+    compile_motion(cv, cv.comp, m, id="arm", backend="native", options=BakeOptions(fps=2, offset=0.5), hold_until=2)
+    xml = ET.fromstring(cv.scene.to_bytes())
+    keys = xml.findall(".//group[@id='arm']/animate[@property='opacity']/key")
+    assert [(float(k.get("time")), float(k.get("value"))) for k in keys] == [(0, 1), (2, 0)]
+    hand = xml.find(".//group[@id='arm-hand-frame-000002-body']")
+    assert hand is not None
+    keys = hand.findall("animate[@property='opacity']/key")
+    assert [(float(k.get("time")), float(k.get("value"))) for k in keys] == [(0, 0), (1.5, 1), (2, 0)]
+
+
+def test_native_arm_follows_moving_root_after_action(tmp_path, scene_render):
+    from srstudio.limbs.math3d import Frame
+    from srstudio.limbs.motion import TransformKey, TransformTrack
+
+    cv = canvas()
+    root = TransformTrack((TransformKey(0, Frame()), TransformKey(2, Frame(origin=Vec3(1, 0, 0)))))
+    m = Motion(ArmProfile(), HUMAN, (Action("point", 0, 1, target=Target(Vec3(0.65, 0.3, 0))),), root=root)
+    compile_motion(cv, cv.comp, m, id="arm", backend="native", options=BakeOptions(fps=4), hold_until=2)
+    path = tmp_path / 'native.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    positions = []
+    for time in (1.1, 1.9):
+        result = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(result.stdout)['result']['nodes']
+        positions.append(next(n for n in nodes if n['id'] == 'arm-upper-draw')['world'][4])
+    assert positions[1] > positions[0] + 0.3
+
+
 def test_renderer_native_elbow_and_wrist_match_spatial_solver(tmp_path):
     engine = os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
     if not engine:

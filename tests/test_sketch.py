@@ -2,12 +2,10 @@
 recording loop with a fake client (what the real client parses and verifies is tested in test_voice.py)."""
 
 import json
-import math
 import shutil
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from sr_core.scene import Scene
@@ -15,8 +13,8 @@ from sr_core.scene import Scene
 from srstudio import PEACH, Canvas, flat_counter, music, narration, sketch, toon
 from srstudio.fonts import GoogleFont
 from srstudio.sketch import Line
-from srstudio.voice import Alignment, Transcript
-from support.sketch import BEATS, LINES, SK, SPEAKERS, with_beats
+from srstudio.voice import Alignment
+from support.sketch import BEATS, LINES, SK, SPEAKERS, FakeClient, confirm_stub, with_beats
 
 
 def canvas() -> Canvas:
@@ -53,6 +51,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, speakers=(replace(SPEAKERS[0], character="owl"), SPEAKERS[1])), "distinct characters"),
         (lambda s: replace(s, speakers=(SPEAKERS[0], replace(SPEAKERS[1], character="dog"))), "distinct characters"),
         (lambda s: replace(s, lines=(*LINES, Line("nobody", "Hi."))), "known speaker"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=1.0), *LINES[1:])), "gain is zero or less"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=-13.0), *LINES[1:])), "gain is zero or less"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=2.0), *LINES[1:])), "gain is zero or less"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=float("nan")), *LINES[1:])), "gain is zero or less"),
@@ -357,40 +357,9 @@ def test_write_project_and_write_voiced_lay_out_the_files(tmp_path, monkeypatch)
 
 
 # -- recording --------------------------------------------------------------------------------------------------------
-class FakeClient:
-    """Says each line as a tone, 0.3 s a word after 0.05 s of silence, and hears back what it is told to."""
-
-    def __init__(self, folder: Path, heard: dict | None = None):
-        self.folder, self.heard, self.requests, self.said = folder, heard or {}, [], {}
-
-    def synthesize(self, text, voice, settings):
-        self.requests.append((text, voice.name, settings.speed))
-        words = len(text.split())
-        seconds = 0.3 * words
-        rate = 8000
-        samples = [0.0] * int(0.05 * rate) + [
-            0.5 * math.sin(2 * math.pi * 220 * k / rate) for k in range(int(seconds * rate))
-        ]
-        wav = self.folder / f"{voice.name}-{len(self.requests)}.wav"
-        music.write_wav(wav, samples, rate)
-        self.said[wav] = text
-        n = len(text)
-        starts = tuple(round(0.05 + k * seconds / n, 6) for k in range(n))
-        ends = tuple(round(s + seconds / n, 6) for s in starts)
-        return SimpleNamespace(wav=wav, alignment=Alignment(tuple(text), starts, ends))
-
-    def transcribe(self, audio, language="en"):
-        text = self.said[Path(audio)]
-        return Transcript("en", 1.0, self.heard.get(text, text), ())
-
-
 def copy_clip(src, dst, clip_in, clip_out, length, gain_db, ffmpeg):
     shutil.copy(src, dst)
     return length
-
-
-def confirm_stub(cache, key, voice):
-    return {"voice_id": voice.id, "name": f"{voice.name} - premade", "category": "premade"}
 
 
 def test_record_says_every_line_in_its_voice_places_the_beats_and_writes_the_manifest(tmp_path):
@@ -483,3 +452,38 @@ def test_voiced_beats_round_trip_and_bad_files_are_refused(tmp_path):
             sketch.load_beats(path)
     with pytest.raises(sketch.SketchError, match="missing.json"):
         sketch.load_beats(tmp_path / "missing.json")
+
+
+def held_sketch(tail: float) -> sketch.Sketch:
+    """``SK`` with a last beat that says nothing, so the tail alone sets where the project ends."""
+    last = SK.beats[-1]
+    silent = replace(last, start=SK.end + 20.0, line=None, word=None, caption="")
+    return replace(SK, beats=(*SK.beats, silent), end=SK.end + 20.2, tail=tail)
+
+
+@pytest.mark.parametrize("tail", [0.25, 0.6])
+def test_a_sketch_can_cut_on_its_last_beat_instead_of_holding(tmp_path, tail):
+    held = held_sketch(tail)
+    rec = sketch.record(held, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    assert rec.end == pytest.approx(max(held.end, rec.beats[-1].start + tail), abs=1e-6)
+    assert rec.end < rec.beats[-1].start + sketch.TAIL_AFTER_LAST
+
+
+def test_a_sketch_keeps_the_full_tail_unless_it_asks_otherwise(tmp_path):
+    held = held_sketch(sketch.TAIL_AFTER_LAST)
+    rec = sketch.record(held, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    assert SK.tail == sketch.TAIL_AFTER_LAST
+    assert rec.end == pytest.approx(rec.beats[-1].start + sketch.TAIL_AFTER_LAST, abs=1e-6)
+
+
+def test_a_short_tail_never_cuts_a_take_short(tmp_path):
+    rec = sketch.record(
+        replace(SK, tail=0.0), tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip
+    )
+    assert rec.end >= max(q["start"] + q["duration"] for q in rec.items)
+
+
+@pytest.mark.parametrize("bad", [-0.1, float("nan"), float("inf"), True, "1"])
+def test_a_tail_that_is_no_length_stops_the_sketch(bad):
+    with pytest.raises(sketch.SketchError, match="tail"):
+        sketch.check(replace(SK, tail=bad))

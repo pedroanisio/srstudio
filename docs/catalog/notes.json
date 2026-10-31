@@ -577,6 +577,46 @@
     "soft-smoke": {"title": "Fumaça que sobe"},
     "soft-grill": {"title": "Churrasqueira redonda"},
     "soft-tongs": {"title": "Pegador de churrasco"},
+    "toon-noodle-box": {"title": "Caixa de macarrão"},
+    "toon-gnome": {"title": "Anão de jardim"},
+    "toon-rain": {"title": "Chuva"},
+    "toon-wifi-list": {"title": "Lista de Wi-Fi"},
+    "toon-gull-stare": {"title": "Gaivota que encara"},
+    "toon-voice-note-bar": {"title": "Barra de áudio"},
+    "toon-reception-glass": {"title": "Vidro da recepção"},
+    "toon-eye-drops": {"title": "Colírio"},
+    "water-splash": {"title": "Respingo"},
+    "rising-bubbles": {"title": "Bolhas subindo"},
+    "collage-battery-insert": {"title": "Bateria do celular"},
+    "paper-menu": {"title": "Cardápio de papel"},
+    "soup-bowl": {"title": "Tigela de sopa"},
+    "reaching-hand": {"title": "Mão que entra"},
+    "phone-screen": {"title": "Tela de celular"},
+    "qr-code": {"title": "Código QR"},
+    "table-tent": {"title": "Display de mesa"},
+    "cafe-table": {"title": "Mesa de café"},
+    "collage-magnifying-glass": {"title": "Lupa de papel"},
+    "stick-message-insert": {"title": "Mensagem na tela"},
+    "collage-flip-card": {"title": "Cartão virável"},
+    "back-room": {"title": "Sala dos fundos"},
+    "sandwich": {"title": "Sanduíche mordido"},
+    "jump-clock": {"title": "Relógio que salta"},
+    "collage-lasagna": {"title": "Lasanha de papel"},
+    "stick-shovel": {"title": "Pá"},
+    "stick-mound": {"title": "Monte de terra"},
+    "stick-smoke-alarm": {"title": "Detector de fumaça"},
+    "stick-chair": {"title": "Cadeira de cozinha"},
+    "stick-bedroom": {"title": "Quarto com lua"},
+    "paper-poster": {"title": "Cartaz de papel"},
+    "pen-on-chain": {"title": "Caneta na corrente"},
+    "stick-palm": {"title": "Palmeira"},
+    "stick-coat-ball": {"title": "Bola de casacos"},
+    "stick-bag-scale": {"title": "Balança de bagagem"},
+    "collage-router": {"title": "Roteador de papel"},
+    "soft-parcels": {"title": "Pilha de encomendas"},
+    "soft-whisk": {"title": "Batedor minúsculo"},
+    "soft-glare-lamp": {"title": "Abajur pequeno de brilho enorme"},
+    "toon-loose-wheel": {"title": "Roda solta que sai rolando"},
     "candidate": {
       "title": "O candidato"
     },
@@ -880,38 +920,86 @@
     "news-set": {
       "title": "Estúdio do telejornal"
     },
+    "news-set@2": {
+      "title": "Estúdio do telejornal, versão 2"
+    },
     "news-desk": {
       "title": "Bancada do telejornal"
+    },
+    "news-desk@2": {
+      "title": "Bancada do telejornal, versão 2"
     },
     "news-vera": {
       "title": "Vera Stillman, a âncora"
     },
+    "news-vera@2": {
+      "title": "Vera Stillman, a âncora, versão 2"
+    },
+    "news-vera@3": {
+      "title": "Vera Stillman, a âncora, versão 3"
+    },
     "news-gus": {
       "title": "Gus Bellows, o coapresentador"
+    },
+    "news-gus@2": {
+      "title": "Gus Bellows, o coapresentador, versão 2"
+    },
+    "news-gus@3": {
+      "title": "Gus Bellows, o coapresentador, versão 3"
     },
     "news-bug": {
       "title": "Marca do programa"
     },
+    "news-bug@2": {
+      "title": "Marca do programa, versão 2"
+    },
+    "news-missing-card": {
+      "title": "Cartaz de desaparecido"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
+    },
+    "news-parody-tag@2": {
+      "title": "Selo de paródia, versão 2"
     },
     "news-source-card": {
       "title": "Cartão da fonte"
     },
+    "news-source-card@2": {
+      "title": "Cartão da fonte, versão 2"
+    },
     "news-lower-third": {
       "title": "Tarja inferior"
+    },
+    "news-lower-third@2": {
+      "title": "Tarja inferior, versão 2"
     },
     "news-banner": {
       "title": "Faixa de urgente"
     },
+    "news-banner@2": {
+      "title": "Faixa de urgente, versão 2"
+    },
     "news-ticker": {
       "title": "Letreiro corrido"
+    },
+    "news-ticker@2": {
+      "title": "Letreiro corrido, versão 2"
     },
     "news-captions": {
       "title": "Legendas do telejornal"
     },
+    "news-captions@2": {
+      "title": "Legendas do telejornal, versão 2"
+    },
     "news-phone": {
       "title": "Celular do Gus"
+    },
+    "news-phone@2": {
+      "title": "Celular do Gus, versão 2"
+    },
+    "news-route": {
+      "title": "Mapa no celular do Gus"
     },
     "host-wardrobe": {
       "title": "Dentro do guarda-roupa"
@@ -1297,7 +1385,59 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"}
+    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-quilt-pull": {"title": "Edredom puxado"},
+    "soft-handshake": {"title": "Aperto de mão"},
+    "soft-open-briefcase": {"title": "Maleta aberta"},
+    "soft-bedside-lamp": {"title": "Abajur"},
+    "soft-picture-book": {"title": "Livro infantil"},
+    "soft-wall-clock": {"title": "Relógio de parede, Soft"},
+    "robe-and-blazer": {"title": "Blazer sobre roupão"},
+    "banknotes": {"title": "Duas notas"},
+    "cue-cards": {"title": "Cartões de deixa"},
+    "stick-blinker": {"title": "Seta do carro"},
+    "stick-swim-ring": {"title": "Boia inflável"},
+    "stick-rear-view": {"title": "Retrovisor"},
+    "cafe-door": {"title": "Porta do café"},
+    "coat-over": {"title": "Casaco vestido em cena"},
+    "big-thumb": {"title": "Polegar gigante"},
+    "phone-post": {"title": "Post antigo no celular"},
+    "collage-eye-twitch": {"title": "Tique no olho"},
+    "collage-ring-corner": {"title": "Canto do ringue"},
+    "collage-towel": {"title": "Toalha listrada"},
+    "collage-stool": {"title": "Banquinho"},
+    "collage-till": {"title": "Caixa registradora"},
+    "collage-counter": {"title": "Balcão"},
+    "collage-wallet": {"title": "Carteira aberta"},
+    "collage-receipt": {"title": "Nota da conta"},
+    "collage-bank-card": {"title": "Cartão de banco"},
+    "collage-full-glass": {"title": "Taça de vinho"},
+    "collage-tiny-cup": {"title": "Xicrinha"},
+    "collage-gravy-boat": {"title": "Molheira com garfos"},
+    "collage-fork": {"title": "Garfo"},
+    "collage-resume": {"title": "Currículo"},
+    "collage-desk-phone": {"title": "Telefone de mesa"},
+    "collage-handset": {"title": "Fone de mesa"},
+    "stick-lights-low": {"title": "Luz baixa"},
+    "stick-recorder": {"title": "Celular gravando"},
+    "stick-eye-mask": {"title": "Máscara de dormir"},
+    "stick-duvet": {"title": "Edredom com monte"},
+    "cv-folder": {"title": "Pasta do currículo"},
+    "toon-plate-of-toast": {"title": "Prato de torradas"},
+    "toon-swing-door": {"title": "Porta vaivém"},
+    "toon-soup-tubs": {"title": "Potes de sopa"},
+    "toon-shampoo": {"title": "Frasco de xampu"},
+    "toon-scribble": {"title": "Rabisco no lugar da legenda"},
+    "toon-rack": {"title": "Cesto da lava-louças"},
+    "toon-profiles": {"title": "Perfis do streaming"},
+    "toon-mower": {"title": "Cortador de grama"},
+    "toon-monitor-receiver": {"title": "Receptor da babá"},
+    "toon-lasagna": {"title": "Lasanha"},
+    "toon-dishwasher": {"title": "Lava-louças"},
+    "toon-device-list": {"title": "Lista de aparelhos"},
+    "toon-cupcakes": {"title": "Bandeja de cupcakes"},
+    "toon-blower": {"title": "Soprador de folhas"},
+    "toon-baby-monitor": {"title": "Babá eletrônica"}
   },
   "gallery": [
     {
@@ -7838,6 +7978,750 @@
       },
       "text": "O telefone ocupa o quadro: o nome de uma conversa e as mensagens, uma de cada vez."
     },
+    {
+      "section": "graphics",
+      "name": "Cartaz de desaparecido",
+      "parts": [
+        "news-missing-card"
+      ],
+      "shot": {
+        "episode": "missing-lid",
+        "at": 1.0
+      },
+      "text": "Um cartaz de desaparecido para um objeto: o desenho dele e o nome, ao lado de quem apresenta."
+    },
+    {
+      "section": "locations",
+      "name": "Estúdio do News Compiler (versão 2)",
+      "parts": [
+        "news-set@2",
+        "news-desk@2"
+      ],
+      "shot": {
+        "episode": "where-to-eat",
+        "at": 1.0,
+        "box": [
+          0,
+          100,
+          1080,
+          1045
+        ]
+      },
+      "text": "A sala iluminada, a parede de monitores com imagens e a treliça no alto. A bancada polida tem borda, frente acesa e um piso embaixo."
+    },
+    {
+      "section": "graphics",
+      "name": "Faixa BREAKING (versão 2)",
+      "parts": [
+        "news-banner@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1146,
+          1080,
+          76
+        ]
+      },
+      "text": "Mais fina, encostada no terceiro inferior; as setas laranja não param de andar."
+    },
+    {
+      "section": "graphics",
+      "name": "Terceiro inferior (versão 2)",
+      "parts": [
+        "news-lower-third@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1222,
+          1080,
+          130
+        ]
+      },
+      "text": "Uma etiqueta menta sobre uma linha da matéria, colada no letreiro; muda a cada virada da história."
+    },
+    {
+      "section": "graphics",
+      "name": "Letreiro do rodapé (versão 2)",
+      "parts": [
+        "news-ticker@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 3.0,
+        "box": [
+          0,
+          1352,
+          1080,
+          64
+        ]
+      },
+      "text": "Logo abaixo do terceiro inferior, com a aba cortada em seta e os fatos pequenos da notícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Marca do programa e selo PARODY (versão 2)",
+      "parts": [
+        "news-bug@2",
+        "news-parody-tag@2"
+      ],
+      "shot": {
+        "episode": "you-too",
+        "at": 3.0,
+        "box": [
+          0,
+          220,
+          1080,
+          90
+        ]
+      },
+      "text": "O nome do programa e o selo PARODY na fileira de cima, em etiquetas do mesmo desenho; o selo fica na tela o vídeo inteiro quando a história é fictícia."
+    },
+    {
+      "section": "graphics",
+      "name": "Legendas do programa (versão 2)",
+      "parts": [
+        "news-captions@2"
+      ],
+      "shot": {
+        "episode": "where-to-eat",
+        "at": 8.0,
+        "box": [
+          150,
+          310,
+          780,
+          170
+        ]
+      },
+      "text": "Uma ou duas linhas de diálogo no painel do programa, com uma cor para cada âncora: papel claro para Vera, tangerina para Gus."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão da fonte (versão 2)",
+      "parts": [
+        "news-source-card@2"
+      ],
+      "shot": {
+        "episode": "seabird-jet-lag",
+        "at": 1.0,
+        "box": [
+          30,
+          995,
+          1020,
+          310
+        ]
+      },
+      "text": "Quando a história é real: veículo, data e manchete num cartão, que depois vira uma etiqueta na fileira de cima."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa no celular do Gus",
+      "parts": [
+        "news-route"
+      ],
+      "shot": {
+        "episode": "seabird-jet-lag",
+        "at": 5.5,
+        "box": [
+          150,
+          470,
+          780,
+          860
+        ]
+      },
+      "text": "Um mapa no celular: mar, costa, um trajeto que se desenha sozinho e alfinetes com os nomes."
+    },
+    {
+      "section": "cast",
+      "name": "Vera Stillman, a âncora séria (versão 2)",
+      "parts": [
+        "news-vera@2"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 2.0,
+        "box": [
+          180,
+          470,
+          720,
+          680
+        ]
+      },
+      "text": "Desenhada de novo: cabelo prateado repartido, óculos de meia-lua e pescoço. Continua sem reação nenhuma."
+    },
+    {
+      "section": "cast",
+      "name": "Gus Bellows, o coanfitrião (versão 2)",
+      "parts": [
+        "news-gus@2"
+      ],
+      "shot": {
+        "episode": "one-more-episode",
+        "at": 1.0,
+        "box": [
+          180,
+          480,
+          760,
+          640
+        ]
+      },
+      "text": "Desenhado de novo: cachos, gravata frouxa, mangas com cotovelos e mãos de verdade."
+    },
+    {
+      "section": "cast",
+      "name": "Vera Stillman, a âncora séria (versão 3)",
+      "parts": [
+        "news-vera@3"
+      ],
+      "shot": {
+        "episode": "security-question",
+        "at": 2.0,
+        "box": [
+          180,
+          470,
+          720,
+          680
+        ]
+      },
+      "text": "O mesmo desenho, com a cabeça girando um pouco menos: as marcas do rosto ficam dentro da pele no limite da virada."
+    },
+    {
+      "section": "cast",
+      "name": "Gus Bellows, o coanfitrião (versão 3)",
+      "parts": [
+        "news-gus@3"
+      ],
+      "shot": {
+        "episode": "one-more-episode",
+        "at": 1.0,
+        "box": [
+          180,
+          480,
+          760,
+          640
+        ]
+      },
+      "text": "O mesmo desenho, com a cabeça girando bem menos: o rubor e as sardas não passam mais da linha do queixo."
+    },
+    {
+      "section": "props",
+      "name": "Lava-louças aberta",
+      "parts": [
+        "toon-dishwasher"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 5.0
+      },
+      "text": "Uma lava-louças aberta que ganha um prato a cada carga."
+    },
+    {
+      "section": "props",
+      "name": "Cesto de canecas",
+      "parts": [
+        "toon-rack"
+      ],
+      "shot": {
+        "episode": "loaded-right",
+        "at": 11.0
+      },
+      "text": "O cesto de cima de perto: fileiras de canecas, todas na mesma inclinação."
+    },
+    {
+      "section": "props",
+      "name": "Potes de sopa",
+      "parts": [
+        "toon-soup-tubs"
+      ],
+      "shot": {
+        "episode": "long-goodbye",
+        "at": 15.3
+      },
+      "text": "Uma pilha de potes de sopa que cresce a cada parada."
+    },
+    {
+      "section": "props",
+      "name": "Cortador de grama",
+      "parts": [
+        "toon-mower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 3.0
+      },
+      "text": "Um cortador de grama que treme enquanto funciona."
+    },
+    {
+      "section": "props",
+      "name": "Soprador de folhas",
+      "parts": [
+        "toon-blower"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 22.5
+      },
+      "text": "Um soprador de folhas que treme enquanto funciona."
+    },
+    {
+      "section": "graphics",
+      "name": "Rabisco no lugar da legenda",
+      "parts": [
+        "toon-scribble"
+      ],
+      "shot": {
+        "episode": "sorry-what",
+        "at": 6.5
+      },
+      "text": "Onde estaria a legenda, um rabisco: palavras que ninguém entendeu."
+    },
+    {
+      "section": "props",
+      "name": "Babá eletrônica",
+      "parts": [
+        "toon-baby-monitor",
+        "toon-swing-door"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 3.0
+      },
+      "text": "A babá eletrônica na prateleira, e a porta vaivém entre a cozinha e a sala."
+    },
+    {
+      "section": "props",
+      "name": "Receptor da babá",
+      "parts": [
+        "toon-monitor-receiver"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 23.0
+      },
+      "text": "A metade dos pais: cinco barras verdes que pulam."
+    },
+    {
+      "section": "props",
+      "name": "Lasanha",
+      "parts": [
+        "toon-lasagna"
+      ],
+      "shot": {
+        "episode": "baby-monitor",
+        "at": 24.6
+      },
+      "text": "Uma lasanha numa travessa com alças, servida na mesa."
+    },
+    {
+      "section": "props",
+      "name": "Prato de torradas",
+      "parts": [
+        "toon-plate-of-toast"
+      ],
+      "shot": {
+        "episode": "call-your-mother",
+        "at": 16.0
+      },
+      "text": "Duas torradas num prato."
+    },
+    {
+      "section": "graphics",
+      "name": "Perfis do streaming",
+      "parts": [
+        "toon-profiles"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 0.2
+      },
+      "text": "A tela de quem está assistindo, com um a seis nomes."
+    },
+    {
+      "section": "graphics",
+      "name": "Lista de aparelhos",
+      "parts": [
+        "toon-device-list"
+      ],
+      "shot": {
+        "episode": "the-profiles",
+        "at": 14.0
+      },
+      "text": "A lista de aparelhos conectados, em tela cheia."
+    },
+    {
+      "section": "props",
+      "name": "Frasco de xampu",
+      "parts": [
+        "toon-shampoo"
+      ],
+      "shot": {
+        "episode": "shower-argument",
+        "at": 17.0
+      },
+      "text": "Um frasco de xampu que solta uma bolha."
+    },
+    {
+      "section": "props",
+      "name": "Bandeja de cupcakes",
+      "parts": [
+        "toon-cupcakes"
+      ],
+      "shot": {
+        "episode": "pajama-day",
+        "at": 24.5
+      },
+      "text": "Uma bandeja de cupcakes com bandeirinhas, em fileiras."
+    },
+    {
+      "section": "props",
+      "name": "Pasta do currículo",
+      "parts": [
+        "cv-folder"
+      ],
+      "shot": {
+        "episode": "any-questions",
+        "at": 14.6
+      },
+      "text": "A pasta de quem se candidata: fechada na mesa, aberta quando alguém resolve ler."
+    },
+    {
+      "section": "props",
+      "name": "Edredom com monte",
+      "parts": [
+        "stick-duvet"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um edredom sobre a cama, com um monte no meio que respira e pode afundar."
+    },
+    {
+      "section": "props",
+      "name": "Máscara de dormir",
+      "parts": [
+        "stick-eye-mask"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Uma máscara de dormir sobre a cabeça, com os olhos bordados fechados."
+    },
+    {
+      "section": "props",
+      "name": "Celular gravando",
+      "parts": [
+        "stick-recorder"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 11.5
+      },
+      "text": "Um celular deitado, com um traço na tela para cada som que gravou."
+    },
+    {
+      "section": "props",
+      "name": "Luz baixa",
+      "parts": [
+        "stick-lights-low"
+      ],
+      "shot": {
+        "episode": "third-snore",
+        "at": 21.3
+      },
+      "text": "Qualquer cenário baixado para a noite, com uma poça de luz em volta de um ponto."
+    },
+    {
+      "section": "props",
+      "name": "Telefone e fone",
+      "parts": [
+        "collage-desk-phone",
+        "collage-handset"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 16.9
+      },
+      "text": "Um telefone de mesa com visor e um fone de fio espiral, no gancho ou fora dele."
+    },
+    {
+      "section": "props",
+      "name": "Currículo de verso em branco",
+      "parts": [
+        "collage-resume"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 8.2
+      },
+      "text": "Um currículo que vira e mostra o verso em branco."
+    },
+    {
+      "section": "props",
+      "name": "Tique no olho",
+      "parts": [
+        "collage-eye-twitch"
+      ],
+      "shot": {
+        "episode": "fluent",
+        "at": 5.45
+      },
+      "text": "Uma pálpebra que pisca sozinha por cima de um sorriso parado."
+    },
+    {
+      "section": "props",
+      "name": "Molheira de imprensa",
+      "parts": [
+        "collage-gravy-boat",
+        "collage-fork"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 2.2
+      },
+      "text": "Uma molheira com garfos presos com fita, apontada como microfone de coletiva."
+    },
+    {
+      "section": "props",
+      "name": "Taça de vinho",
+      "parts": [
+        "collage-wine-glass"
+      ],
+      "shot": {
+        "episode": "any-news",
+        "at": 2.8
+      },
+      "text": "Uma taça de vinho para quem não vai responder."
+    },
+    {
+      "section": "props",
+      "name": "Conta rasgada e xicrinha",
+      "parts": [
+        "collage-receipt",
+        "collage-tiny-cup"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 1.6
+      },
+      "text": "A nota do restaurante, inteira ou rasgada, e uma xicrinha de café."
+    },
+    {
+      "section": "props",
+      "name": "Cartão e carteira",
+      "parts": [
+        "collage-bank-card",
+        "collage-wallet"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 23.2
+      },
+      "text": "Um cartão com o nome do dono e a carteira aberta, com um espaço vazio."
+    },
+    {
+      "section": "props",
+      "name": "Balcão e caixa",
+      "parts": [
+        "collage-counter",
+        "collage-till"
+      ],
+      "shot": {
+        "episode": "ill-get-this",
+        "at": 13.7
+      },
+      "text": "O balcão de uma loja e a caixa registradora com o visor aceso."
+    },
+    {
+      "section": "props",
+      "name": "Corner de boxe",
+      "parts": [
+        "collage-ring-corner",
+        "collage-stool",
+        "collage-towel"
+      ],
+      "shot": {
+        "episode": "book-a-table",
+        "at": 0.2
+      },
+      "text": "O canto do ringue com cordas, banquinho e uma toalha listrada."
+    },
+    {
+      "section": "props",
+      "name": "Post antigo no celular",
+      "parts": [
+        "phone-post",
+        "big-thumb"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 12.0
+      },
+      "text": "Um post de 2016 em tela cheia: a travessa, o coração vazio e o polegar quase em cima dele."
+    },
+    {
+      "section": "props",
+      "name": "Casaco e porta do café",
+      "parts": [
+        "coat-over",
+        "cafe-door"
+      ],
+      "shot": {
+        "episode": "dont-move",
+        "at": 24.4
+      },
+      "text": "O casaco que veste um lado de cada vez, e a porta com a placa lida por dentro."
+    },
+    {
+      "section": "props",
+      "name": "Retrovisor",
+      "parts": [
+        "stick-rear-view"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 1.0
+      },
+      "text": "O quadro inteiro é um retrovisor: só os olhos de quem dirige cabem no vidro."
+    },
+    {
+      "section": "props",
+      "name": "Boia inflável",
+      "parts": [
+        "stick-swim-ring"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 7.5
+      },
+      "text": "Uma boia branca e colorida, amassada contra o vidro do carro."
+    },
+    {
+      "section": "props",
+      "name": "Seta do carro",
+      "parts": [
+        "stick-blinker"
+      ],
+      "shot": {
+        "episode": "turn-this-car",
+        "at": 4.5
+      },
+      "text": "A seta âmbar do painel, que acende a cada clique."
+    },
+    {
+      "section": "props",
+      "name": "Cartões de deixa",
+      "parts": [
+        "cue-cards"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 7.1
+      },
+      "text": "Uma pilha de cartões com a fala que ele quer ouvir."
+    },
+    {
+      "section": "props",
+      "name": "Duas notas",
+      "parts": [
+        "banknotes"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 12.0
+      },
+      "text": "Duas notas em leque, com o valor escrito."
+    },
+    {
+      "section": "props",
+      "name": "Blazer sobre roupão",
+      "parts": [
+        "robe-and-blazer"
+      ],
+      "shot": {
+        "episode": "the-reference",
+        "at": 2.0
+      },
+      "text": "O blazer por cima do roupão: a roupa de quem atende em casa."
+    },
+    {
+      "section": "props",
+      "name": "Relógio de parede, Soft",
+      "parts": [
+        "soft-wall-clock"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 6.8
+      },
+      "text": "O relógio redondo que o Bo olha antes de ceder."
+    },
+    {
+      "section": "props",
+      "name": "Livro infantil",
+      "parts": [
+        "soft-picture-book"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 13.0
+      },
+      "text": "O livro que escorrega do peito do Bo quando ele dorme."
+    },
+    {
+      "section": "props",
+      "name": "Abajur",
+      "parts": [
+        "soft-bedside-lamp"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 2.0
+      },
+      "text": "O abajur na mesa de cabeceira, aceso até o clique."
+    },
+    {
+      "section": "props",
+      "name": "Maleta aberta",
+      "parts": [
+        "soft-open-briefcase"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 1.0
+      },
+      "text": "A maleta aberta no edredom, com o contrato dentro."
+    },
+    {
+      "section": "props",
+      "name": "Aperto de mão",
+      "parts": [
+        "soft-handshake"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 11.0
+      },
+      "text": "O acordo em close: a mão pequena e a mão grande."
+    },
+    {
+      "section": "props",
+      "name": "Edredom puxado",
+      "parts": [
+        "soft-quilt-pull"
+      ],
+      "shot": {
+        "episode": "one-more-page",
+        "at": 19.9
+      },
+      "text": "O edredom sobe até o queixo de quem dormiu."
+    },
     {"section": "props", "name": "Who did this to you?", "parts": ["toon-paper-insert", "toon-pipe"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peças desenhadas para este reel: Folha escrita à mão em close; Cano que pinga e estoura."},
     {"section": "props", "name": "Who else has lost a night to one mosquito?", "parts": ["toon-mosquito", "toon-rolled-towel"], "shot": {"episode": "mosquito", "at": 9.8}, "text": "Peças desenhadas para este reel: Pernilongo em voo; Toalha enrolada na mão."},
     {"section": "props", "name": "How do you fold a fitted sheet?", "parts": ["toon-balled-sheets", "toon-folded-sheet", "toon-padlock", "toon-wrestled-sheet"], "shot": {"episode": "fitted-sheet", "at": 16.5}, "text": "Peças desenhadas para este reel: Avalanche de lençóis amassados; Lençol dobrado perfeito; Cadeado de latão; Lençol em luta."},
@@ -7845,7 +8729,7 @@
     {"section": "props", "name": "Who eats the last slice?", "parts": ["collage-cake-slice"], "shot": {"episode": "you-have-it", "at": 17.0}, "text": "Peças desenhadas para este reel: Fatia de bolo que divide."},
     {"section": "props", "name": "Better with one, or two?", "parts": ["collage-eye-chart", "collage-lens-frame"], "shot": {"episode": "eye-chart", "at": 14.0}, "text": "Peças desenhadas para este reel: Tabela de vista que focaliza; Armação de lentes de clínica."},
     {"section": "props", "name": "Why do automatic taps ignore you?", "parts": ["collage-sensor-tap"], "shot": {"episode": "sensor", "at": 17.0}, "text": "Peças desenhadas para este reel: Torneira com sensor."},
-    {"section": "props", "name": "Can anyone actually taste the difference?", "parts": ["collage-water-jug", "collage-wine-glass"], "shot": {"episode": "first-sip", "at": 18.0}, "text": "Peças desenhadas para este reel: Jarra de água com gelo; Taça de vinho."},
+    {"section": "props", "name": "Can anyone actually taste the difference?", "parts": ["collage-water-jug", "collage-full-glass"], "shot": {"episode": "first-sip", "at": 18.0}, "text": "Peças desenhadas para este reel: Jarra de água com gelo; Taça de vinho."},
     {"section": "props", "name": "Why does nobody ever tell you?", "parts": ["collage-spinach"], "shot": {"episode": "best-day", "at": 16.5}, "text": "Peças desenhadas para este reel: Folha de espinafre nos dentes."},
     {"section": "props", "name": "How much does a watch weigh?", "parts": ["collage-doctor-scale"], "shot": {"episode": "the-scale", "at": 24.8}, "text": "Peças desenhadas para este reel: Balança de consultório."},
     {"section": "props", "name": "Ever waved back at someone who wasn't waving at you?", "parts": ["stick-headset", "stick-poster"], "shot": {"episode": "wave-back", "at": 9.0}, "text": "Peças desenhadas para este reel: Headset de recepção; Pôster de parede."},
@@ -7859,6 +8743,46 @@
     {"section": "props", "name": "Has your chair ever done this in a meeting?", "parts": ["ballpoint", "chair-lever"], "shot": {"episode": "sinking-chair", "at": 23.2}, "text": "Peças desenhadas para este reel: Caneta esferográfica; Alavanca da cadeira."},
     {"section": "props", "name": "Who runs the grill at your family barbecue?", "parts": ["soft-bottle", "soft-grill", "soft-pizza-box", "soft-smoke", "soft-tongs"], "shot": {"episode": "the-tongs", "at": 12.35}, "text": "Peças desenhadas para este reel: Frasco de molho; Churrasqueira redonda; Caixa de pizza; Fumaça que sobe; Pegador de churrasco."},
     {"section": "props", "name": "Why does it always die the day after?", "parts": ["soft-bowling-ball", "soft-brick", "soft-coin-bag", "soft-dimmer", "soft-dust", "soft-home-fridge", "soft-tv", "soft-washer"], "shot": {"episode": "warranty", "at": 16.0}, "text": "Peças desenhadas para este reel: A bowling ball; A brick; A sack of coins; A room going dark; Falling dust; A fridge that dies; A TV that goes off; A washer that takes anything."},
-    {"section": "props", "name": "Why does it only happen in silent rooms?", "parts": ["soft-book", "soft-hush-finger", "soft-notice", "soft-rumble", "soft-yogurt"], "shot": {"episode": "quiet-please", "at": 11.3}, "text": "Peças desenhadas para este reel: A book; A raised finger; A notice on the wall; A rumbling belly; A yogurt."}
+    {"section": "props", "name": "Why does it only happen in silent rooms?", "parts": ["soft-book", "soft-hush-finger", "soft-notice", "soft-rumble", "soft-yogurt"], "shot": {"episode": "quiet-please", "at": 11.3}, "text": "Peças desenhadas para este reel: A book; A raised finger; A notice on the wall; A rumbling belly; A yogurt."},
+    {"section": "props", "name": "Roda solta que sai rolando", "parts": ["toon-loose-wheel"], "shot": {"episode": "the-noise", "at": 25.0}, "text": "A roda da frente larga o eixo e sai rolando, girando o tanto que anda; o carro cai sobre o eixo nu."},
+    {"section": "props", "name": "Abajur pequeno de brilho enorme", "parts": ["soft-glare-lamp"], "shot": {"episode": "still-bright", "at": 27.8}, "text": "Um abajur de doze dólares: a base cabe na mão, a luz toma metade do quadro."},
+    {"section": "props", "name": "Batedor minúsculo", "parts": ["soft-whisk"], "shot": {"episode": "free-shipping", "at": 15.5}, "text": "Um batedor minúsculo, erguido contra a luz."},
+    {"section": "props", "name": "Pilha de encomendas", "parts": ["soft-parcels"], "shot": {"episode": "free-shipping", "at": 15.5}, "text": "Encomendas empilhadas à mão até o teto."},
+    {"section": "props", "name": "Roteador de papel", "parts": ["collage-router"], "shot": {"episode": "its-gone", "at": 9.5}, "text": "O roteador de papel: luz com estados no tempo e um plugue que sai da tomada."},
+    {"section": "props", "name": "Balança de bagagem", "parts": ["stick-bag-scale"], "shot": {"episode": "four-coats", "at": 2.0}, "text": "Uma balança no piso do portão, com um mostrador vermelho que se lê no celular."},
+    {"section": "props", "name": "Bola de casacos", "parts": ["stick-coat-ball"], "shot": {"episode": "four-coats", "at": 15.5}, "text": "Tudo o que o passageiro tem, vestido: uma bola de casacos com chapéus, cachecóis e sapatos nos bolsos."},
+    {"section": "props", "name": "Palmeira", "parts": ["stick-palm"], "shot": {"episode": "four-coats", "at": 20.0}, "text": "Uma palmeira de tronco torto e sete folhas, na outra ponta do voo."},
+    {"section": "props", "name": "Caneta na corrente", "parts": ["pen-on-chain"], "shot": {"episode": "low-balance", "at": 28.3}, "text": "A caneta do balcão presa à corrente: segue a mão, para no fim da corrente e volta sozinha."},
+    {"section": "props", "name": "Cartaz de papel", "parts": ["paper-poster"], "shot": {"episode": "low-balance", "at": 3.0}, "text": "Um cartaz de papel colado na parede, meio torto, com o que você mandar escrever."},
+    {"section": "locations", "name": "Quarto com lua", "parts": ["stick-bedroom"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Um quarto de noite, com a lua na janela e alguém dormindo na cama."},
+    {"section": "props", "name": "Cadeira de cozinha", "parts": ["stick-chair"], "shot": {"episode": "the-chirp", "at": 2.5}, "text": "Uma cadeira de cozinha, de madeira, onde um personagem pode subir."},
+    {"section": "props", "name": "Detector de fumaça", "parts": ["stick-smoke-alarm"], "shot": {"episode": "the-chirp", "at": 9.5}, "text": "Um detector de fumaça cujo LED pisca quando ele apita."},
+    {"section": "props", "name": "Monte de terra", "parts": ["stick-mound"], "shot": {"episode": "the-chirp", "at": 20.0}, "text": "Um monte de terra fresca com uma pequena lápide."},
+    {"section": "props", "name": "Pá", "parts": ["stick-shovel"], "shot": {"episode": "the-chirp", "at": 20.0}, "text": "Uma pá comprida fincada no chão."},
+    {"section": "props", "name": "Lasanha de papel", "parts": ["collage-lasagna"], "shot": {"episode": "your-lasagna", "at": 18.5}, "text": "A lasanha inteira, de lado: massa, molho, queijo e a travessa."},
+    {"section": "props", "name": "Relógio que salta", "parts": ["jump-clock"], "shot": {"episode": "my-manager", "at": 4.6}, "text": "Um relógio de parede cujos ponteiros correm vinte minutos entre um plano e outro."},
+    {"section": "props", "name": "Sanduíche mordido", "parts": ["sandwich"], "shot": {"episode": "my-manager", "at": 24.3}, "text": "Um sanduíche com uma mordida a menos, para quem come escondido."},
+    {"section": "locations", "name": "Sala dos fundos", "parts": ["back-room"], "shot": {"episode": "my-manager", "at": 23.0}, "text": "Uma porta com plaqueta e, atrás dela, um armário com prateleiras, lâmpada nua e duas cadeiras dobráveis."},
+    {"section": "props", "name": "Cartão virável", "parts": ["collage-flip-card"], "shot": {"episode": "no-thanks", "at": 7.5}, "text": "Um cartão grande para ler em voz alta: o texto é medido e ele vira para o outro lado."},
+    {"section": "props", "name": "Mensagem na tela", "parts": ["stick-message-insert"], "shot": {"episode": "whats-your-split", "at": 18.4}, "text": "Uma mensagem de texto na tela inteira, grande o bastante para ler no celular."},
+    {"section": "props", "name": "Lupa de papel", "parts": ["collage-magnifying-glass"], "shot": {"episode": "nail-hole", "at": 1.5}, "text": "A lupa: aro, cabo e uma lente translúcida que deixa ver o que está por baixo."},
+    {"section": "props", "name": "Mesa de café", "parts": ["cafe-table"], "shot": {"episode": "scan-the-code", "at": 1.0}, "text": "Mesa com toalha xadrez até o chão; esconde quem está atrás."},
+    {"section": "props", "name": "Display de mesa", "parts": ["table-tent"], "shot": {"episode": "scan-the-code", "at": 3.0}, "text": "Display dobrado com QR e número da mesa."},
+    {"section": "props", "name": "Código QR", "parts": ["qr-code"], "shot": {"episode": "scan-the-code", "at": 14.2}, "text": "QR desenhado a partir da semente, aqui no avental da Ava."},
+    {"section": "props", "name": "Tela de celular", "parts": ["phone-screen"], "shot": {"episode": "scan-the-code", "at": 17.0}, "text": "Celular de frente, com tela legível."},
+    {"section": "props", "name": "Mão que entra", "parts": ["reaching-hand"], "shot": {"episode": "scan-the-code", "at": 15.5}, "text": "Braço que entra de fora do quadro, segurando o que carrega."},
+    {"section": "props", "name": "Tigela de sopa", "parts": ["soup-bowl"], "shot": {"episode": "scan-the-code", "at": 21.0}, "text": "Tigela larga de sopa de tomate, com colher."},
+    {"section": "props", "name": "Cardápio de papel", "parts": ["paper-menu"], "shot": {"episode": "scan-the-code", "at": 29.0}, "text": "Cardápio de uma folha, em pé ou deitado na mesa."},
+    {"section": "props", "name": "Bateria do celular", "parts": ["collage-battery-insert"], "shot": {"episode": "the-boat", "at": 20.2}, "text": "O celular em tela cheia: a bateria em um por cento, e depois o preto."},
+    {"section": "props", "name": "Bolhas subindo", "parts": ["rising-bubbles"], "shot": {"episode": "scan-the-code", "at": 27.2}, "text": "Bolhas que sobem pelo copo de água."},
+    {"section": "props", "name": "Respingo", "parts": ["water-splash"], "shot": {"episode": "scan-the-code", "at": 26.8}, "text": "Gotas jogadas para cima que caem de volta."},
+    {"section": "props", "name": "Colírio", "parts": ["toon-eye-drops"], "shot": {"episode": "someone-else", "at": 21.0}, "text": "O frasco entra sobre o rosto e duas gotas caem no olho: de onde vêm as lágrimas."},
+    {"section": "props", "name": "Vidro da recepção", "parts": ["toon-reception-glass"], "shot": {"episode": "arrive-early", "at": 4.0}, "text": "O vidro de correr com o furo de falar: quem está atrás dele manda."},
+    {"section": "graphics", "name": "Barra de áudio", "parts": ["toon-voice-note-bar"], "shot": {"episode": "voice-note", "at": 3.0}, "text": "O áudio de onze minutos: a barra enche devagar e o tempo aparece grande o bastante para ler no celular."},
+    {"section": "props", "name": "Gaivota que encara", "parts": ["toon-gull-stare"], "shot": {"episode": "full-coverage", "at": 1.0}, "text": "A cabeça da gaivota vira devagar até um olho encontrar você."},
+    {"section": "graphics", "name": "Lista de Wi-Fi", "parts": ["toon-wifi-list"], "shot": {"episode": "network-names", "at": 1.0}, "text": "A lista de redes, em letras que dão para ler no celular; o nome que mudou acende."},
+    {"section": "props", "name": "Chuva", "parts": ["toon-rain"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "Chuva em laço, atrás do que estiver na frente dela."},
+    {"section": "props", "name": "Anão de jardim", "parts": ["toon-gnome"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "O anão de jardim da foto da entrega."},
+    {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."}
   ]
 }

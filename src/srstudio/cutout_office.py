@@ -116,6 +116,7 @@ def drip_machine(
     "office-mug",
     style="cutout",
     summary="A plain office mug in any colour, with up to eight characters of lettering",
+    examples=('from srstudio import get\nmug = get("prop", "office-mug")(ep.cv, ep.comp, label="TEA")',),
 )
 def office_mug(
     cv: Canvas,

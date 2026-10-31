@@ -26,6 +26,7 @@ import io
 import itertools
 import json
 import math
+import re
 import subprocess
 import urllib.error
 import urllib.parse
@@ -460,6 +461,7 @@ TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text wri
 
 
 MAX_READINGS = 4096  # readings of one text compared at most: each digit string has up to three
+ON_THE_HOUR = re.compile(r"\b(1[0-2]|0?[1-9]):00\b")  # speech-to-text writes a spoken "three a.m." as "3:00 AM"
 
 
 def _tokens(text: str) -> list[str]:
@@ -496,11 +498,12 @@ def _readings(text: str) -> set[str]:
 
 def check_transcript(transcript: Transcript, expected: str, accepted: Sequence[str] = ()) -> None:
     """The heard words equal the scripted words, ignoring case, punctuation and number spelling: a digit string
-    reads as its cardinal or digit by digit ("1028" is "one oh two eight" too). A compound may be heard split or
-    joined ("well-being" for "wellbeing"): the letters must still match in order. ``accepted`` lists hearings the
-    operator approved for this line (a homophone the recognizer cannot tell apart), each compared the same way;
-    anything else is still a mismatch."""
-    heard = _readings(transcript.text)
+    reads as its cardinal or digit by digit ("1028" is "one oh two eight" too), and a heard clock on the hour as the
+    hour ("3:00 AM" is "three a.m." too, "3:30 AM" is not). A compound may be heard split or joined ("well-being" for
+    "wellbeing"): the letters must still match in order. ``accepted`` lists hearings the operator approved for this
+    line (a homophone the recognizer cannot tell apart), each compared the same way; anything else is still a
+    mismatch."""
+    heard = _readings(transcript.text) | _readings(ON_THE_HOUR.sub(r"\1", transcript.text))
     for text in (expected, *accepted):
         if heard & _readings(text):
             return

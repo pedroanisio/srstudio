@@ -130,7 +130,7 @@ STAGING = Staging(
     sets={"jun": ROOM, "omar": ROOM, "kai": ROOM},
     dress=dress,
     cast=casting,
-    push=PUSH,
+    first_shot_push=PUSH,
     bitrate=BITRATE,
     sounds=sounds,
 )

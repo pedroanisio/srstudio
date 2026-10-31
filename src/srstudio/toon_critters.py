@@ -1233,6 +1233,11 @@ CRITTERS = {"sloth": SLOTH, "goat": GOAT, "hamster": HAMSTER}
     "toon-sloth",
     summary="A droopy olive sloth at the desk: a pale face with dark stripes down from the eyes, shaggy crown, long "
     "clawed arms, its own yawn; pressed ink, a tilted head, blinks and lip sync",
+    examples=(
+        'from srstudio import get\nfrom srstudio.toon import Pose\n'
+        'poses = [Pose(0, "sleepy", "flat", "desk"), Pose(1, "wide", "yawn", "sigh")]\n'
+        'groups = get("character", "toon-sloth")(ep.cv, ep.comp, poses, duration=2)',
+    ),
 )
 def sloth(
     cv: Canvas,
@@ -1246,6 +1251,11 @@ def sloth(
     *,
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
+    """Draw srstudio.toon.Pose(start, eyes, mouth, arms) states using srstudio.toon.EYES, MOUTHS and ARMS names.
+
+    Pose starts are seconds relative to enter; the first is zero. Enter, duration (the exit time), taps and
+    mouths use project seconds. Optional limbs are typed LimbTracks on the project clock. Returns pose groups.
+    """
     return figure(cv, parent, SLOTH, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
 
 
@@ -1254,6 +1264,11 @@ def sloth(
     "toon-goat",
     summary="A wiry lilac goat at the desk: back-swept horns, sideways ears, a long pale muzzle and beard, bar pupils, "
     "its own scream; pressed ink, a tilted head, blinks and lip sync",
+    examples=(
+        'from srstudio import get\nfrom srstudio.toon import Pose\n'
+        'poses = [Pose(0, "half", "flat", "desk"), Pose(1, "shock", "scream", "sigh")]\n'
+        'groups = get("character", "toon-goat")(ep.cv, ep.comp, poses, duration=2)',
+    ),
 )
 def goat(
     cv: Canvas,
@@ -1267,6 +1282,11 @@ def goat(
     *,
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
+    """Draw srstudio.toon.Pose(start, eyes, mouth, arms) states using srstudio.toon.EYES, MOUTHS and ARMS names.
+
+    Pose starts are seconds relative to enter; the first is zero. Enter, duration (the exit time), taps and
+    mouths use project seconds. Optional limbs are typed LimbTracks on the project clock. Returns pose groups.
+    """
     return figure(cv, parent, GOAT, poses, duration, taps, enter, stickers, mouths, limbs=limbs)
 
 
@@ -1275,6 +1295,11 @@ def goat(
     "toon-hamster",
     summary="A small round apricot hamster at the desk: cream cheek pouches and belly, round ears, beady eyes, tiny "
     "paws, its own puffed cheeks; pressed ink, a tilted head, blinks and lip sync",
+    examples=(
+        'from srstudio import get\nfrom srstudio.toon import Pose\n'
+        'poses = [Pose(0, "wide", "flat", "desk"), Pose(1, "narrow", "puff", "crossed")]\n'
+        'groups = get("character", "toon-hamster")(ep.cv, ep.comp, poses, duration=2)',
+    ),
 )
 def hamster(
     cv: Canvas,
@@ -1288,4 +1313,9 @@ def hamster(
     *,
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
+    """Draw srstudio.toon.Pose(start, eyes, mouth, arms) states using srstudio.toon.EYES, MOUTHS and ARMS names.
+
+    Pose starts are seconds relative to enter; the first is zero. Enter, duration (the exit time), taps and
+    mouths use project seconds. Optional limbs are typed LimbTracks on the project clock. Returns pose groups.
+    """
     return figure(cv, parent, HAMSTER, poses, duration, taps, enter, stickers, mouths, limbs=limbs)

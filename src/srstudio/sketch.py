@@ -38,11 +38,13 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
+from .hearing import blind_lines
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
 __all__ = [
+    "PHONE_SPEAKER",
     "SketchError",
     "Speaker",
     "Line",
@@ -91,6 +93,7 @@ LIP_SYNCED = (
     "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
+LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it
@@ -116,6 +119,10 @@ VISEME_OF = {
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
+# what a phone's small speaker leaves of a voice: the speech band, a little pushed
+PHONE_SPEAKER = "highpass=f=380,highpass=f=380,lowpass=f=3000,lowpass=f=3000,volume=4dB"
+
+
 class SketchError(SrstudioError, ValueError):
     """The sketch (or a placement or recording of it) is inconsistent."""
 
@@ -133,11 +140,15 @@ class Speaker:
 @dataclass(frozen=True)
 class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
-    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest."""
+    or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
+    ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
+    as it was said, and only the audio in the reel is band-limited. ``gain`` plays it quieter than the others, within
+    :data:`LINE_LEVELS`."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
+    phone: bool = False
     gain: float = 0.0  # dB under the other lines, zero or less: a line said low, set in the mix on its take
 
 
@@ -196,6 +207,10 @@ class Sketch:
     beats: tuple[Beat, ...]
     end: float
     cast: Cast = TOON_CAST
+    tail: float = (
+        TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
+    )
+    bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
 
 
 @dataclass(frozen=True)
@@ -216,15 +231,20 @@ def check(sketch: Sketch) -> None:
     names = [s.name for s in sketch.speakers]
     if not names or len(set(names)) != len(names):
         raise SketchError("speakers need distinct names")
+    if not (checks.number(sketch.tail) and sketch.tail >= 0):
+        raise SketchError(f"tail {sketch.tail!r} must be a non-negative number of seconds")
     cast = sketch.cast
     played = [s.character for s in sketch.speakers if s.character is not None]
     if any(c not in cast.characters for c in played) or len(set(played)) != len(played):
         raise SketchError(f"speakers play distinct characters among {cast.characters}, not {played}")
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
-    if any(not (checks.number(line.gain) and line.gain <= 0) for line in sketch.lines):
-        raise SketchError("a line's gain is zero or less: the other lines set the level")
     for i, line in enumerate(sketch.lines):
+        if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
+            raise SketchError(
+                f"line {i}: a line's gain is zero or less, within {LINE_LEVELS} dB: the other lines set the level, "
+                f"got {line.gain!r}"
+            )
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -719,8 +739,12 @@ def record(
     """Every line said by its speaker's voice (cached by the client), trimmed, placed at its own pace, heard back
     and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and, under ``voiced/``, the viseme tracks, read
     with ``mouth``, and the kept takes (:func:`load_speech`).
-    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried)."""
+    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried), and refuses a
+    line no transcript could confirm (:func:`~srstudio.hearing.blind_lines`) before the first take is paid for."""
     check(sketch)
+    blind = blind_lines(sketch.lines)
+    if blind:
+        raise SketchError("reword these lines or pass heard=(...) on them:\n" + "\n".join(blind))
     root = Path(root)
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
@@ -753,6 +777,7 @@ def record(
             continue
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
+        colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
             spoken.wav,
             dst,
@@ -761,6 +786,7 @@ def record(
             kept,
             gain_to_peak(trim.peak, VOICE_PEAK) + line.gain,
             ffmpeg,
+            **colour,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
@@ -789,7 +815,7 @@ def record(
     if failures:
         raise SketchError("speech check failed:\n" + "\n".join(failures))
     beats = place(sketch, word_starts, [p.end for p in placed])
-    end = round(max(needed, beats[-1].start + TAIL_AFTER_LAST), 6)
+    end = round(max(needed, beats[-1].start + sketch.tail), 6)
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)

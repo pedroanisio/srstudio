@@ -8,7 +8,7 @@ from sr_core.scene import Scene
 from srstudio import CAFE, OFFICE, Canvas, Episode, EpisodeSpec, cast, locations, signature
 from srstudio.canvas import Signature
 from srstudio.limbs.compile import BakeOptions, Occlusion
-from srstudio.limbs.integration import LimbTrack, legacy_action
+from srstudio.limbs.integration import LimbTrack, legacy_action, prepare_tracks
 from srstudio.limbs.model import HUMAN, ArmProfile, LimbError
 from srstudio.limbs.motion import Action, Motion
 from srstudio.limbs.projection import Camera
@@ -48,6 +48,34 @@ def test_episode_perform_passes_typed_tracks_to_the_rig_instead_of_hiding_them_i
     ep.perform(actor, ep.comp, 500, 700, 1, mouth=[(0, "rest")], limbs=(track(),))
     xml = ET.fromstring(ep.scene.to_bytes())
     assert xml.find(f".//group[@id='{actor.tag}-limb-right-front']") is not None
+
+
+def test_track_preflight_uses_the_scene_fps():
+    from dataclasses import replace
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=2)
+    result = prepare_tracks(Canvas(scene), (replace(track(), options=BakeOptions()),), 2)
+    assert result[0].options.fps == 30
+
+
+def test_cutout_replacement_arm_remains_visible_after_its_gesture(tmp_path, scene_render):
+    import json
+    import subprocess
+    from dataclasses import replace
+
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=2)
+    cv = Canvas(scene)
+    short = replace(track(), motion=Motion(ArmProfile(width=0.05), HUMAN, (Action("facepalm", 0, 1),)), occlusion=())
+    cast.Manager(cv).build(cv.comp, 500, 700, 1, Performance(limbs=(short,)))
+    path = tmp_path / 'cutout.xml'
+    path.write_bytes(scene.to_bytes())
+    result = subprocess.run(
+        [str(scene_render), 'eval', str(path), '--time', '1.5', '--json'], capture_output=True, text=True, check=True
+    )
+    nodes = json.loads(result.stdout)['result']['nodes']
+    assert any('-frame-' in n['id'] and n.get('opacity', 0) > 0.5 for n in nodes)
 
 
 def test_legacy_gesture_names_have_explicit_conversion_and_conflicting_controls_fail():

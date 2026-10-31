@@ -191,6 +191,16 @@ def test_a_bare_who_gets_no_figure(pinned_fonts, tmp_path):
     assert len(list(bare.iter())) < len(list(full.iter()))
 
 
+def test_a_sketch_can_name_its_bare_shots_itself(pinned_fonts, tmp_path):
+    st = replace(silent(stage_sketch()), dress=lambda shot: None)
+    declared = replace(st, sketch=replace(st.sketch, bare=("bear",)))
+    (tmp_path / "staging").mkdir()
+    (tmp_path / "sketch").mkdir()
+    on_staging = built(tmp_path / "staging", replace(st, bare=("bear",)), pinned_fonts)[1]
+    on_sketch = built(tmp_path / "sketch", declared, pinned_fonts)[1]
+    assert len(list(on_sketch.iter())) == len(list(on_staging.iter()))
+
+
 def test_an_overlay_is_drawn_once_over_every_shot_and_under_the_captions(pinned_fonts, tmp_path):
     order, seen = [], []
 

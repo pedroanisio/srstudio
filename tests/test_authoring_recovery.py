@@ -66,3 +66,14 @@ def test_failed_finish_writes_the_report_without_creating_scene_directory(projec
         ep.finish(out=out, report=report)
     assert not out.parent.exists()
     assert any(finding["severity"] == "error" for finding in json.loads(report.read_text()))
+
+
+def test_failed_finish_keeps_an_empty_directory_it_did_not_create(project, tmp_path):
+    ep = episode(project)
+    ep.comp.add_group(id="duplicate")
+    ep.comp.add_group(id="duplicate")
+    out = tmp_path / "scenes" / "scene.xml"
+    out.parent.mkdir()
+    with pytest.raises(SceneCheckError):
+        ep.finish(out=out, report=tmp_path / "reports" / "checks.json")
+    assert out.parent.is_dir()

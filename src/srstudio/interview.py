@@ -66,9 +66,9 @@ from .voice import (
 
 RATE = 48000
 FPS = 30
+LEVELS = (-12.0, 0.0)  # how far under the dialogue a line may sit; nothing rises above it, the peak stays VOICE_PEAK
 VOICE_PEAK = 0.78  # the loudest moment of the dialogue, before the master's loudness pass
 ROOM_TONE = 0.00018  # standard deviation of the room tone
-MIN_LINE_GAIN = -24.0  # the furthest a line sits under the others, in dB: below this it is gone, not quiet
 _ID = re.compile(r"[a-z][a-z0-9-]*\Z")
 
 
@@ -105,6 +105,34 @@ class Schedule:
 
     lines: Sequence[float]
     effects: Mapping[str, float]
+
+
+def beats(speech: Sequence[float], start: float, gaps: Sequence[float]) -> Schedule:
+    """Lines one after another: the first at ``start``, each next one ``gaps[i]`` seconds after line ``i`` ends. A
+    reel's schedule is then its pauses, read in a column, and a slow take moves everything after it."""
+    if len(gaps) != len(speech) - 1:
+        raise InterviewError(f"{len(speech)} lines have {len(speech) - 1} gaps between them, got {len(gaps)}")
+    if not checks.number(start) or start < 0 or any(not checks.number(g) or g < 0 for g in gaps):
+        raise InterviewError(f"a start and its gaps are non-negative seconds, got {start!r} and {list(gaps)!r}")
+    cursor, starts = start, []
+    for i, length in enumerate(speech):
+        starts.append(cursor)
+        cursor += length + (gaps[i] if i < len(gaps) else 0.0)
+    return Schedule(starts, {})
+
+
+def chain(start: float, **gaps: float) -> dict[str, float]:
+    """Named beats one after another: the first ``gaps`` seconds after ``start``, each next one its gap after the last.
+    A wordless stretch of a reel then reads as a column, and moving one beat moves everything after it."""
+    if not checks.number(start) or start < 0 or not gaps:
+        raise InterviewError(f"a chain starts at a time and has beats, got {start!r} and {list(gaps)!r}")
+    cursor, beats_at = start, {}
+    for name, gap in gaps.items():
+        if not checks.number(gap) or gap < 0:
+            raise InterviewError(f"beat {name!r} comes a non-negative number of seconds later, got {gap!r}")
+        cursor += gap
+        beats_at[name] = cursor
+    return beats_at
 
 
 @dataclass(frozen=True)
@@ -154,8 +182,8 @@ class Interview:
                 raise InterviewError(f"line {i}: seed must be an integer in 0..2**32-1, got {line.seed!r}")
             if not isinstance(line.heard, tuple) or not all(isinstance(h, str) and h.strip() for h in line.heard):
                 raise InterviewError(f"line {i}: heard must be a tuple of non-empty strings, got {line.heard!r}")
-            if not (checks.number(line.gain) and MIN_LINE_GAIN <= line.gain <= 0):
-                raise InterviewError(f"line {i}: gain must be {MIN_LINE_GAIN}..0 dB, got {line.gain!r}")
+            if not (checks.number(line.gain) and LEVELS[0] <= line.gain <= LEVELS[1]):
+                raise InterviewError(f"line {i}: gain must be within the mix's levels {LEVELS} dB, got {line.gain!r}")
             try:
                 self.voices[line.role].voice_settings(line.speed)
             except SongError as exc:

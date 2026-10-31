@@ -81,7 +81,12 @@ def meeting(cv: Canvas, parent) -> None:
 
 
 # -- props ------------------------------------------------------------------------------------------------------------
-@register("prop", "toon-mug", summary="A coffee mug on the desk, steaming while asked")
+@register(
+    "prop",
+    "toon-mug",
+    summary="A coffee mug on the desk, steaming while asked",
+    examples=('from srstudio import get\nget("prop", "toon-mug")(ep.cv, ep.comp, steam=[(0.1, 0.3)])',),
+)
 def mug(cv: Canvas, parent, x: float = 350, steam: Sequence[tuple[float, float]] = ()) -> None:
     """The mug stands on the desk top with its handle to the right; ``steam`` lists the spans its wisps show."""
     if any(not (checks.number(a) and checks.number(b) and 0 <= a < b) for a, b in steam):

@@ -26,7 +26,7 @@ import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from functools import partial
+from functools import cache, partial
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +85,7 @@ class Shot:
     light: object | None = None  # a lit staging's light layer, between the character and the desk (ADR 0043)
     versions: Mapping[str, int] = field(default_factory=dict)  # the pins, for a further character drawn in the shot
     mouths: Mapping[str, Sequence[tuple[float, str]]] = field(default_factory=dict)  # for a figure the dress draws
+    said: Callable[[], Sequence[tuple[str | None, head_motion.Speech]]] = tuple  # the takes, for a head the dress draws
 
     def badges(self, texts: Mapping[str, str], ended: str = CALL_ENDED, event: str = "hangup") -> None:
         for a, b, text in badge_spans(self.beats, self.app, texts, ended, event):
@@ -136,6 +137,7 @@ class Staging:
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
     character's seat, so a figure can bend, sink or sway while its set stays put."""
@@ -165,6 +167,19 @@ def check_heads(sk: sketch.Sketch, heads: Sequence[str], versions: Mapping[str, 
             raise StagingError(f"heads names {who!r}, who is not in this sketch ({sorted(shown)})")
 
 
+def spoken_takes(root: Path, sk: sketch.Sketch, voiced: bool) -> list[tuple[str | None, head_motion.Speech]]:
+    """Who said each take of ``voiced/speech.json`` and the take as head motion reads it; in a silent build, nothing."""
+    if not voiced:
+        return []
+    path = root / "voiced" / "speech.json"
+    if not path.is_file():
+        raise StagingError(f"heads need {path}, written by the recording run: record again")
+    takes, end = sketch.load_speech(path, sk.cast)
+    if end != sk.end:
+        raise StagingError(f"voiced/speech.json runs {end} s, voiced/beats.json {sk.end} s: record again")
+    return [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
+
+
 def head_plans(
     root: Path, sk: sketch.Sketch, heads: Sequence[str], voiced: bool, versions: Mapping[str, int]
 ) -> dict[str, tuple[toon_head.HeadRig, head_motion.HeadPlan]]:
@@ -172,15 +187,7 @@ def head_plans(
     of ``voiced/speech.json``, its own lines to speak and everyone else's to hear; in a silent one, idle."""
     if not heads:
         return {}
-    spoken: list[tuple[str | None, head_motion.Speech]] = []
-    path = root / "voiced" / "speech.json"
-    if voiced:
-        if not path.is_file():
-            raise StagingError(f"heads need {path}, written by the recording run: record again")
-        takes, end = sketch.load_speech(path, sk.cast)
-        if end != sk.end:
-            raise StagingError(f"voiced/speech.json runs {end} s, voiced/beats.json {sk.end} s: record again")
-        spoken = [(t.who, head_motion.speech_of(t.alignment, t.at, root / "audio" / f"vo-{t.id}.wav")) for t in takes]
+    spoken = spoken_takes(root, sk, voiced)
     out = {}
     for who in heads:
         rig = _rig(who, versions)
@@ -246,6 +253,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
     heads = head_plans(root, sk, staging.heads, voiced, staging.versions)
+    said = cache(partial(spoken_takes, root, sk, voiced))  # read once, and only by a dress that asks
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
@@ -297,17 +305,18 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         raise StagingError(f"the {staging.style.name} style has no font to measure its captions in")
     font = (root / staging.style.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
+    bare = {*staging.bare, *sk.bare}
     for n, app in enumerate(sketch.appearances(sk.beats, sk.end), 1):
         g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
-        extra = {} if app.who in staging.bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
+        extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
         if app.who in staging.moves:
             x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
             body = cv.group(body, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
             staging.moves[app.who](cv, body, app, sk.beats)
-        if app.who in staging.bare:
+        if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:
             rig, plan = heads[app.who]
@@ -320,7 +329,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         light = cv.group(g, cv.uid("g")) if staging.lit else None
         staging.desk(cv, g)
         front = cv.group(g, cv.uid("g"))
-        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions, mouths)
+        shot = Shot(cv, app, back, front, sk.beats, sk.end, measure, light, staging.versions, mouths, said)
         staging.dress(shot)
         if staging.camera is not None:
             staging.camera(shot, g)
@@ -337,7 +346,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
         toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
     if voiced:
-        ep.audio(narration=manifest)
+        ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)

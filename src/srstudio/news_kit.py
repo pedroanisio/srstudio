@@ -1,5 +1,8 @@
 """The news kit: the desk, the two anchors and the graphics of News Compiler, the parody desk (ADR 0060).
 
+Version 1 of the show's drawings, which stay drawable, and everything the versions share. A new reel draws
+:mod:`srstudio.news_inked`, version 2 of the set, the anchors and the graphics, and takes :func:`finish` from here.
+
 A show is not a style of its own here, as with :mod:`srstudio.mind_kit`: :data:`NEWS` is Toon's frame and recording
 road on its own clock, master and letters, and everything in this module wears the show's palette. Every episode is a
 script, two voices and one graphic, so the kit holds what repeats:
@@ -98,6 +101,7 @@ GRADE: dict[str, dict[str, Any]] = {  # over every shot: a little lift on the sc
 FAR_BLUR = 2.2  # px on the monitor wall
 
 DESK_Y = 1120.0  # the desk's top edge, which a framing keeps in place
+ANCHORS = ("vera", "gus")
 NECK_Y, CHIN_Y = -170.0, -40.0  # a bust's neck, and the point of the head drawing that sits on it
 FRAMING: dict[str, tuple[float, float]] = {"vera": (540.0, 1.34), "gus": (560.0, 1.22)}  # close shots: x, scale
 TWO_SHOT: dict[str, float] = {"vera": 290.0, "gus": 780.0}
@@ -117,7 +121,7 @@ MOUTH_RATE = 0.2  # the silent master's stand-in for speech, seconds per mouth
 BLINK = 0.12
 VISEMES = ("closed", "open", "round", "teeth")
 EXPRESSIONS = ("flat", "grin", "gape", "frown", "smirk", *VISEMES)  # a mouth at rest, or "talk" for the track
-EYES = ("level", "side", "wide", "shut", "down", "over", "squint")
+EYES = ("level", "side", "wide", "shut", "down", "over", "squint", "weep")
 ARMS = ("rest", "up", "chest", "point", "phone")
 _DATE = re.compile(r"[A-Z][a-z]{2} [0-9]{1,2}, 20[0-9]{2}")
 _BANNED = re.compile(
@@ -221,11 +225,31 @@ class Pose:
 
 
 @dataclass(frozen=True)
+class Hold:
+    """From its beat, ``who`` stays facing ``to`` (the other anchor, or ``"camera"``) until the next beat whose event is
+    ``until``, whatever is said meanwhile: an override of how version 2 turns the heads (:mod:`srstudio.news_head`)."""
+
+    who: str
+    to: str
+    until: str
+
+    def __post_init__(self) -> None:
+        if self.who not in ANCHORS:
+            raise NewsKitError(f"a hold is on one of {ANCHORS}, got {self.who!r}")
+        if self.to == self.who or self.to not in (*ANCHORS, "camera"):
+            raise NewsKitError(f"{self.who} faces the other anchor or the camera, got {self.to!r}")
+        if not self.until:
+            raise NewsKitError(f"{self.who}'s hold needs an until: the event of the beat that ends it")
+
+
+@dataclass(frozen=True)
 class Act:
-    """Both anchors through one beat. A beat of a sketch holds one figure's pose, and a two-shot has two."""
+    """Both anchors through one beat. A beat of a sketch holds one figure's pose, and a two-shot has two. ``holds`` are
+    the turns this beat starts that the speech alone would not make."""
 
     vera: Pose = Pose()
     gus: Pose = Pose()
+    holds: tuple[Hold, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -424,7 +448,7 @@ GUS_FACE = Face(
 
 def _eye(cv: Canvas, parent, face: Face, side: float, state: str) -> None:
     x, y, r = side * face.eye_x, face.eye_y, face.eye_r
-    if state == "shut":
+    if state in ("shut", "weep"):  # the first drawing has no tears
         _stroke(cv, parent, f"M {x - r} {y + 2} Q {x} {y + 10} {x + r} {y + 2}", PLUM_DEEP, 5.0)
         return
     wide = 1.28 if state == "wide" else 1.0

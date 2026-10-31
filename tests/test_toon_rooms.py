@@ -47,6 +47,25 @@ def canvas(signed: bool = True) -> Canvas:
     )
 
 
+def test_frozen_room_level_does_not_change(tmp_path, scene_render):
+    cv = canvas()
+    with cv.frozen():
+        group = toon_rooms._level(cv, cv.comp, [(0, 0.0, 'hold'), (0.5, 1.0, 'hold')])
+    path = tmp_path / 'level.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    values = []
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        values.append(next(n['opacity'] for n in nodes if n['id'] == group.id))
+    assert values == pytest.approx([0, 0])
+
+
 def tree(node) -> ET.Element:
     return ET.fromstring(node.scene.to_bytes(layout="pretty")) if isinstance(node, Canvas) else node
 

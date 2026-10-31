@@ -43,6 +43,7 @@ from . import (
     ink_phone,
     map_kit,
     mind_kit,
+    news_inked,
     news_kit,
     parts,
     registry,
@@ -288,6 +289,22 @@ RECIPES: dict[str, Recipe] = {
     "collage-snapshot": Recipe(part(360, 760, 360)),
     "collage-gust": Recipe(part((200, 1200), (800, 700), 0.0, SECONDS)),
     "collage-bill": Recipe(part("RENT", 540, 960)),
+    "collage-handset": Recipe(part(540, 960)),
+    "collage-desk-phone": Recipe(part(540, 1300, 460, "PARIS", size=56)),
+    "collage-resume": Recipe(part(540, 960, 520)),
+    "collage-fork": Recipe(part(540, 960, tilt=20.0)),
+    "collage-gravy-boat": Recipe(part(540, 1200, 460)),
+    "collage-tiny-cup": Recipe(part(540, 1100, 200)),
+    "collage-wine-glass": Recipe(part(540, 1200, 420)),
+    "collage-bank-card": Recipe(part(540, 960, 520, "GARY")),
+    "collage-receipt": Recipe(part(540, 960, torn=True)),
+    "collage-wallet": Recipe(part(540, 960)),
+    "collage-counter": Recipe(part(1300)),
+    "collage-till": Recipe(part(540, 1200, 420, "PAID", size=64)),
+    "collage-stool": Recipe(part(540, 1000, 480)),
+    "collage-towel": Recipe(part(540, 700)),
+    "collage-ring-corner": Recipe(part()),
+    "collage-eye-twitch": Recipe(part("brent", (0.2, 0.8))),
     "collage-confetti": Recipe(part(0.0, SECONDS)),
     "collage-arm": Recipe(part("deb", (760, 1500), (420, 900))),
     "collage-tv": Recipe(part(300, 700, 480)),
@@ -302,6 +319,9 @@ RECIPES: dict[str, Recipe] = {
     "saga-holo": Recipe(typeset((saga_sets.Panel(0.0, "Ship's Log", "All systems nominal."),))),
     "soft-cake": Recipe(part("WE'LL MISS\nYOU", x=540, y=1000)),
     "soft-cane": Recipe(part(540, 1200)),
+    "soft-parcels": Recipe(part(120, 1500)),
+    "soft-whisk": Recipe(part(540, 1100, scale=4)),
+    "soft-glare-lamp": Recipe(part(540, 1400)),
     "soft-briefcase": Recipe(part(540, 900)),
     "soft-hive": Recipe(part(540, 1200)),
     "soft-necktie": Recipe(part(540, 900)),
@@ -318,6 +338,15 @@ RECIPES: dict[str, Recipe] = {
     "stick-cockpit": Recipe(part((stick.RigKey(0, "drive"),), SECONDS)),
     "stick-laptop": Recipe(part(540, 960, title="Sent", rows=("Re: budget", "Re: lunch"), badge="40")),
     "stick-phone": Recipe(part(sender="Boss", text="One more thing...")),
+    "stick-bag-scale": Recipe(part(540, 1500, ((0.0, "23.4"), (2.0, "22.9")), SECONDS)),
+    "stick-coat-ball": Recipe(part(540, 700, 320, layers=4, hats=3, scarves=3, trousers=True, shoes=True)),
+    "stick-palm": Recipe(part(540, 1500)),
+    "stick-bedroom": Recipe(part()),
+    "stick-message-insert": Recipe(part(sender="MOM", text="We need to talk.")),
+    "stick-chair": Recipe(part(540, 1500)),
+    "stick-smoke-alarm": Recipe(part(540, 960, scale=2.0)),
+    "stick-mound": Recipe(part(540, 1300, words="ALL 5")),
+    "stick-shovel": Recipe(part(540, 1300)),
     "stick-murphy-bed": Recipe(part(SECONDS)),
     "stick-gym-counter": Recipe(part(sign="NO REFUNDS*", fine="*EVER")),
     "stick-kiosk": Recipe(part((stick_shop.Screen(0.0, "Place item in the bagging area"),), SECONDS)),
@@ -414,9 +443,19 @@ RECIPES: dict[str, Recipe] = {
         lettered(news_kit.Source("The Outlet", "Oct 30, 2026", "A headline, word for word"), 0.0, 1.8, SECONDS)
     ),
     "news-lower-third": Recipe(lettered("THE KICKER", "ONE LINE OF THE STORY", 0.0, SECONDS)),
+    "news-missing-card": Recipe(lettered("ONE LID", 0.0, SECONDS)),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
+    "news-route": Recipe(
+        lettered(
+            "The Map",
+            ((80.0, 560.0), (300.0, 340.0), (560.0, 120.0)),
+            (news_inked.Pin(560.0, 120.0, "HOME", news_kit.MINT),),
+            0.0,
+            SECONDS,
+        )
+    ),
     "host-label": Recipe(lettered("THE GROUP CHAT HAS RULES", 0.0, SECONDS)),
     "host-sign-off": Recipe(lettered("You know what you did.", 0.0, SECONDS)),
     "host-screen": Recipe(lettered("The Group Chat", (host_kit.Bubble("haha"),), 0.0, SECONDS)),
@@ -450,6 +489,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
     "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
     "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s
+    "water-splash": Recipe(part(), at=0.2),  # every bead has fallen back by 0.48 s
     # -- graphics -------------------------------------------------------------------------------------------------
     "signature-code": Recipe(part(540, 960, height=40)),
     "episode-slate": Recipe(part("08", "CAMERA OFF"), at=0.4),  # it fades out by one second
@@ -484,6 +524,8 @@ RECIPES: dict[str, Recipe] = {
         ("My dad works from home.", "He wears a tie on top."), title="My Dad", by="Sam", shown=2)),
     "toon-toast": Recipe(part((toon_props.Toast(0.0, SECONDS, "Fern", "Are you free?"),))),
     "toon-board-text": Recipe(part("LOGO v1")),
+    "toon-scribble": Recipe(part(((0.0, SECONDS),))),
+    "toon-soup-tubs": Recipe(part(((0.0, 3),), end=SECONDS)),
     "toon-badge": Recipe(part("Fern calling", 0.0, SECONDS, lambda text: 16.0 * len(text))),
     "glasses-glint": Recipe(part(((506.0, 942.0), (576.0, 942.0)), scale=1.0), at=0.5),
     "collage-cake-slice": Recipe(part(540.0, 960.0, (1.0, 2.0))),
@@ -491,13 +533,28 @@ RECIPES: dict[str, Recipe] = {
     "collage-lens-frame": Recipe(part(540.0, 960.0)),
     "collage-sensor-tap": Recipe(part(540.0, 960.0, ((0.0, SECONDS),))),
     "collage-spinach": Recipe(part(540.0, 960.0, 300.0)),
-    "collage-wine-glass": Recipe(part(540.0, 1100.0)),
+    "collage-full-glass": Recipe(part(540.0, 1100.0)),
     "collage-water-jug": Recipe(part(540.0, 1100.0)),
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
     "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
 }  # fmt: skip
+RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
+    {
+        f"{name}@2": RECIPES[name]
+        for name in (
+            "news-captions",
+            "news-bug",
+            "news-parody-tag",
+            "news-source-card",
+            "news-lower-third",
+            "news-banner",
+            "news-ticker",
+            "news-phone",
+        )
+    }
+)
 
 FIRST_POSE = Recipe(lambda cv, g, e, ctx: None, at=0.0)  # a character's drawing is srstudio.specimens' alone
 REFUSED: dict[str, Refused] = {

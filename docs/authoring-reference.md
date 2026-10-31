@@ -290,8 +290,9 @@ srstudio inspect location my-room --plugins my_package.parts
 
 Inspection shows the real callable signature, parameter defaults, callback slots, full docstring and a call
 template. The template names the arguments you supply (`cv` is usually `ep.cv`, `parent` is `ep.comp` or a
-shot group). The office, café, Manager and episode slate also include runnable examples using an existing
-`ep` Episode. Python tools can use `srstudio.describe(kind, name)` or `registry.get(kind, name).describe()`;
+shot group). The office, café, Manager, Toon sloth/goat/hamster and episode slate include runnable examples
+using an existing `ep` Episode. Python tools can use `srstudio.describe(kind, name)` or
+`registry.get(kind, name).describe()`;
 both return the same JSON-compatible details as `--json`. Inspection does not call the builder.
 
 Plugin decorators can add `slots=("at_table",)` for unannotated callback parameters and
@@ -364,6 +365,16 @@ and declares its episodes once as a `series.Series` (voices, settings, music bed
 caption look). Each episode is a `Reel` subclass's instance; `series.record` records it and `series.build`
 builds it ([ADR 0031](../docs/decisions/0031-shared-look-and-caption-primitives.md)). `episodes/_saga.py` is the
 worked example.
+
+`staging.freeze(shot)` preserves the shot's starting pose and leaves the scene unchanged on failure. Properties with
+additive animation retain static one-key animations so the renderer can compose them with their base values.
+Timed descendants retain their opening visibility throughout the frozen shot; the shot's own schedule is
+preserved. Animation sampling respects `timeBase`: composition time zero, local time minus the node's start,
+or that local time divided by the node's duration for normalized keys. An omitted normalized end uses project
+duration; if neither is available, freezing is refused. A curve spanning the resulting freeze point without a
+key there is refused unless that segment uses hold interpolation. Provide an explicit key at that point with
+the intended opening value before freezing. Expressions and text animators are also refused; these failures
+leave the scene unchanged.
 
 ### Google Fonts
 
@@ -1631,6 +1642,10 @@ A sloth, a goat and a hamster draw like the traced cat, in code
 [src/srstudio/toon_critters.py](../src/srstudio/toon_critters.py)): `toon-sloth` (olive, droopy, a pale face with dark
 stripes down from the eyes, long ivory claws, a slow blink), `toon-goat` (lilac, wiry, swept horns, sideways ears, a
 long muzzle and beard, bar pupils) and `toon-hamster` (pink, round, cheek pouches, a creamy belly, tiny paws held up).
+Run `srstudio inspect character toon-sloth --json` (or either other name) for an executable pose recipe.
+These builders accept `srstudio.toon.Pose` states using `EYES`, `MOUTHS` and `ARMS` names from that module.
+The first pose starts at zero; pose starts are seconds relative to `enter`. `enter`, `duration` (the exit time),
+`taps`, `mouths` and optional `LimbTrack` motion use project seconds. Builders return the pose groups.
 Each is a `Critter`, a `toon_cast.Drawing` the look routes its foundation, face and limbs to: a dense hand-placed
 outline with a pressed line (`pressed`, heavier at the bottom and back, thinning at sharp turns), open tapered fur
 strokes, one shade tone along the edges away from the light (`shade`) and a head tilted about the neck. Each has
@@ -1654,7 +1669,10 @@ version 2 drawings ([docs/decisions/0059-older-cast-head-rigs.md](decisions/0059
 [src/srstudio/head_motion.py](../src/srstudio/head_motion.py) turns a `HeadStyle` and the `Speech` of a shot
 (`speech_of(alignment, at, path)`) into a `HeadPlan` with `plan(style, speeches, duration)`: spring-keyed nods on the
 accents of the line, a dip before a phrase, a two-octave idle, a breath tied to the pauses and glances, all
-deterministic and bounded by `limit(style, name)`. [src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
+deterministic and bounded by `limit(style, name)`. Head plans keep the spring history and Catmull-Rom neighbors needed
+to preserve motion across shot cuts. Long carried-spring channels are sampled into linear keys at at least 240 Hz
+to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
+[src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
 `HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
 neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](../src/srstudio/toon_rigs.py)
 holds the rigs, and `rig_of` refuses a character with none by name. In a sketch, one line turns it on:

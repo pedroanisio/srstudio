@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import glob
 import importlib.util
 import json
 import os
@@ -11,7 +12,7 @@ from dataclasses import dataclass, field
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 from urllib.request import url2pathname
 
 from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group, Layer, Scene
@@ -19,7 +20,7 @@ from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
 from . import checks, digest, native, signature
-from ._outputs import write_outputs
+from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
 from .errors import SrstudioError
@@ -93,26 +94,61 @@ class _StyleNamer:
         return self.factory()
 
 
+_SEQUENCE_ASSETS = frozenset({"imageSequence", "meshSequence", "volume"})
+
+
+def _input_attribute(node: Any, name: str, spec: Any) -> bool:
+    return name not in ("path", "uri", "report") and (
+        spec == "xs:anyURI" or (name == "src" and node.xml_name in _SEQUENCE_ASSETS)
+    )
+
+
+def _numbered_source(node: Any, name: str) -> bool:
+    return name == "src" and (
+        node.xml_name in ("imageSequence", "meshSequence")
+        or (node.xml_name == "volume" and ("first" in node._attrs or "last" in node._attrs))
+    )
+
+
+def _document_reference(node: Any, name: str, value: str) -> bool:
+    return (
+        node.xml_name in ("material", "materialType")
+        and name
+        in ("baseColorMap", "normalMap", "metallicRoughnessMap", "occlusionMap", "emissiveMap", "displacementMap")
+        and value.lstrip().startswith("#")
+    )
+
+
 def _document_at(scene: Scene, root: Path, destination: Path) -> bytes:
     """Rebase input URIs for a document written outside its project directory."""
     if root.resolve() == destination.resolve():
         return scene.to_bytes(layout="pretty")
-    prefix = quote(Path(os.path.relpath(root.resolve(), destination.resolve())).as_posix(), safe="/")
+    relative = Path(os.path.relpath(root.resolve(), destination.resolve())).as_posix()
+    prefix = quote(relative, safe="/")
     changed = []
     try:
         for node in scene.iter():
             for name, attr in _attr_specs(type(node)).items():
                 value = node._attrs.get(name)
                 if (
-                    attr.spec != "xs:anyURI"
-                    or name in ("path", "uri", "report")
+                    not _input_attribute(node, name, attr.spec)
                     or not value
-                    or value.startswith(("/", "#"))
+                    or value.startswith("/")
+                    or _document_reference(node, name, value)
                     or re.match(r"^[A-Za-z][A-Za-z0-9+.-]+:", value)
                 ):
                     continue
+                source_prefix = prefix
+                if _numbered_source(node, name):
+                    if "%" in relative or "#" in relative:
+                        raise EpisodeArgumentError(
+                            "cannot rebase a numbered input through a path containing '%' or '#'; "
+                            "choose an output directory whose relative project path has neither"
+                        )
+                    # The renderer expands the first '%' or '#' before decoding the URI.
+                    source_prefix = relative if relative.startswith(".") else f"./{relative}"
                 changed.append((node, name, value))
-                node._attrs[name] = f"{prefix}/{value}"
+                node._attrs[name] = f"{source_prefix}/{value}"
         return scene.to_bytes(layout="pretty")
     finally:
         for node, name, value in changed:
@@ -121,14 +157,23 @@ def _document_at(scene: Scene, root: Path, destination: Path) -> bytes:
 
 def _input_path(root: Path, value: str) -> Path | None:
     """Resolve a local scene input URI relative to the project; remote URIs are not local files."""
-    if not value or value.startswith("#"):
+    value = value.strip()
+    if not value:
         return None
-    uri = urlsplit(value)
-    if uri.scheme and uri.scheme.lower() != "file":
-        return None
-    if uri.netloc and uri.netloc.lower() != "localhost":
-        return None
-    path = Path(url2pathname(uri.path))
+    file_uri = False
+    if value.startswith("file://"):
+        value = value[7:]
+        if value.startswith("localhost"):
+            value = value[len("localhost") :]
+        file_uri = True
+    elif match := re.match(r"^([A-Za-z][A-Za-z0-9+.-]+):", value):
+        if match.group(1).lower() != "file":
+            return None
+        value = value[len(match.group()) :]
+        file_uri = True
+    path = Path(url2pathname(value))
+    if file_uri:
+        return path
     return path if path.is_absolute() else root / path
 
 
@@ -139,6 +184,111 @@ def _same_file(first: Path, second: Path) -> bool:
         return first.samefile(second)
     except (FileNotFoundError, NotADirectoryError):
         return False
+
+
+@dataclass(frozen=True)
+class _SequenceInput:
+    prefix: str
+    suffix: str
+    width: int
+    first: int | None
+    last: int | None
+    step: int
+
+    def _matches_name(self, path: Path) -> bool:
+        # Keep sequence components lexical: a numbered directory or frame may be a symlink.
+        value = os.fspath(path)
+        if not os.path.isabs(value):
+            value = os.path.join(os.getcwd(), value)
+        if not value.startswith(self.prefix) or not value.endswith(self.suffix):
+            return False
+        end = len(value) - len(self.suffix) if self.suffix else len(value)
+        number = value[len(self.prefix) : end]
+        if not re.fullmatch(r"-?[0-9]+", number):
+            return False
+        frame = int(number)
+        if number != str(frame).zfill(self.width):
+            return False
+        if self.first is not None and (frame < self.first or (frame - self.first) % self.step):
+            return False
+        return self.last is None or frame <= self.last
+
+    def match_any(self, targets: tuple[Path, ...]) -> Path | None:
+        for target in targets:
+            if self._matches_name(target) or self._matches_name(target.resolve()):
+                return target
+        resolved = {target.resolve(): target for target in targets}
+        identities: dict[tuple[int, int], Path] = {}
+        for target in targets:
+            try:
+                details = target.stat()
+            except (FileNotFoundError, NotADirectoryError):
+                continue
+            identities[(details.st_dev, details.st_ino)] = target
+        # Existing sequence frames can be symlinks to the output or share its inode. Search files
+        # actually present rather than expanding a potentially enormous declared frame range.
+        pattern = glob.escape(self.prefix) + "*" + glob.escape(self.suffix)
+        for name in glob.iglob(pattern):
+            candidate = Path(name)
+            if not self._matches_name(candidate):
+                continue
+            if matched_target := resolved.get(candidate.resolve()):
+                return matched_target
+            if identities:
+                try:
+                    details = candidate.stat()
+                except (FileNotFoundError, NotADirectoryError):
+                    continue
+                if matched_target := identities.get((details.st_dev, details.st_ino)):
+                    return matched_target
+        return None
+
+
+def _sequence_input(root: Path, node: Any, value: str) -> _SequenceInput | None:
+    """Match numbered files without enumerating the declared frame range."""
+    if "%" in value:
+        start = value.index("%")
+        token = re.match(r"%([0-9]*)d", value[start:])
+        if token is None:
+            return None
+        digits = token.group(1).lstrip("0")
+        if len(digits) > 2:
+            return None
+        width = int(digits or 0)
+    elif "#" in value:
+        start = value.index("#")
+        token = re.match(r"#+", value[start:])
+        assert token is not None
+        width = len(token.group())
+    else:
+        return None
+    if width > 64:
+        return None
+    marker = "__srstudio_sequence_frame__"
+    while marker in value:
+        marker += "_"
+    uri = value[:start] + marker + value[start + len(token.group()) :]
+    if uri.lower().startswith("file://"):
+        uri = uri[7:]
+        if uri.lower().startswith("localhost/"):
+            uri = uri[len("localhost") :]
+    elif uri.lower().startswith("file:"):
+        uri = uri[5:]
+    elif re.match(r"^[A-Za-z][A-Za-z0-9+.-]+:", uri):
+        return None
+    path = Path(url2pathname(uri))
+    if not path.is_absolute():
+        path = root / path
+    before, suffix = str(path).split(marker, 1)
+    directory, partial = os.path.split(before)
+    prefix = str(Path(directory).resolve() / partial) if partial else str(Path(directory).resolve()) + os.sep
+    try:
+        first = int(node._attrs["first"]) if "first" in node._attrs else None
+        last = int(node._attrs["last"]) if "last" in node._attrs else None
+        step = int(node._attrs.get("step", 1))
+    except (TypeError, ValueError):
+        first, last, step = None, None, 1
+    return _SequenceInput(prefix, suffix, width, first, last, max(step, 1))
 
 
 _AudioMethod = TypeVar("_AudioMethod", bound=Callable[..., Any])
@@ -234,6 +384,11 @@ class EpisodeSpec:
 
     def __post_init__(self) -> None:
         st = self.style
+        if not isinstance(st, Style):
+            raise EpisodeArgumentError(
+                f"style: expected a Style, got {st!r}; use a constant such as srstudio.TOON "
+                "or look up the slug in srstudio.styles.STYLES"
+            )
         self.palette = st.palette(self.palette)
         if self.background is None:
             self.background = self.palette.background
@@ -763,9 +918,10 @@ class Episode:
             else:
                 self._cover_hidden.append((node.id, "visible", "false"))
 
-    def _input_files(self) -> list[Path]:
+    def _input_files(self) -> tuple[list[Path], list[_SequenceInput]]:
         """Project data and local scene assets that must survive writing the output files."""
         inputs = [self.root / self.spec.dialogue]
+        sequences: list[_SequenceInput] = []
         inputs.extend(self._input_manifests)
         for name in (self.spec.audio, self.spec.font):
             if name is not None:
@@ -786,27 +942,59 @@ class Episode:
         for node in self.scene.iter():
             for name, attr in _attr_specs(type(node)).items():
                 value = node._attrs.get(name)
-                if attr.spec == "xs:anyURI" and name not in ("path", "uri", "report") and isinstance(value, str):
+                if _input_attribute(node, name, attr.spec) and isinstance(value, str):
+                    if _document_reference(node, name, value):
+                        continue
+                    sequence = _sequence_input(self.root, node, value) if _numbered_source(node, name) else None
+                    if sequence is not None:
+                        sequences.append(sequence)
+                        continue
                     path = _input_path(self.root, value)
                     if path is not None:
                         inputs.append(path)
-        return inputs
+        return inputs, sequences
 
     def finish(
-        self, out: Path | None = None, report: Path | None = None, strict: bool = True, *, overwrite: bool = True
+        self,
+        out: Path | None = None,
+        report: Path | None = None,
+        strict: bool = True,
+        *,
+        overwrite: bool = True,
+        private: bool = False,
     ) -> Path:
         """Check, write ``<slug>.scene.xml`` (and the findings report) and return the XML path; a check that finds an
         error (with ``strict``, any finding) is a :class:`SceneCheckError` and writes no scene. Set ``overwrite=False``
-        to refuse existing outputs, including those created during the build."""
+        to refuse existing outputs, including those created during the build. ``private=True`` restricts the written
+        files and newly created output directories to the owner without changing the process umask."""
         out = Path(out) if out else self.root / f"{self.spec.slug}.scene.xml"
         report = Path(report) if report else out.with_name("sdk-validation.json")
-        if _same_file(out, report):
+        target_out = out.resolve() if overwrite else out.parent.resolve() / out.name
+        target_report = report.resolve() if overwrite else report.parent.resolve() / report.name
+        with pinned_directories((target_out, target_report), private=private) as directories:
+            return self._finish(out, report, target_out, target_report, strict, overwrite, private, directories)
+
+    def _finish(
+        self,
+        out: Path,
+        report: Path,
+        target_out: Path,
+        target_report: Path,
+        strict: bool,
+        overwrite: bool,
+        private: bool,
+        directories: dict[Path, int],
+    ) -> Path:
+        if _same_file(target_out, target_report):
             raise EpisodeArgumentError("scene output and validation report must be different files")
-        inputs = self._input_files()
-        for output_file in (out, report):
+        inputs, sequences = self._input_files()
+        for output_file in (target_out, target_report):
             for input_file in inputs:
                 if _same_file(output_file, input_file):
                     raise EpisodeArgumentError(f"{output_file}: output must not replace project input {input_file}")
+        for sequence in sequences:
+            if matched_output := sequence.match_any((target_out, target_report)):
+                raise EpisodeArgumentError(f"{matched_output}: output must not replace a project input sequence frame")
         if len(self._cover_hidden) > self._cover_written:
             from .social import COVER_VARIANT
 
@@ -823,7 +1011,13 @@ class Episode:
         if errors or (strict and findings):
             check_error = SceneCheckError(findings)
             try:
-                write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
+                write_outputs(
+                    [(target_report, (json.dumps(report_rows, indent=2) + "\n").encode())],
+                    overwrite=overwrite,
+                    follow_symlinks=False,
+                    directories=directories,
+                    private=private,
+                )
             except OSError as exc:
                 check_error.args = (f"{check_error}\nvalidation report could not be written: {exc}",)
                 raise check_error from exc
@@ -836,13 +1030,25 @@ class Episode:
             )
             report_rows.append({"severity": "error", "code": "srstudio:signature", "message": str(error)})
             try:
-                write_outputs([(report, (json.dumps(report_rows, indent=2) + "\n").encode())], overwrite=overwrite)
+                write_outputs(
+                    [(target_report, (json.dumps(report_rows, indent=2) + "\n").encode())],
+                    overwrite=overwrite,
+                    follow_symlinks=False,
+                    directories=directories,
+                    private=private,
+                )
             except OSError as exc:
                 error.args = (f"{error}\nvalidation report could not be written: {exc}",)
                 raise error from exc
             raise error
         report_data = (json.dumps(report_rows, indent=2) + "\n").encode()
-        write_outputs([(out, document), (report, report_data)], overwrite=overwrite)
+        write_outputs(
+            [(target_out, document), (target_report, report_data)],
+            overwrite=overwrite,
+            follow_symlinks=False,
+            directories=directories,
+            private=private,
+        )
         print(
             f"{out.name}: {document.count(b'<shape ')} shapes, {document.count(b'<group ')} groups, "
             f"{len(self.caption_specs)} captions, {len(findings)} findings"

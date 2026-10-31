@@ -46,6 +46,42 @@ def test_sampling_backwards_or_after_seeking_is_identical_to_sequential_playback
         assert m.sample(i / 24) == expected[i]
 
 
+@pytest.mark.parametrize('name', ['point', 'wave', 'grasp'])
+def test_zero_preparation_starts_continuously_from_rest(name):
+    motion = Motion(ArmProfile(), HUMAN, (Action(name, start=1, duration=1, preparation=0),))
+    rest = motion.sample(1 - 1e-7)
+    start = motion.sample(1)
+    assert start.arm.wrist.distance(rest.arm.wrist) < 1e-7
+    assert start.control == rest.control
+    assert motion.sample(1 + 1e-4).arm.wrist.distance(start.arm.wrist) < 1e-4
+
+
+@pytest.mark.parametrize('style', [MotionStyle(), MotionStyle(arc=0.4, asymmetry=0.3, settling=0.5)])
+def test_rest_action_keeps_the_rest_pose_through_every_phase(style):
+    motion = Motion(ArmProfile(), HUMAN, (Action('rest', start=1, duration=1, style=style),))
+    expected = motion.sample(0).arm.wrist
+    for t in (1.0, 1.1, 1.275, 1.45, 1.6, 1.9, 2.0):
+        assert motion.sample(t).arm.wrist.distance(expected) < 1e-9
+
+
+def test_rest_action_follows_a_moving_root():
+    root = TransformTrack((TransformKey(0, Frame()), TransformKey(2, Frame(Vec3(0.2, 0, 0)))))
+    rest = Motion(ArmProfile(), HUMAN, (Action('rest', duration=2),), root=root)
+    idle = Motion(ArmProfile(), HUMAN, root=root)
+    for t in (0.0, 0.4, 1.0, 1.6):
+        assert rest.sample(t).arm.wrist.distance(idle.sample(t).arm.wrist) < 1e-9
+
+
+def test_rest_action_still_respects_an_explicit_contact():
+    rest = Motion(ArmProfile(), HUMAN, (Action('rest', duration=2),))
+    hand = rest.sample(1).hand.frame
+    target = Frame(hand.origin + Vec3(0.04, 0, 0), hand.rotation)
+    contact = Contact('contact', 0.5, 1.5, TransformTrack.constant(target))
+    sample = replace(rest, contacts=(contact,)).sample(1)
+    assert sample.arm.wrist.distance(target.origin) < 1e-9
+    assert sample.contacts[0].message == 'contact'
+
+
 def test_relative_actions_retarget_by_proportions_and_world_targets_do_not_move():
     action = Action("point", 0, 2, target=Target(Vec3(0.6, 0.3, 0.1)))
     a = Motion(ArmProfile(), HUMAN, (action,))
@@ -75,6 +111,27 @@ def test_word_reference_is_an_unambiguous_occurrence_and_aligns_the_stroke():
     for bad in (WordRef("missing", 0), WordRef("01", 5)):
         with pytest.raises(LimbError, match="word"):
             Action.on_word("point", bad, [take], duration=1)
+
+
+@pytest.mark.parametrize('start', [0, 1, None])
+def test_word_timed_action_rejects_a_conflicting_start(start):
+    from srstudio.timeline import Take
+
+    take = Take('01', 'actor', 'wide', 'No.', 3, 2, words=({'text': 'No.', 'start': 0.8, 'end': 1.0},))
+    with pytest.raises(LimbError, match='start'):
+        Action.on_word('point', WordRef('01', 0), [take], duration=1, start=start)
+
+
+def test_documented_expressive_motion_recipe_runs():
+    from pathlib import Path
+
+    guide = (Path(__file__).resolve().parents[1] / 'docs/catalog/limbs.md').read_text()
+    block = guide.split('<!-- expressive-motion:start -->', 1)[1].split('<!-- expressive-motion:end -->', 1)[0]
+    code = block.split('```python\n', 1)[1].split('\n```', 1)[0]
+    namespace = {}
+    exec(compile(code, 'docs/catalog/limbs.md', 'exec'), namespace)
+    assert namespace['gesture'].stroke_at == pytest.approx(3.8)
+    assert namespace['motion'].sample(3.8).action == 'point'
 
 
 def test_fingertip_contact_locks_to_a_moving_surface_without_sliding():
@@ -158,14 +215,18 @@ def test_bad_actions_fail_before_any_scene_is_mutated(kwargs):
         Action(**{"name": "point", "start": 0, "duration": 1, **kwargs})
 
 
-def test_contact_transitions_keep_the_authored_elbow_pole_at_rest_endpoints():
-    action = Action("grasp", duration=3, pole=Vec3(0, 1, 0))
+def test_contact_transitions_blend_the_authored_elbow_pole_without_wrist_limit_errors():
+    action = Action("grasp", start=0.5, duration=3, pole=Vec3(0, 1, 0))
     base = Motion(ArmProfile(), HUMAN, (action,))
-    grip = base.sample(1.2).hand.frame
-    m = replace(base, contacts=(Contact("hold", 1.2, 2.1, TransformTrack.constant(grip)),))
-    for i in range(73):
+    grip = base.sample(1.7).hand.frame
+    m = replace(base, contacts=(Contact("hold", 1.7, 2.6, TransformTrack.constant(grip)),))
+    for i in range(97):
         sample = m.sample(i / 24)
         assert abs(sample.control.wrist_deviation) <= 0.8
+    for edge in (action.start, 1.7, 2.6, action.end):
+        before, after = m.sample(edge - 1e-6), m.sample(edge + 1e-6)
+        assert before.arm.elbow.distance(after.arm.elbow) < 1e-5
+        assert before.hand.palm[0].distance(after.hand.palm[0]) < 1e-5
 
 
 @pytest.mark.parametrize("u", [0.9999999999999999, 0.999999997, 1 - 2**-40, 1e-17, 0.5])
@@ -240,3 +301,31 @@ def test_settling_without_a_hold_samples_the_instantaneous_hold_without_dividing
     action = Action("point", 0, 2, hold=0, style=MotionStyle(settling=1.0))
     sample = Motion(ArmProfile(), HUMAN, (action,)).sample(action.stroke_at)
     assert sample.phase == "hold"
+
+
+@pytest.mark.parametrize('preparation', [0, 0.15])
+@pytest.mark.parametrize('pole', [Vec3(0, 1, 0), Vec3(-1, 0, 0)])
+@pytest.mark.parametrize('side', ['left', 'right'])
+def test_authored_pole_blends_elbow_and_hand_at_action_boundaries(preparation, pole, side):
+    action = Action('point', start=1, duration=2, preparation=preparation, pole=pole)
+    motion = Motion(ArmProfile(side=side), HUMAN, (action,))
+    for edge in (action.start, action.end):
+        before, after = motion.sample(edge - 1e-6), motion.sample(edge + 1e-6)
+        assert before.arm.elbow.distance(after.arm.elbow) < 1e-5
+        for axis in (Vec3(1, 0, 0), Vec3(0, 1, 0)):
+            assert before.hand.frame.rotation.rotate(axis).distance(after.hand.frame.rotation.rotate(axis)) < 1e-5
+    # Still use the authored elbow direction during the stroke's hold.
+    from srstudio.limbs.constraints import reach
+
+    held = motion.sample(action.stroke_at)
+    expected = reach(motion.arm, held.arm.wrist, pole=pole)
+    assert held.arm.elbow.distance(expected.elbow) < 1e-9
+
+
+@pytest.mark.parametrize('duration', [0.4, 2.0])
+def test_settling_starts_with_continuous_velocity(duration):
+    action = Action('point', duration=duration, style=MotionStyle(settling=1))
+    motion = Motion(ArmProfile(), HUMAN, (action,))
+    t, h = action.stroke_at, 1e-6
+    before, at, after = (motion.sample(s).arm.wrist for s in (t - h, t, t + h))
+    assert ((at - before) / h).distance((after - at) / h) < 1e-3

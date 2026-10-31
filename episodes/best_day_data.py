@@ -136,7 +136,7 @@ STAGING = Staging(
     setting=setting,
     dress=dress,
     cast=casting,
-    push=PUSH,
+    first_shot_push=PUSH,
     bitrate=BITRATE,
     sounds=sounds,
 )

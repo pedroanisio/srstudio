@@ -7,7 +7,7 @@ import pytest
 
 from srstudio import cast
 from srstudio.cast import CastError
-from srstudio.cutout_reach import ReachError, hand_at, reach
+from srstudio.cutout_reach import ReachError, carried, hand_at, reach
 from srstudio.rig import Performance
 from support.tip_tablet import canvas
 
@@ -135,3 +135,48 @@ def test_a_side_that_is_not_one_is_refused(actor, free):
     cv = canvas()
     with pytest.raises(CastError, match="free_arms names screen sides"):
         actor(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
+
+
+def test_a_carried_thing_rests_rides_the_hand_and_lands():
+    cv = canvas()
+    node = cv.group(cv.comp, "cup")
+    carried(cv, node, TRACK, 0.5, 1.5, rest=(40.0, 50.0), lands=(60.0, 70.0))
+    root = scene(cv)
+    x, y = keyed(root, "cup", "x"), keyed(root, "cup", "y")
+    assert x[0.0] == 40.0 and x[0.5] == 40.0 and y[0.5] == 50.0
+    assert x[1.0] == 700.0 and y[1.0] == 900.0  # in the hand, wherever the hand is
+    assert x[1.5] == 60.0 and y[1.5] == 70.0
+    assert sorted(x) == sorted(y)
+
+
+def test_a_thing_with_no_landing_stays_where_the_hand_let_go():
+    cv = canvas()
+    carried(cv, cv.group(cv.comp, "cup"), TRACK, 0.5, 1.0, rest=(40.0, 50.0))
+    assert keyed(scene(cv), "cup", "x")[1.0] == 700.0
+
+
+@pytest.mark.parametrize(
+    ("take", "put", "rest"),
+    [
+        (1.0, 1.0, (0.0, 0.0)),
+        (1.5, 1.0, (0.0, 0.0)),
+        (-1.0, 1.0, (0.0, 0.0)),
+        (0.5, 3.0, (0.0, 0.0)),
+        (0.5, 1.0, (float("nan"), 0.0)),
+    ],
+)
+def test_a_carry_refuses_what_the_hand_is_not_there_for(take, put, rest):
+    cv = canvas()
+    with pytest.raises(ReachError):
+        carried(cv, cv.group(cv.comp, "cup"), TRACK, take, put, rest=rest)
+
+
+def test_a_carried_thing_is_keyed_on_the_frames_the_arm_is_keyed_on():
+    cv = canvas()
+    track = [(0.04, 300.0, 700.0), (1.0, 700.0, 900.0)]
+    arm, _ = reach(cv, cv.comp, "arm", (100.0, 100.0), track)
+    carried(cv, cv.group(cv.comp, "cup"), track, 0.3, 0.8, rest=(0.0, 0.0))
+    root = scene(cv)
+    arm_times = {round(t, 4) for t in keyed(root, "arm", "rotation")}
+    inside = [t for t in keyed(root, "cup", "x") if 0.3 < t < 0.8]
+    assert inside and all(round(t, 4) in arm_times for t in inside)

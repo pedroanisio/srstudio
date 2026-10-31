@@ -26,8 +26,19 @@ from dataclasses import dataclass, replace
 from typing import Any, Protocol, runtime_checkable
 
 from . import brush
-from .canvas import Canvas
-from .head_motion import GAZES, Channel, HeadMotionError, HeadPlan, HeadStyle, Key, limit
+from .canvas import Canvas, _at_zero
+from .head_motion import (
+    CHANNELS,
+    GAZES,
+    SPRING_RUN,
+    Channel,
+    HeadMotionError,
+    HeadPlan,
+    HeadStyle,
+    Key,
+    _bake_spring,
+    limit,
+)
 from .toon import Pose, ToonDataError, fh, fx, fy, runs, swap_frames
 from .toon_cast import (
     PIVOT,
@@ -61,7 +72,6 @@ __all__ = [
 ]
 
 TILT_EASE = 0.4  # seconds a held tilt takes to reach its pose's value, less when the pose is short, see _held_tilts
-SPRING_RUN = 8  # carried spring keys in a row before one restarts from rest, see rest_springs
 
 FACE_SLIDE = 0.8  # how much further than the skull the face drops on a nod
 SEAM_ROOM = 2.0  # how far above a seam cover's line a head must still be behind it, reference pixels
@@ -73,6 +83,27 @@ class Glancing(Protocol):
     """A drawing that can look away: ``looking`` is the same drawing with its pupils ``dx`` and ``dy`` eye radii off."""
 
     def looking(self, dx: float, dy: float) -> Glancing: ...
+
+
+class Seam(Protocol):
+    """What the seam checks read of a rig, whatever draws it."""
+
+    @property
+    def neck(self) -> Point: ...
+    @property
+    def tilt(self) -> float: ...
+    @property
+    def head(self) -> tuple[Point, ...]: ...
+    @property
+    def cover(self) -> tuple[Point, ...]: ...
+    @property
+    def style(self) -> HeadStyle: ...
+    @property
+    def head_over(self) -> bool: ...
+    @property
+    def free(self) -> float: ...
+    @property
+    def tilt_reach(self) -> tuple[float, float]: ...
 
 
 @dataclass(frozen=True)
@@ -104,7 +135,7 @@ class HeadRig:
     face_slide: float = FACE_SLIDE
 
 
-def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
+def _bounds(rig: Seam) -> list[tuple[float, float]]:
     """The turns (degrees, the rest tilt included) and drops (reference pixels) at the corners of what ``rig``'s style
     can reach."""
     style = rig.style
@@ -117,7 +148,7 @@ def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
     ]
 
 
-def reach(rig: HeadRig) -> HeadPlan:
+def reach(rig: Seam) -> HeadPlan:
     """The head at rest, then at every corner of what ``rig``'s style can reach, a second each: what a rig's specimen
     shows of it (:func:`srstudio.specimens.rig_digest`)."""
     corners = _bounds(rig)
@@ -139,7 +170,7 @@ def chest(rig: HeadRig) -> Point:
     return (rig.neck[0], lowest)
 
 
-def open_seam(rig: HeadRig) -> list[tuple[Point, float, float]]:
+def open_seam(rig: Seam) -> list[tuple[Point, float, float]]:
     """Where the seam opens: every ``(point, turn, drop)`` on the cover line (:data:`SEAM_ROOM` above it for a ruff),
     more than :attr:`HeadRig.free` from its ends, that the head does not reach behind with every channel at its limit.
     Empty is a rig that holds."""
@@ -188,10 +219,18 @@ def _gazing(look: Look, name: str) -> Look:
     return replace(look, drawing=drawing.looking(dx, dy))
 
 
-def _animate(cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, base: float = 0.0) -> None:
-    """``channel`` as engine keys on ``prop``; spring keys carry their momentum into the next key."""
+def _animate(
+    cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, base: float = 0.0, carried: bool = False
+) -> None:
+    """Emit engine keys, sampling long carried springs to bound renderer work; ``carried`` keeps them as they are."""
     if not channel.keys:
         return
+    if cv._frozen:
+        hold = channel.spring is None and channel.curve == "hold"
+        cv.keys(node, prop, [(t, round(base + value * scale, 4)) for t, value in channel.keys], hold=hold, local=False)
+        return
+    if not carried:
+        channel = _bake_spring(channel)
     curve = "spring" if channel.spring else channel.curve
     a = node.add_animate(property=prop, defaultInterpolation=curve)
     attrs = channel.spring.attributes() if channel.spring else {}
@@ -262,6 +301,14 @@ def figure(
 
     look = rig.look
     style = rig.style
+    if not cv._frozen:
+        plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})  # type: ignore[arg-type]
+    spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
+    pose_tilt = Channel(_held_tilts(spans, rig.pose_tilt), style.settle) if rig.pose_tilt else None
+    if cv._frozen:
+        for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
+            if channel is not None and channel.keys:
+                _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
     seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
     neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
     seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
@@ -274,11 +321,10 @@ def figure(
     trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
     turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
     _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
-    spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
     held = turn
-    if rig.pose_tilt is not None:
+    if pose_tilt is not None:
         held = cv.group(turn, cv.uid("tilt"), **neck)
-        _animate(cv, held, "rotation", Channel(_held_tilts(spans, rig.pose_tilt), style.settle))
+        _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
     nod = cv.group(held, cv.uid("nod"), **neck)
     _animate(cv, nod, "rotation", plan.roll)
     _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)

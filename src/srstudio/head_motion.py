@@ -4,9 +4,9 @@ keys for the engine's own curves, deterministic and bounded.
 :func:`plan` turns a :class:`HeadStyle` and the :class:`Speech` of a shot into a :class:`HeadPlan`, one
 :class:`Channel` per thing that moves and a track of where the eyes look:
 
-* **Springs.** A nod, a glance and a lean are targets on spring keys the engine evaluates (``spring`` with
-  ``carry="true"``), so the motion lags, overshoots and settles without a frame being baked here. A :class:`Spring`
-  is named by frequency and damping ratio.
+* **Springs.** A nod, a glance and a lean are targets on spring keys with carried momentum, so the motion lags,
+  overshoots and settles. Short channels use engine springs; long channels are sampled to bound evaluation cost.
+  A :class:`Spring` is named by frequency and damping ratio.
 * **Speech.** A nod falls on about four in five accents (:func:`accents`: content words whose stressed syllable, from
   the CMU Pronouncing Dictionary, stands above the phrase's loudness), spans two to four phones and leads its
   syllable; a phrase after a pause opens with a dip; a character repeats one movement type; an intensifier earns a
@@ -43,12 +43,15 @@ __all__ = [
     "AVERT_BACK",
     "CHANNELS",
     "DUCK",
+    "FACE_DOWN",
+    "FACE_UP",
     "GAZES",
     "INTENSIFIER_GAIN",
     "LISTEN_SHARE",
     "LOUD_RATE",
     "Accent",
     "Channel",
+    "Facing",
     "HeadMotionError",
     "HeadPlan",
     "HeadStyle",
@@ -72,6 +75,7 @@ __all__ = [
 ]
 
 Key: TypeAlias = tuple[float, float]
+Facing: TypeAlias = tuple[float, float, float]  # on, off, the side of the frame the head stays turned to
 
 LOUD_RATE = 100  # loudness samples a second
 PAUSE = 0.25  # the silence, in seconds, that starts a new breath
@@ -79,6 +83,7 @@ DUCK = 0.4  # how much of the idle wander is left while speaking
 INTENSIFIER_GAIN = 1.5  # how much bigger a nod on an intensifier is
 LISTEN_SHARE = 0.35  # how big a listener's nod is, as a share of a full nod
 LISTEN_LAG = 0.15  # how long after the other's accent the listener's nod starts
+FACE_UP, FACE_DOWN = 0.5, 0.6  # how long a turn takes to arrive and to come back
 AVERT_BACK = 0.1  # how long before a line's first word the eyes are back
 AVERT = 0.7  # how long before a line's first word they leave
 ANTICIPATE = 0.08  # seconds of the small opposite move before a nod
@@ -87,6 +92,7 @@ PHONES = 3  # the letters of the stressed syllable a nod spans: Graf's two to fo
 GAZES = {"ahead": (0.0, 0.0), "left": (-0.42, 0.04), "right": (0.42, 0.04), "up": (0.0, -0.3)}  # in eye radii
 LOOK_AWAY = (("left", 0.4), ("right", 0.8), ("up", 1.0))  # the share of glances each way, cumulative
 CHANNELS = ("lean", "turn", "nod", "roll", "face_x", "idle_roll", "idle_y", "breath")
+SPRING_RUN = 8  # longer carried chains are sampled to bound renderer work
 _ROOM = 1.25  # what a spring may add over its largest target, carried momentum included
 
 _VOWELS = re.compile(r"[aeiouy]+")
@@ -182,12 +188,87 @@ class Channel:
             raise HeadMotionError(f"a channel's key times rise, got {self.keys!r}")
 
     def during(self, start: float, end: float) -> Channel:
-        """The keys a shot from ``start`` to ``end`` plays: those inside it and one either side, so each shot of a
-        sketch carries its own stretch of the timeline and a value is the same on both sides of a cut."""
-        before = [key for key in self.keys if key[0] <= start][-1:]
+        """Keep the shot's keys and the curve history needed to preserve its value and tangent at cuts.
+
+        Short carried springs keep their history, long ones are sampled, and Catmull-Rom keeps two neighbors per side.
+        """
+        if self.spring and len(self.keys) > SPRING_RUN:
+            baked = _bake_spring(self)
+            before = [key for key in baked.keys if key[0] <= start][-4:]
+            inside = [key for key in baked.keys if start < key[0] < end]
+            after = [key for key in baked.keys if key[0] >= end][:4]
+            return replace(baked, keys=(*before, *inside, *after))
+        previous = [i for i, key in enumerate(self.keys) if key[0] <= start]
+        if self.spring and previous:
+            before = list(self.keys[: previous[-1] + 1])
+        elif self.curve == "catmull-rom":
+            before = [self.keys[i] for i in previous[-2:]]
+        else:
+            before = [self.keys[i] for i in previous[-1:]]
         inside = [key for key in self.keys if start < key[0] < end]
-        after = [key for key in self.keys if key[0] >= end][:1]
+        after = [key for key in self.keys if key[0] >= end][: 2 if self.curve == "catmull-rom" else 1]
         return replace(self, keys=(*before, *inside, *after))
+
+
+def _bake_spring(channel: Channel) -> Channel:
+    """Sample the renderer's carried spring in linear time, avoiding recursive carry chains."""
+    spring = channel.spring
+    if spring is None or len(channel.keys) <= SPRING_RUN:
+        return channel
+    if spring.frequency > 10000 / 32:
+        raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
+    attrs = spring.attributes()
+    stiffness, damping = max(float(attrs["stiffness"]), 1e-9), max(float(attrs["damping"]), 0.0)
+    w = math.sqrt(stiffness)
+    z = damping / (2 * w)
+    rate = max(240, math.ceil(spring.frequency * 32))
+    spans = tuple(b[0] - a[0] for a, b in zip(channel.keys, channel.keys[1:], strict=False))
+    if (
+        rate > 10000
+        or any(span > 100000 / rate for span in spans)
+        or 1 + sum(math.ceil((b[0] - a[0]) * rate) for a, b in zip(channel.keys, channel.keys[1:], strict=False))
+        > 100000
+    ):
+        raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
+
+    def responses(t: float) -> tuple[float, float]:
+        if z < 1 - 1e-9:
+            wd = w * math.sqrt(1 - z * z)
+            decay = math.exp(-z * w * t)
+            return 1 - decay * (math.cos(wd * t) + z * w / wd * math.sin(wd * t)), decay * math.sin(wd * t) / wd
+        if z <= 1 + 1e-9:
+            decay = math.exp(-w * t)
+            return 1 - decay * (1 + w * t), t * decay
+        s = math.sqrt(z * z - 1)
+        r1, r2 = -w * (z - s), -w * (z + s)
+        return 1 - (r2 * math.exp(r1 * t) - r1 * math.exp(r2 * t)) / (r2 - r1), (
+            math.exp(r1 * t) - math.exp(r2 * t)
+        ) / (r1 - r2)
+
+    def value(t: float, a: float, b: float, velocity: float, tail: float, span: float) -> float:
+        step, release = responses(t)
+        return b + (a - b) * (1 - step) + velocity * release - tail * t / span
+
+    keys: list[Key] = []
+    velocity = 0.0
+    for (start, av), (end, bv) in zip(channel.keys, channel.keys[1:], strict=False):
+        a, b = round(av, 4), round(bv, 4)
+        span = end - start
+        step_end, release_end = responses(span)
+        tail = (a - b) * (1 - step_end) + velocity * release_end
+
+        count = math.ceil(span * rate)
+        for i in range(count):
+            t = round(start + span * i / count, 6)
+            if keys and t <= keys[-1][0]:
+                raise HeadMotionError("spring keys exceed the scene clock resolution")
+            keys.append((t, round(value(span * i / count, a, b, velocity, tail, span), 6)))
+        h = max(1e-9, min(1e-3, 0.1 * span))
+        velocity = (b - value(span - h, a, b, velocity, tail, span)) / h
+    keys.append((round(channel.keys[-1][0], 6), round(channel.keys[-1][1], 4)))
+    if len(keys) > 1 and keys[-1][0] <= keys[-2][0]:
+        raise HeadMotionError("spring keys exceed the scene clock resolution")
+    return Channel(tuple(keys), curve="linear")
 
 
 @dataclass(frozen=True)
@@ -690,11 +771,28 @@ def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> Non
                 raise HeadMotionError(f"speech runs to {last!r}, past the shot's {duration!r} s")
 
 
-def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float, heard: Sequence[Speech] = ()) -> HeadPlan:
+def _check_facing(facing: Sequence[Facing]) -> None:
+    ordered = sorted(facing)
+    for on, off, side in ordered:
+        if off - on < FACE_UP or abs(side) != 1.0:
+            raise HeadMotionError(f"a turn lasts {FACE_UP} s at least, to one side (1 or -1), got {(on, off, side)!r}")
+    if any(b[0] < a[1] for a, b in zip(ordered, ordered[1:], strict=False)):
+        raise HeadMotionError(f"turns do not overlap, got {ordered!r}")
+
+
+def plan(
+    style: HeadStyle,
+    speeches: Sequence[Speech],
+    duration: float,
+    heard: Sequence[Speech] = (),
+    facing: Sequence[Facing] = (),
+) -> HeadPlan:
     """The head's motion over a shot of ``duration`` seconds with these takes, the same every build; ``heard`` is what
-    the others say meanwhile (:func:`listening`)."""
+    the others say meanwhile (:func:`listening`), and ``facing`` the ``(on, off, side)`` the head stays turned to a side
+    of the frame, the most its style turns, for staging that knows who is talking to whom."""
     _check(style, speeches, duration)
     _check(style, heard, duration)
+    _check_facing(facing)
     spans = [span for speech in speeches for span in _breaths(speech)]
     busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
     nodded = [nod for k, speech in enumerate(speeches) for nod in nods(speech, style, k)]
@@ -724,6 +822,9 @@ def plan(style: HeadStyle, speeches: Sequence[Speech], duration: float, heard: S
         side = GAZES[name][0] / GAZES["right"][0]
         turned.append((on + lag, 0.5, off, 0.6, style.glance_turn * side))
         slid.append((on + lag, 0.5, off, 0.6, style.glance_face * side))
+    for on, off, side in facing:
+        turned.append((on, FACE_UP, off, FACE_DOWN, style.glance_turn * side))
+        slid.append((on, FACE_UP, off, FACE_DOWN, style.glance_face * side))
     gaze = [state for on, off, name in looks for state in ((on, name), (off, "ahead"))]
     return HeadPlan(
         lean=Channel(_trapezoids(leans, duration), style.body),

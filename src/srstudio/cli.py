@@ -1,8 +1,9 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
-scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog site, ``srstudio serve`` serves it, ``srstudio parts`` lists the part versions
-and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode and ledger."""
+scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio overlap`` finds
+lines another episode already said, ``srstudio page`` rebuilds the catalog site, ``srstudio serve`` serves it,
+``srstudio parts`` lists the part versions and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode
+and ledger."""
 
 from __future__ import annotations
 
@@ -27,9 +28,12 @@ from . import (
     catalog_versions,
     craft,
     fonts,
+    frames,
     lip_proof,
     lipsync,
+    overlap,
     parts,
+    proof,
     registry,
     releases,
     usage,
@@ -102,6 +106,17 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
+    measured.add_argument("video", type=Path)
+    measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
+    measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
+    measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
+    measured.add_argument("--json", action="store_true")
+    split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
+    split.add_argument("test", choices=releases.TESTS)
+    split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
+    split.add_argument("--share", type=float, default=0.5, help="the part of the test on arm a, if not half")
+    split.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -151,11 +166,22 @@ def main(argv=None):
     )
     lips = sub.add_parser("lipsync", help="score the shipped and the speech mouth over the takes of timelines")
     lips.add_argument("timelines", nargs="+", type=Path, help="timeline.json files with character timestamps")
+    framed = sub.add_parser("frames", help="list, or render at full size, the frames to review in a voiced project")
+    framed.add_argument("project", type=Path, help="the project folder (<slug>/voiced/beats.json)")
+    framed.add_argument("--payoff", type=float, help="the payoff's second, else the last beat with an event")
+    framed.add_argument("--out", type=Path, help="render each frame into this folder")
+    framed.add_argument(
+        "--engine", type=Path, default=os.environ.get("SRSTUDIO_ENGINE") or shutil.which("scene-render")
+    )
     crafted = sub.add_parser("craft", help="measure the camera moves and the pauses between lines of episode projects")
     crafted.add_argument("projects", nargs="+", type=Path, help="episode project folders (<slug>/<slug>.scene.xml)")
     crafted.add_argument("--renders", type=Path, help="folder of renders (<slug>.mp4): measure the sound in each pause")
     crafted.add_argument("--threshold", type=float, default=craft.PAUSE, help="seconds between lines that make a pause")
     crafted.add_argument("--json", action="store_true", help="print the reports as JSON")
+    shared = sub.add_parser("overlap", help="find the lines of an episode that other episodes already said")
+    shared.add_argument("project", type=Path, help="the episode project folder (its recorded script)")
+    shared.add_argument("--episodes", type=Path, required=True, help="the folder of episode projects to compare with")
+    shared.add_argument("--least", type=int, default=overlap.LEAST, help="words in a row that count as a repeat")
     build = sub.add_parser(
         "build", help="run an episode script: an episode's slug, a python file or a module, with its project root"
     )
@@ -196,6 +222,10 @@ def main(argv=None):
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "proof":
+        return _proof(args)
+    if args.cmd == "arms":
+        return _arms(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -322,6 +352,20 @@ def main(argv=None):
         for name, result in scores.items():
             print(f"{name:<13} {result.summary()}")
         return 0
+    if args.cmd == "frames":
+        try:
+            listed = frames.project_frames(args.project, args.payoff)
+            for frame in listed:
+                print(f"{frame.at:8.2f}  {frame.why}")
+            if args.out is not None:
+                if args.engine is None:
+                    raise frames.FrameError("set --engine or SRSTUDIO_ENGINE to render the frames")
+                scene = args.project / f"{args.project.name}.scene.xml"
+                print(f"{len(frames.at_size(scene, listed, args.out, args.engine))} frames in {args.out}")
+        except (frames.FrameError, SrstudioError) as exc:
+            print(f"srstudio frames: {exc}", file=sys.stderr)
+            return 2
+        return 0
     if args.cmd == "craft":
         try:
             reports = []
@@ -350,6 +394,10 @@ def main(argv=None):
                 print(f"  pause {p.start:.2f}–{p.end:.2f}  {p.end - p.start:.2f} s  {level}")
             for line, lost in r.clipped:
                 print(f"  clipped line {line}: {lost:.2f} s of speech lost")
+            for at, gap in r.crowded:
+                print(f"  crowded line at {at:.2f}: {gap:.2f} s after the line before")
+            for t in r.short:
+                print(f"  short text at {t.start:.2f}: {t.text!r} for {t.seconds:.3f} s, under {craft.MIN_DISPLAY} s")
             for start, end in r.opening:
                 print(f"  opening silence {start:.2f}–{end:.2f}  {end - start:.2f} s")
             if not r.opening:
@@ -358,6 +406,18 @@ def main(argv=None):
                 print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
             for h in r.holds:
                 print(f"  hold {h.start:.2f}–{h.end:.2f}  {h.end - h.start:.2f} s")
+        return 0
+    if args.cmd == "overlap":
+        try:
+            lines = overlap.read_lines(overlap.project_script(args.project))
+            found = overlap.overlaps(lines, overlap.scripts(args.episodes, skip=args.project.name), args.least)
+        except overlap.OverlapError as exc:
+            print(f"srstudio overlap: {exc}", file=sys.stderr)
+            return 2
+        for hit in found:
+            print(f"{hit.slug}: {hit.words} ({hit.line!r} / {hit.other!r})")
+        if not found:
+            print(f"no overlap of {args.least} words or more")
         return 0
     if args.cmd == "record":
         try:
@@ -398,6 +458,34 @@ def main(argv=None):
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
+
+
+def _arms(args: argparse.Namespace) -> int:
+    order = args.order.read_text().split() if args.order else []
+    try:
+        loaded = releases.load(args.scripts / "posts")
+        problems = releases.arm_problems(loaded, args.test, order, args.share)
+    except releases.ReleaseError as exc:
+        print(f"srstudio arms: {exc}", file=sys.stderr)
+        return 1
+    for arm, slugs in releases.arms(loaded, args.test).items():
+        print(f"{arm} {len(slugs):>3}  {' '.join(slugs)}")
+    for problem in problems:
+        print(f"srstudio arms: {problem}", file=sys.stderr)
+    return 1 if problems else 0
+
+
+def _proof(args: argparse.Namespace) -> int:
+    try:
+        made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
+    except proof.ProofError as exc:
+        print(f"srstudio proof: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(made))
+    else:
+        print(" ".join(f"{k}={v}" for k, v in made.items()))
+    return 0
 
 
 def _lip_proof(args: argparse.Namespace) -> int:

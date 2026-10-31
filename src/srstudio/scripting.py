@@ -7,12 +7,61 @@ at that moment is refused when the script is imported, never in the render.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 
 from .sketch import Beat, Line, SketchError, events
 
-__all__ = ["Script", "changes", "exactly_once", "first", "hold", "off_screen", "only_events", "part", "say", "spans"]
+__all__ = [
+    "WORDS_PER_SECOND",
+    "Script",
+    "at",
+    "changes",
+    "every",
+    "exactly_once",
+    "first",
+    "hold",
+    "off_screen",
+    "only_events",
+    "over_budget",
+    "part",
+    "say",
+    "spans",
+    "speaks_by",
+    "spoken_seconds",
+    "times",
+    "word_budget",
+    "word_count",
+]
+
+WORDS_PER_SECOND = 2.35  # measured on the two-hander pilots: 57 to 60 spoken words in 23.5 to 25 s, holds included
+SECONDS_A_WORD = 0.27  # fitted to 62 recorded lines of two ElevenLabs voices at their natural pace, 2026-10-31
+SECONDS_A_LINE = 0.1  # the same fit's constant: a line takes this long before its first word counts
+LINE_GAP = 0.3  # seconds between one speaker's last word and the next one's first, typically, in the same reels
+
+
+def word_count(lines: Sequence[Line]) -> int:
+    """The words the sketch speaks, the way a reader counts them: a hyphenated word is one."""
+    return sum(len(line.text.split()) for line in lines)
+
+
+def word_budget(seconds: float) -> int:
+    """How many words a two-hander of ``seconds`` holds, with its holds, before a line is recorded."""
+    return math.floor(seconds * WORDS_PER_SECOND)
+
+
+def over_budget(lines: Sequence[Line], seconds: float) -> int:
+    """How many words past :func:`word_budget` the script runs, 0 when it fits. A take costs money and a script that
+    runs long is found only at the master, so this is read before recording. It predicts, and the master decides."""
+    return max(0, word_count(lines) - word_budget(seconds))
+
+
+def spoken_seconds(lines: Sequence[Line]) -> float:
+    """About how long ``lines`` run, spoken in order with no held pauses, before any take is paid for. An estimate:
+    on the five reels it was fitted to, the speech alone came within 1.7 s of the recording. Held pauses come on top."""
+    speech = sum(SECONDS_A_WORD * len(line.text.split()) + SECONDS_A_LINE for line in lines)
+    return round(speech + LINE_GAP * max(len(lines) - 1, 0), 2)
 
 
 def say(
@@ -183,3 +232,33 @@ def only_events(beats: Sequence[Beat], kinds: Collection[str]) -> None:
     unknown = {b.event.split(":")[0] for b in beats if b.event} - set(kinds)
     if unknown:
         raise SketchError(f"unknown events {sorted(unknown)}")
+
+
+def times(beats: Sequence[Beat], kind: str) -> list[float]:
+    """When every ``kind`` event comes: the moments a sound or a prop lands on."""
+    return [when for when, _ in events(beats, kind)]
+
+
+def at(beats: Sequence[Beat], kind: str) -> float:
+    """When the first ``kind`` event comes. Raises :class:`~srstudio.sketch.SketchError` if none does."""
+    found = times(beats, kind)
+    if not found:
+        raise SketchError(f"no {kind} event")
+    return found[0]
+
+
+def every(start: float, stop: float, step: float) -> list[float]:
+    """Moments ``step`` apart from ``start`` to before ``stop``: the bed of drips, footsteps or ticks a foley writes."""
+    if step <= 0:
+        raise SketchError(f"a bed needs a positive step, got {step!r}")
+    count = max(0, math.ceil(round((stop - start) / step, 9)))
+    return [round(start + n * step, 3) for n in range(count)]
+
+
+def speaks_by(beats: Sequence[Beat], limit: float) -> None:
+    """Refuse a sketch whose first spoken beat comes after ``limit`` seconds: the opening every reel's hook needs."""
+    first_spoken = next((b.start for b in beats if b.spoken), None)
+    if first_spoken is None:
+        raise SketchError("no line is spoken")
+    if first_spoken > limit:
+        raise SketchError(f"the first line starts at {first_spoken:.2f} s, after {limit:.2f} s")

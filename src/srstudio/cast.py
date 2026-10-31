@@ -78,8 +78,10 @@ class OfficeActor(Actor):
     extras: ``arms`` = ``"static"`` (one stroke for both arms) or ``"articulated"`` (a
     right-arm group with a forearm that can rotate at the elbow); ``legs`` = ``"seated"`` draws
     trousers and shoes below the torso, for a bench, and ``"standing"`` trousers straight down to the shoes,
-    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them); ``free_arms`` = screen sides (``left``,
-    ``right``) drawn with no arm, for a reel to reach with (:mod:`srstudio.cutout_reach`).
+    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them); ``tie`` = ``"loose"`` pulls the knot
+    down, off centre, under an open collar: a character who has stopped trying (default: the tie as drawn);
+    ``free_arms`` = screen sides (``left``, ``right``) drawn with no arm, for a reel to reach with
+    (:mod:`srstudio.cutout_reach`).
     """
 
     bottom = 312
@@ -87,12 +89,16 @@ class OfficeActor(Actor):
     eye_xs = (-37, 31)
     LEGS = ("seated", "standing")
     STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
-    extra_options = frozenset({"arms", "legs", "free_arms"})
+    TIES = ("loose",)
+    extra_options = frozenset({"arms", "legs", "tie", "free_arms"})
 
     def validate_performance(self, perf: Performance) -> None:
         _options(perf, self.extra_options)
         if perf.extras.get("arms", "static") not in ("static", "articulated"):
             raise CastError("arms: expected 'static' or 'articulated'")
+        tie = perf.extras.get("tie")
+        if tie is not None and tie not in self.TIES:
+            raise CastError(f"unknown tie {tie!r}; known: {', '.join(self.TIES)}")
         legs = perf.extras.get("legs")
         if legs is not None and legs not in self.LEGS:
             raise CastError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
@@ -130,8 +136,13 @@ class OfficeActor(Actor):
             self.draw_arm_gestures(perf)
         else:
             cv.path(g, f"M-66 148 L-87 235 L-79 {bottom} M67 148 L86 233 L77 {bottom}", stroke=ink, sw=5)
-        cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
-        cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
+        if perf.extras.get("tie") == "loose":
+            cv.path(g, "M-30 122 L0 160 L30 122", stroke=ink, sw=3.5)  # the collar, open
+            cv.path(g, "M-4 166 L20 170 L16 196 L-8 192Z", ink, clear, 0)  # the knot, down and off centre
+            cv.path(g, "M-6 196 L14 200 L9 300 L-6 312 L-16 296Z", ink, clear, 0)
+        else:
+            cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
+            cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
 
     def draw_seated_legs(self, legs):
         """Knees towards the camera, shins down to the path, as the seated café actors sit."""

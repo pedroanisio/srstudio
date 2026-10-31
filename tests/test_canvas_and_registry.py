@@ -192,6 +192,94 @@ def test_a_frozen_drawing_holds_every_key_at_its_value_on_the_first_frame():
     assert keys_on(cv, "h") == {"y": [(0.0, "0"), (0.6, "-8")]}
 
 
+def test_frozen_timed_groups_keep_initial_visibility(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    cv = fresh()
+    with cv.frozen():
+        first = cv.group(cv.comp, 'first-pose', start=0, end=0.5)
+        later = cv.group(cv.comp, 'later-pose', start=0.5, end=2)
+        cv.rect(first, 0, 0, 10, 10, '#ffffff')
+        cv.rect(later, 0, 0, 10, 10, '#ffffff')
+        cv.keys(later, 'opacity', [(0, 1), (1, 0)])
+        cv.keys(later, 'visible', [(0, 'true'), (1, 'false')])
+    assert cv.scene.check(schema=True) == []
+    path = tmp_path / 'poses.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        visible = {n['id'] for n in nodes if n.get('draw', True) and n.get('world_opacity', 1) > 0.5}
+        assert 'first-pose' in visible
+        assert 'later-pose' not in visible
+
+
+def test_frozen_timed_shapes_keep_initial_visibility(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    cv = fresh()
+    with cv.frozen():
+        first = cv.rect(cv.comp, 0, 0, 10, 10, '#ffffff', start=0, end=0.5)
+        later = cv.rect(cv.comp, 0, 0, 10, 10, '#ffffff', start=0.5, end=2)
+        cv.keys(later, 'visible', [(0, 'true'), (1, 'false')])
+    assert cv.scene.check(schema=True) == []
+    path = tmp_path / 'shapes.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        visible = {n['id'] for n in nodes if n.get('draw', True) and n.get('world_opacity', 1) > 0.5}
+        assert first.id in visible
+        assert later.id not in visible
+
+
+def test_nested_frozen_contexts_keep_timed_visibility_until_the_outer_exit():
+    cv = fresh()
+    with cv.frozen():
+        with cv.frozen():
+            group = cv.group(cv.comp, 'later', start=0.5, end=2)
+        assert group.owner is cv.comp
+        cv.keys(group, 'visible', [(0, 'true')])
+    animation = next(group.iter('animate'))
+    assert animation.elements()[0].value == 'false'
+
+
+def test_frozen_timed_instances_keep_initial_visibility(tmp_path, scene_render):
+    import json
+    import subprocess
+
+    cv = fresh()
+    cv.symbol('mark', lambda parent: cv.rect(parent, 0, 0, 10, 10, '#ffffff'))
+    with cv.frozen():
+        cv.instance(cv.comp, 'early-instance', 'mark', start=0, end=0.5)
+        cv.instance(cv.comp, 'late-instance', 'mark', start=0.5, end=2)
+    path = tmp_path / 'instances.scene.xml'
+    path.write_bytes(cv.scene.to_bytes())
+    for time in (0, 1):
+        output = subprocess.run(
+            [str(scene_render), 'eval', str(path), '--time', str(time), '--json'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        nodes = json.loads(output.stdout)['result']['nodes']
+        visible = {n['id'] for n in nodes if n.get('draw', True) and n.get('world_opacity', 1) > 0.5}
+        assert 'early-instance' in visible
+        assert 'late-instance' not in visible
+
+
 def test_a_frozen_drawing_refuses_what_it_cannot_hold_still():
     cv = fresh()
     g = cv.group(cv.comp, "g")

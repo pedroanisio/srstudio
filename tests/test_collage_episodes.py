@@ -47,7 +47,10 @@ PUBLISHED = (
     "therapy_session",
     "thought_leader",
 )
+OFF_SCREEN = {"the_boat": "phone"}  # a voice from a device, never on a set: outside the cast and its voices
+SILENT_MOVING = ("nail_hole", "your_lasagna")  # they open on a silent beat that moves of itself, cut to the first line
 HOOK_SECONDS = 2.0  # funny-reels rubric #1, Hook: the premise reads in the first 1-2 s
+STILL_ARM = 0.45  # the shortest held first frame of the sp-hook_motion test's arm a
 RELEASES = releases.load(EPISODES / "posts")
 
 
@@ -96,17 +99,22 @@ def test_each_sketch_opens_on_its_hook(mods, name):
         return
     # rubric #1: the hook is an opening chosen for the premise, tagged for analytics, its first beat a spoken line
     # that has landed by HOOK_SECONDS; in the still arm of the sp-hook_motion test, a still shot instead, cut by
-    # HOOK_SECONDS to the first line
+    # HOOK_SECONDS to the first line. A reel recorded with a silent lead-in opens on a push (L7): its takes stand.
     tags = RELEASES[sk.slug].tags
     assert tags is not None, f"{sk.slug}: a new release carries its Tags"
     still = tags.test == "sp-hook_motion" and tags.arm == "a"
-    assert (data[name].STAGING.still >= 1.0) == still, f"{sk.slug}: a still opening is the still arm's, and only its"
+    assert (data[name].STAGING.still >= STILL_ARM) == still, (
+        f"{sk.slug}: a still opening is the still arm's, and only its"
+    )
     first, second = sk.beats[0], sk.beats[1]
-    silent_head = still or data[name].STAGING.push > 0  # arm b on a recording that kept its silent second
-    assert first.start == 0.0 and first.line == (None if silent_head else 0)
+    staging = data[name].STAGING
+    pushed = staging.push[1] > 1.0 or staging.first_shot_push > 0  # arm b; these recordings kept their silent head
+    assert not (still and pushed), f"{sk.slug}: a still opening does not push"
+    silent_first = still or pushed or name in SILENT_MOVING
+    assert first.start == 0.0 and first.line == (None if silent_first else 0)
     assert second.start <= HOOK_SECONDS, f"{sk.slug}: the opening beat runs {second.start} s"
-    if silent_head:
-        assert second.line == 0, f"{sk.slug}: the silent shot cuts to the first line"
+    if first.line is None:
+        assert second.line == 0, f"{sk.slug}: a silent opening cuts to the first line"
 
 
 def test_the_published_sketches_are_still_there():
@@ -116,10 +124,16 @@ def test_the_published_sketches_are_still_there():
 def test_every_character_keeps_one_voice_across_episodes(mods):
     builder, data = mods
     ids = {}
-    for d in data.values():
+    for name, d in data.items():
         for s in d.STAGING.sketch.speakers:
+            if s.name == OFF_SCREEN.get(name):
+                continue
             assert s is builder.SPEAKERS[s.name]
             ids.setdefault(s.voice.id, set()).add(s.name)
+    cast_voices = {s.voice.id for s in builder.SPEAKERS.values()}
+    for name, who in OFF_SCREEN.items():
+        voice = next(s for s in data[name].STAGING.sketch.speakers if s.name == who).voice
+        assert voice.id not in cast_voices  # a voice from a device is nobody in the cast
     assert all(len(names) == 1 for names in ids.values())
     assert set(builder.SPEAKERS) == set(collage.LOOKS) == set(builder.TINTS)
 
