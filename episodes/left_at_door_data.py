@@ -189,7 +189,9 @@ def window(shot, start: float, stop: float) -> None:
     for x, y, w, h in ((-10, -140, 44, 1300), (558, -140, 44, 1300), (-10, -140, 612, 150)):
         cv.rect(front, toon.fx(x), toon.fy(y), toon.fh(w), toon.fh(h), FRAME, cv.ink, toon.FINE_W, radius=0)
     toon_house.ledge(cv, front)
-    screen = toon_everyday.Screen(0.0, "notify", "Noodle App", "Delivered", "9:00")
+    again = start >= at(shot, "again")
+    state = ("Order placed", "9:40") if again else ("Delivered", "9:00")
+    screen = toon_everyday.Screen(0.0, "notify", "Noodle App", *state)
     toon_everyday.phone(
         cv, front, [screen], measure=shot.measure, at=(330, 838), scale=0.9, hand=HAND, id=cv.uid("phone")
     )
