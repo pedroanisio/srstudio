@@ -4,8 +4,8 @@ main-trigger: did you see this?
 to: the friend who cries at adverts
 type: real
 story-date: 2026-10-30
-comedy-author: 17
-comedy-reviewer: 16
+comedy-author: 15
+comedy-reviewer: 17
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
 ---

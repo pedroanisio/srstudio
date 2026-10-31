@@ -5,7 +5,7 @@ to: the friend whose partner has stopped offering to navigate
 type: real
 story-date: 2026-10-29
 comedy-author: 18
-comedy-reviewer: 16
+comedy-reviewer: 19
 generated-by: claude-opus-5-5 in Claude Code
 date: 2026-10-31
 ---
