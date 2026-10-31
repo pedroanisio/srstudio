@@ -193,8 +193,8 @@ def _clip(path: Path, moves_at: float) -> Path:
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 def test_a_held_master_reads_as_arm_a_and_a_moving_one_as_arm_b(tmp_path):
-    held = proof.hook(_clip(tmp_path / "held.mp4", 1.0), 24.0)
-    moving = proof.hook(_clip(tmp_path / "moving.mp4", 0.1), 24.0)
+    held = proof.hook(_clip(tmp_path / "held.mp4", 1.0), 2.0, 24.0)
+    moving = proof.hook(_clip(tmp_path / "moving.mp4", 0.1), 2.0, 24.0)
     assert (held["arm"], moving["arm"]) == ("a", "b")
     assert held["changed"] < moving["changed"]
 
@@ -232,4 +232,9 @@ def test_a_report_without_an_arm_stays_as_it_was(monkeypatch):
 
 def test_a_master_too_slow_to_have_a_frame_at_the_hold_is_refused():
     with pytest.raises(proof.ProofError, match="no frame"):
-        proof.hook(Path("x.mp4"), 2.0)
+        proof.hook(Path("x.mp4"), 30.0, 2.0)
+
+
+def test_a_master_shorter_than_the_hold_is_refused_in_words():
+    with pytest.raises(proof.ProofError, match="shorter than the hold"):
+        proof.hook(Path("x.mp4"), 0.2, 24.0)
