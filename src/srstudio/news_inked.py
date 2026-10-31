@@ -103,6 +103,7 @@ __all__ = [
     "captions",
     "desk",
     "gus",
+    "live_door",
     "lower_third",
     "parody_tag",
     "perform",
@@ -1519,6 +1520,70 @@ def missing_card(
     _form(cv, lid, LID, LID_RIM, None, 3.0, 5.0, depth=0.0, amount=0.2)
     _form(cv, lid, tuple((a * 0.8, b * 0.72) for a, b in LID), LID_FILL, None, 5.0, 2.5, depth=0.0, amount=0.2)
     _form(cv, lid, ((64, -56), (98, -66), (104, -48), (76, -38)), LID_RIM, None, 7.0, 4.0, depth=0.0, amount=0.2)
+    _text(cv, g, label, x, y + MISSING_H - 62.0, MISSING_W, 48.0, MISSING_SIZE, PLUM_DEEP, "center")
+
+
+DOOR_WALL = "#7f6a9e"
+DOOR_FILL, DOOR_SHADE = "#c98a55", "#a56c3f"
+DOOR_TOP, DOOR_FOOT = 84.0, 226.0  # the picture's band inside the card, down from its top
+DOOR_LEFT, DOOR_RIGHT = -58.0, 58.0  # the door frame, either side of the card's centre
+
+
+def _polygon(cv: Canvas, parent, points: Sequence[Point], fill: str, weight: float) -> None:
+    """A straight-edged shape: a door keeps its corners, which :func:`_form`'s brushed contour would round off."""
+    d = "M " + " L ".join(f"{x:.2f} {y:.2f}" for x, y in points) + " Z"
+    cv.path(parent, d, fill, PLUM_DEEP, weight)
+
+
+def _door(cv: Canvas, parent, right: float) -> None:
+    """A door hung on the frame's left and swung to ``right``, its free edge foreshortened, two panels and a knob."""
+    t, f = DOOR_TOP, DOOR_FOOT
+    lean = (DOOR_RIGHT - right) * 0.16
+
+    def at(u: float, v: float) -> Point:  # across the door and down it, each 0..1
+        return DOOR_LEFT + u * (right - DOOR_LEFT), t + v * (f - t) + (0.5 - v) * 2.0 * u * lean
+
+    _polygon(cv, parent, (at(0, 0), at(1, 0), at(1, 1), at(0, 1)), DOOR_FILL, 3.5)
+    for top, foot in ((0.1, 0.44), (0.54, 0.9)):
+        _polygon(cv, parent, (at(0.2, top), at(0.8, top), at(0.8, foot), at(0.2, foot)), DOOR_SHADE, 2.0)
+    knob = at(0.9, 0.5)
+    _inked_oval(cv, parent, knob[0], knob[1], 5.5, 5.5, BUTTER, 2.5)
+
+
+@register("graphic", "news-live-door", summary="A live shot of a door nothing happens at, which can slam shut")
+def live_door(
+    cv: Canvas,
+    parent,
+    label: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    shut: float | None = None,
+    id: str = "news-live-door",
+) -> None:
+    """A live inset beside a close-up's head: LIVE, a door ajar on a lit room, and ``label`` under it. With ``shut``,
+    the door is closed from that instant and the light gone; it refuses a label too wide or an instant off its span."""
+    _span(start, end, "the live door")
+    if not label.strip() or measure(label, MISSING_SIZE) > MISSING_W - 24.0:
+        raise NewsKitError(f"the live door's label {label!r} must be some words that fit")
+    if shut is not None and not start < shut < end:
+        raise NewsKitError(f"the live door shuts inside {start}..{end}, not at {shut}")
+    g = cv.group(parent, id, start=start, end=end)
+    x, y = MISSING_X, MISSING_Y
+    cv.rect(g, x + DROP[0], y + DROP[1], MISSING_W, MISSING_H, SHADOW, radius=CHIP)
+    cv.rect(g, x, y, MISSING_W, MISSING_H, CREAM, PLUM_DEEP, 4.0, radius=CHIP)
+    cv.rect(g, x, y, MISSING_W, MISSING_HEAD, PLUM_DEEP, radius=CHIP)
+    _text(cv, g, "LIVE", x, y + 6.0, MISSING_W, MISSING_HEAD - 12.0, 46, BUTTER, "center")
+    cv.rect(g, x + 12.0, y + MISSING_HEAD + 8.0, MISSING_W - 24.0, DOOR_FOOT - MISSING_HEAD - 8.0, DOOR_WALL)
+    centre = x + MISSING_W / 2
+    room = cv.group(g, f"{id}-room", x=centre, y=y)
+    frame = (DOOR_LEFT - 8.0, DOOR_TOP - 8.0, DOOR_RIGHT - DOOR_LEFT + 16.0, DOOR_FOOT - DOOR_TOP + 8.0)
+    cv.rect(room, *frame, PLUM_DEEP)
+    ajar = cv.group(room, f"{id}-ajar", start=start, end=end if shut is None else shut)
+    cv.rect(ajar, DOOR_LEFT, DOOR_TOP, DOOR_RIGHT - DOOR_LEFT, DOOR_FOOT - DOOR_TOP, BUTTER)
+    _door(cv, ajar, DOOR_RIGHT - 34.0)
+    if shut is not None:
+        _door(cv, cv.group(room, f"{id}-shut", start=shut, end=end), DOOR_RIGHT)
     _text(cv, g, label, x, y + MISSING_H - 62.0, MISSING_W, 48.0, MISSING_SIZE, PLUM_DEEP, "center")
 
 

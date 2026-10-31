@@ -8550,6 +8550,23 @@
         }
       ]
     },
+    "news-live-door": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A live shot of a door nothing happens at, which can slam shut. First drawn for came-in-for.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9752aad037759639a37134b7b7d549fa8b812f0c87badc36a3f4ee056709a1c7",
+          "rig": null
+        }
+      ]
+    },
     "news-missing-card": {
       "kind": "graphic",
       "style": "toon",
