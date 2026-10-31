@@ -475,5 +475,5 @@ POST = InstagramPost(
     ),
     credit="Voices: ElevenLabs premade voices Bella, Jessica and Laura. Original characters, drawn in code.",
     hashtags=("#psychology", "#learningstyles", "#howpeoplethink", "#studytips"),
-    thumbnail=Thumbnail("It's important.", 36.25, "There's a name for that", place="top"),
+    thumbnail=Thumbnail("It's important.", 35.9, "There's a name for that", place="top"),
 )

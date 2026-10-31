@@ -215,3 +215,7 @@ def test_no_sheet_lands_on_another_ones_words():
     for k, (left, top, right, bottom) in enumerate(sheets):
         for other_left, other_top, other_right, other_bottom in sheets[k + 1 :]:
             assert right <= other_left or other_right <= left or bottom <= other_top or other_bottom <= top
+
+
+def test_the_cover_shows_the_open_book():
+    assert pilot.POST.thumbnail.at < sketch.events(pilot.SKETCH.beats, "shut")[0][0]

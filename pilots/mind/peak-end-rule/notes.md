@@ -50,7 +50,7 @@ draw what was drawn before: `mind_kit.memory_shelf(also=)` pulls more than one f
 
 ## What I would change
 
-- The name lands at 37% of the way in, a little ahead of the 40% target, and the card opens at 34%. Holding longer on
+- The name lands at 38.4% of the way in, a little ahead of the 40% target, and the card opens at 35%. Holding longer on
   the hearts would close that gap at the cost of pace.
 - There is no room tone. The two comic pauses, 5.73 to 7.10 s and 13.06 to 14.20 s, are near digital silence at -91 dB.
   Quiet restaurant noise under the booth shots would keep them from sounding like dropouts.
