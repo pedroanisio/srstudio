@@ -27,7 +27,15 @@ def shapes(cv: Canvas) -> int:
 
 
 @pytest.mark.parametrize(
-    "name", ["collage-cake-slice", "collage-eye-chart", "collage-lens-frame", "collage-sensor-tap"]
+    "name",
+    [
+        "collage-cake-slice",
+        "collage-eye-chart",
+        "collage-lens-frame",
+        "collage-sensor-tap",
+        "collage-wine-glass",
+        "collage-water-jug",
+    ],
 )
 def test_every_prop_is_registered_for_collage(name):
     entry = registry.get("prop", name)
@@ -42,6 +50,8 @@ def test_every_prop_is_registered_for_collage(name):
         lambda cv: collage_odds.eye_chart(cv, cv.comp, 200, 400, ("E", "FP"), (1.0, 2.0), 6.0, 5.0),
         lambda cv: collage_odds.lens_frame(cv, cv.comp, 500, 500),
         lambda cv: collage_odds.sensor_tap(cv, cv.comp, 500, 1500, ((1.0, 2.0),)),
+        lambda cv: collage_odds.wine_glass(cv, cv.comp, 500, 1500),
+        lambda cv: collage_odds.water_jug(cv, cv.comp, 500, 1500),
     ],
 )
 def test_every_prop_draws_something_valid(draw):

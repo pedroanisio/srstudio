@@ -10125,6 +10125,40 @@
           "rig": null
         }
       ]
+    },
+    "collage-wine-glass": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wine glass, as full as you like. First drawn for first-sip; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9ef7a6ff3097396bda3c7dbd0921618858b8c95519352f50bfe63d07cd8710d",
+          "rig": null
+        }
+      ]
+    },
+    "collage-water-jug": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A glass water jug with ice in it. First drawn for first-sip; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d50ae97f053b293647fa56d5d2736b6bb3627c10741413d1be3fb60f4fd7ecff",
+          "rig": null
+        }
+      ]
     }
   }
 }
