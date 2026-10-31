@@ -8933,6 +8933,74 @@
           "rig": null
         }
       ]
+    },
+    "stick-duvet": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A duvet over a bed, heaped in a mound that breathes and can sink. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "96e19fa0b67f8e4a7211e8e6bf21a9728552dfd7ae92c570b30d086fbf430263",
+          "rig": null
+        }
+      ]
+    },
+    "stick-eye-mask": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A sleep mask on a head, its eyes stitched shut. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "970f52554b504ed20e407f746b08990e2a9618c0c0288fc1eb0c52e036d1c511",
+          "rig": null
+        }
+      ]
+    },
+    "stick-recorder": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone lying face up, with a trace on its screen for each sound it caught. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a41eb99c1988129f155be5dc2e587236449c1f5cbb12ef24368f87bddf03fd40",
+          "rig": null
+        }
+      ]
+    },
+    "stick-lights-low": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Any set turned down to night, with a pool of light left around one point. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "50f950c04a8c05780005caeea1693318f872a1e6e9fdc9cacc1eee04490c3975",
+          "rig": null
+        }
+      ]
     }
   }
 }
