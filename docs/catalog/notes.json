@@ -925,6 +925,27 @@
     "toon-mint": {
       "title": "Bala de hortelã no pires"
     },
+    "stick-foil-note": {
+      "title": "Bilhete no papel-alumínio"
+    },
+    "stick-foil-parcel": {
+      "title": "Pacote de papel-alumínio"
+    },
+    "stick-scan-belt": {
+      "title": "Esteira do raio X"
+    },
+    "stick-robe": {
+      "title": "Roupão ou casaco longo"
+    },
+    "stick-spoon": {
+      "title": "Colher de servir"
+    },
+    "stick-plate": {
+      "title": "Prato cheio"
+    },
+    "stick-xray": {
+      "title": "Tela de raio X"
+    },
     "stick-headset": {
       "title": "Headset de recepção"
     },
