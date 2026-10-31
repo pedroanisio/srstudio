@@ -9,8 +9,8 @@ All LLM output must be treated as untrusted and validated explicitly.
 
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, its effects, the waits the clock jumps
 over and the two dead airs (:func:`schedule`), and its cuts (:func:`extra`). A car salesman goes to ask his manager,
-twice, and comes back worse each time; Rosa follows him the third time. The first second is held still (arm A of the
-``sp-hook_motion`` test); :func:`schedule` refuses a shorter one. The salesman is George and Rosa is Lily, as published.
+twice, and comes back worse each time; Rosa follows him the third time. He drops into his chair in the first second.
+The salesman is George and Rosa is Lily, as published.
 The repeated effects share one prompt and seed, so each is one request.
 """
 
@@ -61,8 +61,7 @@ EFFECTS = [
         seed=SEED + 4,
     ),
 ]
-LEAD = 1.15  # the still first second (arm A): nothing moves and no caption shows before 1.0 s
-STILL = 1.0  # the shortest first second the test accepts
+LEAD = 1.15  # he sits down, and speaks once he has
 LEAVE = 0.50  # he crosses out of frame, and back
 ALONE = 0.90  # she sits there before the clock shows what that cost her
 JUMP = 0.95  # the shot of the clock
@@ -87,8 +86,6 @@ INTERVIEW = Interview(
 
 def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
     """Line starts and effect starts from the clip lengths: the clock jumps and the dead airs sit between the lines."""
-    if LEAD < STILL:
-        raise ValueError(f"arm A holds the first {STILL} s still, but the first line starts at {LEAD}")
     starts: list[float] = []
     fx: dict[str, float] = {}
 

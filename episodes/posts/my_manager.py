@@ -20,7 +20,7 @@ RELEASE = Release(
     ),
     cover=True,
     style="Cutout",
-    tags=Tags("money-services", "other-person", "triumph", test="sp-hook_motion", arm="a"),
+    tags=Tags("money-services", "other-person", "triumph", test="sp-hook_motion", arm="b"),
     comedy=Scores(author=18, reviewer=19),
     parts={
         # back-room, jump-clock, paper-poster and sandwich are drawn too; they stay out until they are approved: a

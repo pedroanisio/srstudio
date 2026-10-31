@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=("#carrepair", "#mechanic", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("Do the noise.", 8.0, "Toon"),
     ),
-    tags=Tags("money-services", "protagonist", "embarrassment", test="sp-hook_motion", arm="a"),
+    tags=Tags("money-services", "protagonist", "embarrassment", test="sp-hook_motion", arm="b"),
     style="Toon",
     comedy=Scores(author=19, reviewer=18),
     parts={

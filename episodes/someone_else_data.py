@@ -2,8 +2,8 @@
 price only appears when you threaten to leave. The caller stays, the line goes dead, the heartbreak stops, and two eye
 drops later the phone rings. Then the room: every agent on the floor tipping their head back.
 
-Two voices (ElevenLabs premade Sarah as the caller, River as the agent). It opens on a still of her with the phone,
-waiting (the ``sp-hook_motion`` test's arm A). ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate`
+Two voices (ElevenLabs premade Sarah as the caller, River as the agent). It opens on her with the phone, waiting, the
+shot drifting in as her eyes go round the room. ``SKETCH`` is checked by :func:`srstudio.sketch.check`; :func:`validate`
 checks what the events ask of the props; :func:`dress` draws each shot and :func:`sounds` the phone.
 """
 
@@ -64,6 +64,9 @@ TINTS = {
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 
 STILL = 1.2  # seconds she waits before she speaks
+DRIFT = 1.05  # the opening drifts in this far
+LOOKS = (0.0, "side"), (0.4, "half"), (0.8, "side")  # seconds, eyes: she waits, and goes on waiting
+PIVOT = (900.0, 900.0)  # at the signature, which the drift keeps in frame
 WIDE = "hamster"  # never seen: the name of the shots the dress draws whole
 FIGURES: dict[str, tuple[float, float]] = {"rabbit": (1.1, 0.0), "hedgehog": (1.1, 0.0)}
 STICKERS = {"hedgehog": toon_cast.headset(toon_cast.HEDGEHOG)}
@@ -103,7 +106,7 @@ script = scripting.Script(LINES)
 hold, say = script.hold, script.say
 
 BEATS = (
-    hold(0.0, WIDE, "", "side", "flat", "desk"),  # the still: she waits on the line
+    hold(0.0, WIDE, "", "side", "flat", "desk"),  # she waits on the line
     say(1.2, "rabbit", 0, "half", "flat", "desk"),
     hold(3.65, "hedgehog", "", "wide", "flat", "desk"),  # dead air
     hold(4.65, "hedgehog", "", "teary", "frown", "desk"),  # her eyes fill
@@ -132,12 +135,12 @@ SKETCH = Sketch(SLUG, TITLE, (RABBIT, HEDGEHOG, LOW, FLOOR), LINES, BEATS, END, 
 
 
 def validate(sk: Sketch = SKETCH) -> None:
-    """The sketch is consistent, opens on a silent uncaptioned still of at least 1 s, and its last five things happen
+    """The sketch is consistent, opens on a silent uncaptioned shot of at least 1 s, and its last five things happen
     once and in order: the line dies, she ticks, the drops, the ring, and the pull back."""
     sketch.check(sk)
     opening = sk.beats[0]
     if opening.line is not None or opening.caption or sk.beats[1].start < 1.0:
-        raise sketch.SketchError("the sketch opens on a silent, uncaptioned still held at least 1 s")
+        raise sketch.SketchError("the sketch opens on a silent, uncaptioned shot of at least 1 s")
     order = ("click", "tick", "drops", "ring", "pull")
     for event in order:
         scripting.exactly_once(sk.beats, event, f"{event} happens once")
@@ -162,15 +165,15 @@ def home(shot) -> None:
 
 
 def opening(shot) -> None:
-    """The first frames: the same room and the same rabbit, drawn still."""
+    """The first frames: the same room and the same rabbit, waiting; her eyes go round it (:func:`lens` drifts in)."""
     cv, app = shot.cv, shot.app
     toon_sets.home(cv, shot.back)
     toon_house.ledge(cv, shot.front)
-    poses = toon.parse_poses([{"start": 0.0, "eyes": "side", "mouth": "flat", "arms": "desk"}], "the still")
+    keys = [{"start": at, "eyes": eyes, "mouth": "flat", "arms": "desk"} for at, eyes in LOOKS]
+    poses = toon.parse_poses(keys, "the opening")
 
     def draw(g) -> None:
-        with cv.frozen():
-            sketch.drawer("rabbit", shot.versions)(cv, g, poses, app.end, (), enter=app.start)
+        sketch.drawer("rabbit", shot.versions)(cv, g, poses, app.end, (), enter=app.start)
 
     toon_world.placed(cv, shot.back, (165.0, 840.0), FIGURES["rabbit"][0], draw, pivot=(165.0, 840.0))
     _phone(shot)
@@ -236,6 +239,13 @@ def dress(shot) -> None:
             d = drops[0]
             squeezes = [d + at for at in DRIP]
             toon_inserts.eye_drops(cv, shot.front, EYE, start=d, squeezes=squeezes, leave=d + 1.5, id=cv.uid("drops"))
+
+
+def lens(shot, setup) -> None:
+    """The opening drifts in on her; every other shot holds its frame."""
+    if shot.app.start == 0:
+        camera.anchor(setup, *PIVOT, place=True)
+        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, DRIFT)])
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:

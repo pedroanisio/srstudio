@@ -27,7 +27,7 @@ RELEASE = Release(
         "embarrassment",
         recurring=("gary", "priya", "deb"),
         test="sp-hook_motion",
-        arm="a",
+        arm="b",
     ),
     style="Collage",
     comedy=Scores(author=18, reviewer=19),

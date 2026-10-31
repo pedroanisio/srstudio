@@ -12,7 +12,7 @@ speech-to-text must hear the scripted words, each voice id must resolve to the p
 effect is length-checked. The key comes from ``ELEVENLABS_API_KEY`` and is never written; the script runs only with
 ``SRSTUDIO_ALLOW_CLOUD=1``. There is no music bed.
 
-Arm A of the first-second test: the two-shot is held frozen, silent and uncaptioned for :data:`HELD` seconds.
+The first line waits :data:`HELD` seconds, silent and uncaptioned, while the trainer strides in and takes the wrist.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import sys
 from srstudio import takes
 from srstudio.voice import Voice, VoiceSettings
 
-HELD = 1.2  # seconds of the first frame, frozen, before anything moves or sounds
+HELD = 1.2  # seconds of silence before the first line
 TRAINER_SETTING = VoiceSettings(stability=0.4, similarity_boost=0.75, style=0.45, speed=1.05)
 MEMBER_SETTING = VoiceSettings(stability=0.65, similarity_boost=0.75, style=0.15, speed=0.95)
 PING = "One soft phone message notification ping, close, dry, no voices, no music"

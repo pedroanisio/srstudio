@@ -13,7 +13,7 @@ import os
 from _common import project_root
 from instagram_posts import POSTS
 from srstudio import SPEECH_MOUTH, Episode, stick, stick_gym, stick_home, stick_reel
-from whats_your_split_audio import HELD, SCRIPT
+from whats_your_split_audio import SCRIPT
 
 os.umask(0o077)
 ROOT = project_root(__file__)
@@ -30,9 +30,9 @@ ep = Episode(
 )
 cv, t = ep.cv, ep.t
 shots = ep.sequence("shots")
-OPENING = t.takes[0].words[0]["start"]
-if SCRIPT.still < 1.0 or SCRIPT.still != HELD or OPENING < 1.0:
-    raise stick.StickDataError(f"arm A holds the first frame at least 1 s, got {OPENING}")
+STRIDES = 0.7  # the seconds of the trainer's entrance, inside the silence before the first line
+if SCRIPT.still < STRIDES:
+    raise stick.StickDataError(f"the trainer arrives before the first line, not at {STRIDES} s of {SCRIPT.still}")
 
 UP = stick.STANDING["stand"]
 
@@ -66,6 +66,7 @@ TRAINER_AT = (60.0, 0.0)
 SPOT_AT, SPOTTER_AT = (-80.0, 0.0), (60.0, -6.0)
 SIT_AT = (-170.0, 0.0)
 BESIDE = (110.0, 0.0)
+FROM_RIGHT = 640.0  # the trainer's first frame, past the frame's right edge
 EAGER = stick.Face("wide", "raised", "smile", look=(-1, 0))
 STUNNED = stick.Face("wide", "raised", "smile", look=(-1, 0))
 THRILLED = stick.Face("happy", "raised", "smile", look=(-1, 0))
@@ -103,7 +104,13 @@ def room(parent, end: float) -> None:
 
 def desk_shot(take, g, end: float) -> None:
     room(g, end)
-    trainer(g, [stick.RigKey(0, "read", EAGER if take.id in ("01", "02") else INTENT)], end, take)
+    face = EAGER if take.id in ("01", "02") else INTENT
+    if take is t.takes[0]:  # he strides in from the right and takes the wrist
+        strides = cv.group(g, cv.uid("strides-in"))
+        cv.keys(strides, "x", [(0.0, FROM_RIGHT), (STRIDES, 0.0)], hold=False)
+        trainer(strides, [stick.RigKey(0, "stand", face), stick.RigKey(STRIDES, "read", face)], end, take)
+    else:
+        trainer(g, [stick.RigKey(0, "read", face)], end, take)
     member(g, [stick.RigKey(0, "wrist", FLAT)], end, take)
     watch(g, 500, 950)
 

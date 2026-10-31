@@ -1,4 +1,4 @@
-"""What's Your Split as data: arm A holds its first frame and the payoff message stays up long enough to read."""
+"""What's Your Split as data: a silent lead with no bed, and the payoff message stays up long enough to read."""
 
 import sys
 from pathlib import Path
@@ -21,12 +21,12 @@ def data():
         sys.path.pop(0)
 
 
-def test_arm_a_holds_at_least_a_second_with_no_bed(data):
+def test_the_first_line_waits_a_second_with_no_bed(data):
     assert data.SCRIPT.still == data.HELD >= 1.0
     assert data.SCRIPT.bed is None
 
 
-def test_the_opening_take_speaks_after_the_hold_and_is_not_an_effect(data):
+def test_the_opening_take_is_speech_not_an_effect(data):
     assert not data.SCRIPT.takes[0].is_effect
 
 

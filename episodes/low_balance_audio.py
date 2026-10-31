@@ -9,8 +9,8 @@ All LLM output must be treated as untrusted and validated explicitly.
 
 The pipeline is :mod:`srstudio.interview`; this file is the episode: its script, its effects, the walk the chain runs
 out on (:func:`schedule`) and its cuts (:func:`extra`). A customer asks about a fee and collects two more. Nothing in
-the bank is free but the pen, and the pen is on a chain. The first second is held still (arm A of the ``sp-hook_motion``
-test); :func:`schedule` refuses a shorter one. The customer is Liam and the teller George, both as published.
+the bank is free but the pen, and the pen is on a chain. The customer walks up to the counter in the first second, and
+speaks when he gets there. The customer is Liam and the teller George, both as published.
 """
 
 from __future__ import annotations
@@ -77,8 +77,7 @@ EFFECTS = [
         seed=SEED + 5,
     ),
 ]
-LEAD = 1.15  # the still first second (arm A): nothing moves and no caption shows before 1.0 s
-STILL = 1.0  # the shortest first second the test accepts
+LEAD = 1.15  # he walks up to the counter, and speaks when he gets there
 STANDS = 1.20  # "You're short." and nothing, before he tries the million
 TAKES = 0.55  # from "The pen." to his hand on it
 LOOKS = 0.70  # he looks at the pen, then goes
@@ -103,8 +102,6 @@ INTERVIEW = Interview(
 
 def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
     """Line starts and effect starts from the clip lengths: the gag runs between "The pen." and the last line."""
-    if LEAD < STILL:
-        raise ValueError(f"arm A holds the first {STILL} s still, but the first line starts at {LEAD}")
     starts: list[float] = []
     fx: dict[str, float] = {}
 

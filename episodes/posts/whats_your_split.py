@@ -19,7 +19,7 @@ RELEASE = Release(
         thumbnail=Thumbnail("What's\nyour split?", 5.0, "Stick", (540, 960), 1.0, place="bottom"),
     ),
     cover=True,
-    tags=Tags("everyday-tech", "protagonist", "recognition", test="sp-hook_motion", arm="a"),
+    tags=Tags("everyday-tech", "protagonist", "recognition", test="sp-hook_motion", arm="b"),
     style="Stick",
     comedy=Scores(author=18, reviewer=16),
     parts={

@@ -2,8 +2,8 @@
 worse: he was a great lasagna. She wrote back: bring him Saturday. So he does, an enormous lasagna on both arms, to a
 silent table. Deb takes it, looks down, and says he looks so peaceful.
 
-Collage style (ADR 0026): the mistake turns real, and the widow takes it further than he did. The reel opens frozen
-(the sp-hook_motion test's arm a): Gary alone, silent, uncaptioned and unmoving for the first STILL seconds.
+Collage style (ADR 0026): the mistake turns real, and the widow takes it further than he did. The reel opens on
+Gary alone, silent and uncaptioned, the shot drifting in on his face for the first STILL seconds.
 ElevenLabs premade voices, lip-synced.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from srstudio import collage, collage_everyday, collage_sets
+from srstudio import camera, collage, collage_everyday, collage_sets
 from srstudio.collage_group import Lineup, Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Staging, make_sketch, solo, timed, voices_note
 from srstudio.sketch import Appearance, Beat, Line, Mouths, events
@@ -36,7 +36,8 @@ NARRATION = f"Voiced with ElevenLabs premade voices {voices_note(NAMES)}; a synt
 NOTE = "ElevenLabs premade voices Chris, Sarah and Jessica at their natural pace; no reference-voice cloning."
 BITRATE = 5_800_000  # two passes: a master under 20 MB
 
-STILL = 1.2  # the seconds Gary holds, frozen and silent, before the cut
+STILL = 1.2  # the seconds of Gary alone, silent, before the cut
+DRIFT = 1.06  # the opening drifts in this far on his face
 SOFA_PLACES = {"priya": Place(300.0, 1900.0, 0.8), "gary": Place(790.0, 1900.0, 0.8)}
 WAKE_PLACES = {
     "jun": Place(150.0, 1800.0, 0.5),
@@ -121,6 +122,11 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     table = Lineup(WAKE_PLACES, {**room, "gary": [_pose(0.0, "wide", "flat", "hold")]}, ((wake, medium),))
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
+        if app.start < STILL:
+            head = solo(cv, parent, app, mouths)
+            camera.anchor(parent, *head, place=True)
+            camera.push_in(cv, parent, scale=[(0.0, 1.0), (app.end, DRIFT)])
+            return head
         if app.start >= wake and app.start < medium:
             return table(cv, parent, app, mouths)
         if app.start < face:
@@ -192,5 +198,4 @@ STAGING = Staging(
     cast=casting,
     setting=setting,
     bitrate=BITRATE,
-    still=STILL,
 )

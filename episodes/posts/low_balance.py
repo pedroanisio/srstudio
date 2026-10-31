@@ -20,7 +20,7 @@ RELEASE = Release(
     ),
     cover=True,
     style="Cutout",
-    tags=Tags("money-services", "institution", "recognition", test="sp-hook_motion", arm="a"),
+    tags=Tags("money-services", "institution", "recognition", test="sp-hook_motion", arm="b"),
     comedy=Scores(author=17, reviewer=18),
     parts={
         # paper-poster and pen-on-chain are drawn too; they stay out until they are approved: a release cannot pin a

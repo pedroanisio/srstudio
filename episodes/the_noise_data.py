@@ -3,7 +3,7 @@ in a yard doing the noise with his mouth. Clunk is two thousand dollars. He talk
 at forty bucks, they shake on it, he pats the car, and the real clunk takes a wheel off. It rolls away past them both.
 
 Two voices (ElevenLabs premade Liam as the customer, Roger as the mechanic), both standing behind the car. It opens on
-a still wide of two people waiting for a car to speak (the ``sp-hook_motion`` test's arm A). ``SKETCH`` is checked by
+a wide of two people waiting for a car to speak, the car shaking at idle as the shot drifts in. ``SKETCH`` is checked by
 :func:`srstudio.sketch.check`; :func:`validate` checks what the events ask of the props; :func:`dress` draws each shot,
 :func:`lens` the one punch-in and :func:`sounds` the clunk.
 """
@@ -45,7 +45,9 @@ FOX_LOW = Speaker("fox-low", VOICE_FOX, VoiceSettings(stability=0.85, similarity
 TINTS = {"fox": "#ffd9b8", "fox-low": "#ffd9b8", "goat": "#e6e0d0", "hamster": "#ffffff"}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 
-STILL = 1.3  # seconds the wide holds before anyone speaks
+STILL = 1.3  # seconds of the opening wide before anyone speaks
+DRIFT = 1.05  # the opening wide drifts in this far
+SHAKE = ((0.0, 0.0), (0.2, -0.8), (0.4, 0.6), (0.6, -0.7), (0.8, 0.5), (1.0, -0.4), (1.2, 0.0))  # s, degrees: at idle
 WIDE = "hamster"  # never seen: the name of the wide, a shot the dress draws whole
 FIGURES = {"fox": (1.1, 30.0), "goat": (1.1, 20.0)}
 CAR_FRONT = {"at": (210.0, 1010.0), "scale": 1.9}  # the car close, between the viewer and whoever is talking
@@ -58,6 +60,7 @@ ROLL = 3.2  # seconds the wheel takes to leave the frame
 SLUMP = -5.0  # degrees the car drops onto its bare axle
 PUNCH = 1.14
 PIVOT = (340.0, 880.0)
+OPENING_PIVOT = (900.0, 1000.0)  # right of the code on the concrete's edge, which the drift keeps in frame
 END = 31.2
 THE_CLUNK = foley.Burst(0.7, 240.0, attack=0.003, decay=0.4, tone_hz=70.0, tone_end_hz=38.0, tone=0.9)
 WHEEL_RATTLE = foley.Burst(0.12, 900.0, attack=0.002, decay=0.5, tone_hz=210.0, tone_end_hz=170.0, tone=0.3)
@@ -84,7 +87,7 @@ script = scripting.Script(LINES)
 hold, say = script.hold, script.say
 
 BEATS = (
-    hold(0.0, WIDE, "", "wide", "flat", "desk"),  # the still: the car says nothing
+    hold(0.0, WIDE, "", "wide", "flat", "desk"),  # the car shakes and says nothing
     say(1.3, "fox", 0, "wide", "grin", "desk"),
     say(2.57, "goat", 1, "half", "flat", "desk"),
     hold(3.83, "fox", "", "left", "flat", "desk"),  # he looks at the car: nothing
@@ -111,12 +114,12 @@ SKETCH = Sketch(SLUG, TITLE, (FOX, GOAT, FOX_LOW), LINES, BEATS, END, bare=(WIDE
 
 
 def validate(sk: Sketch = SKETCH) -> None:
-    """The sketch is consistent, opens on a silent uncaptioned still of at least :data:`STILL`, prices each sound
+    """The sketch is consistent, opens on a silent uncaptioned wide of at least 1 s, prices each sound
     once and in order, and the clunk comes once, on the wide, after the last price."""
     sketch.check(sk)
     opening = sk.beats[0]
     if opening.line is not None or opening.caption or sk.beats[1].start < 1.0:
-        raise sketch.SketchError("the sketch opens on a silent, uncaptioned still held at least 1 s")
+        raise sketch.SketchError("the sketch opens on a silent, uncaptioned wide of at least 1 s")
     order = tuple(name for _, _, name in PRICES) + ("clunk",)
     for event in order:
         scripting.exactly_once(sk.beats, event, f"{event} happens once")
@@ -128,7 +131,7 @@ def validate(sk: Sketch = SKETCH) -> None:
         raise sketch.SketchError("the clunk happens on the wide")
 
 
-def behind(shot, parent, who: str, keys, frozen: bool) -> None:
+def behind(shot, parent, who: str, keys) -> None:
     """``who`` standing behind the car in a wide, one ``(project second, eyes, mouth)`` for each change of look."""
     cv, app = shot.cv, shot.app
     poses = toon.parse_poses(
@@ -138,14 +141,18 @@ def behind(shot, parent, who: str, keys, frozen: bool) -> None:
     at, scale = BEHIND[who]
 
     def draw(g) -> None:
-        drawer = sketch.drawer(who, shot.versions)
-        if frozen:
-            with cv.frozen():
-                drawer(cv, g, poses, app.end, (), enter=app.start)
-        else:
-            drawer(cv, g, poses, app.end, (), enter=app.start)
+        sketch.drawer(who, shot.versions)(cv, g, poses, app.end, (), enter=app.start)
 
     toon_world.placed(cv, parent, at, scale, draw)
+
+
+def shaking(shot):
+    """A group about the car's rear wheel that shakes at idle, for the opening wide."""
+    cv, (x, y) = shot.cv, CAR_WIDE["at"]
+    pivot = {"x": toon.fx(x + 98 * CAR_WIDE["scale"]), "y": toon.fy(y)}
+    car = cv.group(shot.front, cv.uid("g"), anchorX=pivot["x"], anchorY=pivot["y"], **pivot)
+    cv.keys(car, "rotation", SHAKE, hold=False, local=False)
+    return car
 
 
 def yard(shot) -> None:
@@ -163,16 +170,15 @@ def wide(shot) -> None:
     yard(shot)
     clunks = [at for at, _ in sketch.events(shot.beats, "clunk") if app.start <= at < app.end]
     if not clunks:
-        behind(shot, shot.front, "fox", ((app.start, "wide", "flat"),), True)
-        behind(shot, shot.front, "goat", ((app.start, "half", "flat"),), True)
-        with cv.frozen():
-            toon_cars.side_car(cv, shot.front, **CAR_WIDE)
+        behind(shot, shot.front, "fox", ((app.start, "wide", "flat"),))
+        behind(shot, shot.front, "goat", ((app.start, "half", "flat"),))
+        toon_cars.side_car(cv, shaking(shot), **CAR_WIDE)
         return
     clunk = clunks[0]
     behind(shot, shot.front, "fox", ((app.start, "wide", "grin"), (clunk + 0.5, "shock", "flat"),
-                                     (clunk + 1.4, "left", "flat")), False)  # fmt: skip
+                                     (clunk + 1.4, "left", "flat")))  # fmt: skip
     behind(shot, shot.front, "goat", ((app.start, "half", "smirk"), (clunk + 0.5, "shock", "flat"),
-                                      (clunk + 1.4, "left", "flat")), False)  # fmt: skip
+                                      (clunk + 1.4, "left", "flat")))  # fmt: skip
     x, y = CAR_WIDE["at"]
     pivot = {"x": toon.fx(x + 98 * CAR_WIDE["scale"]), "y": toon.fy(y)}
     car = cv.group(shot.front, cv.uid("g"), anchorX=pivot["x"], anchorY=pivot["y"], **pivot)
@@ -201,7 +207,10 @@ def dress(shot) -> None:
 
 
 def lens(shot, setup) -> None:
-    """One punch-in, on the shot where he has to make the noise."""
+    """The opening wide drifts in; one punch-in, on the shot where he has to make the noise."""
+    if shot.app.start == 0:
+        camera.anchor(setup, *OPENING_PIVOT, place=True)
+        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, DRIFT)])
     punches = [at for at, _ in sketch.events(shot.beats, "punch") if shot.app.start <= at < shot.app.end]
     if punches:
         camera.anchor(setup, *PIVOT, place=True)

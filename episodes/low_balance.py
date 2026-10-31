@@ -6,7 +6,7 @@
 
 The customer asks about a twelve dollar fee, and the screen on the counter loses twelve more for asking. He tries to
 close the account and cannot afford to. The pen is free. He walks off with it across the whole of the reception; the
-chain runs out; it takes him back. The first second is held still (arm A of the ``sp-hook_motion`` test).
+chain runs out; it takes him back. He walks up to the counter in the first second.
 """
 
 import os
@@ -49,6 +49,8 @@ HAND_UP = (146, 120)  # the hand, from the customer's head at scale 1, forearm r
 HAND_OUT = (175, 274)  # the same, carrying the pen in front of him
 CHAIN = 580
 WALK_TO = 700  # where his head gets to before the chain has a word
+ARRIVES = 1.05  # the seconds of the walk up to the counter, under the first frame
+COMES_FROM = 60  # where his middle starts it, half in at the frame's left edge
 FLUNG_TO = 565  # his middle, on the floor
 ON_THE_FLOOR = 1690  # his middle, lying down
 S = CUSTOMER_AT[2]
@@ -74,11 +76,20 @@ customer = cast.Candidate(cv)
 
 
 def walk_keys() -> tuple[list, list, list]:
-    """Where the customer's middle is: at the counter, walking with a bounce, flung back, and on the floor."""
+    """Where the customer's middle is: walking up to the counter, at it, walking off with a bounce, flung back, and
+    on the floor."""
     x0, y0 = CUSTOMER_AT[0], CUSTOMER_AT[1] + WAIST
     steps = 6
     top = RUN.taut
-    xs, ys, turns = [(0, x0), (GO, x0)], [(0, y0), (GO, y0)], [(0, 0), (GO, 0)]
+    xs, ys, turns = [(0, COMES_FROM)], [(0, y0)], [(0, -3)]
+    for k in range(1, 5):  # up to the counter, with the same bounce
+        at = ARRIVES * k / 4
+        xs.append((at, COMES_FROM + (x0 - COMES_FROM) * k / 4))
+        ys.append((at, y0 - (14 if k % 2 else 0)))
+        turns.append((at, 3 if k % 2 else -3 if k < 4 else 0))
+    xs.append((GO, x0))
+    ys.append((GO, y0))
+    turns.append((GO, 0))
     for k in range(1, steps + 1):
         at = GO + (top - GO) * k / steps
         xs.append((at, x0 + (WALK_TO - x0) * k / steps))

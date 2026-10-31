@@ -19,8 +19,8 @@ from someone_else_data import (
     SKETCH,
     STICKERS,
     TINTS,
-    WIDE,
     dress,
+    lens,
     validate,
 )
 from srstudio.toon_sketch import Staging, build
@@ -38,6 +38,7 @@ STAGING = Staging(
     versions=PINS[SKETCH.slug],
     desk=no_desk,
     lit=True,
+    camera=lens,
     figures=FIGURES,
     stickers=STICKERS,
 )

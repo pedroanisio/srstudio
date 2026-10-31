@@ -21,7 +21,7 @@ RELEASE = Release(
         hashtags=("#internet", "#customerservice", "#relatable", "#animatedshorts", "#comedy"),
         thumbnail=Thumbnail("Is it fiber?", 8.0, "Toon"),
     ),
-    tags=Tags("money-services", "institution", "recognition", test="sp-hook_motion", arm="a"),
+    tags=Tags("money-services", "institution", "recognition", test="sp-hook_motion", arm="b"),
     style="Toon",
     comedy=Scores(author=18, reviewer=19),
     parts={

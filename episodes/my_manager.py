@@ -6,7 +6,7 @@
 
 The salesman goes to ask his manager. The clock on the wall jumps twenty minutes, and he comes back with a number and
 his tie looser. The third time Rosa follows him, through a door marked MANAGER, to a cupboard, a folding chair and a
-potted plant. She takes the other chair. The first second is held still (arm A of the ``sp-hook_motion`` test).
+potted plant. She takes the other chair. He drops into his own chair in the first second.
 """
 
 import os
@@ -46,6 +46,7 @@ SALESMAN_AT = (540, 790, 1.15)
 ROSA_AT = (230, 1340, 1.55)
 CLOCK_AT = (838, 112, 78)
 GONE_X = 1290  # past the frame's right edge
+SITS_DOWN = ((0.0, -230), (0.55, 18), (0.72, -6), (0.86, 0))  # seconds, pixels: he drops into his chair, and settles
 RETURNS = [CLOCKS[0] + JUMP - 0.1, CLOCKS[1] + JUMP - 0.1]  # he is walking back in as the clock lets go
 IN_ROOM_SALESMAN = (850, 1040, 1.1)
 IN_ROOM_ROSA = (230, 1040, 1.1)
@@ -103,6 +104,7 @@ def behind_desk(g):
         ],
     )
     cv.keys(man, "x", walking(SALESMAN_AT[0], [FIRST, SECOND, THIRD], RETURNS), hold=False)
+    cv.keys(man, "y", [(at, SALESMAN_AT[1] + dy) for at, dy in SITS_DOWN], hold=False)
     worse = [(RETURNS[1] - 0.1, DOOR)]
     loose = cv.group(man, "salesman-loose-tie")
     cv.gate(loose, worse)
@@ -126,6 +128,7 @@ def on_desk(g):
         legs="seated",
         mouth=ep.mouth("rosa"),
         blinks=[
+            (0.62, 0.76),  # the chair
             (CLOCKS[0] - 0.5, CLOCKS[0] - 0.36),
             (CLOCKS[0] + JUMP + 0.1, CLOCKS[0] + JUMP + 0.6),  # twenty minutes in
             (L[3].end + 0.6, L[3].end + 0.74),
