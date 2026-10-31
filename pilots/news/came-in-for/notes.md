@@ -27,11 +27,11 @@ has no name, and the joke is on Gus. Nothing is added to what the show has said 
 
 ## Parts reused
 
-Version 2 of the show from `srstudio.news_inked`: `news-set`, `news-desk`, `news-vera`, `news-gus`, `news-bug`,
-`news-parody-tag`, `news-lower-third`, `news-banner`, `news-ticker`, `news-captions`. The Toon sketch build and
+The show from `srstudio.news_inked`: `news-vera` and `news-gus` at version 3, and at version 2 `news-set`, `news-desk`,
+`news-bug`, `news-parody-tag`, `news-lower-third`, `news-banner`, `news-ticker`, `news-captions`. The Toon sketch build and
 recording road, the signature cactus and code, the Thumbnail and InstagramPost tools, the sting and the foley. No
 character, set or prop of Okayville or Mind.
 
-## Parts new (all proposed)
+## Parts new
 
-`news-live-door`: the live inset of a door, which can slam shut.
+`news-live-door`: the live inset of a door, which can slam shut. Approved by arc4d3.
