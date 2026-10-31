@@ -1,9 +1,10 @@
 """Inside the Circle — a pilot of the Maps channel, main trigger jaw-drop: the sketch as data.
 
-"Nearly half of all people live inside this circle." The dots arrive, a million people each, and a hamster squeezes
-through them apologising. The count is stamped with its grid and its year, and the 2013 circle tightens into the 2015
-one. Then the same circle slides over Australia, where 44 dots fall into it one at a time and the same hamster has
-nobody to apologise to, and slides home to fill again. The last frame is the first.
+"Nearly half of all people live inside this circle." The ring is full on the first frame and the rest of the world's
+dots arrive round it, a million people each. A hamster squeezes through them apologising, and the count is stamped with
+its grid and its year. Then the finding gets bigger: the same circle slides over Australia, 44 dots fall into it one at
+a time, the same hamster has nobody to apologise to, and the first circle holds about ninety times as many. The reel
+ends on that map and cuts to its first frame, so the full ring lands straight after the empty one.
 
 The 3,300 km circle around Mong Khet held a majority on an older reading and does not on the 2025 grid, so the reel says
 what the grid says and does not widen the circle. Every figure traces to ``pilots/maps/inside-the-circle/sources.md``
@@ -17,7 +18,6 @@ shot from the events, so the map follows the recording; :func:`foley` its sound.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping
 from dataclasses import replace
 
@@ -37,12 +37,11 @@ DESCRIPTION = (
     "everyone alive, and the same circle over Australia holds 44 million."
 )
 ACCESSIBILITY = (
-    "A red ring sits on a map of Asia, tagged 3,300 km, and dots fill it, one for each million people, thick inside "
-    "the ring and thin outside it. A cartoon hamster squeezes through big red dots, apologising. A stamp gives the "
-    "count inside and outside, and ripples run over the dots. A wider circle over the South China Sea tightens onto "
-    "the ring. The map slides under the ring until it is over Australia, where 44 dots fall in one at a time. The "
-    "hamster stands alone on an empty map with one dot far off. The map slides home and the ring fills again. The "
-    "first picture comes back."
+    "A red ring on a map of Asia, tagged 3,300 km, is thick with red dots, one for each million people, and thinner "
+    "grey dots arrive outside it. A cartoon hamster squeezes through big red dots, apologising. A stamp gives the "
+    "count inside and outside, and ripples run over the dots. The map slides under the ring until it is over "
+    "Australia, where 44 dots fall in one at a time. The hamster stands alone on an empty map with one dot far off. "
+    "The ring over Australia stays, with its stamp, and the reel cuts back to the full ring."
 )
 NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator) and River (hamster); synthesised effects."
 NOTE = "ElevenLabs premade voices Bella and River at their natural pace; no reference-voice cloning."
@@ -62,19 +61,13 @@ RING_Y = 960.0
 
 FILL = 2.4  # seconds the dots take to arrive
 OUTSIDE = 0.5  # the outside's dots start this long after the inside's
-SLIDE = 2.0  # seconds the map takes to slide under the ring, either way
+SLIDE = 2.0  # seconds the map takes to slide under the ring
 RECOLOUR = 0.8  # seconds the first circle's dots take to stop being what the reel is about
-FALL = 1.1  # seconds the 44 dots take to fall in
-LEAVE = 0.4  # seconds the 44 take to go as the map leaves, while they are still in frame
-REFILL = 0.9  # seconds the first circle's dots take to come back
+FALL = 2.0  # seconds the 44 dots take to fall in: slow enough to count how few they are
 LEAST_APART = 0.6  # seconds between the ripples that count the dots: two inside, two outside, along the line
 RIPPLE = 1.1  # seconds one ripple runs
 RIPPLE_OUT = 2.7  # how many ring radii a ripple outside the ring reaches
-# The 2013 circle: "centred in the South China Sea and about 4,000 km in radius" (Quah). He gives no point, so this one
-# is a stand-in for drawing it, and the circle is drawn as "about": sources.md says so.
-FIRST_DRAWN = (13.0, 114.0)
-FIRST_DRAWN_KM = 4000.0
-TIGHTEN = 1.2  # seconds the 2013 circle takes to become the 2015 one
+LAST_RIPPLES = (0.2, 1.5)  # seconds into the last line: the empty ring is counted too, and the picture does not stop
 
 HAMSTER = Speaker(
     "ham",
@@ -108,14 +101,13 @@ STAGGER = 0.05  # seconds between them
 PRESS = 0.14  # share of the way to the hamster a big dot leans over the rest of the shot
 FAR_DOT = (930.0, 640.0, 1130.0, 16.0)  # the nearest million, a long way off: rest x, y, from x, and its radius
 
-END = 22.7
+END = 20.2
 
 LINES = (
     Line("narrator", "Nearly half of all people live inside this circle."),
     Line("narrator", "Each dot is a million people."),
     Line("ham", "Excuse me. Sorry. Sorry."),
     Line("narrator", "That's almost four billion inside, and over four billion outside."),
-    Line("narrator", "A map started this in 2013. An economist tightened the circle in 2015."),
     Line("narrator", "Now the same circle, over Australia."),
     Line("narrator", "Forty-four million."),
     Line("ham", "Excuse me?"),
@@ -131,21 +123,20 @@ BEATS = (
     say(2.8, CARD, 1, *FACE, "dots"),
     say(4.2, "hamster", 2, "shock", "flat", "desk", "crowd"),
     say(6.2, CARD, 3, *FACE, "count"),
-    say(9.4, CARD, 4, *FACE, "origin"),
-    say(13.2, CARD, 5, *FACE, "slide"),
-    say(15.6, CARD, 6, *FACE, "fall"),
-    say(17.4, "hamster", 7, "side", "flat", "desk", "alone"),
-    say(18.6, CARD, 8, *FACE, "many"),
-    hold(21.8, CARD, LINES[0].text, *FACE, "first"),
+    say(10.2, CARD, 4, *FACE, "slide"),
+    say(13.2, CARD, 5, *FACE, "fall"),
+    say(15.6, "hamster", 6, "side", "flat", "desk", "alone"),
+    say(17.0, CARD, 7, *FACE, "many"),
 )
 SKETCH = Sketch(SLUG, TITLE, (map_kit.NARRATOR, HAMSTER), LINES, BEATS, END, cast=map_kit.MAPS_CAST)
-EVENTS = ("dots", "crowd", "count", "origin", "slide", "fall", "alone", "many", "first")
+EVENTS = ("dots", "crowd", "count", "slide", "fall", "alone", "many")
 TINTS = {"narrator": map_kit.PAPER, "ham": map_kit.PIN}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 POST = InstagramPost(
     title="Why does one circle hold 3.95 billion here and 44 million there?",
     description=(
-        "Around Mong Khet the same circle holds nearly half of everyone alive. The centre in Australia, Adelaide, was "
+        "Around Mong Khet the same circle holds nearly half of everyone alive. A 2013 map started the idea, and an "
+        "economist tightened the circle in 2015. The centre in Australia, Adelaide, was "
         "chosen so the circle holds the country and largely misses Java; about 19 million of the 44 live outside "
         "Australia.\n"
         f"Source: GHS-POP 2025, circle of 3,300 km around Mong Khet, 48.3% of the grid. {PROJECTION}"
@@ -200,8 +191,6 @@ def _rest(at: Mapping[str, float]) -> float:
     rests = at["slide"] + SLIDE
     if rests > at["fall"]:
         raise sketch.SketchError(f"the map rests at {rests} s, after the dots start to fall at {at['fall']} s")
-    if at["many"] + SLIDE + REFILL > at["first"]:
-        raise sketch.SketchError("the map comes home and the first circle fills before the first picture returns")
     return rests
 
 
@@ -213,46 +202,30 @@ def labels(beats, end: float) -> list[tuple[float, float, str]]:
         (0.0, end, "stamp"),
         (0.0, end, "tag"),
         (0.0, at["slide"], MONG_KHET.name),
-        (at["fall"], at["many"], ADELAIDE.name),
-        (at["many"] + SLIDE, end, MONG_KHET.name),
+        (at["fall"], end, ADELAIDE.name),
     ]
 
 
-def _world(shot, start: float, end: float, id: str, *, dots: bool) -> None:
+def _world(shot, start: float, end: float, id: str) -> None:
     """The map, the dots and the pins from ``start`` to ``end`` of the reel: the same map whichever shot draws it, keyed
-    to the reel's clock, so a shot that comes back finds it where it would have been. It goes to Australia and back."""
+    to the reel's clock, so a shot that comes back finds it where it would have been."""
     cv, back, front = shot.cv, shot.back, shot.front
     at = _at(shot.beats)
-    slide, many = at["slide"], at["many"]
-    arrived, home = _rest(at), many + SLIDE
-    shift = None
-    if dots:
-        here, there = (MONG_KHET.lat, MONG_KHET.lon), (ADELAIDE.lat, ADELAIDE.lon)
-        out, back_home = map_kit.glide(here, there, slide, arrived), map_kit.glide(there, here, many, home)
-        shift = (out[0] + back_home[0], out[1] + back_home[1])
+    slide, arrived = at["slide"], _rest(at)
+    shift = map_kit.glide((MONG_KHET.lat, MONG_KHET.lon), (ADELAIDE.lat, ADELAIDE.lon), slide, arrived)
     view = map_kit.equal_area(cv, back, MONG_KHET.lon, MONG_KHET.lat, ZOOM, start, end, shift=shift, id=id)
-    if dots:
-        everyone = {"inside": (0.0, FILL), "rest": (OUTSIDE, FILL)}
-        map_kit.population(cv, view, everyone, id=f"{id}-out")  # under the red, for when the red goes
-        red = {"inside": (0.0, FILL)}
-        fades = {"inside": (slide, slide + RECOLOUR)}
-        if arrived <= start < many + LEAVE:  # the engine refuses a layer with nothing in frame at any frame of its map
-            red["adelaide"] = (at["fall"], at["fall"] + FALL)
-            fades["adelaide"] = (many, many + LEAVE)
-        pins = {"inside": map_kit.PIN, "adelaide": map_kit.PIN}
-        map_kit.population(cv, view, red, colours=pins, fades=fades, id=f"{id}-red")
-        if end > home:
-            map_kit.population(cv, view, {"inside": (home, home + REFILL)}, colours=pins, id=f"{id}-again")
-    for n, (place, a, b) in enumerate(
-        ((MONG_KHET, start, min(end, slide)), (MONG_KHET, max(start, home), end))
-        if dots
-        else ((MONG_KHET, start, end),)
-    ):
-        if a < b:
-            map_kit.pin(cv, front, view, place, a, b, shot.measure, side="below", id=f"{id}-pin-{n}", figure=False,
-                        pop=False)  # fmt: skip
-    if dots and start < many and end > at["fall"]:
-        map_kit.pin(cv, front, view, ADELAIDE, max(start, at["fall"]), min(end, many), shot.measure, side="below",
+    map_kit.population(cv, view, {"inside": None, "rest": (OUTSIDE, FILL)}, id=f"{id}-out")  # under the red
+    red: dict[str, tuple[float, float] | None] = {"inside": None}
+    if start >= arrived:  # the engine refuses a layer with nothing in frame at any frame of its map
+        red["adelaide"] = (at["fall"], at["fall"] + FALL)
+    pins = {"inside": map_kit.PIN, "adelaide": map_kit.PIN}
+    fades = {"inside": (slide, slide + RECOLOUR)}
+    map_kit.population(cv, view, red, colours=pins, fades=fades, id=f"{id}-red")
+    if start < slide:
+        map_kit.pin(cv, front, view, MONG_KHET, start, min(end, slide), shot.measure, side="below", id=f"{id}-pin-0",
+                    figure=False, pop=False)  # fmt: skip
+    if end > at["fall"]:
+        map_kit.pin(cv, front, view, ADELAIDE, max(start, at["fall"]), end, shot.measure, side="below",
                     id=f"{id}-adelaide", figure=False, pop=False)  # fmt: skip
 
 
@@ -268,55 +241,19 @@ def _ripple(shot, at: float, reach: tuple[float, float]) -> None:
 
 def _ripples(shot) -> None:
     """While the line counts them: two ripples over the dots inside the ring, then two over the dots outside it."""
-    count, origin = _at(shot.beats)["count"], _at(shot.beats)["origin"]
-    apart = (origin - count) / 4
+    count, slide = _at(shot.beats)["count"], _at(shot.beats)["slide"]
+    apart = (slide - count) / 4
     if apart < LEAST_APART:
-        raise sketch.SketchError(f"the count needs {4 * LEAST_APART} s of line, got {origin - count} s")
+        raise sketch.SketchError(f"the count needs {4 * LEAST_APART} s of line, got {slide - count} s")
     for n, reach in enumerate(((0.05, 1.0), (0.05, 1.0), (1.0, RIPPLE_OUT), (1.0, RIPPLE_OUT))):
         _ripple(shot, count + n * apart, reach)
-
-
-def first_drawn() -> tuple[float, float, float]:
-    """Where the 2013 circle falls on the first map, in frame pixels: its centre, then its radius."""
-    lat1, lat2 = math.radians(MONG_KHET.lat), math.radians(FIRST_DRAWN[0])
-    west_east = math.radians(FIRST_DRAWN[1] - MONG_KHET.lon)
-    bearing = math.atan2(
-        math.sin(west_east) * math.cos(lat2),
-        math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(west_east),
-    )
-    away = map_kit.ring_px(map_kit.km_between((MONG_KHET.lat, MONG_KHET.lon), FIRST_DRAWN), ZOOM)
-    return 540.0 + away * math.sin(bearing), RING_Y - away * math.cos(bearing), map_kit.ring_px(FIRST_DRAWN_KM, ZOOM)
-
-
-def _tightens(shot) -> None:
-    """The 2013 circle comes up where it was drawn, wider and in the South China Sea, then tightens onto the ring."""
-    cv = shot.cv
-    at = _at(shot.beats)
-    begins, ends = at["origin"], at["slide"]
-    moves = begins + (ends - begins) / 2
-    x, y, radius = first_drawn()
-    g = cv.group(shot.back, cv.uid("g"), start=begins, end=ends, x=x, y=y)
-    cv.keys(g, "x", [(moves, x), (moves + TIGHTEN, 540.0)], kind="sine-in-out", local=False)
-    cv.keys(g, "y", [(moves, y), (moves + TIGHTEN, RING_Y)], kind="sine-in-out", local=False)
-    for prop in ("scaleX", "scaleY"):
-        cv.keys(g, prop, [(moves, 1.0), (moves + TIGHTEN, RING_PX / radius)], kind="sine-in-out", local=False)
-    cv.keys(g, "opacity", [(begins, 0.0), (begins + 0.3, 1.0), (moves + TIGHTEN, 1.0), (ends, 0.0)], hold=False,
-            local=False)  # fmt: skip
-    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, cv.clear, map_kit.PAPER, 14.0)
-    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, cv.clear, map_kit.INK, 7.0)
 
 
 def _stamps(shot, start: float, end: float, id: str) -> None:
     """Whichever stamps fall from ``start`` to ``end``: how to read a dot, the count, then the second circle."""
     at = _at(shot.beats)
     for n, (text, begins, stops) in enumerate(
-        (
-            (LEGEND, 0.0, at["count"]),
-            (COUNT, at["count"], at["slide"]),
-            (OVER, at["fall"], at["many"]),
-            (COUNT, at["many"] + SLIDE, at["first"]),
-            (LEGEND, at["first"], shot.end),
-        )
+        ((LEGEND, 0.0, at["count"]), (COUNT, at["count"], at["slide"]), (OVER, at["fall"], shot.end))
     ):
         a, b = max(start, begins), min(end, stops)
         if a < b:
@@ -366,36 +303,29 @@ def dress(shot) -> None:
         else:
             _alone(shot)
     else:
-        if app.start < at["first"]:
-            stop = min(app.end, at["first"])
-            # Maps either side of a cut match, so it does not show: the 44 are drawn only on the map that holds them.
-            cuts = [t for t in (_rest(at), at["many"] + LEAVE) if app.start < t < stop]
-            for a, b in zip((app.start, *cuts), (*cuts, stop), strict=True):
-                _world(shot, a, b, f"world-{round(a * 1000)}", dots=True)
-                _stamps(shot, a, b, f"world-{round(a * 1000)}")
-            if app.start <= at["count"] < stop:
-                _ripples(shot)
-                _tightens(shot)
-            map_kit.ring(
-                cv, shot.back, RING_PX, app.start, stop, y=RING_Y, id=f"ring-{n}", label=TAG, measure=shot.measure
-            )
-        if app.end > at["first"]:
-            begins = max(app.start, at["first"])
-            _world(shot, begins, app.end, f"home-{n}", dots=False)
-            map_kit.ring(
-                cv, shot.back, RING_PX, begins, app.end, y=RING_Y, id=f"home-ring-{n}", label=TAG, measure=shot.measure
-            )
-            _stamps(shot, begins, app.end, f"home-{n}")
+        # Maps either side of a cut match, so it does not show: the 44 are drawn only on the map that holds them.
+        cuts = [t for t in (_rest(at),) if app.start < t < app.end]
+        for a, b in zip((app.start, *cuts), (*cuts, app.end), strict=True):
+            _world(shot, a, b, f"world-{round(a * 1000)}")
+            _stamps(shot, a, b, f"world-{round(a * 1000)}")
+        if app.start <= at["count"] < app.end:
+            _ripples(shot)
+        if app.start == at["many"]:
+            for after in LAST_RIPPLES:
+                _ripple(shot, at["many"] + after, (0.05, 1.0))
+        map_kit.ring(
+            cv, shot.back, RING_PX, app.start, app.end, y=RING_Y, id=f"ring-{n}", label=TAG, measure=shot.measure
+        )
     map_kit.sign(shot.cv, shot.front)
 
 
 def foley(beats, end, speech, root, seed) -> list[dict]:
-    """A bump for each big dot that shoves in, a pop for each of the 44, and a whoosh each way the map slides."""
+    """A bump for each big dot that shoves in, a pop for each of the 44, and a whoosh as the map slides."""
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     at = _at(beats)
     bumps = [at["crowd"] + i * STAGGER for i in range(len(CROWD))]
     falls = [at["fall"] + i * FALL / 44 for i in range(44)]
     pops = map_kit.write_pops(audio / "pops.wav", sorted([*bumps, *falls]), end, seed=seed)
-    whoosh = synth.write_whoosh(audio / "whoosh.wav", [at["slide"], at["many"]], end, seed=seed)
+    whoosh = synth.write_whoosh(audio / "whoosh.wav", [at["slide"]], end, seed=seed)
     return [sketch.effect("pops", 0.0, -11.0, root, pops), sketch.effect("whoosh", 0.0, -13.0, root, whoosh)]

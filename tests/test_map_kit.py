@@ -364,6 +364,17 @@ def test_a_zone_can_fade_out_once_the_reel_has_moved_on():
     assert '<key time="5" value="1.0"/>' in layer and '<key time="6" value="0.0"/>' in layer
 
 
+def test_a_zone_with_no_window_is_up_on_the_first_frame_and_can_still_fade():
+    cv = canvas()
+    view = map_kit.equal_area(cv, cv.comp, 99.0, 21.0, 1.6, 0.0, 8.0, id="world")
+    map_kit.population(cv, view, {"inside": None, "rest": (0.0, 2.0)}, fades={"inside": (5.0, 6.0)})
+    written = xml(cv)
+    layer = written[written.index('id="map-population-inside-0"') :]
+    layer = layer[: layer.index("</geoLayer>")]
+    assert 'opacity="1"' in layer and '<key time="0"' not in layer
+    assert '<key time="5" value="1.0"/>' in layer and '<key time="6" value="0.0"/>' in layer
+
+
 def test_a_fade_needs_a_zone_that_is_up_before_it():
     cv = canvas()
     view = map_kit.equal_area(cv, cv.comp, 99.0, 21.0, 1.6, 0.0, 8.0, id="world")

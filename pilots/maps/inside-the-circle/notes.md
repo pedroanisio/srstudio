@@ -11,9 +11,11 @@ date: 2026-10-31
 
 ## Main trigger
 
-Jaw-drop. One ring holds nearly half of everyone alive. A dot is a million people, the dots pour in, and a hamster has to
-shove through them apologising. The same ring then slides over Australia, 44 dots fall in, and the same hamster has
-nobody to apologise to. The map slides home, the ring fills again, and the reel returns to its first frame.
+Jaw-drop. The first frame is the claim: one ring, already full, and one line saying it holds nearly half of everyone
+alive. A dot is a million people, the rest of the world's dots arrive round it, and a hamster shoves through them
+apologising. The finding then gets bigger: the same ring slides over Australia, 44 dots fall in, the same hamster has
+nobody to apologise to, and the first circle holds about ninety times as many. The reel ends on that map and cuts to the
+full ring.
 
 The ring never changes size and the map moves under it, so the comparison needs no explaining. The dots carry the
 argument, and the voice only says what they are.
@@ -27,7 +29,8 @@ the line was rewritten in words and the exact figure stays on the stamp.
 
 Both rings are Lambert equal-area maps re-centred on the ring's centre, at one scale, and measured at 429.9 px on the
 frame. The caption states that Adelaide was chosen so the circle holds the country and largely misses Java. `sources.md`
-gives each figure, the run it came from and the status of each claim, and says how the 2013 circle is drawn.
+gives each figure, the run it came from and the status of each claim. The 2013 circle is gone from the reel: the caption
+says where the idea came from, and sources.md rows 14 and 15 carry that.
 
 ## Parts reused
 
@@ -37,25 +40,29 @@ takes and transcript check, foley (`synth.write_whoosh`, `map_kit.write_pops`), 
 
 ## Parts new (all proposed)
 
-`map-ring` gains its tag and `map-population` gains its fade, both added for this reel. `map_kit.glide` keeps the ring
-true during the slide. The rest of the staging is this reel's own: the crowd, the ripples and the 2013 circle.
+`map-ring` gains its tag and `map-population` gains its fade and a zone that is up from the first frame, all added for
+this reel. `map_kit.glide` keeps the ring true during the slide. The rest of the staging is this reel's own: the crowd
+and the ripples.
 
 ## What I would change
 
-The cover's headline sits over the ring's tag. The two ripples outside the ring are faint under its veil.
+The cover's headline sits over the ring's tag. The two ripples outside the ring are faint under its veil. "Each dot is a
+million people." wraps with "people." alone on its second line; only a new take would change that.
 
 ## Standing rules
 
-Taken: L5, the first line is spoken from 0.0 s. L7, the dots start moving in the first second. L10, the evidence is a
-stamp over a moving map. L11, the surprise is the first line. L13, 23.3 s. L15, the caption's first line is a question.
-L16, the watch gate below.
+Read as an explainer, under the Scope section of the rules: the map carries the idea and the cast comes in to react.
 
-Partly: L6, the claim is one short line on screen from frame 0, but the shot is a wide map, not a close reacting face.
-L12, the reel returns to frame 1 by a clean cut after the ring refills, then holds frame 1 for 1.5 s.
+Taken: L4, the claim is on screen and spoken from frame 0, with the ring full. L5, the first line starts at 0.0 s. L7,
+the world's dots start arriving at 0.5 s. L8, as an escalating finding: nearly half, then 3.95 bn against 4.24 bn, then
+44 million in the same circle, then about ninety times as many. L10, the evidence is a stamp over the map. L11, the
+surprise is the first line. L12, the reel ends on the second finding, 0.69 s after its last word, and cuts to frame 1
+with no tail. L13, 20.2 s. L15, the caption's first line is a question. L16, the watch gate below.
 
-Not taken: L4, the claim is clear by 3 s but the trouble, a hamster among the dots, comes at 4.4 s. L8, one running
-joke. L9, the map carries the reel, not two characters talking. L17, `pilotcheck.py` is not on this branch and did not
-run.
+Partly: L6, one short line on frame 0 over a full ring, read at a glance, but a map and not a reacting face. L9, held
+framing, with the hamster for reactions in two shots.
+
+Not taken: L17, `pilotcheck.py` is not on this branch and did not run.
 
 ## Watch gate
 

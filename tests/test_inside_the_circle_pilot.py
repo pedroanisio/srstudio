@@ -84,10 +84,30 @@ def test_both_circles_are_one_radius_at_one_scale():
     assert map_kit.ring_px(pilot.RADIUS_KM, pilot.ZOOM) == pytest.approx(pilot.RING_PX, abs=0.01)
 
 
-def test_the_2013_circle_is_wider_and_drawn_where_it_was():
-    x, y, radius = pilot.first_drawn()
-    assert radius > pilot.RING_PX and radius == pytest.approx(map_kit.ring_px(4000.0, pilot.ZOOM))
-    assert x > 540.0 and y > pilot.RING_Y  # south and east of Mong Khet
+def test_the_reel_tells_no_history_on_the_way_to_its_findings():
+    assert "2013" not in SAID and not hasattr(pilot, "FIRST_DRAWN")
+
+
+def test_the_claim_is_up_with_its_dots_on_the_first_frame():
+    xml = dressed()
+    layer = xml[xml.index('id="world-0-red-inside-0"') :]
+    assert 'opacity="1"' in layer[: layer.index(">")]
+    assert AT["dots"] <= 3.0
+
+
+def test_the_second_finding_is_held_to_the_last_frame():
+    assert pilot.LINES[-1].text == "The first circle holds about ninety times as many."
+    assert pilot.BEATS[-1].line == len(pilot.LINES) - 1 and pilot.BEATS[-1].event == "many"
+    assert pilot.BEATS[-1].who == map_kit.CARD
+
+
+def test_the_44_stay_on_screen_to_the_end():
+    assert (AT["fall"], pilot.END, pilot.ADELAIDE.name) in pilot.labels(pilot.BEATS, pilot.END)
+
+
+def test_the_last_map_keeps_moving_until_it_cuts_away():
+    last = AT["many"] + pilot.LAST_RIPPLES[-1] + pilot.RIPPLE
+    assert pilot.END - last < 1.0 and pilot.LAST_RIPPLES[1] - pilot.LAST_RIPPLES[0] <= pilot.RIPPLE + 0.5
 
 
 def test_the_caption_says_how_the_second_circle_was_placed():
@@ -145,7 +165,7 @@ def test_the_44_are_only_on_the_maps_that_hold_them_in_frame():
 def test_the_ring_spans_the_cuts_between_maps_so_its_tag_stays_long_enough_to_read():
     xml = dressed()
     shots = sum(a.who == map_kit.CARD for a in sketch.appearances(pilot.BEATS, pilot.END))
-    assert xml.count('id="ring-') == shots and xml.count('id="home-ring-') == 1
+    assert xml.count('id="ring-') == shots
 
 
 def test_a_map_that_has_not_come_to_rest_before_the_dots_fall_stops_the_build():
@@ -153,13 +173,8 @@ def test_a_map_that_has_not_come_to_rest_before_the_dots_fall_stops_the_build():
         pilot._rest({**AT, "fall": AT["slide"] + pilot.SLIDE - 0.1})
 
 
-def test_a_map_that_comes_home_too_late_stops_the_build():
-    with pytest.raises(sketch.SketchError, match="comes home"):
-        pilot._rest({**AT, "first": AT["many"] + 0.5})
-
-
 def test_a_count_line_too_short_for_its_ripples_stops_the_build():
-    beats = tuple(replace(b, start=AT["count"] + 1.0) if b.event == "origin" else b for b in pilot.BEATS)
+    beats = tuple(replace(b, start=AT["count"] + 1.0) if b.event == "slide" else b for b in pilot.BEATS)
     with pytest.raises(sketch.SketchError, match="the count needs"):
         pilot._ripples(SimpleNamespace(beats=beats))
 
@@ -186,11 +201,6 @@ def test_events_out_of_order_stop_the_build():
     beats = tuple(replace(b, event=swapped.get(b.event, b.event)) for b in pilot.BEATS)
     with pytest.raises(sketch.SketchError):
         pilot.validate(replace(pilot.SKETCH, beats=beats))
-
-
-def test_the_last_frame_is_the_first():
-    last = pilot.BEATS[-1]
-    assert last.line is None and last.event == "first" and last.caption == pilot.LINES[0].text
 
 
 def test_a_pilot_has_no_release_and_no_post():

@@ -155,7 +155,3 @@ GHS-POP needs credit in the reel's caption and `sources.md`. The population laye
 4. **"Checked it in 2015".** He did more than check: he solved for the smallest circle, in September 2015, with data he doesn't name.
 5. **"Canada or Australia".** Use Australia. See the comparison table.
 6. **GPW.** Not needed separately: GHS-POP is built from GPWv4.11 census data (p. 46).
-
-## How the reel draws the 2013 circle
-
-The reel shows Myers's circle for four seconds so that "tightened" can be seen. Quah gives it as "centred in the South China Sea and about 4,000 km in radius" and names no point, so the reel uses 13.0, 114.0 as a stand-in for drawing it and carries no label or figure for it. Its outline is a true circle on the frame, on a map centred on Mong Khet, so it is approximate in position and in shape. No number in the reel rests on it.

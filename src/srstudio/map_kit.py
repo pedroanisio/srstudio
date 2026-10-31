@@ -641,40 +641,51 @@ def _route(lat: float, frm: float, to: float) -> str:
 def population(
     cv: Canvas,
     view,
-    waves: Mapping[str, tuple[float, float]],
+    waves: Mapping[str, tuple[float, float] | None],
     colours: Mapping[str, str] | None = None,
     radius: float = DOT_RADIUS,
     id: str = "map-population",
     fades: Mapping[str, tuple[float, float]] | None = None,
 ) -> None:
     """The dots of the zones ``waves`` names on the map asset ``view``, each zone appearing wave by wave between its
-    ``(start, end)``. A zone's dots are its total rounded to the nearest million (``tools/maps/build_layers.py``), so a
-    zone can be counted. ``colours`` overrides a zone's colour: :data:`PIN` for the zone the reel is about. ``fades``
-    takes a zone's dots away again over its ``(start, end)``, once the reel is about something else."""
+    ``(start, end)``, or up from the first frame with ``None``. A zone's dots are its total rounded to the nearest
+    million (``tools/maps/build_layers.py``), so a zone can be counted. ``colours`` overrides a zone's colour:
+    :data:`PIN` for the zone the reel is about. ``fades`` takes a zone's dots away again over its ``(start, end)``, once
+    the reel is about something else."""
     if not waves or not set(waves) <= {"inside", "adelaide", "rest"}:
         raise MapKitError(f"the zones are inside, adelaide and rest, got {sorted(waves)}")
     for zone, (begin, stop) in (fades or {}).items():
-        if zone not in waves or begin < waves[zone][1]:
+        up = waves.get(zone, (0.0, 0.0))
+        if zone not in waves or (up is not None and begin < up[1]):
             raise MapKitError(f"a zone fades after it is up, got {zone!r} from {begin}")
         _span(begin, stop, f"the fade of {zone!r}")
     source = _geo(cv, "dots")
     features = [f for f in json.loads(_shipped("dots"))["features"]]
-    for zone, (start, end) in waves.items():
-        _span(start, end, f"the zone {zone!r}")
+    for zone, window in waves.items():
+        if window is not None:
+            _span(window[0], window[1], f"the zone {zone!r}")
         names = [f["id"] for f in features if f["properties"]["zone"] == zone]
-        slot = (end - start) / len(names)
         colour = (colours or {}).get(zone, DOT_OUT)
         if not (isinstance(colour, str) and _HEX.match(colour)):
             raise MapKitError(f"a zone's colour is a #rrggbb colour, got {colour!r}")
         for i, key in enumerate(names):
             layer = view.add_geoLayer(
-                id=f"{id}-{key}", geo=source, filter=f"k={key}", fill=colour, pointRadius=radius, opacity=0
+                id=f"{id}-{key}",
+                geo=source,
+                filter=f"k={key}",
+                fill=colour,
+                pointRadius=radius,
+                opacity=int(window is None),
             )
-            at = start + i * slot
-            keys = [(at, 0.0), (at + max(slot / WAVE_OVERLAP, 0.05), 1.0)]
+            keys: list[tuple[float, float]] = []
+            if window is not None:
+                slot = (window[1] - window[0]) / len(names)
+                at = window[0] + i * slot
+                keys = [(at, 0.0), (at + max(slot / WAVE_OVERLAP, 0.05), 1.0)]
             if fades and zone in fades:
                 keys += [(fades[zone][0], 1.0), (fades[zone][1], 0.0)]
-            cv.keys(layer, "opacity", keys, hold=False, local=False)
+            if keys:
+                cv.keys(layer, "opacity", keys, hold=False, local=False)
 
 
 @register("prop", "map-ring", summary="A circle of a true radius with a veil outside it, what the reel counts inside")
