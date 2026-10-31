@@ -7,7 +7,8 @@ bag, in glowing false colour (:data:`XRAY_ITEMS`), under a moving scan line. :fu
 :func:`foil_parcel` what is in the bag and :func:`foil_note` the note on it, filling the frame. Everything is in frame
 pixels of the 1080 × 1920 Stick frame and nothing is random, so a shot redraws the same. :func:`aisle` looks down a
 plane's aisle in one-point perspective and :func:`queue` stands a line of people in it who can all turn round at once;
-:func:`book` and :func:`duffel` are what a passenger carries.
+:func:`book` and :func:`duffel` are what a passenger carries. :func:`double_take` is not a drawing: it is the keys of a
+look, a look away and a snap back, for any figure in any shot.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from collections.abc import Mapping, Sequence
 from . import checks, signature
 from .canvas import Canvas
 from .registry import register
-from .stick import HEAD_R, Gradient, RigKey, RigPose, StickDataError, _gate, _group, box, oval, paint, shape
+from .stick import HEAD_R, Face, Gradient, RigKey, RigPose, StickDataError, _gate, _group, box, oval, paint, shape
 
 __all__ = [
     "BELT_TOP",
@@ -25,6 +26,7 @@ __all__ = [
     "XRAY_ITEMS",
     "aisle",
     "book",
+    "double_take",
     "duffel",
     "foil_note",
     "foil_parcel",
@@ -377,3 +379,13 @@ def duffel(cv: Canvas, parent, x: float, y: float, *, scale: float = 1.0, colour
     box(cv, g, -120, -56, 240, 112, colour, 5, r=46)
     shape(cv, g, "M -92 -14 L 92 -14", sw=6, stroke=DUFFEL_DARK)
     return g
+
+
+def double_take(at: float, pose: str, first: Face, away: Face, second: Face, *, step: float = 0.45) -> list[RigKey]:
+    """A double take from ``at`` seconds, holding ``pose``: ``first`` for ``step`` seconds, ``away`` for as long, then
+    ``second``, the one that lands. Extend a figure's keys with it; it is timing, so it works in any shot."""
+    if not (checks.number(step) and step > 0):
+        raise StickDataError(f"a double take's step is positive, got {step!r}")
+    if at < 0:
+        raise StickDataError(f"a double take starts in the shot, got {at!r}")
+    return [RigKey(at, pose, first), RigKey(at + step, pose, away), RigKey(at + 2 * step, pose, second)]
