@@ -136,6 +136,7 @@ class Staging:
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -321,7 +322,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
         toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
     if voiced:
-        ep.audio(narration=manifest)
+        ep.audio(narration=manifest, loudness=staging.loudness)
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
             ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
