@@ -29,6 +29,7 @@ from more_tired_audio import (
     MUG_AT,
     NOOR,
     NOOR_AT,
+    OPENING_ZOOM,
     PARTS,
     POOL,
     POSES,
@@ -103,7 +104,8 @@ def performance(who: str, take) -> list[tuple[float, str, stick.Face]]:
 def stage(take) -> None:
     g = ep.shot(shots, take)
     end = take.duration
-    frame = stick.dolly(cv, g, CAMERA, CAMERA, end)
+    pushed = (CAMERA[0], OPENING_ZOOM, CAMERA[2]) if take.id == "01" else CAMERA
+    frame = stick.dolly(cv, g, CAMERA, pushed, end, kind="linear")
     stick_home.kitchen(cv, frame)
     if take.id == "06":
         said = take.speech_duration

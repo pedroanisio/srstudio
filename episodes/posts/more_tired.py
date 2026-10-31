@@ -21,7 +21,7 @@ RELEASE = Release(
     ),
     cover=True,
     tags=Tags(
-        "relationships", "other-person", "recognition", recurring=("dev", "noor"), test="sp-hook_motion", arm="a"
+        "relationships", "other-person", "recognition", recurring=("dev", "noor"), test="sp-hook_motion", arm="b"
     ),
     style="Stick",
     parts={
