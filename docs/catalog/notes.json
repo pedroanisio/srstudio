@@ -2215,6 +2215,186 @@
       ]
     },
     {
+      "section": "cast",
+      "name": "A raposa de contorno",
+      "parts": [
+        "toon-fox@2"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 1.0,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem laranja, focinho e peito claros e orelhas altas, desenhada como o gato do estilo a pincel: tinta de espessura desigual, linhas abertas no pelo, tom de sombra, cabeça inclinada, olhos amendoados e bocas próprias; pisca e a boca segue a fala."
+    },
+    {
+      "section": "cast",
+      "name": "A preguiça",
+      "parts": [
+        "toon-sloth"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 5.0,
+        "box": [
+          0,
+          520,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem verde-oliva caída, rosto claro com listras escuras que descem dos olhos, topete desgrenhado e braços longos de garras; o bocejo é só dela. Tinta marcada, cabeça inclinada, piscadas e boca que segue a fala."
+    },
+    {
+      "section": "cast",
+      "name": "A cabra lilás",
+      "parts": [
+        "toon-goat"
+      ],
+      "shot": {
+        "episode": "who-touched-it",
+        "at": 5.0,
+        "box": [
+          0,
+          480,
+          800,
+          900
+        ]
+      },
+      "text": "Pelagem lilás, chifres voltados para trás, orelhas de lado, focinho comprido e claro com barba e pupilas em barra; o grito é só dela. Tinta marcada, cabeça inclinada, piscadas e boca que segue a fala."
+    },
+    {
+      "section": "cast",
+      "name": "O hamster",
+      "parts": [
+        "toon-hamster"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 5.0,
+        "box": [
+          0,
+          480,
+          820,
+          900
+        ]
+      },
+      "text": "Pequeno, redondo e rosado, com bochechas e barriga cremes, orelhas redondas, olhos de conta e patas minúsculas; as bochechas que incham são só dele. Tinta marcada, cabeça inclinada, piscadas e boca que segue a fala."
+    },
+    {
+      "section": "cast",
+      "name": "Rex, o cachorro (versão 2)",
+      "parts": [
+        "toon-dog@2"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 9.0,
+        "box": [
+          0,
+          620,
+          800,
+          820
+        ]
+      },
+      "text": "O cachorro desenhado de novo: um corpo liso só, orelhas caídas sobre a cabeça, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala, patas macias."
+    },
+    {
+      "section": "cast",
+      "name": "Fern, a rã (versão 2)",
+      "parts": [
+        "toon-frog@2"
+      ],
+      "shot": {
+        "episode": "do-you-floss",
+        "at": 1.0,
+        "box": [
+          0,
+          480,
+          800,
+          960
+        ]
+      },
+      "text": "A rã desenhada de novo: um corpo liso só, olhos em cúpulas com pálpebras redondas, boca larga, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala, pontas dos dedos."
+    },
+    {
+      "section": "cast",
+      "name": "Bruno, o urso (versão 2)",
+      "parts": [
+        "toon-bear@2"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 3.0,
+        "box": [
+          0,
+          640,
+          760,
+          800
+        ]
+      },
+      "text": "O urso desenhado de novo: um corpo liso só, orelhas redondas, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala, patas pesadas de garras."
+    },
+    {
+      "section": "cast",
+      "name": "Pip, a coelha (versão 2)",
+      "parts": [
+        "toon-rabbit@2"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 1.0,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "A coelha desenhada de novo: um corpo liso só, orelhas altas, dentes da frente, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala, patas macias."
+    },
+    {
+      "section": "cast",
+      "name": "O guaxinim (versão 2)",
+      "parts": [
+        "toon-raccoon@2"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 7.0,
+        "box": [
+          0,
+          560,
+          800,
+          900
+        ]
+      },
+      "text": "O guaxinim desenhado de novo: um corpo liso só, máscara de bandido, tufos nas bochechas, luvas pretas, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala."
+    },
+    {
+      "section": "cast",
+      "name": "O ouriço (versão 2)",
+      "parts": [
+        "toon-hedgehog@2"
+      ],
+      "shot": {
+        "episode": "i-cleaned",
+        "at": 3.0,
+        "box": [
+          0,
+          640,
+          760,
+          800
+        ]
+      },
+      "text": "O ouriço desenhado de novo: um corpo liso só, crista irregular de espinhos, tinta marcada, cabeça inclinada, piscadas e boca que segue a fala, patas de garras."
+    },
+    {
       "section": "locations",
       "name": "Sala de reunião",
       "parts": [
@@ -2744,6 +2924,18 @@
         "at": 0.6
       },
       "text": "Armários menta, azulejos brancos com brilho, bancada de madeira e a geladeira alta com ímãs e um bilhete na porta."
+    },
+    {
+      "section": "locations",
+      "name": "Sala de estar à noite",
+      "parts": [
+        "toon-lounge"
+      ],
+      "shot": {
+        "episode": "i-was-watching",
+        "at": 1.0
+      },
+      "text": "Sala à noite, com a luz que muda ao longo da cena: o abajur, a TV na parede cujo brilho troca de cor, o sofá, o roteador que pisca e a caixa inteligente na prateleira."
     },
     {
       "section": "props",
@@ -5950,7 +6142,7 @@
       ],
       "shot": {
         "episode": "good-you",
-        "at": 4.5
+        "at": 6.0
       },
       "text": "Gesso do cotovelo à mão, sobre qualquer braço."
     },
@@ -6010,7 +6202,7 @@
       ],
       "shot": {
         "episode": "good-you",
-        "at": 16.5
+        "at": 17.0
       },
       "text": "Meteoro que desce atrás dos prédios, visto só pela janela, e o clarão que fica."
     },
@@ -6314,6 +6506,60 @@
         "at": 3.6
       },
       "text": "A porta voa aberta no segundo pedido e mostra o escuro de dentro."
+    },
+    {
+      "section": "props",
+      "name": "Smartphone",
+      "parts": [
+        "toon-phone"
+      ],
+      "shot": {
+        "episode": "text-me",
+        "at": 11.0,
+        "box": [
+          290,
+          620,
+          500,
+          900
+        ]
+      },
+      "text": "Smartphone de pé numa superfície ou na mão, com a tela que muda no tempo certo: aviso que o faz vibrar, pedido de código ou senha, perfil de namoro, pagamento recusado, barra de carregamento e a tela apagada. Aqui, a mensagem “home” para a mãe."
+    },
+    {
+      "section": "props",
+      "name": "Caixa inteligente",
+      "parts": [
+        "toon-speaker"
+      ],
+      "shot": {
+        "episode": "representative",
+        "at": 1.0,
+        "box": [
+          680,
+          40,
+          400,
+          300
+        ]
+      },
+      "text": "Caixa inteligente cujo anel de luz mostra o que ela faz: apagada, ouvindo, pensando (uma luz que gira), falando (o anel pulsa) ou com erro (vermelho). Aqui está apagada, na prateleira ao lado do roteador."
+    },
+    {
+      "section": "props",
+      "name": "Prancheta",
+      "parts": [
+        "toon-clipboard"
+      ],
+      "shot": {
+        "episode": "its-soaking",
+        "at": 15.0,
+        "box": [
+          550,
+          770,
+          420,
+          570
+        ]
+      },
+      "text": "Prancheta com um formulário impresso (pedido de emprego, lista de presença): o título, linhas com rótulo cujos valores manuscritos aparecem no tempo certo e um carimbo que cai sobre ele. Aqui, um contrato de aluguel com ocupantes e depósito."
     },
     {
       "section": "props",
