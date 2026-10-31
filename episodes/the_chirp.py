@@ -35,13 +35,20 @@ if SCRIPT.still < 1.0 or SCRIPT.still != HELD or OPENING < 1.0:
     raise stick.StickDataError(f"arm A holds the first frame at least 1 s, got {OPENING}")
 
 UP = stick.STANDING["stand"]
+
+
+def arms(head, elbows, hands) -> stick.RigPose:
+    """The standing body with its head and arms somewhere else."""
+    return stick._seat(head, UP.neck, UP.hip, UP.knees, UP.feet, elbows, hands)
+
+
 POSES = {
     "stand": UP,
-    "hold": stick._seat((540, 750), UP.neck, UP.hip, UP.knees, UP.feet, ((450, 1010), (630, 1010)), ((384, 930), (696, 930))),
-    "fall": stick._seat((540, 770), UP.neck, UP.hip, UP.knees, UP.feet, ((470, 1040), (612, 1040)), ((440, 1120), (640, 1120))),
-    "load": stick._seat((560, 754), UP.neck, UP.hip, UP.knees, UP.feet, ((640, 1000), (650, 950)), ((780, 960), (790, 900))),
-    "lean": stick._seat((580, 790), UP.neck, UP.hip, UP.knees, UP.feet, ((610, 1090), (640, 1040)), ((692, 1060), (692, 1040))),
-}  # fmt: skip
+    "hold": arms((540, 750), ((450, 1010), (630, 1010)), ((384, 930), (696, 930))),
+    "fall": arms((540, 770), ((470, 1040), (612, 1040)), ((440, 1120), (640, 1120))),
+    "load": arms((560, 754), ((640, 1000), (650, 950)), ((780, 960), (790, 900))),
+    "lean": arms((580, 790), ((610, 1090), (640, 1040)), ((692, 1060), (692, 1040))),
+}
 HUSBAND = stick.PLAIN
 CHAIR_AT = (160.0, -150.0)  # up on the chair, right of the bed
 BLANK = stick.Face("open", "flat", "flat", look=(-1, 0))
