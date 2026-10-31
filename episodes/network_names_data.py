@@ -23,11 +23,12 @@ DESCRIPTION = (
     "their Wi-Fi network names, until he tells them how the finale ends."
 )
 ACCESSIBILITY = (
-    "A list of Wi-Fi networks on a phone reads Bruno Home, Linksys 204, Turn It Down. A cartoon rabbit asks who that "
-    "is. On the sofa with the TV on, a cartoon bear says it is the neighbor he has never met. The list changes to I "
-    "Know Its You Bruno. The bear types and his network becomes Sorry. The neighbor's becomes Its OK, Rough Week. They "
-    "like him. The bear types On The Finale and they settle in, she leans on his shoulder, music swells. The list "
-    "changes to Great Show, The Sister Did It. The music stops. Neither moves. Slowly, both look at the wall."
+    "A list of Wi-Fi networks on a phone changes to read Bruno Home, Linksys 204, Turn It Down. A cartoon rabbit asks"
+    " who that is. On the sofa with the TV on, a cartoon bear says it is the neighbor he has never met. The list "
+    "changes to I Know Its You Bruno. The bear types and his network becomes Sorry. The neighbor's becomes Its OK, "
+    "Rough Week. They like him. The bear types On The Finale and they settle in, she leans on his shoulder, music "
+    "swells. The list changes to Great Show, The Sister Did It. The music stops. Neither moves. Slowly, both look at "
+    "the wall."
 )
 NARRATION = "Voiced with ElevenLabs premade voices Sarah (Mae) and Bill (Bruno); synthesized effects."
 NOTE = "ElevenLabs premade voices Sarah and Bill at their natural pace; no reference-voice cloning."
@@ -54,6 +55,8 @@ LEAN = (-14.0, -7.0)  # sideways and degrees: her head on his shoulder
 SETTLE = 1.2  # seconds it takes her
 PHONE = {"at": (130, 960), "scale": 0.9, "hand": "#a97850"}
 SCREEN = "#10202c"
+RENAMED = 0.7  # the neighbor has just renamed his network
+DRIFT = 1.04
 TOP = 308.0  # the list clears the caption above and the marks below
 THE_LIST = {"mine": "BRUNO-HOME", "other": "LINKSYS-204", "his": "TURN IT DOWN"}
 MURMUR = 8.0  # seconds of the TV in one stretch, the longest one burst lasts
@@ -121,7 +124,8 @@ def states(shot) -> tuple[tuple[float, tuple[str, str, str]], ...]:
     """Three names, one of them changing at each step: his, and the neighbor's."""
     his, other = THE_LIST["mine"], THE_LIST["other"]
     return (
-        (0.0, (his, other, THE_LIST["his"])),
+        (0.0, (his, other, "NETGEAR-88")),
+        (RENAMED, (his, other, THE_LIST["his"])),
         (at(shot, "accused"), (his, other, "I KNOW ITS YOU BRUNO")),
         (at(shot, "sorry"), ("SORRY", other, "I KNOW ITS YOU BRUNO")),
         (at(shot, "forgiven"), ("SORRY", other, "ITS OK. ROUGH WEEK?")),
@@ -214,7 +218,11 @@ def wall(shot) -> None:
 def insert(shot, stop: float) -> None:
     """The list over everything: a phone's dark, the names and the marks."""
     cv = shot.cv
-    g = cv.group(shot.front, cv.uid("g"), end=stop)
+    cx, cy = toon.fx(296.0), toon.fy(560.0)
+    g = cv.group(shot.front, cv.uid("g"), end=stop, x=cx, y=cy, anchorX=cx, anchorY=cy)
+    if shot.app.start == 0:  # the opening moves: the list drifts in as the name changes under her question
+        for prop in ("scaleX", "scaleY"):
+            cv.keys(g, prop, [(0.0, 1.0), (stop, DRIFT)], hold=False, local=False)
     cv.rect(g, toon.fx(-10), toon.fy(-140), toon.fh(612), toon.fh(1300), SCREEN, cv.clear, 0, radius=0)
     toon_inserts.wifi_list(cv, g, [s for s in states(shot) if s[0] < stop], end=stop, top=TOP)
     toon_world.marks(cv, g)
