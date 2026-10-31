@@ -33,6 +33,7 @@ def test_poses_count_from_the_entrance_and_keep_the_pose_it_enters_in():
     poses = ((0.0, "half", "flat", "desk"), (1.5, "wide", "flat", "desk"), (3.0, "side", "grin", "desk"))
     drawn = toon_extras.poses_of(poses, 2.0)
     assert [(p.start, p.eyes) for p in drawn] == [(0.0, "wide"), (1.0, "side")]
+    assert [p.eyes for p in toon_extras.poses_of(poses, 0.0, 1.5)] == ["half"]
 
 
 def test_a_figure_refuses_what_it_cannot_draw():
