@@ -65,6 +65,7 @@ Point = tuple[float, float]
 INK, INK_LIGHT = "#12142b", "#262a52"  # the ground
 PAPER = "#f6efe0"
 SPOT = "#ffcf33"  # the channel's one bright colour
+GLASS = "1f"  # a lens's tint, as hex alpha: thin, because what the glass finds has to stay brighter than the rest
 CORAL = "#ff7a5c"
 DIM = "#c9c8d8"  # text on the ground that is not the point; keeps 4.5:1 on INK
 GRADE: dict[str, dict[str, Any]] = {  # over every shot: the corners fall off into the ink, a fine grain
@@ -460,7 +461,7 @@ def lens(
     _rising(path, "a lens's path")
     g = cv.group(parent, id, x=x, y=y, start=start, end=end, rotation=-35)
     cv.rect(g, -18.0, radius, 36.0, 1.4 * radius, INK_LIGHT, PAPER, 6.0, radius=16.0)
-    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, tint + "59", PAPER, 14.0)
+    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, tint + GLASS, PAPER, 14.0)
     cv.ellipse(g, -0.62 * radius, -0.72 * radius, 0.5 * radius, 0.3 * radius, "#ffffff40")
     if path:
         cv.keys(g, "x", list(path), kind="sine-in-out", local=False)
