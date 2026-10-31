@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import os
 import re
 import shutil
 import subprocess
@@ -46,6 +47,9 @@ from . import (
     news_inked,
     news_kit,
     parts,
+    plates,
+    rafa,
+    rafa_host,
     registry,
     saga_sets,
     soft_props,
@@ -239,7 +243,14 @@ def _punched(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
     e(cv, shot, "close", SECONDS / 2, "lint")
 
 
+def _plated(cv: Canvas, g: object, e: registry.Entry, ctx: Context) -> None:
+    """A part that is one path-traced plate, on the stage (ADR 0068)."""
+    plate = rafa_host.part_plates(e.name)[0]
+    rafa_host.place(cv, g, plate, y=(rafa_host.HEIGHT - plate.height) / 2)
+
+
 RECIPES: dict[str, Recipe] = {
+    **dict.fromkeys((*rafa.ROOMS, *rafa.PROPS), Recipe(_plated)),
     # -- locations -------------------------------------------------------------------------------------------------
     "cel-room": Recipe(_cel_room),
     "stick-yard": Recipe(_yard),
@@ -719,6 +730,8 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
     name = plan_.entry.name
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
+    for plate in rafa_host.part_plates(name):
+        plates.render(plate, engine=engine, cache=work / "plates", fonts=Path(os.environ.get("SRSTUDIO_FONTS", "")))
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:
