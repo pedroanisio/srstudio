@@ -9191,7 +9191,7 @@
     },
     "collage-battery-insert": {
       "kind": "prop",
-      "style": "Collage",
+      "style": "collage",
       "refused": null,
       "versions": [
         {
