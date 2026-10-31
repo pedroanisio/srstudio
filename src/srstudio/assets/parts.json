@@ -9205,6 +9205,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-eye-drops": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bottle of eye drops over a face, the drops falling in. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d11fe5e4f3d7e975950d0d2b8e15360867b9ceba20af02747c38423c5d3a3c70",
+          "rig": null
+        }
+      ]
     }
   }
 }

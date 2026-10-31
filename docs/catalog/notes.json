@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "toon-eye-drops": {"title": "Colírio"},
     "water-splash": {"title": "Respingo"},
     "rising-bubbles": {"title": "Bolhas subindo"},
     "collage-battery-insert": {"title": "Bateria do celular"},
@@ -7727,6 +7728,7 @@
     {"section": "props", "name": "Cardápio de papel", "parts": ["paper-menu"], "shot": {"episode": "scan-the-code", "at": 29.0}, "text": "Cardápio de uma folha, em pé ou deitado na mesa."},
     {"section": "props", "name": "Bateria do celular", "parts": ["collage-battery-insert"], "shot": {"episode": "the-boat", "at": 20.2}, "text": "O celular em tela cheia: a bateria em um por cento, e depois o preto."},
     {"section": "props", "name": "Bolhas subindo", "parts": ["rising-bubbles"], "shot": {"episode": "scan-the-code", "at": 27.2}, "text": "Bolhas que sobem pelo copo de água."},
-    {"section": "props", "name": "Respingo", "parts": ["water-splash"], "shot": {"episode": "scan-the-code", "at": 26.8}, "text": "Gotas jogadas para cima que caem de volta."}
+    {"section": "props", "name": "Respingo", "parts": ["water-splash"], "shot": {"episode": "scan-the-code", "at": 26.8}, "text": "Gotas jogadas para cima que caem de volta."},
+    {"section": "props", "name": "Colírio", "parts": ["toon-eye-drops"], "shot": {"episode": "someone-else", "at": 21.0}, "text": "O frasco entra sobre o rosto e duas gotas caem no olho: de onde vêm as lágrimas."}
   ]
 }
