@@ -324,6 +324,7 @@ STICK = Style(
         "stick_flat",
         "stick_gym",
         "stick_home",
+        "stick_odds",
         "stick_office",
         "stick_school",
         "stick_shop",

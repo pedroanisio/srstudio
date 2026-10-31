@@ -238,6 +238,7 @@ def test_the_style_value(tmp_path):
         "stick_flat",
         "stick_gym",
         "stick_home",
+        "stick_odds",
         "stick_office",
         "stick_school",
         "stick_shop",
@@ -248,6 +249,8 @@ def test_the_style_value(tmp_path):
     assert parts == {
         "stick-room",
         "stick-yard",
+        "stick-poster",
+        "stick-headset",
         "stick-figure",
         "stick-hook",
         "stick-headline",
