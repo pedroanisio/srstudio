@@ -1,8 +1,9 @@
 """``srstudio catalog`` lists the registry, ``srstudio styles`` the styles, ``srstudio fonts add`` pins a Google
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
-scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio page``
-rebuilds the catalog site, ``srstudio serve`` serves it, ``srstudio parts`` lists the part versions
-and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode and ledger."""
+scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio overlap`` finds
+lines another episode already said, ``srstudio page`` rebuilds the catalog site, ``srstudio serve`` serves it,
+``srstudio parts`` lists the part versions and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode
+and ledger."""
 
 from __future__ import annotations
 
@@ -30,6 +31,7 @@ from . import (
     frames,
     lip_proof,
     lipsync,
+    overlap,
     parts,
     registry,
     releases,
@@ -164,6 +166,10 @@ def main(argv=None):
     crafted.add_argument("--renders", type=Path, help="folder of renders (<slug>.mp4): measure the sound in each pause")
     crafted.add_argument("--threshold", type=float, default=craft.PAUSE, help="seconds between lines that make a pause")
     crafted.add_argument("--json", action="store_true", help="print the reports as JSON")
+    shared = sub.add_parser("overlap", help="find the lines of an episode that other episodes already said")
+    shared.add_argument("project", type=Path, help="the episode project folder (its script.json)")
+    shared.add_argument("--episodes", type=Path, required=True, help="the folder of episode projects to compare with")
+    shared.add_argument("--least", type=int, default=overlap.LEAST, help="words in a row that count as a repeat")
     build = sub.add_parser(
         "build", help="run an episode script: an episode's slug, a python file or a module, with its project root"
     )
@@ -382,6 +388,18 @@ def main(argv=None):
                 print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
             for h in r.holds:
                 print(f"  hold {h.start:.2f}–{h.end:.2f}  {h.end - h.start:.2f} s")
+        return 0
+    if args.cmd == "overlap":
+        try:
+            lines = overlap.read_lines(args.project / "script.json")
+            found = overlap.overlaps(lines, overlap.scripts(args.episodes, skip=args.project.name), args.least)
+        except overlap.OverlapError as exc:
+            print(f"srstudio overlap: {exc}", file=sys.stderr)
+            return 2
+        for hit in found:
+            print(f"{hit.slug}: {hit.words} ({hit.line!r} / {hit.other!r})")
+        if not found:
+            print(f"no overlap of {args.least} words or more")
         return 0
     if args.cmd == "record":
         try:
