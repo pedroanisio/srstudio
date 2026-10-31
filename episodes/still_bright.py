@@ -47,6 +47,7 @@ JUNO_SEAT = (320.0, 1155.0)  # the sofa's far end
 PIP_SEAT = (680.0, 1395.0)
 DALE_SEAT = blob.SEAT
 LAMP_AT = (500.0, 1185.0)  # on the table, between Dale and the room
+GLARE_REACH = 320.0  # behind Dale and short of the far wall: the bloom must not take his arm, the cactus or the mark
 NIGHT = "#1E2A3A"
 REVIEWER = "Dale R."
 STARS = (4, 4, 5, 1)  # the rating moves with the marriage
@@ -133,8 +134,8 @@ room = cv.group(graded, "dales-room")
 cv.gate(room, [(DALE, DURATION)])
 blob.office(cv, room)
 cv.rect(room, 0, 0, 1080, 1920, NIGHT, opacity=0.8)
+soft_props.glare_lamp(cv, room, *LAMP_AT, reach=GLARE_REACH)
 blob.bo(cv, room, dale, end=DURATION, scale=SCALE, mouth_states=ep.mouth("dale"), fps=FPS, shadow=False)
-soft_props.glare_lamp(cv, room, *LAMP_AT)
 
 soft_props.time_card(cv, ep.comp, [TimeState("2:40 AM", CLOCK, DALE)], (465, 470, 440, 118))
 
