@@ -43,6 +43,7 @@ TUG = 46.0  # px the bill goes each way
 BACK = {"jun": Place(540.0, 1530.0, 0.6)}
 FRONT = {"gary": Place(215.0, 1790.0, 0.74), "omar": Place(865.0, 1790.0, 0.74)}
 COUNTER_TOP = 1300.0
+ROSA_ELBOW = (262.0, 1590.0)  # just over the table, the arm with the cup
 CARD_Y = 1390.0  # the cards, in the hands of the brothers' shrug
 BOB = (10.0, 0.32)  # out of breath: px and seconds
 HIS_CARD, HER_CARD, OMAR_CARD = "#2a9d8f", "#1d3557", "#e63946"  # the one he brandishes, the one she flicks
@@ -104,7 +105,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     tear = events(beats, "crunch")[0][0]
     jun_first = next(b.start for b in beats if b.who == "jun")
     whip = events(beats, "whip")[0][0]
-    rise, turn, insert = _at(beats, "rise"), _at(beats, "turn"), _at(beats, "insert")
+    rise, turn, insert, cup = (_at(beats, n) for n in ("rise", "turn", "insert", "cup"))
     zoom = events(beats, "zoom")[0][0]
     table = Lineup(
         TABLE,
@@ -146,6 +147,9 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
             collage_things.bank_card(cv, panting, 463.0, CARD_Y, 230.0, colour=HIS_CARD, tilt=-8.0)
             collage_things.bank_card(cv, panting, 617.0, CARD_Y, 230.0, colour=OMAR_CARD, tilt=8.0)
             return face
+        if app.who == "rosa" and app.start >= cup:  # the arm with the cup is the shot's; the flick stays hers
+            poses = [{**p, "arms": "free" if p["arms"] == "down" else p["arms"]} for p in app.poses]
+            return solo(cv, parent, replace(app, poses=poses), mouths)
         if table.staged(app):
             chewing = collage_everyday.chew(mouths.get("rosa", ()), tear, tear + 1.3)
             return table(cv, parent, app, {**mouths, "rosa": chewing})
@@ -182,12 +186,13 @@ def _cup(shot) -> None:
     """Rosa alone at the table, the tiny cup coming up in one hand and staying there; then the flick from the other."""
     cv, app, beats, front = shot.cv, shot.app, shot.beats, shot.front
     cup = _at(beats, "cup")
-    collage_everyday.tablecloth(cv, front)
+    collage_everyday.arm(cv, front, "rosa", collage_everyday.shoulder("rosa"), ROSA_ELBOW, hand=False)
     lifted = cv.group(front, cv.uid("g"))
     if app.start == cup:
         cv.keys(lifted, "y", [(cup + 0.15, 420.0), (cup + 0.75, 0.0)], kind="sine-in-out", local=False)
-    collage_everyday.arm(cv, lifted, "rosa", (170.0, 2060.0), (310.0, 1340.0))
+    collage_everyday.arm(cv, lifted, "rosa", ROSA_ELBOW, (310.0, 1340.0))
     collage_things.tiny_cup(cv, lifted, 310.0, 1310.0, 120.0)
+    collage_everyday.tablecloth(cv, front)  # over the arm: the cup comes up from behind the table
     flick = events(beats, "swat")[-1][0]
     if app.start <= flick < app.end:
         card = cv.group(front, cv.uid("g"))

@@ -9,6 +9,7 @@ lands. The reel opens on a slow push (the sp-hook_motion test's arm b). ElevenLa
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 
 from srstudio import collage, collage_everyday, collage_things
 from srstudio.collage_group import Lineup, Place
@@ -49,7 +50,10 @@ RING_SHAKE = 0.9  # seconds a ring shakes the phone
 NOD = (24.0, 0.45)  # the grave nod: px down, seconds
 EAR_NEAR = (646.0, 985.0)  # the handset at Deb's ear in the two-shot
 SHOULDER_NEAR = (626.0, 1215.0)  # her shoulder there
-SHOULDER_CLOSE = (292.0, 1460.0)  # and in her close
+SHOULDER_CLOSE = (286.0, 1390.0)  # and in her close
+ELBOW_NEAR = (572.0, 1377.0)  # the arm with the handset: the elbow, in the two-shot
+ELBOW_CLOSE = (160.0, 1500.0)  # and in her close
+RISE = (0.3, 0.95)  # the handset comes up, after the lift
 EAR_CLOSE = (336.0, 1090.0)  # and in her close
 
 LINES = (
@@ -115,6 +119,7 @@ def _lineup(beats: Sequence[Beat], end: float) -> Lineup:
             _pose(ring, "wide", "o", "hold"),
             _pose(slide, "wide", "flat", "hold"),
             _pose(lift, "wide", "flat", "down"),
+            _pose(lift + RISE[1] - 0.1, "wide", "flat", "free"),
         ],
     }
     return Lineup(PLACES, reactions, ((0.0, close), (nod, insert), (slide, ear)))
@@ -123,12 +128,14 @@ def _lineup(beats: Sequence[Beat], end: float) -> Lineup:
 def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     """The lineup, nodding on the nod; the speaker alone in a close; nobody over the insert."""
     lineup = _lineup(beats, end)
-    nod, insert = _at(beats, "nod"), _at(beats, "insert")
+    nod, insert, ear = _at(beats, "nod"), _at(beats, "insert"), _at(beats, "ear")
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if app.start == insert:
             return collage.face(collage.LOOKS[app.who])
         if not lineup.staged(app):
+            if app.start >= ear:  # the arm with the handset is the shot's, whatever the recording's poses say
+                app = replace(app, poses=[{**p, "arms": "free"} for p in app.poses])
             return solo(cv, parent, app, mouths)
         if app.start != nod:
             return lineup(cv, parent, app, mouths)
@@ -170,7 +177,8 @@ def dress(shot) -> None:
         _shaken(cv, collage_things.desk_phone(cv, front, **INSERT), rings, lift)
         return
     if app.start >= ear:
-        collage_everyday.arm(cv, front, "deb", SHOULDER_CLOSE, (EAR_CLOSE[0] - 10, EAR_CLOSE[1] + 110))
+        collage_everyday.arm(cv, front, "deb", SHOULDER_CLOSE, ELBOW_CLOSE, hand=False)
+        collage_everyday.arm(cv, front, "deb", ELBOW_CLOSE, (EAR_CLOSE[0] - 10, EAR_CLOSE[1] + 110))
         collage_things.handset(cv, front, *EAR_CLOSE, 420.0, 96.0)
         return
     if app.start == close:
@@ -206,13 +214,14 @@ def dress(shot) -> None:
     collage_things.desk_phone(cv, off_hook, NEAR_DEB, PHONE_Y, PHONE_W, off_hook=True)
     rest = (NEAR_DEB, PHONE_Y - PHONE_W * 0.56)
     hand = collage_things.handset(cv, off_hook, *rest, PHONE_W * 0.86)
-    rise = (lift + 0.3, lift + 0.95)
+    rise = (lift + RISE[0], lift + RISE[1])
     cv.keys(hand, "x", [(rise[0], rest[0]), (rise[1], EAR_NEAR[0])], kind="sine-in-out", local=False)
     cv.keys(hand, "y", [(rise[0], rest[1]), (rise[1], EAR_NEAR[1])], kind="sine-in-out", local=False)
     cv.keys(hand, "rotation", [(rise[0], 0.0), (rise[1], 96.0)], kind="sine-in-out", local=False)
     reach = cv.group(off_hook, cv.uid("g"))
     cv.gate(reach, [(rise[1] - 0.1, app.end)])
-    collage_everyday.arm(cv, reach, "deb", SHOULDER_NEAR, (EAR_NEAR[0] - 8.0, EAR_NEAR[1] + 70.0), width=52.0)
+    collage_everyday.arm(cv, reach, "deb", SHOULDER_NEAR, ELBOW_NEAR, width=52.0, hand=False)
+    collage_everyday.arm(cv, reach, "deb", ELBOW_NEAR, (EAR_NEAR[0] - 8.0, EAR_NEAR[1] + 70.0), width=52.0)
 
 
 STAGING = Staging(
