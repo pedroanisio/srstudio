@@ -25,7 +25,8 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=16, reviewer=16),
     parts={
-        # toon-gull-stare is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
+        # toon-gull-stare is drawn too and still proposed: a release cannot pin a proposed
+        # version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-bear": 2,

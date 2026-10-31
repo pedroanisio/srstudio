@@ -37,6 +37,7 @@ RELEASE = Release(
         "collage-dining-room": 1,
         "collage-gary": 1,
         "collage-jun": 1,
+        "collage-lasagna": 1,
         "collage-living-room": 1,
         "collage-omar": 1,
         "collage-phone": 1,
@@ -45,6 +46,5 @@ RELEASE = Release(
         "collage-tablecloth": 1,
         "signature-cactus": 1,
         "signature-code": 1,
-        # collage-lasagna is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
     },
 )

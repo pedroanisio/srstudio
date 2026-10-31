@@ -21,7 +21,6 @@ RELEASE = Release(
     tags=Tags(territory="everyday-tech", cause="protagonist", emotion="affection", test="sp-hook_motion", arm="b"),
     comedy=Scores(author=18, reviewer=17),
     parts={
-        # soft-glare-lamp is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
         "bo": 1,
         "captions": 1,
         "juno": 1,
@@ -30,6 +29,7 @@ RELEASE = Release(
         "signature-code": 1,
         "soft-chair": 1,
         "soft-desk": 1,
+        "soft-glare-lamp": 1,
         "soft-home": 1,
         "soft-laptop": 1,
         "soft-office": 1,

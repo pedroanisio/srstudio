@@ -31,11 +31,10 @@ RELEASE = Release(
         "collage-deb": 1,
         "collage-feld": 1,
         "collage-living-room": 1,
+        "collage-magnifying-glass": 1,
         "collage-phone": 1,
         "collage-sign": 1,
         "signature-cactus": 1,
         "signature-code": 1,
-        # collage-magnifying-glass is drawn too; it stays out until it is approved: a release cannot pin a proposed
-        # version.
     },
 )

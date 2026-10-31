@@ -23,14 +23,13 @@ RELEASE = Release(
     style="Stick",
     comedy=Scores(author=18, reviewer=16),
     parts={
-        # Drawn too and proposed, so it stays out until approved: a release cannot pin a proposed version:
-        # stick-message-insert.
         "signature-cactus": 1,
         "signature-code": 1,
         "stick-card": 1,
         "stick-gym": 1,
         "stick-gym-counter": 1,
         "stick-handset": 1,
+        "stick-message-insert": 1,
         "stick-rig": 1,
         "stick-words": 1,
     },

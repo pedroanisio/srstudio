@@ -28,10 +28,10 @@ RELEASE = Release(
         "collage-bedroom": 1,
         "collage-brent": 1,
         "collage-duvet": 1,
+        "collage-flip-card": 1,
         "collage-priya": 1,
         "collage-supermarket": 1,
         "signature-cactus": 1,
         "signature-code": 1,
-        # collage-flip-card is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
     },
 )

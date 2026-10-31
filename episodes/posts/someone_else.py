@@ -25,7 +25,6 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=18, reviewer=19),
     parts={
-        # toon-eye-drops is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-bear": 2,
@@ -33,6 +32,7 @@ RELEASE = Release(
         "toon-captions": 1,
         "toon-clipboard": 1,
         "toon-dog": 2,
+        "toon-eye-drops": 1,
         "toon-fox": 2,
         "toon-frog": 2,
         "toon-headset": 1,

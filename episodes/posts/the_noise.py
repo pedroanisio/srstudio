@@ -25,13 +25,13 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=19, reviewer=18),
     parts={
-        # toon-loose-wheel is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-captions": 1,
         "toon-clipboard": 1,
         "toon-fox": 2,
         "toon-goat": 1,
+        "toon-loose-wheel": 1,
         "toon-side-car": 1,
         "toon-yard": 1,
     },

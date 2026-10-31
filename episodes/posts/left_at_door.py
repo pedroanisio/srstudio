@@ -25,15 +25,17 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=17, reviewer=16),
     parts={
-        # toon-rain, toon-gnome and toon-noodle-box are drawn too; a release cannot pin a proposed version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-captions": 1,
         "toon-frog": 2,
+        "toon-gnome": 1,
         "toon-ledge": 1,
         "toon-night-street": 1,
+        "toon-noodle-box": 1,
         "toon-phone": 1,
         "toon-porch": 1,
+        "toon-rain": 1,
         "toon-side-car": 1,
         "toon-sloth": 1,
     },

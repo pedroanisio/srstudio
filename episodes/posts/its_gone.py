@@ -31,8 +31,8 @@ RELEASE = Release(
         "collage-living-room": 1,
         "collage-phone": 1,
         "collage-rosa": 1,
+        "collage-router": 1,
         "signature-cactus": 1,
         "signature-code": 1,
-        # collage-router is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
     },
 )

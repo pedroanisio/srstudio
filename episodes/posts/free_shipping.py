@@ -21,8 +21,6 @@ RELEASE = Release(
     tags=Tags(territory="money-services", cause="protagonist", emotion="embarrassment", test="sp-hook_motion", arm="a"),
     comedy=Scores(author=17, reviewer=17),
     parts={
-        # soft-parcels is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
-        # soft-whisk is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
         "captions": 1,
         "juno": 1,
         "pip": 1,
@@ -32,6 +30,8 @@ RELEASE = Release(
         "soft-desk": 1,
         "soft-laptop": 1,
         "soft-office": 1,
+        "soft-parcels": 1,
         "soft-status-badge": 1,
+        "soft-whisk": 1,
     },
 )

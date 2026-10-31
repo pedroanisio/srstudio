@@ -33,6 +33,7 @@ RELEASE = Release(
     style="Collage",
     comedy=Scores(author=18, reviewer=18),
     parts={
+        "collage-battery-insert": 1,
         "collage-brent": 1,
         "collage-bus-stop": 1,
         "collage-deb": 1,
@@ -42,6 +43,5 @@ RELEASE = Release(
         "collage-priya": 1,
         "signature-cactus": 1,
         "signature-code": 1,
-        # collage-battery-insert stays out until it is approved: a release cannot pin a proposed version.
     },
 )

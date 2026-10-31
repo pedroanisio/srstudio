@@ -25,7 +25,6 @@ RELEASE = Release(
     style="Toon",
     comedy=Scores(author=17, reviewer=17),
     parts={
-        # toon-reception-glass is drawn too; it stays out until it is approved: a release cannot pin a proposed version.
         "signature-cactus": 1,
         "signature-code": 1,
         "toon-captions": 1,
@@ -39,5 +38,6 @@ RELEASE = Release(
         "toon-hallway": 1,
         "toon-ledge": 1,
         "toon-raccoon": 2,
+        "toon-reception-glass": 1,
     },
 )
