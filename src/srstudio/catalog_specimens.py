@@ -352,7 +352,7 @@ RECIPES: dict[str, Recipe] = {
     "map-flat": Recipe(lambda cv, g, e, ctx: e(cv, g, -30.0, 45.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
     "map-equal-area": Recipe(lambda cv, g, e, ctx: e(cv, g, 99.0, 21.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
     "map-pin": Recipe(
-        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx).id, _ROME, 0.0, SECONDS, ctx.measure)
+        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx), _ROME, 0.0, SECONDS, ctx.measure)
     ),
     "map-parallel": Recipe(
         lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx), _ROME, 0.0, SECONDS, tag_from=0.0, measure=ctx.measure)

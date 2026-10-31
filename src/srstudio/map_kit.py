@@ -55,6 +55,7 @@ __all__ = [
     "PIN",
     "PAPER",
     "SEA",
+    "Dive",
     "MapKitError",
     "Move",
     "Place",
@@ -68,6 +69,7 @@ __all__ = [
     "flat",
     "glide",
     "globe",
+    "globe_degree_px",
     "ground",
     "install",
     "km_between",
@@ -89,26 +91,26 @@ Measure = Callable[[str, float], float]  # the advance width of a text at a size
 SEA, SEA_DEEP = "#19b5d6", "#0e8fbb"  # bright, so the reel never sits on a dark ground
 LAND = "#fff2cc"
 COAST = INK = "#0b3a53"
-PIN = "#ff3358"  # the channel's one hot colour: what the reel is about
+PIN = "#dc1f47"  # the channel's one hot colour: what the reel is about
+PIN_INK = "#b3123a"  # the same, for a figure lettered on white, whose thin strokes measure paler than a solid fill
 PAPER = "#ffffff"
 GROUND, GROUND_FAR = "#e4fafd", "#a8e9f2"
 GRID = "#ffffff55"
-BORDER = "#0b3a5340"
+BORDER = "#0b3a5370"
 DOT_OUT = "#0b3a53b0"  # a dot outside the circle: there, and not the point
 GLOBE_PADDING = 60.0
-COAST_WIDTH, LAKE_WIDTH, GRID_WIDTH, BORDER_WIDTH = 2.5, 1.0, 1.5, 1.5
+COAST_WIDTH, GRID_WIDTH, BORDER_WIDTH = 2.5, 1.5, 1.5
 EARTH_KM = 6371.0088  # IUGG mean radius, the sphere the figures were summed on
-GRADE: dict[str, dict[str, Any]] = {  # over every shot: a touch of bloom and grain, the corners barely fall off
-    "bloom": dict(threshold=0.92, radius=18, intensity=0.14),
+GRADE: dict[str, dict[str, Any]] = {  # over every shot: a touch of bloom, the corners barely fall off, and no grain,
+    "bloom": dict(threshold=0.92, radius=18, intensity=0.14),  # which on flat colour costs more bytes than it shows
     "vignette": dict(amount=0.08, radius=1.1, softness=0.9, color=SEA_DEEP),
-    "film-grain": dict(amount=0.012, size=1.1, seed=1028),
 }
 SAFE_LEFT, SAFE_WIDTH = 90.0, 900.0  # frame pixels clear of the Reels overlays at the sides
 CAPTION_TOP, CAPTION_SIZE, CAPTION_PAD, CAPTION_RADIUS, CAPTION_LINES = 250.0, 60.0, 24.0, 20.0, 3
 CAPTION_LEADING = 1.18
-STAMP_TOP, STAMP_SIZE, STAMP_LEAST, STAMP_PAD, STAMP_LINES = 1420.0, 42.0, 30.0, 22.0, 2
+STAMP_TOP, STAMP_SIZE, STAMP_FIT, STAMP_LEAST, STAMP_PAD, STAMP_LINES = 1476.0, 42.0, 34.0, 30.0, 22.0, 2
 PILL_NAME, PILL_FIGURE, PILL_PAD, PILL_RADIUS, PILL_GAP = 40.0, 58.0, 18.0, 16.0, 30.0
-PIN_RADIUS, POP_SECONDS = 18.0, 0.2
+PIN_RADIUS, POP_FROM, POP_SECONDS = 18.0, 0.6, 0.2  # from any smaller, a label is too small to sit on its card
 TAG_SIZE, TAG_PAD = 36.0, 14.0
 RING_WIDTH, WASH = 10.0, "#ffffff4d"  # the ring, and the veil that lifts what is inside it
 DOT_RADIUS = 3.0
@@ -116,13 +118,13 @@ WAVE_OVERLAP = 0.6  # a wave of dots takes this share of its slot, so the next s
 MOST_LABELS = 6  # about what a phone can read at once
 PARALLEL_STEP = 2.0  # degrees between a parallel's points: a route's edges are great circles
 SHIFT_STEPS = 32  # keys of a centre that glides
-LAYERS = ("land", "lakes", "borders", "dots")
+WHIP_LEAST, WHIP_RAMP, WHIP_BLUR = 0.3, 0.16, 120.0  # shortest flight it is for, the share each ramp takes, the blur
+LAYERS = ("land", "borders", "dots")
 SHIPPED = "assets/maps"
 CARD = "card"  # who a map shot's beats are for: a sketch of :data:`MAPS_CAST` draws no figure for it
 _EARTH = ("public domain", "Made with Natural Earth.")
 _CREDIT = {
     "land": _EARTH,
-    "lakes": _EARTH,
     "borders": _EARTH,
     "dots": ("CC BY 4.0", "GHS-POP R2023A, European Commission JRC, summed and recoloured."),
 }
@@ -213,6 +215,17 @@ class Place:
 
 
 @dataclass(frozen=True)
+class Dive:
+    """A globe's fall towards a place: from ``begin``, for ``seconds``, to a centre and a zoom."""
+
+    begin: float
+    seconds: float
+    lon: float
+    lat: float
+    zoom: float
+
+
+@dataclass(frozen=True)
 class Move:
     """A camera move on a :func:`flat` view: from ``begin``, for ``seconds``, to a centre and a zoom. ``rho`` is how
     far out the path pulls on the way."""
@@ -229,6 +242,12 @@ class Move:
 def degree_px(zoom: float, width: float = 1080.0) -> float:
     """Frame pixels to a degree on a :func:`flat` view at ``zoom``: zoom 0 fits the world's 360 degrees in the width."""
     return width / 360.0 * 2.0**zoom
+
+
+def globe_degree_px(zoom: float, padding: float = GLOBE_PADDING, width: float = 1080.0) -> float:
+    """Frame pixels to a degree at the centre of a :func:`globe` at ``zoom``, so a cut to a :func:`flat` view can keep
+    the scale."""
+    return (width / 2.0 - padding) * 2.0**zoom * math.pi / 180.0
 
 
 def zoom_for_degree(px: float, width: float = 1080.0) -> float:
@@ -359,7 +378,6 @@ def _world(cv: Canvas, id: str, kind: str, lon: float, lat: float, zoom: float, 
         **attrs,
     )
     view.add_geoLayer(geo=_geo(cv, "land"), fill=LAND, stroke=COAST, strokeWidth=COAST_WIDTH)
-    view.add_geoLayer(geo=_geo(cv, "lakes"), fill=sea, stroke=COAST, strokeWidth=LAKE_WIDTH)
     if borders:
         view.add_geoLayer(geo=_geo(cv, "borders"), fill="#00000000", stroke=BORDER, strokeWidth=BORDER_WIDTH)
     if grid:
@@ -367,8 +385,12 @@ def _world(cv: Canvas, id: str, kind: str, lon: float, lat: float, zoom: float, 
     return view
 
 
-def _show(cv: Canvas, parent, view, start: float, end: float):
+def _show(cv: Canvas, parent, view, start: float, end: float, sea: str | None = None):
+    """The map ``view`` from ``start`` to ``end``; ``sea`` fills what lies past the projection's edge, such as the top
+    of a flat map pulled out beyond the pole."""
     g = cv.group(parent, f"{view.id}-shown", start=start, end=end)
+    if sea is not None:
+        cv.rect(g, 0, 0, cv.width, cv.height, sea)
     g.add_layer(id=f"{view.id}-layer", asset=view.id, x=0, y=0)
     return g
 
@@ -393,21 +415,37 @@ def globe(
     spin: Sequence[tuple[float, float]] = (),
     id: str = "map-globe",
     padding: float = GLOBE_PADDING,
+    dive: Dive | None = None,
 ):
-    """A globe from ``start`` to ``end`` centred on ``lon``, ``lat``; ``spin`` keys its longitude, ``(seconds, lon)``.
-    Near its edge a globe bends the parallels, so it is for asking and not for answering. Returns the map asset, for
-    :func:`pin` and further keys."""
+    """A globe from ``start`` to ``end`` centred on ``lon``, ``lat``; ``spin`` keys its longitude, ``(seconds, lon)``,
+    and ``dive`` ends it by falling towards a place. Near its edge a globe bends the parallels, so it is for asking and
+    not for answering. Returns the map asset, for :func:`pin` and further keys."""
     _span(start, end, "a globe")
     view = _world(cv, id, "globe", lon, lat, 0.0, fitPadding=padding, outline=COAST, outlineWidth=6)
-    if spin:
-        cv.keys(view, "centerLon", list(spin), hold=False, local=False)
+    turned = list(spin)
+    if dive is not None:
+        if not (start <= dive.begin and dive.begin + dive.seconds <= end and dive.seconds > 0):
+            raise MapKitError(f"a dive happens while the globe is up, got {dive!r}")
+        if any(at > dive.begin for at, _ in turned):
+            raise MapKitError("a globe stops turning before it dives")
+        last = dive.begin + dive.seconds
+        turned = [*(turned or [(start, lon)])]
+        lons = [*turned, (dive.begin, turned[-1][1]), (last, dive.lon)]
+        cv.keys(view, "centerLon", lons, kind="sine-in-out", local=False)
+        cv.keys(view, "centerLat", [(dive.begin, lat), (last, dive.lat)], kind="sine-in-out", local=False)
+        cv.keys(view, "zoom", [(dive.begin, 0.0), (last, dive.zoom)], kind="sine-in-out", local=False)
+    elif turned:
+        cv.keys(view, "centerLon", turned, hold=False, local=False)
     g = cv.group(parent, f"{id}-ball", start=start, end=end)
     middle, radius = cv.height / 2, cv.width / 2 - padding
     halo = cv.rgrad("map-globe-halo", ((0.72, SEA + "66"), (1, SEA + "00")), (0.5, 0.5, 0.5))
     cv.ellipse(g, -80, middle - radius - 140, cv.width + 160, 2 * radius + 280, halo)
     _show(cv, g, view, start, end)
     lit = cv.rgrad("map-globe-light", ((0, "#ffffff2e"), (0.55, "#ffffff00"), (1, "#0b3a5347")), (0.38, 0.34, 0.8))
-    cv.ellipse(cv.group(g, f"{id}-shade"), cv.width / 2 - radius, middle - radius, 2 * radius, 2 * radius, lit)
+    shade = cv.group(g, f"{id}-shade")
+    cv.ellipse(shade, cv.width / 2 - radius, middle - radius, 2 * radius, 2 * radius, lit)
+    if dive is not None:  # the light belongs to a ball, and a dive leaves the ball behind
+        cv.keys(shade, "opacity", [(dive.begin, 1.0), (dive.begin + dive.seconds / 2, 0.0)], hold=False, local=False)
     return view
 
 
@@ -437,8 +475,31 @@ def flat(
         view.add_flyTo(
             begin=move.begin, duration=move.seconds, lon=move.lon, lat=move.lat, zoom=move.zoom, rho=move.rho
         )
-    _show(cv, parent, view, start, end)
+    shown = _show(cv, parent, view, start, end, sea=SEA)
+    _whip(cv, shown, view, moves)
     return view
+
+
+def _whip(cv: Canvas, parent, view, moves: Sequence[Move]) -> None:
+    """Over a :func:`flat` view, the same map thrown out of focus for the fast part of each flight, as a camera whipped
+    across it would see it. Sharp at speed, land and sea swap over most of the frame several times a second, which is
+    a flash the strict encode refuses and a viewer should not get; soft, they read as a blur going by."""
+    flights = [move for move in moves if move.seconds >= WHIP_LEAST]
+    if not flights:
+        return
+    keys = [(0.0, 0.0)]
+    for move in flights:
+        ramp = move.seconds * WHIP_RAMP
+        keys += [
+            (move.begin, 0.0),
+            (move.begin + ramp, 1.0),
+            (move.begin + move.seconds - ramp, 1.0),
+            (move.begin + move.seconds, 0.0),
+        ]
+    g = cv.group(parent, f"{view.id}-whip", opacity=0.0)
+    cv.apply(g, cv.effect(f"{view.id}-whip-blur", "blur", radius=WHIP_BLUR))
+    g.add_layer(id=f"{view.id}-whip-layer", asset=view.id, x=0, y=0)
+    cv.keys(g, "opacity", keys, hold=False, local=False)
 
 
 @register("graphic", "map-equal-area", summary="A Lambert azimuthal equal-area map, re-centred as it moves")
@@ -471,14 +532,14 @@ def _rides(cv: Canvas, node, view: str, lon: float, lat: float) -> None:
 
 def _pop(cv: Canvas, node, at: float) -> None:
     for channel in ("scaleX", "scaleY"):
-        cv.keys(node, channel, [(at, 0.2), (at + POP_SECONDS, 1.0)], kind="back-out", local=False)
+        cv.keys(node, channel, [(at, POP_FROM), (at + POP_SECONDS, 1.0)], kind="back-out", local=False)
 
 
 @register("prop", "map-pin", summary="A pin on a place, its name and latitude on a label that rides with it")
 def pin(
     cv: Canvas,
     parent,
-    view: str,
+    view,
     place: Place,
     start: float,
     end: float,
@@ -486,20 +547,22 @@ def pin(
     side: str = "right",
     id: str = "map-pin",
     figure: bool = True,
+    pop: bool = True,
 ):
     """A pin on ``place`` on the map ``view``, with its name and, unless ``figure`` is off, its one-decimal latitude on
     a label on its ``side``: ``right``, ``left``, ``above`` or ``below``. It rides the map however the camera moves. Its
-    label is lettered at one size, so a phone reads every place alike."""
+    label is lettered at one size, so a phone reads every place alike. ``pop`` off, it is simply there."""
     _span(start, end, "a pin")
     if side not in ("right", "left", "above", "below"):
         raise MapKitError(f"a label goes right, left, above or below, got {side!r}")
     check_copy(place.name)
     g = cv.group(parent, id, start=start, end=end)
-    _rides(cv, g, view, place.lon, place.lat)
+    _rides(cv, g, view.id, place.lon, place.lat)
     popped = cv.group(g, f"{id}-popped", x=0, y=0, anchorX=0, anchorY=0)
-    _pop(cv, popped, start)
+    if pop:
+        _pop(cv, popped, start)
     cv.ellipse(popped, -PIN_RADIUS, -PIN_RADIUS, 2 * PIN_RADIUS, 2 * PIN_RADIUS, PIN, PAPER, 6.0)
-    rows = [(place.name, PILL_NAME, INK)] + ([(place.latitude, PILL_FIGURE, PIN)] if figure else [])
+    rows = [(place.name, PILL_NAME, INK)] + ([(place.latitude, PILL_FIGURE, PIN_INK)] if figure else [])
     wide = max(measure(text, size) for text, size, _ in rows) + 2 * PILL_PAD + 8
     tall = sum(size * 1.2 for _, size, _ in rows) + 2 * PILL_PAD * 0.6
     x = {"right": PILL_GAP, "left": -PILL_GAP - wide, "above": -wide / 2, "below": -wide / 2}[side]
@@ -508,7 +571,7 @@ def pin(
     cv.expression(  # a label slides along its pin rather than leave the safe zone as the map moves
         label,
         "position",
-        f"var p = geo('{view}', {place.lon}, {place.lat}); var left = p[0] + {x:.2f}; "
+        f"var p = geo('{view.id}', {place.lon}, {place.lat}); var left = p[0] + {x:.2f}; "
         f"[Math.max({SAFE_LEFT} - left, Math.min(0, {SAFE_LEFT + SAFE_WIDTH - wide:.2f} - left)), 0]",
     )
     cv.rect(label, x, y, wide, tall, PAPER, INK, 3.0, radius=PILL_RADIUS)
@@ -552,8 +615,8 @@ def parallel(
     west, east = _route(place.lat, place.lon, -180.0), _route(place.lat, place.lon, 180.0)
     for name, points in (("west", west), ("east", east)):
         route = view.add_route(id=f"{id}-{name}", points=points, stroke=PIN, strokeWidth=7, progress=0)
-        cv.keys(route, "progress", [(start, 0.0), (start + drawn, 1.0)], kind="sine-in-out", local=False)
-        cv.keys(route, "opacity", [(start, 1.0), (end - 0.001, 1.0), (end, 0.0)], hold=True, local=False)
+        keys = [(start, 0.0), (start + drawn, 1.0), (end - 0.001, 1.0), (end, 0.0)]
+        cv.keys(route, "progress", keys, kind="sine-in-out", local=False)
     if tag_from is None:
         return
     if measure is None:
@@ -644,20 +707,27 @@ def stamp(
     """``text`` on a paper strip low in the safe zone, one or two lines, from ``start`` to ``end``: the only evidence
     a reel states as text, so its dataset and year are in it."""
     _span(start, end, "a stamp")
-    lines, size = None, STAMP_SIZE
-    while size >= STAMP_LEAST:
-        lines = _wrap(measure, check_copy(text), size, SAFE_WIDTH - 2 * STAMP_PAD, STAMP_LINES)
-        if lines:
-            break
-        size -= 2.0
-    if not lines:
-        raise MapKitError(f"a stamp takes {STAMP_LINES} lines at {STAMP_LEAST} at most: {text!r}")
+    lines, size = _stamp_fit(measure, check_copy(text))
     wide = max(measure(row, size) for row in lines) + 2 * STAMP_PAD + 8
     tall = len(lines) * size * CAPTION_LEADING + 2 * STAMP_PAD * 0.7
     g = cv.group(parent, id, start=start, end=end)
     left = round(cv.width / 2 - wide / 2, 2)
     cv.rect(g, left, y, wide, tall, PAPER, INK, 3.0, radius=14.0)
     cv.text(g, cv.uid("map-stamp-text"), "\n".join(lines), 0, y, cv.width, round(tall), size, color=INK)
+
+
+def _stamp_fit(measure: Measure, text: str) -> tuple[list[str], float]:
+    """The lines and size of a stamp: one line if it holds at :data:`STAMP_FIT` or more, so no word is left alone on a
+    second, else two, shrinking as far as :data:`STAMP_LEAST`."""
+    wide = SAFE_WIDTH - 2 * STAMP_PAD
+    for most, least in ((1, STAMP_FIT), (STAMP_LINES, STAMP_LEAST)):
+        size = STAMP_SIZE
+        while size >= least:
+            lines = _wrap(measure, text, size, wide, most)
+            if lines:
+                return lines, size
+            size -= 2.0
+    raise MapKitError(f"a stamp takes {STAMP_LINES} lines at {STAMP_LEAST} at most: {text!r}")
 
 
 def _wrap(measure: Measure, text: str, size: float, width: float, most: int) -> list[str] | None:

@@ -1,15 +1,17 @@
 """Build the map kit's layers under src/srstudio/assets/maps/ from Natural Earth and GHS-POP.
 
 Run (about 4 GB of memory, a minute or two):
-  uv run -q --no-project --with numpy --with rasterio python tools/maps/build_layers.py DATA
+  uv run -q --no-project --with numpy --with rasterio --with shapely python tools/maps/build_layers.py DATA
 
 DATA defaults to $SRSTUDIO_MAPS_DATA, else generated/data/maps. It holds the population grid, which is not in git, and
 ne-5.1.2/, filled from the pinned tag of nvkelso/natural-earth-vector on the first run. The output is deterministic, and
 layers.json records what each layer came from, with the SHA-256 of its input.
 
-land, lakes and borders are Natural Earth 1:50m with their coordinates rounded to :data:`PLACES` decimals and their
-properties dropped. Boundaries are kept as Natural Earth draws them; nothing is added or moved, and the only points
-removed are the ones that run Antarctica's outline along the South Pole (see :func:`thin`).
+land and borders are Natural Earth 1:50m with their coordinates rounded to :data:`PLACES` decimals and their properties
+dropped. Boundaries are kept as Natural Earth draws them; nothing is added or moved, and the only points removed are the
+ones that run Antarctica's outline along the South Pole (see :func:`thin`). The large lakes are cut out of the land as
+holes (see :func:`cut_lakes`): as a layer of their own they would be empty in any frame that holds none, an ocean for
+instance, which the strict encode reports.
 
 dots is the population as one dot per :data:`DOT` people. Every cell of the 30 arc-second grid is put in one of three
 zones, by the rule of circle.py: its centre is within :data:`RADIUS` km of :data:`MONG_KHET`, of :data:`ADELAIDE`, or of
@@ -28,6 +30,8 @@ import urllib.request
 
 import numpy as np
 import rasterio
+from shapely.geometry import mapping, shape
+from shapely.ops import unary_union
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 OUT = REPO / "src/srstudio/assets/maps"
@@ -85,6 +89,23 @@ def thin(coordinates):
     return [thin(part) for part in coordinates]
 
 
+def cut_lakes(features: list) -> None:
+    """Cut the large lakes out of the land, before any rounding: Natural Earth's polygons are valid as they stand, and
+    a lake such as Malaren reaches the coast, so it cannot simply be added to its polygon as an inner ring."""
+    lakes = natural_earth("lakes")
+    water = unary_union(
+        [
+            shape(feature["geometry"])
+            for feature in json.loads(lakes.read_text())["features"]
+            if feature["properties"].get("scalerank", 99) <= LAKE_RANK
+        ]
+    )
+    for feature in features:
+        land = shape(feature["geometry"])
+        if land.intersects(water):
+            feature["geometry"] = mapping(land.difference(water))
+
+
 def write(name: str, features: list, sources: dict) -> None:
     path = OUT / f"{name}.geojson"
     text = json.dumps({"type": "FeatureCollection", "features": features}, separators=(",", ":"))
@@ -96,9 +117,10 @@ def write(name: str, features: list, sources: dict) -> None:
 def natural_earth_layer(name: str, sources: dict) -> None:
     path = natural_earth(name)
     features = []
-    for feature in json.loads(path.read_text())["features"]:
-        if name == "lakes" and feature["properties"].get("scalerank", 99) > LAKE_RANK:
-            continue
+    raw = json.loads(path.read_text())["features"]
+    if name == "land":
+        cut_lakes(raw)
+    for feature in raw:
         geometry = feature["geometry"]
         coordinates = thin(rounded(geometry["coordinates"]))
         features.append(
@@ -109,6 +131,9 @@ def natural_earth_layer(name: str, sources: dict) -> None:
         "input_sha256": sha256(path),
         "licence": "public domain",
     }
+    if name == "land":
+        sources[name]["source"] += f", with the lakes of {NE_FILES['lakes']} to scalerank {LAKE_RANK} cut out as holes"
+        sources[name]["lakes_sha256"] = sha256(natural_earth("lakes"))
     write(name, features, sources)
 
 
@@ -212,7 +237,7 @@ def population_layer(sources: dict) -> None:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     sources: dict = {}
-    for name in NE_FILES:
+    for name in ("land", "borders"):
         natural_earth_layer(name, sources)
     population_layer(sources)
     manifest = {"schema_version": "1.0.0", "generated-by": "tools/maps/build_layers.py", "layers": sources}

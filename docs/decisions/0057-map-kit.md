@@ -1,11 +1,12 @@
 ---
-generated-by: Claude Opus 5.5 (Claude Code)
+generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
 # ADR 0057: the map kit
 
 - **Status:** proposed
 - **Deciders:** Pedro (operator)
+- Back to the [library README](../../README.md)
 
 ## Context
 
@@ -50,8 +51,13 @@ motion.
 ## Consequences
 
 - The layers add about 1.7 MB to the package.
+- The large lakes are holes in `land`, not a layer of their own. A layer with nothing in frame is a finding the strict
+  encode refuses, and an ocean holds no lake; a hole is drawn wherever the land is.
+- A fast flight over a flat map swaps land and sea over most of the frame, which the strict encode refuses as a flash.
+  So the same map is laid over itself, heavily blurred, for the fast part of each flight of 0.3 s or more, and the map
+  carries no film grain, whose frame-by-frame change the same check counts.
 - Antarctica's outline loses the points Natural Earth runs along latitude -90, which an azimuthal view draws as a line
-  across the ice. It is the only change to a Natural Earth shape besides rounding.
+  across the ice. It and the lake holes are the only changes to a Natural Earth shape besides rounding.
 - `specimens.DRAWN` classifies the map elements, so a map part has a fingerprint like any other. A recipe gets the folder
   it renders in through `Context.work`, because a map reads its layers beside the document.
 - The population layer's zones are named after two circles, so a reel about a third circle needs a rebuilt layer.

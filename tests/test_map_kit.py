@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from importlib.resources import files
 from pathlib import Path
 
@@ -185,17 +186,31 @@ def test_a_camera_flies_only_forward():
         map_kit.flat(cv, cv.comp, 12.0, 42.0, 5.0, 0.0, 8.0, moves=overlapping, id="other")
 
 
+def test_a_dive_ends_a_turning_globe_at_the_scale_a_flat_map_can_take_over():
+    cv = canvas()
+    dive = map_kit.Dive(3.0, 1.0, 12.5, 41.9, 3.0)
+    view = map_kit.globe(cv, cv.comp, -30.0, 28.0, 0.0, 4.0, spin=[(0.0, -36.0), (3.0, -26.0)], dive=dive)
+    keyed = {a.property: a for a in view.find_all("animate")}
+    assert set(keyed) == {"centerLon", "centerLat", "zoom"}
+    assert [k.value for k in keyed["centerLon"].find_all("key")][-1] == "12.5"
+    assert map_kit.globe_degree_px(3.0) == pytest.approx(480 * 8 * math.pi / 180)
+    with pytest.raises(MapKitError, match="stops turning"):
+        map_kit.globe(cv, cv.comp, 0.0, 0.0, 0.0, 4.0, spin=[(3.5, 1.0)], dive=dive, id="late")
+    with pytest.raises(MapKitError, match="while the globe"):
+        map_kit.globe(cv, cv.comp, 0.0, 0.0, 0.0, 3.5, dive=dive, id="short")
+
+
 def test_a_pin_rides_the_map_and_shows_its_figure_only_when_asked():
     cv = canvas()
     view = map_kit.globe(cv, cv.comp, 12.0, 42.0, 0.0, 8.0)
-    map_kit.pin(cv, cv.comp, view.id, ROME, 0.0, 8.0, measure, figure=False, id="asked")
+    map_kit.pin(cv, cv.comp, view, ROME, 0.0, 8.0, measure, figure=False, id="asked")
     text = xml(cv)
     assert "geo(&apos;map-globe&apos;" in text or "geo('map-globe'" in text
     assert "41.9" not in text
-    map_kit.pin(cv, cv.comp, view.id, ROME, 3.0, 8.0, measure, id="told")
+    map_kit.pin(cv, cv.comp, view, ROME, 3.0, 8.0, measure, id="told")
     assert "41.9°N" in xml(cv)
     with pytest.raises(MapKitError, match="right, left"):
-        map_kit.pin(cv, cv.comp, view.id, ROME, 3.0, 8.0, measure, side="up", id="bad")
+        map_kit.pin(cv, cv.comp, view, ROME, 3.0, 8.0, measure, side="up", id="bad")
 
 
 def test_a_parallel_is_a_dense_line_at_one_latitude():
@@ -254,6 +269,19 @@ def test_a_stamp_shrinks_to_two_lines_and_then_refuses():
         map_kit.stamp(cv, cv.comp, "Comment below", 0.0, 5.0, measure, id="bait")
 
 
+def test_a_stamp_keeps_to_one_line_rather_than_strand_a_word():
+    assert map_kit._stamp_fit(measure, "A short stamp.") == (["A short stamp."], 42.0)
+    lines, size = map_kit._stamp_fit(lambda text, at: len(text) * at * 0.5, "x" * 45)
+    assert len(lines) == 1 and size < 42.0
+    assert len(map_kit._stamp_fit(measure, "word " * 14)[0]) == 2
+
+
+def test_a_flat_map_has_sea_past_its_poles():
+    cv = canvas()
+    map_kit.flat(cv, cv.comp, 0.0, 40.0, 2.0, 0.0, 8.0)
+    assert f'fill="{map_kit.SEA}"' in xml(cv)
+
+
 def test_captions_refuse_a_cue_of_four_lines():
     cv = canvas()
     fine = [Line(id="a", text="Which is further north?", start=0.0, end=1.0, speaker="narrator")]
@@ -268,3 +296,59 @@ def test_the_narrator_is_the_channels_own_constant():
     assert map_kit.NARRATOR.settings.stability == 0.60
     assert map_kit.CARD in map_kit.MAPS_CAST.characters
     assert map_kit.MAPS.fps == 30 and map_kit.MAPS.mix.loudness == "-14"
+
+
+def test_the_lakes_are_holes_in_the_land_so_no_layer_goes_empty_over_an_ocean():
+    """A layer with nothing in the frame is a finding the strict encode refuses, and an ocean holds no lake. Cut into
+    the land, the lakes are drawn wherever the land is."""
+    assert "lakes" not in map_kit.LAYERS
+    land = json.loads((files("srstudio") / "assets/maps/land.geojson").read_text())
+    polygons = [
+        polygon
+        for feature in land["features"]
+        for polygon in (
+            feature["geometry"]["coordinates"]
+            if feature["geometry"]["type"] == "MultiPolygon"
+            else [feature["geometry"]["coordinates"]]
+        )
+    ]
+    holes = [ring for polygon in polygons for ring in polygon[1:]]
+    assert len(holes) > 20
+    superior = [ring for ring in holes if all(-93 < lon < -84 and 46 < lat < 49.5 for lon, lat in ring)]
+    assert superior, "Lake Superior is a hole in the land"
+    record = json.loads((files("srstudio") / "assets/maps/layers.json").read_text())
+    assert "ne_50m_lakes" in record["layers"]["land"]["source"]
+
+
+def test_a_flight_is_thrown_out_of_focus_and_a_short_hop_is_not():
+    cv = canvas()
+    moves = [Move(1.0, 1.5, -74.0, 41.9, 4.0, 1.7), Move(5.0, 0.04, 2.3, 48.9, 4.0, 1.7)]
+    map_kit.flat(cv, cv.comp, 12.5, 41.9, 4.0, 0.0, 10.0, moves=moves, id="flat")
+    written = xml(cv)
+    whip = written[written.index('id="flat-whip"') :]
+    whip = whip[: whip.index("</group>")]
+    assert 'asset="flat"' in whip and 'effects="flat-whip-blur"' in whip
+    times = [float(t) for t in re.findall(r'<key time="([^"]+)" value', whip)]
+    assert sorted(times) == times
+    assert min(t for t in times if t > 0) == 1.0, "focus goes as the flight starts"
+    assert max(times) == 2.5, "and comes back as it lands, with nothing for the short hop"
+
+
+def test_a_label_is_never_too_small_to_sit_on_its_own_card_while_it_pops():
+    cv = canvas()
+    view = map_kit.flat(cv, cv.comp, 0.0, 0.0, 4.0, 0.0, 5.0, id="flat")
+    map_kit.pin(cv, cv.comp, view, Place("Rome", 41.9, 12.5), 1.0, 3.0, measure)
+    written = xml(cv)
+    popped = written[written.index('id="map-pin-popped"') :]
+    assert '<key time="1" value="0.6"/>' in popped
+    assert map_kit.POP_FROM >= 0.6
+
+
+def test_the_hot_colour_reads_as_text_on_white_and_under_white():
+    def luminance(colour: str) -> float:
+        channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    assert 1.05 / (luminance(map_kit.PIN) + 0.05) >= 4.5
+    assert 1.05 / (luminance(map_kit.PIN_INK) + 0.05) >= 6.0, "thin strokes on white measure about a fifth paler"
