@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+import random
+from collections.abc import Sequence
 
 from . import checks
 from .canvas import Canvas, Keys
@@ -31,6 +33,47 @@ def push_in(cv: Canvas, group, *, x: Keys = (), y: Keys = (), scale: Keys = (), 
     if scale:
         cv.keys(group, "scaleX", scale, hold=hold_scale)
         cv.keys(group, "scaleY", scale, hold=hold_scale)
+
+
+WHIP = 0.14  # seconds a whip pan takes to leave a shot, and to land in the next
+WHIP_BANDS = 14  # the paper streaks that cover the cut
+WHIP_RUN = 700.0  # px each streak travels while it shows
+
+
+def whip(cv: Canvas, group, at: float, *, leaving: bool, direction: int = -1, width: float = 1080.0) -> float:
+    """One side of a whip pan cut at project second ``at``, for shots drawn as groups (a ``<sequence>`` has the native
+    ``whip-pan`` transition, :func:`srstudio.native.transition`): a ``leaving`` shot runs off the frame towards
+    ``direction`` (-1 left, 1 right) over the last :data:`WHIP` seconds, the next shot arrives from the other side over
+    the first. ``group`` must hold no other ``x`` keys. Returns ``at``, the cue for a whoosh."""
+    if not (checks.number(at) and at >= WHIP):
+        raise CameraError(f"whip: at {at} must leave {WHIP} s before the cut")
+    if direction not in (-1, 1):
+        raise CameraError(f"whip: direction is -1 or 1, got {direction!r}")
+    if leaving:
+        cv.keys(group, "x", [(round(at - WHIP, 6), 0.0), (at, direction * width)], kind="cubic-in")
+    else:
+        cv.keys(group, "x", [(at, -direction * width), (round(at + WHIP, 6), 0.0)], kind="cubic-out")
+    return at
+
+
+def whip_streaks(
+    cv: Canvas, parent, at: float, colours: Sequence[str], *, direction: int = -1, seed: int = 0
+) -> object:
+    """Horizontal streaks over the frame, fading up to the cut at ``at`` and away after it, in ``colours``, moving
+    towards ``direction``: what the eye gets instead of the empty frame between two shots of a :func:`whip`. Draw them
+    over the shots. Returns the group."""
+    if not colours:
+        raise CameraError("whip: the streaks need at least one colour")
+    rng = random.Random(seed)
+    g = cv.group(parent, cv.uid("whip-streaks"))
+    a, b = round(at - WHIP, 6), round(at + WHIP, 6)
+    cv.keys(g, "opacity", [(a, 0.0), (at, 1.0), (b, 0.0)], hold=False)
+    tall = cv.height / WHIP_BANDS
+    for i in range(WHIP_BANDS):
+        band = cv.rect(g, -WHIP_RUN, i * tall, cv.width + 2 * WHIP_RUN, tall + 1, rng.choice(list(colours)))
+        run = direction * WHIP_RUN * rng.uniform(0.5, 1.0)
+        cv.keys(band, "x", [(a, -run), (b, run)], hold=False)
+    return g
 
 
 SNAP = 0.25  # seconds: a scale change at least this fast is a crash zoom; slower is a push (srstudio.craft agrees)
