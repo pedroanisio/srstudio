@@ -6,6 +6,8 @@ measured off that review's desk. Each runs on a reel's first delivery only: a vi
 frozen, and no gate here may ask it to change.
 
 - :func:`run_together` reads the scene: a burned caption window must not run across a sentence end unmarked.
+- :func:`signature_shown` measures the engine's frames: both marks must be seen for most of the running time. A parts
+  list says they were drawn, not that the camera sees them.
 """
 
 from __future__ import annotations
@@ -17,16 +19,38 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import NamedTuple
 
+from . import framegraph
+from .framegraph import Drawing, Frame, FrameGraphError
 from .releases import Release
 from .social import DeliveryError, Drift
 
-__all__ = ["FrameGateError", "RunTogether", "captions_run_together", "refuse", "run_together", "sentences_of"]
+__all__ = [
+    "MARK_SEEN",
+    "MIN_SHOWN",
+    "SAMPLE_EVERY",
+    "FrameGateError",
+    "RunTogether",
+    "Shown",
+    "captions_run_together",
+    "refuse",
+    "run_together",
+    "sample_times",
+    "sentences_of",
+    "signature_hidden",
+    "signature_shown",
+]
 
 _WORD = re.compile(r"[a-z0-9$%']+")
 _SENTENCE_END = re.compile(r"(?<![.…])(?:\.|[?!]+)[\"'”’)\]]*\Z")  # an ellipsis trails off, inside its sentence
 _MARKED = re.compile(r"[.?!,:;…—–-]+[\"'”’)\]]*\Z")
 _ABBREVIATION = re.compile(r"(?:[a-z]\.){2,}|(?:mr|mrs|ms|dr|st|vs|jr|sr)\.", re.IGNORECASE)
 _SRT_TIMES = re.compile(r"\d\d:\d\d:\d\d,\d{3} --> ")
+_MARK = re.compile(r"sig-(cactus|code)(?:-\d+)?\Z")
+
+SAMPLE_EVERY = 0.5  # seconds between measured frames: a shot lasts longer than this
+MARK_SEEN = 0.75  # of a mark's box, on the frame and not behind anything, for that frame to count as showing it
+MIN_SHOWN = 0.5  # of the running time with both marks seen: "most"
+MARK_SCALE = 2.0  # frame pixels to a mask pixel: a mark is small
 
 
 class FrameGateError(DeliveryError):
@@ -143,4 +167,87 @@ def captions_run_together(releases: Mapping[str, Release], episodes: Path, first
             Drift(video, f"the caption {r.window!r} runs {r.before!r} into {r.after!r} across a sentence end")
             for r in run_together(scene.read_bytes(), sentences_of(project))
         ]
+    return drift
+
+
+# -- the signature -------------------------------------------------------------------------------------------------
+class Shown(NamedTuple):
+    """Of ``frames`` measured, how many show the ``cactus``, the ``code`` and ``both`` at once."""
+
+    frames: int
+    cactus: int
+    code: int
+    both: int
+
+    @property
+    def share(self) -> float:
+        return self.both / self.frames if self.frames else 0.0
+
+
+def _duration(document: bytes) -> float:
+    project = _root(document).find("project")
+    if project is None or not project.get("duration"):
+        raise FrameGateError("a scene with no project duration cannot be sampled")
+    return float(project.get("duration", ""))
+
+
+def sample_times(duration: float, every: float = SAMPLE_EVERY) -> list[float]:
+    """Every ``every`` seconds of a reel of ``duration`` seconds, from 0, and its last frame's neighbourhood."""
+    return [i * every for i in range(int(duration / every) + 1) if i * every < duration]
+
+
+def _seen(frame: Frame, index: int, drawn: Mapping[str, Drawing]) -> bool:
+    """A mark's box is on the frame and clear of what stands in front of it, by :data:`MARK_SEEN`."""
+    box = frame.box(index, drawn)
+    if box is None or box.area <= 0:
+        return False
+    inside = box.within(frame.width, frame.height)
+    if inside.area <= 0:
+        return False
+    members = [index, *frame.descendants(index)]
+    hidden = frame.in_front(members, drawn, inside, MARK_SCALE)
+    return inside.area * (1.0 - float(hidden.mean())) >= MARK_SEEN * box.area
+
+
+def signature_shown(frames: Iterable[Frame], drawn: Mapping[str, Drawing]) -> Shown:
+    """How much of ``frames`` shows the signature's two marks, wherever the location put them."""
+    total = cactus = code = both = 0
+    for frame in frames:
+        seen: set[str] = set()
+        for index, node in enumerate(frame.nodes):
+            mark = _MARK.match(node.id)
+            if mark and node.kind == "group" and node.draw and mark.group(1) not in seen and _seen(frame, index, drawn):
+                seen.add(mark.group(1))
+        total += 1
+        cactus += "cactus" in seen
+        code += "code" in seen
+        both += len(seen) == 2
+    return Shown(total, cactus, code, both)
+
+
+def signature_hidden(
+    releases: Mapping[str, Release], episodes: Path, first: Mapping[str, str], engine: str | Path
+) -> list[Drift]:
+    """Each reel on its ``first`` delivery that shows both marks for less than :data:`MIN_SHOWN` of its running time;
+    a project with no scene has nothing to measure."""
+    drift: list[Drift] = []
+    for slug, video in first.items():
+        scene = Path(episodes) / slug / releases[slug].scene_file
+        if not scene.is_file():
+            continue
+        document = scene.read_bytes()
+        try:
+            frames = framegraph.evaluate(engine, scene, sample_times(_duration(document)))
+            shown = signature_shown(frames, framegraph.drawings(document))
+        except FrameGraphError as e:
+            raise FrameGateError(f"{video}: {e}") from e
+        if shown.share < MIN_SHOWN:
+            drift.append(
+                Drift(
+                    video,
+                    f"both signature marks are seen in {shown.share:.0%} of the running time, the least is "
+                    f"{MIN_SHOWN:.0%} (of {shown.frames} frames, the cactus in {shown.cactus}, the code in "
+                    f"{shown.code}); move the marks where the framing sees them",
+                )
+            )
     return drift
