@@ -30,13 +30,28 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from . import brush, checks
 from .brush import Point, Shape
 from .canvas import Canvas
 from .registry import register
-from .toon import ARMS, EPSILON, EYES, LIPS, MOUTHS, REF_TOP, SCALE, Pose, ToonDataError, flat, runs, swap_frames
+from .toon import (
+    ARMS,
+    EPSILON,
+    EYES,
+    LIPS,
+    MOUTHS,
+    REF_TOP,
+    SCALE,
+    Pose,
+    ToonDataError,
+    flat,
+    fx,
+    fy,
+    runs,
+    swap_frames,
+)
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
@@ -58,6 +73,8 @@ __all__ = [
     "SLEEPY_PACE",
     "SLEEPY_HOLD",
     "SHUT",
+    "Posing",
+    "Ramp",
     "TEAR",
     "HEART",
     "TONGUE",
@@ -116,6 +133,39 @@ class Drawing(Protocol):
     def viseme(self, look: Look, kind: str) -> list[Layer]: ...
 
     def limb(self, points: Sequence[Point], look: Look, paw: Point, toes: bool) -> list[Layer]: ...
+
+
+@runtime_checkable
+class Posing(Protocol):
+    """A drawing with poses of its own beyond the shared kinds. ``gesture`` is the arms of a kind it draws itself, as
+    :func:`_arms` returns them, or ``None`` for a shared kind; it refuses a kind it does not know. ``shut`` says eyes
+    of that kind have nothing to blink."""
+
+    def gesture(self, arms: str) -> tuple[list[Layer], list[Layer]] | None: ...
+
+    def shut(self, eyes: str) -> bool: ...
+
+
+class Ramp(str):
+    """A layer's colour that is a gradient: the string is the flat colour it averages to, for anything that reads a
+    colour, and :func:`_draw` paints the ramp itself. ``box`` is ``(x0, y0, x1, y1)`` in reference pixels, the line
+    the ``stops`` run along, the same whatever the shape, so two shapes of one ramp meet with no edge."""
+
+    name: str
+    stops: tuple[tuple[float, str], ...]
+    box: tuple[float, float, float, float]
+
+    def __new__(
+        cls, colour: str, name: str, stops: Sequence[tuple[float, str]], box: tuple[float, float, float, float]
+    ) -> Ramp:
+        ramp = super().__new__(cls, colour)
+        ramp.name, ramp.stops, ramp.box = name, tuple(stops), box
+        return ramp
+
+    def paint(self, cv: Canvas) -> str:
+        """The ``url(#name)`` of this ramp, declared the first time it is asked for."""
+        x0, y0, x1, y1 = self.box
+        return cv.grad(self.name, self.stops, (fx(x0), fy(y0), fx(x1), fy(y1)), units="user")
 
 
 @dataclass(frozen=True)
@@ -614,6 +664,10 @@ def _arms(
     """The arms of a pose at rest: those drawn before the face and those drawn over it (paws on the mouth)."""
     if not omit_arms <= {"left", "right"}:
         raise ToonDataError("omitted arms must be left or right")
+    if isinstance(look.drawing, Posing):
+        own = look.drawing.gesture(arms)
+        if own is not None:
+            return own
 
     def limb(side: str, *args, **kwargs) -> list[Layer]:
         return [] if side in omit_arms else _limb(*args, **kwargs)
@@ -1103,7 +1157,8 @@ def blink_times(start: float, end: float, period: float, hold: float = BLINK_HOL
 # -- on a canvas ----------------------------------------------------------------------------------------------------
 def _draw(cv: Canvas, parent, layers: Sequence[Layer]) -> None:
     for shape, colour in layers:
-        flat(cv, parent, shape, {"ink": cv.ink, "white": cv.white}.get(colour, colour))
+        paint = colour.paint(cv) if isinstance(colour, Ramp) else {"ink": cv.ink, "white": cv.white}.get(colour, colour)
+        flat(cv, parent, shape, paint)
 
 
 def _limb_layer(cv: Canvas, parent, arms: str):
@@ -1136,14 +1191,15 @@ def _draw_blinks(cv: Canvas, g, look: Look, pose: Pose, start: float, end: float
     """The lids shut at the look's blinks over the run, slower on sleepy eyes."""
     sleepy = pose.eyes == "sleepy"
     pace, hold = (SLEEPY_PACE, SLEEPY_HOLD) if sleepy else (1.0, BLINK_HOLD)
-    blinks = blink_times(start, end, look.blink * pace, hold) if pose.eyes not in SHUT else []
+    shut = pose.eyes in SHUT or (isinstance(look.drawing, Posing) and look.drawing.shut(pose.eyes))
+    blinks = blink_times(start, end, look.blink * pace, hold) if not shut else []
     if blinks:
-        shut = cv.group(g, cv.uid("g"))
-        _draw(cv, shut, _place(_lids(look), pose.arms))
+        lids = cv.group(g, cv.uid("g"))
+        _draw(cv, lids, _place(_lids(look), pose.arms))
         states = [(start, 0)]
         for t in blinks:
             states += [(t, 1), (round(t + hold, 6), 0)]
-        cv.keys(shut, "opacity", states, local=False)
+        cv.keys(lids, "opacity", states, local=False)
 
 
 def figure(

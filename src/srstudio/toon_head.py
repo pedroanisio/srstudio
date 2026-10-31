@@ -27,7 +27,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from . import brush
 from .canvas import Canvas
-from .head_motion import GAZES, Channel, HeadMotionError, HeadPlan, HeadStyle, limit
+from .head_motion import GAZES, Channel, HeadMotionError, HeadPlan, HeadStyle, Key, limit
 from .toon import Pose, ToonDataError, fh, fx, fy, runs, swap_frames
 from .toon_cast import (
     PIVOT,
@@ -48,8 +48,19 @@ from .toon_cast import (
 )
 from .toon_torso import depth_in
 
-__all__ = ["FACE_SLIDE", "SPRING_RUN", "Glancing", "HeadRig", "figure", "gaze_states", "open_seam", "rest_springs"]
+__all__ = [
+    "FACE_SLIDE",
+    "SPRING_RUN",
+    "TILT_EASE",
+    "Glancing",
+    "HeadRig",
+    "figure",
+    "gaze_states",
+    "open_seam",
+    "rest_springs",
+]
 
+TILT_EASE = 0.4  # seconds a held tilt takes to reach its pose's value, less when the pose is short, see _held_tilts
 SPRING_RUN = 8  # carried spring keys in a row before one restarts from rest, see rest_springs
 
 FACE_SLIDE = 0.8  # how much further than the skull the face drops on a nod
@@ -71,7 +82,11 @@ class HeadRig:
     at rest (degrees clockwise), ``style`` how it moves. ``skull`` draws the head, ``face`` what slides over it,
     ``trunk`` the body. ``cover`` is the top of that body, the line that hides the seam: drawn over the head as a ruff,
     or, with ``head_over``, hidden itself behind the head, whose chin lies over the body. ``free`` is how far from each
-    end of ``cover`` the seam need not stay shut (the corners where a head may part from the shoulders)."""
+    end of ``cover`` the seam need not stay shut (the corners where a head may part from the shoulders). ``pose_tilt``
+    is how far a kind of eyes tilts the head beyond ``tilt``, held from that pose to the next and eased in on the
+    style's ``settle``, for a drawing whose expressions carry a tilt; ``tilt_reach`` is the least and the most it
+    gives, which count toward the rig's bounds. ``face_slide`` is how much further than the skull the face drops on a
+    nod, for a face that has less room on its head than most."""
 
     look: Look
     neck: Point
@@ -84,6 +99,9 @@ class HeadRig:
     style: HeadStyle
     head_over: bool = False
     free: float = 0.0
+    pose_tilt: Callable[[str], float] | None = None
+    tilt_reach: tuple[float, float] = (0.0, 0.0)
+    face_slide: float = FACE_SLIDE
 
 
 def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
@@ -93,7 +111,10 @@ def _bounds(rig: HeadRig) -> list[tuple[float, float]]:
     swing = limit(style, "turn") + limit(style, "roll") + limit(style, "idle_roll")
     down = limit(style, "nod") + limit(style, "idle_y")
     up = -(style.breath_px + limit(style, "idle_y"))
-    return [(rig.tilt + sign * swing, drop) for sign in (-1.0, 1.0) for drop in (up, down)]
+    low, high = rig.tilt_reach
+    return [
+        (rig.tilt + (high if sign > 0 else low) + sign * swing, drop) for sign in (-1.0, 1.0) for drop in (up, down)
+    ]
 
 
 def reach(rig: HeadRig) -> HeadPlan:
@@ -179,6 +200,19 @@ def _animate(cv: Canvas, node, prop: str, channel: Channel, scale: float = 1.0, 
         a.add_key(time=round(t, 6), value=str(round(base + value * scale, 4)), **attrs, **carry)
 
 
+def _held_tilts(spans: Sequence[tuple[Pose, float, float]], tilt_of: Callable[[str], float]) -> tuple[Key, ...]:
+    """Keys that hold each pose's tilt through that pose: the old value at its start, then its own :data:`TILT_EASE`
+    later. A spring runs from one key towards the next, so a lone key at each start would lean into the pose after."""
+    keys: list[Key] = []
+    for pose, start, end in spans:
+        value = tilt_of(pose.eyes)
+        if not keys:
+            keys.append((start, value))
+        elif value != keys[-1][1]:
+            keys += [(start, keys[-1][1]), (round(start + min(TILT_EASE, (end - start) / 2.0), 6), value)]
+    return tuple(keys)
+
+
 def rest_springs(setup, run: int = SPRING_RUN) -> None:
     """Start every ``run``-th carried spring key under ``setup`` from rest. Spring keys carry their momentum from key
     to key, and the engine's time for a frame can double or worse with each carried key before it: a still 9 s into one
@@ -240,7 +274,12 @@ def figure(
     trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
     turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
     _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
-    nod = cv.group(turn, cv.uid("nod"), **neck)
+    spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
+    held = turn
+    if rig.pose_tilt is not None:
+        held = cv.group(turn, cv.uid("tilt"), **neck)
+        _animate(cv, held, "rotation", Channel(_held_tilts(spans, rig.pose_tilt), style.settle))
+    nod = cv.group(held, cv.uid("nod"), **neck)
     _animate(cv, nod, "rotation", plan.roll)
     _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
     idle = cv.group(nod, cv.uid("idle"), **neck)
@@ -251,12 +290,11 @@ def figure(
     skull = cv.group(lift, cv.uid("skull"))
     face = cv.group(lift, cv.uid("face"))
     _animate(cv, face, "x", plan.face_x, fh(1.0))
-    _animate(cv, face, "y", plan.nod, fh(FACE_SLIDE))
+    _animate(cv, face, "y", plan.nod, fh(rig.face_slide))
     trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
     front = cv.group(breath, cv.uid("front"))
 
-    for pose, start, end in runs(poses, duration - enter):
-        start, end = round(start + enter, 6), round(end + enter, 6)
+    for pose, start, end in spans:
         arms = pose.arms
         _draw(cv, cv.group(skull, cv.uid("g"), start=start, end=end), _place(list(rig.skull()), arms))
 

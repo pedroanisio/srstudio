@@ -359,6 +359,85 @@ def test_each_character_moves_its_own_way():
     assert fox.glance_face < goat.glance_face and fox.glance_hold > goat.glance_hold  # the eyes do the work
 
 
+def test_a_rig_with_no_held_tilts_has_no_group_for_them():
+    assert not [g for g in drawn().iter("group") if g.get("id", "").startswith("tilt-")]
+
+
+def test_a_rig_s_held_tilts_ease_in_on_its_settle_and_count_toward_its_bounds():
+    held = {"half": -4.0, "wide": 6.0}
+    rig = replace(RIG, pose_tilt=held.__getitem__, tilt_reach=(-4.0, 6.0))
+    root = drawn(poses=[Pose(0.0, "half", "flat", "desk"), Pose(3.0, "wide", "grin", "desk")], rig=rig)
+    tilt = group(root, "tilt")
+    assert tilt in list(group(root, "turn")) and group(root, "nod") in list(tilt)
+    rotation = animates(tilt)["rotation"]
+    assert rotation.get("defaultInterpolation") == "spring"
+    ease = toon_head.TILT_EASE
+    keys = [(float(k.get("time")), float(k.get("value"))) for k in rotation.findall("key")]
+    assert keys == [(0.0, -4.0), (3.0, -4.0), (3.0 + ease, 6.0)]  # a key at a pose's start would spring on to the next
+    plain, wide = toon_head._bounds(RIG), toon_head._bounds(rig)
+    assert wide[0][0] == pytest.approx(plain[0][0] - 4.0) and wide[3][0] == pytest.approx(plain[3][0] + 6.0)
+
+
+def test_a_held_tilt_keeps_to_its_own_pose_when_poses_come_quickly():
+    held = {"half": -4.0, "wide": 6.0}
+    rig = replace(RIG, pose_tilt=held.__getitem__)
+    gap = toon_head.TILT_EASE / 2.0
+    poses = [
+        Pose(0.0, "half", "flat", "desk"),
+        Pose(1.0, "wide", "flat", "desk"),
+        Pose(1.0 + gap, "half", "flat", "desk"),
+    ]
+    rotation = animates(group(drawn(poses=poses, rig=rig), "tilt"))["rotation"]
+    keys = [(float(k.get("time")), float(k.get("value"))) for k in rotation.findall("key")]
+    assert keys == [
+        (0.0, -4.0),
+        (1.0, -4.0),
+        (pytest.approx(1.0 + gap / 2.0), 6.0),
+        (pytest.approx(1.0 + gap), 6.0),
+        (pytest.approx(1.0 + gap + toon_head.TILT_EASE), -4.0),
+    ]
+
+
+def test_a_rig_sets_how_far_its_face_slides_on_a_nod():
+    speech = head_motion.Speech(1.0, head_motion.words_of(_take(), 1.0), (-20.0,) * 300)
+    plan = head_motion.plan(STYLE, [speech], 8.0)
+    face = animates(group(drawn(plan, rig=replace(RIG, face_slide=0.4)), "face"))["y"]
+    full = animates(group(drawn(plan), "face"))["y"]
+    for slid, slide in zip(face.findall("key"), full.findall("key"), strict=True):
+        assert float(slid.get("value")) == pytest.approx(
+            float(slide.get("value")) * 0.4 / toon_head.FACE_SLIDE, abs=1e-3
+        )
+
+
+def test_a_ramp_paints_as_a_gradient_and_reads_as_its_flat_colour():
+    ramp = toon_cast.Ramp("#123456", "test-ramp", ((0.0, "#000000"), (1.0, "#ffffff")), (10.0, 80.0, 20.0, 90.0))
+    assert ramp == "#123456"
+    scene, cv = stage()
+    toon_cast._draw(
+        cv,
+        cv.comp,
+        [((0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 0.0), ramp), ((0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 0.0), ramp)],
+    )
+    root = ET.fromstring(scene.to_bytes(layout="pretty"))
+    paints = [g for g in root.iter("linearGradient")]
+    assert len(paints) == 1 and paints[0].get("id") == "test-ramp" and paints[0].get("units") == "user"
+    assert [s.get("fill") for s in root.iter("shape")] == ["url(#test-ramp)"] * 2
+
+
+def test_a_drawing_with_its_own_gestures_answers_first_and_passes_on_the_shared_ones():
+    class Own:
+        def gesture(self, arms):
+            return ([(("under",), "#000000")], []) if arms == "bow" else None
+
+        def shut(self, eyes):
+            return False
+
+    look = replace(toon_cast.DOG, drawing=Own())
+    assert isinstance(look.drawing, toon_cast.Posing)
+    assert toon_cast._arms(look, "bow", 0) == ([(("under",), "#000000")], [])
+    assert not isinstance(toon_critters.SLOTH.drawing, toon_cast.Posing)
+
+
 def test_a_second_glance_at_another_rig_keeps_the_rig_s_look():
     assert replace(RIG, tilt=0.0).look is RIG.look
 
