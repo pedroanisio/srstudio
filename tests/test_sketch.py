@@ -2,12 +2,10 @@
 recording loop with a fake client (what the real client parses and verifies is tested in test_voice.py)."""
 
 import json
-import math
 import shutil
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from sr_core.scene import Scene
@@ -15,8 +13,8 @@ from sr_core.scene import Scene
 from srstudio import PEACH, Canvas, flat_counter, music, narration, sketch, toon
 from srstudio.fonts import GoogleFont
 from srstudio.sketch import Line
-from srstudio.voice import Alignment, Transcript
-from support.sketch import BEATS, LINES, SK, SPEAKERS, with_beats
+from srstudio.voice import Alignment
+from support.sketch import BEATS, LINES, SK, SPEAKERS, FakeClient, confirm_stub, with_beats
 
 
 def canvas() -> Canvas:
@@ -359,40 +357,9 @@ def test_write_project_and_write_voiced_lay_out_the_files(tmp_path, monkeypatch)
 
 
 # -- recording --------------------------------------------------------------------------------------------------------
-class FakeClient:
-    """Says each line as a tone, 0.3 s a word after 0.05 s of silence, and hears back what it is told to."""
-
-    def __init__(self, folder: Path, heard: dict | None = None):
-        self.folder, self.heard, self.requests, self.said = folder, heard or {}, [], {}
-
-    def synthesize(self, text, voice, settings):
-        self.requests.append((text, voice.name, settings.speed))
-        words = len(text.split())
-        seconds = 0.3 * words
-        rate = 8000
-        samples = [0.0] * int(0.05 * rate) + [
-            0.5 * math.sin(2 * math.pi * 220 * k / rate) for k in range(int(seconds * rate))
-        ]
-        wav = self.folder / f"{voice.name}-{len(self.requests)}.wav"
-        music.write_wav(wav, samples, rate)
-        self.said[wav] = text
-        n = len(text)
-        starts = tuple(round(0.05 + k * seconds / n, 6) for k in range(n))
-        ends = tuple(round(s + seconds / n, 6) for s in starts)
-        return SimpleNamespace(wav=wav, alignment=Alignment(tuple(text), starts, ends))
-
-    def transcribe(self, audio, language="en"):
-        text = self.said[Path(audio)]
-        return Transcript("en", 1.0, self.heard.get(text, text), ())
-
-
 def copy_clip(src, dst, clip_in, clip_out, length, gain_db, ffmpeg):
     shutil.copy(src, dst)
     return length
-
-
-def confirm_stub(cache, key, voice):
-    return {"voice_id": voice.id, "name": f"{voice.name} - premade", "category": "premade"}
 
 
 def test_record_says_every_line_in_its_voice_places_the_beats_and_writes_the_manifest(tmp_path):
