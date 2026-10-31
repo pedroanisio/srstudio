@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import subprocess
 import wave
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
+from PIL import Image
 from sr_core.scene import Scene
 
 from srstudio import Canvas, flat_counter, news_kit, registry, toon
 from srstudio.news_kit import Act, Bubble, NewsKitError, Pose, Source
+from support.social import engine
 
 SIDE = ("level", "flat", "rest")
 
@@ -235,3 +239,53 @@ def test_the_sting_is_short_and_written_where_it_is_asked(tmp_path: Path):
     with wave.open(str(path)) as w:
         assert w.getnframes() / w.getframerate() == pytest.approx(3.0, abs=0.01)
     assert sum(glide[2] for glide in news_kit.STING) < 1.0  # a sting, never a bed
+
+
+# -- the wall above the screens is wall ---------------------------------------------------------------------------
+def wall_frame(tmp_path: Path, n: int) -> np.ndarray:
+    cv = canvas()
+    news_kit.studio(cv, cv.comp, 12.0)
+    doc = tmp_path / "studio.scene.xml"
+    doc.write_bytes(cv.scene.to_bytes())
+    png = tmp_path / f"{n}.png"
+    subprocess.run([engine(), "render", str(doc), "-f", str(n), "-o", str(png)], check=True, capture_output=True)
+    return np.asarray(Image.open(png).convert("RGB"), dtype=float)
+
+
+def test_nothing_crosses_the_bare_wall_above_the_screens(tmp_path):
+    """The lit sweep belongs to the screens. Drawn as a free band it read as a grey bar growing from the frame's top."""
+    first = wall_frame(tmp_path, 0)
+    for n in (12, 24, 36, 48, 60):
+        assert np.abs(wall_frame(tmp_path, n)[:120] - first[:120]).max() <= 2.0, n
+
+
+def test_the_sweep_still_lights_the_screens(tmp_path):
+    first, lit = wall_frame(tmp_path, 0), wall_frame(tmp_path, 75)  # 2.5 s, as the first row is at its brightest
+    assert (lit[200:380] - first[200:380]).mean() > 3.0
+
+
+def test_no_part_of_the_set_moves_position():
+    """A sweep can only leave the screens by moving: the set animates brightness alone."""
+    cv = canvas()
+    news_kit.studio(cv, cv.comp, 12.0)
+    assert {a.get("property") for a in tree(cv).iter() if a.tag.endswith("animate")} == {"opacity"}
+
+
+# -- captions do not leave a widow ------------------------------------------------------------------------------------
+def test_a_last_line_of_one_word_takes_a_word_from_the_line_above():
+    wrapped = news_kit._wrap(measure, "A live update. He now says he's just parking.", 80.0, 1400.0, 2)
+    assert wrapped == ["A live update. He now says he's", "just parking."]
+
+
+def test_a_wrap_with_no_widow_is_left_as_the_greedy_fill_laid_it():
+    assert news_kit._wrap(measure, "one two three four five six", 80.0, 500.0, 2) == ["one two three", "four five six"]
+
+
+def test_one_line_is_no_widow():
+    assert news_kit._wrap(measure, "just parking.", 80.0, 800.0, 2) == ["just parking."]
+
+
+def test_a_widow_that_cannot_borrow_stays_within_the_width():
+    """The word pulled down must fit beside the widow: a long last word keeps its own line."""
+    wrapped = news_kit._wrap(measure, "tiny words here extraordinarily-long", 80.0, 700.0, 2)
+    assert wrapped == ["tiny words here", "extraordinarily-long"]

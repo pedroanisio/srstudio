@@ -254,6 +254,10 @@ def _wrap(measure: Measure, text: str, size: float, width: float, most: int) -> 
             return None
         else:
             lines.append(word)
+    if len(lines) > 1 and " " not in lines[-1] and " " in lines[-2]:  # a word alone on the last line is a widow
+        kept, _, moved = lines[-2].rpartition(" ")
+        if measure(f"{moved} {lines[-1]}", size) <= width:
+            lines[-2:] = [kept, f"{moved} {lines[-1]}"]
     return lines or None
 
 
@@ -280,13 +284,15 @@ TILES: tuple[tuple[float, float, str, str], ...] = (  # monitor wall: x, y, top 
     (700.0, 690.0, "#6fa8ff", "#5a3bd6"),
 )
 TILE_W, TILE_H = 372.0, 262.0
-SCAN = 7.0  # seconds a band of light takes down the wall
+SWEEP = ((1.12, 4.56), (2.68, 6.1), (4.25, 7.7))  # when each row of screens lights and dims, top row first
+SWEEP_LIGHT = 0.1  # the white over a screen at the top of its swell
 
 
 @register("location", "news-set", summary="The studio: a plum wall and a bright monitor wall behind the desk")
 def studio(cv: Canvas, parent, end: float = 10.0) -> None:
-    """The far plane: the wall, nine bright screens out of focus and a slow band of light down them, so the room is
-    alive while the anchors hold still. It carries no word: every word a shot needs is a graphic."""
+    """The far plane: the wall, nine bright screens out of focus and a slow light that passes down them row by row, so
+    the room is alive while the anchors hold still. The light is drawn on each screen, so it can never cross the bare
+    wall. It carries no word: every word a shot needs is a graphic."""
     cv.rect(parent, 0, 0, cv.width, DESK_Y + 40, cv.grad("news-wall", [(0, PLUM), (1, ORCHID)], (0, 0, 0, 1)))
     far = look.depth(cv, parent, "news-depth", FAR_BLUR)
     frame = cv.group(far, cv.uid("g"))
@@ -294,18 +300,17 @@ def studio(cv: Canvas, parent, end: float = 10.0) -> None:
         paint = cv.grad(f"news-tile-{i}", [(0, top), (1, foot)], (0, 0, 0.6, 1))
         cv.rect(frame, x, y, TILE_W, TILE_H, paint, PLUM_DEEP, 10.0, radius=8.0)
         _shade(cv, frame, _wave(x, y, i), "#ffffff30")
-    glow = cv.group(far, cv.uid("g"), y=-260.0, opacity=0.3)
-    cv.rect(
-        glow,
-        -60,
-        0,
-        cv.width + 120,
-        220,
-        cv.grad("news-scan", [(0, "#ffffff00"), (0.5, "#ffffff55"), (1, "#ffffff00")], (0, 0, 0, 1)),
-    )
-    cv.keys(
-        glow, "y", [(0.0, -260.0), (max(end, SCAN), -260.0 + 1200.0 * max(end, SCAN) / SCAN)], hold=False, local=False
-    )
+    for row, (rise, fade) in enumerate(SWEEP):
+        lit = cv.group(frame, cv.uid("g"), opacity=0.0)
+        for x, y, _, _ in TILES[row * 3 : row * 3 + 3]:
+            cv.rect(lit, x, y, TILE_W, TILE_H, "#ffffff", radius=8.0)
+        cv.keys(
+            lit,
+            "opacity",
+            [(rise, 0.0), ((rise + fade) / 2, SWEEP_LIGHT), (fade, 0.0)],
+            kind="sine-in-out",
+            local=False,
+        )
     look.pool(cv, parent, "news-key", "#ffe3b866", -220, 300, 1000, 1000, opacity=0.5)
 
 
