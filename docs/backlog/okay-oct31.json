@@ -1699,7 +1699,7 @@
       ],
       [
        "PATIENT",
-       "At one a.m. I've written a will."
+       "At one in the morning. I've written a will."
       ]
      ],
      "sound": "phone taps",
@@ -1767,8 +1767,8 @@
     }
    ],
    "number": 13,
-   "spoken_words": 56,
-   "estimated_seconds": 30.7,
+   "spoken_words": 57,
+   "estimated_seconds": 31.1,
    "model": "claude-opus-5-5"
   },
   {
