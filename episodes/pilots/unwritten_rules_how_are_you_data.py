@@ -1,6 +1,4 @@
-"""The Unwritten Rules, how are you: the talking-head pilot with Rafa as host, main trigger recognition.
-
-The script as data.
+"""The Unwritten Rules, how are you: the talking-head pilot with Rafa, main trigger recognition: the sketch as data.
 
 Rafa, a clay man at his own worktop, explains the rules of "how are you" with a smile he is holding up by hand. Every
 rule tells you it is fine, and every time the thing under his hand says otherwise: the mug says "(I think)", the phone
@@ -8,26 +6,64 @@ says 99+, the folder says PENDING. Rule three is that nobody asked. He says so, 
 rule one: he went out for bread, it was a hundred and eighty-seven dollars, and he does not know where the bread is. The
 smile comes back on a cut. "Good."
 
-Nothing is recorded: no voice is chosen, so this is a script and not a :class:`srstudio.sketch.Sketch`, which needs a
-speaker with a voice. :data:`VOICE` stays ``None`` until the operator picks one of :data:`VOICE_CANDIDATES`.
-:func:`validate` checks every word, mood, prop and framing, and the length the script comes to at :data:`PACE`.
+:data:`BEATS` is the script. :data:`SKETCH` is the same script for the recording: :data:`VOICE`, the operator's choice,
+says every line, one take a line, and :data:`KEPT` holds the seconds each take measured, so a beat starts where the one
+before it ends plus its written hold. :func:`validate` checks every word, mood, prop and framing, and the length the
+script comes to at :data:`PACE`; :func:`validate_sketch` checks the sketch on top of that.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 
-from srstudio import host_kit, rafa, rafa_host
+from srstudio import foley as synth
+from srstudio import host_kit, music, rafa, rafa_host, rafa_reel, scripting, sketch
 from srstudio.errors import SrstudioError
+from srstudio.host_kit import BONE
+from srstudio.rafa_reel import Act, Renders
+from srstudio.sketch import Line, Sketch, Speaker
+from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail
+from srstudio.voice import Voice, VoiceSettings
 
 SLUG = "unwritten-rules-how-are-you"
 HOST = "rafa"
-VOICE: str | None = None  # the operator's choice, with his look
+VOICE = "Will"  # the operator's choice: "will is the voice", 2026-10-31
+SEED = 52026
+SETTINGS = VoiceSettings(stability=0.42, similarity_boost=0.75, style=0.35)  # the settings of the audition
+OUTPUT = f"renders/pilots/{SLUG}.mp4"
+TITLE = "How are you has rules — The Unwritten Rules"
+DESCRIPTION = (
+    "A pilot of a talking-head show: Rafa, 34, mostly functional, explains the unwritten rules of how are you at his "
+    "kitchen worktop, and breaks the first one."
+)
+ACCESSIBILITY = (
+    "A clay man in a teal cardigan over mustard stands at a kitchen worktop and talks to camera with a tired smile, a "
+    "mug that says I'm great, I think, under his hand. He gives three rules of how are you. The mug becomes a phone "
+    "with 99+ unread, then a folder marked adult life, pending. He says nobody asked, footsteps walk away, and he "
+    "answers anyway: his eyes go wide over a tote bag, which fills the frame, just came for bread, $187.40. He does "
+    "not know where the bread is. On a cut the smile and the mug are back. He says good, then you know what you did."
+)
+NARRATION = "Voiced with the ElevenLabs premade voice Will; synthesised foley and a synthesised music bed."
+NOTE = "ElevenLabs premade voice Will at its natural pace; no reference-voice cloning."
+TINTS = {"rafa": BONE}
+MOUTH = replace(
+    sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12, fine=True, first_sound=True
+)
+VERSIONS: dict[str, int] = {}
+GAP = 0.2  # seconds of air between two lines that have no hold
+TAIL = 0.5  # seconds the reel runs on after the sign-off
+BPM = 96
 PACE = 2.7  # spoken words a second, the estimate a length is checked at until a take measures it
 SHORTEST, LONGEST = 20.0, 30.0
 SIGN_OFF = "You know what you did."
 HOOK_LABEL = "HOW ARE YOU HAS RULES"
 FRAMINGS = ("medium", "close", "tight")
+LABEL_STOP = "break"  # the third rule's label goes when he turns it on you
+BED_GAIN = -14.0
+BED_FADE = 0.08
+STEP, STEPS = 0.26, 5  # seconds between the steps walking away, and how many
 
 
 class ScriptError(SrstudioError, ValueError):
@@ -63,9 +99,9 @@ BEATS: tuple[Beat, ...] = (
     Beat("price", "It was a hundred and eighty-seven dollars.", "internal-meltdown", "rafa-tote", insert="rafa-tote"),
     Beat("where", "I don't know where the bread is.", "internal-meltdown", "rafa-tote", "tight", hold=1.3),
     Beat("good", "Good.", "public-smile", "rafa-mug", hold=0.7),
-    Beat("off", SIGN_OFF, "public-smile", "rafa-mug", "close"),
+    Beat("off", SIGN_OFF, "public-smile", "rafa-mug"),  # medium: the label sits under his chin only here
 )
-VOICE_CANDIDATES = (  # premade voices already used in this library; one audition take of each, none chosen
+VOICE_CANDIDATES = (  # the three auditioned, one take each; the operator chose Will
     ("Chris", "iP95p4xoKVk53GoZ742B", "casual and down to earth, the man at the worktop; carries the deadpan rules"),
     (
         "Eric",
@@ -78,6 +114,62 @@ VOICE_CANDIDATES = (  # premade voices already used in this library; one auditio
         "young and relaxed, cheerful denial; the closest to a man of 34 keeping it together",
     ),
 )
+
+
+KEPT = (
+    2.172,
+    2.332,
+    1.55,
+    1.365,
+    2.668,
+    2.37,
+    0.804,
+    1.065,
+    2.034,
+    1.474,
+    0.444,
+    1.32,
+)  # seconds, measured from the takes
+ACTS = tuple(Act(beat.framing, beat.prop, beat.mood) for beat in BEATS)
+NAMES = tuple(beat.id for beat in BEATS)
+SPEAKER = Speaker(HOST, Voice(role=HOST, id=VOICE_CANDIDATES[2][1], name=VOICE), SETTINGS, HOST)
+LINES = tuple(Line(HOST, beat.line) for beat in BEATS)
+PLACEHOLDER = ("side", "flat", "desk")  # a pose for the sketch's check: this man is drawn from ACTS
+
+
+def starts() -> tuple[float, ...]:
+    """Where each line starts: where the one before ends, plus its hold, or :data:`GAP` when it has none."""
+    rows, at = [], 0.0
+    for beat, kept in zip(BEATS, KEPT, strict=True):
+        rows.append(round(at, 3))
+        at += kept + (beat.hold or GAP)
+    return tuple(rows)
+
+
+script = scripting.Script(LINES)
+SKETCH = Sketch(
+    SLUG,
+    TITLE,
+    (SPEAKER,),
+    LINES,
+    tuple(script.say(at, HOST, i, *PLACEHOLDER) for i, at in enumerate(starts())),
+    round(starts()[-1] + KEPT[-1] + TAIL, 3),
+    cast=rafa_host.CAST,
+)
+POST = InstagramPost(
+    title="What do you actually say to how are you?",
+    description="Rafa, 34, mostly functional, has rules.",
+    credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
+    hashtags=("#howareyou", "#unwrittenrules", "#animation", "#adulting"),
+    thumbnail=Thumbnail(
+        "How are you\nhas rules", 4.84, "The Unwritten Rules", focus=(540.0, 700.0), zoom=1.0, place="bottom"
+    ),
+)
+
+
+def beat(name: str, beats=SKETCH.beats):
+    """The beat called ``name``, from the sketch's or a recording's ``beats``."""
+    return beats[NAMES.index(name)]
 
 
 def spoken_words() -> int:
@@ -130,3 +222,79 @@ def validate(beats: tuple[Beat, ...] = BEATS) -> None:
         raise ScriptError(
             f"the show runs {SHORTEST} to {LONGEST} s, this comes to {length:.1f} s at {PACE} words a second"
         )
+
+
+def validate_sketch(sk: Sketch = SKETCH) -> None:
+    """The sketch is consistent, parallel to the script, and shows no word the show keeps off the screen."""
+    validate()
+    sketch.check(sk)
+    if len(sk.beats) != len(BEATS) or [q.text for q in sk.lines] != [b.line for b in BEATS]:
+        raise ScriptError(f"{len(sk.beats)} beats for the script's {len(BEATS)}")
+    if sk.beats[0].line is None:
+        raise ScriptError("the reel opens on his line")
+    for text in (*(b.label for b in BEATS if b.label), POST.title, POST.description):
+        host_kit.check_copy(text)
+
+
+def labels(beats, end: float) -> list[tuple[float, float, str]]:
+    """Each label from its beat to the next label, the third to :data:`LABEL_STOP`."""
+    rows = [(beats[i].start, b.label) for i, b in enumerate(BEATS) if b.label]
+    stops = [at for at, _ in rows[1:]] + [beat(LABEL_STOP, beats).start]
+    return [(at, min(stop, end), text) for (at, text), stop in zip(rows, stops, strict=True)]
+
+
+def overlay(cv, parent, beats, end, measure, *, root: Path, renders: Renders) -> None:
+    """Over the picture: the tote on its own, the labels, the sign-off, the signature marks."""
+    tote = rafa_reel.insert(
+        cv, parent, "rafa-tote", beat("price", beats).start, beat("where", beats).start, renders, root
+    )
+    host_kit.finish(cv, tote)
+    host_kit.sign(cv, parent)
+    for start, stop, text in labels(beats, end):
+        host_kit.label(cv, parent, text, start, stop, measure)
+    host_kit.sign_off(cv, parent, SIGN_OFF, beat("off", beats).start, end, measure)
+
+
+def bed(path: Path, beats, end: float, seed: int) -> Path:
+    """The kitchen radio: bass and keys, a shop's idea of fine, gone from the bread to the "Good."."""
+    groove = music.Groove(BPM)
+    bars = int(end / groove.bar) + 2
+    sections = [music.Section(0, bars, frozenset({"bass", "keys"}))]
+    samples = music.render(groove, sections, seed=seed, peak=0.6)[: round(end * synth.RATE)]
+    fall, rise = beat("bread", beats).start, beat("good", beats).start
+    for k in range(round(fall * synth.RATE), round(rise * synth.RATE)):
+        samples[k] = 0.0
+    fade = round(BED_FADE * synth.RATE)
+    for k in range(fade):
+        samples[round(fall * synth.RATE) - k - 1] *= k / fade
+    return music.write_wav(path, samples, synth.RATE)
+
+
+def foley(beats, end: float, speech, root, seed: int) -> list[dict]:
+    """A sound for each thing that lands: the mug down, the phone, the folder, the steps walking off through the hold,
+    the tote, the till on the price, the clock through the longest silence, the bell of the smile coming back."""
+    audio = root / "audio"
+    audio.mkdir(parents=True, exist_ok=True)
+
+    def sound(id: str, gain: float, burst: synth.Burst, times) -> dict:
+        path = synth.write_bursts(audio / f"{id}.wav", list(times), end, burst, seed=seed)
+        return sketch.effect(id, 0.0, gain, root, path)
+
+    said = {name: span for name, span in zip(NAMES, speech, strict=True)}
+    buzz = [beat("two", beats).start, beat("choice", beats).start]
+    away = said["walking"][1]
+    steps = [round(away + STEP * i, 3) for i in range(STEPS)]
+    clock = said["where"][1] + 0.25
+    return [
+        sketch.effect("bed", 0.0, BED_GAIN, root, bed(audio / "bed.wav", beats, end, seed), role="music"),
+        sound("mug", -9.0, synth.KNOCK, [beat("one", beats).start, said["off"][1]]),
+        sketch.effect("buzz", 0.0, -6.0, root, synth.write_buzz(audio / "buzz.wav", buzz, end, seed=seed)),
+        sound("folder", -6.0, synth.THUD, [beat("three", beats).start]),
+        sound("steps-near", -8.0, synth.KNOCK, steps[:2]),
+        sound("steps-off", -16.0, synth.KNOCK, steps[2:4]),
+        sound("steps-gone", -24.0, synth.KNOCK, steps[4:]),
+        sound("tote", -8.0, synth.SWISH, [beat("bread", beats).start]),
+        sound("till", -8.0, synth.BELL, [said["price"][1]]),
+        sound("clock", -14.0, synth.REMOTE_CLICK, [clock, clock + 0.7]),
+        sound("ting", -9.0, synth.BELL, [beat("good", beats).start]),
+    ]
