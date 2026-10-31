@@ -60,6 +60,7 @@ GRAIN = {"intensity": 0.22, "size": 1.4}
 EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
+FLASH_GAP = 1.0  # seconds kept between two flashes: nearer is a strobe (three a second is the seizure limit)
 WHIP_PAPER = ("#fffaf0", "#e8dcc6", "#c9bda6", "#8d99ae", "#6b5b4b")  # the streaks of a whip: paper greys, any set
 WHOOSH_GAIN_DB = -6.0
 STING_GAIN_DB = -5.0
@@ -249,6 +250,15 @@ def check_whips(beats: Sequence[sketch.Beat], end: float, name: str) -> None:
             raise StagingError(f"{name}: the shot at {app.start} s whips in and out")
 
 
+def check_flashes(beats: Sequence[sketch.Beat], name: str) -> None:
+    """No two ``flash`` beats nearer than :data:`FLASH_GAP`, on the scripted clock and on a recording's. A strobe is
+    otherwise only found by the encoder, after the takes are paid for."""
+    at = [t for t, _ in sketch.events(beats, "flash")]
+    for a, b in zip(at, at[1:], strict=False):
+        if b - a < FLASH_GAP:
+            raise StagingError(f"{name}: the flashes at {a} and {b} s are nearer than {FLASH_GAP} s, a strobe")
+
+
 def check_staging(staging: Staging) -> None:
     """The sketch is on the Collage cast, every character on screen has a known set, and its events are known."""
     sk = staging.sketch
@@ -265,6 +275,7 @@ def check_staging(staging: Staging) -> None:
     for at, seconds in sketch.events(sk.beats, "hiss"):
         if not (seconds.replace(".", "", 1).isdigit() and float(seconds) > 0):
             raise StagingError(f"{sk.slug}: the hiss at {at} s runs for hiss:<seconds>, got {seconds!r}")
+    check_flashes(sk.beats, sk.slug)
     check_whips(sk.beats, sk.end, sk.slug)
     for app in sketch.appearances(sk.beats, sk.end):
         if staging.set_of(sk.beats, app) not in collage_sets.SETS:
@@ -299,6 +310,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
     check_still(sk.beats, staging.still, sk.slug)
+    check_flashes(sk.beats, sk.slug)
     ep = Episode(
         EpisodeSpec(
             slug=sk.slug,
