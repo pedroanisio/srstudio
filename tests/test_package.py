@@ -144,6 +144,13 @@ def geo_project(root):
     return folder
 
 
+def test_a_scene_that_is_not_xml_is_a_package_error_so_delivery_holds_it_back(tmp_path):
+    scene = tmp_path / "broken.scene.xml"
+    scene.write_text("<scene>not a scene")
+    with pytest.raises(package.PackageError, match="broken.scene.xml"):
+        package._geo_layers(scene)
+
+
 def test_a_map_layer_the_scene_reads_travels_in_the_package(scene_render, tmp_path):
     built = package.pack(geo_project(tmp_path), tmp_path / "vpkg", post(), engine=scene_render)
     with zipfile.ZipFile(built) as z:

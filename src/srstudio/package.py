@@ -104,7 +104,10 @@ def _contents(path: Path) -> dict:
 
 def _geo_layers(scene: Path) -> list[str]:
     """The ``<geo>`` files ``scene`` reads. The packer does not follow that element, so the package names them."""
-    return [el.attrib["src"] for el in ElementTree.parse(scene).iter() if el.tag.rpartition("}")[2] == "geo"]
+    try:
+        return [el.attrib["src"] for el in ElementTree.parse(scene).iter() if el.tag.rpartition("}")[2] == "geo"]
+    except ElementTree.ParseError as e:
+        raise PackageError(f"{scene.name} is not a scene: {e}") from None
 
 
 def _tool(explicit: Path | str | None) -> Path:
