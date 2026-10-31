@@ -71,6 +71,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_flat,
     toon_head,
     toon_house,
+    toon_lyra,
     toon_orbit,
     toon_parlour,
     toon_plate,

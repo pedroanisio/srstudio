@@ -89,7 +89,7 @@ all nine. The table compares the first seven; Collage and Gloss are described in
 | Captions | DejaVu Sans Bold, bottom captions with highlighted spans | Patrick Hand, top captions paged from word timings (`subtitles.chunk_words`), plus an SRT | Poppins Bold from Google Fonts (`srstudio fonts add`), dark text with a white outline at the top (`captions(color=, shadow=None)`) | traced lettering (`cel.lettering`: boxes in the shade, glyphs as white paths), no font asset, plus an SRT | Inter Bold, white with an ink outline outside, one line per cue (`stick.captions`); hook and headline are traced lettering; plus an SRT | Comic Neue Bold Italic from Google Fonts (pinned), ink text centred in a white pill whose width is measured from the font file (`fonts.text_width`), plus an SRT | Space Grotesk 700 from Google Fonts (pinned); the engine's native karaoke captions, a long line split at words (`native.cues_from_takes`) |
 | Audio | `ep.audio()` (one mixed file) | `ep.audio(take=…)` (one file per take; master −14 LUFS) | `ep.audio(extra=[("groove", …, {"role": "music"})])` (pinned clips) | none (no `<assets>`, no `<audioMix>`); `ep.audio(narration=…)` for a narrated master | none in the picture; `srstudio.dub` adds a voice-over and a music bed to the built scene | none in the silent master; `ep.audio(narration=…)` plus one effects track per bed (typing, camera click) in the narrated one | `ep.audio(take=…, duck=…)`: one file per take panned by speaker, effects, the music bed ducked under lines |
 | Ids | `path-0001` | `shared_counter()` → `g1, p2, e3` | `path-0001`; looks are `<character>-<pose>-<digest>` | `flat_counter("v")` → `v1, v2, v3` for every node | `flat_counter("n")` → `n1, n2, n3` for every node | `flat_counter("k")` → `k1, k2, k3` for every node | `flat_counter("s")` → `s1, s2, s3` for every node |
-| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props`, `soft_sets` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_door`, `stick_flat`, `stick_gym`, `stick_home`, `stick_office`, `stick_school`, `stick_shop`, `stick_street`, `stick_windshield` (the reel builder is `stick_reel`) | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
+| Parts | `cast`, `locations`, `props`, `graphics`, `camera` | `ink`, `ink_captcha`, `ink_doorbell`, `ink_meter`, `ink_phone`, `ink_vacuum`, `subtitles` | `blob`, `soft_props`, `soft_sets` | `cel` | `stick`, `stick_airport`, `stick_car`, `stick_door`, `stick_flat`, `stick_gym`, `stick_home`, `stick_office`, `stick_school`, `stick_shop`, `stick_street`, `stick_windshield` (the reel builder is `stick_reel`) | `toon`, `toon_cast`, `toon_dinner`, `toon_everyday`, `toon_critters`, `toon_inked`, `toon_lyra`, `toon_orbit`, `toon_plate`, `toon_props`, `toon_rooms`, `toon_sets`, `toon_wear` | `saga`, `saga_sets` (the reel builder is `saga_reel`) |
 
 The parts of one style are usable in the other (they draw with the canvas's ink, paper and shade), and the signature
 marks adapt to the palette, so `srstudio catalog --style ink` lists Ink's own parts plus the shared ones.
@@ -1832,6 +1832,26 @@ the sketch's `Shot.measure`).
 | `toon-clipboard` | a form on a clipboard: a title and up to five `Field(label, value, at)` rows | each value is written in at its second; a `(second, text, tone)` stamp lands with a pop |
 
 No episode draws them yet, so the catalog's notes need no gallery item for them.
+
+### Lyra and Retro Orbit: flat print parts, proposed
+
+[src/srstudio/toon_plate.py](../src/srstudio/toon_plate.py) draws a mid-century poster as brush shapes: `shape` turns an
+absolute path into a closed `Shape`, `Frame` places a plate inside a part, and `clip` and `inside` stand in for a clip
+path. A plate keeps its literal colours on any canvas palette.
+
+[src/srstudio/toon_orbit.py](../src/srstudio/toon_orbit.py) adds two 9:16 locations, `planetarium_salon` and
+`starlight_terrace`, and five props: `telescope`, `moon_globe`, `saturn_model`, `field_notebook`, `signal_clicker`.
+Signs are live text in the two fonts of `Lettering`, Bebas Neue and DM Sans, installed with `fonts.install`; with no
+`Lettering` they stand blank. `print_finish` is the one grain, and it fits `Staging.finish`. Neither set signs a shot,
+so a reel there gives its shots a `Staging.desk` that does.
+
+[src/srstudio/toon_lyra.py](../src/srstudio/toon_lyra.py) is `lyra`, an owl who presents astronomy. `MOODS` and
+`EYE_POSES` are typed data; `pose(start, name)` writes a pose in either, and `mood()` and `eye_pose()` refuse an unknown
+name. She is lip synced through her beak, and `LYRA_RIG` is her head rig, with `mood_plan` turning her head from mood
+to mood. Her moods go through the rig, not through `toon_cast.figure`, which holds to the shared names.
+
+All eight parts and the rig are proposed, so a reel cannot use them until the operator decides. The reasons and where
+the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
 
 ## Saga style: a space-opera parody in seven episodes (S1–S7)
 
