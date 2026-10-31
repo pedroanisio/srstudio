@@ -14,6 +14,7 @@ from srstudio import outbox
 
 REPO = Path(__file__).resolve().parent.parent
 ROADS = {"src/srstudio/outbox.py", "episodes/publish_drive.py", "episodes/publish_pilots.py"}
+OWN_GUARD = {"tools/govern/lane_check.py"}  # takes ``run=``; its default meets the stand-in, tests/test_lane_check.py
 REFUSED = "a test reached real rclone"
 
 
@@ -77,7 +78,7 @@ def test_every_road_to_rclone_is_guarded():
         for path in (REPO / folder).rglob("*.py")
         if "rclone" in path.read_text(encoding="utf-8")
     }
-    assert named == ROADS
+    assert named == ROADS | OWN_GUARD
 
 
 @pytest.mark.parametrize("road", sorted(ROADS - {"src/srstudio/outbox.py"}))

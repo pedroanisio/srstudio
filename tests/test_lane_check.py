@@ -103,6 +103,11 @@ def test_a_difference_on_drive_is_refused(tmp_path):
         lane_check.check("on-drive", lane(tmp_path, branch="feat/maps", series="maps"), run=Commands(1))
 
 
+def test_a_drive_check_nobody_faked_meets_the_stand_in_and_not_drive(tmp_path):
+    with pytest.raises(lane_check.LaneError, match="a test reached rclone"):
+        lane_check.check("on-drive", lane(tmp_path, branch="feat/maps", series="maps"))
+
+
 def test_the_drive_check_needs_a_series(tmp_path):
     with pytest.raises(lane_check.LaneError, match="series"):
         lane_check.check("on-drive", lane(tmp_path, branch="feat/maps"), run=Commands())
