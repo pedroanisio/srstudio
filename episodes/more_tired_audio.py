@@ -13,8 +13,8 @@ effect is length-checked. The key comes from ``ELEVENLABS_API_KEY`` and is never
 ``SRSTUDIO_ALLOW_CLOUD=1``. ``tests/test_takes.py`` feeds the pipeline misheard takes and malformed scripts;
 ``tests/test_more_tired.py`` checks this script. There is no music bed.
 
-Two people compete over who slept less, until the baby cries and both of them are, suddenly, asleep. Arm A of the
-first-second test: the kitchen holds for its first .45 s.
+Two people compete over who slept less, until the baby cries and both of them are, suddenly, asleep. Arm B of the
+first-second test: the kitchen pushes in from the first frame, silent for its first .45 s.
 """
 
 from __future__ import annotations
@@ -162,6 +162,7 @@ EYE_CLOSES = 0.15  # after her last line: the peek ends, and that is the end
 KEYS_AT = (956.0, 800.0)  # on the top shelf of the open fridge
 DAWN, DAWN_STRENGTH = "#a7a9c4", 0.5
 POOL = (700.0, 950.0, 760.0)
+OPENING_ZOOM = 1.56  # where the first shot's push ends
 CAMERA = ((710.0, 900.0), 1.5, (540.0, 960.0))  # past the safe, the table's near edge above the captions
 
 
