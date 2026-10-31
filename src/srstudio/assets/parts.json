@@ -9545,6 +9545,312 @@
           "rig": null
         }
       ]
+    },
+    "soft-tongs": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Long kitchen tongs that snap on cue. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e8ef395f09fc2120d0e2cad7382c4fa7a2eb93ec01e2767780e4c91c2d88a2bc",
+          "rig": null
+        }
+      ]
+    },
+    "soft-grill": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kettle grill whose burgers char and flames climb. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9402a28f5656038f4ad746baf923be5db03ebe15154fd6e5e89706a7eab31a12",
+          "rig": null
+        }
+      ]
+    },
+    "soft-smoke": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Puffs that rise and thicken on cue. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "288748098426f53e5e00dfe7f5d8a3f81238bfe2e703af50eb34185ea3dff90a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-pizza-box": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat pizza box with no lettering. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8955adea6286f839898b7da397c07fb270339dee3d43f966d4a6b05675a6ff38",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bottle": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A squeeze bottle, red unless asked otherwise. First drawn for the-tongs. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1e4b13d8712710bb7b8bd3203fee59f475813d516ee916c5ad7539d9f8a6549c",
+          "rig": null
+        }
+      ]
+    },
+    "soft-washer": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-loader whose drum turns on cue, carries what is put in it, and whose light dies. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "44c4d2ebd64b3ed7971ba48da9666eb832a402d24f2f48bdba5c7523c339371b",
+          "rig": null
+        }
+      ]
+    },
+    "soft-brick": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A red house brick. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a459777759b68bdbde2897894a0ee6ee0b51c520fedf567ef064ea70d7d1936e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bowling-ball": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dark purple bowling ball. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c6c2cc9a6c3254b5f92dbcc7c56fc69fb4be9c05f8b244da70ef9ac2d632deb1",
+          "rig": null
+        }
+      ]
+    },
+    "soft-coin-bag": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A burlap sack with a dollar sign. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a6265c9e0b0452e8847bd1d8518def2e2a760b5f51f005c6d19e407e9b482b1c",
+          "rig": null
+        }
+      ]
+    },
+    "soft-tv": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat TV on a low stand whose picture flickers until it goes off. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "71fb83584a95500e5e9373cfa45f4e377066c8de04bc306f6490228945389148",
+          "rig": null
+        }
+      ]
+    },
+    "soft-home-fridge": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-on fridge that stands anywhere, its light dying on cue. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2116ebb7d1614a1e9214133414ad9b75baf68e22919ef28d0ede6c2042aed7c5",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dust": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Specks that fall from overhead on cue. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4f9176e047d90f9f85192e303af76daef19c82c2acd7cdf21afdc939eea6567a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dimmer": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A full-frame veil that deepens in steps. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fd3fb0a6a479d6da5c95e67bd7a556fad52b2f5ca0117b8e414292e3e41e9e19",
+          "rig": null
+        }
+      ]
+    },
+    "soft-notice": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A framed notice with a few big words. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "65811e6afa790a8aa0ca39f0ce5a6db55a3b610c65a250fbba13258a198a75d4",
+          "rig": null
+        }
+      ]
+    },
+    "soft-book": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A closed hardback with a band on its cover. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "863fea34a68613ca070dbd50bb68edca2561b22d329b699c1c9a9c4c7a919cdd",
+          "rig": null
+        }
+      ]
+    },
+    "soft-yogurt": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small yogurt pot with a foil lid. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1f5722305f1f80e385f1e0e5ac839578ba9fe7c793c1b58c2a4c5d086b76ff8d",
+          "rig": null
+        }
+      ]
+    },
+    "soft-rumble": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Curved lines either side of a belly, shaking while it talks. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6979a05f16eb7d00961bd672e4d4606edfd57f2daff735d063ea6302abbe1493",
+          "rig": null
+        }
+      ]
+    },
+    "soft-hush-finger": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One short finger that curls up from a raised hand. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b6bbb652972a8cc263f222a5a1efca59d65a37133f80d2dceb9e11b685132ad5",
+          "rig": null
+        }
+      ]
     }
   }
 }
