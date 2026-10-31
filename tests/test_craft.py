@@ -271,6 +271,27 @@ def test_measure_reports_moves_and_pauses_with_their_level(tmp_path, monkeypatch
     assert data["schema"] == craft.SCHEMA and data["pauses"][0]["quiet"] is True
 
 
+def test_a_line_with_no_breath_before_it_is_crowded():
+    spoken = [(0.0, 1.0), (1.04, 2.0), (2.5, 3.0), (2.9, 4.0)]
+    assert craft.crowded(spoken) == [(1.04, 0.04), (2.9, -0.1)]
+
+
+def test_a_line_a_breath_after_the_last_is_not_crowded():
+    assert craft.crowded([(0.0, 1.0), (1.2, 2.0)]) == []
+    assert craft.crowded([]) == [] and craft.crowded([(0.0, 1.0)]) == []
+
+
+def test_the_report_and_the_command_name_a_crowded_line(tmp_path, monkeypatch, capsys):
+    folder = project(tmp_path)
+    monkeypatch.setattr(craft, "lines", lambda path: [(0.0, 1.0), (1.05, 2.0)])
+    report = craft.measure(folder)
+    assert report.crowded == [(1.05, 0.05)]
+    assert report.to_dict()["crowded"] == [{"start": 1.05, "gap": 0.05}]
+    monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
+    assert main(["craft", str(folder)]) == 0
+    assert "crowded line at 1.05: 0.05 s after the line before" in capsys.readouterr().out
+
+
 def test_measure_without_a_video_leaves_levels_unmeasured(tmp_path):
     report = craft.measure(project(tmp_path))
     assert report.pauses == [craft.Pause(1.0, 3.0, None)]
@@ -430,7 +451,7 @@ def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path,
     folder = project(tmp_path)
     monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
     report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.4.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.5.0"
     assert report.to_dict()["flashes"][0]["share"] == 1.0
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
