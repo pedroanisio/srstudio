@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import os
 import re
 import shutil
 import subprocess
@@ -46,6 +47,8 @@ from . import (
     news_inked,
     news_kit,
     parts,
+    pedro_host,
+    plates,
     registry,
     saga_sets,
     soft_props,
@@ -719,6 +722,8 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
     name = plan_.entry.name
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
+    for plate in pedro_host.part_plates(name):
+        plates.render(plate, engine=engine, cache=work / "plates", fonts=Path(os.environ.get("SRSTUDIO_FONTS", "")))
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:

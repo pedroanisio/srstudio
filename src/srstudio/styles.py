@@ -365,6 +365,7 @@ TOON = Style(
         "mind_kit",
         "news_inked",
         "news_kit",
+        "pedro",
         "toon",
         "toon_bento",
         "toon_cars",
