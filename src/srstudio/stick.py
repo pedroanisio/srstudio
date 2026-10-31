@@ -900,13 +900,15 @@ STRAND_HAIR, FILLED_HAIR = ("cowlick", "spiky"), ("side-part",)  # the bun sits 
 @dataclass(frozen=True)
 class Look:
     """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
-    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap)."""
+    apron colour (``None``: no apron; a shop's uniform), a cap colour (``None``: bareheaded; a pilot's cap) and a
+    sun hat colour (``None``: bareheaded; a wide straw hat over the hair, a day at the beach)."""
 
     hair: str = "cowlick"
     glasses: bool = False
     tie: str | None = None
     apron: str | None = None
     cap: str | None = None
+    sunhat: str | None = None
 
 
 PLAIN = Look()  # Dev's look: the cowlick, no glasses, no tie
@@ -924,6 +926,8 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"apron must be a #rrggbb colour or None, got {look.apron!r}")
     if look.cap is not None and not COLOUR.match(look.cap):
         raise StickDataError(f"cap must be a #rrggbb colour or None, got {look.cap!r}")
+    if look.sunhat is not None and not COLOUR.match(look.sunhat):
+        raise StickDataError(f"sunhat must be a #rrggbb colour or None, got {look.sunhat!r}")
 
 
 @dataclass(frozen=True)
@@ -1078,9 +1082,12 @@ def _head(cv: Canvas, parent, look: Look, r: float = HEAD_R) -> None:
         shape(cv, parent, HAIR[look.hair], sw=6, stroke=cv.ink)
     if look.cap is not None:
         _cap(cv, parent, look.cap)
+    if look.sunhat is not None:
+        _sunhat(cv, parent, look.sunhat)
 
 
 CAP_BAND, CAP_BADGE = "#111111", "#e3b23c"
+SUNHAT_BAND = "#c0453b"
 
 
 def _cap(cv: Canvas, parent, colour: str) -> None:
@@ -1090,6 +1097,13 @@ def _cap(cv: Canvas, parent, colour: str) -> None:
     shape(cv, parent, "M -92 -60 Q 0 -74 98 -60 L 96 -40 Q 0 -54 -90 -42 Z", CAP_BAND, 4, stroke=cv.ink)
     shape(cv, parent, "M 22 -44 Q 96 -50 138 -30 Q 84 -22 22 -32 Z", CAP_BAND, 4, stroke=cv.ink)
     oval(cv, parent, -6, -110, 26, 20, CAP_BADGE)
+
+
+def _sunhat(cv: Canvas, parent, colour: str) -> None:
+    """A wide sun hat on a head of radius :data:`HEAD_R`: the crown, a band and a brim that overhangs the head."""
+    shape(cv, parent, "M -160 -56 Q 0 -112 160 -56 Q 0 -30 -160 -56 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -74 Q -92 -146 0 -148 Q 92 -146 84 -74 Q 0 -94 -84 -74 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -76 Q 0 -96 84 -76 L 86 -96 Q 0 -116 -86 -96 Z", SUNHAT_BAND, 4, stroke=cv.ink)
 
 
 def _glasses(cv: Canvas, parent) -> None:
