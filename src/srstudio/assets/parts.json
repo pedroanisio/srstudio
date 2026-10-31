@@ -8950,6 +8950,57 @@
           "rig": null
         }
       ]
+    },
+    "eaten-sandwich": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long sandwich in hand that loses a mouthful at every bite. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "034d0f9aa1d84e6a754e1a677dc9be33337e5139de8b3052b60cccb459567fae",
+          "rig": null
+        }
+      ]
+    },
+    "paper-napkin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A folded white paper napkin. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e32af7e90906f56851484d9fc2105540b2000aeaf5f0eb8a57421be1b875b481",
+          "rig": null
+        }
+      ]
+    },
+    "bistro-table": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small round bistro table on one leg, seen side on. First drawn for how-is-everything; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ac1a9dd5afb36860a4cf31b91e55acfa6b237b8b344a21bc6096279448baa777",
+          "rig": null
+        }
+      ]
     }
   }
 }
