@@ -55,7 +55,8 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 # reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding, crunch and
-# thud (a door shutting, something heavy landing) play on their beat; hiss:<seconds> lets the air out of something for that long
+# thud (a door shutting, something heavy landing) play on their beat; hiss:<seconds> lets the air out of something for
+# that long
 EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "thud")
 ZOOM_SCALE = 1.55
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land

@@ -10,8 +10,8 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, registry, specimens, toon_cars, toon_house, toon_world
-from srstudio.toon import ToonDataError
 from srstudio.signature import Signature
+from srstudio.toon import ToonDataError
 from srstudio.toon_cars import Passing
 
 

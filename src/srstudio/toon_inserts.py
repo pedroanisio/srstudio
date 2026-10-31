@@ -34,9 +34,9 @@ __all__ = [
 
 
 def _second(value: object, what: str) -> float:
-    if not (checks.number(value) and value >= 0):  # type: ignore[operator]
+    if not (checks.number(value) and value >= 0):
         raise ToonDataError(f"{what} is a second from 0, got {value!r}")
-    return float(value)  # type: ignore[arg-type]
+    return float(value)
 
 
 COUNTER = 801.0  # the reference height of the counter top, the desk's edge

@@ -130,7 +130,7 @@ def _pen_at(x: float, y: float, length: float, grip: Sequence[Grip], run: ChainR
     if run.home is not None and t >= run.home:
         return x, y
     px, py = _along(grip, t if run.taut is None else min(t, run.taut))
-    if run.snap is not None and t > run.snap:
+    if run.snap is not None and run.home is not None and t > run.snap:
         share = ((t - run.snap) / (run.home - run.snap)) ** 2
         return px + (x - px) * share, py + (y - py) * share
     return px, py
@@ -209,7 +209,7 @@ def pen_on_chain(
     cv.keys(pen, "x", [(0, x), *((t, p[0]) for t, p in zip(times, pens, strict=True))], hold=False)
     cv.keys(pen, "y", [(0, y), *((t, p[1]) for t, p in zip(times, pens, strict=True))], hold=False)
     tilt = [(0, -18.0), (start, -18.0), (start + 0.12, 62.0)]
-    if run.home is not None:
+    if run.snap is not None and run.home is not None:
         tilt += [(run.snap, 62.0), (run.home, -30.0), (run.home + 0.1, -12.0), (run.home + 0.2, -18.0)]
     cv.keys(pen, "rotation", tilt, hold=False)
     cv.rect(pen, -6 * scale, -66 * scale, 12 * scale, 74 * scale, PEN_BODY, ink, 2.5, radius=4)
@@ -640,21 +640,21 @@ def back_room(
         cv.keys(hall, prop, [(0, 1.0), (start, 1.0), (end, HALL_NEAR)], kind="sine-in-out")
     w, h = DOOR
     paint = "#5F6F7C"
-    for x, y, rw, rh in (
+    for left, top, rw, rh in (
         (-1600, -1600, 3200, 1600 - h / 2),
         (-1600, h / 2, 3200, 1600 - h / 2),
         (-1600, -h / 2, 1600 - w / 2, h),
         (w / 2, -h / 2, 1600 - w / 2, h),
     ):
-        cv.rect(hall, x, y, rw, rh, paint)
+        cv.rect(hall, left, top, rw, rh, paint)
     cv.rect(hall, -w / 2 - 22, -h / 2 - 22, w + 44, h + 22, cv.clear, "#E4DFD0", 22)
     cv.rect(hall, -w / 2 - 34, -h / 2 - 34, w + 68, h + 34, cv.clear, ink, 4)
     cv.rect(hall, -1600, h / 2, 3200, 30, "#3A3F46", ink, 3)
     door = cv.group(hall, f"{id}-door", x=-w / 2, y=0)
     cv.keys(door, "scaleX", [(0, 1.0), (opens, 1.0), (opens + 0.5, 0.06)], kind="sine-in-out")
     cv.rect(door, 0, -h / 2, w, h, "#A98B66", ink, 4)
-    for y in (-h / 2 + 50, 40):
-        cv.rect(door, 60, y, w - 120, h / 2 - 100, "#B99C74", ink, 3)
+    for top in (-h / 2 + 50, 40):
+        cv.rect(door, 60, top, w - 120, h / 2 - 100, "#B99C74", ink, 3)
     cv.rect(door, 120, -h / 2 + 110, w - 240, 84, "#E4DFD0", ink, 4, radius=8)
     cv.text(door, f"{id}-plate", plate, 124, -h / 2 + 124, w - 248, 60, 42, "#1F2B4A")
     cv.ellipse(door, w - 62, 30, 34, 34, "#D9B44A", ink, 3)
