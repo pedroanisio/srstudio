@@ -8328,9 +8328,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The moving BREAKING banner. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "c4ddffe3d2ef774df25db04e7af65f2f0b6e3c0927b0212748f8e5a5c1c220f3",
           "rig": null
         },
@@ -8338,9 +8341,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: slimmer, under the desk's top so the hands stay in the picture, flush on the lower-third.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "19283471d3a95145c05f5e5cb8d85d384d0c41af605193656ac317764e074285",
           "rig": null
         }
@@ -8355,9 +8361,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The show's name in the corner. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "cfdd5bea2d1fa4907af9fcef83735f6a8bb5c5520e106162c3bc88c2d036f08c",
           "rig": null
         },
@@ -8365,9 +8374,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: the top row's chip, its corner and its shadow.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "37895ccc04783b7e65f7524fca9e2c55dc2332972e1a49ec5cdbdcecc6715e9f",
           "rig": null
         }
@@ -8382,9 +8394,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The show's dialogue captions. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "5a4177540ce1b9c2a0763efa68ea272443d17a10347c4a9913ebb6a91de316c8",
           "rig": null
         },
@@ -8392,9 +8407,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: the show's corner on the show's shadow, same wrap and refusals.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "19ec46cf00f3f841f9588d0b19763cc049691dfe4ce6fd5e84c08b57a1cb909e",
           "rig": null
         }
@@ -8409,9 +8427,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The long anchor desk with the show's name on its front. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "5940d8432dff347c85e4e49be36e486d38b99589a6e1f3f7862c0ceb7689918e",
           "rig": null
         },
@@ -8419,9 +8440,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "Inked polish: a top with thickness, sheen and lip, a curved panelled front with no lettering, a recessed chevron band, a glossy floor with the desk's shadow, a mug, a pad and a studio camera out of focus in the foreground.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "764d9f3859eae0f4eba1a962cf344adc0c4c2db9ab2ee125e2d266c4c96bd470",
           "rig": null
         }
@@ -8436,9 +8460,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "Gus Bellows, the co-host who cannot let anything go. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "1513dcdb005e3f8402c4e2f17077eb64a55e8825355cc9ad2b35c05c99d1f8a3",
           "rig": null
         },
@@ -8446,9 +8473,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "Inked polish: pressed line, shade away from the key light, a neck, curls with a fringe, ears, freckles, a pulled tie, sleeves with elbows, hands with fingers, a phone with a lens block.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "f2facc5f5cc62c63123d9056fe37a1d6dc80a9f4f6328ad0bf42601db509fe14",
           "rig": null
         }
@@ -8463,9 +8493,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A kicker over one line of story. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "1de6eb4c045f25b8740535e44ee40afc51bca6e7ca4f05b13ddee8ebf8b66e15",
           "rig": null
         },
@@ -8473,9 +8506,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: flush between banner and ticker, the tangerine rule gone, a mint kicker chip.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "1961b6ce2ab1ea24706ecf24ff56f8d29a7d78f74b9f6e36e39f7e86ffb36bdf",
           "rig": null
         }
@@ -8490,9 +8526,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A missing-person flyer for an object. First drawn for missing-lid.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved, and so are news-missing-card and news-route. They're no longer proposed.\""
+          },
           "drawing": "773559e4df9d21daf41c1bc517b25d17bf25e431735a2283555315a62e1c5346",
           "rig": null
         }
@@ -8507,9 +8546,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The PARODY tag of a fictional reel. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "a66999296ede1b88bd1a3f134eed20be1640bc29899bc627fab97349158c6610",
           "rig": null
         },
@@ -8517,9 +8559,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: the top row's chip, its corner and its shadow.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "b17f8db771cb4d6d9da6641a6ece31bcd440796570cf63dcf09253dea48333af",
           "rig": null
         }
@@ -8534,9 +8579,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "Gus's phone with its messages arriving. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "9d0f52c601f08ba713846508463309f5f0299a0de274d4cb935688c0202db32e",
           "rig": null
         },
@@ -8544,9 +8592,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "Polish: a handset with case, side buttons, camera island and a chat header with an avatar, bubbles with tails.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "4616e9c8d66ba86e2174f3f4aa55e73df8fbe46f2130bc641c715c526c379db7",
           "rig": null
         }
@@ -8561,9 +8612,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A map on Gus's phone: sea, coast, a dashed direct line and a track that draws itself with a marker at its head, pins that stay up. First drawn for seabird-jet-lag.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved, and so are news-missing-card and news-route. They're no longer proposed.\""
+          },
           "drawing": "dfc732a561a2c371a26fe6f044ba7a2b95c7a0721778795a30f149ad6387d938",
           "rig": null
         }
@@ -8578,9 +8632,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The plum studio and its bright monitor wall. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "1acaecd03c0f0a361da6f4452672470f703299099cbc351535fc59555a698f9b",
           "rig": null
         },
@@ -8588,9 +8645,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "Inked polish: a lit truss in the room's head, nine bezelled screens with pictures, a panelled wall, all behind a far-plane blur, with a veil behind the anchors.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "30589fd8688b7320ebb14a91d02fc93949b1c4e85f6cda21346c2377c26d8855",
           "rig": null
         }
@@ -8605,9 +8665,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "A real story's source, large and then small. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "6040d3f2923e21100fb67a194f2905bd301c1c62ff2e654fc537e00f59a8d414",
           "rig": null
         },
@@ -8615,9 +8678,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: the show's corner and shadow, a mint outlet chip, and the small form on the top row.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "f7e66258fb6a71168419592b7473768d59506f4bd38b4561019e3c6e09b10c6c",
           "rig": null
         }
@@ -8632,9 +8698,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The ticker along the foot of the safe zone. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "e11443bb9111fccd9148bd8d35d735a6a96a4daa9b5dc922c8d58f98013959c3",
           "rig": null
         },
@@ -8642,9 +8711,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "One system of graphics: flush under the lower-third, the tab cut to a chevron, a shadow under the strip.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "2cf003d280d99447db4dc0104678fc7765d79558ccc4ce69a63d3f4579a3a6f0",
           "rig": null
         }
@@ -8659,9 +8731,12 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "Vera Stillman, the straight anchor. First drawn for real-roast.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31: published real-roast (Slack 1793463409.801599) and everyday-breaking (Slack 1793473619.087319), the decision ADR 0060 ties the kit's approval to"
+          },
           "drawing": "b9e79e58a3d4ab150ecf06251c8ed319aeaadd649e8171b19ec796b8e21802ee",
           "rig": null
         },
@@ -8669,9 +8744,12 @@
           "number": 2,
           "date": "2026-10-31",
           "note": "Inked polish: pressed line, shade away from the key light, a neck, a parted silver bob with strands, half-moon glasses, sleeves with elbows, hands with fingers lying on her papers over the desk.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/news-v2/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793475342.947029: \"The v2 News look is approved\""
+          },
           "drawing": "e468bfc52db44e37bc8bed1b621c42756c0aee43c0091db3b7a69ebe2e80702c",
           "rig": null
         }

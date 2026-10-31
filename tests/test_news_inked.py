@@ -77,12 +77,13 @@ def shot(cv: Canvas, who: str) -> SimpleNamespace:
 
 
 @pytest.mark.parametrize(("kind", "name"), DRAWINGS)
-def test_every_part_has_a_proposed_second_version_and_keeps_its_first(kind, name):
+def test_every_part_has_an_approved_second_version_and_keeps_its_first(kind, name):
     part = parts.get(name)
     assert [v.number for v in part.versions] == [1, 2]
     newest = part.version(2)
-    assert newest.status == "proposed"
-    assert newest.approval is None
+    assert newest.status == "approved"
+    assert "1793475342.947029" in newest.approval.words
+    assert part.version(1).status == "approved"
     assert newest.proof == "generated/character-proofs/news-v2/index.html"
     assert registry.get(kind, name).builder is not registry.get(kind, f"{name}@2").builder
 

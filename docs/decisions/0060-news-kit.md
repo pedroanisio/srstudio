@@ -4,8 +4,10 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0060: The news kit is a library module with its own set, anchors, graphics and letters
 
-- Status: proposed (2026-10-31). The show's approvals are delegated to arc4d3, and the kit's approval comes with
-  arc4d3's publish decision on both pilots
+- Status: accepted (2026-10-31). The show's approvals are delegated to arc4d3, and the kit's approval came with
+  arc4d3's publish decision on both pilots: real-roast (Slack 1793463409.801599) and everyday-breaking (Slack
+  1793473619.087319). arc4d3 approved the second version, with `news-missing-card` and `news-route`, in Slack
+  1793475342.947029
 - Deciders: arc4d3, by the operator's delegation; recorded by Claude Opus 5.5 in Claude Code
 - Applies [ADR 0047](0047-character-versions.md) to new parts, and does not extend
   [ADR 0053](0053-automatic-flow-new-parts.md)
@@ -74,15 +76,15 @@ Both anchors keep the same look and voices in every episode. Whatever Gus says a
 
 The operator approved the voices and asked for the picture to be refined. In their words, on 2026-10-31: "run an refine
 / polish pass on the news caracter, props and location. voice aproved." That approval covers the voices of Vera and Gus,
-and nothing else. The look stays proposed: its approval is arc4d3's, by the delegation above, so this ADR's status does
-not change and no version here records an approval.
+and nothing else. The look's approval was arc4d3's, by the delegation above, and arc4d3 gave it the same day; every
+version is recorded in `parts.json` with its words.
 
 The same day the operator ruled that the two pilots are not re-cut: real-roast publishes on its delivered master, and
 both pilots stay as delivered and frozen. So they stay on version 1, and the polish is the default for new reels only.
 
 The two pilots looked flat beside the approved inked Toon cast: a wall of nine plain gradients, a dead band over it, no
 shadow where anything met the desk, a desk that was a strip and a tall lettered panel, and two figures with no necks and
-hose arms. Every drawing that changed is a new version, status proposed, and version 1 still draws:
+hose arms. Every drawing that changed is a new version, and version 1 still draws:
 
 - `news-set@2`, `news-desk@2`, `news-vera@2`, `news-gus@2`: the room in planes behind a far blur, a desk with thickness
   and a floor, a camera out of focus in the foreground, and anchors in the cast's pressed line with shade away from the

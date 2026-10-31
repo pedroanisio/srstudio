@@ -33,9 +33,10 @@ def drawn(**kw) -> dict[str, ET.Element]:
     return {node.get("id", ""): node for node in root.iter()}
 
 
-def test_the_route_is_a_registered_proposed_graphic():
+def test_the_route_is_a_registered_approved_graphic():
     record = parts.get("news-route").versions[-1]
-    assert (record.number, record.status, record.approval) == (1, "proposed", None)
+    assert (record.number, record.status) == (1, "approved")
+    assert "1793475342.947029" in record.approval.words
 
 
 def test_the_phone_is_up_only_from_start_to_end():

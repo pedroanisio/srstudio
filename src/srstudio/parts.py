@@ -11,8 +11,9 @@ version.
   character in it, carries a typed :class:`Refused` and no digest. It keeps its versions and its pins.
 - **The default.** A part's default is its latest approved version (:meth:`Part.latest`). A proposed version is drawn
   only on request, for its proof, is never the default and cannot be pinned.
-- **Approval.** Only the operator approves a version. Above version 1 an approved record carries the proof and the
-  operator's words (:class:`Approval`). An agent never writes one without the operator's decision.
+- **Approval.** The operator approves a version, or arc4d3 by the operator's delegation of 2026-10-31. Above version 1
+  an approved record carries the proof and the approver's words (:class:`Approval`). An agent never writes one without
+  that decision.
 - **Immutability.** An approved version is never revised in place: changing a look means adding a version. A test
   redraws every approved version and compares its digest.
 - **Head rigs.** A rig is a second drawing of a version (:class:`Rig`), recorded on it with the same rules. A version
@@ -142,7 +143,7 @@ class Approval:
         if not _is_date(self.date):
             raise PartError(f"an approval's date is a YYYY-MM-DD day, got {self.date!r}")
         if not (isinstance(self.words, str) and self.words.strip()):
-            raise PartError("an approval holds the operator's words or a reference to them")
+            raise PartError("an approval holds the approver's words or a reference to them")
 
 
 @dataclass(frozen=True)
