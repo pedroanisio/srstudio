@@ -19,7 +19,7 @@ RELEASE = Release(
             "Sound effects synthesized in code."
         ),
         hashtags=('#phoneanxiety', '#relatable', '#anxiety', '#animatedshorts', '#okayville'),
-        thumbnail=Thumbnail("Table for two,\nFriday, seven.", 2.0, "Okayville"),
+        thumbnail=Thumbnail("Table for two,\nFriday, seven.", 18.2, "Okayville"),
     ),
     tags=Tags(
         "own-worst-enemy", "protagonist", "embarrassment", recurring=('priya', 'deb'), test="sp-hook_motion", arm="a"
