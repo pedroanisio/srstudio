@@ -125,3 +125,12 @@ def test_a_lineup_refuses_a_speaker_it_has_no_place_for():
     cv = canvas(end)
     with pytest.raises(GroupError, match="gary"):
         lineup(cv, cv.comp, sketch.appearances(bs, end)[0], {})
+
+
+def test_a_pair_listens_on_one_pose_and_a_place_maps_a_point_of_the_full_shot():
+    places = {"gary": Place(300.0, 1920.0, 0.5), "rosa": Place(800.0, 1920.0, 0.5)}
+    lineup = collage_group.pair(places, (0.0, 5.0), listening=("half", "flat", "hold"))
+    assert lineup.spans == ((0.0, 5.0),)
+    assert all(lineup.reactions[who][0]["eyes"] == "half" for who in places)
+    x, y = collage_group.place_of(places["gary"], (540.0, 1920.0))
+    assert (x, y) == (300.0, 1920.0)
