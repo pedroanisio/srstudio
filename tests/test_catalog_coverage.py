@@ -50,6 +50,7 @@ NO_EPISODE = [
     "toon-receipt",
     "toon-take-a-number",
     "collage-cake-slice",
+    "collage-doctor-scale",
     "collage-eye-chart",
     "collage-lens-frame",
     "collage-sensor-tap",

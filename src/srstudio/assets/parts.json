@@ -10176,6 +10176,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-doctor-scale": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clinic scale with a height bar that lowers on cue. First drawn for the-scale; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "81eeee1520f2f0c2d4d9d27c10af216ced7b4f716da8f2461fe3de8e803420ec",
+          "rig": null
+        }
+      ]
     }
   }
 }
