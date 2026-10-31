@@ -77,8 +77,11 @@
   }
 
   // -- cards ----------------------------------------------------------------------------------------------
+  // The series of the pilots (ADR 0054), by folder name; one the table does not know shows as its folder name.
+  const SERIES = {mind: "There's a Name for That", maps: 'Maps', news: 'News Compiler', host: 'The Unwritten Rules'};
   function videoTags(v) {
     const tags = [];
+    if (v.series) tags.push(`<span class="tag series">piloto · ${esc(SERIES[v.series] || v.series)}</span>`);
     if (v.source === 'package') tags.push('<span class="tag">pacote</span>');
     if (v.source === 'no-render') tags.push('<span class="tag warn">sem render</span>');
     if (!v.measured) tags.push('<span class="tag warn">não medido</span>');
@@ -273,7 +276,8 @@
     let player;
     if (v.src) {
       player = `<div class="phone"${ratio}><video controls playsinline preload="none" poster="${esc(v.poster)}" ` +
-        `src="${esc(v.src)}" aria-label="${esc(v.title)}"></video></div>`;
+        `src="${esc(v.src)}" aria-label="${esc(v.title)}"></video></div>` +
+        (v.source === 'package' ? `<p class="aside">Pacote original: <a href="#/pacotes/${slugLink(v.slug)}">abrir no player SVG</a>.</p>` : '');
     } else if (v.source === 'package') {
       player = `<p class="notice">Pacote original, tocado como SVG. <a href="#/pacotes/${slugLink(v.slug)}">Abrir no player</a>.</p>`;
     } else {

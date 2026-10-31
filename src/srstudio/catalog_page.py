@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import dataclasses
 import hashlib
 import html
 import json
@@ -52,7 +53,7 @@ from pathlib import Path
 from . import catalog_data, catalog_server, catalog_specimens, catalog_versions, checks, digest, parts, registry
 from .catalog_data import CatalogError, GalleryEntry, Line, Still
 from .styles import STYLES, Style
-from .usage import Report
+from .usage import PILOTS, Report, pilot_projects
 
 NOTES_SCHEMA = "1.2.0"
 SCHEMAS = ("1.0.0", "1.1.0", NOTES_SCHEMA)  # 1.1.0 adds the optional gallery, 1.2.0 the optional part titles
@@ -239,6 +240,7 @@ class Card:
     effects: int
     render: Path
     size: tuple[int, int] = (1080, 1920)  # the frame, in pixels
+    series: str = ""  # a pilot's series (ADR 0054); "" for the library's own episodes
 
 
 def plain(docstring: str) -> str:
@@ -309,10 +311,21 @@ def _scene(project: Path) -> Path | None:
 
 def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None = None) -> list[Card]:
     """One card per project folder with a scene document and a ``renders/<slug>.mp4``: noted episodes first, in
-    the notes' order, then the rest by name; each card's style comes from the parts ``usage`` measured."""
+    the notes' order, then the rest by name; each card's style comes from the parts ``usage`` measured. A pilot
+    (``episodes/pilots/<series>/<slug>`` with its render in ``renders/pilots``) is a card with its series."""
+    pilots = pilot_projects(episodes)
+    library = {p.name: ("", p, Path(renders) / f"{p.name}.mp4") for p in Path(episodes).iterdir() if p.is_dir()}
+    library.pop(PILOTS, None)
+    clash = sorted(set(library) & set(pilots))
+    if clash:
+        raise CatalogError(f"a pilot takes the slug of a library project: {', '.join(clash)}")
+    found = {
+        **library,
+        **{slug: (series, folder, Path(renders) / PILOTS / f"{slug}.mp4") for slug, (series, folder) in pilots.items()},
+    }
     cards = []
-    for project in sorted(p for p in Path(episodes).iterdir() if p.is_dir()):
-        slug, render, scene = project.name, Path(renders) / f"{project.name}.mp4", _scene(project)
+    for slug, (series, project, render) in sorted(found.items()):
+        scene = _scene(project)
         if scene is None or not render.exists():
             continue
         try:
@@ -345,6 +358,7 @@ def discover(episodes: Path, renders: Path, notes: Notes, usage: Report | None =
                 effects=effects,
                 render=render,
                 size=(w, h),
+                series=series,
             )
         )
     rank = {slug: i for i, slug in enumerate(notes.order)}
@@ -415,6 +429,7 @@ class Package:
     duration: float
     width: int
     height: int
+    render: Path | None = None  # the package's render on this machine, which the page plays through a web encode
 
 
 _SCENES = re.compile(r'<script id="scenes-data" type="application/json">(.*?)</script>', re.DOTALL)
@@ -439,6 +454,24 @@ def packages_of(page: str) -> list[Package]:
     except (ValueError, KeyError, TypeError) as exc:
         raise CatalogError(f"the base page's scene data: {type(exc).__name__} {exc}") from None
     return out
+
+
+# What each original package was rendered as in ``renders``: two were named for their recreation, and one by its title.
+PACKAGE_RENDERS = {
+    "fast-at-math": "fast-at-math.mp4",
+    "honesty-interview": "honesty-interview-recreated.mp4",
+    "multitasking": "multitasking.mp4",
+    "pressure-interview": "pressure-interview.mp4",
+    "printer-recreation": "Printer_Recreation.mp4",
+    "wifi-password": "wifi-password.mp4",
+}
+
+
+def package_render(slug: str, renders: Path) -> Path | None:
+    """The render of the original package ``slug`` in ``renders``, or None when it is not on this machine."""
+    name = PACKAGE_RENDERS.get(slug)
+    found = Path(renders) / name if name else None
+    return found if found is not None and found.is_file() else None
 
 
 def engine_topics(page: str) -> tuple[str, ...]:
@@ -491,11 +524,12 @@ def _video_of_card(c: Card, media: Callable[[Path], str], poster: Callable[[Path
         src=media(c.render),
         poster=poster(c.render),
         lines=c.lines,
+        series=c.series,
     )
 
 
 def _video_elsewhere(
-    slug: str, package: Package | None, usage: Report | None, poster: str | None
+    slug: str, package: Package | None, usage: Report | None, poster: str | None, src: str | None = None
 ) -> catalog_data.Video:
     """A video with no render on the site: a package, with the poster of its spec, or a project usage knows of."""
     measured = usage is not None and slug in usage.episodes
@@ -515,6 +549,7 @@ def _video_elsewhere(
         width=package.width if package else 0,
         height=package.height if package else 0,
         effects=0,
+        src=src,
         poster=poster,
     )
 
@@ -609,10 +644,14 @@ def assemble(
         shown = _gallery_of(notes.gallery, by_slug, stills)
     videos = [_video_of_card(c, media, poster, usage) for c in cards]
     by_package = {p.slug: p for p in packages}
-    elsewhere = [*by_package, *(usage.episodes if usage else ()), *(usage.unmeasured if usage else ())]
+    # a project that was measured but has no render stays as a card of its own; one that was not measured and is no
+    # package or card is a folder, not a video (it is still listed as unmeasured)
+    elsewhere = [*by_package, *(usage.episodes if usage else ())]
     for slug in dict.fromkeys(elsewhere):
         if slug not in by_slug:
-            videos.append(_video_elsewhere(slug, by_package.get(slug), usage, posters.get(slug)))
+            package = by_package.get(slug)
+            src = media(package.render) if package and package.render else None
+            videos.append(_video_elsewhere(slug, package, usage, posters.get(slug), src))
     sheet = tuple(Still(src=uri, width=POSE_SIZE[0], height=POSE_SIZE[1], label=name) for name, uri in poses)
     if sheet and "pip" not in known:
         raise CatalogError("the pose sheet is Pip's, and no part is registered as pip")
@@ -653,7 +692,7 @@ def assemble(
         catalog_data.Catalog(
             schema_version=catalog_data.SCHEMA_VERSION,
             measured=usage is not None,
-            unmeasured=tuple(usage.unmeasured) if usage else (),
+            unmeasured=tuple(x for x in usage.unmeasured if x in {v.slug for v in videos}) if usage else (),
             engine=tuple(engine),
             styles=tuple(styles),
             videos=tuple(videos),
@@ -1126,7 +1165,11 @@ def build(
         os.chmod(site, 0o700)
         store = MediaStore(site / "media")
         renders_of = {c.slug: c.render for c in cards}
-        originals = packages_of(page)
+        originals = [
+            dataclasses.replace(p, render=found) if (found := package_render(p.slug, renders)) else p
+            for p in packages_of(page)
+        ]
+        web.update({p.render: web_video(p.render, cache) for p in originals if p.render and p.slug not in renders_of})
         shown = pictures_of(Path(engine), cache, episodes, store.add)
         proofs = Proofs(proof_root, site / "proofs", store.add)
         histories = catalog_versions.history(

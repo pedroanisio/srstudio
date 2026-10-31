@@ -87,6 +87,18 @@ def test_a_version_the_table_could_not_hold_is_refused(versions, match):
         cd.parse(doc)
 
 
+def test_a_pilot_is_a_library_video_with_a_series_and_a_package_may_play_its_render():
+    doc = document()
+    doc["videos"][1]["series"] = "news"
+    doc["videos"][2]["src"] = VIDEO
+    catalog = cd.parse(doc)
+    assert [v.series for v in catalog.videos] == ["", "news", ""]
+    assert catalog.videos[2].source == "package" and catalog.videos[2].src == VIDEO
+    assert VIDEO in cd.media_of(catalog)
+    text = cd.dumps(catalog)
+    assert cd.dumps(cd.parse(json.loads(text))) == text
+
+
 def test_a_document_parses_into_typed_values():
     catalog = cd.parse(document())
     assert isinstance(catalog, cd.Catalog) and catalog.styles[0].videos == ("camera-off",)
@@ -189,9 +201,11 @@ def test_a_document_that_is_not_an_object_is_refused():
         (sets(["videos", 0, "src"], None), "src and poster"),
         (sets(["videos", 0, "src"], "../../secret.mp4"), "media/"),
         (sets(["videos", 0, "poster"], "http://example.com/x.jpg"), "media/"),
-        (sets(["videos", 0, "source"], "package"), "no file"),
+        (sets(["videos", 0, "source"], "no-render"), "no file"),
         (sets(["videos", 2, "poster"], None), "package video needs its poster"),
-        (sets(["videos", 2, "src"], VIDEO), "no file"),
+        (sets(["videos", 2, "src"], "../../secret.mp4"), "media/"),
+        (sets(["videos", 0, "series"], "News Desk"), "series"),
+        (sets(["videos", 2, "series"], "news"), "package.*series|series.*package"),
         (sets(["videos", 2, "poster"], "../poster.jpg"), "media/"),
         (sets(["videos", 2, "source"], "no-render"), "no file"),
         (deletes(["parts", 0, "specimen"]), "neither a specimen nor a reason"),

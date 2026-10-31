@@ -23,12 +23,13 @@ from typing import Any, TypeVar, Union
 from .errors import SrstudioError
 from .parts import STATUSES
 
-SCHEMA_VERSION = "1.3.0"
+SCHEMA_VERSION = "1.4.0"
 SOURCES = ("library", "package", "no-render")  # a card with a render, an original package, a project without one
 KINDS = ("character", "location", "prop", "graphic")
 VERSION_STATUSES = STATUSES
 _SEMVER = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 _MEDIA = re.compile(r"media/[0-9a-f]{32}\.[a-z0-9]+")
+_SERIES = re.compile(r"[a-z][a-z0-9-]*")
 _PROOF = re.compile(r"media/[0-9a-f]{32}\.[a-z0-9]+|proofs/[0-9a-f]{16}/[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 T = TypeVar("T")
@@ -137,6 +138,7 @@ class Video:
     src: str | None = None
     poster: str | None = None
     lines: tuple[Line, ...] = ()
+    series: str = ""  # a pilot's series (ADR 0054), "" for the library's own videos
 
 
 @dataclass(frozen=True)
@@ -245,12 +247,18 @@ def _check_video(v: Video, styles: set[str], parts: dict[str, Part]) -> None:
             raise CatalogError(f"{where}: a library video needs its src and poster")
         _media(where, v.src)
         _media(where, v.poster)
-    elif v.src or (v.poster and v.source != "package"):
+    elif v.source != "package" and (v.src or v.poster):
         raise CatalogError(f"{where}: a {v.source} video has no file on this site")
     elif v.source == "package":
         if not v.poster:
             raise CatalogError(f"{where}: a package video needs its poster")
         _media(where, v.poster)
+        if v.src:  # a package plays its render when the machine holds one
+            _media(where, v.src)
+    if v.series and not _SERIES.fullmatch(v.series):
+        raise CatalogError(f"{where}: series {v.series!r} is not a lowercase slug")
+    if v.series and v.source != "library":
+        raise CatalogError(f"{where}: a {v.source} video has no series; only a pilot's library card does")
     if not v.measured and v.parts:
         raise CatalogError(f"{where}: it was not measured, so it cannot claim parts")
     _unique(f"{where} parts", list(v.parts))

@@ -34,8 +34,12 @@ def site(tmp_path_factory) -> Path:
     fx.write_project(episodes, "the-router", kind="timeline", w=1080, h=1080, fps=24, dur=4.0)
     fx.write_project(episodes, "mushroom-training", kind="narration", fps=24, dur=4.0)
     fx.write_project(episodes, "take-home", dur=4.0)
+    fx.write_project(episodes / "pilots" / "news", "real-roast", dur=4.0)
     for slug in ("camera-off", "the-router", "mushroom-training", "take-home"):
         (renders / f"{slug}.mp4").write_bytes(slug.encode())
+    (renders / "pilots").mkdir()
+    (renders / "pilots" / "real-roast.mp4").write_bytes(b"real-roast")
+    (renders / "Printer_Recreation.mp4").write_bytes(b"printer")  # a package's render, under the name it was made as
     video, poster = cache / "clip.mp4", cache / "clip.jpg"
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=108x192:rate=10:duration=4",
@@ -48,9 +52,16 @@ def site(tmp_path_factory) -> Path:
     base = root / "base.html"
     base.write_text(BASE, encoding="utf-8")
     notes = root / "notes.json"
-    gallery = [*fx.GALLERY, fx.item(name="Mesa", parts=["soft-desk"])]
+    gallery = [
+        *fx.GALLERY,
+        fx.item(name="Mesa", parts=["soft-desk"]),
+        fx.item(name="Cacto", parts=["signature-cactus"]),
+    ]
     notes.write_text(json.dumps({"schema": "1.1.0", "episodes": {}, "styles": {}, "gallery": gallery}))
-    report = cp.Report(fx.USAGE.episodes, ("take-home", "the-code"))
+    report = cp.Report(
+        {**fx.USAGE.episodes, "real-roast": ("signature-cactus",), "unfinished": ("signature-cactus",)},
+        ("take-home", "the-code"),
+    )
     inked = cache / "inked.jpg"  # the fox's second version looks different from its first
     inked.write_bytes(poster.read_bytes() + b"inked")
     work = root / "work" / "generated" / "character-proofs"
@@ -337,10 +348,16 @@ def test_a_line_seeks_a_video_that_has_not_loaded(page, origin):
     assert page.evaluate("document.querySelectorAll('video').length") == 0
 
 
-@pytest.mark.parametrize("slug", ["take-home", "the-code"])
-def test_an_unmeasured_episode_says_so(page, origin, slug):
-    go(page, origin, f"#/videos/{slug}")
+def test_an_unmeasured_episode_says_so(page, origin):
+    go(page, origin, "#/videos/take-home")
     assert "Não medido" in page.wait_for_selector("#not-measured").inner_text()
+
+
+def test_an_unmeasured_folder_with_no_scene_or_render_is_not_a_video(page, origin, site):
+    catalog = json.loads((site / "catalog.json").read_text())
+    assert "the-code" not in {v["slug"] for v in catalog["videos"]} | set(catalog["unmeasured"])
+    go(page, origin, "#/videos/the-code")
+    assert "Não encontrado" in page.wait_for_selector("#app h2").inner_text()
 
 
 def test_a_card_shows_the_part_itself_and_a_refused_part_says_why(page, origin):
@@ -427,7 +444,7 @@ def test_a_package_links_to_its_player_and_a_project_says_it_has_no_render(page,
     go(page, origin, "#/videos/honesty-interview")
     page.wait_for_selector("a[href='#/pacotes/honesty-interview']")
     assert page.locator("article video").count() == 0
-    go(page, origin, "#/videos/the-code")
+    go(page, origin, "#/videos/unfinished")
     assert "não tem render" in page.wait_for_selector("article").inner_text()
 
 
@@ -677,6 +694,47 @@ def test_a_proposed_head_rig_shows_as_proposed_with_no_approval(page, origin, si
     go(page, origin, "#/personagens/toon-fox")
     text = page.wait_for_selector(".version[data-version='2'] .rig").inner_text()
     assert "Proposta" in text and "Aprovação do operador" not in text
+
+
+# -- pilots and packages ----------------------------------------------------------------------------------
+def test_a_pilot_is_an_ordinary_video_with_a_series_tag(page, origin):
+    go(page, origin, "#/videos")
+    card = page.wait_for_selector(".card[data-video='real-roast']")
+    assert "piloto" in card.inner_text() and "News" in card.inner_text()
+    assert page.locator(".card[data-video='camera-off'] .tag.series").count() == 0
+    go(page, origin, "#/videos/real-roast")
+    detail = page.wait_for_selector("article.detail")
+    assert detail.query_selector(".tag.series") and detail.query_selector("video")  # it plays like any video
+
+
+def test_each_series_is_tagged_with_its_show_not_its_folder(page, origin, site):
+    """The tag names the show a pilot is for: the host series is "The Unwritten Rules" (ADR 0066), not "Host"."""
+    shows = {
+        "the-router": ("mind", "There's a Name for That"),
+        "mushroom-training": ("maps", "Maps"),
+        "real-roast": ("news", "News Compiler"),
+        "camera-off": ("host", "The Unwritten Rules"),
+    }
+
+    def retag(doc, parts):
+        for video in doc["videos"]:
+            if video["slug"] in shows:
+                video["series"] = shows[video["slug"]][0]
+
+    rewritten(page, site, retag)
+    for slug, (_, show) in shows.items():
+        go(page, origin, f"#/videos/{slug}")
+        tag = page.wait_for_selector(f"article.detail[data-video='{slug}'] .tag.series")
+        assert tag.inner_text() == f"piloto · {show}"
+
+
+def test_a_package_with_a_render_plays_it_and_still_links_its_svg_player(page, origin):
+    go(page, origin, "#/videos/printer-recreation")
+    detail = page.wait_for_selector("article.detail")
+    assert detail.query_selector("video") and detail.query_selector("a[href^='#/pacotes/printer-recreation']")
+    go(page, origin, "#/videos/honesty-interview")
+    other = page.wait_for_selector("article.detail")
+    assert not other.query_selector("video") and "tocado como SVG" in other.inner_text()  # no render: facts only
 
 
 def test_a_single_version_is_listed_without_repeating_the_picture(page, origin):

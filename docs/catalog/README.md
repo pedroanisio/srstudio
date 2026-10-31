@@ -50,7 +50,11 @@ new reels get, the operator's approval, the proof and the reels that pin it, wit
 index lists the part once, showing its default's drawing, with a version count and how many are proposed; the registry
 table keeps every drawing. A proposed version is marked as proposed and is never the default. A version's head rig, when it has one, is shown under it with its own approval and proof.
 
-The document is defined by `srstudio.catalog_data` (`schema_version` `1.3.0`). `catalog_data.load` rejects unknown
+A pilot (a project in `generated/episodes/pilots/<series>/<slug>`, rendered into `generated/renders/pilots`) is an
+ordinary video tagged with its series (ADR 0067). An original package whose render is in `generated/renders` plays it,
+and links its SVG player. A folder with no scene and no render, such as `the-code`, is not a video and has no card.
+
+The document is defined by `srstudio.catalog_data` (`schema_version` `1.4.0`). `catalog_data.load` rejects unknown
 fields, unresolved references and missing media.
 
 ## Running it

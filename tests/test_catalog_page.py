@@ -129,6 +129,29 @@ def test_discover_reads_every_rendered_project_in_note_order(tree):
     assert camera.style == "soft" and router.style == "ink" and cards[2].style == "cel"  # from the measured parts
 
 
+def test_a_pilot_is_a_card_with_its_series_and_the_pilots_folder_is_not(tree):
+    episodes, renders = tree
+    write_project(episodes / "pilots" / "news", "real-roast")
+    write_project(episodes / "pilots" / "maps", "no-render-pilot")
+    (renders / "pilots").mkdir()
+    (renders / "pilots" / "real-roast.mp4").write_bytes(b"not decoded here")
+    cards = cp.discover(episodes, renders, cp.Notes(), USAGE)
+    by_slug = {c.slug: c for c in cards}
+    assert (
+        by_slug["real-roast"].series == "news" and by_slug["real-roast"].render == renders / "pilots" / "real-roast.mp4"
+    )
+    assert by_slug["camera-off"].series == "" and "pilots" not in by_slug and "no-render-pilot" not in by_slug
+
+
+def test_a_pilot_may_not_take_a_library_slug(tree):
+    episodes, renders = tree
+    write_project(episodes / "pilots" / "news", "camera-off")
+    (renders / "pilots").mkdir()
+    (renders / "pilots" / "camera-off.mp4").write_bytes(b"x")
+    with pytest.raises(cp.CatalogError, match="camera-off"):
+        cp.discover(episodes, renders, cp.Notes())
+
+
 def test_a_project_without_a_scene_is_skipped_and_a_broken_scene_is_refused(tree):
     episodes, renders = tree
     (episodes / "empty").mkdir()
@@ -284,6 +307,36 @@ def test_a_package_is_a_video_with_facts_and_no_file(tree):
     assert (printer.measured, printer.parts) == (False, ())  # it is a package, and the report does not cover it
 
 
+def test_a_pilot_video_carries_its_series_into_the_document(tree):
+    episodes, renders = tree
+    write_project(episodes / "pilots" / "news", "real-roast")
+    (renders / "pilots").mkdir()
+    (renders / "pilots" / "real-roast.mp4").write_bytes(b"x")
+    catalog = assembled(tree, usage=cp.Report({**USAGE.episodes, "real-roast": ("pip",)}, ()))
+    videos = {v.slug: v for v in catalog.videos}
+    assert (videos["real-roast"].series, videos["real-roast"].source) == ("news", "library")
+    assert videos["camera-off"].series == "" and videos["real-roast"].measured
+
+
+def test_a_package_with_a_render_on_this_machine_plays_it_through_the_web_encode(tree, tmp_path):
+    packages = [dataclasses.replace(p, render=tmp_path / f"{p.slug}.mp4") if p.slug == "printer-recreation" else p
+                for p in cp.packages_of(BASE)]  # fmt: skip
+    catalog = assembled(tree, usage=USAGE, packages=packages)
+    videos = {v.slug: v for v in catalog.videos}
+    assert videos["printer-recreation"].src == url("printer-recreation.mp4", "mp4")
+    assert videos["printer-recreation"].poster == url("printer-recreation")  # the poster is still its spec's
+    assert videos["honesty-interview"].src is None  # no render known for this one: facts and a poster only
+
+
+def test_a_packages_render_is_found_by_the_name_it_was_rendered_under(tmp_path):
+    (tmp_path / "Printer_Recreation.mp4").write_bytes(b"x")
+    (tmp_path / "honesty-interview-recreated.mp4").write_bytes(b"x")
+    assert cp.package_render("printer-recreation", tmp_path) == tmp_path / "Printer_Recreation.mp4"
+    assert cp.package_render("honesty-interview", tmp_path) == tmp_path / "honesty-interview-recreated.mp4"
+    assert cp.package_render("wifi-password", tmp_path) is None  # known name, no file on this machine
+    assert cp.package_render("not-a-package", tmp_path) is None
+
+
 def test_a_package_without_a_poster_is_refused(tree):
     with pytest.raises(cp.CatalogError, match="honesty-interview.*poster"):
         cp.assemble([], cp.Notes(), media=str, poster=str, poses=[], packages=cp.packages_of(BASE), pictures=pictures())
@@ -375,9 +428,11 @@ def test_an_unmeasured_episode_says_so_and_does_not_show_as_using_nothing(tree):
     report = cp.Report({"camera-off": USAGE.episodes["camera-off"]}, ("the-router", "the-code"))
     catalog = assembled(tree, usage=report)
     videos = {v.slug: v for v in catalog.videos}
-    assert catalog.unmeasured == ("the-router", "the-code") and catalog.measured
+    assert catalog.unmeasured == ("the-router",) and catalog.measured  # the-code is not a video, so not listed
     assert (videos["the-router"].source, videos["the-router"].measured) == ("library", False)
-    assert (videos["the-code"].source, videos["the-code"].measured) == ("no-render", False)  # a project, no render
+    assert (
+        "the-code" not in videos
+    )  # a project with no scene and no render is no video; it stays in the unmeasured list
 
 
 def test_a_card_the_report_never_mentions_is_not_measured(tree):
