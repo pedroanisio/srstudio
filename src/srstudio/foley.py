@@ -52,6 +52,9 @@ __all__ = [
     "whoosh",
     "write_whoosh",
     "WHOOSH",
+    "plop",
+    "write_plop",
+    "PLOP",
     "CHIME",
     "BELL",
     "air",
@@ -235,6 +238,58 @@ def write_whoosh(
 ) -> Path:
     """The whoosh bed for the given cue times, written to ``path``."""
     return write_wav(path, whoosh(times, duration, length, rate, PEAK, seed), rate)
+
+
+PLOP = 1.6  # seconds of one plop: the hit, then the bubbles climbing after it
+
+
+def plop(times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK) -> list[float]:
+    """A mono bed of ``duration`` seconds with something heavy dropped into water at each of ``times``. The weight is
+    a body sinking from 130 to 70 Hz with its octave, so it carries on a phone speaker, under a short splash; the
+    water closes over it in a bloop rising from 160 to 480 Hz; then seeded bubbles climb and thin out."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0 and all(0 <= t <= duration - PLOP for t in times)):
+        raise FoleyError(f"duration {duration} must leave {PLOP:.2f} s after every cue")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    rng = random.Random(seed)
+    out = [0.0] * int(round(duration * rate))
+    smooth = 1.0 - math.exp(-2 * math.pi * 1600.0 / rate)
+
+    def rising(begin: int, seconds: float, low_hz: float, high_hz: float, level: float) -> None:
+        phase = 0.0
+        n = int(seconds * rate)
+        for k in range(n):
+            x = k / n
+            phase += 2 * math.pi * (low_hz + (high_hz - low_hz) * x) / rate
+            out[begin + k] += level * math.sin(phase) * min(1.0, k / (0.004 * rate), 8 * (1 - x))
+
+    for at in sorted(times):
+        begin = int(at * rate)
+        low, body = 0.0, 0.0
+        for k in range(int(0.7 * rate)):
+            t = k / rate
+            body += 2 * math.pi * (70.0 + 60.0 * math.exp(-t / 0.08)) / rate
+            low += smooth * (rng.uniform(-1, 1) - low)
+            env = min(1.0, t / 0.003) * math.exp(-t / 0.24)
+            splash = 0.9 * low * math.exp(-t / 0.035)
+            out[begin + k] += env * (math.sin(body) + 0.3 * math.sin(2 * body) + splash)
+        rising(begin + int(0.09 * rate), 0.16, 160.0, 480.0, 0.5)
+        count = 9
+        for i in range(count):
+            when = 0.30 + (PLOP - 0.42) * (i + rng.uniform(0.0, 0.7)) / count
+            hz = rng.uniform(420.0, 900.0)
+            rising(begin + int(when * rate), 0.07, hz, hz * 1.5, 0.3 * (1 - 0.8 * i / count))
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_plop(path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`plop`, written to ``path``."""
+    return write_wav(path, plop(times, duration, rate, seed), rate)
 
 
 def air(
