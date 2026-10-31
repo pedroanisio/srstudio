@@ -29,7 +29,7 @@ Cast: ava, bo, brent, bruno, candidate, deb, dev, fern, gary, jun, juno, kai, ma
 | 10 | fitted-sheet | toon | b/b | family | family | protagonist | affection | question | visual reveal | callback | 52 | 30.1 s |
 | 11 | seat-belt-sign | stick | b/a | partner | relationships | protagonist | triumph | question | status reversal | new order | 31 | 20.0 s |
 | 12 | headphones | cutout | a/b |  | own-worst-enemy | protagonist | embarrassment | mid-exchange | misunderstanding | reveal | 41 | 23.4 s |
-| 13 | one-symptom | toon | a/a |  | own-worst-enemy | protagonist | tension | mid-exchange | status reversal | new order | 56 | 30.7 s |
+| 13 | one-symptom | toon | a/a |  | own-worst-enemy | protagonist | tension | mid-exchange | status reversal | new order | 57 | 31.1 s |
 | 14 | the-tongs | soft | b/b | family | family | other-person | recognition | action | status reversal | callback | 27 | 18.3 s |
 | 15 | first-sip | collage | b/a | partner | relationships | protagonist | embarrassment | surprising image | misunderstanding | recovery | 40 | 24.0 s |
 | 16 | warranty | soft | a/b |  | money-services | institution | tension | action | escalating consequences | consequence | 45 | 29.0 s |
@@ -249,7 +249,7 @@ Key line: "You have a headache." Caption opens: "Why did you look it up?"
 Voices: the patient (hedgehog) (Callum); the doctor (sloth) (Brian). Set: toon-surgery. New: none.
 
 - Held frame: the patient on the edge of the couch, phone in both hands, the doctor opposite. PATIENT: "It's late-stage tongue rot. Eleven known cases." DOCTOR: "You have a headache." (sound: room tone; camera: held two-shot)
-- The patient scrolls. PATIENT: "That's how it starts." DOCTOR: "Did you look this up?" PATIENT: "At one a.m. I've written a will." (sound: phone taps)
+- The patient scrolls. PATIENT: "That's how it starts." DOCTOR: "Did you look this up?" PATIENT: "At one in the morning. I've written a will." (sound: phone taps)
 - The doctor sighs, holds out a hand, takes the phone and reads, slowly. DOCTOR: "Give me that. Headache. Dry mouth. Tingling left thumb." (sound: one tap; camera: cut to the doctor)
 - He stops. He looks at his left thumb. It twitches. He swallows, dryly. (sound: a very small click of the throat; camera: slow push on the doctor, hold 1.8 s)
 - He looks up. DOCTOR: "...How long have I got?" (sound: sting)
