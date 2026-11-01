@@ -37,7 +37,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from . import checks
+from . import checks, scripting
 from .compose import MusicClient, MusicOutputError, Plan
 from .errors import ConsentError, SrstudioError
 from .generated import gain_to_peak, trim_effect, trim_speech
@@ -68,7 +68,7 @@ from .voice import (
     normalize_words,
 )
 
-__all__ = ["Bed", "FONT", "Script", "Take", "TakesError", "main", "record", "sha256_of"]
+__all__ = ["Bed", "FONT", "Script", "Take", "TakesError", "main", "record", "sha256_of", "silent"]
 
 FONT = ("Inter-Bold.ttf", "font-license.txt")  # the Stick style's caption font and its licence
 VOICE_PEAK = 0.80  # every line is levelled to this peak; the master's loudness pass does the rest
@@ -384,19 +384,78 @@ def record(
     return timeline
 
 
+def _silence(path: Path, seconds: float) -> None:
+    """``seconds`` of mono silence at the takes' rate, so the mix of a silent build finds a file for each take."""
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(bytes(2 * round(seconds * RATE)))
+
+
+def _estimated(take: Take, script: Script, lead: float) -> dict:
+    """``take``'s item as a recording would write it, on an even spread of its words from ``lead`` seconds in."""
+    item: dict = {"id": take.id, "actor": take.actor, "shot": take.shot, "text": take.text, "mood": take.mood}
+    item.update(take.extra)
+    if take.is_effect:
+        length = take.longest
+        return item | {"speech_duration": 0, "words": [], "phones": [], "duration": round(lead + length + take.hold, 6)}
+    words = take.text.split()
+    speed = script.settings_for(take).speed
+    speech = round((scripting.SECONDS_A_WORD * len(words) + scripting.SECONDS_A_LINE) / speed, 6)
+    step = speech / len(words)
+    timed = [{"text": w, "start": lead + i * step, "end": lead + (i + 1) * step} for i, w in enumerate(words)]
+    body = round(lead + speech, 6)
+    return item | {"speech_duration": body, "words": timed, "phones": [], "duration": round(body + take.hold, 6)}
+
+
+def silent(script: Script, root: Path) -> dict:
+    """A ``timeline.json`` for ``root`` on estimated timing, with no request made: every take silent, its words spread
+    evenly over the time :mod:`srstudio.scripting` expects. It is what a reel's stills are drawn from before any take is
+    paid for, and the recording replaces it. A project already recorded is refused: its timeline is worth money."""
+    script.check()
+    if (root / "voice-transcript.json").exists():
+        raise TakesError(f"{root} is already recorded: a silent timeline would replace its takes")
+    audio = root / "audio"
+    audio.mkdir(parents=True, exist_ok=True)
+    items = []
+    for k, take in enumerate(script.takes):
+        lead = script.still if k == 0 else 0.0
+        item = _estimated(take, script, lead)
+        wav = audio / f"silent-{take.id}.wav"
+        _silence(wav, item["duration"] - take.hold)
+        items.append(item | {"audio": f"audio/{wav.name}", "sha256": sha256_of(wav)})
+    timeline = {
+        "title": script.title,
+        "language": script.language,
+        "tts_engine": "estimate",
+        "model": "",
+        "voices": {},
+        "voice_note": "Estimated timing, silent: nothing recorded yet.",
+        "duration": schedule(items, script.fps),
+        "tempo_adjustment": 1.0,
+        "items": items,
+    }
+    (root / "timeline.json").write_text(json.dumps(timeline, indent=2) + "\n")
+    return timeline
+
+
 def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-    """``python3 EPISODE_audio.py PROJECT [--font DIR] [--ffmpeg PATH]``: record ``script`` into PROJECT."""
+    """``python3 EPISODE_audio.py PROJECT [--font DIR] [--ffmpeg PATH] [--silent]``: record ``script`` into PROJECT, or
+    with ``--silent`` write :func:`silent`'s estimate, which needs no key and no consent."""
     parser = argparse.ArgumentParser(description=script.title)
     parser.add_argument("project", type=Path)
     parser.add_argument("--font", type=Path, help=f"folder holding {' and '.join(script.font)} to copy")
     parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
+    parser.add_argument("--silent", action="store_true", help="estimated timing and no request, for stills")
     args = parser.parse_args(argv)
     env = os.environ if env is None else env
     os.umask(0o077)  # generated outputs are private: folders 700, files 600
-    try:
-        require_consent(env)
-    except ConsentError as exc:
-        raise SystemExit(str(exc)) from None
+    if not args.silent:
+        try:
+            require_consent(env)
+        except ConsentError as exc:
+            raise SystemExit(str(exc)) from None
     root = args.project.resolve()
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
@@ -405,6 +464,12 @@ def main(script: Script, argv: list[str] | None = None, env: Mapping[str, str] |
             shutil.copyfile(args.font / name, assets / name)
     if not (assets / script.font[0]).exists():
         raise SystemExit(f"{assets / script.font[0]} is missing; pass --font DIR")
+    if args.silent:
+        try:
+            print(f"{silent(script, root)['duration']:.3f} s, estimated and silent")
+        except TakesError as exc:
+            raise SystemExit(str(exc)) from None
+        return 0
     key = env.get(KEY_ENV, "")
     cache = assets / "elevenlabs"
     client = ElevenLabsClient(cache, key, model=MODEL, seed=script.seed)
