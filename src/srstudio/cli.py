@@ -29,6 +29,7 @@ from . import (
     craft,
     fonts,
     frames,
+    interview,
     lip_proof,
     lipsync,
     overlap,
@@ -441,6 +442,8 @@ def main(argv=None):
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
+            if args.root and "--voice" in args.options:
+                interview.refuse_rehearsal(Path(args.root))
             with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
