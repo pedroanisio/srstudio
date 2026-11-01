@@ -9,11 +9,11 @@ from __future__ import annotations
 import textwrap
 from collections.abc import Callable, Sequence
 
-from . import checks
+from . import brush, checks
 from .canvas import Canvas
 from .registry import register
 from .toon import FINE_W, ToonDataError, fh, fx, fy
-from .toon_sets import _inked, _line
+from .toon_sets import _fill, _inked, _line
 from .toon_world import GULL_BEAK, GULL_GREY, GULL_WHITE
 
 Point = tuple[float, float]
@@ -28,6 +28,7 @@ __all__ = [
     "noodle_box",
     "rain",
     "reception_glass",
+    "standing_drops",
     "voice_note_bar",
     "wifi_list",
 ]
@@ -43,6 +44,7 @@ COUNTER = 801.0  # the reference height of the counter top, the desk's edge
 GAP = 64.0  # the gap under the glass for the paperwork
 DROP_FALL = 0.22  # seconds a drop takes to reach the eye
 BOTTLE, CAP, DROP = "#e8f4fb", "#3f7fbf", "#8fd0f5"
+FRAME_RIGHT = 600.0  # the reference x of the right edge of the frame
 
 
 @register(
@@ -60,9 +62,12 @@ def eye_drops(
     leave: float = 1.8,
     scale: float = 1.0,
     id: str | None = None,
+    arm: str | None = None,
 ) -> None:
     """The bottle tipped over the reference point ``eye`` from ``start`` to ``leave``, one drop falling at each of
-    ``squeezes``, and landing on ``eye``."""
+    ``squeezes``, and landing on ``eye``. With ``arm``, a coat colour, an arm of that colour comes in from the right
+    edge of the frame and holds it: without one the bottle hangs on nothing, so give it one in any shot wider than the
+    face, or the viewer counts a third arm."""
     first = _second(start, "the bottle's arrival")
     times = [_second(t, "a squeeze") for t in squeezes]
     if not times or times != sorted(times) or times[0] <= first or leave <= times[-1] + DROP_FALL:
@@ -81,12 +86,39 @@ def eye_drops(
         (x - 8 * scale, tip),
         (x - w, tip - 26 * scale),
     ]
+    if arm is not None:
+        grip = tip - 56 * scale
+        fore = [(x, grip), (FRAME_RIGHT / 2 + x / 2, grip - 24 * scale), (FRAME_RIGHT + 60.0, grip - 40 * scale)]
+        _fill(cv, g, brush.stroke(fore, 62 * scale, brush.EVEN), cv.ink)
+        _fill(cv, g, brush.stroke(fore, 50 * scale, brush.EVEN), arm)
     _inked(cv, g, body, BOTTLE, FINE_W, 2)
     cv.rect(g, fx(x - w), fy(tip - 120 * scale), fh(2 * w), fh(30 * scale), CAP, cv.ink, FINE_W, radius=fh(6))
+    if arm is not None:
+        cv.ellipse(g, fx(x - 8 * scale), fy(grip - 36 * scale), fh(84 * scale), fh(72 * scale), arm, cv.ink, FINE_W)
     for at in times:
         drop = cv.group(g, cv.uid("drop"), start=at, end=at + DROP_FALL)
         cv.ellipse(drop, fx(x - 7 * scale), fy(tip), fh(14 * scale), fh(20 * scale), DROP, cv.ink, FINE_W / 2)
         cv.keys(drop, "y", [(at, 0.0), (at + DROP_FALL, fh(y - tip))], hold=False, local=False)
+
+
+def standing_drops(cv: Canvas, parent, at: Point, scale: float = 1.0, id: str | None = None) -> None:
+    """The same bottle stood on the reference point ``at``, its base, cap on top, between uses."""
+    if not (checks.number(scale) and scale > 0):
+        raise ToonDataError(f"a scale is over 0, got {scale!r}")
+    x, y = at
+    w = 34 * scale
+    g = cv.group(parent, id or cv.uid("drops-stood"))
+    body = [
+        (x - w, y),
+        (x + w, y),
+        (x + w, y - 62 * scale),
+        (x + 12 * scale, y - 88 * scale),
+        (x - 12 * scale, y - 88 * scale),
+        (x - w, y - 62 * scale),
+    ]
+    _inked(cv, g, body, BOTTLE, FINE_W, 2)
+    cv.rect(g, fx(x - 16 * scale), fy(y - 122 * scale), fh(32 * scale), fh(38 * scale), CAP, cv.ink, FINE_W, radius=fh(4))
+    cv.ellipse(g, fx(x - 12 * scale), fy(y - 50 * scale), fh(24 * scale), fh(32 * scale), DROP, cv.ink, FINE_W / 2)
 
 
 GLASS, GLASS_EDGE, TRAY = "#d7eef2", "#8fb0b6", "#e7e2d6"

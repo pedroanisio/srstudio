@@ -56,6 +56,23 @@ def test_drops_refuse_a_time_they_cannot_keep(bad):
         toon_inserts.eye_drops(cv, cv.comp, **bad)
 
 
+def test_a_bottle_with_an_arm_is_held_by_it_from_the_edge_of_the_frame():
+    cv = canvas()
+    toon_inserts.eye_drops(cv, cv.comp, start=1.0, squeezes=(1.5,), leave=3.0, arm="#e8c79c", id="held")
+    assert ET.tostring(group(cv, "held")).count(b"#e8c79c") == 2  # the arm and the paw round the bottle
+    alone = canvas()
+    toon_inserts.eye_drops(alone, alone.comp, start=1.0, squeezes=(1.5,), leave=3.0, id="alone")
+    assert b"#e8c79c" not in ET.tostring(group(alone, "alone"))
+
+
+def test_a_bottle_stands_on_its_base_and_nothing_of_it_runs_below():
+    cv = canvas()
+    toon_inserts.standing_drops(cv, cv.comp, (200.0, 800.0), scale=1.0, id="stood")
+    assert len(list(group(cv, "stood"))) >= 3
+    with pytest.raises(ToonDataError):
+        toon_inserts.standing_drops(cv, cv.comp, (200.0, 800.0), scale=0.0)
+
+
 def test_the_glass_stands_on_the_counter_and_refuses_to_stand_above_nothing():
     specimens.load_parts()
     assert registry.get("prop", "toon-reception-glass").builder is toon_inserts.reception_glass
