@@ -13,6 +13,8 @@ from srstudio import DAYLIGHT, PEACH, Canvas, flat_counter, overlay_gate, stick,
 from srstudio.craft import CraftError
 from srstudio.overlay_gate import Overlay, overlays, repeated_lines, repeats
 from srstudio.releases import Release
+from srstudio.social import InstagramPost
+from srstudio.thumbnail import Thumbnail
 
 
 def toon_canvas() -> Canvas:
@@ -150,9 +152,8 @@ def test_a_document_that_is_not_a_scene_is_refused():
 
 
 def release(slug: str = "a-b") -> Release:
-    from test_releases import POST  # the smallest post a release takes
-
-    return Release(slug, POST)
+    post = InstagramPost(title="A title", description="A description.", thumbnail=Thumbnail("Two\nlines", 1.0))
+    return Release(slug, post)
 
 
 def write(episodes: Path, slug: str, document: bytes, cues) -> None:
