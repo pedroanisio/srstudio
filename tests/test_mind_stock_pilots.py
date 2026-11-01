@@ -156,3 +156,6 @@ def test_the_clipboard_stays_blank_until_he_has_answered_and_blank_when_she_asks
 def test_the_blurred_far_plane_reaches_the_frame_edge(pilot):
     assert pilot.BLEED is True
 
+
+def test_the_zipper_text_says_what_the_board_does():
+    assert "fills up" not in zipper.ACCESSIBILITY

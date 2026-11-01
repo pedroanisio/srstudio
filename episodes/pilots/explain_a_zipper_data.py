@@ -2,7 +2,7 @@
 
 The observation: you know how a zipper works until someone says go on, then. So the claim comes first, on a zipper
 being pulled, over a raccoon who has already rated himself seven out of seven on a whiteboard. A hedgehog asks him to
-explain it, and a toilet, and a helicopter, and the board fills with what he says. The finding is the payoff: nearly
+explain it, and a toilet, and a helicopter, and each answer goes up on the board. The finding is the payoff: nearly
 all of the people in the study marked themselves down. The raccoon follows them.
 
 Every word about the study lives in :data:`HOW`, :data:`DOWN`, :data:`STAMP` and :data:`CITE` and traces to
@@ -34,7 +34,7 @@ DESCRIPTION = (
 ACCESSIBILITY = (
     "A zipper fills the frame and is pulled open on a raccoon at a whiteboard that reads zipper, seven out of seven. A "
     "hedgehog tells him to go on, then. He says it's a pulling situation. Asked about a toilet he says the water "
-    "leaves, out of respect, and a helicopter is a fan, with confidence, and the board fills up with both. A stamp "
+    "leaves, out of respect, and a helicopter is a fan, with confidence, and each answer goes up on the board. A stamp "
     "reads Nearly all of 16 students marked themselves down, Rozenblit & Keil, 2002. The hedgehog asks if it is still "
     "seven, and the raccoon says put him down for a two."
 )
@@ -147,7 +147,7 @@ def no_desk(cv, parent) -> None:
 
 
 def _board(shot, at: dict[str, float]) -> None:
-    """What he has said so far, on the board behind him, and the score he ends on."""
+    """What he has just said, on the board behind him, and the score he ends on."""
     cv, app = shot.cv, shot.app
     words = cv.group(shot.back, cv.uid("g"))
     rows = [(at[stop], text) for text, stop in BOARD]
