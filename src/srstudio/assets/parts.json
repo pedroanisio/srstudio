@@ -12835,6 +12835,108 @@
           "rig": null
         }
       ]
+    },
+    "toon-double-bed": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A headboard and two pillows for a couple in bed, the wall behind by day or by night. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2b498ba63623c29eb90cd37ddfd54d92e812ae82639401571a5b76fd077df6c9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-double-quilt": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A quilt across a double bed with the nightstand that signs the shot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ed585d3e7ea7083c201b00d633b9bf778ce2ba5cb05d54341a231da24fd76806",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bedroom-corner": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The floor beside the bed: wall, skirting board, floorboards. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "019f4a8cc4bbbe16d44640333906bae73f536aa92fcd80f3abf1961457d2d7c1",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bedside-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A nightstand close up whose drawer buzzes and slides out by itself on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bbe808b5992605f3376f4fa700ac981bfca78162032f5dc17a517d65a5d54ece",
+          "rig": null
+        }
+      ]
+    },
+    "toon-quilt-heap": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A quilt dragged down and heaped over the lap of whoever sits on the floor. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "28cae60d28ae4d30bb70df034529b6c4202dfdc97fe566ec7bbe089b188ac09b",
+          "rig": null
+        }
+      ]
+    },
+    "toon-swung-arm": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A character's arm in its own coat, swinging about the shoulder. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fdcabefdd98c003d4a66fc1451cc4d502886a25e2b3120b5d1c8d9a980c22d73",
+          "rig": null
+        }
+      ]
     }
   }
 }

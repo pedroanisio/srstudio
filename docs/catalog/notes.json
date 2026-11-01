@@ -1252,6 +1252,12 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-swung-arm": {"title": "Braço que balança"},
+    "toon-quilt-heap": {"title": "Edredom amontoado"},
+    "toon-bedside-drawer": {"title": "Gaveta do criado-mudo"},
+    "toon-bedroom-corner": {"title": "Canto do quarto, no chão"},
+    "toon-double-quilt": {"title": "Edredom de casal"},
+    "toon-double-bed": {"title": "Cama de casal"},
     "cake-slice": {"title": "Fatia de bolo"},
     "cake-knife": {"title": "Faca de bolo"},
     "crayon-page": {"title": "Folha de giz de cera"},
@@ -8800,6 +8806,78 @@
         "at": 25.0
       },
       "text": "A faca do bolo de boas-vindas e a fatia oferecida no prato."
+    },
+    {
+      "section": "locations",
+      "name": "Cama de casal",
+      "parts": [
+        "toon-double-bed"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 5.3
+      },
+      "text": "Cabeceira e dois travesseiros para um casal na cama, com a parede atrás de noite ou de dia."
+    },
+    {
+      "section": "props",
+      "name": "Edredom de casal",
+      "parts": [
+        "toon-double-quilt"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 3.0
+      },
+      "text": "O edredom sobre a cama de casal, com o criado-mudo que assina o plano."
+    },
+    {
+      "section": "locations",
+      "name": "Canto do quarto, no chão",
+      "parts": [
+        "toon-bedroom-corner"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 15.0
+      },
+      "text": "O chão ao lado da cama: parede, rodapé e tábuas, para quem desistiu do colchão."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta do criado-mudo",
+      "parts": [
+        "toon-bedside-drawer"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 19.0
+      },
+      "text": "O criado-mudo de perto, com a gaveta que vibra e abre sozinha na hora marcada."
+    },
+    {
+      "section": "props",
+      "name": "Edredom amontoado",
+      "parts": [
+        "toon-quilt-heap"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 15.0
+      },
+      "text": "O edredom arrastado para o chão, amontoado no colo de quem sentou ali."
+    },
+    {
+      "section": "props",
+      "name": "Braço que balança",
+      "parts": [
+        "toon-swung-arm"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 5.0
+      },
+      "text": "O braço de um personagem na própria roupa, balançando a partir do ombro."
     }
   ]
 }

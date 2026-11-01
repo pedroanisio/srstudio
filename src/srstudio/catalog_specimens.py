@@ -481,6 +481,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-shower-water": Recipe(part(((0.0, SECONDS),))),
     "toon-suds": Recipe(part((540, 700))),
     "toon-towel": Recipe(part((540, 700))),
+    "toon-swung-arm": Recipe(part((300.0, 700.0), "#a8764f", ((0.0, 200.0),), 0.0, SECONDS)),
     "toon-open-book": Recipe(part({0: "#ffe14d", 1: "#ffe14d", 9: "#ff9ec4"})),
     "toon-shut-book": Recipe(part()),
     "toon-highlighter": Recipe(part((540.0, 960.0), "#c49a6c")),

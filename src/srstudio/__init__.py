@@ -83,6 +83,7 @@ from . import (  # noqa: F401  (registers builders)
     subtitles,
     toon,
     toon_bento,
+    toon_bed,
     toon_cars,
     toon_cast,
     toon_critters,
