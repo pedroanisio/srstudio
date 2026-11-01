@@ -242,7 +242,14 @@ def dress(shot) -> None:
             d = drops[0]
             squeezes = [d + at for at in DRIP]
             toon_inserts.eye_drops(
-                cv, shot.front, EYE, start=d, squeezes=squeezes, leave=d + DROPS_HELD, scale=0.7, arm=toon_cast.HEDGEHOG.coat
+                cv,
+                shot.front,
+                EYE,
+                start=d,
+                squeezes=squeezes,
+                leave=d + DROPS_HELD,
+                scale=0.7,
+                arm=toon_cast.HEDGEHOG.coat,
             )
 
 

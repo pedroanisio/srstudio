@@ -117,7 +117,9 @@ def standing_drops(cv: Canvas, parent, at: Point, scale: float = 1.0, id: str | 
         (x - w, y - 62 * scale),
     ]
     _inked(cv, g, body, BOTTLE, FINE_W, 2)
-    cv.rect(g, fx(x - 16 * scale), fy(y - 122 * scale), fh(32 * scale), fh(38 * scale), CAP, cv.ink, FINE_W, radius=fh(4))
+    cv.rect(
+        g, fx(x - 16 * scale), fy(y - 122 * scale), fh(32 * scale), fh(38 * scale), CAP, cv.ink, FINE_W, radius=fh(4)
+    )
     cv.ellipse(g, fx(x - 12 * scale), fy(y - 50 * scale), fh(24 * scale), fh(32 * scale), DROP, cv.ink, FINE_W / 2)
 
 
