@@ -4,8 +4,7 @@ manager. He goes to prove it, and comes back with a lanyard while the portal rej
 Two voices (ElevenLabs premade Brian as Dad, Matilda as Fern). One kitchen and the front door seen from inside: Dad at
 the front with the tie held up, then on his chest (``wear``); Fern at her laptop, its lid shutting on ``shut``; the door
 slamming on ``out`` and opening on ``back``; the portal's answer as a notice on ``ping``, never a voice. The camera
-moves
-from the first frame. :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its camera and
+moves from the first frame. :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its camera and
 :func:`sounds` its foley.
 """
 
@@ -40,7 +39,8 @@ ACCESSIBILITY = (
     "An old cartoon goat in a kitchen holds up a striped tie while his daughter, a frog, types at a laptop. She tells "
     "him it is all online. He puts the tie on and leaves by the front door. A card comes up: application 213, "
     "rejected. She does not look up. He comes back with a company lanyard over the tie. He is the regional manager. "
-    "She shuts the laptop and asks in a small voice if they need anyone else. He pats her shoulder and tells her there is a portal. "
+    "She shuts the laptop and asks in a small voice if they need anyone else. He pats her shoulder and tells her "
+    "there is a portal. "
     "Lines appear in tinted pills."
 )
 NARRATION = "Voiced with ElevenLabs premade voices Brian (Dad) and Matilda (Fern); synthesized door, ping and lid."
