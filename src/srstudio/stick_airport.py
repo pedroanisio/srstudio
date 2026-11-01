@@ -65,6 +65,7 @@ BOARDING_SIZE = 25  # the size that fits the room beside the gate letters even i
 GATE_CHARS, NOW_CHARS, TAG_CHARS, ROW_CHARS = 4, 12, 8, 3
 TAG_SPAN = (40, 200)  # the luggage tag's left and right edges, from the carry-on's middle
 PODIUM_X = (640, 1080)  # the podium, from its left end to past the frame
+CACTUS_AT = (610, FLOOR_Y)  # by the window, where the pot stands on the carpet
 PODIUM_TOP = 1150  # a STANDING agent behind it shows from the waist up
 AGENT_AT = (1420.0, 0.0)  # with flip=True a STANDING pose here stands behind the podium, facing the passenger
 SEATS = (240, 540, 840)  # the seats' centres, window to aisle
@@ -118,14 +119,23 @@ def now_size(now: str) -> float:
 
 @register("location", "stick-gate", tags=("airport", "gate", "boarding", "travel", "font"))
 def gate(
-    cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = APPROVED_BOARDING_SIZE
+    cv: Canvas,
+    parent,
+    *,
+    gate: str = "B9",
+    now: str = "GROUP 1",
+    boarding_size: float = APPROVED_BOARDING_SIZE,
+    cactus_at: tuple[float, float] = CACTUS_AT,
 ) -> None:
     """The boarding gate: the terminal wall, the window on the apron with a parked airliner, the gate seats under it,
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
     (ADR 0001). ``boarding_size`` letters the sign's first line; the default is the drawing that was approved, and
-    a reel whose font runs wide passes :data:`BOARDING_SIZE`."""
+    a reel whose font runs wide passes :data:`BOARDING_SIZE`. ``cactus_at`` is where the cactus's pot stands; the
+    default is the approved drawing, and a reel that stands something in front of it moves it."""
     cv.require_font("the boarding sign is set in it")
+    if not (isinstance(cactus_at, tuple) and len(cactus_at) == 2 and all(checks.number(value) for value in cactus_at)):
+        raise StickDataError(f"the cactus stands at an x and a y, got {cactus_at!r}")
     if not (checks.number(boarding_size) and boarding_size > 0):
         raise StickDataError(f"the sign's first line has a size above 0, got {boarding_size!r}")
     if not gate.strip() or len(gate) > GATE_CHARS:
@@ -164,7 +174,7 @@ def gate(
         yy = FLOOR_Y + 50 + row * row * 18 + row * 40
         for col in range(12):
             oval(s, parent, 20 + col * 92 + (row % 2) * 46, yy, 14, 8, CARPET_DOT)
-    signature.cactus(s, parent, 610, FLOOR_Y, scale=0.42)
+    signature.cactus(s, parent, *cactus_at, scale=0.42)
     signature.code(s, parent, 40, 1880, 9, color="#8a99a8")
 
 

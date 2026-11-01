@@ -85,6 +85,27 @@ def test_the_gate_refuses_a_sign_it_cannot_letter(kw, match):
         stick_airport.gate(cv, cv.comp, **kw)
 
 
+def _cactus(cv) -> tuple[float, float]:
+    found = [g for g in xml(cv).iter("group") if (g.get("id") or "").startswith("sig-cactus")]
+    assert len(found) == 1
+    return float(found[0].get("x")), float(found[0].get("y"))
+
+
+def test_the_gate_stands_its_cactus_by_the_window_unless_a_reel_asks():
+    default, moved = canvas(), canvas()
+    stick_airport.gate(default, default.comp)
+    stick_airport.gate(moved, moved.comp, cactus_at=(790.0, stick_airport.PODIUM_TOP))
+    assert _cactus(default) == (610.0, stick_airport.FLOOR_Y)
+    assert _cactus(moved) == (790.0, stick_airport.PODIUM_TOP)
+
+
+@pytest.mark.parametrize("at", [(790.0,), ("x", 1150.0), (float("nan"), 1150.0), None])
+def test_the_gate_refuses_a_cactus_it_cannot_place(at):
+    cv = canvas()
+    with pytest.raises(StickDataError, match="cactus"):
+        stick_airport.gate(cv, cv.comp, cactus_at=at)
+
+
 def test_the_gate_needs_the_caption_font():
     cv = canvas(font=None)
     with pytest.raises(ValueError, match="font"):
