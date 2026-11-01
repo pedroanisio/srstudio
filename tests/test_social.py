@@ -1128,6 +1128,7 @@ def test_a_first_delivery_with_a_run_together_caption_is_refused_before_it_write
     posts.auto_enhance.set_mode(tmp_path, on=False)
     _run_together(tmp_path)
     monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
     with pytest.raises(frame_gates.FrameGateError, match="New_Reel: the caption 'Take it Whatever' runs 'it'"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
@@ -1161,6 +1162,23 @@ def test_a_first_delivery_that_hides_its_signature_is_refused_before_it_writes(m
     monkeypatch.setattr(posts.frame_gates, "signature_hidden", hidden)
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
     with pytest.raises(frame_gates.FrameGateError, match="New_Reel: both signature marks are seen in 0%"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="the-engine", only=["New_Reel"])
+    assert asked == [({"new-reel": "New_Reel"}, "the-engine")]
+
+
+def test_a_first_delivery_with_a_defect_on_its_frames_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    asked = []
+
+    def defects(releases, episodes, first, engine):
+        asked.append((dict(first), engine))
+        return [Drift("New_Reel", "toon-hamster ends in a straight cut")]
+
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", defects)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: toon-hamster ends in a straight cut"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="the-engine", only=["New_Reel"])
     assert asked == [({"new-reel": "New_Reel"}, "the-engine")]
 

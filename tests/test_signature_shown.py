@@ -61,8 +61,8 @@ def test_the_marks_need_not_be_seen_in_the_same_shot_for_each_count_but_both_cou
 
 
 def test_the_samples_cover_the_reel_and_stay_inside_it():
-    assert sample_times(1.2) == [0.0, 0.5, 1.0]
-    assert sample_times(1.0) == [0.0, 0.5]
+    assert sample_times(1.2) == [0.0, 0.5, 1.0, 1.15]
+    assert sample_times(1.0) == [0.0, 0.5, 0.95]
 
 
 def printed(*nodes: dict) -> str:

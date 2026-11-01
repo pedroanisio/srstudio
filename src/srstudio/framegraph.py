@@ -175,10 +175,12 @@ def flatten(path: str) -> list[Polygon]:
 
 
 class Drawing(NamedTuple):
-    """A shape's ``outlines`` in its own coordinates. ``solid`` says its fill hides what is behind it."""
+    """A shape's ``outlines`` in its own coordinates. ``solid`` says its fill hides what is behind it; ``ellipse`` says
+    the shape is one, which its outline alone does not."""
 
     outlines: tuple[Polygon, ...]
     solid: bool
+    ellipse: bool = False
 
 
 def _attribute(element: ET.Element, name: str, default: float = 0.0) -> float:
@@ -247,7 +249,7 @@ def drawings(document: bytes) -> dict[str, Drawing]:
                 outlines = (_ellipse(w, h),)
             else:
                 raise FrameGraphError(f"shape {name!r} is a {kind!r}: its drawing cannot be measured")
-            out[name] = Drawing(outlines, node not in blended and _solid(node, paints))
+            out[name] = Drawing(outlines, node not in blended and _solid(node, paints), kind == "ellipse")
         elif node.tag == "layer" and node.get("asset") in sizes:
             asset = sizes[node.get("asset")]
             w, h = _attribute(asset, "width"), _attribute(asset, "height")

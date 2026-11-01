@@ -8,6 +8,8 @@ frozen, and no gate here may ask it to change.
 - :func:`run_together` reads the scene: a burned caption window must not run across a sentence end unmarked.
 - :func:`signature_shown` measures the engine's frames: both marks must be seen for most of the running time. A parts
   list says they were drawn, not that the camera sees them.
+
+:mod:`srstudio.figure_gates` holds the gates on what a figure and a set look like on the frame.
 """
 
 from __future__ import annotations
@@ -51,6 +53,7 @@ SAMPLE_EVERY = 0.5  # seconds between measured frames: a shot lasts longer than 
 MARK_SEEN = 0.75  # of a mark's box, on the frame and not behind anything, for that frame to count as showing it
 MIN_SHOWN = 0.5  # of the running time with both marks seen: "most"
 MARK_SCALE = 2.0  # frame pixels to a mask pixel: a mark is small
+_LAST = 0.05  # seconds before the end: inside a reel's last frame at any rate it renders at
 
 
 class FrameGateError(DeliveryError):
@@ -192,8 +195,8 @@ def _duration(document: bytes) -> float:
 
 
 def sample_times(duration: float, every: float = SAMPLE_EVERY) -> list[float]:
-    """Every ``every`` seconds of a reel of ``duration`` seconds, from 0, and its last frame's neighbourhood."""
-    return [i * every for i in range(int(duration / every) + 1) if i * every < duration]
+    """Every ``every`` seconds of a reel of ``duration`` seconds, from 0, and its end: the frame a reel closes on."""
+    return [*(i * every for i in range(int(duration / every) + 1) if i * every < duration - _LAST), duration - _LAST]
 
 
 def _seen(frame: Frame, index: int, drawn: Mapping[str, Drawing]) -> bool:
