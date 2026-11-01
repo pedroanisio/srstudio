@@ -13,7 +13,6 @@ The first frame already moves: Juno is on her way down, and the thump lands befo
 """
 
 import os
-from dataclasses import replace
 
 from _common import project_root
 from instagram_posts import POSTS
@@ -106,29 +105,11 @@ def spans(role: str, a: float = 0.0, b: float = 1e6) -> list[tuple[float, float]
 
 
 def quiet(cues, lines, end=DURATION):
-    """``cues`` that talk on ``lines`` and go back to their own mouth the moment a line stops."""
-    later = []
-    for at in sorted(x for span in lines for x in span):
-        held = [c for c in cues if c.time <= at][-1]
-        if held.time != at:
-            later.append(replace(held, time=at, ease=0.0, lift=0.0))
-    return blob.speaking([*cues, *later], lines, end, FPS)
+    return blob.quieted(cues, lines, end, FPS)
 
 
-def walking(points, start, stop, *, step=0.22, flip=False, make=cue, **kw):
-    """Cues that walk along ``points`` between ``start`` and ``stop``, a stride every ``step`` seconds."""
-    n = max(2, int((stop - start) / step))
-    legs = len(points) - 1
-    out = []
-    for k in range(1, n + 1):
-        u = k / n * legs
-        leg = min(int(u), legs - 1)
-        a, b, v = points[leg], points[leg + 1], u - leg
-        spot = (a[0] + (b[0] - a[0]) * v, a[1] + (b[1] - a[1]) * v)
-        out.append(
-            make(start + (stop - start) * k / n, "walk-a" if k % 2 else "walk-b", spot, flip=flip, ease=step, **kw)
-        )
-    return out
+def walking(points, start, stop, **kw):
+    return blob.walking(points, start, stop, scale=SCALE, **kw)
 
 
 juno = quiet(
