@@ -8,7 +8,8 @@ never reused once it is on the feed, because a gap there costs less than two ree
 that was never delivered is not a used number, and :func:`release_claim` gives it back (ADR 0080).
 
 A claim can also name the ``brief`` the reel was made to, which the posting job reads beside its number (ADR 0080),
-and the ``post_by`` day a timely reel is due, which sends it ahead of the number order.
+the ``post_by`` day a timely reel is due, which sends it ahead of the number order, and the ``not_before`` day it may
+first post.
 
 The ledger is a file under ``generated/``: JSON of a fixed schema, read strictly, written whole under a lock.
 """
@@ -45,12 +46,13 @@ __all__ = [
 ]
 
 FILE = "numbers.json"
-SCHEMA = "1.2.0"  # 1.1.0 added a reel's optional brief, 1.2.0 its optional post_by
-_READS = ("1.0.0", "1.1.0", SCHEMA)
+SCHEMA = "1.3.0"  # 1.1.0 added a reel's optional brief, 1.2.0 its optional post_by, 1.3.0 its optional not_before
+_READS = ("1.0.0", "1.1.0", "1.2.0", SCHEMA)
 _LOCK = ".numbers.lock"
 _SERIES = re.compile(r"[A-Z][a-z]+")  # one capitalised word, as a cover names it
 _BRIEF = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")  # lower-case words joined by hyphens, as send-v1
 _DAY = re.compile(r"\d{4}-\d{2}-\d{2}")  # date.fromisoformat alone also reads 20261102
+_OPTIONAL = frozenset({"series", "series_number", "brief", "post_by", "not_before"})
 
 
 class NumberError(SrstudioError, ValueError):
@@ -60,25 +62,28 @@ class NumberError(SrstudioError, ValueError):
 @dataclass(frozen=True)
 class Claim:
     """The number reel ``slug`` holds on the account, its place in ``series`` when it has one, the ``brief`` it was
-    made to when it names one, and the ``post_by`` day it is due when it is timely."""
+    made to when it names one, the ``post_by`` day it is due when it is timely, and the ``not_before`` day it may first
+    post."""
 
     number: int
     series: str = ""
     series_number: int = 0
     brief: str = ""
     post_by: str = ""
+    not_before: str = ""
 
 
 class _Brief(TypedDict, total=False):
     brief: str
     post_by: str
+    not_before: str
 
 
 class EpisodeDocument(_Brief):
     """``episode.json``, beside a numbered video: what the posting job reads, the three required fields on every reel.
     ``series`` is the series in lower case, empty for a reel in no series, whose ``series_number`` is 0. ``brief`` is
-    there only when the reel names one, and ``post_by`` only on a timely reel, so a reel without them keeps the document
-    it always had."""
+    there only when the reel names one, and ``post_by`` and ``not_before`` only on a timely reel, so a reel without them
+    keeps the document it always had."""
 
     number: int
     series: str
@@ -91,14 +96,19 @@ def _check_brief(brief: str) -> str:
     return brief
 
 
-def _check_post_by(day: str) -> str:
+def _check_day(name: str, day: str) -> str:
     try:
         if not _DAY.fullmatch(day):
             raise ValueError
         date.fromisoformat(day)
     except ValueError:
-        raise NumberError(f"post_by {day!r} must be a day, as 2026-11-02") from None
+        raise NumberError(f"{name} {day!r} must be a day, as 2026-11-02") from None
     return day
+
+
+def _check_window(post_by: str, not_before: str) -> None:
+    if post_by and not_before and not_before > post_by:
+        raise NumberError(f"not_before {not_before} falls after post_by {post_by}")
 
 
 def episode_document(claim: Claim) -> EpisodeDocument:
@@ -120,7 +130,10 @@ def episode_document(claim: Claim) -> EpisodeDocument:
     if claim.brief:
         document["brief"] = _check_brief(claim.brief)
     if claim.post_by:
-        document["post_by"] = _check_post_by(claim.post_by)
+        document["post_by"] = _check_day("post_by", claim.post_by)
+    if claim.not_before:
+        document["not_before"] = _check_day("not_before", claim.not_before)
+    _check_window(claim.post_by, claim.not_before)
     return document
 
 
@@ -182,8 +195,16 @@ def _fields(value: Any, where: str, required: set[str], optional: frozenset[str]
     return value
 
 
+def _day_field(slug: str, row: Mapping[str, Any], name: str) -> str:
+    if name not in row:
+        return ""
+    if not isinstance(row[name], str):
+        raise NumberError(f"reel {slug}: {name} {row[name]!r} is not text")
+    return _check_day(name, row[name])
+
+
 def _claim(slug: str, value: Any) -> Claim:
-    row = _fields(value, f"reel {slug}", {"number"}, frozenset({"series", "series_number", "brief", "post_by"}))
+    row = _fields(value, f"reel {slug}", {"number"}, _OPTIONAL)
     series, place = row.get("series", ""), row.get("series_number", 0)
     if not isinstance(series, str) or bool(series) != (place != 0):
         raise NumberError(f"reel {slug}: series {series!r} and series_number {place!r} go together")
@@ -192,13 +213,10 @@ def _claim(slug: str, value: Any) -> Claim:
         if not isinstance(row["brief"], str):
             raise NumberError(f"reel {slug}: brief {row['brief']!r} is not text")
         brief = _check_brief(row["brief"])
-    post_by = ""
-    if "post_by" in row:
-        if not isinstance(row["post_by"], str):
-            raise NumberError(f"reel {slug}: post_by {row['post_by']!r} is not text")
-        post_by = _check_post_by(row["post_by"])
+    post_by, not_before = _day_field(slug, row, "post_by"), _day_field(slug, row, "not_before")
+    _check_window(post_by, not_before)
     number = _whole(row["number"], f"reel {slug}'s number", 1)
-    return Claim(number, series, _whole(place, f"reel {slug}'s place", 0), brief, post_by)
+    return Claim(number, series, _whole(place, f"reel {slug}'s place", 0), brief, post_by, not_before)
 
 
 def read(path: Path) -> Ledger:
@@ -230,6 +248,7 @@ def _write(path: Path, ledger: Ledger) -> None:
             **({"series": c.series, "series_number": c.series_number} if c.series else {}),
             **({"brief": c.brief} if c.brief else {}),
             **({"post_by": c.post_by} if c.post_by else {}),
+            **({"not_before": c.not_before} if c.not_before else {}),
         }
     text = json.dumps({"schema": SCHEMA, "base": ledger.base, "series": dict(ledger.series), "reels": rows}, indent=2)
     done, name = tempfile.mkstemp(prefix=f".{FILE}-", dir=path.parent)  # mode 600
@@ -266,15 +285,19 @@ def set_base(path: Path, base: int, series: str = "") -> Ledger:
         return new
 
 
-def claim(path: Path, slug: str, series: str = "", brief: str = "", post_by: str = "") -> Claim:
+def claim(path: Path, slug: str, series: str = "", brief: str = "", post_by: str = "", not_before: str = "") -> Claim:
     """The number of reel ``slug``, taken the first time and the same one every time after. Asking for another series
     than the one claimed is refused: the first would stay on its render. So is another ``brief``; asked with none, a
-    claim answers with the one it holds. ``post_by`` sets the day a timely reel is due, on a new claim or a held one."""
+    claim answers with the one it holds. ``post_by`` sets the day a timely reel is due and ``not_before`` the first day
+    it may post, on a new claim or a held one, and the second may not fall after the first."""
     path = Path(path)
     if brief:
         _check_brief(brief)
     if post_by:
-        _check_post_by(post_by)
+        _check_day("post_by", post_by)
+    if not_before:
+        _check_day("not_before", not_before)
+    _check_window(post_by, not_before)
     with _locked(path) as ledger:
         held = ledger.reels.get(slug)
         if held is not None:
@@ -282,12 +305,13 @@ def claim(path: Path, slug: str, series: str = "", brief: str = "", post_by: str
                 raise NumberError(f"{slug} holds #{held.number} in series {held.series!r}, not {series!r}")
             if brief and held.brief != brief:
                 raise NumberError(f"{slug} holds #{held.number} on brief {held.brief!r}, not {brief!r}")
-            if not post_by or held.post_by == post_by:
+            dated = replace(held, post_by=post_by or held.post_by, not_before=not_before or held.not_before)
+            _check_window(dated.post_by, dated.not_before)
+            if dated == held:
                 return held
-            dated = replace(held, post_by=post_by)
             _write(path, replace(ledger, reels={**ledger.reels, slug: dated}))
             return dated
-        new = Claim(ledger.next_number(), series, ledger.next_in(series) if series else 0, brief, post_by)
+        new = Claim(ledger.next_number(), series, ledger.next_in(series) if series else 0, brief, post_by, not_before)
         _write(path, replace(ledger, reels={**ledger.reels, slug: new}))
         return new
 

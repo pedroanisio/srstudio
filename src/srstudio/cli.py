@@ -146,6 +146,7 @@ def main(argv=None):
     number.add_argument("--series", default="", help="the series, as Saga")
     number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
     number.add_argument("--post-by", default="", help="claim: the day a timely reel is due, as 2026-11-02")
+    number.add_argument("--not-before", default="", help="claim: the first day a timely reel may post, as 2026-11-20")
     number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
@@ -730,7 +731,9 @@ def _ledger_default() -> Path:
 
 def _claimed(slug: str, claim: show_numbers.Claim) -> str:
     series = f" {claim.series} #{claim.series_number}" if claim.series else ""
-    return f"{slug} #{claim.number}{series}" + "".join(f" {tag}" for tag in (claim.brief, claim.post_by) if tag)
+    return f"{slug} #{claim.number}{series}" + "".join(
+        f" {tag}" for tag in (claim.brief, claim.post_by, claim.not_before) if tag
+    )
 
 
 def _number(args: argparse.Namespace) -> int:
@@ -742,9 +745,8 @@ def _number(args: argparse.Namespace) -> int:
         elif args.action == "claim":
             if not args.value:
                 raise show_numbers.NumberError("claim takes the reel's slug")
-            print(
-                _claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by))
-            )
+            held = show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by, args.not_before)
+            print(_claimed(args.value, held))
             return 0
         elif args.action == "release":
             if not args.value:
