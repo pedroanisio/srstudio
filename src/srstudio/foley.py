@@ -40,6 +40,7 @@ __all__ = [
     "SCRAPE",
     "SWISH",
     "DING",
+    "RING",
     "THUD",
     "RUMBLE",
     "ROAD",
@@ -322,6 +323,8 @@ Glide = tuple[float, float, float]  # (start Hz, end Hz, seconds): one note that
 STING: tuple[Glide, ...] = ((330.0, 262.0, 0.32), (262.0, 196.0, 0.42))  # the "wah-wah": two sagging notes
 CHIME: tuple[Glide, ...] = ((784.0, 784.0, 0.12), (1047.0, 1047.0, 0.22))  # a call's two-note chime
 DING: tuple[Glide, ...] = ((1319.0, 1319.0, 0.07), (1760.0, 1760.0, 0.2))  # a phone's notification
+# one ring of a desk phone: two close notes swapping fast, the trill a real bell makes
+RING: tuple[Glide, ...] = tuple((1175.0 if i % 2 else 988.0,) * 2 + (0.05,) for i in range(18))
 
 
 def tones(

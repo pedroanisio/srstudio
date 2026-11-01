@@ -78,3 +78,14 @@ def test_the_chat_needs_all_three_lines():
         stick_home.reply(cv, cv.comp, name="Him", sent="", answer="who is this")
     stick_home.reply(cv, cv.comp, name="Him", sent="hi", answer="who is this")
     assert list(xml(cv).iter("text")) or list(xml(cv).iter("textLayer")) or list(xml(cv).iter("layer"))
+
+
+def test_a_reel_can_place_the_kitchens_marks_itself():
+    with_marks, without = canvas(signed=True), canvas(signed=True)
+    stick_home.kitchen(with_marks, with_marks.comp)
+    stick_home.kitchen(without, without.comp, marks=False)
+    marks = [
+        [g.get("id") for g in xml(cv).iter("group") if (g.get("id") or "").startswith("sig-")]
+        for cv in (with_marks, without)
+    ]
+    assert len(marks[0]) == 2 and marks[1] == []

@@ -58,3 +58,14 @@ def test_balance_off_is_the_greedy_default():
     a = stick.word_cues([PLANE], min_seconds=1.0, linger=0.9, width=chars, max_width=640, borrow=True)
     b = stick.word_cues([PLANE], min_seconds=1.0, linger=0.9, width=chars, max_width=640, borrow=True, balance=False)
     assert a == b
+
+
+def test_a_balanced_split_can_refuse_to_end_a_sentence_on_a_lone_word():
+    spoken = "I was up at three with him".split()
+    late = take(0.0, 3.0, [(w, 0.2 * i, 0.2 * i + 0.1) for i, w in enumerate(spoken[:-1])] + [("him", 1.25, 1.4)])
+    kept = stick.word_cues([late], min_seconds=0.85, linger=0.9, width=chars, max_width=880, balance=True)
+    assert [c.text for c in kept] == ["I was up at three with", "him"]
+    joined = stick.word_cues(
+        [late], min_seconds=0.85, linger=0.9, width=chars, max_width=880, balance=True, alone=False
+    )
+    assert [c.text for c in joined] == ["I was up at three", "with him"]

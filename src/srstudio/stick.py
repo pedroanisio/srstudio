@@ -90,8 +90,10 @@ __all__ = [
     "STANDING",
     "check_keys",
     "rig",
+    "between",
     "camera",
     "card",
+    "dolly",
     "Tile",
     "Mail",
     "SPEAKING",
@@ -673,6 +675,7 @@ def word_cues(
     borrow: bool = False,
     tail: bool = False,
     balance: bool = False,
+    alone: bool = True,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -687,7 +690,8 @@ def word_cues(
     ``tail``, a take's last cue still shorter than ``min_seconds`` joins the cue before it when both fit
     ``max_width`` together, or else takes that cue's last words until it is long enough, as far as it fits. With
     ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
-    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie."""
+    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
+    ``alone=False`` a balanced split takes the fewest one-word cues first: a sentence does not end on an orphan."""
     if borrow and not min_seconds:
         raise StickDataError("borrow lengthens cues shorter than min_seconds: give min_seconds")
     if not (checks.number(size) and size > 0):
@@ -708,7 +712,9 @@ def word_cues(
     for take in takes:
         words = [w for w in (take.words or []) if w["text"].strip(PUNCTUATION)]
         groups: list[list[dict]] = (
-            _balanced(words, take.end - take.start, linger, width, max_width) if balance and width is not None else []
+            _balanced(words, take.end - take.start, linger, width, max_width, alone)
+            if balance and width is not None
+            else []
         )
         i = len(words) if groups else 0  # balanced: every word is already placed
         while i < len(words):  # every pass takes at least one word: bounded by the word count
@@ -758,21 +764,28 @@ def word_cues(
 
 
 def _balanced(
-    words: Sequence[dict], length: float, linger: float, width: Callable[[str], float], max_width: float
+    words: Sequence[dict],
+    length: float,
+    linger: float,
+    width: Callable[[str], float],
+    max_width: float,
+    alone: bool = True,
 ) -> list[list[dict]]:
     """The split of a take's ``words`` into cues whose shortest lasts longest (each cue runs to the next one's first
     word, the last to its last word plus ``linger``, within the take's ``length``), every cue but a lone word within
-    ``max_width``; on a tie, the fewest cues. Dynamic programming over the split points: n² candidate cues."""
+    ``max_width``; on a tie, the fewest cues. With ``alone=False`` the fewest one-word cues comes before both. Dynamic
+    programming over the split points: n² candidate cues."""
     n = len(words)
-    best: list[tuple[float, int, int]] = [(math.inf, 0, n)] * (n + 1)  # (shortest, -cues, next split) from i
+    best: list[tuple[float, int, int, int]] = [(math.inf, 0, n, 0)] * (n + 1)  # (shortest, -cues, next split, lone)
     for i in range(n - 1, -1, -1):
         options = []
         for j in range(i + 1, n + 1):
             if j - i > 1 and width(_spoken(words[i:j])) > max_width:
                 break  # wider only grows with more words
             end = words[j]["start"] if j < n else min(length, words[-1]["end"] + linger)
-            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j))
-        best[i] = max(options, key=lambda o: (round(o[0], 6), o[1]))
+            lone = best[j][3] + (0 if alone or j - i > 1 else 1)
+            options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j, lone))
+        best[i] = max(options, key=lambda o: (-o[3], round(o[0], 6), o[1]))
     groups, i = [], 0
     while i < n:  # every pass moves past at least one word: bounded by the word count
         j = best[i][2]
@@ -852,7 +865,9 @@ def _scrim(cv: Canvas, parent, cues: Sequence[Line], y: float, peak: float = SCR
 
 # -- the rig: a drawn, posable figure for new episodes ------------------------------------------------------
 Point = tuple[float, float]
-EYES = ("open", "wide", "half", "closed", "happy")
+Framing = tuple[Point, float, Point]  # focus, zoom, where the focus lands: what a camera is told
+EYES = ("open", "wide", "half", "closed", "happy", "peek", "peek-back")
+PEEKS = {"peek": ("closed", "open"), "peek-back": ("open", "closed")}  # the eyes at -x and at +x
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
 HEAD_R = 92
@@ -897,13 +912,15 @@ STRAND_HAIR, FILLED_HAIR = ("cowlick", "spiky"), ("side-part",)  # the bun sits 
 @dataclass(frozen=True)
 class Look:
     """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
-    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap)."""
+    apron colour (``None``: no apron; a shop's uniform), a cap colour (``None``: bareheaded; a pilot's cap) and a
+    sun hat colour (``None``: bareheaded; a wide straw hat over the hair, a day at the beach)."""
 
     hair: str = "cowlick"
     glasses: bool = False
     tie: str | None = None
     apron: str | None = None
     cap: str | None = None
+    sunhat: str | None = None
 
 
 PLAIN = Look()  # Dev's look: the cowlick, no glasses, no tie
@@ -921,6 +938,8 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"apron must be a #rrggbb colour or None, got {look.apron!r}")
     if look.cap is not None and not COLOUR.match(look.cap):
         raise StickDataError(f"cap must be a #rrggbb colour or None, got {look.cap!r}")
+    if look.sunhat is not None and not COLOUR.match(look.sunhat):
+        raise StickDataError(f"sunhat must be a #rrggbb colour or None, got {look.sunhat!r}")
 
 
 @dataclass(frozen=True)
@@ -1075,9 +1094,12 @@ def _head(cv: Canvas, parent, look: Look, r: float = HEAD_R) -> None:
         shape(cv, parent, HAIR[look.hair], sw=6, stroke=cv.ink)
     if look.cap is not None:
         _cap(cv, parent, look.cap)
+    if look.sunhat is not None:
+        _sunhat(cv, parent, look.sunhat)
 
 
 CAP_BAND, CAP_BADGE = "#111111", "#e3b23c"
+SUNHAT_BAND = "#c0453b"
 
 
 def _cap(cv: Canvas, parent, colour: str) -> None:
@@ -1087,6 +1109,13 @@ def _cap(cv: Canvas, parent, colour: str) -> None:
     shape(cv, parent, "M -92 -60 Q 0 -74 98 -60 L 96 -40 Q 0 -54 -90 -42 Z", CAP_BAND, 4, stroke=cv.ink)
     shape(cv, parent, "M 22 -44 Q 96 -50 138 -30 Q 84 -22 22 -32 Z", CAP_BAND, 4, stroke=cv.ink)
     oval(cv, parent, -6, -110, 26, 20, CAP_BADGE)
+
+
+def _sunhat(cv: Canvas, parent, colour: str) -> None:
+    """A wide sun hat on a head of radius :data:`HEAD_R`: the crown, a band and a brim that overhangs the head."""
+    shape(cv, parent, "M -160 -56 Q 0 -112 160 -56 Q 0 -30 -160 -56 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -74 Q -92 -146 0 -148 Q 92 -146 84 -74 Q 0 -94 -84 -74 Z", colour, 6, stroke=cv.ink)
+    shape(cv, parent, "M -84 -76 Q 0 -96 84 -76 L 86 -96 Q 0 -116 -86 -96 Z", SUNHAT_BAND, 4, stroke=cv.ink)
 
 
 def _glasses(cv: Canvas, parent) -> None:
@@ -1116,17 +1145,21 @@ def _crescent(r: float) -> str:
 
 
 def _eyes(cv: Canvas, parent, face: Face) -> None:
+    """The two eyes. ``peek`` keeps the one at -x shut and opens the one at +x: the one a figure, flipped or not, turns
+    toward whoever it faces. ``peek-back`` is the other way round, for a figure seated facing the camera with the one
+    it is checking on at its left, as a driver is."""
     lx, ly = face.look
-    for ex in (-30, 30):
+    for side, ex in enumerate((-30, 30)):
         e = _group(cv, parent, x=ex, y=-12)
-        if face.eyes in ("closed", "happy"):
-            d = "M -15 0 Q 0 9 15 0" if face.eyes == "closed" else "M -15 5 Q 0 -10 15 5"
+        state = PEEKS[face.eyes][side] if face.eyes in PEEKS else face.eyes
+        if state in ("closed", "happy"):
+            d = "M -15 0 Q 0 9 15 0" if state == "closed" else "M -15 5 Q 0 -10 15 5"
             shape(cv, e, d, sw=5, stroke=cv.ink)
             continue
-        w, h, pupil = (22, 26, 7) if face.eyes == "wide" else (17, 20, 9)
+        w, h, pupil = (22, 26, 7) if state == "wide" else (17, 20, 9)
         cv.ellipse(e, -w, -h, 2 * w, 2 * h, cv.white, stroke=cv.ink, sw=4)
         oval(cv, e, lx * (w - pupil - 3) - pupil, ly * (h - pupil - 3) - pupil, 2 * pupil, 2 * pupil, cv.ink)
-        if face.eyes == "half":
+        if state == "half":
             shape(cv, e, f"M {-w - 2} {-h - 2} L {w + 2} {-h - 2} L {w + 2} -2 L {-w - 2} -2 Z", SKIN)
             shape(cv, e, f"M {-w} -2 L {w} -2", sw=4, stroke=cv.ink)
 
@@ -1289,6 +1322,46 @@ def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float =
     if push:
         for prop, a, b in (("scaleX", 1, zoom), ("scaleY", 1, zoom), ("x", fx, to[0]), ("y", fy, to[1])):
             cv.keys(g, prop, [(0, a), (push, b)], kind="sine-in-out")
+    return g
+
+
+def _framing(frame: Framing, what: str) -> tuple[float, float, float, float, float]:
+    """``frame`` as numbers, refused unless it is a real framing."""
+    try:
+        (fx, fy), zoom, (tx, ty) = frame
+    except (TypeError, ValueError):
+        raise StickDataError(f"{what} is (focus, zoom, to), got {frame!r}") from None
+    numbers = (fx, fy, zoom, tx, ty)
+    if not (all(_is_number(n) for n in numbers) and zoom > 0):
+        raise StickDataError(f"{what} needs finite numbers and a positive zoom, got {frame!r}")
+    return numbers
+
+
+def between(a: Framing, b: Framing, at: float) -> Framing:
+    """The framing ``at`` of the way (0..1) from ``a`` to ``b``, eased like :func:`dolly`, each focus and landing point
+    moving straight: a long move crossing several shots is one :func:`dolly` per shot between two of these."""
+    if not (_is_number(at) and 0 <= at <= 1):
+        raise StickDataError(f"a move's point is 0 to 1, got {at!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    u = (1 - math.cos(math.pi * at)) / 2
+    mix = lambda p, q: p + (q - p) * u  # noqa: E731
+    return (mix(fx, fx2), mix(fy, fy2)), mix(zoom, zoom2), (mix(tx, tx2), mix(ty, ty2))
+
+
+def dolly(cv: Canvas, parent, a: Framing, b: Framing, seconds: float, *, start: float = 0.0, kind: str = "sine-in-out"):
+    """A group that holds framing ``a`` until ``start``, moves to ``b`` over ``seconds`` and stays there. A framing is
+    (focus, zoom, to), as :func:`camera` takes them, and either way round: in to a face, or back out to show what the
+    frame was hiding, down to a zoom under 1 on a set wider than the frame."""
+    if not (_is_number(seconds) and seconds > 0 and _is_number(start) and start >= 0):
+        raise StickDataError(f"a move starts at 0 or later and lasts some seconds, got {start!r}, {seconds!r}")
+    fx, fy, zoom, tx, ty = _framing(a, "the first framing")
+    fx2, fy2, zoom2, tx2, ty2 = _framing(b, "the second framing")
+    # the anchor stays on the first focus, so the second framing is where that point must land for it to hold
+    x2, y2 = tx2 + (fx - fx2) * zoom2, ty2 + (fy - fy2) * zoom2
+    g = parent.add_group(id=f"setup-{cv.uid('dolly')}", anchorX=fx, anchorY=fy, x=tx, y=ty, scaleX=zoom, scaleY=zoom)
+    for prop, p, q in (("scaleX", zoom, zoom2), ("scaleY", zoom, zoom2), ("x", tx, x2), ("y", ty, y2)):
+        cv.keys(g, prop, [*([(0, p)] if start else []), (start, p), (start + seconds, q)], kind=kind)
     return g
 
 
