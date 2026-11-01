@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -33,10 +34,19 @@ def test_the_first_line_lands_by_half_a_second(audio):
 def test_both_held_brackets_stay_silent_for_their_length(audio):
     lengths = [1.0] * len(audio.SCRIPT)
     starts = audio.schedule(lengths, {}).lines
-    assert starts[4] - (starts[3] + 1.0) == pytest.approx(1.3)  # her thumb stops
+    assert starts[4] - (starts[3] + 1.0) == pytest.approx(audio.HOLD)  # her thumb stops
     assert starts[7] - (starts[6] + 1.0) >= 1.3 - 1e-9  # it rings
 
 
 def test_every_caption_holds_its_cue_on_a_quick_take(audio):
     starts = audio.schedule([0.3] * len(audio.SCRIPT), {}).lines
     assert all(b - a >= 0.92 - 1e-9 for a, b in zip(starts, starts[1:], strict=False))
+
+
+def test_his_caption_is_down_before_the_list_cuts_in_and_the_list_still_reads(audio):
+    assert audio.CAPTION_TAIL >= 0.3
+    phrases = [{"start": 0.0, "end": 1.0}] * 3 + [{"start": 6.0, "end": 7.5}] + [{"start": 9.0, "end": 10.0}] * 3
+    timing = SimpleNamespace(phrases=phrases)
+    assert audio.extra(timing)["stop_start"] == pytest.approx(7.5 + audio.CAPTION_TAIL)
+    shown = audio.HOLD - audio.CAPTION_TAIL - audio.LOOK_UP
+    assert shown >= 0.92 - 1e-9  # the row is read, and the check's floor is 0.84 s
