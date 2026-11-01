@@ -23,7 +23,16 @@ RELEASE = Release(
     ),
     tags=Tags("relationships", "protagonist", "embarrassment", test="sp-speakers", arm="b"),
     style="Toon",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-bear": 2,
+        "toon-captions": 1,
+        "toon-finger": 1,
+        "toon-key-line": 1,
+        "toon-rabbit": 2,
+    },
     comedy=Scores(author=17, reviewer=18),
     cover=True,
 )
