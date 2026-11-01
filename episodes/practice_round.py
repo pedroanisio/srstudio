@@ -99,20 +99,7 @@ def noor(parent, keys, end: float, take=None) -> None:
     and the pen in the far one."""
     place = dict(poses=POSES, at=RIGHT, flip=True)
     stick.rig(cv, parent, keys, end, look=NOOR_LOOK, mouth=SPEECH_MOUTH, **speaks(take, "noor"), **place)
-    hand = stick.held(cv, parent, keys, end, **place)
-    spans = [(k.start, keys[i + 1].start if i + 1 < len(keys) else end) for i, k in enumerate(keys)]
-    shut = [span for span, k in zip(spans, keys, strict=True) if k.pose in ("guard", "up")]
-    edge, page = cv.group(hand, cv.uid("board-edge")), cv.group(hand, cv.uid("board-page"))
-    cv.gate(edge, shut or [(0, 0.0)])
-    cv.gate(page, [span for span, k in zip(spans, keys, strict=True) if k.pose not in ("guard", "up")] or [(0, 0.0)])
-    st.clipboard(cv, edge)
-    st.clipboard(cv, page, quarter=True)
-    pen = cv.group(stick.held(cv, parent, keys, end, far=True, **place), cv.uid("pen"))
-    if len({PEN_TILT.get(k.pose, 0.0) for k in keys}) > 1:
-        cv.keys(pen, "rotation", [(k.start, PEN_TILT.get(k.pose, 0.0)) for k in keys])
-    else:
-        pen.rotation = PEN_TILT.get(keys[0].pose, 0.0)
-    st.pen(cv, pen)
+    st.board_in_hand(cv, parent, keys, end, tilt=PEN_TILT, **place)
 
 
 def dev(parent, keys, end: float, take=None) -> None:
