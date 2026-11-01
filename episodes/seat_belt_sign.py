@@ -31,6 +31,7 @@ from seat_belt_sign_audio import (
     SHIFT,
     SHOCK,
     SMUG,
+    STILL,
     STRANGERS,
     UPWARD,
 )
@@ -135,14 +136,14 @@ def stage(take) -> None:
         stick.card(cv, g, "16 minutes", size=78)
     elif take.shot == "turn":
         stick_odds.aisle(cv, g)
-        stick_odds.queue(cv, g, end, turn=end * 0.4)
+        stick_odds.queue(cv, g, end, turn=end * 0.4, legs=True)
     elif take.shot == "noor":
         row(g, "31")
         if take.is_effect:
             keys = [K(0, "in-seat", READING), K(0.5, "stand", PROUD), K(0.9, "stretch", PROUD), K(1.4, "carry", DRY)]
         else:
             keys = [K(0, "carry", DRY)]
-        stick_airport.carry_on(cv, g, 690.0, DROP, tag=None)
+        stick_airport.carry_on(cv, g, 690.0, DROP, tag=None, hanging=True)
         figure(g, keys, end, NOOR, SEAT_X, take, who="noor", flip=True)
         if take.is_effect:
             cv.gate(stick_odds.book(cv, g, *OPEN_AT), [(0, 0.2)])
@@ -155,7 +156,7 @@ for take in t.takes:
     stage(take)
 
 hook = stick.card(cv, cv.comp, HOOK, size=78)
-cv.gate(hook, [(0, t.takes[2].start)])
+cv.gate(hook, [(0, STILL)])  # it stops where the same words start as spoken words
 spoken = stick_reel.words(ep, t.takes)
 ep.audio(take=stick_reel.placing({}), loudness="-14")
 stick_reel.close(ep, POSTS["seat-belt-sign"], hook, spoken)

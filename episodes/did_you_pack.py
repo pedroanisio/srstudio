@@ -37,6 +37,7 @@ from did_you_pack_audio import (
     READING,
     SEAT_X,
     SIGN,
+    STILL,
     STREET_SCALE,
     STREET_Y,
     SURE,
@@ -115,7 +116,7 @@ def lane(parent, end: float, *, bag: float, keys, dev_keys, take=None) -> None:
     moving = cv.group(parent, cv.uid("bag"))
     if bag != BAG_X:
         cv.keys(moving, "x", [(0.0, bag - BAG_X), (end * 0.7, 0.0)], kind="linear")
-    stick_airport.carry_on(cv, moving, BAG_X, stick_odds.BELT_TOP, tag=None)
+    stick_airport.carry_on(cv, moving, BAG_X, stick_odds.BELT_TOP, tag=None, hanging=True)
 
 
 def stage(take) -> None:
@@ -135,7 +136,7 @@ def stage(take) -> None:
         figure(g, dev_keys, end, DEV, 300.0, take, who="dev", scale=STREET_SCALE, floor=STREET_Y)
         stick_odds.robe(cv, g, dev_keys, end, POSES, at=(300.0 - 540 * STREET_SCALE, STREET_Y - FLOOR * STREET_SCALE),
                         scale=STREET_SCALE, colour=COAT, belt="#4a3f33")  # fmt: skip
-        stick_airport.carry_on(cv, g, 610.0, STREET_Y, tag=None)
+        stick_airport.carry_on(cv, g, 610.0, STREET_Y, tag=None, hanging=True)
         figure(g, [K(0, "zip", SURE if take.is_effect else FIRM)], end, GRANDMA, 830.0, take, who="grandma", flip=True,
                scale=STREET_SCALE, floor=STREET_Y)  # fmt: skip
     elif take.shot == "belt":
@@ -147,8 +148,12 @@ def stage(take) -> None:
         lane(g, end, bag=BAG_X, keys=[K(0, "peer", DUTY)], dev_keys=[K(0, "stand", FEAR)], take=take)
     elif take.shot == "xray":
         stick_odds.xray(cv, g, end, XRAY)
+        signature.cactus(cv, g, 960, 1440, scale=0.42)  # no room in this shot: both marks stay on the screen
+        signature.code(cv, g, 40, 1885, 9, color="#7f9bb0")
     elif take.shot == "note":
         stick_odds.foil_note(cv, g, NOTE)
+        signature.cactus(cv, g, 900, 1268, scale=0.42)  # she signs her notes with it
+        signature.code(cv, g, 40, 1885, 9, color="#3d4650")
     elif take.shot == "wobble":
         checkpoint(g)
         if take.is_effect:
@@ -168,7 +173,7 @@ for take in t.takes:
     stage(take)
 
 hook = stick.card(cv, cv.comp, HOOK, size=78)
-cv.gate(hook, [(0, t.takes[2].start)])
+cv.gate(hook, [(0, STILL)])  # it stops where the same words start as spoken words
 spoken = stick_reel.words(ep, t.takes)
 ep.audio(take=stick_reel.placing({}), loudness="-14")
 stick_reel.close(ep, POSTS["did-you-pack"], hook, spoken)

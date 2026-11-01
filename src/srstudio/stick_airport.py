@@ -191,9 +191,12 @@ def podium(cv: Canvas, parent, *, gate: str = "B9", plate: bool = True):
 
 
 @register("prop", "stick-carry-on", tags=("airport", "luggage", "suitcase", "tag", "font"))
-def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
+def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4", hanging: bool = False):
     """A wheeled carry-on standing on ``x, y`` (the floor under its middle), its handle up and a luggage tag
-    lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip."""
+    lettered ``tag`` (1 to :data:`TAG_CHARS` characters; ``None``: left blank) hanging from the grip; ``hanging``
+    drops a blank tag straight down from its string, close to the handle, instead of the wide tag beside it."""
+    if hanging and tag is not None:
+        raise StickDataError("a hanging tag is blank")
     if tag is not None:
         cv.require_font("the luggage tag is set in it")
     if tag is not None and (not tag.strip() or len(tag) > TAG_CHARS):
@@ -208,6 +211,10 @@ def carry_on(cv: Canvas, parent, x, y, *, tag: str | None = "GROUP 4"):
         shape(s, g, f"M {gx} {y - 244} L {gx} {y - 40}", sw=4, stroke=CASE_DARK)
     for wx in (x - 56, x + 32):
         oval(s, g, wx, y - 26, 24, 24, s.ink)
+    if hanging:
+        shape(s, g, f"M {x + 30} {y - 440} Q {x + 58} {y - 430} {x + 62} {y - 396}", sw=4, stroke=s.ink)
+        box(s, g, x + 42, y - 396, 40, 86, TAG, 4, r=8)
+        return g
     shape(s, g, f"M {x + 30} {y - 440} Q {x + 60} {y - 420} {x + 74} {y - 380}", sw=4, stroke=s.ink)
     tag_x, tag_w = x + TAG_SPAN[0], TAG_SPAN[1] - TAG_SPAN[0]
     box(s, g, tag_x, y - 384, tag_w, 64, TAG, 4, r=10)

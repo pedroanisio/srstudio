@@ -92,6 +92,16 @@ def test_the_aisle_is_signed_like_any_location():
     assert cv._sig_ids["sig-cactus"] == 1 and cv._sig_ids["sig-code"] == 1
 
 
+def test_a_queue_stands_on_legs_only_when_a_shot_shows_them():
+    def drawn(**kw) -> str:
+        cv = canvas()
+        stick_odds.queue(cv, cv.comp, 2.0, turn=1.0, rows=2, **kw)
+        return cv.scene.to_bytes(layout="pretty").decode()
+
+    assert stick_odds.TROUSERS in drawn(legs=True)
+    assert stick_odds.TROUSERS not in drawn()
+
+
 def test_a_queue_turns_inside_its_shot_and_fits_the_aisle():
     cv = canvas()
     assert stick_odds.queue(cv, cv.comp, 2.0, turn=1.0, rows=3) is not None
