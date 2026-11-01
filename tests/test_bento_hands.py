@@ -1,4 +1,4 @@
-"""Bento's hands are a pair from version 2 (ADR 0097): each hand knows its arm, and the other arm's is its mirror.
+"""Bento's hands are a pair from version 2 (ADR 0104): each hand knows its arm, and the other arm's is its mirror.
 
 Which way a thumb points is read off the drawn layers, never off the flag that chose them.
 """
@@ -345,7 +345,7 @@ def test_the_catalog_titles_version_2():
 
 
 def test_the_adr_records_the_rule_and_that_it_is_accepted():
-    text = (ROOT / "docs/decisions/0097-bento-hands-are-a-pair.md").read_text(encoding="utf-8")
+    text = (ROOT / "docs/decisions/0104-bento-hands-are-a-pair.md").read_text(encoding="utf-8")
     assert "- Status: accepted" in text
     assert "toon-bento" in text and "generated-by:" in text
 

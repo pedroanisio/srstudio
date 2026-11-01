@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0094: A reel stopped before its first delivery is held
+# ADR 0101: A reel stopped before its first delivery is held
 
 - Status: accepted (2026-11-01)
 

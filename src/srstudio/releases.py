@@ -402,7 +402,7 @@ def grandfathered(folder: Path) -> frozenset[str]:
 
 def held(folder: Path, known: Mapping[str, Release]) -> dict[str, str]:
     """The ``HELD`` map of ``folder``'s ``_held`` module: each reel stopped before its first delivery, with the
-    reason and the ruling behind it (ADR 0094). A slug that is no release in ``known`` or a blank reason raises
+    reason and the ruling behind it (ADR 0101). A slug that is no release in ``known`` or a blank reason raises
     :class:`ReleaseError`."""
     folder = Path(folder).resolve()
     try:

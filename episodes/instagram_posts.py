@@ -81,7 +81,7 @@ RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file 
 STRICT = Path(__file__).resolve().parent / "strict"  # strict/<slug>.json: a reel's findings proven false (ADR 0078)
 BIBLE_DIR = Path(__file__).resolve().parent.parent / "bible"  # the cast bible a first delivery is checked against
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
-HELD = releases.held(Path(__file__).resolve().parent / "posts", RELEASES)  # stopped before a first delivery (ADR 0094)
+HELD = releases.held(Path(__file__).resolve().parent / "posts", RELEASES)  # stopped before a first delivery (ADR 0101)
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
@@ -185,7 +185,7 @@ def write_all(
     (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
     (ADR 0073), out of the show's look (ADR 0074), with a --strict finding not proven false (ADR 0078) or one the cast
     bible refuses (ADR 0069), is a :class:`DeliveryError` before anything is written. A video in the manifest is past
-    all of these: what was published stays as it went out. A reel on the hold list (ADR 0094) is passed over, and
+    all of these: what was published stays as it went out. A reel on the hold list (ADR 0101) is passed over, and
     naming one is a :class:`DeliveryError`."""
     stopped = {
         r.video_name: HELD[slug] for slug, r in RELEASES.items() if slug in HELD and r.video_name in (only or ())

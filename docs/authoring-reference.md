@@ -2401,7 +2401,7 @@ builder holds mood tilts; use `toon_head.figure` for a moving head plan. Bento's
 nonempty `limbs` replacement tracks are unsupported.
 
 `toon-bento@2`, the version new reels draw, gives him a pair of hands
-([docs/decisions/0097-bento-hands-are-a-pair.md](decisions/0097-bento-hands-are-a-pair.md)). A `Gesture` holds
+([docs/decisions/0104-bento-hands-are-a-pair.md](decisions/0104-bento-hands-are-a-pair.md)). A `Gesture` holds
 `toon_bento.Paw` records, each naming its `Arm` and `Facing`; a paw on the other arm's sleeve, or two on one arm, is
 refused when the gesture is built.
 
