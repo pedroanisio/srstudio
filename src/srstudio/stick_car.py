@@ -152,7 +152,9 @@ def _scenery(cv: Canvas, parent, end: float, scroll: Scroll, passing: Sequence[f
     ``passing``, and the glass's glare over it all, all of it ``defocus``-blurred when that is set."""
     g = _group(cv, parent)
     g.add_mask(type="path", path=GLASS)
-    focus = dict(effects=cv.effect(f"car-defocus-{defocus:g}", "blur", radius=defocus)) if defocus else {}
+    focus = (
+        dict(effects=cv.effect(f"car-defocus-{defocus:g}", "blur", radius=defocus), **look.sheet(cv)) if defocus else {}
+    )
     g, glass = _group(cv, g, **focus), g  # the country rides on the suspension inside the still window
     ride(cv, g, end, amplitude=3.0, phase=2.0)
 
@@ -165,7 +167,7 @@ def _scenery(cv: Canvas, parent, end: float, scroll: Scroll, passing: Sequence[f
         fraction = dict(LAYERS)[name]
         if fraction < 0.25:
             radius = round(4 - 10 * fraction)
-            node = _group(cv, g, effects=cv.effect(f"car-far-{radius}", "blur", radius=radius))
+            node = _group(cv, g, effects=cv.effect(f"car-far-{radius}", "blur", radius=radius), **look.sheet(cv))
         else:
             node = _group(cv, g, motionBlur="on", shutterAngle=270)
         _scroll(cv, node, end, travel * fraction)

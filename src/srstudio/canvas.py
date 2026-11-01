@@ -114,6 +114,7 @@ class Canvas:
         namer: Callable[[str], str] | None = None,
         local_time: bool = False,
         signature: Signature | None = None,
+        bleed: bool = False,
     ):
         self.scene = scene
         self.palette = palette
@@ -123,6 +124,7 @@ class Canvas:
         self.namer = namer
         self.local_time = local_time  # animations default to timeBase="local" (shot sequences)
         self.signature = signature  # None: an unsigned build (srstudio.signature draws nothing)
+        self.bleed = bleed  # far planes blurred past the frame's edge (srstudio.look.sheet); False as published
         self._sig_ids: dict[str, int] = {}
         self._assets = None
         self._paints = None
