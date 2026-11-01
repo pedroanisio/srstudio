@@ -1,19 +1,20 @@
 """It Autoplayed — the sketch as data: one person in every couple has watched ahead on the show you promised to watch
 together, and gives it away by reacting too soon.
 
-Mae and Bruno are on the sofa, two episodes in. He gasps before the door. He raises his hands late at the sting, comforts
-her before anything has happened, and tells her the dog is fine. There has been no dog. She clicks to the TV's own menu,
-and it convicts him.
+Mae and Bruno are on the sofa, two episodes in. He gasps before the door. He raises his hands late at the sting,
+comforts her before anything has happened, and tells her the dog is fine. There has been no dog. She clicks to the TV's
+own menu, and it convicts him.
 
 Two voices (ElevenLabs premade Sarah as Mae, Bill as Bruno). They face us, so the TV is on our side of the frame: the
-lounge's own TV is taken out of the room and its light falls on the shot (:func:`srstudio.toon_rooms.front_screen`), one
-cue per thing that happens on a show we never see. ``ROWS`` act them per beat; :func:`dress` draws the framings and the
-menu (:func:`srstudio.toon_everyday.tv_menu`), :func:`overlay` the bar and :func:`sounds` the room.
+lounge's own TV is taken out of the room and its light falls on the shot (:func:`srstudio.toon_rooms.front_screen`),
+one cue per thing that happens on a show we never see. ``ROWS`` act them per beat; :func:`dress` draws the framings and
+the menu (:func:`srstudio.toon_everyday.tv_menu`), :func:`overlay` the bar and :func:`sounds` the room.
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
+from math import ceil
 
 from srstudio import (
     foley,
@@ -70,7 +71,7 @@ MAE_CLOSE, BRUNO_CLOSE = (165.0, 880.0), (235.0, 880.0)
 FAR_BLUR = 5.0
 LIGHTS = {"lamp": ((0, "off"),)}
 FROM_MAE, FROM_BRUNO = (108.0, 760.0), (219.0, 772.0)  # the two-shot's shoulders that meet on the cushion
-WOW_HANDS = (((190.0, 765.0), (168.0, 640.0)), ((352.0, 765.0), (374.0, 640.0)))
+WOW_HANDS = (((222.0, 800.0), (168.0, 640.0)), ((322.0, 800.0), (374.0, 640.0)))
 WOW_LATE, WOW_DOWN = 0.5, 1.15  # seconds after the sting that his hands go up, and come down
 REMOTE_ROOT, REMOTE_HAND = (-14.0, 800.0), (36.0, 752.0)
 PAT_ROOT, PAT_DEG, PAT_LEN = (196.0, 760.0), 150.0, 120.0
@@ -145,6 +146,7 @@ END = 25.15
 SKETCH = Sketch(SLUG, TITLE, (MAE, BRUNO), LINES, BEATS, END, tail=0.15, bare=BARE)
 BREATH = foley.Burst(0.3, 2600.0, attack=0.14, decay=0.3)
 TICK = foley.Burst(0.05, 3200.0, attack=0.001, decay=0.2, tone_hz=1400.0, tone_end_hz=1400.0, tone=0.5)
+ROOM_AIR = foley.Burst(4.0, 240.0, attack=0.3, decay=8.0)  # the room once the TV stops: never digital silence
 NOTE_STING = foley.Burst(0.5, 260.0, attack=0.004, decay=0.55, tone_hz=196.0, tone_end_hz=165.0, tone=0.9)
 
 
@@ -182,7 +184,8 @@ def overlay(cv, parent, beats, end, measure) -> None:
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:
-    """His breath, the sting, the TV's hum until she pauses it, her clicks, the menu's tick."""
+    """His breath, the sting, the TV's hum until she pauses it, the room's air under the holds after, her clicks, the
+    menu's tick."""
     pause, menu = at(beats, "pause"), at(beats, "menu")
     click = round(pause + PAUSE_TAKES, 3)
     whole = int(click // foley.HUM.seconds)
@@ -192,6 +195,7 @@ def sounds(beats, end) -> tuple[Sound, ...]:
         Sound("sting", NOTE_STING, (at(beats, "sting"),), -12.0),
         Sound("hum", foley.HUM, tuple(k * foley.HUM.seconds for k in range(whole)), -32.0),
         Sound("hum-end", replace(foley.HUM, seconds=last, decay=0.1), (click - last,), -32.0),
+        Sound("room", ROOM_AIR, tuple(round(click + k * 3.6, 3) for k in range(ceil((end - click) / 3.6))), -34.0),
         Sound("click", foley.REMOTE_CLICK, (click, round(menu - 0.3, 3), round(menu - 0.12, 3)), -12.0),
         Sound("tick", TICK, (round(menu + 0.06, 3),), -20.0),
     )
@@ -219,10 +223,12 @@ def _two(shot) -> None:
     cv, app, beats = shot.cv, shot.app, shot.beats
     sting, hand, pause, menu = (at(beats, k) for k in ("sting", "hand", "pause", "menu"))
     mae = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=PAIR_SCALE, mirror=True)
-    if app.start <= sting < app.end:  # behind him, so a raised arm grows out of his shoulder
+    if app.start <= sting < app.end:  # behind him, so a raised arm grows out of him
         for root, target in WOW_HANDS:
-            toon_pair.reach(cv, shot.back, BRUNO_AT, target, BEAR_COAT, sting + WOW_LATE, sting + WOW_DOWN,
-                            scale=PAIR_SCALE, side="left" if root[0] < BRUNO_AT[0] else "right")  # fmt: skip
+            degrees, length = toon_pair.aim(root, target)
+            swing = [(sting + WOW_LATE, degrees + 40.0), (sting + WOW_LATE + 0.14, degrees)]
+            toon_bed.swung_arm(cv, shot.back, root, BEAR_COAT, swing, sting + WOW_LATE, sting + WOW_DOWN, length=length,
+                               width=toon_bed.ARM_WIDTH * PAIR_SCALE)  # fmt: skip
     bruno = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=PAIR_SCALE)
     if app.start <= 0.05 < app.end:
         _lifted(cv, bruno, BRUNO_AT, 0.05, FLINCH, 0.06, 0.2)
@@ -234,8 +240,8 @@ def _two(shot) -> None:
         toon_bed.swung_arm(cv, shot.back, FROM_BRUNO, BEAR_COAT, [(app.start + 0.2, 150.0), (app.start + 0.5, 176.0)],
                            app.start, app.end, length=50.0, width=34.0)  # fmt: skip
     if pause <= app.start:
-        toon_bed.swung_arm(cv, shot.back, REMOTE_ROOT, RABBIT_COAT, [(app.start, -38.0)], app.start, app.end, length=60.0,
-                           width=30.0)  # fmt: skip
+        toon_bed.swung_arm(cv, shot.back, REMOTE_ROOT, RABBIT_COAT, [(app.start, -38.0)], app.start, app.end,
+                           length=60.0, width=30.0)  # fmt: skip
         toon_everyday.remote(cv, shot.back, REMOTE_HAND, scale=0.42, tilt=14.0, id=cv.uid("remote"))
     toon_world.sofa(cv, shot.front, "rug")
 

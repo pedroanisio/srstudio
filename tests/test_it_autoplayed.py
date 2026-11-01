@@ -1,4 +1,4 @@
-"""It Autoplayed as data: the lines as decided, three real holds, the cut, the light's cues, the overlay, and the arm."""
+"""It Autoplayed as data: the lines as decided, three holds, the cut, the light's cues, the overlay, and the arm."""
 
 import sys
 from pathlib import Path
