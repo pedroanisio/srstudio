@@ -9246,10 +9246,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A meeting room with a solid wall for the shelf. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A meeting room with a solid wall for the shelf. First drawn for its-gone.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"Generic locations (rooms, shops, streets, workplaces) pass under it.\""
+          },
           "drawing": "66891ec954350c52e00e15fc3b5d8c1cd467effbf1289c13c004751bcdd0114e",
           "rig": null
         }

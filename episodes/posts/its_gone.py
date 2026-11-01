@@ -28,6 +28,7 @@ RELEASE = Release(
         "collage-arm": 1,
         "collage-gary": 1,
         "collage-living-room": 1,
+        "collage-meeting-room": 1,
         "collage-phone": 1,
         "collage-rosa": 1,
         "collage-router": 1,
