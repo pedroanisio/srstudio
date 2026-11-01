@@ -92,6 +92,7 @@ KNEE = (690.0, 1322.0)
 EAR = (-114.0, 6.0)  # the phone hand, in the rig's units
 HIP = (112.0, 318.0)  # Milo's free hand at rest, in the rig's units
 CHEST = (104.0, 196.0)  # and with a coffee in it
+HOLDS = (118.0, 192.0)  # his hand on the short arm of the shots that open with the coffee already held
 WHITE = "#F6F1E6"
 LEAN = 26.0  # his arm comes up from the lower left
 TILT = 48.0  # the Boss's arm comes in from the lower right; what it holds stays level
@@ -126,6 +127,16 @@ def on_the_phone(who, tag):
         cv, who.group, f"{tag}-phone-arm", (-72, 143), [(0.0, *EAR)], upper=96, fore=96, bend=1, skin=skin
     )
     cutout_locate.held_phone(cv, arm.grip, 8, -18, scale=0.6, id=f"{tag}-phone")
+
+
+def with_coffee(who, tag, size, track, shown, reach=96):
+    """His screen-right hand on its own arm, the cup held in front of it, so the hand shows behind the cup."""
+    arm = cutout_arm.arm(
+        cv, who.group, f"{tag}-coffee-arm", (73, 144), track, upper=reach, fore=reach, bend=1, skin=who.skin
+    )
+    cup = cv.group(arm.grip, f"{tag}-cup-in-hand", x=-26 / size)
+    cv.gate(cup, shown)
+    props.coffee_cup(cv, cup, 0, 0, 1 / size, shadow=False)
 
 
 def walks_in(node, x, y, start, end, start_x=-260.0):
@@ -164,30 +175,46 @@ def milo_cafe(g):
     size = MILO[2]
     catch = ((CUP_TO + 26 - MILO[0]) / size, (CUP_ROW + 6 - MILO[1]) / size)
     track = [(0.0, *HIP), (CAUGHT - 0.25, catch[0] - 6, catch[1] + 10), (CAUGHT, *catch), (CUP[1] - 0.1, *CHEST)]
-    arm = cutout_arm.arm(cv, who.group, "milo-catch", (73, 144), track, upper=96, fore=96, bend=1, skin=who.skin)
-    cup = cv.group(arm.grip, "cup-in-hand", x=-26 / size)
-    cv.gate(cup, [(CAUGHT, DURATION)])
-    props.coffee_cup(cv, cup, 0, 0, 1 / size)
+    with_coffee(who, "milo-cafe", size, track, [(CAUGHT, DURATION)])
 
 
 def ava_arm(g):
-    """In frame pixels, in front of the counter: the flick along the wood, then a salute."""
+    """In frame pixels, in front of the counter: the flick along the wood. An arm bends to one side of its own line, so
+    the salute is a second arm, its elbow out past her hair, swapped in on the cut back to the shot she is in."""
     shoulder = (AVA[0] - 66 * AVA[2], AVA[1] + 140 * AVA[2])
     rest = (CUP_FROM + 34, CUP_ROW + 4)
-    brow = (AVA[0] - 160, AVA[1] - 40)  # at her temple, the arm outside her face
-    salute = BACK[0] + 0.1
     track = [
         (0.0, *rest),
         (FLICK - 0.1, rest[0] + 22, rest[1]),
         (FLICK + 0.12, rest[0] - 50, rest[1]),
         (CAUGHT - 0.1, *rest),
-        (salute, *rest),
-        (salute + 0.2, *brow),
-        (salute + 0.75, *brow),
-        (salute + 1.05, *rest),
+    ]
+    flick = cv.group(g, "ava-flicks")
+    cv.gate(flick, [(0.0, BACK[0])])
+    cutout_arm.arm(
+        cv,
+        flick,
+        "ava-reach",
+        shoulder,
+        track,
+        upper=128,
+        fore=128,
+        bend=-1,
+        width=6.5,
+        hand=50,
+        skin=cast.Barista.skin,
+    )
+    salutes = cv.group(g, "ava-salutes")
+    cv.gate(salutes, [BACK])
+    brow = (AVA[0] - 180, AVA[1] - 48)
+    up = [
+        (BACK[0], brow[0] - 20, brow[1] + 110),
+        (BACK[0] + 0.22, *brow),
+        (BACK[1] - 0.4, *brow),
+        (BACK[1], brow[0] - 26, brow[1] - 10),
     ]
     cutout_arm.arm(
-        cv, g, "ava-reach", shoulder, track, upper=128, fore=128, bend=-1, width=6.5, hand=50, skin=cast.Barista.skin
+        cv, salutes, "ava-salute", shoulder, up, upper=160, fore=160, bend=1, width=6.5, hand=50, skin=cast.Barista.skin
     )
 
 
@@ -213,11 +240,12 @@ def milo_bench(g):
         mouth=ep.mouth("milo"),
         blinks=[(SITS, SITS + 0.14), (L[5].start, L[5].start + 0.14)],
         nods=[(0, 0), (PATS, 0), (PATS + 0.2, 7), (L[4].start, 7), (L[4].start + 0.3, 3)],
-        free_arms=("left",),
+        free_arms=("left", "right"),
     )
     cv.keys(who.eyes, "x", [(0, 0), (SITS, 0), (SITS + 0.1, -10)], hold=False)
     cv.keys(who.eyes, "y", [(0, 0), (PATS, 0), (PATS + 0.1, 8), (LEAVES + 0.3, 8), (LEAVES + 0.4, 0)], hold=False)
     on_the_phone(who, "milo-bench")
+    with_coffee(who, "milo-bench", MILO_SEATED[2], [(0.0, *HOLDS)], [PARK], reach=46)
 
 
 def stranger(g):
@@ -312,11 +340,12 @@ def milo_room(g):
         mouth=ep.mouth("milo"),
         blinks=[(STOPS + 0.3, STOPS + 0.44), (L[7].end, L[7].end + 0.14)],
         nods=[(0, 0), (STOPS, 0), (STOPS + 0.2, -3), (L[8].start, -3), (L[8].start + 0.2, 4), (L[8].end, 0)],
-        free_arms=("left",),
+        free_arms=("left", "right"),
     )
     cv.keys(who.eyes, "x", [(0, 12)], hold=False)
     walks_in(node, MILO_ROOM[0], MILO_ROOM[1], ROOM[0], STOPS)
     on_the_phone(who, "milo-room")
+    with_coffee(who, "milo-room", MILO_ROOM[2], [(0.0, *HOLDS)], ROOM_SHOTS, reach=46)
 
 
 def at_desk(g):
@@ -330,16 +359,13 @@ def at_desk(g):
 
     cv.keys(hand, "x", [(SLICE[0], 90.0), (SLICE[0] + 0.3, 0.0)], hold=False, kind="sine-out")
     cutout_counter.reaching_hand(
-        cv, hand, 560, 1105, scale=1.0, rotation=-TILT, grip=120, skin=WHITE, sleeve=SHIRT, holds=plate
+        cv, hand, 590, 1105, scale=1.0, rotation=-TILT, grip=120, skin=WHITE, sleeve=SHIRT, holds=plate
     )
 
 
-def wall_shelf(g):
-    """The cake takes the counter, so the cactus sits on a bracket shelf on the plain wall, clear of the Boss."""
-    cv.path(g, "M968 582 L968 612 L994 582Z", "#D8CCBB", cv.ink, 2.5)
-    cv.path(g, "M1040 582 L1040 612 L1014 582Z", "#D8CCBB", cv.ink, 2.5)
-    cv.rect(g, 948, 570, 112, 12, "#F4F0E9", cv.ink, 2.5, radius=2)
-    signature.cactus(cv, g, 1004, 572, 0.6)
+def counter_cactus(g):
+    """The cake takes the counter's middle, so the cactus stands at its near end, in frame in all three framings."""
+    signature.cactus(cv, g, 430, locations.COUNTER_Y + 6, 0.5)
 
 
 def rosa(g):
@@ -391,7 +417,9 @@ cafe = locations.cafe(
     cv, finish, behind_counter=ava, at_counter=at_counter, shots=[CAFE_SHOT, BACK], code_on_shelf=True
 )
 park = locations.park(cv, finish, on_bench=milo_bench, beside_bench=beside_bench, shots=[PARK], sign_lettering=False)
-lobby = locations.reception(cv, finish, the_boss, on_counter, at_desk, shots=ROOM_SHOTS, cactus=wall_shelf)
+lobby = locations.reception(
+    cv, finish, the_boss, on_counter, at_desk, shots=ROOM_SHOTS, cactus=counter_cactus, code_at=(560, 1376)
+)
 streamers = cv.group(lobby, "party-streamers")
 cutout_lobby.paper_streamers(cv, streamers, 170, 910, 196, swags=4, sag=62.0)
 home = cutout_home.home_study(cv, finish, behind_desk=rosa, shots=[HOME])
@@ -409,8 +437,8 @@ WIDE = (1.0, 0.0, 0.0)
 EPS = 1 / 120
 ON_MILO = (1.12, 0.0, -320.0)  # Ava stays below the bug
 key(cafe, [(0.0, WIDE), (BACK[0] - EPS, WIDE), (BACK[0], ON_MILO), (BACK[1], ON_MILO)])
-MEDIUM = (1.2, 0.0, -384.0)
-CRASH = (1.7, 0.0, -1140.0)  # the Boss's head stays above the bug
+MEDIUM = (1.1, 0.0, -192.0)
+CRASH = (1.55, 0.0, -470.0)  # the Boss's head stays under the bug through the whole move, Milo's chin over the caption
 key(
     lobby,
     [
