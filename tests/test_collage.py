@@ -36,7 +36,7 @@ def points(shapes):
 # -- the style and the cast -------------------------------------------------------------------------------------------
 def test_the_style_is_registered_with_its_parts_and_font():
     assert STYLES["collage"] is COLLAGE
-    assert COLLAGE.parts == ("collage", "collage_everyday", "collage_photo", "collage_sets") and COLLAGE.palettes == (
+    assert COLLAGE.parts == ("collage", "collage_everyday", "collage_home", "collage_photo", "collage_sets") and COLLAGE.palettes == (
         collage.PAPER,
     )
     assert (COLLAGE.width, COLLAGE.height, COLLAGE.fps) == (1080, 1920, 24)

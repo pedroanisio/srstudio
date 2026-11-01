@@ -10077,6 +10077,346 @@
           "rig": null
         }
       ]
+    },
+    "collage-wall-tv": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat wall TV whose clipped screen a reel fills. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f44f3be799d12a02ce603f04bd02e9c979f6782f8ff308e9f94e6ae03b0ff522",
+          "rig": null
+        }
+      ]
+    },
+    "collage-hard-hat": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A yellow builder's hard hat, for a head or a table. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "803380a9b19dcc53d90ed76f1dafec885b07890a884cf806ffa2c6801d3212b8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-kayak": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A red kayak with its cockpit. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4c8b05a0df3dc23220e6b6c5be9f36d48360f038010385a46713935b1c5caf0e",
+          "rig": null
+        }
+      ]
+    },
+    "collage-school-desk": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A child's school desk. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e7cb9dcd0ea6476c66ad602b1c983a228c4d9eeebd3a326f3b101fe54fdcd96a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-staircase": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A short flight of stairs with a handrail. First drawn for on-this-day. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9a4f096545ec22d7e5a92569635f2a7d82bde418cc7e1a9da80aac28ee74da8",
+          "rig": null
+        }
+      ]
+    },
+    "collage-pay-envelope": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A sealed pay envelope with a stamp; refuses any figure on it. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f41d20cfbfc5407af47f8b3ef6ca231691befca6381a327d0a48218a7d39374",
+          "rig": null
+        }
+      ]
+    },
+    "collage-headset": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A call-centre headset over a head. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ec22b7e0c7d2d50f191b9d880f62416d18000dd5310565f3c295fa8fece43c5b",
+          "rig": null
+        }
+      ]
+    },
+    "collage-desk-lamp": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One bare lamp and its pool of light. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3b39916fd3690cf36b0bf6c3f3c20757f84a56380685f658393de52405eda112",
+          "rig": null
+        }
+      ]
+    },
+    "collage-dead-plant": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dead plant in a pot. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c7d79f9aa6e544164a1a0d24579f889c3e684c745cc85278687316b441f967e2",
+          "rig": null
+        }
+      ]
+    },
+    "collage-cereal-bowl": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bowl of cereal in milk. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d6842d92ccf26bb4142c0ee055851363c30894e6f853596948b2d2a09edf3c54",
+          "rig": null
+        }
+      ]
+    },
+    "collage-spoon": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A paper spoon. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e4327ac34bdac93db67c747a093d4bacca94a9e1e012f050977910245491e685",
+          "rig": null
+        }
+      ]
+    },
+    "collage-pen": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A ballpoint pen. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "93c7b303e0778aee0d39947b8a8145d875c2a7918bf5326f65bef1702c61261a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-menu-card": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tall closed restaurant menu, no brand. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4cb5774d1d47ac765676e55a2169e2b845e8b16fe654ffb427ba8beed0f00f0a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-order-pad": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A waiter's spiral pad with an unreadable scrawl. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d9b9b622e57a948fb34b153072d50378db59a4eb701b1a8548054740b8d7923b",
+          "rig": null
+        }
+      ]
+    },
+    "collage-plate": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plate with a steak, a salad or sauce. First drawn for no-pad. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3fb3e748858e036e5bb289007e33a8a79d867c0220af4b3ce132bb128ecd16eb",
+          "rig": null
+        }
+      ]
+    },
+    "collage-chair-back": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The tall wooden back of a dining chair. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14821a002aeb8042334347bd13569c1d6e92c3a6a26e666f632217a98337ec14",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wall-hole": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A rough hole in a wall: torn plaster, bare studs. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3c9658c62016498b2a5e6cbc3e55d5f072f8b4447f51997bb27931d0e01fe04",
+          "rig": null
+        }
+      ]
+    },
+    "collage-snowy-window": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A window pane full of winter, laid over a set's window. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8abaf28fea4bbda366e724087fe63463bff0a3d9239ad7811421070d4da2d4b0",
+          "rig": null
+        }
+      ]
+    },
+    "collage-toothbrush-mug": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A mug with one toothbrush in it. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "94970a03b12989d18fd6ec7ba2e94f50b1cda4d3601820c62bbf815756b61443",
+          "rig": null
+        }
+      ]
+    },
+    "collage-napkin": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white napkin tucked in at the collar. First drawn for two-weeks. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "11b35d085bd8db24e43686cc4ed87de5c3f4125d97297a723c283b6a6c414bb3",
+          "rig": null
+        }
+      ]
     }
   }
 }

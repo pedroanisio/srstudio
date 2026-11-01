@@ -1251,7 +1251,26 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-parlour-back": {"title": "Sorveteria, vista do cliente"}
+    "collage-napkin": {"title": "Guardanapo no colarinho"},
+    "collage-toothbrush-mug": {"title": "Caneca com escova"},
+    "collage-snowy-window": {"title": "Janela com neve"},
+    "collage-wall-hole": {"title": "Buraco na parede"},
+    "collage-chair-back": {"title": "Encosto de cadeira"},
+    "collage-plate": {"title": "Prato de papel"},
+    "collage-order-pad": {"title": "Bloco de pedidos"},
+    "collage-menu-card": {"title": "Cardapio fechado"},
+    "collage-pen": {"title": "Caneta de papel"},
+    "collage-spoon": {"title": "Colher de papel"},
+    "collage-cereal-bowl": {"title": "Tigela de cereal"},
+    "collage-dead-plant": {"title": "Planta morta"},
+    "collage-desk-lamp": {"title": "Abajur de haste"},
+    "collage-headset": {"title": "Headset de atendimento"},
+    "collage-pay-envelope": {"title": "Envelope de pagamento lacrado"},
+    "collage-staircase": {"title": "Escada de papel"},
+    "collage-school-desk": {"title": "Carteira escolar"},
+    "collage-kayak": {"title": "Caiaque de papel"},
+    "collage-hard-hat": {"title": "Capacete de obra"},
+    "collage-wall-tv": {"title": "TV de parede de papel"}
   },
   "gallery": [
     {
@@ -7288,7 +7307,6 @@
       "section": "locations",
       "name": "Sorveteria, lado do cliente",
       "parts": [
-        "toon-parlour-back"
       ],
       "shot": {
         "episode": "choice-blindness",
@@ -8044,6 +8062,81 @@
     {"section": "props", "name": "Chuva", "parts": ["toon-rain"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "Chuva em laço, atrás do que estiver na frente dela."},
     {"section": "props", "name": "Anão de jardim", "parts": ["toon-gnome"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "O anão de jardim da foto da entrega."},
     {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."},
-    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."}
+    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."},
+    {
+      "section": "props",
+      "name": "Sala em casa: TV, filme e cereal",
+      "parts": [
+        "collage-wall-tv",
+        "collage-hard-hat",
+        "collage-kayak",
+        "collage-school-desk",
+        "collage-staircase",
+        "collage-cereal-bowl",
+        "collage-spoon"
+      ],
+      "shot": {
+        "episode": "on-this-day",
+        "at": 4.0
+      },
+      "text": "A TV de parede recorta o que o reel desenha na tela: um filme de fotos escala do caiaque à escada."
+    },
+    {
+      "section": "props",
+      "name": "Cabine sem janela",
+      "parts": [
+        "collage-pay-envelope",
+        "collage-headset",
+        "collage-desk-lamp",
+        "collage-dead-plant"
+      ],
+      "shot": {
+        "episode": "exciting-opportunity",
+        "at": 20.0
+      },
+      "text": "Um abajur, uma planta morta, o headset e o envelope lacrado: nenhum número à vista."
+    },
+    {
+      "section": "props",
+      "name": "A entrevista",
+      "parts": [
+        "collage-pen"
+      ],
+      "shot": {
+        "episode": "tell-us",
+        "at": 5.0
+      },
+      "text": "A caneta que desce quando a entrevista vira terapia."
+    },
+    {
+      "section": "props",
+      "name": "Dia 400",
+      "parts": [
+        "collage-chair-back",
+        "collage-wall-hole",
+        "collage-snowy-window",
+        "collage-toothbrush-mug",
+        "collage-napkin"
+      ],
+      "shot": {
+        "episode": "two-weeks",
+        "at": 12.0
+      },
+      "text": "O buraco não muda; a janela, a escova na caneca e a cadeira mudam."
+    },
+    {
+      "section": "props",
+      "name": "Pedido sem bloco",
+      "parts": [
+        "collage-menu-card",
+        "collage-order-pad",
+        "collage-plate"
+      ],
+      "shot": {
+        "episode": "no-pad",
+        "at": 8.0
+      },
+      "text": "Cardápio fechado, pratos que chegam um a um e o bloco que só aparece no fim."
+    }
   ]
 }
