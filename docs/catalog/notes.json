@@ -1252,6 +1252,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-resume-insert": {"title": "Currículo em tela cheia"},
+    "stick-desk-page": {"title": "Folha sobre a mesa"},
+    "stick-interview-desk": {"title": "Mesa com gaveta"},
+    "stick-interview-room": {"title": "Sala de entrevista"},
     "room-door": {"title": "Porta do quarto"},
     "spoon": {"title": "Colher"},
     "cereal-bowl": {"title": "Tigela de cereal"},
@@ -8562,6 +8566,54 @@
         "at": 14.0
       },
       "text": "A porta abre atrás do candidato e entra alguém com uma tigela de cereal, que nunca é posta de lado."
+    },
+    {
+      "section": "locations",
+      "name": "Sala da entrevista de emprego",
+      "parts": [
+        "stick-interview-room"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 14.5
+      },
+      "text": "Uma sala pequena: a porta entre as duas cadeiras, a janela com a cidade fora de foco e a mesa no meio."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta de baixo",
+      "parts": [
+        "stick-interview-desk"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 21.0
+      },
+      "text": "A mesa de frente; a gaveta de baixo desliza e mostra o travesseiro, a coberta dobrada e os cardápios."
+    },
+    {
+      "section": "props",
+      "name": "Folha sobre a mesa",
+      "parts": [
+        "stick-desk-page"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 24.0
+      },
+      "text": "Uma folha na mesa, virada para cima ou para baixo, com uma linha marcada de vermelho."
+    },
+    {
+      "section": "props",
+      "name": "Currículo em tela cheia",
+      "parts": [
+        "stick-resume-insert"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 17.2
+      },
+      "text": "O currículo enche o quadro: linhas genéricas, um título, e uma palavra circulada à mão em vermelho."
     }
   ]
 }
