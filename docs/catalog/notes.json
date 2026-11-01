@@ -1276,6 +1276,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "desk-phone": {"title": "Celular na mesa"},
+    "video-tile": {"title": "Janela de chamada"},
     "toon-remote": {"title": "Controle remoto"},
     "toon-tv-menu": {"title": "Menu de TV"},
     "stick-receipt": {"title": "Nota comprida"},
@@ -9077,6 +9079,30 @@
         "at": 15.0
       },
       "text": "Um controle sem marca, pequeno o bastante para uma pata, e o clique que pausa a mentira."
+    },
+    {
+      "section": "props",
+      "name": "Chamada de vídeo inventada",
+      "parts": [
+        "video-tile"
+      ],
+      "shot": {
+        "episode": "nobody-died",
+        "at": 3.4
+      },
+      "text": "O gerente numa janela de chamada, com placa de nome e nenhum aplicativo de verdade."
+    },
+    {
+      "section": "props",
+      "name": "Celular que não larga do pé",
+      "parts": [
+        "desk-phone"
+      ],
+      "shot": {
+        "episode": "nobody-died",
+        "at": 8.6
+      },
+      "text": "Visto de cima: vibra, recebe mensagens e vira sozinho."
     }
   ]
 }

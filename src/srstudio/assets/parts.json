@@ -13475,6 +13475,40 @@
           "rig": null
         }
       ]
+    },
+    "video-tile": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented video call on a laptop's screen: a plain room, a frame and a name plate. It draws nobody: the sitter is the reel's own drawing. No app name or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4ae4c33ce705c1711b03d3b92ffa4e2aa2decf7e7cff7315edcfcbb390d95754",
+          "rig": null
+        }
+      ]
+    },
+    "desk-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone on a desk seen from above: it buzzes, takes lines as they land and can turn itself over. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "aea5826d9bc14f9529c7105eb69904513afc1662d121ba9977c8621737762c9e",
+          "rig": null
+        }
+      ]
     }
   }
 }
