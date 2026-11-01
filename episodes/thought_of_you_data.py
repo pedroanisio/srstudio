@@ -53,7 +53,7 @@ INSERT = dict(x=190.0, y=830.0, w=700.0, h=960.0)  # clear of the shelf above, a
 INSERT_FOOT = 1790.0  # the slow push grows the phone from here, so its top stays under the shelf
 SLIDE = (1120.0, 0.2)  # the phone comes up from this far below, in these seconds
 READ = 1.3  # seconds a headline holds, at the least: the floor of reading it
-BACK = 0.35  # seconds of his face before the cut to her, when the line runs on past the headline
+BACK = (0.0, 0.0, 0.9)  # seconds of his face before the cut to her, per headline: only the third gives him the clock
 REVEAL_PUSH = 1.05
 HER_PUSH = (1.18, 1.2)  # the push to a close on her last look: the scale, and the seconds it takes
 HELD = dict(x=435.0, y=1400.0, w=210.0, h=340.0)  # a phone in both hands, seen from the back
@@ -72,6 +72,7 @@ EVENING = "#2b1a3a"
 GLOW = "#9fc5ff"
 LAMP = "#ffc66b"
 SHELF_TOP = 580.0  # the wash over her wall stops here, above the cactus
+BITRATE = 5_800_000  # bits a second: the grain, new every frame, otherwise costs 56 MB here; encoded in software
 HOLD_FOR_THE_WORD = 0.9  # the cup meets the saucer on the beat before the line
 
 LINES = (
@@ -100,7 +101,7 @@ BEATS, END = timed(
         (0.5, "rosa", "", "half", "flat", "hold", "reveal:sip"),  # heard; she has not looked up
         (1.6, "rosa", 5, "open", "flat", "hold"),
         (0.45, "gary", "", "open", "flat", HOLDING, "buzz"),
-        (1.75, "gary", 6, "side", "frown", HOLDING),  # he looks at the clock
+        (2.2, "gary", 6, "side", "frown", HOLDING),  # he looks at the clock, and it stays up long enough to read
         (0.8, "rosa", 7, "open", "smile", "hold"),
         (1.7, "gary", "", "open", "flat", HOLDING, "buzz"),  # the reveal: the buzz, then silence, the phone pushing in
         (0.2, "gary", "", "wide", "flat", HOLDING, "zoom"),  # back on his face: he has read it
@@ -154,15 +155,15 @@ def _gated(cv, parent, a: float, b: float):
 
 
 def spans(beats: Sequence[Beat]) -> list[tuple[float, float]]:
-    """When each headline is up: from its buzz until a little before the line under it ends, or the zoom for the last
-    one, whose silence is the reveal. Refuses a headline that would not hold long enough to read."""
+    """When each headline is up: from its buzz until the cut to her, less :data:`BACK`, or the zoom for the last one,
+    whose silence is the reveal. Refuses a headline that would not hold long enough to read."""
     buzzes = [t for t, _ in events(beats, "buzz")][1 : 1 + len(HEADLINES)]
     zoom = events(beats, "zoom")[0][0]
     cuts = [b.start for b in beats if b.who == "rosa"]
     out = []
     for i, at in enumerate(buzzes):
         cut = next(t for t in cuts if t > at)
-        stop = zoom if i == len(HEADLINES) - 1 else max(at + READ, cut - BACK)
+        stop = zoom if i == len(HEADLINES) - 1 else cut - BACK[i]
         if round(stop - at, 6) < READ or stop > cut:
             raise StagingError(f"{SLUG}: the headline at {at} s holds {stop - at:.2f} s before the cut at {cut} s")
         out.append((at, stop))
@@ -211,7 +212,7 @@ def _bed(shot) -> None:
     cv.rect(night, CLOCK["x"] - 26, CLOCK["y"] + 118, 330, 330, "#2d2048", collage.INK, 6)  # the nightstand
     headlines = spans(shot.beats)
     shown, last_stop = [], app.start
-    for at, stop in headlines:  # the clock is off behind a headline: the phone would leave a sliver of its digits
+    for at, stop in headlines:  # off behind a headline, where the phone would leave a sliver of its digits
         if app.start <= at < app.end:
             shown.append((last_stop, at))
             last_stop = stop
@@ -267,6 +268,7 @@ STAGING = Staging(
     cast=casting,
     bleed=True,
     sounds=sounds,
+    bitrate=BITRATE,
     loudness="-14",
     sentence_rows=True,
     caption_tops={LINES[8].text: ZOOMED_CAPTION_TOP},

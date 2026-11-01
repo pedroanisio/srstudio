@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import TOON, camera, craft, parts, sketch, toon, toon_sketch, usage
+from srstudio import TOON, camera, craft, look, parts, sketch, toon, toon_sketch, usage
 from srstudio.layout import VERTICAL
 from srstudio.sketch import Beat, Line, Sketch, Speaker
 from srstudio.voice import Voice, VoiceSettings
@@ -134,6 +134,19 @@ def test_a_staging_camera_moves_every_shot_under_an_id_craft_counts(pinned_fonts
     shots = [g for g in xml.find("composition") if craft.CAMERA.fullmatch(g.get("id", ""))]
     assert [(float(g.get("start")), float(g.get("end"))) for g in shots] == [(a.start, a.end) for a in apps]
     assert all(g.find("animate[@property='scaleX']") is not None for g in shots)
+
+
+def test_a_staging_asks_for_bleed_and_is_built_without_it_by_default(pinned_fonts, tmp_path):
+    sk = Sketch("bleed-test", "Bleed test", SPEAKERS, LINES, STILL, END)
+    far_plane = lambda shot: look.depth(shot.cv, shot.back, shot.cv.uid("far"), 5.0, overscan=True)  # noqa: E731
+    off, _ = built(tmp_path / "off", replace(silent(sk), dress=far_plane), pinned_fonts)
+    on, xml = built(tmp_path / "on", replace(silent(sk), dress=far_plane, bleed=True), pinned_fonts)
+    assert off.cv.bleed is False
+    assert b'threeD="true"' not in off.scene.to_bytes()
+    assert on.cv.bleed is True
+    far = [g for g in xml.iter("group") if g.get("threeD") == "true"]
+    assert len(far) == len(sketch.appearances(STILL, END))  # every shot's far plane is on a sheet past the frame's edge
+    assert all(float(g.get("scaleX")) > 1 for g in far)
 
 
 def test_without_a_camera_the_shots_keep_their_anonymous_ids(pinned_fonts, tmp_path):

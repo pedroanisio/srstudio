@@ -124,10 +124,10 @@ POSES: dict[str, stick.RigPose] = {
     "mug-up": _CRADLE,
     "mug-low": stick.reaching(_REST, _mug_at(MUG_X, 990.0), bend=1),
     "mug-down": stick.reaching(_REST, _mug_at(*_DOWN), bend=1),
-    "plate-up": _noor((PLATE_X, 930.0), (548.0, 780.0), (480.0, 852.0)),
+    "plate-up": _noor((PLATE_X, 930.0), (548.0, 780.0), (480.0, 852.0), bend=-1),
     "plate": _noor((PLATE_X, TOP - 30.0), (548.0, 780.0), (480.0, 852.0)),
-    "key-up": _noor((KEY_X, 950.0), (505.0, 790.0), (450.0, 866.0)),
-    "key": _noor((KEY_X, TOP - 30.0), (505.0, 790.0), (450.0, 866.0)),
+    "key-up": _noor((KEY_X, 950.0), (505.0, 790.0), (450.0, 866.0), bend=-1),
+    "key": _noor((KEY_X, TOP - 30.0), (505.0, 790.0), (450.0, 866.0), bend=-1),
     "flick-a": _noor((PHONE_FROM, TOP - 30.0), (520.0, 790.0), (464.0, 866.0)),
     "flick-b": _noor((PHONE_FROM - 70.0, TOP - 30.0), (548.0, 780.0), (480.0, 852.0)),
 }

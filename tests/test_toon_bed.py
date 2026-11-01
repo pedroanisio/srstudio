@@ -47,6 +47,15 @@ def test_the_quilt_carries_one_of_each_mark(monkeypatch: pytest.MonkeyPatch) -> 
     assert sorted(drawn) == ["cactus", "code"]
 
 
+def test_a_shot_that_signs_elsewhere_leaves_the_nightstand_bare(monkeypatch: pytest.MonkeyPatch) -> None:
+    drawn: list[str] = []
+    monkeypatch.setattr(toon_bed.signature, "cactus", lambda *a, **k: drawn.append("cactus"))
+    monkeypatch.setattr(toon_bed.signature, "code", lambda *a, **k: drawn.append("code"))
+    cv = canvas()
+    toon_bed.double_quilt(cv, cv.comp, signed=False)
+    assert drawn == []
+
+
 def test_the_corner_is_day_or_night() -> None:
     night, day = canvas(), canvas()
     toon_bed.floor_corner(night, night.comp)

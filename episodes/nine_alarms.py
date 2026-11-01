@@ -18,6 +18,7 @@ from nine_alarms_data import (
     SEED,
     SKETCH,
     TINTS,
+    captions,
     count,
     dress,
     lens,
@@ -40,6 +41,7 @@ STAGING = Staging(
     camera=lens,
     bare=BARE,
     overlay=count,
+    captions=captions,
     loudness="-14",
 )
 ep = build(project_root(__file__), STAGING, set(sys.argv[2:]))
