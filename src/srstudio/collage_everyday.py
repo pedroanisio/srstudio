@@ -581,8 +581,20 @@ def gust(cv: Canvas, parent, frm: Point, to: Point, start: float, end: float, *,
 
 # -- payday -----------------------------------------------------------------------------------------------------------
 @register("prop", "collage-bill", summary="A paper bill with a jagged mouth that walks in and takes its bite")
-def bill(cv: Canvas, parent, text: str, x: float, y: float, w: float = 330.0, h: float = 220.0, *, size: float = 52):
-    """A bill ``w`` by ``h`` centred on ``x, y``, saying ``text``; returns the group, which a caller keys to walk."""
+def bill(
+    cv: Canvas,
+    parent,
+    text: str,
+    x: float,
+    y: float,
+    w: float = 330.0,
+    h: float = 220.0,
+    *,
+    size: float = 52,
+    legs: bool = True,
+) -> object:
+    """A bill ``w`` by ``h`` centred on ``x, y``, saying ``text``; returns the group, which a caller keys to walk.
+    Without ``legs`` it is paper that falls or lands, with no feet to stand on."""
     _size(w, "a bill's width")
     _size(h, "a bill's height")
     g = cv.group(parent, cv.uid("g"), x=x, y=y)
@@ -591,7 +603,7 @@ def bill(cv: Canvas, parent, text: str, x: float, y: float, w: float = 330.0, h:
     jaw = [(-w / 2 + w * i / teeth, -h / 2 + (0 if i % 2 else 34)) for i in range(teeth + 1)]
     draw_shapes(cv, g, [(collage._poly(jaw + [(w / 2, -h / 2 - 6), (-w / 2, -h / 2 - 6)]), "#c1121f", INK, 4.0, 1.0)])
     _letter(cv, g, "bill", text, -w / 2 + 16, -h / 2 + 36, w - 32, h - 44, size, color=INK)
-    for dx in (-w * 0.2, w * 0.2):
+    for dx in (-w * 0.2, w * 0.2) if legs else ():
         cv.line(g, dx, h / 2, dx, h / 2 + 34, INK, 10)
         cv.line(g, dx, h / 2 + 34, dx + 30, h / 2 + 34, INK, 10)
     return g

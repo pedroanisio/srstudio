@@ -103,6 +103,13 @@ def test_a_prop_refuses_a_size_it_cannot_draw(call):
         call(canvas())
 
 
+def test_a_bill_without_legs_draws_less_and_the_default_keeps_them():
+    walking, paper = canvas(), canvas()
+    collage_everyday.bill(walking, walking.comp, "RENT", 0, 0)
+    collage_everyday.bill(paper, paper.comp, "RENT", 0, 0, legs=False)
+    assert body(paper).count(b"<shape") == body(walking).count(b"<shape") - 4
+
+
 def test_the_phone_returns_a_screen_inside_its_bezel():
     cv = canvas()
     screen = collage_everyday.phone(cv, cv.comp, 100, 200, 400, 700)
