@@ -9231,6 +9231,23 @@
           "rig": null
         }
       ]
+    },
+    "show-bug": {
+      "kind": "graphic",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The OK-eye mark and the reel's number on a chip in the right gutter, drawn above the camera. The mark is a proposal: nothing defined it. Proposed until arc4d3 has seen the frames.",
+          "status": "proposed",
+          "proof": "generated/character-proofs/show-signature",
+          "approval": null,
+          "drawing": "a2c5cfa118624dff539d6806b64718e959c2dbfef14fce208946ac4c6cd8f66d",
+          "rig": null
+        }
+      ]
     }
   }
 }

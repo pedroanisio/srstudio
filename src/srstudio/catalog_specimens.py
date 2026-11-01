@@ -391,6 +391,7 @@ RECIPES: dict[str, Recipe] = {
         lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "vera"),), ctx.measure, {})
     ),
     "news-bug": Recipe(lettered(0.0, SECONDS)),
+    "show-bug": Recipe(part(212)),
     "news-parody-tag": Recipe(lettered(0.0, SECONDS)),
     "news-source-card": Recipe(
         lettered(news_kit.Source("The Outlet", "Oct 30, 2026", "A headline, word for word"), 0.0, 1.8, SECONDS)

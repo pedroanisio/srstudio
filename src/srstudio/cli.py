@@ -35,12 +35,14 @@ from . import (
     parts,
     registry,
     releases,
+    show,
     usage,
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .thumbnail import ShowCover
 from .timeline import Timeline
 
 
@@ -420,14 +422,16 @@ def main(argv=None):
         except releases.ReleaseError as exc:
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 2
+        number = None
         if episode is None and "-" in script and not script.endswith(".py"):
             print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
             return 2
         if episode is not None:
+            number = _show_number(args.scripts, script)
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
-            with usage.recorded(Path(args.root)) if args.root else nullcontext():
+            with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
                         0, str(Path(script).resolve().parent)
@@ -560,6 +564,15 @@ def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
     if known or (suffix and (scripts / f"{stem}.py").is_file()):
         raise releases.ReleaseError(f"episode {slug!r} has no {script.name} in {scripts}")
     return None
+
+
+def _show_number(scripts: Path, slug: str) -> int | None:
+    """The number the release of the episode ``slug`` carries on the show's cover, or None for any other cover."""
+    stem = slug.replace("-", "_")
+    if not (scripts / "posts" / "__init__.py").is_file() or not (scripts / "posts" / f"{stem}.py").is_file():
+        return None
+    cover = releases.load(scripts / "posts")[slug].post.thumbnail
+    return cover.number if isinstance(cover, ShowCover) else None
 
 
 def _run_script(script: Path, argv: list[str]) -> int:
