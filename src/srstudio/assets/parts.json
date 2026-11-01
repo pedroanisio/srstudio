@@ -6585,6 +6585,29 @@
             },
             "drawing": "e82a0f54d4f6caa1de25ca9866e3e6f4922f3bfe4c3969203ed3be34edd26517"
           }
+        },
+        {
+          "number": 2,
+          "date": "2026-11-01",
+          "note": "A true pair of hands: the right the mirror of the left, each thumb on its own side, a hand's back without its palm crease, and the paw's ink closed at the wrist.",
+          "status": "approved",
+          "proof": "generated/character-proofs/bento-hands/index.html",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "approved"
+          },
+          "drawing": "89e3f5fdb19a9b7a351b2a8f72aafa67f9dcf4dd868ecf98708650dba328ffc5",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: version 1's limits, unchanged, over the new hands.",
+            "status": "approved",
+            "proof": "generated/character-proofs/bento-hands/index.html",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "approved"
+            },
+            "drawing": "ef85037b5d2d1d641affd657a1194497eeb66a95744a8088c86e188b9b49bdcb"
+          }
         }
       ]
     },

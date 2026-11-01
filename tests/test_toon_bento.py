@@ -422,7 +422,7 @@ def test_the_head_turns_about_the_pack_s_pivot_with_each_mood_s_tilt_eased_in():
 
 def test_the_style_is_a_calm_anchor_of_its_own():
     style = RIG.style
-    others = [r.style for name, r in toon_rigs.RIGS.items() if name != "toon-bento"]
+    others = [r.style for name, r in toon_rigs.RIGS.items() if not name.startswith("toon-bento")]
     assert style.seed not in {s.seed for s in others}
     assert style.nod_px < 9.0 and style.glance_face < 3.0
 
@@ -444,7 +444,7 @@ def test_he_is_registered_in_the_toon_style_with_the_operators_approval():
     assert entry.name == "toon-bento"
     part = parts.get("toon-bento")
     assert part.kind == "character" and part.style == "toon" and part.refused is None
-    assert len(part.versions) == 1
+    assert part.latest().number == 2
     version = part.version(1)
     assert version.status == "approved" and version.approval.words == "bento is approved"
     assert version.rig is not None and version.rig.status == "approved"
@@ -471,8 +471,9 @@ def test_the_digest_moves_when_the_drawing_moves(monkeypatch):
 
 
 def test_a_reel_can_draw_and_move_him_now_the_operator_has_approved():
-    assert parts.resolved("toon-bento") == 1
-    assert toon_rigs.rig_of("toon-bento") is RIG
+    assert parts.resolved("toon-bento") == 2
+    assert toon_rigs.rig_of("toon-bento") is toon_bento.BENTO_RIG_2
+    assert toon_rigs.rig_of("toon-bento", {"toon-bento": 1}) is RIG
 
 
 def test_a_limb_track_is_refused_by_name():
