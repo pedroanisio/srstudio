@@ -373,6 +373,31 @@ def test_the_counter_shows_each_ticket_in_turn():
     assert [(0.0, 1.0), (4.5, 0.0)] in gates and [(0.0, 0.0), (4.5, 1.0)] in gates
 
 
+def test_the_counter_can_leave_its_lettering_out_and_keeps_the_rest_of_the_drawing():
+    cv, *_ = staged("counter")
+    plain, *_ = staged("counter", lettering=False)
+    assert {"TAKE A NUMBER", "NOW SERVING", "A17"} <= {t.get("text") for t in tree(cv).iter("text")}
+    assert not [t for t in tree(plain).iter("text") if t.get("text") in ("TAKE A NUMBER", "NOW SERVING", "A17")]
+
+    def shapes(node):
+        return [{k: v for k, v in e.attrib.items() if k != "id"} for e in tree(node).iter("shape")]
+
+    assert shapes(cv) == shapes(plain)
+
+
+@pytest.mark.parametrize("bad", [0, 1, "no", None])
+def test_the_counter_refuses_a_lettering_that_is_not_a_bool(bad):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="lettering"):
+        toon_rooms.stage(cv, cv.comp, cv.comp, "counter", None, D, lettering=bad)
+
+
+def test_the_lounge_takes_no_lettering():
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="lettering"):
+        toon_rooms.stage(cv, cv.comp, cv.comp, "lounge", lettering=False)
+
+
 @pytest.mark.parametrize(
     ("serving", "match"),
     [

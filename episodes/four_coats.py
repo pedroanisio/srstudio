@@ -51,11 +51,11 @@ THREE = (255, dict(layers=2, hats=2, trousers=True))
 FOUR = (285, dict(layers=3, hats=3, scarves=1, trousers=True))
 FIVE = (305, dict(layers=3, hats=3, scarves=2, trousers=True, shoes=True))
 SPHERE = (325, dict(layers=4, hats=4, scarves=3, trousers=True, shoes=True))
-SLAM = ((0.0, "0.0"), (0.08, "12.7"), (0.2, "31.9"), (0.32, "19.6"), (0.44, "23.4"))
+SLAM = ((0.0, None), (0.44, "23.4"))  # dark while the bag lands
 WEIGHED = {"02": "23.4", "03": "23.4", "04": "23.4", "05": "23.4", "07": "23.3", "09": "23.1", "11": "22.9",
            "12": "22.9", "13": "22.9", "14": "22.9"}  # fmt: skip
-CHANGING = {"06": ((0.0, "23.4"), (0.72, "23.3")), "08": ((0.0, "23.3"), (0.8, "23.2"), (1.3, "23.1")),
-            "10": ((0.0, "23.1"), (0.7, "23.0"), (1.4, "22.9")), "01": SLAM}  # fmt: skip
+CHANGING = {"06": ((0.0, "23.4"), (0.72, "23.3")), "08": ((0.0, "23.3"), (0.41, "23.2"), (1.3, "23.1")),
+            "10": ((0.0, "23.1"), (0.6, "23.0"), (1.5, "22.9")), "01": SLAM}  # fmt: skip
 BAG_LEFT = {"01": 1.0, "02": 1.0, "03": 1.0, "04": 1.0, "05": 1.0, "06": 0.9, "07": 0.9, "08": 0.78, "09": 0.72,
             "10": 0.6, "11": 0.5, "12": 0.5, "13": 0.5, "14": 0.5}  # fmt: skip
 DRESSING = {"06": ((0.0, None), (0.55, ONE)), "08": ((0.0, ONE), (0.3, TWO), (0.75, THREE), (1.2, FOUR)),
@@ -143,10 +143,12 @@ def gate_shot(take, g, end: float) -> None:
 
 
 def arrivals_shot(take, g, end: float) -> None:
-    stick_airport.gate(cv, g, gate="A1", now="WELCOME 38°", boarding_size=stick_airport.BOARDING_SIZE)
+    stick_airport.gate(cv, g, gate="A1", now="WELCOME 38°", boarding_size=stick_airport.BOARDING_SIZE, sign=False)
     stick.oval(cv, g, 310, 330, 170, 170, "#ffd23f")  # the sun in the window
     stick_airport.palm(cv, g, 200, 1180, height=640)
     stick.box(cv, g, 0, 0, cv.width, cv.height, "#ff9d2e", opacity=0.2)
+    # over the heat: under it the 38° that makes the joke measures 3.65:1 on the frame
+    stick_airport.boarding_sign(cv, g, gate="A1", now="WELCOME 38°", boarding_size=stick_airport.BOARDING_SIZE)
     face = SORRY
     agent(g, [stick.RigKey(0, "stand", face)], end, take)
     stick_airport.podium(cv, g, gate="LOST")

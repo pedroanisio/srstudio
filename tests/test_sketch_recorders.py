@@ -104,3 +104,12 @@ def test_the_bespoke_recorders_share_the_recording_command_line(monkeypatch, tmp
     monkeypatch.setattr(module, "record", lambda *a, **k: got.append((a, k)))
     assert module.main([str(tmp_path), "--ffmpeg", "ff", *flags], {"K": "v"}) == 0
     assert got == [((tmp_path.resolve(), {"K": "v"}, "ff"), options)]
+
+
+def test_the_toon_recorder_can_place_the_beats_again_without_the_cloud(helpers, monkeypatch, tmp_path):
+    toon, _ = helpers
+    placed = []
+    monkeypatch.setattr(toon.sketch, "place_again", lambda sk, project: placed.append((sk, project)))
+    monkeypatch.setattr(toon, "record_episode", lambda *a, **k: pytest.fail("no recording"))
+    assert toon.recorder("SKETCH", 7, "note", "Doc")([str(tmp_path), "--place-only"], {}) == 0
+    assert placed == [("SKETCH", tmp_path.resolve())]

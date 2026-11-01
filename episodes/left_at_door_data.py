@@ -27,6 +27,7 @@ from srstudio.toon_sketch import Sound
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3116
+CAPTION_HOLD = 0.875  # 21 frames: every cue holds past the engine's 0.8333 s
 SLUG = "left-at-door"
 TITLE = "Left at Door — The Gnome (Toon)"
 DESCRIPTION = (
@@ -97,8 +98,7 @@ BEATS = (
     say(7.42, "sloth", 2, "half", "flat", "desk"),
     first(8.88, "sloth", 3, "I took the photo", "narrow", "flat", "desk", "street"),
     part(9.83, "sloth", 3, 4, "and hit the streets.", "narrow", "flat", "desk"),
-    first(12.05, WIDE, 4, "Green door.", "wide", "flat", "desk", "door-green"),
-    part(12.74, WIDE, 4, 2, "No gnome.", "wide", "flat", "desk"),
+    first(12.05, WIDE, 4, "Green door. No gnome.", "wide", "flat", "desk", "door-green"),
     part(13.61, WIDE, 4, 4, "Gnome.", "wide", "flat", "desk", "door-red"),
     part(14.03, WIDE, 4, 5, "Wrong gnome.", "wide", "flat", "desk", "door-blue"),
     say(15.0, "sloth", 5, "half", "flat", "desk"),
@@ -111,7 +111,7 @@ BEATS = (
     say(26.71, "sloth", 8, "half", "flat", "desk", "again"),
     hold(28.36, WIDE, "", "wide", "flat", "desk", "ping"),
 )
-SKETCH = Sketch(SLUG, TITLE, (NARRATOR, FROG), LINES, BEATS, END, bare=(WIDE,))
+SKETCH = Sketch(SLUG, TITLE, (NARRATOR, FROG), LINES, BEATS, END, bare=(WIDE,), caption_min=CAPTION_HOLD)
 ORDER = ("photo", "street", "door-green", "door-red", "door-blue", "gnome", "open", "shut", "again", "ping")
 
 
@@ -207,8 +207,8 @@ def street(shot, start: float, stop: float) -> None:
     toon_world.night_street(cv, back, end=stop)
     toon_cars.side_car(cv, front, at=(200.0, 980.0), scale=2.0, colour="#30445c")
     screen = toon_everyday.Screen(0.0, "notify", "Delivered", "Green door", "9:06")
-    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 820), scale=0.9, id=cv.uid("phone"))
     toon_inserts.rain(cv, front, start=start, end=stop)
+    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 820), scale=0.9, id=cv.uid("phone"))
     night(cv, front)
 
 
