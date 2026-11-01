@@ -2168,7 +2168,8 @@ The cover is a `srstudio.thumbnail.ShowCover`: a solid band with OKAYVILLE, `#N`
 over the reel's own art. The bug is the part `show-bug`, which `srstudio build` draws above the camera for a release on
 that cover and for no other. Numbers come from `srstudio number`: `base` sets the publishing side's count once, `claim`
 takes the next one before the final build, `list` prints the ledger at `generated/okayville/numbers.json`. A series has
-its own count with `--series`, and `outbox` writes the number in `episode.json` beside the video. `srstudio.show_gate`
+its own count with `--series`, and `outbox` writes `episode.json` beside the video, exactly `{"number": N, "series":
+"saga" or "", "series_number": n}`, with 0 outside a series (`show_numbers.EpisodeDocument`). `srstudio.show_gate`
 refuses a first delivery out of the look.
 
 ## Verification

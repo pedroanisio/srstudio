@@ -572,13 +572,13 @@ tags in `episodes/posts/_interview.py` already number six, so a new Interview re
 
 ## The show's signature
 
-A new Okayville reel in this look (ADR 0074) carries the show's cover and its corner bug. Once the look's part is
-approved, this is the order:
+A new Okayville reel in this look (ADR 0074) carries the show's cover and its corner bug. The look's part is approved,
+and a new reel opts in like this:
 
 1. **Claim the number before the final build.** `srstudio number claim <slug>`, with `--series Saga` for a series reel,
    prints what it gets. The number is burned in, so it cannot wait for delivery. `srstudio number list` shows the
-   ledger. Claims are refused until the publishing side has set the count once with `srstudio number base`; never
-   guess it.
+   ledger. Claims are refused until the count is set once with `srstudio number base`; the counts are in ADR 0074, so
+   never guess one. Only reels count, and a pulled reel leaves a gap.
 2. **Declare it on the cover.** The release's thumbnail is a `srstudio.thumbnail.ShowCover`: the premise in at most 5
    words and two lines, `number=`, and for a series `series=` and `series_number=`, with `cover=True`. The art stays
    the reel's own, so pick a `at` where no face falls under the band (y 1270 down).

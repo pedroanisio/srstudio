@@ -4,8 +4,8 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0074: The Okayville show signature, and who owns the number
 
-- Status: proposed (2026-10-31), on arc4d3's request of that day. Its approval of the template and of the bug is
-  pending, and the OK-eye mark is a proposal drawn here, since none existed.
+- Status: accepted (2026-10-31). arc4d3, by the operator's delegation of 2026-10-31, Slack 1793501087.434969 in thread
+  1793465980.837619: "Show signature: approved, with one change to the mark." The change: the mark is the avatar's OK-eye.
 - Deciders: arc4d3, the publishing side, for the look and the base counts; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0013](0013-designed-thumbnails-and-publish-gate.md),
   [ADR 0037](0037-the-cover-fingerprint-is-the-drawing.md),
@@ -38,8 +38,8 @@ what goes out and when.
    release; a release on a `ShowCover` builds inside `show.stamping(number)`, and `Episode` draws the bug as the
    composition's last child at finish, above the camera. A build with no number produces the document it always did.
    It adds no seconds and hides in the cover variant, so a release on this cover needs `cover=True`.
-3. **The corner is the right gutter, x 926 to 1044, y 232 to 298.** It lies outside the safe area, so no checked text
-   reaches it, and level with News's bug without taking its place. The numbers are below.
+3. **The corner is the right gutter, x 926 to 1044, y 270 to 332.** It lies outside the safe area, so no checked text
+   reaches it, and under the top 14 % of the frame, to y 270, that Meta asks to keep clear. The numbers are below.
 4. **The number lives in the release and in a ledger** (`srstudio.show_numbers`). `srstudio number claim <slug>` takes
    the next number under a file lock in `generated/okayville/numbers.json` before the final build, and the release
    declares it in `ShowCover.number`. The next number is `max(base, highest claimed) + 1`. `base` is set once, from the
@@ -48,8 +48,10 @@ what goes out and when.
    for first deliveries): a number missing from the ledger or different from it, a number another release holds, a
    series tag missing from the caption's first line, a bug that is missing, moves, fades, or carries another number, a
    bug over a face, a signature mark or text, a band over a face, or a video whose corner is not its scene's.
-6. **The number reaches the posting job in `episode.json`,** beside `ab.json` in the outbox. A reel with no number has
-   none, so the outbox of every published reel stays the same.
+6. **The number reaches the posting job in `episode.json`,** beside `ab.json` in the outbox: exactly
+   `{"number": N, "series": "saga" or "", "series_number": n}`, the typed `show_numbers.EpisodeDocument`. The series is in
+   lower case. A reel in no series writes `"series": ""` and `"series_number": 0`. A reel with no number has no file, so
+   the outbox of every published reel stays the same.
 
 ## The corner, measured
 
@@ -63,12 +65,34 @@ a piece of text, a signature mark, or the top 40 % of a recorded figure:
 | Upper right, x 802 | 38 | 0 | 16 |
 | Left gutter, x 36 | 47 | 0 | 14 |
 
-The chip started at 98 px tall, and that ran under the Stick hook card, whose top edge is y 300. It is now 66 px tall.
+That chose the gutter, with the chip at y 232. It was drawn 66 px tall there, and that sits inside the top 14 % Meta asks
+to keep clear, so it moved down. The same 668 frames through the gate's own rules, with measured text and drawn outlines:
 
-The bug stays fixed: a reel that meets it is changed, never the corner. Over the sample frames of ten proof reels the
-gate refuses two published reels as they stand, both true by the rule: take-my-phone, where the cactus's pot sits behind
-the chip in 4 of 43 frames, and gloss-terms, where a robot's head touches under it in 4 of 57. They are published and
-will never meet the gate; on a new reel the author moves the pose or the mark.
+| Chip | Text | Mark | Face |
+|---|---|---|---|
+| y 232 to 298 | 0 | 4 | 4 |
+| y 270 to 336 | 4 | 4 | 5 |
+| y 270 to 332 | 0 | 4 | 5 |
+
+At 66 px the moved chip reaches the widest caption of the sample, a pill on text-me that starts at y 334 and runs under
+the chip's left half, so the chip is 62 px tall and ends 2 px above it. Starting lower gives the same counts or worse, and from y 380 the
+face count is 36.
+
+The bug stays fixed: a reel that meets it is changed, never the corner. The gate refuses two of the 15 reels as they
+stand, the same two at both heights and both true by the rule: take-my-phone, where the cactus's pot sits behind the chip
+in 4 of 43 frames, and gloss-terms, where a robot's head touches under it in 5 of 57. They are published and will never
+meet the gate; on a new reel the author moves the pose or the mark.
+
+The chip now overlaps the top right corner of the Stick hook card, whose top edge is y 300 and right edge x 990. The
+card's text ends before the chip, so the gate passes. That corner is what leaving Meta's zone costs at this x.
+
+## The mark
+
+The mark is the avatar's OK-eye, drawn from its vector source in the avatar's own coordinates: a tall filled yellow O, its
+lower half a white eye with a black pupil and a highlight under a flat lid, then a condensed K, Anton's outline, so the
+chip still needs no font. Two things differ from the source at a height of 28 px. The eye and the pupil stop at the lid
+line rather than pass under a lid drawn over them, which left a white halo around the O's top. And the K stands 20 source
+px further off, so the two letters stay apart.
 
 ## Numbers, and what they depend on
 
@@ -78,18 +102,21 @@ keeps what the code can guarantee apart from what it cannot.
 **The code guarantees:** a number is unique, it rises in claim order, it is never reused, the cover, the bug and the
 ledger agree, and a dropped reel leaves a gap.
 
-**The publishing side must supply:**
+**The publishing side supplies,** in Slack 1793501087.434969:
 
-- One confirmed count for `base`, before the first claim: the original reels on the feed, plus every reel that will post
-  ahead of the first numbered one, the 64 in production included. It can move only until the first claim.
-- For a series, the same count (`srstudio number base N --series Saga`). The series' cards count 18 Saga and 9 Gloss
-  episodes so far, so the next are #19 and #10; those are read from the reels, and the publishing side confirms them.
-- The order. A numbered reel posts after the older queue has drained, lowest number first: the forecast chooses when,
-  not which. Today's queue does not follow any number, and the kicker numbers in it come out of order. If numbered reels
-  post by forecast alone, the numbers stay unique but the feed will not count up.
-- A rule for reels left out. A reel that is never posted leaves a gap, or its number comes back to the same reel. Re-posts,
-  carousels and stories take no number.
-- Reading `episode.json` beside each video.
+- The base. The first numbered reel is #193, from 107 posted, 21 queued and 64 in production at 23:40, so `base` is 192.
+- The series. Saga's next is #19 (base 18) and Gloss's next is #10 (base 9).
+- What counts. Only reels: carousels, stories and re-post variants get no number.
+- The rule for reels left out. Numbers are never reused, so a pulled reel leaves a gap.
+- The order. Autopost posts numbered reels lowest first, once no unnumbered reel waits, so the numbers count up on the feed.
+- The reader. Autopost reads `episode.json` in the shape of decision 6. The message does not say what `series_number`
+  holds outside a series; 0 is this decision's reading, and it is `Claim`'s default.
+
+The ledger takes those counts once, when the first numbered reel needs them:
+
+    srstudio number base 192
+    srstudio number base 18 --series Saga
+    srstudio number base 9 --series Gloss
 
 ## Alternatives rejected
 
@@ -104,16 +131,18 @@ ledger agree, and a dropped reel leaves a gap.
 - **A camera-bound bug.** It would slide and shake with the picture. A child of the composition outside the camera group
   stays pixel for pixel in place, which two moving clips confirmed.
 - **The corner News uses.** It collides with burned text on Soft, Saga and Gloss, whose tops carry cards and captions.
-- **A bug with a font.** A stroked drawing, like the signature code, reads the same on every style and carries no
-  licence or install step.
+- **A bug with a font.** Outlines read the same on every style and carry no licence or install step.
+- **Keeping y 232.** It is one refused frame better on gloss-terms, a reel already refused, and it sits inside the zone
+  Meta names.
+- **A 66 px chip at y 270.** It runs over the top of a caption pill in 4 frames of text-me.
 - **The eye on the cover band.** The request asks for the word and the number, and "OK OKAYVILLE" doubles it.
 
 ## Consequences
 
-- No reel can use the look yet: `show-bug` is proposed, so `releases.unpinned` refuses a build that drew it until
-  arc4d3 approves a version and the release pins it. That is the wanted hold: "before any batch uses them".
-- The look is opt-in. A new reel on a plain `Thumbnail` still ships. Making it a rule for every new Okayville reel is one
-  more gate, and only arc4d3's approval makes it due.
+- `show-bug` version 1 is approved, and its approval names the drawing with the avatar's mark. A new reel pins it like any
+  other part; `releases.unpinned` refuses a build that drew it without the pin.
+- The look is opt-in. A new reel on a plain `Thumbnail` still ships, and the 64 in production stay as they are. Making it
+  a rule for every new Okayville reel is one more gate.
 - Every first delivery on this cover evaluates its frames twice more and reads one frame of the video.
 - The gate reads the scene and one frame of the video, not Instagram. A face is an estimate: the top 40 % of a recorded
   figure, with outlines for the bug and the box for the band. A figure no registered character drew is unseen, and so is
