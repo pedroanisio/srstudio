@@ -21,6 +21,7 @@ a similar character or pass contract JSON directly to a builder.
 | Choose a continuity guarantee | [Continuity discovery](catalog/limbs.md#inspect-continuity-before-choosing-a-transition) | Inspect source key derivatives, estimated joins, endpoint holds and rendered sampling separately. |
 | Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
+| Measure authoring cost | [Authoring benchmark](authoring-benchmark.md) | Separate cold/warm phases, compare output hashes, and bound plate renderer invocations. |
 
 ## Repairing authoring input
 

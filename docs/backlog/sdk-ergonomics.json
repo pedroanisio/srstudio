@@ -50,6 +50,44 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "authoring_benchmark": {
+      "baseline_source_commit": "a4a5331a",
+      "initial_render_session_red": {
+        "failed": 12
+      },
+      "initial_benchmark_red": {
+        "failed": 15
+      },
+      "renderer_output_collision_and_duplicate_json_red": {
+        "failed": 2
+      },
+      "engine_enabled_regressions": {
+        "passed": 111,
+        "skipped": 0
+      },
+      "final_fast_checks": {
+        "passed": 46,
+        "deselected": 4
+      },
+      "branch_inclusive_coverage_percent": {
+        "benchmark_fixtures": 93,
+        "benchmark": 95,
+        "plates": 95
+      },
+      "coverage_scope": "The focused pytest-cov invocation exited 1 because its whole-SDK coverage denominator measured 23.02%, below the unchanged 80% gate. The scoped report for all three changed modules passed at 95%; the full repository test suite was not run.",
+      "real_benchmark_repeats_verified": 2,
+      "phases_per_repeat": 16,
+      "cold_plate_engine_invocations": 2,
+      "warm_plate_engine_invocations": 0,
+      "verification_plate_engine_invocations": 2,
+      "drawing_frames_per_fixture": 8,
+      "planning_state_samples_per_fixture": 9,
+      "contact_compiler_audited_samples": 8,
+      "ruff_formatted_files": 1596,
+      "mypy_source_files": 261,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "qualification": "Real renderer tests verify repeatable phase outputs and decoded plate pixels. Timing is observational, not a correctness threshold. Cold application processes and caches do not flush OS or GPU caches. Hardware/driver identity requires external pinning. The compiler audits the eight emitted frames separately from the nine-point planning grid. A 30-second render limit was too small on this host; correctness integration uses explicit 120-second render and 600-second worker limits. No speedup is claimed."
+    },
     "limb_motion_boundaries": {
       "baseline_source_commit": "83917174",
       "ownership_red": {
@@ -771,16 +809,18 @@
     {
       "id": "SDK-P4-03",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Benchmark the agent authoring loop before optimizing it",
       "problem": "The package eagerly imports registered builders, and existing measurement helpers cover source/build comparisons. There is no single benchmark separating discovery, planning, compilation, rendering and cold/warm cache work.",
       "evidence": ["src/srstudio/__init__.py", "src/srstudio/limbs/evaluation.py:measure", "src/srstudio/plates.py"],
       "change": "Create representative bounded benchmarks for those phases; optimize only measured bottlenecks while preserving discovery completeness and deterministic output.",
       "acceptance": ["Separate cold/warm measurements and pinned fixture inputs", "Report sample, frame, plate and engine invocation counts", "Output-equivalence checks accompany any optimization", "No wall-clock performance threshold in ordinary correctness tests"],
+      "resolution": "Added an opt-in, bounded authoring-loop benchmark with fresh-process import/discovery, acting and moving-contact planning, repeated compilation, frame rendering, cold/warm plates and fresh pixel verification. Reports pin fixture parameters, Python sources, package versions and renderer bytes, define per-phase work counts and refuse changed outputs before publication. Scoped plate render sessions expose actual launch attempts, nested budgets and timeouts. No performance optimization or motion-quality improvement is claimed.",
+      "verification": ["tests/test_authoring_benchmark.py", "tests/test_plate_render_sessions.py", "tests/test_plate_cache_identity.py", "tests/test_plates.py", "tests/test_proxy.py", "docs/authoring-benchmark.md", "docs/decisions/0100-authoring-loop-measurements.md"],
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
