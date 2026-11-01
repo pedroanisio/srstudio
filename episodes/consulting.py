@@ -178,7 +178,7 @@ for take in t.takes:
 
 for shot, faces in (("two", tuple(FACES.values())), ("dev", (FACES["dev"],)), ("noor", (FACES["noor"],))):
     stick_reel.check_framing(CAMERAS[shot], faces=faces, marks=MARKS.values())
-hook = stick.card(cv, cv.comp, HOOK, size=58)
+hook = stick.card(cv, cv.comp, HOOK, size=58, width=stick_reel.CARD_CLEAR)
 cv.gate(hook, [(0, min(3.0, t.takes[2].start))])
 spoken = stick_reel.words(ep, t.takes, sentences=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14", extra=sound())

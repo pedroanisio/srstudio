@@ -18,11 +18,18 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=('#buynowpaylater', '#burrito', '#adulting', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("The burrito went to collections", 2.0, number=198),
+        thumbnail=ShowCover("Repossessing a burrito", 2.0, number=198),
     ),
     tags=Tags("money-services", "institution", "tension", recurring=('noor',), test="sp-speakers", arm="a"),
     style="Stick",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
     comedy=Scores(author=17, reviewer=18),
     cover=True,
 )

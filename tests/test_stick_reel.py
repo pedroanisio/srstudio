@@ -107,3 +107,7 @@ def test_a_subtitle_starts_with_the_take_s_first_word_and_not_with_its_still():
     plain = Take("02", "dev", "open", "Easy.", 3.0, 1.0)
     effect = Take("03", "sfx", "open", "", 4.0, 1.0)
     assert stick_reel.spoken_cues((held, plain, effect)) == [(1.05, 3.0, "Step one."), (3.0, 4.0, "Easy.")]
+
+
+def test_the_clear_card_ends_at_the_bug_box():
+    assert (1080 + stick_reel.CARD_CLEAR) / 2 <= stick_reel.BUG_BOX[0]

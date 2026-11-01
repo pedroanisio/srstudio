@@ -29,7 +29,7 @@ SHOTS = ("door", "noor", "repo", "truck", "two", "hook", "guac", "small", "board
 HOOK = "PAYMENT 3 OF 4: MISSED"
 PLAIN = VoiceSettings(stability=0.45, similarity_boost=0.75, style=0.35, speed=1.0)
 FLAT = VoiceSettings(stability=0.7, similarity_boost=0.75, style=0.1, speed=0.95)  # he has done this before
-TRUCK_HOLD, LOOK_HOLD, GUAC_HOLD, TURN_HOLD = 2.9, 1.2, 1.5, 1.0
+TRUCK_HOLD, LOOK_HOLD, GUAC_HOLD, TURN_HOLD = 2.9, 1.2, 1.5, 1.2
 SCRIPT = takes.Script(
     title="Pay in Four — Stick",
     seed=3306,

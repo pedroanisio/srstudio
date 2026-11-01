@@ -155,7 +155,7 @@ def sound() -> list:
 for take in t.takes:
     stage(take)
 
-hook = stick.card(cv, cv.comp, HOOK, size=58)
+hook = stick.card(cv, cv.comp, HOOK, size=58, width=stick_reel.CARD_CLEAR)
 cv.gate(hook, [(0, min(3.0, t.takes[3].start))])
 spoken = stick_reel.words(ep, t.takes, sentences=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14", extra=sound())

@@ -1378,12 +1378,17 @@ CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 
 
 @register("graphic", "stick-card", tags=("hook", "card", "font"))
-def card(cv: Canvas, parent, text: str, *, size: float = 54):
-    """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card."""
+def card(cv: Canvas, parent, text: str, *, size: float = 54, width: int | None = None):
+    """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card; ``width``
+    narrows it about the frame's centre, so that a reel's card stays clear of the show's bug."""
     cv.require_font("the Stick card sets its hook in it")
     if not text.strip():
         raise StickDataError("a hook card needs text")
     x, y, w, h, r = CARD
+    if width is not None:
+        if not 70 < width <= w:
+            raise StickDataError(f"a card's width runs over 70 up to {w}, got {width!r}")
+        x, w = (cv.width - width) // 2, width
     g = _group(cv, parent)
     box(cv, g, x, y, w, h, "#ffffff", r=r)
     name = cv.uid("text")
