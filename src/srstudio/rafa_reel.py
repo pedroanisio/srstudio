@@ -37,7 +37,8 @@ __all__ = [
 FRAMES: dict[str, float] = {"medium": 1.0, "close": host_kit.FRAMES["close"], "tight": host_kit.FRAMES["tight"]}
 CUT_LEAD = 0.05  # seconds a cut lands before its word
 INSERT_LENSES: dict[str, Camera] = {  # a prop on its own, as tall as a phone: the lens is close, for its lettering
-    "rafa-tote": Camera((62.0, -65.0, -196.0), (0.0, -53.0, 0.0), 40.0, 4.0)
+    "rafa-tote": Camera((62.0, -65.0, -196.0), (0.0, -53.0, 0.0), 40.0, 4.0),
+    "rafa-mug": Camera((14.0, -30.0, -176.0), (9.0, -24.0, 0.0), 40.0, 4.0),
 }
 INSERT_WALL = "#3E5A52"  # the kitchen wall, so a cream prop stands off it
 
