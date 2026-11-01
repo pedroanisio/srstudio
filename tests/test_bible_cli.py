@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -133,3 +134,37 @@ def test_gaps_lists_a_name_that_recurs_with_no_sheet_and_exits_1(world, capsys):
     out = capsys.readouterr().out
     assert "missing: bruno (okayville) is on 2 published reels with no sheet" in out
     assert "placeholders waiting" in out
+
+
+def test_rig_reports_a_reel_that_redraws_a_base_rig_by_exit_status(world, monkeypatch, capsys):
+    base, found, tmp = world
+    found["new-reel"] = replace(found["new-reel"], style="Stick")
+    found["cleaning-fee"] = replace(found["cleaning-fee"], style="Cutout")
+    drawn = {"new-reel": [bible_cli.bible_check.Finding("new-reel", "rig", "'dev' drawn with neck True")]}
+    seen = []
+
+    def check_release(release, episodes, scripts):
+        seen.append((release.slug, scripts))
+        return drawn.get(release.slug, [])
+
+    monkeypatch.setattr(bible_cli.bible_rig, "check_release", check_release)
+    argv = [*base, "rig", "--scripts", str(tmp / "scripts")]
+    assert bible_cli.run(parse(*argv)) == 1
+    out = capsys.readouterr().out
+    assert "new-reel: rig: 'dev' drawn with neck True" in out and out.endswith("1 Stick reels checked, 1 findings\n")
+    assert seen == [("new-reel", tmp / "scripts")]  # the Cutout reel is never handed to the rule
+    drawn.clear()
+    assert bible_cli.run(parse(*argv, "--only", "new-reel")) == 0
+    assert capsys.readouterr().out == "1 Stick reels checked, 0 findings\n"
+
+
+def test_rig_that_cannot_read_a_builder_exits_2(world, monkeypatch, capsys):
+    base, found, _ = world
+    found["new-reel"] = replace(found["new-reel"], style="Stick")
+
+    def unreadable(*args):
+        raise bible_cli.bible_rig.RigError("new-reel: its builder failed")
+
+    monkeypatch.setattr(bible_cli.bible_rig, "check_release", unreadable)
+    assert bible_cli.run(parse(*base, "rig")) == 2
+    assert "its builder failed" in capsys.readouterr().err

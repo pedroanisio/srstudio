@@ -40,6 +40,7 @@ from srstudio import (
     bible,
     bible_check,
     bible_lock,
+    bible_rig,
     caption_gate,
     comedy_floor,
     figure_gates,
@@ -106,8 +107,9 @@ def caption_drift(renders: Path, *, episodes: Path | None = None, only: list[str
 
 
 def bible_findings(first: dict[str, str], chosen: dict[str, releases.Release], episodes: Path) -> dict:
-    """What the cast bible (ADR 0069) finds in each first delivery. A bible that cannot be read refuses the delivery:
-    a canon check that passes because its book is missing would be a control that cannot fail."""
+    """What the cast bible (ADR 0069) finds in each first delivery: its names, drawings and voices, and the base rig
+    of a recurring Stick figure. A bible that cannot be read refuses the delivery: a canon check that passes because
+    its book is missing would be a control that cannot fail."""
     if not first:
         return {}
     try:
@@ -116,8 +118,13 @@ def bible_findings(first: dict[str, str], chosen: dict[str, releases.Release], e
     except bible.BibleError as exc:
         raise DeliveryError(f"the cast bible cannot be read: {exc}") from exc
     known = {e.name for e in registry.entries("character")}
+    scripts = Path(__file__).resolve().parent  # a Stick reel's builder is run to see the looks it draws
     return {
-        slug: bible_check.check_release(library, chosen[slug], episodes, characters=known) for slug in sorted(first)
+        slug: [
+            *bible_check.check_release(library, chosen[slug], episodes, characters=known),
+            *bible_rig.check_release(chosen[slug], episodes, scripts),
+        ]
+        for slug in sorted(first)
     }
 
 

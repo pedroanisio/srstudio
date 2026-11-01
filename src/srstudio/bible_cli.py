@@ -12,7 +12,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from . import bible, bible_build, bible_check, bible_gaps, bible_inventory, bible_lock, registry, releases
+from . import bible, bible_build, bible_check, bible_gaps, bible_inventory, bible_lock, bible_rig, registry, releases
 from .errors import SrstudioError
 
 __all__ = ["add_parser", "run"]
@@ -41,6 +41,11 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     check = actions.add_parser("check", help="check the unpublished releases and any brief against the bible")
     check.add_argument("--brief", type=Path, action="append", default=[], help="a brief or script with a Cast: line")
     check.add_argument("--only", nargs="+", default=[], help="these release slugs alone")
+    rig = actions.add_parser(
+        "rig", help="hold each Stick reel's drawn looks to the base rig its figures were published with"
+    )
+    rig.add_argument("--only", nargs="+", default=[], help="these release slugs alone, published or not")
+    rig.add_argument("--scripts", type=Path, default=REPO / "episodes", help="the folder of the reels' builders")
     render = actions.add_parser("render", help="write the bible folder: sheets, pictures, diagram and pages")
     render.add_argument("out", type=Path)
     render.add_argument("--model", required=True, help="the model that wrote the pages, for their frontmatter")
@@ -82,6 +87,8 @@ def _run(args: argparse.Namespace) -> int:
     episodes = _episodes(args)
     published = bible_inventory.published(_outbox(args))
     characters = {e.name for e in registry.entries("character")}
+    if args.action == "rig":
+        return _rig(args, found, episodes)
     if args.action == "inventory":
         reels = bible_inventory.collect(
             found,
@@ -129,6 +136,19 @@ def _run(args: argparse.Namespace) -> int:
         print(f"{len(pending)} unpublished releases and {len(args.brief)} briefs checked, {total} findings")
         return 1 if total else 0
     return _render(args, loaded, found)
+
+
+def _rig(args: argparse.Namespace, found: dict[str, releases.Release], episodes: Path) -> int:
+    stick = {
+        s: r for s, r in sorted(found.items()) if bible_rig.draws_stick_figures(r) and (not args.only or s in args.only)
+    }
+    total = 0
+    for release in stick.values():
+        for finding in bible_rig.check_release(release, episodes, args.scripts):
+            print(finding)
+            total += 1
+    print(f"{len(stick)} Stick reels checked, {total} findings")
+    return 1 if total else 0
 
 
 def _gaps(

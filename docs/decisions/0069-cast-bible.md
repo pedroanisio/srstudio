@@ -102,6 +102,36 @@ quotation; raise the version in both files; add the changelog section; `bible ve
 A new reel gets its characters by a `Cast: slug, slug` line in the brief, checked by `bible check --brief`, and becomes
 canon only when it is published.
 
+**The rig rule.** arc4d3, Slack 1793513568.110249, on Dev's red tie and the neck: "a recurring figure's base rig stays
+as published, and only clothes and props change per reel", and "a costume can change with the story". `srstudio.bible_rig`
+holds it as code. For a Stick figure the base rig is the `stick.Look` fields `hair`, `glasses` and `neck`: the silhouette
+of the head, the glasses, and whether the torso reaches the head. `tie`, `apron`, `cap` and `sunhat` are clothes and
+props, and a test holds the two lists against the dataclass so a new field has to be placed. Glasses are base rig
+because Noor's sheet says "The bun and the glasses: they are what tell her from Dev", and every take that names Dev, Noor
+or Gary keeps theirs.
+
+A figure carries no name in the code, so the check runs the reel's builder in a temporary copy of its project and records
+every look with the name the drawing gives away: the actor of the take whose `phones` a rig's mouth speaks, the actor of
+the take as long as a sleeper's `talk`, or the name on a call tile. A named look must equal the published base rig
+exactly, so Dev redrawn with new hair is flagged. A look no one speaks from may be an extra recombined from the same
+options, so it counts only for the neck arc4d3 ruled off: a recurring figure's hair with another neck. A figure the reel
+names and no one is drawn as is flagged too. The published base rigs are literal data in the module, so a change to the
+library's own constants cannot move the baseline, and a test holds their names to the bible's characters drawn by the
+shared rig.
+
+`srstudio bible rig` runs it over any set of releases, and the delivery gate runs it on a first delivery of a Stick reel
+that names Dev, Noor or Gary. A builder that is missing, fails, runs past 300 s or draws no figure refuses the delivery,
+as does a timeline it cannot read: a rule that read nothing cannot fail.
+
+What it cannot see: a recurring figure with no line in the reel, drawn with other hair and with a base-rig double
+beside them. Published, that is the old Dev of `the-stove`, bald and in glasses and silent in its last shot, which the
+canon rule `time-lapse-inside-a-reel` allows. It sees a reel only through a builder named for its slug.
+
+Over the 19 Stick reels of `develop`, 17 of them published, it ran the 11 that name a recurring figure, all published, and
+flagged none. On `feat/okay-nov01` at
+`5541ef44` it ran 11 and flagged none. At `30a61064`, before that branch's `b72f092a`, it flagged `neck=True` on Dev and
+Noor in `consulting`, `in-two-hundred` and `pay-in-four`, the three reels of the ruling.
+
 **What stays human.** Which side of a clash wins, who a placeholder becomes, and whether a joke contradicts a canon
 fact in other words.
 
