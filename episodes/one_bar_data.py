@@ -65,7 +65,7 @@ LINES = (
     Line("mia", "How much?"),
     Line("gil", "Nine percent."),
     Line("mia", "Lean left."),
-    Line("gil", "That's the neighbors."),
+    Line("gil", "That's the neighbor's bar."),
     Line("mia", "What are we even sending?"),
     Line("gil", "The complaint."),
     Line("mia", "What complaint?"),

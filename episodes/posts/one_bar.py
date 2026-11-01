@@ -19,11 +19,21 @@ RELEASE = Release(
             " synthesized in code."
         ),
         hashtags=('#nosignal', '#wifi', '#homelife', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("One bar. Don't move.", 7.1, number=210),
+        thumbnail=ShowCover("One bar. Don't move.", 7.1, number=210, focus=(540.0, 1920.0), zoom=1.02),
     ),
     tags=Tags("everyday-tech", "institution", "tension", test="sp-speakers", arm="a"),
     style="Toon",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-captions": 1,
+        "toon-frog": 2,
+        "toon-hallway": 1,
+        "toon-key-line": 1,
+        "toon-ledge": 1,
+        "toon-rabbit": 2,
+    },
     comedy=Scores(author=15, reviewer=18),
     cover=True,
 )
