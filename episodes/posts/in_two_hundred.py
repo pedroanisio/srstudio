@@ -18,11 +18,20 @@ RELEASE = Release(
             " effects synthesized in code."
         ),
         hashtags=('#roadtrip', '#gps', '#marriage', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("The map took her side", 2.0, number=200),
+        thumbnail=ShowCover("The map took her side", 24.0, number=200),
     ),
     tags=Tags("everyday-tech", "protagonist", "triumph", recurring=('dev', 'noor'), test="sp-speakers", arm="b"),
     style="Stick",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-rig": 1,
+        "stick-windshield": 1,
+        "stick-windshield-dash": 1,
+        "stick-words": 1,
+    },
     comedy=Scores(author=16, reviewer=18),
     cover=True,
 )
