@@ -1,11 +1,12 @@
 """Legacy authoring boundaries expose repair fields without interpreting their prose."""
 
 import json
+import pickle
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from sr_core.scene import Scene
+from sr_core.scene import Scene, SchemaValueError
 
 from srstudio import Canvas, cast, cli
 from srstudio import head_motion as hm
@@ -327,3 +328,20 @@ def test_documented_agent_repair_recipe_retries_a_typed_style():
     assert namespace['failure']['path'] == 'style.breath_period'
     assert namespace['repaired'].breath_period == 3
     assert isinstance(namespace['motion'], HeadPlan)
+
+
+def test_invalid_key_time_retains_schema_catch_and_round_trip_repair_fields():
+    cv = canvas()
+    node = cv.group(cv.comp, 'head')
+    before = cv.scene.to_bytes()
+    with pytest.raises(SchemaValueError) as caught:
+        cv.keys(node, 'rotation', ((0, 0), (float('nan'), 1)))
+    error = caught.value
+    assert isinstance(error, CanvasError)
+    assert error.to_dict()['path'] == 'keys.rotation[1][0]'
+    assert error.to_dict()['code'] == 'canvas.keys.time'
+    assert error.to_dict()['remedy']
+    restored = pickle.loads(pickle.dumps(error))
+    assert isinstance(restored, SchemaValueError)
+    assert restored.to_dict() == error.to_dict()
+    assert cv.scene.to_bytes() == before
