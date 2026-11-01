@@ -1251,17 +1251,24 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-cable-drawer": {"title": "Gaveta de cabos"},
-    "toon-gray-cable": {"title": "O cabo cinza"},
-    "toon-kitchen-bin": {"title": "Lixeira da cozinha"},
-    "toon-fridge-light": {"title": "Luz da geladeira"},
-    "toon-hill-window": {"title": "Janela sobre o morro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "room-door": {"title": "Porta do quarto"},
+    "spoon": {"title": "Colher"},
+    "cereal-bowl": {"title": "Tigela de cereal"},
+    "green-tick": {"title": "Visto verde"},
+    "face-box": {"title": "Marcas de rosto"},
+    "meter-panel": {"title": "Painel de medidores"},
+    "recording-window": {"title": "Janela de gravação"},
     "toon-corkboard": {"title": "Quadro de cortiça"},
     "toon-exclaim": {"title": "Ponto de exclamação"},
     "toon-magnifier": {"title": "Lupa"},
     "toon-stuck-notes": {"title": "Bilhetes riscados"},
     "toon-laptop-screen": {"title": "Tela do laptop"},
+    "toon-hill-window": {"title": "Janela sobre o morro"},
+    "toon-fridge-light": {"title": "Luz da geladeira"},
+    "toon-kitchen-bin": {"title": "Lixeira da cozinha"},
+    "toon-gray-cable": {"title": "O cabo cinza"},
+    "toon-cable-drawer": {"title": "Gaveta de cabos"},
     "paper-streamers": {"title": "Serpentinas de papel"},
     "id-lanyard": {"title": "Crachá com cordão"},
     "sheet-cake": {"title": "Bolo retangular"},
@@ -8526,6 +8533,35 @@
         "at": 29.3
       },
       "text": "O quadro que entra pelo lado, sem rostos, com a marca no centro."
+    },
+    {
+      "section": "props",
+      "name": "Janela de gravação",
+      "parts": [
+        "recording-window",
+        "meter-panel",
+        "face-box",
+        "green-tick"
+      ],
+      "shot": {
+        "episode": "one-way-video",
+        "at": 21.5
+      },
+      "text": "Uma janela de entrevista por vídeo inventada: ponto vermelho, contagem regressiva, barras que medem o sorriso e cantos que seguem um rosto."
+    },
+    {
+      "section": "props",
+      "name": "Cereal e porta",
+      "parts": [
+        "cereal-bowl",
+        "spoon",
+        "room-door"
+      ],
+      "shot": {
+        "episode": "one-way-video",
+        "at": 14.0
+      },
+      "text": "A porta abre atrás do candidato e entra alguém com uma tigela de cereal, que nunca é posta de lado."
     }
   ]
 }

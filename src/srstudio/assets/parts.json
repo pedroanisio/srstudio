@@ -10940,7 +10940,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "drawing": "7fb1e2cde501de8ee7418baf3ac977a1e2d81c06f4029f4ba0c79a6185576d1a",
           "rig": null
         }
       ]
@@ -10957,7 +10957,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "drawing": "e3a330176ad26fc953e56ac3b2797db19bda96c066834fcd0e1a0f9c34ef1210",
           "rig": null
         }
       ]
@@ -10974,7 +10974,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "drawing": "65c9176a8d13fb3b4e3d53dba54fc4957ecdd864bec53332d6bee42d80392bfd",
           "rig": null
         }
       ]
@@ -11281,6 +11281,125 @@
           "proof": "",
           "approval": null,
           "drawing": "309c4a2e1fd41685b78d974f31bcb01ae0e57a61cb8bf40175328c9def0da136",
+          "rig": null
+        }
+      ]
+    },
+    "recording-window": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An invented recording window: a dark frame, a red dot and a countdown Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "549d1f26938b2c287afad666bfd6b1a8860c1e80e940d61a1b63878c530efa00",
+          "rig": null
+        }
+      ]
+    },
+    "meter-panel": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Up to four labelled bars keyed to the reel's times Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0f9e74774c7510628e5d4278c8080064c1249f9d928f6f1b9e0cb054a27c3aa7",
+          "rig": null
+        }
+      ]
+    },
+    "face-box": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Four corner marks round a tracked face Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ee3642e6d421d1707c8121af7e2e243bc3f3760ffac12d7ca8a9463849235ff5",
+          "rig": null
+        }
+      ]
+    },
+    "green-tick": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A green disc with a tick that pops in at its time Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bfe9d0b585ee83111fe85907f4426618e6292aa951aaedae3d2bc434d9a607ed",
+          "rig": null
+        }
+      ]
+    },
+    "cereal-bowl": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A half-eaten bowl of cereal, side on Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "971d823c7d1ca9811a3044048a9f67c45d59775528de70ca7dfa0f01415bccfc",
+          "rig": null
+        }
+      ]
+    },
+    "spoon": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain spoon held at the grip Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bec33707a990ab40cee76a0904348fd489de40ae84b07cde9ef777480d692fcc",
+          "rig": null
+        }
+      ]
+    },
+    "room-door": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain white room door that swings open onto the dark Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "26237a77c8c27edbb74edbfdf5eebb5b2e8d065ea4576ffa638e0e7535daf591",
           "rig": null
         }
       ]
