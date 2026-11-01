@@ -56,7 +56,7 @@ def stage() -> tuple[Scene, Canvas]:
 
 def drawn(plan: HeadPlan | None = None, poses=POSES, rig=RIG, **kw) -> ET.Element:
     scene, cv = stage()
-    plan = hm_plan() if plan is None else plan
+    plan = head_motion.plan(rig.style, [], 8.0) if plan is None else plan
     toon_head.figure(cv, cv.comp, rig, poses, 8.0, plan, **kw)
     return ET.fromstring(scene.to_bytes(layout="pretty"))
 

@@ -104,6 +104,12 @@ style.
 
 ### Lip sync
 
+`Performance.mouth` and `Episode.perform(mouth=...)` use `(project second, pose)` sequences. The base actor's
+vocabulary is `srstudio.rig.MOUTHS`: `rest`, `round`, `open`, `small`, `smile`. In particular, use `rest`, not
+the `closed` state from other styles. Actors reject unknown names, malformed pairs and nonfinite, negative or
+decreasing times with `RigError` before drawing. Custom actors can extend `Actor.mouth_poses` alongside their
+`draw_mouths()` implementation; retain `rest` for the default performance.
+
 `srstudio.lipsync` turns what is said into mouth poses ([ADR 0019](../docs/decisions/0019-lip-sync.md)). The shipped
 mouths stay the default, so delivered episodes rebuild unchanged. New episodes opt in:
 
@@ -294,6 +300,11 @@ shot group). The office, café, Manager, Toon sloth/goat/hamster and episode sla
 using an existing `ep` Episode. Python tools can use `srstudio.describe(kind, name)` or
 `registry.get(kind, name).describe()`;
 both return the same JSON-compatible details as `--json`. Inspection does not call the builder.
+
+`Canvas.keys()` builds and validates the complete animation before attaching it to the scene. A failed key
+conversion or SDK validation leaves existing nodes and scene bytes unchanged, so a corrected call can be retried
+on the same canvas. Frozen drawings also validate the supplied keys before retaining only the initial value.
+This atomicity covers one `keys()` call; it does not roll back separate drawing calls made earlier.
 
 Plugin decorators can add `slots=("at_table",)` for unannotated callback parameters and
 `examples=("...Python code using ep...",)` for their own usage examples. The library's `Slot` annotations
@@ -1672,6 +1683,24 @@ accents of the line, a dip before a phrase, a two-octave idle, a breath tied to 
 deterministic and bounded by `limit(style, name)`. Head plans keep the spring history and Catmull-Rom neighbors needed
 to preserve motion across shot cuts. Long carried-spring channels are sampled into linear keys at at least 240 Hz
 to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
+`limit()` describes the rig's allowed excursion, not a universal overshoot factor for every spring. `plan()`
+checks every channel's response; `HeadPlan.check_bounds(style)` exposes the same check. Public Toon, Host, News,
+and Rafa head entry points validate supplied plans before drawing or generating plates' face states.
+Linear, hold, and endpoint-bounded easing check their key values; Catmull-Rom, default TCB, back, and elastic
+curves also check analytic extrema between keys. Unknown curve names raise `HeadMotionError`.
+Short spring curves use sampled extrema plus a conservative
+curvature allowance between samples; long channels use the extrema of their emitted linear keys. Validation
+shares the sampler's work budget. A response outside the envelope raises `HeadMotionError` naming the channel
+and bound. Reduce the excursion or adjust curve/timing; for springs, increasing damping can help. Tuning a curve
+does not enlarge the approved rig. A bare `Channel(curve="spring")` uses the engine's default spring without
+carried momentum; it is checked separately from explicit `Spring` channels.
+For example, Goat's `Spring(2, 0.2)` settling response exceeds its face/turn envelope, while `Spring(0.8, 0.5)`
+fits the same directed-turn example. `check_bounds(style, frozen=True)` checks only the initial pose emitted by
+a frozen drawing, without sampling unused future spring history. Times must remain distinct on the six-decimal
+scene clock. Immutable rig specimens use a separate, fixed probe generated from the rig's combined geometry
+envelope; that probe folds several channels into turn/nod and is not a caller-supplied performance plan.
+Generate plans with the destination rig's `style`: a plan prepared for a larger movement envelope can be
+refused when applied to another character. Regenerate it with the destination style before drawing.
 Explicit `facing=[(on, off, side)]` intervals take precedence over incidental glances: an idle glance is omitted
 when its eye hold or head return overlaps a directed turn, including that turn's return to rest. This prevents
 their head turns and face slides from adding beyond the style's intended bounds. Nonoverlapping glances retain
@@ -1698,6 +1727,10 @@ a body that has no ruff or collar to hide the seam. Word stress comes from a tab
 state over it. Pass such poses to `toon_head.figure` with `BENTO_RIG`. Each mood's tilt is held by the rig through
 `HeadRig.pose_tilt`. A sketch's shared kinds draw on him as his nearest mood, and `parse_poses` admits only those. His
 lip sync takes the same viseme track as the bear and the rabbit.
+`srstudio inspect character toon-bento --json` includes an executable mood-change recipe and the timing
+contract. Import `MOODS`, `EYE_STATES` and `GESTURES` from `srstudio.toon_bento` to discover names. The registered
+builder holds mood tilts; use `toon_head.figure` for a moving head plan. Bento's named gestures supply his arms;
+nonempty `limbs` replacement tracks are unsupported.
 
 ### Toon sketches: *The Report* (T3), *Logo Bigger* (T4) and *Quick Question* (T5)
 

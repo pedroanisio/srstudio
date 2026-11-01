@@ -93,10 +93,32 @@ GAZES = {"ahead": (0.0, 0.0), "left": (-0.42, 0.04), "right": (0.42, 0.04), "up"
 LOOK_AWAY = (("left", 0.4), ("right", 0.8), ("up", 1.0))  # the share of glances each way, cumulative
 CHANNELS = ("lean", "turn", "nod", "roll", "face_x", "idle_roll", "idle_y", "breath")
 SPRING_RUN = 8  # longer carried chains are sampled to bound renderer work
-_ROOM = 1.25  # what a spring may add over its largest target, carried momentum included
+_ROOM = 1.25  # approved rig envelope relative to nominal targets; actual spring responses are checked
 
 _VOWELS = re.compile(r"[aeiouy]+")
 _WORD = re.compile(r"[\w'’-]")
+_BOUNDED_CURVES = frozenset(
+    {
+        'linear',
+        'hold',
+        'step',
+        'steps',
+        'ease-in',
+        'ease-out',
+        'ease-in-out',
+        'cubic-bezier',
+        *(
+            f'{family}-{direction}'
+            for family in ('sine', 'quad', 'cubic', 'quart', 'quint', 'expo', 'circ', 'bounce')
+            for direction in ('in', 'out', 'in-out')
+        ),
+    }
+)
+_CURVES = (
+    _BOUNDED_CURVES
+    | {'catmull-rom', 'tcb', 'spring'}
+    | {f'{family}-{direction}' for family in ('back', 'elastic') for direction in ('in', 'out', 'in-out')}
+)
 _STOPS = frozenset(".,;:!?…—")
 _FUNCTION = frozenset(
     """a about after all also am an and any are as at be because been before but by can could did do does down each else
@@ -182,6 +204,8 @@ class Channel:
     curve: str = "linear"
 
     def __post_init__(self) -> None:
+        if self.spring is None and self.curve not in _CURVES:
+            raise HeadMotionError(f'unknown head channel curve {self.curve!r}; expected one of {sorted(_CURVES)}')
         if any(not _finite(t, v) for t, v in self.keys):
             raise HeadMotionError(f"a channel's keys are finite, got {self.keys!r}")
         if any(b[0] <= a[0] for a, b in zip(self.keys, self.keys[1:], strict=False)):
@@ -212,9 +236,22 @@ class Channel:
 
 def _bake_spring(channel: Channel) -> Channel:
     """Sample the renderer's carried spring in linear time, avoiding recursive carry chains."""
-    spring = channel.spring
-    if spring is None or len(channel.keys) <= SPRING_RUN:
+    if channel.spring is None or len(channel.keys) <= SPRING_RUN:
         return channel
+    return _sample_spring(channel)[0]
+
+
+def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tuple[float, float]]:
+    """Sample carried motion and conservatively bound the continuous curve between samples.
+
+    On each interval, linear-interpolation error is at most max(abs(second derivative)) * step² / 8.
+    The spring's homogeneous response gives a global curvature bound; its endpoint correction is linear.
+    """
+    spring = channel.spring
+    assert spring is not None
+    if len(channel.keys) < 2:
+        held = round(channel.keys[0][1], 4) if channel.keys else 0.0
+        return channel, (held, held)
     if spring.frequency > 10000 / 32:
         raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
     attrs = spring.attributes()
@@ -249,8 +286,15 @@ def _bake_spring(channel: Channel) -> Channel:
         step, release = responses(t)
         return b + (a - b) * (1 - step) + velocity * release - tail * t / span
 
+    def curvature(a: float, b: float, velocity: float) -> float:
+        # Homogeneous energy v² + w²*y² decreases under nonnegative damping. Therefore both |v| and
+        # w*|y| are bounded by the initial energy norm, and |y''| <= 2*z*w*|v| + w²*|y|.
+        # This stays well conditioned even when the two overdamped roots nearly coincide.
+        return w * (2 * z + 1) * math.hypot(velocity, w * (a - b))
+
     keys: list[Key] = []
     velocity = 0.0
+    low, high = math.inf, -math.inf
     for (start, av), (end, bv) in zip(channel.keys, channel.keys[1:], strict=False):
         a, b = round(av, 4), round(bv, 4)
         span = end - start
@@ -258,17 +302,91 @@ def _bake_spring(channel: Channel) -> Channel:
         tail = (a - b) * (1 - step_end) + velocity * release_end
 
         count = math.ceil(span * rate)
+        margin = curvature(a, b, velocity) * (span / count) ** 2 / 8
+        segment_low, segment_high = b, b
         for i in range(count):
             t = round(start + span * i / count, 6)
             if keys and t <= keys[-1][0]:
                 raise HeadMotionError("spring keys exceed the scene clock resolution")
-            keys.append((t, round(value(span * i / count, a, b, velocity, tail, span), 6)))
+            sampled = value(span * i / count, a, b, velocity, tail, span)
+            segment_low, segment_high = min(segment_low, sampled), max(segment_high, sampled)
+            keys.append((t, round(sampled, 6)))
+        low, high = min(low, segment_low - margin), max(high, segment_high + margin)
         h = max(1e-9, min(1e-3, 0.1 * span))
-        velocity = (b - value(span - h, a, b, velocity, tail, span)) / h
+        velocity = (b - value(span - h, a, b, velocity, tail, span)) / h if carry else 0.0
     keys.append((round(channel.keys[-1][0], 6), round(channel.keys[-1][1], 4)))
     if len(keys) > 1 and keys[-1][0] <= keys[-2][0]:
         raise HeadMotionError("spring keys exceed the scene clock resolution")
-    return Channel(tuple(keys), curve="linear")
+    return Channel(tuple(keys), curve="linear"), (low, high)
+
+
+def _spline_extrema(keys: tuple[Key, ...]) -> list[float]:
+    """Exact cubic extrema with sr-eval/channel.rs's nonuniform Catmull-Rom/default TCB tangents."""
+    incoming, outgoing = [], []
+    for i, (time, value) in enumerate(keys):
+        before = value - keys[i - 1][1] if i else keys[1][1] - value
+        after = keys[i + 1][1] - value if i + 1 < len(keys) else before
+        tangent = (before + after) / 2
+        left = time - keys[i - 1][0] if i else 0.0
+        right = keys[i + 1][0] - time if i + 1 < len(keys) else 0.0
+        incoming.append(tangent * 2 * left / (left + right) if left and right else tangent)
+        outgoing.append(tangent * 2 * right / (left + right) if left and right else tangent)
+    extrema: list[float] = []
+    for i, ((_, start), (_, end)) in enumerate(zip(keys, keys[1:], strict=False)):
+        a = 2 * start - 2 * end + outgoing[i] + incoming[i + 1]
+        b = -3 * start + 3 * end - 2 * outgoing[i] - incoming[i + 1]
+        c = outgoing[i]
+        if a == 0:
+            roots = [-c / (2 * b)] if b else []
+        else:
+            discriminant = 4 * b * b - 12 * a * c
+            q = -b - math.copysign(math.sqrt(max(0.0, discriminant)) / 2, b)
+            roots = [q / (3 * a), c / q] if discriminant >= 0 and q else []
+        extrema.extend(((a * u + b) * u + c) * u + start for u in roots if 0 < u < 1)
+    return extrema
+
+
+def _easing_range(curve: str) -> tuple[float, float]:
+    """Continuous progress extrema for the engine's default back/elastic curves, including both endpoints."""
+    family, direction = curve.split('-', 1)
+    if family == 'back':
+        c = 1.70158 * (1.525 if direction == 'in-out' else 1)
+        overshoot = 4 * c**3 / (27 * (c + 1) ** 2)
+    else:
+        # For elastic-out: 1 - exp(-a*u)*cos(w*u). Its extrema satisfy tan(w*u) = -a/w.
+        # Elastic-in is its reflection; in-out uses half the excursion and period 0.45.
+        a, w = 10 * math.log(2), 2 * math.pi / (0.45 if direction == 'in-out' else 0.3)
+        first = (math.pi - math.atan(a / w)) / w
+        overshoot = -math.exp(-a * first) * math.cos(w * first)
+    if direction == 'in':
+        return -overshoot, 1.0
+    if direction == 'out':
+        return 0.0, 1 + overshoot
+    return -overshoot / 2, 1 + overshoot / 2
+
+
+def _channel_bounds(channel: Channel) -> tuple[float, float]:
+    """Bound the emitted curve, including interior extrema, without changing its interpolation."""
+    keys = tuple((round(t, 6), round(v, 4)) for t, v in channel.keys)
+    if any(b[0] <= a[0] for a, b in zip(keys, keys[1:], strict=False)):
+        raise HeadMotionError('channel keys exceed the scene clock resolution')
+    values = [v for _, v in keys]
+    if len(keys) < 2:
+        return min(values), max(values)
+    if channel.spring is not None:
+        if len(keys) > SPRING_RUN:
+            baked, _ = _sample_spring(channel)
+            return min(v for _, v in baked.keys), max(v for _, v in baked.keys)
+        return _sample_spring(replace(channel, keys=keys))[1]
+    if channel.curve == 'spring':
+        # A bare engine spring has k=100, c=10, m=1 and no carried velocity.
+        return _sample_spring(Channel(keys, Spring(10 / (2 * math.pi), 0.5)), carry=False)[1]
+    if channel.curve in ('catmull-rom', 'tcb'):
+        values.extend(_spline_extrema(keys))
+    elif channel.curve not in _BOUNDED_CURVES:
+        low, high = _easing_range(channel.curve)
+        values.extend(a + (b - a) * u for (_, a), (_, b) in zip(keys, keys[1:], strict=False) for u in (low, high))
+    return min(values), max(values)
 
 
 @dataclass(frozen=True)
@@ -326,7 +444,10 @@ class HeadStyle:
 
 
 def limit(style: HeadStyle, name: str) -> float:
-    """The most a channel of ``style`` may reach, overshoot and carried momentum included."""
+    """Allowed channel excursion; plans and figures check every curve against this envelope.
+
+    Tuning frequency or damping does not enlarge a rig's envelope. Responses that exceed it are refused.
+    """
     lean = style.lean * _ROOM
     return {
         "lean": lean,
@@ -757,6 +878,31 @@ class HeadPlan:
         runs cut by :func:`srstudio.toon_head.gaze_states`."""
         return replace(self, **{name: getattr(self, name).during(start, end) for name in CHANNELS})
 
+    def check_bounds(self, style: HeadStyle, *, frozen: bool = False) -> None:
+        """Refuse any channel outside the style envelope, including extrema between keys.
+
+        Endpoint-bounded easing checks its keys; splines and back/elastic easing include analytic extrema.
+        Short engine springs include a conservative interpolation error bound; long carried channels are emitted
+        linearly, so their sampled extrema suffice. Bare ``curve='spring'`` uses the engine's uncarried defaults.
+        ``frozen`` checks only the pose emitted at zero, without sampling unused future motion.
+        """
+        for name in CHANNELS:
+            channel = getattr(self, name)
+            if not channel.keys:
+                continue
+            if frozen:
+                from .canvas import _at_zero
+
+                held = _at_zero(channel.keys, channel.spring is None and channel.curve == 'hold', name)
+                channel = Channel(((0.0, held),))
+            allowed = limit(style, name)
+            bounds = _channel_bounds(channel)
+            if not _finite(*bounds) or max(abs(v) for v in (*bounds, *(v for _, v in channel.keys))) > allowed + 1e-6:
+                raise HeadMotionError(
+                    f'{name}: curve response bound {bounds} exceeds style bound +/-{allowed:g}; '
+                    'reduce the excursion or adjust curve/timing (for springs, increase damping)'
+                )
+
 
 def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> None:
     if not (_finite(duration) and duration > 0):
@@ -836,7 +982,7 @@ def plan(
         turned.append((on, FACE_UP, off, FACE_DOWN, style.glance_turn * side))
         slid.append((on, FACE_UP, off, FACE_DOWN, style.glance_face * side))
     gaze = [state for on, off, name in looks for state in ((on, name), (off, "ahead"))]
-    return HeadPlan(
+    result = HeadPlan(
         lean=Channel(_trapezoids(leans, duration), style.body),
         turn=Channel(_trapezoids([*turned, *trails], duration), style.settle),
         nod=Channel(_chain(moves, style.head, duration), style.head),
@@ -847,3 +993,5 @@ def plan(
         breath=Channel(_breath_keys(style, spans, duration), curve="sine-in-out"),
         gaze=tuple(gaze),
     )
+    result.check_bounds(style)
+    return result
