@@ -517,7 +517,7 @@ def test_each_character_moves_its_own_way():
     styles = {part: rig.style for part, rig in toon_rigs.RIGS.items()}
     sloth, goat, hamster = styles["toon-sloth"], styles["toon-goat"], styles["toon-hamster"]
     fox = styles["toon-fox@2"]
-    assert len({s.seed for s in styles.values()}) == len(styles)
+    assert len({s.seed for s in styles.values()}) == len({part.partition("@")[0] for part in styles})
     assert goat.head.frequency > sloth.head.frequency  # abrupt against slow
     assert goat.head.damping > sloth.head.damping  # and it stops dead
     assert hamster.nod_px < min(s.nod_px for s in (sloth, goat, fox))  # small

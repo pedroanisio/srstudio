@@ -20,14 +20,20 @@ poses work unchanged.
 
 His head lies over the body with its own chin, and his muzzle rides in the face group, so his mouth is always on it
 (:data:`BENTO_RIG`). The registered drawing is that rig with a still plan: one drawing, whether or not the head moves.
+
+His hands are a pair from version 2 (ADR 0097): a :class:`Paw` is on an :class:`Arm` and shows a :class:`Facing`, and
+the drawing follows from those two, so a thumb follows its side. :data:`BENTO_RIG_2` is that version, proposed; version
+1 keeps its one hand on both arms, as approved.
 """
 
 from __future__ import annotations
 
+import enum
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from . import brush
@@ -44,13 +50,18 @@ if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
 
 __all__ = [
+    "Arm",
     "BENTO",
+    "BENTO_2",
     "BENTO_MOTION",
     "BENTO_RIG",
+    "BENTO_RIG_2",
     "CENTRED",
+    "DRAWN_FOR",
     "EAR",
     "EYE_STATES",
     "EyeState",
+    "Facing",
     "GESTURES",
     "Gesture",
     "HEAD",
@@ -60,6 +71,7 @@ __all__ = [
     "MUZZLE",
     "MUZZLE_LAP",
     "Mood",
+    "Paw",
     "SCLERA",
     "SHIRT",
     "TILT_REACH",
@@ -126,12 +138,15 @@ def _same(x: float, y: float) -> Point:
     return x, y
 
 
-def _moved(x: float, y: float, angle: float = 0.0, scale: float = 1.0) -> Place:
-    """What places a part drawn about its own origin: scaled, turned ``angle`` degrees clockwise, then moved."""
+def _moved(x: float, y: float, angle: float = 0.0, scale: float = 1.0, flip: float | None = None) -> Place:
+    """What places a part drawn about its own origin: reflected across the vertical at ``flip`` if there is one,
+    scaled, turned ``angle`` degrees clockwise, then moved."""
     a = math.radians(angle)
     c, s = math.cos(a), math.sin(a)
 
     def place(px: float, py: float) -> Point:
+        if flip is not None:
+            px = 2.0 * flip - px
         px, py = px * scale, py * scale
         return x + px * c - py * s, y + px * s + py * c
 
@@ -215,6 +230,13 @@ def _edge(path: Path, colour: str, width: float, place: Place = _same) -> Layer:
     if points[0] != points[-1]:
         points.append(points[0])
     return brush.stroke(points, width * SIZE, brush.EVEN, steps=2), colour
+
+
+def _ringed(path: Path, colour: str, width: float, place: Place = _same) -> Layer:
+    """The line right round a closed ``path``. :func:`_edge` stops a segment short of its start, because a stroke drops
+    a last point that repeats its first (:func:`srstudio.brush.stroke`), so this one laps past the start instead."""
+    points = _samples(path, _mapped(place))
+    return brush.stroke([*points, *points[:2]], width * SIZE, brush.EVEN, steps=2), colour
 
 
 def _oval(x: float, y: float, rx: float, ry: float, colour: str, place: Place = _same, tilt: float = 0.0) -> Layer:
@@ -493,6 +515,7 @@ _OPEN_LINES: tuple[Path, ...] = (
     ((6.0, -9.0), (4.0, 5.0)),
     ((17.0, -7.0), (14.0, 6.0)),
 )
+_BACK_LINES = _OPEN_LINES[1:]  # the crease is the palm's
 _FIST: Path = (
     (-20.0, 13.0),
     (-29.0, -1.0, -24.0, -15.0),
@@ -512,25 +535,113 @@ _FIST_LINES: tuple[Path, ...] = (
 )
 
 
+_WRIST_X = 3.0  # where a drawn hand meets its cuff, across the hand: a mirrored hand stays on the cuff it had
+
+
+class Arm(enum.Enum):
+    """The arm a hand is on, by the side of the frame it leaves from. His right arm is on the frame's left. The value
+    is the arm's place in :attr:`Gesture.sleeves`."""
+
+    LEFT = 0
+    RIGHT = 1
+
+
+class Facing(enum.Enum):
+    """What the camera sees of a hand."""
+
+    PALM = "palm"  # raised and shown: the crease shows, and with the fingers up the thumb is on the inside
+    BACK = "back"  # pressed to something, or hanging: no crease, and with the fingers up the thumb is on the outside
+
+
+# The arm each drawing is of, palm to the camera: the open hand has its thumb on the +x side, inward on the frame's
+# left, and the fist has it on the -x side, inward on the frame's right.
+DRAWN_FOR: Mapping[str, Arm] = MappingProxyType({"open": Arm.LEFT, "fist": Arm.RIGHT})
+
+
+@dataclass(frozen=True)
+class Paw:
+    """One of his pair of hands: its arm, its wrist at ``(x, y)`` of his drawing, its fingers up at angle 0. On the
+    other arm, or turned over, a hand is the same drawing mirrored, and :attr:`mirrored` works that out, so no caller
+    can draw a hand of the wrong side. Version 1 reads only where the paw is and draws one hand on both arms."""
+
+    arm: Arm
+    x: float
+    y: float
+    angle: float = 0.0
+    fist: bool = False
+    scale: float = 1.0
+    facing: Facing = Facing.PALM
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.arm, Arm):
+            raise ToonDataError(f"a hand is on an Arm, not {self.arm!r}")
+        if not isinstance(self.facing, Facing):
+            raise ToonDataError(f"a hand shows a Facing, not {self.facing!r}")
+        if self.fist and self.facing is Facing.BACK:
+            raise ToonDataError("a fist is drawn from its fingers: there is no back of a fist to show")
+
+    @property
+    def mirrored(self) -> bool:
+        """Whether the drawing is reflected: a hand on the other arm is, and a hand's back is its palm's mirror."""
+        other_arm = self.arm is not DRAWN_FOR["fist" if self.fist else "open"]
+        return other_arm != (self.facing is Facing.BACK)
+
+
 def _hand(x: float, y: float, angle: float = 0.0, fist: bool = False, scale: float = 1.0) -> list[Layer]:
-    """A tiny paw at ``(x, y)`` of his drawing, its fingers up at angle 0."""
+    """A tiny paw at ``(x, y)`` of his drawing, its fingers up at angle 0: version 1's one hand."""
     place = _moved(x, y, angle, scale)
     out = _furred(_FIST if fist else _OPEN, PAW_LINE, place)
     return out + [_line(path, PAW_LINE, 2.0, place) for path in (_FIST_LINES if fist else _OPEN_LINES)]
 
 
+def _placing(paw: Paw, number: int) -> Place:
+    """What places the drawing of ``paw`` in version ``number``."""
+    flip = _WRIST_X if number >= 2 and paw.mirrored else None
+    return _moved(paw.x, paw.y, paw.angle, paw.scale, flip)
+
+
+def _paw_layers(paw: Paw, number: int) -> list[Layer]:
+    """``paw`` as version ``number`` draws it: from version 2 the hand of its arm, a back showing no crease."""
+    if number < 2:
+        return _hand(paw.x, paw.y, paw.angle, paw.fist, paw.scale)
+    place = _placing(paw, number)
+    lines = _FIST_LINES if paw.fist else _BACK_LINES if paw.facing is Facing.BACK else _OPEN_LINES
+    fill, _ = _furred(_FIST if paw.fist else _OPEN, PAW_LINE, place)
+    ink = _ringed(_FIST if paw.fist else _OPEN, PAW_LINE, 2.0, place)
+    return [fill, ink, *(_line(path, PAW_LINE, 2.0, place) for path in lines)]
+
+
+def _nearest(paw: Paw, sleeve: Path) -> float:
+    """How far the wrist of ``paw`` is from ``sleeve``, in his drawing's pixels."""
+    return min(math.hypot(x - paw.x, y - paw.y) for x, y in _samples(sleeve))
+
+
 # -- the gestures ------------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Gesture:
-    """A pose of his arms. ``sleeves`` go over him in ``under`` order, then ``held`` (what he holds) under the paws;
-    ``hands`` are ``(x, y, angle, fist, scale)`` paws, ``paws`` paws drawn whole."""
+    """A pose of his arms. ``sleeves`` go over him in ``under`` order, the frame's left arm then the frame's right, then
+    ``held`` (what he holds) under the paws; ``hands`` are his :class:`Paw`, and ``paws`` paws drawn whole, each with a
+    shape of its own and no thumb to follow a side. A hand must be at the end of its own arm's sleeve: one on the other
+    arm, or two on one, is refused here, when the gesture is built."""
 
     name: str
     title: str
     sleeves: tuple[Path, ...]
-    hands: tuple[tuple[float, float, float, bool, float], ...] = ()
+    hands: tuple[Paw, ...] = ()
     paws: tuple[Path, ...] = ()
     held: bool = False
+
+    def __post_init__(self) -> None:
+        if len(self.sleeves) != 2 or not self.sleeves[0][0][0] < PIVOT_X < self.sleeves[1][0][0]:
+            raise ToonDataError(f"{self.name}: its two sleeves run from the frame's left arm to its right")
+        for paw in self.hands:
+            if not isinstance(paw, Paw):
+                raise ToonDataError(f"{self.name}: a hand is a Paw, not {paw!r}")
+            own, other = self.sleeves[paw.arm.value], self.sleeves[1 - paw.arm.value]
+            if _nearest(paw, other) < _nearest(paw, own):
+                raise ToonDataError(f"{self.name}: the hand at ({paw.x}, {paw.y}) is on the other arm, not {paw.arm}")
+        if len({paw.arm for paw in self.hands}) != len(self.hands):
+            raise ToonDataError(f"{self.name}: two hands on one arm")
 
 
 _READY_SLEEVES: tuple[Path, Path] = (
@@ -555,7 +666,7 @@ _READY_PAWS: tuple[Path, Path] = (
     ((112.0, 673.0), (97.0, 697.0, 110.0, 719.0), (130.0, 742.0, 154.0, 725.0), (171.0, 704.0), (164.0, 684.0)),
     ((437.0, 680.0), (427.0, 704.0, 444.0, 725.0), (465.0, 741.0, 487.0, 718.0), (491.0, 690.0), (476.0, 675.0)),
 )
-_TUCKED = (133.0, 692.0, 180.0, False, 0.75)  # a paw hanging by his side while the other does the work
+_TUCKED = Paw(Arm.LEFT, 133.0, 692.0, 180.0, scale=0.75, facing=Facing.BACK)  # hanging while the other does the work
 GESTURES: dict[str, Gesture] = {
     gesture.name: gesture
     for gesture in (
@@ -582,7 +693,10 @@ GESTURES: dict[str, Gesture] = {
                     (410.0, 536.0),
                 ),
             ),
-            hands=((550.0, 490.0, -16.0, False, 1.0), (125.0, 696.0, 180.0, False, 0.75)),
+            hands=(
+                Paw(Arm.RIGHT, 550.0, 490.0, -16.0),
+                Paw(Arm.LEFT, 125.0, 696.0, 180.0, scale=0.75, facing=Facing.BACK),
+            ),
         ),
         Gesture(
             "empathy",
@@ -606,7 +720,10 @@ GESTURES: dict[str, Gesture] = {
                     (411.0, 522.0),
                 ),
             ),
-            hands=((311.0, 530.0, -64.0, False, 0.84), (148.0, 674.0, 180.0, False, 0.72)),
+            hands=(
+                Paw(Arm.RIGHT, 311.0, 530.0, -64.0, scale=0.84, facing=Facing.BACK),
+                Paw(Arm.LEFT, 148.0, 674.0, 180.0, scale=0.72, facing=Facing.BACK),
+            ),
         ),
         Gesture(
             "shrug",
@@ -633,7 +750,7 @@ GESTURES: dict[str, Gesture] = {
                     (400.0, 515.0),
                 ),
             ),
-            hands=((38.0, 497.0, -67.0, False, 0.86), (573.0, 499.0, 67.0, False, 0.86)),
+            hands=(Paw(Arm.LEFT, 38.0, 497.0, -67.0, scale=0.86), Paw(Arm.RIGHT, 573.0, 499.0, 67.0, scale=0.86)),
         ),
         Gesture(
             "folded",
@@ -699,7 +816,10 @@ GESTURES: dict[str, Gesture] = {
                     (414.0, 531.0),
                 ),
             ),
-            hands=((536.0, 423.0, -5.0, True, 1.03), (130.0, 696.0, 180.0, False, 0.75)),
+            hands=(
+                Paw(Arm.RIGHT, 536.0, 423.0, -5.0, fist=True, scale=1.03),
+                Paw(Arm.LEFT, 130.0, 696.0, 180.0, scale=0.75, facing=Facing.BACK),
+            ),
         ),
         Gesture(
             "panic",
@@ -726,7 +846,7 @@ GESTURES: dict[str, Gesture] = {
                     (411.0, 517.0),
                 ),
             ),
-            hands=((45.0, 346.0, -14.0, False, 1.05), (558.0, 347.0, 14.0, False, 1.05)),
+            hands=(Paw(Arm.LEFT, 45.0, 346.0, -14.0, scale=1.05), Paw(Arm.RIGHT, 558.0, 347.0, 14.0, scale=1.05)),
         ),
         Gesture(
             "facepalm",
@@ -751,7 +871,7 @@ GESTURES: dict[str, Gesture] = {
                     (423.0, 420.0),
                 ),
             ),
-            hands=((308.0, 284.0, -29.0, False, 1.2), _TUCKED),
+            hands=(Paw(Arm.RIGHT, 308.0, 284.0, -29.0, scale=1.2, facing=Facing.BACK), _TUCKED),
         ),
         Gesture(
             "tablet",
@@ -818,12 +938,12 @@ def _tablet() -> list[Layer]:
     return out
 
 
-def _gesture_layers(gesture: Gesture) -> tuple[list[Layer], list[Layer]]:
-    """``(under, over)`` the head (:func:`srstudio.toon_cast._arms`). Ready keeps its sleeves behind the blazer; every
-    other gesture lies over him, head included, the way his drawing stacks it."""
+def _gesture_layers(gesture: Gesture, number: int = 1) -> tuple[list[Layer], list[Layer]]:
+    """``(under, over)`` the head (:func:`srstudio.toon_cast._arms`) in version ``number``. Ready keeps its sleeves
+    behind the blazer; every other gesture lies over him, head included, the way his drawing stacks it."""
     sleeves = [layer for path in gesture.sleeves for layer in _sleeve(path)]
     paws = [layer for path in gesture.paws for layer in _furred(path, PAW_LINE)]
-    hands = [layer for x, y, angle, fist, scale in gesture.hands for layer in _hand(x, y, angle, fist, scale)]
+    hands = [layer for paw in gesture.hands for layer in _paw_layers(paw, number)]
     if gesture.name == "ready":
         cuffs = [
             _line(((123.0, 647.0), (166.0, 654.0)), "#456AC4", 3.0),
@@ -1570,13 +1690,26 @@ _CUFF = "#456AC4"
 _SHARED_ARMS = frozenset(ARMS)
 
 
+def _arm_from(shoulder: Point) -> Arm:
+    """The arm a shared pose's limb leaves ``shoulder`` on."""
+    if shoulder not in SHOULDERS:
+        raise ToonDataError(f"a shared arm leaves a shoulder in {SHOULDERS}, not {shoulder}")
+    return Arm.LEFT if shoulder == SHOULDERS[0] else Arm.RIGHT
+
+
 @dataclass(frozen=True)
 class Bento:
     """His drawing (:class:`srstudio.toon_cast.Drawing`, :class:`srstudio.toon_cast.Posing`,
-    :class:`srstudio.toon_head.Glancing`). ``glance`` is how far his pupils are off, in eye radii."""
+    :class:`srstudio.toon_head.Glancing`). ``glance`` is how far his pupils are off, in eye radii, and ``number`` the
+    version he is drawn as."""
 
     tilt: float = 0.0
     glance: Point = (0.0, 0.0)
+    number: int = 1
+
+    def __post_init__(self) -> None:
+        if self.number not in (1, 2):
+            raise ToonDataError(f"Bento has versions 1 and 2, not version {self.number}")
 
     def foundation(self, look: Look) -> list[Layer]:
         return [*trunk_layers(), *skull_layers(), *_muzzle_layers()]
@@ -1609,11 +1742,16 @@ class Bento:
         sleeve = brush.stroke(line, half * 2.0, brush.EVEN)
         cuff = [(x1 - uy * half, y1 + ux * half), (x1 + uy * half, y1 - ux * half)]
         wrist = _off((x1 + ux * _PAW_REACH, y1 + uy * _PAW_REACH))
+        angle = math.degrees(math.atan2(ux, -uy))
+        if self.number < 2:
+            hand = _hand(wrist[0], wrist[1], angle, False, 0.72)
+        else:  # on a desk, on a keyboard, across him, over his mouth or hanging: never shown palm first
+            hand = _paw_layers(Paw(_arm_from(points[0]), wrist[0], wrist[1], angle, scale=0.72, facing=Facing.BACK), 2)
         return [
             (brush.stroke(line, (half + 3.0 * SIZE) * 2.0, brush.EVEN), SLEEVE_LINE),
             (sleeve, _ramp("sleeve", JACKET, JACKET_FLAT, sleeve)),
             (brush.stroke(cuff, 3.0 * SIZE, brush.EVEN), _CUFF),
-            *_hand(wrist[0], wrist[1], math.degrees(math.atan2(ux, -uy)), False, 0.72),
+            *hand,
         ]
 
     def looking(self, dx: float, dy: float) -> Bento:
@@ -1621,7 +1759,7 @@ class Bento:
 
     def gesture(self, arms: str) -> tuple[list[Layer], list[Layer]] | None:
         if arms in GESTURES:
-            return _gesture_layers(GESTURES[arms])
+            return _gesture_layers(GESTURES[arms], self.number)
         if arms in _SHARED_ARMS:
             return None
         raise ToonDataError(f"Bento has no gesture {arms!r}: his are {tuple(GESTURES)}, and the shared kinds")
@@ -1650,6 +1788,7 @@ BENTO = Look(
     blink=3.7,
     drawing=Bento(),
 )
+BENTO_2 = replace(BENTO, drawing=Bento(number=2))
 BENTO_MOTION = HeadStyle(  # a calm anchor: a measured nod that settles, a level head, the eyes doing the glancing
     seed=6062,
     signature="^",
@@ -1686,6 +1825,47 @@ BENTO_RIG = HeadRig(
     tilt_reach=(min(_TILTS), max(_TILTS)),
     face_slide=FACE_SLIDE,
 )
+BENTO_RIG_2 = replace(BENTO_RIG, look=BENTO_2)
+_CONTRACT = PartContract(
+    parameters=(
+        (
+            'poses',
+            ParameterContract(
+                items=ParameterContract(
+                    fields=(('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),)
+                )
+            ),
+        ),
+        ('enter', ParameterContract(unit='seconds', timebase='project', role='start', minimum=0)),
+        (
+            'duration',
+            ParameterContract(
+                unit='seconds', timebase='project', role='end', description='Exit time; must be greater than enter.'
+            ),
+        ),
+        ('taps', ParameterContract(items=ParameterContract(unit='seconds', timebase='project'))),
+    ),
+    capabilities=(('limbs', False), ('head_motion', False), ('expressions', True), ('mouths', True)),
+    constraints=(
+        'Pose starts are ordered relative to enter and begin at zero.',
+        'duration is the project exit time, strictly after enter.',
+        'For procedural head motion use toon_head.figure with BENTO_RIG and a HeadPlan.',
+    ),
+    operations=(
+        Operation(
+            'pose_of',
+            pose_of,
+            PartContract(
+                parameters=(
+                    ('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),
+                    ('name', ParameterContract(enum=tuple(MOODS))),
+                    ('gesture', ParameterContract(enum=(None, *dict.fromkeys((*GESTURES, *ARMS))))),
+                    ('eyes', ParameterContract(enum=(None, *EYE_STATES))),
+                )
+            ),
+        ),
+    ),
+)
 
 
 @register(
@@ -1699,46 +1879,7 @@ BENTO_RIG = HeadRig(
         'poses = [pose_of(0, "skeptical", "folded", "left"), pose_of(1, "happy")]\n'
         'groups = get("character", "toon-bento")(ep.cv, ep.comp, poses, duration=2)',
     ),
-    contract=PartContract(
-        parameters=(
-            (
-                'poses',
-                ParameterContract(
-                    items=ParameterContract(
-                        fields=(('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),)
-                    )
-                ),
-            ),
-            ('enter', ParameterContract(unit='seconds', timebase='project', role='start', minimum=0)),
-            (
-                'duration',
-                ParameterContract(
-                    unit='seconds', timebase='project', role='end', description='Exit time; must be greater than enter.'
-                ),
-            ),
-            ('taps', ParameterContract(items=ParameterContract(unit='seconds', timebase='project'))),
-        ),
-        capabilities=(('limbs', False), ('head_motion', False), ('expressions', True), ('mouths', True)),
-        constraints=(
-            'Pose starts are ordered relative to enter and begin at zero.',
-            'duration is the project exit time, strictly after enter.',
-            'For procedural head motion use toon_head.figure with BENTO_RIG and a HeadPlan.',
-        ),
-        operations=(
-            Operation(
-                'pose_of',
-                pose_of,
-                PartContract(
-                    parameters=(
-                        ('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),
-                        ('name', ParameterContract(enum=tuple(MOODS))),
-                        ('gesture', ParameterContract(enum=(None, *dict.fromkeys((*GESTURES, *ARMS))))),
-                        ('eyes', ParameterContract(enum=(None, *EYE_STATES))),
-                    )
-                ),
-            ),
-        ),
-    ),
+    contract=_CONTRACT,
 )
 def bento(
     cv: Canvas,
@@ -1763,3 +1904,30 @@ def bento(
     if limbs:
         raise ToonDataError("Bento's arms are gestures: a limb track cannot draw over them")
     return [figure(cv, parent, BENTO_RIG, poses, duration, HeadPlan.still(), taps, enter, stickers, mouths)]
+
+
+@register(
+    "character",
+    "toon-bento@2",
+    summary="Bento with a pair of hands, the right the mirror of the left and each thumb on its own side",
+    contract=_CONTRACT,
+)
+def bento_2(
+    cv: Canvas,
+    parent,
+    poses: Sequence[Pose],
+    duration: float,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    *,
+    limbs: tuple[LimbTrack, ...] = (),
+) -> list:
+    """Draw Bento as :func:`bento` does, with his pair of hands: version 2, proposed.
+
+    For moving heads, pass the poses and a HeadPlan to srstudio.toon_head.figure with BENTO_RIG_2.
+    """
+    if limbs:
+        raise ToonDataError("Bento's arms are gestures: a limb track cannot draw over them")
+    return [figure(cv, parent, BENTO_RIG_2, poses, duration, HeadPlan.still(), taps, enter, stickers, mouths)]

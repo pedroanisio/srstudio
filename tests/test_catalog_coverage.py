@@ -56,6 +56,7 @@ NO_EPISODE = [
     "rafa-tote",
     "show-bug",
     "toon-bento",
+    "toon-bento@2",
     "toon-counter",
     "toon-pipe",
     "toon-receipt",
