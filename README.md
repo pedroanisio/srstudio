@@ -104,6 +104,14 @@ srstudio inspect prop coffee-cup --json
 srstudio inspect character manager --json
 ```
 
+SDK errors retain their exception types and expose `error.to_dict()` with the versioned
+`srstudio.diagnostic/1.0.0` envelope: `code`, `path`, `message`, `actual`, `expected`, `remedy`, `context`, and
+`residual`. Semantic details that a legacy error does not supply are `null`; they are never guessed from its
+message. Gaze and missing-part errors provide explicit repair fields. Limb errors retain their existing codes,
+geometric residuals and context. Payloads bound strings, collection sizes and nesting; nonfinite numbers become
+strings so diagnostics remain valid JSON. Commands accepting `--json` write this envelope to stderr on failure,
+including argument and plugin-import errors, and preserve their existing nonzero exit codes.
+
 `inspect` shows the actual signature, parameter defaults, callback slots, documentation and a call template. Catalog and inspection results also show the registered version and latest approved default for each recorded part. In JSON these appear under `part_version`; character results also retain the legacy `character_version` field. A plain registered name identifies version 1; use `srstudio.parts.drawing(name)` for the latest approved drawing or pass a version explicitly. Version metadata reports the approval record separately; a replaced builder is marked unverified and cannot be used as an approved default or pin. Run `specimens.check(name, version)` to compare it with the approved drawing; proposed versions raise `NotApprovedError`. Non-character specimens use projects under `generated/episodes` by default, or the path supplied by `episodes=Path('/path/to/projects')` or `SRSTUDIO_EPISODES`. A successful check verifies that builder for the current process. Parts without a standalone specimen cannot be checked this way: `parts.restore(name, version)` restores their original registered builder, and `parts.drawing(name, version, allow_unverified=True)` permits proof work. Selected parts include runnable examples using an existing `ep`; try `coffee-cup`, `office-mug`, `stick-mug`, `toon-mug`, or `soft-coffee-machine`. Use `--plugins my_package.parts` to import a plugin before listing or inspecting its parts. `srstudio catalog --json` returns the listing as JSON.
 
 The same information is available in Python:

@@ -299,7 +299,14 @@ def get(kind: str, name: str) -> Entry:
         return _REGISTRY[kind][name]
     except KeyError:
         known = ", ".join(sorted(_REGISTRY.get(kind, {})))
-        raise NotRegisteredError(f"no {kind} named {name!r}; known: {known}") from None
+        raise NotRegisteredError(
+            f"no {kind} named {name!r}; known: {known}",
+            code='registry.not_found',
+            path='name',
+            actual=name,
+            expected=sorted(_REGISTRY.get(kind, {})),
+            remedy='Choose a name from srstudio catalog for this kind.',
+        ) from None
 
 
 def describe(kind: str, name: str) -> PartDetails:

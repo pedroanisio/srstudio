@@ -17,6 +17,7 @@ import sys
 from contextlib import nullcontext
 from dataclasses import asdict
 from pathlib import Path
+from typing import NoReturn
 
 from sr_core.scene import SchemaValueError
 
@@ -41,19 +42,36 @@ from . import (
     usage,
 )
 from .episode import SceneCheckError
-from .errors import SrstudioError
+from .errors import SrstudioError, diagnostic
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
 from .thumbnail import ShowCover
 from .timeline import Timeline
 
 
-def _load_plugins(modules, command: str) -> bool:
+def _error(command: str, error: BaseException, json_output: bool = False) -> None:
+    if json_output:
+        print(json.dumps(diagnostic(error, command=command), allow_nan=False, ensure_ascii=False), file=sys.stderr)
+    else:
+        print(f'srstudio {command}: {error}', file=sys.stderr)
+
+
+def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
     for module in modules:
         try:
             importlib.import_module(module)
         except ImportError as exc:
-            print(f"srstudio {command}: cannot import plugin {module!r}: {exc}", file=sys.stderr)
+            _error(
+                command,
+                SrstudioError(
+                    f'cannot import plugin {module!r}: {exc}',
+                    code='plugin.import',
+                    path='plugins',
+                    actual=module,
+                    remedy='Install the plugin or remove it from --plugins.',
+                ),
+                json_output,
+            )
             return False
     return True
 
@@ -69,7 +87,25 @@ def _version_text(info: registry.PartVersionDetails | None) -> str:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="srstudio")
+    arguments = list(sys.argv[1:] if argv is None else argv)
+
+    class Parser(argparse.ArgumentParser):
+        def error(self, message: str) -> NoReturn:
+            if '--json' in arguments:
+                _error(
+                    self.prog.removeprefix('srstudio '),
+                    SrstudioError(
+                        message,
+                        code='cli.arguments',
+                        path='argv',
+                        remedy=f'Check the arguments with {self.prog} --help.',
+                    ),
+                    True,
+                )
+                self.exit(2)
+            super().error(message)
+
+    parser = Parser(prog="srstudio")
     sub = parser.add_subparsers(dest="cmd", required=True)
     cat = sub.add_parser(
         "catalog",
@@ -201,14 +237,14 @@ def main(argv=None):
     record.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     record.add_argument("slug")
     record.add_argument("options", nargs=argparse.REMAINDER, help="the project and the recorder's own options")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(arguments)
     if args.cmd == "inspect":
-        if not _load_plugins(args.plugins, "inspect"):
+        if not _load_plugins(args.plugins, "inspect", getattr(args, "json", False)):
             return 2
         try:
             info = registry.describe(args.kind, args.name)
         except (registry.RegistryError, registry.NotRegisteredError) as exc:
-            print(f"srstudio inspect: {exc}", file=sys.stderr)
+            _error("inspect", exc, getattr(args, "json", False))
             return 2
         if args.json:
             print(json.dumps(info, indent=2, ensure_ascii=False))
@@ -239,12 +275,12 @@ def main(argv=None):
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
-        if not _load_plugins(args.plugins, "catalog"):
+        if not _load_plugins(args.plugins, "catalog", getattr(args, "json", False)):
             return 2
         try:
             measured = usage.Report.read(args.usage) if args.usage else None
         except usage.UsageError as exc:
-            print(f"srstudio catalog: {exc}", file=sys.stderr)
+            _error("catalog", exc, getattr(args, "json", False))
             return 2
         rows = registry.entries(args.kind, args.style)
         if args.json:
@@ -277,7 +313,7 @@ def main(argv=None):
         try:
             got = fonts.install(fonts.GoogleFont(args.family, args.weight, args.italic), args.into)
         except fonts.FontError as exc:
-            print(f"srstudio fonts: {exc}", file=sys.stderr)
+            _error("fonts", exc, getattr(args, "json", False))
             return 2
         style = " italic" if got.italic else ""
         print(f"{got.path}  {got.family} {got.weight}{style}  {got.license}  sha256 {got.sha256}")
@@ -303,7 +339,7 @@ def main(argv=None):
                 proof_root=args.proof_root,
             )
         except (catalog_page.CatalogError, usage.UsageError) as exc:
-            print(f"srstudio page: {exc}", file=sys.stderr)
+            _error("page", exc, getattr(args, "json", False))
             return 2
         print(f"{args.site}  {len(built.cards)} episodes: {', '.join(c.slug for c in built.cards)}")
         drawn, made = len(built.pictures.stills), built.pictures.made
@@ -313,7 +349,7 @@ def main(argv=None):
         try:
             catalog_server.serve(args.site, args.host, args.port)
         except (catalog_server.ServeError, OSError) as exc:
-            print(f"srstudio serve: {exc}", file=sys.stderr)
+            _error("serve", exc, getattr(args, "json", False))
             return 2
         return 0
     if args.cmd == "usage":
@@ -327,7 +363,7 @@ def main(argv=None):
             runs, missing = usage.discover(args.episodes, args.packages, args.scripts, extra, skip=args.skip)
             report = usage.measure(runs, args.work, missing)
         except usage.UsageError as exc:
-            print(f"srstudio usage: {exc}", file=sys.stderr)
+            _error("usage", exc, getattr(args, "json", False))
             return 2
         report.write(args.out)
         for kind in ("character", "location", "prop"):
@@ -356,7 +392,7 @@ def main(argv=None):
                 for name, style in (("INK_MOUTH", INK_MOUTH), ("SPEECH_MOUTH", lipsync.SPEECH_MOUTH))
             }
         except (OSError, ValueError, KeyError) as exc:
-            print(f"srstudio lipsync: {exc}", file=sys.stderr)
+            _error("lipsync", exc, getattr(args, "json", False))
             return 2
         print(f"{len(takes)} takes")
         for name, result in scores.items():
@@ -373,7 +409,7 @@ def main(argv=None):
                 scene = args.project / f"{args.project.name}.scene.xml"
                 print(f"{len(frames.at_size(scene, listed, args.out, args.engine))} frames in {args.out}")
         except (frames.FrameError, SrstudioError) as exc:
-            print(f"srstudio frames: {exc}", file=sys.stderr)
+            _error("frames", exc, getattr(args, "json", False))
             return 2
         return 0
     if args.cmd == "craft":
@@ -384,7 +420,7 @@ def main(argv=None):
                 video = render if render is not None and render.is_file() else None
                 reports.append(craft.measure(project, video=video, threshold=args.threshold))
         except (craft.CraftError, ValueError) as exc:
-            print(f"srstudio craft: {exc}", file=sys.stderr)
+            _error("craft", exc, getattr(args, "json", False))
             return 2
         if args.json:
             print(json.dumps([r.to_dict() for r in reports], indent=2))
@@ -424,7 +460,7 @@ def main(argv=None):
             lines = overlap.read_lines(overlap.project_script(args.project))
             found = overlap.overlaps(lines, overlap.scripts(args.episodes, skip=args.project.name), args.least)
         except overlap.OverlapError as exc:
-            print(f"srstudio overlap: {exc}", file=sys.stderr)
+            _error("overlap", exc, getattr(args, "json", False))
             return 2
         for hit in found:
             print(f"{hit.slug}: {hit.words} ({hit.line!r} / {hit.other!r})")
@@ -435,7 +471,7 @@ def main(argv=None):
         try:
             recorder = _episode_script(args.scripts, args.slug, "_audio")
         except releases.ReleaseError as exc:
-            print(f"srstudio record: {exc}", file=sys.stderr)
+            _error("record", exc, getattr(args, "json", False))
             return 2
         if recorder is None:
             print(f"srstudio record: no episode {args.slug!r} in {args.scripts}", file=sys.stderr)
@@ -446,7 +482,7 @@ def main(argv=None):
         try:
             episode = _episode_script(args.scripts, script, "")
         except releases.ReleaseError as exc:
-            print(f"srstudio build: {exc}", file=sys.stderr)
+            _error("build", exc, getattr(args, "json", False))
             return 2
         number = None
         if episode is None and "-" in script and not script.endswith(".py"):
@@ -469,7 +505,7 @@ def main(argv=None):
             print(exc, file=sys.stderr)
             return 1
         except (SrstudioError, SchemaValueError, OSError) as exc:
-            print(f"srstudio build: {exc}", file=sys.stderr)
+            _error("build", exc, getattr(args, "json", False))
             return 1
         return 0
 
@@ -480,7 +516,7 @@ def _arms(args: argparse.Namespace) -> int:
         loaded = releases.load(args.scripts / "posts")
         problems = releases.arm_problems(loaded, args.test, order, args.share)
     except releases.ReleaseError as exc:
-        print(f"srstudio arms: {exc}", file=sys.stderr)
+        _error("arms", exc, getattr(args, "json", False))
         return 1
     for arm, slugs in releases.arms(loaded, args.test).items():
         print(f"{arm} {len(slugs):>3}  {' '.join(slugs)}")
@@ -493,7 +529,7 @@ def _proof(args: argparse.Namespace) -> int:
     try:
         made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
     except proof.ProofError as exc:
-        print(f"srstudio proof: {exc}", file=sys.stderr)
+        _error("proof", exc, getattr(args, "json", False))
         return 1
     if args.json:
         print(json.dumps(made))
@@ -507,7 +543,7 @@ def _lip_proof(args: argparse.Namespace) -> int:
         picks = lip_proof.instants(args.project, count=args.count)
         made = lip_proof.frames(picks, args.master, args.out, crop=args.crop) if args.master and args.out else []
     except lip_proof.LipProofError as exc:
-        print(f"srstudio lip-proof: {exc}", file=sys.stderr)
+        _error("lip-proof", exc, getattr(args, "json", False))
         return 2
     for pick in picks:
         flag = "  <- vowel on a shut mouth" if pick.suspect else ""
@@ -533,7 +569,7 @@ def _parts(args: argparse.Namespace) -> int:
             print(f"{len(measured.episodes)} episodes measured, {verdict}")
             return 1 if drift else 0
     except (ValueError, usage.UsageError, catalog_specimens.SpecimenRenderError) as exc:
-        print(f"srstudio parts: {exc}", file=sys.stderr)
+        _error("parts", exc, getattr(args, "json", False))
         return 2
     table = parts.load()
     if args.json:
@@ -572,7 +608,7 @@ def _enhance(action: str, repo: Path) -> int:
         print(f"auto-enhance: {'on' if auto_enhance.enabled(repo) else 'off'}")
         rows = auto_enhance.ledger(repo) if action == "status" else []
     except auto_enhance.EnhanceError as exc:
-        print(f"srstudio enhance: {exc}", file=sys.stderr)
+        _error("enhance", exc)
         return 2
     for row in rows:
         verdict = "; ".join(row.problems) or "counts"
@@ -591,7 +627,7 @@ def _cards(args) -> int:
             args.out, cast_card.Lettering.installed(args.fonts), args.engine, frozenset(args.only)
         )
     except SrstudioError as exc:
-        print(f"srstudio cards: {exc}", file=sys.stderr)
+        _error("cards", exc, getattr(args, "json", False))
         return 1
     for path in written:
         print(path)
@@ -641,7 +677,7 @@ def _number(args: argparse.Namespace) -> int:
             return 0
         ledger = show_numbers.read(args.ledger)
     except show_numbers.NumberError as exc:
-        print(f"srstudio number: {exc}", file=sys.stderr)
+        _error("number", exc, getattr(args, "json", False))
         return 2
     print(f"base {'not set' if ledger.base is None else ledger.base}")
     for series, base in sorted(ledger.series.items()):

@@ -919,11 +919,25 @@ class HeadPlan:
     def check_gaze(self) -> None:
         """Validate all discrete states before drawing, including states outside the current shot."""
         previous = -math.inf
-        for time, name in self.gaze:
+        for index, (time, name) in enumerate(self.gaze):
             if not _finite(time) or time <= previous:
-                raise HeadMotionError('gaze times must be finite and strictly increasing')
+                raise HeadMotionError(
+                    'gaze times must be finite and strictly increasing',
+                    code='gaze.time',
+                    path=f'gaze[{index}][0]',
+                    actual=time,
+                    expected={'finite': True, 'greater_than': previous},
+                    remedy='Use finite project seconds in strictly increasing order.',
+                )
             if not isinstance(name, str) or name not in GAZES:
-                raise HeadMotionError(f'no gaze {name!r}; expected one of {tuple(GAZES)}')
+                raise HeadMotionError(
+                    f'no gaze {name!r}; expected one of {tuple(GAZES)}',
+                    code='gaze.unknown',
+                    path=f'gaze[{index}][1]',
+                    actual=name,
+                    expected=list(GAZES),
+                    remedy='Choose one of the supported gaze states.',
+                )
             previous = time
 
     def check_bounds(self, style: HeadStyle, *, frozen: bool = False) -> None:
