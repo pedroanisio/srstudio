@@ -89,8 +89,10 @@ __all__ = [
     "SEATED",
     "STANDING",
     "check_keys",
+    "ARM",
     "hand_at",
     "held",
+    "reaching",
     "rig",
     "between",
     "camera",
@@ -1408,6 +1410,34 @@ def hand_at(pose: RigPose, *, far: bool = False, at: Point = (0, 0), scale: floa
         raise StickDataError(f"scale must be a positive number, got {scale!r}")
     x, y = pose.hands[0 if far else 1]
     return at[0] + (-scale if flip else scale) * x, at[1] + scale * y
+
+
+ARM = 155.0  # one bone of a standing figure's arm, shoulder to elbow and elbow to hand, as STANDING draws it
+
+
+def reaching(pose: RigPose, hand: Point, *, far: bool = False, bend: int = 1, arm: float = ARM) -> RigPose:
+    """``pose`` with its near hand, or its ``far`` one, on ``hand``, and the elbow solved so both bones stay ``arm``
+    long: a hand sent to a prop arrives without the arm stretching to get there. ``bend`` is +1 or -1, the side of the
+    line from shoulder to hand the elbow goes. A point the arm cannot reach is refused: bring the figure closer."""
+    if not all(_is_number(v) for v in hand):
+        raise StickDataError(f"a hand reaches a finite point, got {hand!r}")
+    if bend not in (1, -1):
+        raise StickDataError(f"an elbow bends +1 or -1, got {bend!r}")
+    if not (_is_number(arm) and arm > 0):
+        raise StickDataError(f"an arm's bone is a positive length, got {arm!r}")
+    sx, sy = pose.neck[0] - 4, pose.neck[1] + 34  # where _body starts an arm
+    dx, dy = hand[0] - sx, hand[1] - sy
+    span = math.hypot(dx, dy)
+    if not 0 < span <= 2 * arm:
+        raise StickDataError(f"a hand at {hand} is out of reach: {span:.0f} from the shoulder, the arm is {2 * arm:g}")
+    side = bend * math.sqrt(arm**2 - (span / 2) ** 2) / span
+    elbow = (sx + dx / 2 - dy * side, sy + dy / 2 + dx * side)
+    i = 0 if far else 1
+    return replace(
+        pose,
+        elbows=(elbow, pose.elbows[1]) if i == 0 else (pose.elbows[0], elbow),
+        hands=(hand, pose.hands[1]) if i == 0 else (pose.hands[0], hand),
+    )
 
 
 def held(
