@@ -76,6 +76,8 @@ AWAY = stick.Face("half", "worried", "frown", look=(0, 0))
 DOWN = stick.Face("wide", "worried", "frown", look=(1, 0.6))
 TERROR = stick.Face("wide", "worried", "frown", look=(0.4, 0.6))
 GONE = stick.Face("half", "flat", "frown", look=(0, 0))
+WORD_SIZE = 80  # the quick lines want longer cues than the Stick size lets fit in a line
+CUE_LEAST = 0.875  # 21 frames: every cue holds past the engine's 0.8333 s
 
 
 def member(parent, keys, end: float, take=None, *, at=MEMBER_AT, gray: bool = False) -> None:
@@ -172,6 +174,6 @@ for take in t.takes:
     else:
         best_shot(g, end)
 
-spoken = stick_reel.words(ep, t.takes, sentences=True)
+spoken = stick_reel.words(ep, t.takes, sentences=True, size=WORD_SIZE, least=CUE_LEAST, join=True)
 ep.audio(take=stick_reel.placing({}))
 stick_reel.close(ep, POSTS["whats-your-split"], spoken)

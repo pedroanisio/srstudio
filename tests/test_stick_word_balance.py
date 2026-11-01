@@ -101,3 +101,45 @@ def test_a_take_with_no_sentence_end_splits_as_it_did():
 def test_sentences_need_balance():
     with pytest.raises(StickDataError, match="sentences"):
         stick.word_cues([TWO_SENTENCES], sentences=True)
+
+
+TWO_QUICK = take(0.0, 1.6, [("Love", 0.0, 0.2), ("it.", 0.2, 0.5), ("Evenings?", 0.8, 1.4)])
+THREE_QUICK = take(
+    0.0,
+    2.3,
+    [
+        ("I", 0.0, 0.1),
+        ("got", 0.1, 0.2),
+        ("you.", 0.2, 0.5),
+        ("Breathe.", 1.0, 1.3),
+        ("Open", 1.55, 1.8),
+        ("it.", 1.8, 2.0),
+    ],
+)
+JOINING = dict(min_seconds=0.875, linger=0.3, width=chars, max_width=880, borrow=True, balance=True, sentences=True)
+
+
+def test_a_cue_too_short_to_read_joins_its_neighbour_and_keeps_the_marks_of_both_sentences():
+    cues = stick.word_cues([TWO_QUICK], join=True, **JOINING)
+    assert [c.text for c in cues] == ["Love it. Evenings?"]
+    assert (cues[0].start, cues[0].end) == (0.0, 1.6)
+
+
+def test_only_the_cues_that_are_still_short_join():
+    cues = stick.word_cues([THREE_QUICK], join=True, **JOINING)
+    assert [c.text for c in cues] == ["I got you", "Breathe. Open it."]
+    assert all(c.end - c.start >= 0.875 for c in cues)
+
+
+def test_a_cue_too_wide_to_join_stays_short():
+    cues = stick.word_cues([TWO_QUICK], join=True, **{**JOINING, "max_width": 400})
+    assert [c.text for c in cues] == ["Love it", "Evenings"]
+
+
+def test_without_join_the_cues_stay_as_they_were():
+    assert [c.text for c in stick.word_cues([TWO_QUICK], **JOINING)] == ["Love it", "Evenings"]
+
+
+def test_join_needs_a_shortest_time():
+    with pytest.raises(StickDataError, match="join"):
+        stick.word_cues([TWO_QUICK], width=chars, balance=True, join=True)
