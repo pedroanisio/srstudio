@@ -8651,6 +8651,23 @@
         }
       ]
     },
+    "news-money-app": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An unbranded money app on Gus's phone, a balance and one button that stops working on cue. First drawn for safe-from-you.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5a35676e77907271798a8f65cdf742aaecc5973b1ebf78f1769e9701ed334344",
+          "rig": null
+        }
+      ]
+    },
     "news-parody-tag": {
       "kind": "graphic",
       "style": "toon",

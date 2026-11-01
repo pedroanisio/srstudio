@@ -106,6 +106,7 @@ __all__ = [
     "gus",
     "live_door",
     "lower_third",
+    "money_app",
     "parody_tag",
     "perform",
     "phone_insert",
@@ -2182,3 +2183,87 @@ def route_insert(
     _marker(cv, head, marker)
     cv.keys(head, "x", [(round(t, 3), x + p[0]) for t, p in zip(times, track, strict=True)], hold=False, local=False)
     cv.keys(head, "y", [(round(t, 3), y + p[1]) for t, p in zip(times, track, strict=True)], hold=False, local=False)
+
+
+APP_LABEL_Y, APP_AMOUNT_Y, APP_BUTTON_Y = 40.0, 110.0, 310.0  # down from the screen's top, under the header
+APP_BUTTON_W, APP_BUTTON_H = 560.0, 132.0
+APP_NOTE_Y, APP_NOTE_H, APP_NOTES = 468.0, 84.0, 2  # the notes under the button, and how many fit before the foot
+APP_AMOUNT_SIZE, APP_WORD_SIZE, APP_NOTE_SIZE = 150.0, 64.0, 44.0
+APP_DEAD = "#b7afc4"  # a button that no longer does anything
+APP_TAP, APP_TAP_R = 0.28, 40.0  # seconds a tap's ring stays, and its size
+
+
+def _button(cv: Canvas, g, word: str, fill: str, ink: str) -> None:
+    """The app's one button, across the middle of the screen."""
+    x, y = PHONE_X + (PHONE_W - APP_BUTTON_W) / 2, PHONE_Y + MAP_TOP + APP_BUTTON_Y
+    cv.rect(g, x, y, APP_BUTTON_W, APP_BUTTON_H, fill, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, word, x, y, APP_BUTTON_W, APP_BUTTON_H, APP_WORD_SIZE, ink, "center")
+
+
+@register(
+    "graphic", "news-money-app", summary="An unbranded money app on Gus's phone, whose button stops working on cue"
+)
+def money_app(
+    cv: Canvas,
+    parent,
+    title: str,
+    amount: str,
+    action: str,
+    refused: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    taps: Sequence[float] = (),
+    refused_at: float | None = None,
+    notes: Sequence[tuple[float, str]] = (),
+    id: str = "news-money-app",
+) -> None:
+    """A balance on the phone from ``start`` to ``end``: ``amount`` under the app's ``title``, and a button that reads
+    ``action`` until ``refused_at`` and ``refused`` from then on. ``taps`` are the seconds a finger lands on it, beside
+    the word so the word stays read, and each of ``notes`` (its second, its words) stays once it arrives. It refuses
+    copy the show keeps off the screen, words too wide for the phone, and any instant off its span. It copies no real
+    app: a mint header and one button."""
+    _span(start, end, "the app")
+    for word, size, room in (
+        (amount, APP_AMOUNT_SIZE, PHONE_W - 60.0),
+        (action, APP_WORD_SIZE, APP_BUTTON_W - 40.0),
+        (refused, APP_WORD_SIZE, APP_BUTTON_W - 40.0),
+    ):
+        check_copy(word)
+        if not word.strip() or measure(word, size) > room:
+            raise NewsKitError(f"the app's {word!r} must be some words that fit")
+    beside = APP_BUTTON_W / 2 - measure(action, APP_WORD_SIZE) / 2  # the button left on either side of the word
+    if taps and beside < 2 * (APP_TAP_R + 4.0):
+        raise NewsKitError(f"a tap needs room beside {action!r} on the button")
+    check_copy(title)
+    blocked = end if refused_at is None else refused_at
+    if not start <= blocked <= end or (refused_at is not None and blocked >= end):
+        raise NewsKitError(f"the app's button stops inside {start}..{end}, not at {refused_at}")
+    if not all(start <= at < end for at in taps):
+        raise NewsKitError(f"a tap lands inside {start}..{end}, got {tuple(taps)}")
+    if len(notes) > APP_NOTES:
+        raise NewsKitError(f"the screen holds {APP_NOTES} notes, got {len(notes)}")
+    for at, note in notes:
+        check_copy(note)
+        if not start <= at < end:
+            raise NewsKitError(f"note {note!r} arrives after the app has gone")
+        if not note.strip() or measure(note, APP_NOTE_SIZE) > PHONE_W - 80.0:
+            raise NewsKitError(f"note {note!r} must be some words that fit")
+    g = cv.group(parent, id, start=start, end=end)
+    _handset(cv, g, title)
+    x, y = PHONE_X, PHONE_Y + MAP_TOP
+    _text(cv, g, "BALANCE", x, y + APP_LABEL_Y, PHONE_W, 56.0, 46, PLUM, "center")
+    _text(cv, g, amount, x, y + APP_AMOUNT_Y, PHONE_W, 170.0, APP_AMOUNT_SIZE, PLUM_DEEP, "center")
+    if blocked > start:
+        _button(cv, cv.group(g, f"{id}-live", start=start, end=blocked), action, MINT, PLUM_DEEP)
+    if refused_at is not None:
+        _button(cv, cv.group(g, f"{id}-refused", start=blocked, end=end), refused, APP_DEAD, PLUM_DEEP)
+    for i, at in enumerate(taps):
+        ring = cv.group(g, f"{id}-tap-{i}", start=at, end=min(at + APP_TAP, end))
+        at_x = x + PHONE_W / 2 + APP_BUTTON_W / 2 - beside / 2
+        _inked_oval(cv, ring, at_x, y + APP_BUTTON_Y + APP_BUTTON_H / 2, APP_TAP_R, APP_TAP_R, BUTTER)
+    for i, (at, note) in enumerate(notes):
+        row = cv.group(g, f"{id}-note-{i}", start=at, end=end)
+        top = y + APP_NOTE_Y + i * (APP_NOTE_H + 12.0)
+        cv.rect(row, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, BUTTER, PLUM_DEEP, 4.0, radius=CHIP)
+        _text(cv, row, note, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, APP_NOTE_SIZE, PLUM_DEEP, "center")
