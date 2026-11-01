@@ -21,7 +21,8 @@ for t in "format:$WS/.venv/bin/ruff format --check src tests episodes tools" \
          "lint:$WS/.venv/bin/ruff check src tests episodes tools" "mypy:$WS/.venv/bin/mypy src"; do
   out=$(${t#*:} 2>&1) || rc=1; echo "[$sha] ${t%%:*}: $(echo "$out" | tail -1)"
 done
-COVERAGE_FILE=$wt/.coverage "$WS/.venv/bin/python" -m pytest -q -p no:cacheprovider --cov -rf > "$log" 2>&1 || rc=1
+COVERAGE_FILE=$wt/.coverage "$WS/.venv/bin/python" -m pytest -q -p no:cacheprovider --basetemp="$home/tmp" --cov -rf \
+  > "$log" 2>&1 || rc=1
 echo "[$sha] pytest: $(grep -E 'passed|failed|error|Required test coverage|FAIL Required' "$log" | tail -3 | tr '\n' ' ')"
 if [ "$rc" -eq 0 ]; then
   cd "$repo" && git worktree remove --force "$wt"

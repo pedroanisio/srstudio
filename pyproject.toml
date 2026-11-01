@@ -49,6 +49,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+tmp_path_retention_policy = "failed"  # a run keeps only its failures' folders: /tmp is a tmpfs with a fixed inode count
 
 [tool.coverage.run]
 branch = true

@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("pregate", ROOT / "tools" / "pregate.py")
 assert spec is not None and spec.loader is not None
@@ -83,3 +85,10 @@ def test_the_full_gate_keeps_nothing_in_the_scratch_folder():
 def test_no_two_decisions_share_a_number():
     numbers = [path.name[:4] for path in (ROOT / "docs" / "decisions").glob("[0-9]*.md")]
     assert sorted(numbers) == sorted(set(numbers))
+
+
+def test_a_run_leaves_no_temporary_folders_behind_on_the_shared_volume():
+    tomllib = pytest.importorskip("tomllib")  # Python 3.11 and later
+    options = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["pytest"]["ini_options"]
+    assert options["tmp_path_retention_policy"] == "failed"
+    assert '--basetemp="$home/tmp"' in GATE.read_text(encoding="utf-8")

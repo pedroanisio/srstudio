@@ -17,6 +17,9 @@ and the comedy floor.
 
 - `tools/gate.sh SHA [NAME]` runs format, lint, types and the full suite on one commit in its own worktree under
   `generated/gates/NAME/`, keeps the log there and removes the worktree when the run passes.
+  Its temporary files go there too, not to `/tmp`, and a run keeps only its failures' folders
+  (`tmp_path_retention_policy`): retained runs filled every inode of the `/tmp` tmpfs on 2026-11-01 and stopped every
+  session on the host.
 - `tools/pregate.py` runs before it: format, lint, types, the tests named for each changed module, every changed test,
   and the contract tests merges most often break. It does not replace the full gate.
 - The `reel` process's build stage leaves on the `reviewed` check: `lane.json` names the reels, and `reviews.json`
