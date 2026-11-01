@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,6 +50,9 @@ __all__ = [
     "CHOPPER",
     "GULL",
     "PLATES",
+    "note_hz",
+    "piano",
+    "phrase",
     "STING",
     "whoosh",
     "write_whoosh",
@@ -478,6 +482,41 @@ GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880
 SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
+
+
+_SEMITONE = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2}
+_NOTE = re.compile(r"([A-G])([#b]?)([0-8])")
+PIANO_RING = 2.2  # seconds a struck note rings on
+
+
+def note_hz(name: str) -> float:
+    """The equal-tempered pitch of a note named like ``A4``, ``F#3`` or ``Bb3``; A4 is 440 Hz."""
+    match = _NOTE.fullmatch(name)
+    if match is None:
+        raise FoleyError(f"{name!r} is not a note like A4, F#3 or Bb3")
+    letter, accidental, octave = match.groups()
+    shift = _SEMITONE[letter] + {"#": 1, "b": -1, "": 0}[accidental] + 12 * (int(octave) - 4)
+    return 440.0 * 2.0 ** (shift / 12)
+
+
+def piano(name: str, ring: float = PIANO_RING) -> Burst:
+    """One struck note, held for :func:`bursts`: the hammer's soft noise under a pitch that dies away."""
+    hz = note_hz(name)
+    return Burst(ring, 1800.0, attack=0.004, decay=0.28, tone_hz=hz, tone_end_hz=hz, tone=0.92)
+
+
+def phrase(notes: Sequence[str], start: float, step: float) -> dict[str, tuple[float, ...]]:
+    """When each note of a melody plays: ``notes`` from ``start``, one every ``step`` seconds, as ``{note: seconds}``,
+    one :func:`piano` burst per note."""
+    if not notes:
+        raise FoleyError("a phrase needs at least one note")
+    if not (checks.number(start) and start >= 0 and checks.number(step) and step > 0):
+        raise FoleyError(f"a phrase runs forward from a second >= 0, got start {start!r}, step {step!r}")
+    out: dict[str, tuple[float, ...]] = {}
+    for i, name in enumerate(notes):
+        note_hz(name)
+        out[name] = (*out.get(name, ()), round(start + i * step, 6))
+    return out
 
 
 def bursts(
