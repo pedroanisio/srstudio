@@ -8,6 +8,11 @@ generated-by: Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code
 a fact corrected after a published reel disproved it, or a clash resolved by the operator, is a patch; a change to
 the files' schema is a major version.
 
+## 1.0.1
+
+- The unnamed role is spelled `neighbor`, as the reels and the repository's EN-US default spell it, so a speaker keyed
+  `neighbor` is a role and not an unknown name. No character, pair or fact changed.
+
 ## 1.0.0
 
 The first cast bible, written from the 131 published reels.

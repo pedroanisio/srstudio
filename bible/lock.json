@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.0.0",
+ "version": "1.0.1",
  "digests": {
   "character:ava": "8879b79a65ae45ac11890ab5db4b5287492a0d8255acf817a8a6a3655b18d596",
   "character:bo": "5b9e71758612f49c2e7d54129fcc7785f0c5624f2568915e53f6e5c5fb7219a3",
@@ -76,8 +76,8 @@
   "clash:pip-why-child": "18adde89bf76b922426a76e74d90ff14a0515817234600c4516378586cbc0c10",
   "clash:river-voice": "69eff5de4dc0a04d3909dd29f6861c6fb2844404405ac9e8bc00625cd55ce1a5",
   "clash:rosa-drawing": "89ec7dc0ad3ca8e86458c5c865ad154fa4062cfdfb8fe418cb691f6607620034",
-  "clash:rosa-two-drawings": "69c38aab462249462c44f11d68b2593f386562041fc1e605698998c8f8e98baf",
-  "clash:rosa-two-voices": "d57f47f40b00511dc34bee4d92583cf0d2debe63c72e25f68a726ef5b6e59571",
+  "clash:rosa-two-drawings": "4c2125d7ad17f984cf589f837a597d4a6d9682d5274d093f7826a508a734a89d",
+  "clash:rosa-two-voices": "57c0371f1126fafee47fdf91b3d29b88832586ddc7aed65c1727754f1c4b9e5a",
   "clash:rosa-voice": "b78531245887baa8f186c27f393e3ae1b7a20e18b688b16c81c738d0083c7c7f",
   "clash:sunny-menu-same-voice": "317831e37fce8b2eafb317eaa271306fe69edf857d1fd95820095c1363f8953d",
   "clash:toon-bear-names": "b2c4510c82d866d667c81c55f7812c538d672d975177b09f33c24dda99652541",
@@ -199,7 +199,7 @@
   "place:soft-office": "eccc021d7643cdb3f2cd51b532169ce9d948cd1bf8120d74a19117afae9a4cb3",
   "place:toon-office": "51ba01d63a879a93d6cd064ef510f4f35dfa7e1016dcaea83dcbf7ce44d8fb92",
   "place:waiting-room": "733c985d6fe34a7d9c413474b17e385d1d20d9fe9103caab34fd6b49fe2d6631",
-  "roles": "07d8e161252f6869c8f3f61713184c7190647c31e0d4ada50a1aea50dc427cf9",
+  "roles": "c832ccb3197858cafe446811d20c4ab6631f0a36efbfc48f739dcd5f36244b5a",
   "rule:ages-fixed": "741f17341b8822c99a6a3ba84ac4acdda2f88e1181f0d614b3d0b486ef366739",
   "rule:ages-loose": "c957b91ab79a2c13abb0c69e155c4ca848622fa3704a8e36c79d0341de8441fb",
   "rule:animals-live-human-lives": "d4e4ff55e959c5a081248a8ee9a6290c0ab8e80d0c295f1ebf284ce8f95c0494",

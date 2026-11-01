@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.0.0",
+ "version": "1.0.1",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "characters": [
   {
@@ -12606,7 +12606,7 @@
   "meter",
   "mom",
   "narrator",
-  "neighbour",
+  "neighbor",
   "phone",
   "pigeon",
   "proud",
@@ -15407,7 +15407,7 @@
      "quote": "rosa"
     }
    ],
-   "proposal": "Collage Rosa is the one Rosa (six reels, family and bank). Rename the Cutout neighbour (for example by the stitched word on her cardigan) or retire her."
+   "proposal": "Collage Rosa is the one Rosa (six reels, family and bank). Rename the Cutout neighbor (for example by the stitched word on her cardigan) or retire her."
   },
   {
    "id": "rosa-two-voices",
@@ -15430,7 +15430,7 @@
      "quote": "Lily"
     }
    ],
-   "proposal": "Follows the drawing: Matilda for Rosa; Lily for any renamed neighbour."
+   "proposal": "Follows the drawing: Matilda for Rosa; Lily for any renamed neighbor."
   },
   {
    "id": "voice-will",
