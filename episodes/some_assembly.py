@@ -138,8 +138,8 @@ def finished(parent, end: float, take=None, *, noor_face=PROUD, dev_face=UNEASY)
                     colour=MANUAL)  # fmt: skip
     figure(room, [K(0, "offer", dev_face)], end, DEV, DEV_END_X, take, who="dev")
     palm = POSES["offer"].hands[1]
-    stick_odds.screws(cv, room, DEV_END_X + (palm[0] - 540) * 0.85 - 40, ROOM_FLOOR - (FOOT - palm[1]) * 0.85 - 40,
-                      scale=1.3)  # fmt: skip
+    stick_odds.screws(cv, room, DEV_END_X + (palm[0] - 540) * 0.85 - 26, ROOM_FLOOR - (FOOT - palm[1]) * 0.85 - 16,
+                      scale=0.6)  # fmt: skip
     return room
 
 
@@ -205,7 +205,9 @@ def stage(take) -> None:
     elif take.shot == "mom":
         noor_close(g, take, end, AT_PHONE if take.is_effect else READING)
         ring = (0.0, 0.5, 1.0) if take.is_effect else ()
-        stick_odds.caller(cv, g, 850.0, 1330.0, "MOM", ring=ring, scale=1.3)
+        propped = cv.group(g, cv.uid("propped"), x=905.0, y=1470.0, anchorX=905.0, anchorY=1470.0, rotation=7.0)
+        cv.ellipse(g, 815.0, 1458.0, 190.0, 30.0, "#00000033")  # its foot is on the floor
+        stick_odds.caller(cv, propped, 905.0, 1320.0, "MOM", ring=ring, scale=0.78)  # against the cupboard
         signature.code(cv, g, 40, 1880, 9, color=CODE_ON_FLOOR)  # the zoom crops the flat's own
     elif take.shot == "later":
         finished(g, end, take)
@@ -228,7 +230,7 @@ for take in t.takes:
     stage(take)
 
 hook = stick.card(cv, cv.comp, HOOK, size=78)
-cv.gate(hook, [(0, STILL + 0.95)])
+cv.gate(hook, [(0, STILL)])  # it stops where the same words start as spoken words
 spoken = stick_reel.words(ep, t.takes, sentences=True, hold=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14")
 stick_reel.close(ep, POSTS["some-assembly"], hook, spoken)
