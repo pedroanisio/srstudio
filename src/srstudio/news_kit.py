@@ -29,6 +29,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from . import _character_contracts as cc
 from . import checks, foley, look, signature, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -859,7 +860,10 @@ def perform(
 
 
 @register(
-    "character", "news-vera", summary="Vera Stillman, the straight anchor: silver bob, half-moon glasses, no reaction"
+    "character",
+    "news-vera",
+    summary="Vera Stillman, the straight anchor: silver bob, half-moon glasses, no reaction",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES),
 )
 def vera(
     cv: Canvas,
@@ -875,7 +879,10 @@ def vera(
 
 
 @register(
-    "character", "news-gus", summary="Gus Bellows, the co-host who cannot let anything go: curls, loud jacket, a phone"
+    "character",
+    "news-gus",
+    summary="Gus Bellows, the co-host who cannot let anything go: curls, loud jacket, a phone",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES),
 )
 def gus(
     cv: Canvas,

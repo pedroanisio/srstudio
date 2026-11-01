@@ -28,6 +28,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
+from . import _character_contracts as cc
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -499,7 +500,12 @@ def _layers(cv: Canvas, g, layers: Sequence[tuple[Shape, str]]) -> None:
         flat(cv, g, shape, {"ink": cv.ink, "white": cv.white}.get(colour, colour))
 
 
-@register("character", "toon-cat", summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression")
+@register(
+    "character",
+    "toon-cat",
+    summary="The desk cat, traced: a body per arm pose, eyes and a mouth per expression",
+    contract=cc.toon(Pose, TRACED_EYES, TRACED_MOUTHS, ARMS, wear=WEAR),
+)
 def cat(
     cv: Canvas, parent, poses: Sequence[Pose], duration: float, taps: Sequence[float] = (), enter: float = 0.0
 ) -> list:

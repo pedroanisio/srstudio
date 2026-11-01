@@ -21,6 +21,7 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any
 
+from . import _character_contracts as cc
 from . import brush, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
 from .brush import Point
 from .canvas import Canvas
@@ -1514,7 +1515,10 @@ def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
 
 
 @register(
-    "character", "news-vera@2", summary="Vera Stillman, inked: a silver bob with a parting, half-moon glasses, a neck"
+    "character",
+    "news-vera@2",
+    summary="Vera Stillman, inked: a silver bob with a parting, half-moon glasses, a neck",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
 )
 def vera(
     cv: Canvas,
@@ -1529,7 +1533,12 @@ def vera(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-gus@2", summary="Gus Bellows, inked: curls, a pulled tie, sleeves with elbows, real hands")
+@register(
+    "character",
+    "news-gus@2",
+    summary="Gus Bellows, inked: curls, a pulled tie, sleeves with elbows, real hands",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus(
     cv: Canvas,
     parent,
@@ -1543,7 +1552,12 @@ def gus(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-vera@3", summary="Vera on the rig whose face stays on her skin: the same drawing as @2")
+@register(
+    "character",
+    "news-vera@3",
+    summary="Vera on the rig whose face stays on her skin: the same drawing as @2",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_3(
     cv: Canvas,
     parent,
@@ -1557,7 +1571,12 @@ def vera_3(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-gus@3", summary="Gus on the rig whose face stays on his skin: the same drawing as @2")
+@register(
+    "character",
+    "news-gus@3",
+    summary="Gus on the rig whose face stays on his skin: the same drawing as @2",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_3(
     cv: Canvas,
     parent,
@@ -1571,7 +1590,12 @@ def gus_3(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths)
 
 
-@register("character", "news-vera@4", summary="Vera with the shout inside her chin, the rig of @3")
+@register(
+    "character",
+    "news-vera@4",
+    summary="Vera with the shout inside her chin, the rig of @3",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_4(
     cv: Canvas,
     parent,
@@ -1585,7 +1609,12 @@ def vera_4(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=4)
 
 
-@register("character", "news-gus@4", summary="Gus with the shout inside his chin and his mouths clear of his nose")
+@register(
+    "character",
+    "news-gus@4",
+    summary="Gus with the shout inside his chin and his mouths clear of his nose",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_4(
     cv: Canvas,
     parent,
@@ -1599,7 +1628,12 @@ def gus_4(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=4)
 
 
-@register("character", "news-vera@5", summary="Vera with a sloped shoulder that her sleeve grows out of")
+@register(
+    "character",
+    "news-vera@5",
+    summary="Vera with a sloped shoulder that her sleeve grows out of",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_5(
     cv: Canvas,
     parent,
@@ -1613,7 +1647,12 @@ def vera_5(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=5)
 
 
-@register("character", "news-gus@5", summary="Gus with arms of one length that travel between their poses")
+@register(
+    "character",
+    "news-gus@5",
+    summary="Gus with arms of one length that travel between their poses",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_5(
     cv: Canvas,
     parent,

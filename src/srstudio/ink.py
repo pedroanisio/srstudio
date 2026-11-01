@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 
+from . import _character_contracts as cc
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -146,6 +147,11 @@ def mouth(cv: Canvas, parent, take: Take, *, x=274, y=295, style: PhonemeStyle =
     "doodle",
     summary="The round-headed doodle: shaded head, dot eyes, five phoneme mouths, "
     "waiting, pointing or head-grabbing arms",
+    contract=cc.take(
+        expressions=True,
+        parameters=(('blink_after', cc.seconds('relative:take')),),
+        vocabularies=(('visemes', tuple(INK_POSES)),),
+    ),
 )
 def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_after: float = 1.2, shades: bool = False):
     """The doodle at ``x, y``; ``shades`` pushes a pair of sunglasses up on his forehead."""
@@ -211,6 +217,7 @@ def human(cv: Canvas, parent, take: Take, x, y, scale=1, gesture=False, blink_af
     "talking-printer",
     summary="An inkjet that talks: blinking LED and voice marks when it speaks, "
     "a shaking shell and bobbing paper when it whirrs",
+    contract=cc.take(parameters=(('fps', cc.P(unit='samples/second')),)),
 )
 def printer(cv: Canvas, parent, take: Take, x, y, scale=1, *, speaker: str = "printer", fps: int = 24):
     g = group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
@@ -340,6 +347,10 @@ def _led_keys(power: str, talking: bool, i: int, duration: float, drop_at: float
     "talking-router",
     summary="A home router that talks: four LEDs chase and the antennas bob when it speaks, "
     "the LEDs step down or sweep up when it is rebooted, a signed model plate",
+    contract=cc.take(
+        parameters=(('power', cc.P(enum=ROUTER_POWER)), ('drop_at', cc.seconds('relative:take'))),
+        vocabularies=(('power', ROUTER_POWER),),
+    ),
 )
 def router(
     cv: Canvas,

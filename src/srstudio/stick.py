@@ -41,6 +41,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from . import _character_contracts as cc
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -556,7 +557,33 @@ def yard(cv: Canvas, parent, foliage: Sequence[Plate], seed: int) -> None:
 
 
 # -- the character ------------------------------------------------------------------------------------------
-@register("character", "stick-figure", tags=("traced", "12fps", "badges"))
+@register(
+    "character",
+    "stick-figure",
+    tags=("traced", "12fps", "badges"),
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(
+            ('duration', cc.seconds('canvas', 'end')),
+            (
+                'poses',
+                cc.P(
+                    items=cc.P(fields=(('start', cc.seconds('canvas', 'start')), ('end', cc.seconds('canvas', 'end'))))
+                ),
+            ),
+            (
+                'badges',
+                cc.P(
+                    items=cc.P(fields=(('traced_angle', cc.P(unit='degrees')), ('radius', cc.P(unit='drawing pixels'))))
+                ),
+            ),
+        ),
+        constraints=(
+            'Traced poses are held drawings. Geometry is in Stick frame coordinates; duration crops pose ends.',
+        ),
+    ),
+)
 def figures(cv: Canvas, parent, poses: Sequence[Pose], badges: Sequence[Badge], duration: float) -> None:
     """The traced stick figure, one group per pose: seated in the room, or leading a row of badge-headed dancers."""
     for i, pose in enumerate(poses):
@@ -1318,7 +1345,48 @@ def _gate(cv: Canvas, node, start: float, end: float, total: float) -> None:
     cv.gate(node, [(start, end)])
 
 
-@register("character", "stick-rig", tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"))
+_FACE_FIELDS = (
+    ('eyes', cc.P(enum=EYES)),
+    ('brows', cc.P(enum=BROWS)),
+    ('mouth', cc.P(enum=MOUTHS)),
+    ('look', cc.P(unit='ratio', prefix_items=(cc.P(minimum=-1, maximum=1), cc.P(minimum=-1, maximum=1)))),
+)
+_RIG_KEY_FIELDS = (('start', cc.seconds('canvas', 'start')), ('face', cc.P(fields=_FACE_FIELDS)))
+
+
+@register(
+    "character",
+    "stick-rig",
+    tags=("procedural", "seated", "standing", "looks", "lip-sync", "expressions"),
+    contract=cc.character(
+        limbs=True,
+        expressions=True,
+        parameters=(
+            *cc.AT,
+            ('keys', cc.P(items=cc.P(fields=_RIG_KEY_FIELDS))),
+            ('end', cc.seconds('canvas', 'end')),
+            ('blinks', cc.P(items=cc.seconds('canvas'))),
+            ('phones', cc.P(description='Character timestamps relative to the shot start; start/end use seconds.')),
+            (
+                'poses',
+                cc.P(
+                    unit='Stick frame pixels',
+                    description='Pose names are keys in this mapping, including custom poses.',
+                ),
+            ),
+        ),
+        vocabularies=(('eyes', EYES), ('brows', BROWS), ('mouths', MOUTHS), ('default_poses', tuple(SEATED))),
+        operations=(
+            cc.Operation('key', RigKey, cc.PartContract(parameters=_RIG_KEY_FIELDS)),
+            cc.Operation('face', Face, cc.PartContract(parameters=_FACE_FIELDS)),
+        ),
+        constraints=(
+            'Keys hold their pose; they do not tween. All animation uses the canvas shot clock.',
+            'The poses mapping may supply arbitrary names; default_poses is not a closed vocabulary.',
+            'at translates reference geometry; scale acts about the frame origin, not the feet.',
+        ),
+    ),
+)
 def rig(
     cv: Canvas,
     parent,

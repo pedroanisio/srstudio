@@ -15,6 +15,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _character_contracts as cc
 from . import look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -96,6 +97,7 @@ def _ring_keys(i: int, duration: float) -> list[tuple[float, float]]:
     summary="A robot vacuum that talks: its ring of lights chases and voice marks flicker when it speaks; it sits "
     "still, rolls off or rolls in and brakes, with a word on its display",
     style="ink",
+    contract=cc.take(parameters=(('state', cc.P(enum=STATES)),), vocabularies=(('states', STATES),)),
 )
 def vacuum(
     cv: Canvas,

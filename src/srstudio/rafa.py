@@ -22,6 +22,7 @@ from functools import cache, lru_cache
 
 import numpy as np
 
+from . import _character_contracts as cc
 from . import clay, rafa_skin
 from .clay import Mesh, Model
 from .errors import SrstudioError
@@ -491,7 +492,36 @@ def _hand(m: Model, x: float, y: float, z: float, side: int = 1) -> None:
     m.capsule("flesh", (x - side * 9, y - 3, z - 1), (x - side * 17, y + 10, z - 5), 4.8)
 
 
-@register("character", "rafa", summary="Rafa, 34, mostly functional: a clay man in a teal cardigan, shot as plates")
+@register(
+    "character",
+    "rafa",
+    summary="Rafa, 34, mostly functional: a clay man in a teal cardigan, shot as plates",
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(('m', cc.P(unit='Rafa model units')),),
+        constraints=(
+            'This builder emits only the static body below the head into a clay.Model; '
+            'it does not draw or animate a face. Use rafa_host for composited plate performance.',
+        ),
+        operations=(
+            cc.Operation(
+                'face',
+                Face,
+                cc.PartContract(
+                    parameters=(
+                        ('mood', cc.P(enum=tuple(MOODS))),
+                        ('gaze', cc.P(enum=tuple(GAZES))),
+                        ('lid', cc.P(enum=tuple(LIDS))),
+                        ('mouth', cc.P(enum=MOUTHS)),
+                        ('turn', cc.P(unit='degrees', enum=TURNS)),
+                        ('nod', cc.P(unit='degrees', enum=NODS)),
+                    )
+                ),
+            ),
+        ),
+    ),
+)
 def body(m: Model) -> None:
     """Everything of him below the head: he slouches, his hips sit a little off, the cardigan hangs open. A neck carries
     the head, and the shoulders have weight: a knit body, a turned-over collar, a placket, folds where wool bends."""

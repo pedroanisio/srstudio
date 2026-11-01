@@ -32,6 +32,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from . import _character_contracts as cc
 from . import camera, checks, foley, head_motion, look, native, signature, sketch, toon
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -951,6 +952,7 @@ def _eyes(cv: Canvas, face, acts: Sequence[tuple[float, Pose]], plan: HeadPlan, 
     "character",
     "host-lint",
     summary="Lint, a clothes moth in a cardigan he is also eating: plumed antennae, heavy lids, a large opinion",
+    contract=cc.anchor(Pose, EYES, EXPRESSIONS, ARMS, VISEMES, host=True),
 )
 def lint(cv: Canvas, parent, pose: Pose | None = None, start: float = 0.0, end: float = 2.0, mouths: Track = ()):
     """Lint in one pose, on his plank."""

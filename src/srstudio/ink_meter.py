@@ -17,6 +17,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _character_contracts as cc
 from . import checks, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -149,6 +150,13 @@ def _chase(i: int, duration: float) -> list[tuple[float, float]]:
     summary="A parking pay station that talks: lights chase over its display when it speaks, the display's reading "
     "changes on cue, and its coin slot is taped over with a SCAN TO PAY sticker",
     style="ink",
+    contract=cc.take(
+        parameters=(
+            ('display', cc.track('relative:take')),
+            ('zoom', cc.P(unit='ratio')),
+            ('framed', cc.P(unit='parent units')),
+        )
+    ),
 )
 def meter(
     cv: Canvas,
