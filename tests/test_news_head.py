@@ -654,22 +654,20 @@ def test_version_4_is_approved_and_its_specimen_shows_every_mouth(who):
     assert {tuple(mouth_of(who, s, 4)) for s in ("gape", "grin")} <= outlines
 
 
-@pytest.mark.parametrize(
-    "reel",
-    [
-        "seabird_jet_lag",
-        "space_haiku",
-        "you_too",
-        "one_more_episode",
-        "security_question",
-        "where_to_eat",
-        "missing_lid",
-        "came_in_for",
-    ],
-)
+@pytest.mark.parametrize("reel", ["seabird_jet_lag", "missing_lid"])
 def test_a_delivered_reel_names_the_version_it_went_out_on(reel):
     source = (Path(__file__).parents[1] / "episodes" / "pilots" / f"{reel}.py").read_text()
     assert "news_inked.stage(ACTS, version=3)" in source
+
+
+def test_only_a_published_reel_stays_on_a_version_before_the_hands():
+    pinned = sorted(
+        path.stem
+        for path in (Path(__file__).parents[1] / "episodes" / "pilots").glob("*.py")
+        for number in re.findall(r"news_inked\.stage\(ACTS, version=(\d+)\)", path.read_text())
+        if int(number) < 6
+    )
+    assert pinned == ["missing_lid", "seabird_jet_lag"]
 
 
 @anchors
