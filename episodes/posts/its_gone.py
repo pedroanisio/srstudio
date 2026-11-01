@@ -26,7 +26,6 @@ RELEASE = Release(
     comedy=Scores(author=18, reviewer=17),
     parts={
         "collage-arm": 1,
-        "collage-boardroom": 1,
         "collage-gary": 1,
         "collage-living-room": 1,
         "collage-phone": 1,

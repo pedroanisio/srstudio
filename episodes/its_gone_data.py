@@ -21,7 +21,7 @@ SLUG = "its-gone"
 TITLE = "It's Gone — Rosa and Gary (Collage)"
 NAMES = ("rosa", "gary")
 HOME = "living-room"
-OFFICE = "boardroom"
+OFFICE = "meeting-room"
 DESCRIPTION = (
     "A Collage sketch: Rosa's internet is gone again, Gary drives forty minutes to press one button, and when the door "
     "shuts she walks to the router and pulls the plug."
@@ -142,7 +142,10 @@ def dress(shot) -> None:
     cv, app, beats = shot.cv, shot.app, shot.beats
     home = _at(beats, "home")
     if app.start < home:
-        collage_everyday.phone(cv, shot.front, 400.0, 1300.0, tilt=-8, **HELD)
+        hand = cv.group(shot.front, cv.uid("g"), x=0.0)
+        if app.start == 0.0:  # in her hands from the first frame, arriving with her
+            cv.keys(hand, "x", [(0.0, ARRIVE[0]), (ARRIVE[1], 0.0)], kind="cubic-out", local=False)
+        collage_everyday.phone(cv, hand, 400.0, 1300.0, tilt=-8, **HELD)
         return
     press, plug = events(beats, "beep")[0][0], _at(beats, "plug")
     cv.rect(shot.front, ROUTER["x"] - 180.0, ROUTER["y"] + 42.0, 360.0, 400.0, TABLE, collage.INK, 7.0, radius=8.0)
