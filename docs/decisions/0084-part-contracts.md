@@ -2,7 +2,7 @@
 generated-by: OpenAI Codex (GPT-6)
 ---
 
-# ADR 0079: Describe part shapes and semantics without drawing
+# ADR 0084: Describe part shapes and semantics without drawing
 
 - Status: accepted (2026-11-01)
 - Back to the [library README](../../README.md)
