@@ -9,12 +9,15 @@ events; :func:`dress` draws the shot, :func:`lens` its camera and :func:`foley` 
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon_extras, toon_homeware, toon_house
 from srstudio import foley as synth
 from srstudio.foley import Burst
 from srstudio.sketch import Line, Sketch
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3114
 SLUG = "shower-argument"
 TITLE = "Shower Argument — Rex Wins (Toon)"

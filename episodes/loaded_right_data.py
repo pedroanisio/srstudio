@@ -1,8 +1,8 @@
 """Loaded Right — the sketch as data: a father who has hated every boyfriend can be won over in one move, at the
-dishwasher. Dad grills Theo about the bus while Theo clears the table and, behind Dad's back, loads the machine. Dad
-turns. The rows are perfect, the mugs are on a slant, and Theo's father taught him.
+dishwasher. Dad grills Lewis about the bus while Lewis clears the table and, behind Dad's back, loads the machine. Dad
+turns. The rows are perfect, the mugs are on a slant, and Lewis's father taught him.
 
-Three voices (ElevenLabs premade Brian as Dad, Matilda as Fern, Will as Theo). One kitchen: Dad at the front, Theo
+Three voices (ElevenLabs premade Brian as Dad, Matilda as Fern, Will as Lewis). One kitchen: Dad at the front, Lewis
 behind him at the open dishwasher, filling it dish by dish (``load`` events, :func:`srstudio.toon_homeware.dishwasher`);
 the rack insert rolls out on ``roll`` and a mug is tipped on ``tip``. The camera moves from the first frame (the
 ``sp-hook_motion`` test's arm B). :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its
@@ -11,17 +11,20 @@ camera and :func:`foley` its sound.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon_extras, toon_homeware, toon_house, toon_sets, toon_world
 from srstudio import foley as synth
 from srstudio.foley import Burst
 from srstudio.sketch import Line, Sketch
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3102
 SLUG = "loaded-right"
 TITLE = "Loaded Right — Dad and the Dishwasher (Toon)"
 DESCRIPTION = (
-    "A Toon sketch: Dad has hated every boyfriend. Then Theo, saying nothing, loads the dishwasher behind his back."
+    "A Toon sketch: Dad has hated every boyfriend. Then Lewis, saying nothing, loads the dishwasher behind his back."
 )
 ACCESSIBILITY = (
     "An old cartoon goat in a kitchen questions a young raccoon about taking the bus. Behind him the raccoon quietly "
@@ -29,16 +32,16 @@ ACCESSIBILITY = (
     "slant. He puts on his reading glasses and tips one with a finger. Told who taught him, his chin goes, and a paw "
     "lands on the raccoon's shoulder. His daughter, a frog, reminds him what he said. Lines appear in tinted pills."
 )
-NARRATION = "Voiced with ElevenLabs premade voices Brian (Dad), Matilda (Fern) and Will (Theo)."
+NARRATION = "Voiced with ElevenLabs premade voices Brian (Dad), Matilda (Fern) and Will (Lewis)."
 NOTE = "ElevenLabs premade voices Brian, Matilda and Will at their natural pace; no reference-voice cloning."
 DAD = speaker("dad", "Brian", "goat", "deadpan")
 FERN = speaker("fern", "Matilda", "frog")
-THEO = speaker("theo", "Will", "raccoon", "deadpan")
-TINTS = tinted(DAD, FERN, THEO)
+LEWIS = speaker("lewis", "Will", "raccoon", "deadpan")
+TINTS = tinted(DAD, FERN, LEWIS)
 BARE = ("hamster",)  # the rack's insert
 FIGURES = {"goat": (1.06, -6.0)}
 PIVOT = (980.0, 1420.0)
-LOADER = (462.0, 668.0)  # Theo behind the machine
+LOADER = (462.0, 668.0)  # Lewis behind the machine
 WASHER = dict(at=(452.0, 838.0), scale=0.96)
 ROLL = Burst(1.6, 900.0, attack=0.1, decay=1.4, tone_hz=170.0, tone_end_hz=210.0, tone=0.25, flutter_hz=26.0)
 CLINK = Burst(0.16, 7000.0, attack=0.001, decay=0.3, tone_hz=2600.0, tone_end_hz=2500.0, tone=0.5)
@@ -46,14 +49,14 @@ END = 27.0
 
 LINES = (
     Line("dad", "So you take the bus."),
-    Line("theo", "Yes, sir."),
+    Line("lewis", "Yes, sir."),
     Line("dad", "The last one had a car. He's gone too."),
     Line("fern", "Dad."),
     Line("dad", "Hey. Nobody touches that."),
     Line("dad", "Mugs on a slant."),
-    Line("theo", "So they drain."),
+    Line("lewis", "So they drain."),
     Line("dad", "Who taught you?"),
-    Line("theo", "My father."),
+    Line("lewis", "My father."),
     Line("dad", "My son."),
     Line("fern", "You said he had dead eyes."),
     Line("dad", "Don't you mess this up."),
@@ -88,12 +91,12 @@ BEATS = (
     hold(24.8, "goat", "", "teary", "flat", "lean", wear=("glasses",)),
     say(25.3, "goat", 11, "narrow", "flat", "lean", wear=("glasses",)),
 )
-SKETCH = Sketch(SLUG, TITLE, (DAD, FERN, THEO), LINES, BEATS, END)
+SKETCH = Sketch(SLUG, TITLE, (DAD, FERN, LEWIS), LINES, BEATS, END)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
     """The sketch is consistent, speaks by 0.5 s, rolls the rack once and tips the mug once after it, lands the paw
-    once on Theo's shot, and the machine is full before Dad turns."""
+    once on Lewis's shot, and the machine is full before Dad turns."""
     sketch.check(sk)
     if next(b for b in sk.beats if b.spoken).start > 0.5:
         raise sketch.SketchError("the first line starts by 0.5 s")
@@ -112,7 +115,7 @@ def validate(sk: Sketch = SKETCH) -> None:
 
 
 def dress(shot) -> None:
-    """The kitchen; Theo behind Dad at the filling machine until Dad turns, then the rack insert, Theo's close-up with
+    """The kitchen; Lewis behind Dad at the filling machine until Dad turns, then the rack insert, Lewis's close-up with
     the hand that lands on his shoulder, and Fern across the table."""
     cv, app = shot.cv, shot.app
     if app.who == "hamster":
