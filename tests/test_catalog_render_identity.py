@@ -14,10 +14,9 @@ from support.plates import printed_plate
 def catalog(tmp_path, monkeypatch):
     engine = tmp_path / 'engine'
     engine.write_bytes(b'build-a')
-    fonts = tmp_path / 'fonts'
-    fonts.mkdir()
+    fonts = tmp_path / 'cache' / 'project' / 'assets'
+    fonts.mkdir(parents=True)
     (fonts / plates.PRINT_FONT[2]).write_bytes(b'font-a')
-    monkeypatch.setenv('SRSTUDIO_FONTS', str(fonts))
     entry = registry.get('prop', 'coffee-cup')
     plan = cs.Plan(entry, b'<scene><project duration="1"/><composition/></scene>', 0, 'drawing-key', False)
     monkeypatch.setattr(cs, 'plan', lambda *args: ([plan], {}))
@@ -25,7 +24,7 @@ def catalog(tmp_path, monkeypatch):
     monkeypatch.setattr(cs.pedro_host, 'part_plates', lambda name: ())
     calls = []
 
-    def render(plan, engine, folder):
+    def render(plan, engine, folder, fonts):
         calls.append(plan.key)
         folder.mkdir(parents=True, exist_ok=True)
         (folder / f'{plan.key}.png').write_bytes(engine.read_bytes())
@@ -84,7 +83,7 @@ def test_bound_specimen_refuses_an_engine_change_before_drawing(tmp_path):
     plan = cs.Plan(registry.get('prop', 'coffee-cup'), b'', 0, 'key', False, digest, ())
     folder = tmp_path / 'catalog'
     with pytest.raises(cs.SpecimenRenderError) as caught:
-        cs.render_one(plan, engine, folder)
+        cs.render_one(plan, engine, folder, tmp_path)
     assert caught.value.to_dict()['code'] == 'catalog.renderer.changed'
     assert not folder.exists()
 
@@ -102,5 +101,5 @@ def test_specimen_does_not_publish_when_the_engine_changes_during_render(tmp_pat
     monkeypatch.setattr(cs, '_render', changed)
     folder = tmp_path / 'catalog'
     with pytest.raises(cs.SpecimenRenderError, match='renderer changed'):
-        cs.render_one(plan, engine, folder)
+        cs.render_one(plan, engine, folder, tmp_path)
     assert not (folder / 'key.png').exists()
