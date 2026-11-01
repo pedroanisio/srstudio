@@ -20,10 +20,10 @@ Koppel, L., Andersson, D., Tinghög, G., Västfjäll, D., & Feldman, G. (2023). 
 | --- | --- | --- |
 | "Most drivers say they're better than most drivers." | pages read, full text | Above the median on skill: 93% US and 69% Swedish students (Svenson, p. 146). 91% and 78% of 1,203 American adults, reproduced and adjusted materials (Koppel et al.). |
 | "Ninety-three percent of American students put themselves in the top half." | pages read | "In the US sample 93% believed themselves to be more skillful drivers than the median driver and 69% of the Swedish drivers shared this belief." 41 of the 81 US students judged skill. The caption gives Sweden and the 2023 replication. |
-| "So researchers asked drivers in hospital, after a crash." | abstract, secondary source only | Svenson, pp. 146–147, on 50 drivers hospitalized after accidents, matched with 50 others. Preston & Harris's own methods section was not read. |
-| "Most of them had caused it." | secondary source only | Svenson, p. 147: "According to police records 34 of the drivers in the accident group were responsible for the accidents." 34 of 50. |
+| "So researchers asked drivers in the hospital, after a crash." | abstract, secondary source only | Svenson, pp. 146–147, on 50 drivers hospitalized after accidents, matched with 50 others. Preston & Harris's own methods section was not read. |
+| "Most of them had caused it." and the stamp "34 of 50 caused it. Preston & Harris, 1965, in Svenson, 1981" | secondary source only | Svenson, p. 147: "According to police records 34 of the drivers in the accident group were responsible for the accidents." 34 of 50. The number comes by this route: it is in Svenson, it was not read in Preston & Harris, and the stamp names the route with "in Svenson, 1981". |
 | "Above average." | abstract, pages read | Svenson, p. 147: "the average driver, irrespective of accident record, judged himself to be more skillful than the average on the nine point scale." Preston & Harris abstract: accident subjects were "much closer to 'expert' than 'very poor'" and their reports were "at considerable variance with police reports". |
 
 ## Scope
 
-Students and small samples for the 1981 and 1965 work, adults online for 2023. Self-reports, in one culture at a time. The reel shows people rating themselves, and does not claim those people drive worse than they say. The tree line is the joke and has no study attached.
+Students and small samples for the 1981 and 1965 work, adults online for 2023. Self-reports, in one culture at a time. The reel shows people rating themselves, and does not claim those people drive worse than they say. "The tree didn't signal." is the joke and has no study attached.

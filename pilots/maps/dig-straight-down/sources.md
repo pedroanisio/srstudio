@@ -13,7 +13,7 @@ Status key: **computed** = computed by `tools/maps/antipodes.py` from the named 
 | "Four in five people would come up in the ocean." | computed | GHS-POP E2025: 8,191,988,536 people, 20.18% opposite land, 79.82% opposite sea. WorldPop R2025A: 8,196,931,816 people, 20.02% and 79.98%. Land mask: Natural Earth 10m land. |
 | "New York City? The Indian Ocean." | computed | GeoNames 5128581 lands at 40.714 S, 105.994 E, sea, 11.1 degrees from Australia. |
 | "Beijing comes up in Argentina." | computed | GeoNames 1816670 lands at 39.907 S, 63.603 W, inside Argentina in Natural Earth countries. Beijing only: Chengdu lands in the sea and Xi'an in Chile, so the reel does not say China. |
-| "About an eighth of the land has land behind it." | computed | 13.10% of the land's area in Natural Earth 10m lies opposite land. An eighth is 12.5%. |
+| "Flip the far side onto this one. About an eighth of the land has land opposite." | computed | 13.10% of the land's area in Natural Earth 10m lies opposite land. An eighth is 12.5%. |
 | "Madrid gets New Zealand." | computed | GeoNames 3117735 lands at 40.416 S, 176.297 E, inside New Zealand in Natural Earth countries. |
 
 ## Main references
