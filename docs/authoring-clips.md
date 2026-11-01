@@ -87,9 +87,23 @@ Changing a printed texture's font or recipe invalidates plates that use it. Chan
 unchanged print. Equal renderer bytes at another path reuse artifacts; replacing the bytes at the same path
 invalidates them even when its size and modification time are preserved.
 
+Code-generated `Texture` maps use nonempty height-by-width-by-four `uint8` arrays. Their identity binds
+width, height and row-major RGBA pixels; reshaping the same bytes creates a different image and drawing.
+Pixel edits between calls change identity. `render` and `verify` snapshot all maps before cache lookup and
+use those same snapshots for the document and staged PNGs. Keep caller arrays unchanged while the snapshot
+is being copied. A warm hit still copies and hashes pixels, but encodes no PNG and starts no renderer.
+Invalid arrays raise `plate.texture.pixels` before creating the cache; convert other image formats explicitly.
+
+Five existing authored Rafa/Pedro maps keep their drawing names through a closed set of exact pixel-hash
+and dimension aliases. Editing or reshaping one loses that alias. Other textures receive new drawing names.
+Textured render keys use schema 1.1.0 and bind map names and dimensions, so old ambiguous render artifacts
+are left untouched and are not reused, including for aliased maps. Untextured drawings, printed-label names
+and their cache keys retain their identities. Existing published assets and approval records are not rewritten.
+See [ADR 0107](decisions/0107-texture-shape-and-snapshot-identity.md).
+
 Catalog specimen and package-poster caches also bind the renderer. Plate-backed specimens include their
 rendered-plate input keys, and the catalog atomically materializes the selected plate at the stable logical
-reference its scene uses. This preserves drawing/approval fingerprints while preventing an outer preview cache
+reference its scene uses. This keeps renderer installation out of drawing fingerprints while preventing an outer preview cache
 from hiding changed renderer or font inputs.
 
 An unchanged rebuild invokes no new plate renderer. It still reads and hashes identity inputs; no zero-cost or

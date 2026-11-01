@@ -50,6 +50,42 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "plate_texture_identity": {
+      "baseline_source_commit": "e15fe9cc",
+      "identity_and_snapshot_red": {
+        "failed": 13
+      },
+      "warm_encoding_red": {
+        "failed": 1
+      },
+      "authored_alias_red": {
+        "failed": 5
+      },
+      "approved_drawing_regressions_before_aliases": {
+        "failed": 2
+      },
+      "shared_map_hashing_red": {
+        "failed": 1
+      },
+      "final_selected_regressions": {
+        "passed": 517,
+        "skipped": 3,
+        "deselected": 2,
+        "subtests_passed": 29
+      },
+      "final_real_renderer_test": {
+        "passed": 1,
+        "renderer_attempts": 3,
+        "warm_attempts": 0
+      },
+      "authoring_navigation": {
+        "passed": 104
+      },
+      "plates_branch_inclusive_coverage_percent": 98,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "mypy_source_files": 286,
+      "qualification": "The final suite checks both approved host specimen fingerprints without rewriting approval records. The real renderer probe checks 64x64 square/strip texture differences and exact legacy-square pixel parity. Three optional engine tests were skipped in the broad selection; the new texture probe ran separately with the pinned engine. This is not a full-suite run or the complete animated DRAWING.md proof."
+    },
     "composition_runtime_limits": {
       "baseline_source_commit": "40e67f49",
       "process_boundary_red": {"failed": 16},
@@ -487,6 +523,32 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-05",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bind texture identities to image shape and owned render snapshots",
+      "problem": "Texture hashes omit image dimensions and are cached despite mutable pixel arrays. Reshaping equal bytes can collapse separate drawing assets, color/normal resources and rendered cache entries. Pixel edits can reuse stale hashes or stage data different from the cache-key document.",
+      "resolution": "Versioned texture identities bind dimensions and RGBA8 pixels. Five closed, exact pixel-hash/dimension aliases preserve authored Rafa/Pedro drawing references; edits or reshapes cannot use those aliases. Textured render keys bind dimensions under schema 1.1.0 and refuse old ambiguous artifacts. Preparation snapshots all maps before cache mutation and stages those same bytes. Hashing is deduplicated within each document, and warm hits neither encode PNGs nor launch a renderer.",
+      "evidence": [
+        "src/srstudio/plates.py:Texture.sha256",
+        "src/srstudio/plates.py:_prepare",
+        "src/srstudio/plates.py:_RenderInputs.key"
+      ],
+      "verification": [
+        "tests/test_plate_texture_identity.py",
+        "tests/test_catalog_render_identity.py",
+        "tests/test_catalog_specimens.py:test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved",
+        "docs/decisions/0107-texture-shape-and-snapshot-identity.md"
+      ],
+      "acceptance": [
+        "Reshaping or editing pixels changes drawing and rendered identity",
+        "A render and both verify passes use one owned texture snapshot",
+        "Malformed RGBA input fails before cache creation with typed repair fields",
+        "Existing authored host drawing fingerprints remain pinned",
+        "Real-render shape differences, unchanged-image parity and zero-launch warm reuse are verified"
+      ]
+    },
     {
       "id": "SDK-P1-03",
       "priority": "P1",

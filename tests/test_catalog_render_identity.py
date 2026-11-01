@@ -1,8 +1,10 @@
 """Outer catalog caches cannot bypass renderer or printed-plate input changes."""
 
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from srstudio import catalog_specimens as cs
@@ -45,6 +47,26 @@ def test_specimen_cache_follows_renderer_and_print_inputs(catalog):
     third = cs.render_all(engine, cache, cache).done['coffee-cup'].png
     assert third not in (first, second) and len(calls) == 3
     assert first.read_bytes() == b'build-a'
+
+
+def test_specimen_cache_follows_texture_shape_and_live_pixel_edits(catalog, monkeypatch):
+    engine, _, cache, calls = catalog
+    array = np.arange(16, dtype=np.uint8).reshape(2, 2, 4)
+    made = printed_plate()
+    material = replace(made.materials[0], print=None, color_map=plates.Texture(array))
+    definitions = [replace(made, materials=(material,))]
+    monkeypatch.setattr(cs.rafa_host, 'part_plates', lambda name: tuple(definitions))
+    first = cs.render_all(engine, cache, cache).done['coffee-cup'].png
+    assert cs.render_all(engine, cache, cache).made == 0
+    definitions[0] = replace(made, materials=(replace(material, color_map=plates.Texture(array.reshape(1, 4, 4))),))
+    second = cs.render_all(engine, cache, cache).done['coffee-cup'].png
+    array[0, 0, 0] = 128
+    third = cs.render_all(engine, cache, cache).done['coffee-cup'].png
+    assert len({first, second, third}) == len(calls) == 3
+    array[0, 0, 0] = 0
+    definitions[0] = replace(made, materials=(material,))
+    assert cs.render_all(engine, cache, cache).done['coffee-cup'].png == first
+    assert len(calls) == 3
 
 
 def test_poster_cache_follows_renderer_bytes(tmp_path, monkeypatch):
