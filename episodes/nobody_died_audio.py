@@ -38,10 +38,11 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("rosa", "Nobody died. Do you want a lamp?", "Nobody died.\nDo you want a lamp?", 0.98),
 ]  # fmt: skip
 CUE = 0.86  # the least a line starts after the one before, so that one's caption cue holds
+CUE_TAIL = 0.2  # a line's caption stays this long after it, Episode.spoken_captions' tail: a cut after a line waits
 START = 0.25  # the manager's first word: the phone is already buzzing
-PEEK = 1.00  # after "I've always admired...": the phone, close, CALL ME and then the line under it
-TURNS = 0.95  # after "Nobody writes that if it's fine.": the phone turns itself over
-BULB = 1.30  # after "Who died?": the held bracket on Rosa under the bulb
+PEEK = CUE_TAIL + 0.95  # after "I've always admired...": the phone, close, CALL ME and then the line under it
+TURNS = CUE_TAIL + 0.90  # after "Nobody writes that if it's fine.": the phone turns itself over
+BULB = CUE_TAIL + 1.20  # after "Who died?": the held bracket on Rosa under the bulb
 ENDING = 0.45  # the lamp under her arm, and out on the last word
 INTERVIEW = Interview(
     slug="nobody-died",
@@ -88,8 +89,8 @@ def schedule(speech: list[float], effect: dict[str, float]) -> Schedule:
 def extra(t: Timing) -> dict:
     """The beats the picture keys on, and the cuts: Milo, the tile, the phone, Rosa."""
     p = t.phrases
-    peek = p[5]["end"] + 0.05
-    turn = p[8]["end"] + 0.05
+    peek = p[5]["end"] + CUE_TAIL
+    turn = p[8]["end"] + CUE_TAIL
     return {
         "face_down": p[3]["start"] - 0.05,
         "peek": peek,
@@ -106,7 +107,7 @@ def extra(t: Timing) -> dict:
             {"time": turn, "angle": "turns"},
             {"time": p[9]["start"] - 0.05, "angle": "tile"},
             {"time": p[10]["start"] - 0.05, "angle": "close"},
-            {"time": p[10]["end"] + 0.10, "angle": "rosa"},
+            {"time": p[10]["end"] + CUE_TAIL, "angle": "rosa"},
         ],
     }
 

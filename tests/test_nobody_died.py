@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "episodes"))
 
-from nobody_died_audio import BULB, CUE, PEEK, SCRIPT, TURNS, VOICES, extra, schedule  # noqa: E402
+from nobody_died_audio import BULB, CUE, CUE_TAIL, PEEK, SCRIPT, TURNS, VOICES, extra, schedule  # noqa: E402
 from srstudio.releases import load  # noqa: E402
 
 
@@ -86,3 +86,18 @@ def test_the_release_sits_in_both_tests_and_tells_nobody_to_send_it():
     assert release.post.title == 'Why does "don\'t worry" make it worse?'
     words = " ".join(s.text for s in SCRIPT).lower()
     assert not any(word in words.split() for word in ("send", "tag", "share", "comment"))
+
+
+def test_a_cut_after_a_line_waits_for_its_caption_cue():
+    """A cue stays CUE_TAIL after its line, as far as the next cue: Episode.spoken_captions' rule; no cut falls in one."""
+    assert CUE_TAIL == 0.2
+    p = phrases()
+    cues = [
+        (
+            q["start"] - 0.05,
+            min(q["end"] + CUE_TAIL, p[i + 1]["start"] - 0.05) if i + 1 < len(p) else q["end"] + CUE_TAIL,
+        )
+        for i, q in enumerate(p)
+    ]
+    crossed = [(c, a, b) for c in extra(Timing(p))["camera_cuts"] for a, b in cues if a + 1e-9 < c["time"] < b - 1e-9]
+    assert not crossed
