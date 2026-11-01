@@ -70,7 +70,7 @@ def _kill_group(process: subprocess.Popen) -> None:
         pass
 
 
-def run(command: tuple[str, ...], *, input: bytes, limits: ProcessLimits) -> ProcessResult:
+def run(command: tuple[str, ...], *, input: bytes, limits: ProcessLimits, cwd: Path | None = None) -> ProcessResult:
     if os.name != 'posix':
         raise _fail('platform', 'runtime', os.name, 'POSIX process groups and RLIMIT_AS')
     try:
@@ -90,6 +90,8 @@ def run(command: tuple[str, ...], *, input: bytes, limits: ProcessLimits) -> Pro
         raise _fail('input', 'command', None, '1..128 nonempty bounded arguments')
     if type(input) is not bytes or len(input) > MAX_INPUT_BYTES:
         raise _fail('input', 'input', None, f'immutable bytes, at most {MAX_INPUT_BYTES}')
+    if cwd is not None and (not isinstance(cwd, Path) or '\x00' in str(cwd)):
+        raise _fail('input', 'cwd', None, 'a working-directory Path or None')
     environment = dict(os.environ)
     for name in ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
         environment[name] = '1'
@@ -105,6 +107,7 @@ def run(command: tuple[str, ...], *, input: bytes, limits: ProcessLimits) -> Pro
             stderr=subprocess.PIPE,
             start_new_session=True,
             env=environment,
+            cwd=cwd,
         )
     except OSError as error:
         raise _fail('launch', 'command', command[0], 'an executable worker runtime') from error

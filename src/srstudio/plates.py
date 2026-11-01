@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 from sr_core.scene import Scene
 
-from . import checks
+from . import _bounded_process, checks
 from .canvas import Canvas
 from .clay import Mesh
 from .errors import SrstudioError
@@ -97,6 +97,7 @@ class RenderStats:
 class _RenderScope:
     maximum: int
     timeout: float
+    memory_bytes: int
     stats: RenderStats
     spent: int = 0
 
@@ -105,18 +106,25 @@ _RENDER_SCOPES: ContextVar[tuple[_RenderScope, ...]] = ContextVar('srstudio_plat
 
 
 @contextmanager
-def render_session(*, max_invocations: int = 100, timeout: float = 60) -> Iterator[RenderStats]:
+def render_session(
+    *, max_invocations: int = 100, timeout: float = 60, max_memory_bytes: int = 8 * 1024**3
+) -> Iterator[RenderStats]:
     """Measure and bound plate/print renderer work in this context, including nested calls.
 
     Each enclosing session consumes one attempt per engine launch and the shortest
-    active timeout applies. A zero invocation budget permits only cache hits. These
-    limits do not bound mesh preparation, memory or other renderer entry points.
+    active timeout and smallest memory limit apply. Memory is a POSIX hard
+    per-process virtual-address-space limit, not aggregate RSS or GPU memory.
+    Each output stream is capped at 64 KiB; failures stop the owned process group.
+    A zero invocation budget permits only cache hits. These limits do not bound
+    mesh preparation, image decoding or other renderer entry points.
     """
     if type(max_invocations) is not int or not 0 <= max_invocations <= 10000:
         raise PlateError('max_invocations must be an integer in 0..10000', code='plate.render.limit')
     if not checks.number(timeout) or not 0 < timeout <= 600:
         raise PlateError('timeout must be finite seconds in (0, 600]', code='plate.render.limit')
-    scope = _RenderScope(max_invocations, timeout, RenderStats())
+    if type(max_memory_bytes) is not int or not 1 <= max_memory_bytes <= 1024**4:
+        raise PlateError('max_memory_bytes must be an integer in 1..1099511627776', code='plate.render.limit')
+    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats())
     token = _RENDER_SCOPES.set((*_RENDER_SCOPES.get(), scope))
     try:
         yield scope.stats
@@ -433,7 +441,17 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
     start = time.perf_counter()
     completed = False
     try:
-        _invoke_renderer(engine, source, out, min((s.timeout for s in scopes), default=None))
+        limits = (
+            _bounded_process.ProcessLimits(
+                timeout=min(s.timeout for s in scopes),
+                memory_bytes=min(s.memory_bytes for s in scopes),
+                stdout_bytes=65536,
+                stderr_bytes=65536,
+            )
+            if scopes
+            else None
+        )
+        _invoke_renderer(engine, source, out, limits)
         completed = True
     finally:
         elapsed = time.perf_counter() - start
@@ -443,33 +461,35 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
             scope.stats.failed += int(not completed)
 
 
-def _invoke_renderer(engine: Path, source: Path, out: Path, timeout: float | None) -> None:
+def _invoke_renderer(engine: Path, source: Path, out: Path, limits: _bounded_process.ProcessLimits | None) -> None:
+    command = (
+        str(Path(engine).resolve()),
+        'render',
+        source.name,
+        '--time',
+        '0',
+        '--output',
+        str(out.resolve()),
+        '--strict',
+    )
+    if limits is not None:
+        try:
+            _bounded_process.run(command, input=b'', limits=limits, cwd=source.parent)
+        except _bounded_process.BoundedProcessError as error:
+            diagnostic = error.to_dict()
+            kind = {'process.timeout': 'timeout', 'process.output': 'output'}.get(diagnostic['code'], 'engine')
+            stderr = error.stderr.decode('utf-8', errors='replace')[-600:]
+            raise PlateError(
+                f'plate renderer {kind} failure: {error}; {stderr}',
+                code=f'plate.render.{kind}',
+                path=diagnostic['path'],
+                actual={'process': diagnostic, 'stderr': stderr},
+                expected='a successful render within the declared process limits',
+                remedy='Repair renderer inputs or explicitly adjust the finite render-session limits before retrying.',
+            ) from error
+        return
     try:
-        done = subprocess.run(
-            [
-                str(Path(engine).resolve()),
-                "render",
-                source.name,
-                "--time",
-                "0",
-                "--output",
-                str(out.resolve()),
-                "--strict",
-            ],
-            cwd=source.parent,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as error:
-        raise PlateError(
-            f'plate renderer exceeded {timeout} seconds',
-            code='plate.render.timeout',
-            path='timeout',
-            actual=timeout,
-            expected='a render completing within the declared limit',
-            remedy='Reduce the plate workload or explicitly increase the render-session timeout.',
-        ) from error
+        done = subprocess.run(command, cwd=source.parent, capture_output=True, text=True, timeout=None)
     except OSError as error:
         raise PlateError(
             f'cannot execute renderer {engine}: {error}',

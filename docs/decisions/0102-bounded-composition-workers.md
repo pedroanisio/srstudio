@@ -49,7 +49,16 @@ Installed SDK/approval records are reloaded in the worker; host-only runtime
 patches do not cross the boundary. This is resource control for trusted workers,
 not an isolation boundary for hostile programs that deliberately escape it.
 
-Plate/proxy source adapters and renderer integration remain open under SDK-P2-07.
+Plate/print renderer sessions reuse the same process runner, with a private
+working directory for relative scene assets, 64 KiB per diagnostic stream and
+the smallest enclosing memory/deadline limits. Every enclosing invocation budget
+counts failures and explicit retries. Atomic cache installation follows successful
+rendering. Unscoped calls retain their existing behavior; host mesh preparation
+and image decoding remain outside the session's process limits. Reusing the
+runner keeps descendant cleanup and kernel-limit behavior shared with composition
+workers instead of maintaining a second subprocess supervisor.
+
+Plate/proxy source adapters and composition-budget integration remain open under SDK-P2-07.
 The [composition guide](../composition-preflight.md) documents supported features;
 the [runtime tests](../../tests/test_composition_runtime.py) and
 [process tests](../../tests/test_bounded_process.py) exercise real kernel limits,

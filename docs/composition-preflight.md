@@ -15,8 +15,10 @@ render cache or creating files.
 `prepare_vector` verifies actual vector XML against a binding. `compile_scene`
 combines verified payloads into a self-contained scene, and `emit_scene` publishes
 that scene atomically. Public preparation and compilation run in workers with
-hard address-space limits and preemptive deadlines. Plate/proxy emission and its
-renderer budget integration remain open under SDK-P2-07. A valid manifest alone is not a rendered scene,
+hard address-space limits and preemptive deadlines. Plate renderer sessions also
+enforce process limits and count retries; see [render sessions](authoring-benchmark.md#bound-a-plate-authoring-operation).
+Plate/proxy source adapters, emission and composition-budget integration remain
+open under SDK-P2-07. A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
 ## Start with a real drawing

@@ -26,6 +26,27 @@ def test_binary_input_and_output_round_trip_under_limits():
     assert result.returncode == 0
 
 
+def test_worker_directory_resolves_relative_resources_without_changing_parent(tmp_path):
+    module = api()
+    before = Path.cwd()
+    (tmp_path / 'resource').write_bytes(b'local resource')
+    result = module.run(
+        (sys.executable, '-c', 'from pathlib import Path; print(Path("resource").read_text())'),
+        input=b'',
+        limits=module.ProcessLimits(),
+        cwd=tmp_path,
+    )
+    assert result.stdout == b'local resource\n'
+    assert Path.cwd() == before
+
+
+def test_invalid_worker_directory_is_typed():
+    module = api()
+    with pytest.raises(module.BoundedProcessError) as caught:
+        module.run((sys.executable, '-c', 'pass'), input=b'', limits=module.ProcessLimits(), cwd=123)
+    assert caught.value.to_dict()['code'] == 'process.input'
+
+
 def test_kernel_address_space_limit_is_hard_and_the_parent_limit_is_unchanged():
     import resource
 
