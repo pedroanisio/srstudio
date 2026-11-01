@@ -133,8 +133,8 @@ def gate(
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
     (ADR 0001). ``boarding_size`` letters the sign's first line; the default is the drawing that was approved, and
     a reel whose font runs wide passes :data:`BOARDING_SIZE`. ``cactus_at`` is where the cactus's pot stands; the
-    default is the approved drawing, and a reel that stands something in front of it moves it. ``sign=False`` leaves the sign's face to
-    :func:`boarding_sign`, for a reel that washes the room and keeps the sign out of the wash."""
+    default is the approved drawing, and a reel that stands something in front of it moves it. ``sign=False`` leaves
+    the sign's face to :func:`boarding_sign`, for a reel that washes the room and keeps the sign out of the wash."""
     cv.require_font("the boarding sign is set in it")
     if not (isinstance(cactus_at, tuple) and len(cactus_at) == 2 and all(checks.number(value) for value in cactus_at)):
         raise StickDataError(f"the cactus stands at an x and a y, got {cactus_at!r}")

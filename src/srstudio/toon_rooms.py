@@ -568,7 +568,8 @@ def stage(
     cv: Canvas, back, light, room: str, lights: Mapping[str, Any] | None = None, end: float = 0.0, **options
 ) -> dict[str, list[Cue]]:
     """Draw the room named ``room`` into ``back`` and its light layer into ``light``, keyed by ``lights`` from 0 to
-    ``end``; ``options`` are the room's own (the counter's ``serving`` and ``lettering``). Returns the cues of every light."""
+    ``end``; ``options`` are the room's own (the counter's ``serving`` and ``lettering``). Returns the cues of every
+    light."""
     r = _room(room)
     extra = sorted(set(options) - r.options)
     if extra:
