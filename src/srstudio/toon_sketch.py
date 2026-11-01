@@ -288,13 +288,14 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         raise StagingError(f"the {staging.style.name} style has no font to measure its captions in")
     font = (root / staging.style.font.src).read_bytes()
     measure = partial(fonts.text_width, font)
+    bare = {*staging.bare, *sk.bare}
     for n, app in enumerate(sketch.appearances(sk.beats, sk.end), 1):
         g = cv.group(ep.comp, f"shot-{n:03d}" if staging.camera else cv.uid("g"), start=app.start, end=app.end)
         back = cv.group(g, cv.uid("g"))
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
-        extra = {} if app.who in staging.bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
+        extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
-        if app.who in staging.bare:
+        if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:
             rig, plan = heads[app.who]

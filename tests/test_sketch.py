@@ -53,6 +53,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, speakers=(replace(SPEAKERS[0], character="owl"), SPEAKERS[1])), "distinct characters"),
         (lambda s: replace(s, speakers=(SPEAKERS[0], replace(SPEAKERS[1], character="dog"))), "distinct characters"),
         (lambda s: replace(s, lines=(*LINES, Line("nobody", "Hi."))), "known speaker"),
+        (lambda s: replace(s, lines=(replace(LINES[0], level_db=1.0), *LINES[1:])), "level_db"),
+        (lambda s: replace(s, lines=(replace(LINES[0], level_db=-13.0), *LINES[1:])), "level_db"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
         (lambda s: with_beats(lambda b: [replace(b[0], start=0.5), *b[1:]]), "starts at 0"),
         (lambda s: with_beats(lambda b: [b[0], replace(b[1], start=0.05), *b[2:]]), "held less than"),

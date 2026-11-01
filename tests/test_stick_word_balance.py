@@ -58,3 +58,46 @@ def test_balance_off_is_the_greedy_default():
     a = stick.word_cues([PLANE], min_seconds=1.0, linger=0.9, width=chars, max_width=640, borrow=True)
     b = stick.word_cues([PLANE], min_seconds=1.0, linger=0.9, width=chars, max_width=640, borrow=True, balance=False)
     assert a == b
+
+
+TWO_SENTENCES = take(
+    20.0,
+    21.6,
+    [("Bro.", 0.0, 0.2), ("Four", 0.3, 0.5), ("hours", 0.5, 0.8), ("of", 0.8, 0.9), ("cardio?", 0.9, 1.3)],
+)  # fmt: skip
+
+
+def test_balance_alone_runs_a_cue_across_a_sentence_end():
+    cues = stick.word_cues([TWO_SENTENCES], min_seconds=0.5, linger=0.3, width=chars, max_width=640, balance=True)
+    assert cues[0].text == "Bro Four hours"
+
+
+def test_sentences_end_a_cue_at_every_sentence_end():
+    cues = stick.word_cues(
+        [TWO_SENTENCES], min_seconds=0.5, linger=0.3, width=chars, max_width=880, balance=True, sentences=True
+    )
+    assert [c.text for c in cues] == ["Bro", "Four hours of cardio"]
+
+
+@pytest.mark.parametrize("end", ["Now!", "Now?", "Now...", "Now.\"", "Now!”", "Now…"])  # fmt: skip
+def test_a_sentence_ends_at_each_of_its_marks_and_past_a_closing_quote(end):
+    words = take(0.0, 2.0, [(end, 0.0, 0.4), ("Then", 0.5, 0.8), ("go", 0.8, 1.1)])
+    cues = stick.word_cues([words], width=chars, max_width=2000, balance=True, sentences=True)
+    assert [c.text for c in cues] == ["Now", "Then go"]
+
+
+def test_a_comma_does_not_end_a_sentence():
+    words = take(0.0, 2.0, [("Now,", 0.0, 0.4), ("then", 0.5, 0.8), ("go", 0.8, 1.1)])
+    cues = stick.word_cues([words], width=chars, max_width=2000, balance=True, sentences=True)
+    assert [c.text for c in cues] == ["Now then go"]
+
+
+def test_a_take_with_no_sentence_end_splits_as_it_did():
+    plain = dict(min_seconds=1.0, linger=0.9, width=chars, max_width=880, balance=True)
+    no_stop = take(10.0, 11.777, [(w["text"].rstrip("."), w["start"], w["end"]) for w in PLANE.words])
+    assert stick.word_cues([no_stop], sentences=True, **plain) == stick.word_cues([no_stop], **plain)
+
+
+def test_sentences_need_balance():
+    with pytest.raises(StickDataError, match="sentences"):
+        stick.word_cues([TWO_SENTENCES], sentences=True)

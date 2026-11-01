@@ -22,11 +22,16 @@ from .registry import register
 __all__ = [
     "BED_TOP",
     "CHIPS",
+    "DEAD_SCREEN",
     "EverydayError",
+    "FLIP",
     "FOODS",
+    "LASAGNA_LAYERS",
+    "LOW_BATTERY",
     "TABLE_TOP",
     "alarm_clock",
     "arm",
+    "battery_insert",
     "bill",
     "bubble",
     "cereal_box",
@@ -36,9 +41,13 @@ __all__ = [
     "chip_bag",
     "confetti",
     "duvet",
+    "flip_card",
     "food",
     "gust",
+    "lasagna",
+    "magnifying_glass",
     "phone",
+    "router",
     "salt_shaker",
     "snapshot",
     "tablecloth",
@@ -50,6 +59,23 @@ TABLE_TOP = 1600.0  # the tablecloth's top edge
 BEZEL = 26.0  # the phone's frame round its screen
 CONFETTI = ("#e63946", "#ffca3a", "#8ac926", "#1982c4", "#ff7ab6", "#fffaf0")
 CHEW = 0.24  # seconds of one chew, open and shut
+FOREVER = 86400.0  # the end of a span that runs on: past any reel
+LASAGNA_LAYERS = (  # top of each layer and its colour, drawn from the crust down
+    (-112.0, "#d9913a"),
+    (-72.0, "#fffaf0"),
+    (-46.0, "#c1121f"),
+    (-18.0, "#f2c14e"),
+    (8.0, "#c1121f"),
+)
+FLIP = 0.2  # the seconds a flip card takes to turn
+CARD_PAD = 30.0  # a flip card's margin round its type
+CARD_GLYPH = 0.62  # a capital's width as a share of the type size
+CARD_LEADING = 1.2  # a row's height as a share of the type size
+CARD_FILLS = ("#fffaf0", "#ffe9a8")  # its sides, in turn: a card turned over shows it has
+LOW_BATTERY = "#ff5a64"  # the battery's colour at LOW_LEVEL percent or under
+LOW_LEVEL = 20
+DEAD_SCREEN = "#0b0a10"  # a phone that has died
+LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 
 
 class EverydayError(SrstudioError, ValueError):
@@ -127,6 +153,166 @@ def food(cv: Canvas, parent, kind: str, x: float, y: float, size: float = 240.0,
     return g
 
 
+@register(
+    "prop", "collage-lasagna", summary="A paper lasagna in its dish: layers of pasta, sauce and cheese, seen side on"
+)
+def lasagna(cv: Canvas, parent, x: float = 540.0, y: float = 1400.0, w: float = 520.0, tilt: float = 0.0) -> object:
+    """A whole lasagna ``w`` wide, centred on ``x, y``, turned ``tilt`` degrees: drawn large, its layers read at a
+    glance as the one thing it can be."""
+    k = round(_size(w, "a lasagna's width") / 520.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt, scaleX=k, scaleY=k)
+    for i, (top, colour) in enumerate(LASAGNA_LAYERS):
+        ripple = [(-236 + 59 * n, top + (5 if n % 2 else -5)) for n in range(9)]
+        slab = [*ripple, (236, 70), (-236, 70)]
+        draw_shapes(cv, g, _paper(_cut(f"lasagna-layer-{i}", slab, 2), colour, shadow=False))
+    for n, (spot_x, spot_y) in enumerate(((-168, -96), (-62, -104), (34, -90), (142, -100))):
+        cv.ellipse(g, spot_x - 26, spot_y - 9, 52 + 8 * (n % 2), 16, "#a4551f")
+    dish = [(-260, 26), (260, 26), (226, 112), (-226, 112)]
+    draw_shapes(cv, g, _paper(_cut("lasagna-dish", dish, 2), "#c8553d"))
+    cv.rect(g, -274, 16, 548, 24, "#e07a5f", INK, 4, radius=10)
+    return g
+
+
+# -- a flip card ------------------------------------------------------------------------------------------------------
+def _wrapped(text: str, per_line: int) -> list[str]:
+    """``text`` greedily broken into rows of at most ``per_line`` characters."""
+    rows: list[str] = []
+    for word in text.split():
+        if rows and len(rows[-1]) + 1 + len(word) <= per_line:
+            rows[-1] += " " + word
+        else:
+            rows.append(word)
+    return rows
+
+
+def _check_fits(text: str, w: float, h: float, size: float) -> None:
+    """Refuse a side too long to read at its size: the card exists to be read, and a clipped word cannot be."""
+    per_line = int((w - 2 * CARD_PAD) / (size * CARD_GLYPH))
+    rows = _wrapped(text, per_line)
+    if not rows or max(len(row) for row in rows) > per_line or len(rows) * size * CARD_LEADING > h - CARD_PAD:
+        raise EverydayError(f"{text!r} does not fit a {w} by {h} card at {size} px")
+
+
+@register("prop", "collage-flip-card", summary="A big paper card held up to be read, which flips to its other side")
+def flip_card(
+    cv: Canvas,
+    parent,
+    sides: Sequence[tuple[float, str]] = ((0.0, "NO THANKS"),),
+    x: float = 540.0,
+    y: float = 1500.0,
+    w: float = 760.0,
+    h: float = 420.0,
+    *,
+    size: float = 84.0,
+    tilt: float = 0.0,
+) -> object:
+    """A card ``w`` by ``h`` centred on ``x, y``, showing each of ``sides`` (``(from, text)``, project seconds) in
+    turn, in type that is measured against the card: it turns edge-on over :data:`FLIP` seconds at each change, so the
+    change reads as the card being turned, and refuses a side it could not show whole."""
+    if not sides:
+        raise EverydayError("a flip card needs at least one side")
+    times = [at for at, _ in sides]
+    if times != sorted(set(times)):
+        raise EverydayError(f"a flip card's sides run forward in time, got {times}")
+    _size(w, "a card's width"), _size(h, "a card's height"), _size(size, "a card's type size")
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, rotation=tilt)
+    for i, (at, text) in enumerate(sides):
+        _check_fits(text, w, h, size)
+        side = cv.group(g, cv.uid("g"))
+        cv.gate(side, [(at, times[i + 1] if i + 1 < len(sides) else FOREVER)])
+        draw_shapes(cv, side, _paper(_cut(f"flip-card-{i}", _box(w, h), 3), CARD_FILLS[i % len(CARD_FILLS)]))
+        cv.rect(side, -w / 2 + 16, -h / 2 + 16, w - 32, h - 32, "#ffffff00", "#c1121f", 6, radius=10)
+        _letter(cv, side, "flip-card", text, -w / 2 + CARD_PAD, -h / 2, w - 2 * CARD_PAD, h, size, color=INK)
+    if len(sides) > 1:
+        turns = [(times[0], 1.0)]
+        for at in times[1:]:
+            turns += [(at - FLIP / 2, 1.0), (at, 0.0), (at + FLIP / 2, 1.0)]
+        cv.keys(g, "scaleX", turns, hold=False, local=False)
+    return g
+
+
+@register("prop", "collage-magnifying-glass", summary="A paper magnifying glass: a ring, a tinted lens and a handle")
+def magnifying_glass(
+    cv: Canvas, parent, x: float = 540.0, y: float = 1100.0, size: float = 420.0, tilt: float = -30.0
+) -> object:
+    """A glass whose lens is ``size`` across, centred on ``x, y``, its handle running away at ``tilt`` degrees: the
+    lens is see-through, so what is drawn under it shows; returns the group, which a caller keys to move."""
+    k = round(_size(size, "a lens's size") / 420.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k, rotation=tilt)
+    draw_shapes(cv, g, _paper(_cut("glass-handle", [(-34, 200), (34, 200), (44, 520), (-44, 520)], 2), "#6b4226"))
+    cv.ellipse(g, -210, -210, 420, 420, "#cfe8ff40", "#2b2d42", 26)
+    cv.ellipse(g, -180, -180, 360, 360, "#ffffff00", "#ffffff99", 6)
+    cv.path(g, "M-120 -96 Q-82 -148 -22 -152", stroke="#ffffffcc", sw=16)
+    return g
+
+
+# -- a router ---------------------------------------------------------------------------------------------------------
+def _light_spans(light: Sequence[tuple[float, str]]) -> list[tuple[str, float, float | None]]:
+    """``(state, from, to)`` of each stretch of ``light``; the last runs on (``to`` None)."""
+    if not light or light[0][0] != 0:
+        raise EverydayError(f"a router's light is known from second 0, got {light!r}")
+    times = [at for at, _ in light]
+    if not all(checks.number(t) for t in times) or times != sorted(set(times)):
+        raise EverydayError(f"a router's light changes in rising seconds, got {times!r}")
+    unknown = sorted({state for _, state in light} - set(LIGHTS))
+    if unknown:
+        raise EverydayError(f"no router light {unknown}; one of {sorted(LIGHTS)}")
+    ends: list[float | None] = [*times[1:], None]
+    return [(state, at, stop) for (at, state), stop in zip(light, ends, strict=True)]
+
+
+@register(
+    "prop",
+    "collage-router",
+    summary="A paper home router with two aerials, one big status light keyed on cue, and a cord that can be pulled",
+)
+def router(
+    cv: Canvas,
+    parent,
+    x: float = 540.0,
+    y: float = 1400.0,
+    w: float = 320.0,
+    *,
+    light: Sequence[tuple[float, str]] = ((0.0, "green"),),
+    unplugged: float | None = None,
+) -> object:
+    """A router ``w`` wide centred on ``x, y``, its cord running right to a wall socket. ``light`` is ``(project second,
+    state)`` from 0, a state one of :data:`LIGHTS`, big enough to read on a phone. From ``unplugged`` the plug hangs
+    out of the socket; the light is the caller's to change."""
+    spans = _light_spans(light)
+    width = _size(w, "a router's width")
+    if unplugged is not None and not (checks.number(unplugged) and unplugged >= 0):
+        raise EverydayError(f"a router is unplugged from second 0 on, got {unplugged!r}")
+    k = round(width / 320.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k)
+    for dx, lean in ((-104, -9), (104, 9)):
+        cv.line(g, dx, -46, dx + lean, -190, INK, 11)
+    socket = (232.0, 8.0)
+    cv.rect(g, socket[0] - 36, socket[1] - 46, 72, 92, "#fffaf0", INK, 4, radius=8)
+    for side in (-12, 12):
+        cv.rect(g, socket[0] + side - 3, socket[1] - 14, 6, 26, INK)
+    draw_shapes(cv, g, _paper(_cut("router-case", [(-160, -56), (160, -56), (160, 56), (-160, 56)], 2), "#2f3e5b"))
+    cv.rect(g, -128, 30, 180, 6, "#5c6f94")
+    cv.rect(g, -128, 14, 180, 6, "#5c6f94")
+    for state, at, stop in spans:
+        lamp = cv.group(g, cv.uid("g"))
+        cv.gate(lamp, [(at, FOREVER if stop is None else stop)])
+        if state != "off":
+            cv.ellipse(lamp, 54, -70, 140, 140, LIGHTS[state], opacity=0.35)
+        cv.ellipse(lamp, 84, -40, 80, 80, LIGHTS[state], INK, 5)
+    plugged = cv.group(g, cv.uid("g"))
+    cv.line(plugged, 160, 40, socket[0] - 20, 40, INK, 8)
+    cv.line(plugged, socket[0] - 20, 40, socket[0], 8, INK, 8)
+    cv.rect(plugged, socket[0] - 18, socket[1] - 20, 36, 40, "#23202b", radius=6)
+    if unplugged is not None:
+        cv.gate(plugged, [(0.0, unplugged)])
+        hanging = cv.group(g, cv.uid("g"))
+        cv.gate(hanging, [(unplugged, FOREVER)])
+        cv.line(hanging, 160, 40, 190, 120, INK, 8)
+        cv.rect(hanging, 172, 118, 36, 40, "#23202b", radius=6)
+    return g
+
+
 # -- a phone ----------------------------------------------------------------------------------------------------------
 @register("prop", "collage-phone", summary="A big paper phone, its screen a group the caller writes on")
 def phone(cv: Canvas, parent, x: float, y: float, w: float, h: float, screen: str = "#fffaf0", tilt: float = 0.0):
@@ -139,6 +325,54 @@ def phone(cv: Canvas, parent, x: float, y: float, w: float, h: float, screen: st
     cv.rect(g, -w / 2 + BEZEL, -h / 2 + BEZEL, w - 2 * BEZEL, h - 2 * BEZEL, screen, radius=14)
     cv.ellipse(g, -9, -h / 2 + 7, 13, 13, "#4a4752")
     return cv.group(g, cv.uid("g"), x=-w / 2 + BEZEL, y=-h / 2 + BEZEL)
+
+
+@register(
+    "prop",
+    "collage-battery-insert",
+    summary="A phone filling the frame with its battery and percentage on it, red when low, then a dead black screen",
+)
+def battery_insert(
+    cv: Canvas,
+    parent,
+    x: float = 190.0,
+    y: float = 420.0,
+    w: float = 700.0,
+    h: float = 1200.0,
+    *,
+    levels: Sequence[tuple[float, int]] = ((0.0, 1),),
+    dead: float | None = None,
+) -> object:
+    """A phone ``w`` by ``h`` with its top-left at ``x, y``, the battery on its screen at each of ``levels`` (``(from,
+    percent)``, project seconds from 0); from ``dead`` the screen is black. Returns the screen's group."""
+    if not levels or levels[0][0] != 0:
+        raise EverydayError(f"a battery's level is known from second 0, got {levels!r}")
+    times = [at for at, _ in levels]
+    if not all(checks.number(t) for t in times) or times != sorted(set(times)):
+        raise EverydayError(f"a battery's level changes in rising seconds, got {times!r}")
+    if not all(0 <= percent <= 100 for _, percent in levels):
+        raise EverydayError(f"a battery runs from 0 to 100 percent, got {levels!r}")
+    if dead is not None and not (checks.number(dead) and dead >= 0):
+        raise EverydayError(f"a battery dies from second 0 on, got {dead!r}")
+    screen = phone(cv, parent, x, y, w, h, screen="#17151f")
+    across, down = w - 2 * BEZEL, h - 2 * BEZEL
+    case_w, case_h = across * 0.68, across * 0.3
+    left, top = (across - case_w) / 2, down * 0.3
+    ends: list[float] = [*times[1:], FOREVER]
+    for (at, percent), stop in zip(levels, ends, strict=True):
+        level = cv.group(screen, cv.uid("g"))
+        cv.gate(level, [(at, stop)])
+        colour = LOW_BATTERY if percent <= LOW_LEVEL else "#3ddc6e"
+        cv.rect(level, left, top, case_w, case_h, "#ffffff00", "#fffaf0", 12, radius=26)
+        cv.rect(level, left + case_w, top + case_h * 0.3, 26, case_h * 0.4, "#fffaf0", radius=8)
+        fill = max(case_w - 40, 1.0) * max(percent, 2) / 100
+        cv.rect(level, left + 20, top + 20, fill, case_h - 40, colour, radius=10)
+        _letter(cv, level, "battery", f"{percent}%", 0, top + case_h + 40, across, 260, 200, color=colour)
+    if dead is not None:
+        black = cv.group(screen, cv.uid("g"))
+        cv.gate(black, [(dead, FOREVER)])
+        cv.rect(black, 0, 0, across, down, DEAD_SCREEN, radius=14)
+    return screen
 
 
 @register("prop", "collage-bubble", summary="A paper message bubble with its tail, grey for theirs and green for mine")
@@ -347,8 +581,20 @@ def gust(cv: Canvas, parent, frm: Point, to: Point, start: float, end: float, *,
 
 # -- payday -----------------------------------------------------------------------------------------------------------
 @register("prop", "collage-bill", summary="A paper bill with a jagged mouth that walks in and takes its bite")
-def bill(cv: Canvas, parent, text: str, x: float, y: float, w: float = 330.0, h: float = 220.0, *, size: float = 52):
-    """A bill ``w`` by ``h`` centred on ``x, y``, saying ``text``; returns the group, which a caller keys to walk."""
+def bill(
+    cv: Canvas,
+    parent,
+    text: str,
+    x: float,
+    y: float,
+    w: float = 330.0,
+    h: float = 220.0,
+    *,
+    size: float = 52,
+    legs: bool = True,
+) -> object:
+    """A bill ``w`` by ``h`` centred on ``x, y``, saying ``text``; returns the group, which a caller keys to walk.
+    Without ``legs`` it is paper that falls or lands, with no feet to stand on."""
     _size(w, "a bill's width")
     _size(h, "a bill's height")
     g = cv.group(parent, cv.uid("g"), x=x, y=y)
@@ -357,7 +603,7 @@ def bill(cv: Canvas, parent, text: str, x: float, y: float, w: float = 330.0, h:
     jaw = [(-w / 2 + w * i / teeth, -h / 2 + (0 if i % 2 else 34)) for i in range(teeth + 1)]
     draw_shapes(cv, g, [(collage._poly(jaw + [(w / 2, -h / 2 - 6), (-w / 2, -h / 2 - 6)]), "#c1121f", INK, 4.0, 1.0)])
     _letter(cv, g, "bill", text, -w / 2 + 16, -h / 2 + 36, w - 32, h - 44, size, color=INK)
-    for dx in (-w * 0.2, w * 0.2):
+    for dx in (-w * 0.2, w * 0.2) if legs else ():
         cv.line(g, dx, h / 2, dx, h / 2 + 34, INK, 10)
         cv.line(g, dx, h / 2 + 34, dx + 30, h / 2 + 34, INK, 10)
     return g

@@ -23,6 +23,7 @@ __all__ = [
     "SHELVES",
     "signature_box",
     "boardroom",
+    "meeting_room",
     "classroom",
     "living_room",
     "cafe",
@@ -77,6 +78,7 @@ def _finish(cv: Canvas, back, lit: bool = True) -> None:
 # each set's shelf: its left edge and width; the cactus stands near the left end, the code sits at the right
 SHELVES: dict[str, tuple[float, float]] = {
     "boardroom": (720.0, 300.0),
+    "meeting-room": (720.0, 300.0),
     "classroom": (40.0, 330.0),
     "living-room": (60.0, 320.0),
     "cafe": (720.0, 320.0),
@@ -181,6 +183,41 @@ def boardroom(cv: Canvas, parent) -> object:
     )
     _finish(cv, back)
     _shelf(cv, g, "boardroom", "#1b263b")
+    return g
+
+
+GLASS_END = 700.0  # the meeting room's window stops here: the shelf hangs on solid wall
+
+
+@register(
+    "location",
+    "collage-meeting-room",
+    summary="A meeting room: a window on the city at dusk, and a solid wall with a picture and the signature shelf",
+)
+def meeting_room(cv: Canvas, parent) -> object:
+    g = cv.group(parent, cv.uid("g"))
+    back = _backdrop(cv, g)
+    _wall(cv, back, "meeting-room", "#2b3a55", "#8d99ae")
+    sky = cv.grad("collage-meeting-room-sky", [(0, "#f6bd60"), (0.6, "#f28482"), (1, "#84a59d")], (0, 0, 0, 1))
+    cv.rect(back, 60, 470, GLASS_END - 60, 1150, sky)
+    for i, (w, h) in enumerate(((90, 420), (120, 560), (70, 330), (140, 700))):
+        x = 70 + i * 145
+        cv.rect(back, x, 1620 - h, w, h, "#3d405b", opacity=0.85)
+        for row in range(int(h // 70)):
+            cv.rect(back, x + 18, 1620 - h + 24 + row * 70, w - 36, 16, "#f2cc8f", opacity=0.5)
+    for post in (60, 380, GLASS_END):
+        cv.rect(back, post - 6, 460, 12, 1170, "#1b263b")
+    _frame(cv, back, "meeting-room", 770, 840, 230, 300, "#e9c46a")
+    cv.rect(
+        back,
+        0,
+        1610,
+        cv.width,
+        310,
+        cv.grad("collage-meeting-room-table", [(0, "#6f4e37"), (1, "#3b2a1e")], (0, 0, 0, 1)),
+    )
+    _finish(cv, back)
+    _shelf(cv, g, "meeting-room", "#1b263b")
     return g
 
 
@@ -545,6 +582,7 @@ def bus_stop(cv: Canvas, parent) -> object:
 
 SETS: dict[str, Callable[[Canvas, object], object]] = {
     "boardroom": boardroom,
+    "meeting-room": meeting_room,
     "classroom": classroom,
     "living-room": living_room,
     "cafe": cafe,

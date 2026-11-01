@@ -277,6 +277,15 @@ def test_the_style_value(tmp_path):
         "stick-gate",
         "stick-gate-podium",
         "stick-carry-on",
+        "stick-bag-scale",
+        "stick-coat-ball",
+        "stick-palm",
+        "stick-bedroom",
+        "stick-chair",
+        "stick-smoke-alarm",
+        "stick-mound",
+        "stick-shovel",
+        "stick-message-insert",
         "stick-cabin",
         "stick-armrests",
         "stick-windshield",
@@ -615,3 +624,21 @@ def test_stick_refusals_are_srstudio_errors_and_still_value_errors():
         stick.card(cv, cv.comp, "hook")
     for error in (caught.value, silent.value):
         assert isinstance(error, SrstudioError) and isinstance(error, ValueError)
+
+
+def test_a_look_with_a_neck_joins_its_head_to_its_torso_and_the_default_keeps_its_gap():
+    def lines(look) -> list[str]:
+        cv = canvas()
+        stick.rig(cv, cv.comp, [stick.RigKey(0, "stand")], 1.0, poses=stick.STANDING, look=look)
+        return [n.get("path", "") for n in xml(cv).iter() if n.get("path")]
+
+    pose = stick.STANDING["stand"]
+    top = pose.head[1] + stick.HEAD_R - stick.NECK_SINK
+    neck = f"M {pose.head[0]:g} {top:g} L {pose.neck[0]:g} {pose.neck[1]:g}"
+    assert neck in lines(stick.Look(neck=True))
+    assert neck not in lines(stick.Look())
+
+
+def test_a_neck_is_true_or_false():
+    with pytest.raises(stick.StickDataError):
+        stick.check_look(stick.Look(neck="yes"))

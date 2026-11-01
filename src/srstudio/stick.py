@@ -660,6 +660,8 @@ SCRIM_PEAK, SCRIM_FEATHER, SCRIM_FADE, SCRIM_GAP = 0.75, 110, 0.12, 0.5
 # The scrim darkens the band behind the words at SCRIM_PEAK, feathered SCRIM_FEATHER px above and below, fading in
 # and out over SCRIM_FADE s around each run of words; words less than SCRIM_GAP s apart are one run.
 PUNCTUATION = ".,!?;:\"“”…"
+SENTENCE_ENDS = (".", "!", "?", "…")
+CLOSING = "\"”'’)"  # marks that may follow a sentence's end
 
 
 def word_cues(
@@ -673,6 +675,7 @@ def word_cues(
     borrow: bool = False,
     tail: bool = False,
     balance: bool = False,
+    sentences: bool = False,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -687,7 +690,11 @@ def word_cues(
     ``tail``, a take's last cue still shorter than ``min_seconds`` joins the cue before it when both fit
     ``max_width`` together, or else takes that cue's last words until it is long enough, as far as it fits. With
     ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
-    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie."""
+    left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
+    ``sentences`` as well, no cue runs across a sentence end: the punctuation that would mark it is dropped from the
+    cue, so with the sound off "Bro. Four hours" would read "Bro Four hours"."""
+    if sentences and not balance:
+        raise StickDataError("sentences is a limit on balance's split: give balance")
     if borrow and not min_seconds:
         raise StickDataError("borrow lengthens cues shorter than min_seconds: give min_seconds")
     if not (checks.number(size) and size > 0):
@@ -708,7 +715,9 @@ def word_cues(
     for take in takes:
         words = [w for w in (take.words or []) if w["text"].strip(PUNCTUATION)]
         groups: list[list[dict]] = (
-            _balanced(words, take.end - take.start, linger, width, max_width) if balance and width is not None else []
+            _balanced(words, take.end - take.start, linger, width, max_width, sentences=sentences)
+            if balance and width is not None
+            else []
         )
         i = len(words) if groups else 0  # balanced: every word is already placed
         while i < len(words):  # every pass takes at least one word: bounded by the word count
@@ -758,11 +767,18 @@ def word_cues(
 
 
 def _balanced(
-    words: Sequence[dict], length: float, linger: float, width: Callable[[str], float], max_width: float
+    words: Sequence[dict],
+    length: float,
+    linger: float,
+    width: Callable[[str], float],
+    max_width: float,
+    *,
+    sentences: bool = False,
 ) -> list[list[dict]]:
     """The split of a take's ``words`` into cues whose shortest lasts longest (each cue runs to the next one's first
     word, the last to its last word plus ``linger``, within the take's ``length``), every cue but a lone word within
-    ``max_width``; on a tie, the fewest cues. Dynamic programming over the split points: n² candidate cues."""
+    ``max_width``; on a tie, the fewest cues. With ``sentences``, a cue stops at the first word that ends a sentence.
+    Dynamic programming over the split points: n² candidate cues."""
     n = len(words)
     best: list[tuple[float, int, int]] = [(math.inf, 0, n)] * (n + 1)  # (shortest, -cues, next split) from i
     for i in range(n - 1, -1, -1):
@@ -772,6 +788,8 @@ def _balanced(
                 break  # wider only grows with more words
             end = words[j]["start"] if j < n else min(length, words[-1]["end"] + linger)
             options.append((min(end - words[i]["start"], best[j][0]), best[j][1] - 1, j))
+            if sentences and _ends_sentence(words[j - 1]):
+                break  # a longer cue would run across the sentence end
         best[i] = max(options, key=lambda o: (round(o[0], 6), o[1]))
     groups, i = [], 0
     while i < n:  # every pass moves past at least one word: bounded by the word count
@@ -779,6 +797,10 @@ def _balanced(
         groups.append(list(words[i:j]))
         i = j
     return groups
+
+
+def _ends_sentence(word: dict) -> bool:
+    return word["text"].rstrip(CLOSING).endswith(SENTENCE_ENDS)
 
 
 def _spoken(words: Sequence[dict]) -> str:
@@ -856,6 +878,7 @@ EYES = ("open", "wide", "half", "closed", "happy")
 BROWS = ("flat", "raised", "angry", "worried")
 MOUTHS = ("flat", "smile", "frown", "smirk")
 HEAD_R = 92
+NECK_SINK = 8  # how far inside the rim of the head a neck starts, so a nod opens no gap
 SKIN, SKIN_SHADE = "#f3ece0", "#d8cdbb"
 LIMB, LIMB_FAR = 15, 13  # stroke widths of the near and the far limbs
 
@@ -897,13 +920,16 @@ STRAND_HAIR, FILLED_HAIR = ("cowlick", "spiky"), ("side-part",)  # the bun sits 
 @dataclass(frozen=True)
 class Look:
     """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
-    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap)."""
+    apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap). The
+    poses stop the torso at the neck, some 15 pixels short of the head: ``neck`` draws that span, so that a head does
+    not float above its body. A figure already published keeps its gap and stays off."""
 
     hair: str = "cowlick"
     glasses: bool = False
     tie: str | None = None
     apron: str | None = None
     cap: str | None = None
+    neck: bool = False
 
 
 PLAIN = Look()  # Dev's look: the cowlick, no glasses, no tie
@@ -915,6 +941,8 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"unknown hair {look.hair!r}; known: {', '.join(HAIRS)}")
     if not isinstance(look.glasses, bool):
         raise StickDataError(f"glasses must be true or false, got {look.glasses!r}")
+    if not isinstance(look.neck, bool):
+        raise StickDataError(f"neck must be true or false, got {look.neck!r}")
     if look.tie is not None and not COLOUR.match(look.tie):
         raise StickDataError(f"tie must be a #rrggbb colour or None, got {look.tie!r}")
     if look.apron is not None and not COLOUR.match(look.apron):
@@ -1000,6 +1028,15 @@ def _spans(keys: Sequence[RigKey], end: float) -> list[tuple[RigKey, float, floa
     return [(k, k.start, keys[i + 1].start if i + 1 < len(keys) else end) for i, k in enumerate(keys)]
 
 
+def _under_head(pose: RigPose) -> Point:
+    """The point inside the head's rim, :data:`NECK_SINK` pixels in, on the way to the neck."""
+    hx, hy = pose.head
+    nx, ny = pose.neck
+    across = math.dist(pose.head, pose.neck)
+    along = (HEAD_R - NECK_SINK) / across
+    return hx + (nx - hx) * along, hy + (ny - hy) * along
+
+
 def _limb(cv: Canvas, parent, points: Sequence[Point], width: float):
     d = "M " + " L ".join(f"{x:g} {y:g}" for x, y in points)
     return shape(cv, parent, d, sw=width, stroke=cv.ink)
@@ -1012,8 +1049,10 @@ def _body(
     tie: str | None = None,
     apron: str | None = None,
     omit_arms: frozenset[str] = frozenset(),
+    neck: bool = False,
 ) -> None:
-    """Far limbs, torso (its apron, then its tie), near limbs: one stroked path each; a foot is a short run forward."""
+    """Far limbs, torso (its apron, then its tie), near limbs: one stroked path each; a foot is a short run forward.
+    With ``neck`` a stroke runs from under the head down to the torso."""
     shoulder = (pose.neck[0] - 4, pose.neck[1] + 34)
     for i, width in ((0, LIMB_FAR), (1, LIMB)):
         knee, foot = pose.knees[i], pose.feet[i]
@@ -1021,6 +1060,8 @@ def _body(
         if ("left" if i == 0 else "right") not in omit_arms:
             _limb(cv, parent, [shoulder, pose.elbows[i], pose.hands[i]], width)
         if i == 0:
+            if neck:
+                _limb(cv, parent, [_under_head(pose), pose.neck], LIMB)
             _limb(cv, parent, [pose.neck, pose.hip], LIMB)
             if apron is not None:
                 bib, strap = _apron(pose.neck, pose.hip)
@@ -1247,7 +1288,7 @@ def rig(
     spans = _spans(keys, end)
     for k, a, b in spans:
         body = _group(cv, g)
-        _body(cv, body, poses[k.pose], look.tie, look.apron, sides)
+        _body(cv, body, poses[k.pose], look.tie, look.apron, sides, look.neck)
         _gate(cv, body, a, b, end)
     limb_body = _group(cv, g) if limbs else None
     hx, hy = poses[keys[0].pose].head

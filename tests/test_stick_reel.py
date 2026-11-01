@@ -1,5 +1,7 @@
 """What a new Stick reel shares: its spec, its word captions at one height, its mix, the frames that alternate."""
 
+from types import SimpleNamespace
+
 import pytest
 
 from srstudio import STICK, stick, stick_reel
@@ -36,3 +38,20 @@ def test_a_placed_effect_starts_late_and_every_take_is_faded():
     assert place(Take)["start"] == 2.5 and place(Take)["fadeIn"]
     Take.id = "01"
     assert "start" not in place(Take)
+
+
+@pytest.mark.parametrize(("sentences", "cues"), [(False, ["Bro Four hours"]), (True, ["Bro", "Four hours"])])
+def test_a_new_reel_asks_for_cues_that_stop_at_a_sentence_end(monkeypatch, tmp_path, sentences, cues):
+    drawn = []
+    monkeypatch.setattr(stick_reel.stick, "words", lambda cv, group, lines, **kw: drawn.extend(c.text for c in lines))
+    monkeypatch.setattr(stick_reel.fonts, "text_width", lambda font, text, size: 10.0 * len(text))
+    (tmp_path / "font.ttf").write_bytes(b"font")
+    cv = SimpleNamespace(comp=None, group=lambda parent, name: name)
+    ep = SimpleNamespace(cv=cv, root=tmp_path, spec=SimpleNamespace(font="font.ttf"))
+    words = [
+        {"text": "Bro.", "start": 0.0, "end": 0.3},
+        {"text": "Four", "start": 0.5, "end": 0.8},
+        {"text": "hours", "start": 0.9, "end": 1.2},
+    ]
+    stick_reel.words(ep, [SimpleNamespace(start=0.0, end=2.0, words=words)], sentences=sentences)
+    assert drawn == cues
