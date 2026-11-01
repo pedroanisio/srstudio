@@ -147,7 +147,9 @@ def test_occupied_cuts_at_the_measured_edge_the_upper_half_before_him_and_the_lo
 
 
 needs_engine = pytest.mark.skipif(
-    not os.environ.get("SRSTUDIO_ENGINE"), reason="set SRSTUDIO_ENGINE (and SRSTUDIO_RENDERS) to render the plates"
+    not os.environ.get("SRSTUDIO_ENGINE")
+    or not (os.environ.get("SRSTUDIO_RENDERS") or os.environ.get("SRSTUDIO_PLATES")),
+    reason="set SRSTUDIO_ENGINE and SRSTUDIO_RENDERS (or SRSTUDIO_PLATES) to render the plates",
 )
 
 
