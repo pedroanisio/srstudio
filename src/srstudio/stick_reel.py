@@ -108,14 +108,20 @@ def turns(end: float, rate: float) -> tuple[list[tuple[float, float]], list[tupl
     return spans[0::2], spans[1::2]
 
 
-def spoken_cues(takes: Sequence[Any]) -> list[tuple[float, float, str]]:
-    """One subtitle per spoken take, from its first word: a still opening is inside its take and says nothing."""
-    return [(x.start + (x.words[0]["start"] if x.words else 0.0), x.end, x.text) for x in takes if not x.is_effect]
+def spoken_cues(takes: Sequence[Any], *, first_word: bool = False) -> list[tuple[float, float, str]]:
+    """One subtitle per spoken take, from the take's start. ``first_word`` starts it at the take's first word, because
+    a still opening is inside its take and says nothing: new reels ask for it, delivered ones keep their cues."""
+
+    def start(x: Any) -> float:
+        return x.start + x.words[0]["start"] if first_word and x.words else x.start
+
+    return [(start(x), x.end, x.text) for x in takes if not x.is_effect]
 
 
-def close(ep: Episode, post: InstagramPost, *hidden: Any) -> Path:
-    """The burned ``hidden`` nodes off the cover, the subtitles, the post and the scene."""
+def close(ep: Episode, post: InstagramPost, *hidden: Any, first_word: bool = False) -> Path:
+    """The burned ``hidden`` nodes off the cover, the subtitles (``first_word`` is :func:`spoken_cues`'), the post and
+    the scene."""
     ep.hide_on_cover(*hidden)
-    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes))
+    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes, first_word=first_word))
     ep.instagram(post)
     return ep.finish(ep.root / f"{ep.spec.slug}.scene.xml", ep.root / "qa" / "sdk-validation.json")

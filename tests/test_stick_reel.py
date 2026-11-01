@@ -58,8 +58,15 @@ def test_a_new_reel_asks_for_cues_that_stop_at_a_sentence_end(monkeypatch, tmp_p
     assert drawn == cues
 
 
-def test_a_subtitle_starts_with_the_take_s_first_word_and_not_with_its_still():
-    held = Take("01", "noor", "open", "Step one.", 0.0, 3.0, words=({"text": "Step", "start": 1.05, "end": 1.4},))
-    plain = Take("02", "dev", "open", "Easy.", 3.0, 1.0)
-    effect = Take("03", "sfx", "open", "", 4.0, 1.0)
-    assert stick_reel.spoken_cues((held, plain, effect)) == [(1.05, 3.0, "Step one."), (3.0, 4.0, "Easy.")]
+HELD = Take("01", "noor", "open", "Step one.", 0.0, 3.0, words=({"text": "Step", "start": 1.05, "end": 1.4},))
+PLAIN = Take("02", "dev", "open", "Easy.", 3.0, 1.0)
+EFFECT = Take("03", "sfx", "open", "", 4.0, 1.0)
+
+
+def test_a_new_reel_s_subtitle_starts_with_the_take_s_first_word_and_not_with_its_still():
+    cues = stick_reel.spoken_cues((HELD, PLAIN, EFFECT), first_word=True)
+    assert cues == [(1.05, 3.0, "Step one."), (3.0, 4.0, "Easy.")]
+
+
+def test_a_delivered_reel_keeps_its_subtitles_from_the_take_s_start():
+    assert stick_reel.spoken_cues((HELD, PLAIN, EFFECT)) == [(0.0, 3.0, "Step one."), (3.0, 4.0, "Easy.")]

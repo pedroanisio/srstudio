@@ -233,4 +233,4 @@ hook = stick.card(cv, cv.comp, HOOK, size=78)
 cv.gate(hook, [(0, STILL)])  # it stops where the same words start as spoken words
 spoken = stick_reel.words(ep, t.takes, sentences=True, hold=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14")
-stick_reel.close(ep, POSTS["some-assembly"], hook, spoken)
+stick_reel.close(ep, POSTS["some-assembly"], hook, spoken, first_word=True)
