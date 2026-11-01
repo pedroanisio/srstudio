@@ -19,7 +19,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery and opt-in coordinated acting. Rig capabilities remain intentionally distinct; calibrated perceptual evidence and cross-system recipes are the next gaps. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, opt-in coordinated acting and executable cross-system recipes. Rig capabilities remain intentionally distinct; calibrated quality profiles and the remaining integration/refactor findings are the next gaps. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 699,
     "characters": 70,
@@ -105,12 +105,14 @@
     {
       "id": "SDK-P3-02",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Add executable cross-system authoring recipes",
       "problem": "There are useful runnable examples for individual systems, but agents still need to assemble emotional transitions, state across cuts and multi-rig performances from separate references.",
       "evidence": ["docs/authoring-reference.md", "docs/catalog/limbs.md", "examples/limbs_gallery.py"],
       "change": "Add short executable recipes for sustained listening, a changing emotion, carrying a prop across a cut and the same intent on two rig families. Show valid imports, clocks, capabilities and repairable failures.",
       "acceptance": ["Documentation examples execute in tests", "Examples use public APIs and explicit assets", "Output includes machine-readable validation and reproducible render commands"],
+      "resolution": "Added executable sustained-listening and carried-prop state recipes, including capability repair diagnostics and explicit source/shot clocks. The complete acting_continuity study uses public APIs to combine a Bento listener and a depth-composited isolated hand/cup interaction that moves through a camera cut and returns to its support. It ships exact listening-score JSON, serialized motion, a licensed font, source provenance, SDK validation and numeric contact evidence. Synthetic listening inputs are labeled explicitly; the documentation explains measured recording inputs. Together with acting_gallery, the examples cover changing emotion and shared intent on two rig families. The new study strictly encoded all 144 frames at 1920x1080/24 fps without diagnostics. Whole-body carrying and perceptual quality certification remain outside this recipe's claims.",
+      "verification": ["tests/test_acting_continuity_example.py", "tests/test_acting_gallery.py", "examples/acting_continuity.py", "examples/acting_gallery.py", "docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures", "docs/authoring-reference.md#carrying-a-prop-across-a-cut"],
       "complexity": "M"
     },
     {
@@ -191,7 +193,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "limits": [
     "No confirmed P0/P1 remains open in this review. The sequence-clock and extreme-number defects found during implementation are recorded as resolved; this is not a claim that the repository has no other defects.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",

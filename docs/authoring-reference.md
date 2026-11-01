@@ -132,6 +132,111 @@ scene-render validate ../generated/sdk-acting/acting-gallery.scene.xml --deny-wa
 scene-render encode ../generated/sdk-acting/acting-gallery.scene.xml --strict
 ```
 
+### Sustained listening and repairable capability failures
+
+Use `heard` for the other speaker's lines. Keep one plan across their phrases and cuts;
+recompiling at each phrase restarts the procedural performance. This executable fixture
+is deliberately synthetic and silent. Its constant levels are not measurements.
+
+<!-- listening:start -->
+```python
+from srstudio.acting import (
+    BENTO, ActingBeat, ActingError, ActingScore, SpokenLine,
+    compile_performance, gloss_actor,
+)
+from srstudio.voice import Alignment
+
+synthetic_alignment = Alignment(
+    tuple("Hello."), (0, .1, .2, .3, .4, .5), (.1, .2, .3, .4, .5, .6)
+)
+heard = tuple(
+    SpokenLine(at, synthetic_alignment, (-24.0,) * 60)
+    for at in (.5, 2.2, 4.0)
+)
+score = ActingScore(
+    6, (ActingBeat(0, gaze="right", transition=0),), heard=heard, seed=1
+)
+listener = compile_performance(BENTO, score)
+assert listener.sample(3) == listener.window(3, 6).sample(0)
+assert listener.sample(1.1).mouth == "closed"
+
+try:
+    compile_performance(gloss_actor("nadia"), score)
+except ActingError as error:
+    diagnostic = error.to_dict()
+assert diagnostic["code"] == "acting.unsupported"
+assert diagnostic["path"] and diagnostic["expected"] and diagnostic["remedy"]
+```
+<!-- listening:end -->
+
+For a real recording, parse its alignment with `Alignment.parse`, then obtain measured
+levels with `head_motion.speech_of(alignment, at, audio_path).levels` and pass those to
+`SpokenLine`. Place the recording as a separate scene audio asset at the same performance
+offset. Do not substitute the synthetic levels above for measured prosody. The planner
+selects reactions deterministically from the rig style and seed; it need not nod at every
+phrase. This fixture's seed produces three reactions, with the middle reaction continuing
+through the cut.
+
+### Carrying a prop across a cut
+
+An attachment belongs to the source motion. Bind it once, then observe the same plan
+through both shot windows. This compact recipe demonstrates state ownership; the complete
+rendered interaction below adds moving contact, prop geometry and depth compositing.
+
+<!-- carrying:start -->
+```python
+from dataclasses import replace
+from srstudio.acting import ActingScore, Overrides, compile_performance, gloss_actor
+from srstudio.limbs import HUMAN, ArmProfile, Camera, Frame, Vec3
+from srstudio.limbs.compile import BakeOptions
+from srstudio.limbs.integration import LimbTrack
+from srstudio.limbs.motion import Action, Attachment, Motion
+
+motion = Motion(ArmProfile(), HUMAN, (Action("grasp", duration=6),))
+offset = Frame(Vec3(0, .37, .19))
+initial = motion.sample(1.2).hand.frame.compose(offset)
+motion = replace(motion, attachments=(Attachment("cup", 1.2, 5, initial, offset),))
+track = LimbTrack(
+    motion, style="gloss", camera=Camera(origin=(-92, -345), scale=200),
+    options=BakeOptions(fps=24), backend="baked",
+)
+source = compile_performance(
+    gloss_actor("nadia"), ActingScore(6, overrides=Overrides(limbs=(track,)))
+)
+after_cut = source.window(3, 6)
+assert after_cut.sample(0) == source.sample(3)
+cup_at_cut = dict(after_cut.sample(0).limbs[0].props)["cup"]
+assert cup_at_cut == motion.sample(3).hand.frame.compose(offset)
+```
+<!-- carrying:end -->
+
+`Attachment` verifies that acquisition does not jump and holds the release frame after
+release. It does not draw the prop. `bake_interaction` combines a `Participant` hand and
+`PropDrawing(mesh, AttachedProp(motion, "cup"))` in the same canonical coordinates,
+sorting their surfaces together. Do not draw a second copy of that hand with `LimbTrack`
+in the same view. For an isolated interaction, place the compositor under the performance
+window's returned group with `Canvas(local_time=True)` and an explicit full-source
+`BakeOptions(duration=6)`. The group supplies the source clock; baking just the shot length
+would discard later motion. The limb and prop must use the same projection, placement,
+facing and parent transform. Adding a prop beside a bobbing character's root does not
+automatically inherit its body bob or anatomical reflection.
+
+The complete study combines a sustained Bento listener and an isolated hand that lifts,
+carries and replaces a cup. A camera cut occurs while both are moving. It includes a
+serialized motion, exact listening-score JSON, licensed font, explicit synthetic-input provenance,
+SDK schema validation and numeric report:
+
+```sh
+python examples/acting_continuity.py ../generated/sdk-continuity
+scene-render validate ../generated/sdk-continuity/continuity.scene.xml --deny-warnings
+scene-render encode ../generated/sdk-continuity/continuity.scene.xml --strict
+```
+
+For changing emotion and the same intent on two rig families, run
+[`acting_gallery.py`](../examples/acting_gallery.py) from the preceding section. These
+studies demonstrate supported clocks and composition; they do not certify emotional
+readability, collision-free gripping or whole-body balance.
+
 ## Styles
 
 A **style** is what an episode looks like before a single part is placed, and it is a value:

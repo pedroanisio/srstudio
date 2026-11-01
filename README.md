@@ -154,7 +154,9 @@ The [authoring reference](docs/authoring-reference.md#styles) compares their inp
 [Coordinated acting](docs/authoring-reference.md#coordinated-acting-and-continuity) compiles typed emotion, speech,
 gaze and head intent with explicit channel ownership. Reuse windows of one performance across cuts; inspect
 rig capabilities before generating a score. The [two-family study](examples/acting_gallery.py) builds Bento and
-Gloss Nadia with a reproducible scene and JSON continuity report.
+Gloss Nadia with a reproducible scene and JSON continuity report. The
+[listening and carrying study](examples/acting_continuity.py) adds sustained reactions and a moving hand/prop
+interaction across a cut, with executable [authoring recipes](docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures).
 
 Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
 
