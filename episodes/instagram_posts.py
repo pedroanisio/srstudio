@@ -35,8 +35,17 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import auto_enhance, caption_gate, comedy_floor, figure_gates, fonts, frame_gates, outbox, releases
-from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, overlay_gate, releases
+from srstudio import (
+    auto_enhance,
+    caption_gate,
+    comedy_floor,
+    figure_gates,
+    fonts,
+    frame_gates,
+    outbox,
+    overlay_gate,
+    releases,
+)
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -132,7 +141,6 @@ def write_all(
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
         ]
     )
-    refused = auto_enhance.refused(first, REPO)
     refused = [
         *overlay_gate.repeated_lines(chosen, _beside(renders), first.values()),
         *auto_enhance.refused(first, REPO),

@@ -28,21 +28,21 @@ VOICES = {
 SCRIPT = [  # role, text, caption, speed
     Spoken("manager", "Do you have any questions for us?", "Do you have any questions for us?", 1.02),
     Spoken("candidate", "Just one. Are you happy here?", "Just one.\nAre you happy here?", 1.00),
-    Spoken("manager", "We have free fruit.", "We have free fruit.", 0.95, level=-2),
+    Spoken("manager", "We have free fruit.", "We have free fruit.", 0.95, gain=-2),
     Spoken("candidate", "When was your last vacation?", "When was your last vacation?", 1.00),
-    Spoken("manager", "What year is it?", "What year is it?", 0.92, level=-3),
+    Spoken("manager", "What year is it?", "What year is it?", 0.92, gain=-3),
     Spoken("candidate", "Take your time.", "Take your time.", 0.95),
     Spoken(
         "manager",
         "It's just bananas. Since March. Just bananas.",
         "It's just bananas.\nSince March.\nJust bananas.",
         0.92,
-        level=-4,
+        gain=-4,
     ),  # fmt: skip
     Spoken("candidate", "What's your greatest weakness?", "What's your greatest weakness?", 1.00),
-    Spoken("manager", "I stayed.", "I stayed.", 0.88, level=-7),
+    Spoken("manager", "I stayed.", "I stayed.", 0.88, gain=-7),
     Spoken("candidate", "We'll be in touch.", "We'll be in touch.", 1.00),
-    Spoken("manager", "Will you?", "Will you?", 0.90, level=-5),
+    Spoken("manager", "Will you?", "Will you?", 0.90, gain=-5),
 ]
 START = 0.50  # the first word, on the held frame's last moment
 FALL = 2.0  # the smile holds, and goes on one side

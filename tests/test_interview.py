@@ -60,6 +60,8 @@ def pins_for(tmp_path: Path, iv: I.Interview, speech: list[float]) -> dict[str, 
         (dict(effects=[I.Sound("fx", "x", float("nan"), 0.5, 0.5)]), "seconds nan must lie in"),
         (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=1.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
         (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=1.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
         (
             dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=float("nan")), I.Spoken("candidate", "Hi.", "Hi.")]),
             "gain",
@@ -84,7 +86,7 @@ def test_declarations_name_every_line_and_effect_and_pin_the_voice():
 def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
     plain = make(lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x")])
     quiet = make(
-        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", level=-6)]
+        lines=[I.Spoken("manager", "Why here?", "Why here?"), I.Spoken("candidate", "The chair.", "x", gain=-6)]
     )
     assert I.declarations(plain) == I.declarations(quiet)
     before = I.place(plain, pins_for(tmp_path, plain, [1.0, 0.8]), back_to_back)
@@ -97,8 +99,8 @@ def test_a_line_sits_at_its_own_level_without_asking_for_a_new_take(tmp_path):
 
 @pytest.mark.parametrize("level", [0.5, -12.5, float("nan"), float("inf")])
 def test_a_level_outside_the_mix_is_refused_when_made(level):
-    with pytest.raises(I.InterviewError, match="level"):
-        make(lines=[I.Spoken("manager", "Hi.", "Hi.", level=level), I.Spoken("candidate", "Hi.", "Hi.")])
+    with pytest.raises(I.InterviewError, match="must lie in"):
+        make(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=level), I.Spoken("candidate", "Hi.", "Hi.")])
 
 
 def test_a_line_may_carry_its_own_seed_so_only_its_take_is_requested_again():
@@ -222,7 +224,7 @@ def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):
 
 @pytest.mark.parametrize("gain", [float("nan"), -30.0, 3.0, "quiet", None])
 def test_a_line_s_gain_is_a_drop_the_mix_can_play(gain):
-    with pytest.raises(I.InterviewError, match="gain must be"):
+    with pytest.raises(I.InterviewError, match="must lie in"):
         make(lines=[I.Spoken("manager", "A short line.", "A short line.", gain=gain)])
 
 
@@ -354,6 +356,8 @@ def test_a_spoken_line_and_a_sketch_line_share_one_gain_field_in_db():
         names = {f.name for f in fields(kind)}
         assert "gain" in names and not names & {"level", "level_db"}
     assert I.LEVELS == sketch.LINE_LEVELS == (-12.0, 0.0)
+
+
 def test_beats_lays_lines_end_to_end_with_their_gaps():
     schedule = I.beats([1.0, 2.0, 0.5], 0.5, [0.25, 1.5])
     assert schedule.lines == pytest.approx([0.5, 1.75, 5.25])

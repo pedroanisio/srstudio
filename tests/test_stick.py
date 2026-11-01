@@ -675,6 +675,8 @@ def test_a_look_with_a_neck_joins_its_head_to_its_torso_and_the_default_keeps_it
 def test_a_neck_is_true_or_false():
     with pytest.raises(stick.StickDataError):
         stick.check_look(stick.Look(neck="yes"))
+
+
 def _eye_canvas() -> Canvas:
     scene = Scene(version="auto")
     scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background="#d9d2c4")

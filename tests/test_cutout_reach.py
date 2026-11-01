@@ -135,10 +135,6 @@ def test_a_side_that_is_not_one_is_refused(actor, free):
     cv = canvas()
     with pytest.raises(CastError, match="free_arms names screen sides"):
         actor(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
-def test_a_side_that_is_not_one_is_refused(free):
-    cv = canvas()
-    with pytest.raises(CastError, match="free_arms names screen sides"):
-        cast.Barista(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
 
 
 def test_a_carried_thing_rests_rides_the_hand_and_lands():

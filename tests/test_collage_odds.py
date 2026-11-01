@@ -34,7 +34,7 @@ def shapes(cv: Canvas) -> int:
         "collage-lens-frame",
         "collage-sensor-tap",
         "collage-spinach",
-        "collage-wine-glass",
+        "collage-full-glass",
         "collage-water-jug",
         "collage-doctor-scale",
     ],

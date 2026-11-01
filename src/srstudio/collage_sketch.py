@@ -55,13 +55,10 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 # reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding, crunch and
-# thud (a door shutting, something heavy landing) play on their beat; hiss:<seconds> lets the air out of something for
-# that long
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "thud")
-# reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding and crunch
-# play on their beat; ring is one ring of a phone; hiss:<seconds> lets the air out of something for that long; whip,
-# on the beat a new shot starts, whips the camera from the shot before it to that one
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip")
+# thud (a door shutting, something heavy landing) play on their beat; ring is one ring of a phone; hiss:<seconds> lets
+# the air out of something for that long; whip, on the beat a new shot starts, whips the camera from the shot before
+# it to that one
+EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "ring", "whip", "thud")
 ZOOM_SCALE = 1.55
 PUSH_AT = (540.0, 960.0)  # the middle of the frame
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
@@ -78,8 +75,8 @@ SWAT = 0.12  # seconds of a swat's whoosh: it lands on its beat
 DING_GAIN_DB = -8.0
 HISS_GAIN_DB = -9.0
 CRUNCH_GAIN_DB = -6.0
-THUD_GAIN_DB = -4.0
 RING_GAIN_DB = -11.0
+THUD_GAIN_DB = -4.0
 CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
@@ -229,12 +226,12 @@ class Staging:
     # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
     still: float = 0.0
     opening: CastDrawer = stilled
-    # the scale the first shot pushes in to across its length, for a reel that opens on a silent beat and on movement
-    # (arm b, on a recording that kept its silent head); 0 leaves the shot where it stands
-    push: float = 0.0
     # a slow push from the first frame, (until, scale): every shot before ``until`` keeps to one move over the frame's
     # middle, so a cut inside it is not a jump, and a silent lead-in moves as a reel's first line would (L7)
     push: tuple[float, float] = (0.0, 1.0)
+    # the scale the first shot alone pushes in to across its length, pivoting on the face, for a reel that opens on a
+    # silent beat and on movement (arm b, on a recording that kept its silent head); 0 leaves the shot where it stands
+    first_shot_push: float = 0.0
     # the set of a shot, from the beats the build draws and its appearance, for a reel that changes rooms; a name of
     # collage_sets.SETS. None keeps every character on its ``sets`` entry
     setting: Callable[[Sequence[Beat], Appearance], str] | None = None
@@ -242,9 +239,7 @@ class Staging:
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
-    # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
-    # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
-    keep_signature: bool = False
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     # the seed the takes were recorded on, when it is not ``seed``: it is part of each take's cache key, so a seed
     # moved after the recording keeps the takes and their foley by naming the old one here; 0 is ``seed``
     recording_seed: int = 0
@@ -252,26 +247,15 @@ class Staging:
     sounds: Callable[[Sequence[Beat], float], Sequence[Sound]] = lambda beats, end: ()
     # where the pill of a line goes, by its text, when a shot's picture fills the usual place; empty keeps them all
     caption_tops: Mapping[str, float] = field(default_factory=dict)
-    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
+    # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
+    # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
+    keep_signature: bool = False
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:
         """The set this appearance plays on."""
         return self.sets[app.who] if self.setting is None else self.setting(beats, app)
 
 
-def check_push(beats: Sequence[sketch.Beat], staging: Staging, name: str) -> None:
-    """A pushed opening moves, so it is not a still one, grows the shot so no edge shows, and leaves the first shot
-    to no crash zoom, which would take the same keys."""
-    push, still = staging.push, staging.still
-    if push == 0:
-        return
-    if not (checks.number(push) and push > 1):
-        raise StagingError(f"{name}: push {push!r} must grow the shot, above 1")
-    if still:
-        raise StagingError(f"{name}: an opening holds still or pushes in, not both")
-    first = sketch.appearances(beats, beats[-1].start + 1.0)[0]
-    if any(at < first.end for at, _ in sketch.events(beats, "zoom")):
-        raise StagingError(f"{name}: a crash zoom in the first shot would take the keys of its push")
 def check_push(push: tuple[float, float], beats: Sequence[sketch.Beat], name: str) -> None:
     """A push is a move over the frame's middle and a zoom pivots on a face: a shot has one or the other."""
     until, scale = push
@@ -279,6 +263,23 @@ def check_push(push: tuple[float, float], beats: Sequence[sketch.Beat], name: st
         raise StagingError(f"{name}: push {push!r} needs seconds from 0 and a scale from 1")
     if any(at < until for at, _ in sketch.events(beats, "zoom")):
         raise StagingError(f"{name}: a zoom comes inside the push, which ends at {until} s")
+
+
+def check_first_shot_push(beats: Sequence[sketch.Beat], staging: Staging, name: str) -> None:
+    """A pushed opening moves, so it is not a still one, grows the shot so no edge shows, leaves the first shot to no
+    crash zoom, which would take the same keys, and is not a second move on top of :attr:`Staging.push`."""
+    scale, still = staging.first_shot_push, staging.still
+    if scale == 0:
+        return
+    if not (checks.number(scale) and scale > 1):
+        raise StagingError(f"{name}: first_shot_push {scale!r} must grow the shot, above 1")
+    if still:
+        raise StagingError(f"{name}: an opening holds still or pushes in, not both")
+    if staging.push[1] > 1.0:
+        raise StagingError(f"{name}: a push across the cuts and a push on the first shot would take the same keys")
+    first = sketch.appearances(beats, beats[-1].start + 1.0)[0]
+    if any(at < first.end for at, _ in sketch.events(beats, "zoom")):
+        raise StagingError(f"{name}: a crash zoom in the first shot would take the keys of its push")
 
 
 def check_still(beats: Sequence[sketch.Beat], still: float, name: str) -> None:
@@ -336,8 +337,8 @@ def check_staging(staging: Staging) -> None:
         if staging.set_of(sk.beats, app) not in collage_sets.SETS:
             raise StagingError(f"{sk.slug}: unknown set for {app.who} at {app.start} s")
     check_still(sk.beats, staging.still, sk.slug)
-    check_push(sk.beats, staging, sk.slug)
     check_push(staging.push, sk.beats, sk.slug)
+    check_first_shot_push(sk.beats, staging, sk.slug)
     if not (type(staging.bitrate) is int and staging.bitrate >= 0):
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
 
@@ -367,8 +368,8 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             raise StagingError(f"voiced/mouths.json runs {mouths_end} s, voiced/beats.json {end} s: record again")
     sketch.check(sk)
     check_still(sk.beats, staging.still, sk.slug)
-    check_push(sk.beats, staging, sk.slug)
     check_push(staging.push, sk.beats, sk.slug)
+    check_first_shot_push(sk.beats, staging, sk.slug)
     check_flashes(sk.beats, sk.slug)
     ep = Episode(
         EpisodeSpec(
@@ -436,14 +437,14 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         face = (staging.opening if opening else cast)(cv, g, app, mouths)
         front = cv.group(g, cv.uid("g"))
         staging.dress(Shot(cv, app, back, front, sk.beats, sk.end, measure))
-        if staging.keep_signature:
-            face = collage_sets.zoom_pivot(staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP)
-        if staging.push and app.start == 0:
-            camera.anchor(g, *face, place=True)
-            camera.push_in(cv, g, scale=[(0.0, 1.0), (app.end, staging.push)])
         if app.start < staging.push[0]:
             camera.anchor(g, *PUSH_AT, place=True)
             camera.push_in(cv, g, scale=[(0.0, 1.0), staging.push])
+        if staging.first_shot_push and app.start == 0:
+            camera.anchor(g, *face, place=True)
+            camera.push_in(cv, g, scale=[(0.0, 1.0), (app.end, staging.first_shot_push)])
+        if staging.keep_signature:
+            face = collage_sets.zoom_pivot(staging.set_of(sk.beats, app), face, ZOOM_SCALE, height=collage.CAPTION_TOP)
         for at in zooms(sk.beats, app):
             camera.anchor(g, *face, place=True)
             camera.crash_zoom(cv, g, at, ZOOM_SCALE, duration=ZOOM_SNAP)
@@ -466,13 +467,9 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
 def sound_effects(
     beats: Sequence[sketch.Beat], end: float, root: Path, seed: int, own: Sequence[Sound] = ()
 ) -> list[dict]:
-    """The manifest's effects: a whoosh into every ``zoom``, the sting on ``sting``, the headset on ``beep``, the
-    shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a phone's ring on
-    ``ring``, chewing on ``crunch``, a thud on ``thud`` and air on ``hiss:<seconds>``."""
-def sound_effects(beats: Sequence[sketch.Beat], end: float, root: Path, seed: int) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom`` and ``whip``, the sting on ``sting``, the headset on
     ``beep``, the shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a
-    phone's ring on ``ring``, chewing on ``crunch`` and air on ``hiss:<seconds>``."""
+    phone's ring on ``ring``, chewing on ``crunch``, a thud on ``thud`` and air on ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []

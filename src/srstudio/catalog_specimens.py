@@ -545,7 +545,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-lens-frame": Recipe(part(540.0, 960.0)),
     "collage-sensor-tap": Recipe(part(540.0, 960.0, ((0.0, SECONDS),))),
     "collage-spinach": Recipe(part(540.0, 960.0, 300.0)),
-    "collage-wine-glass": Recipe(part(540.0, 1100.0)),
+    "collage-full-glass": Recipe(part(540.0, 1100.0)),
     "collage-water-jug": Recipe(part(540.0, 1100.0)),
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
