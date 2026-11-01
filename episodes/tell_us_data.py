@@ -38,7 +38,9 @@ HOOK_SECONDS = 3.0
 
 PLACES = {"brent": Place(300.0, 1800.0, 0.7), "deb": Place(780.0, 1800.0, 0.7)}
 TIPS = (0.0, -4.0, -9.0, -15.0, -22.0, -28.0)  # Gary's chair, further back each cut
-PENS = {"brent": (300.0, 1700.0), "deb": (780.0, 1700.0)}
+PENS = {"brent": (393.0, 1700.0), "deb": (823.0, 1700.0)}  # the tips on the table, each pen through a hand
+TABLE_TOP = 1700.0  # the table runs in front of the panel, past the foot of the frame
+ZOOM_X = 1205.0  # Deb's zoom lands with the shelf and its code left of the bug, Brent out of the frame
 BOX = (530.0, 1760.0, 300.0)
 CLOCK = (130.0, 760.0, 84.0)
 TISSUE = (232.0, 1560.0)  # in Brent's hand
@@ -119,7 +121,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if group.staged(app):
-            return group(cv, parent, app, mouths)
+            return ZOOM_X, group(cv, parent, app, mouths)[1]
         tilted = cv.group(parent, cv.uid("g"), x=collage.CX, y=1920.0, rotation=tip(app))
         moved = cv.group(tilted, cv.uid("g"), x=-collage.CX, y=-1920.0)
         collage_home.chair_back(cv, moved, collage.CX, 860, 560, 1200)
@@ -148,6 +150,8 @@ def dress(shot) -> None:
     """The table's props in the panel's shots, the clock over the shelf side, the hook while it is up."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     if app.who != "gary":
+        top = cv.grad("tell-us-table", [(0, "#8a6244"), (1, "#5b3f2c")], (0, 0, 0, 1))
+        cv.rect(shot.front, -40.0, TABLE_TOP, cv.width + 80.0, 1960.0 - TABLE_TOP, top, collage.INK, 4)
         _pens(cv, shot.front, app, beats)
         tissue = _said(beats, 10)
         if app.end > tissue - 0.01:

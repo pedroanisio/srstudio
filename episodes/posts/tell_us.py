@@ -18,11 +18,20 @@ RELEASE = Release(
             "Sound effects synthesized in code."
         ),
         hashtags=('#jobinterview', '#jobsearch', '#relatable', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("He started at birth", 20.6, number=199),
+        thumbnail=ShowCover("He started at birth", 12.0, number=199),
     ),
     tags=Tags("job-hunting", "protagonist", "embarrassment", test="sp-speakers", arm="b"),
     style="Collage",
-    parts={},
+    parts={
+        "collage-boardroom": 1,
+        "collage-brent": 1,
+        "collage-deb": 1,
+        "collage-gary": 1,
+        "collage-sign": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
     comedy=Scores(author=16, reviewer=17),
     cover=True,
 )
