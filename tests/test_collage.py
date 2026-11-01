@@ -38,6 +38,7 @@ def test_the_style_is_registered_with_its_parts_and_font():
     assert STYLES["collage"] is COLLAGE
     assert COLLAGE.parts == (
         "collage",
+        "collage_article",
         "collage_everyday",
         "collage_odds",
         "collage_photo",
