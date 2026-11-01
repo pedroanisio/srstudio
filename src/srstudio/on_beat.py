@@ -21,21 +21,23 @@ def _marks(groove: Groove, start: float, end: float, every: float) -> list[float
 
 
 def ride(cv: Canvas, node, groove: Groove, start: float, end: float, height: float, bar_hit: float = 1.0) -> None:
-    """``node`` rises ``height`` px on each beat of the span and settles as far under between beats, ``bar_hit`` times
-    as high on a beat that opens a bar. The eased keys carry a beat's lift into the next."""
+    """``node`` rises ``height`` px on each beat of the span and settles as far under between beats, about where it
+    stands, ``bar_hit`` times as high on a beat that opens a bar. The eased keys carry a beat's lift into the next."""
     if height <= 0 or bar_hit <= 0:
         raise MusicError(f"a ride needs a height and a bar hit above zero, got {height} and {bar_hit}")
-    beats = set(groove.between(start, end))
+    beats = set(_marks(groove, start, end, 1))
+    rest = node.y or 0.0
     frames = []
     for t in _marks(groove, start, end, 0.5):
         lift = height * (bar_hit if groove.opens_bar(t) else 1.0)
-        frames.append((t, -lift if t in beats else height))
+        frames.append((t, rest + (-lift if t in beats else height)))
     cv.keys(node, "y", frames, kind="sine-in-out")
 
 
 def sway(cv: Canvas, node, groove: Groove, start: float, end: float, one: float, other: float) -> None:
-    """``node`` leans ``one`` degrees on a beat of the span and ``other`` on the next."""
-    frames = [(t, one if k % 2 == 0 else other) for k, t in enumerate(_marks(groove, start, end, 1))]
+    """``node`` leans ``one`` degrees past its own rotation on a beat of the span and ``other`` on the next."""
+    rest = node.rotation or 0.0
+    frames = [(t, rest + (one if k % 2 == 0 else other)) for k, t in enumerate(_marks(groove, start, end, 1))]
     cv.keys(node, "rotation", frames, kind="sine-in-out")
 
 
@@ -44,6 +46,8 @@ def alternate(
 ) -> dict[bool, list[tuple[float, float]]]:
     """The spans of two states swapped on the grid every ``every`` beats, covering ``[start, end)`` and opening on
     ``first``: gate one drawing on each, a mouth open and a mouth shut."""
+    if end <= start:
+        raise MusicError(f"the span {start}..{end} must end after it starts")
     inner = [t for t in groove.between(start, end, every) if t > start]
     edges = [start, *inner, end]
     spans: dict[bool, list[tuple[float, float]]] = {True: [], False: []}

@@ -175,13 +175,10 @@ class Model:
 
     def surface(self, material: str, verts: Points, normals: Points, tris, uvs=None) -> None:
         """Triangles exactly as given."""
-        self._add(
-            material,
-            np.array(verts, float).reshape(-1, 3),
-            np.array(normals, float).reshape(-1, 3),
-            tris,
-            None if uvs is None else np.array(uvs, float).reshape(-1, 2),
-        )
+        points, facing = np.array(verts, float).reshape(-1, 3), np.array(normals, float).reshape(-1, 3)
+        if not (np.isfinite(points).all() and np.isfinite(facing).all()):
+            raise ClayError(f"a {material} surface has a vertex or a normal that is not a number")
+        self._add(material, points, facing, tris, None if uvs is None else np.array(uvs, float).reshape(-1, 2))
 
     def _shell(self, material: str, p: Point, size: np.ndarray, spin: np.ndarray, last: float) -> None:
         """An ellipsoid from its top down to the polar angle ``last``."""
@@ -327,6 +324,8 @@ class Model:
     def loft(self, xs: Points, ring: Callable, assign: Callable) -> None:
         """Rings along x with both ends capped: ``ring(x)`` gives a ring's z and y, and ``assign(centroid, normal,
         row, column)`` names each quad's material, or None to leave it open."""
+        if not len(xs):
+            raise ClayError("a loft needs at least one ring")
         rows = [ring(float(x)) for x in np.asarray(xs, float)]
         v = np.array(
             [[(x, y, z) for z, y in zip(r[0], r[1], strict=True)] for x, r in zip(xs, rows, strict=True)], float
@@ -370,21 +369,25 @@ class Model:
         if len(line) < 2:
             raise ClayError(f"a strut needs a path of two points, got {len(line)}")
         face = _unit(np.array(out, float), "a strut's face")
+        widths = np.asarray(width, float)
+        if widths.ndim and len(widths) != len(line):
+            raise ClayError(f"a strut of {len(line)} points needs one width or one each, got {len(widths)}")
         along = np.gradient(line, axis=0)
-        along /= np.linalg.norm(along, axis=1, keepdims=True)
         u, w = superellipse(28, n)
         rows = []
-        for point, t, wide in zip(line, along, np.broadcast_to(np.asarray(width, float), (len(line),)), strict=True):
-            side = np.cross(t, face)
-            side /= np.linalg.norm(side)
+        for point, step, wide in zip(line, along, np.broadcast_to(widths, (len(line),)), strict=True):
+            t = _unit(step, "a strut's path")
+            side = _unit(np.cross(t, face), "a strut running along its face")
             rows.append(point + np.outer(u * wide / 2, side) + np.outer(w * thick / 2, np.cross(side, t)))
         self._capped(material, rows)
 
     def revolve(self, material: str, profile: Points, sides: int = 64) -> None:
         """A surface of revolution about the local z axis: ``profile`` rows are (radius, z)."""
-        p = np.array(profile, float).reshape(-1, 2)
-        if len(p) < 2 or p[:, 0].min() < 0:
+        p = np.array(profile, float)
+        if p.ndim != 2 or p.shape[1] != 2 or len(p) < 2 or p[:, 0].min() < 0:
             raise ClayError(f"a revolved profile needs two rows of radius and z, radii not negative, got {profile!r}")
+        if sides < 3:
+            raise ClayError(f"a revolved surface needs three sides, got {sides}")
         angles = np.linspace(0, 2 * np.pi, sides, endpoint=False)
         v = np.array([[(r * math.cos(a), r * math.sin(a), z) for a in angles] for r, z in p])
         n = _grid_normals(v)
@@ -445,9 +448,12 @@ class Model:
 
 def superellipse(m: int, n: float, power: float | None = None) -> tuple[np.ndarray, np.ndarray]:
     """``m`` points round a unit superellipse: ``n`` squares it off across, ``power`` (``n`` by default) up and down."""
+    up = n if power is None else power
+    if m < 3 or n <= 0 or up <= 0:
+        raise ClayError(f"a superellipse needs three points and powers above zero, got {m}, {n} and {power}")
     theta = np.linspace(0, 2 * np.pi, m, endpoint=False)
     c, s = np.cos(theta), np.sin(theta)
-    return np.sign(c) * np.abs(c) ** (2 / n), np.sign(s) * np.abs(s) ** (2 / (power or n))
+    return np.sign(c) * np.abs(c) ** (2 / n), np.sign(s) * np.abs(s) ** (2 / up)
 
 
 def _grid_normals(v: np.ndarray) -> np.ndarray:

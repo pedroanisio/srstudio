@@ -184,3 +184,74 @@ def test_layers_are_the_same_bytes_on_a_warm_rebuild_and_render_nothing_new(scen
     assert (first.back == second.back).all() and (first.under == second.under).all()
     first.write(tmp_path / "out", "shot")
     assert sorted(p.name for p in (tmp_path / "out").iterdir()) == ["shot-back.png", "shot-front.png", "shot-under.png"]
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        dict(quiet=(("tire", "well"), ("well", "seat"))),
+        dict(soft_edge=-0.1),
+        dict(thresholds=(0.3, float("nan"), 0.6)),
+        dict(rough={"wheel": 0.4}),
+        dict(oversample=1.5),
+    ],
+)
+def test_a_recipe_refuses_a_family_or_a_setting_that_cannot_draw(bad):
+    tones = {"body": MINT, "seat": TAN, "tire": BLACK, "well": BLACK}
+    with pytest.raises(proxy.ProxyError):
+        proxy.Recipe(tones=tones, **bad)
+
+
+@pytest.mark.parametrize("bad", [dict(colour="red"), dict(weight=-1.0), dict(least=3.0, most=2.0)])
+def test_ink_refuses_a_colour_or_a_width_that_cannot_draw(bad):
+    with pytest.raises(proxy.ProxyError):
+        proxy.Ink(**bad)
+
+
+def test_a_stretched_model_keeps_normals_square_to_its_surface():
+    model = clay.Model()
+    model.surface("body", [(0, 0, 0), (1, 0, 1), (0, 1, 0)], [(-1, 0, 1)] * 3, [(0, 1, 2)])
+    view = proxy.View((0.0, 0.0, -10.0), (0.0, 0.0, 0.0), 20.0, stretch=3.0, size=(100, 100))
+    mesh = proxy._fitted(model.meshes(), view)[0]
+    assert np.linalg.norm(mesh.normals, axis=1) == pytest.approx(1.0)
+    assert (mesh.vertices[1] - mesh.vertices[0]) @ mesh.normals[0] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_mesh_that_is_not_a_number_is_refused_before_any_render(tmp_path):
+    mesh = ball()[0]
+    mesh.vertices[0, 0] = np.nan
+    with pytest.raises(proxy.ProxyError, match="not a number"):
+        proxy.picture([mesh], VIEW, RECIPE, engine=tmp_path / "missing", cache=tmp_path)
+
+
+def test_a_view_that_sees_nothing_of_the_model_is_an_error_not_an_empty_plate():
+    ids = np.zeros((40, 40, 4), np.uint8)
+    with pytest.raises(proxy.ProxyError, match="nothing"):
+        proxy.composite(np.zeros((40, 40, 4), np.uint8), ids, RECIPE)
+
+
+def test_a_frame_of_one_part_has_no_line_in_it():
+    ids = np.zeros((40, 40, 4), np.uint8)
+    ids[..., :3], ids[..., 3] = np.array(RECIPE.ids["body"]) * proxy.ID_GAIN, 255
+    lit = np.full((40, 40, 4), 255, np.uint8)
+    rgba, _ = proxy.composite(lit, ids, RECIPE)
+    assert np.ptp(rgba[..., :3], axis=(0, 1)).max() == 0
+
+
+def test_a_part_under_three_pixels_wide_is_read_as_what_surrounds_it():
+    body, seat = (np.array(RECIPE.ids[n]) * proxy.ID_GAIN for n in ("body", "seat"))
+    for wide, kept in ((2, False), (3, True)):
+        ids = np.zeros((20, 20, 4), np.uint8)
+        ids[..., 3], ids[..., :3] = 255, body
+        ids[:, 8 : 8 + wide, :3] = seat
+        found = RECIPE.names.index("seat") in proxy.read_parts(ids, RECIPE)
+        assert found is kept
+
+
+def test_a_disc_needs_a_radius_and_one_behind_the_lens_is_not_seen():
+    for radius in (0.0, -1.0):
+        with pytest.raises(proxy.ProxyError):
+            VIEW.disc((0.0, -60.0, 0.0), radius, -1)
+    behind = (0.0, 0.0, -600.0)
+    assert VIEW.disc(behind, 20.0, 1) is None
+    assert VIEW.disc(behind, 20.0, -1) is None

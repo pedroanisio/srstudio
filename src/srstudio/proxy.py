@@ -109,14 +109,18 @@ class View:
 
     def disc(self, centre: Sequence[float], radius: float, facing: int) -> Disc | None:
         """A circle upright in a plane of constant z, its face toward ``facing`` on z, or None when that face turns
-        from the lens or it misses the frame. A long lens lets a skew (two turns and a scale), fitted across the full
-        width, stand in for the projection."""
+        from the lens, it stands behind the lens or it misses the frame. A long lens lets a skew (two turns and a
+        scale), fitted across the full width, stand in for the projection; a face seen from the far side is mirrored,
+        which no turn can show, so a rim drawn on it has to look the same either way round."""
+        if not (checks.number(radius) and radius > 0):
+            raise ProxyError(f"a disc needs a radius above zero, got {radius}")
         x, y, z = centre
         if (self.position[2] - z) * facing <= 0:
             return None
-        ahead, behind, under, over = self.project(
-            [(x + radius, y, z), (x - radius, y, z), (x, y + radius, z), (x, y - radius, z)]
-        )
+        rim = [(x + radius, y, z), (x - radius, y, z), (x, y + radius, z), (x, y - radius, z)]
+        if ((np.array(rim) * (self.stretch, 1, 1) - self.position) @ self._axes[0]).min() <= 0:
+            return None
+        ahead, behind, under, over = self.project(rim)
         middle = (ahead + behind + under + over) / 4
         turns, scales, unturns = np.linalg.svd(np.column_stack([ahead - behind, under - over]) / (2 * radius))
         if np.linalg.det(turns) < 0:
@@ -140,6 +144,13 @@ class Ink:
     shade: float = 0.5
     least: float = 0.6
     most: float = 2.0
+
+    def __post_init__(self) -> None:
+        if not _HEX.match(self.colour):
+            raise ProxyError(f"ink {self.colour!r} must be #rrggbb")
+        widths = (self.weight, self.grain, self.shade, self.least, self.most)
+        if not (all(checks.number(w) and w >= 0 for w in widths) and self.least <= self.most):
+            raise ProxyError(f"ink widths {widths} must not be negative, least no more than most")
 
 
 @dataclass(frozen=True)
@@ -169,10 +180,22 @@ class Recipe:
             stray = sorted(set(names) - set(self.tones))
             if stray:
                 raise ProxyError(f"{what} names parts with no tones: {stray}")
-        if list(self.thresholds) != sorted(self.thresholds) or len(set(self.thresholds)) != 3:
+        families = [name for group in self.quiet for name in set(group)]
+        shared = sorted({name for name in families if families.count(name) > 1})
+        if shared:
+            raise ProxyError(f"quiet groups share {shared}: each part keeps one family")
+        stray = sorted(set(self.rough) - set(self.tones))
+        if stray:
+            raise ProxyError(f"rough names parts with no tones: {stray}")
+        if not all(checks.number(r) and 0 <= r <= 1 for r in self.rough.values()):
+            raise ProxyError(f"roughness {dict(self.rough)} must be between 0 and 1")
+        rising = all(map(checks.number, self.thresholds)) and list(self.thresholds) == sorted(self.thresholds)
+        if not rising or len(set(self.thresholds)) != 3:
             raise ProxyError(f"thresholds {self.thresholds} must rise")
-        if self.oversample < 1:
-            raise ProxyError(f"oversample {self.oversample} must be at least 1")
+        if not (checks.number(self.soft_edge) and self.soft_edge >= 0):
+            raise ProxyError(f"soft_edge {self.soft_edge} must not be negative")
+        if not isinstance(self.oversample, int) or self.oversample < 1:
+            raise ProxyError(f"oversample {self.oversample} must be a whole number from 1")
 
     @property
     def names(self) -> list[str]:
@@ -263,6 +286,8 @@ def _bands(part: np.ndarray, luma: np.ndarray, recipe: Recipe) -> np.ndarray:
 def composite(lit: np.ndarray, ids: np.ndarray, recipe: Recipe) -> tuple[np.ndarray, np.ndarray]:
     """Colour and ink from a light pass and a part pass: the RGBA picture and each pixel's part."""
     part = read_parts(ids, recipe)
+    if part.max() < 0:
+        raise ProxyError("nothing of the model falls in the frame")
     height, width = part.shape
     names = recipe.names
     luma = ndimage.gaussian_filter(lit[..., :3].mean(-1) / 255.0, 1.2)
@@ -273,7 +298,8 @@ def composite(lit: np.ndarray, ids: np.ndarray, recipe: Recipe) -> tuple[np.ndar
         family[ks] = ks[0]
     labels = family[part]
     labels[part < 0] = len(names)
-    distance = ndimage.distance_transform_edt(~_edges(labels))
+    edges = _edges(labels)
+    distance = ndimage.distance_transform_edt(~edges) if edges.any() else np.full(edges.shape, np.inf)
     noise = np.random.default_rng(recipe.grain_seed).standard_normal((height // 4 + 1, width // 4 + 1))
     grain = ndimage.gaussian_filter(noise, 14)
     grain = ndimage.zoom(grain / grain.std(), 4, order=1)[:height, :width]
@@ -318,12 +344,21 @@ def _bytes(rgba: np.ndarray) -> np.ndarray:
 
 
 def _fitted(meshes: Iterable[Mesh], view: View) -> list[Mesh]:
-    return [dataclasses.replace(m, vertices=m.vertices * (view.stretch, 1, 1)) for m in meshes]
+    """The meshes stretched along x; a normal takes the inverse, or the light would land on the unstretched model."""
+    out = []
+    for m in meshes:
+        facing = m.normals / (view.stretch, 1, 1)
+        facing = facing / np.maximum(np.linalg.norm(facing, axis=1, keepdims=True), 1e-9)
+        out.append(dataclasses.replace(m, vertices=m.vertices * (view.stretch, 1, 1), normals=facing))
+    return out
 
 
 def _preflight(meshes: Sequence[Mesh], recipe: Recipe) -> None:
     if not meshes:
         raise ProxyError("no meshes to draw")
+    for mesh in meshes:
+        if not (np.isfinite(mesh.vertices).all() and np.isfinite(mesh.normals).all()):
+            raise ProxyError(f"a {mesh.material} mesh has a vertex or a normal that is not a number")
     seen = {m.material for m in meshes}
     unknown = sorted(seen - set(recipe.tones))
     if unknown:

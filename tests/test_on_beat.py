@@ -79,3 +79,20 @@ def test_two_states_swap_on_the_grid_and_cover_the_span():
     assert np.ravel(spans[False]) == pytest.approx([1.0, 1.5, 2.0, 2.1])
     flipped = on_beat.alternate(GRID, 0.9, 2.1, every=1.0, first=False)
     assert flipped[True] == spans[False]
+
+
+def test_a_ride_refuses_a_span_with_only_a_half_beat_in_it(cv):
+    with pytest.raises(MusicError):
+        on_beat.ride(cv, cv.group(cv.comp, "body"), GRID, 1.2, 1.3, 10.0)
+
+
+def test_a_ride_and_a_lean_move_about_where_the_node_stands(cv):
+    on_beat.ride(cv, cv.group(cv.comp, "body", y=300.0), GRID, 1.0, 2.0, 10.0)
+    assert [y for _, y in keys(cv, "body", "y")] == pytest.approx([290.0, 310.0, 290.0, 310.0])
+    on_beat.sway(cv, cv.group(cv.comp, "friend", rotation=5.0), GRID, 1.0, 2.0, -2.0, 2.0)
+    assert [r for _, r in keys(cv, "friend", "rotation")] == pytest.approx([3.0, 7.0])
+
+
+def test_swapped_states_need_a_span_that_lasts():
+    with pytest.raises(MusicError):
+        on_beat.alternate(GRID, 2.0, 2.0)

@@ -110,6 +110,10 @@ def turning_rim(
     the turning group, ``name``."""
     if end <= start:
         raise VehicleError(f"the span {start}..{end} must end after it starts")
+    if disc is None:
+        raise VehicleError(f"no disc for rim {name}: its wheel faces away from the lens or misses the frame")
+    if radius <= 0:
+        raise VehicleError(f"a rim needs a radius above zero, got {radius}")
     place = cv.group(parent, cv.uid("rim"), x=disc.x, y=disc.y, rotation=disc.tilt)
     lens = cv.group(place, cv.uid("rim"), scaleX=disc.stretch, scaleY=disc.squash)
     turning = cv.group(lens, name)

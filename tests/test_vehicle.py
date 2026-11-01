@@ -53,3 +53,12 @@ def test_a_rim_with_five_windows_by_default_and_any_count_on_request(cv):
     assert len(paths) == 8
     with pytest.raises(vehicle.VehicleError):
         vehicle.RimLook(windows=1)
+
+
+def test_a_rim_with_no_disc_or_no_radius_is_refused_and_draws_nothing(cv):
+    disc = proxy.Disc(100.0, 100.0, 0.0, 1.0, 0.8, 0.0)
+    before = cv.scene.to_bytes(layout="pretty")
+    for bad_disc, radius in ((None, 40.0), (disc, 0.0)):
+        with pytest.raises(vehicle.VehicleError):
+            vehicle.turning_rim(cv, cv.comp, bad_disc, radius, 0.0, 1.0, 90.0, "rim")
+    assert cv.scene.to_bytes(layout="pretty") == before
