@@ -23,7 +23,16 @@ RELEASE = Release(
     ),
     tags=Tags("epic-world", "other-person", "recognition", test="sp-speakers", arm="a"),
     style="Saga",
-    parts={},
+    parts={
+        "saga-entry": 1,
+        "saga-handbook": 1,
+        "saga-hook": 1,
+        "saga-juno": 1,
+        "saga-mabel": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
     comedy=Scores(author=16, reviewer=15),
     cover=True,
 )
