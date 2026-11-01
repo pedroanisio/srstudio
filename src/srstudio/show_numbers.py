@@ -14,20 +14,34 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import re
 import tempfile
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from .errors import SrstudioError
 
-__all__ = ["FILE", "SCHEMA", "Claim", "Ledger", "NumberError", "claim", "ledger_path", "read", "set_base"]
+__all__ = [
+    "FILE",
+    "SCHEMA",
+    "Claim",
+    "EpisodeDocument",
+    "Ledger",
+    "NumberError",
+    "claim",
+    "episode_document",
+    "ledger_path",
+    "read",
+    "set_base",
+]
 
 FILE = "numbers.json"
 SCHEMA = "1.0.0"
 _LOCK = ".numbers.lock"
+_SERIES = re.compile(r"[A-Z][a-z]+")  # one capitalised word, as a cover names it
 
 
 class NumberError(SrstudioError, ValueError):
@@ -41,6 +55,29 @@ class Claim:
     number: int
     series: str = ""
     series_number: int = 0
+
+
+class EpisodeDocument(TypedDict):
+    """``episode.json``, beside a numbered video: what the posting job reads, all three fields on every reel. ``series``
+    is the series in lower case, empty for a reel in no series, whose ``series_number`` is 0."""
+
+    number: int
+    series: str
+    series_number: int
+
+
+def episode_document(claim: Claim) -> EpisodeDocument:
+    """The posting job's document of ``claim``; a claim outside that contract is a :class:`NumberError`."""
+    if type(claim.number) is not int or claim.number < 1:
+        raise NumberError(f"a reel's number is a whole number from 1, got {claim.number!r}")
+    named = bool(claim.series)
+    if named != (claim.series_number != 0):
+        raise NumberError(f"series {claim.series!r} and series_number {claim.series_number!r} go together")
+    if named and not _SERIES.fullmatch(claim.series):
+        raise NumberError(f"series {claim.series!r} must be one capitalised word, as Saga")
+    if type(claim.series_number) is not int or claim.series_number < 0:
+        raise NumberError(f"series_number must be a whole number, got {claim.series_number!r}")
+    return {"number": claim.number, "series": claim.series.lower(), "series_number": claim.series_number}
 
 
 @dataclass(frozen=True)
@@ -156,6 +193,8 @@ def set_base(path: Path, base: int, series: str = "") -> Ledger:
     """Set the count ahead of the first number, or of ``series``' first. It is a fact and moves no claim: a base is
     refused once anything was claimed on it."""
     _whole(base, "base", 0)
+    if series and not _SERIES.fullmatch(series):
+        raise NumberError(f"series {series!r} must be one capitalised word, as Saga")
     path = Path(path)
     with _locked(path) as ledger:
         if series:

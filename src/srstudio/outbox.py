@@ -26,7 +26,7 @@ from pathlib import Path
 from . import digest
 from .errors import SrstudioError
 from .releases import ARMS
-from .show_numbers import Claim
+from .show_numbers import Claim, episode_document
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
 __all__ = [
@@ -149,12 +149,6 @@ def ready(
     return bundles, drift
 
 
-def _episode_document(claim: Claim) -> dict[str, int | str]:
-    if not claim.series:
-        return {"number": claim.number}
-    return {"number": claim.number, "series": claim.series, "series_number": claim.series_number}
-
-
 def _arms(items: Items, ab: Mapping[str, Arm] | None) -> dict[str, Arm]:
     ab = dict(ab or {})
     unknown = sorted(set(ab) - set(items))
@@ -237,7 +231,7 @@ def stage(bundles: Sequence[Bundle], folder: Path, *, manifest: str = MANIFEST) 
                 hashes[AB_NAME] = digest.sha256(arm)
             if b.episode is not None:
                 place = target / EPISODE_NAME
-                place.write_text(json.dumps(_episode_document(b.episode)) + "\n")
+                place.write_text(json.dumps(episode_document(b.episode)) + "\n")
                 place.chmod(0o600)
                 hashes[EPISODE_NAME] = digest.sha256(place)
             videos[b.name] = hashes

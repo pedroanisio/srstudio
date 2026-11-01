@@ -356,7 +356,7 @@ def test_a_numbered_video_is_staged_with_its_place_and_a_plain_one_as_it_always_
     manifest = json.loads(stage(bundles, folder).read_text())
     assert json.loads((folder / "a" / EPISODE_NAME).read_text()) == {
         "number": 212,
-        "series": "Saga",
+        "series": "saga",
         "series_number": 19,
     }
     assert (folder / "a" / EPISODE_NAME).stat().st_mode & 0o777 == 0o600
@@ -376,6 +376,15 @@ def test_stage_refuses_a_bundle_whose_own_file_is_named_episode_json(tmp_path):
     source.write_text("{}")
     with pytest.raises(OutboxError, match=EPISODE_NAME):
         stage([Bundle("a", (source,), episode=Claim(1))], tmp_path / "outbox")
+
+
+def test_a_reel_in_no_series_writes_all_three_fields_with_an_empty_series_and_zero(delivered, tmp_path):
+    """The posting job's contract is three fields on every numbered reel: none is left out."""
+    items, out, pk = delivered
+    bundles, _ = ready(items, out, font=FONT, packages=pk, numbers={"a": Claim(193)})
+    folder = tmp_path / "outbox"
+    stage(bundles, folder)
+    assert (folder / "a" / EPISODE_NAME).read_text() == '{"number": 193, "series": "", "series_number": 0}\n'
 
 
 def test_no_published_release_has_a_number_so_the_outbox_stays_the_same():

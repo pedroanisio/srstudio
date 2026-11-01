@@ -8,7 +8,16 @@ import pytest
 
 from srstudio import show_numbers
 from srstudio.cli import main
-from srstudio.show_numbers import Claim, NumberError, claim, ledger_path, read, set_base
+from srstudio.show_numbers import (
+    Claim,
+    EpisodeDocument,
+    NumberError,
+    claim,
+    episode_document,
+    ledger_path,
+    read,
+    set_base,
+)
 
 
 @pytest.fixture
@@ -167,3 +176,42 @@ def test_the_command_line_sets_claims_and_lists(path, capsys):
     assert main(["number", "list", *ledger]) == 0
     said = capsys.readouterr().out
     assert "base 200" in said and "Saga base 18" in said and "first-reel #201" in said
+
+
+def test_the_publishing_side_s_counts_give_the_numbers_it_named(path):
+    """arc4d3, Slack 1793501087.434969: first numbered reel #193, Saga next #19, Gloss next #10."""
+    set_base(path, 192)
+    set_base(path, 18, series="Saga")
+    set_base(path, 9, series="Gloss")
+    assert claim(path, "plain-reel") == Claim(193)
+    assert claim(path, "saga-next", series="Saga") == Claim(194, "Saga", 19)
+    assert claim(path, "gloss-next", series="Gloss") == Claim(195, "Gloss", 10)
+
+
+@pytest.mark.parametrize("series", ["saga", "SAGA", "Two Words", "Saga#"])
+def test_a_series_is_named_as_its_cover_names_it(path, series):
+    with pytest.raises(NumberError, match="capitalised"):
+        set_base(path, 18, series=series)
+
+
+@pytest.mark.parametrize(
+    ("claimed", "document"),
+    [
+        (Claim(193), {"number": 193, "series": "", "series_number": 0}),
+        (Claim(194, "Saga", 19), {"number": 194, "series": "saga", "series_number": 19}),
+        (Claim(195, "Gloss", 10), {"number": 195, "series": "gloss", "series_number": 10}),
+    ],
+)
+def test_the_episode_document_is_exactly_what_the_posting_job_reads(claimed, document):
+    assert episode_document(claimed) == document
+    assert list(episode_document(claimed)) == ["number", "series", "series_number"]
+    assert set(EpisodeDocument.__annotations__) == set(document)
+
+
+@pytest.mark.parametrize(
+    "broken",
+    [Claim(0), Claim(True), Claim(193, "Saga"), Claim(193, "", 4), Claim(193, "saga", 4), Claim(193, "Saga", -1)],
+)
+def test_a_claim_outside_the_contract_writes_no_document(broken):
+    with pytest.raises(NumberError):
+        episode_document(broken)
