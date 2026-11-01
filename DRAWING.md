@@ -6,7 +6,7 @@ status: accepted
 
 # Drawing architecture: a hybrid, layered kit
 
-srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0090](docs/decisions/0090-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms`, `paint`, and the shared scene contracts below are still proposed, not importable APIs or evidence of a completed renderer.
+srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms`, `paint`, and the shared scene contracts below are still proposed, not importable APIs or evidence of a completed renderer.
 
 The kit addresses different needs without requiring every video to use every technique. A single 2D path does not encode a rigid object's unseen surfaces; independently drawn views can drift. Drawn characters already have shading primitives, but need a shared way to attach shading to moving forms and light. Environments need controlled depth and surface texture. Information has the opposite need: captions, cards and map lines must stay exact. A fixed view can remain entirely 2D; multi-view geometry becomes useful when its consistency justifies the rendering cost.
 
@@ -139,7 +139,7 @@ The table gives each type its default. Only the rigid-object layer is built, and
 
 The first full proof is a short Toon clip containing a multicolored car turning under a moving camera, a rigged hand holding a prop, a figure crossing behind/in front of the car, a textured background, and protected information. It includes a held pose, a continuous pose/expression transition, a cut, changed key/fill/rim lighting, and a warm-cache rebuild. Test frontal, three-quarter, and profile views only for assets that explicitly support them; an unsupported view must demonstrate the refusal path.
 
-The thresholds below are acceptance targets, not reported measurements, except where ADR 0090 records one. That proof records its results and any approved style-specific replacement thresholds.
+The thresholds below are acceptance targets, not reported measurements, except where ADR 0091 records one. That proof records its results and any approved style-specific replacement thresholds.
 
 | Gate | Required evidence |
 |---|---|

@@ -1,4 +1,4 @@
-"""A wheel on a proxy (ADR 0090): a tyre model that stays still and a drawn rim that turns on its disc."""
+"""A wheel on a proxy (ADR 0091): a tyre model that stays still and a drawn rim that turns on its disc."""
 
 from __future__ import annotations
 

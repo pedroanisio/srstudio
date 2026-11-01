@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0090: The hybrid drawing method is the default for new work
+# ADR 0091: The hybrid drawing method is the default for new work
 
 - Status: accepted (2026-11-01), on the operator's word
 - Back to the [library README](../../README.md)

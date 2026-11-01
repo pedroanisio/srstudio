@@ -11,7 +11,7 @@ _car_cel.py (run it first: it writes PROJECT/plates); the people and the city ar
 frame (480 x 802 px, scaled 2.25 onto the 1080 x 1920 Stick frame). The body rides the beat over wheels that stay on
 the road and turn. The beat, the size of the bounce and the wheels' speed are numbers measured once from the
 reference's soundtrack and picture; no frame, footage or audio of the reference is read or embedded. A study of another
-creator's cartoon, kept to prove the library (ADR 0090), never a release: it declares no post and no part, and stays out
+creator's cartoon, kept to prove the library (ADR 0091), never a release: it declares no post and no part, and stays out
 of episodes/ so nothing ships it.
 """
 

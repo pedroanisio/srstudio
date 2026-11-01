@@ -1,4 +1,4 @@
-"""Wheels on a rigid proxy (ADR 0090): a tyre that stays on the road and a drawn rim that turns on it.
+"""Wheels on a rigid proxy (ADR 0091): a tyre that stays on the road and a drawn rim that turns on it.
 
 A turning wheel needs no plate per angle. :func:`tyre` models what is round and still, for a recipe's ``under`` plate,
 and :func:`turning_rim` draws the rim as vectors on the :class:`~srstudio.proxy.Disc` the view gives, turned by the
