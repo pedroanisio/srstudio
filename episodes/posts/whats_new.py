@@ -12,10 +12,10 @@ RELEASE = Release(
         description=(
             "Every update moves the one thing you use and calls it an improvement. This one is a man in your "
             "house, and he has moved the sofa.\nA Soft sketch on Okayville, voiced with ElevenLabs premade voices "
-            "Laura (Juno), Alice (Pip) and Eric (Bo); every character is original, drawn in code."
+            "Laura (Juno), Will (Pip) and Eric (Bo); every character is original, drawn in code."
         ),
         credit=(
-            "Voices: ElevenLabs premade voices Laura, Alice and Eric. Original characters, drawn in code. Sound "
+            "Voices: ElevenLabs premade voices Laura, Will and Eric. Original characters, drawn in code. Sound "
             "effects synthesized in code."
         ),
         hashtags=('#softwareupdate', '#techhumor', '#relatable', '#animatedshorts', '#okayville'),

@@ -73,6 +73,8 @@ GLOW = "#9fc5ff"
 LAMP = "#ffc66b"
 SHELF_TOP = 580.0  # the wash over her wall stops here, above the cactus
 BITRATE = 5_800_000  # bits a second: the grain, new every frame, otherwise costs 56 MB here; encoded in software
+# At the defaults the grain keeps x264 from keying this reel's cuts; this interval with no B frames lands all of them
+KEYFRAMES = 7.0
 HOLD_FOR_THE_WORD = 0.9  # the cup meets the saucer on the beat before the line
 
 LINES = (
@@ -269,6 +271,8 @@ STAGING = Staging(
     bleed=True,
     sounds=sounds,
     bitrate=BITRATE,
+    keyframes=KEYFRAMES,
+    bframes=0,
     loudness="-14",
     sentence_rows=True,
     caption_tops={LINES[8].text: ZOOMED_CAPTION_TOP},
