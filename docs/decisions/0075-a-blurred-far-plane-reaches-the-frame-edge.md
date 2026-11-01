@@ -103,6 +103,7 @@ and 0.1 with `overscan`. Built Toon scenes have no blurred group, and Ink and Ce
 
 The sheet holds for a still set. Above Average's car scrolls a road through its far plane, so the plane's bounds change
 every frame. Each frame rendered alone, and the encode ran the GPU out of memory at 6.0 s, the same frame on both runs,
-on a 8 GB card. Such a plane stays off the sheet (`look.depth(moving=True)`), and a sharp plate of its own colour goes
-under it, so the frame's edge shows paint and not the page. That the changing bounds are the cause is inferred from
-these two runs and from the encode that passed with this change; the engine's allocator was not read.
+on an 8 GB card, with a sampled peak of 6039 MiB. Such a plane stays off the sheet (`look.depth(moving=True)`), and a
+sharp plate of its own colour goes under it, so the frame's edge shows paint and not the page. The encode then passed
+with a sampled peak of 1731 MiB. That the changing bounds are the cause is inferred from these runs; the engine's
+allocator was not read.
