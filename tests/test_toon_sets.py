@@ -434,3 +434,16 @@ def test_the_call_centre_label_fails_the_strict_contrast_check_unless_legible(tm
     code, findings = contrast_findings(tmp_path / "plain", comic_neue)
     assert code != 0 and [f["code"] for f in findings] == ["LEG-CONTRAST"] and findings[0]["measured"] < 4.5
     assert contrast_findings(tmp_path / "legible", comic_neue, legible=True) == (0, [])
+
+
+def test_a_kitchen_can_leave_the_chair_out_and_the_default_keeps_it():
+    def drawn(**options) -> bytes:
+        scene = Scene(version="auto")
+        scene.add_project(width=1080, height=1920, fps="24", duration=4.0, background=PEACH.background)
+        cv = Canvas(scene, PEACH, font_asset="comic-neue", namer=flat_counter("k"))
+        toon_sets.kitchen(cv, cv.comp, **options)
+        return scene.to_bytes(layout="pretty")
+
+    assert toon_sets.KITCHEN_CHAIR.encode().lower() in drawn().lower()
+    assert toon_sets.KITCHEN_CHAIR.encode().lower() not in drawn(chair=False).lower()
+    assert drawn() == drawn(chair=True)

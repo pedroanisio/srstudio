@@ -13005,6 +13005,23 @@
           "rig": null
         }
       ]
+    },
+    "toon-open-laptop": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0e7bccdffcb3c3831780d4aa22a3f312e7c81bdb9a90beae36f5ddca3f33ce0f",
+          "rig": null
+        }
+      ]
     }
   }
 }

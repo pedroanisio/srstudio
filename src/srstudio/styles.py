@@ -382,6 +382,7 @@ TOON = Style(
         "toon_house",
         "toon_surgery",
         "toon_inked",
+        "toon_laptop",
         "toon_odds",
         "toon_parlour",
         "toon_props",

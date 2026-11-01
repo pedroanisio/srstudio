@@ -97,6 +97,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_homeware,
     toon_house,
     toon_inserts,
+    toon_laptop,
     toon_odds,
     toon_parlour,
     toon_props,
