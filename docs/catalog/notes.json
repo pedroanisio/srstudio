@@ -960,6 +960,12 @@
     "news-oven-clock": {
       "title": "Relógio do forno"
     },
+    "news-forecast-map": {
+      "title": "Mapa da previsão"
+    },
+    "news-corridor-map": {
+      "title": "Mapa do corredor"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
     },
@@ -8017,6 +8023,42 @@
         ]
       },
       "text": "Um fogão sem marca: os dígitos nunca mudam, só a etiqueta que diz se o relógio está certo."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa da previsão",
+      "parts": [
+        "news-forecast-map"
+      ],
+      "shot": {
+        "episode": "leave-it-home",
+        "at": 16.9,
+        "box": [
+          170,
+          490,
+          740,
+          830
+        ]
+      },
+      "text": "Um condado inventado ao sol, um alfinete só e uma nuvem do tamanho exato para encontrá-lo."
+    },
+    {
+      "section": "graphics",
+      "name": "Mapa do corredor",
+      "parts": [
+        "news-corridor-map"
+      ],
+      "shot": {
+        "episode": "same-way",
+        "at": 3.1,
+        "box": [
+          170,
+          490,
+          740,
+          830
+        ]
+      },
+      "text": "Um corredor visto de cima: dois pontos que desviam juntos e uma contagem de quantas vezes."
     },
     {
       "section": "locations",

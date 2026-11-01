@@ -107,6 +107,10 @@ __all__ = [
     "gus",
     "live_door",
     "lower_third",
+    "corridor_dashes",
+    "corridor_keys",
+    "corridor_map",
+    "forecast_map",
     "money_app",
     "oven_clock",
     "parody_tag",
@@ -2409,3 +2413,245 @@ def oven_clock(
     _oven_tag(cv, cv.group(g, f"{id}-wrong", start=start, end=turned), wrong, TANGERINE)
     if right_at is not None:
         _oven_tag(cv, cv.group(g, f"{id}-right", start=right_at, end=end), right, MINT)
+
+
+PANEL_HEAD, PANEL_FOOT = 96.0, 126.0  # a map panel's title strip and the count under it
+PANEL_TITLE_SIZE, PANEL_COUNT_SIZE = 56.0, 64.0
+FORECAST_LAND = "#7fc99a"
+FORECAST_SUN = "#ffd23f"
+FORECAST_COAST = (
+    (70, 170),
+    (200, 110),
+    (360, 150),
+    (540, 104),
+    (652, 200),
+    (620, 340),
+    (660, 470),
+    (520, 540),
+    (330, 500),
+    (170, 556),
+    (52, 440),
+    (96, 300),
+)  # an invented county, in px of the map under the title strip
+FORECAST_SUNS = ((175, 215), (515, 205), (165, 430), (530, 430), (350, 442))
+FORECAST_REACH = 52.0  # a sun's rays end here, so none is drawn under the pin or across the coast
+FORECAST_PIN = (350.0, 310.0)
+FORECAST_DRIFT = 1.4  # seconds the cloud takes to cross to the pin
+FORECAST_FALL = 0.14  # seconds the rain takes to fall one step, so a held map still moves
+
+
+def _panel(cv: Canvas, parent, title: str, id: str, start: float, end: float) -> Any:
+    """A map's card over the dimmed room, its title across the top, in the phone's window so nothing else moves.
+
+    The card is narrower than the banner, so it would cut BREAKING to a stump beside it: a bare bar rests over the
+    word and the chevrons for as long as the card is up.
+    """
+    g = cv.group(parent, id, start=start, end=end)
+    rest = cv.group(g, f"{id}-rest", start=start, end=end)
+    cv.rect(rest, 0, BANNER_Y, cv.width, BANNER_H, TANGERINE)
+    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
+    cv.rect(g, PHONE_X - 12, PHONE_Y - 8, PHONE_W + 48, PHONE_H + 48, SHADOW, radius=2 * CHIP)
+    cv.rect(g, PHONE_X - 20, PHONE_Y - 20, PHONE_W + 40, PHONE_H + 40, CREAM, PLUM_DEEP, 5.0, radius=2 * CHIP)
+    cv.rect(g, PHONE_X, PHONE_Y, PHONE_W, PANEL_HEAD, MINT, PLUM_DEEP, 4.0, radius=CHIP)
+    _text(cv, g, title, PHONE_X, PHONE_Y, PHONE_W, PANEL_HEAD, PANEL_TITLE_SIZE, PLUM_DEEP, "center")
+    return g
+
+
+def _counts(
+    cv: Canvas, g, word: str, counts: Sequence[tuple[float, str]], end: float, measure: Measure, id: str
+) -> None:
+    """The count under a map: ``word`` and each of ``counts`` (its second, its figure), held until the next."""
+    top = PHONE_Y + PHONE_H - PANEL_FOOT
+    for i, ((at, figure), stop) in enumerate(zip(counts, [*(c[0] for c in counts[1:]), end], strict=True)):
+        row = cv.group(g, f"{id}-count-{i}", start=at, end=stop)
+        cv.rect(row, PHONE_X, top, PHONE_W, PANEL_FOOT, PLUM_DEEP, radius=CHIP)
+        _text(cv, row, f"{word}: {figure}", PHONE_X, top, PHONE_W, PANEL_FOOT, PANEL_COUNT_SIZE, BUTTER, "center")
+
+
+def _panel_copy(
+    where: str,
+    title: str,
+    counter: str,
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+) -> None:
+    """What every map panel refuses: a span that is none, copy the show keeps off it, words too wide, a count that
+    does not start with the panel or does not move forward inside it."""
+    _span(start, end, where)
+    check_copy(title)
+    check_copy(counter)
+    if not title.strip() or measure(title, PANEL_TITLE_SIZE) > PHONE_W - 60.0:
+        raise NewsKitError(f"{where}'s title {title!r} must be some words that fit")
+    if not counts or counts[0][0] != start:
+        raise NewsKitError(f"{where} shows its count from {start}")
+    moments = [at for at, _ in counts]
+    if any(b <= a for a, b in zip(moments, moments[1:], strict=False)) or moments[-1] >= end:
+        raise NewsKitError(f"{where}'s count moves forward inside {start}..{end}")
+    for _, figure in counts:
+        check_copy(figure)
+        if measure(f"{counter}: {figure}", PANEL_COUNT_SIZE) > PHONE_W - 60.0:
+            raise NewsKitError(f"{where}'s count {figure!r} does not fit")
+
+
+def _sun(cv: Canvas, g, x: float, y: float) -> None:
+    near = FORECAST_REACH - 14.0
+    for i in range(8):
+        turn = i * math.pi / 4
+        cv.path(
+            g,
+            f"M {x + near * math.cos(turn):.2f} {y + near * math.sin(turn):.2f} "
+            f"L {x + FORECAST_REACH * math.cos(turn):.2f} {y + FORECAST_REACH * math.sin(turn):.2f}",
+            None,
+            PLUM_DEEP,
+            6.0,
+        )
+    _inked_oval(cv, g, x, y, 28.0, 28.0, FORECAST_SUN, 5.0)
+
+
+def _cloud(cv: Canvas, g) -> None:
+    """A small grey cloud on its own origin, its foot just over the pin's head."""
+    for x, y, r in ((-34, -8, 28), (0, -24, 36), (36, -8, 28)):
+        _inked_oval(cv, g, x, y, r, r, "#8d85a3", 5.0)
+    cv.rect(g, -56, -8, 112, 30, "#8d85a3", radius=14.0)
+
+
+@register(
+    "graphic",
+    "news-forecast-map",
+    summary="An invented county in the sun with one pin, and a cloud small enough to find it",
+)
+def forecast_map(
+    cv: Canvas,
+    parent,
+    title: str,
+    pin: str,
+    counter: str,
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+    rain: tuple[float, float] | None = None,
+    id: str = "news-forecast-map",
+) -> None:
+    """A forecast over the dimmed room from ``start`` to ``end``: an invented county, sun all over it, one ``pin``, and
+    under it ``counter`` with its ``counts``. ``rain`` is when a cloud the size of the pin is up: it crosses to the pin
+    in :data:`FORECAST_DRIFT` seconds, rains on it and nowhere else, and is gone. It refuses copy the show keeps off the
+    screen, words too wide, and a cloud off its span or gone before it arrives. It copies no real place or service."""
+    _panel_copy("the forecast", title, counter, counts, start, end, measure)
+    check_copy(pin)
+    if not pin.strip() or measure(pin, PANEL_TITLE_SIZE) > 240.0:
+        raise NewsKitError(f"the forecast's pin {pin!r} must be a word that fits")
+    if rain is not None and not (start < rain[0] and rain[0] + FORECAST_DRIFT < rain[1] <= end):
+        raise NewsKitError(f"the cloud crosses in {FORECAST_DRIFT} s inside {start}..{end}, not {rain}")
+    g = _panel(cv, parent, title, id, start, end)
+    x, y = PHONE_X, PHONE_Y
+    _polygon(cv, g, [(x + a, y + b) for a, b in FORECAST_COAST], FORECAST_LAND, 5.0)
+    for a, b in FORECAST_SUNS:
+        _sun(cv, g, x + a, y + b)
+    px, py = x + FORECAST_PIN[0], y + FORECAST_PIN[1]
+    cv.path(g, f"M {px} {py} L {px - 24} {py - 52} A 34 34 0 1 1 {px + 24} {py - 52} Z", TANGERINE, PLUM_DEEP, 5.0)
+    _inked_oval(cv, g, px, py - 66.0, 12.0, 12.0, CREAM)
+    wide = measure(pin, 40.0) + 40.0
+    cv.rect(g, px - wide / 2, py + 10.0, wide, 60.0, CREAM, PLUM_DEEP, 4.0, radius=CHIP)
+    _text(cv, g, pin, px - wide / 2, py + 10.0, wide, 60.0, 40.0, PLUM_DEEP, "center")
+    _counts(cv, g, counter, counts, end, measure, id)
+    if rain is None:
+        return
+    above = py - 138.0
+    cloud = cv.group(g, f"{id}-cloud", start=rain[0], end=rain[1], x=x + PHONE_W - 60.0, y=above)
+    cv.keys(cloud, "x", [(rain[0], x + PHONE_W - 60.0), (rain[0] + FORECAST_DRIFT, px)], hold=False, local=False)
+    _cloud(cv, cloud)
+    falling = cv.group(cloud, f"{id}-rain", start=rain[0] + FORECAST_DRIFT, end=rain[1])
+    for dx in (-30.0, 0.0, 30.0):
+        cv.path(falling, f"M {dx} 30 L {dx - 8} 64", None, "#3f7ad6", 7.0)
+    fall = rain[0] + FORECAST_DRIFT
+    beats = int((rain[1] - fall) / FORECAST_FALL)
+    cv.keys(
+        falling,
+        "y",
+        [(round(fall + i * FORECAST_FALL, 3), 12.0 * (i % 2)) for i in range(beats + 1)],
+        hold=False,
+        local=False,
+    )
+
+
+CORRIDOR_LEFT, CORRIDOR_RIGHT = 170.0, 530.0  # the walls, in px of the panel
+CORRIDOR_TOP, CORRIDOR_FOOT = 120.0, 640.0  # the floor, from under the title to over the count
+CORRIDOR_DASH, CORRIDOR_DASH_EVERY = 46.0, 110.0  # the centre line on the floor
+CORRIDOR_STEP = 0.22  # seconds a sidestep takes, the same for both, so two men who step together are seen to
+CORRIDOR_DOT = 44.0
+Stop = tuple[float, float, float]  # a second, and where the man reaches from there, in px of the panel
+
+
+def corridor_keys(stops: Sequence[Stop]) -> list[Stop]:
+    """The key frames of one man: he holds where he is until a stop's second, then steps there in one quick move."""
+    keys = [stops[0]]
+    for (_, x, y), (at, nx, ny) in zip(stops, stops[1:], strict=False):
+        keys += [(at, x, y), (at + CORRIDOR_STEP, nx, ny)]
+    return keys
+
+
+def corridor_dashes(top: float, foot: float) -> list[float]:
+    """Where each dash of the centre line starts, every one of them ending before the floor does."""
+    return [
+        top + 40.0 + i * CORRIDOR_DASH_EVERY
+        for i in range(int((foot - top - 40.0) / CORRIDOR_DASH_EVERY) + 1)
+        if top + 40.0 + i * CORRIDOR_DASH_EVERY + CORRIDOR_DASH < foot
+    ]
+
+
+def _man(cv: Canvas, g, id: str, stops: Sequence[Stop], fill: str) -> None:
+    keys = corridor_keys(stops)
+    man = cv.group(g, id, x=PHONE_X + keys[0][1], y=PHONE_Y + keys[0][2])
+    _inked_oval(cv, man, 0.0, 0.0, CORRIDOR_DOT, CORRIDOR_DOT, fill, 5.0)
+    if len(keys) > 1:
+        cv.keys(man, "x", [(round(t, 3), PHONE_X + a) for t, a, _ in keys], hold=False, local=False)
+        cv.keys(man, "y", [(round(t, 3), PHONE_Y + b) for t, _, b in keys], hold=False, local=False)
+
+
+@register(
+    "graphic", "news-corridor-map", summary="A corridor from above: two plain dots that step in sync, and a count"
+)
+def corridor_map(
+    cv: Canvas,
+    parent,
+    title: str,
+    counter: str,
+    one: Sequence[Stop],
+    other: Sequence[Stop],
+    counts: Sequence[tuple[float, str]],
+    start: float,
+    end: float,
+    measure: Measure,
+    id: str = "news-corridor-map",
+) -> None:
+    """A corridor seen from above from ``start`` to ``end``: ``one`` and ``other`` are two men as plain dots, each a
+    list of stops (its second, its x, its y) he steps to in :data:`CORRIDOR_STEP` seconds, with ``counter`` and its
+    ``counts`` under them. It refuses copy the show keeps off the screen, words too wide, a man outside the walls, and
+    stops out of order or off the span."""
+    _panel_copy("the corridor", title, counter, counts, start, end, measure)
+    for stops in (one, other):
+        if not stops or stops[0][0] != start:
+            raise NewsKitError(f"a man in the corridor stands there from {start}")
+        moments = [at for at, _, _ in stops]
+        if any(b <= a for a, b in zip(moments, moments[1:], strict=False)) or moments[-1] + CORRIDOR_STEP > end:
+            raise NewsKitError(f"a man's stops move forward inside {start}..{end}")
+        for _, x, y in stops:
+            if not (
+                CORRIDOR_LEFT + CORRIDOR_DOT <= x <= CORRIDOR_RIGHT - CORRIDOR_DOT
+                and CORRIDOR_TOP + CORRIDOR_DOT <= y <= CORRIDOR_FOOT - CORRIDOR_DOT
+            ):
+                raise NewsKitError(f"({x}, {y}) is outside the corridor")
+    g = _panel(cv, parent, title, id, start, end)
+    left, right = PHONE_X + CORRIDOR_LEFT, PHONE_X + CORRIDOR_RIGHT
+    top, foot = PHONE_Y + CORRIDOR_TOP, PHONE_Y + CORRIDOR_FOOT
+    cv.rect(g, left, top, right - left, foot - top, "#e4dcef")
+    for x in (left - 22.0, right):
+        cv.rect(g, x, top, 22.0, foot - top, PLUM, PLUM_DEEP, 4.0)
+    for y in corridor_dashes(top, foot):
+        cv.rect(g, (left + right) / 2 - 5.0, y, 10.0, CORRIDOR_DASH, "#cfc7db", radius=5.0)
+    _man(cv, g, f"{id}-one", one, TANGERINE)
+    _man(cv, g, f"{id}-other", other, MINT)
+    _counts(cv, g, counter, counts, end, measure, id)
