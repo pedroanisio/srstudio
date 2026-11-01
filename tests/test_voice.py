@@ -886,3 +886,23 @@ def test_a_clock_reading_changes_no_other_word(heard):
 
 def test_a_script_that_says_the_zeros_still_hears_them():
     check_transcript(parse_transcript(transcript("Room 3:00")), "Room three oh oh")
+
+
+SUM = "Hackers took six billion dollars from Binance."
+
+
+def heard_as(text: str) -> Transcript:
+    return Transcript("eng", 1.0, text, ())
+
+
+@pytest.mark.parametrize(
+    "heard", ["Hackers took $6 billion from Binance", "Hackers took 6 billion dollars from Binance"]
+)
+def test_a_sum_in_billions_is_heard_as_it_is_said(heard):
+    check_transcript(heard_as(heard), SUM)
+
+
+@pytest.mark.parametrize("heard", ["Hackers took $7 billion from Binance", "Hackers took $6 million from Binance"])
+def test_a_sum_in_billions_does_not_pass_for_another_sum(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(heard_as(heard), SUM)

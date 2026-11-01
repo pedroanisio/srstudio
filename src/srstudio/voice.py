@@ -463,10 +463,12 @@ TITLES = {"mr": "mister", "mrs": "missus", "dr": "doctor"}  # speech-to-text wri
 MAX_READINGS = 4096  # readings of one text compared at most: each digit string has up to three
 ON_THE_HOUR = re.compile(r"\b(1[0-2]|0?[1-9]):00\b")  # speech-to-text writes a spoken "three a.m." as "3:00 AM"
 DOLLARS = re.compile(r"\$(\d+)\b(?!\.\d)")  # and a spoken "a hundred dollars" as "$100"
+SCALED_DOLLARS = re.compile(r"\$(\d+) (thousand|million|billion|trillion)\b")  # "six billion dollars" as "$6 billion"
 
 
 def _tokens(text: str) -> list[str]:
     text = text.lower().replace("\u2019", "'").replace("-", " ").replace("%", " percent ")
+    text = SCALED_DOLLARS.sub(r"\1 \2 dollars", text)
     text = DOLLARS.sub(r"\1 dollars", text)
     cleaned = "".join(c if c.isalnum() or c == "'" else " " for c in text)
     return [token for token in (t.strip("'") for t in cleaned.split()) if token]
