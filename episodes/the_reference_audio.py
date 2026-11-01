@@ -29,7 +29,8 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("manager", "You managed Milo for six years?", "You managed Milo\nfor six years?", 1.02),
     Spoken("rosa", "Seven. Felt longer.", "Seven. Felt longer.", 0.95),
     Spoken("manager", "Is he reliable?", "Is he reliable?", 1.00),
-    Spoken("rosa", "Very. Apart from the $40.", "Very.\nApart from the forty dollars.", 0.98),
+    Spoken("rosa", "Very. Apart from the $40.", "Very.\nApart from the forty dollars.", 0.98,
+           heard=("Very. Apart from the 40",)),  # arc4d3's standing rule, Slack 1793499862.755999
     Spoken("milo", "What $40?", "What forty dollars?", 1.05),
     Spoken("manager", "Would you hire him again?", "Would you hire him again?", 1.00),
     Spoken("rosa", "In a heartbeat.", "In a heartbeat.", 0.98),
