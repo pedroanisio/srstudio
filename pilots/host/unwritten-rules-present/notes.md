@@ -47,6 +47,14 @@ The room is the bed: synthesised tone at -30 dB and no music. The clock, the pap
 
 ## Comedy score
 
-Hook 2, Premise 2, Structure 2, Surprise 2, Escalation 2, Shown 2, Timing 2, Clarity 2, Sound 1, Ending 1: 18/20. This is the author's estimate. The reviewer's figure in the
-frontmatter is the lower score the reviewer reported. Both were given before the lines that overran the caption band were
+Hook 2, Premise 2, Structure 2, Surprise 2, Escalation 2, Shown 2, Timing 2, Clarity 2, Sound 1, Ending 1: 18/20. This is the author's estimate. The reviewer scored independently in
+another session, and the figure in the frontmatter is the reviewer's own. Both were given before the lines that overran the caption band were
 reworded to fit; no beat changed.
+
+## Standing rules
+
+Not taken: L17, `pilotcheck.py` is not on this branch and did not run.
+
+## Watch gate
+
+Watch gate: not watched yet. The reel goes to the operator for review.
