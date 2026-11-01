@@ -71,6 +71,22 @@ def test_a_tap_runs_only_in_its_runs():
     assert shapes(wet) > shapes(dry)
 
 
+def test_the_height_bar_can_start_lower_to_clear_what_stands_behind_it():
+    def top(**kw) -> float:
+        cv = canvas()
+        collage_odds.doctor_scale(cv, cv.comp, 400, 1880, **kw)
+        return min(float(r.get("y")) for r in tree(cv).iter("shape") if r.get("shape") == "rect")
+
+    assert top(bar_from=790.0) > top()
+    assert top(bar_from=620.0) == top()
+
+
+@pytest.mark.parametrize("bar_from", [619.0, 1880.0, float("nan")])
+def test_the_height_bar_stays_on_the_scale(bar_from):
+    with pytest.raises(CollageOddsError):
+        collage_odds.doctor_scale(canvas(), canvas().comp, 400, 1880, bar_from=bar_from)
+
+
 def test_a_scale_without_a_drop_stays_where_it_is_drawn():
     cv = canvas()
     collage_odds.doctor_scale(cv, cv.comp, 400, 1880)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from srstudio import collage, collage_group, collage_odds, collage_sets, foley
 from srstudio.collage_group import Place
-from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, timed, voices_note, zooms
+from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, timed, voices_note
 from srstudio.sketch import Appearance, Line, Mouths, events
 
 SEED = 4125
@@ -39,7 +39,8 @@ ITEMS = (
     ("#8d939a", 80),
     ("#1f2933", 110),
 )
-PILE = (640.0, 1846.0)
+PILE = (620.0, 1790.0)
+BAR_FROM = 790.0  # under the shelf and its cactus
 SCALE_X = 330.0
 THUD = foley.THUD
 EXHALE = foley.Burst(1.2, 1800.0, attack=0.1, decay=0.5)
@@ -102,17 +103,22 @@ def casting(beats, end: float) -> CastDrawer:
 
 
 def dress(shot) -> None:
-    """The scale at his feet, the pile on the chair, the reading on her clipboard, the shoe he takes back."""
+    """The scale at his feet, the pile on a stool, the reading on the scale's post, the shoe he takes back."""
     cv, front, app, beats = shot.cv, shot.front, shot.app, shot.beats
     items, weigh, shoe = moments(beats, "item"), moments(beats, "weigh")[0], moments(beats, "shoe")[0]
     bar = moments(beats, "bar")[0]
     if app.start < STILL:
         return
-    collage_odds.doctor_scale(cv, shot.back, SCALE_X, 1880.0, bar, 1112.0, shot.end)
+    collage_odds.doctor_scale(cv, shot.back, SCALE_X, 1880.0, bar, 1112.0, shot.end, bar_from=BAR_FROM)
+    for leg in (-130.0, 100.0):
+        cv.rect(front, PILE[0] + leg, PILE[1] + 24.0, 30.0, 130.0, "#5e3920", collage.INK, 4.0, radius=0.0)
     cv.rect(front, PILE[0] - 170.0, PILE[1], 340.0, 30.0, "#7a4a2a", collage.INK, 4.0, radius=8.0)
+    pile = cv.group(front, cv.uid("g"))
+    if shoe < app.end:  # what was on the shoe settles on the stool
+        cv.keys(pile, "y", [(shoe, 0.0), (shoe + 0.12, 26.0)], hold=False, local=False)
     for k, (t, (colour, width)) in enumerate(zip(items, ITEMS, strict=False)):
         if t < app.end:
-            g = cv.group(front, cv.uid("g"), start=t)
+            g = cv.group(pile, cv.uid("g"), start=t)
             if k == 0 and shoe < app.end:
                 cv.gate(g, [(t, shoe)])
             cv.rect(
@@ -127,10 +133,7 @@ def dress(shot) -> None:
                 radius=14.0,
             )
     reading = cv.group(front, cv.uid("g"), start=weigh)
-    if zooms(beats, app):  # the crash zoom would carry the usual card off the frame's right edge
-        collage_sets.sign(cv, reading, "201 LB", 611, 1450, 190, 90, size=40)
-    else:
-        collage_sets.sign(cv, reading, "201 LB", 690, 1450, 280, 110, size=58)
+    collage_sets.sign(cv, reading, "201 LB", SCALE_X - 130, 890, 260, 104, size=56)
     if app.end > shoe:
         held = cv.group(front, cv.uid("g"), start=shoe)
         cv.rect(held, 230.0, 1590.0, 200.0, 70.0, ITEMS[0][0], collage.INK, 4.0, radius=26.0)
