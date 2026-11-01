@@ -402,6 +402,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-slipper": Recipe(part(540, 960, scale=3.0)),
     "stick-trash-truck": Recipe(part(40, 1100)),
     "stick-wheelie-bin": Recipe(part(540, 1100, scale=1.5)),
+    "stick-box": Recipe(part(540, 1100, scale=2.0)),
+    "stick-receipt": Recipe(part(540, 300, 1200)),
     "stick-duffel": Recipe(part(540, 960, scale=2.0)),
     "stick-book": Recipe(part(540, 960, scale=3.0)),
     "stick-queue": Recipe(part(SECONDS, turn=SECONDS / 2)),

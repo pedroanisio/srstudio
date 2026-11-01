@@ -13407,6 +13407,40 @@
           "rig": null
         }
       ]
+    },
+    "stick-box": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain delivery box on the floor, with no lettering or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ebc6d13567b5c85ee7ff9170435afe157d7c5ccf0654aced61015627d35d01e6",
+          "rig": null
+        }
+      ]
+    },
+    "stick-receipt": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A long receipt hanging from a hand, its rows unreadable, unrolling to the floor. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "86fb7662d49e2ce3754de1ea59c4acc4c584714ad63212619845805603c6e172",
+          "rig": null
+        }
+      ]
     }
   }
 }

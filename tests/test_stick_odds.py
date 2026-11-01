@@ -246,3 +246,43 @@ def test_a_book_takes_a_cover_colour():
     stick_odds.book(manual, manual.comp, 0, 0, colour="#f4f1ea")
     assert b"#f4f1ea" in manual.scene.to_bytes(layout="pretty")
     assert b"#f4f1ea" not in plain.scene.to_bytes(layout="pretty")
+
+
+def test_a_carton_stands_on_its_foot_and_refuses_a_size_it_cannot_draw():
+    cv = canvas()
+    g = stick_odds.carton(cv, cv.comp, 300, 1500, w=200, h=160)
+    assert float(g.x) == 300 and float(g.y) == 1500
+    assert stick_odds.carton(cv, cv.comp, 300, 1500, flip=True, scale=0.8) is not None
+    with pytest.raises(stick.StickDataError, match="size"):
+        stick_odds.carton(cv, cv.comp, 0, 0, w=0)
+    with pytest.raises(stick.StickDataError, match="size"):
+        stick_odds.carton(cv, cv.comp, 0, 0, h=-4)
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick_odds.carton(cv, cv.comp, 0, 0, scale=0)
+
+
+def test_a_carton_carries_no_lettering():
+    cv = canvas()
+    stick_odds.carton(cv, cv.comp, 300, 1500)
+    assert b"<layer" not in cv.scene.to_bytes()
+
+
+def test_a_receipt_hangs_from_its_top_and_unrolls_on_a_rising_span():
+    cv = canvas()
+    stick_odds.receipt(cv, cv.comp, 100, 200, 500)
+    assert b"scaleY" not in cv.scene.to_bytes()
+    rolling = stick_odds.receipt(cv, cv.comp, 100, 200, 500, unroll=(1.0, 1.8))
+    assert float(rolling.anchorY) == 0
+    assert b"scaleY" in cv.scene.to_bytes()
+    with pytest.raises(stick.StickDataError, match="length"):
+        stick_odds.receipt(cv, cv.comp, 0, 0, 0)
+    with pytest.raises(stick.StickDataError, match="width"):
+        stick_odds.receipt(cv, cv.comp, 0, 0, 100, w=0)
+    with pytest.raises(stick.StickDataError, match="unroll"):
+        stick_odds.receipt(cv, cv.comp, 0, 0, 100, unroll=(2.0, 1.0))
+
+
+def test_a_receipt_has_no_readable_figures():
+    cv = canvas()
+    stick_odds.receipt(cv, cv.comp, 100, 200, 500)
+    assert b"<layer" not in cv.scene.to_bytes()

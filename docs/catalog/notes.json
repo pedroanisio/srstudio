@@ -1276,6 +1276,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "stick-receipt": {"title": "Nota comprida"},
+    "stick-box": {"title": "Caixa de entrega"},
     "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
     "collage-article": {"title": "Matéria no celular"},
     "soft-star-card": {"title": "Cartão de cinco estrelas"},
@@ -9036,6 +9038,19 @@
         "at": 19.1
       },
       "text": "A tela virada para nós: a piada são os bilhetes por cima da página."
+    },
+    {
+      "section": "props",
+      "name": "Caixa lisa e nota comprida",
+      "parts": [
+        "stick-box",
+        "stick-receipt"
+      ],
+      "shot": {
+        "episode": "cant-afford-to-save",
+        "at": 11.0
+      },
+      "text": "A compra que não para: caixas sem marca empilhadas e uma nota que desenrola até o chão, com linhas que ninguém lê."
     }
   ]
 }
