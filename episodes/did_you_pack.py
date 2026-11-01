@@ -45,7 +45,17 @@ from did_you_pack_audio import (
     XRAY,
 )
 from instagram_posts import POSTS
-from srstudio import SPEECH_MOUTH, Episode, stick, stick_airport, stick_home, stick_odds, stick_reel, stick_street
+from srstudio import (
+    SPEECH_MOUTH,
+    Episode,
+    signature,
+    stick,
+    stick_airport,
+    stick_home,
+    stick_odds,
+    stick_reel,
+    stick_street,
+)
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -98,6 +108,7 @@ def checkpoint(parent) -> None:
 
 def lane(parent, end: float, *, bag: float, keys, dev_keys, take=None) -> None:
     checkpoint(parent)
+    signature.cactus(cv, parent, 80, 1384, scale=0.42)  # on a seat: the belt stands in front of the terminal's own
     figure(parent, dev_keys, end, DEV, DEV_X, take, who="dev")
     officer(parent, keys, end, take)
     stick_odds.scan_belt(cv, parent)
@@ -112,11 +123,14 @@ def stage(take) -> None:
     end = take.duration
     if take.shot == "table":
         kitchen(g, take, end, heap=2, spooned=False)
+        signature.cactus(cv, g, 930, 1560, scale=0.42)  # the hook card covers the window's
     elif take.shot == "plate":
         frame = stick.camera(cv, g, (570, 1120), zoom=1.35, to=(540, 900))
         kitchen(frame, take, end, heap=3, spooned=True)
+        signature.code(cv, g, 40, 1885, 9, color="#3d2c1c")  # the push leaves the kitchen's own below the frame
     elif take.shot == "door":
         stick_street.street(cv, g)
+        signature.cactus(cv, g, 110, 1400, scale=0.42)  # the suitcase stands in front of the street's own
         dev_keys = [K(0, "stand", PLEADING if take.actor == "dev" else FULL)]
         figure(g, dev_keys, end, DEV, 300.0, take, who="dev", scale=STREET_SCALE, floor=STREET_Y)
         stick_odds.robe(cv, g, dev_keys, end, POSES, at=(300.0 - 540 * STREET_SCALE, STREET_Y - FLOOR * STREET_SCALE),
