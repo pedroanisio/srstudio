@@ -124,6 +124,13 @@ print(info["signature"], info["slots"])
 builder = get("location", "office-wide")
 ```
 
+Inspection also includes a versioned `contract`: JSON Schema argument/return shapes, declared units and clocks,
+capabilities, vocabularies, and helper operations. Actor contracts distinguish construction from `build`; Bento
+exposes its `pose_of` vocabulary and identifies `duration` as the project exit time. Unknown metadata stays
+explicitly unknown, and runtime objects such as a canvas are marked as runtime bindings. Contracts describe the
+API; they do not deserialize records or replace builder validation. See the
+[agent contract reference](docs/authoring-reference.md#agent-contracts).
+
 `srstudio usage` can measure which registered parts episode builds use; its JSON report can be supplied to `srstudio catalog --usage REPORT` and `srstudio page`. See the [catalog guide](docs/catalog/README.md).
 
 ## Styles

@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING
 from . import brush
 from .brush import Point, Shape
 from .canvas import Canvas
+from .contracts import Operation, ParameterContract, PartContract
 from .head_motion import HeadPlan, HeadStyle, Spring
 from .registry import register
 from .toon import ARMS, Pose, ToonDataError
@@ -1697,6 +1698,46 @@ BENTO_RIG = HeadRig(
         'from srstudio.toon_bento import pose_of\n'
         'poses = [pose_of(0, "skeptical", "folded", "left"), pose_of(1, "happy")]\n'
         'groups = get("character", "toon-bento")(ep.cv, ep.comp, poses, duration=2)',
+    ),
+    contract=PartContract(
+        parameters=(
+            (
+                'poses',
+                ParameterContract(
+                    items=ParameterContract(
+                        fields=(('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),)
+                    )
+                ),
+            ),
+            ('enter', ParameterContract(unit='seconds', timebase='project', role='start', minimum=0)),
+            (
+                'duration',
+                ParameterContract(
+                    unit='seconds', timebase='project', role='end', description='Exit time; must be greater than enter.'
+                ),
+            ),
+            ('taps', ParameterContract(items=ParameterContract(unit='seconds', timebase='project'))),
+        ),
+        capabilities=(('limbs', False), ('head_motion', False), ('expressions', True), ('mouths', True)),
+        constraints=(
+            'Pose starts are ordered relative to enter and begin at zero.',
+            'duration is the project exit time, strictly after enter.',
+            'For procedural head motion use toon_head.figure with BENTO_RIG and a HeadPlan.',
+        ),
+        operations=(
+            Operation(
+                'pose_of',
+                pose_of,
+                PartContract(
+                    parameters=(
+                        ('start', ParameterContract(unit='seconds', timebase='relative:enter', minimum=0)),
+                        ('name', ParameterContract(enum=tuple(MOODS))),
+                        ('gesture', ParameterContract(enum=(None, *dict.fromkeys((*GESTURES, *ARMS))))),
+                        ('eyes', ParameterContract(enum=(None, *EYE_STATES))),
+                    )
+                ),
+            ),
+        ),
     ),
 )
 def bento(
