@@ -129,6 +129,10 @@ ship and its licence needs no notice here.
 - **Keep a separate neck mesh under the skull.** Tried first. The join shows as an arch on the nape at every angle that
   sees it, and a soft ball there reads as a pillar beside the throat.
 
+The shave and the light are part of the turn. A short fade down the temple drew a mask's edge across the side of the
+head and a strong back light burned the grey shave white, so the shave fades over nine units in a warmer tone and the
+back light stands well under the key. The collar lies down at both ends instead of stopping as a square flap.
+
 ## Consequences
 
 - **Only a head and chest.** The port has no trousers, shoes or hands: the frame does not show them. A standing or

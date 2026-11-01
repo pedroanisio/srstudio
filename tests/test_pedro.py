@@ -448,3 +448,26 @@ def test_a_lid_coming_down_leaves_no_highlight_above_it():
         return float(named(pedro.eyes(Face(lid=lid)), "glint").vertices[:, 1].min())
 
     assert highest("half") > highest("open") + 0.5
+
+
+def test_the_shave_fades_into_the_skin_with_no_edge_down_the_temple():
+    """A short fade reads as a mask's edge when he turns: the shave has to melt away across the side of the head."""
+    z = np.linspace(-12.0, 12.0, 481)
+    points = np.stack((np.full_like(z, 18.0), np.full_like(z, 18.0), z), axis=-1)
+    amount = pedro._shaved(points)
+    begun, done = z[np.argmax(amount > 0.1)], z[np.argmax(amount > 0.9)]
+    assert done - begun >= 5.0
+
+
+def test_the_lines_round_the_eye_stand_clear_of_the_skin_at_every_point():
+    """A line half sunk in the skin breaks up into loose ticks when the face turns away from the lens."""
+    assert pedro._CREASE_OFF >= 0.1
+
+
+def test_the_collar_lies_down_at_its_ends_and_stands_at_the_nape():
+    """A collar that stops at full height is a square flap beside the neck when he turns."""
+    from srstudio import pedro_wardrobe
+
+    ends = pedro_wardrobe._collar_stand(np.array((1.0, math.tau - 1.0)))
+    assert np.all(ends < 0.01)
+    assert pedro_wardrobe._collar_stand(np.array(math.pi)) > 4.0

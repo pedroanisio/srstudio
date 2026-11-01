@@ -81,6 +81,7 @@ _STRANDS, _LOCKS = 11000, 380  # the hairs of his top, and the tufts they gather
 _HAIRS = ("hair-dark", "hair-mid", "hair-grey", "hair-silver")
 _BEARD_HAIRS = 3000
 _BEARD_HANGS_FROM = 46.0  # below this the beard leaves his skin and hangs past the chin
+_CREASE_OFF = 0.1  # the lines round an eye stand this far off the skin, so a turn cannot sink them
 _BEARD_CURL = 0.05  # how fast it goes back under the chin as it hangs
 _EAR_AT = (27.8, 7.4)  # the y and z of an ear's middle: behind the middle of his head's depth, as a head's are
 _EAR_TALL, _EAR_WIDE = 6.5, 3.6  # half an ear's height and width
@@ -768,9 +769,9 @@ def _eye(side: float, top: float, bottom: float, gaze: str, close: float) -> lis
         path = lay(side * _EYE_X + _EYE_W * wide, _EYE_Y + _margin(top, bottom, close, wide, side), lifted)
         out.append(_tube_part("skin-warm", path, 0.17, 40, 8))
     wide = np.linspace(-1.0, 1.0, 15)
-    fold = lay(side * _EYE_X + 2.6 * wide, _EYE_Y + 1.75 + 0.3 * (1.0 - wide * wide), 0.035)
+    fold = lay(side * _EYE_X + 2.6 * wide, _EYE_Y + 1.75 + 0.3 * (1.0 - wide * wide), _CREASE_OFF)
     out.append(_tube_part("skin-warm", fold, 0.048, 25, 5))
-    hood = lay(side * _EYE_X + 3.2 * wide, _EYE_Y - top - 0.62 + 0.42 * wide * wide + 0.12 * wide * side, 0.03)
+    hood = lay(side * _EYE_X + 3.2 * wide, _EYE_Y - top - 0.62 + 0.42 * wide * wide + 0.12 * wide * side, _CREASE_OFF)
     out.append(_tube_part("skin-warm", hood, 0.06, 25, 5))
     return out
 
@@ -866,9 +867,9 @@ def _shaved(points: np.ndarray) -> np.ndarray:
     """How much stubble the skin at ``points`` carries, 0 to 1: all of it on the sides and back, none on the face. Its
     front edge runs down the temple to a sideburn before the ear, and its foot round the ear to a fade on the nape."""
     y, z = points[..., 1], points[..., 2]
-    start = np.interp(y, (6.0, 12.0, 20.0, 27.0), (-6.5, -3.5, 0.0, 2.2))
+    start = np.interp(y, (6.0, 12.0, 20.0, 27.0), (-8.5, -5.5, -2.0, 0.2))
     foot = np.interp(z, (2.0, 7.0, 12.0, 20.0), (27.0, 28.5, 33.0, 38.5))
-    return _smooth((z - start) / 5.0) * _smooth((foot - y) / 3.0)
+    return _smooth((z - start) / 9.0) * _smooth((foot - y) / 3.0)
 
 
 @lru_cache(maxsize=1)
@@ -882,7 +883,7 @@ def scalp_picture() -> Texture:
     speck = stream(1024, size * size).reshape(size, size)
     amount = shaved * (0.42 + 0.4 * speck * speck)
     skin = np.array([int(_SKIN[i : i + 2], 16) for i in (1, 3, 5)], float)
-    mixed = skin * (1.0 - amount[..., None]) + np.array((86.0, 83.0, 80.0)) * amount[..., None]
+    mixed = skin * (1.0 - amount[..., None]) + np.array((78.0, 70.0, 64.0)) * amount[..., None]
     picture = np.empty((size, size, 4), np.uint8)
     picture[..., :3] = np.round(mixed)
     picture[..., 3] = 255
