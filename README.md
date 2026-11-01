@@ -4,6 +4,9 @@ srstudio is a Python toolkit for building animated episodes as [scene-render](ht
 
 The library builds and validates scene XML. Rendering that XML into video requires the separate scene-render engine.
 
+For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
+link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+
 ## Install
 
 From the `srstudio` directory, using Python 3.10 or later:
@@ -107,7 +110,8 @@ srstudio inspect character manager --json
 SDK errors retain their exception types and expose `error.to_dict()` with the versioned
 `srstudio.diagnostic/1.0.0` envelope: `code`, `path`, `message`, `actual`, `expected`, `remedy`, `context`, and
 `residual`. Semantic details that a legacy error does not supply are `null`; they are never guessed from its
-message. Gaze and missing-part errors provide explicit repair fields. Limb errors retain their existing codes,
+message. Common head, spring, speech, gaze, placement, mouth, blink and keyframe failures provide explicit
+[repair fields and a retry recipe](docs/authoring-reference.md#repairing-authoring-input). Limb errors retain their existing codes,
 geometric residuals and context. Payloads bound strings, collection sizes and nesting; nonfinite numbers become
 strings so diagnostics remain valid JSON. Commands accepting `--json` write this envelope to stderr on failure,
 including argument and plugin-import errors, and preserve their existing nonzero exit codes.

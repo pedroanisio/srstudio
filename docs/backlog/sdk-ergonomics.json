@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "909025e7",
-  "reviewed_working_tree": "The review at 909025e7 captured an unfinished transition test. Subsequent implementation completed the policy API and its red-to-green cycle; see transition_policy_implementation and resolved_working_tree_blockers. Historical observations retain their original verification scope.",
+  "reviewed_source_commit": "865ac902",
+  "reviewed_working_tree": "Reviewed develop at 865ac902 with the authoring-diagnostics implementation and documentation changes described below. Catalog counts were rechecked unchanged. Earlier observations retain their original verification scope; the prior transition collection blocker is resolved.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Remaining priorities include legacy repair diagnostics, cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Remaining priorities include cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -38,6 +38,26 @@
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "authoring_diagnostics_implementation": {
+      "selected_regressions": {
+        "passed": 1322,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "errors": 99,
+        "head_motion": 93,
+        "rig": 92,
+        "canvas": 94,
+        "cli": 79
+      },
+      "ruff_files": 1547,
+      "mypy_source_files": 239,
+      "red_to_green_evidence": [
+        "tests/test_authoring_diagnostics.py",
+        "tests/test_diagnostics.py"
+      ],
+      "qualification": "One combined engine-enabled selection passed after red-to-green validation of malformed authoring input, bounded diagnostics and the executable repair recipe. The first expanded run found a sandbox socket refusal in the number-ledger concurrency test; commit 865ac902 replaces only the manager transport with one-way pipes, preserving three real claimant processes and verifying persisted ledger numbers. The final selection includes that test without skips. This is not a full-suite execution, a new video render or a perceptual quality review."
+    },
     "transition_policy_implementation": {
       "final_combined_regression_selection": {"passed": 413, "subtests_passed": 24, "skipped": 0},
       "branch_inclusive_coverage_percent": {"acting": 91, "acting_compiler": 89, "acting_parser": 95, "transition_policies": 97, "character_clips": 97, "head_motion": 92},
@@ -62,7 +82,7 @@
       "full_size_frames_inspected": 4,
       "qualification": "This selected regression run is not the full repository suite. Additional recovery tests exposed stale metadata after direct builder swaps; tests first reproduced both a mismatched signature crash and stale claims with an unchanged signature, then passed after the fix. Both documentation recipes were strictly encoded and independently counted with ffprobe. Four full-size frames were inspected; no human-rating study or whole-body quality certification is claimed."
     },
-    "latest_focused_run": {
+    "pre_transition_review_focused_run": {
       "command": "../.venv/bin/python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_noncharacter_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_sdk_review_followup.py --tb=short",
       "passed": 237,
       "skipped": 9,
@@ -125,19 +145,20 @@
     },
     {
       "topic": "Agent repair loop",
-      "observation": "replace(BENTO.head_rig.style, breath_period=0) raises HeadMotionError, but diagnostic() returns null path, actual, expected and remedy. The message alone identifies breath_period.",
-      "improvement": "Supply repair fields at the validation source, preserve exception compatibility, and test the same envelope through SDK and CLI.",
+      "observation": "The previously reproduced breath_period failure now reports head.style.range, style.breath_period, actual/expected values and a remedy. Common head, channel, speech, facing, gaze, rig and canvas input failures also declare repair fields. Unmigrated validation sites still retain explicit nulls.",
+      "improvement": "Extend explicit repair metadata when changing other authoring boundaries; preserve exception compatibility and exercise the same envelope through SDK and CLI.",
       "related_finding": "SDK-P3-05",
       "evidence": ["src/srstudio/head_motion.py:HeadStyle.__post_init__", "src/srstudio/errors.py:diagnostic"]
     },
     {
       "topic": "Documentation ergonomics",
-      "observation": "The README links public discovery, acting and clip APIs, and the authoring reference contains executable composition recipes. The reference also contains extensive episode histories, so agent tasks still need a deliberate route to the relevant contract and recipe.",
-      "improvement": "Provide a concise task-to-API entry point linking existing executable recipes, accepted data-only schemas, runtime bindings, clocks, capability checks and repair examples. Generate vocabulary and capability material from the existing declarations to avoid a second drifting reference.",
+      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; detailed episode histories remain below the task guide.",
+      "improvement": "Keep the task guide linked to executable recipes and generated contract vocabularies; avoid duplicating capability declarations in prose.",
       "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
     }
   ],
   "resolved_findings": [
+    {"priority": "P1", "title": "Malformed authoring input and oversized diagnostic graphs must fail predictably", "evidence": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py"], "qualification": "Red tests reproduced raw unpacking/type/string-conversion failures, a silently accepted nonfinite facing interval, excessive tiny-period blink iteration, plugin SDK failures escaping the CLI envelope, and a shared nested diagnostic payload expanding beyond three million characters. Source validation, preflight work limits and shared diagnostic traversal budgets now exercise typed bounded failure paths. This is scoped to the tested authoring boundaries, not an exhaustive malformed-input audit."},
     {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
     {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
@@ -294,12 +315,14 @@
     {
       "id": "SDK-P3-05",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Enrich legacy errors with actionable repair fields",
       "problem": "The shared diagnostic envelope is available, but many older validation paths only supply a message and class-qualified code. Agents still have to interpret prose when path, expected value or remedy is null.",
       "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/rig.py:Actor.build", "src/srstudio/head_motion.py:HeadStyle"],
       "change": "Add explicit stable codes, paths, actual/expected values and remedies to common authoring failures, preserving existing exception types and avoiding inference from message text.",
       "acceptance": ["SDK and CLI expose the same repair fields", "Malformed inputs exercise the failure path", "Payloads remain bounded and strict JSON"],
+      "resolution": "Common head style, spring, channel, speech, listening, facing, gaze, placement, actor mouth, blink, visibility and canvas key failures declare codes, input paths, actual/expected values and remedies at their validation source. SDK plugin failures preserve these fields through JSON CLI output. Diagnostic traversal has shared node/text budgets; opaque values and extreme integers do not replace these failures with formatting errors. Blink generation refuses oversized schedules before iteration. A tested repair recipe and task-to-API guide document the agent workflow. Other legacy errors retain null metadata rather than inferred facts.",
+      "verification": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py", "tests/test_actor_nod_preflight.py", "tests/test_head_motion.py", "tests/test_canvas_and_registry.py", "tests/test_cli.py"],
       "complexity": "M"
     },
     {
@@ -307,8 +330,8 @@
       "priority": "P3",
       "status": "open",
       "title": "Prove the DRAWING.md composition proposal with animated evidence",
-      "problem": "The document has explicit spatial, temporal, lighting and cost contracts, but its runnable example verifies API structure rather than the proposed combined aesthetic or moving contact/shadow behavior.",
-      "evidence": ["DRAWING.md", "tests/test_drawing_document.py"],
+      "problem": "The default hybrid drawing method now has a rigid-object implementation in proxy/vehicle and a car_vibe example. DRAWING.md still labels moving-camera and turning-object registration as unproven; forms and paint remain proposed. Its document example verifies structure, not the complete animated contact, receiver, lighting and cost acceptance matrix.",
+      "evidence": ["DRAWING.md", "tests/test_drawing_document.py", "src/srstudio/proxy.py", "examples/car_vibe", "docs/decisions/0091-hybrid-drawing-is-the-default.md"],
       "change": "Build the documented opt-in adoption spike with moving camera and prop contacts, occlusion, shadow receivers, stable textures, emotional continuity, a cut and warm-cache evidence. Keep unsupported backend capabilities explicit.",
       "acceptance": ["Pinned SDK/engine/style versions and strict render checks", "Temporal stability and registration checks plus full-size visual review", "Measured cold/warm plate counts and render cost", "Operator approval before style adoption, as required by DRAWING.md"],
       "complexity": "XL"
@@ -347,7 +370,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
@@ -357,7 +380,7 @@
     "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."
   ],
   "limits": [
-    "No P0 was confirmed. The two P1 findings reproduced in the latest review are now fixed; previously repaired diagnostic, sequence-clock and extreme-number defects remain resolved. This is not an exhaustive claim of defect absence.",
+    "No P0 was confirmed. The callback/option P1 findings and additional malformed-input, blink-budget and diagnostic-amplification defects reproduced during implementation are now fixed; previously repaired sequence-clock defects remain resolved. This is not an exhaustive claim of defect absence.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]

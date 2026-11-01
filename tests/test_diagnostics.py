@@ -141,3 +141,28 @@ def test_cyclic_error_payload_is_bounded_and_serializable():
     actual.append(actual)
     data = SrstudioError('invalid', actual=actual).to_dict()
     assert len(json.dumps(data, allow_nan=False)) < 1000
+
+
+def test_shared_nested_payload_has_a_total_size_budget_not_only_per_container_limits():
+    value = 'x' * 1024
+    for _ in range(5):
+        value = [value] * 5
+    encoded = json.dumps(SrstudioError('invalid', actual=value).to_dict(), allow_nan=False)
+    size = len(encoded)
+    assert size < 32768
+    assert 'payload limit' in encoded
+
+
+def test_diagnostic_metadata_strings_are_bounded_too():
+    error = SrstudioError('m' * 10000, code='c' * 10000, path='p' * 10000, remedy='r' * 10000)
+    data = error.to_dict()
+    assert all(len(data[field]) <= 4096 for field in ('message', 'code', 'path', 'remedy'))
+
+
+@pytest.mark.parametrize('mapping', [False, True])
+def test_shared_numeric_payload_has_a_traversal_budget(mapping):
+    value = 0
+    for _ in range(5):
+        value = {str(i): value for i in range(6)} if mapping else [value] * 6
+    encoded = json.dumps(SrstudioError('invalid', actual=value).to_dict(), allow_nan=False)
+    assert len(encoded) < 32768 and 'payload limit' in encoded

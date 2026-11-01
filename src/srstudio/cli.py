@@ -80,6 +80,9 @@ def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
                 json_output,
             )
             return False
+        except SrstudioError as exc:
+            _error(command, exc, json_output)
+            return False
     return True
 
 

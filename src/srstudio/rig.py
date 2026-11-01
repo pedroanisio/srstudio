@@ -21,13 +21,14 @@ from sr_core.scene import Sequence as SceneSequence
 
 from . import checks
 from .canvas import Canvas, Keys, _visibility_keys
-from .errors import SrstudioError
+from .errors import SrstudioError, _brief, _repair
 from .soundtrack import pose_keys
 
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
 Span = tuple[float, float]
 MOUTHS = ('rest', 'round', 'open', 'small', 'smile')
+MAX_BLINKS = 10_000
 
 
 class RigError(SrstudioError, ValueError):
@@ -93,25 +94,79 @@ class Actor(ABC):
         its own end so a longer root track is sampled only through that clip.
         """
         if end is not None:
-            end = checks.positive(end, RigError, 'actor end must be a positive finite canvas second')
-        perf = perf or Performance()
+            if not checks.number(end) or end <= 0:
+                raise RigError(
+                    'actor end must be a positive finite canvas second',
+                    code='rig.end',
+                    path='end',
+                    actual=end,
+                    expected='a positive finite canvas second',
+                    remedy='Set end to the actor exit time on the canvas clock, or omit it for the project end.',
+                )
+            end = float(end)
+        if perf is None:
+            perf = Performance()
+        if not isinstance(perf, Performance):
+            raise RigError(
+                'perf must be a Performance or None',
+                code='rig.performance',
+                path='performance',
+                actual=perf,
+                expected='Performance or None',
+                remedy='Construct Performance with explicit mouth, blink, nod or limb tracks.',
+            )
         if perf.limbs and not self.supports_limbs:
             from .limbs.errors import LimbError
 
-            raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
+            raise LimbError(
+                f"{type(self).__name__} must explicitly support replacement limb tracks",
+                code='rig.limbs.unsupported',
+                path='performance.limbs',
+                actual=type(self).__name__,
+                expected='an actor with supports_limbs=True',
+                remedy='Choose a rig supporting replacement limbs or omit the limb tracks.',
+            )
         self.validate_performance(perf)
-        if perf.mouth and not isinstance(perf.mouth, Sequence):
-            raise RigError('mouth: expected a sequence of (project second, pose) pairs')
+        if not isinstance(perf.mouth, Sequence) or isinstance(perf.mouth, (str, bytes)):
+            raise RigError(
+                'mouth: expected a sequence of (project second, pose) pairs',
+                code='rig.mouth.shape',
+                path='performance.mouth',
+                actual=perf.mouth,
+                expected='a sequence of (project second, pose) pairs',
+                remedy='Use an empty tuple for the default mouth, or a sequence of timed mouth poses.',
+            )
         states = perf.mouth or ((0.0, 'rest'),)
         previous = 0.0
         for index, record in enumerate(states):
             if not isinstance(record, (tuple, list)) or len(record) != 2:
-                raise RigError(f'mouth[{index}]: expected a (project second, pose) pair')
+                raise RigError(
+                    f'mouth[{index}]: expected a (project second, pose) pair',
+                    code='rig.mouth.shape',
+                    path=f'performance.mouth[{index}]',
+                    actual=record,
+                    expected='a (project second, pose) pair',
+                    remedy='Provide exactly two values: the numeric time and a supported mouth pose.',
+                )
             time, pose = record
             if not checks.number(time) or time < previous:
-                raise RigError(f'mouth[{index}]: times must be finite, non-negative and nondecreasing')
+                raise RigError(
+                    f'mouth[{index}]: times must be finite, non-negative and nondecreasing',
+                    code='rig.mouth.time',
+                    path=f'performance.mouth[{index}][0]',
+                    actual=time,
+                    expected={'finite': True, 'minimum': previous},
+                    remedy='Order mouth states by nonnegative project seconds; use local clips for shot clocks.',
+                )
             if not isinstance(pose, str) or pose not in self.mouth_poses:
-                raise RigError(f'mouth[{index}]: unknown pose {pose!r}; expected one of {self.mouth_poses}')
+                raise RigError(
+                    f'mouth[{index}]: unknown pose {_brief(pose)}; expected one of {self.mouth_poses}',
+                    code='rig.mouth.pose',
+                    path=f'performance.mouth[{index}][1]',
+                    actual=pose,
+                    expected=self.mouth_poses,
+                    remedy='Choose a mouth pose from this actor\'s reported vocabulary.',
+                )
             previous = time
         cv = self.cv
         blink_keys = _visibility_keys(perf.blinks)
@@ -228,21 +283,71 @@ class Actor(ABC):
 # -- the lit cast (Saga, Gloss) -------------------------------------------------------------------------------------
 def check_place(scale: float, end: float, error: type[Exception]) -> None:
     """A character is drawn at a scale above 0 for a shot of more than 0 s."""
-    checks.positive(scale, error, f"a character's scale must be > 0, got {scale}")
-    checks.positive(end, error, f"a character is drawn for more than 0 s, got {end}")
+    for name, value, message in (
+        ('scale', scale, "a character's scale must be > 0"),
+        ('end', end, 'a character is drawn for more than 0 s'),
+    ):
+        if not checks.number(value) or value <= 0:
+            raise _repair(
+                error(f'{message}, got {_brief(value)}'),
+                code='rig.placement',
+                path=name,
+                actual=value,
+                expected='a positive finite number, excluding booleans',
+                remedy='Use a positive scale and a positive exit time in the builder\'s declared clock.',
+            )
 
 
 def blinks(cv: Canvas, eyes, end: float, *, period: float, phase: float, skip_empty: bool) -> None:
     """``eyes`` close for a blink every ``period`` seconds from ``phase`` while a whole blink fits before ``end``.
     A shot too short for one keys nothing with ``skip_empty``, and holds the eyes open with a single key without
-    it."""
-    checks.positive(period, RigError, f"blink period must be finite and > 0, got {period!r}")
-    checks.non_negative(end, RigError, f"blink end must be finite and >= 0, got {end!r}")
-    checks.non_negative(phase, RigError, f"blink phase must be finite and >= 0, got {phase!r}")
+    it. Schedules are limited to 10,000 blinks before drawing."""
+    for name, value in (('period', period), ('end', end), ('phase', phase)):
+        positive = name == 'period'
+        if not checks.number(value) or (value <= 0 if positive else value < 0):
+            comparison = '> 0' if positive else '>= 0'
+            raise RigError(
+                f'blink {name} must be finite and {comparison}, got {_brief(value)}',
+                code='rig.blink.input',
+                path=f'blink.{name}',
+                actual=value,
+                expected={'finite': True, 'exclusive_minimum' if positive else 'minimum': 0},
+                remedy='Use a positive blink period and nonnegative phase/end seconds.',
+            )
+    requested = max(0.0, (float(end) - float(phase) - 0.16) / float(period))
+    if requested > MAX_BLINKS:
+        raise RigError(
+            'blink schedule exceeds its generation budget',
+            code='rig.blink.budget',
+            path='blink.period',
+            actual={'period': period, 'phase': phase, 'end': end},
+            expected={'maximum_blinks': MAX_BLINKS},
+            remedy='Increase the blink period or shorten the schedule before retrying.',
+        )
     keys: list[tuple[float, float]] = [(0, 1)]
     t = phase
+    count = 0
     while t + 0.16 < end:
+        if count >= MAX_BLINKS:
+            raise RigError(
+                'blink schedule exceeds its generation budget at float precision',
+                code='rig.blink.budget',
+                path='blink.period',
+                actual=period,
+                expected={'maximum_blinks': MAX_BLINKS},
+                remedy='Increase the period or shorten the schedule.',
+            )
+        if t + period <= t or t + 0.05 <= t or t + 0.14 <= t + 0.05:
+            raise RigError(
+                'blink timestamps cannot advance at this clock precision',
+                code='rig.blink.precision',
+                path='blink.phase',
+                actual=t,
+                expected='resolvable blink timestamps',
+                remedy='Use a local shot clock nearer zero, or increase the period.',
+            )
         keys += [(round(t, 4), 1), (round(t + 0.05, 4), 0.1), (round(t + 0.14, 4), 1)]
         t += period
+        count += 1
     if len(keys) > 1 or not skip_empty:
         cv.keys(eyes, "scaleY", keys, hold=False)

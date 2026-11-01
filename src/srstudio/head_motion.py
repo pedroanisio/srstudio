@@ -38,7 +38,7 @@ from typing import TypeAlias
 
 from . import checks, soundtrack
 from ._curves import progress, spline_coefficients, spring_response
-from .errors import SrstudioError
+from .errors import SrstudioError, _brief
 from .voice import Alignment
 
 __all__ = [
@@ -139,6 +139,41 @@ class HeadMotionError(SrstudioError, ValueError):
     """Head motion was asked for something it cannot do; the message names what."""
 
 
+def _invalid(
+    code: str, path: str, actual: object, expected: object, remedy: str, message: str | None = None
+) -> HeadMotionError:
+    return HeadMotionError(
+        message or f'{path}: expected {expected}; got {_brief(actual)}',
+        code=code,
+        path=path,
+        actual=actual,
+        expected=expected,
+        remedy=remedy,
+    )
+
+
+def _precision(actual: object) -> HeadMotionError:
+    return _invalid(
+        'head.channel.precision',
+        'channel.keys',
+        actual,
+        'distinct times after rounding to six decimals',
+        'Space keys farther apart or use a local clock nearer zero.',
+        'channel keys exceed the scene clock resolution',
+    )
+
+
+def _budget(actual: object) -> HeadMotionError:
+    return _invalid(
+        'head.channel.budget',
+        'channel.spring',
+        actual,
+        {'maximum_sampled_keys': 100000},
+        'Reduce spring frequency, key count or duration; compile shorter bounded performances.',
+        'carried spring exceeds the 100000-key sampling budget',
+    )
+
+
 def _finite(*values: float) -> bool:
     return all(checks.number(v) for v in values)
 
@@ -162,8 +197,15 @@ def noise(x: float, seed: int, channel: str) -> float:
 
 def fbm(t: float, hz: float, seed: int, channel: str, octaves: int = 2) -> float:
     """``octaves`` of :func:`noise` from ``hz`` up, each an octave higher and half as strong, in [-1, 1]."""
-    if not _finite(t, hz):
-        raise HeadMotionError(f"noise needs finite numbers, got t={t!r}, hz={hz!r}")
+    for name, value in (('t', t), ('hz', hz)):
+        if not checks.number(value):
+            raise _invalid(
+                'head.noise.number',
+                f'noise.{name}',
+                value,
+                'a finite number, excluding booleans',
+                'Use finite time and frequency values for deterministic noise.',
+            )
     total = sum(0.5**k * noise(2**k * hz * t, seed, f"{channel}/{k}") for k in range(octaves))
     return total / sum(0.5**k for k in range(octaves))
 
@@ -179,10 +221,29 @@ class Spring:
     anticipation: float = 0.0
 
     def __post_init__(self) -> None:
-        if not (_finite(self.frequency, self.damping, self.anticipation)):
-            raise HeadMotionError(f"a spring needs finite numbers, got {self!r}")
-        if self.frequency <= 0 or not 0 < self.damping <= 2 or not 0 <= self.anticipation <= 0.5:
-            raise HeadMotionError(f"a spring has frequency > 0, damping 0..2 and anticipation 0..0.5, got {self!r}")
+        for name in ('frequency', 'damping', 'anticipation'):
+            value = getattr(self, name)
+            if not checks.number(value):
+                raise _invalid(
+                    'head.spring.number',
+                    f'spring.{name}',
+                    value,
+                    'a finite number, excluding booleans',
+                    'Supply a numeric frequency in Hz, damping ratio or anticipation fraction.',
+                )
+        for name, valid, expected in (
+            ('frequency', self.frequency > 0, {'exclusive_minimum': 0, 'unit': 'Hz'}),
+            ('damping', 0 < self.damping <= 2, {'exclusive_minimum': 0, 'maximum': 2}),
+            ('anticipation', 0 <= self.anticipation <= 0.5, {'minimum': 0, 'maximum': 0.5}),
+        ):
+            if not valid:
+                raise _invalid(
+                    'head.spring.range',
+                    f'spring.{name}',
+                    getattr(self, name),
+                    expected,
+                    'Choose a value inside the reported spring parameter bounds.',
+                )
 
     @property
     def stiffness(self) -> float:
@@ -206,12 +267,59 @@ class Channel:
     curve: str = "linear"
 
     def __post_init__(self) -> None:
-        if self.spring is None and self.curve not in _CURVES:
-            raise HeadMotionError(f'unknown head channel curve {self.curve!r}; expected one of {sorted(_CURVES)}')
-        if any(not _finite(t, v) for t, v in self.keys):
-            raise HeadMotionError(f"a channel's keys are finite, got {self.keys!r}")
-        if any(b[0] <= a[0] for a, b in zip(self.keys, self.keys[1:], strict=False)):
-            raise HeadMotionError(f"a channel's key times rise, got {self.keys!r}")
+        if not isinstance(self.curve, str) or self.curve not in _CURVES:
+            raise _invalid(
+                'head.channel.curve',
+                'channel.curve',
+                self.curve,
+                sorted(_CURVES),
+                'Choose a supported interpolation name; supply Spring parameters separately.',
+            )
+        if self.spring is not None and not isinstance(self.spring, Spring):
+            raise _invalid(
+                'head.channel.spring',
+                'channel.spring',
+                self.spring,
+                'Spring or None',
+                'Construct Spring(frequency, damping) or omit it to use the named curve.',
+            )
+        if not isinstance(self.keys, tuple):
+            raise _invalid(
+                'head.channel.keys',
+                'channel.keys',
+                self.keys,
+                'a tuple of (second, value) tuples',
+                'Provide immutable key pairs; an empty tuple holds zero.',
+            )
+        previous = -math.inf
+        for i, row in enumerate(self.keys):
+            path = f'channel.keys[{i}]'
+            if not isinstance(row, tuple) or len(row) != 2:
+                raise _invalid(
+                    'head.channel.keys',
+                    path,
+                    row,
+                    'a (second, value) tuple',
+                    'Give each key exactly one time and one numeric value.',
+                )
+            for j, value in enumerate(row):
+                if not checks.number(value):
+                    raise _invalid(
+                        'head.channel.number',
+                        f'{path}[{j}]',
+                        value,
+                        'a finite number, excluding booleans',
+                        'Use numeric seconds and channel values; remove nonfinite values.',
+                    )
+            if row[0] <= previous:
+                raise _invalid(
+                    'head.channel.order',
+                    path + '[0]',
+                    row[0],
+                    {'greater_than': previous},
+                    'Order keys by strictly increasing time; resolve duplicate times explicitly.',
+                )
+            previous = row[0]
 
     def sample(self, time: float) -> float:
         """Value in project seconds, matching emitted key precision, easing and carried spring history.
@@ -220,7 +328,13 @@ class Channel:
         same bounded bake as emission. Preparation is cached with a bounded cache; sampling order has no effect.
         """
         if not _finite(time):
-            raise HeadMotionError(f'channel sample time must be finite, got {time!r}')
+            raise _invalid(
+                'head.channel.sample',
+                'channel.sample.time',
+                time,
+                'a finite second',
+                'Sample the channel at a finite numeric time.',
+            )
         channel = _sampling_channel(self)
         keys = channel.keys
         if not keys:
@@ -286,7 +400,7 @@ def _sampling_channel(channel: Channel) -> Channel:
     channel = _bake_spring(channel)
     keys = tuple((round(t, 6), round(v, 4)) for t, v in channel.keys)
     if any(b[0] <= a[0] for a, b in zip(keys, keys[1:], strict=False)):
-        raise HeadMotionError('channel keys exceed the scene clock resolution')
+        raise _precision(channel.keys)
     return replace(channel, keys=keys)
 
 
@@ -314,7 +428,7 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
         held = round(channel.keys[0][1], 4) if channel.keys else 0.0
         return channel, (held, held)
     if spring.frequency > 10000 / 32:
-        raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
+        raise _budget({'frequency': spring.frequency})
     attrs = spring.attributes()
     stiffness, damping = max(float(attrs["stiffness"]), 1e-9), max(float(attrs["damping"]), 0.0)
     w = math.sqrt(stiffness)
@@ -327,7 +441,7 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
         or 1 + sum(math.ceil((b[0] - a[0]) * rate) for a, b in zip(channel.keys, channel.keys[1:], strict=False))
         > 100000
     ):
-        raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
+        raise _budget({'sample_rate': rate, 'key_count': len(channel.keys), 'spans': spans})
 
     def responses(t: float) -> tuple[float, float]:
         return spring_response(t, w, z)
@@ -357,7 +471,7 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
         for i in range(count):
             t = round(start + span * i / count, 6)
             if keys and t <= keys[-1][0]:
-                raise HeadMotionError("spring keys exceed the scene clock resolution")
+                raise _precision((start, end))
             sampled = value(span * i / count, a, b, velocity, tail, span)
             segment_low, segment_high = min(segment_low, sampled), max(segment_high, sampled)
             keys.append((t, round(sampled, 6)))
@@ -366,7 +480,7 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
         velocity = (b - value(span - h, a, b, velocity, tail, span)) / h if carry else 0.0
     keys.append((round(channel.keys[-1][0], 6), round(channel.keys[-1][1], 4)))
     if len(keys) > 1 and keys[-1][0] <= keys[-2][0]:
-        raise HeadMotionError("spring keys exceed the scene clock resolution")
+        raise _precision(channel.keys[-2:])
     return Channel(tuple(keys), curve="linear"), (low, high)
 
 
@@ -407,7 +521,7 @@ def _channel_bounds(channel: Channel) -> tuple[float, float]:
     """Bound the emitted curve, including interior extrema, without changing its interpolation."""
     keys = tuple((round(t, 6), round(v, 4)) for t, v in channel.keys)
     if any(b[0] <= a[0] for a, b in zip(keys, keys[1:], strict=False)):
-        raise HeadMotionError('channel keys exceed the scene clock resolution')
+        raise _precision(channel.keys)
     values = [v for _, v in keys]
     if len(keys) < 2:
         return min(values), max(values)
@@ -460,25 +574,84 @@ class HeadStyle:
 
     def __post_init__(self) -> None:
         if self.signature not in ("^", "~", "/"):
-            raise HeadMotionError(f"signature is ^, ~ or /, got {self.signature!r}")
+            raise _invalid(
+                'head.style.signature',
+                'style.signature',
+                self.signature,
+                ['^', '~', '/'],
+                'Choose swing-and-back (^), overshooting swing (~), or slow shift (/).',
+            )
+        if type(self.seed) is not int or not checks.number(self.seed):
+            raise _invalid(
+                'head.style.seed',
+                'style.seed',
+                self.seed,
+                'a finite integer, excluding booleans',
+                'Choose a fixed integer seed for repeatable motion.',
+            )
+        for name in ('head', 'settle', 'body'):
+            if not isinstance(getattr(self, name), Spring):
+                raise _invalid(
+                    'head.style.spring',
+                    f'style.{name}',
+                    getattr(self, name),
+                    'a Spring',
+                    'Construct Spring(frequency, damping, anticipation) for this motion phase.',
+                )
         for field in fields(self):
             value = getattr(self, field.name)
-            if isinstance(value, float | int) and not checks.number(value):
-                raise HeadMotionError(f"{field.name} must be finite, got {value!r}")
+            if field.name not in ('signature', 'seed', 'head', 'settle', 'body') and not checks.number(value):
+                raise _invalid(
+                    'head.style.number',
+                    f'style.{field.name}',
+                    value,
+                    'a finite number, excluding booleans',
+                    'Supply the named numeric control using its documented units.',
+                )
         for name in ("nod_px", "idle_hz", "breath_period", "glance_every", "glance_hold", "loud_range"):
             if getattr(self, name) <= 0:
-                raise HeadMotionError(f"{name} must be positive, got {getattr(self, name)!r}")
+                raise _invalid(
+                    'head.style.range',
+                    f'style.{name}',
+                    getattr(self, name),
+                    {'exclusive_minimum': 0},
+                    'Use a positive value in the documented units for this control.',
+                )
         for name in ("nod_roll", "min_gap", "lead", "accent_db", "lean", "idle_roll", "idle_px", "breath_px"):
             if getattr(self, name) < 0:
-                raise HeadMotionError(f"{name} must not be negative, got {getattr(self, name)!r}")
+                raise _invalid(
+                    'head.style.range',
+                    f'style.{name}',
+                    getattr(self, name),
+                    {'minimum': 0},
+                    'Use zero to disable this control, or a positive amount.',
+                )
         for name in ("glance_turn", "glance_face"):
             if getattr(self, name) < 0:
-                raise HeadMotionError(f"{name} must not be negative, got {getattr(self, name)!r}")
+                raise _invalid(
+                    'head.style.range',
+                    f'style.{name}',
+                    getattr(self, name),
+                    {'minimum': 0},
+                    'Use zero to disable this control, or a positive amount.',
+                )
         for name in ("nod_share", "follow", "avert"):
             if not 0 <= getattr(self, name) <= 1:
-                raise HeadMotionError(f"{name} is a share, 0 to 1, got {getattr(self, name)!r}")
+                raise _invalid(
+                    'head.style.range',
+                    f'style.{name}',
+                    getattr(self, name),
+                    {'minimum': 0, 'maximum': 1},
+                    'Express this share as a fraction from zero to one.',
+                )
         if not 0 <= self.breath_scale < 0.1:
-            raise HeadMotionError(f"breath_scale is under a tenth, got {self.breath_scale!r}")
+            raise _invalid(
+                'head.style.range',
+                'style.breath_scale',
+                self.breath_scale,
+                {'minimum': 0, 'exclusive_maximum': 0.1},
+                'Use a nonnegative scale fraction smaller than one tenth.',
+            )
 
 
 def limit(style: HeadStyle, name: str) -> float:
@@ -511,16 +684,39 @@ class Word:
     stop: bool
 
     def __post_init__(self) -> None:
-        if not self.text or len(self.chars) != len(self.text):
-            raise HeadMotionError(f"a word has one time span per letter, got {self.text!r} and {self.chars!r}")
+        if (
+            not isinstance(self.text, str)
+            or not self.text
+            or not isinstance(self.chars, (tuple, list))
+            or len(self.chars) != len(self.text)
+        ):
+            raise _invalid(
+                'head.word.chars',
+                'word.chars',
+                {'text': self.text, 'chars': self.chars},
+                'one time span per letter of a nonempty word',
+                'Provide the character alignment for every letter in this word.',
+            )
         if not _finite(self.start, self.end) or self.end < self.start:
-            raise HeadMotionError(f"{self.text!r}: a word ends after it starts, got {self.start!r}..{self.end!r}")
+            raise _invalid(
+                'head.word.time',
+                'word.end',
+                {'start': self.start, 'end': self.end},
+                'finite seconds with end >= start',
+                'Use the word\'s ordered project-clock endpoints.',
+            )
 
 
 def words_of(alignment: Alignment, at: float) -> tuple[Word, ...]:
     """The words of a take's character timestamps, placed from project second ``at``."""
     if not (_finite(at) and at >= 0):
-        raise HeadMotionError(f"a take is placed at a second >= 0, got {at!r}")
+        raise _invalid(
+            'head.speech.time',
+            'speech.at',
+            at,
+            'a finite nonnegative second',
+            'Place the take on the project clock at or after zero.',
+        )
     words: list[Word] = []
     current: list[tuple[str, float, float]] = []
 
@@ -532,9 +728,15 @@ def words_of(alignment: Alignment, at: float) -> tuple[Word, ...]:
             current.clear()
 
     last = 0.0
-    for c, a, b in zip(alignment.characters, alignment.starts, alignment.ends, strict=True):
+    for index, (c, a, b) in enumerate(zip(alignment.characters, alignment.starts, alignment.ends, strict=True)):
         if a < last or b < a:
-            raise HeadMotionError(f"a take's character times rise, got {c!r} at {a!r}..{b!r} after {last!r}")
+            raise _invalid(
+                'head.speech.alignment',
+                f'alignment.characters[{index}]',
+                (c, a, b),
+                {'start_at_least': last, 'end_at_least_start': True},
+                'Use ordered character timestamps from the take alignment.',
+            )
         last = a
         if _WORD.match(c):
             current.append((c, a, b))
@@ -588,11 +790,47 @@ class Speech:
 
     def __post_init__(self) -> None:
         if not (_finite(self.at) and self.at >= 0):
-            raise HeadMotionError(f"speech starts at a second >= 0, got {self.at!r}")
-        if not self.levels or not _finite(*self.levels):
-            raise HeadMotionError("speech needs finite loudness samples")
-        if any(b.start < a.start for a, b in zip(self.words, self.words[1:], strict=False)):
-            raise HeadMotionError("speech's words must be in time order")
+            raise _invalid(
+                'head.speech.time',
+                'speech.at',
+                self.at,
+                'a finite nonnegative second',
+                'Place speech on the project clock at or after zero.',
+            )
+        if not isinstance(self.levels, (tuple, list)) or not self.levels:
+            raise _invalid(
+                'head.speech.levels',
+                'speech.levels',
+                self.levels,
+                'a nonempty sequence of finite dB samples',
+                'Provide measured loudness samples at 100 Hz.',
+            )
+        for i, level in enumerate(self.levels):
+            if not checks.number(level):
+                raise _invalid(
+                    'head.speech.levels',
+                    f'speech.levels[{i}]',
+                    level,
+                    'a finite numeric dB sample',
+                    'Replace the invalid loudness value with a measured finite sample.',
+                )
+        if not isinstance(self.words, (tuple, list)) or any(not isinstance(w, Word) for w in self.words):
+            raise _invalid(
+                'head.speech.words',
+                'speech.words',
+                self.words,
+                'a sequence of Words',
+                'Use words_of(alignment, at) or construct typed Word records.',
+            )
+        for i, (a, b) in enumerate(zip(self.words, self.words[1:], strict=False), 1):
+            if b.start < a.start:
+                raise _invalid(
+                    'head.speech.order',
+                    f'speech.words[{i}].start',
+                    b.start,
+                    {'minimum': a.start},
+                    'Order words by their project-clock start times.',
+                )
 
     def level(self, t: float) -> float:
         """The loudness at project second ``t``, the nearest sample past either end."""
@@ -919,7 +1157,24 @@ class HeadPlan:
     def check_gaze(self) -> None:
         """Validate all discrete states before drawing, including states outside the current shot."""
         previous = -math.inf
-        for index, (time, name) in enumerate(self.gaze):
+        if not isinstance(self.gaze, (tuple, list)):
+            raise _invalid(
+                'gaze.shape',
+                'gaze',
+                self.gaze,
+                'a sequence of (second, name) pairs',
+                'Provide a finite gaze track, or an empty tuple for no authored gaze.',
+            )
+        for index, row in enumerate(self.gaze):
+            if not isinstance(row, (tuple, list)) or len(row) != 2:
+                raise _invalid(
+                    'gaze.shape',
+                    f'gaze[{index}]',
+                    row,
+                    'a (second, name) pair',
+                    'Supply a numeric time and a supported gaze name for each state.',
+                )
+            time, name = row
             if not _finite(time) or time <= previous:
                 raise HeadMotionError(
                     'gaze times must be finite and strictly increasing',
@@ -931,7 +1186,7 @@ class HeadPlan:
                 )
             if not isinstance(name, str) or name not in GAZES:
                 raise HeadMotionError(
-                    f'no gaze {name!r}; expected one of {tuple(GAZES)}',
+                    f'no gaze {_brief(name)}; expected one of {tuple(GAZES)}',
                     code='gaze.unknown',
                     path=f'gaze[{index}][1]',
                     actual=name,
@@ -951,6 +1206,14 @@ class HeadPlan:
         self.check_gaze()
         for name in CHANNELS:
             channel = getattr(self, name)
+            if not isinstance(channel, Channel):
+                raise _invalid(
+                    'head.channel.type',
+                    f'head.{name}',
+                    channel,
+                    'a Channel',
+                    'Construct Channel from numeric key pairs; use an empty Channel for zero motion.',
+                )
             if not channel.keys:
                 continue
             if frozen:
@@ -963,30 +1226,104 @@ class HeadPlan:
             if not _finite(*bounds) or max(abs(v) for v in (*bounds, *(v for _, v in channel.keys))) > allowed + 1e-6:
                 raise HeadMotionError(
                     f'{name}: curve response bound {bounds} exceeds style bound +/-{allowed:g}; '
-                    'reduce the excursion or adjust curve/timing (for springs, increase damping)'
+                    'reduce the excursion or adjust curve/timing (for springs, increase damping)',
+                    code='head.bounds',
+                    path=f'head.{name}',
+                    actual={'response_bounds': bounds},
+                    expected={'minimum': -allowed, 'maximum': allowed},
+                    remedy='Reduce target excursion or overshoot; adjust timing or increase spring damping.',
                 )
 
 
-def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float) -> None:
+def _check(style: HeadStyle, speeches: Sequence[Speech], duration: float, path: str = 'speech') -> None:
+    if not isinstance(style, HeadStyle):
+        raise _invalid(
+            'head.style.type', 'style', style, 'a HeadStyle', 'Use a rig\'s style or construct a typed HeadStyle.'
+        )
+    if not isinstance(speeches, Sequence):
+        raise _invalid(
+            'head.speech.shape',
+            path,
+            speeches,
+            'a sequence of Speech records',
+            'Provide a finite sequence of typed takes.',
+        )
     if not (_finite(duration) and duration > 0):
-        raise HeadMotionError(f"a shot lasts a positive number of seconds, got {duration!r}")
+        raise _invalid(
+            'head.duration',
+            'duration',
+            duration,
+            'a positive finite number of seconds',
+            'Use the positive performance length in seconds.',
+        )
     last = 0.0
-    for speech in speeches:
+    for index, speech in enumerate(speeches):
+        if not isinstance(speech, Speech):
+            raise _invalid(
+                'head.speech.type',
+                f'{path}[{index}]',
+                speech,
+                'a Speech',
+                'Construct Speech(at, words, levels) using measured alignment and loudness.',
+            )
         if speech.at < last:
-            raise HeadMotionError(f"speech is in time order and does not overlap: {speech.at!r} after {last!r}")
+            raise _invalid(
+                'head.speech.order',
+                f'{path}[{index}].at',
+                speech.at,
+                {'minimum': last},
+                'Order takes and place each after the previous take\'s last word.',
+            )
         if speech.words:
             last = speech.words[-1].end
             if last > duration:
-                raise HeadMotionError(f"speech runs to {last!r}, past the shot's {duration!r} s")
+                raise _invalid(
+                    'head.speech.duration',
+                    f'{path}[{index}].words',
+                    last,
+                    {'maximum': duration},
+                    'Extend the performance or correct the take alignment and placement.',
+                    f"speech runs to {last!r}, past the shot's {duration!r} s",
+                )
 
 
 def _check_facing(facing: Sequence[Facing]) -> None:
-    ordered = sorted(facing)
-    for on, off, side in ordered:
-        if off - on < FACE_UP or abs(side) != 1.0:
-            raise HeadMotionError(f"a turn lasts {FACE_UP} s at least, to one side (1 or -1), got {(on, off, side)!r}")
-    if any(b[0] < a[1] for a, b in zip(ordered, ordered[1:], strict=False)):
-        raise HeadMotionError(f"turns do not overlap, got {ordered!r}")
+    if not isinstance(facing, Sequence) or isinstance(facing, (str, bytes)):
+        raise _invalid(
+            'head.facing.shape',
+            'facing',
+            facing,
+            'a sequence of (on, off, side) triples',
+            'Provide finite facing intervals, or an empty tuple for procedural glances.',
+        )
+    for index, row in enumerate(facing):
+        if not isinstance(row, (tuple, list)) or len(row) != 3 or not _finite(*row):
+            raise _invalid(
+                'head.facing.shape',
+                f'facing[{index}]',
+                row,
+                'three finite numbers: on, off, side',
+                'Supply numeric start/end seconds and side -1 or 1.',
+            )
+        on, off, side = row
+        if not checks.number(off - on) or off - on < FACE_UP or abs(side) != 1.0:
+            raise _invalid(
+                'head.facing.interval',
+                f'facing[{index}]',
+                row,
+                {'minimum_duration': FACE_UP, 'sides': [-1, 1]},
+                'Allow the full head turn interval and select a supported side.',
+            )
+    ordered = sorted(enumerate(facing), key=lambda row: row[1][0])
+    for (_, a), (index, b) in zip(ordered, ordered[1:], strict=False):
+        if b[0] < a[1]:
+            raise _invalid(
+                'head.facing.overlap',
+                f'facing[{index}]',
+                b,
+                {'start_at_least': a[1]},
+                'Finish the earlier facing interval before starting the next.',
+            )
 
 
 def plan(
@@ -1004,7 +1341,7 @@ def plan(
     Other glances keep their original deterministic timing and direction.
     """
     _check(style, speeches, duration)
-    _check(style, heard, duration)
+    _check(style, heard, duration, 'heard')
     _check_facing(facing)
     spans = [span for speech in speeches for span in _breaths(speech)]
     busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
