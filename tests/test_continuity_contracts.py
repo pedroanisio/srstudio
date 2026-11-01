@@ -13,8 +13,8 @@ from srstudio.acting import BENTO, TransitionPolicy, compile_performance, gloss_
 from srstudio.limbs import HUMAN, ArmProfile, Camera, Frame, Quaternion, Vec3
 from srstudio.limbs.compile import BakeOptions, compile_motion
 from srstudio.limbs.motion import ActionJoin, Motion, TransformKey, TransformTrack
-from test_acting_transitions import numeric
-from test_action_chaining import contact_motion, gestures
+from support.acting import numeric
+from support.gestures import contact_motion, gestures
 
 
 def trajectory(mode):

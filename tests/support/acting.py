@@ -8,6 +8,7 @@ import subprocess
 from sr_core.scene import Scene
 
 from srstudio import Canvas
+from srstudio.acting import ActingBeat, ActingScore, HeadTarget
 
 
 def canvas():
@@ -35,4 +36,17 @@ def contact_track():
     )
     return LimbTrack(
         motion, style='gloss', camera=Camera(origin=(-92, -345), scale=200), options=BakeOptions(fps=4), backend='baked'
+    )
+
+
+def numeric(policy, **kwargs):
+    return ActingScore(
+        4,
+        (
+            ActingBeat(0, head=HeadTarget(turn=0), transition=0),
+            ActingBeat(1, head=HeadTarget(turn=2), transition=1, policy=policy),
+        ),
+        idle=False,
+        sample_rate=24,
+        **kwargs,
     )

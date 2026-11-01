@@ -9,22 +9,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from srstudio import clay, plates
-from srstudio.plates import Camera, Line, Material, Placed, Plate, PlateError, Print
-
-
-def plate(size=(10.0, 10.0, 10.0), rotation=0.0, background=plates.CLEAR) -> Plate:
-    m = clay.Model()
-    m.box("clay", (0, 0, 0), size)
-    return Plate(
-        64,
-        64,
-        Camera((0.0, 0.0, -200.0), (0.0, 0.0, 0.0), 20.0),
-        plates.stage_lights(),
-        (Placed(m.meshes(), rotation_y=rotation),),
-        (Material("clay", "#C88762"),),
-        background,
-    )
+from srstudio import plates
+from srstudio.plates import Line, Material, Plate, PlateError, Print
+from support.plates import plate
 
 
 def test_a_digest_is_stable_and_follows_every_input():

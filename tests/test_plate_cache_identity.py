@@ -2,13 +2,12 @@
 
 import hashlib
 import os
-from dataclasses import replace
 
 import numpy as np
 import pytest
 
 from srstudio import plates
-from test_plates import plate
+from support.plates import plate, printed_plate
 
 
 @pytest.fixture
@@ -29,12 +28,6 @@ def rendering(tmp_path, monkeypatch):
 
     monkeypatch.setattr(plates, '_engine_render', render)
     return engine, fonts, tmp_path / 'cache', calls
-
-
-def printed_plate():
-    text = plates.Print('#FFFFFF', 64, 64, (plates.Line('OK', 32, 32, 12, '#000000'),))
-    original = plate()
-    return replace(original, materials=(replace(original.materials[0], print=text),))
 
 
 def test_engine_content_changes_invalidate_without_losing_previous_build(rendering):

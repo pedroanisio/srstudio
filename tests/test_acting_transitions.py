@@ -22,20 +22,7 @@ from srstudio.acting import (
     parse_score,
 )
 from srstudio.head_motion import Spring
-from support.acting import canvas, contact_track, evaluate
-
-
-def numeric(policy, **kwargs):
-    return ActingScore(
-        4,
-        (
-            ActingBeat(0, head=HeadTarget(turn=0), transition=0),
-            ActingBeat(1, head=HeadTarget(turn=2), transition=1, policy=policy),
-        ),
-        idle=False,
-        sample_rate=24,
-        **kwargs,
-    )
+from support.acting import canvas, contact_track, evaluate, numeric
 
 
 def test_policy_free_score_retains_its_serialized_drawing():

@@ -8,28 +8,11 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import Canvas
-from srstudio.limbs import HUMAN, ArmProfile, Frame, HandControl, LimbError, Quaternion, Vec3
+from srstudio.limbs import HUMAN, ArmProfile, Frame, HandControl, LimbError, Vec3
 from srstudio.limbs.compile import BakeOptions, compile_motion
-from srstudio.limbs.motion import Action, Attachment, Contact, Motion, MotionStyle, Target, TransformKey, TransformTrack
+from srstudio.limbs.motion import Action, Attachment, Motion, Target, TransformKey, TransformTrack
 from srstudio.limbs.serialization import motion_dict, parse_motion
-
-
-def gestures(side='right', moving=False):
-    root = TransformTrack.constant(Frame())
-    if moving:
-        root = TransformTrack(
-            tuple(
-                TransformKey(t, Frame(Vec3(0.08 * t, 0, 0), Quaternion.axis_angle(Vec3(0, 0, 1), 0.04 * t)))
-                for t in (0, 2, 4, 5)
-            ),
-            interpolation='continuous',
-        )
-    return Motion(
-        ArmProfile(side=side),
-        HUMAN,
-        (Action('point', duration=2, style=MotionStyle(asymmetry=0.2)), Action('present', start=2, duration=2)),
-        root=root,
-    )
+from support.gestures import contact_motion, gestures
 
 
 def points(sample):
@@ -87,19 +70,6 @@ def test_joined_sampling_is_random_access_and_retargeting_rebuilds_derived_data(
     other = motion.retarget(replace(motion.arm, side='left'))
     assert other.sample(2).arm.wrist != motion.sample(2).arm.wrist
     assert_continuous(other, 2)
-
-
-def contact_motion():
-    source = Motion(ArmProfile(), HUMAN, (Action('rest', duration=2), Action('rest', start=2, duration=2)))
-    frame = source.sample(0).hand.frame
-    target = TransformTrack(
-        (
-            TransformKey(0, frame, velocity=Vec3(0.02, 0, 0)),
-            TransformKey(4, Frame(frame.origin + Vec3(0.08, 0, 0), frame.rotation), velocity=Vec3(0.02, 0, 0)),
-        ),
-        interpolation='continuous',
-    )
-    return replace(source, contacts=(Contact('first', 0.5, 1.5, target), Contact('second', 2.5, 3.5, target)))
 
 
 def test_a_join_preserves_moving_contact_endpoints_and_a_carried_prop():

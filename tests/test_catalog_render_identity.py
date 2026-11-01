@@ -7,7 +7,7 @@ import pytest
 
 from srstudio import catalog_specimens as cs
 from srstudio import plates, registry
-from test_plate_cache_identity import printed_plate
+from support.plates import printed_plate
 
 
 @pytest.fixture
