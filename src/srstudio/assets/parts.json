@@ -5683,10 +5683,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A tiled shower wall with a chrome shower head, hose and a shelf of bottles. First drawn for planning-fallacy; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A tiled shower wall with a chrome shower head, hose and a shelf of bottles. First drawn for planning-fallacy.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data. Generic locations (rooms, shops, streets, workplaces) pass under it.\""
+          },
           "drawing": "41956ba865b52f7c06b4957ea9c255bba047082ac65d7f36a51b00afaafa9d51",
           "rig": null
         }
@@ -7175,10 +7178,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "Shower water fanning from the rose in stepped streaks that stop short of a face. First drawn for planning-fallacy; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "Shower water fanning from the rose in stepped streaks that stop short of a face. First drawn for planning-fallacy.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The standing rule is wider from now on. The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data.\""
+          },
           "drawing": "63dac4032f603233cdf1d2bad6eeb6fb8aecde391fd321f7f0cad46eb4ce622e",
           "rig": null
         }
@@ -7820,10 +7826,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "Inside a car from the dashboard: its paint round one wide window with the road going past. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Inside a car from the dashboard: its paint round one wide window with the road going past.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793486690.452509: \"The same conditions apply as before: an approved style, no real brand, logo or likeness, and no readable personal or financial data. Generic locations (rooms, shops, streets, workplaces) pass under it.\""
+          },
           "drawing": "0f3471d5bc852a3723a4621288cf4b012fc0b721fe536ff577be752518ce22c0",
           "rig": null
         }

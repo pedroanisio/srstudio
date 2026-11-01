@@ -31,15 +31,15 @@ RELEASE = Release(
     ),
     style="Toon",
     parts={
-        # toon-bathroom, toon-shower-water also drawn:
-        # a release cannot pin a proposed version, so they join once approved.
         "signature-cactus": 1,
         "signature-code": 1,
+        "toon-bathroom": 1,
         "toon-captions": 1,
         "toon-dog": 2,
         "toon-frog": 2,
         "toon-ledge": 1,
         "toon-shampoo": 1,
+        "toon-shower-water": 1,
     },
     comedy=Scores(author=16, reviewer=17),
 )
