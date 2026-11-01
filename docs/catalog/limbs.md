@@ -61,12 +61,63 @@ assert track.sample(1).origin == Vec3(0.2, 0, 0)
 Each key can supply `velocity=Vec3(...)` in parent units/second and `angular_velocity=Vec3(...)` in local
 radians/second. Missing interior velocities come from neighboring poses; endpoints default to zero. Translation
 uses quintic segments with matching velocity and zero acceleration at keys. Rotation uses spherical cubic
-segments with matching angular velocity; angular acceleration is not constrained. Excessive angular control
+controls targeting shared angular velocity; small-arc normalized linear blending makes this approximate,
+and angular acceleration is not constrained. Excessive angular control
 arcs are rejected before sampling: insert keys or reduce angular velocity. Velocities require continuous mode.
 
 Sampling is independent of playback order. Outside the key interval, the nearest frame is held, even when an
 explicit endpoint velocity is nonzero. Compiler output still follows its bake frame rate; continuous authoring
 does not override an intentionally held-frame look. Motion JSON `1.2.0` and later preserve the mode and velocities.
+
+## Inspect continuity before choosing a transition
+
+`TransformTrack.describe_continuity()` and `Motion.describe_continuity()` return fresh JSON-compatible
+`srstudio.continuity/1.0.0` descriptions. Guarantees apply to the named boundary and stated conditions.
+`false` means **no general guarantee**, not that every instance has a visible jump. Discovery does not sample
+the motion, certify reachability or change its serialization.
+
+| Boundary | Position | Velocity | Acceleration |
+| --- | --- | --- | --- |
+| Smooth source transform at interior keys | Continuous | Zero on both sides | Zero on both sides |
+| Continuous source translation at interior keys | Continuous | Shared, possibly nonzero | Zero on both sides |
+| Continuous source rotation at interior keys | Continuous | Approximately matched by spherical controls | Not guaranteed |
+| Join boundary with valid regular geometry and continuous source boundaries | Matched pose | Estimated from preserved source | Not guaranteed |
+| Native or baked rendered limb frames | Held samples; can jump between frames | Not inherited from source | Not inherited from source |
+
+Continuous translation is C2 at interior keys: position, velocity and acceleration match. That guarantee does
+not extend through a held outer endpoint with a nonzero authored velocity. `endpoint_holds` reports those
+translation and rotation velocity jumps separately. A one-key track is constant. Finite clock resolution,
+floating-point error, IK branch changes, constraint activation and projection still need separate checks.
+
+<!-- continuity-discovery:start -->
+```python
+import json
+from srstudio.limbs import HUMAN, ArmProfile, Frame, Vec3
+from srstudio.limbs.motion import Action, Motion, TransformKey, TransformTrack
+
+track = TransformTrack(
+    tuple(TransformKey(t, Frame(Vec3(0.1 * t, 0, 0))) for t in (0, 1, 2)),
+    interpolation="continuous",
+)
+motion = Motion(
+    ArmProfile(), HUMAN,
+    (Action("point", duration=2), Action("present", start=2, duration=2)),
+    root=track,
+).chain()
+track_info = track.describe_continuity()
+motion_info = motion.describe_continuity()
+assert track_info["interior_keys"]["translation"]["acceleration"]
+assert motion_info["joins"][0]["velocity_matching"] == "estimated"
+assert not motion_info["emission"]["native"]["inherits_source_derivatives"]
+json.dumps(motion_info, allow_nan=False)
+```
+<!-- continuity-discovery:end -->
+
+Inspect `BENTO.describe()["transitions"]` for acting contracts. Its legacy and policy descriptions distinguish
+numeric linear baked keys from held expression, gesture and gaze arrivals. Easing a source curve does not
+preserve its derivatives after baking. Windowing one performance preserves its source-time samples across
+cuts; it does not make an independently authored camera cut or discrete drawing switch continuous.
+See [acting policies](../authoring-reference.md#opt-in-acting-transition-policies).
 
 ## Chain gestures without returning to rest
 

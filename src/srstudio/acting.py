@@ -102,7 +102,7 @@ class ActingRig:
     version: str = '1.0.0'
 
     def describe(self) -> dict:
-        from ._acting_transitions import describe_policy
+        from ._acting_transitions import describe_continuity, describe_policy
 
         return {
             'schema': 'srstudio.acting-rig/1.0.0',
@@ -128,6 +128,7 @@ class ActingRig:
             'transitions': {
                 'discrete': 'switch at arrival',
                 'numeric': 'sampled sine-in-out',
+                'continuity': describe_continuity(policy=False),
                 'policy': describe_policy(self),
             },
         }

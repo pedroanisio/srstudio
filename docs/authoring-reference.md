@@ -18,6 +18,7 @@ a similar character or pass contract JSON directly to a builder.
 | Add anticipation and staggered arrivals | [Transition policies](#opt-in-acting-transition-policies) | Opt-in score 1.1.0; declared phases must fit and respect contacts. Faces remain held drawings. |
 | Carry state through a cut | [Listening](#sustained-listening-and-repairable-capability-failures) and [carrying](#carrying-a-prop-across-a-cut) recipes | Window one source performance; preserve contact, expression and texture clocks. |
 | Author constrained arm motion | [Limbs guide](catalog/limbs.md) | Declare anatomy, reference units, projection and contacts; canonical-arm limits do not certify whole-body motion. |
+| Choose a continuity guarantee | [Continuity discovery](catalog/limbs.md#inspect-continuity-before-choosing-a-transition) | Inspect source key derivatives, estimated joins, endpoint holds and rendered sampling separately. |
 | Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
 
@@ -269,6 +270,10 @@ The compiler limits candidate keys to 20,000 per channel before adding a dense i
 These are bounded sampled motions, not a continuous physical simulation. Position,
 velocity and acceleration are separate properties: policy baking does **not** guarantee
 velocity or acceleration continuity, and it never implies facial morph support.
+`rig.describe()["transitions"]` exposes these limits for both legacy transitions and opt-in policies,
+including held drawing switches and source-time-preserving cuts. For spatial tracks and joins, use
+[`describe_continuity()`](catalog/limbs.md#inspect-continuity-before-choosing-a-transition); its source
+guarantees do not transfer to the native or baked limb compiler's held frames.
 
 The executable [transition study](../examples/acting_transitions.py) compares legacy,
 anticipated and spring timing, with cuts during anticipation and settling. It exports
