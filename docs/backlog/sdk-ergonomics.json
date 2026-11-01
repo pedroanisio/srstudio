@@ -1,0 +1,182 @@
+{
+  "schema_version": "1.0.0",
+  "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
+  "reviewed_on": "2026-11-01",
+  "reviewed_source_commit": "64efa1c7",
+  "audience": ["AI coding agents", "SDK users", "animation authors"],
+  "scope": "SDK/API ergonomics, discovery, animation composition, documentation and refactor candidates",
+  "priorities": {
+    "P0": "Critical failure requiring immediate containment",
+    "P1": "Confirmed correctness defect in an existing supported workflow",
+    "P2": "High-impact capability or usability gap",
+    "P3": "Integration, documentation, evidence or maintainability improvement",
+    "P4": "Broader capability or measurement-led optimization"
+  },
+  "assessment": "Strong reusable primitives and validation; composing a coherent performance still requires rig-specific knowledge. Numeric validity does not establish perceptual quality.",
+  "catalog_observation": {
+    "parts": 699,
+    "characters": 70,
+    "entries_with_explicit_part_contract": 1,
+    "explicit_contract_names": ["toon-bento"],
+    "qualification": "Actor-derived entries additionally infer known base-class lifecycle capabilities; explicit metadata count is not a count of all typed APIs. Counts describe the inspected checkout, not a permanent gate."
+  },
+  "accelerators": [
+    {"name": "Episode assembly and validated output", "evidence": ["src/srstudio/episode.py:Episode", "examples/new_episode.py"]},
+    {"name": "Catalog inspection, typed shape metadata and approved part versions", "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_part", "src/srstudio/parts.py"]},
+    {"name": "Word-timed gestures, style controls, continuous transforms and action joins", "evidence": ["src/srstudio/limbs/motion.py:Action.on_word", "src/srstudio/limbs/motion.py:MotionStyle", "src/srstudio/limbs/motion.py:TransformTrack", "src/srstudio/limbs/motion.py:Motion.chain"]},
+    {"name": "Speech-driven head motion, listening, deterministic idle and breathing", "evidence": ["src/srstudio/head_motion.py:plan", "src/srstudio/head_motion.py:HeadPlan"]},
+    {"name": "Arm/hand IK, contacts, attachments, retargeting and style adapters", "evidence": ["src/srstudio/limbs/motion.py:Motion", "src/srstudio/limbs/interaction.py", "src/srstudio/limbs/compile.py:compile_motion"]},
+    {"name": "Numeric motion reports and configurable quality gates", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport"]},
+    {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]}
+  ],
+  "confirmed_open_P0": [],
+  "confirmed_open_P1": [],
+  "resolved_findings": [
+    {"priority": "P1", "title": "Clipped spline channels must retain tangent neighbors", "evidence": ["src/srstudio/head_motion.py:Channel.during", "tests/test_motion_review_regressions.py"]},
+    {"priority": "P1", "title": "Unknown gaze must fail before drawing", "evidence": ["src/srstudio/head_motion.py:HeadPlan.check_gaze", "src/srstudio/toon_head.py"]},
+    {"priority": "P1", "title": "Rafa must honor shared channel sampling semantics", "evidence": ["src/srstudio/rafa.py", "src/srstudio/head_motion.py:Channel.sample"]},
+    {"priority": "P1", "title": "Invalid actor nods must not leave partial drawings", "commit": "b2f32f77", "evidence": ["src/srstudio/rig.py:Actor.build"]},
+    {"priority": "P1", "title": "Failed symbol callbacks must not poison reuse", "commit": "56ebe145", "evidence": ["src/srstudio/canvas.py:Canvas.symbol"]},
+    {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
+  ],
+  "findings": [
+    {
+      "id": "SDK-P2-01",
+      "priority": "P2",
+      "status": "open",
+      "title": "Finish semantic contracts for character discovery",
+      "problem": "Agents can inspect signatures but most non-Actor rigs still leave capabilities, units, clocks and expression vocabularies unknown. Shape completeness alone cannot tell an agent how to use a rig.",
+      "evidence": ["src/srstudio/contracts.py:describe_part", "src/srstudio/registry.py:Entry.describe", "src/srstudio/toon_bento.py:contract"],
+      "change": "Declare supported capabilities, units, timebases, vocabularies and helper operations for the registered character families. Preserve explicit unknown values where behavior is not verified.",
+      "acceptance": ["Inspect every character without drawing or rendering", "Test metadata against valid and invalid builder calls", "Separate constructor, placement and performance operations"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P2-02",
+      "priority": "P2",
+      "status": "open",
+      "title": "Coordinate acting intent and persistent performance state",
+      "problem": "Performance exposes mouth, blink, nod, limb tracks and untyped extras; HeadPlan and rig-specific moods are separate. Authors must manually resolve conflicting channels, emotional transitions and state across shots.",
+      "evidence": ["src/srstudio/rig.py:Performance", "src/srstudio/episode.py:Episode.perform", "src/srstudio/head_motion.py:HeadPlan", "src/srstudio/toon_bento.py:MOODS", "src/srstudio/rafa.py:MOODS"],
+      "change": "Add typed acting beats that compile supported expression, gaze, speech, head, breath and gesture intents into existing tracks. Define channel ownership, explicit override precedence, transitions and continuous-shot state; reject unsupported capabilities before mutation.",
+      "acceptance": ["Deterministic compilation and random-access state sampling", "A camera cut preserves expression, gaze and held contact state unless explicitly reset", "Test conflicts, unsupported rigs, malformed input and atomic failures", "Execute and render examples on at least two supported rig families"],
+      "complexity": "XL"
+    },
+    {
+      "id": "SDK-P2-03",
+      "priority": "P2",
+      "status": "open",
+      "title": "Calibrate motion quality profiles against actual performances",
+      "problem": "Speed, acceleration, jerk and collision evidence exists, but callers must invent thresholds. A passing numeric report does not establish weight, emotional readability or a pleasing transition.",
+      "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/evaluation.py:plan_trials", "src/srstudio/limbs/evaluation.py:summarize", "docs/catalog/limbs.md"],
+      "change": "Provide versioned, explicitly scoped character/style profiles with rendered exemplars and measured failure cases. Use the existing comparison/rating facilities to keep subjective judgments separate from numeric guarantees.",
+      "acceptance": ["Profiles identify scale, clock, sampling rate and applicable rigs", "Regression cases trip each configured gate", "Rendered clips demonstrate accepted and rejected behavior", "No universal biomechanical or emotional score is claimed"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P3-01",
+      "priority": "P3",
+      "status": "open",
+      "title": "Normalize actor placement and timing through explicit adapters",
+      "problem": "Actor.build, Toon figure wrappers, Gloss drawing functions and plate rigs have different placement and performance contracts. Bento's duration means project exit while its pose starts are relative to enter; limb actions use motion seconds.",
+      "evidence": ["src/srstudio/rig.py:Actor.build", "src/srstudio/toon_bento.py:bento", "src/srstudio/gloss.py:draw", "src/srstudio/limbs/integration.py:LimbTrack"],
+      "change": "Introduce a typed adapter boundary with explicit start/end, coordinate units, time conversion and capability checks, preserving existing builders and their defaults.",
+      "acceptance": ["Equivalent performances on nonzero project offsets", "No double offset or accidental duration-as-length conversion", "Unsupported channels fail before drawing", "Existing scenes retain their output without opting in"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P3-02",
+      "priority": "P3",
+      "status": "open",
+      "title": "Add executable cross-system authoring recipes",
+      "problem": "There are useful runnable examples for individual systems, but agents still need to assemble emotional transitions, state across cuts and multi-rig performances from separate references.",
+      "evidence": ["docs/authoring-reference.md", "docs/catalog/limbs.md", "examples/limbs_gallery.py"],
+      "change": "Add short executable recipes for sustained listening, a changing emotion, carrying a prop across a cut and the same intent on two rig families. Show valid imports, clocks, capabilities and repairable failures.",
+      "acceptance": ["Documentation examples execute in tests", "Examples use public APIs and explicit assets", "Output includes machine-readable validation and reproducible render commands"],
+      "complexity": "M"
+    },
+    {
+      "id": "SDK-P3-03",
+      "priority": "P3",
+      "status": "open",
+      "title": "Separate head-channel mechanics from speech planning",
+      "problem": "head_motion.py combines channel interpolation, spring baking, bounds, speech analysis, deterministic noise and behavioral planning. Changes to one concern require reviewing a large shared module.",
+      "evidence": ["src/srstudio/head_motion.py:Channel", "src/srstudio/head_motion.py:speech_of", "src/srstudio/head_motion.py:plan", "src/srstudio/_curves.py"],
+      "change": "Extract cohesive channel and speech-planning internals while preserving public imports. Keep shared interpolation semantics in one implementation; use the same boundary approach for further motion/contact decomposition when it reduces coupling.",
+      "acceptance": ["Existing imports remain valid", "Numeric and serialized output parity at keys, cuts and spring boundaries", "No new duplicate sampler or planner behavior"],
+      "complexity": "M"
+    },
+    {
+      "id": "SDK-P3-04",
+      "priority": "P3",
+      "status": "open",
+      "title": "Complete explicit drawing-event instrumentation",
+      "problem": "Drawing events now identify rig drawings and IDs, but usage tracing still installs a profiler and inspects function source/frames to identify legacy calls and delegates.",
+      "evidence": ["src/srstudio/usage.py:_tail_call", "src/srstudio/usage.py:_performed", "src/srstudio/usage.py:trace", "src/srstudio/drawing_events.py"],
+      "change": "Move legacy registered builders onto explicit drawing events, then remove inference that is no longer needed. Preserve nested drawing attribution and profiler compatibility during migration.",
+      "acceptance": ["Usage and figure-ID parity across representative builder families", "Nested and failing drawings leave observer state clean", "Tracing does not depend on availability of Python source or frame-local names"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P3-05",
+      "priority": "P3",
+      "status": "open",
+      "title": "Enrich legacy errors with actionable repair fields",
+      "problem": "The shared diagnostic envelope is available, but many older validation paths only supply a message and class-qualified code. Agents still have to interpret prose when path, expected value or remedy is null.",
+      "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/rig.py:Actor.build", "src/srstudio/head_motion.py:HeadStyle"],
+      "change": "Add explicit stable codes, paths, actual/expected values and remedies to common authoring failures, preserving existing exception types and avoiding inference from message text.",
+      "acceptance": ["SDK and CLI expose the same repair fields", "Malformed inputs exercise the failure path", "Payloads remain bounded and strict JSON"],
+      "complexity": "M"
+    },
+    {
+      "id": "SDK-P3-06",
+      "priority": "P3",
+      "status": "open",
+      "title": "Prove the DRAWING.md composition proposal with animated evidence",
+      "problem": "The document has explicit spatial, temporal, lighting and cost contracts, but its runnable example verifies API structure rather than the proposed combined aesthetic or moving contact/shadow behavior.",
+      "evidence": ["DRAWING.md", "tests/test_drawing_document.py"],
+      "change": "Build the documented opt-in adoption spike with moving camera and prop contacts, occlusion, shadow receivers, stable textures, emotional continuity, a cut and warm-cache evidence. Keep unsupported backend capabilities explicit.",
+      "acceptance": ["Pinned SDK/engine/style versions and strict render checks", "Temporal stability and registration checks plus full-size visual review", "Measured cold/warm plate counts and render cost", "Operator approval before style adoption, as required by DRAWING.md"],
+      "complexity": "XL"
+    },
+    {
+      "id": "SDK-P4-01",
+      "priority": "P4",
+      "status": "open",
+      "title": "Extend constraints to whole-body performance",
+      "problem": "The reusable spatial solver is centered on arms and hands. Drawn leg poses exist, but there is no shared foot-planting, support/balance or locomotion contract coordinating them with torso and root motion.",
+      "evidence": ["src/srstudio/limbs/model.py:ArmProfile", "src/srstudio/limbs/motion.py:Motion", "src/srstudio/stick.py:RigPose"],
+      "change": "Add opt-in torso/root coordination and leg/foot contact primitives with explicit supported anatomy and movement envelopes before expanding to locomotion.",
+      "acceptance": ["Foot contacts retain their world anchors", "Support and joint constraints are validated", "Random-access deterministic sampling", "Rendered weight-shift and step examples"],
+      "complexity": "XL"
+    },
+    {
+      "id": "SDK-P4-02",
+      "priority": "P4",
+      "status": "open",
+      "title": "Support target-based gaze where rigs can draw it",
+      "problem": "The shared gaze planner has four named states and held eye transitions. It cannot express continuous target tracking or a richer eye/head relationship across rig families.",
+      "evidence": ["src/srstudio/head_motion.py:GAZES", "src/srstudio/head_motion.py:_gaze", "src/srstudio/toon_head.py:gaze_states"],
+      "change": "Introduce typed target gaze with explicit eye/head limits and latency, capability-gated continuous sampling, and deliberate mappings for rigs that only support named states.",
+      "acceptance": ["No silent substitution for unsupported gaze", "Target motion remains deterministic across cuts and sampling order", "Bounds and eye/head timing tests plus rendered review"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P4-03",
+      "priority": "P4",
+      "status": "open",
+      "title": "Benchmark the agent authoring loop before optimizing it",
+      "problem": "The package eagerly imports registered builders, and existing measurement helpers cover source/build comparisons. There is no single benchmark separating discovery, planning, compilation, rendering and cold/warm cache work.",
+      "evidence": ["src/srstudio/__init__.py", "src/srstudio/limbs/evaluation.py:measure", "src/srstudio/plates.py"],
+      "change": "Create representative bounded benchmarks for those phases; optimize only measured bottlenecks while preserving discovery completeness and deterministic output.",
+      "acceptance": ["Separate cold/warm measurements and pinned fixture inputs", "Report sample, frame, plate and engine invocation counts", "Output-equivalence checks accompany any optimization", "No wall-clock performance threshold in ordinary correctness tests"],
+      "complexity": "M"
+    }
+  ],
+  "recommended_order": ["SDK-P2-01", "SDK-P3-01", "SDK-P2-02", "SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "limits": [
+    "No new P0/P1 defect is confirmed by this review; this is not a claim that the repository has none.",
+    "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
+    "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
+  ]
+}
