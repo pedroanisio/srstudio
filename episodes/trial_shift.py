@@ -36,7 +36,21 @@ from srstudio import (
     signature,
 )
 from srstudio import interview as iv_audio
-from trial_shift_audio import INTERVIEW
+from trial_shift_audio import (
+    ARM,
+    AT_DOOR,
+    CAPTION_LEAD,
+    CAPTION_MIN,
+    CAPTION_TAIL,
+    HELD_OUT,
+    HOOK,
+    INTERVIEW,
+    MILO_SIZE,
+    MILO_Y,
+    REST,
+    SHOULDER,
+    TWO,
+)
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -78,15 +92,12 @@ def seen(*angles: str) -> list[tuple[float, float]]:
 GREEN_INK = 3
 APRON = "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z"
 TIE_UP = [0.15, 0.5, 0.85]  # she pulls the strings three times, and he rocks with it
-MILO_Y, MILO_SIZE = 1035.0, 1.4
-MILO_X, AT_DOOR = 630.0, 270.0
+MILO_X = 630.0
 AVA_Y, AVA_SIZE = 1040.0, 1.3
 AVA_X, AVA_CLOSE, AVA_TAG = 880.0, 660.0, 620.0
 TRAY_Y, TRAY_SIZE = 800.0, 1.35
 DOOR_X, DOOR_TOP, DOOR_H = -10.0, 430.0, 1270.0
-HOOK = (196.0, 1250.0)  # on the end of the counter: he is in front of it, the Candidate behind it
 FOLDER_HAND = (128.0, 1160.0)
-HELD_OUT = (90.0, 1400.0)  # low, and clear of his face
 LAST_LOOK = WIDE + 0.45  # all three, at the door
 
 
@@ -197,9 +208,12 @@ def door(parent):
 
 
 def peg(g):
+    """The spare on its hook, only in the shots that see the end of the counter whole."""
+    g = cv.group(g, "the-peg")
+    cv.gate(g, seen("wide", "door"))
     cv.rect(g, HOOK[0] - 26, HOOK[1] - 12, 52, 16, "#6E4B32", cv.ink, 3, radius=4)
     hung = cv.group(g, "spare-on-its-hook")
-    cv.gate(hung, [(0.0, ARRIVES + 0.1)])
+    cv.gate(hung, [(0.0, TAKEN)])
     cutout_trial.apron_spare(cv, hung, HOOK[0], HOOK[1] - 8, scale=0.56, id="spare-hung")
 
 
@@ -290,13 +304,13 @@ def milo(g):
     cv.path(apron, APRON, cutout_trial.GREEN, cv.ink, GREEN_INK)
     cutout_arm.arm(cv, who.group, "milo-right", (73, 144), [(0.0, 96.0, 326.0)], upper=96, fore=96, bend=1, width=5.0,
                    hand=26.0, skin=who.skin)  # fmt: skip
-    hook = milo_units(*HOOK)
+    hook = milo_units(HOOK[0], HOOK[1] - 8)
     held = milo_units(*HELD_OUT)
-    track = [(0.0, -96.0, 326.0), (ARRIVES, -96.0, 326.0), (TAKEN, hook[0], hook[1] + 30), (OUT, *held)]
-    arm = cutout_arm.arm(cv, who.group, "milo-left", (-72, 143), track, upper=96, fore=96, bend=-1, width=5.0,
+    track = [(0.0, *REST), (ARRIVES, *REST), (TAKEN, *hook), (OUT, *held)]
+    arm = cutout_arm.arm(cv, who.group, "milo-left", SHOULDER, track, upper=ARM, fore=ARM, bend=-1, width=5.0,
                          hand=26.0, skin=who.skin)  # fmt: skip
     spare = cv.group(arm.grip, "spare-in-hand")
-    cv.gate(spare, [(ARRIVES + 0.1, DURATION)])
+    cv.gate(spare, [(TAKEN, DURATION)])
     cutout_trial.apron_spare(cv, spare, 0, 0, scale=0.56 / MILO_SIZE, id="spare-held")
     return cutout_walk.walk(
         cv, node, [(0.0, MILO_X), (CROSSES, MILO_X), (ARRIVES, AT_DOOR), (DURATION, AT_DOOR)], MILO_Y
@@ -322,7 +336,6 @@ def close(at, scale, to=(540, 775)):
     return scale, to[0] - x * scale, to[1] - y * scale
 
 
-TWO = (1.2, -190.0, -320.0)
 FRAMES = {  # angle -> scale, x, y
     "open": TWO,
     "ava": close((AVA_CLOSE, AVA_Y), 1.7),
@@ -337,7 +350,8 @@ FRAMES = {  # angle -> scale, x, y
 camera.reframe(cv, room, [(c.time, *FRAMES[c.angle]) for c in cuts])
 
 hook = cutout_key.key_line(cv, ep.comp, "TRIAL SHIFT: 10 TO 11", 0.0, 3.0, font=(ROOT / ep.spec.font).read_bytes())
-spoken = ep.captions(ep.spoken_captions(min_seconds=0.84), x=80, y=1420, width=920, size=60)
+spoken = ep.spoken_captions(CAPTION_TAIL, CAPTION_LEAD, min_seconds=CAPTION_MIN)
+spoken = ep.captions(spoken, x=80, y=1420, width=920, size=60)
 ep.hide_on_cover(hook, *spoken)
 ep.markers(extra=[("marker-tag", TAG, "The tag"), ("marker-door", CHIME, "The next one")])
 ep.instagram(POSTS["trial-shift"])
