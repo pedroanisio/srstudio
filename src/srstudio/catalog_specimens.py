@@ -50,6 +50,7 @@ from . import (
     plates,
     rafa,
     rafa_host,
+    readings,
     registry,
     saga_sets,
     soft_props,
@@ -498,6 +499,9 @@ RECIPES: dict[str, Recipe] = {
     "toon-call-chip": Recipe(lettered("Dana", (0.0, 862), 0.0, SECONDS)),
     "toon-cable-drawer": Recipe(part(0.0)),
     "toon-gray-cable": Recipe(part(((0.0, 296.0, 400.0),), 0.0, SECONDS)),
+    "toon-raised-phone": Recipe(part((296.0, 500.0), "#7fcf6b", "#4f9a46", ((0.0, 1),), 0.0, SECONDS)),
+    "toon-upload-chip": Recipe(lettered(readings.held(((0.0, "9%"),), SECONDS), (0.09,), at=(296.0, 500.0))),
+    "toon-sandwich-broom": Recipe(part(((0.0, 296.0, 400.0), (1.0, 296.0, 420.0)), 0.0, SECONDS, 2.0)),
     "toon-whirl": Recipe(part(), at=0.35),  # it is gone by 0.7 s
     "toon-sparkles": Recipe(part(), at=0.25),  # each glint twinkles for half a second
     "hair-fall": Recipe(part(), at=0.3),  # the sheet has crossed the frame by 0.6 s
