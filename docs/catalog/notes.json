@@ -8255,7 +8255,7 @@
       "text": "A prancheta de quem vem cobrar: de lado enquanto ele lê, de frente quando ele vira para você assinar."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Gravata e crachá",
       "parts": [
         "toon-necktie",
@@ -8268,7 +8268,7 @@
       "text": "Uma gravata segurada pelo nó, ou vestida, e um crachá sem letras."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Laptop e aviso do sistema",
       "parts": [
         "toon-laptop-lid",
@@ -8281,7 +8281,7 @@
       "text": "A tampa do laptop que fecha no tempo certo e o aviso de uma linha sob a borda da mesa."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Sala de entrevista",
       "parts": [
         "toon-wall-sign",
@@ -8294,7 +8294,7 @@
       "text": "A placa da empresa na parede e a persiana que desce."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Sobre a mesa da entrevista",
       "parts": [
         "toon-tissue-box",
@@ -8425,7 +8425,7 @@
       "text": "O cronômetro corre apagado no painel e só acende quando alguém olha."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Pasta e fotografia",
       "parts": [
         "toon-folder"
@@ -8501,7 +8501,7 @@
       "text": "A janela da cozinha à noite, com os postes apagando em fila morro abaixo."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Rascunho e bilhetes",
       "parts": [
         "toon-laptop-screen",
@@ -8514,7 +8514,7 @@
       "text": "A tela com o rascunho em mudança e os bilhetes riscados que se acumulam."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Lupa e ponto de exclamação",
       "parts": [
         "toon-magnifier",
@@ -8527,7 +8527,7 @@
       "text": "A lupa sobre a tela e o ponto de exclamação desenhado como forma."
     },
     {
-      "section": "Toon: adereços",
+      "section": "props",
       "name": "Quadro de cortiça",
       "parts": [
         "toon-corkboard"
@@ -8614,6 +8614,18 @@
         "at": 17.2
       },
       "text": "O currículo enche o quadro: linhas genéricas, um título, e uma palavra circulada à mão em vermelho."
+    },
+    {
+      "section": "props",
+      "name": "Detector de fumaça no teto",
+      "parts": [
+        "toon-smoke-detector"
+      ],
+      "shot": {
+        "episode": "new-challenges",
+        "at": 28.4
+      },
+      "text": "O detector no teto, com a luz que fica vermelha no último instante."
     }
   ]
 }
