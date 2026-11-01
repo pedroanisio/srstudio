@@ -57,6 +57,13 @@ def test_nonfinite_failure_values_stay_strict_json():
     assert json.loads(json.dumps(error.to_dict(), allow_nan=False))['actual'] == {'value': 'nan'}
 
 
+def test_extreme_integers_do_not_break_json_encoding_or_payload_bounds():
+    error = SrstudioError('bad integer', actual={'value': 10**10000})
+    encoded = json.dumps(error.to_dict(), allow_nan=False)
+    assert len(encoded) < 1000
+    assert json.loads(encoded)['actual']['value'] == '<integer exceeds 4096 bits>'
+
+
 def test_inspect_json_failure_is_structured_on_stderr(capsys):
     assert cli.main(['inspect', 'character', 'missing-part', '--json']) == 2
     out, err = capsys.readouterr()

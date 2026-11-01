@@ -39,8 +39,10 @@ class Diagnostic(TypedDict):
 
 def _json_value(value: object, depth: int = 0) -> Any:
     """Bound diagnostic payloads and make nonfinite or opaque input safe for strict JSON."""
-    if value is None or isinstance(value, (bool, int)):
+    if value is None or isinstance(value, bool):
         return value
+    if isinstance(value, int):
+        return value if value.bit_length() <= 4096 else '<integer exceeds 4096 bits>'
     if isinstance(value, str):
         return value[:4096]
     if isinstance(value, float):
