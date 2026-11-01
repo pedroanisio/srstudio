@@ -98,9 +98,10 @@ def test_excessive_angular_velocity_is_rejected_before_sampling():
 def test_continuous_track_round_trips_through_versioned_motion_document():
     motion = Motion(ArmProfile(), HUMAN, root=moving())
     data = motion_dict(motion)
-    assert data['schema'] == 'srstudio.limbs/1.2.0'
+    assert data['schema'] == 'srstudio.limbs/1.3.0'
     assert parse_motion(data) == motion
     data['schema'] = 'srstudio.limbs/1.1.0'
+    del data['motion']['joins']
     with pytest.raises(LimbError, match='1.2.0'):
         parse_motion(data)
 
@@ -109,6 +110,7 @@ def test_continuous_track_round_trips_through_versioned_motion_document():
 def test_historical_documents_keep_smooth_track_defaults(version):
     data = motion_dict(Motion(ArmProfile(), HUMAN))
     data['schema'] = f'srstudio.limbs/{version}'
+    del data['motion']['joins']
     root = data['motion']['root']
     del root['interpolation']
     for key in root['keys']:

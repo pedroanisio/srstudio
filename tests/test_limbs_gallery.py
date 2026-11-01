@@ -82,3 +82,24 @@ def test_gallery_scenes_pass_engine_validation(tmp_path, engine, deformation):
     path = module.build(tmp_path / deformation, fps=2, deformation=deformation)
     result = subprocess.run([engine, "validate", str(path)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.usefixtures("system_font")
+@pytest.mark.parametrize("deformation", ["contour", "skin"])
+def test_gallery_cli_chains_all_gestures_without_a_rest_at_each_boundary(tmp_path, monkeypatch, deformation):
+    script = Path(__file__).resolve().parents[1] / "examples" / "limbs_gallery.py"
+    spec = importlib.util.spec_from_file_location("limbs_gallery", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    out = tmp_path / deformation
+    monkeypatch.setattr("sys.argv", [str(script), str(out), "--fps", "2", "--chain", "--deformation", deformation])
+    module.main()
+    motion = load_motion(out / "motion.json")
+    assert len(motion.joins) == 5
+    assert all(motion.sample(t).phase == "transition" for t in (2, 4, 6, 8, 10))
+    report = json.loads((out / "limbs-qa.json").read_text())
+    assert report["chained"] is True
+    assert all(v["max_bone_error"] < 1e-6 for v in report["styles"].values())
+    if deformation == "skin":
+        assert set(report["backends"].values()) == {"native-skin"}
+        assert all(abs(motion.sample(i / 24).arm.elbow.z) < 1e-9 for i in range(289))

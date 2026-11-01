@@ -15,7 +15,8 @@ from .errors import LimbError
 from .math3d import number
 from .motion import Motion
 
-SCHEMA = "srstudio.limbs/1.2.0"
+SCHEMA = "srstudio.limbs/1.3.0"
+TRANSFORM_SCHEMA = "srstudio.limbs/1.2.0"
 ANATOMY_SCHEMA = "srstudio.limbs/1.1.0"
 LEGACY_SCHEMA = "srstudio.limbs/1.0.0"
 MAX_BYTES = 5 * 1024 * 1024
@@ -112,7 +113,7 @@ def parse_motion(data: object) -> Motion:
     unknown = set(data) - {"schema", "generatedBy", "motion"}
     if unknown:
         raise LimbError(f"motion document has unknown fields {sorted(unknown)}")
-    if data.get("schema") not in (SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA):
+    if data.get("schema") not in (SCHEMA, TRANSFORM_SCHEMA, ANATOMY_SCHEMA, LEGACY_SCHEMA):
         raise LimbError(f"motion document needs schema {SCHEMA}")
     if "generatedBy" in data and not isinstance(data["generatedBy"], str):
         raise LimbError("motion generatedBy must be a string")
@@ -121,13 +122,15 @@ def parse_motion(data: object) -> Motion:
     result: Motion = _decode(Motion, data["motion"], "motion", [MAX_ITEMS])
     if data["schema"] == LEGACY_SCHEMA and any("bend_axis" in digit for digit in data["motion"]["hand"]["digits"]):
         raise LimbError("custom bend axes require motion schema srstudio.limbs/1.1.0")
-    if data['schema'] != SCHEMA:
+    if data['schema'] in (ANATOMY_SCHEMA, LEGACY_SCHEMA):
         tracks = [data['motion'].get('root', {}), *(c['target'] for c in data['motion'].get('contacts', []))]
         if any(
             'interpolation' in track or any('velocity' in k or 'angular_velocity' in k for k in track.get('keys', []))
             for track in tracks
         ):
             raise LimbError('transform interpolation and velocities require motion schema srstudio.limbs/1.2.0')
+    if data['schema'] != SCHEMA and 'joins' in data['motion']:
+        raise LimbError('action joins require motion schema srstudio.limbs/1.3.0')
     return result
 
 

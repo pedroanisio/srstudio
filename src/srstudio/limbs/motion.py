@@ -12,6 +12,7 @@ from .constraints import hand_pose, reach
 from .errors import Diagnostic, LimbError
 from .math3d import Frame, Quaternion, Vec3, bounded, number
 from .model import ArmPose, ArmProfile, HandControl, HandPose, HandProfile, label
+from .transitions import ActionJoin, JoinPlan, JoinWindow, prepare_join, resolve_joins, sample_join
 
 ACTIONS = (
     "rest",
@@ -364,6 +365,7 @@ class Motion:
     attachments: tuple[Attachment, ...] = ()
     root: TransformTrack = TransformTrack((TransformKey(0, Frame()),))
     reach_policy: str = "strict"
+    joins: tuple[ActionJoin, ...] = ()
 
     def __post_init__(self) -> None:
         if len(self.actions) > 10000 or self.reach_policy not in ("strict", "clamp"):
@@ -387,6 +389,7 @@ class Motion:
                 )
             if c.digit is not None and c.digit not in {d.name for d in self.hand.digits}:
                 raise LimbError(f"contact names an unknown digit {c.digit}")
+        _ = self._join_windows  # Validate composition before evaluating attachment acquisition.
         for a in self.attachments:
             actual = self.sample(a.attach).hand.frame.compose(a.offset)
             if actual.origin.distance(a.initial.origin) > a.tolerance:
@@ -397,6 +400,27 @@ class Motion:
 
     def retarget(self, arm: ArmProfile, hand: HandProfile | None = None) -> Motion:
         return replace(self, arm=arm, hand=hand or self.hand)
+
+    def chain(self, *after: int) -> Motion:
+        """Join selected adjacent action pairs (all by default), preserving explicitly authored join windows."""
+        indices = after or tuple(range(len(self.actions) - 1))
+        joins = {join.after: join for join in self.joins}
+        for index in indices:
+            join = ActionJoin(index)
+            joins.setdefault(index, join)
+        return replace(self, joins=tuple(joins[index] for index in sorted(joins)))
+
+    @cached_property
+    def _join_windows(self) -> tuple[JoinWindow, ...]:
+        return resolve_joins(self)
+
+    @cached_property
+    def _join_starts(self) -> tuple[float, ...]:
+        return tuple(window.start for window in self._join_windows)
+
+    @cached_property
+    def _join_plans(self) -> dict[int, JoinPlan]:
+        return {}
 
     @property
     def end(self) -> float:
@@ -587,6 +611,22 @@ class Motion:
             raise error.with_context(**context) from error
 
     def _sample(self, time: float) -> Sample:
+        index = bisect_right(self._join_starts, time) - 1
+        if index >= 0:
+            window = self._join_windows[index]
+            if window.start < time < window.end:
+                try:
+                    if index not in self._join_plans:
+                        plan = prepare_join(self, window)
+                        if len(self._join_plans) >= 64:
+                            self._join_plans.clear()
+                        self._join_plans[index] = plan
+                    return sample_join(self, self._join_plans[index], time)
+                except LimbError as error:
+                    raise error.with_context(join_after=window.after, phase='transition') from error
+        return self._sample_actions(time)
+
+    def _sample_actions(self, time: float) -> Sample:
         goal, control, action, phase = self._request(time)
         orientation: Quaternion | None = None
         local_orientation = False
@@ -650,9 +690,27 @@ class Motion:
                 turn = (angular_velocity(previous, start_time) * ta + angular_velocity(following, end_time) * tb) * span
                 if turn.length > 1e-12:
                     orientation = orientation * Quaternion.axis_angle(turn, turn.length)
-        root = self.root.sample(time)
-        profile = replace(self.arm, shoulder=root.point(self.arm.shoulder))
         pole = self._pole(action, time, goal)
+        arm, hand, control = self._pose(time, goal, control, pole, orientation, local_orientation)
+        diagnostics: tuple[Diagnostic, ...] = ()
+        if active:
+            at = hand.frame.origin if active.digit is None else hand.digit(active.digit).points[-1]
+            error = at.distance(active.frame(time).origin)
+            if error > 1e-6:
+                raise LimbError(f"contact {active.name} has residual {error:g}", code="contact", residual=error)
+            diagnostics = (Diagnostic("contact", active.name, error),)
+        return Sample(time, arm, hand, control, action.name if action else "rest", phase, diagnostics)
+
+    def _pose(
+        self,
+        time: float,
+        goal: Vec3,
+        control: HandControl,
+        pole: Vec3,
+        orientation: Quaternion | None = None,
+        local_orientation: bool = False,
+    ) -> tuple[ArmPose, HandPose, HandControl]:
+        profile = replace(self.arm, shoulder=self.root.sample(time).point(self.arm.shoulder))
         arm = reach(profile, goal, pole=pole, policy=self.reach_policy)
         if orientation is not None:
             relative = orientation if local_orientation else arm.frame.rotation.inverse() * orientation
@@ -670,14 +728,7 @@ class Motion:
         ):
             bounded(getattr(control, name), *limit, name)
         hand = hand_pose(self.hand, control, arm.frame, side=profile.side)
-        diagnostics: tuple[Diagnostic, ...] = ()
-        if active:
-            at = hand.frame.origin if active.digit is None else hand.digit(active.digit).points[-1]
-            error = at.distance(active.frame(time).origin)
-            if error > 1e-6:
-                raise LimbError(f"contact {active.name} has residual {error:g}", code="contact", residual=error)
-            diagnostics = (Diagnostic("contact", active.name, error),)
-        return Sample(time, arm, hand, control, action.name if action else "rest", phase, diagnostics)
+        return arm, hand, control
 
     def prop_frame(self, name: str, time: float) -> Frame:
         number(time, "prop time")

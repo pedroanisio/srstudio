@@ -35,6 +35,7 @@ def build(
     license_file: Path | None = None,
     deformation: str = "contour",
     hand: str = "human",
+    chain: bool = False,
 ) -> Path:
     if deformation not in ("contour", "skin"):
         raise LimbError("gallery deformation must be contour or skin")
@@ -97,10 +98,13 @@ def build(
         # Native skin is planar; articulated fingers retain their spatial controls and baked representation.
         targets = ((0.65, 0.3), (0.55, 0.3), (0.48, -0.1), (0.08, -0.28), (0.5, 0.32), (0.6, 0.4))
         actions = tuple(
-            Action(name, i * 2, 2, target=Target(Vec3(x, y, 0)))
+            # Continuous native skin must keep one planar elbow branch even when the wrist crosses y=0.
+            Action(name, i * 2, 2, target=Target(Vec3(x, y, 0)), pole=Vec3(0, -1, 0) if chain else None)
             for i, (name, (x, y)) in enumerate(zip(names, targets, strict=True))
         )
     motion = Motion(ArmProfile(), HANDS[hand], actions)
+    if chain:
+        motion = motion.chain()
     save_motion(motion, out / "motion.json")
     report = {
         "schema": "srstudio.limbs.gallery/1.0.0",
@@ -109,6 +113,7 @@ def build(
         "deformation": deformation,
         "backends": {},
         "hand": hand,
+        "chained": chain,
     }
     for i, (style, background) in enumerate((("stick", "#e7dcc7"), ("toon", "#f8e5d5"), ("gloss", "#e8dcf0"))):
         left = i * 640
@@ -174,6 +179,7 @@ def main() -> None:
     parser.add_argument("--font-license", type=Path)
     parser.add_argument("--deformation", choices=("contour", "skin"), default="contour")
     parser.add_argument("--hand", choices=tuple(HANDS), default="human")
+    parser.add_argument("--chain", action="store_true", help="flow between gestures without returning to rest")
     args = parser.parse_args()
     print(
         build(
@@ -183,6 +189,7 @@ def main() -> None:
             license_file=args.font_license,
             deformation=args.deformation,
             hand=args.hand,
+            chain=args.chain,
         )
     )
 

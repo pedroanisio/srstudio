@@ -66,7 +66,59 @@ arcs are rejected before sampling: insert keys or reduce angular velocity. Veloc
 
 Sampling is independent of playback order. Outside the key interval, the nearest frame is held, even when an
 explicit endpoint velocity is nonzero. Compiler output still follows its bake frame rate; continuous authoring
-does not override an intentionally held-frame look. Motion JSON `1.2.0` preserves the mode and velocities.
+does not override an intentionally held-frame look. Motion JSON `1.2.0` and later preserve the mode and velocities.
+
+## Chain gestures without returning to rest
+
+`Motion.chain()` joins every adjacent action. It returns a new motion, replacing the first action's recovery
+and the next action's preparation/stroke with a transition. The default window starts at the end of the first
+action's hold and ends at the next action's stroke time. Outside that window, the original motion is unchanged.
+
+<!-- action-chain:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.motion import Action, Motion
+
+source = Motion(
+    ArmProfile(), HUMAN,
+    (Action("point", duration=2), Action("present", start=2, duration=2)),
+)
+motion = source.chain()
+assert motion.sample(2).phase == "transition"
+assert source.joins == ()
+```
+<!-- action-chain:end -->
+
+For selected pairs, use `motion.chain(0, 2)`: each index identifies the action before a join. Existing explicit
+windows are preserved. For custom timing, use `dataclasses.replace(motion, joins=(ActionJoin(0, start=1.4,
+end=2.65),))`, importing `ActionJoin` from `srstudio.limbs.motion`. Times are motion seconds. Each endpoint
+must lie inside its respective action; windows must be ordered, unique and nonoverlapping. A join can bridge
+a gap between actions, and neighboring windows may touch.
+
+The transition matches source wrist position, hand orientation, elbow plane and effective finger angles,
+with boundary velocities estimated from the preserved source motion. Sampling order does not affect the
+result. IK and the existing reach, wrist and finger limits still apply; a join can fail if its intermediate
+poses are unreachable or its elbow plane becomes ambiguous. Such failures include `join_after` and
+`phase="transition"` in their diagnostic context. Compilation checks sampled poses before scene emission.
+
+Joins cannot replace an active contact. An explicit window can start at a contact's release and end at the
+next contact's acquisition; held props continue following the sampled hand frame. Use an intermediate action
+or different endpoints when a direct transition violates limits. Joins do not repair discontinuities in the
+root track, guarantee matching acceleration/jerk, or certify anatomical or emotional plausibility. Keep root
+motion continuous and inspect the compiled quality report and rendered movement. Output remains sampled at
+the compiler's bake rate. Without explicit joins, actions retain their original return-to-rest behavior.
+
+Build the same six chained gestures in Stick, Toon and Gloss, including strict motion JSON and numeric reports:
+
+```sh
+python examples/limbs_gallery.py ../generated/limbs/chained --chain
+scene-render encode ../generated/limbs/chained/limbs-gallery.scene.xml
+```
+
+Add `--deformation skin` for planar native arm skinning or `--hand gripper` for the mechanical hand. Omitting
+`--chain` keeps the gallery's original independent gestures. The chained skin example uses an explicit elbow
+guide to keep one planar bend direction. Joining opposite elbow branches may require a spatial transition;
+that motion needs the baked backend rather than native planar skinning.
 
 ## Time an expressive gesture to speech
 
@@ -385,10 +437,11 @@ in the wrist frame, including axial roll. FK and IK share one hand-frame convent
 lateral direction, as `reach` does with its default pole, so an FK pose solved back through `reach` with its
 elbow as the pole returns the same hand frame on both sides.
 
-The current writer emits `srstudio.limbs/1.2.0` motion documents. The reader also accepts `1.0.0` and `1.1.0`
+The current writer emits `srstudio.limbs/1.3.0` motion documents. The reader also accepts `1.0.0`, `1.1.0` and `1.2.0`
 documents and supplies the original smooth interpolation for tracks without the new fields. Documents without
 explicit axes retain their original +X default. Explicit axes require at least `1.1.0`; transform interpolation
-and velocity fields require `1.2.0`. Unknown versions and fields are rejected. All accepted versions pass through
+and velocity fields require `1.2.0`; action joins require `1.3.0`. Older documents without joins preserve their
+return-to-rest behavior. Unknown versions and fields are rejected. All accepted versions pass through
 the current numeric and resource validation.
 Decoding errors retain the nested field path, including optional objects: an invalid target coordinate reports
 `motion.actions[0].target.position.x` and the expected finite number, so an authoring agent can repair that field.
