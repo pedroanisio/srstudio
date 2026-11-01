@@ -127,6 +127,51 @@ Velocity samples belong to interval midpoints when computing acceleration, so a 
 artificially inflate the acceleration report. Native IK, baked hand contours and interaction visibility share
 the same six-decimal scene-time quantization, including frame-aligned offsets such as `1 / 24` seconds.
 
+## Apply a character's motion quality limits
+
+`BakeOptions(quality=QualityProfile(...))` checks authored limits before scene emission in native and baked
+compilation, prepared character tracks, and interaction bakes. Profiles are opt-in and named for the character
+or style. This example uses an existing `cv` Canvas; the limits are illustrative authoring choices, to be
+calibrated against the intended performance:
+
+<!-- quality-profile:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.compile import BakeOptions, compile_motion
+from srstudio.limbs.motion import Action, Motion
+from srstudio.limbs.validation import QualityProfile
+
+arm = ArmProfile()
+profile = QualityProfile("presenter", max_speed=2 * arm.length, max_jerk=60 * arm.length, policy="warn")
+compiled = compile_motion(
+    cv, cv.comp, Motion(arm, HUMAN, (Action("point", duration=2),)),
+    id="quality-point", backend="baked", options=BakeOptions(fps=24, quality=profile),
+)
+findings = compiled.report.quality_findings
+```
+<!-- quality-profile:end -->
+
+Available limits cover wrist speed, acceleration and jerk; elbow speed; hand angular speed and acceleration;
+reach residual; and obstacle penetration. `max_jerk` uses world units/second³ and angular acceleration uses
+world radians/second². Differences carry interval-midpoint times, including nonuniform sampling. Each finding
+contains its metric, measured value, limit, sample time, repair guidance and, for collisions, obstacle and arm
+segment. `policy="warn"` preserves these findings in the report and compiler diagnostics; `"error"` raises a
+`LimbError` with `code="quality.limit"` before drawing. Changed profiles invalidate prepared reports.
+
+Derivatives require evidence: speed needs two samples, acceleration three, jerk four. An enabled limit with
+too few samples produces `quality.evidence`, rather than passing on a default zero. Reports without a quality
+profile retain zero defaults for unavailable measurements; those zeros are not proof of stillness.
+
+For obstacles, pass `CollisionSphere(name, center, radius, parts=("upper", "forearm"))` in `profile.obstacles`
+and set `max_penetration`. Centers and radii use world canonical units. The check measures sphere penetration
+against arm-segment capsules of radius `arm.width / 2`; it does not check the hand mesh, infer the torso, detect
+collisions between samples, or move the actor automatically. Choose obstacles and exclusions to represent the
+intended contacts. At most 128 uniquely named obstacles and `max_collision_checks` segment/obstacle/sample
+checks (default and maximum 1,000,000) are allowed. Budget exhaustion is an error even under warning policy.
+
+These measurements support visual review. They do not certify anatomical plausibility, emotion or whole-body
+balance, and thresholds are not universal across rigs or stylized animation.
+
 ## Artist contours
 
 A `ContourCorrection` replaces a named projected surface with original artwork. Coordinates are canonical
