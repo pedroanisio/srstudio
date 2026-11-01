@@ -44,3 +44,7 @@ signature cactus and code; `mind-stamp` and `mind-named`.
 ## Parts new (all proposed)
 
 - `mind-zipper`, a closed zipper over the whole frame, pulled open on the shot behind it.
+
+## Watch gate
+
+Watch gate: not watched yet.

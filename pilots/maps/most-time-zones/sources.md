@@ -18,6 +18,8 @@ Status key: **computed** = computed by `tools/maps/time_zones.py`, quoted from i
 
 ## Limits
 
+- The day the reel runs is 18 June 2026 UTC, the day of the year the seven towns come closest to all dark. The dots turn on the sun's altitude at five-minute steps, and the build stops if a step of that day has no town lit.
+
 - Antarctic claims are left out. So is Clipperton, which is French and uninhabited but has no tz zone. Counting it would change January's tie.
 - "France" here means every territory France governs, so the claim is about the French Republic, not the mainland.
 - A claim about France's longest border was dropped: on Natural Earth 5.1.1 Spain is 567 km and Brazil 518 km.

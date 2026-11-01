@@ -31,4 +31,5 @@ GeoNames cities: the coordinates of each record named above. https://www.geoname
 - The antipode of a point flips its latitude and moves its longitude by 180 degrees. A grid cell's people count as opposite land when the cell's antipode falls on the land mask.
 - A cell's antipode is decided at its centre, so coastlines are good to about 1 km of grid.
 - A city is one coordinate, not its whole footprint: part of a large city can land elsewhere. London lands in the sea, 2.1 degrees from New Zealand, and is not used.
+- The red dots are the channel's dots, one per million people, turned to their antipodes. The figure is the grid's, computed above, and not a count of the dots on screen.
 - A hole through the Earth is a picture, not an engineering claim. Nothing in the reel states a depth.
