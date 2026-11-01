@@ -11573,6 +11573,91 @@
           "rig": null
         }
       ]
+    },
+    "toon-climb-chair": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kitchen chair seen from behind, its back hiding who stands on it from the waist down. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "19d131f27f833105b6d7e2e3e0126ebefda1b960bd5009808b3235fac11c6958",
+          "rig": null
+        }
+      ]
+    },
+    "toon-table-legs": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Over a ledge's front: an apron, the wall and floor under it, and two legs, so the ledge reads as a table. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0799b5a5c49e2153b18d3235e20c1ee35399d2f0ee08b7328e4ab1cb511ca415",
+          "rig": null
+        }
+      ]
+    },
+    "toon-raised-phone": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A forearm in a character's colours holding a phone up, its signal bars on a clock. It never moves. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ab7709c16c041623ddfaeb1ec3c340368df9936cfc5b897964ba74a981a0a252",
+          "rig": null
+        }
+      ]
+    },
+    "toon-upload-chip": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An upload's figure over its bar, in an invented interface; each reading held long enough to read. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "974defacd053af25fdf74024d5536945d22737659ed3ad6392c2117cf9c84bc9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-sandwich-broom": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A broom held head up with a sandwich balanced on it, bitten at a second. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "34e4d66f739756433dad4ca709486732b686ce28061e9262c2ef7558b44efd9e",
+          "rig": null
+        }
+      ]
     }
   }
 }

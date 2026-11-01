@@ -390,6 +390,7 @@ TOON = Style(
         "toon_world",
         "toon_flat",
         "toon_sets",
+        "toon_signal",
         "toon_study",
         "toon_tie",
         "toon_wear",
