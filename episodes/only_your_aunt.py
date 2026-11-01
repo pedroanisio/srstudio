@@ -10,8 +10,8 @@ bench a stranger lays a crayon page on his knee, pats it twice and goes. "Is he 
 the Boss behind a cake with his name on it. Nobody speaks. "Mom. There's a cake." "Is it chocolate?" "Who did you tell?"
 Rosa at home, a hand to her heart, wounded. "Nobody! Your aunt doesn't count." Cut on the last word to a slice held out.
 
-Rosa is heard down the phone until her close-up. Ava, the man on the bench and the Boss are silent and unnamed. No music:
-the foley is synthesized here. It declares no engine safe area, so captions are placed inside x 80–920 by hand.
+Rosa is heard down the phone until her close-up. Ava, the man on the bench and the Boss are silent and unnamed. No
+music: the foley is synthesized here. It declares no engine safe area, so captions are placed inside x 80–920 by hand.
 """
 
 import os
@@ -90,9 +90,9 @@ CUP_ROW = 1222.0
 CUP_FROM, CUP_TO = 650.0, 460.0
 KNEE = (690.0, 1322.0)
 EAR = (-114.0, 6.0)  # the phone hand, in the rig's units
-HIP = (96.0, 262.0)  # Milo's free hand at rest, in the rig's units
+HIP = (112.0, 318.0)  # Milo's free hand at rest, in the rig's units
 CHEST = (104.0, 196.0)  # and with a coffee in it
-WHITE = "#FFFFFF"
+WHITE = "#F6F1E6"
 LEAN = 26.0  # his arm comes up from the lower left
 TILT = 48.0  # the Boss's arm comes in from the lower right; what it holds stays level
 SHIRT = "#E9E5DC"
@@ -142,7 +142,7 @@ def ava(g):
         *AVA,
         mouth=[(0.0, "smile")],
         blinks=[(L[0].end, L[0].end + 0.14), (L[3].start, L[3].start + 0.14)],
-        nods=[(0, 0), (CAUGHT, 0), (CAUGHT + 0.2, 4), (CAUGHT + 0.5, 0)],
+        nods=[(0, 0), (BACK[0], 0), (BACK[0] + 0.2, 4), (BACK[0] + 0.6, 0)],
         free_arms=("left",),
         name=None,
     )
@@ -174,11 +174,20 @@ def ava_arm(g):
     """In frame pixels, in front of the counter: the flick along the wood, then a salute."""
     shoulder = (AVA[0] - 66 * AVA[2], AVA[1] + 140 * AVA[2])
     rest = (CUP_FROM + 34, CUP_ROW + 4)
-    brow = (AVA[0] - 62, AVA[1] - 54)
-    track = [(0.0, *rest), (FLICK - 0.1, rest[0] + 22, rest[1]), (FLICK + 0.12, rest[0] - 50, rest[1]), (CAUGHT - 0.1, *rest),
-             (CAUGHT + 0.16, *brow), (CAUGHT + 0.7, *brow), (CAUGHT + 1.0, *rest)]  # fmt: skip
+    brow = (AVA[0] - 160, AVA[1] - 40)  # at her temple, the arm outside her face
+    salute = BACK[0] + 0.1
+    track = [
+        (0.0, *rest),
+        (FLICK - 0.1, rest[0] + 22, rest[1]),
+        (FLICK + 0.12, rest[0] - 50, rest[1]),
+        (CAUGHT - 0.1, *rest),
+        (salute, *rest),
+        (salute + 0.2, *brow),
+        (salute + 0.75, *brow),
+        (salute + 1.05, *rest),
+    ]
     cutout_arm.arm(
-        cv, g, "ava-reach", shoulder, track, upper=150, fore=150, bend=-1, width=6.5, hand=50, skin=cast.Barista.skin
+        cv, g, "ava-reach", shoulder, track, upper=128, fore=128, bend=-1, width=6.5, hand=50, skin=cast.Barista.skin
     )
 
 
@@ -321,7 +330,7 @@ def at_desk(g):
 
     cv.keys(hand, "x", [(SLICE[0], 90.0), (SLICE[0] + 0.3, 0.0)], hold=False, kind="sine-out")
     cutout_counter.reaching_hand(
-        cv, hand, 585, 1075, scale=1.0, rotation=-TILT, grip=120, skin=WHITE, sleeve=SHIRT, holds=plate
+        cv, hand, 560, 1105, scale=1.0, rotation=-TILT, grip=120, skin=WHITE, sleeve=SHIRT, holds=plate
     )
 
 
@@ -390,7 +399,7 @@ cup_insert(cv.group(finish, "cup-insert"))
 
 
 def key(group, moves):
-    """Hard cuts and pushes of a set, each frame (scale, x, y); the caller keeps every edge of the set outside the frame."""
+    """Hard cuts and pushes of a set, each frame (scale, x, y); the caller keeps every edge of the set out of frame."""
     for i, prop in enumerate(("scaleX", "x", "y")):
         cv.keys(group, prop, [(at, frame[i]) for at, frame in moves], hold=False)
     cv.keys(group, "scaleY", [(at, frame[0]) for at, frame in moves], hold=False)

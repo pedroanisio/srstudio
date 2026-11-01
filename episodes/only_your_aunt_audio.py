@@ -31,7 +31,12 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("rosa", "Is he a nice boy?", "Is he a nice boy?", 1.00, phone=True),
     Spoken("milo", "Mom. There's a cake.", "Mom. There's a cake.", 0.92),
     Spoken("rosa", "Is it chocolate?", "Is it chocolate?", 1.02, phone=True),
-    Spoken("milo", "I haven't had the interview! Who did you tell?", "I haven't had the interview!\nWho did you tell?", 1.08),
+    Spoken(
+        "milo",
+        "I haven't had the interview! Who did you tell?",
+        "I haven't had the interview!\nWho did you tell?",
+        1.08,
+    ),
     Spoken("rosa", "Nobody! Your aunt doesn't count.", "Nobody!\nYour aunt doesn't count.", 0.96),
 ]  # fmt: skip
 CUE = 0.86  # the least a line starts after the one before, so that one's caption cue holds
