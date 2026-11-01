@@ -152,11 +152,18 @@ def alarm(beats, n: int) -> float:
     return times(beats, "alarm")[n - 1]
 
 
+def buried(beats) -> float:
+    """When the phone in her hand is gone under the pillow."""
+    return at(beats, "bury") + 0.25
+
+
 def count(cv, parent, beats, end, measure) -> None:
-    """The overlay: which alarm this is, from just before its line to just after it starts, never its words."""
-    alarms = times(beats, "alarm")
+    """The overlay: which alarm this is, from just before its line to just after it starts, never its words, and never
+    while the phone in her hand still reads the alarm before."""
+    alarms, gone = times(beats, "alarm"), buried(beats)
     for n, start in enumerate(alarms, 1):
-        toon_house.key_line(cv, parent, f"ALARM {n} OF {OF}", max(0.0, start - 0.3), start + 1.5, measure=measure)
+        lead = max(start - 0.3, gone if start > gone else 0.0)
+        toon_house.key_line(cv, parent, f"ALARM {n} OF {OF}", lead, start + 1.5, measure=measure)
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:
@@ -240,20 +247,13 @@ def _night(shot) -> None:
                        length=150.0)  # fmt: skip
     toon_bed.double_quilt(cv, shot.front, signed=False)
     px, py = toon_bed.PHONE_SPOT
+    stood = cv.group(shot.front, cv.uid("g"), start=app.start, end=grab)  # in her hand from here on, never on the stand
     cv.rect(
-        shot.front,
-        fx(px - 18),
-        fy(py - 70),
-        fh(36),
-        fh(70),
-        toon_everyday.PHONE_BODY,
-        cv.ink,
-        toon.FINE_W,
-        radius=fh(5),
+        stood, fx(px - 18), fy(py - 70), fh(36), fh(70), toon_everyday.PHONE_BODY, cv.ink, toon.FINE_W, radius=fh(5)
     )
     toon_bed.swung_arm(cv, shot.front, (372.0, 760.0), RABBIT_COAT, [(hit - 0.2, -14.0), (hit, 24.0)], hit - 0.2,
                        hit + 0.3, length=150.0, width=54.0)  # fmt: skip
-    held_from, held_to = grab, bury + 0.25
+    held_from, held_to = grab, buried(beats)
     toon_bed.swung_arm(cv, shot.front, (204.0, 776.0), RABBIT_COAT, [(grab, -12.0)], held_from, held_to, length=72.0,
                        width=44.0)  # fmt: skip
     shade = cv.group(shot.front, cv.uid("g"))
