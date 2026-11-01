@@ -18,7 +18,7 @@ PARTS = (
     "toon-lasagna",
     "toon-monitor-receiver",
     "toon-mower",
-    "toon-profiles",
+    "toon-profile-list",
     "toon-rack",
     "toon-scribble",
     "toon-shampoo",
@@ -142,22 +142,47 @@ def test_a_stack_of_tubs_is_bounded(counts):
 
 def test_a_profile_screen_prints_each_name():
     cv = canvas()
-    toon_homeware.profiles(cv, cv.comp, ("Mia", "Brock", "Guest"))
+    toon_homeware.profile_list(cv, cv.comp, ("Mia", "Brock", "Guest"))
     assert {"Mia", "Brock", "Guest"} <= set(words(cv))
 
 
 @pytest.mark.parametrize("names", [(), ("a",) * 7])
 def test_a_profile_screen_holds_one_to_six(names):
     cv = canvas()
-    with pytest.raises(toon.ToonDataError, match="tiles"):
-        toon_homeware.profiles(cv, cv.comp, names)
+    with pytest.raises(toon.ToonDataError, match="rows"):
+        toon_homeware.profile_list(cv, cv.comp, names)
 
 
 @pytest.mark.parametrize("name", ["", "A name far too long for its tile on a phone"])
 def test_a_profile_name_must_fit(name):
     cv = canvas()
     with pytest.raises(toon.ToonDataError, match="characters"):
-        toon_homeware.profiles(cv, cv.comp, (name,))
+        toon_homeware.profile_list(cv, cv.comp, (name,))
+
+
+def test_a_profile_screen_is_a_list_of_round_avatars_under_its_own_words():
+    cv = canvas()
+    toon_homeware.profile_list(cv, cv.comp, ("Mia", "Brock"))
+    drawn = cv.scene.to_bytes().decode()
+    assert "Who's on the couch?" in drawn and "Who's watching" not in drawn
+    assert toon_homeware.AVATARS[0] in drawn and toon_homeware.AVATARS[1] in drawn
+    assert toon_homeware.AVATARS[2] not in drawn, "one avatar a name"
+    assert toon_homeware.DARK_SCREEN[0] not in drawn, "no dark page behind them"
+
+
+def test_a_device_list_stays_dark_unless_given_other_paints():
+    dark, pale = canvas(), canvas()
+    toon_homeware.device_list(dark, dark.comp)
+    toon_homeware.device_list(pale, pale.comp, paints=toon_homeware.LIGHT_SCREEN)
+    drawn = dark.scene.to_bytes().decode()
+    assert toon_homeware.DARK_SCREEN[0] in drawn and toon_homeware.DARK_SCREEN[0] not in pale.scene.to_bytes().decode()
+
+
+def test_a_door_draws_legs_on_its_guest_only_when_asked():
+    plain, legged = canvas(), canvas()
+    toon_homeware.swing_door(plain, plain.comp, opens=((1.0, 2.0),), end=4.0)
+    toon_homeware.swing_door(legged, legged.comp, opens=((1.0, 2.0),), end=4.0, legs=True)
+    assert len(legged.scene.to_bytes()) > len(plain.scene.to_bytes())
 
 
 def test_a_device_list_holds_one_to_four_rows():
@@ -166,7 +191,7 @@ def test_a_device_list_holds_one_to_four_rows():
         toon_homeware.device_list(cv, cv.comp, rows=())
 
 
-@pytest.mark.parametrize("draw", [toon_homeware.profiles, toon_homeware.device_list])
+@pytest.mark.parametrize("draw", [toon_homeware.profile_list, toon_homeware.device_list])
 def test_a_screen_leaves_after_it_arrives(draw):
     cv = canvas()
     with pytest.raises(toon.ToonDataError, match="leaves"):

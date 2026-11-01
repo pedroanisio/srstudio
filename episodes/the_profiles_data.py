@@ -19,7 +19,7 @@ SLUG = "the-profiles"
 TITLE = "The Profiles — Mia and Brock (Toon)"
 DESCRIPTION = "A Toon sketch: two exes meet to end a shared streaming account, and find a worse betrayal."
 ACCESSIBILITY = (
-    "A streaming screen asks who's watching, with tiles for Mia, Brock, Brock's mom, Kyle and Tess. Two "
+    "A streaming screen asks who's on the couch, listing Mia, Brock, Brock's mom, Kyle and Tess. Two "
     "cartoon exes, a "
     "rabbit and a dog, sit at a restaurant table with a phone between them. She opens the device list: Kyle and Tess, "
     "their new partners, are both on the Living Room TV. They lean in, on one side of the table. It is episode nine, "
@@ -35,7 +35,7 @@ PIVOT = (980.0, 1420.0)
 STILL = 0.45
 NAMES = ("Mia", "Brock", "Brock's Mom", "Kyle", "Tess")
 DEVICES = (("Kyle", "Living Room TV", "Now watching"), ("Tess", "Living Room TV", "Now watching"))
-PHONE = dict(at=(440, 846), scale=0.9)
+PHONE = dict(at=(98, 846), scale=0.9)  # at the table's left end, under the near one's shoulder: no face behind it
 BROCK_AT = (392.0, 816.0)
 END = 26.6
 
@@ -57,7 +57,7 @@ SCRIPT = scripting.Script(LINES)
 say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 BEATS = (
-    hold(0.0, "hamster", "", "half", "none", "desk"),  # the held frame: Who's watching?
+    hold(0.0, "hamster", "", "half", "none", "desk"),  # the held frame: Who's on the couch?
     say(STILL, "hamster", 0, "half", "none", "desk"),
     say(2.7, "dog", 1, "half", "flat", "desk"),
     say(3.6, "rabbit", 2, "half", "flat", "crossed"),
@@ -99,9 +99,9 @@ def dress(shot) -> None:
     together = sketch.events(shot.beats, "together")[0][0]
     if app.who == "hamster":
         if app.start < listing:
-            toon_homeware.profiles(cv, shot.back, NAMES, app.start, app.end)
+            toon_homeware.profile_list(cv, shot.back, NAMES, app.start, app.end)
         else:
-            toon_homeware.device_list(cv, shot.back, DEVICES, app.start, app.end)
+            toon_homeware.device_list(cv, shot.back, DEVICES, app.start, app.end, paints=toon_homeware.LIGHT_SCREEN)
         toon_house.ledge(cv, shot.front, "white")
         return
     toon_dinner.restaurant(cv, shot.back)

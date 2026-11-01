@@ -1209,7 +1209,7 @@
     "toon-shampoo": {"title": "Frasco de xampu"},
     "toon-scribble": {"title": "Rabisco no lugar da legenda"},
     "toon-rack": {"title": "Cesto da lava-louças"},
-    "toon-profiles": {"title": "Perfis do streaming"},
+    "toon-profile-list": {"title": "Lista de perfis do streaming"},
     "toon-mower": {"title": "Cortador de grama"},
     "toon-monitor-receiver": {"title": "Receptor da babá"},
     "toon-lasagna": {"title": "Lasanha"},
@@ -8075,15 +8075,15 @@
     },
     {
       "section": "graphics",
-      "name": "Perfis do streaming",
+      "name": "Lista de perfis do streaming",
       "parts": [
-        "toon-profiles"
+        "toon-profile-list"
       ],
       "shot": {
         "episode": "the-profiles",
         "at": 0.2
       },
-      "text": "A tela de quem está assistindo, com um a seis nomes."
+      "text": "A tela de quem está no sofá: uma lista de um a seis nomes com avatares redondos."
     },
     {
       "section": "graphics",

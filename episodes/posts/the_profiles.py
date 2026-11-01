@@ -34,7 +34,7 @@ RELEASE = Release(
         "toon-hamster": 1,
         "toon-ledge": 1,
         "toon-phone": 1,
-        "toon-profiles": 1,
+        "toon-profile-list": 1,
         "toon-rabbit": 2,
         "toon-restaurant": 1,
         "toon-table": 1,

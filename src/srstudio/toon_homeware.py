@@ -27,7 +27,7 @@ __all__ = [
     "monitor_receiver",
     "lasagna",
     "mower",
-    "profiles",
+    "profile_list",
     "rack",
     "scribble",
     "shampoo",
@@ -57,7 +57,10 @@ TUB, TUB_LID, SOUP = "#f4f7f9", "#e8574f", "#f0b45a"
 BOTTLE, BOTTLE_SHADE, BOTTLE_LABEL = "#57b6c9", "#3b8fa2", "#fff6dc"
 BUBBLE = "#e6f7ff"
 PAGE_BG, TILE_INK = "#14161f", "#ffffff"
-TILES = ("#e8574f", "#3f8fe0", "#f2c14e", "#57b878", "#a36be0")
+DARK_SCREEN = (PAGE_BG, "#232634", TILE_INK, "#b9c0d0", LED)  # page, row, ink, soft ink, the doing
+AVATARS = ("#b4432f", "#2a6aaa", "#8a6710", "#2f7550", "#7443b0")
+LIGHT_SCREEN = ("#e6edf4", "#ffffff", "#20242e", "#566074", "#17703f")  # page, row, ink, soft ink, the doing
+PROFILE_TOP, PROFILE_ROW, PROFILE_ROOM = 322.0, 88.0, 450.0  # reference units: under the caption, over the ledge
 SCRAWL_BG, SCRAWL_INK = "#fff1cf", "#1f2933"
 MOWER, MOWER_DARK = "#d9483b", "#9c2f26"
 BLOWER, BLOWER_DARK = "#f28c28", "#b85f12"
@@ -226,10 +229,17 @@ def monitor_receiver(
 
 @register("prop", "toon-swing-door", summary="A swing door with a round window, shut or open on a lit dining room")
 def swing_door(
-    cv: Canvas, parent, opens: Spans = (), at: Point = (380.0, 150.0), size: Point = (200.0, 620.0), end: float = 0.0
+    cv: Canvas,
+    parent,
+    opens: Spans = (),
+    at: Point = (380.0, 150.0),
+    size: Point = (200.0, 620.0),
+    end: float = 0.0,
+    *,
+    legs: bool = False,
 ) -> None:
     """A door whose frame's top left is reference ``at``: shut, and for each of ``opens`` (seconds) swung back on a
-    lit room with a guest's shadow crossing it."""
+    lit room with a guest's shadow crossing it, standing on the room's floor when ``legs``."""
     x, y = _point(at, "a door's place")
     w, h = size
     spans = _spans(opens, "a door's opens")
@@ -253,6 +263,10 @@ def swing_door(
         cv.rect(ajar, fx(x + w - 32), fy(y), fh(32), fh(h), DOOR_SHADE, cv.ink, FINE_W)
         guest = cv.group(g, cv.uid("g"), opacity=0.0)
         cv.ellipse(guest, fx(x + 40), fy(y + 130), fh(80), fh(90), "#7a5a42")
+        if legs:
+            for leg in (x + 36, x + 92):
+                cv.rect(guest, fx(leg), fy(y + 480), fh(32), fh(130), "#7a5a42")
+                cv.rect(guest, fx(leg - 8), fy(y + 596), fh(48), fh(24), "#7a5a42", radius=fh(10))
         cv.rect(guest, fx(x + 22), fy(y + 216), fh(116), fh(300), "#7a5a42", radius=fh(30))
         seen = [(t, 1.0 - v) for t, v in shut]
         cv.keys(ajar, "opacity", seen)
@@ -332,49 +346,58 @@ def _fit(text: str, what: str) -> str:
     return text
 
 
-@register("prop", "toon-profiles", summary="A streaming service's Who's watching? screen, with its name tiles")
-def profiles(cv: Canvas, parent, names: Sequence[str] = ("Mia", "Brock"), start: float = 0.0, end: float = 2.0) -> None:
-    """The frame filled by a profile screen: the question and up to six square name tiles."""
+@register("prop", "toon-profile-list", summary="A streaming service's Who's on the couch? list: round avatars, names")
+def profile_list(
+    cv: Canvas, parent, names: Sequence[str] = ("Mia", "Brock"), start: float = 0.0, end: float = 2.0
+) -> None:
+    """The frame filled by a pale profile screen: the question, under it a list of up to six rows, a round avatar with
+    the name's initial beside each name. The rows start under the caption's place."""
     if not 1 <= len(names) <= 6:
-        raise ToonDataError(f"a profile screen shows 1 to 6 tiles, got {len(names)}")
+        raise ToonDataError(f"a profile list shows 1 to 6 rows, got {len(names)}")
     if end <= start:
         raise ToonDataError(f"a screen leaves after it arrives, got {start}..{end}")
+    page, _, ink, soft, _ = LIGHT_SCREEN
+    pitch = min(PROFILE_ROW, PROFILE_ROOM / len(names))
     g = cv.group(parent, cv.uid("g"), start=start, end=end)
-    cv.rect(g, fx(-10), fy(0), fh(612), fh(1000), PAGE_BG)
-    cv.text(g, cv.uid("profiles-head"), "Who's watching?", fx(0), fy(130), int(fh(592)), int(fh(90)), 76,
-            color=TILE_INK, wrap="none")  # fmt: skip
+    cv.rect(g, fx(-10), fy(0), fh(612), fh(1000), page)
+    cv.text(g, cv.uid("profiles-head"), "Who's on the couch?", fx(0), fy(130), int(fh(592)), int(fh(90)), 68,
+            color=ink, wrap="none")  # fmt: skip
     for i, name in enumerate(names):
-        x, y = 66 + (i % 2) * 250, 244 + (i // 2) * 174
-        cv.rect(g, fx(x), fy(y), fh(210), fh(112), TILES[i % len(TILES)], radius=fh(14))
-        cv.ellipse(g, fx(x + 78), fy(y + 20), fh(54), fh(54), "#ffffff", opacity=0.85)
+        y = PROFILE_TOP + i * pitch
         name = _fit(name, "a profile's name")
-        cv.text(g, cv.uid("profile"), name, fx(x - 20), fy(y + 114), int(fh(250)), int(fh(44)), 40, color=TILE_INK,
-                wrap="none")  # fmt: skip
+        cv.ellipse(g, fx(64), fy(y + 6), fh(64), fh(64), AVATARS[i % len(AVATARS)], cv.ink, FINE_W)
+        cv.text(g, cv.uid("profile-initial"), name[0].upper(), fx(64), fy(y + 14), int(fh(64)), int(fh(48)), 44,
+                color="#ffffff", wrap="none")  # fmt: skip
+        cv.text(g, cv.uid("profile"), name, fx(150), fy(y + 14), int(fh(390)), int(fh(48)), 44, color=ink,
+                align="start", wrap="none")  # fmt: skip
+        cv.rect(g, fx(150), fy(y + 76), fh(390), fh(2), soft, cv.clear, 0, radius=0, opacity=0.5)
 
 
 @register("prop", "toon-device-list", summary="A streaming account's device list: who is watching on what, right now")
 def device_list(
     cv: Canvas, parent, rows: Sequence[tuple[str, str, str]] = (("Kyle", "Living Room TV", "Now watching"),),
-    start: float = 0.0, end: float = 2.0,
+    start: float = 0.0, end: float = 2.0, *, paints: tuple[str, str, str, str, str] = DARK_SCREEN,
 ) -> None:  # fmt: skip
-    """The frame filled by a device list, a row per ``(name, device, doing)``, the doing in green."""
+    """The frame filled by a device list, a row per ``(name, device, doing)``, the doing in green. ``paints`` are the
+    page, the row, the ink, the soft ink and the doing: :data:`LIGHT_SCREEN` goes with :func:`profile_list`."""
     if not 1 <= len(rows) <= 4:
         raise ToonDataError(f"a device list shows 1 to 4 rows, got {len(rows)}")
     if end <= start:
         raise ToonDataError(f"a screen leaves after it arrives, got {start}..{end}")
+    page, row, ink, soft, doing_ink = paints
     g = cv.group(parent, cv.uid("g"), start=start, end=end)
-    cv.rect(g, fx(-10), fy(0), fh(612), fh(1000), PAGE_BG)
-    cv.text(g, cv.uid("devices-head"), "Your devices", fx(0), fy(190), int(fh(592)), int(fh(80)), 64, color=TILE_INK,
+    cv.rect(g, fx(-10), fy(0), fh(612), fh(1000), page)
+    cv.text(g, cv.uid("devices-head"), "Your devices", fx(0), fy(190), int(fh(592)), int(fh(80)), 64, color=ink,
             wrap="none")  # fmt: skip
     for i, (name, device, doing) in enumerate(rows):
         y = 310 + i * 200
-        cv.rect(g, fx(36), fy(y), fh(520), fh(172), "#232634", radius=fh(14))
+        cv.rect(g, fx(36), fy(y), fh(520), fh(172), row, radius=fh(14))
         name = _fit(name, "a device's owner")
-        cv.text(g, cv.uid("device-name"), name, fx(56), fy(y + 12), int(fh(480)), int(fh(62)), 54, color=TILE_INK,
+        cv.text(g, cv.uid("device-name"), name, fx(56), fy(y + 12), int(fh(480)), int(fh(62)), 54, color=ink,
                 align="start", wrap="none")  # fmt: skip
-        cv.text(g, cv.uid("device"), device, fx(56), fy(y + 72), int(fh(480)), int(fh(44)), 38, color="#b9c0d0",
+        cv.text(g, cv.uid("device"), device, fx(56), fy(y + 72), int(fh(480)), int(fh(44)), 38, color=soft,
                 align="start", wrap="none")  # fmt: skip
-        cv.text(g, cv.uid("doing"), doing, fx(56), fy(y + 116), int(fh(480)), int(fh(44)), 38, color=LED,
+        cv.text(g, cv.uid("doing"), doing, fx(56), fy(y + 116), int(fh(480)), int(fh(44)), 38, color=doing_ink,
                 align="start", wrap="none")  # fmt: skip
 
 

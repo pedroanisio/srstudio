@@ -9083,7 +9083,7 @@
         }
       ]
     },
-    "toon-profiles": {
+    "toon-profile-list": {
       "kind": "prop",
       "style": "toon",
       "refused": null,
@@ -9091,14 +9091,14 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A streaming service's who-is-watching screen, one to six named tiles.",
+          "note": "A streaming service's pale profile screen: Who's on the couch?, a list of one to six round avatars with names. Replaces toon-profiles, retired by arc4d3's ruling.",
           "status": "approved",
           "proof": "",
           "approval": {
             "date": "2026-10-31",
-            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793494442.026429: redraw it; \"'Who's watching?' is Netflix's own wording, and colour tiles with names in a grid on dark is its signature layout\""
           },
-          "drawing": "147af716636ea50be85f1b99385d2890cd413816b0177a337d7acb9343ea0bcb",
+          "drawing": "d80a16986bcca83745e30cbe71a352aff9086eff9e412fe9719043e60fa32d50",
           "rig": null
         }
       ]
