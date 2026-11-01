@@ -8,7 +8,9 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
   finding counts as proven false only when it's measured on the rendered frames, not argued: the text's real time on
   screen from the frames (first to last frame it's legible) against the rule's minimum, and contrast measured on the
   composited frame. Each one goes in the `delivered:` post with its frame evidence, signed off by a reviewer who isn't
-  the author. Real findings still get fixed."
+  the author. Real findings still get fixed." On `TXT-FIT`, arc4d3's acceptance of `ill-get-this` the same day: "the
+  proof holds. The card touches the edge only while it's thrown in (f0505), and at rest GARY is fully inside it (f0517,
+  f0528)."
 - Deciders: arc4d3, the publishing side, for the rule; written by Claude Opus 5.5 in Claude Code
 - Follows [ADR 0073](0073-frame-gates-and-standing-review.md) and [ADR 0040](0040-frozen-releases-at-an-accepted-drawing.md)
 - Back to the [library README](../../README.md)
@@ -38,8 +40,8 @@ Published content is frozen, so nothing here may ask a delivered reel to change.
    would otherwise clear what it never rendered.
 4. **A finding is cleared by a record and nothing else**: `episodes/strict/<slug>.json`, version 1.0.0, tracked with the
    release. The frames it cites sit in the project, under `qa/strict/`.
-5. **Only `LEG-SHORT` and `LEG-CONTRAST` can be cleared**, the two the rule says how to measure. Anything else is a real
-   finding and gets fixed.
+5. **Only `LEG-SHORT`, `LEG-CONTRAST` and `TXT-FIT` can be cleared.** The rule says how to measure the first two, and
+   arc4d3's acceptance of `ill-get-this` gives the third. Anything else is a real finding and gets fixed.
 6. **`srstudio strict` lists the reels shipped under the rule**, with their numbers and frames, and how many of the
    delivered reels that is: the post asks to see how often it happens, and a `delivered:` post carries the reel's lines.
 
@@ -70,7 +72,14 @@ Published content is frozen, so nothing here may ask a delivered reel to change.
 ```
 
 `LEG-CONTRAST` measures `first_frame`, `last_frame`, `lowest_frame`, `fill`, `back`, `ratio` and `minimum`: the worst
-frame of the run, on the composited master. A finding has no id in the report, so `code`, `node` and `at`, its start to
+frame of the run, on the composited master.
+
+`TXT-FIT` measures `first_frame`, the first frame the box is on screen, `rest_frame`, the first it stays still, and
+`last_frame`, with `text` and `box` as `[left, top, right, bottom]` in frame pixels at rest, and the report's `limit`.
+It proves a text cut only while it comes in. The record of `ill-get-this` would carry
+`{"first_frame": 504, "rest_frame": 517, "last_frame": 539, "text": [429, 1389, 675, 1479], "box": [211, 1095, 866, 1541], "limit": 0}`.
+
+A finding has no id in the report, so `code`, `node` and `at`, its start to
 the millisecond, name it. One caption track can repeat a code on one node.
 
 A record is written by agents, so it is model output and gets the five controls CLAUDE.md asks for. The numbers are also
@@ -86,12 +95,15 @@ checked against the files, because a record of correct shape can still be invent
 | its minimum is not the report's | the rule's minimum is not the author's to choose |
 | it names a finding the report does not have | stale |
 | it covers a finding but measured frames from another part of the reel | a true number about another text |
+| its text reaches past its box at rest by more than the limit | the text is cut; the gate computes the overhang from the two boxes |
+| the report has the text cut after `rest_frame` | a text cut at rest, or leaving, is cut: the proof is "only while it's thrown in" |
+| its text leaves the frame | the frame cuts a text as a box does |
 | its scene is not the report's, or its master's hash is not the video's | it was measured on something else |
 | its frame rate is not the file's | at 12 fps, 48 frames read twice as long |
 | a cited frame is missing, or is not that frame of the master | it is an argument, not a measurement |
 
 A cited picture is compared with the frame decoded from the master, byte for byte. `LEG-SHORT` must cite its first and
-last frames and `LEG-CONTRAST` its worst.
+last frames and `LEG-CONTRAST` its worst, `TXT-FIT` its first, rest and last.
 
 ## Proof on real findings
 
@@ -102,6 +114,12 @@ holds on all six.
 Pointed by mistake at earlier masters of `arrive-early` and `four-coats`, built from the same scenes, the gate refused
 their frames, down to one that differed by at most 10 levels of 255. That is the check doing its work, and a re-encode
 after measuring means measuring again.
+
+The proof arc4d3 accepted on `ill-get-this` ran the same way, on its report, its master and its frames, and clears. The
+report's cut is `c7202-layer`, 20.917 to 21 s. Boxes recomputed from frames decoded from the master, with thresholds of
+their own, put GARY within 1 px and the card within 4 px of the record's numbers, with 218 px of box left of the text, 191
+right of it, 294 above and 62 below. Seven tampered copies of the record were refused, among them a rest
+frame before the cut ends, a limit of 700 and a report that has the text cut into its rest.
 
 ## Consequences
 
@@ -119,7 +137,10 @@ after measuring means measuring again.
 ## What the gate cannot see
 
 It holds the numbers to the files and no further. It does not see that the text is legible in the frames it is shown,
-that the text stayed up between two cited frames, or that a contrast figure was measured on the glyphs. Those are the
+that the text stayed up between two cited frames, that a contrast figure was measured on the glyphs, or that the two
+boxes of a `TXT-FIT` are where the record says. A box is upright, so around a tilted card it holds some of the table
+too, and the frames are what show the text on the card. The engine samples a `TXT-FIT` (71 of 576 frames on `ill-get-this`), so
+a cut outside the sampled frames is not in the report. Those are the
 reviewer's, and arc4d3 spot-checks each `delivered:` post. It cannot see who the reviewer was: that they are not the
 author is a rule of the process, as with the comedy floor (ADR 0064).
 
@@ -130,8 +151,11 @@ author is a rule of the process, as with the comedy floor (ADR 0064).
   the master's own frames, for a reviewer to read, is what the rule asks.
 - **Encoding without `--strict`, or lowering findings to warnings.** [ADR 0025](0025-saga-style.md) refused this, and it
   would hide real findings with the false ones.
-- **Clearing `LEG-SPEED`, `TXT-FIT` or anything else.** The rule says how to measure two kinds. A third needs its own
-  measure, stated by the publishing side, and a new record version.
+- **Clearing `LEG-SPEED` or anything else.** A kind can be cleared once the publishing side has said how it is measured,
+  as it did for `TXT-FIT`. Another needs the same, and a measure of its own.
+- **Clearing a `TXT-FIT` by saying the cut is brief.** arc4d3 accepted a text that rests whole, not a short cut, so the
+  measure is the rest, and a text cut as it leaves is still real.
+- **A new record version for `TXT-FIT`.** No record had been written at 1.0.0, so the kind joined it.
 - **A line in the release file.** A release says what a reel is. A record is bound to one master and is replaced with it.
 - **Records in `generated/`.** The listing has to answer for what shipped, and that belongs in history. Only the frames
   stay beside the build, as they are the size of frames.
