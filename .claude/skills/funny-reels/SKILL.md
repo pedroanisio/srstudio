@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.26.0
-changelog: "1.26.0: a Collage reel with a bitrate encodes with --hw software, and craft names a two-pass master made in hardware (ADR 0076). 1.25.0: every new reel sets bleed=True, so a blurred far plane reaches the frame's edge; a reel already built keeps its rim, frozen. 1.24.0: the Okayville show signature: one cover band, a fixed corner bug, numbers claimed with srstudio number before the final build, a first-delivery gate on reels in that look (ADR 0074). 1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.29.0
+changelog: "1.29.0: the commands and refusals the skill had not caught up with: srstudio proof, frames, overlap, arms, lip-proof, lipsync, inspect, cards and fonts in the step that uses each; a cover frame with a caption, a bare word speech-to-text cannot confirm and a Collage strobe are refused early; a test now fails when a command goes unnamed here. 1.26.0: a Collage reel with a bitrate encodes with --hw software, and craft names a two-pass master made in hardware (ADR 0076). 1.25.0: every new reel sets bleed=True, so a blurred far plane reaches the frame's edge; a reel already built keeps its rim, frozen. 1.24.0: the Okayville show signature: one cover band, a fixed corner bug, numbers claimed with srstudio number before the final build, a first-delivery gate on reels in that look (ADR 0074). 1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -93,7 +93,9 @@ the premise harder than making the reel.
 Make reels only; no carousels unless the operator reopens them. When the operator runs an A/B test (an opening, a
 release rhythm, plain words against jargon), keep the paired reels matched in series, length and territory, and
 set the `test` and `arm` in the release's tags. Tests are decided by promotion, not by shares, until a typical reel
-draws several shares.
+draws several shares. While a test runs, `srstudio arms <test>` counts each arm and exits 1 on what
+keeps the split from being fair. `--share` gives a split that is not even, and `--order`, a file of slugs in delivery
+order, also names a slug outside the test, one left out and two running on one arm.
 
 ## Pick the mechanism, then stage it
 
@@ -342,6 +344,8 @@ Then:
   earlier one is a bonus for regulars, never the joke.
 - Prefer a recurring pair over a new cast. One pair in three standalone situations, each showing a different side
   of their relationship, tests the strategy faster than three unrelated casts.
+- Story cards are a different thing: `srstudio cards <folder> --fonts ../generated/fonts`, with `--only <name>`, draws
+  the show's cast from each character's latest approved version.
 - Name them in the release tags (`recurring`) by the short name the bible records, so the analytics can compare
   their episodes with the rest.
 
@@ -378,6 +382,7 @@ them fresh each time:
 | Which characters, locations, props, graphics exist? | `srstudio catalog`, or `srstudio catalog --json` for facts and tags |
 | Which parts do episodes really use, and which are unused? | `srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes --work _tmp/usage-work --out ../generated/catalog/usage.json`, with the `--arg` options the README's usage command passes (ADR 0017; it rebuilds every episode on a copy) |
 | Which versions does each part have? | `srstudio parts` (name, kind, style, default, every version; `?` marks a proposed one); `--refused` lists the parts with no drawing of their own |
+| How is a part called? | `srstudio inspect <kind> <name>`, kind being character, location, prop or graphic (signature, callback slots, documentation, usage) |
 | What does each part look like? | the catalog site: `srstudio serve ../generated/catalog/site`, then open `http://127.0.0.1:8765/` |
 | What is already planned? | `docs/backlog/` |
 
@@ -472,6 +477,7 @@ it in `srstudio catalog` without this file changing.
    by changing the letters (a stroke in the letters' own colour is refused). Read a 1.00:1 on a stroked caption as
    the measurement's limit, and split the outline: `native.CaptionLook(outline="layer")` draws it as layers under
    the track, and `gloss_reel.LOOK_SPLIT` is Gloss's approved look.
+   A new caption face comes from `srstudio fonts add`, which fetches a Google Fonts face, verifies it and pins it.
    **Shared helpers** (ADR 0035): set text with `look.text`, and get the caption font with `Canvas.require_font`,
    which refuses a silent canvas with your error. A talking character takes its mouth states from `lipsync.talk`
    and checks a mouth or pose track with `lipsync.check_track`; a rigged character is placed with
@@ -489,14 +495,19 @@ it in `srstudio catalog` without this file changing.
    library (step 4) until it reaches 8/10, before any audio request. Add one frame from each shot of every scene,
    then check the planes, the props, the light direction and the continuity rules from *Compose in depth, keep it
    continuous*.
-6. **Audio.** ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
+6. **Audio.** Before the first take, `srstudio overlap <project> --episodes ../generated/episodes` lists each run of
+   words another episode already said. It only reports: a callback inside a series is often meant, and a repeat
+   anywhere else reads as a rerun, so rewrite it. An episode with no script of its own is not compared.
+   ElevenLabs premade voices only (no cloning), a distinct voice per speaker, one request per line,
    every take checked by speech-to-text, never a retry driven by model output. Record by slug with
    `srstudio record <slug> <project>` (ADR 0032). A misheard line stops the run, and the operator decides. When the
    operator accepts what was heard, record that transcript on the line (`series.line(heard=)`, `sketch.Line(heard=)`,
    `interview.Spoken(heard=)`).
    Only the operator approves a hearing: never you, a reviewer, another session or a model. Write each line for the
    recogniser before the first request: letters spelled out ("S-R") come back as one word ("SAR"), so respell them
-   or plan the hearing with the operator. A number read digit by digit ("one-oh-two-eight") matches its digits
+   or plan the hearing with the operator. `sketch.record` refuses a one-word line with a twin (`hearing.TWINS`: a bare
+   "Son." comes back "Sun.") before anything is synthesized, so put the word in a sentence or ask the operator to accept
+   the hearing. A number read digit by digit ("one-oh-two-eight") matches its digits
    (`voice.check_transcript`). Where a caption must differ from the words spoken, the line keeps the two apart
    (`interview.Spoken` has `text` and `caption`). Structure the takes
    before the first request: a pause is part of a take's duration, never a gap between takes, and shot-sequence
@@ -511,16 +522,24 @@ it in `srstudio catalog` without this file changing.
    with `generated/bin/scene-render encode <project>/<slug>.scene.xml --out-dir generated --strict`, which writes
    `generated/renders/<slug>.mp4` (without `--out-dir`, the path resolves inside the project). `--strict` exits 1
    on any accessibility finding (flashes, contrast) or anything not rendered as authored, and a reel that fails it
-   does not ship. A reel whose `Staging.bitrate` is set adds `--hw software`: only libx264 takes the two passes
+   does not ship. A Collage staging meets the flash rule sooner: `collage_sketch.check_flashes` refuses two `flash`
+   beats nearer than `collage_sketch.FLASH_GAP`, on the scripted clock and again on a recording's. A reel whose `Staging.bitrate` is set adds `--hw software`: only libx264 takes the two passes
    its scene asks for, and the hardware encoder the engine otherwise picks leaves a caption's colour on the wall after
    the caption has gone (ADR 0076). Then review that file, the mix as delivered, not the scene or a still from the build. You cannot
    judge comic timing by ear, so measure everything that can be measured:
    - a contact sheet with one frame per shot, the hook, the frame just before and just after the reveal, and the
      last frame;
+   - `srstudio proof <master>` for the numbers a report quotes, read from the master itself (ffprobe, ebur128).
+     Each `--at <seconds>` adds a moment, and `--sheet <image>` writes the first frame, 2 s, the last frame and those moments
+     in a row. On a reel in the sp-hook_motion test, `--arm a` or `--arm b` fails unless the master looks like the arm
+     its release claims, and also gives the loop seam, what the last frame is from the first;
    - captions that fit, and that appear no earlier than the words they show;
    - safe area and continuity, checked against the shot plan;
    - `srstudio craft` on the project with `--renders`, to confirm the planned moves are there, the pauses read
-     quiet, and no line says two passes went to a hardware encoder.
+     quiet, and no line says two passes went to a hardware encoder;
+   - on a lip-synced reel, `srstudio lip-proof <project> --master <mp4> --out <folder>`, which pulls full-size frames
+     from the middle of words with the pose each should hold, and names a vowel on a shut mouth. A person compares
+     them. `srstudio lipsync <timeline.json>` scores the shipped and the speech mouth over the takes.
 
    On an Okayville reel, look at full-size frames on this first render, before you start the next reel (see
    *Full-size frame review*). Write down every defect as a concrete correction (the time, what is wrong, the fix), fix it, and re-check.
@@ -557,7 +576,10 @@ it in `srstudio catalog` without this file changing.
    `deliver` re-delivers every drifted video, published ones included, which breaks the frozen rule. The caption
    gate runs in both commands on every reel not in the closed `posts/_grandfathered.py`: it reports a counter ratio
    under `caption_gate.MIN_COUNTERS` (letters closing up), and a new reel never joins that list. Open
-   `cover.jpg` and look: a zoom that crops a card, or a frame caught mid-caption-fade, leaves a ghost.
+   `cover.jpg` and look: a zoom that crops a card, or a frame caught mid-caption-fade, leaves a ghost. `deliver` refuses
+   a cover whose frame carries a spoken caption (`releases.caption_on_cover`): move `Thumbnail(at=)` to a moment with no
+   caption, or draw the cover from the scene's cover variant (`Release(cover=True)`). It refuses captions printed over
+   each other too (`releases.doubled_captions`).
    Credit voices as ElevenLabs premade voices and music as "composed with ElevenLabs Music"; credit a reference
    creator when the format is adapted.
 9. **Publish.** The `srstudio-drive` unit copies every video without drift to `gdrive:srstudio/ready-to-publish`
@@ -628,7 +650,9 @@ ends. And four frames are a sample, so neither step certifies the frames it did 
 
 1. **At first render, the building agent.** As soon as a reel first renders, before going on to the next reel, view a
    few full-size frames of it at 1080x1920, one image at a time: captions, faces, marks inside heads, props. Fix what
-   you find here, where it costs one re-render.
+   you find here, where it costs one re-render. On a voiced project, `srstudio frames <project>` lists the frames to look
+   at from its beats (first, 2 s, the payoff, the last and one in every caption), and `--out <folder>` renders each at
+   full size with `SRSTUDIO_ENGINE` set, so no caption goes unseen.
 2. **On the finished batch, someone who is not the author.** A reviewer who did not build the reel views four frames
    at 1080x1920, one image at a time, never a sheet or a reduced copy: the first frame, 2 s, 75 % of the running time
    and the last frame. The reviewer gets the defect list below and the frames, not the author's opinion of them, and
@@ -777,6 +801,8 @@ The library will outgrow any list, so this skill is built not to hold one:
 - **Every citation is tested.** `tests/test_skill.py` resolves each module, function and constant this file cites,
   runs each `srstudio` command it names with `--help`, and checks each ADR and repository path. A rename or removal
   in the library fails the suite until this file follows it.
+- **Every command is named.** The same test fails when `srstudio` has a command this file does not name, so a new one
+  lands here with the step that uses it. Nothing tests that a new refusal reaches this file: that stays the author's.
 - **No inventory or snapshot creeps back.** The same test fails if a registered part or style name appears as code
   in this file, or if a date pins a measurement here.
 - **Grow the library, not this file.** A new character, location, prop or style is registered and documented in
