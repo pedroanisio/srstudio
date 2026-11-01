@@ -15,7 +15,7 @@ from typing import Any, Literal
 
 from sr_core.scene import Animate, Scene
 
-from . import checks
+from . import checks, drawing_events
 from ._counter import Counter
 from .errors import SrstudioError
 from .native import NativeError
@@ -175,9 +175,9 @@ class Canvas:
     def uid(self, prefix: str) -> str:
         """``prefix-0001``, ``prefix-0002``...: stable ids for anonymous shapes (or the ``namer``'s own)."""
         if self.namer is not None:
-            return self.namer(prefix)
+            return drawing_events.allocated(self.namer(prefix))
         self._serial += 1
-        return f"{prefix}-{self._serial:04d}"
+        return drawing_events.allocated(f"{prefix}-{self._serial:04d}")
 
     def grad(
         self,

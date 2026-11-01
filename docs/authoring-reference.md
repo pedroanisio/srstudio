@@ -188,6 +188,15 @@ rebuilds every episode project on a copy and records each registered part its bu
 ([ADR 0017](../docs/decisions/0017-measured-part-usage.md)). It prints the used and unused parts per kind and writes the
 report that `srstudio page --usage` reads:
 
+Rig drawing and Canvas ID allocation emit explicit `drawing_events` notifications. Custom performers can use
+`with drawing_events.drawing(registered_part_name):` around their drawing calls; `usage.trace()` then records
+the part and the IDs allocated by `cv.uid()`, including IDs from custom namers. Nested scopes count every used
+part and associate IDs with the outermost character. An unknown explicit name raises `UsageError` while tracing.
+`drawing_events.observe(callback)` receives paired begin/end events and ID events in the current execution
+context; end events include `successful`. Observation and profiler state are restored on exceptional exit.
+Existing registered functions and class methods retain automatic tracing, including the legacy delegate fallback.
+The head emitter's private name, signature and code object no longer identify the character.
+
 ```bash
 srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes \
     --work _tmp/usage-work --out ../generated/catalog/usage.json
