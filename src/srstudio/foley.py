@@ -60,6 +60,8 @@ __all__ = [
     "BELL",
     "air",
     "write_air",
+    "room",
+    "write_room",
     "WATER_EDGE",
     "water",
     "write_water",
@@ -331,6 +333,36 @@ def write_air(
 ) -> Path:
     """The air bed for the given cue times, written to ``path``."""
     return write_wav(path, air(times, duration, length, rate, PEAK, seed), rate)
+
+
+ROOM_LOW = 0.02  # share of each noise sample a room keeps: under about 170 Hz at the foley's rate
+ROOM_HUM = ((120.0, 0.5), (240.0, 0.2))  # a fridge across the room, in the band a phone speaker still plays
+ROOM_EDGE = 0.05  # seconds it fades at each end, so the cut back to the first frame does not click
+
+
+def room(duration: float, rate: int = RATE, peak: float = PEAK, seed: int = 0) -> list[float]:
+    """A mono bed of ``duration`` seconds of an ordinary room: soft low noise and a far fridge. Silence under a held
+    pause reads as a dropped file; this keeps the pause in a place, and it never competes with a line."""
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration >= 2 * ROOM_EDGE):
+        raise FoleyError(f"duration {duration} must be at least {2 * ROOM_EDGE} s")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    rng = random.Random(seed)
+    n, edge = int(round(duration * rate)), int(ROOM_EDGE * rate)
+    out, low = [0.0] * n, 0.0
+    for k in range(n):
+        low += ROOM_LOW * (rng.uniform(-1.0, 1.0) - low)
+        hum = sum(level * math.sin(2 * math.pi * hz * k / rate) for hz, level in ROOM_HUM)
+        out[k] = (low * 6.0 + hum * 0.2) * min(1.0, k / edge, (n - 1 - k) / edge)
+    top = max(abs(v) for v in out)
+    return [v * peak / top for v in out]
+
+
+def write_room(path: Path, duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`room`, written to ``path``."""
+    return write_wav(path, room(duration, rate, PEAK, seed), rate)
 
 
 WATER_EDGE = 0.02  # seconds a shower takes to come on or go off: a tap, not a fade
