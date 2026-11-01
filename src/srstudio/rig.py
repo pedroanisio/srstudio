@@ -106,6 +106,13 @@ class Actor(ABC):
             previous = time
         cv = self.cv
         blink_keys = _visibility_keys(perf.blinks)
+        nod_animation = None
+        if perf.nods:
+            # Prepare with the canvas's actual clock/freeze policy before drawing or changing actor state.
+            # Reuse the validated animation so value conversion happens only once.
+            staging = Group()
+            nod_animation = cv.keys(staging, "rotation", perf.nods, hold=False)
+            staging.remove(nod_animation)
         if perf.limbs:
             project = next(cv.scene.iter("project"), None)
             duration = project.attributes().get("duration") if project is not None else None
@@ -122,8 +129,8 @@ class Actor(ABC):
         self.eyes = eyes = cv.group(head, f"{self.tag_base}-eyes")
         self.draw_eyes(eyes, perf)
         self.draw_face_front(head, perf)
-        if perf.nods:
-            cv.keys(head, "rotation", perf.nods, hold=False)
+        if nod_animation is not None:
+            head.add(nod_animation)
         closed = cv.group(head, self.blink_id)
         self.draw_blink(closed, perf)
         if perf.blinks:
