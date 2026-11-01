@@ -12572,10 +12572,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A white sheet cake on a board, piped with two lines of icing. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A white sheet cake on a board, piped with two lines of icing..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "19615db78e4157e44fe4fac7582e02353ece98fa5c1a869d65b3a19aa9975599",
           "rig": null
         }
@@ -12606,10 +12609,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "Swags of crepe paper pinned along a wall, for a party. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Swags of crepe paper pinned along a wall, for a party..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "606239e0ccbff297c978273ed52cd18b827087d6fc0a81c456ffe0829490fc3b",
           "rig": null
         }
@@ -12708,10 +12714,13 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A phone held up, its back to the camera Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A phone held up, its back to the camera.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "c1c47c43e0d8ac7f4a478833edf212aa318b15c15d2515fe6c122e44ea112b0a",
           "rig": null
         }
@@ -12725,10 +12734,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "Stick clipboard, edge on, angled with unreadable notes, or turned flat to the viewer with a heading, four boxes and a line to sign; no figures. Taken from stick-clipboard on feat/okay-nov01 efc77d9c, the quarter view added. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Stick clipboard, edge on, angled with unreadable notes, or turned flat to the viewer with a heading, four boxes and a line to sign; no figures. Taken from stick-clipboard on feat/okay-nov01 efc77d9c, the quarter view added..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "298b562933b985957b62480aaf47525ec9965d9bdaa40a44e943e940dc5cdd0e",
           "rig": null
         }
@@ -12742,10 +12754,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "Two steel shelf brackets on a wall with a pencilled line between them and nothing on them; no figures. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "Two steel shelf brackets on a wall with a pencilled line between them and nothing on them; no figures..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "02e29a9099e4e5ecae18fa49cefb947218e8422bb7879171ee13896a4382bf05",
           "rig": null
         }
@@ -12759,10 +12774,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A pillow on a folded duvet, generic and unbranded, that can slide along a table; no figures. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A pillow on a folded duvet, generic and unbranded, that can slide along a table; no figures..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "d96b42205957be1662b853059ae1ec26b649cc0b4c59400757d8631b3973e89e",
           "rig": null
         }
@@ -12776,10 +12794,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A takeaway cup with a few words lettered on it, big enough to fill an insert Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A takeaway cup with a few words lettered on it, big enough to fill an insert.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "a3f981cd07ffa31f5f5143a13a4c5b0e871be6790f090e8d4727d98865765bb5",
           "rig": null
         }
@@ -12793,10 +12814,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A child's crayon page: scribbled crayon lines, no drawn figure and no readable text Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A child's crayon page: scribbled crayon lines, no drawn figure and no readable text.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "0b8c8eacfbc877277c8a16e920f2a78aa074f69bf985ef241ee788ac0be19b7d",
           "rig": null
         }
@@ -12810,10 +12834,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A cake knife held at the grip, blade down Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A cake knife held at the grip, blade down.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "fbf9f1daa389df0d385f555876204a12b313c180cd889cc68259c361a009d9d8",
           "rig": null
         }
@@ -12827,10 +12854,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "One slice of sheet cake on a plate Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "One slice of sheet cake on a plate.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "ffddb90351e9d02508421c28f00b58540d9419def8cb3ed4a97cc055c6ce5646",
           "rig": null
         }
@@ -12844,10 +12874,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A headboard and two pillows for a couple in bed, the wall behind by day or by night. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A headboard and two pillows for a couple in bed, the wall behind by day or by night..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "2b498ba63623c29eb90cd37ddfd54d92e812ae82639401571a5b76fd077df6c9",
           "rig": null
         }
@@ -12861,10 +12894,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A quilt across a double bed with the nightstand that signs the shot. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A quilt across a double bed with the nightstand that signs the shot..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "ed585d3e7ea7083c201b00d633b9bf778ce2ba5cb05d54341a231da24fd76806",
           "rig": null
         }
@@ -12878,10 +12914,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "The floor beside the bed: wall, skirting board, floorboards. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "The floor beside the bed: wall, skirting board, floorboards..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "019f4a8cc4bbbe16d44640333906bae73f536aa92fcd80f3abf1961457d2d7c1",
           "rig": null
         }
@@ -12895,10 +12934,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A nightstand close up whose drawer buzzes and slides out by itself on cue. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A nightstand close up whose drawer buzzes and slides out by itself on cue..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "f6ddb8725aafd731f1fdd3001b07ed4991d943c568b99a7369356c042be9377d",
           "rig": null
         }
@@ -12912,10 +12954,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A quilt dragged down and heaped over the lap of whoever sits on the floor. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A quilt dragged down and heaped over the lap of whoever sits on the floor..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "28cae60d28ae4d30bb70df034529b6c4202dfdc97fe566ec7bbe089b188ac09b",
           "rig": null
         }
@@ -12929,10 +12974,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A character's arm in its own coat, swinging about the shoulder. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A character's arm in its own coat, swinging about the shoulder..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "fdcabefdd98c003d4a66fc1451cc4d502886a25e2b3120b5d1c8d9a980c22d73",
           "rig": null
         }
@@ -12946,10 +12994,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A front room for the Soft cast: wall, window, floor, rug, a door to the hall with a sofa jammed across it behind a gate, and a pale print on the rug where the sofa stood; slots for what stands against the wall and in the hall, no figures. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A front room for the Soft cast: wall, window, floor, rug, a door to the hall with a sofa jammed across it behind a gate, and a pale print on the rug where the sofa stood; slots for what stands against the wall and in the hall, no figures..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "5fd8196a7944c46c5d1e0a6d7327f0b03338b712a4ccf9f6645ef415a3713384",
           "rig": null
         }
@@ -12963,10 +13014,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A plain white mug of coffee for a hand, no lettering and no brand. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A plain white mug of coffee for a hand, no lettering and no brand..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "4cbf83efd6b25ed7f1434fa95f0b1d26c583e894e24364f6d67ab75b5ae3d3ac",
           "rig": null
         }
@@ -12980,10 +13034,13 @@
         {
           "number": 1,
           "date": "2026-11-01",
-          "note": "A faceless card of five empty stars, no text, no brand, copying no real app; stars fill in at a tap. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "note": "A faceless card of five empty stars, no text, no brand, copying no real app; stars fill in at a tap..",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793535918.754259: \"The 19 faceless parts of slice 1 are fine under the rule, with the non-author confirmation noted.\""
+          },
           "drawing": "0abecd6ba731c4dae8067d229e0fa8f8a4516d6a0b20990560a131b6baacfc61",
           "rig": null
         }

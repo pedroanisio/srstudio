@@ -48,6 +48,6 @@ RELEASE = Release(
         "stick-table": 1,
         "stick-words": 1,
     },
-    comedy=Scores(author=16, reviewer=17),
+    comedy=Scores(author=16, reviewer=16),
     cover=True,
 )

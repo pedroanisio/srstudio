@@ -44,7 +44,8 @@ RELEASE = Release(
         "toon-kitchen": 1,
         "toon-ledge": 1,
         "toon-rabbit": 2,
+        "toon-swung-arm": 1,
     },
-    comedy=Scores(author=18, reviewer=18),
+    comedy=Scores(author=18, reviewer=17),
     cover=True,
 )

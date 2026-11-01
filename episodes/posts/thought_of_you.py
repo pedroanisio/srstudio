@@ -1,5 +1,6 @@
 """The release of thought-of-you."""
 
+from srstudio.comedy_floor import Scores
 from srstudio.releases import Release, Tags
 from srstudio.social import InstagramPost
 from srstudio.thumbnail import ShowCover
@@ -46,5 +47,6 @@ RELEASE = Release(
         "signature-cactus": 1,
         "signature-code": 1,
     },
+    comedy=Scores(author=18, reviewer=18),
     cover=True,
 )
