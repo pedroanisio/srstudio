@@ -206,13 +206,16 @@ def park(
     growth: Stages = ((0.0, 0),),
     seated: Sequence[tuple[float, float]] = (),
     cast: Slot = None,
+    shots: Sequence[Shot] = (Shot(0.0),),
     id: str = "soft-park",
 ):
     """The park: ``growth`` is (time, stage) rows from 0, a stage indexing the tree's :data:`TREES`, and the town
     rises with it; ``seated`` limits the bench to those spans (none: no bench); ``cast`` draws the cast between the
-    set and the foreground planter."""
+    set and the foreground planter. ``shots`` are rows from 0 in rising time: they cut in on everything but the
+    foreground, which holds the signature marks, and a single shot leaves the park as it was drawn."""
     rows = _stages("growth", growth, len(TREES))
-    g = cv.group(parent, id)
+    whole = cv.group(parent, id)
+    g = _framed(cv, whole, f"{id}-room", shots) if len(shots) > 1 else whole
     sky = cv.grad("soft-park-sky", [(0.0, "#BFDDEE"), (0.62, "#EAF2E8"), (1.0, "#F6EBD6")], (0, 0, 0, 1))
     cv.rect(g, 0, 0, WIDTH, HORIZON + 8, sky)
     far = look.depth(cv, g, "soft-park-far", FAR_BLUR)
@@ -230,10 +233,10 @@ def park(
         park_bench(cv, _gated(cv, g, f"{id}-benched", seated), 540, BENCH_SEAT)
     if cast is not None:
         cast(g)
-    front = cv.group(g, f"{id}-front")
+    front = cv.group(whole, f"{id}-front")
     cv.ellipse(front, -120, 1740, 330, 300, "#6F9D62")  # a bush the camera looks past
     planter(cv, front)
-    return g
+    return whole
 
 
 @register(
