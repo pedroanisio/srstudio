@@ -280,9 +280,11 @@ def hiring_office(
     *,
     snap: float | None = None,
     depth: float = 7.0,
+    code: tuple[float, float, float] = (1000.0, HIRING_DESK_Y + 40, 10.0),
 ):
     """``next_room`` draws behind the glass and the blind, which covers it until ``snap``; ``behind_desk`` draws who
-    sits there, above :data:`HIRING_DESK_Y`; ``on_desk`` draws in front of them."""
+    sits there, above :data:`HIRING_DESK_Y`; ``on_desk`` draws in front of them. ``code`` is where the signature's
+    right end sits and its height, for a reel whose desk things or camera would lose it at the far right."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots:
@@ -305,7 +307,7 @@ def hiring_office(
     top = cv.grad("hiring-desk", [(0, "#9A6E4C"), (0.3, "#A97C53"), (1, "#6F4F35")], (0, 0, 0.2, 1))
     cv.rect(g, -300, HIRING_DESK_Y, 1680, 1200, top, ink, 4)
     cv.rect(g, -300, HIRING_DESK_Y + 4, 1680, 7, "#FFFFFF", opacity=0.25)
-    signature.code(cv, g, 1000, HIRING_DESK_Y + 40, 10, color="#3B2A1C", align="end")
+    signature.code(cv, g, code[0], code[1], code[2], color="#3B2A1C", align="end")
     signature.cactus(cv, g, 96, HIRING_DESK_Y + 100, 0.55)
     locations._call(on_desk, g)
     return g

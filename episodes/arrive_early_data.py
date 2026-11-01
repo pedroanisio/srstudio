@@ -149,7 +149,7 @@ def waiting_room(shot) -> None:
 
 def staff_side(shot) -> None:
     """Behind the glass: the counter room, the clock, the ledge and the glass over whoever is sitting there."""
-    toon_rooms.dress(shot, "counter", LIGHTS)
+    toon_rooms.dress(shot, "counter", LIGHTS, lettering=False)
     toon_props.clock(shot.cv, shot.back, TIME, at=(322.0, 392.0), r=40.0)
     toon_inserts.reception_glass(shot.cv, shot.front)
     toon_house.ledge(shot.cv, shot.front)

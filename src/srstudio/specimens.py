@@ -213,7 +213,8 @@ def _space(entry: registry.Entry) -> Canvas:
 
 
 def _blob(entry: registry.Entry) -> Canvas:
-    poses, eyes, mouths = tuple(blob.POSES), tuple(blob.EYES), tuple(blob.MOUTHS)
+    poses = tuple(pose for pose in blob.POSES if pose not in blob.POSES_SINCE_APPROVAL)
+    eyes, mouths = tuple(blob.EYES), tuple(blob.MOUTHS)
     count = max(len(poses), len(eyes), len(mouths))
     cues = [
         blob.Cue(i * STEP, poses[i % len(poses)], eyes[i % len(eyes)], mouths[i % len(mouths)]) for i in range(count)
@@ -262,15 +263,16 @@ def _moth(entry: registry.Entry) -> Canvas:
 
 
 def _clay(entry: registry.Entry) -> Canvas:
-    """Every face of a clay character, one plate at a time (ADR 0068)."""
-    from . import rafa_host
+    """Every face of a character shot on plates, one plate at a time (ADR 0068)."""
+    from . import pedro_host, rafa_host
 
+    host = pedro_host if entry.name == "pedro" else rafa_host
     cv = _stage("toon", HOLD)
-    faces = rafa_host.part_plates(entry.name)
+    faces = host.part_plates(entry.name)
     for n, plate in enumerate(faces):
         shown = cv.group(cv.comp, cv.uid("g"), opacity=0.0)
         cv.gate(shown, [(HOLD * n / len(faces), HOLD * (n + 1) / len(faces))])
-        rafa_host.place(cv, shown, plate)
+        host.place(cv, shown, plate)
     return cv
 
 
@@ -352,6 +354,7 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     ),
     "host-lint": _moth,
     "rafa": _clay,
+    "pedro": _clay,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
     "stick-figure": _traced_stick,

@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#delivery", "#noodles", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("One gnome.", 5.0, "Toon"),
+        thumbnail=Thumbnail("One gnome.", 6.9, "Toon"),
     ),
     tags=Tags("everyday-tech", "institution", "embarrassment", test="sp-hook_motion", arm="b"),
     style="Toon",

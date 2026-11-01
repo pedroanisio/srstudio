@@ -76,7 +76,7 @@ def test_every_cited_module_and_function_exists(name):
     _resolve(name)
 
 
-@pytest.mark.parametrize("command", sorted({m for s in SPANS for m in re.findall(r"^srstudio (\w+)", s)}))
+@pytest.mark.parametrize("command", sorted({m for s in SPANS for m in re.findall(r"^srstudio ([\w-]+)", s)}))
 def test_every_cited_cli_command_exists(command):
     with pytest.raises(SystemExit) as done:
         main([command, "--help"])
@@ -111,3 +111,11 @@ def test_the_skill_holds_no_dated_snapshot():
 def test_the_skill_names_the_live_inventory_commands():
     for command in ("srstudio catalog", "srstudio styles", "srstudio usage"):
         assert f"`{command}" in BODY, command
+
+
+def test_every_srstudio_command_is_named(capsys):
+    """The tests above hold the skill to the code. This holds the code to the skill: no command goes unsaid."""
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    commands = re.search(r"\{([a-z,-]+)\}", capsys.readouterr().out).group(1).split(",")
+    assert sorted(set(commands) - set(re.findall(r"srstudio ([a-z][a-z-]*)", BODY))) == []

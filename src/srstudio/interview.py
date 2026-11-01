@@ -14,7 +14,9 @@ the next, a missing or unknown effect, or anything past the end card stops the b
 mixed. :func:`build` runs the steps, writes the caption face first (:func:`caption_face`: DejaVu Sans Bold by
 default, or ``Interview.font``, a Google Font pinned under ``assets/fonts``), then the room tone and ``dialogue.json``;
 :func:`main` is its command line. Every refusal is an :class:`InterviewError`; a failed resolve is the
-engine's :class:`~srstudio.generated.ResolveError`.
+engine's :class:`~srstudio.generated.ResolveError`. :func:`rehearse` runs the same placement on tones cut to each line's
+estimated length, so a reel's picture can be looked at before any take is paid for; :func:`refuse_rehearsal` keeps such
+a project out of a voiced master.
 
 The Soft episodes, whose lines sit on a beat grid, use :mod:`srstudio.song` instead.
 """
@@ -22,6 +24,7 @@ The Soft episodes, whose lines sit on a beat grid, use :mod:`srstudio.song` inst
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import math
 import os
@@ -45,12 +48,14 @@ from .generated import (
     gain_to_peak,
     pinned,
     resolve,
+    sha256_of,
     trim_effect,
     trim_speech,
 )
 from .layout import LayoutError, find_engine
 from .provider import CACHE_ENV, CONSENT_ENV, KEY_ENV, NAME, SFX_MODEL, format_voice
 from .sample import SYSTEM_FONTS, copy_dejavu
+from .scripting import line_seconds
 from .song import MAX_GAIN, Singer, SongError
 from .timeline import Phrase
 from .voice import (
@@ -85,6 +90,7 @@ class Spoken:
     seed: int | None = None  # this line's own take: a re-take changes it; None keeps the interview's seed
     heard: tuple[str, ...] = ()  # hearings the operator approved for this line, besides its own words
     gain: float = 0.0  # dB against the others in the mix; the take stays the same (:data:`LEVELS`)
+    phone: bool = False  # heard through a phone; the speech check still hears the clean take
 
 
 @dataclass(frozen=True)
@@ -105,6 +111,34 @@ class Schedule:
 
     lines: Sequence[float]
     effects: Mapping[str, float]
+
+
+def beats(speech: Sequence[float], start: float, gaps: Sequence[float]) -> Schedule:
+    """Lines one after another: the first at ``start``, each next one ``gaps[i]`` seconds after line ``i`` ends. A
+    reel's schedule is then its pauses, read in a column, and a slow take moves everything after it."""
+    if len(gaps) != len(speech) - 1:
+        raise InterviewError(f"{len(speech)} lines have {len(speech) - 1} gaps between them, got {len(gaps)}")
+    if not checks.number(start) or start < 0 or any(not checks.number(g) or g < 0 for g in gaps):
+        raise InterviewError(f"a start and its gaps are non-negative seconds, got {start!r} and {list(gaps)!r}")
+    cursor, starts = start, []
+    for i, length in enumerate(speech):
+        starts.append(cursor)
+        cursor += length + (gaps[i] if i < len(gaps) else 0.0)
+    return Schedule(starts, {})
+
+
+def chain(start: float, **gaps: float) -> dict[str, float]:
+    """Named beats one after another: the first ``gaps`` seconds after ``start``, each next one its gap after the last.
+    A wordless stretch of a reel then reads as a column, and moving one beat moves everything after it."""
+    if not checks.number(start) or start < 0 or not gaps:
+        raise InterviewError(f"a chain starts at a time and has beats, got {start!r} and {list(gaps)!r}")
+    cursor, beats_at = start, {}
+    for name, gap in gaps.items():
+        if not checks.number(gap) or gap < 0:
+            raise InterviewError(f"beat {name!r} comes a non-negative number of seconds later, got {gap!r}")
+        cursor += gap
+        beats_at[name] = cursor
+    return beats_at
 
 
 @dataclass(frozen=True)
@@ -249,6 +283,14 @@ def said(root: Path, phrase: Phrase, word: str, which: int = 0) -> float:
         raise InterviewError(f"line {phrase.index + 1}: no word to find in {word!r}")
     if isinstance(which, bool) or not isinstance(which, int) or which < 0:
         raise InterviewError(f"line {phrase.index + 1}: which counts from 0, got {which!r}")
+    if rehearsed(root):
+        words = [normalize_words(w) for w in phrase.text.split()]
+        hits = [i for i, w in enumerate(words) if w == wanted]
+        if len(hits) <= which:
+            raise InterviewError(
+                f"line {phrase.index + 1}: {word!r} is not heard {which + 1} time(s) in {phrase.text!r}"
+            )
+        return phrase.start + (phrase.end - phrase.start) * hits[which] / len(words)
     assets = Path(root) / "assets"
     transcript = ElevenLabsClient(assets / "elevenlabs", key="").transcribe(
         assets / "generated" / f"line-{phrase.index + 1}.wav"
@@ -336,6 +378,7 @@ def place(iv: Interview, pins: Mapping[str, Resolved], schedule: ScheduleFn) -> 
             gain_db=round(voice_gain + line.gain, 4),
             role="dialogue",
             language="en",
+            phone=line.phone,
         )
         clips.append(PlacedClip(item, pins[item.id].sha256, placement))
     sound_effects = []
@@ -444,6 +487,98 @@ def build(
     return out
 
 
+REHEARSAL_DIR = "rehearsal"  # under the project's assets, never the takes' own cache
+REHEARSAL_RATE = RATE  # a mix reads every clip at its own rate
+REHEARSAL_SYLLABLE = 5.0  # Hz: how fast a rehearsal tone opens and shuts, so an amplitude mouth moves on it
+
+
+def spoken_estimate(text: str, speed: float = 1.0) -> float:
+    """About how long ``text`` runs at ``speed``, before a take is paid for: an estimate, as
+    :func:`srstudio.scripting.spoken_seconds` is, and the recording decides."""
+    return line_seconds(text, speed)
+
+
+def _write_tone(path: Path, seconds: float, *, syllables: bool) -> Path:
+    """``seconds`` of a quiet 220 Hz tone, opening and shutting like speech when ``syllables``, a level burst if not."""
+    frames = bytearray()
+    for n in range(round(seconds * REHEARSAL_RATE)):
+        t = n / REHEARSAL_RATE
+        shape = 0.55 + 0.45 * math.sin(2 * math.pi * REHEARSAL_SYLLABLE * t) if syllables else 1.0
+        frames += round(9000 * shape * math.sin(2 * math.pi * 220 * t)).to_bytes(2, "little", signed=True)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(REHEARSAL_RATE)
+        w.writeframes(bytes(frames))
+    return path
+
+
+def rehearse(
+    iv: Interview,
+    root: Path,
+    *,
+    schedule: ScheduleFn,
+    extra: Callable[[Timing], dict] = lambda timing: {},
+    fetch: Fetch | None = None,
+) -> Path:
+    """``root/dialogue.json`` from tones cut to each line's estimated length: the schedule, its refusals, the beats and
+    the mouths all run as they will on the takes, with nothing requested and no key. It costs nothing, so a reel's
+    stills come before its recording; :func:`build` overwrites it, and :func:`said` spaces a line's words evenly until
+    then. The tones stay under ``assets/rehearsal``, out of the takes' cache, and :func:`refuse_rehearsal` keeps them
+    out of a master."""
+    root = Path(root).resolve()
+    assets = root / "assets"
+    folder = assets / REHEARSAL_DIR
+    folder.mkdir(parents=True, exist_ok=True)
+    caption_face(iv, assets, fetch=fetch)
+    lines, effects = declarations(iv)
+    pins: dict[str, Resolved] = {}
+    for item, line in zip(lines, iv.lines, strict=True):
+        path = _write_tone(folder / f"{item.id}.wav", spoken_estimate(line.text, line.speed), syllables=True)
+        pins[item.id] = Resolved(item, path, sha256_of(path))
+    for item, fx in zip(effects, iv.effects, strict=True):
+        path = _write_tone(folder / f"{item.id}.wav", fx.longest, syllables=False)
+        pins[item.id] = Resolved(item, path, sha256_of(path))
+    placed = place(iv, pins, schedule)
+    t = placed.timing
+    write_room_tone(assets / "room-tone.wav", t.duration, iv.room_tone_seed)
+    clips = [
+        dataclasses.replace(
+            clip, generated=dataclasses.replace(clip.generated, cache=f"assets/{REHEARSAL_DIR}/{clip.generated.id}.wav")
+        )
+        for clip in placed.clips
+    ]
+    out = root / "dialogue.json"
+    timeline = {
+        "title": iv.title,
+        "language": "en-US",
+        "tts_engine": "rehearsal tones",
+        "model": "none",
+        "voice_note": "A rehearsal: tones cut to estimated lengths, no recording.",
+        "rehearsal": True,
+        "duration": t.duration,
+        "phrases": t.phrases,
+        "sound_effects": placed.sound_effects,
+        "clips": [c.to_dict() for c in clips],
+        **extra(t),
+    }
+    out.write_text(json.dumps(timeline, indent=2) + "\n")
+    print(f"rehearsal: duration {t.duration:.3f}s, no take requested")
+    return out
+
+
+def rehearsed(root: Path) -> bool:
+    """Whether ``root``'s ``dialogue.json`` is a rehearsal, read on the file: a project with none is not one."""
+    path = Path(root) / "dialogue.json"
+    return path.is_file() and json.loads(path.read_text()).get("rehearsal") is True
+
+
+def refuse_rehearsal(root: Path) -> None:
+    """Raise :class:`InterviewError` when ``root`` holds a rehearsal: its tones never reach a voiced master."""
+    if rehearsed(root):
+        raise InterviewError(f"{root}: dialogue.json is a rehearsal of tones: record the episode before a voiced build")
+
+
 FONT_DIR = "fonts"  # a Google caption face, its licence and fonts.lock.json, under the project's assets
 NOTO_SANS_BOLD = GoogleFont("Noto Sans", 700)  # an opt-in face near DejaVu Sans Bold's width, so captions still fit
 
@@ -502,7 +637,15 @@ def main(
     parser.add_argument("project", type=Path)
     parser.add_argument("--key-stdin", action="store_true", help="read the ElevenLabs key from standard input")
     parser.add_argument("--engine", type=Path, default=None)
+    parser.add_argument("--rehearse", action="store_true", help="tones for estimated lengths: no key and no request")
     args = parser.parse_args(argv)
+    if args.rehearse:
+        os.umask(0o077)  # generated outputs are private: folders 700, files 600
+        try:
+            rehearse(iv, args.project, schedule=schedule, extra=extra)
+        except InterviewError as exc:
+            raise SystemExit(str(exc)) from None
+        return 0
     try:
         engine = find_engine(args.engine)
     except LayoutError as exc:

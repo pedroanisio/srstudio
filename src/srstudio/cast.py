@@ -61,13 +61,27 @@ def _options(perf: Performance, allowed: frozenset[str]) -> None:
         raise CastError("name: expected badge text or None")
 
 
+SIDES = ("left", "right")  # the screen sides an arm can be left off
+
+
+def _free_sides(perf: Performance) -> tuple[str, ...]:
+    """The screen sides a reel draws its own arm on, refused unless they are sides."""
+    free = perf.extras.get("free_arms", ())
+    if isinstance(free, str) or not set(free) <= set(SIDES):
+        raise CastError(f"free_arms names screen sides, {' and '.join(SIDES)}; got {free!r}")
+    return tuple(free)
+
+
 class OfficeActor(Actor):
     """Shared body of the interview series: white shirt, dark tie, head radius 100.
 
     extras: ``arms`` = ``"static"`` (one stroke for both arms) or ``"articulated"`` (a
     right-arm group with a forearm that can rotate at the elbow); ``legs`` = ``"seated"`` draws
     trousers and shoes below the torso, for a bench, and ``"standing"`` trousers straight down to the shoes,
-    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them).
+    :data:`STANDING_LEGS` below the torso (default: none, the desk hides them); ``tie`` = ``"loose"`` pulls the knot
+    down, off centre, under an open collar: a character who has stopped trying (default: the tie as drawn);
+    ``free_arms`` = screen sides (``left``, ``right``) drawn with no arm, for a reel to reach with
+    (:mod:`srstudio.cutout_reach`).
     """
 
     bottom = 312
@@ -75,15 +89,21 @@ class OfficeActor(Actor):
     eye_xs = (-37, 31)
     LEGS = ("seated", "standing")
     STANDING_LEGS = 336  # from the torso's bottom to the soles, standing
-    extra_options = frozenset({"arms", "legs"})
+    TIES = ("loose",)
+    extra_options = frozenset({"arms", "legs", "tie", "free_arms"})
 
     def validate_performance(self, perf: Performance) -> None:
         _options(perf, self.extra_options)
         if perf.extras.get("arms", "static") not in ("static", "articulated"):
             raise CastError("arms: expected 'static' or 'articulated'")
+        tie = perf.extras.get("tie")
+        if tie is not None and tie not in self.TIES:
+            raise CastError(f"unknown tie {tie!r}; known: {', '.join(self.TIES)}")
         legs = perf.extras.get("legs")
         if legs is not None and legs not in self.LEGS:
             raise CastError(f"unknown legs pose {legs!r}; known: {', '.join(self.LEGS)}")
+        if _free_sides(perf) and perf.extras.get("arms", "static") == "articulated":
+            raise CastError("free_arms: an articulated arm cannot be left out")
 
     def draw_body(self, g, perf: Performance):
         cv, ink, white, clear = self.cv, self.cv.ink, self.cv.white, self.cv.clear
@@ -101,8 +121,8 @@ class OfficeActor(Actor):
         cv.path(
             g, f"M-64 {bottom} L-68 154 Q-69 124 -39 120 Q-4 113 38 120 Q68 126 68 154 L64 {bottom}Z", white, ink, 4.5
         )
-        replaced = self.replaced_arms(perf)  # legacy arm names, by screen side
-        if perf.limbs:
+        replaced = self.replaced_arms(perf) | frozenset(_free_sides(perf))  # legacy arm names, by screen side
+        if perf.limbs or replaced:
             if "left" not in replaced:
                 cv.path(g, f"M-66 148 L-87 235 L-79 {bottom}", stroke=ink, sw=5)
             if "right" not in replaced:
@@ -116,8 +136,13 @@ class OfficeActor(Actor):
             self.draw_arm_gestures(perf)
         else:
             cv.path(g, f"M-66 148 L-87 235 L-79 {bottom} M67 148 L86 233 L77 {bottom}", stroke=ink, sw=5)
-        cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
-        cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
+        if perf.extras.get("tie") == "loose":
+            cv.path(g, "M-30 122 L0 160 L30 122", stroke=ink, sw=3.5)  # the collar, open
+            cv.path(g, "M-4 166 L20 170 L16 196 L-8 192Z", ink, clear, 0)  # the knot, down and off centre
+            cv.path(g, "M-6 196 L14 200 L9 300 L-6 312 L-16 296Z", ink, clear, 0)
+        else:
+            cv.path(g, "M-11 120 L11 120 L8 146 L-8 146Z", ink, clear, 0)
+            cv.path(g, "M-8 149 L8 149 L13 268 L0 292 L-13 268Z", ink, clear, 0)
 
     def draw_seated_legs(self, legs):
         """Knees towards the camera, shins down to the path, as the seated café actors sit."""
@@ -325,16 +350,22 @@ class Rosa(OfficeActor):
 class CafeActor(Actor):
     """The café family: skin tone, wardrobe, round blink arcs; tag ``role-cafe`` or ``role-park``.
 
-    extras: ``skin`` colour override. ``seated`` is a constructor argument.
+    extras: ``skin`` colour override; ``free_arms`` = screen sides (``left``, ``right``) drawn with no arm, no hand and
+    nothing held, for a reel to reach with (:mod:`srstudio.cutout_reach`). ``seated`` is a constructor argument.
     """
 
     mouth_stroke = 3.5
     supports_limbs = True
     skin = "#F1D0AA"
-    extra_options = frozenset({"skin"})
+    extra_options = frozenset({"skin", "free_arms"})
 
     def validate_performance(self, perf: Performance) -> None:
         _options(perf, self.extra_options)
+        _free_sides(perf)
+
+    def arms_left_out(self, perf: Performance) -> frozenset[str]:
+        """The screen sides this actor does not draw an arm on: a limb track's, or a reel's own."""
+        return self.replaced_arms(perf) | frozenset(_free_sides(perf))
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None, seated: bool = False):
         role = role or self.role
@@ -362,20 +393,30 @@ class CafeActor(Actor):
 
 @register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings")
 class Barista(CafeActor):
-    """extras: ``name`` on the badge (default AVA)."""
+    """extras: ``name`` on the badge (default AVA); ``legs`` = ``True`` draws her down to the soles, 489 under her
+    origin as the customer stands, for a shot with no counter in front of her (default: the counter hides them)."""
 
     role = "barista"
-    extra_options = CafeActor.extra_options | {"name"}
+    extra_options = CafeActor.extra_options | {"name", "legs"}
     skin = "#C28A65"
+
+    def validate_performance(self, perf: Performance) -> None:
+        super().validate_performance(perf)
+        if not isinstance(perf.extras.get("legs", False), bool):
+            raise CastError(f"legs is True or False, got {perf.extras['legs']!r}")
 
     def draw_body(self, g, perf):
         cv, ink = self.cv, self.cv.ink
         skin = perf.extras.get("skin", self.skin)
+        if perf.extras.get("legs"):
+            cv.path(g, "M-53 310 L-51 467 L-9 467 L4 344 L15 468 L57 468 L55 310Z", "#2F3A40", ink, 4)
+            cv.path(g, "M-54 462 Q-21 457 -6 475 L-4 489 L-66 489Z", "#2A211C", ink, 4)
+            cv.path(g, "M15 462 Q49 456 70 475 L72 489 L11 489Z", "#2A211C", ink, 4)
         cv.rect(g, -10, 91, 20, 39, skin, ink, 3)
         cv.path(g, "M-68 322 L-73 150 Q-74 121 -44 116 L43 116 Q74 121 75 150 L68 322Z", "#F5EAD4", ink, 4)
         cv.path(g, "M-43 119 L-54 327 L57 327 L43 119 L24 119 L22 154 L-23 154 L-25 119Z", "#366761", ink, 3)
-        replaced = self.replaced_arms(perf)  # legacy arm names, by screen side
-        if perf.limbs:
+        replaced = self.arms_left_out(perf)  # legacy arm names, by screen side
+        if replaced or perf.limbs:
             if "left" not in replaced:
                 cv.path(g, "M-66 140 L-104 212 L-119 229", stroke=ink, sw=5)
             if "right" not in replaced:
@@ -449,8 +490,8 @@ class Customer(CafeActor):
         cv.line(g, -12, 145, -17, 195, "#E9E2CC", 2.5)
         cv.line(g, 14, 145, 18, 192, "#E9E2CC", 2.5)
         cv.rect(g, -43, 236, 86, 47, "#426C82", ink, 2.5, radius=12)
-        replaced = self.replaced_arms(perf)  # legacy arm names, by screen side
-        if perf.limbs:
+        replaced = self.arms_left_out(perf)  # legacy arm names, by screen side
+        if replaced or perf.limbs:
             if "left" not in replaced:
                 cv.path(g, "M-72 143 L-103 213 L-122 212", stroke=ink, sw=5)
             if "right" not in replaced:

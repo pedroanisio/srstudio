@@ -40,6 +40,7 @@ __all__ = [
     "speaking",
     "MOUTHS",
     "POSES",
+    "POSES_SINCE_APPROVAL",
     "SEAT",
     "FLOOR",
     "SCALE",
@@ -370,6 +371,17 @@ def _lounging() -> Pose:
     return Pose("lounge", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
 
 
+def _on_the_floor() -> Pose:
+    """Sat on the floor facing left, with nothing under her: the sit pose with the hip on the ground and both legs out
+    along it, the far knee a little up."""
+    sit = _sitting((-170, -112), (-150, -108))
+    legs = {
+        "leg_l": Stroke((-10, -40), (-76, -48), (-140, -36), (-196, -14), *LEG),
+        "leg_r": Stroke((22, -32), (-40, -84), (-96, -78), (-136, -36), *LEG),
+    }
+    return Pose("floor", sit.head, {**sit.limbs, **legs}, sit.front, sit.face)
+
+
 def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
@@ -413,6 +425,7 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-166, -106), (-158, -118), head=(-36, -326)), "type-b"),
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
         _lounging(),
+        _on_the_floor(),
         _pose(
             "clasp",
             (0, -432),
@@ -532,6 +545,8 @@ POSES: dict[str, Pose] = {
         ),
     )
 }
+# Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
+POSES_SINCE_APPROVAL = frozenset({"floor"})
 
 
 # -- faces ------------------------------------------------------------------------------------------------
@@ -1102,6 +1117,55 @@ def speaking(cues: Sequence[Cue], spans: Sequence[tuple[float, float]], end: flo
     holds = zip(unique, [c.time for c in unique[1:]] + [end], strict=True)
     voiced = [replace(c, mouth="sing") if any(a < until and c.time < b for a, b in spans) else c for c, until in holds]
     return settle(voiced, fps)
+
+
+def quieted(cues: Sequence[Cue], spans: Sequence[tuple[float, float]], end: float, fps: float = 15) -> list[Cue]:
+    """:func:`speaking`, with every hold split where a line starts and stops, so a figure on one long hold talks for
+    its line and is back on its own mouth the moment the line ends. Splitting moves nothing: a split cue only holds."""
+    later = []
+    for start, stop in spans:
+        if stop < start:
+            raise BlobError(f"a line ends before it starts: {start} to {stop}")
+        for at in (start, stop):
+            before = [c for c in cues if c.time <= at]
+            if not before:
+                raise BlobError(f"no cue stands at or before {at}, where a line starts or stops")
+            held = max(before, key=lambda c: c.time)
+            if held.time != at:
+                later.append(replace(held, time=at, ease=0.0, lift=0.0))
+    return speaking([*cues, *later], spans, end, fps)
+
+
+def walking(
+    points: Sequence[tuple[float, float]],
+    start: float,
+    stop: float,
+    *,
+    step: float = 0.22,
+    scale: float = 1.0,
+    flip: bool = False,
+    **kw,
+) -> list[Cue]:
+    """Cues that walk ``points`` (output pixels) from ``start``, landing on the last at ``stop``, a stride every
+    ``step`` seconds or the nearest that divides the time, each leg taking its share of the strides. ``kw`` goes to
+    every stride, as a face does. The figure stands where the first point is at ``start``: its own cue puts it there."""
+    if len(points) < 2:
+        raise BlobError(f"a walk takes at least two points, got {len(points)}")
+    if stop <= start:
+        raise BlobError(f"a walk stops after it starts, got {start} to {stop}")
+    if step <= 0:
+        raise BlobError(f"a stride takes a positive time, got {step}")
+    count = max(2, int((stop - start) / step + 1e-9))
+    legs = len(points) - 1
+    out = []
+    for k in range(1, count + 1):
+        along = k / count * legs
+        leg = min(int(along), legs - 1)
+        (ax, ay), (bx, by), part = points[leg], points[leg + 1], along - leg
+        spot = (ax + (bx - ax) * part, ay + (by - ay) * part)
+        pose = "walk-a" if k % 2 else "walk-b"
+        out.append(cue(start + (stop - start) * k / count, pose, spot, scale=scale, ease=step, flip=flip, **kw))
+    return out
 
 
 def mouth_track(frames: Sequence[Drawing], states: Sequence[tuple[float, str]] = ()) -> list[tuple[float, str]]:

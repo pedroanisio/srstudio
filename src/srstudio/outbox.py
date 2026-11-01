@@ -6,10 +6,14 @@ each one with its ``ig.txt``, its ``cover.jpg`` and its ``.vpkg.zip`` package (r
 reported. :func:`stage` copies the bundles into one private folder per video, with an ``ab.json`` naming the
 A/B test and arm of a video in one, next to an ``outbox.json`` of SHA-256s (a pilot's folder uses the same stage and
 push under another manifest name: ``episodes/publish_pilots.py``), replacing the previous outbox whole,
-so the folder holds exactly what is ready now; the operator's own top-level dot-files (``.ignore``) are carried
-over and uploaded with it.
+so the folder holds exactly what is ready now; the operator's own top-level dot-files are carried over.
 :func:`push` uploads that folder with rclone (``copy``, which never deletes on the remote) and then has rclone
 check that every staged file arrived with the same hash.
+
+The remote's ``.ignore`` is the record of the reels held out of the queue, one name per line. The publishing side edits
+it on Drive, so that copy is the source of truth: a local ``.ignore`` is never uploaded, and :func:`push` reads the
+remote's before and after and fails if a line went missing. The only way to take a line out is ``release=``, in the push
+that carries the re-delivered reel.
 """
 
 from __future__ import annotations
@@ -25,17 +29,21 @@ from pathlib import Path
 
 from . import digest
 from .errors import SrstudioError
-from .releases import ARMS
-from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
+from .releases import ARMS, arms_of
+from .show_numbers import Claim, episode_document
+from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery, read_manifest
 
 __all__ = [
     "AB_NAME",
+    "EPISODE_NAME",
+    "IGNORE_NAME",
     "Arm",
     "MANIFEST",
     "MANIFEST_VERSION",
     "NO_PACKAGE",
     "Bundle",
     "OutboxError",
+    "delivered_names",
     "latest_package",
     "push",
     "ready",
@@ -44,6 +52,8 @@ __all__ = [
 
 MANIFEST = "outbox.json"
 AB_NAME = "ab.json"  # beside a video in an A/B test: an :class:`Arm`'s document, read by the posting job
+EPISODE_NAME = "episode.json"  # beside a numbered video: its place on the show (ADR 0074), for the posting job's order
+IGNORE_NAME = ".ignore"  # on the remote: the reels held out of the queue, a record this code never overwrites
 MANIFEST_VERSION = "1.0.0"
 NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package"
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -59,32 +69,49 @@ class OutboxError(SrstudioError, ValueError):
 @dataclass(frozen=True)
 class Arm:
     """What a reel's ``ab.json`` says: the first-second ``test`` and its ``arm``, and, in the recipient test, its
-    ``recipient`` arm and who arm ``b`` is written ``to``."""
+    ``recipient`` arm and who arm ``b`` is written ``to``; ``also`` holds the ``(test, arm)`` of any further test."""
 
     test: str
     arm: str
     recipient: str = ""
     to: str = ""
+    also: tuple[tuple[str, str], ...] = ()
 
-    def document(self) -> dict[str, str]:
+    def document(self) -> dict[str, str | list[dict[str, str]]]:
         extra = {"recipient": self.recipient, "to": self.to}
-        return {"test": self.test, "arm": self.arm} | {key: value for key, value in extra.items() if value}
+        document: dict[str, str | list[dict[str, str]]] = {"test": self.test, "arm": self.arm}
+        document |= {key: value for key, value in extra.items() if value}
+        if self.also:
+            document["also"] = [{"test": test, "arm": arm} for test, arm in self.also]
+        return document
 
 
 @dataclass(frozen=True)
 class Bundle:
     """One video ready to publish: its folder name in the outbox, the files that go in it, video first, and the
     :class:`Arm` of the A/B tests it is in, if any. ``names`` gives what each of ``files`` is staged as, in order; left
-    empty, each keeps its own name."""
+    empty, each keeps its own name. ``episode`` is its number on the show, if it has one."""
 
     name: str
     files: tuple[Path, ...]
     ab: Arm | None = None
     names: tuple[str, ...] = ()
+    episode: Claim | None = None
 
     @property
     def staged_names(self) -> tuple[str, ...]:
         return self.names or tuple(f.name for f in self.files)
+
+
+def delivered_names(deliveries: Path, folder: Path) -> set[str]:
+    """Every video the delivery folder ``deliveries`` or the outbox ``folder`` shows, by a folder or a manifest entry.
+    A folder that is not there is an :class:`OutboxError`: it says nothing about what went out."""
+    names = set(read_manifest(deliveries))
+    for place in (Path(deliveries), Path(folder)):
+        if not place.is_dir():
+            raise OutboxError(f"{place} is not a folder, so what was delivered cannot be read from it")
+        names |= {p.name for p in place.iterdir() if p.is_dir()}
+    return names
 
 
 def latest_package(folder: Path, slug: str) -> Path | None:
@@ -106,6 +133,7 @@ def ready(
     packages: Mapping[str, Path] | None = None,
     frozen: Mapping[str, str] | None = None,
     ab: Mapping[str, Arm] | None = None,
+    numbers: Mapping[str, Claim] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
@@ -113,8 +141,13 @@ def ready(
     (:data:`NO_PACKAGE`). A package for a video that is not published, or one that does not exist, raises
     :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready. ``frozen`` is passed to the gate
     (:func:`~srstudio.social.check_delivery`). ``ab`` maps a video name to the ``(test, arm)`` it is staged with; a
-    name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`."""
+    name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`.
+    ``numbers`` maps a video name to its number on the show; a video with none is staged as it always was."""
     ab = _arms(items, ab)
+    numbers = dict(numbers or {})
+    strays = sorted(set(numbers) - set(items))
+    if strays:
+        raise OutboxError(f"a number is named for a video that is not published: {', '.join(strays)}")
     packages = dict(packages or {})
     unknown = sorted(set(packages) - set(items))
     if unknown:
@@ -135,7 +168,7 @@ def ready(
             continue
         folder = Path(deliveries) / name
         files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))
-        bundles.append(Bundle(name, files, ab.get(name)))
+        bundles.append(Bundle(name, files, ab.get(name), episode=numbers.get(name)))
     return bundles, drift
 
 
@@ -147,8 +180,14 @@ def _arms(items: Items, ab: Mapping[str, Arm] | None) -> dict[str, Arm]:
     for name, chosen in sorted(ab.items()):
         if not chosen.test:
             raise OutboxError(f"{name}: an A/B arm needs its test")
-        if chosen.arm not in ARMS:
-            raise OutboxError(f"{name}: arm {chosen.arm!r} is not one of {', '.join(ARMS)}")
+        tests = [(chosen.test, chosen.arm), *chosen.also]
+        if not all(test for test, _ in tests):
+            raise OutboxError(f"{name}: a further A/B arm needs its test")
+        for test, arm in tests:
+            if arm not in arms_of(test):
+                raise OutboxError(f"{name}: {test} arm {arm!r} is not one of {', '.join(arms_of(test))}")
+        if len({test for test, _ in tests}) != len(tests):
+            raise OutboxError(f"{name}: one test is named twice in {tests!r}")
         if chosen.recipient and chosen.recipient not in ARMS:
             raise OutboxError(f"{name}: recipient {chosen.recipient!r} is not one of {', '.join(ARMS)}")
         if (chosen.recipient == "b") != bool(chosen.to):
@@ -177,10 +216,12 @@ def _check(bundles: Sequence[Bundle]) -> None:
             raise OutboxError(f"{b.name}: two files share one name, so one would be staged twice")
         if b.ab is not None and AB_NAME in files:
             raise OutboxError(f"{b.name}: a staged file is named {AB_NAME}, which its A/B arm is written to")
+        if b.episode is not None and EPISODE_NAME in files:
+            raise OutboxError(f"{b.name}: a staged file is named {EPISODE_NAME}, which its number is written to")
 
 
 def _dot_files(folder: Path) -> list[Path]:
-    """The operator's regular top-level dot-files in ``folder``: kept across restages and uploaded with the rest."""
+    """The operator's regular top-level dot-files in ``folder``: kept across restages."""
     if not folder.is_dir():
         return []
     return sorted(p for p in folder.iterdir() if p.name.startswith(".") and p.is_file() and not p.is_symlink())
@@ -217,6 +258,11 @@ def stage(bundles: Sequence[Bundle], folder: Path, *, manifest: str = MANIFEST) 
                 arm.write_text(json.dumps(b.ab.document()) + "\n")
                 arm.chmod(0o600)
                 hashes[AB_NAME] = digest.sha256(arm)
+            if b.episode is not None:
+                place = target / EPISODE_NAME
+                place.write_text(json.dumps(episode_document(b.episode)) + "\n")
+                place.chmod(0o600)
+                hashes[EPISODE_NAME] = digest.sha256(place)
             videos[b.name] = hashes
         document = build / manifest
         document.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")
@@ -254,6 +300,54 @@ def fetch(
     return str(done.stdout)
 
 
+def _held(text: str) -> list[str]:
+    """The records of a ``.ignore``: its lines without their surrounding space, blank ones left out."""
+    return [record for line in text.splitlines() if (record := line.strip())]
+
+
+def _lost(before: str, after: str) -> list[str]:
+    """The records of ``before`` that ``after`` no longer has."""
+    now = set(_held(after))
+    return [record for record in _held(before) if record not in now]
+
+
+def _step(cmd: list[str], run: Callable[..., subprocess.CompletedProcess], **kw: str) -> None:
+    try:
+        done = run(cmd, capture_output=True, text=True, check=False, **kw)
+    except FileNotFoundError as e:
+        raise OutboxError(f"rclone was not found at {cmd[0]!r}") from e
+    if done.returncode != 0:
+        reason = (done.stderr or done.stdout or "").strip().splitlines()[-1:] or ["no output"]
+        raise OutboxError(f"rclone {cmd[1]} failed ({done.returncode}): {reason[0]}")
+
+
+def _refuse_release(folder: Path, release: Sequence[str], held: str) -> None:
+    """A release is a slug Drive holds and this push carries; anything else leaves the push untouched."""
+    records = set(_held(held))
+    unheld = sorted(slug for slug in release if slug not in records)
+    if unheld:
+        raise OutboxError(f"release: {', '.join(unheld)} is not held in {IGNORE_NAME}")
+    carried = {p.name for p in folder.iterdir() if p.is_dir()} if folder.is_dir() else set()
+    absent = sorted(slug for slug in release if slug not in carried)
+    if absent:
+        raise OutboxError(f"release: {', '.join(absent)} is not in this push's outbox, so it was not re-delivered")
+
+
+def _release(
+    remote: str, release: Sequence[str], held: str, *, rclone: str, run: Callable[..., subprocess.CompletedProcess]
+) -> None:
+    """Write ``held`` back to ``remote`` without the lines of ``release``, the rest in order, and read it back."""
+    kept = "".join(line for line in held.splitlines(keepends=True) if line.strip() not in release)
+    _step([rclone, "rcat", f"{remote}/{IGNORE_NAME}"], run, input=kept)
+    back = fetch(remote, IGNORE_NAME, rclone=rclone, run=run) or ""
+    lost = _lost(kept, back)
+    if lost:
+        raise OutboxError(f"{IGNORE_NAME} on {remote} lost {', '.join(lost)} in the release: restore them there")
+    stuck = sorted(set(release) & set(_held(back)))
+    if stuck:
+        raise OutboxError(f"{IGNORE_NAME} on {remote} still holds {', '.join(stuck)} after the release")
+
+
 def push(
     folder: Path,
     remote: str,
@@ -261,20 +355,27 @@ def push(
     rclone: str = "rclone",
     dry_run: bool = False,
     run: Callable[..., subprocess.CompletedProcess] | None = None,
+    release: Sequence[str] = (),
 ) -> None:
     """Upload ``folder`` to ``remote`` (``name:path``) with ``rclone copy --checksum``, then ``rclone check
-    --one-way`` that every file arrived; a dry run only previews the copy. Raises :class:`OutboxError`."""
+    --one-way`` that every file arrived; both leave the remote's ``.ignore`` out. It is read before and after, and a
+    line gone from it is an error. ``release`` names the reels of this push to take out of it, after the check, written
+    back and read back; a reel it does not hold, or that this push does not carry, stops the push before the upload. A
+    dry run reads ``.ignore``, refuses the same releases and only previews the copy. Raises :class:`OutboxError`."""
     if not _REMOTE.fullmatch(remote) or " " in remote.split(":", 1)[0]:
         raise OutboxError(f"{remote!r} is not an rclone remote (name:path)")
     run = run or _run
-    steps = [[rclone, "copy", str(folder), remote, "--checksum", *(["--dry-run"] if dry_run else [])]]
-    if not dry_run:
-        steps.append([rclone, "check", str(folder), remote, "--one-way"])
-    for cmd in steps:
-        try:
-            done = run(cmd, capture_output=True, text=True, check=False)
-        except FileNotFoundError as e:
-            raise OutboxError(f"rclone was not found at {rclone!r}") from e
-        if done.returncode != 0:
-            reason = (done.stderr or done.stdout or "").strip().splitlines()[-1:] or ["no output"]
-            raise OutboxError(f"rclone {cmd[1]} failed ({done.returncode}): {reason[0]}")
+    folder = Path(folder)
+    keep_off = ["--exclude", f"/{IGNORE_NAME}"]
+    before = fetch(remote, IGNORE_NAME, rclone=rclone, run=run) or ""
+    _refuse_release(folder, release, before)
+    _step([rclone, "copy", str(folder), remote, "--checksum", *keep_off, *(["--dry-run"] if dry_run else [])], run)
+    if dry_run:
+        return
+    _step([rclone, "check", str(folder), remote, "--one-way", *keep_off], run)
+    after = fetch(remote, IGNORE_NAME, rclone=rclone, run=run) or ""
+    lost = _lost(before, after)
+    if lost:
+        raise OutboxError(f"{IGNORE_NAME} on {remote} lost {', '.join(lost)} during the push: restore them there")
+    if release:
+        _release(remote, release, after, rclone=rclone, run=run)

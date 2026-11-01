@@ -2085,7 +2085,9 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene. A new release
   also sets `tags=srstudio.releases.Tags(territory, cause, emotion, recurring=, test=, arm=)`, from closed sets the
   account's analytics count ([ADR 0033](../docs/decisions/0033-episode-tags-for-analytics.md)); releases published
-  before tags existed leave it `None`.
+  before tags existed leave it `None`. A reel in a second A/B test adds `also=(("sp-speakers", "a"),)`, and a reel on
+  the send test adds `send_to=` and `send_line=`
+  ([ADR 0080](../docs/decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
   [episodes/instagram_posts.py](../episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
   script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
   Recreations credit the original author in the caption itself.
@@ -2132,7 +2134,8 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
   without a package is held back like a drifted one. A video whose release is in an A/B test
   (`releases.Tags(test=, arm=)`) is staged with an `ab.json` (`{"test": ..., "arm": ...}`) that the posting job
-  reads, hashed in `outbox.json` like every staged file. The recipient test rides in the same file: `recipient=` is
+  reads, hashed in `outbox.json` like every staged file. A second test goes beside them as `"also": [{"test": ...,
+  "arm": ...}]`, from `Tags(also=)`. The recipient test rides in the same file: `recipient=` is
   its arm, and arm `b` adds `to=`, who the viewer sends it to, from `releases.RECIPIENTS`. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by
@@ -2160,6 +2163,27 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   its `notes.md`, the lower at 14 or above. The remote is judged after normalising, and rclone is given the normal form,
   so `pilots/../ready-to-publish` is refused. No systemd unit watches the staging folder and none runs this tool.
   `FOLDER` is the whole set: staging replaces the last stage.
+
+### The Okayville show signature
+
+A reel in the show's look carries one cover and one corner bug ([ADR 0074](decisions/0074-okayville-show-signature.md)).
+The cover is a `srstudio.thumbnail.ShowCover`: a solid band with OKAYVILLE, `#N` and the premise in at most 5 words,
+over the reel's own art. The bug is the part `show-bug`, which `srstudio build` draws above the camera for a release on
+that cover and for no other. Numbers come from `srstudio number`: `base` sets the publishing side's count once, `claim`
+takes the next one before the final build, `list` prints the ledger at `generated/okayville/numbers.json`. A series has
+its own count with `--series`, and `outbox` writes `episode.json` beside the video, exactly `{"number": N, "series":
+"saga" or "", "series_number": n}`, with 0 outside a series (`show_numbers.EpisodeDocument`). `srstudio.show_gate`
+refuses a first delivery out of the look. `srstudio number claim <slug> --brief send-v1` records the brief a reel was
+made to, and `episode.json` then carries `"brief"` too; a reel without one keeps the three fields. `srstudio number
+release <slug>` gives back a claim on a reel never delivered ([ADR 0080](decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
+
+### Strict findings at first delivery
+
+`srstudio.strict_gate` reads a new reel's `qa/render-report.json` at first delivery
+([ADR 0078](decisions/0078-strict-findings-at-first-delivery.md)). A `--strict` finding refuses the reel unless
+`episodes/strict/<slug>.json` proves it false on the master's own frames, signed off by a reviewer who is not the
+author. `srstudio strict` lists the reels shipped that way, with their numbers and frames, and how many of the delivered
+reels that is.
 
 ## Verification
 

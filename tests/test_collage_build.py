@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import COLLAGE, collage, collage_sets, collage_sketch, sketch
+from srstudio import COLLAGE, collage, collage_sets, collage_sketch, foley, sketch
 from srstudio.collage_group import Lineup, Place
 from srstudio.collage_sketch import Staging, check_staging, make_sketch, solo, sound_effects, timed
 
@@ -180,6 +180,40 @@ def still_staging(beats=STILL_BEATS, still=1.0, **kw) -> Staging:
     return Staging(sk, 7, "d", "a", "n", collage_sketch.TINTS, sets, still=still, **kw)
 
 
+def test_a_push_runs_from_the_first_frame_across_the_cuts_inside_it(pinned_fonts, tmp_path):
+    ep = built(tmp_path, still_staging(STILL_BEATS, 0.0, push=(2.0, 1.05)), pinned_fonts)
+    xml = ep.scene.to_bytes(layout="pretty")
+    assert xml.count(b'property="scaleX"') >= 2
+
+
+@pytest.mark.parametrize(("push", "match"), [((-1.0, 1.1), "seconds"), ((1.0, 0.9), "scale")])
+def test_a_push_refuses_what_is_no_push(push, match):
+    with pytest.raises(collage_sketch.StagingError, match=match):
+        collage_sketch.check_push(push, STILL_BEATS, "x")
+
+
+def test_a_push_keeps_clear_of_a_zoom():
+    beats = (sketch.Beat(0.0, "gary", "", "h", "f", "d"), sketch.Beat(1.0, "gary", "", "h", "f", "d", event="zoom"))
+    with pytest.raises(collage_sketch.StagingError, match="inside the push"):
+        collage_sketch.check_push((2.0, 1.1), beats, "x")
+    collage_sketch.check_push((1.0, 1.1), beats, "x")
+
+
+def test_a_pushed_first_shot_is_checked():
+    check_staging(still_staging(still=0.0, first_shot_push=1.06))
+    for kw, match in (
+        ({"still": 0.0, "first_shot_push": 0.9}, "grow"),
+        ({"still": 0.0, "first_shot_push": float("nan")}, "grow"),
+        ({"still": 1.0, "first_shot_push": 1.06}, "not both"),
+        ({"still": 0.0, "first_shot_push": 1.06, "push": (2.0, 1.05)}, "same keys"),
+    ):
+        with pytest.raises(collage_sketch.StagingError, match=match):
+            check_staging(still_staging(**kw))
+    zoomed = (replace(STILL_BEATS[0], event="zoom"), *STILL_BEATS[1:])
+    with pytest.raises(collage_sketch.StagingError, match="crash zoom"):
+        check_staging(still_staging(beats=zoomed, still=0.0, first_shot_push=1.06))
+
+
 def test_a_still_opening_is_checked():
     check_staging(still_staging())
     check_staging(still_staging(still=0.0))  # no still opening: any first beat
@@ -231,9 +265,30 @@ def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinn
             check_staging(still_staging(bitrate=bad))
 
 
+def test_a_staging_s_own_sound_is_written_once_and_skipped_when_it_has_no_cue(tmp_path):
+    burst = foley.Burst(0.2, 800.0)
+    own = (collage_sketch.Sound("knock", burst, (1.0,), -6.0), collage_sketch.Sound("none", burst, ()))
+    effects = sound_effects(BEATS, END, tmp_path, 7, own)
+    assert [e["id"] for e in effects][-1] == "knock"
+    assert "none" not in [e["id"] for e in effects]
+    assert (tmp_path / effects[-1]["audio"]).is_file()
+
+
 def test_a_thud_beat_plays_a_thud(tmp_path):
     beats = [
         sketch.Beat(0.0, "gary", "", "open", "flat", "down"),
         sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="thud"),
     ]
     assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]
+
+
+def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    def output(ep) -> dict:
+        return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+
+    assert "keyframeInterval" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    set_ = output(built(tmp_path / "set", still_staging(keyframes=52 / 24), pinned_fonts))
+    assert set_["keyframeInterval"] == "2.1667"
+    for bad in (-1, "2", float("nan")):
+        with pytest.raises(collage_sketch.StagingError, match="keyframes"):
+            check_staging(still_staging(keyframes=bad))

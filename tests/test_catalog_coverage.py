@@ -13,7 +13,10 @@ import json
 from collections.abc import Collection
 from pathlib import Path
 
-from srstudio import registry
+from srstudio import (
+    rafa_host,  # noqa: F401 (importing it registers Rafa's parts, which this file declares)
+    registry,
+)
 
 NOTES = Path(__file__).resolve().parent.parent / "docs" / "catalog" / "notes.json"
 
@@ -37,6 +40,7 @@ NO_EPISODE = [
     "news-phone@2",
     "news-vera@4",
     "news-vera@5",
+    "pedro",
     "rafa",
     "rafa-bills",
     "rafa-breakroom",
@@ -45,8 +49,10 @@ NO_EPISODE = [
     "rafa-mug",
     "rafa-phone",
     "rafa-tote",
+    "show-bug",
     "toon-bento",
     "toon-counter",
+    "toon-pipe",
     "toon-receipt",
     "toon-take-a-number",
 ]

@@ -233,21 +233,58 @@ def test_the_style_value(tmp_path):
     assert STICK.facts()["parts"] == [
         "stick",
         "stick_airport",
+        "stick_bed",
         "stick_car",
         "stick_door",
         "stick_flat",
         "stick_gym",
         "stick_home",
+        "stick_odds",
         "stick_office",
+        "stick_roadtrip",
         "stick_school",
         "stick_shop",
         "stick_street",
+        "stick_table",
         "stick_windshield",
     ]
     parts = {e.name for e in registry.entries(style="stick") if e.style == "stick"}
     assert parts == {
+        "stick-blinker",
+        "stick-clipboard",
+        "stick-folded-bedding",
+        "stick-wall-brackets",
+        "stick-duvet",
+        "stick-eye-mask",
+        "stick-lights-low",
+        "stick-rear-view",
+        "stick-recorder",
+        "stick-swim-ring",
         "stick-room",
         "stick-yard",
+        "stick-wardrobe",
+        "stick-screws",
+        "stick-planks",
+        "stick-manual-page",
+        "stick-drill",
+        "stick-caller",
+        "stick-wheelie-bin",
+        "stick-trash-truck",
+        "stick-sparks",
+        "stick-slipper",
+        "stick-queue",
+        "stick-duffel",
+        "stick-book",
+        "stick-aisle",
+        "stick-xray",
+        "stick-spoon",
+        "stick-scan-belt",
+        "stick-robe",
+        "stick-plate",
+        "stick-foil-parcel",
+        "stick-foil-note",
+        "stick-poster",
+        "stick-headset",
         "stick-figure",
         "stick-hook",
         "stick-headline",
@@ -426,6 +463,20 @@ def test_every_seated_pose_and_face_draws():
                 face = stick.Face(eyes, brows, "smirk", (-1, 1))
                 stick.rig(cv, cv.comp, [stick.RigKey(0, name, face)], 1.0)
                 assert len(list(xml(cv).iter("shape"))) > 10
+
+
+def test_a_card_can_be_narrowed_to_stay_clear_of_the_bug_and_the_default_keeps_its_width():
+    def card(**kwargs):
+        cv = canvas()
+        cv.require_font = lambda *_: None
+        stick.card(cv, cv.comp, "HOOK", **kwargs)
+        return next(xml(cv).iter("shape"))
+
+    assert (card().get("x"), card().get("width")) == ("90", "900")
+    narrow = card(width=772)
+    assert (narrow.get("x"), narrow.get("width")) == ("154", "772")
+    with pytest.raises(stick.StickDataError, match="width"):
+        card(width=0)
 
 
 def test_the_camera_takes_no_end_it_would_never_read():
@@ -642,3 +693,74 @@ def test_a_look_with_a_neck_joins_its_head_to_its_torso_and_the_default_keeps_it
 def test_a_neck_is_true_or_false():
     with pytest.raises(stick.StickDataError):
         stick.check_look(stick.Look(neck="yes"))
+
+
+def _eye_canvas() -> Canvas:
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="24", duration=1.0, background="#d9d2c4")
+    return Canvas(scene, DAYLIGHT, font_asset="inter", namer=flat_counter("n"))
+
+
+SHUT_EYE = b"Q 0 9 15 0"
+
+
+def test_a_peek_shuts_the_eye_away_from_x_and_opens_the_other():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(SHUT_EYE) < drawn.index(b"ellipse"), "the shut eye is the one at -x"
+
+
+def test_a_peek_is_a_face_the_rig_draws_and_a_blink_leaves_it_alone():
+    assert "peek" in stick.EYES
+    cv = _eye_canvas()
+    stick.rig(cv, cv.comp, [stick.RigKey(0, "lean", stick.Face("peek"))], 1.0, blinks=(0.5,), flip=True)
+    assert cv.scene.to_bytes(layout="pretty").count(SHUT_EYE) == 1
+
+
+def test_a_wink_is_not_a_known_eye():
+    with pytest.raises(stick.StickDataError, match="eyes"):
+        stick.check_face(stick.Face("wink"))
+
+
+def test_a_peek_back_opens_the_eye_a_figure_that_is_not_flipped_turns_left():
+    cv = _eye_canvas()
+    stick._eyes(cv, cv.comp, stick.Face("peek-back"))
+    drawn = cv.scene.to_bytes(layout="pretty")
+    assert drawn.count(SHUT_EYE) == 1
+    assert drawn.index(b"ellipse") < drawn.index(SHUT_EYE), "the shut eye is the one at +x"
+    assert "peek-back" in stick.EYES
+
+
+def test_hand_at_is_where_the_hand_lands_after_the_figure_is_placed():
+    pose = stick.STANDING["point"]
+    assert stick.hand_at(pose) == pose.hands[1]
+    assert stick.hand_at(pose, far=True) == pose.hands[0]
+    x, y = pose.hands[1]
+    assert stick.hand_at(pose, at=(100.0, -50.0), scale=0.5) == (100 + x / 2, -50 + y / 2)
+    assert stick.hand_at(pose, at=(1380.0, 0.0), flip=True) == (1380 - x, y)
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick.hand_at(pose, scale=0)
+
+
+def test_held_follows_the_hand_from_key_to_key_and_turns_with_the_figure():
+    cv = canvas()
+    keys = [stick.RigKey(0, "stand"), stick.RigKey(1.0, "point"), stick.RigKey(2.0, "stand")]
+    g = stick.held(cv, cv.comp, keys, 3.0, poses=stick.STANDING, at=(1000.0, 0.0), scale=0.5, flip=True)
+    assert (g.scaleX, g.scaleY) == (-0.5, 0.5)
+    tracks = {a.get("property"): a for a in ET.fromstring(cv.scene.to_bytes(layout="pretty")).iter("animate")}
+    xs = [(float(k.get("time")), float(k.get("value"))) for k in tracks["x"].iter("key")]
+    stand, point = stick.STANDING["stand"].hands[1], stick.STANDING["point"].hands[1]
+    assert xs == [(0.0, 1000 - stand[0] / 2), (1.0, 1000 - point[0] / 2), (2.0, 1000 - stand[0] / 2)]
+    assert tracks["x"].get("defaultInterpolation") == "hold"
+
+
+def test_held_stays_put_for_one_key_and_refuses_what_the_rig_refuses():
+    cv = canvas()
+    g = stick.held(cv, cv.comp, [stick.RigKey(0, "stand")], 2.0, poses=stick.STANDING)
+    assert (g.x, g.y) == stick.STANDING["stand"].hands[1]
+    with pytest.raises(stick.StickDataError):
+        stick.held(cv, cv.comp, [stick.RigKey(0, "nope")], 2.0, poses=stick.STANDING)
+    with pytest.raises(stick.StickDataError):
+        stick.held(cv, cv.comp, [stick.RigKey(1.0, "stand")], 2.0, poses=stick.STANDING)

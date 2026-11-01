@@ -2,12 +2,10 @@
 recording loop with a fake client (what the real client parses and verifies is tested in test_voice.py)."""
 
 import json
-import math
 import shutil
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from sr_core.scene import Scene
@@ -15,8 +13,8 @@ from sr_core.scene import Scene
 from srstudio import PEACH, Canvas, flat_counter, music, narration, sketch, toon
 from srstudio.fonts import GoogleFont
 from srstudio.sketch import Line
-from srstudio.voice import Alignment, Transcript
-from support.sketch import BEATS, LINES, SK, SPEAKERS, with_beats
+from srstudio.voice import Alignment
+from support.sketch import BEATS, LINES, SK, SPEAKERS, FakeClient, confirm_stub, with_beats
 
 
 def canvas() -> Canvas:
@@ -56,6 +54,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, lines=(replace(LINES[0], gain=1.0), *LINES[1:])), "gain"),
         (lambda s: replace(s, lines=(replace(LINES[0], gain=-13.0), *LINES[1:])), "gain"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=2.0), *LINES[1:])), "gain"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=float("nan")), *LINES[1:])), "gain"),
         (lambda s: with_beats(lambda b: [replace(b[0], start=0.5), *b[1:]]), "starts at 0"),
         (lambda s: with_beats(lambda b: [b[0], replace(b[1], start=0.05), *b[2:]]), "held less than"),
         (lambda s: with_beats(lambda b: [replace(b[0], who="owl"), *b[1:]]), "not in the Toon vocabulary"),
@@ -357,40 +357,9 @@ def test_write_project_and_write_voiced_lay_out_the_files(tmp_path, monkeypatch)
 
 
 # -- recording --------------------------------------------------------------------------------------------------------
-class FakeClient:
-    """Says each line as a tone, 0.3 s a word after 0.05 s of silence, and hears back what it is told to."""
-
-    def __init__(self, folder: Path, heard: dict | None = None):
-        self.folder, self.heard, self.requests, self.said = folder, heard or {}, [], {}
-
-    def synthesize(self, text, voice, settings):
-        self.requests.append((text, voice.name, settings.speed))
-        words = len(text.split())
-        seconds = 0.3 * words
-        rate = 8000
-        samples = [0.0] * int(0.05 * rate) + [
-            0.5 * math.sin(2 * math.pi * 220 * k / rate) for k in range(int(seconds * rate))
-        ]
-        wav = self.folder / f"{voice.name}-{len(self.requests)}.wav"
-        music.write_wav(wav, samples, rate)
-        self.said[wav] = text
-        n = len(text)
-        starts = tuple(round(0.05 + k * seconds / n, 6) for k in range(n))
-        ends = tuple(round(s + seconds / n, 6) for s in starts)
-        return SimpleNamespace(wav=wav, alignment=Alignment(tuple(text), starts, ends))
-
-    def transcribe(self, audio, language="en"):
-        text = self.said[Path(audio)]
-        return Transcript("en", 1.0, self.heard.get(text, text), ())
-
-
 def copy_clip(src, dst, clip_in, clip_out, length, gain_db, ffmpeg):
     shutil.copy(src, dst)
     return length
-
-
-def confirm_stub(cache, key, voice):
-    return {"voice_id": voice.id, "name": f"{voice.name} - premade", "category": "premade"}
 
 
 def test_record_says_every_line_in_its_voice_places_the_beats_and_writes_the_manifest(tmp_path):
@@ -538,3 +507,44 @@ def test_a_line_gain_is_in_db_at_zero_or_under_within_the_mix(gain):
     lines = (LINES[0], replace(LINES[1], gain=gain), LINES[2])
     with pytest.raises(sketch.SketchError, match="gain"):
         sketch.check(replace(SK, lines=lines))
+
+
+def test_placing_again_reads_the_recording_and_asks_no_voice(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    voiced = tmp_path / "voiced"
+    mouths, speech = (voiced / "mouths.json").read_bytes(), (voiced / "speech.json").read_bytes()
+    beats = (voiced / "beats.json").read_bytes()
+    placed = sketch.place_again(SK, tmp_path)
+    again = json.loads((voiced / "beats.json").read_text())["beats"]
+    assert [b["start"] for b in again] == pytest.approx([b["start"] for b in json.loads(beats)["beats"]], abs=2e-6)
+    assert [b.start for b in placed] == [b["start"] for b in again]
+    assert (voiced / "mouths.json").read_bytes() == mouths and (voiced / "speech.json").read_bytes() == speech
+
+
+def test_placing_again_carries_a_changed_cue_to_the_voiced_build(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    before = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    held = replace(SK, caption_min=2.5, tail=0.0)
+    assert held.caption_min == 2.5
+    sketch.place_again(held, tmp_path)
+    after = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    assert any(b.start > a.start for a, b in zip(before, after, strict=True))
+
+
+def test_placing_again_refuses_a_recording_of_other_lines(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    fewer = replace(SK, lines=SK.lines[:2], beats=tuple(b for b in SK.beats if b.line in (None, 0, 1)))
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(fewer, tmp_path)
+
+
+def test_placing_again_refuses_a_recording_that_ends_before_the_beats(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(replace(SK, tail=9.0), tmp_path)
+
+
+@pytest.mark.parametrize("bad", [0, -0.5, "long", float("nan")])
+def test_a_caption_minimum_is_a_positive_number(bad):
+    with pytest.raises(sketch.SketchError, match="caption_min"):
+        sketch.check(replace(SK, caption_min=bad))

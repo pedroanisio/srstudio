@@ -249,11 +249,12 @@ def _door(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float, colour: str
     "toon-kitchen",
     summary="The office kitchen: tiled backsplash, mint cabinets, a counter for props and a tall fridge with a note",
 )
-def kitchen(cv: Canvas, parent, note: str = "") -> None:
+def kitchen(cv: Canvas, parent, note: str = "", chair: bool = True) -> None:
     """The office kitchen behind the character: a warm wall, mint upper and lower cabinets, a white subway-tile
     backsplash with a glint on every tile, a wooden counter at :data:`COUNTER_Y` that props stand on, and a tall
     fridge at the right with magnets and, when ``note`` is given (1 to :data:`NOTE_MAX` characters), a note stuck
-    to its door. The signature marks are the desk's (:func:`srstudio.toon.desk`)."""
+    to its door. ``chair`` false leaves the chair out, for a shot of someone who is not sitting in it. The signature
+    marks are the desk's (:func:`srstudio.toon.desk`)."""
     if note and (len(note) > NOTE_MAX or not note.strip()):
         raise ToonDataError(f"the fridge note is 1 to {NOTE_MAX} characters")
     g = cv.group(parent, cv.uid("g"))
@@ -271,9 +272,9 @@ def kitchen(cv: Canvas, parent, note: str = "") -> None:
     cv.rect(g, fx(-10), fy(COUNTER_Y + 20), fh(FRIDGE_X + 6), fh(12), COUNTER_EDGE, cv.ink, FINE_W * 0.6, radius=0)
     cv.rect(g, fx(0), fy(COUNTER_Y + 4), fh(FRIDGE_X - 10), fh(4), GLINT, cv.clear, 0, radius=fh(2), opacity=0.35)
     _fridge(cv, g, note)
-    # the chair back: wood, with a lighter rail
-    _path(cv, g, CHAIR_D, KITCHEN_CHAIR)
-    _line(cv, g, [(40, 600), (150, 584), (270, 596)], 10.0, KITCHEN_CHAIR_LIGHT)
+    if chair:  # its back: wood, with a lighter rail
+        _path(cv, g, CHAIR_D, KITCHEN_CHAIR)
+        _line(cv, g, [(40, 600), (150, 584), (270, 596)], 10.0, KITCHEN_CHAIR_LIGHT)
 
 
 def _fridge(cv: Canvas, g, note: str) -> None:
@@ -688,7 +689,12 @@ def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[f
     summary="A call-centre cubicle: a fabric partition, a YOUR CALL MATTERS poster and a CALLS WAITING board",
 )
 def call_centre(
-    cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0, 12),), end: float = 0.0, legible: bool = False
+    cv: Canvas,
+    parent,
+    waiting: Sequence[tuple[float, int]] = ((0.0, 12),),
+    end: float = 0.0,
+    legible: bool = False,
+    bright_count: bool = False,
 ) -> None:
     """The character's cubicle on a pale office wall: a flecked blue fabric partition with an aluminium cap behind
     the character, a cheerful poster above it that reads YOUR CALL MATTERS, and, where the other sets have their
@@ -696,8 +702,8 @@ def call_centre(
     0, in time order, each count 0 to :data:`WAITING_MAX`; the board shows one count at a time. The lamp blinks
     from 0 to ``end`` (still when ``end`` is 0). ``legible`` letters the label in :data:`LED_LABEL`: the engine
     measures text contrast on the glyphs as drawn, edges included, and the label's thin lettering in :data:`LED`
-    falls below 4.5:1, which fails a strict encode. Off by default, so the sets of published episodes stay as they
-    were."""
+    falls below 4.5:1, which fails a strict encode. ``bright_count`` letters the count in it too: :data:`LED` on the
+    board's face is 4.48:1 on the frame. Both off by default, so the sets of published episodes stay as they were."""
     counts = _check_waiting(waiting)
     end = _check_end(end)
     g = cv.group(parent, cv.uid("g"))
@@ -723,7 +729,7 @@ def call_centre(
     for i, (at, count) in enumerate(counts):
         digits = cv.group(g, cv.uid("g"))
         cv.text(digits, cv.uid("centre-count"), str(count), fx(380), fy(410), int(fh(204)), int(fh(86)), 110,
-                color=LED, align="start")  # fmt: skip
+                color=LED_LABEL if bright_count else LED, align="start")  # fmt: skip
         keys = [(0.0, 1.0 if at == 0 else 0.0)] + ([(at, 1.0)] if at > 0 else [])
         if i + 1 < len(counts):
             keys.append((counts[i + 1][0], 0.0))

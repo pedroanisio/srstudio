@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#wifi", "#neighbors", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("Turn It Down", 7.0, "Toon"),
+        thumbnail=Thumbnail("Turn It Down", 10.0, "Toon"),
     ),
     tags=Tags("everyday-tech", "other-person", "affection", test="sp-hook_motion", arm="b"),
     style="Toon",

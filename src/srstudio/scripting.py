@@ -16,17 +16,22 @@ from .sketch import Beat, Line, SketchError, events
 __all__ = [
     "WORDS_PER_SECOND",
     "Script",
+    "at",
     "changes",
+    "every",
     "exactly_once",
     "first",
     "hold",
+    "line_seconds",
     "off_screen",
     "only_events",
     "over_budget",
     "part",
     "say",
     "spans",
+    "speaks_by",
     "spoken_seconds",
+    "times",
     "word_budget",
     "word_count",
 ]
@@ -53,10 +58,15 @@ def over_budget(lines: Sequence[Line], seconds: float) -> int:
     return max(0, word_count(lines) - word_budget(seconds))
 
 
+def line_seconds(text: str, speed: float = 1.0) -> float:
+    """About how long one line runs at ``speed``, before its take is paid for; the recording decides."""
+    return (SECONDS_A_WORD * len(text.split()) + SECONDS_A_LINE) / speed
+
+
 def spoken_seconds(lines: Sequence[Line]) -> float:
     """About how long ``lines`` run, spoken in order with no held pauses, before any take is paid for. An estimate:
     on the five reels it was fitted to, the speech alone came within 1.7 s of the recording. Held pauses come on top."""
-    speech = sum(SECONDS_A_WORD * len(line.text.split()) + SECONDS_A_LINE for line in lines)
+    speech = sum(line_seconds(line.text) for line in lines)
     return round(speech + LINE_GAP * max(len(lines) - 1, 0), 2)
 
 
@@ -228,3 +238,33 @@ def only_events(beats: Sequence[Beat], kinds: Collection[str]) -> None:
     unknown = {b.event.split(":")[0] for b in beats if b.event} - set(kinds)
     if unknown:
         raise SketchError(f"unknown events {sorted(unknown)}")
+
+
+def times(beats: Sequence[Beat], kind: str) -> list[float]:
+    """When every ``kind`` event comes: the moments a sound or a prop lands on."""
+    return [when for when, _ in events(beats, kind)]
+
+
+def at(beats: Sequence[Beat], kind: str) -> float:
+    """When the first ``kind`` event comes. Raises :class:`~srstudio.sketch.SketchError` if none does."""
+    found = times(beats, kind)
+    if not found:
+        raise SketchError(f"no {kind} event")
+    return found[0]
+
+
+def every(start: float, stop: float, step: float) -> list[float]:
+    """Moments ``step`` apart from ``start`` to before ``stop``: the bed of drips, footsteps or ticks a foley writes."""
+    if step <= 0:
+        raise SketchError(f"a bed needs a positive step, got {step!r}")
+    count = max(0, math.ceil(round((stop - start) / step, 9)))
+    return [round(start + n * step, 3) for n in range(count)]
+
+
+def speaks_by(beats: Sequence[Beat], limit: float) -> None:
+    """Refuse a sketch whose first spoken beat comes after ``limit`` seconds: the opening every reel's hook needs."""
+    first_spoken = next((b.start for b in beats if b.spoken), None)
+    if first_spoken is None:
+        raise SketchError("no line is spoken")
+    if first_spoken > limit:
+        raise SketchError(f"the first line starts at {first_spoken:.2f} s, after {limit:.2f} s")

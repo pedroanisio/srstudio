@@ -25,10 +25,21 @@ if str(PILOTS) not in sys.path:
     sys.path.insert(0, str(PILOTS))
 
 import news_story  # noqa: E402
+import safe_from_you_data  # noqa: E402
 import seabird_jet_lag_data  # noqa: E402
 import space_haiku_data  # noqa: E402
+import they_voted_no_data  # noqa: E402
 
-REELS = (seabird_jet_lag_data, space_haiku_data)
+REELS = (seabird_jet_lag_data, space_haiku_data, safe_from_you_data, they_voted_no_data)
+RUNS_LONG = {they_voted_no_data: 34.0}  # the reviewer kept every line: 79 words, and the master runs 30.4 s
+PHONES = (  # what fills the frame
+    "news-phone",
+    "news-veer",
+    "news-lost",
+    "news-money-app",
+    "news-money-app-again",
+    "news-oven-clock",
+)
 reel = pytest.mark.parametrize("pilot", REELS, ids=lambda m: m.SLUG)
 
 
@@ -60,6 +71,16 @@ def frontmatter(pilot, name: str = "notes.md") -> dict[str, str]:
     return {k.strip(): v.strip() for k, v in (row.split(":", 1) for row in head.strip().splitlines())}
 
 
+def pilot_inserts(pilot) -> tuple[tuple[float, float], ...]:
+    """When the reel's phone or stove is up, read off what it draws."""
+    groups = overlay(pilot)
+    return tuple(
+        (float(groups[name].get("start", "0")), float(groups[name].get("end", "0")))
+        for name in PHONES
+        if name in groups
+    )
+
+
 def groups_of(pilot, prefix: str) -> list[ET.Element]:
     return [g for name, g in overlay(pilot).items() if name.startswith(prefix)]
 
@@ -71,7 +92,8 @@ def test_the_reel_as_written_is_valid(pilot):
 
 @reel
 def test_the_script_fits_a_thirty_second_reel(pilot):
-    assert scripting.over_budget(pilot.LINES, 30.0) == 0
+    assert scripting.over_budget(pilot.LINES, RUNS_LONG.get(pilot, 30.0)) == 0
+    assert pilot.SKETCH.end <= 35.0
 
 
 def test_seabird_was_cut_to_the_length_the_review_asked_for():
@@ -80,7 +102,7 @@ def test_seabird_was_cut_to_the_length_the_review_asked_for():
 
 @reel
 def test_the_story_is_from_the_last_48_hours_of_the_day_it_was_picked(pilot):
-    picked = date(2026, 10, 31)
+    picked = date.fromisoformat(frontmatter(pilot)["date"])
     assert picked - timedelta(days=2) <= date.fromisoformat(pilot.STORY_DATE) <= picked
     assert frontmatter(pilot)["story-date"] == pilot.STORY_DATE
 
@@ -142,12 +164,43 @@ def test_the_sign_off_ends_on_the_anchor_credited_for_it():
     assert space_haiku_data.BEATS[-1].who == "vera"
 
 
+def test_binance_is_quoted_in_the_words_read_and_its_position_stays_on_screen():
+    assert '"Your assets are safe."' in safe_from_you_data.LINES[3].text
+    assert "Your assets are safe." in sources(safe_from_you_data)
+    assert any("WILL NOT BE PASSED ON TO USERS" in item for item in safe_from_you_data.TICKER)
+
+
+def test_safe_from_you_ends_on_one_word_after_the_longest_held_stare():
+    pilot = safe_from_you_data
+    assert pilot.LINES[-1].text == "You." and pilot.BEATS[-1].who == "vera"
+    stare = pilot.BEATS[-2]
+    assert stare.line is None and pilot.BEATS[-1].start - stare.start >= 1.2
+
+
+def test_the_vote_is_read_before_the_oven_and_the_reel_ends_on_it():
+    lines = [q.text for q in they_voted_no_data.LINES]
+    assert "fifty point two to forty-nine point eight" in lines[3]
+    assert lines[-1] == "They voted no." and they_voted_no_data.BEATS[-1].who == "vera"
+
+
+def test_the_digits_stay_while_the_tag_turns_on_the_word_right():
+    pilot = they_voted_no_data
+    right = next(b for b in pilot.BEATS if b.event == "right")
+    assert right.word == 6 and right.caption == "right."
+    groups = overlay(pilot)
+    assert float(groups["news-oven-clock-right"].get("start", "0")) == right.start
+
+
+def test_the_phone_shows_what_opened_first_and_not_all_of_phase_one():
+    assert safe_from_you_data.NOTES[0] == "PHASE ONE: BITCOIN FIRST"
+
+
 @reel
 def test_the_opening_is_the_card_the_line_and_a_reaction_by_five_seconds(pilot):
     sk = pilot.SKETCH
     assert sk.beats[0].event == "card" and sk.beats[0].line == 0
-    reaction = next(b for b in sk.beats if b.line == 1)
-    assert reaction.start < 5.0 and sk.lines[1].speaker == "gus"
+    reaction = next(b for b in sk.beats if b.line is not None and sk.lines[b.line].speaker == "gus")
+    assert reaction.start < 5.0
 
 
 @reel
@@ -167,7 +220,7 @@ def test_the_source_stays_on_screen_from_the_first_frame_to_the_last(pilot):
 @reel
 def test_the_show_and_the_source_are_drawn_over_the_phone_so_they_are_not_dimmed(pilot):
     names = list(overlay(pilot))
-    phones = [i for i, name in enumerate(names) if name in ("news-phone", "news-veer", "news-lost")]
+    phones = [i for i, name in enumerate(names) if name in PHONES]
     assert not phones or max(phones) < names.index("news-bug") < names.index("news-source-card")
 
 
@@ -179,7 +232,7 @@ def test_the_ticker_waits_for_the_card_to_leave_its_place(pilot):
 @reel
 def test_a_lower_third_never_sits_behind_a_phone(pilot):
     groups = overlay(pilot)
-    phones = [g for name, g in groups.items() if name in ("news-phone", "news-veer", "news-lost")]
+    phones = [g for name, g in groups.items() if name in PHONES]
     for name, lower in groups.items():
         if not re.fullmatch(r"news-lower-\d+", name):
             continue
@@ -187,6 +240,23 @@ def test_a_lower_third_never_sits_behind_a_phone(pilot):
             assert float(lower.get("end", "0")) <= float(phone.get("start", "0")) or (
                 float(lower.get("start", "0")) >= float(phone.get("end", "0"))
             )
+
+
+@reel
+def test_a_lower_third_never_names_the_other_anchor_for_as_long_as_it_stays(pilot):
+    names = {"VERA STILLMAN, ANCHOR": "vera", "GUS BELLOWS, CO-HOST": "gus"}
+    sk = pilot.SKETCH
+    for a, b, kicker, _ in pilot.STORY.spans(sk.beats, sk.end):
+        for beat in sk.beats:
+            if kicker in names and a <= beat.start < b and beat.who in names.values():
+                assert beat.who == names[kicker], f"{kicker} over {beat.who} at {beat.start}"
+
+
+@pytest.mark.parametrize("pilot", [safe_from_you_data, they_voted_no_data], ids=lambda m: m.SLUG)
+def test_a_lower_third_stays_long_enough_to_be_read_after_it_slides_in(pilot):
+    sk = pilot.SKETCH
+    spans = pilot.STORY.spans(sk.beats, sk.end, pilot_inserts(pilot))
+    assert all(b - a >= 1.2 for a, b, _, _ in spans), [(a, b) for a, b, _, _ in spans if b - a < 1.2]
 
 
 @reel
@@ -304,7 +374,9 @@ def test_notes_name_the_new_fact_about_gus_for_the_cast_bible():
     assert "wife" in (folder(seabird_jet_lag_data) / "notes.md").read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("module", ["seabird_jet_lag_audio", "space_haiku_audio"])
+@pytest.mark.parametrize(
+    "module", ["seabird_jet_lag_audio", "space_haiku_audio", "safe_from_you_audio", "they_voted_no_audio"]
+)
 def test_the_recording_carries_the_banner(module):
     text = (PILOTS / f"{module}.py").read_text(encoding="utf-8")
     assert "ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error." in text

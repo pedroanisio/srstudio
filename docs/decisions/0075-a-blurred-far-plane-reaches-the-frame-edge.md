@@ -5,7 +5,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0075: A blurred far plane reaches the frame's edge, on the reels that ask
 
 - Status: proposed (2026-10-31). Implemented: `Canvas.bleed`, `EpisodeSpec.bleed`, `collage_sketch.Staging.bleed`,
-  `series.Reel.bleed`, `stick_reel.spec(bleed=)`, `look.sheet`, `look.depth(overscan=)`; `tests/test_bleed.py`.
+  `series.Reel.bleed`, `stick_reel.spec(bleed=)`, `look.sheet`, `look.depth(overscan=, moving=)`; `tests/test_bleed.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 

@@ -103,8 +103,10 @@ POSES: dict[str, RigPose] = {
 
 
 @register("location", "stick-kitchen", tags=("home", "kitchen", "domestic", "fridge"))
-def kitchen(cv: Canvas, parent) -> None:
-    """The kitchen, without its table: the window and its curtains, a calendar, a shut fridge, a shut safe."""
+def kitchen(cv: Canvas, parent, *, marks: bool = True, safe: bool = True) -> None:
+    """The kitchen, without its table: the window and its curtains, a calendar, a shut fridge, a shut safe. A reel
+    whose framing or card hides the marks passes ``marks=False`` and places them where they are seen (ADR 0001), and
+    one with no use for a wall safe passes ``safe=False``."""
     s = _group(cv, parent)
     wall = paint(cv, Gradient("kitchen-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, FLOOR_Y))
     box(cv, s, 0, 0, cv.width, FLOOR_Y, wall)
@@ -117,10 +119,13 @@ def kitchen(cv: Canvas, parent) -> None:
     shape(cv, s, "M 380 160 L 480 160 Q 470 340 400 530 L 380 530 Z", CURTAIN)
     shape(cv, s, "M 760 160 L 660 160 Q 670 340 740 530 L 760 530 Z", CURTAIN)
     box(cv, s, 370, 516, 400, 18, WOOD_DARK)
-    signature.cactus(cv, s, 700, 516, scale=0.42)
+    if marks:
+        signature.cactus(cv, s, 700, 516, scale=0.42)
     _fridge(cv, s)
-    _safe(cv, s)
-    signature.code(cv, s, 40, 1885, 9, color="#6d5f49")
+    if safe:
+        _safe(cv, s)
+    if marks:
+        signature.code(cv, s, 40, 1885, 9, color="#6d5f49")
 
 
 def _fridge(cv: Canvas, parent) -> None:
@@ -142,13 +147,18 @@ def _safe(cv: Canvas, parent) -> None:
 
 
 @register("prop", "stick-table", tags=("home", "kitchen", "table", "furniture"))
-def table(cv: Canvas, parent) -> None:
-    """The kitchen table, its top at :data:`TABLE_TOP`."""
-    x0, x1 = TABLE_X
+def table(
+    cv: Canvas, parent, *, span: tuple[float, float] = TABLE_X, top: float = TABLE_TOP, legs: float = 420.0
+) -> None:
+    """The kitchen table, its top at :data:`TABLE_TOP` and :data:`TABLE_X` wide. ``span``, ``top`` and ``legs`` set a
+    narrower one, or one that stands somewhere else on the floor."""
+    x0, x1 = span
+    if not (all(checks.number(v) for v in (x0, x1, top, legs)) and x1 > x0 and legs > 0):
+        raise StickDataError(f"a table runs left to right on legs of some length, got {span!r}, {top!r}, {legs!r}")
     g = _group(cv, parent)
     for x in (x0 + 34, x1 - 62):
-        box(cv, g, x, TABLE_TOP + 30, 28, 420, WOOD_DARK, 5)
-    box(cv, g, x0, TABLE_TOP, x1 - x0, 42, WOOD, 6, r=8)
+        box(cv, g, x, top + 30, 28, legs, WOOD_DARK, 5)
+    box(cv, g, x0, top, x1 - x0, 42, WOOD, 6, r=8)
 
 
 @register("location", "stick-kitchen-plan", tags=("home", "kitchen", "overhead", "chase"))
@@ -274,15 +284,19 @@ def bedroom(cv: Canvas, parent) -> None:
 
 
 @register("prop", "stick-chair", tags=("home", "chair", "furniture"))
-def chair(cv: Canvas, parent, x, y):
-    """A wooden kitchen chair with its feet on ``y``, its seat 150 above it, the height a figure climbs."""
-    g = _group(cv, parent)
-    box(cv, g, x + 92, y - 470, 22, 470, WOOD_DARK, 4, r=6)  # the back
-    box(cv, g, x - 114, y - 170, 228, 34, WOOD, 4, r=8)  # the seat
+def chair(cv: Canvas, parent, x, y, *, rise: float = 0.0, flip: bool = False):
+    """A wooden kitchen chair with its feet on ``y``, its seat 150 above it, the height a figure climbs. ``rise`` lifts
+    it on longer legs, for a figure to sit in; ``flip`` puts its back on the left."""
+    if not (checks.number(rise) and rise >= 0):
+        raise StickDataError(f"a chair's rise is 0 or more, got {rise!r}")
+    g = _group(cv, parent, x=2 * x, scaleX=-1) if flip else _group(cv, parent)
+    top = y - rise
+    box(cv, g, x + 92, top - 470, 22, 470, WOOD_DARK, 4, r=6)  # the back
+    box(cv, g, x - 114, top - 170, 228, 34, WOOD, 4, r=8)  # the seat
     for lx in (x - 104, x + 80):
-        box(cv, g, lx, y - 138, 24, 138, WOOD_DARK, 4, r=4)
-    box(cv, g, x + 40, y - 450, 74, 26, WOOD, 4, r=8)
-    box(cv, g, x + 40, y - 370, 74, 26, WOOD, 4, r=8)
+        box(cv, g, lx, top - 138, 24, 138 + rise, WOOD_DARK, 4, r=4)
+    box(cv, g, x + 40, top - 450, 74, 26, WOOD, 4, r=8)
+    box(cv, g, x + 40, top - 370, 74, 26, WOOD, 4, r=8)
     return g
 
 

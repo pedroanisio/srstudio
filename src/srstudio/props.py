@@ -333,10 +333,12 @@ def cafe_paints(cv: Canvas) -> dict[str, str]:
     summary="Takeaway cup with lid and a foam heart",
     examples=('from srstudio import get\ncup = get("prop", "coffee-cup")(ep.cv, ep.comp, 540, 960)',),
 )
-def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0):
+def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0, *, shadow: bool = True):
+    """``shadow`` is its contact shadow on what it stands on: off for a cup held in the air."""
     ink, clear, white = cv.ink, cv.clear, cv.white
     g = cv.group(parent, cv.uid("coffee-cup"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)
-    cv.ellipse(g, -29, 56, 64, 10, "#5C4D3E", opacity=0.16)
+    if shadow:
+        cv.ellipse(g, -29, 56, 64, 10, "#5C4D3E", opacity=0.16)
     cv.path(g, "M-28 -18 L28 -18 L22 57 Q0 66 -22 57Z", white, ink, 3)
     cv.path(g, "M-26 11 L26 11 L24 37 L-24 37Z", "#B27F51", clear, 0)
     cv.ellipse(g, -32, -25, 64, 15, "#3E4947", ink, 3)

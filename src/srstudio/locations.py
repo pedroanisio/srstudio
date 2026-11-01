@@ -185,9 +185,10 @@ def office_reverse(
     cactus: Slot = None,
     *,
     depth: float | None = None,
+    chair: bool = True,
 ):
     """``depth`` blurs the wall behind the chair by that many px; the chair, the cast, the desk and the marks stay
-    sharp."""
+    sharp. ``chair=False`` leaves the chair to the slot (to sink it)."""
     _check_depth(depth)
     p = props.office_paints(cv)
     ink = cv.ink
@@ -200,7 +201,8 @@ def office_reverse(
     cv.line(far, 20, 0, 20, 1402, "#ECE0C9", 3)
     for y in [8, 342]:
         cv.path(far, f"M1069 {y + 12} L1086 {y} L1086 {y + 38} L1071 {y + 43}Z", "#A49176", ink, 3)
-    props.chair(cv, g, "gray")
+    if chair:
+        props.chair(cv, g, "gray")
     _call(in_chair, g)
     cv.rect(g, 0, 1399, 1080, 433, p["desk"], ink, 4)
     props.woodgrain(cv, g, 1418, 390, 12)
@@ -252,9 +254,12 @@ def cafe(
     cactus: Slot = None,
     *,
     menu: tuple[str, str, str] | None = None,
+    code_on_shelf: bool = False,
 ):
     """``menu`` letters the board's three lines under its title (the two prices and the footer, each 1 to
-    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte."""
+    :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte.
+    ``code_on_shelf`` moves the signature code from the board's corner to the shelf's edge, for a reel with someone
+    standing in front of the board."""
     if menu is not None and not (
         isinstance(menu, tuple)
         and len(menu) == 3
@@ -290,7 +295,10 @@ def cafe(
                 ("menu-wifi", footer, 634, 61, 31, "#A9CBB8"),
             ),
         )
-    signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
+    if code_on_shelf:
+        signature.code(cv, g, 555, 1017, 12, color="#F3DCA4", align="end")
+    else:
+        signature.code(cv, g, 445, 708, 11, color="#C49B68", opacity=0.9, align="end")
     props.cafe_window(cv, g)
     for xx in [300, 850]:
         props.pendant_light(cv, g, xx)
@@ -373,6 +381,7 @@ RECEPTION_CLERK = (600, 790, 1.3)  # an office actor behind the counter
 RECEPTION_VISITOR = (250, 1080, 1.5)  # a standing café actor in front of it
 COUNTER_Y = 1060  # the counter's top
 COUNTER_FLOOR = 1440  # where the counter meets the floor
+RECEPTION_CODE = (990, COUNTER_FLOOR - 64)  # the code on the counter's face, by its top right corner
 
 
 @register(
@@ -474,8 +483,13 @@ def reception(
     at_desk: Slot = None,
     id="location-reception",
     shots=None,
+    cactus: Slot = None,
+    code_at: tuple[float, float] | None = None,
 ):
-    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`."""
+    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`; ``cactus`` takes over the
+    counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it, and
+    ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it
+    out."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -534,8 +548,9 @@ def reception(
         cv.ellipse(desk, fx - 5, fy - 5, 10, 10, "#E8A94B", ink, 1.5)
     cv.path(desk, "M300 1060 L298 1004 Q324 990 350 1004 L348 1060Z", vase, ink, 3)
     cv.ellipse(desk, 304, 996, 42, 14, "#D7EEEA", ink, 2.5)
-    signature.cactus(cv, desk, 450, COUNTER_Y + 6, 0.5)
-    signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
+    signature.home_cactus(cv, desk, 450, COUNTER_Y + 6, 0.5, slot=cactus)
+    code_x, code_y = code_at or RECEPTION_CODE
+    signature.code(cv, g, code_x, code_y, 10, color="#9E9483", align="end")
     _call(on_desk, desk)
     _call(at_desk, g)
     return g

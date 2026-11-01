@@ -22,6 +22,7 @@ all synthesised deterministically by :mod:`srstudio.foley`.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -36,6 +37,7 @@ from . import (
     TOON,
     Episode,
     EpisodeSpec,
+    camera,
     checks,
     craft,
     errors,
@@ -133,13 +135,17 @@ class Staging:
     output: str | None = None
     crf: str = "17"
     on_face: Mapping[str, Callable[..., None]] = field(default_factory=dict)
-    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
     """Per character in ``heads``: ``(cv, appearance, beats, face)`` draws into that shot's face group, so it moves with
     the head."""
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
     """``(cv, parent, beats, end, measure)`` draws what stays over every shot, under the captions and out of the
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
+    loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
+    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
+    """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
+    character's seat, so a figure can bend, sink or sway while its set stays put."""
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -215,6 +221,21 @@ def fit_captions(lines: Sequence[toon.Line], measure: Callable[[str], float], wi
     wide = [q.text for q in lines if toon.pill_width(measure, q.text) > width - 2 * PILL_MARGIN]
     if wide:
         raise StagingError("captions too wide for one pill: " + "; ".join(repr(t) for t in wide))
+
+
+def opening_push(scale: float = 1.06, at: tuple[float, float] = (540.0, 1000.0)) -> Callable[[Shot, object], None]:
+    """A :attr:`Staging.camera` that pushes in on ``at`` across the first shot and leaves the others where they stand:
+    a reel that speaks from its first frame opens on movement (the ``sp-hook_motion`` test's arm b) without a redrawn
+    pose or another second of recording."""
+    if not (checks.number(scale) and scale > 1):
+        raise StagingError(f"an opening push grows the shot, above 1, got {scale!r}")
+
+    def push(shot: Shot, group: object) -> None:
+        if shot.app.start == 0:
+            camera.anchor(group, *at, place=True)
+            camera.push_in(shot.cv, group, scale=[(0.0, 1.0), (shot.app.end, scale)])
+
+    return push
 
 
 def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
@@ -297,6 +318,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
+        if app.who in staging.moves:
+            x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
+            body = cv.group(body, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+            staging.moves[app.who](cv, body, app, sk.beats)
         if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:
@@ -327,7 +352,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         fit_captions(lines, partial(measure, size=toon.CAPTION_SIZE), cv.width)
         toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
     if voiced:
-        ep.audio(narration=manifest)
+        ep.audio(narration=manifest, loudness=staging.loudness)
         beds = []
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
@@ -438,16 +463,23 @@ def recorder(
     sounds: Sounds | None = None,
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
-    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
-    once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
-    :func:`record_episode`."""
+    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
+    the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
+    :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
+    that is already there (:func:`srstudio.sketch.place_again`)."""
 
-    def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
+    def record(project: Path, env: Mapping[str, str], ffmpeg: str, place_only: bool = False) -> dict:
         if validate is not None:
             validate(sk)
+        if place_only:
+            sketch.place_again(sk, project)
+            return {}
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
 
+    def options(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument("--place-only", action="store_true", help="move the beats onto the recording already there")
+
     def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-        return recording.main(record, doc, argv, env)
+        return recording.main(record, doc, argv, env, options)
 
     return main

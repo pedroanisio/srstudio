@@ -101,6 +101,9 @@ side can sort the replies:
 | `delivered:` | reels are in the outbox | `delivered: the-refund, split-shift (2 of 24)` |
 | `blocked:` | a request cannot be met | `blocked: render host down, first 8 by 09:00` |
 
+A `delivered:` post of a reel shipped under the strict rule carries its lines from `srstudio strict` and its frame
+evidence, for the publishing side to spot-check (ADR 0078).
+
 A question about nothing they posted is a new top-level message starting with `[question]`.
 
 ```bash

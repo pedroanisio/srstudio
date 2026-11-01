@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, frame_gates, parts, sketch, social, thumbnail
+from srstudio import Episode, EpisodeSpec, frame_gates, parts, show_numbers, sketch, social, thumbnail
 from srstudio.comedy_floor import ComedyError, Scores
-from srstudio.releases import Release, ReleaseError
+from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import (
     CAPTION_LIMIT,
     COVER_NAME,
@@ -43,7 +43,9 @@ from srstudio.social import (
     take_frame,
     video_size,
 )
-from srstudio.thumbnail import Thumbnail
+from srstudio.strict_gate import strict_defects
+from srstudio.thumbnail import ShowCover, Thumbnail
+from support import bible_docs
 from support.social import FONT, engine, post, tall, video
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -1053,8 +1055,11 @@ def _new_reel(posts, monkeypatch, tmp_path, repo, comedy=ON_THE_FLOOR, hashtags=
     release = Release("new-reel", post, video="New_Reel", parts={}, comedy=comedy)
     monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
     monkeypatch.setattr(posts, "REPO", repo)
+    monkeypatch.setattr(posts, "BIBLE_DIR", bible_docs.locked(tmp_path / "bible"))
     monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
     monkeypatch.setattr(posts.releases, "doubled_captions", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.releases, "caption_on_cover", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.strict_gate, "strict_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
     return renders
 
@@ -1068,6 +1073,50 @@ def test_a_first_delivery_without_an_enhancement_is_refused_before_it_writes(mon
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
     with pytest.raises(DeliveryError, match="New_Reel: no enhancement"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def _baited(posts, monkeypatch, tmp_path):
+    """A new reel on the send test by its ledger brief alone, as a holdout is, whose caption asks to be sent."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    reel = posts.RELEASES["new-reel"]
+    baited = replace(reel, post=replace(reel.post, description="Send this to your mum."))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": baited})
+    monkeypatch.setattr(posts, "_delivering", lambda *a: {"New_Reel"})
+    ledger = show_numbers.ledger_path(renders)
+    show_numbers.set_base(ledger, 192)
+    show_numbers.claim(ledger, "new-reel", brief="send-v1")
+    project = tmp_path / "episodes" / "new-reel"
+    project.mkdir(parents=True)
+    (project / "new-reel.scene.xml").write_text("<scene/>")
+    return renders
+
+
+def test_a_first_delivery_with_bait_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("bait must be refused before delivering"))
+    with pytest.raises(DeliveryError, match='New_Reel: its caption says "send this to"'):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_the_check_gate_names_bait_on_a_reel_on_the_send_test(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "caption_drift", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "font_file", lambda folder: tmp_path / "font.ttf")
+    monkeypatch.setattr(posts, "items", lambda renders: {})
+    monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
+    drift = posts.check_all(renders / "ig", renders, fonts_dir=tmp_path)
+    assert [str(d) for d in drift] == ['New_Reel: its caption says "send this to"']
+
+
+def test_a_ledger_that_cannot_be_read_is_a_delivery_error_at_the_bait_check(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    show_numbers.ledger_path(renders).write_text("not json")
+    with pytest.raises(DeliveryError, match="cannot be read"):
+        posts.send_drift(renders, posts.RELEASES)
 
 
 def test_auto_enhance_off_just_delivers(monkeypatch, tmp_path):
@@ -1137,6 +1186,118 @@ def test_a_first_delivery_with_a_run_together_caption_is_refused_before_it_write
         posts.main([*argv, "--only", "New_Reel"])
 
 
+def _numbered_reel(posts, monkeypatch, tmp_path):
+    """A new reel on the show's cover, past every other gate."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    cover = ShowCover("GOOD", 1.0, number=212)
+    release = replace(posts.RELEASES["new-reel"], post=replace(posts.RELEASES["new-reel"].post, thumbnail=cover))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
+    monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    return renders
+
+
+def test_a_first_delivery_out_of_the_show_s_look_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _numbered_reel(posts, monkeypatch, tmp_path)
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: #212 is not in the ledger"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_published_reel_on_the_show_s_cover_never_meets_the_gate_again(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _numbered_reel(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def _reported_reel(posts, monkeypatch, tmp_path, findings):
+    """A new reel past every other gate, built and rendered with these ``findings`` in its report."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    project = tmp_path / "episodes" / "new-reel"
+    (project / "qa").mkdir(parents=True)
+    scene = b'<scene><project width="1080" height="1920" fps="24" duration="2"/></scene>'
+    (project / "new-reel.scene.xml").write_bytes(scene)
+    report = {
+        "format": "scene-render-report/1",
+        "scene": {"sha256": hashlib.sha256(scene).hexdigest()},
+        "output": {"start": 0.0, "end": 2.0},
+        "findings": findings,
+    }
+    (project / "qa" / "render-report.json").write_text(json.dumps(report))
+    monkeypatch.setattr(posts.strict_gate, "strict_defects", strict_defects)
+    monkeypatch.setattr(posts, "STRICT", tmp_path / "strict")
+    monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    return renders
+
+
+FINDING = {
+    "code": "LEG-SHORT",
+    "severity": "warning",
+    "path": "/scene/composition/layer",
+    "node": "card-layer",
+    "time": [0.0, 0.375],
+    "measured": 0.375,
+    "limit": 0.8333,
+    "unit": "s",
+}
+
+
+def test_a_first_delivery_with_a_strict_finding_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: --strict warning: LEG-SHORT card-layer at 0.000"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: the frame gates refuse: New_Reel: --strict warning"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_first_delivery_reads_the_reel_s_record_from_the_episodes_folder(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    (tmp_path / "strict").mkdir()
+    (tmp_path / "strict" / "new-reel.json").write_text("{")
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: new-reel.json: not JSON"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_first_delivery_with_no_render_report_is_refused(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [])
+    (tmp_path / "episodes" / "new-reel" / "qa" / "render-report.json").unlink()
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: no render report"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_first_delivery_with_a_clean_report_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [])
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_published_reel_with_a_strict_finding_stays_as_it_went_out(monkeypatch, tmp_path):
+    """Delivered reels carry findings, and published content is frozen: the gate is for first deliveries alone."""
+    posts = shipped_posts()
+    renders = _reported_reel(posts, monkeypatch, tmp_path, [FINDING])
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
 def test_a_published_reel_with_a_run_together_caption_stays_as_it_went_out(monkeypatch, tmp_path):
     posts = shipped_posts()
     renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
@@ -1197,6 +1358,31 @@ def test_a_first_delivery_on_the_comedy_floor_delivers(monkeypatch, tmp_path, sc
     posts = shipped_posts()
     renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, scores)
     posts.auto_enhance.set_mode(tmp_path, on=False)
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def _repeats_on_first(chosen, episodes, first):
+    return [Drift("New_Reel", 'the key line "Fine." repeats the caption on screen from 1.00 to 2.00 s')] * len(first)
+
+
+def test_a_first_delivery_with_an_overlay_over_its_caption_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, Scores(15, 15))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts.overlay_gate, "repeated_lines", _repeats_on_first)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match='New_Reel: the key line "Fine." repeats the caption'):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_video_already_delivered_answers_to_no_overlay_gate(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, Scores(15, 15))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts.overlay_gate, "repeated_lines", _repeats_on_first)
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
     assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
         "written"
     ]
@@ -1294,3 +1480,97 @@ def test_the_published_delivery_has_not_drifted():
         pytest.skip("set SRSTUDIO_RENDERS and SRSTUDIO_FONTS to check the published delivery")
     drift = shipped_posts().check_all(Path(renders) / "ig", Path(renders), fonts_dir=Path(fonts_dir))
     assert drift == [], "the delivery drifted; run instagram_posts.py deliver:\n" + "\n".join(map(str, drift))
+
+
+def _naming(posts, monkeypatch, *names):
+    release = posts.RELEASES["new-reel"]
+    tags = Tags("money-services", "other-person", "recognition", recurring=names)
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": replace(release, tags=tags)})
+
+
+def test_a_first_delivery_naming_a_character_the_bible_lacks_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "bruno")
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible refuses.*new-reel: unknown-name: 'bruno'"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
+    with pytest.raises(SystemExit, match="deliver: .*new-reel: unknown-name: 'bruno'"):
+        posts.main([*argv, "--only", "New_Reel"])
+
+
+def test_a_first_delivery_that_names_only_the_bibles_characters_delivers(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_first_delivery_that_redraws_a_recurring_figures_base_rig_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    seen = []
+
+    def drawn(release, episodes, scripts):
+        seen.append((release.slug, scripts))
+        return [posts.bible_check.Finding(release.slug, "rig", "'dev' drawn with neck True")]
+
+    monkeypatch.setattr(posts.bible_rig, "check_release", drawn)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible refuses.*new-reel: rig: 'dev' drawn with neck True"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+    assert seen == [("new-reel", Path(posts.__file__).resolve().parent)]
+
+
+def test_a_rig_that_cannot_be_read_refuses_the_first_delivery_instead_of_passing_it(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+
+    def unreadable(*args):
+        raise posts.bible_rig.RigError("new-reel: its builder failed")
+
+    monkeypatch.setattr(posts.bible_rig, "check_release", unreadable)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="new-reel: its builder failed"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_video_already_delivered_is_never_refused_by_the_bible(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "bruno")
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
+def test_a_bible_that_cannot_be_read_refuses_the_first_delivery_instead_of_passing_it(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts, "BIBLE_DIR", tmp_path / "nowhere")
+    with pytest.raises(DeliveryError, match="the cast bible cannot be read"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_bible_edited_without_a_new_version_refuses_the_first_delivery(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    _naming(posts, monkeypatch, "rex", "fern")
+    cast = tmp_path / "bible" / "cast.json"
+    cast.write_text(cast.read_text().replace("a holiday rental", "a cabin by a lake"))  # drift: no bump, no lock
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match="cast bible cannot be read.*place:.*changed without a version bump"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])

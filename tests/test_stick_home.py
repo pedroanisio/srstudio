@@ -132,3 +132,14 @@ def test_a_message_needs_the_font():
     cv = canvas(font=None)
     with pytest.raises(Exception, match="message"):
         stick_home.message(cv, cv.comp, sender="MOM", text="hi")
+
+
+def test_a_reel_can_place_the_kitchens_marks_itself():
+    with_marks, without = canvas(signed=True), canvas(signed=True)
+    stick_home.kitchen(with_marks, with_marks.comp)
+    stick_home.kitchen(without, without.comp, marks=False)
+    marks = [
+        [g.get("id") for g in xml(cv).iter("group") if (g.get("id") or "").startswith("sig-")]
+        for cv in (with_marks, without)
+    ]
+    assert len(marks[0]) == 2 and marks[1] == []

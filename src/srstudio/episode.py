@@ -19,7 +19,7 @@ from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
-from . import checks, digest, native, signature
+from . import checks, digest, native, show, signature
 from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
@@ -482,6 +482,7 @@ class Episode:
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
+        self._show_stamped = False  # the show bug (ADR 0074) is drawn once, however many times this finishes
         self._cover_written = 0
         self._cover_variant: Any = None
         # Shot-sequence layouts add the font first and their audio per take; the interview family mixes one file.
@@ -660,18 +661,29 @@ class Episode:
         return out
 
     def spoken_captions(
-        self, tail: float = 0.2, lead: float = 0.05, name: str = "dialogue-{n}"
+        self, tail: float = 0.2, lead: float = 0.05, name: str = "dialogue-{n}", *, min_seconds: float = 0.0
     ) -> list[tuple[float, float, str, str]]:
         """Each phrase's caption, from ``lead`` before it to ``tail`` after it, cut where the next one starts: two
-        lines never share the band, however close they are spoken."""
+        lines never share the band, however close they are spoken. ``min_seconds`` holds a short word's cue that long
+        past its start, so it can be read; a next line that starts too soon for that is refused by line number, for
+        the schedule to give it room."""
         if not (checks.number(lead) and checks.number(tail) and lead >= 0 and tail >= 0):
             raise EpisodeError(f"caption lead and tail must be finite and non-negative, got {lead}, {tail}")
+        if not (checks.number(min_seconds) and min_seconds >= 0):
+            raise EpisodeError(f"caption min_seconds must be finite and non-negative, got {min_seconds}")
         out = []
         for i, p in enumerate(self.phrases):
-            end = p.end + tail
+            start = max(0.0, p.start - lead)
+            end = max(p.end + tail, start + min_seconds)
             if i + 1 < len(self.phrases):
-                end = min(end, self.phrases[i + 1].start - lead)
-            out.append((max(0.0, p.start - lead), end, p.caption, name.format(n=i + 1)))
+                next_cue = self.phrases[i + 1].start - lead
+                if next_cue - start < min_seconds:
+                    raise EpisodeError(
+                        f"line {i + 1} {p.text!r}: its cue holds {next_cue - start:.2f} s before line {i + 2}, under "
+                        f"{min_seconds} s"
+                    )
+                end = min(end, next_cue)
+            out.append((start, end, p.caption, name.format(n=i + 1)))
         return out
 
     def mix(
@@ -1005,6 +1017,10 @@ class Episode:
         for sequence in sequences:
             if matched_output := sequence.match_any((target_out, target_report)):
                 raise EpisodeArgumentError(f"{matched_output}: output must not replace a project input sequence frame")
+        number = show.active()
+        if number is not None and not self._show_stamped:
+            self._show_stamped = True
+            self.hide_on_cover(show.bug(self.cv, self.comp, number))  # last, so above the camera and all else
         if len(self._cover_hidden) > self._cover_written:
             from .social import COVER_VARIANT
 

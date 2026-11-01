@@ -31,7 +31,7 @@ def tool(monkeypatch, tmp_path):
 
 
 class Runner:
-    """Records rclone calls and answers with ``codes`` in turn."""
+    """Records rclone calls and answers with ``codes`` in turn; a read of ``.ignore`` finds none and takes no code."""
 
     def __init__(self, *codes):
         self.codes = list(codes)
@@ -39,6 +39,8 @@ class Runner:
 
     def __call__(self, cmd, **_):
         self.calls.append(cmd)
+        if cmd[1] == "cat":
+            return subprocess.CompletedProcess(cmd, 3, "", "directory not found\n")
         return subprocess.CompletedProcess(cmd, self.codes.pop(0), "", "rclone: quota exceeded\n")
 
 
@@ -335,8 +337,10 @@ def test_the_upload_copies_then_checks_and_never_deletes(tool, world, monkeypatc
     assert tool.main(args(world)) == 0
     stage = str(world / "generated/pilots/mind")
     assert run.calls == [
-        ["rclone", "copy", stage, "gdrive:srstudio/pilots/mind", "--checksum"],
-        ["rclone", "check", stage, "gdrive:srstudio/pilots/mind", "--one-way"],
+        ["rclone", "cat", "gdrive:srstudio/pilots/mind/.ignore"],
+        ["rclone", "copy", stage, "gdrive:srstudio/pilots/mind", "--checksum", "--exclude", "/.ignore"],
+        ["rclone", "check", stage, "gdrive:srstudio/pilots/mind", "--one-way", "--exclude", "/.ignore"],
+        ["rclone", "cat", "gdrive:srstudio/pilots/mind/.ignore"],
     ]
     assert not {"sync", "delete", "deletefile", "purge", "move", "--delete-excluded"} & {
         word for call in run.calls for word in call
@@ -348,7 +352,17 @@ def test_a_dry_run_stages_and_only_previews(tool, world, monkeypatch):
     monkeypatch.setattr(tool.outbox, "_run", run)
     assert tool.main(args(world, "--dry-run")) == 0
     assert run.calls == [
-        ["rclone", "copy", str(world / "generated/pilots/mind"), tool.REMOTE, "--checksum", "--dry-run"]
+        ["rclone", "cat", f"{tool.REMOTE}/.ignore"],
+        [
+            "rclone",
+            "copy",
+            str(world / "generated/pilots/mind"),
+            tool.REMOTE,
+            "--checksum",
+            "--exclude",
+            "/.ignore",
+            "--dry-run",
+        ],
     ]
     assert (world / "generated/pilots/mind" / tool.MANIFEST).is_file()
 
@@ -477,7 +491,7 @@ def test_auto_enhance_off_reads_nothing_and_just_delivers(tool, world, monkeypat
     run = Manifest()
     monkeypatch.setattr(tool.outbox, "_run", run)
     assert tool.main(args(world)) == 0
-    assert not [c for c in run.calls if c[1] == "cat"]
+    assert not [c for c in run.calls if c[1] == "cat" and not c[2].endswith("/.ignore")]
     assert "auto-enhance off" in capsys.readouterr().out
 
 
@@ -494,7 +508,7 @@ def test_the_maps_series_stages_in_its_own_folder_and_pushes_to_its_own_remote(t
     assert tool.main(maps_args(world)) == 0
     assert (world / "generated/pilots/maps/the-tell/the-tell.mp4").is_file()
     assert not (world / "generated/pilots/mind").exists()
-    assert "gdrive:srstudio/pilots/maps" in runner.calls[0]
+    assert "gdrive:srstudio/pilots/maps" in runner.calls[1]
     assert all("gdrive:srstudio/pilots/mind" not in call for call in runner.calls)
 
 
@@ -503,7 +517,7 @@ def test_the_default_series_stays_mind(tool, world, monkeypatch):
     monkeypatch.setattr(tool.outbox, "_run", runner)
     assert tool.main(args(world)) == 0
     assert (world / "generated/pilots/mind/the-tell/the-tell.mp4").is_file()
-    assert "gdrive:srstudio/pilots/mind" in runner.calls[0]
+    assert "gdrive:srstudio/pilots/mind" in runner.calls[1]
 
 
 def test_each_series_defaults_to_its_own_stage_and_remote(tool):
@@ -650,14 +664,15 @@ def test_only_news_and_host_owe_the_floor(tool):
     assert tool.NOT_COMEDY == {"mind", "maps"}
 
 
-def test_scored_news_stages_in_its_own_folder_pushes_to_its_own_remote_and_never_reads_drive(tool, world, monkeypatch):
+def test_scored_news_stages_in_its_own_folder_pushes_to_its_own_remote_and_reads_only_ignore(tool, world, monkeypatch):
     both_scored(world)
     runner = Runner(0, 0)
     monkeypatch.setattr(tool.outbox, "_run", runner)
     assert tool.main(news_args(world)) == 0
     assert (world / "generated/pilots/news/the-tell/the-tell.mp4").is_file()
-    assert [call[1] for call in runner.calls] == ["copy", "check"]
-    assert all("gdrive:srstudio/pilots/news" in call for call in runner.calls)
+    assert [call[1] for call in runner.calls] == ["cat", "copy", "check", "cat"]
+    assert {call[2] for call in runner.calls if call[1] == "cat"} == {"gdrive:srstudio/pilots/news/.ignore"}
+    assert all("gdrive:srstudio/pilots/news" in call for call in runner.calls[1:3])
 
 
 @pytest.mark.parametrize(

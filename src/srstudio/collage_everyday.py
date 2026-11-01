@@ -15,7 +15,22 @@ from collections.abc import Callable, Sequence
 
 from . import checks, collage
 from .canvas import Canvas
-from .collage import INK, LOOKS, Look, Point, _cut, _hand, _paper, _ring, _sleeve, _smooth, draw_shapes
+from .collage import (
+    CX,
+    HALF_WIDTH,
+    INK,
+    LOOKS,
+    SHOULDER_Y,
+    Look,
+    Point,
+    _cut,
+    _hand,
+    _paper,
+    _ring,
+    _sleeve,
+    _smooth,
+    draw_shapes,
+)
 from .errors import SrstudioError
 from .registry import register
 
@@ -41,14 +56,18 @@ __all__ = [
     "chip_bag",
     "confetti",
     "duvet",
+    "eased",
     "flip_card",
     "food",
+    "frames",
     "gust",
     "lasagna",
     "magnifying_glass",
     "phone",
+    "reach",
     "router",
     "salt_shaker",
+    "shoulder",
     "snapshot",
     "tablecloth",
     "thumb",
@@ -76,6 +95,12 @@ LOW_BATTERY = "#ff5a64"  # the battery's colour at LOW_LEVEL percent or under
 LOW_LEVEL = 20
 DEAD_SCREEN = "#0b0a10"  # a phone that has died
 LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
+REACH_DRAWN = 300.0  # px an arm that reaches is drawn at, before it stretches to its hand
+REACH_CUFF = 30.0  # px the sleeve stops short of the hand's centre, so that its round end stays behind the hand
+EASES: dict[str, Callable[[float], float]] = {
+    "sine-in-out": lambda u: (1.0 - math.cos(math.pi * u)) / 2.0,
+    "cubic-in": lambda u: u**3,
+}
 
 
 class EverydayError(SrstudioError, ValueError):
@@ -641,14 +666,82 @@ def confetti(
     return g
 
 
+def shoulder(who: str | Look, side: int = -1) -> Point:
+    """Where ``who``'s arm starts in a single, for an arm drawn by the scene over the pose that frees it: ``side`` -1
+    is the screen-left arm of ``free``, 1 the screen-right arm of ``free-right``."""
+    look = LOOKS[who] if isinstance(who, str) else who
+    return (CX + side * (HALF_WIDTH[look.build] - 46), SHOULDER_Y[look.build] + 50)
+
+
 @register("prop", "collage-arm", summary="A character's arm on its own, sleeve and hand, for reaching past the pose")
-def arm(cv: Canvas, parent, who: str | Look, frm: Point, to: Point, *, width: float = 72.0) -> object:
+def arm(
+    cv: Canvas, parent, who: str | Look, frm: Point, to: Point, *, width: float = 72.0, hand: bool = True
+) -> object:
     """``who``'s arm from ``frm`` (off the frame, usually) to its hand at ``to``; returns the group, which a caller
-    keys to bring it in."""
+    keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from."""
     look = LOOKS[who] if isinstance(who, str) else who
     g = cv.group(parent, cv.uid("g"))
-    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + _hand(look, "reach-hand", *to, r=38))
+    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_hand(look, "reach-hand", *to, r=38) if hand else []))
     return g
+
+
+def eased(keys: Sequence[tuple[float, float]], t: float, kind: str) -> float:
+    """The value of ``keys`` at project second ``t``, the way the engine eases between them, for a thing that has to
+    follow a keyed one without being its child."""
+    if not keys:
+        raise EverydayError("no keys to ease between")
+    if kind not in EASES:
+        raise EverydayError(f"an ease is one of {sorted(EASES)}, got {kind!r}")
+    if t <= keys[0][0]:
+        return keys[0][1]
+    for (t0, v0), (t1, v1) in zip(keys, keys[1:], strict=False):
+        if t < t1:
+            return v0 + (v1 - v0) * EASES[kind]((t - t0) / (t1 - t0))
+    return keys[-1][1]
+
+
+def frames(*spans: tuple[float, float], step: float = 1 / 24) -> list[float]:
+    """The times of ``spans``, ``step`` apart with each span's two ends, sorted and without repeats."""
+    if any(end <= start for start, end in spans):
+        raise EverydayError(f"a span runs forward, got {spans!r}")
+    out: set[float] = set()
+    for start, end in spans:
+        n = int((end - start) / step)
+        out |= {round(start + i * step, 6) for i in range(n + 1)} | {round(end, 6)}
+    return sorted(out)
+
+
+def reach(
+    cv: Canvas,
+    parent,
+    who: str | Look,
+    frm: Point,
+    hand: Callable[[float], Point],
+    times: Sequence[float],
+    *,
+    width: float = 72.0,
+) -> object:
+    """``who``'s arm fixed at its shoulder ``frm`` while its hand goes where ``hand`` says at each of ``times``: the
+    arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. Returns the hand's
+    group, at the hand's origin, for what it holds."""
+    if not times:
+        raise EverydayError("an arm that reaches needs times to reach at")
+    look = LOOKS[who] if isinstance(who, str) else who
+    spots = [(t, hand(t)) for t in times]
+    if any(math.hypot(x - frm[0], y - frm[1]) < 1.0 for _, (x, y) in spots):
+        raise EverydayError(f"a hand has to be off the shoulder at {frm!r}")
+    pivot = cv.group(parent, cv.uid("g"), x=frm[0], y=frm[1])
+    upper = cv.group(pivot, cv.uid("g"))
+    arm(cv, upper, look, (0.0, 0.0), (0.0, REACH_DRAWN), width=width, hand=False)
+    turns = [(t, math.degrees(math.atan2(frm[0] - x, y - frm[1]))) for t, (x, y) in spots]
+    cv.keys(pivot, "rotation", turns, hold=False, local=False)
+    lengths = [(t, max(math.hypot(x - frm[0], y - frm[1]) - REACH_CUFF, 1.0) / REACH_DRAWN) for t, (x, y) in spots]
+    cv.keys(upper, "scaleY", lengths, hold=False, local=False)
+    held = cv.group(parent, cv.uid("g"))
+    cv.keys(held, "x", [(t, x) for t, (x, _) in spots], hold=False, local=False)
+    cv.keys(held, "y", [(t, y) for t, (_, y) in spots], hold=False, local=False)
+    draw_shapes(cv, held, _hand(look, "reach-hand", 0.0, 0.0, r=38))
+    return held
 
 
 def chew(track: Sequence[tuple[float, str]], start: float, end: float) -> list[tuple[float, str]]:

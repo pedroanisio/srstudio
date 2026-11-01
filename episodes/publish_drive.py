@@ -3,6 +3,7 @@
     python3 publish_drive.py                 # stage generated/outbox and push it to gdrive:srstudio/ready-to-publish
     python3 publish_drive.py --dry-run       # stage, then only preview what rclone would upload
     python3 publish_drive.py --stage-only    # stage, push nothing
+    python3 publish_drive.py --release text-me   # push, then take text-me out of Drive's .ignore
 
 Ready means the publish gate (``instagram_posts.py check``) finds no drift for the video: its render, post,
 caption and cover all match the last delivery, and it has its package. A video whose release is in an A/B test
@@ -12,7 +13,9 @@ package is the one received in ``videos-styles``; an original episode is packed 
 only when its scene changed). A drifted video, or one without a package, is held back and listed, and the command
 exits 1; a staging or upload failure exits 2. ``tools/systemd/srstudio-drive.{path,service}`` run it on every delivery.
 The upload is ``rclone copy``, which never deletes on Drive; a video that is held back stays wherever an earlier
-push put it. Needs an rclone remote (``rclone config``; the default is ``gdrive:``).
+push put it. Drive's ``.ignore`` is the record of the reels held out of the queue: a push never writes it, reads it
+before and after, and fails if a line went missing. ``--release <slug>`` (repeatable) is the only way to remove a line,
+for a reel this push carries. Needs an rclone remote (``rclone config``; the default is ``gdrive:``).
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from srstudio import outbox, package
+from srstudio import outbox, package, show_numbers
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -79,7 +82,16 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="stage, then only preview the upload")
     mode.add_argument("--stage-only", action="store_true", help="stage, upload nothing")
+    parser.add_argument(
+        "--release",
+        action="append",
+        default=[],
+        metavar="SLUG",
+        help="take this reel of the push out of Drive's .ignore, after the upload is checked (repeatable)",
+    )
     args = parser.parse_args(argv)
+    if args.release and args.stage_only:
+        parser.error("--release needs a push, and --stage-only pushes nothing")
 
     items = posts.items(args.renders)
     received = args.packages or [WORKSPACE / "videos-styles"]
@@ -88,7 +100,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         found = packages_for(items, [*received, args.vpkg])
         bundles, drift = outbox.ready(
-            items, args.deliveries, font=posts.font_file(args.fonts), packages=found, frozen=posts.FROZEN, ab=posts.AB
+            items,
+            args.deliveries,
+            font=posts.font_file(args.fonts),
+            packages=found,
+            frozen=posts.FROZEN,
+            ab=posts.AB,
+            numbers=posts.numbers(args.renders),
         )
         for d in drift:
             print(f"held back: {d}")
@@ -96,9 +114,12 @@ def main(argv: list[str] | None = None) -> int:
         held = len({d.name for d in drift} & set(items)) if not any(d.name == "*" for d in drift) else len(items)
         print(f"{len(bundles)} ready, {held} held back; staged in {manifest.parent}")
         if not args.stage_only:
-            outbox.push(manifest.parent, args.remote, rclone=args.rclone, dry_run=args.dry_run)
+            release = tuple(args.release)
+            outbox.push(manifest.parent, args.remote, rclone=args.rclone, dry_run=args.dry_run, release=release)
             print(f"{'previewed' if args.dry_run else 'copied and checked'}: {args.remote}")
-    except outbox.OutboxError as e:
+            if release:
+                print(f"{'would release' if args.dry_run else 'released'}: {', '.join(release)}")
+    except (outbox.OutboxError, show_numbers.NumberError) as e:
         print(f"publish_drive: {e}", file=sys.stderr)
         return 2
     return 1 if drift else 0

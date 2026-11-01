@@ -2,8 +2,8 @@
 Font; ``srstudio build`` runs an episode, ``srstudio usage`` measures which parts the episodes use, ``srstudio lipsync``
 scores the mouths over aligned takes, ``srstudio craft`` measures camera moves and pauses, ``srstudio overlap`` finds
 lines another episode already said, ``srstudio page`` rebuilds the catalog site, ``srstudio serve`` serves it,
-``srstudio parts`` lists the part versions and checks the pins, and ``srstudio enhance`` shows the auto-enhance mode
-and ledger."""
+``srstudio parts`` lists the part versions and checks the pins, ``srstudio enhance`` shows the auto-enhance mode and
+ledger, and ``srstudio strict`` lists the reels shipped with findings proven false."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from sr_core.scene import SchemaValueError
 
 from . import (
     auto_enhance,
+    bible_cli,
     catalog_page,
     catalog_server,
     catalog_specimens,
@@ -29,18 +30,27 @@ from . import (
     craft,
     fonts,
     frames,
+    interview,
     lip_proof,
     lipsync,
+    outbox,
     overlap,
     parts,
+    proof,
     registry,
     releases,
+    show,
+    show_numbers,
+    strict_gate,
     usage,
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError
+from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .takes import refuse_rehearsal as refuse_takes_rehearsal
+from .thumbnail import ShowCover
 from .timeline import Timeline
 
 
@@ -82,6 +92,17 @@ def main(argv=None):
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
+    number = sub.add_parser(
+        "number", help="the show's numbers: set the count, claim or release a reel's number, list (ADR 0074, ADR 0080)"
+    )
+    number.add_argument("action", choices=("list", "base", "claim", "release"))
+    number.add_argument("value", nargs="?", help="base: the count; claim, release: the reel's slug")
+    number.add_argument("--series", default="", help="the series, as Saga")
+    number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
+    number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
+    strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
+    strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
+    strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
     )
@@ -105,6 +126,17 @@ def main(argv=None):
     lip.add_argument("--master", type=Path, help="the final mp4; with --out, pull each instant's frame")
     lip.add_argument("--out", type=Path, help="folder for the frames")
     lip.add_argument("--crop", help="ffmpeg crop of each frame, w:h:x:y")
+    measured = sub.add_parser("proof", help="a master's measures (ffprobe, ebur128) and a sheet of frames to look at")
+    measured.add_argument("video", type=Path)
+    measured.add_argument("--at", type=float, action="append", default=[], help="a moment to look at, in seconds")
+    measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
+    measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
+    measured.add_argument("--json", action="store_true")
+    split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
+    split.add_argument("test", choices=releases.TESTS)
+    split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
+    split.add_argument("--share", type=float, default=0.5, help="the part of the test on arm a, if not half")
+    split.add_argument("--scripts", type=Path, default=_scripts_default(), help="folder of episode scripts")
     styles = sub.add_parser("styles", help="list the named styles: frame, clock, palettes, parts")
     styles.add_argument("--json", action="store_true")
     font = sub.add_parser("fonts", help="Google Fonts: fetch, verify and pin a face for captions")
@@ -131,6 +163,7 @@ def main(argv=None):
     page.add_argument(
         "--packages", type=Path, default=packages, required=not packages, help="folder of <name>-<version> packages"
     )
+    bible_cli.add_parser(sub)
     cards = sub.add_parser("cards", help="write the cast's story cards, drawn through the engine")
     cards.add_argument("out", type=Path, help="the folder the <name>.png files go in")
     cards.add_argument("--fonts", type=Path, default=os.environ.get("SRSTUDIO_FONTS"), help="the pinned fonts folder")
@@ -206,10 +239,18 @@ def main(argv=None):
         for example in info['examples']:
             print(f"\nExample (ep is an existing Episode):\n{example}")
         return 0
+    if args.cmd == "number":
+        return _number(args)
+    if args.cmd == "strict":
+        return _strict(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "proof":
+        return _proof(args)
+    if args.cmd == "arms":
+        return _arms(args)
     if args.cmd == "parts":
         return _parts(args)
     if args.cmd == "catalog":
@@ -256,6 +297,8 @@ def main(argv=None):
         style = " italic" if got.italic else ""
         print(f"{got.path}  {got.family} {got.weight}{style}  {got.license}  sha256 {got.sha256}")
         return 0
+    if args.cmd == "bible":
+        return bible_cli.run(args)
     if args.cmd == "cards":
         return _cards(args)
     if args.cmd == "page":
@@ -390,6 +433,8 @@ def main(argv=None):
                 print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
             for h in r.holds:
                 print(f"  hold {h.start:.2f}–{h.end:.2f}  {h.end - h.start:.2f} s")
+            if r.hardware:
+                print(f"  two passes asked, one taken by {r.hardware}: encode again with --hw software")
         return 0
     if args.cmd == "overlap":
         try:
@@ -420,14 +465,19 @@ def main(argv=None):
         except releases.ReleaseError as exc:
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 2
+        number = None
         if episode is None and "-" in script and not script.endswith(".py"):
             print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
             return 2
         if episode is not None:
+            number = _show_number(args.scripts, script)
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
-            with usage.recorded(Path(args.root)) if args.root else nullcontext():
+            if args.root and "--voice" in args.options:
+                interview.refuse_rehearsal(Path(args.root))
+                refuse_takes_rehearsal(Path(args.root))
+            with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
                         0, str(Path(script).resolve().parent)
@@ -442,6 +492,34 @@ def main(argv=None):
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 1
         return 0
+
+
+def _arms(args: argparse.Namespace) -> int:
+    order = args.order.read_text().split() if args.order else []
+    try:
+        loaded = releases.load(args.scripts / "posts")
+        problems = releases.arm_problems(loaded, args.test, order, args.share)
+    except releases.ReleaseError as exc:
+        print(f"srstudio arms: {exc}", file=sys.stderr)
+        return 1
+    for arm, slugs in releases.arms(loaded, args.test).items():
+        print(f"{arm} {len(slugs):>3}  {' '.join(slugs)}")
+    for problem in problems:
+        print(f"srstudio arms: {problem}", file=sys.stderr)
+    return 1 if problems else 0
+
+
+def _proof(args: argparse.Namespace) -> int:
+    try:
+        made = proof.report(args.video, args.at, args.sheet, arm=args.arm)
+    except proof.ProofError as exc:
+        print(f"srstudio proof: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(made))
+    else:
+        print(" ".join(f"{k}={v}" for k, v in made.items()))
+    return 0
 
 
 def _lip_proof(args: argparse.Namespace) -> int:
@@ -560,6 +638,73 @@ def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
     if known or (suffix and (scripts / f"{stem}.py").is_file()):
         raise releases.ReleaseError(f"episode {slug!r} has no {script.name} in {scripts}")
     return None
+
+
+def _ledger_default() -> Path:
+    return show_numbers.ledger_path(Path(os.environ.get("SRSTUDIO_RENDERS") or "generated/renders"))
+
+
+def _claimed(slug: str, claim: show_numbers.Claim) -> str:
+    series = f" {claim.series} #{claim.series_number}" if claim.series else ""
+    return f"{slug} #{claim.number}{series}" + (f" {claim.brief}" if claim.brief else "")
+
+
+def _number(args: argparse.Namespace) -> int:
+    try:
+        if args.action == "base":
+            if not (args.value or "").isdecimal():
+                raise show_numbers.NumberError(f"base takes a count, got {args.value!r}")
+            show_numbers.set_base(args.ledger, int(args.value), args.series)
+        elif args.action == "claim":
+            if not args.value:
+                raise show_numbers.NumberError("claim takes the reel's slug")
+            print(_claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series, args.brief)))
+            return 0
+        elif args.action == "release":
+            if not args.value:
+                raise show_numbers.NumberError("release takes the reel's slug")
+            root = args.ledger.resolve().parent.parent  # the ledger sits under the folder the renders and outbox are in
+            shown = outbox.delivered_names(root / "renders" / "ig", root / "outbox")
+            print(f"released {_claimed(args.value, show_numbers.release_claim(args.ledger, args.value, shown))}")
+            return 0
+        ledger = show_numbers.read(args.ledger)
+    except SrstudioError as exc:
+        print(f"srstudio number: {exc}", file=sys.stderr)
+        return 2
+    print(f"base {'not set' if ledger.base is None else ledger.base}")
+    for series, base in sorted(ledger.series.items()):
+        print(f"{series} base {base}")
+    for slug, claim in sorted(ledger.reels.items(), key=lambda kv: kv[1].number):
+        print(_claimed(slug, claim))
+    return 0
+
+
+def _show_number(scripts: Path, slug: str) -> int | None:
+    """The number the release of the episode ``slug`` carries on the show's cover, or None for any other cover."""
+    stem = slug.replace("-", "_")
+    if not (scripts / "posts" / "__init__.py").is_file() or not (scripts / "posts" / f"{stem}.py").is_file():
+        return None
+    cover = releases.load(scripts / "posts")[slug].post.thumbnail
+    return cover.number if isinstance(cover, ShowCover) else None
+
+
+def _delivery_default() -> Path:
+    return Path(os.environ.get("SRSTUDIO_RENDERS") or "generated/renders") / "ig"
+
+
+def _strict(args: argparse.Namespace) -> int:
+    try:
+        if not (args.delivery / MANIFEST).is_file():
+            raise DeliveryError(f"no delivery manifest in {args.delivery}")
+        known = releases.load(args.scripts / "posts")
+        lines = strict_gate.listing(
+            strict_gate.read_all(args.scripts / "strict", known), known, read_manifest(args.delivery)
+        )
+    except (DeliveryError, releases.ReleaseError) as exc:
+        print(f"srstudio strict: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
 
 
 def _run_script(script: Path, argv: list[str]) -> int:

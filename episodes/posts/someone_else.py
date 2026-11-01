@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#internet", "#customerservice", "#relatable", "#animatedshorts", "#comedy"),
-        thumbnail=Thumbnail("Is it fiber?", 8.0, "Toon"),
+        thumbnail=Thumbnail("Is it fiber?", 4.5, "Toon"),
     ),
     tags=Tags("money-services", "institution", "recognition", test="sp-hook_motion", arm="b"),
     style="Toon",

@@ -54,11 +54,12 @@ NEAR_Y = 1730  # the open bed's foot, toward the camera
 
 
 @register("location", "stick-studio-flat", tags=("home", "flat", "rental", "kitchen"))
-def studio(cv: Canvas, parent) -> None:
+def studio(cv: Canvas, parent, *, marks: bool = True) -> None:
     """A studio flat for rent, :data:`SET_W` wide: the wall and its skirting over floorboards, the kitchen counter
     with a stove, a pot and a tap, a toilet plumbed in right beside the stove, a window whose sunny view is painted
     on (the blue runs over the frame and drips down the wall), and the cabinet the bed folds out of (draw
-    :func:`murphy_bed` over it). A potted cactus sits on the counter and the code on the floor (ADR 0001)."""
+    :func:`murphy_bed` over it). A potted cactus sits on the counter and the code on the floor (ADR 0001); a
+    reel whose framing never reaches them passes ``marks=False`` and places them where it looks."""
     s = cv
     wall = paint(s, Gradient("flat-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, FLOOR_Y))
     box(s, parent, 0, 0, SET_W, FLOOR_Y, wall)
@@ -78,8 +79,9 @@ def studio(cv: Canvas, parent) -> None:
     x, y, w, h = CAB  # the cabinet's frame; the bed itself is murphy_bed
     box(s, parent, x - 26, y - 26, w + 52, h + 26, CABINET_EDGE, 4, r=8)
     shape(s, parent, f"M {x - 60} {FLOOR_Y + 6} L {x + w + 60} {FLOOR_Y + 6}", sw=16, stroke="#000000", opacity=0.10)
-    signature.cactus(s, parent, 330, 1150, scale=0.42)  # on the counter, by the wall
-    signature.code(s, parent, 40, 1880, 9, color="#7a5a35")  # on the floor's near edge
+    if marks:
+        signature.cactus(s, parent, 330, 1150, scale=0.42)  # on the counter, by the wall
+        signature.code(s, parent, 40, 1880, 9, color="#7a5a35")  # on the floor's near edge
 
 
 def _window(s: Canvas, parent) -> None:

@@ -224,10 +224,12 @@ def horse(
     end: float = 0.0,
     blinks: Sequence[float] | None = None,
     id: str = "horse",
+    neck: float = 640.0,
 ) -> None:
     """The head centred on reference ``at``, about 420 tall at ``scale`` 1 (within :data:`SCALES`), the neck running
-    down behind it. Its lids drop at each of ``blinks`` (project seconds), every :data:`HORSE_BLINK` seconds from
-    ``start`` to ``end`` when ``blinks`` is None; a still (``end`` 0) never blinks."""
+    down behind it to ``neck`` below that point, shorter for a horse whose chest a car hides. Its lids drop at each
+    of ``blinks`` (project seconds), every :data:`HORSE_BLINK` seconds from ``start`` to ``end`` when ``blinks`` is
+    None; a still (``end`` 0) never blinks."""
     if not (checks.number(scale) and SCALES[0] <= scale <= SCALES[1]):
         raise ToonDataError(f"a horse's scale is within {SCALES}, got {scale!r}")
     if not (isinstance(at, tuple | list) and len(at) == 2 and all(checks.number(v) for v in at)):
@@ -243,7 +245,7 @@ def horse(
     def local(points: Sequence[Point]) -> list[Point]:  # the brush works in reference pixels of the frame
         return [(p[0], p[1] + 70) for p in points]
 
-    _inked(cv, g, local([(-96, 40), (-132, 330), (-120, 640), (120, 640), (132, 330), (96, 40)]), COAT_DARK)
+    _inked(cv, g, local([(-96, 40), (-132, 330), (-120, neck), (120, neck), (132, 330), (96, 40)]), COAT_DARK)
     for side in (-1, 1):
         ear = [(side * 44, -176), (side * 78, -262), (side * 94, -160)]
         _inked(cv, g, local(ear), COAT)

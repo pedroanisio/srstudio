@@ -221,6 +221,46 @@ def test_a_bedroom_is_dark_only_by_its_lights_and_the_phone_flickers_inside_its_
     assert len(flicker) > 1 and min(flicker) >= 0.9
 
 
+def test_a_lamp_lights_a_warm_pool_that_holds_still_where_a_phone_flickers():
+    cv = signed()
+    lights = [soft_sets.Light(0.0, "lamp", 300.0, 1400.0), soft_sets.Light(2.0, "dark")]
+    soft_sets.bedroom(cv, cv.comp, lights=lights)
+    found = groups(cv)
+    night = found["soft-bedroom-night-1"]
+    assert opacity_keys(night)[:2] == [(0.0, 1.0), (2.0, 0.0)]
+    assert (2.0, 1.0) in opacity_keys(found["soft-bedroom-night-2"])  # the lamp goes off into the dark
+    assert "soft-bedroom-flicker-1" not in found  # a bulb holds still
+    pool = night.find("shape")
+    assert pool is not None and pool.get("fill") == "url(#soft-bedroom-lamp)"
+    x, y, w, h = (float(pool.get(k)) for k in ("x", "y", "width", "height"))
+    assert (x + w / 2, y + h / 2) == (300.0, 1400.0)
+    stops = [s.get("color") for g in tree(cv).iter("radialGradient") if g.get("id") == "soft-bedroom-lamp" for s in g]
+    assert soft_sets.LAMP_GLOW in stops
+
+
+def test_a_lamp_off_the_edge_of_the_frame_still_darkens_the_far_side_of_the_room():
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp, lights=[soft_sets.Light(0.0, "lamp", -760.0, 1300.0)])
+    pool = groups(cv)["soft-bedroom-night-1"].find("shape")
+    x, y, w, h = (float(pool.get(k)) for k in ("x", "y", "width", "height"))
+    assert x <= 0 and y <= 0 and x + w >= 1080 and y + h >= 1920
+
+
+def test_a_hall_light_comes_through_a_door_off_the_frame_and_swings_shut():
+    rows = soft_sets.hall_light(2.0, 5.0, y=1200.0)
+    assert [(row.time, row.state) for row in rows] == [(2.0, "lamp"), (4.75, "lamp"), (5.0, "dark")]
+    assert rows[0].x < 0 and rows[1].x < rows[0].x and rows[0].y == 1200.0
+    cv = signed()
+    soft_sets.bedroom(cv, cv.comp, lights=[soft_sets.Light(0.0, "lamp", 975.0, 1480.0), *rows])
+    assert (5.0, 1.0) in opacity_keys(groups(cv)["soft-bedroom-night-4"])
+
+
+@pytest.mark.parametrize(("opens", "shuts"), [(5.0, 5.0), (5.0, 5.2), (5.0, 2.0), (-1.0, 2.0), (1.0, float("inf"))])
+def test_a_hall_light_refuses_a_door_that_shuts_before_it_can(opens, shuts):
+    with pytest.raises(SoftSetError):
+        soft_sets.hall_light(opens, shuts)
+
+
 @pytest.mark.parametrize(
     "kw",
     [

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import parts, releases
-from srstudio.releases import Release, ReleaseError
+from srstudio import parts, releases, subtitles
+from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import InstagramPost, Item
 from srstudio.thumbnail import Thumbnail
 
@@ -183,6 +183,14 @@ def test_the_posting_jobs_hook_motion_test_is_a_known_test():
     assert (tags.test, tags.arm) == ("sp-hook_motion", "b")
 
 
+def test_tags_take_the_speakers_test_on_either_arm():
+    for arm in releases.ARMS:
+        tags = releases.Tags("job-hunting", "institution", "recognition", test="sp-speakers", arm=arm)
+        assert (tags.test, tags.arm) == ("sp-speakers", arm)
+    with pytest.raises(releases.ReleaseError, match="arm"):
+        releases.Tags("job-hunting", "institution", "recognition", test="sp-speakers", arm="c")
+
+
 @pytest.mark.parametrize(
     ("kw", "match"),
     [
@@ -344,3 +352,145 @@ def test_a_published_video_is_not_read_for_doubled_captions(tmp_path):
     project.mkdir()
     (project / "a-b.scene.xml").write_text("<scene")
     assert releases.doubled_captions({"a-b": Release("a-b", POST)}, tmp_path, ()) == []
+
+
+def on_cover_project(tmp_path: Path, srt: str = "1\n00:00:00,200 --> 00:00:02,000\nHello.\n") -> Path:
+    project = tmp_path / "a-b"
+    project.mkdir()
+    (project / "a-b.srt").write_text(srt)
+    return tmp_path
+
+
+def test_a_cover_whose_frame_carries_a_caption_is_named(tmp_path):
+    drift = releases.caption_on_cover({"a-b": Release("a-b", POST)}, on_cover_project(tmp_path), {"a-b"})
+    assert [(d.name, d.reason) for d in drift] == [("a-b", 'the cover frame at 1.00 s carries the caption "Hello."')]
+
+
+def test_a_cover_on_a_clean_frame_or_drawn_from_the_cover_variant_passes(tmp_path):
+    episodes = on_cover_project(tmp_path, "1\n00:00:02,000 --> 00:00:03,000\nHello.\n")
+    assert releases.caption_on_cover({"a-b": Release("a-b", POST)}, episodes, {"a-b"}) == []
+    (tmp_path / "x").mkdir()
+    late = on_cover_project(tmp_path / "x")
+    assert releases.caption_on_cover({"a-b": Release("a-b", POST, cover=True)}, late, {"a-b"}) == []
+
+
+def test_a_published_video_or_a_project_with_no_captions_is_not_read(tmp_path):
+    release = {"a-b": Release("a-b", POST)}
+    assert releases.caption_on_cover(release, tmp_path, {"a-b"}) == []
+    assert releases.caption_on_cover(release, on_cover_project(tmp_path), ()) == []
+
+
+def tagged(slug: str, arm: str, test: str = "sp-hook_motion") -> Release:
+    return Release(slug, POST, tags=Tags("family", "protagonist", "recognition", test=test, arm=arm))
+
+
+def test_an_arm_count_lists_each_arm_of_one_test():
+    run = {"a": tagged("a", "a"), "b": tagged("b", "b"), "c": Release("c", POST), "d": tagged("d", "a", "opening")}
+    assert releases.arms(run, "sp-hook_motion") == {"a": ["a"], "b": ["b"]}
+
+
+def test_a_balanced_alternating_order_has_no_problems():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "b"), "r": tagged("r", "a"), "s": tagged("s", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "q", "r", "s"]) == []
+    assert releases.arm_problems(run, "sp-hook_motion") == []
+
+
+def test_a_lopsided_test_and_a_broken_order_are_named():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "a"), "r": tagged("r", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "q", "r"]) == [
+        "arm a has 2 and arm b has 1",
+        "q follows p on the same arm a",
+    ]
+
+
+def test_a_declared_share_replaces_the_even_split():
+    run = {slug: tagged(slug, "a" if slug == "a" else "b") for slug in "abcde"}
+    order = ["b", "a", "c", "d", "e"]
+    assert releases.arm_problems(run, "sp-hook_motion", order, share=0.2) == []
+    assert releases.arm_problems(run, "sp-hook_motion") == ["arm a has 1 and arm b has 4"]
+
+
+def test_a_declared_share_is_held_to_its_count_and_keeps_the_smaller_arm_apart():
+    run = {slug: tagged(slug, "a" if slug in "ab" else "b") for slug in "abcdefghij"}
+    assert releases.arm_problems(run, "sp-hook_motion", share=0.1) == ["arm a has 2 and arm b has 8, not 1 and 9"]
+    assert releases.arm_problems(run, "sp-hook_motion", list("abcdefghij"), share=0.2) == [
+        "b follows a on the same arm a"
+    ]
+
+
+@pytest.mark.parametrize("share", [0.0, 1.0, -0.2, 1.2, float("nan")])
+def test_a_share_that_leaves_an_arm_empty_is_refused(share):
+    with pytest.raises(releases.ReleaseError, match="share"):
+        releases.arm_problems({}, "sp-hook_motion", share=share)
+
+
+def test_an_order_with_a_stranger_or_a_gap_is_named():
+    run = {"p": tagged("p", "a"), "q": tagged("q", "b")}
+    assert releases.arm_problems(run, "sp-hook_motion", ["p", "z"]) == ["z is not in the test", "q is not in the order"]
+
+
+def test_a_written_srt_reads_back_and_a_broken_one_is_refused(tmp_path):
+    srt = subtitles.write_srt(tmp_path / "a.srt", [(0.2, 1.75, "Hello."), (61.0, 62.5, "Two\nlines")])
+    assert subtitles.read_srt(srt) == [(0.2, 1.75, "Hello."), (61.0, 62.5, "Two\nlines")]
+    srt.write_text("1\nnot a time\nHello.\n")
+    with pytest.raises(subtitles.SubtitleError, match="not a subtitle block"):
+        subtitles.read_srt(srt)
+
+
+# -- a reel in two tests (ADR 0080) ------------------------------------------------------------------------------------
+BASE = dict(territory="family", cause="protagonist", emotion="embarrassment")
+
+
+def in_tests(slug, test, arm, also=()):
+    return Release(slug, POST, tags=releases.Tags(**BASE, test=test, arm=arm, also=also))
+
+
+def test_the_length_test_has_its_own_arms():
+    assert releases.arms_of("sp-length") == ("short", "natural")
+    assert releases.arms_of("sp-speakers") == releases.ARMS
+    assert releases.Tags(**BASE, test="sp-length", arm="natural").arm == "natural"
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(test="sp-length", arm="a"), "arm 'a'"),
+        (dict(test="sp-speakers", arm="short"), "arm 'short'"),
+        (dict(test="sp-length", arm="short", also=(("sp-speakers", "c"),)), "arm 'c'"),
+        (dict(test="sp-speakers", arm="a", also=(("sp-length", "b"),)), "arm 'b'"),
+        (dict(test="sp-length", arm="short", also=(("no-such-test", "a"),)), "no-such-test"),
+        (dict(test="sp-length", arm="short", also=(("sp-length", "natural"),)), "twice"),
+        (dict(test="sp-length", arm="short", also=(("sp-speakers", "a"), ("sp-speakers", "b"))), "twice"),
+        (dict(also=(("sp-speakers", "a"),)), "also"),
+        (dict(test="sp-length", arm="short", also=[("sp-speakers", "a")]), "also"),
+        (dict(test="sp-length", arm="short", also=("sp-speakers", "a")), "also"),
+    ],
+)
+def test_tags_refuse_a_second_test_they_cannot_vouch_for(kw, match):
+    with pytest.raises(ReleaseError, match=match):
+        releases.Tags(**BASE, **kw)
+
+
+def test_a_reel_in_two_tests_counts_in_both():
+    run = {
+        "p": in_tests("p", "sp-length", "short", (("sp-speakers", "a"),)),
+        "q": in_tests("q", "sp-length", "natural", (("sp-speakers", "b"),)),
+        "r": in_tests("r", "sp-speakers", "a"),
+    }
+    assert releases.arms(run, "sp-length") == {"short": ["p"], "natural": ["q"]}
+    assert releases.arms(run, "sp-speakers") == {"a": ["p", "r"], "b": ["q"]}
+
+
+def test_a_reel_on_the_second_test_is_in_its_order_and_its_split():
+    run = {
+        "p": in_tests("p", "sp-length", "short", (("sp-speakers", "a"),)),
+        "q": in_tests("q", "sp-length", "natural", (("sp-speakers", "b"),)),
+    }
+    assert releases.arm_problems(run, "sp-speakers", ["p", "q"]) == []
+    assert releases.arm_problems(run, "sp-length", ["p", "q"]) == []
+
+
+def test_the_length_test_reports_a_split_by_its_own_arms():
+    run = {"p": in_tests("p", "sp-length", "short"), "q": in_tests("q", "sp-length", "short")}
+    assert releases.arm_problems(run, "sp-length") == ["arm short has 2 and arm natural has 0"]
+    assert releases.arm_problems(run, "sp-length", ["p", "q"])[-1] == "q follows p on the same arm short"

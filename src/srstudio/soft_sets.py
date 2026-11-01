@@ -18,7 +18,8 @@ from .errors import SrstudioError
 from .registry import register
 from .soft_props import bench as park_bench
 
-__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "park", "playroom"]
+__all__ = ["CAPTIONS", "FINISH", "Dim", "Light", "Shot", "SoftSetError", "bedroom", "finish", "hall_light", "park"]
+__all__ += ["playroom"]
 
 WIDTH, HEIGHT = 1080, 1920
 Slot = Callable[[object], object] | None
@@ -41,19 +42,34 @@ BARK, BARK_DARK = "#8A6242", "#6B4A30"
 
 
 NIGHT, NIGHT_CLEAR = "#0B1026FB", "#0B102600"  # the engine composites in linear light: a lit wall needs 98 % to go dark
-LIGHTS = ("day", "phone", "dark")
+LIGHTS = ("day", "phone", "lamp", "dark")
+LAMP_GLOW = "#E08A2E5C"  # the amber a bulb leaves on a wall, between its clear middle and the dark
 FLICKER = (1.0, 0.93, 0.98, 0.9, 1.0, 0.95, 0.91, 0.99)  # a screen's light changing with what is on it
+LAMP_DARK = "#0B1026D8"  # a lamp's dark stays short of NIGHT: the corners of a lamplit room are there
+LAMP_REACH = 1600.0  # px from a lamp to the edge of its pool
+LAMP_BOX = 4000.0  # px from a lamp to the edge of the painted square: past its reach it is all LAMP_DARK
+HALL_X, HALL_SWUNG_X = -300.0, -760.0  # px of a hall's light left of the frame: open, and with the door nearly to
 FLICKER_STEP = 0.14  # seconds a flicker value holds
 OVER = 600  # px a room runs past the frame on every side
 
 
 class Light(NamedTuple):
-    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` pooled on (``x``, ``y``)."""
+    """From ``time``, the room is lit by ``state``: ``day``, ``dark``, or a ``phone`` or ``lamp`` at (``x``, ``y``)."""
 
     time: float
     state: str
     x: float = 540.0
     y: float = 1040.0
+
+
+def hall_light(opens: float, shuts: float, *, y: float = 1300.0, swing: float = 0.25) -> list[Light]:
+    """The rows of a door off the left of the frame: the hall comes in at ``opens``, thins as the door swings to over
+    ``swing`` seconds, and the room is dark at ``shuts``. A bedroom's lights go on from these."""
+    if not all(checks.number(v) for v in (opens, shuts, y, swing)) or opens < 0 or swing <= 0:
+        raise SoftSetError(f"a hall light opens and swings at finite times, got {opens!r}, {shuts!r}, {swing!r}")
+    if shuts - swing <= opens:
+        raise SoftSetError(f"a door open at {opens} cannot swing {swing} s and shut by {shuts}")
+    return [Light(opens, "lamp", HALL_X, y), Light(shuts - swing, "lamp", HALL_SWUNG_X, y), Light(shuts, "dark")]
 
 
 class Shot(NamedTuple):
@@ -167,6 +183,15 @@ def _skyline(cv: Canvas, far, rows: list[tuple[float, float, int]], id: str, gro
             cv.rect(g, x, ground - h, w, h, "#B8C6D2" if k % 2 else "#A9B9C8", radius=8)
 
 
+def planter(cv: Canvas, parent) -> None:
+    """The planter in the frame's bottom right corner, with the cactus in it and the code on it (ADR 0001), for a
+    foreground the camera does not move."""
+    cv.rect(parent, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)
+    cv.rect(parent, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
+    signature.cactus(cv, parent, 968, 1744, 0.72)
+    signature.code(cv, parent, 880, 1800, 15, color="#F3DFCF")
+
+
 @register(
     "location",
     "soft-park",
@@ -207,10 +232,7 @@ def park(
         cast(g)
     front = cv.group(g, f"{id}-front")
     cv.ellipse(front, -120, 1740, 330, 300, "#6F9D62")  # a bush the camera looks past
-    cv.rect(front, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)  # the planter
-    cv.rect(front, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
-    signature.cactus(cv, front, 968, 1744, 0.72)
-    signature.code(cv, front, 880, 1800, 15, color="#F3DFCF")
+    planter(cv, front)
     return g
 
 
@@ -349,7 +371,8 @@ def _framed(cv: Canvas, parent, id: str, shots: Sequence[Shot]):
 
 
 def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
-    """The dark over the room: nothing by day, a pool that flickers around a phone, or all of it."""
+    """The dark over the room: nothing by day, a pool that flickers around a phone, a warm one that holds still
+    around a lamp, or all of it."""
     pool = cv.rgrad("soft-bedroom-pool", [(0.0, NIGHT_CLEAR), (0.12, NIGHT_CLEAR), (0.34, NIGHT)])
     for k, row in enumerate(lights):
         if row.state == "day":
@@ -360,10 +383,19 @@ def _lights(cv: Canvas, g, lights: Sequence[Light], id: str) -> None:
         if row.state == "dark":
             cv.rect(night, 0, 0, WIDTH, HEIGHT, NIGHT)
             continue
+        if row.state == "lamp":
+            cv.rect(night, row.x - LAMP_BOX, row.y - LAMP_BOX, 2 * LAMP_BOX, 2 * LAMP_BOX, _lamplight(cv))
+            continue
         lit = cv.group(night, f"{id}-flicker-{k + 1}")  # a gate holds its group's opacity: the flicker sits inside it
         cv.rect(lit, row.x - 2000, row.y - 2000, 4000, 4000, pool)
         beats = int(min(end - row.time, 60.0) / FLICKER_STEP) + 1
         cv.keys(lit, "opacity", [(row.time + n * FLICKER_STEP, FLICKER[n % len(FLICKER)]) for n in range(beats)])
+
+
+def _lamplight(cv: Canvas) -> str:
+    """A bulb's pool: clear where it falls, amber at its edge and dark past that, with the room still readable."""
+    stops = [(0.0, NIGHT_CLEAR), (0.2, NIGHT_CLEAR), (0.46, LAMP_GLOW), (1.0, LAMP_DARK)]
+    return cv.rgrad("soft-bedroom-lamp", stops, (0.5, 0.5, LAMP_REACH / (2 * LAMP_BOX)))
 
 
 def _gated(cv: Canvas, parent, id: str, spans: Sequence[tuple[float, float]]):

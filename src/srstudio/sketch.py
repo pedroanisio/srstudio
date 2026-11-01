@@ -38,11 +38,13 @@ from .canvas import Canvas
 from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
+from .hearing import blind_lines
 from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
 __all__ = [
+    "PHONE_SPEAKER",
     "SketchError",
     "Speaker",
     "Line",
@@ -63,6 +65,7 @@ __all__ = [
     "place",
     "draw_cast",
     "write_project",
+    "place_again",
     "write_voiced",
     "load_beats",
     "extend_track",
@@ -91,7 +94,7 @@ LIP_SYNCED = (
     "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
-LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix
+LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it
@@ -117,6 +120,10 @@ VISEME_OF = {
 Mouths = dict[str, list[tuple[float, str]]]  # the viseme track per character, project seconds
 
 
+# what a phone's small speaker leaves of a voice: the speech band, a little pushed
+PHONE_SPEAKER = "highpass=f=380,highpass=f=380,lowpass=f=3000,lowpass=f=3000,volume=4dB"
+
+
 class SketchError(SrstudioError, ValueError):
     """The sketch (or a placement or recording of it) is inconsistent."""
 
@@ -136,12 +143,16 @@ class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
     Every take is levelled to one peak, so a line meant to come out small is only small in the mix with a ``gain``:
-    dB under the others, within :data:`LINE_LEVELS`; the take stays the same."""
+    dB under the others, within :data:`LINE_LEVELS`; the take stays the same.
+
+    ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
+    as it was said, and only the audio in the reel is band-limited."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
     gain: float = 0.0  # dB against the others in the mix
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -203,6 +214,7 @@ class Sketch:
         TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
     )
     bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
+    caption_min: float = CAPTION_MIN  # seconds a caption is held when the next change can wait for it
 
 
 @dataclass(frozen=True)
@@ -225,6 +237,8 @@ def check(sketch: Sketch) -> None:
         raise SketchError("speakers need distinct names")
     if not (checks.number(sketch.tail) and sketch.tail >= 0):
         raise SketchError(f"tail {sketch.tail!r} must be a non-negative number of seconds")
+    if not (checks.number(sketch.caption_min) and sketch.caption_min > 0):
+        raise SketchError(f"caption_min {sketch.caption_min!r} must be a positive number of seconds")
     cast = sketch.cast
     played = [s.character for s in sketch.speakers if s.character is not None]
     if any(c not in cast.characters for c in played) or len(set(played)) != len(played):
@@ -346,8 +360,8 @@ def place(sketch: Sketch, word_starts: Sequence[Sequence[float]], speech_ends: S
     """The beats moved to a recording: a spoken beat starts where its word is heard (``word_starts[line][word]``,
     project seconds), a silent one a beat after the line before it ends, no earlier than its scripted distance from
     the beat before and no later than ``BLANK_MARGIN`` before the next spoken one (the midpoint when that window is
-    empty). A change of caption that would cut the caption before it short of ``CAPTION_MIN`` (measured from when
-    that caption appeared) waits for it, up to ``CAPTION_LAG`` after its own word. Strictly increasing by
+    empty). A change of caption that would cut the caption before it short of ``sketch.caption_min`` (measured from
+    when that caption appeared) waits for it, up to ``CAPTION_LAG`` after its own word. Strictly increasing by
     ``MIN_STEP``."""
     check(sketch)
     if len(word_starts) != len(sketch.lines) or len(speech_ends) != len(sketch.lines):
@@ -374,7 +388,7 @@ def place(sketch: Sketch, word_starts: Sequence[Sequence[float]], speech_ends: S
         if out:
             at = max(at, out[-1].start + MIN_STEP)
             if out[-1].caption and out[-1].caption != b.caption:
-                at = min(max(at, shown + CAPTION_MIN), at + CAPTION_LAG)
+                at = min(max(at, shown + sketch.caption_min), at + CAPTION_LAG)
         if not out or out[-1].caption != b.caption:
             shown = at
         out.append(replace(b, start=round(at, 6)))
@@ -728,8 +742,12 @@ def record(
     """Every line said by its speaker's voice (cached by the client), trimmed, placed at its own pace, heard back
     and conformed to ``audio/vo-NN.wav``; the beats moved onto the words and, under ``voiced/``, the viseme tracks, read
     with ``mouth``, and the kept takes (:func:`load_speech`).
-    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried)."""
+    :class:`SketchError` lists every line speech-to-text did not hear as scripted (nothing is retried), and refuses a
+    line no transcript could confirm (:func:`~srstudio.hearing.blind_lines`) before the first take is paid for."""
     check(sketch)
+    blind = blind_lines(sketch.lines)
+    if blind:
+        raise SketchError("reword these lines or pass heard=(...) on them:\n" + "\n".join(blind))
     root = Path(root)
     audio = root / "audio"
     audio.mkdir(parents=True, exist_ok=True)
@@ -762,6 +780,7 @@ def record(
             continue
         dst = audio / f"vo-{slot.id}.wav"
         kept = round(at.kept, 6)
+        colour = {"effect": PHONE_SPEAKER} if line.phone else {}
         conform_clip(
             spoken.wav,
             dst,
@@ -770,6 +789,7 @@ def record(
             kept,
             gain_to_peak(trim.peak, VOICE_PEAK) + line.gain,
             ffmpeg,
+            **colour,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
         played = speakers[line.speaker].character
@@ -802,6 +822,24 @@ def record(
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
+
+
+def place_again(sketch: Sketch, root: Path) -> list[Beat]:
+    """The beats moved once more onto the recording already under ``root``, for a change of cues that needs no voice:
+    the lines' timed letters come from ``voiced/speech.json``, nothing is asked or written but the placed beats and
+    what follows from them (``voiced/beats.json``, ``script.json``, ``poses.json``). The audio stays as it was.
+    :class:`SketchError` when the recording is of other lines, or ends before the beats do."""
+    check(sketch)
+    root = Path(root)
+    takes, end = load_speech(root / "voiced" / "speech.json", sketch.cast)
+    if len(takes) != len(sketch.lines):
+        raise SketchError(f"the recording has {len(takes)} takes, the sketch {len(sketch.lines)} lines: record again")
+    word_starts = [[round(t.at + a, 6) for _, a, _ in words_of(t.alignment)] for t in takes]
+    beats = place(sketch, word_starts, [t.at + t.kept for t in takes])
+    if beats[-1].start + sketch.tail > end + 1e-6:
+        raise SketchError(f"the beats run past the recording's {end} s: record again")
+    write_voiced(root, beats, end, sketch.lines)
+    return beats
 
 
 def effect(
