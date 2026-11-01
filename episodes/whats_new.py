@@ -59,9 +59,10 @@ FLOOR = 1590.0
 THUMP = 0.33
 TAP = JAB + 0.62  # the finger lands
 SAT = PEEK - 1.3  # the second thump
-JUNO_HIGH, JUNO_DOWN = (770.0, 1500.0), (770.0, 1650.0)
+JUNO_HIGH, JUNO_DOWN, JUNO_CLEAR = (770.0, 1500.0), (770.0, 1650.0), (970.0, 1650.0)
 BO_AT, BO_FRIDGE, BO_NOD, BO_CARD = (440.0, FLOOR), (250.0, FLOOR), (640.0, FLOOR), (900.0, FLOOR)
-PIP_AT, PIP_WALL, PIP_PRESS, PIP_OFF = (165.0, 1560.0), (470.0, 1560.0), (400.0, 1560.0), (150.0, 1560.0)
+BO_CLEAR = (300.0, FLOOR)
+PIP_AT, PIP_WALL, PIP_PRESS, PIP_OFF = (165.0, 1560.0), (470.0, 1560.0), (430.0, 1560.0), (150.0, 1560.0)
 SWITCH_AT = (665.0, 1010.0)
 FRIDGE_AT, LAMP_AT, SHELF_Y = (170.0, 1300.0), (640.0, 850.0), 850.0
 DOOR_SEAT = (930.0, 1570.0)
@@ -86,7 +87,7 @@ foley.write_bursts(ROOT / "assets" / "steps.wav", STEPS, DURATION, foley.KNOCK, 
 ep.audio(
     extra=[
         ("room-tone", "assets/room-tone.wav", {"role": "ambience"}),
-        ("thump", "assets/thump.wav", {"role": "effects", "gain": -6}),
+        ("thump", "assets/thump.wav", {"role": "effects", "gain": -8}),
         ("clicks", "assets/clicks.wav", {"role": "effects", "gain": -9}),
         ("hum", "assets/hum.wav", {"role": "ambience", "gain": -16}),
         ("tap", "assets/tap.wav", {"role": "effects", "gain": -6}),
@@ -118,7 +119,8 @@ juno = quiet(
         cue(THUMP, "floor", JUNO_DOWN, ease=0.2, eyes="wide", mouth="o"),
         cue(P[1].start, "floor", JUNO_DOWN, eyes="look", mouth="flat"),
         cue(P[5].end, "floor", JUNO_DOWN, eyes="look", mouth="flat"),
-        cue(P[7].end, "floor", JUNO_DOWN, eyes="closed", mouth="flat"),
+        cue(P[7].start - 0.03, "floor", JUNO_CLEAR, ease=0.0, eyes="look", mouth="flat"),  # out of Bo's close-up
+        cue(DARK, "floor", JUNO_DOWN, ease=0.0, eyes="closed", mouth="flat"),
         cue(DARK + 0.5, "floor", JUNO_DOWN, eyes="look", mouth="flat"),
         cue(P[13].start, "floor", JUNO_DOWN, eyes="open", mouth="flat"),
     ],
@@ -153,7 +155,8 @@ bo = quiet(
         cue(PRESS, "clasp", BO_NOD, eyes="happy", mouth="smile"),
         cue(LAMP + 0.18, "clasp", BO_NOD, ease=0.1, turn=7, eyes="happy", mouth="grin"),
         cue(LAMP + 0.4, "clasp", BO_NOD, ease=0.1, eyes="happy", mouth="grin"),
-        cue(P[14].start, "wave-b", BO_CARD, flip=True, eyes="happy", mouth="grin"),
+        cue(P[13].start - 0.04, "clasp", BO_CLEAR, ease=0.0, eyes="happy", mouth="smile"),  # out of Juno's close-up
+        cue(P[14].start - 0.04, "wave-b", BO_CARD, ease=0.0, flip=True, eyes="happy", mouth="grin"),
     ],
     spans("bo", 0.0, NEXT),
     NEXT,
@@ -247,14 +250,14 @@ JUNO_CLOSE = (2.1, 740.0, 1240.0)
 shots = [
     WIDE,
     Shot(P[1].start - 0.06, 1.3, 470.0, 1200.0),
-    Shot(P[3].start - 0.04, 2.0, 65.0, 1060.0),
+    Shot(P[3].start - 0.04, 2.0, 110.0, 1060.0),
     Shot(P[4].start - 0.04, 1.3, 620.0, 1200.0),
     Shot(P[6].start - 0.04, *JUNO_CLOSE),
-    Shot(P[7].start - 0.03, 2.1, 480.0, 1130.0),
-    Shot(DARK, 1.36, 430.0, 1170.0),
-    Shot(PRESS, 1.4, 450.0, 1140.0),
+    Shot(P[7].start - 0.03, 2.1, 350.0, 1130.0),
+    Shot(DARK, 1.36, 470.0, 1170.0),
+    Shot(PRESS, 1.4, 470.0, 1140.0),
     Shot(P[13].start - 0.04, *JUNO_CLOSE),
-    Shot(P[14].start - 0.04, 1.5, 750.0, 1240.0),
+    Shot(P[14].start - 0.04, 1.3, 775.0, 1240.0),
     Shot(NEXT, 1.0, 540.0, 960.0),
 ]
 graded = soft_sets.finish(cv, ep.comp)

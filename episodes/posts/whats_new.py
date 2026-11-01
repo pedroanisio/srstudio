@@ -19,13 +19,25 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=('#softwareupdate', '#techhumor', '#relatable', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("We improved your living room", 6.9, number=195),
+        thumbnail=ShowCover("We improved your sofa", 6.9, number=195),
     ),
     tags=Tags(
         "everyday-tech", "institution", "recognition", recurring=('bo', 'juno', 'pip'), test="sp-speakers", arm="b"
     ),
     style="Soft",
-    parts={},
+    parts={
+        "bo": 1,
+        "captions": 1,
+        "juno": 1,
+        "pip": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "soft-bedside-lamp": 1,
+        "soft-dimmer": 1,
+        "soft-home-fridge": 1,
+        "soft-notice": 1,
+    },
     comedy=Scores(author=17, reviewer=16),
     cover=True,
 )
