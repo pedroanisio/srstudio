@@ -126,22 +126,21 @@ def gate(
     now: str = "GROUP 1",
     boarding_size: float = APPROVED_BOARDING_SIZE,
     cactus_at: tuple[float, float] = CACTUS_AT,
+    sign: bool = True,
 ) -> None:
     """The boarding gate: the terminal wall, the window on the apron with a parked airliner, the gate seats under it,
     the boarding sign with ``gate`` (1 to :data:`GATE_CHARS` characters) and the group called ``now`` (1 to
     :data:`NOW_CHARS`), and the carpet. The code sits on the carpet's near edge and the cactus by the window
     (ADR 0001). ``boarding_size`` letters the sign's first line; the default is the drawing that was approved, and
     a reel whose font runs wide passes :data:`BOARDING_SIZE`. ``cactus_at`` is where the cactus's pot stands; the
-    default is the approved drawing, and a reel that stands something in front of it moves it."""
+    default is the approved drawing, and a reel that stands something in front of it moves it. ``sign=False`` leaves the sign's face to
+    :func:`boarding_sign`, for a reel that washes the room and keeps the sign out of the wash."""
     cv.require_font("the boarding sign is set in it")
     if not (isinstance(cactus_at, tuple) and len(cactus_at) == 2 and all(checks.number(value) for value in cactus_at)):
         raise StickDataError(f"the cactus stands at an x and a y, got {cactus_at!r}")
     if not (checks.number(boarding_size) and boarding_size > 0):
         raise StickDataError(f"the sign's first line has a size above 0, got {boarding_size!r}")
-    if not gate.strip() or len(gate) > GATE_CHARS:
-        raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
-    if not now.strip() or len(now) > NOW_CHARS:
-        raise StickDataError(f"the sign calls 1 to {NOW_CHARS} characters, got {now!r}")
+    _check_sign(gate, now)
     s = cv
     wall = paint(s, Gradient("gate-wall", ((0, WALL_TOP), (1, WALL_LOW)), 0, 0, 0, FLOOR_Y))
     box(s, parent, 0, 0, s.width, FLOOR_Y, wall)
@@ -154,14 +153,11 @@ def gate(
     for mx in (x + w / 3, x + 2 * w / 3):  # the mullions
         box(s, parent, mx - 7, y, 14, h, FRAME)
     # the boarding sign, hung from the ceiling on two rods
-    sx, sy, sw_, sh = SIGN_BOX
+    sx, sy, sw_, _ = SIGN_BOX
     for rx in (sx + 60, sx + sw_ - 60):
         box(s, parent, rx - 4, 0, 8, sy, FRAME)
-    box(s, parent, sx, sy, sw_, sh, SIGN, r=14)
-    box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
-    _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
-    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, boarding_size, SIGN_TEXT, align="start")
-    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
+    if sign:
+        boarding_sign(s, parent, gate=gate, now=now, boarding_size=boarding_size)
     # the gate seats under the window: a row joined on one beam
     box(s, parent, 30, 1420, 560, 16, SEAT_DARK)
     for k in range(4):
@@ -231,7 +227,8 @@ def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, 
     """A bag scale: its platter set in the floor under ``x, y`` and its red readout at ``readout``, on the podium's
     front by default. ``readings`` are ``(start, weight)`` in rising order, the first from the shot's start; each
     shows until the next and the last until ``end``. A weight has 1 to :data:`READOUT_CHARS` characters, lit at
-    :data:`READOUT_SIZE` so it reads at phone size. Draw it after the podium and before the bag."""
+    :data:`READOUT_SIZE` so it reads at phone size, and a weight of ``None`` leaves the readout dark. Draw it after the
+    podium and before the bag."""
     cv.require_font("the readout is set in it")
     readings = tuple(readings)
     if not readings:
@@ -240,7 +237,7 @@ def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, 
     if starts[0] != 0 or any(b <= a for a, b in zip(starts, starts[1:], strict=False)) or starts[-1] >= end:
         raise StickDataError(f"readings start at 0 and rise before the end, got {starts} to {end}")
     for _, weight in readings:
-        if not weight.strip() or len(weight) > READOUT_CHARS:
+        if weight is not None and (not weight.strip() or len(weight) > READOUT_CHARS):
             raise StickDataError(f"a reading has 1 to {READOUT_CHARS} characters, got {weight!r}")
     s = cv
     g = _group(s, parent)
@@ -249,10 +246,34 @@ def bag_scale(cv: Canvas, parent, x, y, readings, end, *, readout: tuple[float, 
     rx, ry, rw, rh = readout
     box(s, g, rx, ry, rw, rh, LED_BACK, 5, r=16)
     for (start, weight), until in zip(readings, [*starts[1:], end], strict=True):
+        if weight is None:
+            continue
         lit = _group(s, g)
         _label(s, lit, weight, rx, ry, rw, rh, READOUT_SIZE, LED)
         s.gate(lit, [(start, until)])
     return g
+
+
+def _check_sign(gate: str, now: str) -> None:
+    if not gate.strip() or len(gate) > GATE_CHARS:
+        raise StickDataError(f"the gate has 1 to {GATE_CHARS} characters, got {gate!r}")
+    if not now.strip() or len(now) > NOW_CHARS:
+        raise StickDataError(f"the sign calls 1 to {NOW_CHARS} characters, got {now!r}")
+
+
+def boarding_sign(
+    cv: Canvas, parent, *, gate: str = "B9", now: str = "GROUP 1", boarding_size: float = APPROVED_BOARDING_SIZE
+) -> None:
+    """The face of the gate's boarding sign at :data:`SIGN_BOX`: ``gate`` on its light tile, the first line in
+    ``boarding_size``, the group called ``now`` under them."""
+    _check_sign(gate, now)
+    s = cv
+    sx, sy, sw_, sh = SIGN_BOX
+    box(s, parent, sx, sy, sw_, sh, SIGN, r=14)
+    box(s, parent, sx + 20, sy + 20, 120, 110, SIGN_LIGHT, r=10)
+    _label(s, parent, gate, sx + 20, sy + 20, 120, 110, 72, SIGN)
+    _label(s, parent, "NOW BOARDING", sx + 150, sy + 30, sw_ - 170, 90, boarding_size, SIGN_TEXT, align="start")
+    _label(s, parent, now, sx + 20, sy + 140, sw_ - 40, 96, now_size(now), SIGN_TEXT)
 
 
 @register("prop", "stick-coat-ball", tags=("airport", "clothes", "coats", "scarf", "hat", "front-layer"))

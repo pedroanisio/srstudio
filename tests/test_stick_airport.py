@@ -197,6 +197,30 @@ def test_the_scale_lights_one_weight_at_a_time_at_phone_size():
     assert keyed, "each reading is lit only for its own time"
 
 
+def test_the_scale_can_stay_dark_until_its_first_reading():
+    cv = canvas()
+    stick_airport.bag_scale(cv, cv.comp, 540, 1700, ((0.0, None), (0.44, "23.4")), 4.0)
+    assert texts(cv) == ["23.4"]
+
+
+def test_the_gate_can_leave_its_sign_for_a_reel_to_hang_over_a_wash():
+    plain, whole = canvas(), canvas()
+    stick_airport.gate(plain, plain.comp, gate="A1", now="HOT", sign=False)
+    assert texts(plain) == []
+    stick_airport.boarding_sign(plain, plain.comp, gate="A1", now="HOT")
+    stick_airport.gate(whole, whole.comp, gate="A1", now="HOT")
+    assert sorted(texts(plain)) == sorted(texts(whole))
+    assert shapes(plain) == shapes(whole)
+
+
+def test_the_sign_refuses_what_the_gate_refuses():
+    cv = canvas()
+    with pytest.raises(StickDataError, match="gate has 1 to"):
+        stick_airport.boarding_sign(cv, cv.comp, gate="", now="HOT")
+    with pytest.raises(StickDataError, match="sign calls 1 to"):
+        stick_airport.boarding_sign(cv, cv.comp, gate="A1", now="")
+
+
 @pytest.mark.parametrize(
     "readings, end, match",
     [
