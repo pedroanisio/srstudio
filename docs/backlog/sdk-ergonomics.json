@@ -50,6 +50,40 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "composition_runtime_limits": {
+      "baseline_source_commit": "40e67f49",
+      "process_boundary_red": {"failed": 16},
+      "public_worker_boundary_red": {"failed": 12},
+      "node_budget_and_prepared_metadata_red": {"failed": 2},
+      "remote_typed_cause_red": {"failed": 1},
+      "worker_startup_diagnostic_red": {"failed": 1},
+      "engine_enabled_regressions": {"passed": 409, "skipped": 0, "subtests_passed": 28},
+      "branch_inclusive_coverage_percent": {
+        "bounded_process": 91,
+        "process_bootstrap": 100,
+        "composition_runtime": 88,
+        "composition_wire": 85,
+        "composition_worker": 100,
+        "composition": 100,
+        "composition_emit": 87,
+        "composition_parse": 90,
+        "composition_preflight": 95,
+        "composition_vector": 95,
+        "total": 93
+      },
+      "coverage_scope": "Ten composition/runtime modules, unchanged 80% gate. Subprocess and exec instrumentation measures real worker execution. The full repository suite was not run.",
+      "kernel_address_space_test_limit_bytes": 134217728,
+      "refused_allocation_bytes": 268435456,
+      "parent_limits_and_environment_unchanged": true,
+      "timed_out_descendants_verified_inactive": true,
+      "worker_output_caps_verified": true,
+      "example_xml_equal_to_previous_compiler": true,
+      "example_xml_sha256": "08028df34cadb149c9f1ee211f4006ed5a3745faf40ef1bf2c0d380e3943ee16",
+      "ruff_formatted_files": 794,
+      "mypy_source_files": 271,
+      "retained_artifacts": "../generated/sdk-composition-runtime/v1/",
+      "qualification": "Kernel limits apply to each worker's virtual address space, including runtime and mappings, not aggregate RSS or GPU memory. Deadlines bound worker invocations and binary IPC; host drawing generation, bounded manifest intake and atomic filesystem publication remain host operations. Vector verification/compilation uses these limits; plate/proxy and renderer integration remain open. No performance improvement is claimed; VectorSource batches work to avoid separate preparation invocations."
+    },
     "composition_vector_emission": {
       "baseline_source_commit": "f8ccb9c2",
       "manifest_commit": "f8ccb9c2",
@@ -545,14 +579,15 @@
           "Strict frozen manifest records and bounded parsing; approved references, camera/view envelopes, source clocks, declared contacts and reproducible work estimates",
           "Actual closed vector payload verification, content hashes, node counts and conservative complete animation bounds",
           "Revalidated compilation with scoped IDs/paints, one parent/camera projection and preserved source clocks",
-          "Atomic self-contained scene publication with expansion allowances, cooperative timeout checks and failure preservation"
+          "Atomic self-contained scene publication with expansion allowances, cooperative timeout checks and failure preservation",
+          "Public vector verification/compilation workers with hard kernel address-space limits, parent deadlines, bounded IPC and preserved typed causes; VectorSource batches preparation and compilation"
         ],
         "remaining": [
           "Prepared plate/proxy payload bindings and supported backend emission under shared camera/light contracts",
-          "Hard process-memory and deadline enforcement for preparation/rendering, including bounded retries",
+          "Integrate bounded execution with plate/proxy preparation and renderer invocations, including retry accounting",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_example.py", "docs/composition-preflight.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "docs/composition-preflight.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"

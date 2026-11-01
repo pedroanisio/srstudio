@@ -138,6 +138,12 @@ class ContactSpec(_Record):
 
 @dataclass(frozen=True)
 class RenderBudget(_Record):
+    """Planning limits plus each worker's deadline and hard virtual-address-space cap.
+
+    The memory cap includes worker runtime/libraries. Host intake/publication,
+    GPU memory and independently invoked renderers are outside that process cap.
+    """
+
     max_frames: int = field(default=2400, metadata={'minimum': 1, 'maximum': 100000})
     max_frame_pixels: int = field(default=16777216, metadata={'minimum': 1, 'maximum': 67108864})
     max_output_pixels: int = field(default=10_000_000_000, metadata={'minimum': 1, 'maximum': 1e12})
@@ -279,6 +285,14 @@ class PreparedVector:
 
 
 @dataclass(frozen=True)
+class VectorSource:
+    """Host-owned source bytes; preparation and compilation share one bounded worker."""
+
+    id: str
+    xml: bytes
+
+
+@dataclass(frozen=True)
 class CompiledScene:
     """A self-contained scene, its content identity and the manifest it implements."""
 
@@ -288,22 +302,26 @@ class CompiledScene:
     nodes: int
 
 
-def prepare_vector(binding: AssetBinding, xml: bytes) -> PreparedVector:
-    """Check a host-prepared vector document's actual geometry, resources and declared work bounds."""
-    from ._composition_vector import prepare_vector as prepare
+def prepare_vector(binding: AssetBinding, xml: bytes, *, budget: RenderBudget | None = None) -> PreparedVector:
+    """Verify a host-prepared vector under a process memory cap and preemptive deadline."""
+    from ._composition_runtime import prepare_vector as prepare
 
-    return prepare(binding, xml)
+    return prepare(binding, xml, budget=budget)
 
 
-def compile_scene(plan: ValidatedScenePlan, assets: tuple[PreparedVector, ...]) -> CompiledScene:
-    """Revalidate manifest and payloads, then compile supported layers without filesystem mutations."""
-    from ._composition_emit import compile_scene as compile_
+def compile_scene(plan: ValidatedScenePlan, assets: tuple[PreparedVector | VectorSource, ...]) -> CompiledScene:
+    """Verify and compile in a bounded worker; source bytes avoid a separate preparation invocation."""
+    from ._composition_runtime import compile_scene as compile_
 
     return compile_(plan, assets)
 
 
 def emit_scene(
-    plan: ValidatedScenePlan, assets: tuple[PreparedVector, ...], output: Path, *, overwrite: bool = False
+    plan: ValidatedScenePlan,
+    assets: tuple[PreparedVector | VectorSource, ...],
+    output: Path,
+    *,
+    overwrite: bool = False,
 ) -> CompiledScene:
     """Compile in memory and publish one complete private scene file with an atomic installation."""
     from ._composition_emit import emit_scene as emit

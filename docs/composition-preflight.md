@@ -14,8 +14,9 @@ render cache or creating files.
 
 `prepare_vector` verifies actual vector XML against a binding. `compile_scene`
 combines verified payloads into a self-contained scene, and `emit_scene` publishes
-that scene atomically. Plate/proxy emission and hard process-memory enforcement
-remain open under SDK-P2-07. A valid manifest alone is not a rendered scene,
+that scene atomically. Public preparation and compilation run in workers with
+hard address-space limits and preemptive deadlines. Plate/proxy emission and its
+renderer budget integration remain open under SDK-P2-07. A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
 ## Start with a real drawing
@@ -62,13 +63,21 @@ stale costs, approvals or geometry evidence.
 
 ```python
 from pathlib import Path
-from srstudio.composition import compile_scene, emit_scene, prepare_vector
+from srstudio.composition import VectorSource, compile_scene, emit_scene
 
 # checked is the preflight result; source_bytes is the host's id-to-bytes map.
-prepared = tuple(prepare_vector(b, source_bytes[b.id]) for b in checked.bindings)
-compiled = compile_scene(checked, prepared)  # immutable XML, digest, actual nodes
-emit_scene(checked, prepared, Path("generated/scene.xml"))
+sources = tuple(VectorSource(b.id, source_bytes[b.id]) for b in checked.bindings)
+compiled = compile_scene(checked, sources)  # immutable XML, digest, actual nodes
+emit_scene(checked, sources, Path("generated/scene.xml"))
 ```
+
+`VectorSource` sends host-owned bytes through preparation and compilation in one
+worker. To inspect measured geometry separately, call
+`prepare_vector(binding, xml, budget=checked.spec.budget)`; it returns a frozen
+`PreparedVector`, also accepted by compilation. Omitting that preparation budget
+uses the default `RenderBudget`. Each public call has its own worker lifetime;
+preparing every source separately adds worker startup costs. Neither input form
+executes an arbitrary drawing callback in the worker.
 
 The vector adapter supports nested groups, paths, rectangles, rounded rectangles,
 ellipses, local linear/radial gradients, and numeric transform/opacity or boolean
@@ -96,12 +105,43 @@ preserve the old destination.
 
 Payloads and expanded output have an eight MiB cap, finite node limits and a
 64-element nesting limit. Repeated placements include their copy/serialization
-allowance before expanded trees are allocated. Compilation checks elapsed time
-between bounded operations and refuses publication after its deadline. This is
-cooperative cancellation, not a preemptive process deadline. Memory accounting
-is a conservative planning allowance, not a hard RSS limit. The compiler makes
-no engine calls; rendering its output independently does not inherit these
-budgets. Plate/proxy adapters and hard runtime enforcement remain required work.
+allowance before expanded trees are allocated. The host rejects known node and
+expansion budget failures before launching work. The worker repeats semantic
+validation, verifies actual payloads and compiles the result. Input and result
+messages use closed, bounded JSON with base64 bytes; executable Python objects
+are never deserialized.
+
+## Runtime limits
+
+`RenderBudget.max_memory_bytes` sets the worker's hard `RLIMIT_AS` limit before
+SDK imports. It includes the interpreter, libraries, mappings and allocation
+overhead, so the declared scene-memory estimate is not a sufficient worker
+budget by itself. This is a per-process virtual-address-space cap, not a peak-RSS
+estimate or GPU-memory limit. An inherited lower process limit is preserved.
+The host application retains its own limits. Native math thread counts are one
+inside the worker; the host environment is unchanged.
+
+`RenderBudget.timeout` bounds each worker invocation, including startup, input
+transfer, verification and compilation. The parent stops the entire worker
+process group on timeout or excessive output, including descendants whose leader
+has exited. Input, stdout and stderr have byte caps; a worker cannot exhaust host
+memory by printing indefinitely or stall input transfer beyond the deadline.
+Workers do not write scene outputs. The parent checks the complete reply's schema,
+manifest/content hashes and node count before atomic publication.
+
+POSIX process groups and kernel address-space limits are required; unsupported
+platforms refuse rather than running unbounded. The installed SDK and approval
+records must be available in the worker. In-process monkeypatches or dynamically
+registered host-only builders are not transferred. Host drawing generation,
+bounded manifest intake and final filesystem publication are outside the worker.
+This execution boundary is not a sandbox for hostile Python programs.
+
+The vector compiler makes no engine calls. Rendering its output independently
+does not inherit these budgets; plate/proxy adapters and renderer integration
+remain required work. Timeout and memory-allocation failures expose budget paths;
+other worker startup, exit or protocol failures have explicit worker codes.
+There are no automatic retries. Typed SDK causes, including part-version errors,
+survive the worker boundary through a closed diagnostic protocol.
 
 Scene JSON uses schema `srstudio.scene-plan/1.0.0`. Unknown fields, duplicate JSON
 keys, booleans in numeric fields, nonfinite numbers and excessive input graphs
@@ -157,8 +197,9 @@ agreement; it does not solve a skeleton or infer biomechanical validity.
 | Contact samples | Actual endpoint/key comparisons performed by manifest validation |
 
 Work declarations sharing a content key must match. Input binding order does
-not change the result, and unused bindings do not contribute work. Memory is a
-planning allowance, not measured or enforced process RSS. Cache reuse can make
+not change the result, and unused bindings do not contribute work. Estimated
+memory is a planning allowance, not measured process RSS. The separate hard
+worker address-space cap also includes runtime overhead. Cache reuse can make
 actual render work smaller; preflight does not inspect cache contents.
 
 Cross-layer shadow receivers, split-pass intersections and per-layer finish

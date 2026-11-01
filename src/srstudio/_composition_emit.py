@@ -46,6 +46,20 @@ def _placement(layer: c.LayerSpec, spec: c.ScenePlan, poses: dict) -> dict[str, 
     }
 
 
+def check_expansion(plan: c.ValidatedScenePlan, sizes: dict[str, int]) -> None:
+    """Account for namespaced copies before launching a worker or allocating trees."""
+    bindings = {binding.id: binding for binding in plan.bindings}
+    output_bound = 2048 + sum(sizes[layer.asset] + 64 * bindings[layer.asset].nodes for layer in plan.spec.layers)
+    memory_bound = plan.cost.memory_bytes + 8 * output_bound
+    if output_bound > MAX_XML_BYTES or memory_bound > plan.spec.budget.max_memory_bytes:
+        raise c._fail(
+            'budget.expansion',
+            (output_bound, memory_bound),
+            'XML expansion within 8 MiB and the declared memory allowance',
+            'composition.budget',
+        )
+
+
 def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ...]) -> c.CompiledScene:
     started = time.monotonic()
     if type(plan) is not c.ValidatedScenePlan or type(assets) is not tuple or len(assets) > c.MAX_LAYERS:
@@ -74,17 +88,7 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
     # Each placement owns a namespaced copy. Account for serialization and
     # parser working storage before allocating any expanded trees. The extra
     # per-node allowance covers scoped IDs, references and wrapper attributes.
-    output_bound = 2048 + sum(
-        len(actual[layer.asset].xml) + 64 * actual[layer.asset].binding.nodes for layer in plan.spec.layers
-    )
-    memory_bound = plan.cost.memory_bytes + 8 * output_bound
-    if output_bound > MAX_XML_BYTES or memory_bound > budget.max_memory_bytes:
-        raise c._fail(
-            'budget.expansion',
-            (output_bound, memory_bound),
-            'XML expansion within 8 MiB and the declared memory allowance',
-            'composition.budget',
-        )
+    check_expansion(plan, {name: len(asset.xml) for name, asset in actual.items()})
     roots = {}
     for binding in plan.bindings:
         asset = actual[binding.id]
@@ -170,9 +174,13 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
 
 
 def emit_scene(
-    plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ...], output: Path, *, overwrite: bool = False
+    plan: c.ValidatedScenePlan,
+    assets: tuple[c.PreparedVector | c.VectorSource, ...],
+    output: Path,
+    *,
+    overwrite: bool = False,
 ) -> c.CompiledScene:
-    compiled = compile_scene(plan, assets)
+    compiled = c.compile_scene(plan, assets)
     if not isinstance(output, Path) or type(overwrite) is not bool:
         raise c._fail('output', None, 'a Path and an explicit boolean overwrite policy')
     try:

@@ -24,10 +24,10 @@ from srstudio.composition import (
     TemporalPolicy,
     Transform,
     ValidatedScenePlan,
+    VectorSource,
     compile_scene,
     emit_scene,
     preflight,
-    prepare_vector,
     style_revision,
 )
 
@@ -80,7 +80,7 @@ def build_manifest() -> tuple[ValidatedScenePlan, bytes]:
 
 def build_scene() -> CompiledScene:
     plan, xml = build_manifest()
-    return compile_scene(plan, (prepare_vector(plan.bindings[0], xml),))
+    return compile_scene(plan, (VectorSource(plan.bindings[0].id, xml),))
 
 
 if __name__ == '__main__':
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite', action='store_true', help='Replace an existing output atomically.')
     args = parser.parse_args()
     plan, xml = build_manifest()
-    assets = (prepare_vector(plan.bindings[0], xml),)
+    assets = (VectorSource(plan.bindings[0].id, xml),)
     compiled = (
         emit_scene(plan, assets, args.output, overwrite=args.overwrite) if args.output else compile_scene(plan, assets)
     )

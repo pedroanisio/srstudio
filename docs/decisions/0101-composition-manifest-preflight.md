@@ -63,6 +63,7 @@ External resources, unbounded expressions, unsupported geometry and renderer
 backends are refused instead of being copied without verified behavior. Source
 provenance remains the host's responsibility; XML geometry is not proof of an
 approved drawing's authorship. Expanded copies consume an explicit memory
-allowance, and cooperative timeout checks prevent late publication. Neither is
-a claim of preemptive process-memory enforcement. Plate/proxy emission and hard
-runtime enforcement remain open under SDK-P2-07.
+allowance, and cooperative timeout checks prevent late publication. The subsequent
+[bounded-worker decision](0102-bounded-composition-workers.md) adds kernel
+address-space limits and parent-owned deadlines to public vector preparation and
+compilation. Plate/proxy emission and renderer integration remain open under SDK-P2-07.

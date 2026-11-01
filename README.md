@@ -9,7 +9,8 @@ link discovery, typed inputs, clocks, capabilities, executable recipes and repai
 The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
 rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
 The [composition guide](docs/composition-preflight.md) covers strict scene manifests,
-declared contacts, work budgets, verified vector payloads and atomic scene emission.
+declared contacts, work budgets, vector verification in bounded worker processes and
+atomic scene emission.
 
 ## Install
 
