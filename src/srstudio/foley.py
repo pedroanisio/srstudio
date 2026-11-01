@@ -50,6 +50,9 @@ __all__ = [
     "CHOPPER",
     "GULL",
     "PLATES",
+    "DAWN_PHRASE",
+    "dawn",
+    "write_dawn",
     "note_hz",
     "piano",
     "phrase",
@@ -517,6 +520,49 @@ def phrase(notes: Sequence[str], start: float, step: float) -> dict[str, tuple[f
         note_hz(name)
         out[name] = (*out.get(name, ()), round(start + i * step, 6))
     return out
+
+
+DAWN_PHRASE = 0.9  # seconds at most of one bird's phrase
+DAWN_NOTES = (3, 6)  # the notes in a phrase, at least and at most
+DAWN_BAND = (2300.0, 4300.0)  # Hz a small bird sings in
+DAWN_NOTE = 0.09  # seconds of one note
+DAWN_GAP = 0.05  # seconds between two notes
+
+
+def dawn(times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0, peak: float = PEAK) -> list[float]:
+    """A mono bed of ``duration`` seconds with one small bird's phrase at each of ``times``: morning, heard and not
+    seen. Each phrase draws its own notes from the seed, a few quick slides high up, so no two birds repeat, and the
+    bed is silent between phrases: list more times for a fuller dawn."""
+    if not times:
+        raise FoleyError("a dawn needs at least one bird")
+    if not (isinstance(rate, int) and rate >= MIN_RATE):
+        raise FoleyError(f"rate {rate} must be an integer of at least {MIN_RATE} Hz")
+    if not (checks.number(duration) and duration > 0 and all(0 <= t < duration for t in times)):
+        raise FoleyError(f"duration {duration} must hold every bird, got {list(times)}")
+    if not (checks.number(peak) and 0 < peak <= 1):
+        raise FoleyError(f"peak {peak} must be in 0..1")
+    out = [0.0] * int(round(duration * rate))
+    rng = random.Random(seed)
+    span = int(DAWN_NOTE * rate)
+    for at in sorted(times):
+        begin = int(at * rate)
+        for note in range(rng.randint(*DAWN_NOTES)):
+            start = begin + int(note * (DAWN_NOTE + DAWN_GAP) * rate)
+            high, low = rng.uniform(*DAWN_BAND), rng.uniform(*DAWN_BAND)
+            phase, level = 0.0, rng.uniform(0.55, 1.0)
+            for k in range(min(span, max(0, len(out) - start))):
+                u = k / span
+                phase += 2 * math.pi * (high + (low - high) * u) / rate
+                out[start + k] += level * math.sin(math.pi * u) * math.sin(phase)
+    top = max((abs(v) for v in out), default=0.0)
+    if top > 0:
+        out = [v * peak / top for v in out]
+    return out
+
+
+def write_dawn(path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0) -> Path:
+    """The bed of :func:`dawn`, written to ``path``."""
+    return write_wav(path, dawn(times, duration, rate, seed), rate)
 
 
 def bursts(

@@ -296,3 +296,48 @@ def test_write_plop_writes_a_wave(tmp_path):
     path = foley.write_plop(tmp_path / "plop.wav", [0.1], 2.0, rate=8000, seed=1)
     with wave.open(str(path)) as w:
         assert w.getnframes() == 16000 and w.getframerate() == 8000
+
+
+def test_a_dawn_sings_at_each_time_and_is_silent_between():
+    bed = foley.dawn([0.5, 2.5], 4.0, rate=16000, seed=7)
+    rate = 16000
+    assert len(bed) == 4 * rate
+    assert max(abs(v) for v in bed) == pytest.approx(foley.PEAK)
+    assert all(v == 0 for v in bed[: rate // 2 - 1])  # nothing before the first bird
+    gap = bed[int(0.5 * rate + foley.DAWN_PHRASE * rate) + 1 : int(2.5 * rate) - 1]
+    assert gap and all(v == 0 for v in gap)
+    assert any(v for v in bed[rate // 2 : rate]) and any(v for v in bed[int(2.5 * rate) : 3 * rate])
+
+
+def test_a_dawn_is_high_and_no_two_birds_sing_the_same_phrase():
+    rate = 16000
+    bed = foley.dawn([0.0, 1.0], 2.0, rate=rate, seed=3)
+    first, second = bed[: int(foley.DAWN_PHRASE * rate)], bed[rate : rate + int(foley.DAWN_PHRASE * rate)]
+    assert first != second
+    sung = [v for v in first if abs(v) > 0.01]
+    crossings = sum(1 for a, b in zip(sung, sung[1:], strict=False) if (a < 0) != (b < 0))
+    assert crossings / (2 * len(sung) / rate) > 1500  # a bird, not a hum
+    assert bed == foley.dawn([0.0, 1.0], 2.0, rate=rate, seed=3)
+
+
+def test_write_dawn_writes_a_wav(tmp_path):
+    path = foley.write_dawn(tmp_path / "dawn.wav", [0.1], 1.0, rate=8000)
+    with wave.open(str(path)) as wav:
+        assert wav.getframerate() == 8000
+        assert wav.getnframes() == 8000
+
+
+@pytest.mark.parametrize(
+    ("times", "duration", "kw"),
+    [
+        ([], 2.0, {}),
+        ([3.0], 2.0, {}),
+        ([0.1], 0.0, {}),
+        ([-1.0], 2.0, {}),
+        ([0.1], 2.0, {"rate": 100}),
+        ([0.1], 2.0, {"peak": 2.0}),
+    ],
+)
+def test_a_dawn_refuses_what_it_cannot_sing(times, duration, kw):
+    with pytest.raises(foley.FoleyError):
+        foley.dawn(times, duration, **kw)
