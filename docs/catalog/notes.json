@@ -1276,6 +1276,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "collage-thread": {"title": "Conversa no celular"},
+    "collage-weather-map": {"title": "Mapa do tempo de papel"},
     "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
     "collage-article": {"title": "Matéria no celular"},
     "soft-star-card": {"title": "Cartão de cinco estrelas"},
@@ -9036,6 +9038,30 @@
         "at": 19.1
       },
       "text": "A tela virada para nós: a piada são os bilhetes por cima da página."
+    },
+    {
+      "section": "props",
+      "name": "Mapa do tempo de papel",
+      "parts": [
+        "collage-weather-map"
+      ],
+      "shot": {
+        "episode": "cold-front",
+        "at": 2.0
+      },
+      "text": "O mapa do tempo de papel com a seta EXES, atrás do âncora."
+    },
+    {
+      "section": "props",
+      "name": "Conversa no celular",
+      "parts": [
+        "collage-thread"
+      ],
+      "shot": {
+        "episode": "cold-front",
+        "at": 15.2
+      },
+      "text": "A conversa inventada: balões cinza que chegam nos seus segundos, o verde dela no fim."
     }
   ]
 }

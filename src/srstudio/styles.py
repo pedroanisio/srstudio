@@ -460,6 +460,7 @@ COLLAGE = Style(
         "collage",
         "collage_article",
         "collage_everyday",
+        "collage_forecast",
         "collage_odds",
         "collage_photo",
         "collage_sets",

@@ -13441,6 +13441,40 @@
           "rig": null
         }
       ]
+    },
+    "collage-weather-map": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A paper weather map on an easel-less sheet: two invented land shapes, isobars inside the sheet, a big arrow that takes a word, an optional clock card. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "849f994bf0c12fa9c44bfd315bd0adfa1700bef8b00f355e509c643e03d9dcd9",
+          "rig": null
+        }
+      ]
+    },
+    "collage-thread": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented messaging thread on a phone: a contact name, a clock that changes, an optional call banner, grey and green bubbles that land on their seconds. Copies no real app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f52adc0569fb0801c34e6e574f7561f76634578d047a4207d35bf6241c56abef",
+          "rig": null
+        }
+      ]
     }
   }
 }
