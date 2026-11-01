@@ -906,3 +906,21 @@ def test_a_sum_in_billions_is_heard_as_it_is_said(heard):
 def test_a_sum_in_billions_does_not_pass_for_another_sum(heard):
     with pytest.raises(TranscriptMismatch):
         check_transcript(heard_as(heard), SUM)
+
+
+SHARE = "It lost, fifty point two to forty-nine point eight."
+
+
+def test_a_decimal_is_heard_as_it_is_said():
+    check_transcript(heard_as("It lost 50.2 to 49.8"), SHARE)
+
+
+@pytest.mark.parametrize("heard", ["It lost 50.3 to 49.8", "It lost 50 to 49.8", "It lost 502 to 49.8"])
+def test_a_decimal_does_not_pass_for_another_number(heard):
+    with pytest.raises(TranscriptMismatch):
+        check_transcript(heard_as(heard), SHARE)
+
+
+@pytest.mark.parametrize(("text", "words"), [("$6.30", ["6", "30"]), ("1.2.3", ["1", "2", "3"])])
+def test_a_price_and_a_version_are_not_decimals(text, words):
+    assert voice._tokens(text) == words
