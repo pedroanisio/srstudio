@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from srstudio import collage_home, registry
+from srstudio import collage, collage_home, collage_sets, registry, show
 from srstudio.collage_home import HomeError
 from support.collage_photo import canvas
 
@@ -95,3 +95,51 @@ def test_a_pad_refuses_a_line_count_that_is_not_whole(lines) -> None:
 def test_a_size_that_is_not_positive_is_refused(call) -> None:
     with pytest.raises(HomeError, match="positive"):
         call(canvas())
+
+
+def measure(text: str, size: float = 60.0) -> float:
+    return len(text) * size * 0.6
+
+
+@pytest.mark.parametrize("name", sorted(collage_sets.SHELVES))
+def test_a_hook_card_clears_the_shelf_the_bug_and_the_captions_on_every_set(name) -> None:
+    cv = canvas()
+    x0, y0, x1, y1 = collage_home.hook_box("NO PAD", name, measure)
+    sx0, sy0, sx1, sy1 = collage_sets.signature_box(name)
+    bx0, by0, bx1, by1 = show.BUG_BOX
+    assert x1 <= sx0 or x0 >= sx1 or y1 <= sy0 or y0 >= sy1
+    assert x1 <= bx0 or x0 >= bx1 or y1 <= by0 or y0 >= by1
+    assert y0 >= collage.CAPTION_BOTTOM
+    assert 0 <= x0 < x1 <= cv.width
+    assert y1 <= collage.CAPTION_BOTTOM + 180
+
+
+def test_a_long_hook_takes_the_wide_side_of_a_shelf_on_the_right() -> None:
+    x0, _, x1, _ = collage_home.hook_box("INTERVIEW, 9:00", "boardroom", measure)
+    assert 0 < x0 and x1 <= collage_sets.signature_box("boardroom")[0]
+
+
+def test_a_hook_card_shows_only_for_its_seconds() -> None:
+    cv = canvas()
+    g = collage_home.hook_card(cv, cv.comp, "NO PAD", "cafe", measure, start=0.0, seconds=3.0)
+    assert g.id in xml(cv)
+    assert "NO PAD" in xml(cv)
+    assert 'property="opacity"' in xml(cv)
+    assert 'time="3' in xml(cv)
+
+
+def test_a_hook_card_too_wide_for_the_room_beside_the_shelf_is_refused() -> None:
+    with pytest.raises(HomeError, match="too wide"):
+        collage_home.hook_box("A HOOK LINE FAR TOO LONG TO SIT BESIDE ANY SHELF AT ALL", "cafe", measure)
+
+
+@pytest.mark.parametrize("text", ["", "   "])
+def test_a_hook_card_refuses_nothing_to_say(text) -> None:
+    with pytest.raises(HomeError, match="says nothing"):
+        collage_home.hook_box(text, "cafe", measure)
+
+
+def test_a_hook_card_refuses_no_seconds() -> None:
+    cv = canvas()
+    with pytest.raises(HomeError, match="positive"):
+        collage_home.hook_card(cv, cv.comp, "NO PAD", "cafe", measure, start=0.0, seconds=0.0)

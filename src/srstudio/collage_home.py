@@ -9,12 +9,12 @@ the beats moves them with it. No prop carries a brand, and none carries a figure
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
-from . import checks
+from . import checks, collage_sets
 from .canvas import Canvas
-from .collage import INK, Point, _cut, _paper, _smooth, draw_shapes
+from .collage import CAPTION_BOTTOM, INK, Point, _cut, _paper, _smooth, draw_shapes
 from .errors import SrstudioError
 from .registry import register
 
@@ -28,6 +28,8 @@ __all__ = [
     "desk_lamp",
     "hard_hat",
     "headset",
+    "hook_box",
+    "hook_card",
     "kayak",
     "menu_card",
     "napkin",
@@ -51,6 +53,12 @@ DISHES = ("steak", "salad", "sauce", "empty")
 PLASTER = "#efe6d4"  # what a broken wall shows round its hole
 STUD = "#b08355"
 VOID = "#2a2024"
+FRAME_W = 1080.0
+HOOK_TOP = CAPTION_BOTTOM + 14.0  # the room under the caption pill
+HOOK_H = 104.0
+HOOK_SIZE = 56.0
+HOOK_PAD = 40.0  # either side of the words
+HOOK_MARGIN = 40.0  # from the frame's edge and from the shelf
 
 
 class HomeError(SrstudioError, ValueError):
@@ -84,6 +92,37 @@ def _dome(w: float, h: float, n: int = 12) -> list[Point]:
 
 def _lettered(cv: Canvas, g, text: str, x: float, y: float, w: float, h: float, size: float, color: str) -> None:
     cv.text(g, cv.uid("home"), text, x, y, round(w), round(h), round(size), color=color)
+
+
+def hook_box(text: str, room: str, measure: Callable[..., float]) -> tuple[float, float, float, float]:
+    """Where a hook card goes on the set ``room`` (x0, y0, x1, y1): under the caption pill, centred in the width the
+    wider side of the shelf leaves, so the signature, the show's bug and a two-row caption all stay clear whatever the
+    set. Raises :class:`HomeError` for no words, or words too wide for that room."""
+    if not text.strip():
+        raise HomeError("a hook card that says nothing is not a hook")
+    shelf = collage_sets.signature_box(room)
+    left, right = max(
+        ((HOOK_MARGIN, shelf[0] - HOOK_MARGIN), (shelf[2] + HOOK_MARGIN, FRAME_W - HOOK_MARGIN)),
+        key=lambda side: side[1] - side[0],
+    )
+    width = math.ceil(measure(text, size=HOOK_SIZE) + 2 * HOOK_PAD)
+    if width > right - left:
+        raise HomeError(f"{text!r} is too wide for the {right - left:g} px beside the shelf of {room}: {width:g} px")
+    x0 = float((left + right - width) // 2)
+    return x0, HOOK_TOP, x0 + width, HOOK_TOP + HOOK_H
+
+
+def hook_card(
+    cv: Canvas, parent, text: str, room: str, measure: Callable[..., float], *, start: float, seconds: float
+) -> object:
+    """The one short on-screen line of a reel, up for ``seconds`` from ``start`` on the project clock, placed by
+    :func:`hook_box`; a card that spans a cut is drawn in each shot it shows in."""
+    _size(seconds, "a hook card's seconds")
+    x0, y0, x1, y1 = hook_box(text, room, measure)
+    g = cv.group(parent, cv.uid("g"))
+    cv.gate(g, [(start, start + seconds)])
+    collage_sets.sign(cv, g, text, round(x0), round(y0), round(x1 - x0), round(y1 - y0), size=round(HOOK_SIZE))
+    return g
 
 
 @register("prop", "collage-wall-tv", summary="A flat paper TV on the wall with an empty screen a reel fills")
