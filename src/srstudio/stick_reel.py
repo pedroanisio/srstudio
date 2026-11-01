@@ -3,26 +3,30 @@
 :func:`spec` is the :class:`~srstudio.episode.EpisodeSpec` of a word-captioned Stick reel; :func:`words` burns its
 take timings as the style's approved ``white-word`` captions at one height (:data:`WORDS_Y`), under the shots so a
 close-up never scales them; :func:`placing` is the mix's take rule, starting an effect some seconds into its take
-where the picture lands it; :func:`turns` splits a shot between two drawings shown turn about; :func:`close` hides
-the burned text on the cover and writes the reel's subtitles, post and scene.
+where the picture lands it; :func:`turns` splits a shot between two drawings shown turn about; :func:`check_framing`
+refuses a shot whose camera lands a face on the bug or under the captions, or loses a mark; :func:`close` hides the
+burned text on the cover and writes the reel's subtitles, post and scene.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from . import checks, fonts, stick, subtitles
 from .episode import Episode, EpisodeSpec
+from .show import BUG_BOX
 from .social import InstagramPost
 from .styles import STICK
 
-__all__ = ["WORD_MIN", "WORD_SIZE", "WORDS_Y", "close", "placing", "spec", "turns", "words"]
+__all__ = ["WORD_MIN", "WORD_SIZE", "WORDS_Y", "check_framing", "close", "placing", "spec", "turns", "words"]
 
 WORDS_Y = 1600  # the band: below every face, in the look's zone
 WORD_SIZE, WORD_LINGER, WORD_MIN = 88, 0.9, 0.85  # a word up for less than 0.833 s fails the legibility check
 SCRIM = 0.9
+FRAME_W, FRAME_H = 1080, 1920
+HEAD_RADIUS = 92.0  # a head's reach from its middle, hair and all, on the uncut set
 
 
 def spec(
@@ -97,6 +101,45 @@ def turns(end: float, rate: float) -> tuple[list[tuple[float, float]], list[tupl
     edges = [i * step for i in range(int(end / step) + 1)]
     spans = [(a, min(a + step, end)) for a in edges if a < end]
     return spans[0::2], spans[1::2]
+
+
+def check_framing(
+    camera: tuple[stick.Point, float, stick.Point],
+    *,
+    faces: Iterable[stick.Point] = (),
+    marks: Iterable[stick.Point] = (),
+) -> list[stick.Point]:
+    """Where a shot's ``faces`` then ``marks`` land through ``camera`` (focus, zoom, where the focus lands; see
+    :func:`srstudio.stick.camera`), points on the uncut set. Refuses a head that reaches the show's bug or the caption
+    band, or leaves the frame, and a mark that leaves the frame or goes under the captions: a camera is chosen by eye
+    on one frame, and the build burns the bug in after that frame was looked at."""
+    (fx, fy), zoom, (tx, ty) = camera
+    if not all(checks.number(v) for v in (fx, fy, zoom, tx, ty)) or zoom <= 0:
+        raise stick.StickDataError(f"a camera lands a point with a finite focus and a positive zoom, got {camera!r}")
+
+    def land(point: stick.Point) -> stick.Point:
+        return tx + (point[0] - fx) * zoom, ty + (point[1] - fy) * zoom
+
+    landed: list[stick.Point] = []
+    left, top, right, bottom = BUG_BOX
+    for face in faces:
+        x, y = land(face)
+        reach = HEAD_RADIUS * zoom
+        if x + reach > left and x - reach < right and y + reach > top and y - reach < bottom:
+            raise stick.StickDataError(f"the camera lands the face at {face} on the bug, at ({x:.0f}, {y:.0f})")
+        if y + reach > WORDS_Y:
+            raise stick.StickDataError(f"the camera lands the face at {face} in the caption band, at y {y + reach:.0f}")
+        if x - reach < 0 or x + reach > FRAME_W or y - reach < 0:
+            raise stick.StickDataError(f"the camera puts the face at {face} off the frame, at ({x:.0f}, {y:.0f})")
+        landed.append((x, y))
+    for mark in marks:
+        x, y = land(mark)
+        if not (0 <= x <= FRAME_W and 0 <= y <= FRAME_H):
+            raise stick.StickDataError(f"the camera puts the mark at {mark} off the frame, at ({x:.0f}, {y:.0f})")
+        if y > WORDS_Y and y < WORDS_Y + WORD_SIZE * 2:
+            raise stick.StickDataError(f"the camera puts the mark at {mark} under the captions, at y {y:.0f}")
+        landed.append((x, y))
+    return landed
 
 
 def close(ep: Episode, post: InstagramPost, *hidden: Any) -> Path:

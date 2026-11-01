@@ -55,3 +55,47 @@ def test_a_new_reel_asks_for_cues_that_stop_at_a_sentence_end(monkeypatch, tmp_p
     ]
     stick_reel.words(ep, [SimpleNamespace(start=0.0, end=2.0, words=words)], sentences=sentences)
     assert drawn == cues
+
+
+CLOSE = ((300.0, 800.0), 1.4, (420.0, 800.0))  # focus, zoom, where the focus lands
+
+
+def test_framing_says_where_faces_and_marks_land_through_the_camera():
+    landed = stick_reel.check_framing(CLOSE, faces=[(300.0, 800.0)], marks=[(440.0, 1100.0)])
+    assert landed == [(420.0, 800.0), pytest.approx((616.0, 1220.0))]
+
+
+def test_a_face_that_the_camera_puts_on_the_bug_is_refused():
+    with pytest.raises(stick.StickDataError, match="bug"):
+        stick_reel.check_framing(((540.0, 960.0), 1.0, (540.0, 960.0)), faces=[(985.0, 300.0)])
+
+
+def test_a_big_head_near_the_bug_is_refused_though_its_centre_is_clear():
+    with pytest.raises(stick.StickDataError, match="bug"):
+        stick_reel.check_framing(((540.0, 960.0), 2.0, (540.0, 960.0)), faces=[(760.0, 690.0)])
+
+
+def test_a_face_in_the_caption_band_is_refused():
+    with pytest.raises(stick.StickDataError, match="caption"):
+        stick_reel.check_framing(CLOSE, faces=[(300.0, 1420.0)])
+
+
+def test_a_face_off_the_frame_is_refused():
+    with pytest.raises(stick.StickDataError, match="off the frame"):
+        stick_reel.check_framing(CLOSE, faces=[(1000.0, 800.0)])
+
+
+def test_a_mark_off_the_frame_or_under_the_captions_is_refused():
+    with pytest.raises(stick.StickDataError, match="off the frame"):
+        stick_reel.check_framing(CLOSE, marks=[(1100.0, 800.0)])
+    with pytest.raises(stick.StickDataError, match="caption"):
+        stick_reel.check_framing(CLOSE, marks=[(300.0, 1420.0)])
+
+
+@pytest.mark.parametrize(
+    "camera",
+    [((0.0, 0.0), 0.0, (0.0, 0.0)), ((0.0, 0.0), float("nan"), (0.0, 0.0)), ((float("inf"), 0.0), 1.0, (0.0, 0.0))],
+)
+def test_a_camera_that_cannot_land_a_point_is_refused(camera):
+    with pytest.raises(stick.StickDataError, match="camera"):
+        stick_reel.check_framing(camera, faces=[(0.0, 0.0)])
