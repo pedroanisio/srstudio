@@ -158,6 +158,10 @@ def kayak(cv: Canvas, parent, x: float, y: float, w: float = 560.0, tilt: float 
     hull = [(-280, -6), (-150, -44), (150, -44), (280, -6), (150, 40), (-150, 40)]
     draw_shapes(cv, g, _paper(_cut("kayak-hull", hull, 2), "#e63946"))
     cv.ellipse(g, -96, -32, 192, 44, "#23202b", INK, 4)
+    paddle = cv.group(g, cv.uid("g"), y=-70, rotation=-16.0)
+    cv.rect(paddle, -250, -6, 500, 12, "#3a3a44", INK, 2)
+    for dx in (-274, 274):
+        cv.ellipse(paddle, dx - 30, -44, 60, 88, "#ffca3a", INK, 3)
     return g
 
 
