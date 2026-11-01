@@ -279,13 +279,7 @@ MARKS = Marks(0.3, (70.0, 1840.0), 9.0, BODY_SHADE)  # on the dash and on the ho
 
 @register("prop", "stick-windshield-dash", tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"))
 def dashboard(
-    cv: Canvas,
-    parent,
-    end: float,
-    *,
-    buzz: Sequence[float] = (),
-    down: float | None = None,
-    marks: Marks = MARKS,
+    cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), down: float | None = None, marks: Marks = MARKS
 ) -> None:
     """What is between the camera and the couple of :func:`windshield`: the wheel in front of the driver, the
     dashboard across the cabin (its top at :data:`DASH_TOP`), the phone in its mount between the seats, buzzing at
