@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
 
@@ -435,3 +436,58 @@ def test_the_far_side_refuses_what_it_cannot_show(start, flip, end, what, match)
     cv = canvas()
     with pytest.raises(MapKitError, match=match):
         map_kit.far_side(cv, cv.comp, 0.0, start, flip, end, what=what)
+
+
+def test_a_clock_reads_its_hour_with_two_hands_and_no_letters():
+    cv = canvas()
+    map_kit.clock(cv, cv.comp, 100.0, 200.0, 50.0, 15.5, 1.0, 3.0)
+    text = xml(cv)
+    assert 'id="map-clock-hour"' in text and 'id="map-clock-minute"' in text
+    hour = re.search(r'id="map-clock-hour"[^>]*rotation="([\d.]+)"', text)
+    minute = re.search(r'id="map-clock-minute"[^>]*rotation="([\d.]+)"', text)
+    assert hour is not None and float(hour.group(1)) == pytest.approx(105.0)
+    assert minute is not None and float(minute.group(1)) == pytest.approx(180.0)
+    assert "<text" not in text
+
+
+def test_a_running_clock_turns_its_hands_by_the_hours_it_runs():
+    cv = canvas()
+    map_kit.clock(cv, cv.comp, 100.0, 200.0, 50.0, 0.0, 1.0, 3.0, runs=24.0, pop=False)
+    assert "720" in xml(cv) and "8640" in xml(cv)
+
+
+@pytest.mark.parametrize(
+    ("radius", "hour", "runs", "start", "end"),
+    [(0.0, 3.0, 0.0, 1.0, 3.0), (50.0, "noon", 0.0, 1.0, 3.0), (50.0, 3.0, -1.0, 1.0, 3.0), (50.0, 3.0, 0.0, 3.0, 1.0)],
+)
+def test_a_clock_refuses_what_it_cannot_read(radius, hour, runs, start, end):
+    cv = canvas()
+    with pytest.raises(MapKitError):
+        map_kit.clock(cv, cv.comp, 0.0, 0.0, radius, hour, start, end, runs=runs)
+
+
+def test_the_sun_is_overhead_at_a_noon_equinox_and_down_on_the_far_side():
+    noon = datetime(2026, 3, 20, 12, 7, tzinfo=timezone.utc)
+    assert map_kit.sun_altitude(0.0, 0.0, noon) > 88.0
+    assert map_kit.sun_altitude(0.0, 180.0, noon) < map_kit.HORIZON
+    assert map_kit.lit(Place("A", 0.0, 0.0), noon) and not map_kit.lit(Place("B", 0.0, 179.9), noon)
+
+
+def test_a_days_light_keys_each_town_only_when_the_sun_changes():
+    cv = canvas()
+    view = map_kit.flat(cv, cv.comp, 0.0, 0.0, 0.0, 1.0, 5.0)
+    day = datetime(2026, 6, 18, tzinfo=timezone.utc)
+    map_kit.daylight(cv, cv.comp, view, (ROME, ADELAIDE), day, 1.0, 5.0)
+    text = xml(cv)
+    assert 'id="map-daylight-0-sun"' in text and 'id="map-daylight-1-sun"' in text
+    assert "<text" not in text
+
+
+def test_a_day_needs_a_place_and_a_span():
+    cv = canvas()
+    view = map_kit.flat(cv, cv.comp, 0.0, 0.0, 0.0, 1.0, 5.0)
+    day = datetime(2026, 6, 18, tzinfo=timezone.utc)
+    with pytest.raises(MapKitError, match="needs a place"):
+        map_kit.daylight(cv, cv.comp, view, (), day, 1.0, 5.0)
+    with pytest.raises(MapKitError):
+        map_kit.daylight(cv, cv.comp, view, (ROME,), day, 5.0, 1.0)

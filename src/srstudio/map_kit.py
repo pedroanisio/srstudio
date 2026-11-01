@@ -29,6 +29,7 @@ import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
@@ -46,6 +47,7 @@ __all__ = [
     "CARD",
     "COAST",
     "EARTH_KM",
+    "HORIZON",
     "INK",
     "LAND",
     "LAYERS",
@@ -62,6 +64,8 @@ __all__ = [
     "captions",
     "check_copy",
     "check_labels",
+    "clock",
+    "daylight",
     "degree_px",
     "dots",
     "equal_area",
@@ -74,6 +78,7 @@ __all__ = [
     "ground",
     "install",
     "km_between",
+    "lit",
     "parallel",
     "pin",
     "population",
@@ -81,6 +86,7 @@ __all__ = [
     "ring_px",
     "sign",
     "stamp",
+    "sun_altitude",
     "write_pops",
     "write_ticks",
     "zoom_for_degree",
@@ -99,6 +105,10 @@ GROUND, GROUND_FAR = "#e4fafd", "#a8e9f2"
 GRID = "#ffffff55"
 BORDER = "#0b3a5370"
 DOT_OUT = "#0b3a53b0"  # a dot outside the circle: there, and not the point
+HORIZON = -0.833  # degrees: the sun's rim on the horizon, with refraction
+SUN = "#ffc83d"
+DAY_DOT, DAY_STEP_MINUTES = 26.0, 5
+CLOCK_RIM, CLOCK_HOUR, CLOCK_HAND = 0.1, 0.14, 0.09  # shares of a clock's radius
 FAR_FILLS = {"land": "#dc1f478c", "people": PIN}  # the far side: see through to the map under it, and people as dots
 GLOBE_PADDING = 60.0
 COAST_WIDTH, GRID_WIDTH, BORDER_WIDTH = 2.5, 1.5, 1.5
@@ -767,6 +777,91 @@ def ring(
         left, top = x - wide / 2, y - radius - tall / 2
         cv.rect(g, left, top, wide, tall, PIN, radius=12.0)
         cv.text(g, cv.uid("map-tag"), words, left, top, math.ceil(wide), math.ceil(tall), TAG_SIZE, color=PAPER)
+
+
+@register("prop", "map-clock", summary="A round clock with no numbers: one place's time, or a day going by")
+def clock(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    radius: float,
+    hour: float,
+    start: float,
+    end: float,
+    runs: float = 0.0,
+    id: str = "map-clock",
+    pop: bool = True,
+):
+    """A clock at ``x``, ``y`` reading ``hour`` on a 24-hour count, and running on by ``runs`` hours from ``start``
+    to ``end``. It has hands and no letters, so a dozen of them can be read as a dozen. Returns its group."""
+    _span(start, end, "a clock")
+    if not (checks.number(radius) and radius > 0):
+        raise MapKitError(f"a clock needs a radius, got {radius!r}")
+    if not (checks.number(hour) and checks.number(runs) and runs >= 0):
+        raise MapKitError(f"a clock reads an hour and runs forward, got {hour!r}, {runs!r}")
+    g = cv.group(parent, id, start=start, end=end, x=x, y=y, anchorX=0, anchorY=0)
+    if pop:
+        _pop(cv, g, start)
+    cv.ellipse(g, -radius, -radius, 2 * radius, 2 * radius, PAPER, INK, radius * CLOCK_RIM)
+    hands = (
+        ("hour", hour * 30.0, runs * 30.0, 0.55, CLOCK_HOUR),
+        ("minute", hour * 360.0, runs * 360.0, 0.82, CLOCK_HAND),
+    )
+    for name, angle, turns, reach, wide in hands:
+        hand = cv.group(g, f"{id}-{name}", x=0, y=0, anchorX=0, anchorY=0, rotation=round(angle % 360.0, 3))
+        if turns:
+            cv.keys(hand, "rotation", [(start, angle % 360.0), (end, angle % 360.0 + turns)], hold=False, local=False)
+        cv.rect(hand, -radius * wide / 2, -radius * reach, radius * wide, radius * reach, INK, radius=radius * wide / 2)
+    return g
+
+
+def sun_altitude(lat: float, lon: float, moment: datetime) -> float:
+    """The sun's altitude in degrees at a place and a UTC moment, from the Astronomical Almanac's low-precision
+    formulae."""
+    d = (moment - datetime(2000, 1, 1, 12, tzinfo=timezone.utc)).total_seconds() / 86400
+    g = math.radians((357.528 + 0.9856003 * d) % 360)
+    ecliptic = math.radians((280.460 + 0.9856474 * d) % 360 + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g))
+    tilt = math.radians(23.439 - 4e-7 * d)
+    ascension = math.atan2(math.cos(tilt) * math.sin(ecliptic), math.cos(ecliptic))
+    declination = math.asin(math.sin(tilt) * math.sin(ecliptic))
+    hour = math.radians((280.46061837 + 360.98564736629 * d) % 360 + lon) - ascension
+    la = math.radians(lat)
+    return math.degrees(
+        math.asin(math.sin(la) * math.sin(declination) + math.cos(la) * math.cos(declination) * math.cos(hour))
+    )
+
+
+def lit(place: Place, moment: datetime) -> bool:
+    """Whether the sun's rim is up at ``place``, by :data:`HORIZON`, which allows for refraction."""
+    return sun_altitude(place.lat, place.lon, moment) > HORIZON
+
+
+@register("prop", "map-daylight", summary="Towns on a map that light and go dark as one real day runs past")
+def daylight(
+    cv: Canvas, parent, view, places: Sequence[Place], day: datetime, start: float, end: float, id: str = "map-daylight"
+) -> None:
+    """A dot on each of ``places`` on the map ``view``, gold while the sun is up there and dark while it is not, as the
+    UTC day from ``day`` runs by between ``start`` and ``end``. Each change is the sun's, at the channel's five-minute
+    step. It letters nothing."""
+    _span(start, end, "a day")
+    if not places:
+        raise MapKitError("a day of light needs a place")
+    steps = int(24 * 60 / DAY_STEP_MINUTES)
+    for n, place in enumerate(places):
+        g = cv.group(parent, f"{id}-{n}", start=start, end=end)
+        _rides(cv, g, view.id, place.lon, place.lat)
+        r = DAY_DOT
+        cv.ellipse(g, -r, -r, 2 * r, 2 * r, INK, PAPER, 5.0)
+        sun = cv.group(g, f"{id}-{n}-sun", opacity=int(lit(place, day)))
+        cv.ellipse(sun, -r, -r, 2 * r, 2 * r, SUN, PAPER, 5.0)
+        keys: list[tuple[float, float]] = [(start, float(lit(place, day)))]
+        for step in range(1, steps):
+            up = float(lit(place, day + timedelta(minutes=step * DAY_STEP_MINUTES)))
+            if up != keys[-1][1]:
+                keys.append((round(start + (end - start) * step / steps, 4), up))
+        if len(keys) > 1:
+            cv.keys(sun, "opacity", keys, local=False)
 
 
 @register("graphic", "map-stamp", summary="One line of evidence over the map: the figure, its dataset and its year")
