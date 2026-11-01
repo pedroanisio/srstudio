@@ -194,10 +194,16 @@ def _board(shot, at: dict[str, float]) -> None:
     )
 
 
+def underlay(cv, parent) -> None:
+    """A sharp plate of the car's own colour under its blurred far plane, so the frame's edge shows paint, not page."""
+    cv.rect(parent, 0, 0, cv.width, cv.height, toon_cars.BODY)
+
+
 def _car(shot, at: dict[str, float]) -> None:
     cv, app = shot.cv, shot.app
     who = app.who
-    toon_cars.car_inside(cv, mind_kit.far(cv, shot.back), app.start, app.end, _traffic(app, at))
+    underlay(cv, shot.back)
+    toon_cars.car_inside(cv, mind_kit.far(cv, shot.back, moving=True), app.start, app.end, _traffic(app, at))
     toon_cars.seat(cv, shot.back, SEAT_X[who])
     if who == "bear":
         mind_kit.key(cv, shot.light)

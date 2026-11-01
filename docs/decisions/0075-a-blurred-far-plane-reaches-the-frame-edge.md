@@ -98,3 +98,11 @@ and 0.1 with `overscan`. Built Toon scenes have no blurred group, and Ink and Ce
 - A `threeD` group is a plane at `zDepth` 0. A reel that adds a `<camera>` for 2.5D parallax moves it with the camera.
 - A reel can forget the flag. The first-delivery gates do not check it, because they would refuse the three batches
   as well.
+
+## A far plane that moves
+
+The sheet holds for a still set. Above Average's car scrolls a road through its far plane, so the plane's bounds change
+every frame. Each frame rendered alone, and the encode ran the GPU out of memory at 6.0 s, the same frame on both runs,
+on a 8 GB card. Such a plane stays off the sheet (`look.depth(moving=True)`), and a sharp plate of its own colour goes
+under it, so the frame's edge shows paint and not the page. That the changing bounds are the cause is inferred from
+these two runs and from the encode that passed with this change; the engine's allocator was not read.

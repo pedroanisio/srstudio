@@ -194,3 +194,15 @@ def test_a_sketch_asks_for_bleed_through_its_staging(monkeypatch, tmp_path):
     )  # fmt: skip
     with pytest.raises(Stop):
         toon_sketch.build(tmp_path, staging, ())
+
+
+def test_a_far_plane_that_moves_stays_off_the_sheet():
+    cv = _canvas(bleed=True)
+    mind_kit.far(cv, cv.comp, moving=True)
+    assert b"threeD" not in cv.scene.to_bytes(layout="pretty")
+
+
+def test_a_far_plane_that_moves_is_still_out_of_focus():
+    cv = _canvas(bleed=True)
+    mind_kit.far(cv, cv.comp, moving=True)
+    assert b"mind-depth" in cv.scene.to_bytes(layout="pretty")

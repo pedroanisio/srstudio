@@ -313,9 +313,10 @@ def finish(cv: Canvas, node) -> None:
     look.grade(cv, node, "mind", GRADE)
 
 
-def far(cv: Canvas, parent):
-    """A group out of focus for a set's far plane: a set behind a character goes in here, its marks stay out of it."""
-    return look.depth(cv, parent, "mind-depth", FAR_BLUR, overscan=True)
+def far(cv: Canvas, parent, moving: bool = False):
+    """A group out of focus for a set's far plane: a set behind a character goes in here, its marks stay out of it.
+    See :func:`srstudio.look.depth` for ``moving``."""
+    return look.depth(cv, parent, "mind-depth", FAR_BLUR, overscan=True, moving=moving)
 
 
 def key(cv: Canvas, parent) -> None:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import sys
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -163,3 +164,10 @@ def test_the_blurred_far_plane_reaches_the_frame_edge(pilot):
 
 def test_the_zipper_text_says_what_the_board_does():
     assert "fills up" not in zipper.ACCESSIBILITY
+
+
+def test_the_car_is_underlaid_in_its_body_colour_so_the_page_never_shows_at_the_edge():
+    drawn = []
+    cv = SimpleNamespace(width=1080, height=1920, rect=lambda *a, **k: drawn.append(a))
+    above.underlay(cv, "parent")
+    assert drawn == [("parent", 0, 0, 1080, 1920, above.toon_cars.BODY)]
