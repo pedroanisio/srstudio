@@ -37,6 +37,7 @@ __all__ = [
     "ARMS",
     "EYES",
     "held",
+    "worn",
     "speaking",
     "MOUTHS",
     "POSES",
@@ -1125,6 +1126,19 @@ def held(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 
     tips = [(d.pose.limbs["arm_l"].p3, d.pose.limbs["arm_r"].p3) for d in frames]
     cv.keys(g, "x", [(d.time, round(scale * (a[0] + b[0]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
     cv.keys(g, "y", [(d.time, round(scale * (a[1] + b[1]) / 2, 3)) for d, (a, b) in zip(frames, tips, strict=True)])
+    return g
+
+
+def worn(cv: Canvas, parent, cues: Sequence[Cue], *, end: float, scale: float = 1, fps: float = 15, id: str):
+    """A group on the head through ``cues``, drawing by drawing, for what a character wears: a scarf, a blanket.
+
+    Like :func:`held`, it uses the same cues, ``end``, ``scale`` and ``fps`` as the character it rides with and is
+    placed in the same parent. What it holds is drawn with its origin on the head's centre."""
+    checks.positive(scale, BlobError, f"what a blob wears needs a positive scale, got {scale!r}")
+    frames = drawings(cues, end=end, fps=fps)
+    g = cv.group(parent, id)
+    cv.keys(g, "x", [(d.time, round(scale * d.pose.head[0], 3)) for d in frames])
+    cv.keys(g, "y", [(d.time, round(scale * d.pose.head[1], 3)) for d in frames])
     return g
 
 
