@@ -679,6 +679,7 @@ def word_cues(
     balance: bool = False,
     alone: bool = True,
     sentences: bool = False,
+    join: bool = False,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -696,7 +697,11 @@ def word_cues(
     left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
     ``sentences`` as well, no cue runs across a sentence end: the punctuation that would mark it is dropped from the
     cue, so with the sound off "Bro. Four hours" would read "Bro Four hours". With ``alone=False`` a balanced split
-    takes the fewest one-word cues first: a sentence does not end on an orphan."""
+    takes the fewest one-word cues first: a sentence does not end on an orphan. With ``join``, a cue of a take still
+    shorter than ``min_seconds`` joins the neighbour that leaves the longer cue while the two fit ``max_width``, keeping
+    the sentence marks ("Love it. Evenings?"): a sentence too quick for a cue of its own."""
+    if join and not min_seconds:
+        raise StickDataError("join merges cues shorter than min_seconds: give min_seconds")
     if sentences and not balance:
         raise StickDataError("sentences is a limit on balance's split: give balance")
     if borrow and not min_seconds:
@@ -765,9 +770,31 @@ def word_cues(
                 if shift > 0:
                     here[1] += shift
                     after[0] += shift
+        if join and width is not None:
+            _join_short(groups, spans, min_seconds, width, max_width)
         for (start, end), group in zip(spans, groups, strict=True):
-            cues.append(Line(round(start, 3), round(end, 3), _spoken(group), size))
+            cues.append(Line(round(start, 3), round(end, 3), _marked(group) if join else _spoken(group), size))
     return cues
+
+
+def _join_short(
+    groups: list[list[dict]], spans: list[list[float]], least: float, width: Callable[[str], float], max_width: float
+) -> None:
+    """Join each cue shorter than ``least``, the shortest first, with the neighbour that fits and leaves the shorter
+    cue. Every pass removes a cue or stops: bounded by the cue count."""
+    while len(groups) > 1:
+        joins = []
+        for k, (start, end) in enumerate(spans):
+            if end - start >= least:
+                continue
+            for i in (k - 1, k):
+                if 0 <= i < len(groups) - 1 and width(_marked(groups[i] + groups[i + 1])) <= max_width:
+                    joins.append((end - start, spans[i + 1][1] - spans[i][0], i))
+        if not joins:
+            return
+        _, _, i = min(joins)
+        groups[i : i + 2] = [groups[i] + groups[i + 1]]
+        spans[i : i + 2] = [[spans[i][0], spans[i + 1][1]]]
 
 
 def _balanced(
@@ -812,6 +839,14 @@ def _ends_sentence(word: dict) -> bool:
 
 def _spoken(words: Sequence[dict]) -> str:
     return " ".join(w["text"].strip(PUNCTUATION) for w in words)
+
+
+def _marked(words: Sequence[dict]) -> str:
+    """The words as :func:`_spoken`, but a cue that holds a sentence end keeps its sentences' marks: two sentences
+    read as one without them."""
+    if not any(_ends_sentence(w) for w in words[:-1]):
+        return _spoken(words)
+    return " ".join(w["text"].lstrip(PUNCTUATION) if _ends_sentence(w) else w["text"].strip(PUNCTUATION) for w in words)
 
 
 @register("graphic", "stick-words", tags=("captions", "outlined", "word-by-word"))
