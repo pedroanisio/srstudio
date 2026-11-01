@@ -4,7 +4,11 @@ A release is checked against what its project recorded, by the name it uses for 
 
 - ``unknown-name``: a name the release tags or a project speaker uses that is neither a character of the bible in the
   reel's world nor one of its unnamed roles;
-- ``drawing``: a known character named in the reel while none of the parts the bible gives them is drawn in it;
+- ``drawing``: a known character named in the reel while none of the parts the bible gives them is drawn in it, and the
+  reel draws a character part that no name present accounts for. A character who is only heard (a voice on the phone,
+  a voice behind a door) has no drawing to get wrong: when every character part the reel draws belongs to another name
+  present, she is checked for her name and her voice alone. A rig that draws any figure (the Stick style's) belongs to
+  no one in particular, so it never explains a name's absence;
 - ``voice``: a known character heard in a voice that is not the bible's;
 - ``world``: a name that only exists in another world's bible (a sealed world shares no canon).
 
@@ -23,7 +27,7 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import bible_inventory
+from . import bible_inventory, registry
 from .bible import Bible, Character
 from .releases import Release
 from .social import DeliveryError
@@ -57,7 +61,19 @@ def _voice_matches(heard: str, character: Character) -> bool:
     return given.startswith(("open:", "proposal:")) or heard.lower() in given.lower()
 
 
-def check_release(bible: Bible, release: Release, episodes: Path, *, characters: Collection[str] = ()) -> list[Finding]:
+def rig_parts() -> frozenset[str]:
+    """The registered parts that draw any number of figures: one rig per style, as the Stick style has."""
+    return frozenset(e.name for e in registry.entries("character") if e.style == "stick")
+
+
+def check_release(
+    bible: Bible,
+    release: Release,
+    episodes: Path,
+    *,
+    characters: Collection[str] = (),
+    rigs: Collection[str] | None = None,
+) -> list[Finding]:
     """What disagrees with the bible in ``release``, by the names its tags and its project's speakers use."""
     slug = release.slug
     world = bible_inventory.world_of(slug)
@@ -65,6 +81,11 @@ def check_release(bible: Bible, release: Release, episodes: Path, *, characters:
     heard = bible_inventory.speakers(project) if project.is_dir() else {}
     names = sorted({*(release.tags.recurring if release.tags else ()), *heard})
     pinned = set(release.parts or ()) & set(characters)
+    many = set(rig_parts() if rigs is None else rigs)  # a rig draws anyone, so it explains no one
+    accounted: set[str] = set()  # the drawn parts that a name present in the reel explains
+    for name in names:
+        accounted |= {d.part for c in bible.named(name) if c.world == world for d in c.look.drawing} & pinned - many
+    unexplained = pinned - accounted  # drawn in the reel, and no name present owns them
     found: list[Finding] = []
     unnamed = []
     for name in names:
@@ -82,7 +103,7 @@ def check_release(bible: Bible, release: Release, episodes: Path, *, characters:
             continue
         character = here[0]
         owned = {d.part for d in character.look.drawing}
-        if pinned and owned and not owned & pinned:
+        if unexplained and owned and not owned & pinned:
             found.append(
                 Finding(
                     slug,

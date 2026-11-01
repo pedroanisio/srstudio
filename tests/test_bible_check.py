@@ -61,6 +61,42 @@ def test_a_known_name_with_another_drawing_is_flagged(tmp_path, loaded):
     assert finding.kind == "drawing" and "toon-dog" in finding.message and "toon-frog" in finding.message
 
 
+def test_a_character_only_heard_is_not_drawn_so_only_its_name_and_voice_are_checked(tmp_path, loaded):
+    project(tmp_path, "new-reel", narration={"voice": {"rex": {"name": "Charlie - Deep"}, "fern": {"name": "Matilda"}}})
+    r = release(
+        "new-reel", recurring=("rex",), parts={"toon-dog": 1}
+    )  # fern speaks off screen; the reel never draws her
+    assert bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS) == []
+
+
+def test_a_character_only_heard_is_still_refused_in_another_voice(tmp_path, loaded):
+    project(
+        tmp_path, "new-reel", narration={"voice": {"rex": {"name": "Charlie - Deep"}, "fern": {"name": "Liam - Young"}}}
+    )
+    r = release("new-reel", recurring=("rex",), parts={"toon-dog": 1})
+    (finding,) = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS)
+    assert finding.kind == "voice" and "'fern'" in finding.message and "Matilda" in finding.message
+
+
+def test_a_character_the_release_tags_is_still_refused_when_drawn_as_another(tmp_path, loaded):
+    project(tmp_path, "new-reel", narration={"voice": {"rex": {"name": "Charlie - Deep"}, "fern": {"name": "Matilda"}}})
+    r = release("new-reel", recurring=("rex", "fern"), parts={"toon-dog": 1, "toon-bear": 1})
+    (finding,) = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS)
+    assert finding.kind == "drawing" and "'fern'" in finding.message and "toon-frog" in finding.message
+
+
+def test_a_part_that_draws_any_figure_never_explains_a_name_so_a_drawn_speaker_is_still_flagged(tmp_path, loaded):
+    project(tmp_path, "new-reel", narration={"voice": {"rex": {"name": "Charlie - Deep"}, "fern": {"name": "Matilda"}}})
+    r = release("new-reel", recurring=("rex",), parts={"toon-dog": 1})
+    (finding,) = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS, rigs={"toon-dog"})
+    assert finding.kind == "drawing" and "'fern'" in finding.message  # the rig could be drawing fern too
+
+
+def test_the_rigs_are_the_registered_parts_of_the_stick_style():
+    assert {"stick-rig", "stick-figure"} <= bible_check.rig_parts()
+    assert "toon-dog" not in bible_check.rig_parts()
+
+
 def test_a_known_name_in_another_voice_is_flagged(tmp_path, loaded):
     project(tmp_path, "new-reel", narration={"voice": {"rex": {"name": "Liam - Young"}}})
     (finding,) = bible_check.check_release(loaded, release("new-reel", recurring=("rex",)), tmp_path)

@@ -139,11 +139,16 @@ does not confirm them.
 
 ## Consequences
 
-- Checked against the 131 published reels as a calibration (they are never refused), the check flags 13: six
-  reels of the Toon Pip, who is drawn and voiced as another character than the Soft Pip, `market-rate` (the part the
-  bible gives the manager is the candidate there), the Stick Gary of `the-viewing`, the Gloss Gus in
-  `representative`, and one-off names (`brooke`, `theo`, `sam`, `remy`, `feld`) that
+- Checked against the 131 published reels as a calibration (they are never refused), the check flags 12: six
+  reels of the Toon Pip, who is drawn and voiced as another character than the Soft Pip, the Stick Gary of
+  `the-viewing`, the Gloss Gus in `representative`, and one-off names (`brooke`, `theo`, `sam`, `remy`, `feld`) that
   have no sheet. Each is a clash or a name the bible does not yet hold, so a new reel that does the same is stopped.
+- A character who is only heard is not drawn, so the drawing check does not apply to her: it flags a known character
+  whose parts are not drawn only when the reel draws a character part that no name present owns. A rig that draws any
+  figure (the Stick style's) never explains a name's absence, so the Stick Gary stays flagged. The first run of the
+  check flagged 13 and counted `market-rate`, whose manager is heard while the reel draws only the candidate; that
+  is the same shape as the manager of `the-reference` and is no longer a finding. The voice check still applies to
+  every voice heard. What code cannot see is a heard character drawn by a part the bible gives to someone else.
 - A one-reel name is not a character of the bible. A new reel that reuses it is refused until it gets a sheet; that is
   the intended pressure to decide who they are.
 - Each new recurring character, pair or fact is a minor version of both files, with a line in `CHANGELOG.md`.
