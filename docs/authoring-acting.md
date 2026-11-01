@@ -81,6 +81,59 @@ scene-render validate ../generated/sdk-acting/acting-gallery.scene.xml --deny-wa
 scene-render encode ../generated/sdk-acting/acting-gallery.scene.xml --strict
 ```
 
+### Opt-in target gaze
+
+`srstudio.gaze` compiles a target track with separate eye and head latency and
+angular limits. Check `rig.describe()["capabilities"]["target_gaze"]` before binding
+it. Critter and Inked split-head drawings declare moving pupil layers; unsupported
+drawings raise `GazeError` rather than substituting a named direction.
+
+```python
+from srstudio import acting, gaze, toon_critters
+
+rig = acting.ActingRig(
+    "sloth-tracking", "toon",
+    (acting.Emotion("neutral", acting.Expression("wide", "flat"), "desk"),),
+    head_rig=toon_critters.SLOTH_RIG,
+)
+target = gaze.GazePlan(gaze.parse_gaze({
+    "duration": 1,
+    "target": {"keys": [
+        {"time": 0, "point": [0, 0, 2]},
+        {"time": 0.5, "point": [0.6, 0.2, 2]},
+    ]},
+    "limits": {"eye_latency": 0.03, "head_latency": 0.15},
+}))
+base = acting.compile_performance(
+    rig, acting.ActingScore(1, overrides=acting.Overrides(gaze=()), idle=False)
+)
+plan = base.with_target_gaze(target)
+assert plan.window(0.3, 1).sample(0.4) == plan.sample(0.7)
+```
+
+Coordinates use one fixed observer frame: X right, Y down, Z forward, with common
+caller-selected units. An optional `observer` track supplies translation; resolve
+rotating frames before passing coordinates. `parse_gaze` rejects unknown fields and
+primitive coercions. Plans reject sampled targets behind the observer and limit
+excursions, with at most 1,000 keys per track and 20,000 planned samples. Compilation
+samples target easing and emits linear angle interpolation; it does not guarantee
+velocity continuity or exact tracking between source samples.
+
+Binding preserves the full performance clock and adds stylized `face_x`/`nod` head
+follow inside the rig's envelope. It moves declared pupils while retaining lids and
+painter order; closed eyes remain closed. This is an authored 2D mapping, not a
+biomechanical model or a world-space line-of-sight constraint. Neutral named holds
+may be replaced; authored look-away states conflict. `Overrides(gaze=())` suppresses
+procedural named glances. Rebinding replaces the previous target. Direct callers can
+pass `target_gaze=target` to `ToonClip` or `toon_head.figure`.
+
+For a rig supporting only named directions, call `gaze.named_gaze(plan,
+gaze.NamedGazeMapping(states, max_error))` explicitly. Supply states supported by the
+destination rig and an error allowance in eye radii. This returns held **eye** keys
+only; it does not transfer head follow. `toon_head.gaze_capabilities(rig)` describes
+the drawing mapping and emission budget. Existing drawing paths are unchanged when
+no target is supplied.
+
 ### Opt-in acting transition policies
 
 Score schema `srstudio.acting/1.1.0` adds a versioned `policy` to each beat. Existing
