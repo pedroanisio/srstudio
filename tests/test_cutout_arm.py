@@ -6,7 +6,8 @@ import math
 
 import pytest
 
-from srstudio import cutout_arm
+from srstudio import cast, cutout_arm
+from srstudio.rig import Performance
 from support.tip_tablet import canvas
 
 
@@ -93,3 +94,25 @@ def test_the_rotation_never_takes_the_long_way_round():
     track = [(0.0, -150, 10), (1.0, -150, -10)]
     keys = cutout_arm.arm(cv, cv.comp, "reach", (0, 0), track).rotations
     assert max(abs(b[1] - a[1]) for a, b in zip(keys, keys[1:], strict=False)) < 45
+
+
+def drawn(actor, **extras) -> bytes:
+    cv = canvas()
+    actor(cv).build(cv.comp, 540, 900, perf=Performance(extras=extras))
+    return cv.scene.to_bytes()
+
+
+def test_a_cafe_actor_leaves_out_an_arm_a_reel_will_draw():
+    assert len(drawn(cast.Barista, free_arms=("right",))) < len(drawn(cast.Barista))
+    assert len(drawn(cast.Customer, free_arms=("left", "right"))) < len(drawn(cast.Customer, free_arms=("left",)))
+
+
+def test_a_cafe_actor_with_no_free_arm_is_drawn_as_it_always_was():
+    assert drawn(cast.Barista, free_arms=()) == drawn(cast.Barista)
+
+
+@pytest.mark.parametrize("free", ["left", ("up",), ("left", "back")])
+def test_a_free_arm_on_no_known_side_is_refused(free):
+    cv = canvas()
+    with pytest.raises(cast.CastError, match="free_arms names screen sides"):
+        cast.Barista(cv).build(cv.comp, 540, 900, perf=Performance(extras={"free_arms": free}))
