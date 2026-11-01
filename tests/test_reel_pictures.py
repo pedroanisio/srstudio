@@ -642,6 +642,13 @@ def test_the_profiles_draws_brock_as_the_bear_the_cast_knows() -> None:
 
 
 @pytest.mark.usefixtures("reels")
+def test_loaded_right_leaves_theo_to_the_published_reel_that_has_him() -> None:
+    mod = _data("loaded_right")
+    assert {s.name for s in mod.SKETCH.speakers} == {"dad", "fern", "lewis"}
+    assert not any("Lewis" in line.text for line in mod.LINES), "his name is never spoken"
+
+
+@pytest.mark.usefixtures("reels")
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7

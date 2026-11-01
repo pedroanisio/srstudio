@@ -12,7 +12,7 @@ RELEASE = Release(
         description=(
             "Dad has a file on every boyfriend. It has never once mattered "
             "what was in it.\nA Toon sketch on Okayville, voiced with ElevenLabs premade voices Brian (Dad), "
-            "Matilda (Fern) and Will (Theo); every character is original, drawn in code."
+            "Matilda (Fern) and Will (Lewis); every character is original, drawn in code."
         ),
         credit=(
             "Voices: ElevenLabs premade voices Brian, Matilda and Will. Original characters, drawn in code. Sound"
