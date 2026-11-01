@@ -60,6 +60,8 @@ def pins_for(tmp_path: Path, iv: I.Interview, speech: list[float]) -> dict[str, 
         (dict(effects=[I.Sound("fx", "x", float("nan"), 0.5, 0.5)]), "seconds nan must lie in"),
         (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=1.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
         (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=1.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
         (
             dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=float("nan")), I.Spoken("candidate", "Hi.", "Hi.")]),
             "gain",
@@ -218,6 +220,23 @@ def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):
     assert [c.generated.id for c in placed.clips] == ["line-1", "line-2", "squeak"]
     assert {c.placement.role for c in placed.clips} == {"dialogue", "effects"}
     assert [e["name"] for e in placed.sound_effects] == ["squeak"]
+
+
+@pytest.mark.parametrize("gain", [float("nan"), -30.0, 3.0, "quiet", None])
+def test_a_line_s_gain_is_a_drop_the_mix_can_play(gain):
+    with pytest.raises(I.InterviewError, match="must lie in"):
+        make(lines=[I.Spoken("manager", "A short line.", "A short line.", gain=gain)])
+
+
+def test_a_quiet_line_drops_alone_and_leaves_the_level_of_the_others(tmp_path):
+    loud = make(lines=[I.Spoken("manager", "One.", "One."), I.Spoken("candidate", "Two.", "Two.")])
+    quiet = make(lines=[I.Spoken("manager", "One.", "One."), I.Spoken("candidate", "Two.", "Two.", gain=-12.0)])
+    pins = pins_for(tmp_path, loud, [1.0, 1.0])
+    level = [c.placement.gain_db for c in I.place(loud, pins, back_to_back).clips]
+    dropped = [c.placement.gain_db for c in I.place(quiet, pins, back_to_back).clips]
+    assert dropped[0] == level[0]
+    assert dropped[1] == pytest.approx(level[1] - 12.0)
+    assert dropped[2] == level[2]  # the effect is not a line
 
 
 @pytest.mark.parametrize(

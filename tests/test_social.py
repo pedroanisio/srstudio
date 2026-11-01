@@ -1233,6 +1233,31 @@ def test_a_first_delivery_on_the_comedy_floor_delivers(monkeypatch, tmp_path, sc
     ]
 
 
+def _repeats_on_first(chosen, episodes, first):
+    return [Drift("New_Reel", 'the key line "Fine." repeats the caption on screen from 1.00 to 2.00 s')] * len(first)
+
+
+def test_a_first_delivery_with_an_overlay_over_its_caption_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, Scores(15, 15))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts.overlay_gate, "repeated_lines", _repeats_on_first)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    with pytest.raises(DeliveryError, match='New_Reel: the key line "Fine." repeats the caption'):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_video_already_delivered_answers_to_no_overlay_gate(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, Scores(15, 15))
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    monkeypatch.setattr(posts.overlay_gate, "repeated_lines", _repeats_on_first)
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
+
+
 @pytest.mark.parametrize("scores", [None, Scores(3, 3)])
 def test_a_video_already_delivered_owes_no_comedy_score(monkeypatch, tmp_path, scores):
     posts = shipped_posts()

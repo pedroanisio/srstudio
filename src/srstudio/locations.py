@@ -185,9 +185,10 @@ def office_reverse(
     cactus: Slot = None,
     *,
     depth: float | None = None,
+    chair: bool = True,
 ):
     """``depth`` blurs the wall behind the chair by that many px; the chair, the cast, the desk and the marks stay
-    sharp."""
+    sharp. ``chair=False`` leaves the chair to the slot (to sink it)."""
     _check_depth(depth)
     p = props.office_paints(cv)
     ink = cv.ink
@@ -200,7 +201,8 @@ def office_reverse(
     cv.line(far, 20, 0, 20, 1402, "#ECE0C9", 3)
     for y in [8, 342]:
         cv.path(far, f"M1069 {y + 12} L1086 {y} L1086 {y + 38} L1071 {y + 43}Z", "#A49176", ink, 3)
-    props.chair(cv, g, "gray")
+    if chair:
+        props.chair(cv, g, "gray")
     _call(in_chair, g)
     cv.rect(g, 0, 1399, 1080, 433, p["desk"], ink, 4)
     props.woodgrain(cv, g, 1418, 390, 12)

@@ -92,6 +92,16 @@ def test_a_build_refuses_a_pin_it_cannot_draw(pinned_fonts, tmp_path):
         built(tmp_path, silent(fox_sketch(), versions={"toon-fox": 9}), pinned_fonts)
 
 
+def test_the_opening_push_moves_the_first_shot_and_no_other(pinned_fonts, tmp_path):
+    sk = Sketch("push-test", "Push test", SPEAKERS, LINES, STILL, END)
+    _, xml = built(tmp_path, replace(silent(sk), camera=toon_sketch.opening_push(1.08)), pinned_fonts)
+    shots = xml.findall(".//group[@id]")
+    moved = [g.get("id") for g in shots if g.get("id", "").startswith("shot-") and g.find("animate") is not None]
+    assert moved == ["shot-001"]
+    with pytest.raises(toon_sketch.StagingError, match="above 1"):
+        toon_sketch.opening_push(1.0)
+
+
 def test_a_sketch_may_open_on_a_still_uncaptioned_beat_and_caption_its_first_line_later(pinned_fonts, tmp_path):
     sk = Sketch("still-test", "Still test", SPEAKERS, LINES, STILL, END)
     sketch.check(sk)
@@ -250,3 +260,18 @@ def test_captions_a_staging_brings_stay_off_the_cover(pinned_fonts, tmp_path):
 
     ep, _ = built(tmp_path, replace(silent(stage_sketch()), captions=captions), pinned_fonts)
     assert ("my-captions", "visible", "false") in ep._cover_hidden  # written into the cover variant by finish()
+
+
+def test_a_move_keys_the_body_of_that_character_on_every_shot_of_theirs(pinned_fonts, tmp_path):
+    """A figure can bend about its seat while the set stays still; the other character is left alone."""
+    calls = []
+
+    def bend(cv, body, app, beats):
+        calls.append(app.who)
+        cv.keys(body, "rotation", [(app.start, 0.0), (app.end, 20.0)], hold=False, local=False)
+
+    sk = Sketch("moved", "Moved", SPEAKERS, LINES, STILL, END)
+    _, moved = built(tmp_path / "moved", silent(sk, moves={"bear": bend}), pinned_fonts)
+    _, still = built(tmp_path / "still", silent(sk), pinned_fonts)
+    assert set(calls) == {"bear"}
+    assert ET.tostring(moved).count(b"rotation") > ET.tostring(still).count(b"rotation")

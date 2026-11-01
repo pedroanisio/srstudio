@@ -447,6 +447,9 @@ def _capsule(a: Point, b: Point, width: float) -> list[Point]:
     return end + side(end[-1], start[0]) + start + side(start[-1], end[0])
 
 
+BEANIE_BAND_BOTTOM = -4  # the band's lower edge, from the face's centre
+
+
 def _eye_centres(look: Look) -> tuple[Point, Point]:
     cx, cy = face(look)
     return (cx - 62, cy - 18), (cx + 62, cy - 18)
@@ -521,10 +524,19 @@ def _eyes(look: Look, kind: str) -> list[Shape]:
     return out
 
 
-def lid_shapes(look: Look) -> list[Shape]:
-    """Both eyes shut: paper lids over the whites and a lash line, for a blink."""
+def lid_shapes(look: Look, under_band: bool = False) -> list[Shape]:
+    """Both eyes shut: paper lids over the whites and a lash line, for a blink. The lids are drawn after the hair, so
+    a hat's band ends up under them; ``under_band`` starts them at its lower edge and drops the lash line below it,
+    for new reels, and delivered ones keep the lid they were drawn with."""
     out: list[Shape] = []
+    cy = face(look)[1]
     for side, (ex, ey) in zip((-1, 1), _eye_centres(look), strict=True):
+        if under_band and look.hair == "beanie":
+            top, bottom = cy + BEANIE_BAND_BOTTOM, ey + 75
+            lid = [(ex - 57, top), (ex + 57, top), (ex + 57, bottom - 24), (ex + 30, bottom), (ex - 30, bottom)]
+            out.append((_poly([*lid, (ex - 57, bottom - 24)]), look.skin, None, 0.0, 1.0))
+            out.append(_arc(_curve(ex - 44, ex + 44, top + 22, 14), 7))
+            continue
         out.append(_blob(f"{look.name}-lid{side}", ex, ey, 57, 75, look.skin, n=14, amount=0.01, edge=0))
         out.append(_arc(_curve(ex - 44, ex + 44, ey + 4, 14), 7))
     return out
@@ -892,8 +904,8 @@ def _hair_front(look: Look) -> list[Shape]:
         band = [
             (cx - HEAD_RX - 22, cy - 60),
             (cx + HEAD_RX + 22, cy - 60),
-            (cx + HEAD_RX + 18, cy - 4),
-            (cx - HEAD_RX - 18, cy - 4),
+            (cx + HEAD_RX + 18, cy + BEANIE_BAND_BOTTOM),
+            (cx - HEAD_RX - 18, cy + BEANIE_BAND_BOTTOM),
         ]
         out.append(_cutout(f"{look.name}-band", band, _shade(hair), 2.0))
         for i in range(12):
@@ -1169,13 +1181,14 @@ def figure(
     stickers: Sequence[Any] = (),
     mouths: Mouths = (),
     still: bool = False,
+    lids_under_band: bool = False,
 ) -> list:
     """One group per pose run, on from project second ``enter`` until ``duration``. ``mouths`` is the lip-sync
     track (``(project second, viseme)``): the mouth becomes one layer per viseme with hold keys inside each run, the
     pose's own mouth showing while closed. The eyes shut for :data:`srstudio.toon_cast.BLINK_HOLD` at the look's
     pace. A ``still`` figure keys nothing: no breath, no blink and the pose's own mouth, for an opening whose
-    picture must not change (ADR 0036). ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast
-    types on no keyboard."""
+    picture must not change (ADR 0036). ``lids_under_band`` is :func:`lid_shapes`' ``under_band``. ``taps`` and
+    ``stickers`` are part of the drawer contract; the Collage cast types on no keyboard."""
     if not (checks.number(enter) and 0 <= enter < duration):
         raise CollageError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     groups = []
@@ -1199,7 +1212,7 @@ def figure(
         blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" and not still else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
-            draw_shapes(cv, shut, lid_shapes(look))
+            draw_shapes(cv, shut, lid_shapes(look, lids_under_band))
             states = [(start, 0)]
             for t in blinks:
                 states += [(t, 1), (round(t + BLINK_HOLD, 6), 0)]
@@ -1223,8 +1236,9 @@ def _drawer(look: Look) -> Drawer:
         stickers: Sequence[Any] = (),
         mouths: Mouths = (),
         still: bool = False,
+        lids_under_band: bool = False,
     ) -> list:
-        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still)
+        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still, lids_under_band)
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary
@@ -1267,9 +1281,11 @@ def captions(
     tints: Mapping[str, str] | None = None,
     *,
     sentences: bool = False,
+    tops: Mapping[str, float] | None = None,
 ) -> None:
     """One pill per cue, centred under :data:`CAPTION_TOP`, one or two lines (:func:`caption_lines`), sized by
-    ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise)."""
+    ``measure(text)`` (the advance width at :data:`CAPTION_SIZE`), tinted by speaker (paper white otherwise).
+    ``tops`` moves the pill of a cue, by its text, for a shot whose picture the usual place would cover."""
     cv.require_font("the Collage style letters its captions in its font", CollageError)
     for line in lines:
         rows = caption_lines(measure, line.text, cv.width, sentences=sentences)
@@ -1279,7 +1295,8 @@ def captions(
         height = len(rows) * CAPTION_LEADING + 2 * CAPTION_PAD_Y
         fill = (tints or {}).get(line.speaker, cv.white)
         x = round(cv.width / 2 - width / 2, 2)
-        cv.rect(g, x, CAPTION_TOP, width, height, fill, INK, EDGE, radius=CAPTION_RADIUS)
+        pill = (tops or {}).get(line.text, CAPTION_TOP)
+        cv.rect(g, x, pill, width, height, fill, INK, EDGE, radius=CAPTION_RADIUS)
         for i, row in enumerate(rows):
-            top = CAPTION_TOP + CAPTION_PAD_Y + i * CAPTION_LEADING
+            top = pill + CAPTION_PAD_Y + i * CAPTION_LEADING
             cv.text(g, cv.uid("caption"), row, 0, top, cv.width, CAPTION_LEADING, CAPTION_SIZE, color=INK, wrap="none")

@@ -43,6 +43,7 @@ from srstudio import (
     fonts,
     frame_gates,
     outbox,
+    overlay_gate,
     releases,
     show_gate,
     show_numbers,
@@ -141,6 +142,7 @@ def write_all(
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
     refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
+    frame_gates.refuse(overlay_gate.repeated_lines(chosen, _beside(renders), first.values()))
     frame_gates.refuse(
         [
             *frame_gates.captions_run_together(chosen, _beside(renders), first),

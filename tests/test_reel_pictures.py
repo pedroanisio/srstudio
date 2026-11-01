@@ -749,3 +749,15 @@ def test_a_recording_script_imports_only_what_its_data_defines(script: Path) -> 
             names |= {n.name for n in data.body if isinstance(n, ast.FunctionDef | ast.ClassDef)}
             names |= {a.asname or a.name for n in data.body if isinstance(n, ast.ImportFrom) for a in n.names}
             assert {a.name for a in node.names} <= names, f"{script.name} imports what {source.name} lacks"
+
+
+def test_nobody_in_the_headphones_aisle_is_there_twice() -> None:
+    """The stopped row is a crowd of strangers: the same face twice, or a lead's, reads as a copy, not as a crowd."""
+    tree = ast.parse((EPISODES / "headphones.py").read_text())
+    shoppers = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "shoppers")
+    row = next(n.value for n in ast.walk(shoppers) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == "row")
+    assert isinstance(row, ast.List)
+    cast = [ast.unparse(person.elts[0]) for person in row.elts if isinstance(person, ast.Tuple)]
+    assert len(cast) == len(row.elts) >= 3
+    assert len(set(cast)) == len(cast), cast
+    assert not {"cast.Customer", "cast.Rosa"} & set(cast)  # Milo and Rosa stand in the same aisle
