@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _cutout_contracts
 from .canvas import Canvas
 from .cutout_handed import PAGE, CutoutHandedError, _check_scale, _check_spans
 from .registry import register
@@ -17,7 +18,13 @@ __all__ = ["banknotes", "cue_cards", "robe_and_blazer"]
 CUE_CARD_CHARS = 14
 
 
-@register("prop", "cue-cards", style="cutout", summary="A stack of cue cards held up, the top card lettered by hand")
+@register(
+    "prop",
+    "cue-cards",
+    style="cutout",
+    summary="A stack of cue cards held up, the top card lettered by hand",
+    contract=_cutout_contracts.contract('cue-cards'),
+)
 def cue_cards(
     cv: Canvas,
     parent,
@@ -57,7 +64,13 @@ def cue_cards(
 BILL = "#A6C29A"
 
 
-@register("prop", "banknotes", style="cutout", summary="A pair of plain banknotes, fanned, lettered with their value")
+@register(
+    "prop",
+    "banknotes",
+    style="cutout",
+    summary="A pair of plain banknotes, fanned, lettered with their value",
+    contract=_cutout_contracts.contract('banknotes'),
+)
 def banknotes(
     cv: Canvas, parent, x=540, y=900, *, value: str = "20", count: int = 2, scale: float = 1.0, id: str = "banknotes"
 ):
@@ -85,7 +98,13 @@ BLAZER = "#3C4A5C"
 BLAZER_DARK = "#2C3746"
 
 
-@register("prop", "robe-and-blazer", style="cutout", summary="A blazer over a bathrobe, worn on a Cutout actor")
+@register(
+    "prop",
+    "robe-and-blazer",
+    style="cutout",
+    summary="A blazer over a bathrobe, worn on a Cutout actor",
+    contract=_cutout_contracts.contract('robe-and-blazer'),
+)
 def robe_and_blazer(cv: Canvas, parent, *, id: str = "robe-and-blazer"):
     """Drawn in the actor's own units, from the shoulders to the waist, so hang it on ``actor.group``: a video call's
     worth of dressing, and the terry collar still shows."""

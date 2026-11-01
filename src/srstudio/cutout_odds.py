@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks
+from . import _cutout_contracts, checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -68,7 +68,11 @@ def _layers(cv: Canvas, g, right: float, scallop: bool) -> None:
 
 
 @register(
-    "prop", "eaten-sandwich", style="cutout", summary="A long sandwich in hand that loses a mouthful at every bite"
+    "prop",
+    "eaten-sandwich",
+    style="cutout",
+    summary="A long sandwich in hand that loses a mouthful at every bite",
+    contract=_cutout_contracts.contract('eaten-sandwich'),
 )
 def eaten_sandwich(
     cv: Canvas, parent, x=540, y=900, *, bites: Sequence[float] = (), scale: float = 1.0, id: str = "eaten-sandwich"
@@ -88,7 +92,13 @@ def eaten_sandwich(
     return g
 
 
-@register("prop", "paper-napkin", style="cutout", summary="A folded white paper napkin, one corner lifting")
+@register(
+    "prop",
+    "paper-napkin",
+    style="cutout",
+    summary="A folded white paper napkin, one corner lifting",
+    contract=_cutout_contracts.contract('paper-napkin'),
+)
 def paper_napkin(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "paper-napkin"):
     """Lying centred on (``x``, ``y``), 150 wide."""
     _check_scale(scale)
@@ -100,7 +110,13 @@ def paper_napkin(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: st
     return g
 
 
-@register("prop", "bistro-table", style="cutout", summary="A small round bistro table on one leg, seen side on")
+@register(
+    "prop",
+    "bistro-table",
+    style="cutout",
+    summary="A small round bistro table on one leg, seen side on",
+    contract=_cutout_contracts.contract('bistro-table'),
+)
 def bistro_table(cv: Canvas, parent, x=540, y=1100, *, width: float = 300, id: str = "bistro-table"):
     """The middle of its top is (``x``, ``y``); its foot stands ``width`` * 0.9 below."""
     checks.positive(width, CutoutOddsError, f"width must be positive, got {width!r}")
@@ -113,7 +129,13 @@ def bistro_table(cv: Canvas, parent, x=540, y=1100, *, width: float = 300, id: s
     return g
 
 
-@register("prop", "earbud", style="cutout", summary="A white wireless earbud with its short stem")
+@register(
+    "prop",
+    "earbud",
+    style="cutout",
+    summary="A white wireless earbud with its short stem",
+    contract=_cutout_contracts.contract('earbud'),
+)
 def earbud(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, flip: bool = False, id: str = "earbud"):
     """The bud's middle is on (``x``, ``y``), the stem hanging 50 below it; ``flip`` turns it for the other ear."""
     _check_scale(scale)
@@ -125,7 +147,13 @@ def earbud(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, flip: bool =
     return g
 
 
-@register("prop", "tin-of-peas", style="cutout", summary="A tin of peas with a green label and a pod on it")
+@register(
+    "prop",
+    "tin-of-peas",
+    style="cutout",
+    summary="A tin of peas with a green label and a pod on it",
+    contract=_cutout_contracts.contract('tin-of-peas'),
+)
 def tin_of_peas(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "tin-of-peas"):
     """Centred on (``x``, ``y``), 80 wide and 104 tall."""
     _check_scale(scale)
@@ -141,7 +169,13 @@ def tin_of_peas(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str
     return g
 
 
-@register("prop", "store-box", style="cutout", summary="A plain supermarket box of crackers, no brand")
+@register(
+    "prop",
+    "store-box",
+    style="cutout",
+    summary="A plain supermarket box of crackers, no brand",
+    contract=_cutout_contracts.contract('store-box'),
+)
 def store_box(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "store-box"):
     """Centred on (``x``, ``y``), 130 wide and 180 tall."""
     _check_scale(scale)
@@ -156,7 +190,13 @@ def store_box(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str =
     return g
 
 
-@register("prop", "coin-purse", style="cutout", summary="A clasp coin purse that opens on the coins inside it")
+@register(
+    "prop",
+    "coin-purse",
+    style="cutout",
+    summary="A clasp coin purse that opens on the coins inside it",
+    contract=_cutout_contracts.contract('coin-purse'),
+)
 def coin_purse(
     cv: Canvas, parent, x=540, y=900, *, opens: Sequence[tuple[float, float]] = (), scale: float = 1.0, id="coin-purse"
 ):
@@ -185,7 +225,9 @@ def coin_purse(
     return g
 
 
-@register("prop", "small-coin", style="cutout", summary="One small coin")
+@register(
+    "prop", "small-coin", style="cutout", summary="One small coin", contract=_cutout_contracts.contract('small-coin')
+)
 def small_coin(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "small-coin"):
     """Centred on (``x``, ``y``), 44 wide."""
     _check_scale(scale)
@@ -195,7 +237,13 @@ def small_coin(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str 
     return g
 
 
-@register("prop", "lane-sign", style="cutout", summary="A checkout lane's lit number, hung from the ceiling")
+@register(
+    "prop",
+    "lane-sign",
+    style="cutout",
+    summary="A checkout lane's lit number, hung from the ceiling",
+    contract=_cutout_contracts.contract('lane-sign'),
+)
 def lane_sign(
     cv: Canvas,
     parent,
@@ -224,7 +272,13 @@ def lane_sign(
     return g
 
 
-@register("prop", "glasses-glint", style="cutout", summary="The light catching a pair of round glasses, once")
+@register(
+    "prop",
+    "glasses-glint",
+    style="cutout",
+    summary="The light catching a pair of round glasses, once",
+    contract=_cutout_contracts.contract('glasses-glint'),
+)
 def glasses_glint(
     cv: Canvas,
     parent,
@@ -292,7 +346,13 @@ def gas_lift(cv: Canvas, group, drops: Sequence[tuple[float, float, float]], y: 
     return keys[-1][1]
 
 
-@register("prop", "chair-lever", style="cutout", summary="An office chair's height lever, which tips on each pull")
+@register(
+    "prop",
+    "chair-lever",
+    style="cutout",
+    summary="An office chair's height lever, which tips on each pull",
+    contract=_cutout_contracts.contract('chair-lever'),
+)
 def chair_lever(
     cv: Canvas, parent, x=540, y=900, *, pulls: Sequence[float] = (), scale: float = 1.0, id: str = "chair-lever"
 ):
@@ -312,7 +372,13 @@ def chair_lever(
     return g
 
 
-@register("prop", "ballpoint", style="cutout", summary="A plain ballpoint pen, held to write")
+@register(
+    "prop",
+    "ballpoint",
+    style="cutout",
+    summary="A plain ballpoint pen, held to write",
+    contract=_cutout_contracts.contract('ballpoint'),
+)
 def ballpoint(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "ballpoint"):
     """Its nib is on (``x``, ``y``), the barrel 120 long, up and to the right."""
     _check_scale(scale)

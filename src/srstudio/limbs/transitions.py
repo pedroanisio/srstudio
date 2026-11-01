@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from ._motion_interpolation import smooth, tangent_weights
 from .errors import LimbError
 from .math3d import Frame, Quaternion, Vec3, number
 from .model import HandControl, HandProfile
@@ -170,12 +171,13 @@ def prepare_join(motion: Motion, window: JoinWindow) -> JoinPlan:
 
 
 def sample_join(motion: Motion, plan: JoinPlan, time: float) -> Sample:
-    from .motion import Sample, smooth
+    from .motion import Sample
 
     window = plan.window
     span = window.end - window.start
     u = (time - window.start) / span
-    s, ta, tb = smooth(u), u - 6 * u**3 + 8 * u**4 - 3 * u**5, -4 * u**3 + 7 * u**4 - 3 * u**5
+    s = smooth(u)
+    ta, tb = tangent_weights(u)
     values = tuple(
         a + (b - a) * s + span * (va * ta + vb * tb)
         for a, b, va, vb in zip(

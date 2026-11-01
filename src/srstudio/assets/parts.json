@@ -13407,6 +13407,40 @@
           "rig": null
         }
       ]
+    },
+    "wire-car": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A seeded wireframe car with its hidden lines removed, from the side or a corner; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
+    },
+    "wire-jet": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A seeded wireframe fighter jet with its hidden lines removed, from any side; proposed until the operator has seen it.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "",
+          "rig": null
+        }
+      ]
     }
   }
 }

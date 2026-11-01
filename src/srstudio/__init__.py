@@ -112,6 +112,12 @@ from . import (  # noqa: F401  (registers builders)
     toon_voices,
     toon_ward,
     toon_world,
+    wire_car,
+    wire_car_prop,
+    wire_draw,
+    wire_jet,
+    wire_jet_prop,
+    wire_view,
 )
 from .canvas import (
     CAFE,

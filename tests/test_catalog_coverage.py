@@ -61,6 +61,8 @@ NO_EPISODE = [
     "toon-pipe",
     "toon-receipt",
     "toon-take-a-number",
+    "wire-car",
+    "wire-jet",
 ]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),

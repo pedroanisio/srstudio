@@ -276,7 +276,7 @@ def register(
 
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style. Duplicate names are refused unless
-    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares location callbacks when
+    ``replace=True`` explicitly replaces the existing builder. ``slots`` declares drawing callbacks when
     they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode.
     ``contract`` adds structured discovery semantics without replacing the builder's runtime validation.
 
@@ -293,8 +293,6 @@ def register(
         if contract is not None:
             describe_callable(obj, contract)  # Refuse invalid metadata before mutating the registry.
         if slots:
-            if kind != "location":
-                raise RegistryError("only locations declare callback slots")
             parameters = _signature(obj).parameters
             for slot in slots:
                 if slot not in parameters or parameters[slot].kind in (

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks
+from . import _cutout_contracts, checks
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -31,7 +31,13 @@ def _scale(scale) -> None:
     checks.positive(scale, CutoutLeakError, f"scale must be a positive number, got {scale!r}")
 
 
-@register("prop", "lettered-cup", style="cutout", summary="A big takeaway cup with a message in marker on it, no brand")
+@register(
+    "prop",
+    "lettered-cup",
+    style="cutout",
+    summary="A big takeaway cup with a message in marker on it, no brand",
+    contract=_cutout_contracts.contract('lettered-cup'),
+)
 def lettered_cup(
     cv: Canvas, parent, x=540, y=800, *, lines: Sequence[str] = ("HELLO",), scale: float = 1.0, id: str = "lettered-cup"
 ):
@@ -55,7 +61,13 @@ def lettered_cup(
     return g
 
 
-@register("prop", "crayon-page", style="cutout", summary="A sheet in a child's crayon, scribble only, no lettering")
+@register(
+    "prop",
+    "crayon-page",
+    style="cutout",
+    summary="A sheet in a child's crayon, scribble only, no lettering",
+    contract=_cutout_contracts.contract('crayon-page'),
+)
 def crayon_page(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation: float = 0, id: str = "crayon-page"):
     """The middle of the sheet is on (``x``, ``y``), 220 by 300 at scale 1, ``rotation`` degrees round."""
     _scale(scale)
@@ -69,7 +81,13 @@ def crayon_page(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotatio
     return g
 
 
-@register("prop", "cake-knife", style="cutout", summary="A broad cake knife, held at its handle")
+@register(
+    "prop",
+    "cake-knife",
+    style="cutout",
+    summary="A broad cake knife, held at its handle",
+    contract=_cutout_contracts.contract('cake-knife'),
+)
 def cake_knife(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation: float = 0, id: str = "cake-knife"):
     """The grip is on (``x``, ``y``) and the blade points down, ``rotation`` degrees round; 220 long at scale 1."""
     _scale(scale)
@@ -80,7 +98,13 @@ def cake_knife(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, rotation
     return g
 
 
-@register("prop", "cake-slice", style="cutout", summary="A slice of sheet cake on a paper plate")
+@register(
+    "prop",
+    "cake-slice",
+    style="cutout",
+    summary="A slice of sheet cake on a paper plate",
+    contract=_cutout_contracts.contract('cake-slice'),
+)
 def cake_slice(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "cake-slice"):
     """The plate's middle is on (``x``, ``y``), 240 wide at scale 1."""
     _scale(scale)
