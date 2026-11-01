@@ -102,3 +102,46 @@ def test_a_scale_is_positive(scale: float) -> None:
     s = shot()
     with pytest.raises(ToonDataError, match="scale"):
         toon_pair.figure(s, s.back, "bear", (420.0, 840.0), ACTS, scale=scale)
+
+
+def test_a_shoulder_follows_the_placement_and_the_mirror() -> None:
+    assert toon_pair.shoulder((430.0, 876.0), 0.72) == pytest.approx((355.84, 783.84))
+    assert toon_pair.shoulder((430.0, 876.0), 0.72, side="right") == pytest.approx((532.96, 783.84))
+    assert toon_pair.shoulder((430.0, 876.0), 0.72, mirror=True) == pytest.approx((532.96 - 28.8, 783.84))
+
+
+def test_a_shoulder_is_left_or_right() -> None:
+    with pytest.raises(ToonDataError, match="left or right"):
+        toon_pair.shoulder((0.0, 0.0), 1.0, side="middle")
+
+
+def test_a_reach_runs_from_the_shoulder_to_the_target() -> None:
+    root = toon_pair.shoulder((430.0, 876.0), 0.72)
+    degrees, length = toon_pair.aim(root, (root[0] - 100.0, root[1] - 100.0))
+    assert degrees == pytest.approx(225.0)
+    assert length == pytest.approx(141.42, abs=0.01)
+
+
+def test_reach_draws_an_arm_rooted_on_the_figure_and_landing_at_its_second() -> None:
+    cv = canvas()
+    at, target = (430.0, 876.0), (300.0, 700.0)
+    arm = toon_pair.reach(cv, cv.comp, at, target, "#efe8ee", 2.0, 3.0, scale=0.72)
+    root = toon_pair.shoulder(at, 0.72)
+    assert (arm.x, arm.y) == (fx(root[0]), fy(root[1]))
+    assert (arm.start, arm.end) == (2.0, 3.0)
+    assert b"rotation" in cv.scene.to_bytes(layout="pretty")
+
+
+def test_reach_refuses_a_target_at_the_shoulder_and_a_target_too_far() -> None:
+    cv = canvas()
+    at = (430.0, 876.0)
+    with pytest.raises(ToonDataError, match="too close"):
+        toon_pair.reach(cv, cv.comp, at, toon_pair.shoulder(at, 0.72), "#efe8ee", 2.0, 3.0, scale=0.72)
+    with pytest.raises(ToonDataError, match="too far"):
+        toon_pair.reach(cv, cv.comp, at, (-400.0, 100.0), "#efe8ee", 2.0, 3.0, scale=0.72)
+
+
+def test_reach_refuses_a_span_with_no_time_to_land() -> None:
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="land"):
+        toon_pair.reach(cv, cv.comp, (430.0, 876.0), (300.0, 700.0), "#efe8ee", 2.0, 2.05, scale=0.72)

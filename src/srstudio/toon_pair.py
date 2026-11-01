@@ -4,20 +4,28 @@ A sketch's beat describes one character, the shot's lead. :func:`figure` draws a
 instead, so a shot can hold two: it sits at a reference point, optionally mirrored to face the other, takes its
 expressions from an :class:`Act` per beat, keeps its own viseme track and moves its head on the takes, its own lines to
 say and the rest to listen to, exactly as a lead named in ``Staging.heads`` does (ADR 0050). The acts run parallel to
-the sketch's beats, so a recording that moves the beats moves them too.
+the sketch's beats, so a recording that moves the beats moves them too. :func:`reach` is the arm a two-shot needs and a
+figure's poses do not have, rooted on the shoulder that placement gives it, never on a point judged by eye.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from . import checks, head_motion, sketch, toon, toon_head, toon_rigs
+from . import checks, head_motion, sketch, toon, toon_bed, toon_head, toon_rigs
 from .toon import ToonDataError, fx, fy
+from .toon_cast import SHOULDERS
 from .toon_sketch import SEAT, Shot
 
-__all__ = ["Act", "figure", "poses_of"]
+__all__ = ["Act", "aim", "figure", "poses_of", "reach", "shoulder"]
+
+Point = tuple[float, float]
+LONGEST = 360.0  # reference pixels an arm runs at a figure's full size: past that it stops reading as an arm
+LAND = 0.14  # seconds an arm takes to land
+RAISE = 40.0  # degrees below its target an arm swings up from
 
 
 @dataclass(frozen=True)
@@ -94,3 +102,52 @@ def figure(
     plan = head_motion.plan(rig.style, own, shot.end, heard=heard).during(app.start, app.end)
     toon_head.figure(cv, g, rig, poses, app.end, plan, (), enter=app.start, **extra)
     return g
+
+
+def shoulder(at: Point, scale: float = 1.0, *, side: str = "left", mirror: bool = False) -> Point:
+    """Where a figure placed as :func:`figure` places it has its ``side`` shoulder (the side of the drawing, which a
+    ``mirror`` turns over), in reference pixels."""
+    if side not in ("left", "right"):
+        raise ToonDataError(f"a shoulder is left or right, got {side!r}")
+    x, y = SHOULDERS[0 if side == "left" else 1]
+    sx = -scale if mirror else scale
+    return (at[0] + (x - SEAT[0]) * sx, at[1] + (y - SEAT[1]) * scale)
+
+
+def aim(root: Point, target: Point) -> tuple[float, float]:
+    """The swing of an arm from ``root`` to ``target``, as :func:`srstudio.toon_bed.swung_arm` reads it: degrees from 0
+    pointing right, clockwise, between -90 and 270, and the length."""
+    dx, dy = target[0] - root[0], target[1] - root[1]
+    degrees = math.degrees(math.atan2(dy, dx))
+    return (degrees + 360.0 if degrees < -90.0 else degrees, math.hypot(dx, dy))
+
+
+def reach(
+    cv: Any,
+    parent: object,
+    at: Point,
+    target: Point,
+    coat: str,
+    start: float,
+    end: float,
+    *,
+    scale: float = 1.0,
+    side: str = "left",
+    mirror: bool = False,
+) -> Any:
+    """An arm of the figure placed at ``at``, rooted on its ``side`` shoulder, on screen from ``start`` to ``end``,
+    its paw landing on ``target`` :data:`LAND` seconds in. Drawn into ``parent``, so a group that walks the figure walks
+    the arm. Returns the arm's group. A target closer than the arm is wide, past :data:`LONGEST` at the figure's size,
+    or a span with no time to land is refused."""
+    root = shoulder(at, scale, side=side, mirror=mirror)
+    degrees, length = aim(root, target)
+    width = toon_bed.ARM_WIDTH * scale
+    if length < width:
+        raise ToonDataError(f"a target {length:.0f} px from the shoulder is too close for an arm {width:.0f} px wide")
+    if length > LONGEST * scale:
+        raise ToonDataError(f"a target {length:.0f} px from the shoulder is too far: {LONGEST * scale:.0f} px at most")
+    if not (checks.number(start) and checks.number(end) and end - start > LAND):
+        raise ToonDataError(f"an arm needs over {LAND} s to land, got {start!r}..{end!r}")
+    rest = degrees - RAISE if degrees > 90.0 else degrees + RAISE
+    swing = [(start, rest), (start + LAND, degrees)]
+    return toon_bed.swung_arm(cv, parent, root, coat, swing, start, end, length=length, width=width)
