@@ -78,3 +78,8 @@ def test_the_full_gate_refuses_a_commit_that_is_not_there(tmp_path):
 
 def test_the_full_gate_keeps_nothing_in_the_scratch_folder():
     assert "_tmp" not in GATE.read_text(encoding="utf-8")
+
+
+def test_no_two_decisions_share_a_number():
+    numbers = [path.name[:4] for path in (ROOT / "docs" / "decisions").glob("[0-9]*.md")]
+    assert sorted(numbers) == sorted(set(numbers))
