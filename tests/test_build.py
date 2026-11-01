@@ -131,6 +131,25 @@ def test_spoken_captions_end_before_the_next_one_starts(project):
     assert [s[3] for s in specs[:2]] == ["dialogue-1", "dialogue-2"]
 
 
+def test_a_spoken_cue_holds_at_least_min_seconds_past_a_short_word(project):
+    ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
+    specs = ep.spoken_captions(tail=0.0, lead=0.0, min_seconds=1.2)
+    assert all(end - start >= 1.2 - 1e-9 for start, end, _, _ in specs)
+    assert min(p.end - p.start for p in ep.phrases) < 1.2
+
+
+def test_a_spoken_cue_that_the_next_line_cuts_short_is_refused_by_line(project):
+    ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
+    with pytest.raises(EpisodeError, match="line 1"):
+        ep.spoken_captions(min_seconds=60.0)
+
+
+def test_spoken_captions_refuse_a_negative_min_seconds(project):
+    ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
+    with pytest.raises(EpisodeError, match="min_seconds"):
+        ep.spoken_captions(min_seconds=-0.5)
+
+
 def test_spoken_captions_refuse_a_negative_tail(project):
     ep = Episode(EpisodeSpec(slug="s", title="t", description="d", root=project, seed=1))
     with pytest.raises(EpisodeError, match="lead and tail"):
