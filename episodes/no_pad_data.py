@@ -39,6 +39,7 @@ HOOK_SECONDS = 3.0
 STILL = 0.45  # the held first frame
 
 PLACES = {"gary": Place(290.0, 1800.0, 0.72), "priya": Place(800.0, 1800.0, 0.72)}
+ZOOM_X = 1265.0  # Priya's zoom lands with the shelf and its code left of the bug, Gary out of the frame
 TABLE = 1580
 PIVOT = (540.0, 1900.0)  # Jun's eyes are under the hat: his looks read as the lean of his whole body
 LEAN = 6.0
@@ -133,7 +134,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
         if group.staged(app):
-            return group(cv, parent, app, mouths)
+            return ZOOM_X, group(cv, parent, app, mouths)[1]
         lean = cv.group(parent, cv.uid("g"), x=PIVOT[0], y=PIVOT[1])
         moved = cv.group(lean, cv.uid("g"), x=-PIVOT[0], y=-PIVOT[1])
         if app.start <= tap < app.end:
@@ -159,7 +160,7 @@ def _plates(cv, front, beats: Sequence[Beat], end: float) -> None:
 
 
 def _pad(cv, front, app: Appearance, beats: Sequence[Beat]) -> None:
-    """The pad, unseen until now, rising very slowly from the apron; then the pen, and a first line of scrawl."""
+    """The pad, unseen until now, rising slowly in his hand; then the pen in the other, and a first line of scrawl."""
     _, _, rise = _looks(beats)
     write = rise + 1.3
     pad = cv.group(front, cv.uid("g"))
@@ -172,6 +173,8 @@ def _pad(cv, front, app: Appearance, beats: Sequence[Beat]) -> None:
     keys = [(write + i * 0.15, 470.0 + (i % 2) * 28.0) for i in range(6)]
     cv.keys(hand, "x", keys, hold=False, local=False)
     collage_home.pen(cv, hand, 0, 0, 240, 20.0)
+    collage_everyday.arm(cv, hand, "jun", (490.0, 470.0), (52.0, -76.0))
+    collage_everyday.arm(cv, pad, "jun", (140.0, 2040.0), (404.0, 1644.0))
 
 
 def _spoon(cv, front, beats: Sequence[Beat], app: Appearance) -> None:

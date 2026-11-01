@@ -18,11 +18,21 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=('#restaurant', '#waiter', '#relatable', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("He remembers everything", 9.4, number=208),
+        thumbnail=ShowCover("He remembers everything", 21.5, number=208),
     ),
     tags=Tags("money-services", "other-person", "tension", test="sp-speakers", arm="b"),
     style="Collage",
-    parts={},
+    parts={
+        "collage-arm": 1,
+        "collage-cafe": 1,
+        "collage-gary": 1,
+        "collage-jun": 1,
+        "collage-priya": 1,
+        "collage-sign": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
     comedy=Scores(author=17, reviewer=18),
     cover=True,
 )
