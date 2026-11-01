@@ -216,7 +216,11 @@ def build(out: Path, *, fps: int = 24) -> Path:
     score_data = {
         'schema': 'srstudio.acting/1.0.0',
         'duration': score.duration,
-        'beats': [asdict(beat) for beat in score.beats],
+        # This fixture uses the original schema; dataclass fields can grow independently of it.
+        'beats': [
+            {'at': beat.at, 'emotion': beat.emotion, 'gaze': beat.gaze, 'transition': beat.transition}
+            for beat in score.beats
+        ],
         'seed': score.seed,
         'sample_rate': score.sample_rate,
         'heard': [

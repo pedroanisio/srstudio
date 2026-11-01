@@ -10,6 +10,7 @@ from sr_core.scene import Scene
 
 from . import checks, lipsync
 from . import head_motion as hm
+from ._acting_transitions import NumericEvent, compile_channel, schedules
 from ._curves import progress
 from .acting import (
     ActingBeat,
@@ -143,6 +144,12 @@ def _append(track, time, value):
         track.append((time, value))
 
 
+def _directed(base: Channel, events: list[NumericEvent], duration: float, rate: int) -> Channel:
+    if any(event.window.policy is not None for event in events):
+        return compile_channel(base, events, duration, rate)
+    return _numeric(base, [(e.window.launch, e.window.arrival, e.target) for e in events], duration, rate)
+
+
 def _follow(base: HeadPlan, gaze, rig: ActingRig, duration: float, rate: int) -> HeadPlan:
     """Authored eye holds lead horizontal head follow; dense holds shorten its arrival."""
     assert rig.head_rig is not None
@@ -242,7 +249,7 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
     expressions = [(0.0, neutral.expression)]
     gestures = [(0.0, neutral.gesture)]
     gaze: list[tuple[float, str]] = []
-    numeric: dict[str, list[tuple[float, float, float | None]]] = {name: [] for name in CHANNELS}
+    numeric: dict[str, list[NumericEvent]] = {name: [] for name in CHANNELS}
     busy: dict[str, float] = {}
     previous = -1.0
     for index, beat in enumerate(score.beats):
@@ -271,7 +278,6 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
             for a in t.motion.attachments
         ):
             raise _error(path, beat.at, 'explicit prop release before a reset', 'acting.conflict')
-        on, off = round(beat.at, 6), round(beat.at + beat.transition, 6)
         assignments: dict[str, Any] = {}
         if beat.reset:
             assignments.update(emotion='neutral', expression=neutral.expression, gesture=neutral.gesture, gaze='ahead')
@@ -302,10 +308,23 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
             if not checks.number(beat.breath) or not 0 <= beat.breath <= 1:
                 raise _error(f'{path}.breath', beat.breath, 'a normalized expansion in 0..1')
             assignments['breath'] = beat.breath
+        windows = schedules(beat, rig, set(assignments), duration, path)
+        if beat.reset and beat.policy is not None:
+            start = min(w.start for w in windows.values())
+            end = max(w.end for w in windows.values())
+            for track in limbs:
+                offset = track.options.offset
+                intervals = [(c.start + offset, c.end + offset) for c in track.motion.contacts]
+                intervals += [(a.attach + offset, a.release + offset) for a in track.motion.attachments]
+                if any(a <= start < b or start <= a < end for a, b in intervals):
+                    raise _error(
+                        path + '.policy', (start, end), 'explicit release before all reset phases', 'acting.conflict'
+                    )
         for name, value in assignments.items():
-            if name in busy and on < busy[name]:
-                raise _error(path, on, f'no overlap with the pending {name} transition', 'acting.conflict')
-            busy[name] = off
+            window = windows[name]
+            if name in busy and window.start < busy[name]:
+                raise _error(path, window.start, f'no overlap with the pending {name} transition', 'acting.conflict')
+            busy[name] = window.end
             if name in numeric:
                 if value is not None and not checks.number(value):
                     raise _error(f'{path}.head.{name}', value, 'a finite head target')
@@ -313,11 +332,11 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
                     raise _error(
                         f'{path}.head.{name}', value, f'a target inside +/-{hm.limit(rig.head_rig.style, name)}'
                     )
-                numeric[name].append((on, off, value))
+                numeric[name].append(NumericEvent(window, value))
             else:
                 _append(
                     {'emotion': emotion_keys, 'expression': expressions, 'gesture': gestures, 'gaze': gaze}[name],
-                    off,
+                    window.arrival,
                     value,
                 )
         # Validate authored choices even if a whole-channel override will replace their output.
@@ -349,10 +368,22 @@ def compile_score(rig: ActingRig, score: ActingScore) -> PerformancePlan:
             for t, name in gaze if overrides.gaze is None else overrides.gaze:
                 _append(chosen, t, name)
             base = _follow(base, chosen, rig, duration, score.sample_rate)
-        head = replace(
-            base,
-            **{name: _numeric(getattr(base, name), numeric[name], duration, score.sample_rate) for name in CHANNELS},
-        )
+        channels: dict[str, Any] = {
+            name: _directed(getattr(base, name), numeric[name], duration, score.sample_rate) for name in CHANNELS
+        }
+        head = replace(base, **channels)
+        assert rig.head_rig is not None
+        if any(beat.policy is not None for beat in score.beats):
+            # Validate authored policy excursions even when an explicit override owns the output.
+            head.check_bounds(rig.head_rig.style)
+            if any(e.window.policy is not None for e in numeric['breath']):
+                values = [value for _, value in head.breath.keys]
+                if any(not 0 <= value <= 1 for value in values):
+                    raise _error(
+                        'policy.breath',
+                        (min(values), max(values)),
+                        'normalized expansion in 0..1 throughout all phases',
+                    )
         if overrides.gaze is not None:
             owners['gaze'] = 'override'
         if overrides.head is not None:

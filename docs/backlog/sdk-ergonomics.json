@@ -3,7 +3,7 @@
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
   "reviewed_source_commit": "909025e7",
-  "reviewed_working_tree": "develop at 909025e7, with an untracked tests/test_acting_transitions.py from in-progress TDD. That file imports unimplemented policy records and does not collect; it is not evidence of a delivered transition API. Historical implementation observations below retain their original verification scope.",
+  "reviewed_working_tree": "The review at 909025e7 captured an unfinished transition test. Subsequent implementation completed the policy API and its red-to-green cycle; see transition_policy_implementation and resolved_working_tree_blockers. Historical observations retain their original verification scope.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. The next high-impact gap is selectable acting transition policies. Discovery deliberately retains unknown semantics for the other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Remaining priorities include legacy repair diagnostics, cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -38,6 +38,18 @@
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "transition_policy_implementation": {
+      "final_combined_regression_selection": {"passed": 413, "subtests_passed": 24, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"acting": 91, "acting_compiler": 89, "acting_parser": 95, "transition_policies": 97, "character_clips": 97, "head_motion": 92},
+      "ruff_files": 1546,
+      "mypy_source_files": 239,
+      "repository_collection": {"collected": 19876, "errors": 0},
+      "strict_encoded_frames": 96,
+      "frame_size": [1920, 1080],
+      "fps": 24,
+      "full_size_frames_inspected": 4,
+      "qualification": "Selected regressions cover acting, strict parsing, policies, executable examples, clip clocks, head mechanics, character contracts and DRAWING.md. This is not a full-suite execution; full collection verifies the former import blocker is gone. Tests first reproduced early zero-duration motion, override-hidden overshoot, negative breath expansion and a legacy example's leaking policy field, then passed after fixes. The final three-panel study strictly encoded all 96 frames, independently counted with ffprobe; source hashes match. Four full-size frames were inspected. Human ratings remain absent, and no facial morph, derivative continuity or universal biomechanical guarantee is claimed."
+    },
     "noncharacter_implementation": {
       "final_combined_regression_selection": {"passed": 633, "skipped": 0},
       "branch_inclusive_coverage_percent": {"contracts": 88, "registry": 96, "drawing_metadata": 100, "locations": 96, "props": 99, "graphics": 85, "cutout_counter": 97, "cli": 64},
@@ -92,14 +104,16 @@
   ],
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
-  "working_tree_blockers": [
+  "working_tree_blockers": [],
+  "resolved_working_tree_blockers": [
     {
       "priority": "P1",
       "scope": "Uncommitted development checkout only; not a shipped SDK defect",
       "path": "tests/test_acting_transitions.py",
       "observation": "pytest --collect-only exits 2 because ChannelTiming cannot be imported from srstudio.acting. TransitionPolicy is also not implemented, and the legacy-output assertion still contains BASELINE_DIGEST.",
       "remedy": "Complete the existing red-to-green transition work, capture the actual pre-change fingerprint, and pass the policy regressions and existing output-parity checks before committing it. Do not skip or delete the tests to report a green suite.",
-      "related_finding": "SDK-P2-05"
+      "related_finding": "SDK-P2-05",
+      "resolution": "Implemented ChannelTiming and TransitionPolicy, captured the actual legacy fingerprint, passed the policy and integration regressions, and collected all 19,876 repository tests without errors."
     }
   ],
   "current_review_observations": [
@@ -219,12 +233,14 @@
     {
       "id": "SDK-P2-05",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Expose explicit transition policies at the coordinated acting boundary",
       "problem": "Low-level channels support many curves and springs, and MotionStyle supplies arcs, overshoot and settling. ActingBeat exposes only a transition duration: numeric targets use fixed sampled sine-in-out, while expressions and gestures switch at arrival. Agents cannot select coordinated anticipation, settling or staggered channel timing through the high-level score. Existing action joins match estimated velocities but do not promise acceleration continuity.",
       "evidence": ["src/srstudio/acting.py:ActingBeat", "src/srstudio/acting.py:ActingRig.describe", "src/srstudio/_acting_compile.py:_numeric", "src/srstudio/head_motion.py:Channel", "src/srstudio/limbs/motion.py:MotionStyle", "src/srstudio/limbs/transitions.py:ActionJoin"],
       "change": "Add versioned, opt-in transition policies that compile through existing curve and spring mechanics, with explicit channel timing and rig capability checks. Keep held or replacement faces explicit; require authored support for any facial morph. Describe position, velocity and acceleration guarantees separately instead of treating all easing as smoothness.",
       "acceptance": ["Strict score parsing and discovery describe supported policies", "Existing scores retain their current output", "Random-access and cut-window parity holds through anticipations and settling", "Contact ownership and motion limits survive transitions", "Rendered comparisons distinguish intended emotional timing from numeric continuity claims"],
+      "resolution": "Added opt-in versioned TransitionPolicy and ChannelTiming, strict score schema 1.1.0 and capability-dependent discovery. Numeric phases reuse Channel curves and springs with bounded dense baking; held faces, gestures and gaze have separate arrival times. Legacy scores retain their captured serialized drawing, and schema 1.0.0 still rejects new fields. Tests preserve random-access/cut state, contact and prop ownership, reject overlapping phases and reset/contact crossings, enforce head/breath limits even under overrides, and bound adversarial input and work. Engine comparisons cover cuts inside anticipation and settling. The executable three-variant study exports exact scores and source hashes and strictly encodes 96 frames at 1920x1080/24 fps. Four full-size frames demonstrate earlier expression timing and retained state after cuts. Its report explicitly separates authored intent and sampled continuity from perceptual preference, facial morphing and derivative guarantees.",
+      "verification": ["tests/test_acting_transitions.py", "tests/test_acting_transition_example.py", "tests/test_acting.py", "tests/test_acting_parse.py", "tests/test_acting_continuity_example.py", "examples/acting_transitions.py", "docs/authoring-reference.md#opt-in-acting-transition-policies", "docs/decisions/0092-acting-transition-policies.md"],
       "complexity": "L"
     },
     {
@@ -331,11 +347,11 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
-    "Use existing MotionStyle, speech-timed actions and head channels for arcs, anticipation, settling and listening. More noise or more easing does not by itself establish purposeful acting.",
+    "Use opt-in acting policies for coordinated phase and channel timing, and existing MotionStyle, speech-timed actions and head channels for arcs and listening. More noise or more easing does not by itself establish purposeful acting.",
     "Test position, velocity, acceleration, contact and clock continuity as separate properties. Current action joins estimate boundary velocities; they do not promise acceleration continuity.",
     "Validate bounded typed input before emission; repair explicit error paths and avoid retrying into a scene already changed by a failed legacy builder.",
     "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."

@@ -6,10 +6,22 @@ from dataclasses import fields
 from typing import Any
 
 from . import checks
-from .acting import ActingBeat, ActingScore, Expression, HeadTarget, Overrides, SpokenLine, _error
+from .acting import (
+    ActingBeat,
+    ActingScore,
+    ChannelTiming,
+    Expression,
+    HeadTarget,
+    Overrides,
+    SpokenLine,
+    TransitionPolicy,
+    _error,
+)
+from .head_motion import Spring
 from .voice import Alignment
 
 SCHEMA = 'srstudio.acting/1.0.0'
+POLICY_SCHEMA = 'srstudio.acting/1.1.0'
 
 
 def _object(value: object, path: str, allowed: set[str], required: set[str] | None = None) -> dict[str, Any]:
@@ -44,8 +56,39 @@ def _boolean(value: object, path: str) -> bool:
     return value
 
 
-def _beat(value: object, path: str) -> ActingBeat:
-    data = _object(value, path, {f.name for f in fields(ActingBeat)}, {'at'})
+def _policy(value: object, path: str) -> TransitionPolicy:
+    data = _object(value, path, {f.name for f in fields(TransitionPolicy)}, {'version'})
+    kwargs: dict[str, Any] = {'version': _name(data['version'], path + '.version')}
+    if 'curve' in data:
+        kwargs['curve'] = _name(data['curve'], path + '.curve')
+    for name in ('anticipation', 'anticipation_amount', 'settle', 'overshoot'):
+        if name in data:
+            kwargs[name] = _number(data[name], f'{path}.{name}')
+    if data.get('spring') is not None:
+        spring = _object(data['spring'], path + '.spring', {'frequency', 'damping'}, {'frequency', 'damping'})
+        frequency = _number(spring['frequency'], path + '.spring.frequency')
+        damping = _number(spring['damping'], path + '.spring.damping')
+        if not 0.1 <= frequency <= 20 or not 0.1 <= damping <= 2:
+            raise _error(path + '.spring', spring, 'frequency 0.1..20 Hz and damping 0.1..2')
+        kwargs['spring'] = Spring(frequency, damping)
+    timings = []
+    for i, row in enumerate(_array(data.get('timing', []), path + '.timing', 11)):
+        where = f'{path}.timing[{i}]'
+        timing = _object(row, where, {'channel', 'delay', 'duration'}, {'channel'})
+        timings.append(
+            ChannelTiming(
+                _name(timing['channel'], where + '.channel'),
+                _number(timing.get('delay', 0), where + '.delay'),
+                _number(timing['duration'], where + '.duration') if timing.get('duration') is not None else None,
+            )
+        )
+    kwargs['timing'] = tuple(timings)
+    return TransitionPolicy(**kwargs)
+
+
+def _beat(value: object, path: str, policy_enabled: bool) -> ActingBeat:
+    allowed = {f.name for f in fields(ActingBeat)} - (set() if policy_enabled else {'policy'})
+    data = _object(value, path, allowed, {'at'})
     kwargs: dict[str, Any] = {'at': _number(data['at'], path + '.at')}
     for name in ('emotion', 'gaze', 'gesture'):
         if data.get(name) is not None:
@@ -64,6 +107,8 @@ def _beat(value: object, path: str) -> ActingBeat:
     if data.get('head') is not None:
         head = _object(data['head'], path + '.head', {f.name for f in fields(HeadTarget)})
         kwargs['head'] = HeadTarget(**{k: _number(v, f'{path}.head.{k}') for k, v in head.items() if v is not None})
+    if data.get('policy') is not None:
+        kwargs['policy'] = _policy(data['policy'], path + '.policy')
     return ActingBeat(**kwargs)
 
 
@@ -88,8 +133,8 @@ def decode(data: object, overrides: Overrides | None) -> ActingScore:
         {'schema', 'duration', 'beats', 'speech', 'heard', 'seed', 'sample_rate', 'idle'},
         {'schema', 'duration'},
     )
-    if value['schema'] != SCHEMA:
-        raise _error('schema', value['schema'], SCHEMA)
+    if value['schema'] not in (SCHEMA, POLICY_SCHEMA):
+        raise _error('schema', value['schema'], (SCHEMA, POLICY_SCHEMA))
     if overrides is not None and not isinstance(overrides, Overrides):
         raise _error('overrides', overrides, 'typed runtime Overrides')
     integers = {}
@@ -101,7 +146,10 @@ def decode(data: object, overrides: Overrides | None) -> ActingScore:
     speech = {}
     for name in ('speech', 'heard'):
         speech[name] = tuple(_line(row, f'{name}[{i}]') for i, row in enumerate(_array(value.get(name, []), name)))
-    beats = tuple(_beat(row, f'beats[{i}]') for i, row in enumerate(_array(value.get('beats', []), 'beats')))
+    beats = tuple(
+        _beat(row, f'beats[{i}]', value['schema'] == POLICY_SCHEMA)
+        for i, row in enumerate(_array(value.get('beats', []), 'beats'))
+    )
     return ActingScore(
         _number(value['duration'], 'duration'),
         beats,

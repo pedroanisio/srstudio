@@ -20,7 +20,7 @@ from ._transaction import scene_transaction
 from .canvas import Canvas
 from .character_clips import GlossClip, Interval, Placement, ToonClip, place_character
 from .errors import SrstudioError
-from .head_motion import CHANNELS, HeadPlan
+from .head_motion import CHANNELS, HeadPlan, Spring
 from .limbs.integration import LimbTrack
 from .limbs.math3d import Frame
 from .limbs.motion import Sample
@@ -34,6 +34,7 @@ __all__ = [
     'ActingRig',
     'ActingScore',
     'ActingState',
+    'ChannelTiming',
     'Emotion',
     'Expression',
     'HeadTarget',
@@ -43,6 +44,7 @@ __all__ = [
     'PerformancePlan',
     'PerformanceWindow',
     'SpokenLine',
+    'TransitionPolicy',
     'compile_performance',
     'gloss_actor',
     'parse_score',
@@ -100,6 +102,8 @@ class ActingRig:
     version: str = '1.0.0'
 
     def describe(self) -> dict:
+        from ._acting_transitions import describe_policy
+
         return {
             'schema': 'srstudio.acting-rig/1.0.0',
             'name': self.name,
@@ -121,8 +125,40 @@ class ActingRig:
                 {'name': e.name, 'eyes': e.expression.eyes, 'mouth': e.expression.mouth, 'gesture': e.gesture}
                 for e in self.emotions
             ],
-            'transitions': {'discrete': 'switch at arrival', 'numeric': 'sampled sine-in-out'},
+            'transitions': {
+                'discrete': 'switch at arrival',
+                'numeric': 'sampled sine-in-out',
+                'policy': describe_policy(self),
+            },
         }
+
+
+@dataclass(frozen=True)
+class ChannelTiming:
+    """A channel's delay from beat.at and optional replacement transition duration, in seconds."""
+
+    channel: str
+    delay: float = 0.0
+    duration: float | None = None
+
+
+@dataclass(frozen=True)
+class TransitionPolicy:
+    """Opt-in numeric phases and held drawing arrival times; validated during compilation.
+
+    Anticipation precedes the delayed launch. Settling follows arrival. Amounts are
+    fractions of the target delta; spring parameters use Hz and damping ratio.
+    This policy does not morph faces or promise velocity/acceleration continuity.
+    """
+
+    version: str = '1.0.0'
+    curve: str = 'sine-in-out'
+    anticipation: float = 0.0
+    anticipation_amount: float = 0.15
+    settle: float = 0.0
+    overshoot: float = 0.0
+    spring: Spring | None = None
+    timing: tuple[ChannelTiming, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -136,6 +172,7 @@ class ActingBeat:
     breath: float | None = None
     transition: float = 0.25
     reset: bool = False
+    policy: TransitionPolicy | None = None
 
 
 @dataclass(frozen=True)
@@ -328,7 +365,7 @@ def compile_performance(rig: ActingRig, score: ActingScore) -> PerformancePlan:
 
 
 def parse_score(data: object, *, overrides: Overrides | None = None) -> ActingScore:
-    """Strictly parse a decoded ``srstudio.acting/1.0.0`` object before semantic compilation.
+    """Strictly parse a decoded acting score (1.0.0 or opt-in-policy 1.1.0).
 
     Unknown fields and primitive type coercions are refused. HeadPlan/LimbTrack overrides
     are explicit Python runtime bindings, never opaque values forwarded from generated JSON.

@@ -132,6 +132,78 @@ scene-render validate ../generated/sdk-acting/acting-gallery.scene.xml --deny-wa
 scene-render encode ../generated/sdk-acting/acting-gallery.scene.xml --strict
 ```
 
+### Opt-in acting transition policies
+
+Score schema `srstudio.acting/1.1.0` adds a versioned `policy` to each beat. Existing
+1.0.0 scores retain their output and reject this new field. Python uses
+`TransitionPolicy` and `ChannelTiming` from `srstudio.acting`; inspect
+`BENTO.describe()["transitions"]["policy"]` for supported channels, curves and bounds.
+
+<!-- acting-policy:start -->
+```python
+from srstudio.acting import BENTO, compile_performance, parse_score
+
+score = parse_score({
+    "schema": "srstudio.acting/1.1.0", "duration": 4, "idle": False,
+    "beats": [
+        {"at": 0, "head": {"turn": 0}, "transition": 0},
+        {"at": 1, "emotion": "happy", "head": {"turn": 2}, "transition": 0.7,
+         "policy": {
+             "version": "1.0.0", "curve": "spring",
+             "spring": {"frequency": 3, "damping": 0.85},
+             "anticipation": 0.2, "anticipation_amount": 0.1,
+             "settle": 0.3, "overshoot": 0.1,
+             "timing": [{"channel": "expression", "duration": 0.1},
+                        {"channel": "turn", "delay": 0.08}]
+         }}
+    ]
+})
+plan = compile_performance(BENTO, score)
+assert plan.sample(1.1).emotion == "happy"
+assert plan.window(0.9, 3).sample(0.2) == plan.sample(1.1)
+```
+<!-- acting-policy:end -->
+
+Each channel launches at `beat.at + delay` and arrives after its timing `duration`
+(default: `beat.transition`). Numeric anticipation starts **before** launch, moving
+opposite the target delta by `anticipation_amount`. Arrival can exceed the target by
+`overshoot`; positive `settle` then returns to it. These amounts are fractions of the
+delta, not absolute angles or pixels. Springs default to 3 Hz and damping 0.75; an
+explicit spring uses 0.1–20 Hz and damping 0.1–2. Its own `anticipation` must be zero:
+the policy owns that phase. Other curves use the shared `Channel` sampler.
+
+Expression, gesture and gaze remain held drawings that switch at their individual
+arrival times. The emotion label follows expression timing. Speech owns mouth timing.
+Gloss can stagger supported drawing channels; numeric easing/anticipation on a beat
+without numeric targets is rejected. A timing entry must name a unique, supported
+channel assigned by that beat. Reset also assigns procedural numeric channels on Toon;
+ordinary `HeadTarget` assignments retain their existing five fields.
+
+All phases must fit inside the performance and cannot overlap another transition on
+the same channel. Reset phases cannot cross active contacts or prop attachments.
+Whole-channel overrides keep precedence, but cannot hide an invalid policy excursion.
+Rendered head channels stay inside rig limits, and policy-driven breath stays in 0..1.
+Numeric anticipation/settling requires a positive transition at six-decimal scene
+precision. A zero-duration numeric arrival changes within one scene quantum
+(one microsecond), preserving the preceding hold; discrete drawings switch directly.
+
+Policies bake linear keys at at least 240 Hz inside their intervals (at least 32 samples
+per spring cycle), retaining phase boundaries and the score's ordinary sample grid.
+The compiler limits candidate keys to 20,000 per channel before adding a dense interval.
+These are bounded sampled motions, not a continuous physical simulation. Position,
+velocity and acceleration are separate properties: policy baking does **not** guarantee
+velocity or acceleration continuity, and it never implies facial morph support.
+
+The executable [transition study](../examples/acting_transitions.py) compares legacy,
+anticipated and spring timing, with cuts during anticipation and settling. It exports
+the exact score JSON, source hashes and state report; human ratings remain explicitly
+absent. Build into a new directory, then render:
+
+```sh
+python examples/acting_transitions.py ../generated/sdk-acting-transitions
+scene-render encode ../generated/sdk-acting-transitions/acting-transitions.scene.xml --strict
+```
+
 ### Sustained listening and repairable capability failures
 
 Use `heard` for the other speaker's lines. Keep one plan across their phrases and cuts;

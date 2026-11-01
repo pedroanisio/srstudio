@@ -165,6 +165,12 @@ Gloss Nadia with a reproducible scene and JSON continuity report. The
 [listening and carrying study](examples/acting_continuity.py) adds sustained reactions and a moving hand/prop
 interaction across a cut, with executable [authoring recipes](docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures).
 
+Opt-in [acting transition policies](docs/authoring-reference.md#opt-in-acting-transition-policies) add curves,
+springs, anticipation, settling and separate channel arrival times through strict score schema 1.1.0.
+Existing scores retain their output. The [transition comparison](examples/acting_transitions.py) demonstrates
+faces arriving before heads, with cuts through anticipation and settling; faces remain held drawings, and
+velocity/acceleration continuity and perceptual quality are not implied by easing.
+
 [Versioned motion envelopes](docs/catalog/limbs.md#versioned-reference-envelopes) provide measured numeric
 limits for explicitly scoped canonical human arms. The [quality study](examples/limbs_quality.py) builds
 reference and rejected motions, strict render evidence and a separate blinded review packet. Numeric limits
