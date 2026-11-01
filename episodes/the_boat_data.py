@@ -69,7 +69,7 @@ JOINS = Place(835.0, 1620.0, 0.62)  # where Brent comes to in the huddle
 JOIN_FROM = 1300.0  # and where he comes from
 JOIN = 0.45  # the seconds it takes him
 TURN = 0.7  # the seconds into the last shot that the heads turn
-HELD = dict(x=355.0, y=1560.0, w=150.0, h=250.0, tilt=-6.0)  # the phone as Deb holds it at the stop
+HELD = dict(x=355.0, y=1655.0, w=150.0, h=250.0, tilt=-6.0)  # the phone as Deb holds it at the stop
 HUDDLED = dict(x=350.0, y=1600.0, w=190.0, h=320.0, tilt=-4.0)
 LAST = dict(x=750.0, y=1610.0, w=220.0, h=380.0, tilt=-4.0)
 SCREEN_LIT = "#bfe3ff"
