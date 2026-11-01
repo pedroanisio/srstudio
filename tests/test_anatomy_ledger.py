@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import anatomy_ledger, collage_everyday, news_inked, parts, toon_bento, toon_head, usage
+from srstudio import anatomy, anatomy_ledger, collage_everyday, news_inked, parts, toon_bento, toon_head, usage
 from srstudio._transaction import scene_transaction
 from srstudio.anatomy import AnatomyError
 from srstudio.anatomy_ledger import HAND_NO_SIDE, HAND_UNPAIRED, AnatomyRefusedError, Exemption, ExemptionError, Note
@@ -252,3 +252,42 @@ def test_every_side_less_arm_in_an_episode_is_a_listed_published_reel():
 
 def test_a_version_on_the_list_of_an_unpaired_part_is_still_drawable():
     assert parts.drawing("news-gus", 3).name == "news-gus@3"
+
+
+def _hand_drawn(cv: Canvas, **kw: object) -> bytes:
+    collage_everyday.arm(cv, cv.comp, "gary", (900.0, 1800.0), (700.0, 1400.0), **kw)
+    return cv.scene.to_bytes()
+
+
+def test_a_pov_arm_says_its_side_and_keeps_its_thumb_on_the_page(cv):
+    """Looking down an arm inverts it: the right arm seen by its owner draws what a left arm seen from outside does."""
+    other = Canvas(Scene(version="auto"), font_asset=None)
+    pov = _hand_drawn(cv, side=1, view=anatomy.View.POV)
+    outside = _hand_drawn(other, side=-1)
+    assert pov == outside
+    assert anatomy_ledger.notes(cv) == []
+    assert [limb.side for limb in cv.limbs.values()] == [anatomy.Side.RIGHT]
+
+
+def test_a_pov_arm_differs_from_the_same_arm_seen_from_outside(cv):
+    other = Canvas(Scene(version="auto"), font_asset=None)
+    assert _hand_drawn(cv, side=1, view=anatomy.View.POV) != _hand_drawn(other, side=1)
+
+
+def test_a_view_on_an_arm_that_does_not_say_its_side_is_still_noted(cv):
+    _hand_drawn(cv, view=anatomy.View.POV)
+    assert [note.rule for note in anatomy_ledger.notes(cv)] == [HAND_NO_SIDE]
+
+
+def test_a_view_is_the_contract_s_and_nothing_else(cv):
+    with pytest.raises(anatomy.HandError):
+        _hand_drawn(cv, side=1, view="pov")
+
+
+def test_a_reach_carries_the_view_too(cv):
+    other = Canvas(Scene(version="auto"), font_asset=None)
+    collage_everyday.reach(
+        cv, cv.comp, "deb", (900.0, 1800.0), lambda t: (700.0, 1400.0), [0.0, 1.0], side=1, view=anatomy.View.POV
+    )
+    collage_everyday.reach(other, other.comp, "deb", (900.0, 1800.0), lambda t: (700.0, 1400.0), [0.0, 1.0], side=-1)
+    assert cv.scene.to_bytes() == other.scene.to_bytes()

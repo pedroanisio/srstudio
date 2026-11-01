@@ -355,6 +355,7 @@ NOT_A_HAND: Final = MappingProxyType(
         "toon-desk-lamp": "a lamp's arm",
         "toon-mower": "a mower's handle",
         "toon-tee": "a shirt front, between a figure's own arms",
+        "toon-remote": "a remote for a paw to hold: it draws no paw",
     }
 )
 

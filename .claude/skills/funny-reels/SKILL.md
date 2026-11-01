@@ -740,7 +740,8 @@ none of them, so on a pilot these defects are caught only by someone looking at 
 - `anatomy_gate.hand_defects`, the check named `anatomy`: what the build noted against `srstudio.anatomy`, read from the
   `anatomy.json` that `srstudio build` writes, so a scene built before the rule is refused until rebuilt. The build
   itself refuses first (`AnatomyRefusedError`): a hand from a version with one drawing on both arms, or a Collage
-  `arm` or `reach` that does not pass `side`. Give the arm its side and use the current version. `srstudio anatomy`
+  `arm` or `reach` that does not pass `side`. Give the arm its side and use the current version. An arm the camera
+  looks down, the viewer's own hand in an insert, adds `view=anatomy.View.POV`, which inverts its thumb. `srstudio anatomy`
   prints the closed list of published reels that keep such a hand. A reel never joins that list to get out, and on a
   first delivery the list excuses nothing.
 - `anatomy_gate.body_defects`, the same check on the frames: a bust that ends in the open, and two hands on one arm of

@@ -703,9 +703,10 @@ def _reaching(look: Look, x: float, y: float) -> list[Shape]:
     return _hand(look, "reach-hand", x, y, 38, anatomy.Arm(REACHING_HAND.side).hand(REACHING_HAND.facing))
 
 
-def _hand_of(side: int) -> anatomy.Hand:
-    """The hand of the arm on ``side``: on a figure facing the camera a reaching hand shows its back."""
-    return anatomy.Arm(anatomy.Side.of(side)).hand(REACHING_HAND.facing)
+def _hand_of(side: int, view: anatomy.View = anatomy.View.FRONT) -> anatomy.Hand:
+    """The hand of the arm on ``side``, seen as ``view`` says: a reaching hand shows its back, on a figure facing the
+    camera and to a camera looking down the arm, where the thumb goes to the other side."""
+    return anatomy.Arm(anatomy.Side.of(side), view).hand(REACHING_HAND.facing)
 
 
 def _mirrored_hand(cv: Canvas, parent, look: Look, x: float, y: float) -> None:
@@ -726,15 +727,17 @@ def arm(
     width: float = 72.0,
     hand: bool = True,
     side: int | _Unsaid = _Unsaid.SIDE,
+    view: anatomy.View = anatomy.View.FRONT,
 ) -> object:
     """``who``'s arm from ``frm`` (off the frame, usually) to its hand at ``to``; returns the group, which a caller
     keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from. ``side`` is
     the side of the body the arm is on, as in :func:`shoulder`: the hand of one is the mirror of the other's, and on a
-    figure facing the camera the back of either shows, its thumb on the outside. An upper arm is the same on both."""
+    figure facing the camera the back of either shows, its thumb on the outside. ``view`` is ``View.POV`` for an arm the
+    camera looks down, which inverts: the thumb goes inward. An upper arm is the same on both."""
     chosen = _side_of(cv, side, who, hand)
     look = LOOKS[who] if isinstance(who, str) else who
     g = cv.group(parent, cv.uid("g"))
-    mirrored = REACHING_HAND.mirrored(_hand_of(chosen))
+    mirrored = REACHING_HAND.mirrored(_hand_of(chosen, view))
     drawn = hand and not mirrored
     draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_reaching(look, *to) if drawn else []))
     if hand and mirrored:
@@ -780,11 +783,12 @@ def reach(
     *,
     width: float = 72.0,
     side: int | _Unsaid = _Unsaid.SIDE,
+    view: anatomy.View = anatomy.View.FRONT,
 ) -> object:
     """``who``'s arm fixed at its shoulder ``frm`` while its hand goes where ``hand`` says at each of ``times``: the
-    arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. ``side`` picks the
-    hand as in :func:`arm`. Returns the hand's group, at the hand's origin, for what it holds, which is never mirrored
-    with the hand."""
+    arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. ``side`` and
+    ``view`` pick the hand as in :func:`arm`. Returns the hand's group, at the hand's origin, for what it holds, which
+    is never mirrored with the hand."""
     chosen = _side_of(cv, side, who)
     if not times:
         raise EverydayError("an arm that reaches needs times to reach at")
@@ -802,7 +806,7 @@ def reach(
     held = cv.group(parent, cv.uid("g"))
     cv.keys(held, "x", [(t, x) for t, (x, _) in spots], hold=False, local=False)
     cv.keys(held, "y", [(t, y) for t, (_, y) in spots], hold=False, local=False)
-    if REACHING_HAND.mirrored(_hand_of(chosen)):
+    if REACHING_HAND.mirrored(_hand_of(chosen, view)):
         _mirrored_hand(cv, held, look, 0.0, 0.0)
     else:
         draw_shapes(cv, held, _reaching(look, 0.0, 0.0))

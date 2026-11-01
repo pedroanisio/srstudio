@@ -57,19 +57,32 @@ Counted on what is already built, without rendering:
 - 12 of the 14 delivered News reels drew an unpaired version in their first package, read from each package's hand
   scales: a hand with no mirrored partner. 10 were re-rendered on version 6 before going out. `missing-lid` and
   `seabird-jet-lag` stayed that way. The other two, `everyday-breaking` and `real-roast`, are on version 1's balls.
-- 7 Collage reels leave `side` out, found by walking the episodes' syntax trees. 6 of them have a right arm drawn with a
-  left hand: `any-news`, `fluent`, `ill-get-this`, `regards-dad`, `sensor`, `thought-of-you`. `its-gone`'s arms are left
-  arms, which is an unsaid side and not a wrong one.
+- 7 Collage reels leave `side` out, found by walking the episodes' syntax trees. That count is of unsaid sides, not of
+  wrong hands. Each hand of these reels was then viewed on the masters at full size:
+  - Wrong on the frames, 2, both published: `ill-get-this`, where Gary's two hands on the wallet and the pair on the
+    bill have their thumbs the same way, and `any-news`, where the pair on the forks do.
+  - Wrong by the rule, 1, not published: `sensor`, an arm leaving Jun's own shoulder on a figure facing the camera, not
+    a POV arm, with its thumb inward on the back of a raised hand. It now says `side=1`.
+  - Not wrong, 1: `thought-of-you`. The insert at 14.0 s is a POV arm, back of the hand to camera, thumb inward on the
+    page, and the held hand at 17.5 s has its thumb out. An earlier version of this record called it a right arm with a
+    left hand, read from the code. On the frames it is correct.
+  - Cannot be told, 2: `fluent`, whose one seen thumb is on a hanging hand, in by geometry, with Deb's hidden by the
+    handset, and `regards-dad`, whose thumb is hidden by the finger.
+  - Not viewed, 1: `its-gone`. Its arms are left arms, so its side is unsaid and not wrong in the code.
 
-19 reels in all. `any-news`, `fluent`, `ill-get-this`, `its-gone` and `regards-dad` are published, so they are rows of
-the list, with `missing-lid` and `seabird-jet-lag`. `sensor` and `thought-of-you` are not published, so they now say
-their sides, and their right arms get a right hand on their next build.
+That makes 19 reels the rule would have stopped at the build, 12 for an unpaired version and 7 for an unsaid side, of
+which 14 had a hand wrong on the frames at some build: the 12 News reels and 2 Collage. `any-news`, `fluent`,
+`ill-get-this`, `its-gone`, `regards-dad` and `thought-of-you` are published, so they are rows of the list, with
+`missing-lid` and `seabird-jet-lag`. `sensor` is not, so it now says its side, and its right arm gets a right hand on
+its next build.
 
 ## Limits
 
 - Rafa is a named gap: `rafa._hand` puts his thumb on the arm's side through the contract, but his four fingers are one
   row on both hands, 0.5 off centre, so the right hand is not an exact mirror of the left. He is approved, so he stays
   as drawn until the operator says otherwise. `anatomy_parts.NOT_MIRRORED` lists him and a test pins it.
+- A Collage arm says what the camera sees with `view=`: `arm` and `reach` take `View.POV`, and without it an arm looking
+  down itself would be forced to pick the side that draws its thumb right.
 - `side=` is a declaration. A caller who says the wrong side of a Collage arm is not caught: an arm drawn by coordinates
   does not know whose shoulder it left.
 - A single-drawing prop carries its side in the table, but a caller can still place it on the other arm. The table

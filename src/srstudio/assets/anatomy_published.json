@@ -108,6 +108,12 @@
       "rule": "hand-no-arm",
       "part": "toon-watering-can",
       "why": "published before rule 2: the prop draws its holder's hand, the build never named the arm"
+    },
+    {
+      "reel": "thought-of-you",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen, and its insert is a POV arm drawn right"
     }
   ]
 }
