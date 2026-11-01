@@ -8044,6 +8044,14 @@
     {"section": "props", "name": "Chuva", "parts": ["toon-rain"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "Chuva em laço, atrás do que estiver na frente dela."},
     {"section": "props", "name": "Anão de jardim", "parts": ["toon-gnome"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "O anão de jardim da foto da entrega."},
     {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."},
-    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."}
+    {"section": "locations", "name": "Sala de reunião", "parts": ["collage-meeting-room"], "shot": {"episode": "its-gone", "at": 2.0}, "text": "Uma janela para a cidade ao entardecer e uma parede sólida com a prateleira da assinatura."},
+    {"section": "graphics", "name": "O outro lado da Terra", "parts": ["map-far-side"], "shot": {"episode": "dig-straight-down", "at": 19.9, "box": [0, 680, 1080, 560]}, "text": "O outro lado do planeta virado por cima do mapa plano: cada ponto pousa no seu antípoda."},
+    {"section": "props", "name": "Relógio sem números", "parts": ["map-clock"], "shot": {"episode": "most-time-zones", "at": 14.5, "box": [0, 460, 1080, 1000]}, "text": "Um relógio redondo só com ponteiros, para que uma dúzia deles se conte de relance."},
+    {"section": "props", "name": "Cidades que acendem", "parts": ["map-daylight"], "shot": {"episode": "most-time-zones", "at": 18.0, "box": [0, 460, 1080, 1000]}, "text": "Pontos em cidades do mapa, dourados com o sol e escuros sem ele, ao longo de um dia de verdade."},
+    {"section": "graphics", "name": "Carimbo de evidência", "parts": ["mind-stamp"], "shot": {"episode": "above-average", "at": 9.0, "box": [200, 240, 680, 280]}, "text": "Uma linha de evidência carimbada sobre a imagem, com a fonte embaixo, nunca num slide próprio."},
+    {"section": "graphics", "name": "Zíper de abertura", "parts": ["mind-zipper"], "shot": {"episode": "explain-a-zipper", "at": 0.9}, "text": "Um zíper fechado ocupa o quadro e, ao ser puxado, abre em V sobre a cena de trás."},
+    {"section": "graphics", "name": "Nome do efeito", "parts": ["mind-named"], "shot": {"episode": "above-average", "at": 23.0, "box": [60, 250, 960, 200]}, "text": "O nome do efeito, pequeno, sobre a última pausa: uma assinatura depois da risada."},
+    {"section": "locations", "name": "Enfermaria", "parts": ["toon-ward", "toon-ward-bed"], "shot": {"episode": "above-average", "at": 18.5}, "text": "Uma parede clara, uma cortina no trilho e um suporte de soro; na frente, o lençol dobrado sobre o cobertor azul."},
+    {"section": "props", "name": "Curativo", "parts": ["toon-bandage"], "shot": {"episode": "above-average", "at": 23.0, "box": [0, 280, 900, 800]}, "text": "Uma faixa de gaze na testa e um esparadrapo em cruz na bochecha, que ficam no personagem quando ele fala."}
   ]
 }

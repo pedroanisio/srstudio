@@ -29,7 +29,9 @@ import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -183,6 +185,13 @@ def _on_flat(cv: Canvas, parent: Any, ctx: Context) -> Any:
 def _on_area(cv: Canvas, parent: Any, ctx: Context) -> Any:
     _maps(ctx)
     return map_kit.equal_area(cv, parent, 99.0, 21.0, 1.6, 0.0, SECONDS)
+
+
+def _far_side(cv: Canvas, parent: Any, e: registry.Entry, ctx: Context) -> None:
+    """The far side on the world map it lies over, turned all the way over by the second shown."""
+    _maps(ctx)
+    map_kit.flat(cv, parent, 0.0, 0.0, 0.0, 0.0, SECONDS)
+    e(cv, parent, 0.0, 0.0, (0.5, SECONDS / 2), SECONDS)
 
 
 def part(*args, **kwargs) -> Draw:
@@ -367,6 +376,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-card-reader": Recipe(part(((0.0, "TAP CARD", "idle"),))),
     "toon-phone": Recipe(lettered(PHONE_SCREENS)),
     "toon-speaker": Recipe(part(((0.0, "listen"),), SECONDS)),
+    "toon-bandage": Recipe(part(0.0, SECONDS, SimpleNamespace(eyes=((200.0, 300.0), (360.0, 300.0))))),
     "mind-name-card": Recipe(lettered("A Long Name", 0.0, 0.2, SECONDS)),
     "mind-evidence-card": Recipe(
         lettered(
@@ -382,6 +392,11 @@ RECIPES: dict[str, Recipe] = {
     "mind-memory-shelf": Recipe(lettered(("One", "Two", "Three"))),
     "mind-two-lines": Recipe(lettered(("Guessed", 0.5, ""), ("Happened", 0.25, ""), 0.0, SECONDS)),
     "mind-lens": Recipe(part((540.0, 900.0), 0.0, SECONDS)),
+    "mind-stamp": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, ("A line of evidence.",), "Source, 2026", 0.0, SECONDS, ctx.measure)
+    ),
+    "mind-zipper": Recipe(part(0.0, SECONDS), at=SECONDS / 2),
+    "mind-named": Recipe(lambda cv, g, e, ctx: e(cv, g, "A Long Name", 0.0, SECONDS, ctx.measure)),
     "map-globe": Recipe(lambda cv, g, e, ctx: e(cv, g, -20.0, 30.0, 0.0, SECONDS, spin=_SPIN) if _maps(ctx) else None),
     "map-flat": Recipe(lambda cv, g, e, ctx: e(cv, g, -30.0, 45.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
     "map-equal-area": Recipe(lambda cv, g, e, ctx: e(cv, g, 99.0, 21.0, 1.6, 0.0, SECONDS) if _maps(ctx) else None),
@@ -395,6 +410,11 @@ RECIPES: dict[str, Recipe] = {
         lambda cv, g, e, ctx: e(cv, _on_area(cv, g, ctx), {"inside": (0.0, 0.5), "rest": (0.0, 0.5)}, _HOT)
     ),
     "map-ring": Recipe(part(map_kit.ring_px(3300.0, 1.6), 0.0, SECONDS)),
+    "map-far-side": Recipe(_far_side, at=SECONDS),
+    "map-clock": Recipe(part(540.0, 960.0, 300.0, 10.0, 0.0, SECONDS)),
+    "map-daylight": Recipe(
+        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx), (_ROME,), datetime(2026, 6, 18, tzinfo=UTC), 0.0, SECONDS)
+    ),
     "map-stamp": Recipe(lettered("A line of evidence. Source, 2026.", 0.0, SECONDS)),
     "map-captions": Recipe(
         lambda cv, g, e, ctx: e(cv, g, (toon.Line("1", "A caption.", 0.0, SECONDS, "narrator"),), ctx.measure, {})
