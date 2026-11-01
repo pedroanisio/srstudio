@@ -33,6 +33,7 @@ from . import (  # noqa: F401  (registers builders)
     cutout_reference,
     cutout_shop,
     cutout_store,
+    cutout_walk,
     gloss,
     gloss_reel,
     gloss_sets,
