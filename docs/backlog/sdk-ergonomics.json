@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Remaining priorities include broader contracts, bounded scene composition, cache identity, continuity guarantees, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Remaining priorities include broader contracts, bounded scene composition, continuity guarantees, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -38,6 +38,25 @@
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "rendered_artifact_identity": {
+      "baseline_source_commit": "2dab35c1",
+      "initial_plate_identity_red": {"failed": 7, "passed": 2},
+      "catalog_materialization_red": {"failed": 1},
+      "outer_cache_identity_red": {"failed": 2},
+      "font_binding_race_red": {"failed": 1},
+      "final_focused_identity_tests": {"passed": 17, "deselected_real_engine_test": 1},
+      "broader_engine_enabled_regressions": {
+        "passed": 929,
+        "skipped": 0,
+        "qualification": "Includes proxy, vehicle and host/reel checks; this run began before the final catalog font-binding guard. The final revision is covered by the selection below."
+      },
+      "final_engine_enabled_selection": {"passed": 731, "subtests_passed": 25, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"plates": 97, "catalog_specimens": 97},
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "ruff_formatted_files": 1558,
+      "mypy_source_files": 244,
+      "qualification": "Real-engine checks verify printed-texture dependency resolution, deterministic plate pixels and warm reuse. Boundary-injected tests verify renderer/font changes and failure publication. These are selected regressions, not a full-suite run or evidence of perceptual improvement."
+    },
     "explicit_drawing_events": {
       "baseline_source_commit": "ea60f48d",
       "deferred_execution_red": {
@@ -342,9 +361,12 @@
     {
       "id": "SDK-P2-09",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Include renderer identity in plate cache ownership",
       "problem": "Plate cache lookup uses only serialized scene content and can return an earlier renderer build output when the same cache directory is reused.",
+      "resolution": "Keep drawing digests stable and key rendered plates, prints, catalog specimens and posters by renderer bytes and relevant compiled inputs. Printed textures and their dependent plates include actual font bytes. Unique private work directories and atomic installation preserve prior artifacts. Catalogs materialize the selected plate at its logical drawing reference and refuse dependency changes after binding. Legacy flat cache files remain untouched and are not trusted as renderer-owned hits. Returned filenames preserve render identity through copied host assets.",
+      "verification": ["tests/test_plate_cache_identity.py", "tests/test_catalog_render_identity.py", "tests/test_plates.py", "tests/test_catalog_specimens.py", "docs/decisions/0095-rendered-artifact-cache-identity.md"],
+      "limits": ["Renderer runtime dependencies, hardware and environment must remain pinned; hashing the executable does not fingerprint those inputs.", "Warm hits still read and hash inputs. Zero new renderer invocations is not a zero-cost lookup guarantee."],
       "evidence": [
         "src/srstudio/plates.py:render",
         "DRAWING.md#rules"
@@ -604,7 +626,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-09", "SDK-P2-08", "SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P3-08", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-08", "SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P3-08", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

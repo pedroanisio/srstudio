@@ -196,7 +196,7 @@ def test_a_scene_with_no_length_is_refused_before_the_engine(tmp_path, text):
         cs.poster(tmp_path, "wifi", tmp_path / "no-engine", tmp_path / "cache")
 
 
-def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path):
+def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path, monkeypatch):
     scene = package(tmp_path / "packages")
     before = sorted(p.name for p in scene.parent.iterdir())
     made = cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache")
@@ -204,7 +204,9 @@ def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path
     assert sorted(p.name for p in scene.parent.iterdir()) == before
     assert [p.name for p in made.parent.iterdir()] == [made.name]  # no frame left beside it
     mtime = made.stat().st_mtime_ns
-    assert cs.poster(tmp_path / "packages", "wifi", tmp_path / "no-engine", tmp_path / "cache") == made  # cached
+    with monkeypatch.context() as patch:
+        patch.setattr(cs.subprocess, 'run', lambda *args, **kwargs: pytest.fail('warm poster invoked a process'))
+        assert cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache") == made
     assert made.stat().st_mtime_ns == mtime
     scene.write_text(PACKAGE.replace("#336699", "#993366"))
     assert cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache") != made  # a new spec is a new poster

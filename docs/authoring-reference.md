@@ -921,6 +921,38 @@ Soft, Ink, Stick, Saga and other specialized builders still use their documented
 `contracts.describe_callable(place_character)` expose argument shapes; runtime objects remain runtime bindings,
 and this API does not parse untrusted JSON. See [ADR 0087](decisions/0087-character-clip-clocks.md).
 
+### Plate cache ownership
+
+`plates.digest(plate)` identifies a drawing document. `plates.print_name(printed)` identifies a logical printed
+texture from its definition and font metadata. Neither is a rendered filename. Use the `Path` returned by
+`plates.render`, `plates.print_png`, or the prepared sheet; its filename includes the renderer and input identity
+and remains distinct when copied into a project's asset directory.
+
+Rendered plates and prints live under `<cache>/renders/<engine-sha256>/`. Their keys include a versioned cache
+schema, the engine file's SHA-256, compiled scene bytes, actual print font bytes when used, and compiled print
+dependencies. Samples, bounces, lighting and other emitted settings participate through the scene document.
+Changing a printed texture's font or recipe invalidates plates that use it. Changing plate quality can reuse an
+unchanged print. Equal renderer bytes at another path reuse artifacts; replacing the bytes at the same path
+invalidates them even when its size and modification time are preserved.
+
+Catalog specimen and package-poster caches also bind the renderer. Plate-backed specimens include their
+rendered-plate input keys, and the catalog atomically materializes the selected plate at the stable logical
+reference its scene uses. This preserves drawing/approval fingerprints while preventing an outer preview cache
+from hiding changed renderer or font inputs.
+
+An unchanged rebuild invokes no new plate renderer. It still reads and hashes identity inputs; no zero-cost or
+cross-platform pixel-equivalence claim is implied. Renderer dependencies, hardware and environment must remain
+pinned for reproducible comparisons. Keep renderer files immutable for a build. A detected change prevents the
+current artifact from being published; previous complete artifacts remain available. `plates.verify` compares a
+fresh plate render with cached pixels on that selected toolchain.
+
+Legacy `<cache>/<drawing-digest>.png` and `prints/<logical-name>.png` files have no renderer provenance and are
+left untouched, but are not imported as trusted cache hits. The first build with the new cache renders new
+artifacts. Published projects keep their copied images and approved drawing references. Missing engine/font
+inputs raise `plate.cache.input` before cache creation; execution failures retain `PlateError`, and detected
+renderer changes expose `plate.cache.changed` or `catalog.renderer.changed` with repair fields.
+Specimens also reject a rendered plate whose inputs changed after cache binding with `catalog.inputs.changed`.
+
 ### Extending drawing calls
 
 `Canvas.keys()` builds and validates the complete animation before attaching it to the scene. A failed key

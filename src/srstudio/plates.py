@@ -1,10 +1,11 @@
 """Plates: path-traced stills, rendered once on demand and cached by what they draw (ADR 0068).
 
 A :class:`Plate` is one camera, one set of lights and some placed meshes. Its digest is the digest of the scene document
-it makes, and that document names its meshes and printed textures by digest of their own, so a plate's name is known
-without rendering anything and changes exactly when the picture would. Renders land in ``<cache>/<digest>.png``; a
-plate that is already there is not rendered again. The engine gives identical bytes for an identical document, so a
-rebuild checks itself (:func:`verify`).
+it makes, and that document names its meshes and printed textures by digest of their own, so a drawing's name is known
+without rendering anything. Render artifacts additionally include the engine bytes, actual print font bytes and
+compiled print scenes in their identity. They live under ``<cache>/renders/<engine-sha256>/``. Treat returned paths as
+opaque; :func:`digest` identifies the drawing, not a rendered file. An unchanged build reuses its artifacts, and
+:func:`verify` compares a fresh render with the cached pixels on the selected toolchain.
 
 A replacement feature is the difference between two plates of the same pose (:func:`patch`): what changed, cut out with
 a feathered edge and stored with its place. Printed labels are engine-rendered 2D scenes in a Google font
@@ -212,7 +213,7 @@ def materials_of(meshes: Sequence[Mesh], palette: dict[str, Material]) -> tuple[
 
 
 def print_name(printed: Print) -> str:
-    """What a printed texture is called: the digest of its definition and its font."""
+    """The logical texture name from its definition and declared font metadata, independent of rendering."""
     text = json.dumps({"print": asdict(printed), "font": PRINT_FONT}, sort_keys=True)
     return hashlib.sha256(text.encode()).hexdigest()
 
@@ -365,58 +366,153 @@ def _keep(tmp: Path, target: Path) -> Path:
 
 def _engine_render(engine: Path, source: Path, out: Path) -> None:
     """Render frame 0 of ``source``, from its own folder because a document's files are relative to it."""
-    done = subprocess.run(
-        [str(Path(engine).resolve()), "render", source.name, "--time", "0", "--output", str(out.resolve()), "--strict"],
-        cwd=source.parent,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        done = subprocess.run(
+            [
+                str(Path(engine).resolve()),
+                "render",
+                source.name,
+                "--time",
+                "0",
+                "--output",
+                str(out.resolve()),
+                "--strict",
+            ],
+            cwd=source.parent,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        raise PlateError(
+            f'cannot execute renderer {engine}: {error}',
+            code='plate.render.engine',
+            path='engine',
+            actual=str(engine),
+            expected='an executable scene-render build',
+            remedy='Supply a working renderer executable with its required runtime dependencies.',
+        ) from error
     if done.returncode != 0:
         raise PlateError(f"the engine could not render {source.name}: {done.stderr.strip()[-600:]}")
 
 
-def print_png(printed: Print, *, engine: Path, cache: Path, fonts: Path) -> Path:
-    """The texture of ``printed``, rendered once. Everything on it is in :data:`PRINT_FONT`, a Google Font."""
-    folder = _folder(cache / "prints")
-    out = folder / f"{print_name(printed)}.png"
+def _input_error(path: str, value: Path, error: OSError) -> PlateError:
+    return PlateError(
+        f'cannot read render {path}: {value}: {error}',
+        code='plate.cache.input',
+        path=path,
+        actual=str(value),
+        expected='a readable renderer file or print font',
+        remedy='Supply the selected renderer and, for printed materials, the actual PRINT_FONT file.',
+    )
+
+
+def _engine_digest(engine: Path) -> str:
+    digest_ = hashlib.sha256()
+    try:
+        with engine.open('rb') as stream:
+            while block := stream.read(1024 * 1024):
+                digest_.update(block)
+    except OSError as error:
+        raise _input_error('engine', engine, error) from error
+    return digest_.hexdigest()
+
+
+@dataclass(frozen=True)
+class _RenderInputs:
+    engine: Path
+    engine_digest: str
+    font: bytes | None
+
+    def check_engine(self) -> None:
+        if _engine_digest(self.engine) != self.engine_digest:
+            raise PlateError(
+                'renderer changed during rendering; the current artifact was not published',
+                code='plate.cache.changed',
+                path='engine',
+                actual=str(self.engine),
+                expected=self.engine_digest,
+                remedy='Keep the renderer file immutable for the build, then retry with the selected build.',
+            )
+
+    def key(self, kind: str, source: bytes, prints: Sequence[bytes] = ()) -> str:
+        definition = {
+            'schema': 'srstudio.plate-render/1.0.0',
+            'kind': kind,
+            'engine': self.engine_digest,
+            'font': hashlib.sha256(self.font).hexdigest() if self.font is not None else None,
+            'document': hashlib.sha256(source).hexdigest(),
+            'prints': sorted(hashlib.sha256(item).hexdigest() for item in prints),
+        }
+        return hashlib.sha256(json.dumps(definition, sort_keys=True).encode()).hexdigest()
+
+    def folder(self, cache: Path) -> Path:
+        return _folder(_folder(_folder(cache) / 'renders') / self.engine_digest)
+
+
+def _render_inputs(engine: Path, fonts: Path, *, printed: bool) -> _RenderInputs:
+    engine = Path(engine).absolute()
+    engine_digest = _engine_digest(engine)
+    font = None
+    if printed:
+        path = fonts / PRINT_FONT[2]
+        try:
+            font = path.read_bytes()
+        except OSError as error:
+            raise _input_error('font', path, error) from error
+    return _RenderInputs(engine, engine_digest, font)
+
+
+def _print_document(printed: Print, font: bytes) -> bytes:
+    family, weight, name, license_ = PRINT_FONT
+    scene = Scene(version="auto")
+    scene.add_project(
+        width=printed.width, height=printed.height, fps="1", duration=1, background=printed.background, seed=1030
+    )
+    cv = Canvas(scene, font_asset="print", width=printed.width, height=printed.height)
+    cv.assets.add_font(
+        id="print", src=name, sha256=hashlib.sha256(font).hexdigest(), family=family, weight=weight, license=license_
+    )
+    if printed.border:
+        inset = max(printed.width, printed.height) * 0.02
+        wide, tall = printed.width - inset * 2, printed.height - inset * 2
+        cv.rect(cv.comp, inset, inset, wide, tall, "#00000000", printed.border, inset * 0.6, inset * 2)
+    for number, line in enumerate(printed.lines):
+        tall = round(line.size * 1.6)
+        x, y = line.x - printed.width / 2, line.y - tall / 2
+        cv.text(cv.comp, f"line-{number}", line.text, x, y, printed.width, tall, line.size, line.color)
+    return scene.to_bytes(layout="pretty")
+
+
+def _private_bytes(path: Path, data: bytes) -> None:
+    path.write_bytes(data)
+    path.chmod(FILE_MODE)
+
+
+def _cached_print(source: bytes, inputs: _RenderInputs, folder: Path) -> Path:
+    out = folder / f'{inputs.key("print", source)}.png'
     if out.exists():
         return out
-    family, weight, name, license_ = PRINT_FONT
-    font = (fonts / name).read_bytes()
-    with tempfile.TemporaryDirectory(dir=cache) as work:
+    assert inputs.font is not None  # preflight reads the actual font before cache mutation
+    with tempfile.TemporaryDirectory(dir=folder) as work:
         root = Path(work)
-        (root / name).write_bytes(font)
-        scene = Scene(version="auto")
-        scene.add_project(
-            width=printed.width, height=printed.height, fps="1", duration=1, background=printed.background, seed=1030
-        )
-        cv = Canvas(scene, font_asset="print", width=printed.width, height=printed.height)
-        cv.assets.add_font(
-            id="print",
-            src=name,
-            sha256=hashlib.sha256(font).hexdigest(),
-            family=family,
-            weight=weight,
-            license=license_,
-        )
-        if printed.border:
-            inset = max(printed.width, printed.height) * 0.02
-            wide, tall = printed.width - inset * 2, printed.height - inset * 2
-            cv.rect(cv.comp, inset, inset, wide, tall, "#00000000", printed.border, inset * 0.6, inset * 2)
-        for number, line in enumerate(printed.lines):
-            tall = round(line.size * 1.6)
-            x, y = line.x - printed.width / 2, line.y - tall / 2
-            cv.text(cv.comp, f"line-{number}", line.text, x, y, printed.width, tall, line.size, line.color)
-        source = root / "print.scene.xml"
-        source.write_bytes(scene.to_bytes(layout="pretty"))
+        _private_bytes(root / PRINT_FONT[2], inputs.font)
+        document_ = root / 'print.scene.xml'
+        _private_bytes(document_, source)
         tmp = root / "print.png"
-        _engine_render(engine, source, tmp)
-        shutil.move(tmp, out)
-    os.chmod(out, FILE_MODE)
-    return out
+        _engine_render(inputs.engine, document_, tmp)
+        inputs.check_engine()
+        return _keep(tmp, out)
 
 
-def _lay_out(plate: Plate, cache: Path, engine: Path, fonts: Path) -> None:
+def print_png(printed: Print, *, engine: Path, cache: Path, fonts: Path) -> Path:
+    """The print texture cached by its scene, renderer and actual PRINT_FONT bytes."""
+    inputs = _render_inputs(engine, fonts, printed=True)
+    assert inputs.font is not None
+    source = _print_document(printed, inputs.font)
+    return _cached_print(source, inputs, inputs.folder(cache))
+
+
+def _lay_out(plate: Plate, cache: Path, inputs: _RenderInputs, folder: Path, prints: dict[str, bytes]) -> None:
     """Put what ``plate`` names into the cache: its meshes, and its prints, rendered on the way."""
     meshes = _folder(cache / "meshes")
     for placed in plate.placed:
@@ -427,42 +523,58 @@ def _lay_out(plate: Plate, cache: Path, engine: Path, fonts: Path) -> None:
                 tmp.write_bytes(mesh.obj)
                 _keep(tmp, target)
     textures = _folder(cache / "textures")
+    for name, source in prints.items():
+        rendered = _cached_print(source, inputs, folder)
+        target = _folder(cache / 'prints') / f'{name}.png'
+        shutil.copyfile(rendered, target)
+        target.chmod(FILE_MODE)
     for material in plate.materials:
-        if material.print is not None:
-            print_png(material.print, engine=engine, cache=cache, fonts=fonts)
         for texture in (material.color_map, material.normal_map):
             if texture is not None and not (textures / f"{texture.sha256}.png").exists():
                 write_png(textures / f"{texture.sha256}.png", texture.pixels)
 
 
 def render(plate: Plate, *, engine: Path, cache: Path, fonts: Path) -> Path:
-    """``<cache>/<digest>.png``, rendered only when it is missing."""
-    _folder(cache)
-    out = cache / f"{digest(plate)}.png"
+    """A renderer-owned artifact, rendered only when its complete input identity is missing."""
+    inputs, source, prints = _prepare(plate, engine, fonts)
+    folder = inputs.folder(cache)
+    out = folder / f'{inputs.key("plate", source, tuple(prints.values()))}.png'
     if out.exists():
         return out
-    return _render_to(plate, out, engine, cache, fonts)
+    return _render_to(plate, out, inputs, folder, source, prints)
 
 
-def _render_to(plate: Plate, out: Path, engine: Path, cache: Path, fonts: Path) -> Path:
-    _lay_out(plate, cache, engine, fonts)
-    source = cache / f"{out.stem}.scene.xml"
-    source.write_bytes(document(plate))
-    tmp = cache / f"{out.stem}.{os.getpid()}.png"
-    try:
-        _engine_render(engine, source, tmp)
+def _prepare(plate: Plate, engine: Path, fonts: Path) -> tuple[_RenderInputs, bytes, dict[str, bytes]]:
+    printed = [material.print for material in plate.materials if material.print is not None]
+    inputs = _render_inputs(engine, fonts, printed=bool(printed))
+    prints = {print_name(item): _print_document(item, inputs.font) for item in printed if inputs.font is not None}
+    return inputs, document(plate), prints
+
+
+def _render_to(
+    plate: Plate, out: Path, inputs: _RenderInputs, folder: Path, source: bytes, prints: dict[str, bytes]
+) -> Path:
+    with tempfile.TemporaryDirectory(dir=folder) as work:
+        root = Path(work)
+        _lay_out(plate, root, inputs, folder, prints)
+        document_ = root / 'plate.scene.xml'
+        _private_bytes(document_, source)
+        tmp = root / 'plate.png'
+        _engine_render(inputs.engine, document_, tmp)
+        inputs.check_engine()
         return _keep(tmp, out)
-    finally:
-        source.unlink(missing_ok=True)
-        tmp.unlink(missing_ok=True)
 
 
 def verify(plate: Plate, *, engine: Path, cache: Path, fonts: Path) -> str:
     """Render ``plate`` again beside its cached file and refuse any difference: returns the sha256 of its pixels."""
-    kept = render(plate, engine=engine, cache=cache, fonts=fonts)
-    again = _render_to(plate, cache / f"{kept.stem}.again.png", engine, cache, fonts)
-    first, second = pixels(kept), pixels(again)
-    again.unlink()
+    inputs, source, prints = _prepare(plate, engine, fonts)
+    folder = inputs.folder(cache)
+    kept = folder / f'{inputs.key("plate", source, tuple(prints.values()))}.png'
+    if not kept.exists():
+        _render_to(plate, kept, inputs, folder, source, prints)
+    with tempfile.TemporaryDirectory(dir=folder) as work:
+        again = _render_to(plate, Path(work) / 'again.png', inputs, folder, source, prints)
+        first, second = pixels(kept), pixels(again)
     if first.shape != second.shape or not np.array_equal(first, second):
         raise PlateError(f"plate {kept.stem} did not render to the same pixels twice")
     return hashlib.sha256(first.tobytes()).hexdigest()
