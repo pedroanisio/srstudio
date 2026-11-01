@@ -318,6 +318,16 @@ def test_captions_sit_in_measured_pills_in_the_style_font():
         toon.captions(canvas(font=None), cv.comp, lines, measure)
 
 
+def test_a_shot_can_lower_the_caption_band():
+    default, lowered = canvas(), canvas()
+    lines = toon.parse_script(SCRIPT)
+    toon.captions(default, default.comp, lines, measure)
+    toon.captions(lowered, lowered.comp, lines, measure, band=toon.CAPTION_TOP + 12)
+    pill = lambda cv: next(s for s in tree(cv).find("composition").iter("shape") if s.get("shape") == "rect")  # noqa: E731
+    assert float(pill(default).get("y")) == round(toon.fy(toon.CAPTION_TOP))
+    assert float(pill(lowered).get("y")) == round(toon.fy(toon.CAPTION_TOP + 12))
+
+
 # -- the style ------------------------------------------------------------------------------------------------
 def test_the_style_value(tmp_path):
     assert STYLES["toon"] is TOON and TOON.silent and TOON.font.google.italic and TOON.font.style == "italic"

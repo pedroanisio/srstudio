@@ -107,9 +107,10 @@ def double_bed(cv: Canvas, parent, *, day: bool = False) -> object:
     summary="A quilt across a double bed in front of the cast, a nightstand beside it signed as the desk is",
     style="toon",
 )
-def double_quilt(cv: Canvas, parent, pattern: str = "plum", *, day: bool = False) -> object:
+def double_quilt(cv: Canvas, parent, pattern: str = "plum", *, day: bool = False, signed: bool = True) -> object:
     """A quilt from side to side of :func:`double_bed`, one of :data:`srstudio.toon_house.QUILTS`, the nightstand with
-    the cactus and the code, and by ``day`` the sun in bands across it. Returns its group."""
+    the cactus and the code, and by ``day`` the sun in bands across it. A reel whose close shots lose the nightstand
+    signs on something they keep and passes ``signed=False``. Returns its group."""
     if pattern not in QUILTS:
         raise ToonDataError(f"a quilt is one of {sorted(QUILTS)}, got {pattern!r}")
     base, patch = QUILTS[pattern]
@@ -126,8 +127,11 @@ def double_quilt(cv: Canvas, parent, pattern: str = "plum", *, day: bool = False
         FINE_W,
         radius=0,
     )
-    signature.cactus(cv, g, fx(NIGHTSTAND_X + 66), fy(NIGHTSTAND_TOP), 0.7)
-    signature.code(cv, g, fx(NIGHTSTAND_X + 96), fy(NIGHTSTAND_TOP + 30), 14, color="#b9a48f", opacity=0.9, align="end")
+    if signed:
+        signature.cactus(cv, g, fx(NIGHTSTAND_X + 66), fy(NIGHTSTAND_TOP), 0.7)
+        signature.code(
+            cv, g, fx(NIGHTSTAND_X + 96), fy(NIGHTSTAND_TOP + 30), 14, color="#b9a48f", opacity=0.9, align="end"
+        )
     cv.rect(g, fx(QUILT_X), fy(QUILT_TOP), fh(QUILT_W), fh(420), base, cv.ink, INK_W, radius=fh(30))
     for row, top in enumerate(range(int(QUILT_TOP) + 30, 1130, 76)):
         for col, left in enumerate(range(0, 400, 92)):

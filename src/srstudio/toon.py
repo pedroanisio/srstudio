@@ -546,12 +546,19 @@ def pill_width(measure: Callable[[str], float], text: str) -> float:
 
 @register("graphic", "toon-captions", summary="Each cue in a white pill at the top, in the style's italic")
 def captions(
-    cv: Canvas, parent, lines: Sequence[Line], measure: Callable[[str], float], tints: Mapping[str, str] | None = None
+    cv: Canvas,
+    parent,
+    lines: Sequence[Line],
+    measure: Callable[[str], float],
+    tints: Mapping[str, str] | None = None,
+    *,
+    band: float = CAPTION_TOP,
 ) -> None:
     """One pill per cue, centred, sized by ``measure(text)`` (the text's advance width at :data:`CAPTION_SIZE`);
-    ``tints`` colours the pill of a cue by its speaker (white otherwise)."""
+    ``tints`` colours the pill of a cue by its speaker (white otherwise); ``band`` is the top of the pills in reference
+    pixels, for a reel whose corner bug would crowd them."""
     cv.require_font("the Toon style letters its captions in its font")
-    top, height = int(round(fy(CAPTION_TOP))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
+    top, height = int(round(fy(band))), int(round(fh(CAPTION_H)))  # the text box takes whole pixels
     for line in lines:
         g = cv.group(parent, cv.uid("g"), start=line.start, end=line.end)
         width = pill_width(measure, line.text)
