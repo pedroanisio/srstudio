@@ -54,9 +54,18 @@ def spec(root: str | Path, slug: str, number: str, title: str, description: str,
     )
 
 
-def words(ep: Episode, takes: Sequence[Any], *, y: float = WORDS_Y, size: float = WORD_SIZE, sentences: bool = False):
+def words(
+    ep: Episode,
+    takes: Sequence[Any],
+    *,
+    y: float = WORDS_Y,
+    size: float = WORD_SIZE,
+    sentences: bool = False,
+    hold: bool = False,
+):
     """The spoken ``takes`` as word captions on the episode clock; returns their group. With ``sentences``, no cue
-    runs across a sentence end (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep theirs."""
+    runs across a sentence end, and ``hold`` keeps the short cues that can leave up long enough to read
+    (:func:`srstudio.stick.word_cues`): new reels ask for them, delivered ones keep theirs."""
     group = ep.cv.group(ep.cv.comp, "spoken-words")
     font = (ep.root / str(ep.spec.font)).read_bytes()
     cues = stick.word_cues(
@@ -68,6 +77,7 @@ def words(ep: Episode, takes: Sequence[Any], *, y: float = WORDS_Y, size: float 
         borrow=True,
         balance=True,
         sentences=sentences,
+        hold=hold,
     )
     stick.words(ep.cv, group, cues, y=y, scrim=SCRIM)
     return group
