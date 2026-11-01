@@ -44,7 +44,7 @@ TINTS = {"vera": news_kit.CREAM, "gus": news_kit.TANGERINE}
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 VERSIONS = {"news-vera": 3, "news-gus": 3}
 DOOR = "KITCHEN"
-SMALL = 0.35  # of the full voice: the same word he shouted, with the air gone out of it
+SMALL = -9.11864  # dB, 35% of the full voice: the same word he shouted, with the air gone out of it
 SLAM = 0.35  # seconds into the held beat at which the door shuts: long enough to see it open first
 TICKER = ("FRIDGE: OPENED 3 TIMES", "LIGHTS: LEFT ON", "HALLWAY: NO COMMENT", "HER TV: STILL ON, VERY LOUD")
 LOWERS = (  # the beat it arrives on, its kicker, its one line, and whether it slides in
@@ -72,7 +72,7 @@ LINES = (
     Line("vera", "She's on the couch. The TV's on. It's coming back."),
     Line("gus", "Ma'am, what was it?"),
     Line("vera", "To get away from you."),
-    Line("gus", "Ma'am?", level=SMALL),
+    Line("gus", "Ma'am?", gain=SMALL),
     Line("vera", "She's back in the kitchen. She knows why."),
 )
 PLACEHOLDER = ("side", "flat", "desk")  # a Toon pose for the sketch's check: this cast is drawn from ACTS

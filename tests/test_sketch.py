@@ -53,8 +53,8 @@ def test_a_consistent_sketch_passes_and_derives_its_cues_appearances_events_and_
         (lambda s: replace(s, speakers=(replace(SPEAKERS[0], character="owl"), SPEAKERS[1])), "distinct characters"),
         (lambda s: replace(s, speakers=(SPEAKERS[0], replace(SPEAKERS[1], character="dog"))), "distinct characters"),
         (lambda s: replace(s, lines=(*LINES, Line("nobody", "Hi."))), "known speaker"),
-        (lambda s: replace(s, lines=(replace(LINES[0], level_db=1.0), *LINES[1:])), "level_db"),
-        (lambda s: replace(s, lines=(replace(LINES[0], level_db=-13.0), *LINES[1:])), "level_db"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=1.0), *LINES[1:])), "gain"),
+        (lambda s: replace(s, lines=(replace(LINES[0], gain=-13.0), *LINES[1:])), "gain"),
         (lambda s: replace(s, lines=(LINES[0], Line("boss", "  "), LINES[2])), "known speaker and some text"),
         (lambda s: with_beats(lambda b: [replace(b[0], start=0.5), *b[1:]]), "starts at 0"),
         (lambda s: with_beats(lambda b: [b[0], replace(b[1], start=0.05), *b[2:]]), "held less than"),
@@ -527,14 +527,14 @@ def test_a_line_said_small_is_levelled_below_the_others_and_the_rest_keep_their_
         gains[Path(dst).name] = gain
         return copy_clip(src, dst, a, b, kept, gain, ffmpeg)
 
-    lines = (LINES[0], replace(LINES[1], level=0.25), LINES[2])
+    lines = (LINES[0], replace(LINES[1], gain=-12.0), LINES[2])
     sketch.record(replace(SK, lines=lines), tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=clip)
     assert gains["vo-01.wav"] == pytest.approx(gains["vo-03.wav"])  # the takes are alike but for their words
-    assert gains["vo-01.wav"] - gains["vo-02.wav"] == pytest.approx(12.04, abs=0.01)  # a quarter of the peak
+    assert gains["vo-01.wav"] - gains["vo-02.wav"] == pytest.approx(12.0)  # the gain, in dB, off the common level
 
 
-@pytest.mark.parametrize("level", [0.0, -0.5, 1.5, float("nan")])
-def test_a_line_level_is_a_part_of_the_full_voice(level):
-    lines = (LINES[0], replace(LINES[1], level=level), LINES[2])
-    with pytest.raises(sketch.SketchError, match="level"):
+@pytest.mark.parametrize("gain", [0.5, 1.5, -12.5, float("nan"), float("inf")])
+def test_a_line_gain_is_in_db_at_zero_or_under_within_the_mix(gain):
+    lines = (LINES[0], replace(LINES[1], gain=gain), LINES[2])
+    with pytest.raises(sketch.SketchError, match="gain"):
         sketch.check(replace(SK, lines=lines))
