@@ -20,6 +20,7 @@ from collections.abc import Sequence
 
 from . import checks, signature, stick_reel
 from .canvas import Canvas
+from .look import sheet
 from .registry import register
 from .stick import Face, Gradient, Look, RigKey, RigPose, StickDataError, _group, _seat, box, oval, paint, rig, shape
 
@@ -144,7 +145,7 @@ def _outside(cv: Canvas, parent, night: Sequence[tuple[float, float]]) -> None:
     x, y, w, h = DOORWAY
     sky = paint(cv, Gradient("door-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, y, 0, vy))
     box(cv, parent, x - 10, y - 10, w + 20, vy - y + 20, sky)
-    far = _group(cv, parent, effects=cv.effect("door-far-blur", "blur", radius=3.0))
+    far = _group(cv, parent, effects=cv.effect("door-far-blur", "blur", radius=3.0), **sheet(cv))
     for side, edge in ((-1, x - 60), (1, x + w + 60)):
         shape(cv, far, f"M {vx + side * 34} {vy + 6} L {vx + side * 34} {vy - 120} L {edge} {y - 80} "
                        f"L {edge} {vy + 140} Z", BUILDING_FAR, 3)  # fmt: skip
@@ -245,7 +246,7 @@ def street(cv: Canvas, parent, end: float, *, night: Sequence[tuple[float, float
     s = cv
     sky = paint(s, Gradient("lens-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 0, 0, 900))
     box(s, parent, 0, 0, s.width, 900, sky)
-    far = _group(s, parent, effects=s.effect("lens-far-blur", "blur", radius=7.0))
+    far = _group(s, parent, effects=s.effect("lens-far-blur", "blur", radius=7.0), **sheet(s))
     shape(s, far, "M -40 900 L -40 180 L 420 620 L 420 900 Z", BUILDING_FAR, 4)
     shape(s, far, "M 1120 900 L 1120 180 L 660 620 L 660 900 Z", BUILDING, 4)
     for wx, wy, ww, wh in ((30, 420, 100, 170), (250, 610, 70, 120), (960, 420, 100, 170), (760, 610, 70, 120)):

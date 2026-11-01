@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from . import checks, signature
+from . import checks, look, signature
 from .canvas import Canvas
 from .collage import INK, LOOKS, CollageError, Point, _cut, _paper, _ring, draw_shapes, figure_shapes
 from .registry import register
@@ -53,13 +53,15 @@ def _wall(cv: Canvas, g, name: str, top: str, bottom: str) -> None:
 
 
 DEPTH_BLUR = 3.0  # the painted backdrop is a touch out of focus, the paper cast and the signature are sharp
-OVERSCAN = 1.04  # the backdrop drawn a little larger than the frame, so its blur never pulls the frame's edge in
+OVERSCAN = 1.04  # the backdrop drawn a little larger than the frame; its blur sees that only on a look.sheet
 
 
 def _backdrop(cv: Canvas, g) -> object:
     """The group a set paints into: scaled up about the frame's centre and blurred, for depth."""
     cx, cy = cv.width / 2, cv.height / 2
-    back = cv.group(g, cv.uid("g"), x=cx, y=cy, anchorX=cx, anchorY=cy, scaleX=OVERSCAN, scaleY=OVERSCAN)
+    back = cv.group(
+        g, cv.uid("g"), x=cx, y=cy, anchorX=cx, anchorY=cy, scaleX=OVERSCAN, scaleY=OVERSCAN, **look.sheet(cv)
+    )
     cv.apply(back, cv.effect("collage-depth", "blur", radius=DEPTH_BLUR))
     return back
 

@@ -36,12 +36,13 @@ def _check_depth(depth) -> None:
         checks.positive(depth, LocationError, f"depth is a far-plane blur radius in px above 0, got {depth!r}")
 
 
-def _far(cv: Canvas, g, depth: float | None):
+def _far(cv: Canvas, g, depth: float | None, overscan: bool = False):
     """Where a set draws its far plane: ``g`` itself, or with ``depth`` a group in it blurred by that radius
-    (:func:`srstudio.look.depth`). The cast, the props and the signature marks are drawn outside it."""
+    (:func:`srstudio.look.depth`), which ``overscan`` passes on. The cast, the props and the signature marks are drawn
+    outside it."""
     if depth is None:
         return g
-    return look.depth(cv, g, f"cutout-depth-{depth:g}", depth)
+    return look.depth(cv, g, f"cutout-depth-{depth:g}", depth, overscan=overscan)
 
 
 def _office_room(cv: Canvas, g, p, plant_id="office-plant"):
@@ -120,7 +121,7 @@ def office_wide(
     if instanced:
         cv.instance(g, f"{id}-room", _office_room_symbol(cv))
     else:
-        _office_room(cv, _far(cv, g, depth), p)
+        _office_room(cv, _far(cv, g, depth, overscan=True), p)
     props.chair(cv, g)
     _call(at_desk, g)
     if instanced:
@@ -193,7 +194,7 @@ def office_reverse(
     g = cv.group(parent, id)
     if shots is not None:
         cv.gate(g, shots)  # the gate precedes the drawing, as in the shipped scenes
-    far = _far(cv, g, depth)
+    far = _far(cv, g, depth, overscan=True)
     cv.rect(far, 0, 0, 1080, 1920, p["warm_wall"])
     cv.rect(far, 0, 0, 14, 1410, "#818074", ink, 3)
     cv.line(far, 20, 0, 20, 1402, "#ECE0C9", 3)

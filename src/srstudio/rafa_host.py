@@ -415,7 +415,7 @@ def perform(
 
 def backdrop(cv: Canvas, parent, picture: Path, root: Path) -> None:
     """The room behind him, a little soft, so his edge is the sharpest thing in the frame."""
-    far = look.depth(cv, parent, "rafa-depth", ROOM_BLUR)
+    far = look.depth(cv, parent, "rafa-depth", ROOM_BLUR, overscan=True)
     shelf = _Shelf(cv, Path(root))
     far.add_layer(id=cv.uid("rafa-room"), asset=shelf.name(picture, WIDTH, HEIGHT), x=0, y=0)
 

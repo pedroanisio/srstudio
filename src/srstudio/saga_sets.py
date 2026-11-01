@@ -132,7 +132,7 @@ def _stars(cv: Canvas, g, seed: int, count: int, box=(0, 0, W, H), end: float = 
 
 def _far(cv: Canvas, g):
     """A group for the set's far plane, drawn first and thrown out of focus by :data:`DEPTH_BLUR`."""
-    return look.depth(cv, g, "saga-depth", DEPTH_BLUR)
+    return look.depth(cv, g, "saga-depth", DEPTH_BLUR, overscan=True)
 
 
 def _pool(cv: Canvas, g, name: str, colour: str, y: float, w: float = 1000, h: float = 260, opacity: float = 0.35):

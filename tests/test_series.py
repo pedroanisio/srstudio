@@ -199,6 +199,13 @@ def test_build_passes_the_reels_caption_look_and_its_post(project):
     assert FakeEpisode.made[-1].posted == "the-post"
 
 
+def test_a_reel_asks_for_bleed_and_is_built_without_it_by_default(project):
+    series.build(reel(), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.bleed is False
+    series.build(reel(bleed=True), "unused.py", argv=["demo.py", str(project)])
+    assert FakeEpisode.made[-1].spec.given.bleed is True
+
+
 def test_a_reel_can_encode_at_its_own_crf_over_the_series_output(project):
     series.build(reel(crf="21"), "unused.py", argv=["demo.py", str(project)])
     assert FakeEpisode.made[-1].spec.given.output_options == {**OUTPUT, "crf": "21"}
