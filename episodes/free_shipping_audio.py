@@ -27,7 +27,7 @@ VOICES = {
 SCRIPT = [  # role, text, caption, speed
     Spoken("juno", "$6 shipping? No way.", "$6 shipping? No way.", 1.0, seed=SEED + 21),
     Spoken("pip", "How much till it's free?", "How much till it's free?", 1.05),
-    Spoken("juno", "$21. Tiny whisk.", "$21. Tiny whisk.", 1.05),
+    Spoken("juno", "Twenty-one dollars. ... Tiny whisk.", "$21. Tiny whisk.", 1.05),  # the price, a beat, the whisk
     Spoken("pip", "We don't need a tiny whisk.", "We don't need a tiny whisk.", 1.05),
     Spoken("juno", "It saves us $6.", "It saves us $6.", 1.05),
     Spoken("juno", "Egg poacher. Sock stretcher. Bird feeder.", "Egg poacher.\nSock stretcher. Bird feeder.", 1.0),
@@ -35,7 +35,7 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("juno", "$50.02! Free shipping!", "$50.02! Free shipping!", 1.08),
     Spoken("pip", "Send it all back.", "Send it all back.", 0.92, level_db=-4.0),
     Spoken("juno", "Return shipping is $6.", "Return shipping is $6.", 0.92, seed=SEED + 22, level_db=-6.0),
-    Spoken("pip", "$6? No way.", "$6? No way.", 1.0),
+    Spoken("pip", "$6? No way.", "$6? No way.", 1.0, heard=("Six? No way",)),  # arc4d3, Slack 1793499862.755999
 ]
 INTERVIEW = Interview(
     slug="free-shipping",
