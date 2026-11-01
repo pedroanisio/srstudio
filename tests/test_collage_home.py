@@ -153,3 +153,26 @@ def test_the_booth_is_a_set_with_its_signature_and_no_window() -> None:
     x0, y0, x1, y1 = collage_sets.signature_box("booth")
     assert 0 <= x0 < x1 <= cv.width and y1 <= collage.CAPTION_BOTTOM + 300
     assert "collage-booth" in {e.name for e in registry.entries("location")}
+
+
+def test_a_tissue_box_draws_with_one_tissue_up() -> None:
+    cv = canvas()
+    before = len(xml(cv))
+    collage_home.tissue_box(cv, cv.comp, 540, 1600)
+    assert len(xml(cv)) > before + 100
+    assert "collage-tissue-box" in {e.name for e in registry.entries("prop")}
+
+
+@pytest.mark.parametrize(("time", "minute"), [("9:00", 0.0), ("9:15", 90.0), ("9:50", 300.0)])
+def test_a_wall_clock_points_where_it_is_told(time, minute) -> None:
+    cv = canvas()
+    clock = collage_home.wall_clock(cv, cv.comp, 200, 900, 90, time)
+    assert clock.minute == minute
+    assert clock.hour == pytest.approx((9 % 12 + minute / 360) * 30)
+
+
+@pytest.mark.parametrize("time", ["nine", "25:00", "9:75", ""])
+def test_a_wall_clock_refuses_a_time_that_is_not_one(time) -> None:
+    cv = canvas()
+    with pytest.raises(HomeError, match="time"):
+        collage_home.wall_clock(cv, cv.comp, 200, 900, 90, time)
