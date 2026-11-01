@@ -63,6 +63,7 @@ __all__ = [
     "place",
     "draw_cast",
     "write_project",
+    "place_again",
     "write_voiced",
     "load_beats",
     "extend_track",
@@ -203,6 +204,7 @@ class Sketch:
         TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
     )
     bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
+    caption_min: float = CAPTION_MIN  # seconds a caption is held when the next change can wait for it
 
 
 @dataclass(frozen=True)
@@ -225,6 +227,8 @@ def check(sketch: Sketch) -> None:
         raise SketchError("speakers need distinct names")
     if not (checks.number(sketch.tail) and sketch.tail >= 0):
         raise SketchError(f"tail {sketch.tail!r} must be a non-negative number of seconds")
+    if not (checks.number(sketch.caption_min) and sketch.caption_min > 0):
+        raise SketchError(f"caption_min {sketch.caption_min!r} must be a positive number of seconds")
     cast = sketch.cast
     played = [s.character for s in sketch.speakers if s.character is not None]
     if any(c not in cast.characters for c in played) or len(set(played)) != len(played):
@@ -346,8 +350,8 @@ def place(sketch: Sketch, word_starts: Sequence[Sequence[float]], speech_ends: S
     """The beats moved to a recording: a spoken beat starts where its word is heard (``word_starts[line][word]``,
     project seconds), a silent one a beat after the line before it ends, no earlier than its scripted distance from
     the beat before and no later than ``BLANK_MARGIN`` before the next spoken one (the midpoint when that window is
-    empty). A change of caption that would cut the caption before it short of ``CAPTION_MIN`` (measured from when
-    that caption appeared) waits for it, up to ``CAPTION_LAG`` after its own word. Strictly increasing by
+    empty). A change of caption that would cut the caption before it short of ``sketch.caption_min`` (measured from
+    when that caption appeared) waits for it, up to ``CAPTION_LAG`` after its own word. Strictly increasing by
     ``MIN_STEP``."""
     check(sketch)
     if len(word_starts) != len(sketch.lines) or len(speech_ends) != len(sketch.lines):
@@ -374,7 +378,7 @@ def place(sketch: Sketch, word_starts: Sequence[Sequence[float]], speech_ends: S
         if out:
             at = max(at, out[-1].start + MIN_STEP)
             if out[-1].caption and out[-1].caption != b.caption:
-                at = min(max(at, shown + CAPTION_MIN), at + CAPTION_LAG)
+                at = min(max(at, shown + sketch.caption_min), at + CAPTION_LAG)
         if not out or out[-1].caption != b.caption:
             shown = at
         out.append(replace(b, start=round(at, 6)))
@@ -802,6 +806,24 @@ def record(
     write_voiced(root, beats, end, sketch.lines, mouths)
     write_speech(root, kept_takes, end)
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
+
+
+def place_again(sketch: Sketch, root: Path) -> list[Beat]:
+    """The beats moved once more onto the recording already under ``root``, for a change of cues that needs no voice:
+    the lines' timed letters come from ``voiced/speech.json``, nothing is asked or written but the placed beats and
+    what follows from them (``voiced/beats.json``, ``script.json``, ``poses.json``). The audio stays as it was.
+    :class:`SketchError` when the recording is of other lines, or ends before the beats do."""
+    check(sketch)
+    root = Path(root)
+    takes, end = load_speech(root / "voiced" / "speech.json", sketch.cast)
+    if len(takes) != len(sketch.lines):
+        raise SketchError(f"the recording has {len(takes)} takes, the sketch {len(sketch.lines)} lines: record again")
+    word_starts = [[round(t.at + a, 6) for _, a, _ in words_of(t.alignment)] for t in takes]
+    beats = place(sketch, word_starts, [t.at + t.kept for t in takes])
+    if beats[-1].start + sketch.tail > end + 1e-6:
+        raise SketchError(f"the beats run past the recording's {end} s: record again")
+    write_voiced(root, beats, end, sketch.lines)
+    return beats
 
 
 def effect(

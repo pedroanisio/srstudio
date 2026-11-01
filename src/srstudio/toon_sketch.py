@@ -22,6 +22,7 @@ all synthesised deterministically by :mod:`srstudio.foley`.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -436,16 +437,23 @@ def recorder(
     sounds: Sounds | None = None,
 ) -> Callable[..., int]:
     """The ``main`` of an episode's recording script: :func:`srstudio.recording.main` around :func:`record_episode`
-    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH]``, the help from ``doc``); ``validate`` checks the sketch
-    once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
-    :func:`record_episode`."""
+    (``python3 <episode>_audio.py PROJECT [--ffmpeg PATH] [--place-only]``, the help from ``doc``); ``validate`` checks
+    the sketch once the arguments are parsed, before anything is recorded; ``foley_of`` and ``sounds`` as in
+    :func:`record_episode`. ``--place-only`` asks no voice and needs no consent: the beats are moved onto the recording
+    that is already there (:func:`srstudio.sketch.place_again`)."""
 
-    def record(project: Path, env: Mapping[str, str], ffmpeg: str) -> dict:
+    def record(project: Path, env: Mapping[str, str], ffmpeg: str, place_only: bool = False) -> dict:
         if validate is not None:
             validate(sk)
+        if place_only:
+            sketch.place_again(sk, project)
+            return {}
         return record_episode(sk, project, env, ffmpeg, seed, note, mouth=mouth, foley_of=foley_of, sounds=sounds)
 
+    def options(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument("--place-only", action="store_true", help="move the beats onto the recording already there")
+
     def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
-        return recording.main(record, doc, argv, env)
+        return recording.main(record, doc, argv, env, options)
 
     return main
