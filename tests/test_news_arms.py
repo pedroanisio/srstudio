@@ -244,14 +244,84 @@ def test_version_5_changes_only_the_shoulders_and_the_arms(who):
 
 
 @anchors
-def test_version_5_is_approved_and_is_what_new_reels_get(who):
+def test_version_5_is_approved(who):
     name = f"news-{who}"
     version = parts.get(name).version(5)
     assert version.status == "approved"
     assert version.rig.status == "approved"
     assert "Slack 1793489774.457989" in version.approval.words
     assert version.approval.words == version.rig.approval.words
-    assert parts.latest(name).number == 5
     assert specimens.digest(name, 5) == version.drawing
     assert specimens.rig_digest(name, 5) == version.rig.drawing
     assert specimens.digest(name, 5) != specimens.digest(name, 4)
+
+
+def scene_of(who, number):
+    """The scene of an anchor in the pose that shows both hands."""
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=2.0, background=news_kit.PLUM_DEEP)
+    cv = Canvas(scene, news_kit.NEWS.palette(), font_asset="barlow-condensed")
+    back, front = cv.group(cv.comp, "back"), cv.group(cv.comp, "front")
+    news_inked.perform(cv, back, who, 540.0, ((0.0, Pose(arms="up")),), 0.0, 2.0, scale=1.0, over=front, number=number)
+    return cv.scene.to_bytes(layout="pretty")
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_a_palm_to_the_camera_has_its_thumb_inward_on_either_arm(side):
+    thumb = min(news_inked.FINGERS_UP, key=lambda p: p[0] + p[1] * 0.1)  # the far low tip: the thumb, not a finger
+    assert thumb[0] < 0
+    drawn = -thumb[0] if news_arms.Hand("open", side).mirrored else thumb[0]
+    assert drawn * side < 0
+
+
+def test_the_two_open_hands_are_a_pair_and_not_the_same_hand():
+    left, right = news_arms.Hand("open", -1.0), news_arms.Hand("open", 1.0)
+    assert left.mirrored != right.mirrored
+
+
+@pytest.mark.parametrize("kind", sorted(news_arms.DRAWN_FOR))
+def test_every_shape_is_mirrored_on_exactly_one_arm(kind):
+    assert news_arms.Hand(kind, -1.0).mirrored != news_arms.Hand(kind, 1.0).mirrored
+
+
+def test_a_level_point_keeps_its_thumb_on_top_on_the_arm_that_points():
+    hand = news_arms.Hand("point", -1.0)
+    assert not hand.mirrored
+    thumb = max(news_inked.POINTING, key=lambda p: p[0])
+    turn = math.radians(news_arms.REACHES["gus"]["point"][0].turn)
+    assert thumb[0] * math.sin(turn) + thumb[1] * math.cos(turn) < -30.0  # above the wrist on the frame
+
+
+def test_a_hand_on_the_other_arm_is_refused():
+    with pytest.raises(news_kit.NewsKitError, match="was placed on side"):
+        news_arms.Hand("open", 1.0).on(-1.0)
+    assert news_arms.Hand("open", 1.0).on(1.0).mirrored is False
+
+
+@pytest.mark.parametrize(("kind", "side"), [("claw", 1.0), ("open", 0.0)])
+def test_a_hand_that_is_no_hand_of_the_pair_is_refused(kind, side):
+    with pytest.raises(news_kit.NewsKitError):
+        news_arms.Hand(kind, side)
+
+
+@anchors
+def test_version_6_mirrors_one_hand_of_the_pair_and_version_5_stays_as_it_went_out(who):
+    assert scene_of(who, 6).count(b'scaleX="-') == scene_of(who, 5).count(b'scaleX="-') + 1
+
+
+@anchors
+def test_version_6_changes_only_the_hands(who):
+    assert news_inked.inked(who, 6) is news_inked.inked(who, 5)
+    assert news_inked.RIGS[f"news-{who}@6"] is news_inked.RIGS[f"news-{who}@5"]
+
+
+@anchors
+def test_version_6_is_approved_and_is_what_new_reels_get(who):
+    name = f"news-{who}"
+    version = parts.get(name).version(6)
+    assert (version.status, version.rig.status) == ("approved", "approved")
+    assert "Slack 1793545038.063029" in version.approval.words
+    assert parts.latest(name).number == 6
+    assert specimens.digest(name, 6) == version.drawing
+    assert specimens.rig_digest(name, 6) == version.rig.drawing
+    assert specimens.digest(name, 6) != specimens.digest(name, 5)

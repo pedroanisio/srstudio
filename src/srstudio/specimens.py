@@ -353,6 +353,8 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
             "news-gus@4",
             "news-vera@5",
             "news-gus@5",
+            "news-vera@6",
+            "news-gus@6",
         ),
         _anchor,
     ),

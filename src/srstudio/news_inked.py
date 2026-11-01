@@ -306,10 +306,21 @@ HANDS: dict[str, tuple[Point, ...]] = {"open": FINGERS_UP, "fist": FIST, "rest":
 
 
 def _hand(
-    cv: Canvas, parent, kind: str, at: Point, turn: float, skin: str, tone: str, size: float = 1.0, seed: float = 0.0
+    cv: Canvas,
+    parent,
+    kind: str,
+    at: Point,
+    turn: float,
+    skin: str,
+    tone: str,
+    size: float = 1.0,
+    seed: float = 0.0,
+    mirrored: bool = False,
 ) -> None:
-    """A hand with its wrist at ``at``, fingers ``turn`` degrees clockwise of up, in the same ink as the sleeve."""
-    g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], rotation=turn, scaleX=size, scaleY=size)
+    """A hand with its wrist at ``at``, fingers ``turn`` degrees clockwise of up, in the same ink as the sleeve.
+    ``mirrored`` makes it the other hand of the pair."""
+    wide = -size if mirrored else size
+    g = cv.group(parent, cv.uid("g"), x=at[0], y=at[1], rotation=turn, scaleX=wide, scaleY=size)
     _form(cv, g, HANDS[kind], skin, tone, seed, INK * 0.72, depth=11.0, amount=0.3)
     if kind == "fist":
         for x in (-16, 2, 20):
@@ -1133,9 +1144,11 @@ def _arm_on_rig(
     acts: Sequence[tuple[float, Pose]],
     spans: Mapping[str, Spans],
     seed: float,
+    number: int = 5,
 ) -> None:
     """One arm of version 5: the hand under the sleeve, then all the sleeve's ink, then all its fill, so that a line
-    runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder."""
+    runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder.
+    From version 6 its hand is the one of the pair that belongs to this arm; before it, every arm drew the same hand."""
     build = news_arms.BUILDS[who]
     sleeve, tone, skin, shadow = _DRESS[who]
     keys = news_arms.keys_of(who, side, acts)
@@ -1146,7 +1159,8 @@ def _arm_on_rig(
     for hand in sorted({hold.hand for hold in holds.values()}):
         g = cv.group(wrist, cv.uid("g"), opacity=0.0)
         cv.gate(g, [span for state, hold in holds.items() if hold.hand == hand for span in spans[state]])
-        _hand(cv, g, hand, (0.0, 0.0), 0.0, skin, shadow, build.hand, seed + 3)
+        mirrored = number >= 6 and news_arms.Hand(hand, side).on(side).mirrored
+        _hand(cv, g, hand, (0.0, 0.0), 0.0, skin, shadow, build.hand, seed + 3, mirrored)
     end = -build.fore
     _form(
         cv,
@@ -1179,7 +1193,9 @@ def _arm_on_rig(
                 _strip(cv, bone, near, far, length, edge, tone, when)
 
 
-def _arms_on_rig(cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans]) -> None:
+def _arms_on_rig(
+    cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans], number: int = 5
+) -> None:
     """Both arms of version 5, over what they hold: Vera's sheaf and Gus's phone, which rises with his hands."""
     if who == "vera":
         g = cv.group(parent, cv.uid("g"), opacity=0.0)
@@ -1195,7 +1211,7 @@ def _arms_on_rig(cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]
         cv.keys(rise, "y", keys, hold=False, kind="sine-in-out", local=False)
         _phone(cv, rise, 0.0, PHONE_HELD)
     for i, side in enumerate((-1.0, 1.0)):
-        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6)
+        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6, number)
 
 
 def skeleton(who: str, number: int, state: str) -> tuple[tuple[Point, Point, Point], ...]:
@@ -1394,7 +1410,7 @@ def _arms_of(
 ) -> None:
     """The arms of version ``number``: from version 5 on their rig, before it a drawing for each pose."""
     if number >= 5:
-        _arms_on_rig(cv, hands, who, acts, arms)
+        _arms_on_rig(cv, hands, who, acts, arms, number)
     else:
         (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
 
@@ -1487,6 +1503,8 @@ RIGS: Mapping[str, AnchorRig] = MappingProxyType(
         "news-gus@4": GUS_RIG_3,
         "news-vera@5": VERA_RIG_3,
         "news-gus@5": GUS_RIG_3,
+        "news-vera@6": VERA_RIG_3,
+        "news-gus@6": GUS_RIG_3,
     }
 )
 
@@ -1625,6 +1643,34 @@ def gus_5(
 ):
     """Gus at the desk in one pose."""
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=5)
+
+
+@register("character", "news-vera@6", summary="Vera with a pair of hands, the right the mirror of the left")
+def vera_6(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Vera at the desk in one pose."""
+    return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=6)
+
+
+@register("character", "news-gus@6", summary="Gus with a pair of hands, the right the mirror of the left")
+def gus_6(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Gus at the desk in one pose."""
+    return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=6)
 
 
 def _phone_down(cv: Canvas, parent, x: float, spans: Spans) -> None:

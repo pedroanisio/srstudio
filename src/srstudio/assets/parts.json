@@ -8728,6 +8728,29 @@
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
             }
           }
+        },
+        {
+          "number": 6,
+          "date": "2026-11-01",
+          "note": "A pair of hands: the hand on the frame's left is the mirror of the one on the right, so a thumb follows its side, inward on a palm to the camera, and a hand on the other arm is refused. Face, costume and arms as version 5.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+          },
+          "drawing": "c4c176f8564ce3e7c425ed52d33705669db720ea401c8e8400a2658ee6b04549",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed as on version 5.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+            "drawing": "bbde6a145a4af188bfa68f4c0862304fb58a0169defe2b5218ee2d6c6092d45d",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+            }
+          }
         }
       ]
     },
@@ -9176,6 +9199,29 @@
             "approval": {
               "date": "2026-10-31",
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+            }
+          }
+        },
+        {
+          "number": 6,
+          "date": "2026-11-01",
+          "note": "A pair of hands: the hand on the frame's left is the mirror of the one on the right, so a thumb follows its side, inward on a palm to the camera, and a hand on the other arm is refused. Face, costume and arms as version 5.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
+          },
+          "drawing": "1908e0c7db30a017d20bae53ba8624aeb06c46b61320db3dbd89abff1e176668",
+          "rig": {
+            "date": "2026-11-01",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed as on version 5.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-hands/they-voted-no.mp4",
+            "drawing": "3c03b09caedb87b2a96f9bacbb39425648c07dfdd8087fd5220f036f6f0b5eac",
+            "approval": {
+              "date": "2026-11-01",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793545038.063029: \"The fix, in the rig: the right hand is the mirror of the left, and a hand's thumb follows its side.\""
             }
           }
         }

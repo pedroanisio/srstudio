@@ -38,9 +38,11 @@ REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
     "news-gus@4",
     "news-gus@5",
+    "news-gus@6",
     "news-phone@2",
     "news-vera@4",
     "news-vera@5",
+    "news-vera@6",
     "pedro",
     "rafa",
     "rafa-bills",
