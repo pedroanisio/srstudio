@@ -114,9 +114,9 @@ def test_a_span_that_is_not_one_stops_the_build():
         corridor(canvas(), start=5.0, end=5.0)
 
 
-def test_the_part_is_registered_and_starts_proposed():
+def test_the_part_is_registered_and_approved():
     versions = parts.get("news-corridor-map").versions
-    assert [(v.number, v.status) for v in versions] == [(1, "proposed")]
+    assert [(v.number, v.status) for v in versions] == [(1, "approved")]
 
 
 def test_the_floor_dashes_stay_on_the_floor():

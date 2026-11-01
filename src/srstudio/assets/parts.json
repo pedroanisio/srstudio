@@ -8813,9 +8813,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An unbranded money app on Gus's phone, a balance and one button that stops working on cue. First drawn for safe-from-you.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793540353.039279: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "5a35676e77907271798a8f65cdf742aaecc5973b1ebf78f1769e9701ed334344",
           "rig": null
         }
@@ -8830,9 +8833,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "A corridor from above: two plain dots that step in sync, and a count. First drawn for same-way.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793544715.992549: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "0e0ecb949210cf09f0bf3b4ec040a70a0e13e8d5ecf62f350766b01a935f4859",
           "rig": null
         }
@@ -8847,9 +8853,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An invented county in the sun with one pin, and a cloud small enough to find it. First drawn for leave-it-home.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793544715.992549: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "62057b1c9178ce157087a77cf0aa3234c69ec4d126caf9b550e15180fe1ab615",
           "rig": null
         }
@@ -8864,9 +8873,12 @@
           "number": 1,
           "date": "2026-11-01",
           "note": "An unbranded stove on the show: a seven-segment clock that never changes and a tag that does. First drawn for they-voted-no.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793540353.039279: \"The two new faceless parts are fine under the rule.\""
+          },
           "drawing": "662f89a0fe43754230dff013aa79f2cca8f90e3e8f17e4b12fd72076954dc2a9",
           "rig": null
         }
