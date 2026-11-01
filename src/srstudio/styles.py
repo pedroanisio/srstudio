@@ -424,7 +424,7 @@ SAGA = Style(
         google=GoogleFont("Space Grotesk", 700),
     ),
     mouths={VOID.name: SPEECH_MOUTH},
-    parts=("saga", "saga_sets"),
+    parts=("saga", "saga_sets", "saga_everyday"),
     namer=partial(flat_counter, "s"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
 )
