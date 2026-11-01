@@ -104,7 +104,7 @@ def check_release(
     found: list[Finding] = []
     unnamed = []
     for name in names:
-        if name in bible.roles:
+        if bible.is_role(name):
             continue
         everywhere = bible.named(name)
         here = [c for c in everywhere if c.world == world]

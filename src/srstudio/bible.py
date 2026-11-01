@@ -36,6 +36,7 @@ STATUSES = ("canon", "placeholder")
 PAIR_STATUSES = ("canon", "proposal")
 KINDS = ("person", "animal", "object", "archetype")
 ROLES = ("straight", "instigator", "victim", "chaos", "know-it-all")
+ROLE_SPELLINGS = {"neighbour": "neighbor"}  # one role: the published reels' speakers are keyed by either spelling
 FACT_KINDS = ("line", "drawn", "voice", "seen")
 CLASH_KINDS = ("name", "drawing", "voice")
 SCOPES = ("across-worlds", "within-world")
@@ -387,6 +388,11 @@ class Bible:
 
     def character(self, slug: str) -> Character | None:
         return next((c for c in self.characters if c.slug == slug), None)
+
+    def is_role(self, name: str) -> bool:
+        """Whether the name is an unnamed role, in either spelling of :data:`ROLE_SPELLINGS`."""
+        key = name.strip().lower()
+        return ROLE_SPELLINGS.get(key, key) in {r.lower() for r in self.roles}
 
     def named(self, name: str) -> list[Character]:
         """Every character the name belongs to: its slug or its name, in any world."""

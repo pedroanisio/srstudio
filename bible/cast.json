@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.1.0",
+ "version": "1.1.1",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "characters": [
   {
@@ -13273,10 +13273,14 @@
   "doodle",
   "doorbell",
   "first",
+  "fox",
   "friend",
+  "friend-fast",
   "frog",
+  "goat",
   "her",
   "hotline",
+  "husband",
   "interviewer",
   "kid",
   "kiosk",
@@ -13300,7 +13304,8 @@
   "teacher",
   "third",
   "toddler",
-  "vacuum"
+  "vacuum",
+  "wife"
  ],
  "places": [
   {
@@ -15329,13 +15334,13 @@
   {
    "id": "base-rig-stays",
    "status": "proposal",
-   "rule": "proposal: a recurring figure's base rig stays as published, and only clothes and props change per reel. This is arc4d3's standing rule; code checks the drawn part a reel pins, not the clothes.",
+   "rule": "Decision by arc4d3 (Slack 1793513568.110249): a recurring figure's base rig stays as published, and only clothes and props change per reel. For a Stick figure the base rig is the hair, the glasses and the neck; the tie, apron, cap and sun hat are clothes and props.",
    "cites": []
   },
   {
    "id": "unnamed-figure-is-background",
    "status": "proposal",
-   "rule": "proposal: an unnamed figure with no line, recombined from existing options of an approved style, is background: it needs no sheet and no cast line. This is arc4d3's standing rule.",
+   "rule": "Decision by arc4d3 (Slack 1793512208.441779): an unnamed figure with no line, recombined from existing options of an approved style, is background: it needs no sheet and no cast line.",
    "cites": []
   }
  ],

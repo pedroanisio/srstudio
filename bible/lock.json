@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.1.0",
+ "version": "1.1.1",
  "digests": {
   "character:across": "ab864c83654c7254bfb9ce015c6fcdafa9971d28ee86a5e277371ce1fac8d26a",
   "character:ava": "8879b79a65ae45ac11890ab5db4b5287492a0d8255acf817a8a6a3655b18d596",
@@ -205,11 +205,11 @@
   "place:soft-office": "eccc021d7643cdb3f2cd51b532169ce9d948cd1bf8120d74a19117afae9a4cb3",
   "place:toon-office": "51ba01d63a879a93d6cd064ef510f4f35dfa7e1016dcaea83dcbf7ce44d8fb92",
   "place:waiting-room": "733c985d6fe34a7d9c413474b17e385d1d20d9fe9103caab34fd6b49fe2d6631",
-  "roles": "06a8b020290452216d3c1e67f69cf1c1005b321ffe19866977285985f2076523",
+  "roles": "ddab6546eebeb8407414681d0410e65ed531a43a9fb34e5c92d7ef3f2dff9d12",
   "rule:ages-fixed": "741f17341b8822c99a6a3ba84ac4acdda2f88e1181f0d614b3d0b486ef366739",
   "rule:ages-loose": "c957b91ab79a2c13abb0c69e155c4ca848622fa3704a8e36c79d0341de8441fb",
   "rule:animals-live-human-lives": "d4e4ff55e959c5a081248a8ee9a6290c0ab8e80d0c295f1ebf284ce8f95c0494",
-  "rule:base-rig-stays": "d0f9f30ad53d51c5be11092932422540b978440f9d8271a330208b9d784a63f2",
+  "rule:base-rig-stays": "3be7d1b82206a3dc7a6d18cfcc8143bef5185838a809990fdc07422cd862f550",
   "rule:bowlheads": "8005a77e56044899abc65c612644a319175d23598f8b9b9209a0586466929db1",
   "rule:cactus-signature": "704ae57e7a7735136b9813e802b837fa807f38fc83be360c46517043049412f8",
   "rule:carry-over": "849063a976eed07cf1874c14c4b1dc208cbe1e86ef92765fbc7c3e2cbdaab272",
@@ -244,7 +244,7 @@
   "rule:time": "b9b2fa9399a52a08f8b35d13af56429c112185d1dc3c49782a72a02b94017cf2",
   "rule:time-lapse-inside-a-reel": "b2266cb43f29819da7ceb2a3820c09128f05cbd2ff49bf92fad5e7d9c923d734",
   "rule:toon-october": "532c421f811ad36908ef929923352ecc0c47bbeddcd2f701a782a26d57a2b761",
-  "rule:unnamed-figure-is-background": "5655d76af5bc1e01f15aa5e53c538edc742f2ae3dc0d383b5cd07bd16f2b60d5",
+  "rule:unnamed-figure-is-background": "247cbf7900f7aaabff39b33949a4254e9b393d67d5ab55d7d036c8142301e57a",
   "rule:unseen-colleagues": "6aeb20ebd7b90042b746d9b7b42858eeb474c0edf527250e19e15b5cd00077ef"
  }
 }

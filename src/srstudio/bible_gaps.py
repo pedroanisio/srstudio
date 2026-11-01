@@ -44,7 +44,6 @@ def _family(world: str) -> set[str]:
 
 def find(bible: Bible, reels: Collection[Reel], *, threshold: int = THRESHOLD) -> Gaps:
     """Compare the published reels' names with the bible's characters, world by world."""
-    roles = {r.lower() for r in bible.roles}
     recorded = {f.reel for clash in bible.clashes for f in clash.evidence}  # a clash is on record, not a gap
     subjects = " ".join(clash.subject for clash in bible.clashes)
     recorded |= {s for r in reels for s in [r.slug] if re.search(rf"(?<![\w-]){re.escape(s)}(?![\w-])", subjects)}
@@ -52,7 +51,7 @@ def find(bible: Bible, reels: Collection[Reel], *, threshold: int = THRESHOLD) -
     stale: dict[str, tuple[str, ...]] = {}
     covered: set[str] = set()
     for cand in candidates(reels, threshold=1):
-        if cand.name.lower() in roles:
+        if bible.is_role(cand.name):
             continue
         for world in cand.worlds or (cand.world,):
             _compare(bible, cand, world, threshold, recorded, missing, stale, covered)

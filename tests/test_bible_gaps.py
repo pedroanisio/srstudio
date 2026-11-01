@@ -41,6 +41,12 @@ def test_a_role_noun_is_never_a_missing_character(tmp_path):
     assert found.missing == ()
 
 
+def test_the_other_spelling_of_a_role_is_never_a_missing_character(tmp_path):
+    held = library(tmp_path, roles=("neighbor",))
+    found = bible_gaps.find(held, [reel("a-one", "neighbour"), reel("a-two", "neighbour")])
+    assert found.missing == ()
+
+
 def test_a_sheet_that_lacks_a_reel_naming_it_is_stale_and_a_complete_one_is_not(tmp_path):
     held = library(tmp_path)
     rex = held.character("rex")

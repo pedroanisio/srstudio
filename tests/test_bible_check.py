@@ -47,6 +47,24 @@ def test_a_reel_that_uses_the_bibles_names_drawings_and_voices_has_no_finding(tm
     assert bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS) == []
 
 
+def test_neighbour_is_the_role_neighbor_in_either_spelling(tmp_path):
+    document = cast_document()
+    document["roles"] = ["narrator", "neighbor"]
+    held = bible.load(write(tmp_path / "bible", document))
+    for spelling in ("neighbor", "neighbour", " Neighbour "):
+        assert held.is_role(spelling)
+    assert not held.is_role("neighbours")
+    project(tmp_path, "new-reel", script=[{"speaker": "neighbour", "text": "Hi."}])
+    assert bible_check.check_release(held, release("new-reel"), tmp_path, characters=CHARACTERS) == []
+
+
+def test_a_spelling_counts_only_for_a_role_the_bible_lists(tmp_path):
+    document = cast_document()
+    document["roles"] = ["narrator"]
+    held = bible.load(write(tmp_path / "bible", document))
+    assert not held.is_role("neighbour")
+
+
 def test_a_name_the_bible_lacks_is_flagged_and_the_drawing_it_borrows_is_named(tmp_path, loaded):
     project(tmp_path, "new-reel", script=[{"speaker": "bruno", "text": "Hi."}])
     r = release("new-reel", parts={"toon-dog": 1})

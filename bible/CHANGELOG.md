@@ -8,6 +8,15 @@ generated-by: Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code
 a fact corrected after a published reel disproved it, or a clash resolved by the operator, is a patch; a change to
 the files' schema is a major version.
 
+## 1.1.1
+
+- Roles `husband`, `wife`, `goat`, `fox` and `friend-fast` are added, and `neighbour` is treated as the role `neighbor`
+  (`bible.ROLE_SPELLINGS`), not listed as a second one: published reels (`the-chirp`, `the-noise`, `voice-note`,
+  `text-me`) key their speakers by them, and a role noun is not a missing character.
+- The two rules from arc4d3's standing instructions are marked as decisions with the Slack messages that gave them
+  (1793513568.110249 and 1793512208.441779). The schema has no status for a decision, so they stay `proposal`: no
+  published reel establishes either. The rule about the base rig now says which Stick fields count as base rig.
+
 ## 1.1.0
 
 Written from the published record after batch C (163 published reels). Every new record rests on a delivered reel.
