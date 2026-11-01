@@ -131,6 +131,13 @@ explicitly unknown, and runtime objects such as a canvas are marked as runtime b
 API; they do not deserialize records or replace builder validation. See the
 [agent contract reference](docs/authoring-reference.md#agent-contracts).
 
+Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback
+semantics. Selected props publish local drawing anchors. Run `srstudio catalog --contract-coverage --json` to
+see explicit declarations separately from inferred argument shapes and the remaining gaps. The
+[location and held-prop recipes](docs/authoring-reference.md#non-character-discovery-and-drawing-anchors) use
+those contracts to place an actor and carry a cup between palm and fingers. Flat drawing anchors do not imply
+spatial attachment or collision capabilities.
+
 `srstudio usage` can measure which registered parts episode builds use; its JSON report can be supplied to `srstudio catalog --usage REPORT` and `srstudio page`. See the [catalog guide](docs/catalog/README.md).
 
 ## Styles

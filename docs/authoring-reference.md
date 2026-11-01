@@ -512,6 +512,12 @@ not dimensionless or project time. `canvas` time follows `Canvas.local_time`; `r
 the builder's entrance. Bento's pose starts use that relative clock, while `duration` is an absolute project
 exit. The Actor build operation describes coordinates in drawing-parent units and scale as a ratio.
 
+`ParameterContract.space` and `anchors` publish `x-space` and `x-anchors`; `PartContract.returns` can attach them
+to a returned drawing group. Anchors are named finite 2D points, with explicit units and coordinate space.
+They describe local geometry before the returned group's transform. They do not imply a mesh, collision
+surface, finger contact solver, or supported camera view. These are optional additions to the existing
+`srstudio.part-contract/1.0.0` envelope; argument-shape completeness still says nothing about return semantics.
+
 `x-status="runtime"` marks Python objects such as a Canvas or callback. `x-status="unknown"` marks missing or
 unresolved annotations and bounded recursive expansion. Neither is permission to accept arbitrary generated
 JSON as valid input. Dataclass-shaped JSON still needs construction of the actual Python record; inspection
@@ -599,6 +605,99 @@ arguments and its `still` behavior. These distinctions let agents reject unsuppo
 Discovery remains a description, not a JSON executor or a new validation layer. Opaque runtime bindings,
 legacy extras and some nested plugin data still require the actual Python API and its checks. Units and
 capabilities do not establish emotional readability, biomechanics, or rendered quality.
+
+### Non-character discovery and drawing anchors
+
+The core Cutout families publish 33 prop, 8 location and 11 graphic contracts; `reaching-hand` adds a held-prop
+callback contract. Coverage remains partial across the full catalog. Inspect it separately from ordinary listings:
+
+```bash
+srstudio catalog --contract-coverage --json
+srstudio catalog --style cutout --kind prop --contract-coverage
+srstudio inspect prop coffee-cup --json
+```
+
+`srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
+separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
+the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.
+The regular `catalog` list retains its existing shape. Coverage and usage-ranking reports are separate modes.
+Directly replacing `Entry.builder` invalidates its previous declaration even if the new signature matches.
+Inspection marks that contract `declaration_status="builder-changed"`; coverage lists it under
+`stale_contract_parts` and `undeclared_parts`. Re-register the replacement with its own checked metadata, or
+restore the original version with `parts.restore`. Drawing approval and semantic declarations remain separate.
+
+Location slots are runtime callbacks receiving an existing group. The slot description identifies its drawing
+depth, and the callback's return value is ignored. This complete recipe validates a malformed callback before
+drawing, then places an actual actor behind the office desk. `shots` gates visibility on the canvas clock;
+it does not call the callback again for each frame or shift the actor's performance clock.
+
+<!-- location-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, cast, describe, get
+from srstudio.locations import LocationError
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=3)
+cv = Canvas(scene, font_asset=None)
+info = describe("location", "office-desk")["contract"]
+assert info["arguments"]["properties"]["behind_desk"]["x-role"] == "drawing-slot"
+location = get("location", "office-desk")
+before = scene.to_bytes()
+try:
+    location(cv, cv.comp, behind_desk=False)
+except LocationError as error:
+    repair = error.to_dict()
+    assert scene.to_bytes() == before
+
+seated = []
+def seat(parent):
+    seated.append(cast.Manager(cv).build(parent, 560, 724, 1.45))
+
+room = location(cv, cv.comp, shots=[(0, 3)], behind_desk=seat)
+assert scene.check(schema=True) == []
+```
+<!-- location-discovery:end -->
+
+For a held cup, align its published `body-center` anchor with the hand's `grip`. The existing hand builder draws
+the carried object between palm and fingers. Animate the shared parent so the contact survives translation,
+rotation and scaling without independently sampled prop keys. A floating cup uses `shadow=False`; its contact
+shadow belongs on a support surface. `base` is a separate local anchor for placing the cup on a table.
+
+<!-- held-prop-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, describe, get
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=3, background="#ECE2D2")
+cv = Canvas(scene, font_asset=None)
+cup_info = describe("prop", "coffee-cup")["contract"]
+hand_info = describe("prop", "reaching-hand")["contract"]
+assert cup_info["returns"]["x-space"] == "returned-group"
+assert hand_info["returns"]["x-anchors"]["grip"] == [0, 0]
+assert cup_info["capabilities"]["spatial_attachment"] is False
+cups = []
+def carry(parent):
+    cup = get("prop", "coffee-cup")(cv, parent, 0, 0, scale=2, shadow=False)
+    cup.anchorX, cup.anchorY = cup_info["returns"]["x-anchors"]["body-center"]
+    cups.append(cup)
+
+hand = get("prop", "reaching-hand")(
+    cv, cv.comp, 540, 1050, scale=1.3, grip=52, holds=carry,
+)
+cv.keys(hand, "y", [(0, 1050), (1, 900), (2, 900), (3, 1050)], kind="sine-in-out")
+cv.keys(hand, "rotation", [(0, 0), (1, -8), (2, -8), (3, 0)], kind="sine-in-out")
+assert scene.check(schema=True) == []
+```
+<!-- held-prop-discovery:end -->
+
+This is an authored flat grip and a sleeve entering from outside the frame, with no articulated shoulder,
+physical collision, or automatic view conversion. Use the [spatial contact compositor](catalog/limbs.md#prop-contact-and-compositing)
+when the prop needs a mesh and depth ordering across articulated limbs. Some builders return only part of their
+drawing: `cafe-window` returns its clipped view, and `tree` its animated canopy. Their contracts identify that
+limitation. `captions` returns layers placed directly in the composition; its start/end values use the composition
+clock, independently of `Canvas.local_time`. Other core graphic animation keys use the canvas clock.
 
 ### Character clips: one placement and timing boundary
 

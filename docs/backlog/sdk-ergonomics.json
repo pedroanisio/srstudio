@@ -3,7 +3,7 @@
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
   "reviewed_source_commit": "5eef6d94",
-  "reviewed_working_tree": "develop with pending changes to contract discovery and its tests; pending code is not treated as a completed capability",
+  "reviewed_working_tree": "The review at 5eef6d94 included pending discovery work. Implementation observations and resolutions below record subsequent verified changes.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -20,23 +20,36 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, coordinated acting, executable cross-system recipes and scoped numeric regression envelopes. The reproduced core callback and prop-option defects now have atomic preflight and repairable failures. The largest agent-authoring gaps are semantic discovery for non-character parts and selectable acting transition policies. Rig capabilities remain intentionally distinct. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. The next high-impact gap is selectable acting transition policies. Discovery deliberately retains unknown semantics for the other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
-    "entries_with_explicit_part_contract": 70,
+    "entries_with_explicit_part_contract": 123,
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 631,
-    "noncharacter_parts_with_explicit_contracts": 0,
+    "noncharacter_parts_with_explicit_contracts": 53,
+    "source": "Implementation worktree following 5d58caf7; counts re-observed with contract_coverage().",
     "by_kind": {
       "character": {"registered": 70, "explicit_contracts": 70},
-      "prop": {"registered": 436, "explicit_contracts": 0},
-      "location": {"registered": 112, "explicit_contracts": 0},
-      "graphic": {"registered": 83, "explicit_contracts": 0}
+      "prop": {"registered": 436, "explicit_contracts": 34},
+      "location": {"registered": 112, "explicit_contracts": 8},
+      "graphic": {"registered": 83, "explicit_contracts": 11}
     },
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "noncharacter_implementation": {
+      "final_combined_regression_selection": {"passed": 633, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"contracts": 88, "registry": 96, "drawing_metadata": 100, "locations": 96, "props": 99, "graphics": 85, "cutout_counter": 97, "cli": 64},
+      "ruff_files": 1533,
+      "mypy_source_files": 235,
+      "strict_encoded_recipes": 2,
+      "encoded_frames": 180,
+      "frame_size": [1080, 1920],
+      "fps": 30,
+      "full_size_frames_inspected": 4,
+      "qualification": "This selected regression run is not the full repository suite. Additional recovery tests exposed stale metadata after direct builder swaps; tests first reproduced both a mismatched signature crash and stale claims with an unchanged signature, then passed after the fix. Both documentation recipes were strictly encoded and independently counted with ffprobe. Four full-size frames were inspected; no human-rating study or whole-body quality certification is claimed."
+    },
     "latest_focused_run": {
       "command": "python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_catalog_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_motion_quality_profiles.py --tb=short",
       "passed": 175,
@@ -67,6 +80,7 @@
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
   "resolved_findings": [
+    {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
     {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
     {"priority": "P1", "title": "Extreme numeric input must return bounded validation failures", "commit": "5d6c0c7b", "evidence": ["src/srstudio/checks.py:number", "src/srstudio/errors.py:_json_value", "tests/test_checks.py", "tests/test_diagnostics.py:test_extreme_integers_do_not_break_json_encoding_or_payload_bounds"]},
@@ -148,12 +162,13 @@
     {
       "id": "SDK-P2-04",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Extend semantic discovery to props, locations and graphics",
       "problem": "All 70 default characters have explicit contracts, but none of the 631 other registered parts does. Signatures and selected examples are useful; they do not consistently declare coordinate units, anchors, slot expectations, clock roles or interaction capabilities. An agent composing a hand with a prop or an actor with a location still has to read implementation details.",
       "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_callable", "src/srstudio/locations.py:office_wide", "src/srstudio/props.py"],
       "change": "Reuse PartContract for non-character families, starting with the common placement, location-slot and held-prop workflows. Declare verified units, coordinate origins, time roles and callback contracts; expose coverage by kind and retain explicit unknowns where semantics are not established.",
-      "implementation_observation": "Pending discovery work adds return anchors and coverage reporting, but no core non-character registration yet consumes the drafted metadata. The draft cafe constraint says 18 characters while locations.MENU_CHARS is 14. Metadata must be tested against actual accepted boundaries before publication. Neither drafted metadata nor inferred parameter shapes establish a working semantic contract.",
+      "resolution": "Added explicit contracts to the 52 core Cutout builders and reaching-hand, with optional return-space/anchor annotations and separate SDK/CLI coverage reporting. Executable location and held-cup recipes bind actual builders, preserve shared contact transforms, and expose repairable failures. Tests execute all 53 builders to verify return shapes, check the cafe's actual 14-character boundary, distinguish local dimensions from parent placement, and verify callback parent groups and unsupported combinations. Both recipes strictly encoded 90 frames each at 1080x1920/30 fps; four full-size frames show the actor behind the desk and the cup between palm and fingers. The remaining 578 non-character entries retain explicit unknowns, as required by this item's common-workflow scope; no universal metadata or spatial attachment capability is claimed.",
+      "verification": ["tests/test_noncharacter_contracts.py", "tests/test_noncharacter_discovery_recipes.py", "tests/test_core_drawing_preflight.py", "tests/test_catalog_contracts.py", "docs/authoring-reference.md#non-character-discovery-and-drawing-anchors", "docs/decisions/0090-noncharacter-drawing-contracts.md"],
       "acceptance": ["Catalog reports semantic coverage separately from inferred argument shapes", "Executable location-slot and held-prop recipes agree with published units and anchors", "Invalid options and unsupported combinations produce repairable failures", "No inferred capability is presented as verified merely because a parameter name matches"],
       "complexity": "L"
     },
@@ -272,7 +287,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-04", "SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

@@ -122,7 +122,13 @@ def main(argv=None):
     cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
-    cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
+    catalog_mode = cat.add_mutually_exclusive_group()
+    catalog_mode.add_argument(
+        "--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in"
+    )
+    catalog_mode.add_argument(
+        '--contract-coverage', action='store_true', help='report declared semantics and argument shapes by kind'
+    )
     detail = sub.add_parser("inspect", help="show a part's signature, callback slots, documentation and usage")
     detail.add_argument("kind", choices=registry.KINDS)
     detail.add_argument("name")
@@ -292,6 +298,20 @@ def main(argv=None):
     if args.cmd == "catalog":
         if not _load_plugins(args.plugins, "catalog", getattr(args, "json", False)):
             return 2
+        if args.contract_coverage:
+            coverage = registry.contract_coverage(args.style, kind=args.kind)
+            if args.json:
+                print(json.dumps(coverage, indent=2, ensure_ascii=False))
+            else:
+                for kind, counts in coverage['kinds'].items():
+                    print(
+                        f"{kind}: {counts['explicit_contracts']}/{counts['registered']} explicit contracts; "
+                        f"{counts['shape_complete']} complete argument shapes; "
+                        f"{counts['with_units']} with units, {counts['with_clocks']} with clocks, "
+                        f"{counts['with_anchors']} with anchors"
+                    )
+                print(coverage['qualification'])
+            return 0
         try:
             measured = usage.Report.read(args.usage) if args.usage else None
         except usage.UsageError as exc:

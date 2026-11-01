@@ -126,6 +126,17 @@ class Entry:
     def __call__(self, *args, **kwargs):
         return self.builder(*args, **kwargs)
 
+    @property
+    def _current_contract(self) -> PartContract | None:
+        """Authored metadata belongs to its registered callable, including when signatures happen to match."""
+        return self.contract if self.builder is self._registered_builder else None
+
+    def _describe_contract(self) -> dict[str, Any]:
+        result = describe_part(self.builder, self._current_contract)
+        if self.contract is not None and self._current_contract is None:
+            result['declaration_status'] = 'builder-changed'
+        return result
+
     def describe(self) -> PartDetails:
         """Signature, callback slots, documentation and usage; never calls the builder."""
         signature = _signature(self.builder)
@@ -167,7 +178,7 @@ class Entry:
             "examples": list(self.examples),
             "part_version": _part_version(self),
             "character_version": _character_version(self),
-            "contract": describe_part(self.builder, self.contract),
+            "contract": self._describe_contract(),
         }
 
 
@@ -359,3 +370,43 @@ def catalog(style: str | None = None, *, kind: str | None = None) -> list[dict]:
         }
         for e in entries(kind, style)
     ]
+
+
+def contract_coverage(style: str | None = None, *, kind: str | None = None) -> dict:
+    """Report declared semantics separately from argument shape inference; never invoke builders.
+
+    Explicit metadata may still be partial. A complete argument shape is not proof of
+    units, clocks, capabilities, return types or runtime semantic validation.
+    """
+    selected = entries(kind, style)
+
+    def contains(value: object, key: str) -> bool:
+        if isinstance(value, dict):
+            return key in value or any(contains(v, key) for v in value.values())
+        return isinstance(value, list) and any(contains(v, key) for v in value)
+
+    kinds = {}
+    for name in (kind,) if kind else KINDS:
+        rows = [e for e in selected if e.kind == name]
+        contracts = [e._describe_contract() for e in rows]
+        kinds[name] = {
+            'registered': len(rows),
+            'explicit_contracts': sum(e._current_contract is not None for e in rows),
+            'shape_complete': sum(c['shape_complete'] for c in contracts),
+            'with_units': sum(contains(c, 'x-unit') for c in contracts),
+            'with_clocks': sum(contains(c, 'x-timebase') for c in contracts),
+            'with_anchors': sum(contains(c, 'x-anchors') for c in contracts),
+            'undeclared_parts': sorted(e.name for e in rows if e._current_contract is None),
+            'stale_contract_parts': sorted(
+                e.name for e in rows if e.contract is not None and e._current_contract is None
+            ),
+        }
+    return {
+        'schema': 'srstudio.contract-coverage/1.0.0',
+        'kind': kind,
+        'style': style,
+        'kinds': kinds,
+        'qualification': (
+            'Declared metadata and complete argument shapes do not certify semantic completeness or validity.'
+        ),
+    }

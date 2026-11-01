@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 
+from . import _drawing_contracts as dc
 from . import checks, look, props, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -88,7 +89,12 @@ def _refuse_instanced_hand_off(instanced: bool, cactus: Slot):
     if instanced and cactus is not None:
         raise signature.SignatureError(
             "an instanced office draws its desk once for every angle; hand its cactus "
-            "over on the inline drawing (instanced=False)"
+            "over on the inline drawing (instanced=False)",
+            code='location.instanced_cactus',
+            path='instanced',
+            actual=True,
+            expected=False,
+            remedy='Set instanced=False when supplying a cactus callback.',
         )
 
 
@@ -105,6 +111,7 @@ def _office_desk_front(cv: Canvas, g, p, cactus: Slot = None):
 @register(
     "location",
     "office-wide",
+    contract=dc.location('office-wide'),
     summary="Office, wide shot: wall art, plant, desk, laptop, the candidate's back",
     examples=(
         'from srstudio import cast, get\n'
@@ -135,7 +142,14 @@ def office_wide(
     _refuse_instanced_hand_off(instanced, cactus)
     _check_depth(depth)
     if instanced and depth is not None:
-        raise LocationError("an instanced office shares its room with every angle; blur its depth inline")
+        raise LocationError(
+            "an instanced office shares its room with every angle; blur its depth inline",
+            code='location.instanced_depth',
+            path='instanced',
+            actual=True,
+            expected=False,
+            remedy='Set instanced=False to blur this room, or omit depth to keep instancing.',
+        )
     p = props.office_paints(cv)
     g = cv.group(parent, id)
     if shots is not None:
@@ -157,6 +171,7 @@ def office_wide(
 @register(
     "location",
     "office-desk",
+    contract=dc.location('office-desk'),
     summary="Office, wide shot without the foreground candidate: whoever sits behind "
     "the desk; chair=False leaves the chair to the slot (to spin it)",
 )
@@ -197,6 +212,7 @@ def office_desk(
 @register(
     "location",
     "office-reverse",
+    contract=dc.location('office-reverse'),
     summary="Office, reverse angle on the candidate: warm wall, gray chair, glass of water",
 )
 def office_reverse(
@@ -258,6 +274,7 @@ MENU_CHARS = 14  # the most characters a line of the café's menu board holds at
 @register(
     "location",
     "cafe",
+    contract=dc.location('cafe'),
     summary="Café interior: tiles, shelf, menu, masked window, pendants, espresso machine, counter",
     examples=(
         'from srstudio import cast, get\n'
@@ -351,7 +368,12 @@ def park_seat_y(bottom: float, scale: float) -> float:
     return PARK_SEAT_Y - bottom * scale
 
 
-@register("location", "park", summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench")
+@register(
+    "location",
+    "park",
+    contract=dc.location('park'),
+    summary="Park: buildings, lawn, path, swaying tree, shrubs, sign, bench",
+)
 def park(
     cv: Canvas,
     parent,
@@ -413,6 +435,7 @@ RECEPTION_CODE = (990, COUNTER_FLOOR - 64)  # the code on the counter's face, by
 @register(
     "location",
     "conference-room",
+    contract=dc.location('conference-room'),
     summary="Conference room: blinds with light shafts, a whiteboard with a chart and sticky notes, a high-back "
     "chair, a walnut table with a speakerphone, notes and a mug",
 )
@@ -499,6 +522,7 @@ def conference_room(
 @register(
     "location",
     "reception",
+    contract=dc.location('reception'),
     summary="Reception: a lit walnut slat wall with a backlit logo, opal globe pendants, a plant, a stone-topped "
     "fluted counter with a monitor and flowers, and a polished floor that reflects them",
 )
@@ -637,6 +661,7 @@ def _digit(cv: Canvas, parent, ch: str, x, y, id: str):
 @register(
     "location",
     "elevator",
+    contract=dc.location('elevator'),
     summary="Elevator cab: brushed steel walls, sliding doors onto a hallway, a seven-segment floor display, a "
     "button panel with the rider's floor lit, a ceiling light and handrails",
 )

@@ -16,6 +16,7 @@ from dataclasses import MISSING, dataclass, fields, is_dataclass
 from types import SimpleNamespace
 from typing import Annotated, Any, Literal, NoReturn, Union, get_args, get_origin, get_type_hints, is_typeddict
 
+from . import checks
 from .errors import SrstudioError
 
 SCHEMA = 'srstudio.part-contract/1.0.0'
@@ -66,9 +67,11 @@ class ParameterContract:
     fields: tuple[tuple[str, ParameterContract], ...] = ()
     items: ParameterContract | None = None
     prefix_items: tuple[ParameterContract, ...] = ()
+    space: str | None = None
+    anchors: tuple[tuple[str, tuple[float, float]], ...] = ()
 
     def __post_init__(self) -> None:
-        for name in ('description', 'unit', 'timebase', 'role'):
+        for name in ('description', 'unit', 'timebase', 'role', 'space'):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or len(value) > 4096):
                 _fail(f'{name}: expected a string of at most 4096 characters')
@@ -91,6 +94,17 @@ class ParameterContract:
             or any(not isinstance(value, ParameterContract) for value in self.prefix_items)
         ):
             _fail('prefix_items: expected at most 100 ParameterContracts')
+        _pairs(self.anchors, 'anchors')
+        if self.anchors and (not self.unit or not self.space):
+            _fail('anchors: declare the coordinate unit and space')
+        for name, point in self.anchors:
+            if (
+                len(name) > 128
+                or not isinstance(point, tuple)
+                or len(point) != 2
+                or not all(checks.number(value) for value in point)
+            ):
+                _fail('anchors: expected named finite 2D points')
 
     def apply(self, schema: dict) -> dict:
         result = dict(schema)
@@ -99,6 +113,7 @@ class ParameterContract:
             ('unit', 'x-unit'),
             ('timebase', 'x-timebase'),
             ('role', 'x-role'),
+            ('space', 'x-space'),
             ('minimum', 'minimum'),
             ('maximum', 'maximum'),
         ):
@@ -107,6 +122,8 @@ class ParameterContract:
                 result[key] = value
         if self.enum:
             result['enum'] = list(self.enum)
+        if self.anchors:
+            result['x-anchors'] = {name: list(point) for name, point in self.anchors}
         nested = [
             key
             for key, active in (
@@ -165,8 +182,11 @@ class PartContract:
     vocabularies: tuple[tuple[str, tuple[str, ...]], ...] = ()
     constraints: tuple[str, ...] = ()
     operations: tuple[Operation, ...] = ()
+    returns: ParameterContract | None = None
 
     def __post_init__(self) -> None:
+        if self.returns is not None and not isinstance(self.returns, ParameterContract):
+            _fail('returns: expected a ParameterContract or None')
         for name in ('parameters', 'capabilities', 'vocabularies'):
             _pairs(getattr(self, name), name)
         if any(not isinstance(value, ParameterContract) for _, value in self.parameters):
@@ -341,7 +361,15 @@ def describe_callable(
         'required': required,
         'additionalProperties': additional,
     }
-    returns = shapes.shape(builder if inspect.isclass(builder) else hints.get('return', signature.return_annotation))
+    result_spec = metadata.returns or ParameterContract()
+    result_type = (
+        result_spec.type
+        if result_spec.type is not _EMPTY
+        else builder
+        if inspect.isclass(builder)
+        else hints.get('return', signature.return_annotation)
+    )
+    returns = result_spec.apply(shapes.shape(result_type))
     capabilities = {'limbs': None, 'head_motion': None, 'expressions': None, **dict(metadata.capabilities)}
     return {
         'schema': SCHEMA,
