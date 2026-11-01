@@ -108,7 +108,10 @@ def sweat(parent, end: float) -> None:
 
 
 def gate_shot(take, g, end: float) -> None:
-    stick_airport.gate(cv, g, gate="B9", now="LAST CALL", boarding_size=stick_airport.BOARDING_SIZE)
+    stick_airport.gate(
+        cv, g, gate="B9", now="LAST CALL", boarding_size=stick_airport.BOARDING_SIZE,
+        cactus_at=(790.0, stick_airport.PODIUM_TOP),  # on the podium: the bag stands where the cactus would
+    )  # fmt: skip
     face = DEADPAN
     agent(g, [stick.RigKey(0, "stand", face)], end, take)
     stick_airport.podium(cv, g, gate="B9", plate=False)
