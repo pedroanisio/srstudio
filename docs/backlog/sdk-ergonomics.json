@@ -581,14 +581,15 @@
           "Revalidated compilation with scoped IDs/paints, one parent/camera projection and preserved source clocks",
           "Atomic self-contained scene publication with expansion allowances, cooperative timeout checks and failure preservation",
           "Public vector verification/compilation workers with hard kernel address-space limits, parent deadlines, bounded IPC and preserved typed causes; VectorSource batches preparation and compilation",
-          "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images"
+          "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images",
+          "Perspective plate-view bridge resolves canonical units, handedness, parent transforms, shared world lights and bounded principal-point overscan without applying projection twice"
         ],
         "remaining": [
           "Prepared plate/proxy payload bindings and supported backend emission under shared camera/light contracts",
           "Integrate composition budgets with plate/proxy preparation and bounded renderer sessions",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"

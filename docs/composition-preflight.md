@@ -21,6 +21,50 @@ Plate/proxy source adapters, emission and composition-budget integration remain
 open under SDK-P2-07. A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
+## Register a plate view
+
+`plate_view(plan, layer_id)` derives a perspective plate camera and shared lights
+from a revalidated plan. It resolves the complete parent transform and converts
+canonical coordinates (+Z toward the reference viewer) to the plate backend's
+centimeter-like units (+Z away). Metric scene units have fixed conversions;
+`canonical-arm` requires an authored `meters_per_unit` argument.
+
+```python
+view = composition.plate_view(plan, "host")
+engine_point = view.point((0.1, 0.2, 0.0))
+engine_normal = view.direction((0.0, 0.0, 1.0))
+# Build canonical source geometry using these mappings, then render a Plate
+# with view.width, view.height, view.camera and view.lights.
+image_x, image_y = view.offset
+```
+
+The image is already projected. Composite it at `view.offset` in screen space;
+do not apply the layer or camera transform again. An off-center principal point
+uses an enlarged render frame so shifting the image does not clip geometry at
+the final frame's edges. The adapter checks that frame against dimension, pixel
+and memory limits. Actual render-job dimensions and work must still be bound
+and checked by the pending source adapter.
+
+`point` consumes canonical source coordinates and applies all parents, uniform
+scale, world-unit conversion and the Z reflection. `direction` rotates and
+reflects normals without translation or scale. Converting triangle geometry
+also requires reversing its winding (`view.reverses_winding`). Existing clay
+meshes have a different source basis: explicitly convert their +Z-away vertices,
+normals and winding to canonical source axes before using these mappings.
+Shared lights stay in world space, independent of the layer's pose. Directional
+yaw/pitch describe light travel from canonical +Z; positive yaw turns toward +X,
+and positive pitch toward -Y. Area-light positions and radii convert with world
+units; power and colors remain unchanged.
+
+This adapter currently supports lit perspective world plate/proxy layers. It
+refuses orthographic/screen/flat views, the engine's near-vertical up-axis switch,
+field-of-view clamping and geometry outside the plate camera's clipping range.
+The existing plate camera's ambient-occlusion defaults remain in effect. The
+adapter does not verify mesh payloads, render, certify work declarations or emit
+plate assets into a compiled scene. [Registration tests](../tests/test_composition_plate_view.py)
+cover the mapping and a real-render landmark check; broader style and animated
+adoption evidence remains separate.
+
 ## Start with a real drawing
 
 Run the [pinned paper example](../examples/composition_preflight.py):

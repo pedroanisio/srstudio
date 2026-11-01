@@ -5,13 +5,18 @@ declared manifest without executing builders, inspecting a cache or rendering.
 Its costs are conservative declared bounds, not measured renderer RSS or timing.
 Vector preparation checks actual payloads; emission compiles supported features
 into a self-contained scene and atomically publishes it without rendering.
+plate_view resolves perspective plate coordinates and shared lights; it does not
+yet supply a verified plate payload or compiled plate/proxy emission.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from ._composition_plate_view import PlateView
 
 from .errors import SrstudioError
 
@@ -70,6 +75,12 @@ class CameraSpec(_Record):
 
 @dataclass(frozen=True)
 class LightSpec(_Record):
+    """World-space lights. Directional yaw/pitch rotate light travel from canonical +Z.
+
+    Positive yaw turns toward +X; positive pitch turns toward -Y. Positions and
+    area radii use the scene world unit; light intensities are backend power values.
+    """
+
     id: str
     kind: Literal['ambient', 'directional', 'sphere-area']
     color: str
@@ -271,6 +282,19 @@ def preflight(spec: ScenePlan, bindings: tuple[AssetBinding, ...]) -> ValidatedS
     from ._composition_preflight import preflight as validate
 
     return validate(spec, bindings)
+
+
+def plate_view(plan: ValidatedScenePlan, layer: str, *, meters_per_unit: float | None = None) -> PlateView:
+    """Resolve one perspective world layer to a plate camera, lights and source transform.
+
+    The returned image offset already includes projection. Composite that plate
+    in screen space without the layer transform. Canonical-arm scenes require
+    an authored meters_per_unit; metric units cannot be overridden. This adapter
+    does not prepare geometry, render, approve a drawing or emit a composition.
+    """
+    from ._composition_plate_view import plate_view as resolve
+
+    return resolve(plan, layer, meters_per_unit=meters_per_unit)
 
 
 @dataclass(frozen=True)
