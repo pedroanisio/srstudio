@@ -22,7 +22,13 @@ from .errors import SrstudioError
 from .music import write_wav
 
 __all__ = [
+    "ALARM_HIGH",
+    "ALARM_LOW",
+    "FAR_BARK",
     "FoleyError",
+    "far_alarm",
+    "far_barks",
+    "hum",
     "typing_bursts",
     "taps",
     "keystrokes",
@@ -484,6 +490,12 @@ CHOPPER = Burst(3.0, 520.0, attack=0.5, decay=4.0, tone_hz=48.0, tone_end_hz=48.
 GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880.0, tone=1.0, flutter_hz=17.0)
 SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
+ALARM_HIGH = Burst(0.3, 500.0, attack=0.01, decay=2.0, tone_hz=900.0, tone_end_hz=900.0, tone=0.85)  # far: no low end
+ALARM_LOW = Burst(0.3, 500.0, attack=0.01, decay=2.0, tone_hz=720.0, tone_end_hz=720.0, tone=0.85)
+ALARM_STEP = 0.34
+FAR_BARK = Burst(0.2, 900.0, attack=0.005, decay=0.5, tone_hz=520.0, tone_end_hz=340.0, tone=0.6)
+BARK_STEP = 0.34
+HUM_HZ, HUM_FLAT = 100.0, 50.0  # mains hum, and a decay so slow it reads as flat
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
 
 
@@ -563,6 +575,31 @@ def dawn(times: Sequence[float], duration: float, rate: int = RATE, seed: int = 
 def write_dawn(path: Path, times: Sequence[float], duration: float, rate: int = RATE, seed: int = 0) -> Path:
     """The bed of :func:`dawn`, written to ``path``."""
     return write_wav(path, dawn(times, duration, rate, seed), rate)
+
+
+def hum(seconds: float) -> Burst:
+    """A room's low hum, a fridge or a mains transformer, flat for ``seconds`` and then cut dead: what a viewer only
+    notices when it stops."""
+    return Burst(seconds, 160.0, attack=0.05, decay=HUM_FLAT, tone_hz=HUM_HZ, tone_end_hz=HUM_HZ, tone=0.8)
+
+
+def far_alarm(start: float, seconds: float) -> dict[Burst, tuple[float, ...]]:
+    """When each of a far car alarm's two tones sounds over ``seconds`` from ``start``, as ``{tone: seconds}``: thin,
+    for :func:`bursts` at a low gain, each tone on its own track."""
+    if not (checks.number(start) and checks.number(seconds) and start >= 0):
+        raise FoleyError(f"an alarm runs from a second >= 0 for a number of seconds, got {start!r}, {seconds!r}")
+    count = int((seconds - ALARM_HIGH.seconds) / ALARM_STEP) + 1 if seconds >= ALARM_HIGH.seconds else 0
+    if count < 2:
+        raise FoleyError(f"an alarm needs both its tones, got {seconds!r} s")
+    rows = [round(start + i * ALARM_STEP, 6) for i in range(count)]
+    return {ALARM_HIGH: tuple(rows[0::2]), ALARM_LOW: tuple(rows[1::2])}
+
+
+def far_barks(start: float, count: int) -> tuple[float, ...]:
+    """A dog across town: ``count`` barks of :data:`FAR_BARK` from ``start``."""
+    if not (isinstance(count, int) and count > 0 and checks.number(start) and start >= 0):
+        raise FoleyError(f"a dog barks at least once from a second >= 0, got {count!r} at {start!r}")
+    return tuple(round(start + i * BARK_STEP, 6) for i in range(count))
 
 
 def bursts(
