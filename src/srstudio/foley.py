@@ -60,6 +60,7 @@ __all__ = [
     "BELL",
     "air",
     "write_air",
+    "jingle",
     "room",
     "write_room",
     "WATER_EDGE",
@@ -360,6 +361,19 @@ def room(duration: float, rate: int = RATE, peak: float = PEAK, seed: int = 0) -
     return [v * peak / top for v in out]
 
 
+def jingle(at: float, seed: int = 0, shakes: int = 7) -> list[float]:
+    """The moments of a bunch of keys coming out of a pocket from second ``at``, for :data:`KEYS`: a loose, uneven run
+    that slows as the hand finds the right one."""
+    if not (checks.number(at) and at >= 0 and isinstance(shakes, int) and shakes > 0):
+        raise FoleyError(f"a jingle needs a time and a count, got {at!r}, {shakes!r}")
+    rng = random.Random(seed)
+    times, gap = [at], 0.05
+    for _ in range(shakes - 1):
+        times.append(round(times[-1] + gap * rng.uniform(0.7, 1.3), 4))
+        gap *= 1.25
+    return times
+
+
 def write_room(path: Path, duration: float, rate: int = RATE, seed: int = 0) -> Path:
     """The bed of :func:`room`, written to ``path``."""
     return write_wav(path, room(duration, rate, PEAK, seed), rate)
@@ -510,6 +524,7 @@ GULL = Burst(0.5, 300.0, attack=0.02, decay=0.6, tone_hz=1450.0, tone_end_hz=880
 SCRAPE = Burst(0.3, 1500.0, attack=0.02, decay=0.5, tone_hz=220.0, tone_end_hz=170.0, tone=0.25, flutter_hz=38.0)
 SWISH = Burst(0.6, 2600.0, attack=0.2, decay=0.6, tone_hz=300.0, tone_end_hz=900.0, tone=0.15)
 PLATES = Burst(0.3, 9000.0, attack=0.001, decay=0.3, tone_hz=3100.0, tone_end_hz=2900.0, tone=0.35)
+KEYS = Burst(0.08, 8000.0, attack=0.001, decay=0.2, tone_hz=4300.0, tone_end_hz=3900.0, tone=0.3)
 
 
 def bursts(

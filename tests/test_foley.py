@@ -316,3 +316,11 @@ def test_a_room_is_repeatable_from_its_seed():
 def test_a_room_refuses_what_it_cannot_write(duration, peak, match):
     with pytest.raises(foley.FoleyError, match=match):
         foley.room(duration, peak=peak)
+
+
+def test_a_jingle_starts_on_its_moment_and_slows():
+    times = foley.jingle(2.0, seed=1)
+    gaps = [b - a for a, b in zip(times, times[1:])]
+    assert times[0] == 2.0 and times == sorted(times) and gaps[-1] > gaps[0]
+    with pytest.raises(foley.FoleyError, match="jingle"):
+        foley.jingle(-1.0)
