@@ -368,6 +368,7 @@ TOON = Style(
         "rafa",
         "toon",
         "toon_bento",
+        "toon_alarm",
         "toon_cars",
         "toon_cast",
         "toon_chat",
