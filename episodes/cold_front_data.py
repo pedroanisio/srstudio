@@ -1,7 +1,7 @@
 """Cold Front — the sketch as data: first frost tonight, exes moving in. Omar reads it off a paper map; Deb, under her
-duvet with Priya on speaker, says not mine. Scattered hellos by nine, and at nine one lands. Priya asks if he texted.
-No. The second bubble lands on Omar's last word. He's changed. Priya and Omar say her name on one beat, and she answers
-anyway.
+duvet with Priya on speaker, says not mine. Scattered hellos by nine, and at nine one lands. Priya asks if he texted,
+and her thumb slides over it. No. Omar reads the second bubble out before it lands; it lands on the cut to the phone.
+He's changed. Priya and Omar say her name on one beat, and she answers anyway.
 "He doesn't miss you. He's cold."
 
 Collage style (ADR 0026), Okayville batch E on the send test: the recipient is your best friend, the one who always
@@ -53,10 +53,12 @@ PHONE = dict(x=618.0, y=1130.0, w=372.0, h=640.0)  # in her hand, its screen tow
 INSERT = dict(x=150.0, y=790.0, w=780.0, h=1090.0)  # clear of the shelf above and of the pill
 BUBBLE_AT = (712.0, 1338.0)  # where her thumb covers the first bubble on the phone in her hand
 ELBOW = (654.0, 1740.0)  # under the duvet, so the forearm rises out of it beside the phone
-HAND_REST = (640.0, 1570.0)  # her hand at the phone's foot, off its words
-HAND_ABOVE = (625.0, 1565.0)  # the thumb lifts
-HAND_DOWN = (635.0, 1590.0)  # and comes down
+HAND_REST = (630.0, 1500.0)  # her hand on the phone's edge, off its words, the forearm in sight above the duvet
+HAND_ABOVE = (625.0, 1475.0)  # the thumb lifts
+HAND_DOWN = (636.0, 1500.0)  # and comes down
 HAND_MOVE = 0.35  # seconds the hand takes to move
+HEY_HELD = 0.9  # seconds HEY stays readable on the phone in her hand, past the check's 0.84, before her thumb is on it
+OVER_HEY = 0.85  # how far through its move the hand has the word covered, when the word goes
 INSERT_HAND_SCALE = 1.9  # the phone is up at the eye, so her hand is near as well
 INSERT_HAND = (936.0, 1632.0)
 INSERT_ELBOW = (1120.0, 2040.0)
@@ -83,19 +85,18 @@ LINES = (
     Line("priya", "Deb.", phone=True, together=True),
     Line("omar", "He doesn't miss you. He's cold."),
 )
-_BEATS, END = timed(
+BEATS, END = timed(
     LINES,
     (
         (2.7, "omar", 0, "side", "flat", "free-right"),  # the arrow slides from frame one, his hand on the map
         (0.9, "deb", 1, "open", "smile", "free-right"),  # at the TV, nothing to fear
-        (1.1, "omar", 2, "side", "flat", "free-right", "reveal:clock"),
-        (0.85, "deb", LINES[2].text, "side", "smile", "free-right", "reveal:insert"),  # cut on "nine": still 8:59
-        (0.95, "deb", "", "side", "smile", "free-right", "buzz"),  # 9:00, and the first bubble
-        (0.4, "deb", "", "side", "smile", "free-right", "reveal:cover"),  # the smile stays, her thumb goes over it
+        (1.95, "omar", 2, "side", "flat", "free-right", "reveal:clock"),  # held to the end of his caption
+        (1.0, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands at 9:00 with the first bubble
+        (0.35, "deb", "", "side", "smile", "free-right", "reveal:cover"),  # the smile stays; back to her
         (1.0, "deb", 3, "side", "smile", "free-right"),
         (0.95, "deb", 4, "side", "smile", "free-right"),  # eyes on the phone
-        (2.6, "omar", 5, "side", "flat", "free-right"),
-        (0.7, "deb", LINES[5].text, "side", "smile", "free-right", "buzz"),  # the cut lands on his last word
+        (3.3, "omar", 5, "side", "flat", "free-right"),  # held to the end of his caption
+        (1.0, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands with the bubble he just read out
         (0.85, "deb", 6, "sad", "smile", "free-right"),  # softly
         (0.8, "omar", 7, "open", "flat", "down"),  # his eyes come off the map, to the lens
         (0.5, "deb", "", "up", "smile", "free-right", "reveal:tv"),  # she looks up at the TV
@@ -106,12 +107,6 @@ _BEATS, END = timed(
     ),
     tail=0.45,
 )
-# two cuts land on a line's last word, its caption still up: to the phone on "nine", and the second bubble on "myself"
-_LANDS = {
-    next(i for i, b in enumerate(_BEATS) if b.caption == LINES[n].text and b.who == "deb"): (n, word)
-    for n, word in ((2, 3), (5, 6))
-}
-BEATS = [replace(b, line=_LANDS[i][0], word=_LANDS[i][1]) if i in _LANDS else b for i, b in enumerate(_BEATS)]
 SKETCH = replace(make_sketch(SLUG, TITLE, NAMES, LINES, BEATS, END), tail=0.45)
 
 
@@ -120,11 +115,11 @@ def _at(beats: Sequence[Beat], name: str) -> float:
 
 
 def inserts(beats: Sequence[Beat]) -> list[tuple[float, float]]:
-    """When the phone fills the frame: from the top bar's last minute to the cover, from the second bubble to the next
-    line, and from the green bubble to Omar. Refuses an order the recording broke."""
-    second = events(beats, "buzz")[1][0]
+    """When the phone fills the frame: from the first bubble to the cover, from the second to the next line, and from
+    the green bubble to Omar. Refuses an order the recording broke."""
+    first, second = [t for t, _ in events(beats, "buzz")][:2]
     next_line = next(b.start for b in beats if b.start > second and b.line is not None and b.word == 0)
-    out = [(_at(beats, "insert"), _at(beats, "cover")), (second, next_line)]
+    out = [(first, _at(beats, "cover")), (second, next_line)]
     answer = _at(beats, "answer")
     out.append((answer, next(b.start for b in beats if b.start > answer)))
     if any(b <= a for a, b in out) or any(c[0] < p[1] for p, c in zip(out, out[1:], strict=False)):
@@ -177,9 +172,9 @@ def _gated(cv, parent, spans: Sequence[tuple[float, float]]):
     return g
 
 
-def _thread(cv, parent, box: dict, beats: Sequence[Beat]) -> None:
+def _thread(cv, parent, box: dict, beats: Sequence[Beat]):
     buzzes = [t for t, _ in events(beats, "buzz")]
-    collage_forecast.thread(
+    return collage_forecast.thread(
         cv,
         parent,
         **box,
@@ -209,17 +204,36 @@ def _news(shot) -> None:
         collage_sets.sign(cv, shot.front, OVERLAY, **CHYRON, size=74, fill="#ffd166", tilt=-1)
 
 
+def _thumb(beats: Sequence[Beat]) -> float:
+    """When her hand starts for the bubble: back from the insert HEY is read, and it goes as Priya asks."""
+    return _at(beats, "cover") + HEY_HELD - OVER_HEY * HAND_MOVE
+
+
+def _covered(beats: Sequence[Beat]) -> float:
+    """When her fist has the first HEY covered, which is when the word stops being drawn under it."""
+    return _thumb(beats) + OVER_HEY * HAND_MOVE
+
+
+def _hide_first(cv, phone, words: str, until: float) -> None:
+    """The bubble ``words`` on a drawn ``phone`` stops at ``until``, its paper left under her fist. The thread is an
+    approved part with no such option, so the layer it drew is gated from here."""
+    texts = {a.id for a in cv.assets.iter() if a.xml_name == "text" and a.text == words}
+    layer = next(n for n in phone.iter() if n.xml_name == "layer" and n.asset in texts)
+    cv.gate(layer, [(0.0, until)])
+
+
 def _hand(beats: Sequence[Beat]):
-    """Where her hand is at a second, and the seconds to key it at."""
-    cover = _at(beats, "cover")
-    changed = next(b.start for b in beats if b.line == 6)
+    """Where her hand is at a second, and the seconds to key it at. It leaves the first bubble under the second's
+    insert, so she is back with the hand clear of the words and the arm in sight for the whole of her line."""
+    thumb = _thumb(beats)
+    second = events(beats, "buzz")[1][0]
     answer = _at(beats, "answer")
     keys = [
         (0.0, HAND_REST),
-        (cover, HAND_REST),
-        (cover + HAND_MOVE, BUBBLE_AT),
-        (changed, BUBBLE_AT),
-        (changed + HAND_MOVE, HAND_ABOVE),
+        (thumb, HAND_REST),
+        (thumb + HAND_MOVE, BUBBLE_AT),
+        (second, BUBBLE_AT),
+        (second + HAND_MOVE, HAND_ABOVE),
         (answer - 0.15, HAND_ABOVE),
         (answer, HAND_DOWN),
     ]
@@ -251,9 +265,12 @@ def _sofa(shot) -> None:
         last = b
     if last < app.end:
         gaps.append((last, app.end))
-    _thread(cv, _gated(cv, shot.front, gaps) if gaps else shot.front, PHONE, shot.beats)
     if not gaps:
         raise StagingError(f"{SLUG}: the shot at {app.start} s is all insert")
+    phone = _thread(cv, _gated(cv, shot.front, gaps), PHONE, shot.beats)
+    covered = _covered(shot.beats)
+    if app.start <= covered < app.end:
+        _hide_first(cv, phone, "HEY", covered)
     where, times = _hand(shot.beats)
     collage_everyday.reach(
         cv, _gated(cv, shot.front, gaps), "deb", ELBOW, where, [t for t in times if t <= shot.end] + [shot.end], side=1

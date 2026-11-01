@@ -42,15 +42,14 @@ def test_the_inserts_follow_the_buzzes_in_order(data):
     assert len(spans) == 3 and all(a < b for a, b in spans)
     assert all(c[0] >= p[1] for p, c in zip(spans, spans[1:], strict=False))
     buzzes = [t for t, _ in sketch.events(data.SKETCH.beats, "buzz")]
-    assert spans[0][0] < buzzes[0] < spans[0][1] and spans[1][0] == buzzes[1]
+    assert spans[0][0] == buzzes[0] and spans[1][0] == buzzes[1]
 
 
 def test_a_recording_that_breaks_the_inserts_order_is_refused(data):
     beats = list(data.SKETCH.beats)
     i = next(k for k, b in enumerate(beats) if b.event == "reveal:cover")
-    beats[i] = replace(beats[i], event="reveal:insert")
-    j = next(k for k, b in enumerate(beats) if b.event == "reveal:insert")
-    beats[j] = replace(beats[j], event="reveal:cover")
+    j = next(k for k, b in enumerate(beats) if b.event == "buzz")
+    beats[i], beats[j] = replace(beats[i], event="buzz"), replace(beats[j], event="reveal:cover")
     with pytest.raises(SrstudioError, match="out of order"):
         data.inserts(beats)
 
@@ -58,5 +57,39 @@ def test_a_recording_that_breaks_the_inserts_order_is_refused(data):
 def test_her_hand_leaves_the_words_once_the_second_bubble_is_read(data):
     where, times = data._hand(data.SKETCH.beats)
     changed = next(b.start for b in data.SKETCH.beats if b.line == 6)
-    assert where(changed + data.HAND_MOVE) == data.HAND_ABOVE
+    assert where(changed) == data.HAND_ABOVE
     assert where(times[-1]) == data.HAND_DOWN
+
+
+def test_no_cut_falls_inside_a_caption(data):
+    sk = data.SKETCH
+    cuts = [a.start for a in sketch.appearances(sk.beats, sk.end)][1:]
+    starts = [b.start for b in sk.beats]
+    spans = []
+    for i, b in enumerate(sk.beats):
+        if b.caption and (not i or sk.beats[i - 1].caption != b.caption):
+            ends = [t for t, q in zip(starts, sk.beats, strict=True) if t > b.start and q.caption != b.caption]
+            spans.append((b.start, ends[0] if ends else sk.end))
+    assert [(a, b, c) for a, b in spans for c in cuts if a < c < b] == []
+
+
+def test_each_insert_opens_on_a_cut_with_no_caption_over_it(data):
+    beats = data.SKETCH.beats
+    for at, _ in sketch.events(beats, "buzz"):
+        beat = next(b for b in beats if b.start == at)
+        assert beat.caption == "" and beat.who == "deb"
+
+
+def test_her_forearm_stays_in_sight_above_the_duvet_wherever_the_hand_is(data):
+    where, times = data._hand(data.SKETCH.beats)
+    over = data.DUVET_TOP - 60.0
+    assert all(where(t)[1] < over for t in times)
+
+
+def test_hey_is_covered_when_it_goes_and_was_up_long_enough_to_read(data):
+    beats = data.SKETCH.beats
+    where, _ = data._hand(beats)
+    gone = data._covered(beats)
+    x, y = where(gone)
+    assert abs(x - data.BUBBLE_AT[0]) < 15.0 and abs(y - data.BUBBLE_AT[1]) < 40.0
+    assert gone - data._at(beats, "cover") >= 0.84
