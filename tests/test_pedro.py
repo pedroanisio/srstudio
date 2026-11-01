@@ -471,3 +471,13 @@ def test_the_collar_lies_down_at_its_ends_and_stands_at_the_nape():
     ends = pedro_wardrobe._collar_stand(np.array((1.0, math.tau - 1.0)))
     assert np.all(ends < 0.01)
     assert pedro_wardrobe._collar_stand(np.array(math.pi)) > 4.0
+
+
+@pytest.mark.parametrize("y", [12.0, 18.0])
+def test_the_side_of_his_head_has_no_ridge_where_the_face_meets_the_skull(y):
+    """A crease from the hairline to the ear reads as a mask on a ball the moment he turns."""
+    zs = np.linspace(-6.0, 5.0, 45)
+    outs = np.linspace(5.0, 24.0, 9501)
+    sides = [outs[np.argmax(pedro_sculpt.field(outs, np.full_like(outs, y), np.full_like(outs, z)) > 0.0)] for z in zs]
+    bend = np.gradient(np.gradient(np.array(sides), zs), zs)
+    assert np.abs(bend).max() < 0.25

@@ -63,7 +63,7 @@ _NECK = (
     25.0,
     60.0,
 )  # half width, middle, half depth, top and foot of the neck the skull comes down into
-_MELT_Z, _MELT = (-8.0, -1.0), (0.3, 5.0)  # how softly the skull melts in: wide behind the temple, nothing on the face
+_MELT_Z, _MELT = (-8.0, 6.0), (0.3, 4.0)  # the face stays sharp, the skull melts in with no ridge at its edge
 _JAW_FLOOR = ((50.4, -8.0), (42.0, 7.5))  # the line under his jaw, from the chin up to its angle, as y and z
 _ROUND = 0.44  # how round the face stands across: 0.5 is an ellipse, lower is a flat front with hard corners
 CENTRE = np.array((0.0, 27.0, 3.0))  # the skin is star-shaped about this point, which the neck's column has to contain
@@ -154,9 +154,15 @@ def _ball(x, y, z, c: Sequence[float], r: Sequence[float]) -> np.ndarray:
     return (np.sqrt(q) - 1.0) * min(r)
 
 
-def _union(a, b, k: float) -> np.ndarray:
+def _union(a, b, k: float | np.ndarray) -> np.ndarray:
     h = np.clip(0.5 + 0.5 * (b - a) / k, 0.0, 1.0)
     return b * (1.0 - h) + a * h - k * h * (1.0 - h)
+
+
+def _melt(z: np.ndarray) -> np.ndarray:
+    """How softly the skull joins the face at ``z``: on a smooth ramp, as a straight one left a ridge at its end."""
+    t = np.clip((z - _MELT_Z[0]) / (_MELT_Z[1] - _MELT_Z[0]), 0.0, 1.0)
+    return _MELT[0] + (_MELT[1] - _MELT[0]) * t * t * (3.0 - 2.0 * t)
 
 
 def _above_jaw_floor(y, z) -> np.ndarray:
@@ -194,7 +200,7 @@ def field(x, y, z) -> np.ndarray:
     base = (np.sqrt(radial) - 1.0) * np.minimum(rx, np.minimum(fd, bd))
     base = np.maximum(base, np.maximum(-y, y - 50.0))
     base = -_union(-base, -_above_jaw_floor(y, z), 1.5)
-    base = _union(base, _ball(x, y, z, *SKULL), np.interp(z, _MELT_Z, _MELT))
+    base = _union(base, _ball(x, y, z, *SKULL), _melt(z))
     base = _union(base, _neck(x, y, z), 3.0)
     return _union(base, _nose(x, y, z), 1.35)
 
