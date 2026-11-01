@@ -1252,6 +1252,12 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "held-phone": {"title": "Celular na mão"},
+    "table-fork": {"title": "Garfo"},
+    "dinner-plate": {"title": "Prato de jantar"},
+    "notice-phone": {"title": "Celular com aviso"},
+    "location-chip": {"title": "Mapa com ponto"},
+    "table-phone": {"title": "Celular na mesa"},
     "paper-streamers": {"title": "Serpentinas de papel"},
     "id-lanyard": {"title": "Crachá com cordão"},
     "sheet-cake": {"title": "Bolo retangular"},
@@ -8711,6 +8717,9 @@
     {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."},
     {"section": "props", "name": "Placa de parede", "parts": ["wall-plaque"], "shot": {"episode": "round-seven", "at": 18.9}, "text": "Uma placa de latão que passa o filme inteiro ilegível na parede e só ganha letras no close."},
     {"section": "props", "name": "Bolo e serpentinas", "parts": ["sheet-cake", "paper-streamers"], "shot": {"episode": "round-seven", "at": 14.6}, "text": "Um bolo branco com duas linhas de glacê e serpentinas de papel presas na parede da recepção."},
-    {"section": "props", "name": "Crachá com cordão", "parts": ["id-lanyard"], "shot": {"episode": "round-seven", "at": 9.5}, "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."}
+    {"section": "props", "name": "Crachá com cordão", "parts": ["id-lanyard"], "shot": {"episode": "round-seven", "at": 9.5}, "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."},
+    {"section": "props", "name": "Mapa que entrega", "parts": ["location-chip", "table-phone"], "shot": {"episode": "the-dot", "at": 13.8}, "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."},
+    {"section": "props", "name": "Aviso no celular", "parts": ["notice-phone"], "shot": {"episode": "the-dot", "at": 23.0}, "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."},
+    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."}
   ]
 }

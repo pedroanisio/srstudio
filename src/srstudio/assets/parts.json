@@ -12614,6 +12614,108 @@
           "rig": null
         }
       ]
+    },
+    "table-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone flat on a table that rings, lights and talks on speaker Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "30d0a9c57b3ab79a30326101585114bcc3d2520b93c9351c4b5f940acd129389",
+          "rig": null
+        }
+      ]
+    },
+    "location-chip": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An invented map chip, unlettered: a blue dot at each place it caught Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "189aa4a6a652323924c040d7a9187a0637356f3b227ed430eb28caf19b173cab",
+          "rig": null
+        }
+      ]
+    },
+    "notice-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone held up with a map on it and a notice chip landing Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1d8a8e204cb4841923d0756b4e792a5f41a4fc26ab65aac838bd348ba51d4500",
+          "rig": null
+        }
+      ]
+    },
+    "dinner-plate": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A half-eaten dinner plate seen across a table Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "84a474c68740573d39fd2cbeb78a19ab0ac110e5d2ecb7a01b0db581f4013f73",
+          "rig": null
+        }
+      ]
+    },
+    "table-fork": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A fork held at its grip Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ad7b3bfa4373ce2ad4c2fe6676cb3c229e43f717ec9a842bad503a0506a112c0",
+          "rig": null
+        }
+      ]
+    },
+    "held-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone held up, its back to the camera Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c1c47c43e0d8ac7f4a478833edf212aa318b15c15d2515fe6c122e44ea112b0a",
+          "rig": null
+        }
+      ]
     }
   }
 }
