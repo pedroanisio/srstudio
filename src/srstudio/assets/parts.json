@@ -13449,16 +13449,22 @@
           "number": 1,
           "date": "2026-10-31",
           "note": "The owl astronomy presenter from the Retro Orbit pack supplied by the operator: flat print colour, six moods, eight eye poses, a beak that speaks. Proposed: awaiting the operator's decision.",
-          "status": "proposed",
+          "status": "approved",
           "proof": "generated/character-proofs/lyra/index.html",
-          "approval": null,
+          "approval": {
+            "date": "2026-11-01",
+            "words": "Lyra is approved"
+          },
           "drawing": "98ed8d7d7d074104ba556fc1a40dd3f7065866f7f7c095e71b0191f0a1b94155",
           "rig": {
             "date": "2026-10-31",
             "note": "Lyra's head on its own neck: an owl's quick turn and long hold, the whole head over the scarf, the uniform run up behind it. Proposed: awaiting the operator's decision.",
-            "status": "proposed",
+            "status": "approved",
             "proof": "generated/character-proofs/lyra/index.html",
-            "approval": null,
+            "approval": {
+              "date": "2026-11-01",
+              "words": "Lyra is approved"
+            },
             "drawing": "f84af0211f5870ecd7fa8cf4235d0384023c837e9c4af8ec253996b36cee31fc"
           }
         }

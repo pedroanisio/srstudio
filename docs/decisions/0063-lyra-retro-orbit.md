@@ -4,9 +4,10 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0063: Lyra and the Retro Orbit parts, drawn as flat print plates
 
-- Status: proposed (2026-10-31). The operator asked for this port. Nothing here is approved: the eight records are
-  `proposed`, `LYRA_RIG` is `proposed`, and the operator judges the look from the clips in
-  `generated/character-proofs/lyra/`. Implemented: `srstudio.toon_plate`, `srstudio.toon_orbit`, `srstudio.toon_lyra`;
+- Status: accepted for Lyra (2026-11-01). The operator asked for this port and approved her: "Lyra is approved". The
+  `toon-lyra` record and `LYRA_RIG` are `approved` on those words. They named Lyra, so the seven Retro Orbit sets and
+  props stay `proposed` and wait for their own decision. The clips are in `generated/character-proofs/lyra/`.
+  Implemented: `srstudio.toon_plate`, `srstudio.toon_orbit`, `srstudio.toon_lyra`;
   `tests/test_toon_orbit.py`, `tests/test_toon_lyra.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Extends [ADR 0047](0047-character-versions.md), [ADR 0050](0050-organic-head-motion.md) and
@@ -84,7 +85,7 @@ The Toon parts are brush shapes with pressed ink. Three things had to give way t
 ## Consequences
 
 - Any new poster-look part can use `toon_plate`, and nothing in the brush cast changes.
-- She is on no reel and in no release. A reel needs the operator's approval of these records first.
+- She is on no reel and in no release. A reel may draw her and her rig; the sets and props still need a decision.
 - The port differs from the pack where 9:16 and the rig required it: the sets above, the raised neckline, the mint
   terrace table top, FIELD STATION on two lines, and the flat drawing's head tilt of 0 with the rig's rest at -2.
 - At the extreme of a turn the scarf slips out from under one side of the chin. That is a limit of a rigid head over a

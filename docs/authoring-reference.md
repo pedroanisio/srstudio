@@ -2534,7 +2534,7 @@ the sketch's `Shot.measure`).
 
 No episode draws them yet, so the catalog's notes need no gallery item for them.
 
-### Lyra and Retro Orbit: flat print parts, proposed
+### Lyra and Retro Orbit: flat print parts
 
 [src/srstudio/toon_plate.py](../src/srstudio/toon_plate.py) draws a mid-century poster as brush shapes: `shape` turns an
 absolute path into a closed `Shape`, `Frame` places a plate inside a part, and `clip` and `inside` stand in for a clip
@@ -2551,8 +2551,8 @@ so a reel there gives its shots a `Staging.desk` that does.
 name. She is lip synced through her beak, and `LYRA_RIG` is her head rig, with `mood_plan` turning her head from mood
 to mood. Her moods go through the rig, not through `toon_cast.figure`, which holds to the shared names.
 
-All eight parts and the rig are proposed, so a reel cannot use them until the operator decides. The reasons and where
-the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
+Lyra and her rig are approved. The two locations and five props are proposed, so a reel cannot use them until they are
+decided. The reasons and where the port differs from the pack are in [docs/decisions/0063-lyra-retro-orbit.md](decisions/0063-lyra-retro-orbit.md).
 
 ## Saga style: a space-opera parody in seven episodes (S1–S7)
 

@@ -1,5 +1,5 @@
 """Lyra, the owl presenter (ADR 0063): her moods and eye poses as typed data, her beak for lip sync, the head rig
-measured at its bounds, and all of it held at ``proposed``."""
+measured at its bounds, and her approval on the operator's word."""
 
 import math
 from dataclasses import replace
@@ -254,10 +254,9 @@ def test_moods_and_eye_poses_draw_in_one_figure_through_the_rig():
     assert toon_head.figure(cv, cv.comp, toon_lyra.LYRA_RIG, poses, 8.0, plan) is not None
 
 
-def test_a_clip_can_reach_the_rig_directly_but_a_reel_is_refused_it():
+def test_a_reel_reaches_her_approved_rig():
     assert toon_rigs.RIGS["toon-lyra"] is toon_lyra.LYRA_RIG
-    with pytest.raises(parts.NotApprovedError):
-        toon_rigs.rig_of("toon-lyra")
+    assert toon_rigs.rig_of("toon-lyra") is toon_lyra.LYRA_RIG
 
 
 def test_she_lip_syncs_through_the_shared_track():
@@ -273,18 +272,18 @@ def test_the_builder_has_no_limb_tracks_to_draw():
 
 
 # -- the record --------------------------------------------------------------------------------------------------------
-def test_she_is_proposed_a_toon_part_with_no_approval():
+def test_she_is_a_toon_part_approved_in_the_operator_s_words():
     specimens.load_parts()
     entry = registry.get("character", "toon-lyra")
     assert entry.builder is toon_lyra.lyra
     assert entry.style == "toon"
     part = parts.get("toon-lyra")
     version = part.version(1)
-    assert version.status == "proposed"
-    assert version.approval is None
-    assert part.default is None
-    assert version.rig.status == "proposed"
-    assert version.rig.approval is None
+    assert version.status == "approved"
+    assert (version.approval.date, version.approval.words) == ("2026-11-01", "Lyra is approved")
+    assert part.default == 1
+    assert version.rig.status == "approved"
+    assert (version.rig.approval.date, version.rig.approval.words) == ("2026-11-01", "Lyra is approved")
     assert version.proof == version.rig.proof == "generated/character-proofs/lyra/index.html"
 
 
@@ -310,11 +309,28 @@ def test_the_digest_shows_every_eye_pose(name, monkeypatch):
     assert specimens.digest("toon-lyra") != parts.get("toon-lyra").version(1).drawing
 
 
-def test_a_sketch_knows_her_and_refuses_her_while_she_is_proposed():
+def test_a_sketch_knows_her_and_resolves_her_approved_version():
     assert "lyra" in sketch.CHARACTERS
     assert "lyra" in sketch.LIP_SYNCED
-    with pytest.raises(parts.NotApprovedError):
-        parts.resolved("toon-lyra")
+    assert parts.resolved("toon-lyra") == 1
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "toon-planetarium-salon",
+        "toon-starlight-terrace",
+        "toon-telescope",
+        "toon-moon-globe",
+        "toon-saturn-model",
+        "toon-field-notebook",
+        "toon-signal-clicker",
+    ],
+)
+def test_the_word_on_lyra_leaves_the_retro_orbit_parts_proposed(name):
+    version = parts.get(name).version(1)
+    assert version.status == "proposed"
+    assert version.approval is None
 
 
 def test_the_style_lists_her_modules():
