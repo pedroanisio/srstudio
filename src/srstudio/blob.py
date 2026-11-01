@@ -395,7 +395,7 @@ def _hugging() -> Pose:
     """Standing, leaning in to the right with both arms across someone there; flip for the other one."""
     return _pose(
         "hug",
-        (58, -428),
+        (30, -428),
         front=ARMS,
         face=(10, 2),
         torso=seg((6, -326), (0, -215), *TORSO),
