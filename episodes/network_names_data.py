@@ -57,7 +57,6 @@ PHONE = {"at": (296, 776), "scale": 1.5}
 INSERT = "#3a2c4e"  # the sofa's plum, dark, behind the phone when the shot cuts to it
 INSERT_CODE = "#e8dff0"
 SCREEN = "#10202c"
-RENAMED = 0.7  # the neighbor has just renamed his network
 DRIFT = 1.04
 TOP = 308.0  # the list clears the caption above and the marks below
 THE_LIST = {"mine": "BRUNO-HOME", "other": "MODEM-204", "his": "TURN IT DOWN"}
@@ -126,8 +125,7 @@ def states(shot) -> tuple[tuple[float, tuple[str, str, str]], ...]:
     """Three names, one of them changing at each step: his, and the neighbor's."""
     his, other = THE_LIST["mine"], THE_LIST["other"]
     return (
-        (0.0, (his, other, "ROUTER-88")),
-        (RENAMED, (his, other, THE_LIST["his"])),
+        (0.0, (his, other, THE_LIST["his"])),
         (at(shot, "accused"), (his, other, "I KNOW ITS YOU BRUNO")),
         (at(shot, "sorry"), ("SORRY", other, "I KNOW ITS YOU BRUNO")),
         (at(shot, "forgiven"), ("SORRY", other, "ITS OK. ROUGH WEEK?")),
