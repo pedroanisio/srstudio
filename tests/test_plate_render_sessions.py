@@ -1,13 +1,11 @@
 """Scoped plate work is measurable, bounded and does not publish failed renders."""
 
-import subprocess
 from pathlib import Path
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
-from srstudio import plates
+from srstudio import _bounded_process, plates
 from support.plates import plate
 
 
@@ -20,9 +18,9 @@ def renderer(tmp_path, monkeypatch):
     def run(command, **options):
         seen.append(options)
         plates.write_png(Path(command[command.index('--output') + 1]), np.zeros((64, 64, 4), dtype=np.uint8))
-        return SimpleNamespace(returncode=0, stderr='')
+        return _bounded_process.ProcessResult(stdout=b'', stderr=b'', returncode=0)
 
-    monkeypatch.setattr(plates.subprocess, 'run', run)
+    monkeypatch.setattr(_bounded_process, 'run', run)
     return engine, seen
 
 
@@ -37,7 +35,7 @@ def test_nested_sessions_count_actual_attempts_and_warm_hits_consume_no_budget(r
         assert warm.invocations == 0
         assert outer.completed == inner.completed == 1 and outer.failed == 0
         assert outer.engine_seconds >= 0
-    assert seen[0]['timeout'] == 2
+    assert seen[0]['limits'].timeout == 2
 
 
 def test_exhausted_inner_budget_does_not_count_a_renderer_launch(renderer, tmp_path):
@@ -65,22 +63,18 @@ def test_changing_report_cannot_restore_budget(renderer, tmp_path):
 @pytest.mark.parametrize('failure', ['timeout', 'launch', 'exit'])
 def test_failures_are_counted_and_context_restores(renderer, tmp_path, monkeypatch, failure):
     engine, _ = renderer
-    success = plates.subprocess.run
+    success = _bounded_process.run
 
     def fail(command, **options):
-        if failure == 'timeout':
-            raise subprocess.TimeoutExpired(command, options['timeout'])
-        if failure == 'launch':
-            raise OSError('refused')
-        return SimpleNamespace(returncode=7, stderr='render failed')
+        raise _bounded_process.BoundedProcessError('render failed', code=f'process.{failure}')
 
-    monkeypatch.setattr(plates.subprocess, 'run', fail)
+    monkeypatch.setattr(_bounded_process, 'run', fail)
     with plates.render_session(max_invocations=1, timeout=1) as stats:
         with pytest.raises(plates.PlateError):
             plates.render(plate(), engine=engine, cache=tmp_path / 'cache', fonts=tmp_path)
     assert stats.invocations == stats.failed == 1 and stats.completed == 0
     assert list((tmp_path / 'cache').rglob('*.png')) == []
-    monkeypatch.setattr(plates.subprocess, 'run', success)
+    monkeypatch.setattr(_bounded_process, 'run', success)
     with plates.render_session(max_invocations=1, timeout=1) as retry:
         plates.render(plate(), engine=engine, cache=tmp_path / 'cache', fonts=tmp_path)
     assert retry.invocations == retry.completed == 1

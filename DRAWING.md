@@ -6,7 +6,7 @@ status: accepted
 
 # Drawing architecture: a hybrid, layered kit
 
-srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms`, `paint`, and the shared scene contracts below are still proposed, not importable APIs or evidence of a completed renderer.
+srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms` and `paint` remain proposed. [Composition preflight and vector emission](docs/composition-preflight.md) supplies typed records, read-only validation, verified vector payloads and atomic self-contained scene output. Vector preparation and compilation use bounded worker processes. Plate/proxy emission, renderer budget integration and the complete shared scene contracts below remain unfinished.
 
 The kit addresses different needs without requiring every video to use every technique. A single 2D path does not encode a rigid object's unseen surfaces; independently drawn views can drift. Drawn characters already have shading primitives, but need a shared way to attach shading to moving forms and light. Environments need controlled depth and surface texture. Information has the opposite need: captions, cards and map lines must stay exact. A fixed view can remain entirely 2D; multi-view geometry becomes useful when its consistency justifies the rendering cost.
 
@@ -40,6 +40,8 @@ The style/show applies its world grade, bloom, and grain once after compositing 
 
 The proposed scene contract owns a single world unit and clock. Its canonical axes match [limbs.math3d](src/srstudio/limbs/math3d.py): x right, y down, z toward the reference viewer. Every asset declares its scale into those units and a local-to-world transform. Rig reference pixels, mesh units, and image pixels are never treated as interchangeable by inference.
 
+`composition.plate_view` now supplies a [perspective registration bridge](docs/composition-preflight.md#register-a-plate-view): canonical units and handedness, complete parent transforms, shared world lights, and bounded overscan for an off-center principal point. Its image offset is already projected. A real-render landmark test checks this mapping; verified geometry preparation, plate/proxy emission, orthographic support and the full animated proof remain open.
+
 One camera owns projection. A 2D point travels from local geometry through its world transform and view/projection, then through the inverse of its drawing parent's 2D transform. [limbs.projection.Camera](src/srstudio/limbs/projection.py) already implements that last contract. A plate adapter must derive the engine camera's handedness, field of view, principal point, and pixel scale from the same camera and pass landmark registration tests. The separate [plates.Camera](src/srstudio/plates.py) and [2D group camera moves](src/srstudio/camera.py) are existing mechanisms, not interchangeable camera objects. A composited plate and its attached marks must not receive the camera transform twice.
 
 Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-to-front order. A hand wrapping a mug, or a figure walking behind a car and then in front of it, requires depth/part masks or explicitly split passes sampled at the same time. Alpha alone cannot resolve internal occlusion. `srstudio.proxy` gets a part-id pass from the plates API by rendering flat emissive part colours, and `layers` cuts it into back, front and under plates so people draw between them. A depth or normal pass must still be proven available on the chosen backend.
@@ -61,7 +63,7 @@ Animation obeys these contracts:
 
 ## Agent-facing composition contract
 
-These are proposed typed records and validation responsibilities. They extend the existing APIs named above; they are not additional production imports.
+The table defines the complete target contract. [srstudio.composition](src/srstudio/composition.py) implements manifest records, declared relationship checks and verified vector emission; the [composition guide](docs/composition-preflight.md) distinguishes those supported features from pending adapters and runtime enforcement.
 
 | Record | Required content | Refusal before any rendering |
 |---|---|---|

@@ -67,7 +67,7 @@ counts, without timing thresholds.
 ```python
 from srstudio import plates
 
-with plates.render_session(max_invocations=2, timeout=30) as work:
+with plates.render_session(max_invocations=2, timeout=30, max_memory_bytes=8 * 1024**3) as work:
     image = plates.render(plate, engine=engine, cache=cache, fonts=fonts)
 
 print(work.invocations, work.completed, work.failed, work.engine_seconds)
@@ -75,10 +75,26 @@ print(work.invocations, work.completed, work.failed, work.engine_seconds)
 
 The scope covers plate and printed-texture renderer launches, including nested
 calls. Every enclosing scope spends a launch attempt, and the shortest active
-timeout applies. Cached images spend no attempts. Use `max_invocations=0` to
+timeout and smallest memory allowance apply. Cached images spend no attempts. Use `max_invocations=0` to
 require cache reuse. Changing the returned stats does not restore the budget.
 After scope exit, the previous limits are restored.
 
-`PlateError.to_dict()` reports `plate.render.budget` or `plate.render.timeout`
-with repair information. The scope limits synchronous renderer work in its
-context; it does not limit mesh preparation, memory or unrelated renderer APIs.
+The default memory allowance is 8 GiB. `max_memory_bytes` accepts an integer from
+1 byte through 1 TiB and caps each renderer process's virtual address space using
+POSIX `RLIMIT_AS`, including runtime library mappings. It does not cap aggregate
+RSS or GPU memory. Each captured output stream is limited to 64 KiB. Timeouts and
+other failures terminate the owned process group, including descendants retaining
+output pipes after their leader exits. Failed renders cannot publish partial
+cached images. Launch failures and explicit retries consume attempts; the SDK
+does not retry automatically.
+
+`PlateError.to_dict()` reports `plate.render.budget`, `plate.render.timeout`,
+`plate.render.output` or `plate.render.engine` with repair information. Process
+failures retain the typed cause and a bounded stderr excerpt. A memory-limited
+native exit is reported as an engine failure; its exit code alone cannot prove
+memory exhaustion.
+
+The scope limits synchronous renderer work in its context. Mesh preparation,
+image decoding and unrelated renderer APIs remain outside these limits. Calls
+without a session retain their existing execution behavior. This is resource
+control for trusted renderer programs, not a security sandbox.
