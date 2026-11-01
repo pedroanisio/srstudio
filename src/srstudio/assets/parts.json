@@ -13441,6 +13441,159 @@
           "rig": null
         }
       ]
+    },
+    "stick-box": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain delivery box on the floor, with no lettering or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ebc6d13567b5c85ee7ff9170435afe157d7c5ccf0654aced61015627d35d01e6",
+          "rig": null
+        }
+      ]
+    },
+    "stick-receipt": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A long receipt hanging from a hand, its rows unreadable, unrolling to the floor. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "86fb7662d49e2ce3754de1ea59c4acc4c584714ad63212619845805603c6e172",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tv-menu": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A full-frame TV menu with one row: a plain door, a bar and a label. An invented interface with no app name or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "eee46f3acb3a8aadfceae1aa387d881bc2d0033339a7209a430be94a143c55f3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-remote": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain TV remote, small enough for a paw. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3cfa6e114f0a889f913cad7267487230c27e60eea5c48d521a45602fde3cf41",
+          "rig": null
+        }
+      ]
+    },
+    "video-tile": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented video call on a laptop's screen: a plain room, a frame and a name plate. It draws nobody: the sitter is the reel's own drawing. No app name or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4ae4c33ce705c1711b03d3b92ffa4e2aa2decf7e7cff7315edcfcbb390d95754",
+          "rig": null
+        }
+      ]
+    },
+    "desk-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone on a desk seen from above: it buzzes, takes lines as they land and can turn itself over. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "aea5826d9bc14f9529c7105eb69904513afc1662d121ba9977c8621737762c9e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-door": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Doors let into the back wall of a Soft room, shut or standing open on the dark, with a slot for what stands in the doorway. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14146d235b23bca4c900470bc898a2d5b072447b92539001cec537691c9f4155",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mop": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A string mop standing on its head, that can tip over, slowly. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "22e16ea456379efdf716c60e607e06d1324e7be9237b81efa0135ef857724ad3",
+          "rig": null
+        }
+      ]
+    },
+    "soft-closet": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The whole frame dark, with one line of light: what stands inside shows plainly only where it crosses the line. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "de8b908afcca7ecbee98f80ce63031f430a9c0c52bb1ea7d116fbb13d2dfaf18",
+          "rig": null
+        }
+      ]
     }
   }
 }

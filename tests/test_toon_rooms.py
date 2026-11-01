@@ -603,3 +603,58 @@ def test_the_light_visibly_reaches_the_character(scene_render, tmp_path, room):
     blue, red, dark = screen["blue"], screen["red"], screen["dark"]
     assert mean(blue, 2) > 1.05 * mean(dark, 2) and mean(red, 0) > 1.05 * mean(dark, 0)
     assert mean(red, 0) / mean(red, 2) > 1.15 * (mean(blue, 0) / mean(blue, 2))
+
+
+def _front(end=D, **options):
+    cv = canvas()
+    parent = cv.group(cv.comp, "shot")
+    keyed = ((0, "on", "blue"), (2.0, "on", "white"), (2.4, "on", "blue"))
+    cues = toon_rooms.front_screen(cv, parent, keyed, end, **options)
+    return cv, cues
+
+
+def test_a_screen_in_front_of_the_people_lights_the_whole_frame_on_its_cues():
+    cv, cues = _front()
+    assert [c.colour for c in cues] == ["blue", "white", "blue"]
+    xml = cv.scene.to_bytes().decode()
+    assert xml.count('blend="multiply"') == 2 and 'blend="screen"' not in xml  # the ink stays ink
+    for colour in ("blue", "white"):
+        assert toon_rooms.front_tint(toon_rooms.SCREEN_COLOURS[colour]) in xml
+
+
+def test_a_tint_is_part_of_the_way_from_white_to_the_screen_s_colour():
+    assert toon_rooms.front_tint("#000000", 0.5) == "#808080"
+    assert toon_rooms.front_tint("#4f9dff", 1.0) == "#4f9dff"
+    assert toon_rooms.front_tint("#ffffff", 0.3) == "#ffffff"
+
+
+def test_a_screen_in_front_dims_on_a_dim_cue_and_holds_for_a_still():
+    cv = canvas()
+    cues = toon_rooms.front_screen(cv, cv.comp, ((0, "on", "blue"), (1.0, "dim")), D, strength=0.5)
+    assert cues[-1].state == "dim"
+    assert 'property="opacity"' in cv.scene.to_bytes().decode()
+    still = canvas()
+    held = toon_rooms.front_screen(still, still.comp, ((0, "on", "blue"),), 0.0)
+    assert [c.colour for c in held] == ["blue"]
+
+
+@pytest.mark.parametrize(
+    ("cues", "match"),
+    [
+        (((0, "on"),), "first cue names its colour"),
+        (((0, "on", "mauve"),), "a screen colour is one of"),
+        (((1, "on", "blue"),), "cues run from 0"),
+        (((0, "on", "blue"), (0, "on", "white")), "cues run in order"),
+    ],
+)
+def test_a_screen_in_front_refuses_cues_it_cannot_play(cues, match):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match=match):
+        toon_rooms.front_screen(cv, cv.comp, cues, D)
+
+
+@pytest.mark.parametrize("strength", [0, -0.1, 1.5, "x"])
+def test_a_screen_in_front_refuses_a_strength_outside_a_fraction(strength):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="strength"):
+        toon_rooms.front_screen(cv, cv.comp, ((0, "on", "blue"),), D, strength=strength)

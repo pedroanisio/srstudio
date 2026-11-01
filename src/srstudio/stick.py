@@ -455,8 +455,9 @@ TUFT = "M -23 8 Q -29 -7 -37 -13 M -10 8 Q -12 -10 -21 -23 M 1 9 Q 1 -13 7 -27 M
 
 
 @register("location", "stick-room", tags=("room", "desk", "laptop", "window"))
-def room(cv: Canvas, parent) -> None:
-    """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop."""
+def room(cv: Canvas, parent, *, marks: bool = True) -> None:
+    """A sunlit study in two-point perspective: window, wall picture, bookcase, chair, desk and an open laptop. A reel
+    that blurs the room or frames the desk out passes ``marks=False`` and places the marks itself (ADR 0001)."""
     s = cv
     box(s, parent, 0, 0, s.width, s.height, paint(s, WALL))
     shape(s, parent, "M 0 0 L 1040 0 L 810 128 L 0 112 Z", "#b7ac90", 3)
@@ -519,8 +520,9 @@ def room(cv: Canvas, parent) -> None:
     shape(s, parent, "M 868 941 L 868 960 L 892 960 L 898 941 Z", "#444753", 3)
     for x in (589, 605, 623):
         box(s, parent, x, 1182, 8, 4, "#343943")
-    signature.cactus(s, parent, 1010, 1190, scale=0.42)  # on the desk, by the laptop (ADR 0001)
-    signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
+    if marks:
+        signature.cactus(s, parent, 1010, 1190, scale=0.42)  # on the desk, by the laptop (ADR 0001)
+        signature.code(s, parent, 790, 1120, 9, color="#c9ccd3", angle=-16)  # on the laptop's lid
 
 
 @register("location", "stick-yard", tags=("garden", "fence", "trees", "outdoor"))

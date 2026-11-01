@@ -11,7 +11,8 @@ plane's aisle in one-point perspective and :func:`queue` stands a line of people
 and :func:`sparks` are trash day. :func:`planks`, :func:`wardrobe`, :func:`drill`, :func:`screws` and
 :func:`manual_page` are flat-pack furniture, from the pile to the manual's last page (:data:`MANUAL_DRAWINGS`);
 :func:`caller` is a phone ringing with a name on it. :func:`double_take` is not a drawing: it is the keys of a look, a
-look away and a snap back, for any figure in any shot.
+look away and a snap back, for any figure in any shot. :func:`carton` is a plain delivery box and :func:`receipt` a long
+till receipt on a hand, which can unroll to the floor.
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ __all__ = [
     "aisle",
     "book",
     "caller",
+    "carton",
     "double_take",
     "drill",
     "duffel",
@@ -43,6 +45,7 @@ __all__ = [
     "plate",
     "poster",
     "queue",
+    "receipt",
     "robe",
     "scan_belt",
     "screws",
@@ -114,6 +117,75 @@ XRAY_ITEMS: dict[str, tuple[tuple[str, str, str], ...]] = {  # paths around the 
         ("M -280 0 L 280 0", "", BONE),
     ),
 }  # fmt: skip
+
+
+CARTON, CARTON_TOP, CARTON_SIDE, CARTON_TAPE = "#c49a66", "#d9b583", "#a67f50", "#e5cfa6"
+TILL_PAPER, TILL_RULE = "#fbf8f0", "#b9b4a8"
+TILL_ROW = 34  # px between a receipt's scrawled rows
+FLOOR_SHADOW = "#3a2a1c"
+
+
+@register("prop", "stick-box", tags=("box", "parcel", "delivery", "home"))
+def carton(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    w: float = 190,
+    h: float = 150,
+    flip: bool = False,
+    scale: float = 1.0,
+    shadow: bool = True,
+):
+    """A plain delivery carton standing on the floor at ``x, y``, the middle of its foot: a taped front, a top and a
+    shaded side, with a contact shadow. It carries no lettering and no logo. ``flip`` puts the side on the left.
+    ``shadow=False`` drops the contact shadow, for a carton standing on another."""
+    if not (w > 0 and h > 0):
+        raise StickDataError(f"a carton's size is positive, got {w!r} by {h!r}")
+    if scale <= 0:
+        raise StickDataError(f"a carton's scale is positive, got {scale!r}")
+    g = _group(cv, parent, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    deep = 0.16 * w
+    if shadow:
+        oval(cv, g, -w * 0.6, -12, w * 1.3, 26, FLOOR_SHADOW, opacity=0.28)
+    shape(cv, g, f"M {w / 2} {-h} L {w / 2 + deep} {-h - deep * 0.6} L {w / 2 + deep} {-deep * 0.6} L {w / 2} 0 Z",
+          CARTON_SIDE, 5, stroke=cv.ink)  # fmt: skip
+    top = -h - deep * 0.6
+    shape(cv, g, f"M {-w / 2} {-h} L {-w / 2 + deep} {top} L {w / 2 + deep} {top} L {w / 2} {-h} Z", CARTON_TOP, 5,
+          stroke=cv.ink)  # fmt: skip
+    cv.rect(g, -w / 2, -h, w, h, CARTON, stroke=cv.ink, sw=5, radius=0)
+    box(cv, g, -w * 0.07, -h, w * 0.14, h * 0.34, CARTON_TAPE)
+    shape(cv, g, f"M {-w * 0.07 + deep * 0.5} {-h - deep * 0.3} L {w * 0.07 + deep * 0.5} {-h - deep * 0.3} "
+          f"L {w * 0.07} {-h} L {-w * 0.07} {-h} Z", CARTON_TAPE)  # fmt: skip
+    return g
+
+
+@register("prop", "stick-receipt", tags=("receipt", "paper", "money", "shop"))
+def receipt(
+    cv: Canvas, parent, x: float, y: float, length: float, *, w: float = 74, unroll: tuple[float, float] | None = None
+):
+    """A long till receipt hanging from ``x, y``, the middle of its top edge, ``length`` px down to a curl. Its rows are
+    scrawled, so no figure reads. ``unroll`` is the span of seconds it runs out from nothing, about its top."""
+    if not length > 0:
+        raise StickDataError(f"a receipt's length is positive, got {length!r}")
+    if not w > 0:
+        raise StickDataError(f"a receipt's width is positive, got {w!r}")
+    if unroll is not None and not 0 <= unroll[0] < unroll[1]:
+        raise StickDataError(f"a receipt unrolls over a rising span of seconds, got {unroll!r}")
+    g = _group(cv, parent, x=x, y=y, anchorX=0, anchorY=0)
+    cv.rect(g, -w / 2, 0, w, length, TILL_PAPER, stroke=cv.ink, sw=4, radius=0)
+    for k in range(1, int((length - TILL_ROW) // TILL_ROW)):
+        row = k * TILL_ROW
+        reach = w * (0.28 if k % 3 else 0.12)
+        shape(cv, g, f"M {-w * 0.34} {row} L {reach} {row}", sw=4, stroke=TILL_RULE)
+        shape(cv, g, f"M {w * 0.22} {row} L {w * 0.36} {row}", sw=4, stroke=TILL_RULE)
+    left, right, foot = -w / 2, w / 2, length
+    curl = f"M {left} {foot} Q 0 {foot + 26} {right} {foot} Q {w * 0.2} {foot - 16} {left} {foot} Z"
+    shape(cv, g, curl, TILL_RULE, 4, stroke=cv.ink)
+    if unroll is not None:
+        cv.keys(g, "scaleY", [(unroll[0], 0.02), (unroll[1], 1.0)], kind="sine-out")
+    return g
 
 
 @register("prop", "stick-poster", tags=("wall", "poster", "sign", "font"))
