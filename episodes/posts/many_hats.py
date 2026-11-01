@@ -22,7 +22,17 @@ RELEASE = Release(
     ),
     tags=Tags("job-hunting", "institution", "recognition", test="sp-speakers", arm="a"),
     style="Cutout",
-    parts={},
+    parts={
+        "candidate": 1,
+        "captions": 1,
+        "hiring-office": 1,
+        "job-ad": 1,
+        "manager": 1,
+        "roller-blind": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
     comedy=Scores(author=16, reviewer=17),
     cover=True,
 )
