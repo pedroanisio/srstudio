@@ -46,6 +46,10 @@ def _data(name: str) -> ModuleType:
     return importlib.import_module(f"{name}_data")
 
 
+def sketch_event(mod: ModuleType, kind: str) -> float:
+    return next(b.start for b in mod.BEATS if b.event == kind)
+
+
 def _appearance(mod: ModuleType, start: float) -> Appearance:
     return Appearance("gary", start, mod.END, [])
 
@@ -659,6 +663,17 @@ def test_one_more_pages_pip_keeps_the_voice_of_his_published_reels() -> None:
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7
+
+
+@pytest.mark.usefixtures("reels")
+def test_keiths_rope_ends_in_the_frogs_paw_in_every_pose_it_is_held_in() -> None:
+    mod = _data("sorry_what")
+    desk, crossed = (238.0, 794.0), (290.0, 732.0)  # the paw of toon_cast's _arms for each pose
+    assert math.dist(mod.ROPES["crossed"][0], crossed) < 4.0
+    assert math.dist(mod.ROPES["desk"][0], desk) < 4.0
+    assert math.dist(mod.ROPE_DOOR[0], desk) < 4.0
+    held = {b.arms for b in mod.BEATS if b.who == "frog" and b.start >= sketch_event(mod, "keith") + 2}
+    assert held <= set(mod.ROPES)
 
 
 def test_sorry_whats_pushes_turn_about_the_pivot_the_marks_stand_at() -> None:

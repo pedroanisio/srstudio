@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import camera, scripting, sketch, toon_cars, toon_homeware, toon_house, toon_world
+from srstudio import camera, scripting, sketch, toon_cars, toon_cast, toon_homeware, toon_house, toon_world
 from srstudio import foley as synth
 from srstudio.foley import Burst
 from srstudio.sketch import Line, Sketch
@@ -43,7 +43,12 @@ HISS = Burst(1.3, 5200.0, attack=0.02, decay=4.0, tone_hz=240.0, tone_end_hz=250
 SUITCASE = "#b3734a"
 CASE = (770.0, 1236.0, 150.0, 104.0)  # at his feet: the ledge line hides its bottom edge
 CASE_HANDLE = 18.0
-ROPE_OUT = [(300, 790), (380, 730), (470, 760), (620, 700)]
+ROPE_DOOR = [(240, 794), (292, 790), (346, 716), (404, 712), (462, 600)]  # from his paw to the halter
+ROPES = {  # by the arms of the moment, from the paw that holds it out of the frame towards the car
+    "desk": [(240, 794), (300, 790), (380, 730), (470, 760), (620, 700)],
+    "crossed": [(290, 732), (360, 716), (470, 760), (620, 700)],
+}
+GRIP = (30.0, 18.0)  # half the size of the paw closed over the rope, in frame px
 HORSE_DOOR = dict(at=(462, 486), scale=0.92)
 HORSE_LEGS = (252.0, 280.0, 312.0, 340.0)
 END = 31.8
@@ -133,6 +138,24 @@ def _first(beats, kind: str) -> float:
     return sketch.events(beats, kind)[0][0]
 
 
+def _lead(shot, rope: list[tuple[int, int]], start: float, end: float) -> None:
+    """The rope from ``start`` to ``end`` of the shot, its end under a paw closed over it."""
+    cv = shot.cv
+    held = cv.group(shot.front, cv.uid("lead"))
+    cv.keys(held, "opacity", [(0.0, 0.0), (start, 1.0), (end, 0.0)], local=False)
+    toon_house.rope(cv, held, rope)
+    x, y, (w, h) = fx(rope[0][0]), fy(rope[0][1]), GRIP
+    cv.ellipse(held, x - w, y - h, 2 * w, 2 * h, toon_cast.FROG.paw or toon_cast.FROG.coat, cv.ink, 5.0)
+
+
+def _held(shot) -> None:
+    """Keith's rope out of whichever paw his arms have it in, pose by pose: the recording placed the poses."""
+    app = shot.app
+    poses = [(app.start + p["start"], p["arms"]) for p in app.poses]
+    for (start, arms), end in zip(poses, [t for t, _ in poses[1:]] + [app.end], strict=True):
+        _lead(shot, ROPES[arms], start, end)
+
+
 def dress(shot) -> None:
     """The fence and the mower, the door with Keith, the street and the blower, and the car."""
     cv, app = shot.cv, shot.app
@@ -155,7 +178,7 @@ def dress(shot) -> None:
         toon_house.hallway(cv, shot.back, door="open")
         toon_house.horse(cv, shot.back, start=app.start, end=app.end, id=cv.uid("horse"), **HORSE_DOOR)
         if app.start >= keith:
-            toon_house.rope(cv, shot.front, [(292, 790), (346, 716), (404, 712), (462, 600)])
+            _lead(shot, ROPE_DOOR, app.start, app.end)
         else:
             x, y, w, h = CASE
             cv.rect(shot.back, x + 50, y - CASE_HANDLE, 50, 20, cv.clear, cv.ink, 5.0, radius=8)
@@ -168,7 +191,7 @@ def dress(shot) -> None:
         if app.who == "hedgehog" and app.start < calm:
             toon_homeware.blower(cv, shot.front, at=(290.0, 790.0), running=((app.start, app.end),))
         if app.who == "frog" and app.start >= keith + 2:
-            toon_house.rope(cv, shot.front, ROPE_OUT)
+            _held(shot)
         toon_house.ledge(cv, shot.front, "white")
     if spans:
         toon_homeware.scribble(cv, shot.front, spans)
