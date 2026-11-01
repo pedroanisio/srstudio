@@ -19,7 +19,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives and validation; composing a coherent performance still requires rig-specific knowledge. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery and opt-in coordinated acting. Rig capabilities remain intentionally distinct; calibrated perceptual evidence and cross-system recipes are the next gaps. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 699,
     "characters": 70,
@@ -34,6 +34,7 @@
     {"name": "Speech-driven head motion, listening, deterministic idle and breathing", "evidence": ["src/srstudio/head_motion.py:plan", "src/srstudio/head_motion.py:HeadPlan"]},
     {"name": "Soft pose tweening, local foot pinning and path-based walking cues", "evidence": ["src/srstudio/blob.py:Cue", "src/srstudio/blob.py:drawings", "src/srstudio/blob.py:walking"]},
     {"name": "Typed character clips with a shared placement and local performance clock", "evidence": ["src/srstudio/character_clips.py:place_character", "tests/test_character_clips.py", "docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary"]},
+    {"name": "Strict acting scores, explicit emotion mappings and persistent performance windows", "evidence": ["src/srstudio/acting.py:compile_performance", "src/srstudio/acting.py:parse_score", "examples/acting_gallery.py", "docs/authoring-reference.md#coordinated-acting-and-continuity"]},
     {"name": "Arm/hand IK, contacts, attachments, retargeting and style adapters", "evidence": ["src/srstudio/limbs/motion.py:Motion", "src/srstudio/limbs/interaction.py", "src/srstudio/limbs/compile.py:compile_motion"]},
     {"name": "Numeric motion reports and configurable quality gates", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport"]},
     {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]}
@@ -41,6 +42,8 @@
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
   "resolved_findings": [
+    {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
+    {"priority": "P1", "title": "Extreme numeric input must return bounded validation failures", "commit": "5d6c0c7b", "evidence": ["src/srstudio/checks.py:number", "src/srstudio/errors.py:_json_value", "tests/test_checks.py", "tests/test_diagnostics.py:test_extreme_integers_do_not_break_json_encoding_or_payload_bounds"]},
     {"priority": "P1", "title": "Clipped spline channels must retain tangent neighbors", "evidence": ["src/srstudio/head_motion.py:Channel.during", "tests/test_motion_review_regressions.py"]},
     {"priority": "P1", "title": "Unknown gaze must fail before drawing", "evidence": ["src/srstudio/head_motion.py:HeadPlan.check_gaze", "src/srstudio/toon_head.py"]},
     {"priority": "P1", "title": "Rafa must honor shared channel sampling semantics", "evidence": ["src/srstudio/rafa.py", "src/srstudio/head_motion.py:Channel.sample"]},
@@ -65,12 +68,14 @@
     {
       "id": "SDK-P2-02",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Coordinate acting intent and persistent performance state",
       "problem": "Performance exposes mouth, blink, nod, limb tracks and untyped extras; HeadPlan and rig-specific moods are separate. Authors must manually resolve conflicting channels, emotional transitions and state across shots.",
       "evidence": ["src/srstudio/rig.py:Performance", "src/srstudio/episode.py:Episode.perform", "src/srstudio/head_motion.py:HeadPlan", "src/srstudio/toon_bento.py:MOODS", "src/srstudio/rafa.py:MOODS"],
       "change": "Add typed acting beats that compile supported expression, gaze, speech, head, breath and gesture intents into existing tracks. Define channel ownership, explicit override precedence, transitions and continuous-shot state; reject unsupported capabilities before mutation.",
       "acceptance": ["Deterministic compilation and random-access state sampling", "A camera cut preserves expression, gaze and held contact state unless explicitly reset", "Test conflicts, unsupported rigs, malformed input and atomic failures", "Execute and render examples on at least two supported rig families"],
+      "resolution": "Added typed acting scores, strict decoded-JSON parsing, explicit rig emotion maps, channel ownership and bounded compilation into existing Toon/Gloss/head/limb primitives. Explicit tracks override beat channels; unsupported controls and ownership conflicts raise typed repairable errors. Numeric head/breath targets ease while discrete faces/gestures switch at arrival. Windows retain one source clock, including contacts and attachment state. The two-family Bento/Nadia gallery rendered and strictly encoded all 144 frames at 1920x1080/24 fps with no diagnostics. Rendered sequence review also found and fixed the underlying adapter clock defect. Emotion labels remain authored intent, not perceptual certification.",
+      "verification": ["tests/test_acting.py", "tests/test_acting_parse.py", "tests/test_acting_gallery.py", "tests/test_character_clips.py", "examples/acting_gallery.py", "docs/decisions/0088-coordinated-acting.md"],
       "complexity": "XL"
     },
     {
@@ -93,7 +98,7 @@
       "evidence": ["src/srstudio/rig.py:Actor.build", "src/srstudio/toon_bento.py:bento", "src/srstudio/gloss.py:draw", "src/srstudio/limbs/integration.py:LimbTrack"],
       "change": "Introduce a typed adapter boundary with explicit start/end, coordinate units, time conversion and capability checks, preserving existing builders and their defaults.",
       "acceptance": ["Equivalent performances on nonzero project offsets", "No double offset or accidental duration-as-length conversion", "Unsupported channels fail before drawing", "Existing scenes retain their output without opting in"],
-      "resolution": "Added opt-in typed ActorClip, split-head ToonClip, GlossClip and prepared PlateClip adapters. Interval uses parent start/end seconds; an engine container clock maps local performances once, including idle and limb animation. Placement explicitly maps a source anchor to parent units. Unsupported controls and invalid data are preflighted; failed drawing restores scene/canvas state. Actor's optional end bounds root baking to the clip, preserving the project-duration default. Rafa sheet conversion preserves image patches and source duration. Specialized builders outside these families retain their APIs; shared acting intent and cross-clip state remain SDK-P2-02.",
+      "resolution": "Added opt-in typed ActorClip, split-head ToonClip, GlossClip and prepared PlateClip adapters. Interval uses parent start/end seconds; an engine container clock maps local performances once, including idle and limb animation. Placement explicitly maps a source anchor to parent units. Unsupported controls and invalid data are preflighted; failed drawing restores scene/canvas state. Actor's optional end bounds root baking to the clip, preserving the project-duration default. Rafa sheet conversion preserves image patches and source duration. Specialized builders outside these families retain their APIs; shared acting intent and cross-clip state are covered by SDK-P2-02.",
       "verification": ["tests/test_character_clips.py", "tests/test_character_clip_recipe.py", "tests/test_actor_nod_preflight.py", "tests/test_catalog_contracts.py", "tests/test_rosa.py", "docs/decisions/0087-character-clip-clocks.md"],
       "complexity": "L"
     },
@@ -186,9 +191,9 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-02", "SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "limits": [
-    "No new P0/P1 defect is confirmed by this review; this is not a claim that the repository has none.",
+    "No confirmed P0/P1 remains open in this review. The sequence-clock and extreme-number defects found during implementation are recorded as resolved; this is not a claim that the repository has no other defects.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]

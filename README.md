@@ -151,6 +151,11 @@ A `Style` supplies defaults for frame size, timing, input files, palette, captio
 
 The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. [Character clips](docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary) give Actor, split-head Toon, Gloss and prepared plates one explicit placement and timing boundary. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
 
+[Coordinated acting](docs/authoring-reference.md#coordinated-acting-and-continuity) compiles typed emotion, speech,
+gaze and head intent with explicit channel ownership. Reuse windows of one performance across cuts; inspect
+rig capabilities before generating a score. The [two-family study](examples/acting_gallery.py) builds Bento and
+Gloss Nadia with a reproducible scene and JSON continuity report.
+
 Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
 
 | Show | Value | Main use |

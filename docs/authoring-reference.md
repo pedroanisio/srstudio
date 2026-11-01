@@ -61,6 +61,77 @@ not overlap. Its duration is the final caption's end. An optional `caption` over
 See [`Timeline.from_dict`, `from_takes`, and `from_captions`](../src/srstudio/timeline.py) for the supported fields
 and [`srstudio.takes`](../src/srstudio/takes.py) for producing recorded take timelines.
 
+## Coordinated acting and continuity
+
+`srstudio.acting` compiles a bounded score once, then places windows of that same
+performance into shots. `BENTO` and `gloss_actor("nadia")` expose explicit artistic
+emotion mappings through `describe()`; inspect capabilities before generating intent.
+These names describe the author's intent, not a measured emotion or a universal
+biomechanical model. Gloss supports its existing face, mouth, gesture and guest limb
+controls; directed head motion, gaze and listening require a capable Toon head rig.
+
+<!-- acting:start -->
+```python
+from srstudio.acting import BENTO, compile_performance, parse_score
+
+score = parse_score({
+    "schema": "srstudio.acting/1.0.0",
+    "duration": 6,
+    "seed": 17,
+    "beats": [
+        {"at": 0, "emotion": "neutral", "gaze": "left", "transition": 0},
+        {"at": 1.2, "emotion": "happy", "gaze": "right", "transition": 0.4},
+        {"at": 3.8, "emotion": "concerned", "transition": 0.4}
+    ]
+})
+plan = compile_performance(BENTO, score)
+after_cut = plan.window(3, 6)
+assert after_cut.sample(0) == plan.sample(3)
+assert after_cut.sample(0).gaze == "right"
+# In a shot whose parent clock begins at zero:
+# after_cut.place(cv, shot, at=0, placement=Placement(...), id="speaker")
+```
+<!-- acting:end -->
+
+The decoded JSON parser rejects unknown fields and type coercions. Compilation then
+checks vocabulary, timing, bounds, capabilities and conflicting ownership, raising
+`ActingError` with `to_dict()` repair fields. Python authors can construct `ActingScore`
+and `ActingBeat` directly. Scores are limited to 600 seconds, 1,000 beats and 20,000
+sampled keys per numeric channel; the default sampling rate is 30 Hz.
+
+Discrete expression, gaze and gesture changes occur at `at + transition`. Numeric
+`HeadTarget` fields and `breath` ease during that interval using sampled sine easing.
+`breath` is a held expansion in 0..1, not an oscillation gain. A reset returns authored
+channels to the rig's neutral/procedural state. Emotion defaults persist until replaced;
+an explicit beat field wins over its emotion default. Directed eyes lead inferred head
+turn by 80 ms; explicit head targets win over that inferred turn. Omitted fields preserve
+their prior owner. These transitions do not morph between drawings or promise continuous
+velocity at arbitrary changes in authored intent.
+
+`SpokenLine(at, alignment, levels)` uses line-relative character alignment and measured
+dB samples at 100 Hz; `at` is on the performance clock. `speech` drives the mouth and
+head; `heard` supplies another speaker's prosody for listening without opening this
+character's mouth. Audio assets are placed separately. Full `Overrides` tracks take
+precedence over beat channels; `None` inherits, while an empty track requests defaults.
+A `HeadPlan` override owns numeric head channels and gaze together. Typed limb tracks
+own gestures; conflicting explicit gestures are rejected. Runtime overrides are Python
+bindings passed to `parse_score(..., overrides=...)`, never opaque generated JSON.
+
+`window(start, end)` uses absolute performance endpoints; `place(..., at=...)` uses the
+parent clock. The returned group runs on the original performance clock, so attached
+drawings must use that clock too. Random-access sampling preserves expression, gaze,
+breathing phase, contacts and attachment state across cuts. A reset during an active
+limb contact or prop attachment fails until its explicit release. Spatial limb samples
+describe the source motion; baked rendering still uses the selected limb frame rate.
+
+Run the two-family silent study with licensed font assets and a JSON state report:
+
+```sh
+python examples/acting_gallery.py ../generated/sdk-acting
+scene-render validate ../generated/sdk-acting/acting-gallery.scene.xml --deny-warnings
+scene-render encode ../generated/sdk-acting/acting-gallery.scene.xml --strict
+```
+
 ## Styles
 
 A **style** is what an episode looks like before a single part is placed, and it is a value:
