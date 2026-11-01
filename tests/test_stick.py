@@ -713,3 +713,36 @@ def test_a_peek_back_opens_the_eye_a_figure_that_is_not_flipped_turns_left():
     assert drawn.count(SHUT_EYE) == 1
     assert drawn.index(b"ellipse") < drawn.index(SHUT_EYE), "the shut eye is the one at +x"
     assert "peek-back" in stick.EYES
+
+
+def test_hand_at_is_where_the_hand_lands_after_the_figure_is_placed():
+    pose = stick.STANDING["point"]
+    assert stick.hand_at(pose) == pose.hands[1]
+    assert stick.hand_at(pose, far=True) == pose.hands[0]
+    x, y = pose.hands[1]
+    assert stick.hand_at(pose, at=(100.0, -50.0), scale=0.5) == (100 + x / 2, -50 + y / 2)
+    assert stick.hand_at(pose, at=(1380.0, 0.0), flip=True) == (1380 - x, y)
+    with pytest.raises(stick.StickDataError, match="scale"):
+        stick.hand_at(pose, scale=0)
+
+
+def test_held_follows_the_hand_from_key_to_key_and_turns_with_the_figure():
+    cv = canvas()
+    keys = [stick.RigKey(0, "stand"), stick.RigKey(1.0, "point"), stick.RigKey(2.0, "stand")]
+    g = stick.held(cv, cv.comp, keys, 3.0, poses=stick.STANDING, at=(1000.0, 0.0), scale=0.5, flip=True)
+    assert (g.scaleX, g.scaleY) == (-0.5, 0.5)
+    tracks = {a.get("property"): a for a in ET.fromstring(cv.scene.to_bytes(layout="pretty")).iter("animate")}
+    xs = [(float(k.get("time")), float(k.get("value"))) for k in tracks["x"].iter("key")]
+    stand, point = stick.STANDING["stand"].hands[1], stick.STANDING["point"].hands[1]
+    assert xs == [(0.0, 1000 - stand[0] / 2), (1.0, 1000 - point[0] / 2), (2.0, 1000 - stand[0] / 2)]
+    assert tracks["x"].get("defaultInterpolation") == "hold"
+
+
+def test_held_stays_put_for_one_key_and_refuses_what_the_rig_refuses():
+    cv = canvas()
+    g = stick.held(cv, cv.comp, [stick.RigKey(0, "stand")], 2.0, poses=stick.STANDING)
+    assert (g.x, g.y) == stick.STANDING["stand"].hands[1]
+    with pytest.raises(stick.StickDataError):
+        stick.held(cv, cv.comp, [stick.RigKey(0, "nope")], 2.0, poses=stick.STANDING)
+    with pytest.raises(stick.StickDataError):
+        stick.held(cv, cv.comp, [stick.RigKey(1.0, "stand")], 2.0, poses=stick.STANDING)

@@ -89,6 +89,8 @@ __all__ = [
     "SEATED",
     "STANDING",
     "check_keys",
+    "hand_at",
+    "held",
     "rig",
     "between",
     "camera",
@@ -1396,6 +1398,40 @@ def rig(
     if limbs:
         front = _group(cv, g)
         draw_tracks(cv, LayerTargets(behind, limb_body, front), limbs, id=cv.uid("limbs"), facing=facing)
+    return g
+
+
+def hand_at(pose: RigPose, *, far: bool = False, at: Point = (0, 0), scale: float = 1.0, flip: bool = False) -> Point:
+    """Where ``pose``'s near hand (the ``far`` one if asked) lands on the frame, for a figure placed by :func:`rig` with
+    the same ``at``, ``scale`` and ``flip``."""
+    if not (_is_number(scale) and scale > 0):
+        raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    x, y = pose.hands[0 if far else 1]
+    return at[0] + (-scale if flip else scale) * x, at[1] + scale * y
+
+
+def held(
+    cv: Canvas,
+    parent,
+    keys: Sequence[RigKey],
+    end: float,
+    *,
+    poses: Mapping[str, RigPose] = SEATED,
+    far: bool = False,
+    at: Point = (0, 0),
+    scale: float = 1.0,
+    flip: bool = False,
+):
+    """A group at a figure's hand, stepping with the ``keys`` of its :func:`rig` and sized and mirrored with it: draw
+    what the hand carries in it about the origin, and it stays in the hand through every pose. Pass the figure's own
+    ``poses``, ``at``, ``scale`` and ``flip``."""
+    check_keys(keys, end, poses)
+    spots = [(k.start, hand_at(poses[k.pose], far=far, at=at, scale=scale, flip=flip)) for k in keys]
+    x, y = spots[0][1]
+    g = _group(cv, parent, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    if len({spot for _, spot in spots}) > 1:
+        cv.keys(g, "x", [(t, spot[0]) for t, spot in spots])
+        cv.keys(g, "y", [(t, spot[1]) for t, spot in spots])
     return g
 
 
