@@ -35,7 +35,7 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, releases
+from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, overlay_gate, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -123,7 +123,10 @@ def write_all(
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
     refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
-    refused = auto_enhance.refused(first, REPO)
+    refused = [
+        *overlay_gate.repeated_lines(chosen, _beside(renders), first.values()),
+        *auto_enhance.refused(first, REPO),
+    ]
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
