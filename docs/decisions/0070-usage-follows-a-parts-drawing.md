@@ -4,7 +4,9 @@ generated-by: Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code
 
 # ADR 0070: The usage measure follows the drawing a part only calls
 
-- Status: proposed; implemented 2026-10-31 on `fix/usage-performers` (`srstudio.usage`; tests in `tests/test_usage.py`).
+- Status: superseded by [ADR 0094](0094-explicit-drawing-execution.md), 2026-11-01.
+  Previously proposed and implemented 2026-10-31 on `fix/usage-performers`
+  (`srstudio.usage`; tests in `tests/test_usage.py`).
   It extends [ADR 0017](0017-measured-part-usage.md) and [ADR 0032](0032-releases-recorders-and-discovery.md).
 - Deciders: worskpace-e5 (orchestrator), pending review; implementation drafted by Claude Sonnet 5.5 in Claude Code
 - Back to the [library README](../../README.md)

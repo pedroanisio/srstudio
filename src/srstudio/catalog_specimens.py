@@ -13,13 +13,15 @@ still in its place, and a registered part in neither table stops the build (:fun
 
 A framed part takes two renders: the first, at half scale with room around the frame, finds what the part covers
 (:func:`bounds`); the second scales the composition so that fills a square, and ``ffmpeg`` crops and resizes it. Files
-are named by the digest of the drawing (:func:`key`), so a part that did not change is not rendered again.
+use a drawing key (:func:`key`) bound to the renderer bytes and any printed-plate dependencies, so unchanged
+inputs are not rendered again. Drawing/approval identities remain independent of this rendered-artifact key.
 """
 
 from __future__ import annotations
 
 import hashlib
 import inspect
+import json
 import re
 import shutil
 import subprocess
@@ -27,7 +29,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -142,6 +144,9 @@ class Plan:
     at: float
     key: str
     set: bool  # a location: the whole frame on its own stage colour, not framed
+    renderer_sha256: str | None = None
+    plate_inputs: tuple[plates.Plate, ...] | None = None
+    plate_keys: tuple[str, ...] | None = None
 
 
 FILLED = {
@@ -867,7 +872,27 @@ def _resize(png: Path, out: Path, crop: str, scale: str) -> None:
     )
 
 
+def _check_renderer(engine: Path, expected: str) -> None:
+    if plates._engine_digest(engine) != expected:
+        raise SpecimenRenderError(
+            'renderer changed during the catalog build',
+            code='catalog.renderer.changed',
+            path='engine',
+            actual=str(engine),
+            expected=expected,
+            remedy='Keep the renderer immutable for this build, then retry.',
+        )
+
+
 def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
+    expected = plan_.renderer_sha256 or plates._engine_digest(engine)
+    _check_renderer(engine, expected)
+
+    def draw(document: bytes, at: float, out: Path) -> None:
+        _check_renderer(engine, expected)
+        _render(engine, document, at, out)
+        _check_renderer(engine, expected)
+
     style = style_of(plan_.entry)
     project = ET.fromstring(plan_.document).find("project")
     assert project is not None  # framed() refuses a document without one before anything is rendered
@@ -875,24 +900,46 @@ def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
     name = plan_.entry.name
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
-    for plate in (*rafa_host.part_plates(name), *pedro_host.part_plates(name)):
-        plates.render(plate, engine=engine, cache=work / "plates", fonts=fonts)
+    definitions = plan_.plate_inputs
+    if definitions is None:
+        definitions = (*rafa_host.part_plates(name), *pedro_host.part_plates(name))
+    if plan_.plate_keys is not None and len(plan_.plate_keys) != len(definitions):
+        raise SpecimenRenderError('bound plate keys do not match the specimen dependencies')
+    for index, plate in enumerate(definitions):
+        cache = work / 'plates'
+        rendered = plates.render(plate, engine=engine, cache=cache, fonts=fonts)
+        if plan_.plate_keys is not None and rendered.stem != plan_.plate_keys[index]:
+            raise SpecimenRenderError(
+                'plate inputs changed after binding the specimen cache',
+                code='catalog.inputs.changed',
+                path=f'plates[{index}]',
+                actual=rendered.stem,
+                expected=plan_.plate_keys[index],
+                remedy='Keep fonts, plate definitions and renderer inputs immutable for the build, then retry.',
+            )
+        # Specimen documents use stable drawing references; select the renderer-
+        # owned artifact explicitly instead of treating those names as cache hits.
+        target = cache / f'{plates.digest(plate)}.png'
+        with tempfile.TemporaryDirectory(dir=cache) as scratch:
+            staged = Path(scratch) / target.name
+            shutil.copyfile(rendered, staged)
+            staged.chmod(plates.FILE_MODE)
+            staged.replace(target)
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:
         document = framed(plan_.document, background=style.palettes[0].background)
-        _render(engine, document, plan_.at, trial)
+        draw(document, plan_.at, trial)
         stage = rgb(style.palettes[0].background)
         if bounds(pixels_of(trial, width, height), stage) is None:
             raise SpecimenRenderError(f"{name}: the set drew nothing at {plan_.at:g} s")
         _resize(trial, final.with_suffix(".tmp.png"), "", f"{SIZE}:-2")
+        _check_renderer(engine, expected)
         final.with_suffix(".tmp.png").replace(final)
         trial.unlink()
         return
     # half scale, centred: what a part draws past the edge of the frame is still measured
-    _render(
-        engine, framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial
-    )
+    draw(framed(plan_.document, background=BACKGROUND, x=width / 4, y=height / 4, scale=0.5), plan_.at, trial)
     box = bounds(pixels_of(trial, width, height), rgb(BACKGROUND))
     if box is None:
         raise SpecimenRenderError(f"{name}: the recipe drew nothing at {plan_.at:g} s")
@@ -911,8 +958,9 @@ def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
         y=height / 2 - scale * (y0 + y1) / 2,
         scale=scale,
     )
-    _render(engine, document, plan_.at, trial)
+    draw(document, plan_.at, trial)
     _resize(trial, final.with_suffix(".tmp.png"), f"crop={side}:{side},", f"{SIZE}:{SIZE}")
+    _check_renderer(engine, expected)
     final.with_suffix(".tmp.png").replace(final)
     trial.unlink()
 
@@ -931,15 +979,38 @@ def _failure(plan_: Plan, exc: BaseException) -> str:
 
 
 def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
-    """Every part's specimen and every refusal. Only a drawing with no file yet is rendered."""
+    """Every part's specimen and refusal, cached for its renderer and printed-plate dependencies."""
     if not shutil.which("ffmpeg"):
         raise SpecimenRenderError("specimens need ffmpeg")
-    folder = Path(cache).resolve() / "specimens"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "specimens" / engine_digest
     plans, refused = plan(episodes, folder / "work")
-    missing = {p.key: p for p in plans if not (folder / f"{p.key}.png").exists()}
+    bound = []
     fonts = print_fonts(episodes, folder / "work")
+    for item in plans:
+        definitions = (*rafa_host.part_plates(item.entry.name), *pedro_host.part_plates(item.entry.name))
+        dependencies = []
+        for definition in definitions:
+            inputs, source, prints = plates._prepare(definition, engine, fonts)
+            dependencies.append(inputs.key('plate', source, tuple(prints.values())))
+        data = {
+            'schema': 'srstudio.specimen-render/1.0.0',
+            'drawing': item.key,
+            'engine': engine_digest,
+            'plates': sorted(dependencies),
+        }
+        key_ = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        bound.append(
+            replace(
+                item, key=key_, renderer_sha256=engine_digest, plate_inputs=definitions, plate_keys=tuple(dependencies)
+            )
+        )
+    plans = bound
+    _check_renderer(engine, engine_digest)
+    missing = {p.key: p for p in plans if not (folder / f"{p.key}.png").exists()}
     with ThreadPoolExecutor(WORKERS) as pool:
-        running = [(p, pool.submit(render_one, p, Path(engine).resolve(), folder, fonts)) for p in missing.values()]
+        running = [(p, pool.submit(render_one, p, engine, folder, fonts)) for p in missing.values()]
     failed = [_failure(p, exc) for p, f in running if (exc := f.exception()) is not None]
     if failed:
         raise SpecimenRenderError(f"{len(failed)} specimens failed:\n" + "\n".join(failed))
@@ -980,8 +1051,11 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
     if duration <= 0:
         raise SpecimenRenderError(f"package {slug}: {scene.name} has no duration")
     at = round(duration * POSTER_AT, 3)
-    folder = Path(cache).resolve() / "posters"
-    out = folder / f"{slug}-{poster_key(scene, at)}.jpg"
+    engine = Path(engine).resolve()
+    engine_digest = plates._engine_digest(engine)
+    folder = Path(cache).resolve() / "posters" / engine_digest
+    rendered_key = hashlib.sha256(f'{engine_digest}|{poster_key(scene, at)}'.encode()).hexdigest()
+    out = folder / f"{slug}-{rendered_key}.jpg"
     if out.exists():
         return out
     folder.mkdir(parents=True, exist_ok=True)
@@ -995,7 +1069,9 @@ def poster(packages: Path, slug: str, engine: Path, cache: Path) -> Path:
     )
     if run.returncode != 0 or not frame.exists():
         raise SpecimenRenderError(f"package {slug}: scene-render failed: {run.stdout[-400:]} {run.stderr[-400:]}")
+    _check_renderer(engine, engine_digest)
     _resize(frame, folder / f"{out.stem}.tmp.jpg", "", f"{POSTER_WIDTH}:-2")
+    _check_renderer(engine, engine_digest)
     (folder / f"{out.stem}.tmp.jpg").replace(out)
     frame.unlink()
     return out

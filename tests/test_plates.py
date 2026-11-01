@@ -124,8 +124,9 @@ def test_one_plate_placed_twice_is_one_asset_and_two_layers():
 
 def test_a_print_whose_font_is_not_in_the_folder_is_a_typed_error_that_names_the_folder(tmp_path):
     printed = Print("#ffffff", 64, 64, (Line("Hi", 32.0, 32.0, 12.0, "#000000"),))
-    with pytest.raises(PlateError, match=r"fredoka-600\.ttf.*" + str(tmp_path / "nowhere")):
-        plates.print_png(printed, engine=tmp_path / "no-engine", cache=tmp_path / "cache", fonts=tmp_path / "nowhere")
+    (tmp_path / "engine").write_bytes(b"engine")
+    with pytest.raises(PlateError, match=str(tmp_path / "nowhere") + r"/fredoka-600\.ttf"):
+        plates.print_png(printed, engine=tmp_path / "engine", cache=tmp_path / "cache", fonts=tmp_path / "nowhere")
 
 
 def test_a_broken_engine_is_a_typed_error(tmp_path):
@@ -137,15 +138,17 @@ def test_a_broken_engine_is_a_typed_error(tmp_path):
     assert not list((tmp_path / "cache").glob("*.png")), "a failed render leaves no plate behind"
 
 
-def test_a_cached_plate_is_not_rendered_again(tmp_path):
+def test_a_cached_plate_is_not_rendered_again(tmp_path, monkeypatch):
     cache = tmp_path / "cache"
-    cache.mkdir()
     made = plate()
-    kept = cache / f"{plates.digest(made)}.png"
-    kept.write_bytes(b"already here")
     engine = tmp_path / "engine"
     engine.write_text("#!/bin/sh\nexit 9\n")
     engine.chmod(0o755)
+    monkeypatch.setattr(
+        plates, '_engine_render', lambda engine, source, out: plates.write_png(out, np.zeros((1, 1, 4)))
+    )
+    kept = plates.render(made, engine=engine, cache=cache, fonts=tmp_path)
+    monkeypatch.setattr(plates, '_engine_render', lambda *args: pytest.fail('rendered again'))
     assert plates.render(made, engine=engine, cache=cache, fonts=tmp_path) == kept
 
 
@@ -155,7 +158,8 @@ def test_a_rebuild_gives_the_same_plate(scene_render, tmp_path):
     cache = tmp_path / "cache"
     fonts = tmp_path
     first = plates.render(made, engine=engine, cache=cache, fonts=fonts)
-    assert first.name == f"{plates.digest(made)}.png"
+    assert first.suffix == '.png' and len(first.stem) == 64
+    assert first.name != f"{plates.digest(made)}.png", 'render identity includes the selected engine'
     assert plates.pixels(first)[..., 3].max() == 255, "something was drawn"
     assert plates.pixels(first)[0, 0, 3] == 0, "a clear plate has real alpha"
     assert stat.S_IMODE(os.stat(first).st_mode) == 0o600

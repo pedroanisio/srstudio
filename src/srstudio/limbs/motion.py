@@ -58,8 +58,8 @@ class TransformTrack:
     """A transform in motion seconds. Smooth mode stops at each key; continuous mode passes interior keys.
 
     Continuous translation uses quintic segments with shared velocity and zero acceleration at keys. Rotations
-    use spherical cubic Bezier segments with shared local angular velocity. Velocity units are parent units/s and
-    local radians/s. Missing interior velocities use neighboring poses; endpoint velocities default to zero.
+    target shared local angular velocity through spherical controls; small-arc blending is approximate. Units are
+    parent units/s and local radians/s. Missing interior velocities use neighboring poses; endpoints default to zero.
     Explicit endpoint velocities describe the animated interval; outside it the nearest frame is still held.
     """
 
@@ -113,6 +113,12 @@ class TransformTrack:
     @classmethod
     def constant(cls, frame: Frame) -> TransformTrack:
         return cls((TransformKey(0, frame),))
+
+    def describe_continuity(self) -> dict:
+        """Versioned source-key guarantees, angular approximation and explicit endpoint hold jumps."""
+        from ._continuity import describe_track
+
+        return describe_track(self)
 
     def sample(self, time: float) -> Frame:
         number(time, "sample time")
@@ -400,6 +406,12 @@ class Motion:
 
     def retarget(self, arm: ArmProfile, hand: HandProfile | None = None) -> Motion:
         return replace(self, arm=arm, hand=hand or self.hand)
+
+    def describe_continuity(self) -> dict:
+        """Describe source joins and held emission without sampling or certifying the whole motion."""
+        from ._continuity import describe_motion
+
+        return describe_motion(self)
 
     def chain(self, *after: int) -> Motion:
         """Join selected adjacent action pairs (all by default), preserving explicitly authored join windows."""

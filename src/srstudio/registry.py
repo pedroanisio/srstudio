@@ -15,6 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypedDict, TypeVar
 
+from . import drawing_events
 from .contracts import PartContract, describe_callable, describe_part
 from .errors import SrstudioError
 
@@ -124,7 +125,7 @@ class Entry:
         )
 
     def __call__(self, *args, **kwargs):
-        return self.builder(*args, **kwargs)
+        return drawing_events.call(self.builder, *args, **kwargs)
 
     @property
     def _current_contract(self) -> PartContract | None:
@@ -277,7 +278,12 @@ def register(
     module, and ``""`` for a part shared by every style. Duplicate names are refused unless
     ``replace=True`` explicitly replaces the existing builder. ``slots`` declares location callbacks when
     they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode.
-    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation."""
+    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation.
+
+    Use the returned callable: it emits explicit usage events while preserving its signature and function kind.
+    Class registration retains the class identity and instruments only methods declared on that class.
+    Deferred builders are attributed when their bodies execute, not when their generator/coroutine is created.
+    Shared performers can identify their owning registered callable with ``drawing_events.drawing(owner)``."""
     if kind not in KINDS:
         raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
 
@@ -303,6 +309,7 @@ def register(
 
         resolved = style_of_module(obj.__module__) if style is None else style
         previous = _REGISTRY[kind].get(name)
+        obj = drawing_events.instrument(obj)
         entry = Entry(
             kind,
             name,

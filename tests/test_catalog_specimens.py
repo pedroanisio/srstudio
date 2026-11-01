@@ -179,6 +179,7 @@ def test_a_build_prints_plates_in_the_font_of_its_projects_with_no_fonts_variabl
     """The catalog's service has no SRSTUDIO_FONTS, and runs from a folder that holds no font."""
     monkeypatch.delenv("SRSTUDIO_FONTS", raising=False)
     monkeypatch.chdir(tmp_path)
+    (tmp_path / "engine").write_bytes(b"engine")
     episodes = projects_with(tmp_path, b"the font's bytes")
     only_rafa_mug(monkeypatch)
     seen: list[bytes] = []
@@ -195,6 +196,7 @@ def test_a_build_prints_plates_in_the_font_of_its_projects_with_no_fonts_variabl
 
 def test_a_build_whose_projects_hold_no_print_font_says_so_before_any_render(tmp_path, monkeypatch):
     (tmp_path / "episodes").mkdir()
+    (tmp_path / "engine").write_bytes(b"engine")
     only_rafa_mug(monkeypatch)
     monkeypatch.setattr(cs, "render_one", lambda *a: pytest.fail("rendered without its font"))
     with pytest.raises(cs.SpecimenRenderError, match=r"no project in .*episodes holds assets/fredoka-600\.ttf"):
@@ -202,13 +204,14 @@ def test_a_build_whose_projects_hold_no_print_font_says_so_before_any_render(tmp
 
 
 def test_every_failed_specimen_is_named_once_and_all_of_them_fail_the_build(tmp_path, monkeypatch):
+    (tmp_path / "engine").write_bytes(b"engine")
     episodes = projects_with(tmp_path, b"font")
     named, bare = plated_plan("rafa-mug"), plated_plan("rafa-phone")
     monkeypatch.setattr(cs, "plan", lambda e, w: ([named, replace(bare, key="other")], {}))
     monkeypatch.setattr(cs.shutil, "which", lambda tool: f"/fake/{tool}")
 
     def render_one(plan_, engine, folder, fonts):
-        if plan_ is named:
+        if plan_.entry.name == named.entry.name:
             raise cs.SpecimenRenderError("rafa-mug: the recipe drew nothing at 1 s")
         raise FileNotFoundError(2, "No such file or directory", "some-file")
 
@@ -260,7 +263,7 @@ def test_a_scene_with_no_length_is_refused_before_the_engine(tmp_path, text):
         cs.poster(tmp_path, "wifi", tmp_path / "no-engine", tmp_path / "cache")
 
 
-def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path):
+def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path, monkeypatch):
     scene = package(tmp_path / "packages")
     before = sorted(p.name for p in scene.parent.iterdir())
     made = cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache")
@@ -268,7 +271,9 @@ def test_a_poster_comes_from_the_spec_once_and_leaves_the_package_alone(tmp_path
     assert sorted(p.name for p in scene.parent.iterdir()) == before
     assert [p.name for p in made.parent.iterdir()] == [made.name]  # no frame left beside it
     mtime = made.stat().st_mtime_ns
-    assert cs.poster(tmp_path / "packages", "wifi", tmp_path / "no-engine", tmp_path / "cache") == made  # cached
+    with monkeypatch.context() as patch:
+        patch.setattr(cs.subprocess, 'run', lambda *args, **kwargs: pytest.fail('warm poster invoked a process'))
+        assert cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache") == made
     assert made.stat().st_mtime_ns == mtime
     scene.write_text(PACKAGE.replace("#336699", "#993366"))
     assert cs.poster(tmp_path / "packages", "wifi", engine(), tmp_path / "cache") != made  # a new spec is a new poster

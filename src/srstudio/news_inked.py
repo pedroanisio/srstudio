@@ -22,7 +22,7 @@ from types import MappingProxyType
 from typing import Any
 
 from . import _character_contracts as cc
-from . import brush, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
+from . import brush, drawing_events, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
@@ -1383,27 +1383,38 @@ def _perform(
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
     if not acts or acts[0][0] > start:
         raise NewsKitError(f"an anchor needs a pose from {start} s, got {acts[:1]!r}")
-    size = scale if scale else 1.0
-    g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    hands = g if over is None else cv.group(over, cv.uid("hands"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
-    arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
-    eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
-    mouth = mouth_track(acts, mouths, end)
-    if motion is not None:
-        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
+    owner = {
+        ('vera', 2): vera,
+        ('gus', 2): gus,
+        ('vera', 3): vera_3,
+        ('gus', 3): gus_3,
+        ('vera', 4): vera_4,
+        ('gus', 4): gus_4,
+        ('vera', 5): vera_5,
+        ('gus', 5): gus_5,
+    }.get((who, number))
+    with drawing_events.drawing(owner):
+        size = scale if scale else 1.0
+        g = cv.group(parent, id or cv.uid("anchor"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        hands = g if over is None else cv.group(over, cv.uid("hands"), x=x, y=DESK_Y, scaleX=size, scaleY=size)
+        arms = _spans([(at, pose.arms) for at, pose in acts], start, end)
+        eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
+        mouth = mouth_track(acts, mouths, end)
+        if motion is not None:
+            _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
+            return g
+        neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
+        if who == "vera":
+            _vera_body(cv, g, number)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
+        else:
+            _gus_body(cv, g, number)
+            head = cv.group(g, cv.uid("g"), **neck)
+            _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
+        _arms_of(cv, hands, who, acts, arms, number)
+        cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
         return g
-    neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
-    if who == "vera":
-        _vera_body(cv, g, number)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-    else:
-        _gus_body(cv, g, number)
-        head = cv.group(g, cv.uid("g"), **neck)
-        _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-    _arms_of(cv, hands, who, acts, arms, number)
-    cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
-    return g
 
 
 def _arms_of(

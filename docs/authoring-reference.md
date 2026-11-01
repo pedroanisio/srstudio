@@ -18,6 +18,7 @@ a similar character or pass contract JSON directly to a builder.
 | Add anticipation and staggered arrivals | [Transition policies](#opt-in-acting-transition-policies) | Opt-in score 1.1.0; declared phases must fit and respect contacts. Faces remain held drawings. |
 | Carry state through a cut | [Listening](#sustained-listening-and-repairable-capability-failures) and [carrying](#carrying-a-prop-across-a-cut) recipes | Window one source performance; preserve contact, expression and texture clocks. |
 | Author constrained arm motion | [Limbs guide](catalog/limbs.md) | Declare anatomy, reference units, projection and contacts; canonical-arm limits do not certify whole-body motion. |
+| Choose a continuity guarantee | [Continuity discovery](catalog/limbs.md#inspect-continuity-before-choosing-a-transition) | Inspect source key derivatives, estimated joins, endpoint holds and rendered sampling separately. |
 | Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
 
@@ -72,6 +73,13 @@ Generated blink schedules refuse more than 10,000 blinks before drawing. Carried
 sampled-key budget and scene clock precision. Reduce the requested work or use a suitable local clock when
 those diagnostics fire. The tested mouth, visibility and keyframe preflights leave their scene unchanged;
 this is not a blanket transaction guarantee for every legacy builder.
+
+Head planning also preflights procedural schedules: at most 10,000 estimated breathing cycles or glance
+candidates, and 100,000 estimated keys per idle channel. Estimates use the shortest seeded interval and
+include rounding allowance; suppressed glances still consume planning work. Intervals must preserve the
+six-decimal scene clock. `head.plan.budget` and `head.plan.precision` identify the responsible style field or
+duration. Increase the interval, reduce frequency, or compile a shorter source performance, then use its
+windows for cuts. These limits do not establish perceptual quality or an execution-time guarantee.
 
 ## Timeline input formats
 
@@ -262,6 +270,10 @@ The compiler limits candidate keys to 20,000 per channel before adding a dense i
 These are bounded sampled motions, not a continuous physical simulation. Position,
 velocity and acceleration are separate properties: policy baking does **not** guarantee
 velocity or acceleration continuity, and it never implies facial morph support.
+`rig.describe()["transitions"]` exposes these limits for both legacy transitions and opt-in policies,
+including held drawing switches and source-time-preserving cuts. For spatial tracks and joins, use
+[`describe_continuity()`](catalog/limbs.md#inspect-continuity-before-choosing-a-transition); its source
+guarantees do not transfer to the native or baked limb compiler's held frames.
 
 The executable [transition study](../examples/acting_transitions.py) compares legacy,
 anticipated and spring timing, with cuts during anticipation and settling. It exports
@@ -505,14 +517,25 @@ rebuilds every episode project on a copy and records each registered part its bu
 ([ADR 0017](../docs/decisions/0017-measured-part-usage.md)). It prints the used and unused parts per kind and writes the
 report that `srstudio page --usage` reads:
 
-Rig drawing and Canvas ID allocation emit explicit `drawing_events` notifications. Custom performers can use
-`with drawing_events.drawing(registered_part_name):` around their drawing calls; `usage.trace()` then records
-the part and the IDs allocated by `cv.uid()`, including IDs from custom namers. Nested scopes count every used
-part and associate IDs with the outermost character. An unknown explicit name raises `UsageError` while tracing.
-`drawing_events.observe(callback)` receives paired begin/end events and ID events in the current execution
-context; end events include `successful`. Observation and profiler state are restored on exceptional exit.
-Existing registered functions and class methods retain automatic tracing, including the legacy delegate fallback.
-The head emitter's private name, signature and code object no longer identify the character.
+Registered builders, rig drawings and Canvas ID allocation emit explicit `drawing_events` notifications.
+Keep the callable returned by `register`; it preserves signatures and function kind. Classes retain their
+identity, with instrumentation on their own methods and preserved static/class descriptors. Shared performers
+use `with drawing_events.drawing(owner):`, where `owner` is their registered callable or rig. Callable identity
+prevents a retired builder from claiming the replacement registration. Explicit registered-name strings are
+also accepted when attribution to that current name is intentional; unknown strings raise `UsageError`.
+
+`usage.trace()` records parts and IDs allocated by `cv.uid()`, including custom namers. Nested scopes count
+every part and assign IDs to the outermost character in that execution context. Independent coroutine tasks
+keep separate figure ownership. A child task created inside a character scope inherits that ownership; await
+its drawing before leaving the enclosing scope. Tracing does not make concurrent mutation of one Canvas safe.
+
+Generators and async generators attribute each resume, including send, throw and close; yielded caller code
+is outside their scope. Coroutines attribute awaited execution and cancellation cleanup. Merely creating a
+deferred object is not usage. Join all drawing tasks before a trace closes: copied contexts cannot append to a
+closed observer. `drawing_events.observe(callback)` receives begin/ID/end events; end events include
+`successful`. Failed drawing still records attempted usage and allocated IDs, while `usage.recorded()` refuses
+to publish records for a failed build. Nested traces both observe inner work. Existing profilers remain active;
+there is no source, frame-local, closure or delegate inference.
 
 ```bash
 srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes \
@@ -902,6 +925,38 @@ For a continuous performance through camera cuts, retain its containing group an
 Soft, Ink, Stick, Saga and other specialized builders still use their documented APIs. Python dataclasses and
 `contracts.describe_callable(place_character)` expose argument shapes; runtime objects remain runtime bindings,
 and this API does not parse untrusted JSON. See [ADR 0087](decisions/0087-character-clip-clocks.md).
+
+### Plate cache ownership
+
+`plates.digest(plate)` identifies a drawing document. `plates.print_name(printed)` identifies a logical printed
+texture from its definition and font metadata. Neither is a rendered filename. Use the `Path` returned by
+`plates.render`, `plates.print_png`, or the prepared sheet; its filename includes the renderer and input identity
+and remains distinct when copied into a project's asset directory.
+
+Rendered plates and prints live under `<cache>/renders/<engine-sha256>/`. Their keys include a versioned cache
+schema, the engine file's SHA-256, compiled scene bytes, actual print font bytes when used, and compiled print
+dependencies. Samples, bounces, lighting and other emitted settings participate through the scene document.
+Changing a printed texture's font or recipe invalidates plates that use it. Changing plate quality can reuse an
+unchanged print. Equal renderer bytes at another path reuse artifacts; replacing the bytes at the same path
+invalidates them even when its size and modification time are preserved.
+
+Catalog specimen and package-poster caches also bind the renderer. Plate-backed specimens include their
+rendered-plate input keys, and the catalog atomically materializes the selected plate at the stable logical
+reference its scene uses. This preserves drawing/approval fingerprints while preventing an outer preview cache
+from hiding changed renderer or font inputs.
+
+An unchanged rebuild invokes no new plate renderer. It still reads and hashes identity inputs; no zero-cost or
+cross-platform pixel-equivalence claim is implied. Renderer dependencies, hardware and environment must remain
+pinned for reproducible comparisons. Keep renderer files immutable for a build. A detected change prevents the
+current artifact from being published; previous complete artifacts remain available. `plates.verify` compares a
+fresh plate render with cached pixels on that selected toolchain.
+
+Legacy `<cache>/<drawing-digest>.png` and `prints/<logical-name>.png` files have no renderer provenance and are
+left untouched, but are not imported as trusted cache hits. The first build with the new cache renders new
+artifacts. Published projects keep their copied images and approved drawing references. Missing engine/font
+inputs raise `plate.cache.input` before cache creation; execution failures retain `PlateError`, and detected
+renderer changes expose `plate.cache.changed` or `catalog.renderer.changed` with repair fields.
+Specimens also reject a rendered plate whose inputs changed after cache binding with `catalog.inputs.changed`.
 
 ### Extending drawing calls
 
