@@ -286,7 +286,7 @@ def faces(
     lids = _blinks(end) if blink else {}
     shapes = _spoken(mouths, end)
     rows = []
-    for frame in range(round(end * FPS)):
+    for frame in range(math.ceil(round(end * FPS, 6))):  # the engine writes a frame for a part of one
         t, held = frame / FPS, (frame - frame % TWOS) / FPS
         gaze = _held(plan.gaze, t, "ahead")
         rows.append(
