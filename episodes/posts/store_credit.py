@@ -19,11 +19,21 @@ RELEASE = Release(
             "code. Sound effects synthesized in code."
         ),
         hashtags=('#spaceopera', '#customerservice', '#refund', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("Eleven credits. Expires today.", 27.2, number=215, series="Saga", series_number=20),
+        thumbnail=ShowCover("Expires today", 27.2, number=215, series="Saga", series_number=20),
     ),
     tags=Tags("epic-world", "institution", "recognition", test="sp-speakers", arm="b"),
     style="Saga",
-    parts={},
+    parts={
+        "saga-droid": 1,
+        "saga-enforcer": 1,
+        "saga-entry": 1,
+        "saga-gloom": 1,
+        "saga-handbook": 1,
+        "saga-hook": 1,
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+    },
     comedy=Scores(author=15, reviewer=15),
     cover=True,
 )
