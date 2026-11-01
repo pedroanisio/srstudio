@@ -4,7 +4,8 @@ manager. He goes to prove it, and comes back with a lanyard while the portal rej
 Two voices (ElevenLabs premade Brian as Dad, Matilda as Fern). One kitchen and the front door seen from inside: Dad at
 the front with the tie held up, then on his chest (``wear``); Fern at her laptop, its lid shutting on ``shut``; the door
 slamming on ``out`` and opening on ``back``; the portal's answer as a notice on ``ping``, never a voice. The camera
-moves from the first frame. :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its camera and
+moves from the first frame. :func:`validate` checks the events; :func:`dress` draws each shot, :func:`lens` its
+camera and
 :func:`sounds` its foley.
 """
 
