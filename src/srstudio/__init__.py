@@ -64,6 +64,7 @@ from . import (  # noqa: F401  (registers builders)
     signature,
     soft_bedtime,
     soft_front,
+    soft_inbox,
     soft_odds,
     soft_props,
     soft_sets,

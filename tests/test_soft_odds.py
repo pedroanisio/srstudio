@@ -287,3 +287,11 @@ def test_a_rumble_refuses_spans_that_do_not_run_in_order(spans):
     cv = canvas()
     with pytest.raises(SoftOddError, match="rumble"):
         soft_odds.rumble(cv, cv.comp, 500, 900, spans)
+
+
+def test_a_notice_takes_a_smaller_lettering_and_refuses_none_at_all():
+    cv = canvas()
+    soft_odds.notice(cv, cv.comp, 540, 524, "LAST OPENED:\n2021", size=50)
+    assert 'size="50"' in cv.scene.to_bytes(layout="pretty").decode()
+    with pytest.raises(SoftOddError, match="size"):
+        soft_odds.notice(cv, cv.comp, 540, 524, "QUIET", size=0)

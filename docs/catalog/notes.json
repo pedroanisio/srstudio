@@ -1276,6 +1276,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-call-screen": {"title": "Tela de chamada"},
+    "soft-mail-list": {"title": "Lista de e-mails"},
+    "soft-mail-screen": {"title": "Tela de e-mail com contador"},
     "collage-thread": {"title": "Conversa no celular"},
     "collage-weather-map": {"title": "Mapa do tempo de papel"},
     "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
@@ -9062,6 +9065,42 @@
         "at": 15.2
       },
       "text": "A conversa inventada: balões cinza que chegam nos seus segundos, o verde dela no fim."
+    },
+    {
+      "section": "props",
+      "name": "Tela de e-mail com contador",
+      "parts": [
+        "soft-mail-screen"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 1.2
+      },
+      "text": "O envelope e o contador vermelho que sobe de um em um."
+    },
+    {
+      "section": "props",
+      "name": "Lista de e-mails",
+      "parts": [
+        "soft-mail-list"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 8.2
+      },
+      "text": "Assuntos inventados, com a linha que faz o polegar parar."
+    },
+    {
+      "section": "props",
+      "name": "Tela de chamada",
+      "parts": [
+        "soft-call-screen"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 13.5
+      },
+      "text": "Número desconhecido sobre dois botões redondos, e o vermelho que escurece ao ser apertado."
     }
   ]
 }

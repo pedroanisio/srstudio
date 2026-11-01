@@ -13475,6 +13475,57 @@
           "rig": null
         }
       ]
+    },
+    "soft-mail-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass: an envelope and a red badge whose count ticks up. Generic, no app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "521019c033f6429e6a917c2d75607a3a2898efb808813b82a1efbb5ac7a12b30",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mail-list": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass: a plain list of invented subjects with one row lit. No sender, no address. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4e8fccccc7d18c486f2beed5867b0abc7cc3fe83760211e080a45f020760afed",
+          "rig": null
+        }
+      ]
+    },
+    "soft-call-screen": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A phone's glass ringing: a caller over a red and a green round button that darkens when pressed. Generic, no app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "449930f37bd37ed0d24666b45bfbd656cbd5691b95d04ede218f7c28b16b46ab",
+          "rig": null
+        }
+      ]
     }
   }
 }
