@@ -9,6 +9,8 @@ moving under it. The first shot pushes in from its first frame (the ``sp-hook_mo
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon_cars, toon_homeware, toon_house, toon_world
 from srstudio import foley as synth
 from srstudio.foley import Burst
@@ -16,6 +18,7 @@ from srstudio.sketch import Line, Sketch
 from srstudio.toon import fh, fx, fy
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3107
 SLUG = "sorry-what"
 TITLE = "Sorry, What — Gil and Keith (Toon)"

@@ -9,12 +9,15 @@ frame (the ``sp-hook_motion`` test's arm B), its count climbing; the insert is t
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon_everyday, toon_homeware, toon_house, toon_sets
 from srstudio import foley as synth
 from srstudio.sketch import Line, Sketch
 from srstudio.toon import fh
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3120
 SLUG = "pajama-day"
 TITLE = "Pajama Day — Mae and the Class Chat (Toon)"

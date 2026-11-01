@@ -10,10 +10,13 @@ the end puts them on one side of the table. :func:`validate` checks the events; 
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon_dinner, toon_everyday, toon_extras, toon_homeware, toon_house
 from srstudio.sketch import Line, Sketch
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3113
 SLUG = "the-profiles"
 TITLE = "The Profiles — Mia and Brock (Toon)"
