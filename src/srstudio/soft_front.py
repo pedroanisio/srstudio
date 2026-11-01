@@ -19,7 +19,7 @@ from .registry import register
 from .soft_props import STAR_OFF, STAR_ON, STARS, _star
 from .soft_sets import FAR_BLUR, HEIGHT, INK_LINE, OVER, WIDTH, Shot, _framed
 
-__all__ = ["DOOR", "PRINT", "WALL_FOOT", "SoftFrontError", "front_room", "mug", "star_card"]
+__all__ = ["DOOR", "PRINT", "WALL_FOOT", "SoftFrontError", "front_room", "mug", "shelf", "star_card"]
 
 Slot = Callable[[object], object] | None
 
@@ -123,12 +123,19 @@ def front_room(
         cv.ellipse(room, fx - 15, fy - 9, 30, 18, "#D9BC97")
     if cast is not None:
         cast(room)
-    front = cv.group(g, f"{id}-front")
+    shelf(cv, g, id=f"{id}-front")
+    return g
+
+
+def shelf(cv: Canvas, parent, *, id: str):
+    """The foreground shelf in the frame's bottom right corner, with both marks: the room's own, and the one to draw
+    over a full-frame insert, so the marks stay in the same place through the cut."""
+    front = cv.group(parent, id)
     cv.rect(front, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)
     cv.rect(front, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
     signature.cactus(cv, front, 968, 1744, 0.72)
     signature.code(cv, front, 880, 1800, 15, color="#F3DFCF")
-    return g
+    return front
 
 
 @register("prop", "soft-mug", summary="A plain white mug of coffee, for a hand; no lettering, no brand")

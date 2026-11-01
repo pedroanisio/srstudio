@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from srstudio import SOFT, Canvas, blob, registry, soft_bedtime, soft_front, specimens
+from srstudio import SOFT, Canvas, Signature, blob, registry, soft_bedtime, soft_front, specimens
 from srstudio.soft_front import SoftFrontError
 from srstudio.soft_props import SoftPropError
 from srstudio.soft_sets import Shot
@@ -137,3 +137,29 @@ def test_sitting_on_the_floor_keeps_the_seated_top_and_lays_the_legs_along_the_g
 def test_a_pose_added_since_approval_moves_no_approved_drawing():
     specimens.check("juno", 1)
     assert "floor" in blob.POSES_SINCE_APPROVAL <= set(blob.POSES)
+
+
+def signed() -> Canvas:
+    cv = canvas()
+    cv.signature = Signature()
+    return cv
+
+
+def test_the_shelf_carries_both_marks_on_its_own_for_a_full_frame_insert():
+    cv = signed()
+    soft_front.shelf(cv, cv.comp, id="insert-shelf")
+    ids = [g.get("id") for g in tree(cv).iter("group")]
+    assert "insert-shelf" in ids
+    assert any(i.startswith("sig-cactus") for i in ids) and any(i.startswith("sig-code") for i in ids)
+
+
+def test_the_rooms_own_shelf_is_the_same_shelf():
+    room, alone = signed(), signed()
+    soft_front.front_room(room, room.comp)
+    soft_front.shelf(alone, alone.comp, id="soft-front-room-front")
+
+    def shapes(cv):
+        front = next(g for g in tree(cv).iter("group") if g.get("id") == "soft-front-room-front")
+        return [{k: v for k, v in shape.attrib.items() if k != "id"} for shape in front.iter("shape")]
+
+    assert shapes(room) == shapes(alone)
