@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "865ac902",
-  "reviewed_working_tree": "Reviewed develop at 865ac902 with the authoring-diagnostics implementation and documentation changes described below. Catalog counts were rechecked unchanged. Earlier observations retain their original verification scope; the prior transition collection blocker is resolved.",
+  "reviewed_source_commit": "ea60f48d",
+  "reviewed_working_tree": "Refreshed review of develop at ea60f48d and the uncommitted explicit drawing-event migration. Catalog counts were rechecked unchanged. New schedule, deferred-execution, composition, contract, cache and maintainability findings retain the complete P0-P4 scope. Earlier verification entries keep their original scope.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -203,6 +203,149 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-03",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Bound procedural head planning before schedule generation",
+      "resolution": "Procedural planning now checks worst-case seeded schedule counts and six-decimal clock precision before generation. Limits are 10000 estimated breathing cycles or glance candidates and 100000 estimated keys per idle channel. Slow subnormal idle frequencies use finite endpoints without multiplying zero by infinity. Normal output retains the committed numeric and serialization baseline.",
+      "verification": {"red": {"failed": 11, "passed": 1}, "focused_green": {"passed": 285}, "engine_enabled_regressions": {"passed": 483, "skipped": 0}, "planner_branch_inclusive_coverage_percent": 95, "ruff_formatted_files": 1555, "mypy_source_files": 244},
+      "problem": "Positive finite style values can stall rounded breath time, cause excessive glance iteration, or overflow idle sampling. Extremely slow idle frequencies also produce NaN through zero times an infinite reciprocal.",
+      "evidence": [
+        "src/srstudio/_head_planner.py",
+        "tests/test_head_planner_budgets.py"
+      ],
+      "acceptance": [
+        "Invalid schedules fail before generators run",
+        "Typed budget and precision failures identify repairable inputs",
+        "Existing normal motion retains numeric and serialized parity"
+      ]
+    },
+    {
+      "id": "SDK-P1-04",
+      "priority": "P1",
+      "status": "open",
+      "title": "Preserve deferred drawing execution in the event migration",
+      "problem": "The uncommitted registered-builder wrapper closes its drawing scope before a generator executes, losing figure IDs while reporting the part as used.",
+      "evidence": [
+        "src/srstudio/drawing_events.py",
+        "src/srstudio/usage.py"
+      ],
+      "acceptance": [
+        "Generator resume, send, throw and close retain drawing attribution",
+        "Coroutine and async-generator failures and cancellation restore scopes",
+        "Concurrent execution does not mix independent figure IDs"
+      ]
+    },
+    {
+      "id": "SDK-P2-06",
+      "priority": "P2",
+      "status": "open",
+      "title": "Expand explicit non-character contracts beyond core workflows",
+      "problem": "Only 53 of 631 non-character parts declare semantic contracts; agents must inspect implementation for most coordinate, clock and return conventions.",
+      "evidence": [
+        "src/srstudio/registry.py:contract_coverage",
+        "src/srstudio/_drawing_contracts.py"
+      ],
+      "acceptance": [
+        "All supported non-character builders have authored units, clocks, returns and capability declarations where applicable",
+        "Contract examples execute against actual builders",
+        "Unknown or unsupported spatial semantics are never inferred"
+      ]
+    },
+    {
+      "id": "SDK-P2-07",
+      "priority": "P2",
+      "status": "open",
+      "title": "Implement bounded scene-wide composition preflight",
+      "problem": "DRAWING.md proposes shared scene contracts, but subsystem compilation does not yet provide one validated plan with cross-layer bindings, versions and render budgets.",
+      "evidence": [
+        "DRAWING.md#agent-facing-composition-contract"
+      ],
+      "acceptance": [
+        "Strict typed input validates references, capabilities, clocks and budgets before mutation",
+        "Immutable validated plans expose reproducible cost estimates",
+        "Emission refuses unsupported backend capabilities and never publishes partial output"
+      ]
+    },
+    {
+      "id": "SDK-P2-08",
+      "priority": "P2",
+      "status": "open",
+      "title": "Publish and verify transition continuity guarantees",
+      "problem": "Transition policies expose easing without derivative guarantees; limb action joins estimate boundary velocities. Agents need to distinguish position, velocity and acceleration continuity.",
+      "evidence": [
+        "src/srstudio/acting.py:TransitionPolicy",
+        "src/srstudio/limbs/transitions.py"
+      ],
+      "acceptance": [
+        "Discovery declares continuity and explicit discontinuities",
+        "Supported derivative-preserving transitions pass boundary and random-access tests",
+        "Contacts remain valid and existing policy output stays compatible"
+      ]
+    },
+    {
+      "id": "SDK-P2-09",
+      "priority": "P2",
+      "status": "open",
+      "title": "Include renderer identity in plate cache ownership",
+      "problem": "Plate cache lookup uses only serialized scene content and can return an earlier renderer build output when the same cache directory is reused.",
+      "evidence": [
+        "src/srstudio/plates.py:render",
+        "DRAWING.md#rules"
+      ],
+      "acceptance": [
+        "Renderer changes invalidate affected cached outputs",
+        "Relevant rendering inputs and quality configuration participate in cache identity",
+        "Unchanged warm builds invoke no new plate render"
+      ]
+    },
+    {
+      "id": "SDK-P3-07",
+      "priority": "P3",
+      "status": "open",
+      "title": "Separate task documentation from episode history",
+      "problem": "The authoring reference has 2917 lines mixing reusable workflows with detailed episode history.",
+      "evidence": [
+        "docs/authoring-reference.md"
+      ],
+      "acceptance": [
+        "Task index links focused guides with imports, clocks, bindings and failure examples",
+        "Existing links remain resolvable",
+        "Executable examples remain verified"
+      ]
+    },
+    {
+      "id": "SDK-P3-08",
+      "priority": "P3",
+      "status": "open",
+      "title": "Separate transform, gesture and contact responsibilities in limb motion",
+      "problem": "limbs/motion.py combines transform interpolation, gesture synthesis and contact sampling behind the same public module.",
+      "evidence": [
+        "src/srstudio/limbs/motion.py"
+      ],
+      "acceptance": [
+        "Cohesive internal modules preserve public imports and record identities",
+        "Sampled numeric and emitted output match captured baselines",
+        "No duplicate interpolation or contact implementation"
+      ]
+    },
+    {
+      "id": "SDK-P4-04",
+      "priority": "P4",
+      "status": "open",
+      "title": "Support authored emotional blends on capable rigs",
+      "problem": "Coordinated acting holds or replaces expressions; richer facial transitions need explicit authored support coordinated with posture and gesture.",
+      "evidence": [
+        "src/srstudio/acting.py",
+        "src/srstudio/_acting_compile.py"
+      ],
+      "acceptance": [
+        "Rigs explicitly declare supported expression transitions",
+        "Unsupported blends fail before drawing",
+        "Deterministic cuts and temporal rendered review cover facial and body coordination"
+      ]
+    },
     {
       "id": "SDK-P1-01",
       "priority": "P1",
@@ -404,7 +547,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": [ "SDK-P1-04", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P2-06", "SDK-P2-07", "SDK-P2-08", "SDK-P2-09", "SDK-P3-07", "SDK-P3-08", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
@@ -414,7 +557,7 @@
     "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."
   ],
   "limits": [
-    "No P0 was confirmed. The callback/option P1 findings and additional malformed-input, blink-budget and diagnostic-amplification defects reproduced during implementation are now fixed; previously repaired sequence-clock defects remain resolved. This is not an exhaustive claim of defect absence.",
+    "No P0 was confirmed. Earlier callback/option, malformed-input, blink-budget and diagnostic-amplification repairs remain recorded. The refreshed review reproduced additional procedural head-schedule and deferred tracing defects, tracked separately above. This is not an exhaustive claim of defect absence.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]

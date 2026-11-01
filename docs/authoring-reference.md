@@ -73,6 +73,13 @@ sampled-key budget and scene clock precision. Reduce the requested work or use a
 those diagnostics fire. The tested mouth, visibility and keyframe preflights leave their scene unchanged;
 this is not a blanket transaction guarantee for every legacy builder.
 
+Head planning also preflights procedural schedules: at most 10,000 estimated breathing cycles or glance
+candidates, and 100,000 estimated keys per idle channel. Estimates use the shortest seeded interval and
+include rounding allowance; suppressed glances still consume planning work. Intervals must preserve the
+six-decimal scene clock. `head.plan.budget` and `head.plan.precision` identify the responsible style field or
+duration. Increase the interval, reduce frequency, or compile a shorter source performance, then use its
+windows for cuts. These limits do not establish perceptual quality or an execution-time guarantee.
+
 ## Timeline input formats
 
 `Timeline.load(path)` reads JSON and selects a format by its top-level shape. The same data can be passed to

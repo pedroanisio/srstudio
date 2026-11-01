@@ -45,6 +45,57 @@ _DIP_LEAD = 0.2  # how long before its phrase a dip starts
 _DIP_SHARE = 0.2  # a dip's depth, as a share of a full nod
 
 
+_CLOCK_STEP = 1e-6
+_MAX_CYCLES = 10000
+_MAX_NOISE_KEYS = 100000
+
+
+def _schedule_check(style: HeadStyle, duration: float) -> None:
+    """Bound procedural work before allocating keys, including six-decimal clock rounding.
+
+    Estimates use the shortest possible seeded interval, independently of the
+    chosen seed or whether speech later suppresses an incidental movement.
+    """
+
+    def precision(path: str, actual: float) -> None:
+        raise _invalid(
+            'head.plan.precision',
+            path,
+            actual,
+            {'minimum_time_step': _CLOCK_STEP, 'clock_decimals': 6},
+            'Increase the interval or shorten the performance to preserve distinct scene-clock times.',
+        )
+
+    def budget(path: str, actual: float, count: float, maximum: int) -> None:
+        if not math.isfinite(count) or count > maximum:
+            raise _invalid(
+                'head.plan.budget',
+                path,
+                actual,
+                {'maximum_schedule_items': maximum, 'duration': duration},
+                'Reduce frequency, increase the interval, or compile a shorter performance.',
+            )
+
+    if duration < _CLOCK_STEP or math.ulp(duration) > _CLOCK_STEP:
+        precision('duration', duration)
+    for name, shortest in (
+        ('breath_period', style.breath_period * 0.85 * 0.4),
+        ('glance_every', style.glance_every * 0.7),
+        ('glance_hold', style.glance_hold * 0.8),
+    ):
+        if shortest < _CLOCK_STEP:
+            precision(f'style.{name}', getattr(style, name))
+    # A completed breath is rounded before the next cycle starts. Account for
+    # the largest possible downward rounding rather than dividing by the period.
+    breath_step = style.breath_period * 0.85 - _CLOCK_STEP / 2
+    budget('style.breath_period', style.breath_period, duration / breath_step + 1, _MAX_CYCLES)
+    budget('style.glance_every', style.glance_every, duration / (style.glance_every * 0.7) + 1, _MAX_CYCLES)
+    rate = 8.0 * style.idle_hz
+    budget('style.idle_hz', style.idle_hz, duration * rate + 2, _MAX_NOISE_KEYS)
+    if 1.0 / rate < _CLOCK_STEP:
+        precision('style.idle_hz', style.idle_hz)
+
+
 def _shape(kind: str, span: float) -> tuple[Key, ...]:
     if kind == "^":
         return ((0.0, 0.0), (span * 0.5, 1.0), (span + 0.35, 0.0))
@@ -108,7 +159,9 @@ def _noise_keys(
     style: HeadStyle, name: str, amount: float, spans: Sequence[tuple[float, float]], duration: float
 ) -> tuple[Key, ...]:
     step = 1.0 / (8.0 * style.idle_hz)
-    times = [k * step for k in range(int(duration / step) + 1)]
+    # A subnormal frequency can have an infinite reciprocal. Zero times that
+    # reciprocal is NaN, although a slow channel needs only its finite endpoints.
+    times = [0.0] if step >= duration else [k * step for k in range(int(duration / step) + 1)]
     if times[-1] < duration:
         times.append(duration)
     keys = []
@@ -300,6 +353,7 @@ def plan(
     _check(style, speeches, duration)
     _check(style, heard, duration, 'heard')
     _check_facing(facing)
+    _schedule_check(style, duration)
     spans = [span for speech in speeches for span in _breaths(speech)]
     busy = sorted([*spans, *(span for speech in heard for span in _breaths(speech))])
     nodded = [nod for k, speech in enumerate(speeches) for nod in nods(speech, style, k)]
