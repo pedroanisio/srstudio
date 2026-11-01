@@ -2085,7 +2085,8 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene. A new release
   also sets `tags=srstudio.releases.Tags(territory, cause, emotion, recurring=, test=, arm=)`, from closed sets the
   account's analytics count ([ADR 0033](../docs/decisions/0033-episode-tags-for-analytics.md)); releases published
-  before tags existed leave it `None`. A reel on the send test adds `send_to=` and `send_line=`
+  before tags existed leave it `None`. A reel in a second A/B test adds `also=(("sp-speakers", "a"),)`, and a reel on
+  the send test adds `send_to=` and `send_line=`
   ([ADR 0080](../docs/decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
   [episodes/instagram_posts.py](../episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
   script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
@@ -2133,7 +2134,8 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   (video, `ig.txt`, `cover.jpg` and its `.vpkg.zip`) and copies it to Drive (`--stage-only`, `--dry-run`). A video
   without a package is held back like a drifted one. A video whose release is in an A/B test
   (`releases.Tags(test=, arm=)`) is staged with an `ab.json` (`{"test": ..., "arm": ...}`) that the posting job
-  reads, hashed in `outbox.json` like every staged file. The recipient test rides in the same file: `recipient=` is
+  reads, hashed in `outbox.json` like every staged file. A second test goes beside them as `"also": [{"test": ...,
+  "arm": ...}]`, from `Tags(also=)`. The recipient test rides in the same file: `recipient=` is
   its arm, and arm `b` adds `to=`, who the viewer sends it to, from `releases.RECIPIENTS`. A recreation ships the package it was received with
   (`videos-styles/`); an original episode is packed by `srstudio.package` from `generated/episodes/<slug>/` into
   `generated/vpkg/` with `scenerender-vpkg`, unpacked and checked against its SHA-256s, and its scene validated by

@@ -78,7 +78,7 @@ VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug ->
 COVER_SCENES = {slug: r.scene_file for slug, r in RELEASES.items() if r.cover}  # scenes with a cover variant
 FROZEN = {r.video_name: r.frozen for r in RELEASES.values() if r.frozen}  # video name -> accepted drawing
 AB = {
-    r.video_name: outbox.Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to)
+    r.video_name: outbox.Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to, r.tags.also)
     for r in RELEASES.values()
     if r.tags and r.tags.test
 }  # A/B arms

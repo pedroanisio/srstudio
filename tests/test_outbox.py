@@ -153,6 +153,14 @@ def test_a_video_in_an_ab_test_is_staged_with_its_arm_in_ab_json(delivered, tmp_
             Arm("sp-hook_motion", "a", "b", "family"),
             {"test": "sp-hook_motion", "arm": "a", "recipient": "b", "to": "family"},
         ),
+        (
+            Arm("sp-length", "short", also=(("sp-speakers", "a"),)),
+            {"test": "sp-length", "arm": "short", "also": [{"test": "sp-speakers", "arm": "a"}]},
+        ),
+        (
+            Arm("sp-speakers", "b", also=(("sp-length", "natural"),)),
+            {"test": "sp-speakers", "arm": "b", "also": [{"test": "sp-length", "arm": "natural"}]},
+        ),
     ],
 )
 def test_both_tests_go_in_one_ab_json(delivered, tmp_path, arm, document):
@@ -163,10 +171,24 @@ def test_both_tests_go_in_one_ab_json(delivered, tmp_path, arm, document):
     assert json.loads((folder / "a" / AB_NAME).read_text()) == document
 
 
+def test_a_release_with_one_test_keeps_its_ab_json_byte_for_byte(delivered, tmp_path):
+    items, out, pk = delivered
+    bundles, _ = ready(items, out, font=FONT, packages=pk, ab={"a": Arm("sp-hook_motion", "a")})
+    stage(bundles, tmp_path / "staged")
+    assert (tmp_path / "staged" / "a" / AB_NAME).read_text() == '{"test": "sp-hook_motion", "arm": "a"}\n'
+
+
 @pytest.mark.parametrize(
     ("ab", "match"),
     [
         ({"nobody": Arm("sp-hook_motion", "a")}, "not published"),
+        ({"a": Arm("sp-length", "a")}, "arm 'a'"),
+        ({"a": Arm("sp-hook_motion", "short")}, "arm 'short'"),
+        ({"a": Arm("sp-length", "short", also=(("sp-speakers", "c"),))}, "arm 'c'"),
+        ({"a": Arm("sp-speakers", "a", also=(("sp-length", "b"),))}, "arm 'b'"),
+        ({"a": Arm("sp-length", "short", also=(("", "a"),))}, "test"),
+        ({"a": Arm("sp-length", "short", also=(("sp-length", "natural"),))}, "twice"),
+        ({"a": Arm("sp-length", "short", also=(("sp-speakers", "a"), ("sp-speakers", "b")))}, "twice"),
         ({"a": Arm("sp-hook_motion", "c")}, "arm"),
         ({"a": Arm("", "a")}, "test"),
         ({"a": Arm("sp-hook_motion", "a", "c")}, "recipient"),
@@ -719,7 +741,7 @@ def test_ab_mirrors_the_test_and_arm_of_every_release_in_a_test():
     finally:
         sys.path.remove(str(EPISODES))
     expected = {
-        r.video_name: Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to)
+        r.video_name: Arm(r.tags.test, r.tags.arm, r.tags.recipient, r.tags.to, r.tags.also)
         for r in posts.RELEASES.values()
         if r.tags and r.tags.test
     }

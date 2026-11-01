@@ -29,7 +29,7 @@ from pathlib import Path
 
 from . import digest
 from .errors import SrstudioError
-from .releases import ARMS
+from .releases import ARMS, arms_of
 from .show_numbers import Claim, episode_document
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery, read_manifest
 
@@ -69,16 +69,21 @@ class OutboxError(SrstudioError, ValueError):
 @dataclass(frozen=True)
 class Arm:
     """What a reel's ``ab.json`` says: the first-second ``test`` and its ``arm``, and, in the recipient test, its
-    ``recipient`` arm and who arm ``b`` is written ``to``."""
+    ``recipient`` arm and who arm ``b`` is written ``to``; ``also`` holds the ``(test, arm)`` of any further test."""
 
     test: str
     arm: str
     recipient: str = ""
     to: str = ""
+    also: tuple[tuple[str, str], ...] = ()
 
-    def document(self) -> dict[str, str]:
+    def document(self) -> dict[str, str | list[dict[str, str]]]:
         extra = {"recipient": self.recipient, "to": self.to}
-        return {"test": self.test, "arm": self.arm} | {key: value for key, value in extra.items() if value}
+        document: dict[str, str | list[dict[str, str]]] = {"test": self.test, "arm": self.arm}
+        document |= {key: value for key, value in extra.items() if value}
+        if self.also:
+            document["also"] = [{"test": test, "arm": arm} for test, arm in self.also]
+        return document
 
 
 @dataclass(frozen=True)
@@ -175,8 +180,14 @@ def _arms(items: Items, ab: Mapping[str, Arm] | None) -> dict[str, Arm]:
     for name, chosen in sorted(ab.items()):
         if not chosen.test:
             raise OutboxError(f"{name}: an A/B arm needs its test")
-        if chosen.arm not in ARMS:
-            raise OutboxError(f"{name}: arm {chosen.arm!r} is not one of {', '.join(ARMS)}")
+        tests = [(chosen.test, chosen.arm), *chosen.also]
+        if not all(test for test, _ in tests):
+            raise OutboxError(f"{name}: a further A/B arm needs its test")
+        for test, arm in tests:
+            if arm not in arms_of(test):
+                raise OutboxError(f"{name}: {test} arm {arm!r} is not one of {', '.join(arms_of(test))}")
+        if len({test for test, _ in tests}) != len(tests):
+            raise OutboxError(f"{name}: one test is named twice in {tests!r}")
         if chosen.recipient and chosen.recipient not in ARMS:
             raise OutboxError(f"{name}: recipient {chosen.recipient!r} is not one of {', '.join(ARMS)}")
         if (chosen.recipient == "b") != bool(chosen.to):

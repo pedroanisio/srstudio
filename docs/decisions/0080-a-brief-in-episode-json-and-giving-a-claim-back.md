@@ -42,6 +42,12 @@ and it stands in the way of the reels that go ahead of it.
    the spoken captions of a reel with those tags or with the brief `send-v1`, at first delivery and in
    `instagram_posts.py check`. The brief is what catches a holdout, which has no tags to read.
 
+7. **A reel can be in two tests.** arc4d3 runs `sp-length`, with arms `short` and `natural`, beside `sp-speakers` on batch
+   E. A test may have its own arms (`releases.arms_of`), and `Tags.also` names further tests as `(test, arm)` pairs. They
+   reach `ab.json` as `"also": [{"test": "sp-speakers", "arm": "a"}]` beside the top-level `test` and `arm`, so a reel in
+   one test writes the bytes it always did. `releases.arms` counts a reel in every test it names. An arm its test does
+   not have, or one test named twice, is refused in the tags and again at the outbox.
+
 ## Consequences
 
 - The next claim is still `max(base, highest held) + 1`. A number released from the top of the ledger is taken by the
@@ -62,6 +68,8 @@ and it stands in the way of the reels that go ahead of it.
 - **A `brief` written on every reel, empty by default.** It changes the bytes of every staged `episode.json`.
 - **Filling gaps on the next claim.** It puts a later reel under an earlier number, and autopost posts lowest first.
 - **Editing the ledger by hand.** The ledger is written whole under a lock, and a hand edit skips the delivered check.
+- **A list of tests replacing `test` and `arm`.** It would change `ab.json` for every reel in one test, and the posting
+  job reads those two fields.
 - **Naming the tag `recipient`.** `Tags.recipient` is already the arm of the recipient A/B test, a or b, in 48 releases
   and in `ab.json`, and a reel can be in that test and on the send test at once. The same name for a person would change
   what those files mean.

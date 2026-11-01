@@ -435,3 +435,62 @@ def test_a_written_srt_reads_back_and_a_broken_one_is_refused(tmp_path):
     srt.write_text("1\nnot a time\nHello.\n")
     with pytest.raises(subtitles.SubtitleError, match="not a subtitle block"):
         subtitles.read_srt(srt)
+
+
+# -- a reel in two tests (ADR 0080) ------------------------------------------------------------------------------------
+BASE = dict(territory="family", cause="protagonist", emotion="embarrassment")
+
+
+def in_tests(slug, test, arm, also=()):
+    return Release(slug, POST, tags=releases.Tags(**BASE, test=test, arm=arm, also=also))
+
+
+def test_the_length_test_has_its_own_arms():
+    assert releases.arms_of("sp-length") == ("short", "natural")
+    assert releases.arms_of("sp-speakers") == releases.ARMS
+    assert releases.Tags(**BASE, test="sp-length", arm="natural").arm == "natural"
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [
+        (dict(test="sp-length", arm="a"), "arm 'a'"),
+        (dict(test="sp-speakers", arm="short"), "arm 'short'"),
+        (dict(test="sp-length", arm="short", also=(("sp-speakers", "c"),)), "arm 'c'"),
+        (dict(test="sp-speakers", arm="a", also=(("sp-length", "b"),)), "arm 'b'"),
+        (dict(test="sp-length", arm="short", also=(("no-such-test", "a"),)), "no-such-test"),
+        (dict(test="sp-length", arm="short", also=(("sp-length", "natural"),)), "twice"),
+        (dict(test="sp-length", arm="short", also=(("sp-speakers", "a"), ("sp-speakers", "b"))), "twice"),
+        (dict(also=(("sp-speakers", "a"),)), "also"),
+        (dict(test="sp-length", arm="short", also=[("sp-speakers", "a")]), "also"),
+        (dict(test="sp-length", arm="short", also=("sp-speakers", "a")), "also"),
+    ],
+)
+def test_tags_refuse_a_second_test_they_cannot_vouch_for(kw, match):
+    with pytest.raises(ReleaseError, match=match):
+        releases.Tags(**BASE, **kw)
+
+
+def test_a_reel_in_two_tests_counts_in_both():
+    run = {
+        "p": in_tests("p", "sp-length", "short", (("sp-speakers", "a"),)),
+        "q": in_tests("q", "sp-length", "natural", (("sp-speakers", "b"),)),
+        "r": in_tests("r", "sp-speakers", "a"),
+    }
+    assert releases.arms(run, "sp-length") == {"short": ["p"], "natural": ["q"]}
+    assert releases.arms(run, "sp-speakers") == {"a": ["p", "r"], "b": ["q"]}
+
+
+def test_a_reel_on_the_second_test_is_in_its_order_and_its_split():
+    run = {
+        "p": in_tests("p", "sp-length", "short", (("sp-speakers", "a"),)),
+        "q": in_tests("q", "sp-length", "natural", (("sp-speakers", "b"),)),
+    }
+    assert releases.arm_problems(run, "sp-speakers", ["p", "q"]) == []
+    assert releases.arm_problems(run, "sp-length", ["p", "q"]) == []
+
+
+def test_the_length_test_reports_a_split_by_its_own_arms():
+    run = {"p": in_tests("p", "sp-length", "short"), "q": in_tests("q", "sp-length", "short")}
+    assert releases.arm_problems(run, "sp-length") == ["arm short has 2 and arm natural has 0"]
+    assert releases.arm_problems(run, "sp-length", ["p", "q"])[-1] == "q follows p on the same arm short"
