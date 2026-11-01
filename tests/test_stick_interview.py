@@ -75,6 +75,18 @@ def test_the_menus_are_set_in_ink():
     assert {t.get("color") for t in xml(cv).iter("text")} == {cv.ink}
 
 
+def luminance(colour: str) -> float:
+    channels = [int(colour[k : k + 2], 16) / 255 for k in (1, 3, 5)]
+    red, green, blue = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+@pytest.mark.parametrize("fill", [stick_interview.MENU_A, stick_interview.MENU_B, stick_interview.MENU_C])
+def test_ink_stays_clear_of_the_gate_on_every_menu(fill):
+    ink = canvas().ink
+    assert (luminance(fill) + 0.05) / (luminance(ink) + 0.05) > 5.5  # the gate's 4.5, with room for the scaled type
+
+
 def test_a_drawer_that_starts_open_needs_a_font_for_its_menus():
     silent = canvas(font=False)
     with pytest.raises(CanvasError, match="menus"):
