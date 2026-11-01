@@ -8668,6 +8668,23 @@
         }
       ]
     },
+    "news-forecast-map": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An invented county in the sun with one pin, and a cloud small enough to find it. First drawn for leave-it-home.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "62057b1c9178ce157087a77cf0aa3234c69ec4d126caf9b550e15180fe1ab615",
+          "rig": null
+        }
+      ]
+    },
     "news-oven-clock": {
       "kind": "graphic",
       "style": "toon",

@@ -432,6 +432,17 @@ RECIPES: dict[str, Recipe] = {
     "news-oven-clock": Recipe(
         lettered("MY OVEN", "7:42", "1 HOUR OFF", "CORRECT", 0.0, SECONDS, right_at=SECONDS / 2)
     ),
+    "news-forecast-map": Recipe(
+        lettered(
+            "FORECAST",
+            "HIM",
+            "DRY DAYS",
+            ((0.0, "63"), (SECONDS * 0.8, "64")),
+            0.0,
+            SECONDS,
+            rain=(SECONDS * 0.2, SECONDS * 0.7),
+        )
+    ),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
