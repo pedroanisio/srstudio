@@ -41,6 +41,7 @@ BEZEL, GLASS, HEAD_INK = "#2b2b33", "#ffffff", "#6a6f7c"
 PAPER, STRIKE = "#ffe680", "#d42a2a"
 CORK, CORK_RIM, CORK_DOT = "#c99a62", "#7d5a36", "#b78852"
 LENS, BRASS, GRIP = "#d7eef8", "#c9a24d", "#5d3a22"
+LENS_TINT = 0.05  # how much the glass tints what is read through it
 PIN = "#d42a2a"
 NOTE_W, NOTE_H = 104.0, 74.0
 SPOTS: tuple[
@@ -163,7 +164,8 @@ def magnifier(cv: Canvas, parent, at: Point = (300.0, 400.0), scale: float = 1.0
     handle = _d("M", (x - r * 0.62, y + r * 0.8), "L", (x - r * 1.5, y + r * 1.9), "L", (x - r * 1.28, y + r * 2.08),
                 "L", (x - r * 0.42, y + r * 0.98), "Z")  # fmt: skip
     _path(cv, g, handle, GRIP, INK_W * 0.7)
-    cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), LENS, BRASS, INK_W * 1.6, opacity=0.4)
+    cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), LENS, opacity=LENS_TINT)
+    cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), cv.clear, BRASS, INK_W * 1.6)
     cv.ellipse(g, fx(x - r), fy(y - r), fh(2 * r), fh(2 * r), cv.clear, cv.ink, FINE_W * 0.7)
     return g
 

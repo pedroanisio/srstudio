@@ -3,10 +3,13 @@ defaults, nothing shows outside its time, and each refuses what cannot be read o
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, registry, toon_drafts
+from srstudio.cast_card import contrast
 from srstudio.toon import ToonDataError
 from srstudio.toon_drafts import Draft, Note
 
@@ -86,3 +89,25 @@ def test_a_bad_scale_is_refused() -> None:
     cv = canvas()
     with pytest.raises(ToonDataError, match="scale"):
         toon_drafts.magnifier(cv, cv.comp, scale=0)
+
+
+def test_text_read_through_the_glass_keeps_its_contrast() -> None:
+    """The lens tints what is behind it: the screen's greyest word stays readable under the glass, on the frame too."""
+
+    def under_lens(colour: str) -> str:
+        channels = (int(colour[i : i + 2], 16) for i in (1, 3, 5))
+        tint = (int(toon_drafts.LENS[i : i + 2], 16) for i in (1, 3, 5))
+        mixed = (
+            (1 - toon_drafts.LENS_TINT) * c + toon_drafts.LENS_TINT * t for c, t in zip(channels, tint, strict=True)
+        )
+        return "#" + "".join(f"{round(c):02x}" for c in mixed)
+
+    assert contrast(under_lens(toon_drafts.HEAD_INK), under_lens(toon_drafts.GLASS)) >= 4.5
+
+
+def test_the_ring_is_solid_and_only_the_lens_is_tinted() -> None:
+    cv = canvas()
+    toon_drafts.magnifier(cv, cv.comp)
+    ring = re.search(rf'<shape [^>]*stroke="{toon_drafts.BRASS}"[^>]*>', raw(cv))
+    assert ring is not None
+    assert "opacity" not in ring.group(0)
