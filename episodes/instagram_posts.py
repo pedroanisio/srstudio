@@ -36,6 +36,7 @@ import shutil
 from pathlib import Path
 
 from srstudio import auto_enhance, caption_gate, comedy_floor, figure_gates, fonts, frame_gates, outbox, releases
+from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, overlay_gate, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -132,6 +133,10 @@ def write_all(
         ]
     )
     refused = auto_enhance.refused(first, REPO)
+    refused = [
+        *overlay_gate.repeated_lines(chosen, _beside(renders), first.values()),
+        *auto_enhance.refused(first, REPO),
+    ]
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))
     return publish(items(renders), out, font=font_file(fonts_dir), engine=engine, only=only, frozen=FROZEN)
