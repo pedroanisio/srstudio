@@ -92,7 +92,9 @@ LINES = (
     Line("raccoon", "We already have your..."),
     Line("frog", "Take a seat. Someone will be with you shortly."),
     Line("dog", "Who's next?"),
-    Line("frog", "You're late. That's $20."),
+    Line(  # accepted by arc4d3, Slack 1793499862.755999: the recognizer drops the dollars
+        "frog", "You're late. That's $20.", heard=("You're late. That's 20",)
+    ),
 )
 
 script = scripting.Script(LINES)

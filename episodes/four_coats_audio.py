@@ -46,7 +46,8 @@ SCRIPT = takes.Script(
     takes=(
         _fx(1, "[THUD]", 0.1, "gate", "A heavy suitcase dropped flat on a metal scale, one thud, dry, no voices", 0.6),
         takes.Take("02", "agent", "23.4.", 0.15, shot="gate", mood="calm"),
-        takes.Take("03", "agent", "$60.", 0.35, shot="gate", mood="calm"),
+        # accepted by arc4d3, Slack 1793499862.755999: the recognizer drops the dollars
+        takes.Take("03", "agent", "$60.", 0.35, shot="gate", mood="calm", heard=("Sixty",)),
         takes.Take("04", "traveler", "For point four?", 0.3, shot="gate", mood="firm"),
         takes.Take("05", "agent", "It's policy.", 0.55, shot="gate", mood="calm"),
         _fx(
