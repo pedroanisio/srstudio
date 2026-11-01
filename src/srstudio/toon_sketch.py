@@ -36,6 +36,7 @@ from . import (
     TOON,
     Episode,
     EpisodeSpec,
+    camera,
     checks,
     craft,
     errors,
@@ -140,6 +141,9 @@ class Staging:
     camera's reach, from the beats the build placed: a show's graphics."""
     safe_area: SafeArea | None = None  # declared on the project, for a show that keeps its text inside one
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
+    moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
+    """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
+    character's seat, so a figure can bend, sink or sway while its set stays put."""
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):
@@ -215,6 +219,21 @@ def fit_captions(lines: Sequence[toon.Line], measure: Callable[[str], float], wi
     wide = [q.text for q in lines if toon.pill_width(measure, q.text) > width - 2 * PILL_MARGIN]
     if wide:
         raise StagingError("captions too wide for one pill: " + "; ".join(repr(t) for t in wide))
+
+
+def opening_push(scale: float = 1.06, at: tuple[float, float] = (540.0, 1000.0)) -> Callable[[Shot, object], None]:
+    """A :attr:`Staging.camera` that pushes in on ``at`` across the first shot and leaves the others where they stand:
+    a reel that speaks from its first frame opens on movement (the ``sp-hook_motion`` test's arm b) without a redrawn
+    pose or another second of recording."""
+    if not (checks.number(scale) and scale > 1):
+        raise StagingError(f"an opening push grows the shot, above 1, got {scale!r}")
+
+    def push(shot: Shot, group: object) -> None:
+        if shot.app.start == 0:
+            camera.anchor(group, *at, place=True)
+            camera.push_in(shot.cv, group, scale=[(0.0, 1.0), (shot.app.end, scale)])
+
+    return push
 
 
 def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
@@ -296,6 +315,10 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         poses = toon.parse_poses(app.poses, f"poses of {app.who} from {app.start} s")
         extra = {} if app.who in bare else sketch.drawer_extras(app.who, staging.stickers, mouths)
         body = figure_group(cv, g, staging.figures.get(app.who))
+        if app.who in staging.moves:
+            x, y = toon.fx(SEAT[0]), toon.fy(SEAT[1])
+            body = cv.group(body, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+            staging.moves[app.who](cv, body, app, sk.beats)
         if app.who in bare:
             pass  # a card: the dress draws the whole frame
         elif app.who in heads:

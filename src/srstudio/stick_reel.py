@@ -62,10 +62,12 @@ def words(
     size: float = WORD_SIZE,
     alone: bool = True,
     sentences: bool = False,
+    hold: bool = False,
 ):
     """The spoken ``takes`` as word captions on the episode clock; returns their group. ``alone=False`` keeps a word
-    from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end
-    (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep theirs."""
+    from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end, and
+    ``hold`` keeps the short cues that can leave up long enough to read (:func:`srstudio.stick.word_cues`): new reels
+    ask for them, delivered ones keep theirs."""
     group = ep.cv.group(ep.cv.comp, "spoken-words")
     font = (ep.root / str(ep.spec.font)).read_bytes()
     cues = stick.word_cues(
@@ -78,6 +80,7 @@ def words(
         balance=True,
         alone=alone,
         sentences=sentences,
+        hold=hold,
     )
     stick.words(ep.cv, group, cues, y=y, scrim=SCRIM)
     return group
@@ -105,10 +108,14 @@ def turns(end: float, rate: float) -> tuple[list[tuple[float, float]], list[tupl
     return spans[0::2], spans[1::2]
 
 
+def spoken_cues(takes: Sequence[Any]) -> list[tuple[float, float, str]]:
+    """One subtitle per spoken take, from its first word: a still opening is inside its take and says nothing."""
+    return [(x.start + (x.words[0]["start"] if x.words else 0.0), x.end, x.text) for x in takes if not x.is_effect]
+
+
 def close(ep: Episode, post: InstagramPost, *hidden: Any) -> Path:
     """The burned ``hidden`` nodes off the cover, the subtitles, the post and the scene."""
     ep.hide_on_cover(*hidden)
-    srt = [(x.start, x.end, x.text) for x in ep.t.takes if not x.is_effect]
-    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", srt)
+    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes))
     ep.instagram(post)
     return ep.finish(ep.root / f"{ep.spec.slug}.scene.xml", ep.root / "qa" / "sdk-validation.json")

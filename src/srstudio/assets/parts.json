@@ -11106,6 +11106,1426 @@
           "rig": null
         }
       ]
+    },
+    "toon-pipe": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wall pipe that drips on cue and sprays once. First drawn for the-last-guy.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "8cb16ee56ca88faad225738ee71f2709326d80d963fb014fa1941ea2cddc5ddd",
+          "rig": null
+        }
+      ]
+    },
+    "toon-paper-insert": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A handwritten sheet that fills the frame: a title and short lines. First drawn for the-last-guy.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "401e1fe200e1b753cc6e2a2207b8d97b95f8c0e1734593669c3e6381635b953f",
+          "rig": null
+        }
+      ]
+    },
+    "toon-mosquito": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A mosquito on a keyed path that jitters and lands. First drawn for mosquito.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d49bc14522a2d0f020e00d345244e2d0e9b4ac00910aef3b11a7a13f0e2d924c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-rolled-towel": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A rolled towel raised in a fist and swung. First drawn for mosquito.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "780ec85a4a6aa958250ebf61b42c1be3e09ee88d925425c11a511c03a5998a50",
+          "rig": null
+        }
+      ]
+    },
+    "toon-wrestled-sheet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A sheet heaving in a losing fight. First drawn for fitted-sheet.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "e8cb635191c51b856e78c6fc5c877aa76fa63d9b267d4031f3763c39962d27e7",
+          "rig": null
+        }
+      ]
+    },
+    "toon-balled-sheets": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A rising avalanche of balled-up sheets. First drawn for fitted-sheet.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "4966e4031dbc2a50a27b0c86daa13288de88e0a7c88ec16b761c0ebced5b37e7",
+          "rig": null
+        }
+      ]
+    },
+    "toon-folded-sheet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One impossibly square folded sheet on two paws. First drawn for fitted-sheet.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "b409d9159c509ccb50da93730af34ffddd18c5bb1f26ad554bc8e7c944928e65",
+          "rig": null
+        }
+      ]
+    },
+    "toon-padlock": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A brass padlock that drops when it is opened. First drawn for fitted-sheet.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "c38a88b32e065f1a6495eb81b38495c831cc6d79cf118c29722c2d008e9615f6",
+          "rig": null
+        }
+      ]
+    },
+    "toon-tasting-spoons": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Tiny tasting spoons that pile up, one per cue. First drawn for one-more-taste.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "dc7addf09555371a8227f1ca7db9fa208985a1e422921a5db303aceb30fe8f96",
+          "rig": null
+        }
+      ]
+    },
+    "collage-cake-slice": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A slice of cake on a plate that halves on every cue. First drawn for you-have-it.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "2ee15fcb892433a391d58af83e907f1a8cad3f907b97b6b787f0a419b7d0a001",
+          "rig": null
+        }
+      ]
+    },
+    "collage-eye-chart": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An eye chart whose rows snap sharp one at a time. First drawn for eye-chart.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "b330896566f527bc8609da05e5f85dc36e1f48ec1f7aa32316cfad14f2df19ba",
+          "rig": null
+        }
+      ]
+    },
+    "collage-lens-frame": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clinic lens frame held in front of a face. First drawn for eye-chart.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "5167db5320d41579aab87c080823d42d966e42db5f3b7bb9eca8e20688fcb98c",
+          "rig": null
+        }
+      ]
+    },
+    "collage-sensor-tap": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A chrome sensor tap over a basin, running on cue. First drawn for sensor.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "faf58aa252d33e305aed1acd8b2a90a96d397fc0ba75b77ffb4c4039037349de",
+          "rig": null
+        }
+      ]
+    },
+    "collage-spinach": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wide leaf of spinach to stick across someone's teeth. First drawn for best-day.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "621631d0fe0595f6e1a15bc44d91d2cc7194baf7be467b57e79f189708024c28",
+          "rig": null
+        }
+      ]
+    },
+    "collage-water-jug": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A glass water jug with ice in it. First drawn for first-sip.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d50ae97f053b293647fa56d5d2736b6bb3627c10741413d1be3fb60f4fd7ecff",
+          "rig": null
+        }
+      ]
+    },
+    "collage-doctor-scale": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clinic scale with a height bar that lowers on cue. First drawn for the-scale.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "81eeee1520f2f0c2d4d9d27c10af216ced7b4f716da8f2461fe3de8e803420ec",
+          "rig": null
+        }
+      ]
+    },
+    "stick-poster": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A big wall poster with one line of lettering. First drawn for wave-back.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "f62016b5ea9605faf3bfed24ec85750b71b69a286bf8a329e12bc3f494698916",
+          "rig": null
+        }
+      ]
+    },
+    "stick-headset": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-desk headset over a figure's head, mic at the mouth. First drawn for wave-back.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "29070d7fa318faec3930d41dcdb505662efbbd8cda7d7f3ddbb4007cf563abb4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-xray": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A scanner's screen filling the frame, objects in glowing false color under a moving scan line. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "80c30887668358e54e72b5beceaf74f900af734195441e045c0331805bdcd0c4",
+          "rig": null
+        }
+      ]
+    },
+    "stick-plate": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dinner plate from the side under up to three tiers of food. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "80e8445c8fbdc66be540a6c4af49c2679b67f83502a79427540dbeb48e466d12",
+          "rig": null
+        }
+      ]
+    },
+    "stick-spoon": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A big serving spoon, empty or with a helping. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "5f4275b2099779b0c29bd2ff654645831d80ed171b6ebd9e1bd39027decbb9c5",
+          "rig": null
+        }
+      ]
+    },
+    "stick-robe": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A robe or a long coat that follows a figure's rig keys. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d4f9db169e7036f562d33568ce324aa714849d7d3bc384dba67fc93765bd1ab1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-scan-belt": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A security belt running out of its scanner. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "413c220e0c1d1567bbdb50dffb37e191285b4114cff482802879ecd0501ac530",
+          "rig": null
+        }
+      ]
+    },
+    "stick-foil-parcel": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A crumpled foil parcel of leftovers. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "ddde4644dba6215e23a6cd2b0582ba6abab3950ccc9d9b0a5d873ac533646b20",
+          "rig": null
+        }
+      ]
+    },
+    "stick-foil-note": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The frame given over to foil and the note taped to it. First drawn for did-you-pack.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "7b9224b3cb0cd6fd40566bc59463339080b0cc8c19765c95ef5ddb01820cadee",
+          "rig": null
+        }
+      ]
+    },
+    "stick-aisle": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plane's aisle in one-point perspective, from the back of the cabin. First drawn for seat-belt-sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "fbe0bb99b41dddf853812de1016d1cc686119d878806b919e197229064c43ebe",
+          "rig": null
+        }
+      ]
+    },
+    "stick-queue": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A line of passengers down the aisle who all turn round at once. First drawn for seat-belt-sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "3139e707e5811b5c204ad887f5e13120aa7c7f285f31e7001598a68e386590e9",
+          "rig": null
+        }
+      ]
+    },
+    "stick-book": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A paperback, open or shut. First drawn for seat-belt-sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "19ffb40c37f21e161593180466dcb9491f31ce671dc9fdff997bdf929a20ec6c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-duffel": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A soft duffel bag. First drawn for seat-belt-sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d595150940569a0c09aefe418580e1eb69c3269b0ac634a6518edafe7f9599df",
+          "rig": null
+        }
+      ]
+    },
+    "stick-wheelie-bin": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wheeled trash bin that can lose its wheels. First drawn for bin-day.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "5f9696c2784cc57a81dfac8ef5d09fe8ad8be7f3a9b7dc35f841124bb746153c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-trash-truck": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A trash truck from the side, with a window for its driver. First drawn for bin-day.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "923a1437bb3ae88a85d4eba5b4d5f2a21cfad212d9b4d5c4d6e073f4713d4bcf",
+          "rig": null
+        }
+      ]
+    },
+    "stick-slipper": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One bedroom slipper. First drawn for bin-day.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "7f1ed7173d1b4a63c85a6da7535f66742f1799d2a39b89f435b01ced3b7a38dc",
+          "rig": null
+        }
+      ]
+    },
+    "stick-sparks": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flickering spray of sparks. First drawn for bin-day.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "c63f44fd33c2efcc366b06670d72cdd55854592f2b68ba1ab326ed49bc38eb98",
+          "rig": null
+        }
+      ]
+    },
+    "stick-planks": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Flat-pack panels leaning on the wall, with their flat box. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "88bda137f88086e0f1ec3624d1fe68a68d64d45bd66fcd89be8ec9d01c5e66e2",
+          "rig": null
+        }
+      ]
+    },
+    "stick-wardrobe": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat-pack wardrobe half up with a door on backwards, or standing. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "5a9df99dbc58f79ef7a5d0fbe8acd411732fccb72e44338b06ada262c3038162",
+          "rig": null
+        }
+      ]
+    },
+    "stick-drill": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A cordless drill for a figure's hand. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "c0df60c2b8689db066f36e683134eab386e3be69885ce9baae7e1b3af9855010",
+          "rig": null
+        }
+      ]
+    },
+    "stick-screws": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A few loose screws. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "312cb49a07ccd6570651d5ff5f29c4885a824f38e232a99403bee1ebe68bf129",
+          "rig": null
+        }
+      ]
+    },
+    "stick-manual-page": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The frame given over to a numbered assembly-manual page and its wordless little people. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "fd67f8abec199e3d99a15a0a4b324f2c3e4736e87c842e44ad2fe2b7c2f48de1",
+          "rig": null
+        }
+      ]
+    },
+    "stick-caller": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone ringing with the caller's name on its screen. First drawn for some-assembly.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "ccfdb1db8e8078a5cfced8ee715b0f0bfe88e6cfcbdbac028efa30a84cf166f2",
+          "rig": null
+        }
+      ]
+    },
+    "eaten-sandwich": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A long sandwich in hand that loses a mouthful at every bite. First drawn for how-is-everything.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "034d0f9aa1d84e6a754e1a677dc9be33337e5139de8b3052b60cccb459567fae",
+          "rig": null
+        }
+      ]
+    },
+    "paper-napkin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A folded white paper napkin. First drawn for how-is-everything.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "e32af7e90906f56851484d9fc2105540b2000aeaf5f0eb8a57421be1b875b481",
+          "rig": null
+        }
+      ]
+    },
+    "bistro-table": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small round bistro table on one leg, seen side on. First drawn for how-is-everything.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "ac1a9dd5afb36860a4cf31b91e55acfa6b237b8b344a21bc6096279448baa777",
+          "rig": null
+        }
+      ]
+    },
+    "earbud": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white wireless earbud with a short stem. First drawn for headphones.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "2e548d4baabc226c1a987b11c1cc1299d875282f8451a44db6234557689e8784",
+          "rig": null
+        }
+      ]
+    },
+    "tin-of-peas": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tin of peas with a green label. First drawn for headphones.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "4f9582597ee1948c58484dd16e2c7f66f8559e6230514942803001a66e74fcbb",
+          "rig": null
+        }
+      ]
+    },
+    "store-box": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain supermarket box of crackers. First drawn for headphones.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "5b76429123bb67df4f1583517a9536ad71eb642de24edc9c54364e63ced9bf70",
+          "rig": null
+        }
+      ]
+    },
+    "coin-purse": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clasp coin purse that opens on the coins inside it. First drawn for shortest-line.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "a767111320c6e08e44accdc515d9f3eb129872452a4153f96f0b7f1bcce48e66",
+          "rig": null
+        }
+      ]
+    },
+    "small-coin": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One small coin. First drawn for shortest-line.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "c97d2443e065f37a7f1947a8bf1e5f538cc8559e1d5b321843fd7d529e7797e5",
+          "rig": null
+        }
+      ]
+    },
+    "lane-sign": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A checkout lane's lit number, hung from the ceiling, changing on its times. First drawn for shortest-line.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "7fe5d007fc444f5a548a9c45a6e4a506fe4755663f2f8ec1f710c3132a516883",
+          "rig": null
+        }
+      ]
+    },
+    "glasses-glint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The light catching a pair of round glasses, once. First drawn for shortest-line.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "09c8cbd28664166f71185a3fc95d486c97c965f2f9899dc30d387a1f3daf3889",
+          "rig": null
+        }
+      ]
+    },
+    "chair-lever": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An office chair's height lever, which tips on each pull. First drawn for sinking-chair.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "fb35055ca63fa63d871661a59d6da491e4ef8d15f5443902ec509323404b2c8c",
+          "rig": null
+        }
+      ]
+    },
+    "ballpoint": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain ballpoint pen, held to write. First drawn for sinking-chair.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "3b81fe41ae57d3c78916ed7e1ba9761ee349e2c3dd330f5dff418b9598cfe100",
+          "rig": null
+        }
+      ]
+    },
+    "soft-tongs": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Long kitchen tongs that snap on cue. First drawn for the-tongs.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "dd4eb64792355ee2e950deb2c279ce62cd54ee878d75199d58826f3189da2b81",
+          "rig": null
+        }
+      ]
+    },
+    "soft-grill": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kettle grill whose burgers char and flames climb. First drawn for the-tongs.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "9402a28f5656038f4ad746baf923be5db03ebe15154fd6e5e89706a7eab31a12",
+          "rig": null
+        }
+      ]
+    },
+    "soft-smoke": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Puffs that rise and thicken on cue. First drawn for the-tongs.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "288748098426f53e5e00dfe7f5d8a3f81238bfe2e703af50eb34185ea3dff90a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-pizza-box": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat pizza box with no lettering. First drawn for the-tongs.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "8955adea6286f839898b7da397c07fb270339dee3d43f966d4a6b05675a6ff38",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bottle": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A squeeze bottle, red unless asked otherwise. First drawn for the-tongs.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "1e4b13d8712710bb7b8bd3203fee59f475813d516ee916c5ad7539d9f8a6549c",
+          "rig": null
+        }
+      ]
+    },
+    "soft-washer": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-loader whose drum turns on cue, carries what is put in it, and whose light dies.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "44c4d2ebd64b3ed7971ba48da9666eb832a402d24f2f48bdba5c7523c339371b",
+          "rig": null
+        }
+      ]
+    },
+    "soft-brick": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A red house brick.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "920f24345a66ffa4bef5f2561f650c35b6c76ebffd41a154c692aac34a9ce129",
+          "rig": null
+        }
+      ]
+    },
+    "soft-bowling-ball": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A dark purple bowling ball.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "c4bbe1db7c8169361b93cfe30f298413219f61e6e08fc280a0e9fb110c9a9c7e",
+          "rig": null
+        }
+      ]
+    },
+    "soft-coin-bag": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A burlap sack with a dollar sign.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "f5c7b5d20fe7bf2ccaec5f1ea11ffcae2e4270b07833eae077ed5f4b67aa5c0d",
+          "rig": null
+        }
+      ]
+    },
+    "soft-tv": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A flat TV on a low stand whose picture flickers until it goes off.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "71fb83584a95500e5e9373cfa45f4e377066c8de04bc306f6490228945389148",
+          "rig": null
+        }
+      ]
+    },
+    "soft-home-fridge": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A front-on fridge that stands anywhere, its light dying on cue.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "2116ebb7d1614a1e9214133414ad9b75baf68e22919ef28d0ede6c2042aed7c5",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dust": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Specks that fall from overhead on cue.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "4f9176e047d90f9f85192e303af76daef19c82c2acd7cdf21afdc939eea6567a",
+          "rig": null
+        }
+      ]
+    },
+    "soft-dimmer": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A full-frame veil that deepens in steps.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "fd3fb0a6a479d6da5c95e67bd7a556fad52b2f5ca0117b8e414292e3e41e9e19",
+          "rig": null
+        }
+      ]
+    },
+    "soft-notice": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A framed notice with a few big words.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "65811e6afa790a8aa0ca39f0ce5a6db55a3b610c65a250fbba13258a198a75d4",
+          "rig": null
+        }
+      ]
+    },
+    "soft-book": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A closed hardback with a band on its cover.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "82b84f577d2f4892ae79cc5d21f635f9ae27243000706b9e0e435e1da2cbca46",
+          "rig": null
+        }
+      ]
+    },
+    "soft-yogurt": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A small yogurt pot with a foil lid.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "7f86c0a2a70051696c6db8f2e5a0ebf76a077a9ac882e187fa16cc4f3cc6c646",
+          "rig": null
+        }
+      ]
+    },
+    "soft-rumble": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Curved lines either side of a belly, shaking while it talks.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "f15945f73a24b654c585428d110eb1c99be3d6ade2bfc1699317030b68d49c14",
+          "rig": null
+        }
+      ]
+    },
+    "soft-hush-finger": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One short finger that curls up from a raised hand.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Batch A: approved. Your reading on Cutout was right: the first sentence covered them, and the wider rule now covers them anyway. (Slack 1793486952.501009)"
+          },
+          "drawing": "11f1b8234580846804598788cafd5472fc8bce38232887e12de73fdcf5995650",
+          "rig": null
+        }
+      ]
+    },
+    "collage-full-glass": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wine glass, as full as you like. First drawn for first-sip.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d9ef7a6ff3097396bda3c7dbd0921618858b8c95519352f50bfe63d07cd8710d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-faucet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kitchen tap on the counter whose bad joint drips on cue and bursts once. First drawn for the-last-guy.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Standing rule, arc4d3 by the operator's delegation (Slack 1793481766.343039): a version-1 prop that is a generic object in an approved style, with no real brand or likeness and no readable personal data, needs no question."
+          },
+          "drawing": "235dcc91cb087234c90a4725d3509b46a585fd0c759e1e9e591f2f62b9d1508d",
+          "rig": null
+        }
+      ]
     }
   }
 }

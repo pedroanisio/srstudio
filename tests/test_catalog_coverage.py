@@ -47,6 +47,7 @@ NO_EPISODE = [
     "rafa-tote",
     "toon-bento",
     "toon-counter",
+    "toon-pipe",
     "toon-receipt",
     "toon-take-a-number",
 ]
