@@ -72,7 +72,9 @@ FIGURES: dict[str, tuple[float, float]] = {"rabbit": (1.1, 0.0), "hedgehog": (1.
 STICKERS = {"hedgehog": toon_cast.headset(toon_cast.HEDGEHOG)}
 PHONE = {"at": (450.0, 814.0), "scale": 0.9}  # stood on her desk, on speaker
 BOARD = {"at": (424, 816), "scale": 1.1}  # stood on the agent's desk
-EYE = (205.0, 545.0)  # where the drops land
+EYE = (215.0, 558.0)  # where the drops land, her eye on the left
+DROPS_HELD = 1.5  # the seconds the bottle is at her eye
+CLOSE_ZOOM, CLOSE_SHIFT = 2.0, (120.0, 438.0)  # the frame on her face for those, its shift off the eye in pixels
 END = 34.35
 ROWS = (  # the floor, far row first: (reference height, scale, who, from left to right)
     (520.0, 0.3, ("dog", "hedgehog", "frog", "bear", "raccoon")),
@@ -179,13 +181,13 @@ def opening(shot) -> None:
     _phone(shot)
 
 
-def agent(shot, who: str, group, at, scale: float, drops: float, speaks: float) -> None:
-    """One agent in a row: head back with the bottle over it, then down to pick up."""
+def agent(shot, who: str, group, at, scale: float, speaks: float) -> None:
+    """One agent in a row, already crying, who picks up crying."""
     cv = shot.cv
     poses = toon.parse_poses(
         [
-            {"start": 0.0, "eyes": "up", "mouth": "flat", "arms": "desk"},
-            {"start": max(0.0, speaks - shot.app.start), "eyes": "wide", "mouth": "open", "arms": "desk"},
+            {"start": 0.0, "eyes": "teary", "mouth": "frown", "arms": "desk"},
+            {"start": max(0.0, speaks - shot.app.start), "eyes": "teary", "mouth": "open", "arms": "desk"},
         ],
         f"{who} on the floor",
     )
@@ -193,16 +195,14 @@ def agent(shot, who: str, group, at, scale: float, drops: float, speaks: float) 
 
     def draw(g) -> None:
         sketch.drawer(who, shot.versions)(cv, g, poses, shot.app.end, (), enter=shot.app.start, **stuck)
-        toon_inserts.eye_drops(
-            cv, g, EYE, start=drops, squeezes=[drops + at for at in DRIP], leave=speaks, id=cv.uid("drops")
-        )
 
     toon_world.placed(cv, group, at, scale, draw)
 
 
 def floor(shot) -> None:
-    """The floor: rows of low cubicles, every agent with their head back and the bottle over it. The room starts close
-    on the middle of the front row and draws back to all of it; the last line is the whole floor picking up."""
+    """The floor: rows of low cubicles, every agent in tears with the bottle stood on the desk between them. The room
+    starts close on the middle of the front row and draws back to all of it; the last line is the whole floor picking
+    up."""
     cv, app = shot.cv, shot.app
     speaks = next(b.start for b in shot.beats if b.line == len(LINES) - 1)
     toon_sets.call_centre(cv, shot.back, ((0.0, 99),), end=shot.end, legible=True)
@@ -213,11 +213,14 @@ def floor(shot) -> None:
     for k, (y, scale, row) in enumerate(ROWS):
         step = 592.0 / len(row)
         for n, who in enumerate(row):
-            agent(shot, who, room, (step * (n + 0.5) - 20.0, y), scale, app.start + 0.2 + 0.11 * (n + k), speaks)
-        if k < len(ROWS) - 1:
+            agent(shot, who, room, (step * (n + 0.5) - 20.0, y), scale, speaks)
+        last = k == len(ROWS) - 1
+        if not last:
             cv.rect(
                 room, toon.fx(-90), toon.fy(y - 6), toon.fh(770), toon.fh(40), "#6a84a8", cv.ink, toon.FINE_W, radius=0
             )
+        for n in range(1, len(row)):  # between two agents, where it covers neither
+            toon_inserts.standing_drops(cv, room, (step * n - 20.0, 806.0 if last else y - 2.0), scale)
     toon_house.ledge(cv, shot.front)  # the front row's own desk, with the marks
 
 
@@ -238,14 +241,26 @@ def dress(shot) -> None:
         if drops:
             d = drops[0]
             squeezes = [d + at for at in DRIP]
-            toon_inserts.eye_drops(cv, shot.front, EYE, start=d, squeezes=squeezes, leave=d + 1.5, id=cv.uid("drops"))
+            toon_inserts.eye_drops(
+                cv, shot.front, EYE, start=d, squeezes=squeezes, leave=d + DROPS_HELD, scale=0.7, arm=toon_cast.HEDGEHOG.coat
+            )
 
 
 def lens(shot, setup) -> None:
     """The opening drifts in on her; every other shot holds its frame."""
-    if shot.app.start == 0:
+    cv, app = shot.cv, shot.app
+    if app.start == 0:
         camera.anchor(setup, *PIVOT, place=True)
-        camera.push_in(shot.cv, setup, scale=[(0.0, 1.0), (shot.app.end, DRIFT)])
+        camera.push_in(cv, setup, scale=[(0.0, 1.0), (app.end, DRIFT)])
+    for at in (at for at, _ in sketch.events(shot.beats, "drops") if app.start <= at < app.end):
+        # close enough on the face that her paws on the desk are out of frame, and the arm with the bottle is hers
+        x, y = toon.fx(EYE[0]), toon.fy(EYE[1])
+        camera.anchor(setup, x, y, place=True)
+        out = at + DROPS_HELD
+        cv.keys(setup, "x", [(app.start, x), (at, x + CLOSE_SHIFT[0]), (out, x)], local=False)
+        cv.keys(setup, "y", [(app.start, y), (at, y + CLOSE_SHIFT[1]), (out, y)], local=False)
+        cv.keys(setup, "scaleX", [(app.start, 1.0), (at, CLOSE_ZOOM), (out, 1.0)], local=False)
+        cv.keys(setup, "scaleY", [(app.start, 1.0), (at, CLOSE_ZOOM), (out, 1.0)], local=False)
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:
