@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.26.0
-changelog: "1.26.0: a Collage reel with a bitrate encodes with --hw software, and craft names a two-pass master made in hardware (ADR 0076). 1.25.0: every new reel sets bleed=True, so a blurred far plane reaches the frame's edge; a reel already built keeps its rim, frozen. 1.24.0: the Okayville show signature: one cover band, a fixed corner bug, numbers claimed with srstudio number before the final build, a first-delivery gate on reels in that look (ADR 0074). 1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.28.0
+changelog: "1.28.0: the target is sends and follows: the send test, its sendability table and the lowest-third cut in Select before you produce, Tags send_to and send_line, srstudio number claim --brief send-v1, and first delivery refuses bait on a reel on the test (ADR 0080). 1.26.0: a Collage reel with a bitrate encodes with --hw software, and craft names a two-pass master made in hardware (ADR 0076). 1.25.0: every new reel sets bleed=True, so a blurred far plane reaches the frame's edge; a reel already built keeps its rim, frozen. 1.24.0: the Okayville show signature: one cover band, a fixed corner bug, numbers claimed with srstudio number before the final build, a first-delivery gate on reels in that look (ADR 0074). 1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -94,6 +94,39 @@ Make reels only; no carousels unless the operator reopens them. When the operato
 release rhythm, plain words against jargon), keep the paired reels matched in series, length and territory, and
 set the `test` and `arm` in the release's tags. Tests are decided by promotion, not by shares, until a typical reel
 draws several shares.
+
+### The send test
+
+The target is sends and follows, not reach. A reel earns them when a viewer thinks of one person and sends it, so every
+reel answers these four, from batch E on:
+
+1. **Who gets it.** The script names the one person a viewer sends it to: mum, partner, the group chat, a manager, a
+   roommate. The premise is about that relationship, and sending it says "this is you" or "this is us".
+2. **The send line.** The last line is the reason to send: a line people quote.
+3. **Punch-up.** A second writer, not the author, rewrites for the send line only.
+4. **No bait.** Never "tag a friend" or "send this to", on screen or in the caption. `srstudio.send_gate` refuses those
+   words at first delivery and in the publish check, in a character's mouth too, so write around them.
+
+Score sendability 0 to 2 on each row, out of 10. The author, the punch-up writer and the orchestrator each score, and the
+lowest counts:
+
+| # | Criterion | 2 points means |
+|---|---|---|
+| 1 | Recipient | one specific person most viewers have in their life, named in the script's header and evident on screen |
+| 2 | Relationship | the joke is a pattern of that relationship, not a general observation with a mum added |
+| 3 | Accusation | sending it says something to that person: a viewer can picture their reaction |
+| 4 | Send line | the last line works as a quote on its own, spoken in about eight words or fewer |
+| 5 | Stands alone | the recipient gets it cold, with no account, series or earlier reel |
+
+**The lowest third by sendability is not made.** Write half as many again as a round needs, and the orchestrator cuts;
+ties break on the comedy score. The comedy floor stays, so a reel needs both.
+
+One reel in five is a holdout, the measure: drawn before writing, seeded, never redrawn, written to the old brief with
+the same mix and floor, and with no recipient, no punch-up and no cut.
+
+The release carries the test as `send_to=` and `send_line=` in `releases.Tags`, and a holdout carries neither. Every reel
+of the batch, holdouts included, claims its number with `srstudio number claim <slug> --brief send-v1` (ADR 0080), which
+puts the brief in `episode.json` for the posting job.
 
 ## Pick the mechanism, then stage it
 
