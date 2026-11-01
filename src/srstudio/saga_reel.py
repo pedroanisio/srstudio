@@ -25,7 +25,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import native, saga, saga_sets, staging
+from . import native, saga, saga_everyday, saga_sets, staging  # noqa: F401  (saga_everyday adds its sets and props)
 from .saga import SagaError
 from .saga_sets import Panel
 from .staging import CROSSFADE, SHAKE_PX, SHAKE_STEP, Move
@@ -51,6 +51,7 @@ NARRATOR = "narrator"
 DUCK = -9.0  # dB the music drops under a line
 MUSIC_GAIN = -16.0
 BADGE = (88, 236)  # the narrator's Handbook in the corner while it reads over a scene
+ARMED = frozenset({"gloom", "juno", "mabel"})  # the cast whose arm lifts (:class:`~srstudio.saga.Arm`)
 PANS = {"gloom": -0.06, "rook": -0.05, "mabel": -0.05, "juno": 0.05, "seven": 0.06, "gary": 0.06, "droid": 0.04}
 
 
@@ -66,6 +67,9 @@ class Place:
     scale: float = 1.0
     flip: bool = False
     behind: bool = False
+    arm: saga.Arm | None = None  # lifted off the body, to reach a table or a mouth (Lord Gloom, Juno, Mabel)
+    lean: tuple[tuple[float, float], ...] = ()  # (second, degrees) from the feet: positive toward its right of frame
+    mouth: tuple[tuple[float, str], ...] = ()  # (second, pose) for a mouth that moves with nothing said
 
 
 @dataclass(frozen=True)
@@ -85,6 +89,7 @@ class Entry:
     title: str
     body: str
     fade: bool = False  # cut to and faded up by its own opacity, graded without bloom or sheen (strict contrast)
+    rise: bool = True  # False: a faded entry already up, the next line of the entry before it
 
 
 @dataclass(frozen=True)
@@ -123,6 +128,10 @@ def check(takes: Sequence[Any], stages: Mapping[str, Stage]) -> None:
                 raise SagaError(f"{where}: {p.who!r} is not in the cast {saga.CAST}")
             if p.behind and s.set not in saga_sets.FRONTS:
                 raise SagaError(f"{where}: {s.set!r} has no front layer to stand behind")
+            if p.arm is not None and p.who not in ARMED:
+                raise SagaError(f"{where}: {p.who} has no arm to lift; one of {sorted(ARMED)}")
+            if p.mouth and take.actor == p.who:
+                raise SagaError(f"{where}: {p.who} speaks here, so the take moves the mouth")
         if len({p.who for p in s.cast}) != len(s.cast):
             raise SagaError(f"{where}: a cast member stands in two places")
         for prop in s.props:
@@ -162,7 +171,8 @@ def build(
             card = saga_sets.entry(
                 cv, g, s.entry.title, s.entry.body, end=end, font=font, talk=said, legible=s.entry.fade
             )
-            if s.entry.fade:  # cut to, then up from the dark by its own opacity: judged only once it is all there
+            # cut to, then up from the dark by its own opacity: judged only once it is all there
+            if s.entry.fade and s.entry.rise:
                 cv.keys(card, "opacity", [(0.0, 0.0), (round(min(CROSSFADE, end / 2), 4), 1.0)], hold=False)
             continue
         legible = any(p.fade for p in s.panels)  # fading panels sit over the grade, which grades the world alone
@@ -174,9 +184,14 @@ def build(
         def cast(behind: bool, *, into=shaken, s=s, take=take, speech=speech, end=end) -> None:
             for p in s.cast:
                 if p.behind == behind:
-                    said = speech if take.actor == p.who else ()
+                    said = speech if take.actor == p.who else list(p.mouth)
                     y = p.y if p.y is not None else saga_sets.BEHIND[s.set] if p.behind else saga_sets.FLOOR
-                    saga.draw(cv, into, p.who, at=(p.x, y), scale=p.scale, flip=p.flip, talk=said, end=end)
+                    lifted = {"arm": p.arm} if p.arm is not None else {}
+                    body = saga.draw(
+                        cv, into, p.who, at=(p.x, y), scale=p.scale, flip=p.flip, talk=said, end=end, **lifted
+                    )
+                    if p.lean:
+                        cv.keys(body, "rotation", p.lean, kind="sine-in-out")
 
         cast(True)
         if s.set in saga_sets.FRONTS:

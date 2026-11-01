@@ -1263,6 +1263,20 @@
     "toon-upload-chip": {"title": "Envio em andamento"},
     "toon-sandwich-broom": {"title": "Sanduíche na vassoura"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "saga-dim": {"title": "Escurecer a sala"},
+    "saga-coupon": {"title": "Cupom"},
+    "saga-basket": {"title": "Cesto com estação quebrada"},
+    "saga-form": {"title": "Formulário"},
+    "saga-benefits": {"title": "Holograma de benefícios"},
+    "saga-tooth": {"title": "Dente"},
+    "saga-wince": {"title": "Traços de dor"},
+    "saga-ration-bar": {"title": "Barra de ração"},
+    "saga-cup": {"title": "Copo de barro"},
+    "saga-plate": {"title": "Prato"},
+    "saga-returns-desk": {"title": "Balcão de devoluções"},
+    "saga-returns": {"title": "Guichê de devoluções"},
+    "saga-hut-table": {"title": "Mesa da cabana"},
+    "saga-hut": {"title": "Cabana no deserto"},
     "stick-resume-insert": {"title": "Currículo em tela cheia"},
     "stick-desk-page": {"title": "Folha sobre a mesa"},
     "stick-interview-desk": {"title": "Mesa com gaveta"},
@@ -8656,6 +8670,64 @@
         "at": 7.1
       },
       "text": "O único ponto da casa com sinal: um braço que não desce, a cadeira sobre a mesa, o envio que anda devagar e o almoço entregue de vassoura."
+    },
+    {
+      "section": "locations",
+      "name": "Cabana no deserto",
+      "parts": [
+        "saga-hut",
+        "saga-hut-table",
+        "saga-plate",
+        "saga-cup",
+        "saga-ration-bar"
+      ],
+      "shot": {
+        "episode": "dental-plan",
+        "at": 0.45
+      },
+      "text": "Uma cabana redonda de barro com a janela nos dois sóis. A mesa fica à frente de quem senta, e a barra de ração está lá desde o primeiro quadro."
+    },
+    {
+      "section": "props",
+      "name": "Dente, holograma e formulário",
+      "parts": [
+        "saga-tooth",
+        "saga-benefits",
+        "saga-form",
+        "saga-wince"
+      ],
+      "shot": {
+        "episode": "dental-plan",
+        "at": 21.6
+      },
+      "text": "O plano de benefícios guardado como foto de formatura, e um dente que cai no prato com um quique. O formulário chega logo depois, deslizando pela mesa."
+    },
+    {
+      "section": "locations",
+      "name": "Guichê de devoluções",
+      "parts": [
+        "saga-returns",
+        "saga-returns-desk",
+        "saga-basket"
+      ],
+      "shot": {
+        "episode": "store-credit",
+        "at": 27.2
+      },
+      "text": "Um guichê simples numa estação espacial, com a fila, a janela nas estrelas e um cesto onde cabe uma estação quebrada."
+    },
+    {
+      "section": "props",
+      "name": "Cupom e sala escura",
+      "parts": [
+        "saga-coupon",
+        "saga-dim"
+      ],
+      "shot": {
+        "episode": "store-credit",
+        "at": 24.1
+      },
+      "text": "Um cupom minúsculo que atravessa o buraco, e uma sala que escurece sobre tudo o que já foi desenhado e depois volta."
     }
   ]
 }

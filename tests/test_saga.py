@@ -51,7 +51,7 @@ def test_saga_is_a_registered_portrait_sequence_style_with_its_own_palette_and_m
     assert STYLES["saga"] is SAGA
     assert (SAGA.width, SAGA.height, SAGA.fps, SAGA.timing) == (1080, 1920, 24, "sequence")
     assert SAGA.default_palette is VOID and SAGA.mouth() is saga.SAGA_MOUTH
-    assert SAGA.parts == ("saga", "saga_sets")
+    assert SAGA.parts == ("saga", "saga_sets", "saga_everyday")
     assert SAGA.font is not None and SAGA.font.google is not None and SAGA.font.family == "Space Grotesk"
 
 
@@ -68,8 +68,29 @@ def test_every_saga_part_is_registered_under_the_style():
             "saga-cockpit",
             "saga-cockpit-console",
             "saga-compactor",
+            "saga-hut",
+            "saga-hut-table",
+            "saga-returns",
+            "saga-returns-desk",
         },
-        "prop": {"saga-handbook", "saga-holo", "saga-cube", "saga-freighter", "saga-fighter", "saga-pebble"},
+        "prop": {
+            "saga-handbook",
+            "saga-holo",
+            "saga-cube",
+            "saga-freighter",
+            "saga-fighter",
+            "saga-pebble",
+            "saga-plate",
+            "saga-cup",
+            "saga-ration-bar",
+            "saga-wince",
+            "saga-tooth",
+            "saga-benefits",
+            "saga-form",
+            "saga-basket",
+            "saga-coupon",
+            "saga-dim",
+        },
         "graphic": {"saga-hook", "saga-entry"},
     }
     for kind, names in want.items():

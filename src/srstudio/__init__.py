@@ -53,6 +53,7 @@ from . import (  # noqa: F401  (registers builders)
     props,
     registry,
     saga,
+    saga_everyday,
     saga_reel,
     saga_sets,
     signature,

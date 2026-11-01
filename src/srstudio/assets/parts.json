@@ -11658,6 +11658,244 @@
           "rig": null
         }
       ]
+    },
+    "saga-hut": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A round clay desert hut with a porthole on two suns and a shelf. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "efe5cc95db815b99d78f8bf2b8fef7292c39763994fbb107d8ed463278aff8bc",
+          "rig": null
+        }
+      ]
+    },
+    "saga-hut-table": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The clay table across the hut, in front of whoever sits at it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "92721535610129ba2e25303b51297b7a8f2656357e6267cfcf3fd96fef46963d",
+          "rig": null
+        }
+      ]
+    },
+    "saga-returns": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A bay with a window on the stars, a shelf and a returns sign. Generic and unbranded. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6a67af7f57dd5b7a6e18c656c70339513334abfda4e233820822544975319e2f",
+          "rig": null
+        }
+      ]
+    },
+    "saga-returns-desk": {
+      "kind": "location",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain returns desk with a small printer on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "cd47acaee98bc382d8fe78305969adcf64040f91645094fac662244227b0dda8",
+          "rig": null
+        }
+      ]
+    },
+    "saga-plate": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain plate seen from the table's edge. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "08324bd51f80b95f413f05961d8491c744c9b3ff1915b16376c9c452aab85ceb",
+          "rig": null
+        }
+      ]
+    },
+    "saga-cup": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A clay cup with no handle, tea running into it, a little steam after. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "804761b9f578b6e2ba82a956ddf40741299ae5ad071842f071c533db8ac6e218",
+          "rig": null
+        }
+      ]
+    },
+    "saga-ration-bar": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A foil ration bar, unbranded, one end bitten at. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a7618cd0ccf1aa5c983c724dc54a6b9cd99ca65c884976dd9f92d78e607f4c61",
+          "rig": null
+        }
+      ]
+    },
+    "saga-wince": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Three red pain ticks at a jaw, shown in the spans it hurts. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a5ef73035c75481e9dd9c1f20c52cefdf46867494e6563db44b3a427d09f009a",
+          "rig": null
+        }
+      ]
+    },
+    "saga-tooth": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One tooth that drops to where it lands, with a small bounce. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2c0003fcb9137a20635041ab6ad07e902a6aff5e8cf4f4e648b6f877c023246f",
+          "rig": null
+        }
+      ]
+    },
+    "saga-benefits": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A hologram of an invented benefits plan. Invented interface, no real app. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f7fb0cf6bca77d76dd3e8fc240611e43b5c82aedd9541a7717ef9b03e2cbdabe",
+          "rig": null
+        }
+      ]
+    },
+    "saga-form": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A filled-in form with illegible lines, no readable data, and a pen on it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5d2c9ce223c05dc0d57c571b06970a1b160abdda43b61ce47a8937454542b991",
+          "rig": null
+        }
+      ]
+    },
+    "saga-basket": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wire basket holding a broken station plate with one hole through it. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9fd45ff310cbe848c902289e4a5d4574583af98d196a6f2e38a5ab84e87f1cf9",
+          "rig": null
+        }
+      ]
+    },
+    "saga-coupon": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A tiny printed coupon with no readable text, on a track of its own. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ad1dd520e9fffa023344e063ffb7397cda3ad6427e9cb8eeaa01988618aba37d",
+          "rig": null
+        }
+      ]
+    },
+    "saga-dim": {
+      "kind": "prop",
+      "style": "saga",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The room darkening over what is drawn before it, and coming back. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "07f8d1bdfd51812739b3e9c47d51ede127ba0b5d495c76c1df1257edd851e25f",
+          "rig": null
+        }
+      ]
     }
   }
 }
