@@ -33,8 +33,10 @@ SUPERSEDED = ["toon-fox", "toon-hedgehog", "toon-raccoon"]
 REPLACED_ON_SCREEN = ["news-gus@2", "news-vera@2"]
 NO_EPISODE = [
     "news-gus@4",
+    "news-gus@5",
     "news-phone@2",
     "news-vera@4",
+    "news-vera@5",
     "rafa",
     "rafa-bills",
     "rafa-breakroom",

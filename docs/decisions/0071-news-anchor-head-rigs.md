@@ -138,6 +138,43 @@ Rejected: clamping the slide inside the reels and leaving the style alone. The d
 still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
 is built, not to its limits, and more than this fix needs.
 
+## Version 5: the arms join the shoulders and keep their length
+
+Version 5, `news-vera@5` and `news-gus@5`, changes the shoulders and the arms and nothing else: the face, the head rig,
+the costume and the palette are those of version 4. On version 4 each shoulder was a round cap with a closed ink line
+across it, sitting on a jacket wider than the shoulders. An arm was a separate drawing for each pose, so Gus's upper arm
+ran 94 to 114 px and his forearm 113 to 161 px, his chest elbow closed to 45.6 degrees, and a change of pose was a cut.
+
+`news_arms` holds the geometry. An arm is one shoulder and two lengths, the same in every pose, and a pose names where
+the wrist goes; the elbow is solved from that. Three chains of the same bones draw an arm: hand and cuff, then all the
+ink, then all the fill, so a line runs round the whole arm with none at the elbow or across the shoulder, and the sleeve
+grows out of a jacket that now slopes from the neck to its shoulder point and comes in towards the desk. Between two
+poses the bones turn on keys over 0.28 s, so no wrist jumps. Gus's sleeve takes the orange of his jacket, because a
+sleeve in a darker orange than the jacket it grows out of reads as a separate part. His two creases go: the sleeves lie
+where they sat, and with the arms up they read as marks on his chest. His phone sits 16 px lower, below the collar,
+with his hands. The hand keeps one size in every pose. Vera has one arm pose, by design of the show, and keeps it.
+
+`tests/test_news_arms.py` measures each rule on version 5 and on version 4, and a rule that passes on version 4 is named
+in the test as a guard: a length changes by at most 0.5 px between poses, a held elbow is never under 65 degrees, the
+root of a sleeve is inside the jacket to within 1 px, and no wrist moves more than 60 px in a frame through any pair of
+poses.
+
+One elbow rule holds on the holds only. Rest, chest and phone bend the elbow one way and arms up and pointing bend it
+the other, seen from the front, so a change between the two groups passes either through a straight arm or through a
+closed elbow. Straight sends the hand 240 px from the shoulder, across Vera in the two-shot and out of the frame. Closed
+keeps the arm in the picture: the hand passes the shoulder, as a raised hand does, and the elbow closes all the way for
+the middle frames of that change. The test holds the direction, so an arm cannot flip through a straight
+elbow, and the limit of 65 degrees stays on the holds.
+
+arc4d3 ruled on Slack 1793489774.457989, by the operator's delegation of 2026-10-31: "it's Pedro's own request, so
+there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the
+head motion." So `stage` draws version 5 by default, and a delivered reel keeps its own `version=3`.
+
+Rejected: keeping a drawing per pose and correcting the numbers, which leaves the cut between poses and nothing to hold
+the lengths to. Morphing between the drawings of version 4, whose lengths differ, which stretches a sleeve in motion. A
+fill and ink per bone with the joint hidden under a cap, which is the defect this version removes. Straightening the
+elbow between poses, for the reason above.
+
 ## Consequences
 
 - A rebuild of a delivered News reel now draws moving heads. A reel that must stay as published needs `heads=False`.

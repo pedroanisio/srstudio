@@ -20,7 +20,7 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any
 
-from . import brush, head_motion, look, news_head, news_kit, parts, toon, toon_head
+from . import brush, head_motion, look, news_arms, news_head, news_kit, parts, toon, toon_head
 from .brush import Point
 from .canvas import Canvas
 from .head_motion import Channel, HeadPlan
@@ -78,7 +78,7 @@ from .news_kit import (
     sign,
 )
 from .registry import register
-from .toon_critters import FUR, LINE, drifted, pressed, shade
+from .toon_critters import FUR, LIGHT_FROM, LINE, drifted, pressed, shade
 
 __all__ = [
     "BANNER_H",
@@ -119,6 +119,8 @@ __all__ = [
 ]
 
 INK, FINE = 8.0, 5.0  # a contour and an inner stroke, as the pressed hand takes them
+SLEEVE_INK, CUFF = 6.0, 12.0  # a sleeve's line, and how much cuff shows past it
+PHONE_RISE, PHONE_HELD = 60.0, -66.0  # how far below his hands Gus's phone starts as they bring it up
 FAR_BLUR, NEAR_BLUR = 4.0, 6.0  # px on the monitor wall and on the camera in the foreground
 DESK_Y, LIP_Y, FRONT_Y, FLOOR_Y = 1082.0, 1134.0, 1150.0, 1730.0  # the top's back edge, its lip, the front, its foot
 NECK_Y, COLLAR_Y, CHIN_TIP = (
@@ -826,25 +828,28 @@ def _neck(cv: Canvas, g, skin: str, tone: str, deep: str, wide: float) -> None:
     )
 
 
-def _vera_body(cv: Canvas, g) -> None:
+VERA_TORSO: tuple[Point, ...] = (
+    (-216, 60),
+    (-214, -20),
+    (-204, -84),
+    (-168, -130),
+    (-112, -150),
+    (-62, -158),
+    (-44, -166),
+    (0, -120),
+    (44, -166),
+    (62, -158),
+    (112, -150),
+    (168, -130),
+    (204, -84),
+    (214, -20),
+    (216, 60),
+)
+
+
+def _vera_body(cv: Canvas, g, number: int = 2) -> None:
     _neck(cv, g, VERA_SKIN, VERA_TONE, VERA_DEEP, 42.0)
-    torso = (
-        (-216, 60),
-        (-214, -20),
-        (-204, -84),
-        (-168, -130),
-        (-112, -150),
-        (-62, -158),
-        (-44, -166),
-        (0, -120),
-        (44, -166),
-        (62, -158),
-        (112, -150),
-        (168, -130),
-        (204, -84),
-        (214, -20),
-        (216, 60),
-    )
+    torso = news_arms.TORSOS["vera"] if number >= 5 else VERA_TORSO
     _form(cv, g, torso, TEAL, TEAL_TONE, 11.0, depth=30.0, amount=0.3)
     _form(
         cv, g, ((-46, -164), (0, -74), (46, -164), (24, -150), (0, -132), (-24, -150)), CREAM, "#e3d3bc", 12.0, 5.5, 8.0
@@ -873,22 +878,34 @@ def _vera_body(cv: Canvas, g) -> None:
     _line(cv, g, ((0, -44), (2, 30)), PLUM_DEEP, 5.0)
 
 
+def _sheaf(cv: Canvas, g) -> None:
+    """The news under Vera's hands."""
+    look.pool(cv, g, "news2-sheaf-shadow", "#160a3099", -130, 10, 260, 34)
+    _form(cv, g, ((-96, -18), (96, -18), (116, 28), (-116, 28)), "#efe7f5", None, 21.0, 5.5, amount=0.2)
+    _form(cv, g, ((-92, -26), (92, -26), (110, 20), (-110, 20)), CREAM, None, 22.0, 5.5, amount=0.2)
+    for k in (-10.0, -1.0, 8.0):
+        _line(cv, g, ((-62 - k * 0.3, k), (58 + k * 0.3, k)), "#c7bcd6", 3.4)
+
+
+VERA_ARM: tuple[Point, Point, Point] = (
+    (174.0, -96.0),
+    (222.0, 4.0),
+    (92.0, 14.0),
+)  # shoulder, elbow, wrist, on the right
+
+
 def _vera_arms(cv: Canvas, parent, spans: Mapping[str, Spans]) -> None:
     for when in spans.values():  # her hands stay where they are: it is the news that moves
         g = cv.group(parent, cv.uid("g"), opacity=0.0)
         cv.gate(g, when)
-        look.pool(cv, g, "news2-sheaf-shadow", "#160a3099", -130, 10, 260, 34)
-        _form(cv, g, ((-96, -18), (96, -18), (116, 28), (-116, 28)), "#efe7f5", None, 21.0, 5.5, amount=0.2)
-        _form(cv, g, ((-92, -26), (92, -26), (110, 20), (-110, 20)), CREAM, None, 22.0, 5.5, amount=0.2)
-        for k in (-10.0, -1.0, 8.0):
-            _line(cv, g, ((-62 - k * 0.3, k), (58 + k * 0.3, k)), "#c7bcd6", 3.4)
+        _sheaf(cv, g)
         for side, seed in ((-1.0, 31.0), (1.0, 37.0)):
             _arm(
                 cv,
                 g,
-                (side * 174, -96),
-                (side * 222, 4),
-                (side * 92, 14),
+                (side * VERA_ARM[0][0], VERA_ARM[0][1]),
+                (side * VERA_ARM[1][0], VERA_ARM[1][1]),
+                (side * VERA_ARM[2][0], VERA_ARM[2][1]),
                 TEAL,
                 TEAL_TONE,
                 CREAM,
@@ -991,25 +1008,28 @@ def _vera_head(
     _mouths(cv, over, face, mouth, start, end)
 
 
-def _gus_body(cv: Canvas, g) -> None:
+GUS_TORSO: tuple[Point, ...] = (
+    (-228, 60),
+    (-226, -20),
+    (-212, -90),
+    (-172, -134),
+    (-116, -152),
+    (-66, -158),
+    (-48, -168),
+    (-4, -110),
+    (52, -166),
+    (68, -156),
+    (122, -148),
+    (178, -128),
+    (214, -80),
+    (226, -20),
+    (228, 60),
+)
+
+
+def _gus_body(cv: Canvas, g, number: int = 2) -> None:
     _neck(cv, g, GUS_SKIN, GUS_TONE, GUS_DEEP, 48.0)
-    torso = (
-        (-228, 60),
-        (-226, -20),
-        (-212, -90),
-        (-172, -134),
-        (-116, -152),
-        (-66, -158),
-        (-48, -168),
-        (-4, -110),
-        (52, -166),
-        (68, -156),
-        (122, -148),
-        (178, -128),
-        (214, -80),
-        (226, -20),
-        (228, 60),
-    )
+    torso = news_arms.TORSOS["gus"] if number >= 5 else GUS_TORSO
     _form(cv, g, torso, ORANGE, ORANGE_TONE, 51.0, depth=32.0, amount=0.5)
     _form(
         cv,
@@ -1042,8 +1062,9 @@ def _gus_body(cv: Canvas, g) -> None:
         6.0,
         depth=10.0,
     )
-    _line(cv, g, ((-170, -66), (-152, -52), (-138, -62)), "#b4520c", 5.0)  # a jacket that has been sat on
-    _line(cv, g, ((160, -52), (148, -44), (134, -54)), "#b4520c", 5.0)
+    if number < 5:  # from version 5 the sleeves lie where these two creases sat, and they read as marks on his chest
+        _line(cv, g, ((-170, -66), (-152, -52), (-138, -62)), "#b4520c", 5.0)  # a jacket that has been sat on
+        _line(cv, g, ((160, -52), (148, -44), (134, -54)), "#b4520c", 5.0)
 
 
 def _phone(cv: Canvas, parent, x: float, y: float) -> None:
@@ -1075,6 +1096,113 @@ def _gus_arms(cv: Canvas, parent, spans: Mapping[str, Spans]) -> None:
         for i, (s, e, w, hand, turn) in enumerate(GUS_ARMS[state]):
             size = 1.12 if state in ("up", "point") else 0.98
             _arm(cv, g, s, e, w, "#f2811a", ORANGE_TONE, CREAM, hand, GUS_SKIN, GUS_TONE, 61.0 + i * 3, size, turn)
+
+
+_DRESS = {"vera": (TEAL, TEAL_TONE, VERA_SKIN, VERA_TONE), "gus": (ORANGE, ORANGE_TONE, GUS_SKIN, GUS_TONE)}
+
+
+def _bones(cv: Canvas, parent, build: news_arms.Build, side: float, keys: Mapping[str, news_arms.Keys]):
+    """The two lengths of an arm as nested groups, each turning on its joint: one such pair per layer of the arm."""
+    upper = cv.group(parent, cv.uid("arm"), x=build.shoulder[0] * side, y=build.shoulder[1], anchorX=0.0, anchorY=0.0)
+    cv.keys(upper, "rotation", keys["upper"], hold=False, kind="sine-in-out", local=False)
+    fore = cv.group(upper, cv.uid("forearm"), x=0.0, y=-build.upper, anchorX=0.0, anchorY=0.0)
+    cv.keys(fore, "rotation", keys["bend"], hold=False, kind="sine-in-out", local=False)
+    return upper, fore
+
+
+def _strip(cv: Canvas, parent, near: float, far: float, length: float, edge: float, tone: str, spans: Spans) -> None:
+    """The shade along the ``edge`` of a length of sleeve, while ``spans`` last."""
+    g = cv.group(parent, cv.uid("g"), opacity=0.0, scaleX=edge)
+    cv.gate(g, spans)
+    flat(cv, g, brush.outline(news_arms.shade_strip(near, far, length), steps=3), tone)
+
+
+def _arm_on_rig(
+    cv: Canvas,
+    parent,
+    who: str,
+    side: float,
+    acts: Sequence[tuple[float, Pose]],
+    spans: Mapping[str, Spans],
+    seed: float,
+) -> None:
+    """One arm of version 5: the hand under the sleeve, then all the sleeve's ink, then all its fill, so that a line
+    runs around the whole arm with none at the elbow, where the two lengths are one sleeve, or at the shoulder."""
+    build = news_arms.BUILDS[who]
+    sleeve, tone, skin, shadow = _DRESS[who]
+    keys = news_arms.keys_of(who, side, acts)
+    holds = {state: hold for state, hold in news_arms.holds(who, side).items() if state in spans}
+    _, fore = _bones(cv, parent, build, side, keys)
+    wrist = cv.group(fore, cv.uid("wrist"), x=0.0, y=-build.fore - CUFF, anchorX=0.0, anchorY=0.0)
+    cv.keys(wrist, "rotation", keys["palm"], hold=False, kind="sine-in-out", local=False)
+    for hand in sorted({hold.hand for hold in holds.values()}):
+        g = cv.group(wrist, cv.uid("g"), opacity=0.0)
+        cv.gate(g, [span for state, hold in holds.items() if hold.hand == hand for span in spans[state]])
+        _hand(cv, g, hand, (0.0, 0.0), 0.0, skin, shadow, build.hand, seed + 3)
+    end = -build.fore
+    _form(
+        cv,
+        fore,
+        ((-24, end - CUFF), (24, end - CUFF), (25, end + 6), (-25, end + 6)),
+        CREAM,
+        None,
+        seed + 2,
+        5.0,
+        amount=0.2,
+    )
+    upper, fore = _bones(cv, parent, build, side, keys)
+    flat(cv, upper, brush.outline(news_arms.sleeve(build, SLEEVE_INK, -side), steps=3), PLUM_DEEP)
+    flat(cv, fore, brush.outline(news_arms.forearm(build, SLEEVE_INK), steps=3), PLUM_DEEP)
+    upper, _ = _bones(cv, parent, build, side, keys)
+    _, fore = _bones(cv, parent, build, side, keys)  # its own chain, so that the forearm lies on the upper arm's shade
+    for bone, drawn, near, far, length, turn in (
+        (upper, news_arms.sleeve(build), build.root, build.elbow, build.upper, lambda h: h.upper),
+        (fore, news_arms.forearm(build), build.elbow, build.wrist, build.fore, lambda h: h.upper + h.bend),
+    ):
+        flat(cv, bone, brush.outline(drawn, steps=3), sleeve)
+        for edge in (-1.0, 1.0):
+            when = [
+                span
+                for state, hold in holds.items()
+                if news_arms.sheds(turn(hold), edge, LIGHT_FROM)
+                for span in spans[state]
+            ]
+            if when:
+                _strip(cv, bone, near, far, length, edge, tone, when)
+
+
+def _arms_on_rig(cv: Canvas, parent, who: str, acts: Sequence[tuple[float, Pose]], spans: Mapping[str, Spans]) -> None:
+    """Both arms of version 5, over what they hold: Vera's sheaf and Gus's phone, which rises with his hands."""
+    if who == "vera":
+        g = cv.group(parent, cv.uid("g"), opacity=0.0)
+        cv.gate(g, [span for when in spans.values() for span in when])
+        _sheaf(cv, g)
+    elif "phone" in spans:
+        g = cv.group(parent, cv.uid("g"), opacity=0.0)
+        cv.gate(g, spans["phone"])
+        rise = cv.group(g, cv.uid("g"))
+        keys: list[tuple[float, float]] = [(0.0, PHONE_RISE)]
+        for a, b in spans["phone"]:
+            keys += [(a, PHONE_RISE), (a + news_arms.EASE, 0.0), (b - news_arms.EASE, 0.0), (b, PHONE_RISE)]
+        cv.keys(rise, "y", keys, hold=False, kind="sine-in-out", local=False)
+        _phone(cv, rise, 0.0, PHONE_HELD)
+    for i, side in enumerate((-1.0, 1.0)):
+        _arm_on_rig(cv, parent, who, side, acts, spans, (31.0 if who == "vera" else 61.0) + i * 6)
+
+
+def skeleton(who: str, number: int, state: str) -> tuple[tuple[Point, Point, Point], ...]:
+    """Shoulder, elbow and wrist of both arms of version ``number`` holding ``state``, frame left first."""
+    if number >= 5:
+        build = news_arms.BUILDS[who]
+        pair = news_arms.REACHES[who][state]
+        return tuple(
+            ((build.shoulder[0] * side, build.shoulder[1]), news_arms.elbow_of(build, side, reach), reach.wrist)
+            for side, reach in zip((-1.0, 1.0), pair, strict=True)
+        )
+    if who == "gus":
+        return tuple((s, e, w) for s, e, w, _, _ in GUS_ARMS[state])
+    (s, e, w) = VERA_ARM
+    return tuple(((side * s[0], s[1]), (side * e[0], e[1]), (side * w[0], w[1])) for side in (-1.0, 1.0))
 
 
 CURLS: tuple[tuple[float, float, float], ...] = (  # the fringe: x, y, radius
@@ -1214,21 +1342,30 @@ def perform(
     eyes = eye_track(side_eyes(acts, looks, end), end, 4.3 if who == "vera" else 2.4, 1.7 if who == "vera" else 0.9)
     mouth = mouth_track(acts, mouths, end)
     if motion is not None:
-        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number))
+        _on_rig(cv, g, hands, who, acts, arms, eyes, mouth, start, end, motion, inked(who, number), number)
         return g
     neck = dict(x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)  # the head turns on the neck, over the collar
     if who == "vera":
-        _vera_body(cv, g)
+        _vera_body(cv, g, number)
         head = cv.group(g, cv.uid("g"), **neck)
         _vera_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-        _vera_arms(cv, hands, arms)
     else:
-        _gus_body(cv, g)
+        _gus_body(cv, g, number)
         head = cv.group(g, cv.uid("g"), **neck)
         _gus_head(cv, head, eyes, mouth, start, end, None, inked(who, number))
-        _gus_arms(cv, hands, arms)
+    _arms_of(cv, hands, who, acts, arms, number)
     cv.keys(head, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
     return g
+
+
+def _arms_of(
+    cv: Canvas, hands, who: str, acts: Sequence[tuple[float, Pose]], arms: Mapping[str, Spans], number: int
+) -> None:
+    """The arms of version ``number``: from version 5 on their rig, before it a drawing for each pose."""
+    if number >= 5:
+        _arms_on_rig(cv, hands, who, acts, arms)
+    else:
+        (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
 
 
 def side_eyes(
@@ -1259,13 +1396,14 @@ def _on_rig(
     end: float,
     motion: tuple[AnchorRig, HeadPlan],
     face: Face,
+    number: int = 2,
 ) -> None:
     """An anchor whose head moves. The nesting is :mod:`srstudio.toon_head`'s, one kind of motion a group, outermost
     first: over the body, which does not move, the beat's tilt, the plan's turn and nod, with all the hair and the
     ears, and the face that slides over those."""
     rig, plan = motion
     pivot = dict(x=0.0, y=CHIN_Y, anchorX=0.0, anchorY=CHIN_Y)  # a group that turns on the point the head sits on
-    (_vera_body if who == "vera" else _gus_body)(cv, g)
+    (_vera_body if who == "vera" else _gus_body)(cv, g, number)
     tilt = cv.group(g, cv.uid("head-tilt"), x=0.0, y=NECK_Y, anchorX=0.0, anchorY=CHIN_Y)
     cv.keys(tilt, "rotation", _head_keys(acts), hold=False, kind="sine-in-out", local=False)
     turn = cv.group(tilt, cv.uid("head-turn"), **pivot)
@@ -1274,7 +1412,7 @@ def _on_rig(
     toon_head._animate(cv, nod, "rotation", plan.roll)
     toon_head._animate(cv, nod, "y", plan.nod, 1.0, CHIN_Y)
     (_vera_head if who == "vera" else _gus_head)(cv, nod, eyes, mouth, start, end, motion, face)
-    (_vera_arms if who == "vera" else _gus_arms)(cv, hands, arms)
+    _arms_of(cv, hands, who, acts, arms, number)
 
 
 def _rig_of(body: tuple[float, float], skin: tuple[Point, ...], hair: tuple[Point, ...], wide: float, **move) -> dict:
@@ -1316,6 +1454,8 @@ RIGS: Mapping[str, AnchorRig] = MappingProxyType(
         "news-gus@3": GUS_RIG_3,
         "news-vera@4": VERA_RIG_3,
         "news-gus@4": GUS_RIG_3,
+        "news-vera@5": VERA_RIG_3,
+        "news-gus@5": GUS_RIG_3,
     }
 )
 
@@ -1426,6 +1566,34 @@ def gus_4(
 ):
     """Gus at the desk in one pose."""
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=4)
+
+
+@register("character", "news-vera@5", summary="Vera with a sloped shoulder that her sleeve grows out of")
+def vera_5(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Vera at the desk in one pose."""
+    return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=5)
+
+
+@register("character", "news-gus@5", summary="Gus with arms of one length that travel between their poses")
+def gus_5(
+    cv: Canvas,
+    parent,
+    pose: Pose | None = None,
+    x: float = 540.0,
+    start: float = 0.0,
+    end: float = 2.0,
+    mouths: Track = (),
+):
+    """Gus at the desk in one pose."""
+    return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=5)
 
 
 def _phone_down(cv: Canvas, parent, x: float, spans: Spans) -> None:

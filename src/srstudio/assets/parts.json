@@ -8537,6 +8537,29 @@
             },
             "drawing": "bc7207084ab852ed49444b1335fb1c89b27e7d9a5004f4e031fcf4a1dd9a77de"
           }
+        },
+        {
+          "number": 5,
+          "date": "2026-10-31",
+          "note": "Shoulders that slope from the neck into sleeves growing out of the jacket, one line around the whole arm, one length of arm in every pose and the arms turning on their joints between poses. Face, costume, palette and head rig unchanged.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-arms/news-arms-moving.mp4",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+          },
+          "drawing": "2552959a261fd85d77d0280bee409ef3351228520ae6c2354489a6c111ffb354",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed on shoulder, elbow and wrist.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-arms/news-arms-moving.mp4",
+            "drawing": "4a29ba869091b2d6d8be7a1973fa117dde96f5b47908f80e5f0395276c35db88",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+            }
+          }
         }
       ]
     },
@@ -8883,6 +8906,29 @@
               "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489634.822829: \"*v4 mouths: approved* for both anchors.\""
             },
             "drawing": "ea15ec7b8c7b3cc2889e615320afaf8b899ee8b09797a9dca50780689dac7912"
+          }
+        },
+        {
+          "number": 5,
+          "date": "2026-10-31",
+          "note": "Shoulders that slope from the neck into sleeves growing out of the jacket, one line around the whole arm and one length of arm; her one arm pose stays. Face, costume, palette and head rig unchanged.",
+          "status": "approved",
+          "proof": "generated/character-proofs/news-arms/news-arms-moving.mp4",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+          },
+          "drawing": "9edbb1d2867b6c1aac58096940fc0923f70d111116c4f494a345f54e9f9b5ec9",
+          "rig": {
+            "date": "2026-10-31",
+            "note": "Head rig: the limits of version 3 unchanged. The arms are keyed on shoulder, elbow and wrist.",
+            "status": "approved",
+            "proof": "generated/character-proofs/news-arms/news-arms-moving.mp4",
+            "drawing": "fab57dcab833d9f934162fa757844f036db3837cf01f030135658caf770dc6ab",
+            "approval": {
+              "date": "2026-10-31",
+              "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793489774.457989: \"it's Pedro's own request, so there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the head motion.\""
+            }
           }
         }
       ]
