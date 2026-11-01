@@ -1685,7 +1685,16 @@ to preserve motion across shot cuts. Long carried-spring channels are sampled in
 to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
 `limit()` describes the rig's allowed excursion, not a universal overshoot factor for every spring. `plan()`
 checks every channel's response; `HeadPlan.check_bounds(style)` exposes the same check. Public Toon, Host, News,
-and Rafa head entry points validate supplied plans before drawing or generating plates' face states.
+and Rafa head entry points validate supplied plans before drawing or generating plates' face states. Gaze names
+must exist in `head_motion.GAZES`, and gaze times must be finite and strictly increasing, including states outside
+the current shot. Invalid gaze input raises `HeadMotionError` before scene mutation.
+
+`channel.sample(project_second)` evaluates the emitted motion without drawing: hold, easing, spline and spring
+semantics match the renderer, including emitted key precision. Empty channels sample as zero; times outside the
+keys hold the nearest value. Sampling order does not matter. `channel.during(start, end)` retains the curve history
+and spline neighbors needed for continuity across cuts. Rafa samples this same motion before selecting the nearest
+plate and holding it on twos. Its valid `up` gaze maps explicitly to `ahead` because no upward plate exists; unknown
+states are refused. See [ADR 0078](decisions/0078-shared-channel-sampling.md).
 Linear, hold, and endpoint-bounded easing check their key values; Catmull-Rom, default TCB, back, and elastic
 curves also check analytic extrema between keys. Unknown curve names raise `HeadMotionError`.
 Short spring curves use sampled extrema plus a conservative

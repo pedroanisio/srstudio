@@ -28,6 +28,7 @@ import hashlib
 import math
 import re
 import statistics
+from bisect import bisect_right
 from collections.abc import Sequence
 from dataclasses import dataclass, fields, replace
 from functools import lru_cache
@@ -36,6 +37,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 from . import checks, soundtrack
+from ._curves import progress, spline_coefficients, spring_response
 from .errors import SrstudioError
 from .voice import Alignment
 
@@ -211,10 +213,55 @@ class Channel:
         if any(b[0] <= a[0] for a, b in zip(self.keys, self.keys[1:], strict=False)):
             raise HeadMotionError(f"a channel's key times rise, got {self.keys!r}")
 
+    def sample(self, time: float) -> float:
+        """Value in project seconds, matching emitted key precision, easing and carried spring history.
+
+        Empty channels return zero; times outside the keys hold the nearest value. Long spring chains use the
+        same bounded bake as emission. Preparation is cached with a bounded cache; sampling order has no effect.
+        """
+        if not _finite(time):
+            raise HeadMotionError(f'channel sample time must be finite, got {time!r}')
+        channel = _sampling_channel(self)
+        keys = channel.keys
+        if not keys:
+            return 0.0
+        if time <= keys[0][0]:
+            return keys[0][1]
+        if time >= keys[-1][0]:
+            return keys[-1][1]
+        index = bisect_right(keys, (time, math.inf)) - 1
+        start, a = keys[index]
+        end, b = keys[index + 1]
+        u = (time - start) / (end - start)
+        if channel.spring is not None or channel.curve == 'spring':
+            spring = channel.spring
+            attrs = spring.attributes() if spring else {'stiffness': '100', 'damping': '10'}
+            w = math.sqrt(max(float(attrs['stiffness']), 1e-9))
+            z = max(float(attrs['damping']), 0.0) / (2 * w)
+            velocity = 0.0
+            for i in range(index + 1):
+                start, a = keys[i]
+                end, b = keys[i + 1]
+                span = end - start
+                step, release = spring_response(span, w, z)
+                tail = (a - b) * (1 - step) + velocity * release
+
+                h = max(1e-9, min(1e-3, 0.1 * span))
+                elapsed = time - start if i == index else span - h
+                step, release = spring_response(elapsed, w, z)
+                value = b + (a - b) * (1 - step) + velocity * release - tail * elapsed / span
+                if i == index:
+                    return value
+                velocity = (b - value) / h if spring else 0.0
+        if channel.curve in ('catmull-rom', 'tcb'):
+            c3, c2, c1, c0 = _sampling_splines(keys)[index]
+            return ((c3 * u + c2) * u + c1) * u + c0
+        return a + (b - a) * progress(channel.curve, u)
+
     def during(self, start: float, end: float) -> Channel:
         """Keep the shot's keys and the curve history needed to preserve its value and tangent at cuts.
 
-        Short carried springs keep their history, long ones are sampled, and Catmull-Rom keeps two neighbors per side.
+        Short carried springs keep their history; long ones are sampled. Both spline modes keep two neighbors per side.
         """
         if self.spring and len(self.keys) > SPRING_RUN:
             baked = _bake_spring(self)
@@ -225,13 +272,27 @@ class Channel:
         previous = [i for i, key in enumerate(self.keys) if key[0] <= start]
         if self.spring and previous:
             before = list(self.keys[: previous[-1] + 1])
-        elif self.curve == "catmull-rom":
+        elif self.curve in ("catmull-rom", "tcb"):
             before = [self.keys[i] for i in previous[-2:]]
         else:
             before = [self.keys[i] for i in previous[-1:]]
         inside = [key for key in self.keys if start < key[0] < end]
-        after = [key for key in self.keys if key[0] >= end][: 2 if self.curve == "catmull-rom" else 1]
+        after = [key for key in self.keys if key[0] >= end][: 2 if self.curve in ("catmull-rom", "tcb") else 1]
         return replace(self, keys=(*before, *inside, *after))
+
+
+@lru_cache(maxsize=64)
+def _sampling_channel(channel: Channel) -> Channel:
+    channel = _bake_spring(channel)
+    keys = tuple((round(t, 6), round(v, 4)) for t, v in channel.keys)
+    if any(b[0] <= a[0] for a, b in zip(keys, keys[1:], strict=False)):
+        raise HeadMotionError('channel keys exceed the scene clock resolution')
+    return replace(channel, keys=keys)
+
+
+@lru_cache(maxsize=64)
+def _sampling_splines(keys: tuple[Key, ...]) -> tuple[tuple[float, float, float, float], ...]:
+    return spline_coefficients(keys)
 
 
 def _bake_spring(channel: Channel) -> Channel:
@@ -269,18 +330,7 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
         raise HeadMotionError("carried spring exceeds the 100000-key sampling budget")
 
     def responses(t: float) -> tuple[float, float]:
-        if z < 1 - 1e-9:
-            wd = w * math.sqrt(1 - z * z)
-            decay = math.exp(-z * w * t)
-            return 1 - decay * (math.cos(wd * t) + z * w / wd * math.sin(wd * t)), decay * math.sin(wd * t) / wd
-        if z <= 1 + 1e-9:
-            decay = math.exp(-w * t)
-            return 1 - decay * (1 + w * t), t * decay
-        s = math.sqrt(z * z - 1)
-        r1, r2 = -w * (z - s), -w * (z + s)
-        return 1 - (r2 * math.exp(r1 * t) - r1 * math.exp(r2 * t)) / (r2 - r1), (
-            math.exp(r1 * t) - math.exp(r2 * t)
-        ) / (r1 - r2)
+        return spring_response(t, w, z)
 
     def value(t: float, a: float, b: float, velocity: float, tail: float, span: float) -> float:
         step, release = responses(t)
@@ -322,20 +372,8 @@ def _sample_spring(channel: Channel, *, carry: bool = True) -> tuple[Channel, tu
 
 def _spline_extrema(keys: tuple[Key, ...]) -> list[float]:
     """Exact cubic extrema with sr-eval/channel.rs's nonuniform Catmull-Rom/default TCB tangents."""
-    incoming, outgoing = [], []
-    for i, (time, value) in enumerate(keys):
-        before = value - keys[i - 1][1] if i else keys[1][1] - value
-        after = keys[i + 1][1] - value if i + 1 < len(keys) else before
-        tangent = (before + after) / 2
-        left = time - keys[i - 1][0] if i else 0.0
-        right = keys[i + 1][0] - time if i + 1 < len(keys) else 0.0
-        incoming.append(tangent * 2 * left / (left + right) if left and right else tangent)
-        outgoing.append(tangent * 2 * right / (left + right) if left and right else tangent)
     extrema: list[float] = []
-    for i, ((_, start), (_, end)) in enumerate(zip(keys, keys[1:], strict=False)):
-        a = 2 * start - 2 * end + outgoing[i] + incoming[i + 1]
-        b = -3 * start + 3 * end - 2 * outgoing[i] - incoming[i + 1]
-        c = outgoing[i]
+    for a, b, c, start in spline_coefficients(keys):
         if a == 0:
             roots = [-c / (2 * b)] if b else []
         else:
@@ -878,6 +916,16 @@ class HeadPlan:
         runs cut by :func:`srstudio.toon_head.gaze_states`."""
         return replace(self, **{name: getattr(self, name).during(start, end) for name in CHANNELS})
 
+    def check_gaze(self) -> None:
+        """Validate all discrete states before drawing, including states outside the current shot."""
+        previous = -math.inf
+        for time, name in self.gaze:
+            if not _finite(time) or time <= previous:
+                raise HeadMotionError('gaze times must be finite and strictly increasing')
+            if not isinstance(name, str) or name not in GAZES:
+                raise HeadMotionError(f'no gaze {name!r}; expected one of {tuple(GAZES)}')
+            previous = time
+
     def check_bounds(self, style: HeadStyle, *, frozen: bool = False) -> None:
         """Refuse any channel outside the style envelope, including extrema between keys.
 
@@ -886,6 +934,7 @@ class HeadPlan:
         linearly, so their sampled extrema suffice. Bare ``curve='spring'`` uses the engine's uncarried defaults.
         ``frozen`` checks only the pose emitted at zero, without sampling unused future motion.
         """
+        self.check_gaze()
         for name in CHANNELS:
             channel = getattr(self, name)
             if not channel.keys:

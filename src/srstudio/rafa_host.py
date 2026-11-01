@@ -229,15 +229,8 @@ def mouth_plate(face: Face) -> Plate:
 
 
 def _value(channel: Channel, t: float) -> float:
-    """A channel at second ``t``: eased between its keys, which is close enough to the spring for a stepped pose."""
-    keys = channel.keys
-    if not keys or t <= keys[0][0]:
-        return keys[0][1] if keys else 0.0
-    for (a, va), (b, vb) in zip(keys, keys[1:], strict=False):
-        if t < b:
-            x = (t - a) / (b - a)
-            return va + (vb - va) * x * x * (3.0 - 2.0 * x)
-    return keys[-1][1]
+    """Evaluate the authored channel before replacement-pose quantization."""
+    return channel.sample(t)
 
 
 def _step(value: float, steps: Sequence[float]) -> float:
@@ -293,7 +286,7 @@ def faces(
         rows.append(
             Face(
                 mood=_held(moods, t, moods[0][1]),
-                gaze=gaze if gaze in rafa.GAZES else "ahead",
+                gaze="ahead" if gaze == "up" else gaze,  # explicit compatibility mapping: no upward plate
                 lid=lids.get(frame, "open"),
                 mouth=shapes.get(frame, "rest"),
                 turn=_step(_value(plan.turn, held), rafa.TURNS),
