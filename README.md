@@ -6,6 +6,8 @@ The library builds and validates scene XML. Rendering that XML into video requir
 
 For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
 link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
+rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
 
 ## Install
 

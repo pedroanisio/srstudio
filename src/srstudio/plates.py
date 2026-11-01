@@ -21,8 +21,11 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import time
 import zlib
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import cached_property
 from pathlib import Path
@@ -46,6 +49,7 @@ __all__ = [
     "Plate",
     "PlateError",
     "Print",
+    "RenderStats",
     "Texture",
     "digest",
     "document",
@@ -56,6 +60,7 @@ __all__ = [
     "print_name",
     "print_png",
     "render",
+    "render_session",
     "soften",
     "stage_lights",
     "verify",
@@ -73,6 +78,51 @@ FOLDER_MODE, FILE_MODE = 0o700, 0o600
 
 class PlateError(SrstudioError, ValueError):
     """A plate that cannot be described or rendered, or a cached file that is not what its name says."""
+
+
+@dataclass
+class RenderStats:
+    """Observed launch attempts, successful/failed renders and wall seconds inside a render session.
+
+    Cache hits do not launch an engine. Launch errors and timeouts count as failed attempts.
+    Changing these reporting fields does not restore the session's invocation budget.
+    """
+
+    invocations: int = 0
+    completed: int = 0
+    failed: int = 0
+    engine_seconds: float = 0.0
+
+
+@dataclass
+class _RenderScope:
+    maximum: int
+    timeout: float
+    stats: RenderStats
+    spent: int = 0
+
+
+_RENDER_SCOPES: ContextVar[tuple[_RenderScope, ...]] = ContextVar('srstudio_plate_render_scopes', default=())
+
+
+@contextmanager
+def render_session(*, max_invocations: int = 100, timeout: float = 60) -> Iterator[RenderStats]:
+    """Measure and bound plate/print renderer work in this context, including nested calls.
+
+    Each enclosing session consumes one attempt per engine launch and the shortest
+    active timeout applies. A zero invocation budget permits only cache hits. These
+    limits do not bound mesh preparation, memory or other renderer entry points.
+    """
+    if type(max_invocations) is not int or not 0 <= max_invocations <= 10000:
+        raise PlateError('max_invocations must be an integer in 0..10000', code='plate.render.limit')
+    if not checks.number(timeout) or not 0 < timeout <= 600:
+        raise PlateError('timeout must be finite seconds in (0, 600]', code='plate.render.limit')
+    scope = _RenderScope(max_invocations, timeout, RenderStats())
+    token = _RENDER_SCOPES.set((*_RENDER_SCOPES.get(), scope))
+    try:
+        yield scope.stats
+    finally:
+        _RENDER_SCOPES.reset(token)
 
 
 @dataclass(frozen=True)
@@ -377,6 +427,34 @@ def _keep(tmp: Path, target: Path) -> Path:
 
 def _engine_render(engine: Path, source: Path, out: Path) -> None:
     """Render frame 0 of ``source``, from its own folder because a document's files are relative to it."""
+    scopes = _RENDER_SCOPES.get()
+    for scope in scopes:
+        if scope.spent >= scope.maximum:
+            raise PlateError(
+                'plate renderer invocation budget exhausted',
+                code='plate.render.budget',
+                path='max_invocations',
+                actual=scope.spent,
+                expected=f'fewer than {scope.maximum} attempts',
+                remedy='Reuse cached inputs or explicitly increase the render-session budget.',
+            )
+    for scope in scopes:
+        scope.spent += 1
+        scope.stats.invocations += 1
+    start = time.perf_counter()
+    completed = False
+    try:
+        _invoke_renderer(engine, source, out, min((s.timeout for s in scopes), default=None))
+        completed = True
+    finally:
+        elapsed = time.perf_counter() - start
+        for scope in scopes:
+            scope.stats.engine_seconds += elapsed
+            scope.stats.completed += int(completed)
+            scope.stats.failed += int(not completed)
+
+
+def _invoke_renderer(engine: Path, source: Path, out: Path, timeout: float | None) -> None:
     try:
         done = subprocess.run(
             [
@@ -392,7 +470,17 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
             cwd=source.parent,
             capture_output=True,
             text=True,
+            timeout=timeout,
         )
+    except subprocess.TimeoutExpired as error:
+        raise PlateError(
+            f'plate renderer exceeded {timeout} seconds',
+            code='plate.render.timeout',
+            path='timeout',
+            actual=timeout,
+            expected='a render completing within the declared limit',
+            remedy='Reduce the plate workload or explicitly increase the render-session timeout.',
+        ) from error
     except OSError as error:
         raise PlateError(
             f'cannot execute renderer {engine}: {error}',
