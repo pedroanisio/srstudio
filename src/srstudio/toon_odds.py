@@ -21,6 +21,7 @@ __all__ = [
     "mosquito",
     "padlock",
     "paper_insert",
+    "faucet",
     "pipe",
     "rolled_towel",
     "tasting_spoons",
@@ -35,6 +36,7 @@ PIPE_RUN = 200.0  # reference pixels from the joint up to where the pipe leaves 
 DRIP_FALL = 0.32  # seconds a drip takes to fall
 DRIP_DROP = 210.0  # reference pixels it falls
 SPRAY = 5  # the jets of a burst joint
+FAUCET_RISE, FAUCET_REACH, FAUCET_W = 104.0, 62.0, 18.0  # reference pixels: top of the arc, spout, tube width
 TITLE_MAX, LINES_MAX, LINE_MAX = 40, 4, 26
 INSERT_PUSH = 1.05
 SHEETS_RISE = 0.7  # seconds
@@ -76,6 +78,51 @@ def pipe(
         for n in range(SPRAY):
             lean = (n - (SPRAY - 1) / 2) * 34.0
             cv.rect(jets, fx(x + lean), fy(y - 4 + abs(lean) * 0.3), fh(13), fh(220 - abs(lean)), WATER, radius=fh(4))
+    return g
+
+
+@register(
+    "prop", "toon-faucet", summary="A kitchen tap on the counter, a bad joint that drips and can burst", style="toon"
+)
+def faucet(
+    cv: Canvas,
+    parent,
+    x: float = 420.0,
+    counter: float = 500.0,
+    drips: Sequence[float] = (0.2, 1.1, 2.0),
+    burst: float | None = None,
+    end: float = 4.0,
+):
+    """A tap standing on a counter whose top is at ``counter``, its riser at ``x`` and its spout curving left, a drip
+    falling from the spout to the counter at every second of ``drips``, and, from ``burst`` to ``end``, thin jets out of
+    the bad joint on the riser."""
+    times = _cues(drips, end, "a faucet's drips")
+    if burst is not None and not (checks.number(burst) and 0 <= burst < end):
+        raise ToonDataError(f"a faucet bursts before its end {end}, got {burst!r}")
+    g = cv.group(parent, cv.uid("g"))
+    top, mouth = counter - FAUCET_RISE, x - FAUCET_REACH
+    arc = (
+        f"M{fx(x)} {fy(counter - 12)} L{fx(x)} {fy(top + 40)} C{fx(x)} {fy(top - 12)} {fx(mouth)} {fy(top - 12)} "
+        f"{fx(mouth)} {fy(top + 44)}"
+    )
+    cv.path(g, arc, None, cv.ink, fh(FAUCET_W + 8))
+    cv.path(g, arc, None, PIPE, fh(FAUCET_W))
+    cv.rect(g, fx(mouth - 13), fy(top + 40), fh(26), fh(14), JOINT, cv.ink, INK_W * 0.6, radius=fh(3))
+    cv.rect(g, fx(x - 38), fy(counter - 10), fh(76), fh(12), JOINT, cv.ink, INK_W * 0.7, radius=fh(4))
+    collar = counter - FAUCET_RISE * 0.42
+    cv.rect(g, fx(x - 22), fy(collar - 13), fh(44), fh(26), JOINT, cv.ink, INK_W * 0.7, radius=fh(6))
+    fall = counter - (top + 58)
+    for at_t in times:
+        drop = cv.group(g, cv.uid("g"), start=at_t, end=min(end, at_t + DRIP_FALL))
+        size = fh(13)
+        cv.ellipse(drop, fx(mouth) - size / 2, fy(top + 54), size, size * 1.4, WATER, cv.ink, FINE_W * 0.5)
+        cv.keys(drop, "y", [(at_t, 0.0), (at_t + DRIP_FALL, fh(fall))], hold=False, local=False)
+    if burst is not None:
+        jets = cv.group(g, cv.uid("g"), start=burst, end=end)
+        for n in range(SPRAY):
+            lean = (n - (SPRAY - 1) / 2) * 16.0
+            tall = 96.0 - abs(lean) * 0.8
+            cv.rect(jets, fx(x + lean - 5), fy(collar - 12 - tall), fh(10), fh(tall), WATER, radius=fh(4))
     return g
 
 

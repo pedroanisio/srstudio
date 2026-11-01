@@ -9,7 +9,7 @@ from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, registry, toon_odds
 from srstudio.styles import STYLES
-from srstudio.toon import ToonDataError
+from srstudio.toon import ToonDataError, fy
 
 
 def canvas() -> Canvas:
@@ -25,6 +25,7 @@ def tree(cv: Canvas):
 @pytest.mark.parametrize(
     "name",
     [
+        "toon-faucet",
         "toon-pipe",
         "toon-paper-insert",
         "toon-mosquito",
@@ -71,11 +72,24 @@ def test_a_mosquito_refuses_a_path_it_cannot_fly(path, end):
         lambda cv: toon_odds.folded_sheet(cv, cv.comp, start=2.0, end=1.0),
         lambda cv: toon_odds.padlock(cv, cv.comp, start=3.0, opened=1.0),
         lambda cv: toon_odds.tasting_spoons(cv, cv.comp, (1.0, 5.0), end=4.0),
+        lambda cv: toon_odds.faucet(cv, cv.comp, drips=(5.0,), end=4.0),
+        lambda cv: toon_odds.faucet(cv, cv.comp, burst=4.0, end=4.0),
     ],
 )
 def test_a_prop_refuses_bad_data(call):
     with pytest.raises(ToonDataError):
         call(canvas())
+
+
+def test_a_faucet_stands_on_its_counter_and_bursts_only_when_told():
+    cv = canvas()
+    toon_odds.faucet(cv, cv.comp, x=420.0, counter=500.0, drips=(0.5,), end=4.0)
+    rects = [r for r in tree(cv).iter("shape") if r.get("shape") == "rect"]
+    plate = max(rects, key=lambda r: float(r.get("width")))
+    assert float(plate.get("y")) + float(plate.get("height")) == pytest.approx(fy(502.0), abs=0.5)
+    assert [g.get("start") for g in tree(cv).iter("group") if g.get("start")] == ["0.5"]
+    toon_odds.faucet(cv, cv.comp, drips=(0.5,), burst=2.0, end=4.0)
+    assert "2" in [g.get("start") for g in tree(cv).iter("group")]
 
 
 def test_the_spoon_pile_grows_one_spoon_per_cue():

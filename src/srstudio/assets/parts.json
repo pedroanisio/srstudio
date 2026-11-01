@@ -12205,6 +12205,26 @@
           "rig": null
         }
       ]
+    },
+    "toon-faucet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kitchen tap on the counter whose bad joint drips on cue and bursts once. First drawn for the-last-guy.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Standing rule, arc4d3 by the operator's delegation (Slack 1793481766.343039): a version-1 prop that is a generic object in an approved style, with no real brand or likeness and no readable personal data, needs no question."
+          },
+          "drawing": "235dcc91cb087234c90a4725d3509b46a585fd0c759e1e9e591f2f62b9d1508d",
+          "rig": null
+        }
+      ]
     }
   }
 }

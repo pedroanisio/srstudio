@@ -559,6 +559,7 @@
     }
   },
   "parts": {
+    "toon-faucet": {"title": "Torneira que pinga e estoura"},
     "soft-hush-finger": {"title": "A raised finger"},
     "soft-rumble": {"title": "A rumbling belly"},
     "soft-yogurt": {"title": "A yogurt"},
@@ -8722,7 +8723,7 @@
       },
       "text": "O edredom sobe até o queixo de quem dormiu."
     },
-    {"section": "props", "name": "Who did this to you?", "parts": ["toon-paper-insert", "toon-pipe"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peças desenhadas para este reel: Folha escrita à mão em close; Cano que pinga e estoura."},
+    {"section": "props", "name": "Who did this to you?", "parts": ["toon-paper-insert"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peças desenhadas para este reel: Folha escrita à mão em close."},
     {"section": "props", "name": "Who else has lost a night to one mosquito?", "parts": ["toon-mosquito", "toon-rolled-towel"], "shot": {"episode": "mosquito", "at": 9.8}, "text": "Peças desenhadas para este reel: Pernilongo em voo; Toalha enrolada na mão."},
     {"section": "props", "name": "How do you fold a fitted sheet?", "parts": ["toon-balled-sheets", "toon-folded-sheet", "toon-padlock", "toon-wrestled-sheet"], "shot": {"episode": "fitted-sheet", "at": 16.5}, "text": "Peças desenhadas para este reel: Avalanche de lençóis amassados; Lençol dobrado perfeito; Cadeado de latão; Lençol em luta."},
     {"section": "props", "name": "Can I try the pistachio?", "parts": ["toon-tasting-spoons"], "shot": {"episode": "one-more-taste", "at": 21.0}, "text": "Peças desenhadas para este reel: Colherinhas de prova empilhadas."},
@@ -8783,6 +8784,7 @@
     {"section": "graphics", "name": "Lista de Wi-Fi", "parts": ["toon-wifi-list"], "shot": {"episode": "network-names", "at": 1.0}, "text": "A lista de redes, em letras que dão para ler no celular; o nome que mudou acende."},
     {"section": "props", "name": "Chuva", "parts": ["toon-rain"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "Chuva em laço, atrás do que estiver na frente dela."},
     {"section": "props", "name": "Anão de jardim", "parts": ["toon-gnome"], "shot": {"episode": "left-at-door", "at": 2.0}, "text": "O anão de jardim da foto da entrega."},
-    {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."}
+    {"section": "props", "name": "Caixa de macarrão", "parts": ["toon-noodle-box"], "shot": {"episode": "left-at-door", "at": 8.0}, "text": "A caixa de macarrão, cheia ou pela metade."},
+    {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."}
   ]
 }
