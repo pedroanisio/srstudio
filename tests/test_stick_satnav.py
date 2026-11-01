@@ -1,5 +1,7 @@
 """The Stick road ahead and the phone that gives directions on it."""
 
+import colorsys
+import re
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -82,11 +84,41 @@ def test_a_shot_with_no_length_is_refused(draw, end):
 
 
 @pytest.mark.parametrize("screen", sorted(stick_satnav.SCREENS))
-def test_every_screen_draws_and_its_words_fit_the_banner(screen):
+def test_every_screen_draws_and_its_words_fit_the_card(screen):
     cv = canvas()
     stick_satnav.nav_insert(cv, cv.comp, 2.0, screen=screen, buzz=(0.1,))
     assert len(stick_satnav.SCREENS[screen].words) <= 20
     assert "x" in animated(cv)
+
+
+def hue(colour: str) -> float:
+    red, green, blue = (int(colour[k : k + 2], 16) / 255 for k in (1, 3, 5))
+    return colorsys.rgb_to_hsv(red, green, blue)[0] * 360
+
+
+@pytest.mark.parametrize("colour", [stick_satnav.CARD, stick_satnav.ROUTE])
+def test_the_card_and_the_route_keep_to_warm_colours_no_map_app_uses(colour):
+    assert hue(colour) < 60  # past that the wheel runs through green, teal, blue and purple
+
+
+@pytest.mark.parametrize("screen", sorted(stick_satnav.SCREENS))
+def test_the_instruction_is_a_card_low_on_the_screen_with_the_route_above_it(screen):
+    cv = canvas()
+    stick_satnav.nav_insert(cv, cv.comp, 2.0, screen=screen)
+    shapes = list(xml(cv).iter("shape"))
+    [card] = [s for s in shapes if s.get("fill") == stick_satnav.CARD]
+    top = float(card.get("y") or 0)
+    assert top > stick_satnav.SCREEN_Y + stick_satnav.SCREEN_H / 2
+    assert top + float(card.get("height") or 0) <= stick_satnav.SCREEN_Y + stick_satnav.SCREEN_H
+    [words] = list(xml(cv).iter("text"))
+    assert words.get("color") == cv.ink and float(words.get("width") or 0) <= float(card.get("width") or 0)
+    route = [s for s in shapes if s.get("stroke") == stick_satnav.ROUTE]
+    assert route
+    for line in route:
+        assert all(float(y) < top for y in re.findall(r"-?[\d.]+", line.get("path") or "")[1::2])
+    [dot] = [s for s in shapes if s.get("fill") == stick_satnav.ROUTE]
+    assert float(dot.get("y") or 0) + float(dot.get("height") or 0) < top
+    assert dot.get("stroke") == cv.ink
 
 
 def test_recalculating_spins():

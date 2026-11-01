@@ -46,22 +46,17 @@ RAIL, RAIL_DARK = "#a57f54", "#7c5c3a"
 DASH_TOP, DASH_LOW, TRIM, PILLAR = "#4c5059", "#30333a", "#6a6f7a", "#3e424b"
 SCREEN_W, SCREEN_H = 560, 890  # the phone's screen on the frame
 SCREEN_X, SCREEN_Y = (1080 - SCREEN_W) // 2, 545
-MAP_LAND, MAP_ROAD, MAP_WATER, ROUTE, BANNER, BANNER_TEXT = (
-    "#ece8dc",
-    "#fbfaf5",
-    "#a9d0de",
-    "#2c7fd6",
-    "#1d3d4a",
-    "#ffffff",
-)
+MAP_LAND, MAP_ROAD, MAP_WATER, ROUTE, CARD = "#ece8dc", "#fbfaf5", "#a9d0de", "#b5532f", "#e3b23c"
 PIN, COUCH, COUCH_DARK = "#d6453c", "#b9743c", "#8e5427"
-BANNER_H = 340  # the instruction's banner across the top of the screen, for an icon and two lines of words
+CARD_H, CARD_GAP = 330, 18  # the instruction's card over the foot of the map, for an icon and two lines of words
+CARD_X, CARD_Y, CARD_W = SCREEN_X + CARD_GAP, SCREEN_Y + SCREEN_H - CARD_H - CARD_GAP, SCREEN_W - 2 * CARD_GAP
+ROUTE_FROM = CARD_Y - 70  # where the route leaves the car, the location dot on it, clear of the card
 SPIN_STEPS, SPIN_RATE = 8, 1.5  # the recalculating ring's drawn steps, and turns a second
 
 
 @dataclass(frozen=True)
 class Screen:
-    """One instruction: ``words`` in the banner, what the map shows (``route`` of ``straight``, ``lost`` or ``end``)
+    """One instruction: ``words`` on the card, what the map shows (``route`` of ``straight``, ``lost`` or ``end``)
     and ``icon`` (``arrow``, ``spin``, ``flag``, ``fence``, ``couch``)."""
 
     words: str
@@ -204,52 +199,52 @@ def ahead(cv: Canvas, parent, end: float, *, surface: str = "street", fence: flo
 
 def _map(cv: Canvas, parent, screen: Screen) -> None:
     """The invented map: its streets, a lake, and the route as far as this instruction goes."""
-    x, y, w, h = SCREEN_X, SCREEN_Y + BANNER_H - 200, SCREEN_W, SCREEN_H - BANNER_H + 200
+    x, y, w, h = SCREEN_X, SCREEN_Y, SCREEN_W, SCREEN_H
     box(cv, parent, x, y, w, h, MAP_LAND)
-    oval(cv, parent, x + 340, y + 620, 300, 380, MAP_WATER)
+    oval(cv, parent, x + 340, y + 250, 300, 380, MAP_WATER)
     for k in range(6):
-        ry = y + 200 + k * 150
+        ry = y + 50 + k * 150
         shape(cv, parent, f"M {x} {ry} L {x + w} {ry + 30}", sw=26, stroke=MAP_ROAD)
     for k in range(4):
         rx = x + 80 + k * 150
         shape(cv, parent, f"M {rx} {y} L {rx + 40} {y + h}", sw=26, stroke=MAP_ROAD)
-    cx, base = x + w / 2, y + h - 90
+    cx, base = x + w / 2, ROUTE_FROM
     if screen.route == "straight":
-        shape(cv, parent, f"M {cx} {base} L {cx} {y + 180}", sw=30, stroke=ROUTE)
+        shape(cv, parent, f"M {cx} {base} L {cx} {y + 70}", sw=30, stroke=ROUTE)
     elif screen.route == "lost":
-        shape(cv, parent, f"M {cx - 170} {base} L {cx - 150} {y + 520}", sw=30, stroke=ROUTE)
-        d = f"M {cx - 150} {y + 520} Q {cx - 40} {y + 470} {cx + 30} {y + 400}"
+        shape(cv, parent, f"M {cx - 170} {base} L {cx - 150} {y + 260}", sw=30, stroke=ROUTE)
+        d = f"M {cx - 150} {y + 260} Q {cx - 40} {y + 210} {cx + 30} {y + 140}"
         shape(cv, parent, d, sw=12, stroke=PIN)
-        cx, base = cx + 30, y + 400
+        cx, base = cx + 30, y + 140
     else:
-        shape(cv, parent, f"M {cx} {base} Q {cx - 140} {y + 500} {cx} {y + 380}", sw=30, stroke=ROUTE)
-    oval(cv, parent, cx - 30, base - 30, 60, 60, ROUTE, stroke="#ffffff", sw=8)
+        shape(cv, parent, f"M {cx} {base} Q {cx - 140} {y + 260} {cx} {y + 120}", sw=30, stroke=ROUTE)
+    oval(cv, parent, cx - 30, base - 30, 60, 60, ROUTE, stroke=cv.ink, sw=6)
 
 
 def _arrow(cv: Canvas, parent, x: float, y: float, _end: float) -> None:
     shape(cv, parent, f"M {x} {y - 70} L {x + 60} {y + 2} L {x + 24} {y + 2} L {x + 24} {y + 70} L {x - 24} {y + 70} "
-          f"L {x - 24} {y + 2} L {x - 60} {y + 2} Z", BANNER_TEXT)  # fmt: skip
+          f"L {x - 24} {y + 2} L {x - 60} {y + 2} Z", cv.ink)  # fmt: skip
 
 
 def _spin(cv: Canvas, parent, x: float, y: float, end: float) -> None:
     ring = _group(cv, parent, x=x, y=y)
     for k in range(SPIN_STEPS):
         a = 2 * math.pi * k / SPIN_STEPS
-        oval(cv, ring, 52 * math.cos(a) - 12, 52 * math.sin(a) - 12, 24, 24, BANNER_TEXT, opacity=0.25 + 0.75 * k / 7)
+        oval(cv, ring, 52 * math.cos(a) - 12, 52 * math.sin(a) - 12, 24, 24, cv.ink, opacity=0.25 + 0.75 * k / 7)
     step = 1 / (SPIN_STEPS * SPIN_RATE)
     cv.keys(ring, "rotation", [(k * step, k * 360 / SPIN_STEPS) for k in range(int(end / step) + 1)])
 
 
 def _flag(cv: Canvas, parent, x: float, y: float, _end: float) -> None:
-    shape(cv, parent, f"M {x - 40} {y + 70} L {x - 40} {y - 70}", sw=12, stroke=BANNER_TEXT)
+    shape(cv, parent, f"M {x - 40} {y + 70} L {x - 40} {y - 70}", sw=12, stroke=cv.ink)
     shape(cv, parent, f"M {x - 40} {y - 70} L {x + 60} {y - 36} L {x - 40} {y} Z", PIN)
 
 
 def _gate(cv: Canvas, parent, x: float, y: float, _end: float) -> None:
     for rail in (y - 24, y + 28):
-        shape(cv, parent, f"M {x - 84} {rail} L {x + 84} {rail}", sw=14, stroke=BANNER_TEXT)
+        shape(cv, parent, f"M {x - 84} {rail} L {x + 84} {rail}", sw=14, stroke=cv.ink)
     for px in (x - 60, x, x + 60):
-        shape(cv, parent, f"M {px} {y - 66} L {px} {y + 66}", sw=14, stroke=BANNER_TEXT)
+        shape(cv, parent, f"M {px} {y - 66} L {px} {y + 66}", sw=14, stroke=cv.ink)
 
 
 def _sofa(cv: Canvas, parent, x: float, y: float, _end: float) -> None:
@@ -290,7 +285,7 @@ def nav_insert(cv: Canvas, parent, end: float, *, screen: str = "straight", buzz
     screen_area = _group(cv, phone)
     screen_area.add_mask(type="path", path=f"M {SCREEN_X} {SCREEN_Y} h {SCREEN_W} v {SCREEN_H} h {-SCREEN_W} Z")
     _map(cv, screen_area, shown)
-    box(cv, screen_area, SCREEN_X, SCREEN_Y, SCREEN_W, BANNER_H, BANNER)
-    ICONS[shown.icon](cv, screen_area, 540.0, SCREEN_Y + 92, end)
-    cv.text(screen_area, cv.uid("nav-words"), shown.words, SCREEN_X + 10, SCREEN_Y + 176, SCREEN_W - 20, 150, 60,
-            BANNER_TEXT, weight=700)  # fmt: skip
+    box(cv, screen_area, CARD_X, CARD_Y, CARD_W, CARD_H, CARD, 5, r=28)
+    ICONS[shown.icon](cv, screen_area, 540.0, CARD_Y + 92, end)
+    cv.text(screen_area, cv.uid("nav-words"), shown.words, CARD_X + 6, CARD_Y + 170, CARD_W - 12, 150, 60,
+            cv.ink, weight=700)  # fmt: skip
