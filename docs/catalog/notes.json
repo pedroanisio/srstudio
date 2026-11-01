@@ -534,6 +534,12 @@
   },
   "styles": {
     "soft": {
+    "held-phone": {"title": "Celular na mão"},
+    "table-fork": {"title": "Garfo"},
+    "dinner-plate": {"title": "Prato de jantar"},
+    "notice-phone": {"title": "Celular com aviso"},
+    "location-chip": {"title": "Mapa com ponto"},
+    "table-phone": {"title": "Celular na mesa"},
       "title": "Blob pose a pose",
       "text": "Personagem branco de um só contorno num palco quente; poses no beat com in-betweens, legendas escuras no topo. 9:16 a 30 fps; paleta <i>warm</i>."
     },
@@ -8626,6 +8632,9 @@
         "at": 28.4
       },
       "text": "O detector no teto, com a luz que fica vermelha no último instante."
-    }
+    },
+    {"section": "props", "name": "Mapa que entrega", "parts": ["location-chip", "table-phone"], "shot": {"episode": "the-dot", "at": 13.8}, "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."},
+    {"section": "props", "name": "Aviso no celular", "parts": ["notice-phone"], "shot": {"episode": "the-dot", "at": 23.0}, "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."},
+    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."}
   ]
 }
