@@ -676,6 +676,21 @@ def test_keiths_rope_ends_in_the_frogs_paw_in_every_pose_it_is_held_in() -> None
     assert held <= set(mod.ROPES)
 
 
+@pytest.mark.usefixtures("reels")
+def test_the_toss_in_book_a_table_stays_under_both_chins_and_leaves_the_frame() -> None:
+    mod = _data("book_a_table")
+    w, h = mod.PHONE["w"], mod.PHONE["h"]
+    chin = 1245.0  # the lower of the two faces, in the group shot
+    for step in range(101):
+        x, y, turn, scale = mod.toss(step / 100)
+        radians = math.radians(turn)
+        reach = (abs(math.cos(radians)) * h + abs(math.sin(radians)) * w) * scale / 2
+        assert y - reach >= chin
+    x, y, turn, scale = mod.toss(1.0)
+    assert y - max(w, h) * scale / 2 > 1920.0
+    assert turn >= 360.0
+
+
 def test_dont_moves_marks_sit_on_the_table_below_the_pushed_phone_and_left_of_the_thumb() -> None:
     values = {
         target.id: ast.literal_eval(node.value)

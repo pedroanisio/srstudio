@@ -216,3 +216,15 @@ def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinn
     for bad in (-1, 2.5, "5M", True):
         with pytest.raises(collage_sketch.StagingError, match="bitrate"):
             check_staging(still_staging(bitrate=bad))
+
+
+def test_a_staging_may_set_its_keyframes_and_the_published_ones_do_not(pinned_fonts, tmp_path):
+    def output(ep) -> dict:
+        return dict(next(ET.fromstring(ep.scene.to_bytes(layout="pretty")).iter("output")).attrib)
+
+    assert "keyframeInterval" not in output(built(tmp_path / "default", still_staging(), pinned_fonts))
+    set_ = output(built(tmp_path / "set", still_staging(keyframes=52 / 24), pinned_fonts))
+    assert set_["keyframeInterval"] == "2.1667"
+    for bad in (-1, "2", float("nan")):
+        with pytest.raises(collage_sketch.StagingError, match="keyframes"):
+            check_staging(still_staging(keyframes=bad))

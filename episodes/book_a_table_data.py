@@ -34,6 +34,7 @@ ACCESSIBILITY = (
 NARRATION = "Voiced with ElevenLabs premade voices Sarah (Priya), Jessica (Deb) and Alice (the restaurant)."
 NOTE = "ElevenLabs premade voices Sarah, Jessica and Alice at their natural pace; no reference-voice cloning."
 BITRATE = 5_300_000  # two passes: a master under 20 MB, and a still opening that stays still
+KEYFRAMES = 52 / 24  # frames 416 and 624: her caption leaves on the first, with no cut, and the last just before 624
 
 STILL = 0.45  # the held first frame: the sp-hook_motion test's arm a
 PLACES = {"deb": Place(720.0, 1600.0, 0.66), "priya": Place(390.0, 1730.0, 0.74)}
@@ -50,7 +51,14 @@ POST = dict(x=1000.0, y=840.0, h=780.0)
 BACKREST = (1270.0, "#588157", "#a3b18a", "#3a5a40")  # the sofa's back, its top and its seams, seen from the front
 SEAT_PHONE = dict(x=470.0, y=1560.0, w=150.0, h=250.0)
 SHAKE = 18.0  # px of a head saying no
-THROW = 0.45  # seconds the phone is in the air
+THROW = 0.55  # seconds the phone is in the air, towards us and the sofa, which is on our side of them
+FLING = 0.4  # seconds her hands stay open
+TOSS_DOWN = 900.0  # px it has dropped by the end of the throw: past the bottom of the frame
+TOSS_HOP = 18.0  # px it rises first, short of her chin
+TOSS_RIGHT = 230.0
+TOSS_TURNS = 1.5
+TOSS_GROWS = 0.6  # coming at the camera
+TOSS_KEYS = 14
 WOBBLE, WOBBLE_STEP = 12.0, 0.06  # a ringing phone's shake: px and seconds
 RING_SHAKE = 0.8
 
@@ -106,6 +114,15 @@ def _sofa_at(beats: Sequence[Beat]) -> float:
     return events(beats, "ring")[1][0]
 
 
+def toss(u: float) -> tuple[float, float, float, float]:
+    """The phone at ``u`` of the way through the throw: its centre, its rotation in degrees and its scale. It leaves
+    her chest in a low arc, turning, and falls past the bottom of the frame without rising to either face."""
+    x = PHONE["x"] + PHONE["w"] / 2 + TOSS_RIGHT * u
+    peak = 0.25
+    y = PHONE["y"] + PHONE["h"] / 2 + (u * (u - 2 * peak) / peak**2) * TOSS_HOP + (TOSS_DOWN + TOSS_HOP) * u**3
+    return x, y, 360.0 * TOSS_TURNS * u, 1.0 + TOSS_GROWS * u**2
+
+
 def _pose(start: float, eyes: str, mouth: str, arms: str) -> dict:
     return {"start": round(start, 6), "eyes": eyes, "mouth": mouth, "arms": arms}
 
@@ -117,7 +134,7 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
     corner = Lineup(
         PLACES,
         {
-            "priya": [_pose(0, "wide", "flat", "hold")],
+            "priya": [_pose(0, "wide", "flat", "hold"), _pose(throw, "wide", "flat", "down")],
             "deb": [
                 _pose(0, "open", "smile", "down"),
                 _pose(dial, "wide", "flat", "down"),
@@ -133,7 +150,20 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
         HIDING, {"priya": [_pose(0, "wide", "flat", "down")], "deb": [_pose(0, "wide", "flat", "down")]}, ((sofa, end),)
     )
 
+    def flung(app: Appearance) -> Appearance:
+        """Her hands fly open as the phone leaves them, then drop: the recording's beat has them down at once."""
+        at = round(throw - app.start, 6)
+        poses = []
+        for pose in app.poses:
+            if pose["start"] == at:
+                poses += [{**pose, "arms": "shrug"}, {**pose, "start": round(at + FLING, 6)}]
+            else:
+                poses.append(pose)
+        return replace(app, poses=poses)
+
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:
+        if app.who == "priya" and app.start <= throw < app.end:
+            app = flung(app)
         if app.start == shake:
             head = cv.group(parent, cv.uid("g"))
             steps = [(shake + 0.2 + i * 0.22, (SHAKE if i % 2 else -SHAKE) if 0 < i < 4 else 0.0) for i in range(5)]
@@ -160,15 +190,21 @@ def _legs(cv, parent) -> None:
 
 
 def _phone_in_hand(shot) -> None:
-    """Her phone, up to the throw: it leaves the frame turning, towards the sofa out of shot."""
+    """Her phone, up to the throw: it leaves her hands the moment the beat turns, on :func:`toss`."""
     cv, app, beats, front = shot.cv, shot.app, shot.beats, shot.front
     throw = _at(beats, "throw")
-    phone = cv.group(front, cv.uid("g"))
-    collage_everyday.phone(cv, phone, **PHONE)
+    x, y, _, _ = toss(0.0)
+    w, h = PHONE["w"], PHONE["h"]
+    phone = cv.group(front, cv.uid("g"), x=x, y=y)
+    collage_everyday.phone(cv, phone, -w / 2, -h / 2, w, h)
     if app.start <= throw < app.end:
-        start = throw + 0.2
-        cv.keys(phone, "x", [(start, 0.0), (start + THROW, 1100.0)], kind="cubic-in", local=False)
-        cv.keys(phone, "y", [(start, 0.0), (start + THROW, -420.0)], kind="sine-out", local=False)
+        path = [(i / TOSS_KEYS, toss(i / TOSS_KEYS)) for i in range(TOSS_KEYS + 1)]
+        for index, prop in enumerate(("x", "y", "rotation")):
+            keys = [(round(throw + u * THROW, 6), round(at[index], 3)) for u, at in path]
+            cv.keys(phone, prop, keys, hold=False, local=False)
+        for prop in ("scaleX", "scaleY"):
+            keys = [(round(throw + u * THROW, 6), round(at[3], 4)) for u, at in path]
+            cv.keys(phone, prop, keys, hold=False, local=False)
 
 
 def _sofa(shot) -> None:
@@ -221,5 +257,6 @@ STAGING = Staging(
     still=STILL,
     opening=_HELD.held,
     bitrate=BITRATE,
+    keyframes=KEYFRAMES,
     loudness="-14",
 )
