@@ -51,6 +51,7 @@ GLARE_REACH = 320.0  # behind Dale and short of the far wall: the bloom must not
 NIGHT = "#1E2A3A"
 REVIEWER = "Dale R."
 STARS = (4, 4, 5, 1)  # the rating moves with the marriage
+REVIEW_AT, REVIEW_SCALE = (835, 622), 1.3  # on the open wall, clear of both faces; its lettering ends at x 920
 
 foley.write_whoosh(ROOT / "assets" / "flip.wav", [a for a, _ in INSERTS], DURATION, length=0.2, seed=INTERVIEW.seed + 1)
 foley.write_bursts(ROOT / "assets" / "ping.wav", [PING], DURATION, foley.BELL, seed=INTERVIEW.seed + 2)
@@ -137,7 +138,7 @@ cv.rect(room, 0, 0, 1080, 1920, NIGHT, opacity=0.8)
 soft_props.glare_lamp(cv, room, *LAMP_AT, reach=GLARE_REACH)
 blob.bo(cv, room, dale, end=DURATION, scale=SCALE, mouth_states=ep.mouth("dale"), fps=FPS, shadow=False)
 
-soft_props.time_card(cv, ep.comp, [TimeState("2:40 AM", CLOCK, DALE)], (465, 470, 440, 118))
+soft_props.time_card(cv, ep.comp, [TimeState("2:40 AM", CLOCK, DALE)], (84, 470, 236, 80), size=50)
 
 for i, (span, stars) in enumerate(zip(INSERTS, STARS, strict=True), start=1):
     insert = cv.group(ep.comp, f"review-{i}")
@@ -146,9 +147,9 @@ for i, (span, stars) in enumerate(zip(INSERTS, STARS, strict=True), start=1):
     soft_props.phone(
         cv,
         insert,
-        x=540,
-        y=960,
-        scale=2.3,
+        x=REVIEW_AT[0],
+        y=REVIEW_AT[1],
+        scale=REVIEW_SCALE,
         screen=lambda g, stars=stars, i=i: soft_props.review_view(cv, g, REVIEWER, stars, id=f"review-view-{i}"),
         id=f"review-phone-{i}",
     )
