@@ -1692,6 +1692,12 @@ BENTO_RIG = HeadRig(
     "toon-bento",
     summary="Bento, a caramel capybara in a blue blazer and red tie: a broad muzzle, two front teeth, small round ears "
     "and tiny paws, with 36 moods, 12 eye states, 9 gestures and his own visemes",
+    examples=(
+        'from srstudio import get\n'
+        'from srstudio.toon_bento import pose_of\n'
+        'poses = [pose_of(0, "skeptical", "folded", "left"), pose_of(1, "happy")]\n'
+        'groups = get("character", "toon-bento")(ep.cv, ep.comp, poses, duration=2)',
+    ),
 )
 def bento(
     cv: Canvas,
@@ -1705,7 +1711,14 @@ def bento(
     *,
     limbs: tuple[LimbTrack, ...] = (),
 ) -> list:
-    """His rig standing still: each mood's tilt held, nothing else moving."""
+    """Draw Bento's mood poses with each mood's head tilt held and no procedural head motion.
+
+    Use srstudio.toon_bento.pose_of(start, name, gesture=None, eyes=None). MOODS, EYE_STATES and GESTURES in
+    that module expose the accepted names; gesture also accepts srstudio.toon.ARMS. Pose starts are seconds
+    relative to enter, starting at zero. Enter, duration (the exit time), taps and mouths use project seconds.
+    Returns a list containing the outer group. Nonempty limbs are unsupported: use Bento's named gestures.
+    For moving heads, pass the poses and a HeadPlan to srstudio.toon_head.figure with BENTO_RIG.
+    """
     if limbs:
         raise ToonDataError("Bento's arms are gestures: a limb track cannot draw over them")
     return [figure(cv, parent, BENTO_RIG, poses, duration, HeadPlan.still(), taps, enter, stickers, mouths)]

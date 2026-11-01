@@ -72,6 +72,9 @@ these to the character and preview the result: an exaggerated reaction and a qui
 amounts of movement. The numeric report checks geometry and timing; it does not score emotional readability.
 Set `preparation=0` to start a stroke at the resting pose without an anticipation. The `rest` action holds the
 resting pose throughout its interval; a moving root or an explicitly declared contact can still move the hand.
+Hand controls use a minimum-jerk envelope at the neutral and fully posed limits. Anticipation and reach
+overshoot therefore do not start or stop finger curls with an abrupt velocity change; the wrist's authored
+reach path remains independent of this hand-control envelope.
 An explicit `Action.pole` is a world-space elbow guide. Its direction eases in during preparation (or the stroke
 when preparation is zero), remains authored through the hold, and returns to the default during recovery.
 The transition rotates the elbow around the reach axis, so an opposing pole can require spatial motion and the

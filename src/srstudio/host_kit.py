@@ -849,6 +849,7 @@ def perform(
         raise HostKitError(f"Lint needs a pose from {start} s, got {acts[:1]!r}")
     plan = plan or HeadPlan()
     style = MOTION
+    plan.check_bounds(style, frozen=bool(cv._frozen))
     seat = dict(x=540.0, y=SEAT_Y)
     outer = cv.group(head_parent, cv.uid("lint"), **seat)
     arm_outer = cv.group(arms_parent, cv.uid("lint-arms"), **seat)

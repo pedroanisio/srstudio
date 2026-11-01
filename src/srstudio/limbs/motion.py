@@ -380,7 +380,8 @@ class Motion:
         target_position += Vec3(action.style.asymmetry * distance * math.sin(math.pi * u) ** 2 * 0.05, 0, 0)
         control = action.control or _recipe(action.name, self.hand, time - action.start)
         control = replace(control, curl=control.curl + (1 - control.curl) * action.style.tension * 0.2)
-        weight = min(1, max(0, amount))
+        # Ease into and out of the clamp: anticipation and overshoot must not create finger velocity jumps.
+        weight = smooth(amount)
         blended = _blend(HandControl(), control, weight, self.hand) if weight else HandControl()
         return target_position, blended, action, phase
 

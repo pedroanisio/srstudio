@@ -120,7 +120,7 @@ def test_a_frame_list_covers_the_reel_with_a_face_for_every_frame():
 
 
 def test_his_head_moves_on_twos_and_only_on_plate_steps():
-    plan = HeadPlan(turn=Channel(((0.0, 0.0), (1.0, 5.3))), nod=Channel(((0.0, 0.0), (1.0, 3.1))))
+    plan = HeadPlan(turn=Channel(((0.0, 0.0), (1.0, 4.9))), nod=Channel(((0.0, 0.0), (1.0, 3.1))))
     rows = faces(1.2, plan=plan)
     assert all(row.turn in TURNS and row.nod in NODS for row in rows)
     assert {rows[1].turn, rows[1].nod} == {rows[0].turn, rows[0].nod}

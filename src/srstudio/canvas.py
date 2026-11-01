@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from sr_core.scene import Scene
+from sr_core.scene import Animate, Scene
 
 from . import checks
 from ._counter import Counter
@@ -403,18 +403,26 @@ class Canvas:
         """Keyframes on ``prop``; ``hold`` steps between values, otherwise they interpolate linearly.
 
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
-        ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas."""
+        ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas.
+        The complete animation is built off-scene; invalid input leaves the scene unchanged."""
         ordered = sorted(values, key=lambda kv: kv[0])
-        if self._frozen:
-            ordered = [(0, _at_zero(ordered, hold and kind is None, prop))]
-            if prop == "visible" and node in self._frozen_hidden:
-                ordered = [(0, "false")]
-        kw = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
+        if not ordered:
+            raise CanvasError(f'keys on {prop!r}: no keys to animate')
+        kw: dict[str, Any] = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
-        a = node.add_animate(**kw)
+        a = Animate(**kw)
         for t, value in ordered:
+            if isinstance(value, float) and not checks.number(value):
+                raise CanvasError(f'keys on {prop!r} at {t!r}: numeric values must be finite')
             a.add_key(time=round(float(t), 6), value=str(value))
+        if self._frozen:
+            value = _at_zero(ordered, hold and kind is None, prop)
+            if prop == "visible" and node in self._frozen_hidden:
+                value = "false"
+            a = Animate(**kw)
+            a.add_key(time=0, value=str(value))
+        node.add(a)
         return a
 
     @contextmanager

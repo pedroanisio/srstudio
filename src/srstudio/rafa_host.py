@@ -283,6 +283,7 @@ def faces(
     if not moods or moods[0][0] > 0.0:
         raise RafaHostError(f"a reel needs a mood from 0 s, got {moods[:1]!r}")
     plan = plan or HeadPlan()
+    plan.check_bounds(MOTION)
     lids = _blinks(end) if blink else {}
     shapes = _spoken(mouths, end)
     rows = []
@@ -391,6 +392,8 @@ def perform(
 ):
     """Him, frame by frame from second ``start``: the pose plate of each frame, its eye patch and its mouth patch, in a
     group that breathes on ``plan``. ``root`` is the project the pictures go into."""
+    if plan is not None:
+        plan.check_bounds(MOTION, frozen=bool(cv._frozen))
     shelf = _Shelf(cv, Path(root))
     x, y = BREATH_ANCHOR
     man = cv.group(parent, cv.uid("rafa"), x=x, y=y, anchorX=x, anchorY=y)

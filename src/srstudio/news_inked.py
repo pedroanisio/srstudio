@@ -1330,6 +1330,29 @@ def perform(
     when there is one, so a forearm lies across the desk's top and a head stays behind its edge. ``motion`` puts the
     head on its rig (:func:`_on_rig`) and ``looks`` is when its eyes go to the other anchor with it. ``number`` is the
     version drawn."""
+    if motion is not None:
+        rig, plan = motion
+        plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    return _perform(cv, parent, who, x, acts, start, end, mouths, id, scale, over, motion, looks, number)
+
+
+def _perform(
+    cv: Canvas,
+    parent,
+    who: str,
+    x: float,
+    acts: Sequence[tuple[float, Pose]],
+    start: float,
+    end: float,
+    mouths: Track = (),
+    id: str | None = None,
+    scale: float = 1.0,
+    over=None,
+    motion: Motion = None,
+    looks: Sequence[tuple[float, float]] = (),
+    number: int = 2,
+):
+    """Draw a checked performance or rig_specimen's fixed aggregate-envelope probe."""
     _span(start, end, "an anchor")
     if who not in ("vera", "gus"):
         raise NewsKitError(f"the desk seats vera and gus, not {who!r}")
@@ -1477,7 +1500,7 @@ def rig_specimen(cv: Canvas, who: str, seconds: float, number: int = 2) -> None:
     )
     slide = head_motion.limit(rig.style, "face_x")
     plan = replace(toon_head.reach(rig), face_x=Channel(((0.0, -slide), (seconds, slide))))
-    perform(
+    _perform(
         cv, cv.comp, who, 540.0, acts, 0.0, seconds, mouths_shown(seconds, number), motion=(rig, plan), number=number
     )
 

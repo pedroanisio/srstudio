@@ -300,6 +300,33 @@ def figure(
     """The character in nested groups (the module's docstring), one drawing per pose run inside the chains, moved by
     ``plan``. The arguments mean what they mean to :func:`srstudio.toon_cast.figure`; ``on_face`` draws into the face's
     group last, so what it adds moves with the head. Returns the outermost group."""
+    plan.check_bounds(rig.style, frozen=bool(cv._frozen))
+    return _draw_figure(cv, parent, rig, poses, duration, plan, taps, enter, stickers, mouths, on_face)
+
+
+def _draw_reach(cv: Canvas, parent, rig: HeadRig, poses: Sequence[Pose], duration: float, taps=(), *, mouths=()):
+    """Draw only the rig-derived aggregate envelope probe for immutable specimen fingerprints.
+
+    ``reach`` folds roll/idle/pose tilt into turn and lift/idle into nod. Those combined geometry bounds are
+    deliberately larger than one performance channel's allowance. No caller-supplied plan enters this path.
+    """
+    return _draw_figure(cv, parent, rig, poses, duration, reach(rig), taps, mouths=mouths)
+
+
+def _draw_figure(
+    cv: Canvas,
+    parent,
+    rig: HeadRig,
+    poses: Sequence[Pose],
+    duration: float,
+    plan: HeadPlan,
+    taps: Sequence[float] = (),
+    enter: float = 0.0,
+    stickers: Sequence[Layer] = (),
+    mouths: Mouths = (),
+    on_face: Callable[[Any], None] | None = None,
+):
+    """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
     from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
 
     look = rig.look

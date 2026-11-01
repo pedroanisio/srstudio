@@ -27,6 +27,7 @@ from .soundtrack import pose_keys
 if TYPE_CHECKING:
     from .limbs.integration import LimbTrack
 Span = tuple[float, float]
+MOUTHS = ('rest', 'round', 'open', 'small', 'smile')
 
 
 class RigError(SrstudioError, ValueError):
@@ -63,6 +64,7 @@ class Actor(ABC):
 
     role: str = "actor"
     mouth_stroke: float = 3.6
+    mouth_poses: tuple[str, ...] = MOUTHS
     supports_limbs: bool = False
 
     def __init__(self, canvas: Canvas, role: str | None = None, tag: str | None = None):
@@ -89,6 +91,19 @@ class Actor(ABC):
 
             raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
         self.validate_performance(perf)
+        if perf.mouth and not isinstance(perf.mouth, Sequence):
+            raise RigError('mouth: expected a sequence of (project second, pose) pairs')
+        states = perf.mouth or ((0.0, 'rest'),)
+        previous = 0.0
+        for index, record in enumerate(states):
+            if not isinstance(record, (tuple, list)) or len(record) != 2:
+                raise RigError(f'mouth[{index}]: expected a (project second, pose) pair')
+            time, pose = record
+            if not checks.number(time) or time < previous:
+                raise RigError(f'mouth[{index}]: times must be finite, non-negative and nondecreasing')
+            if not isinstance(pose, str) or pose not in self.mouth_poses:
+                raise RigError(f'mouth[{index}]: unknown pose {pose!r}; expected one of {self.mouth_poses}')
+            previous = time
         cv = self.cv
         blink_keys = _visibility_keys(perf.blinks)
         if perf.limbs:
@@ -117,7 +132,6 @@ class Actor(ABC):
         else:
             cv.gate(closed, [])
         self.mouths = self.draw_mouths(head)
-        states = perf.mouth or ((0.0, "rest"),)
         for name, shape in self.mouths.items():
             cv.keys(shape, "opacity", pose_keys(states, name))
         self.after_head(g, perf)

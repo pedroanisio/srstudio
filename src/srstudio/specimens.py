@@ -185,7 +185,7 @@ def _rigged(rig: toon_head.HeadRig) -> Canvas:
     poses = _poses(NEWER_EYES, NEWER_MOUTHS, ARMS, WEAR)
     seconds = len(poses) * STEP
     cv = _stage("toon", seconds)
-    toon_head.figure(cv, cv.comp, rig, poses, seconds, toon_head.reach(rig), _taps(poses), mouths=_track(VISEMES))
+    toon_head._draw_reach(cv, cv.comp, rig, poses, seconds, _taps(poses), mouths=_track(VISEMES))
     return cv
 
 
@@ -227,7 +227,11 @@ def _blob(entry: registry.Entry) -> Canvas:
 def _actor(entry: registry.Entry) -> Canvas:
     cv = _stage("cutout", HOLD)
     perf = rig.Performance(mouth=_track(("closed", "open")), blinks=[(1.0, 1.1)], nods=[(0.0, 0.0), (1.0, 3.0)])
-    entry(cv).build(cv.comp, FEET[0], FEET[1], 1.0, perf)
+    actor = entry(cv)
+    # Approved specimens used an undrawn "closed" pose. Keep that historical vocabulary on this instance only;
+    # ordinary actors still reject it, and changing it to "rest" would change the approved drawing.
+    actor.mouth_poses = (*actor.mouth_poses, 'closed')
+    actor.build(cv.comp, FEET[0], FEET[1], 1.0, perf)
     return cv
 
 

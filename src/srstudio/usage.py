@@ -156,7 +156,8 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
         if event == "call":
             parts = codes.get(frame.f_code)
             name = _called(frame, parts) if parts else None
-            if frame.f_code is toon_head.figure.__code__:
+            # Both validated performances and fixed specimen probes enter this emitter.
+            if frame.f_code is toon_head._draw_figure.__code__:
                 name = rigged.get(id(frame.f_locals["rig"]))
             if name is None and frame.f_code in delegates:
                 name = _performed(frame, delegates[frame.f_code])
