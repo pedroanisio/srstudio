@@ -57,6 +57,7 @@ BILLS_TO = (610, 1140)
 PHONE = (455, 1040)
 SKIN = cast.Customer.skin
 OPEN_HAND = (585, 905)
+ON_DESK = WALLET + 0.25  # his right hand comes over the desk: the shoulder it hangs from is below the desk's edge
 
 shake = [(k * 0.15, CARDS_UP[0] + (3 if k % 2 else -3), CARDS_UP[1] + (2 if k % 3 else -3))
          for k in range(1, int((LOWERS - 0.2) / 0.15))]  # fmt: skip
@@ -146,6 +147,9 @@ def cards(g):
         scale=1.04,
     )
     reach(cv, g, "milo-card-arm", SHOULDERS[0], left, skin=SKIN, hand=46, width=7, sleeve="#527B90")
+    up = cv.group(g, "milo-arm-up")
+    cv.gate(up, [(0.0, ON_DESK)])
+    reach(cv, up, "milo-reach-up", SHOULDERS[1], RIGHT, skin=SKIN, hand=46, width=7, sleeve="#527B90")
 
 
 def behind(g):
@@ -157,13 +161,15 @@ def behind(g):
 def on_desk(g):
     props.speakerphone(cv, g, *PHONE, talk=[(L[i].start, L[i].end) for i in (0, 2, 5, 7)])
     bills = cv.group(g, "bills", x=BILLS_FROM[0], y=BILLS_FROM[1])
-    cv.gate(bills, [(WALLET + 0.25, DURATION)])
-    path = [(s, *hand_at(RIGHT, s)) for s in samples if WALLET + 0.25 <= s <= PAID]
+    cv.gate(bills, [(ON_DESK, DURATION)])
+    path = [(s, *hand_at(RIGHT, s)) for s in samples if ON_DESK <= s <= PAID]
     follow = [(s, x - 34, y) for s, x, y in path]
     cv.keys(bills, "x", [(s, x) for s, x, _ in follow], hold=False)
     cv.keys(bills, "y", [(s, y) for s, _, y in follow], hold=False)
     cutout_reference.banknotes(cv, bills, 0, 0, value="20", scale=0.9)
-    _, grip = reach(cv, g, "milo-reach", SHOULDERS[1], RIGHT, skin=SKIN, hand=46, width=7, sleeve="#527B90")
+    over = cv.group(g, "milo-arm-over")
+    cv.gate(over, [(ON_DESK, DURATION)])
+    _, grip = reach(cv, over, "milo-reach", SHOULDERS[1], RIGHT, skin=SKIN, hand=46, width=7, sleeve="#527B90")
     palm = cv.group(grip, "open-palm")
     cv.gate(palm, [(OFFERS + 0.1, DURATION)])
     for k, (fx, turn) in enumerate(((-26, -14), (-9, -4), (9, 4), (26, 14))):

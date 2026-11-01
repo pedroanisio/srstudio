@@ -502,3 +502,18 @@ def test_brent_speaking_over_the_slide_frees_the_arm_until_it_lets_go() -> None:
     assert [(p["start"], p["arms"]) for p in freed.poses] == [(0.0, "free-right"), (lets_go, "down"), (5.0, "hold")]
     assert mod._sliding(Appearance("deb", 10.0, 17.0, poses), 10.0).poses == poses
     assert mod._sliding(Appearance("brent", 2.0, 4.0, poses), 10.0).poses == poses
+
+
+def _calls(tree: ast.Module, function: str, name: str) -> list[ast.Call]:
+    body = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == function)
+    found = (n for n in ast.walk(body) if isinstance(n, ast.Call))
+    return [n for n in found if ast.unparse(n.func).split(".")[-1] == name]
+
+
+def test_the_references_right_arm_stays_behind_the_desk_until_the_hand_is_over_it() -> None:
+    tree = ast.parse((EPISODES / "the_reference.py").read_text())
+    for function, parent, span in (("cards", "up", "(0.0, ON_DESK)"), ("on_desk", "over", "(ON_DESK, DURATION)")):
+        right = [c for c in _calls(tree, function, "reach") if ast.unparse(c.args[3]) == "SHOULDERS[1]"]
+        assert [ast.unparse(c.args[1]) for c in right] == [parent]
+        gates = _calls(tree, function, "gate")
+        assert (parent, f"[{span}]") in [(ast.unparse(c.args[0]), ast.unparse(c.args[1])) for c in gates]
