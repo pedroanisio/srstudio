@@ -137,7 +137,7 @@ def lights(shot) -> dict:
 
 def counter(shot) -> None:
     cv, app = shot.cv, shot.app
-    toon_rooms.dress(shot, "counter", lights(shot))
+    toon_rooms.dress(shot, "counter", lights(shot), lettering=False)
     toon_house.ledge(cv, shot.front)
     if app.who == "goat":
         fields = [

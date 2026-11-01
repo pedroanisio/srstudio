@@ -440,12 +440,17 @@ def counter(
     *,
     light=None,
     serving: Sequence[Sequence[Any]] = ((0.0, "A17"),),
+    lettering: bool = True,
 ):
     """A mint institutional wall with a darker wainscot; two fluorescent fixtures hang from the ceiling tiles above
     the pill; a TAKE A NUMBER sign with its red dispenser at the left; a NOW SERVING board at the right whose ticket
     changes at each ``(second, ticket)`` of ``serving`` (a capital and one to three digits, from 0, in order); an
     orange plastic chair behind the character. ``lights`` keys the ``tubes`` and the ``board``. The light layer goes
-    into ``light`` (the shot's), else into a group drawn over the set. Returns the cues."""
+    into ``light`` (the shot's), else into a group drawn over the set. ``lettering=False`` leaves the sign, the label
+    and the ticket out and keeps everything else, for a reel with no use for them: under the wash and the board's own
+    glow they measure 1.9 to 4.2:1 on the frame. Returns the cues."""
+    if not isinstance(lettering, bool):
+        raise ToonDataError(f"lettering is True or False, got {lettering!r}")
     cues = parse_lights("counter", lights, end)
     end = float(end)
     tickets = _check_serving(serving, end)
@@ -474,8 +479,9 @@ def counter(
     cv.rect(g, fx(30), fy(330), fh(206), fh(66), SHADOW_CARD, radius=fh(4), opacity=0.16)
     cv.rect(g, fx(24), fy(324), fh(206), fh(66), SIGN, cv.ink, FINE_W, radius=fh(4))
     cv.rect(g, fx(24), fy(324), fh(206), fh(16), SIGN_BAND, cv.ink, FINE_W, radius=fh(4))
-    cv.text(g, cv.uid("counter-sign"), "TAKE A NUMBER", fx(24), fy(342), int(fh(206)), int(fh(48)), 34,
-            color=SIGN_INK)  # fmt: skip
+    if lettering:
+        cv.text(g, cv.uid("counter-sign"), "TAKE A NUMBER", fx(24), fy(342), int(fh(206)), int(fh(48)), 34,
+                color=SIGN_INK)  # fmt: skip
     _line(cv, g, [(126, 396), (126, 410)], 5.0)
     _inked(cv, g, [(98, 408), (154, 408), (158, 444), (94, 444)], SIGN_BAND)
     cv.rect(g, fx(112), fy(436), fh(28), fh(10), SIGN, cv.ink, FINE_W / 2, radius=fh(2))
@@ -484,11 +490,12 @@ def counter(
               lambda c, name, col: _glow(cv, c, f"toon-counter-board-halo-{name}", 485, 400, 165, col))  # fmt: skip
     cv.rect(g, fx(380), fy(330), fh(210), fh(138), BOARD_FRAME, cv.ink, INK_W, radius=fh(6))
     cv.rect(g, fx(392), fy(342), fh(186), fh(114), BOARD, cv.ink, FINE_W, radius=fh(4))
-    cv.text(g, cv.uid("counter-label"), "NOW SERVING", fx(392), fy(346), int(fh(186)), int(fh(26)), 26,
-            color=BOARD_LABEL)  # fmt: skip
+    if lettering:
+        cv.text(g, cv.uid("counter-label"), "NOW SERVING", fx(392), fy(346), int(fh(186)), int(fh(26)), 26,
+                color=BOARD_LABEL)  # fmt: skip
     face = _level(cv, g, board)
     _coloured(cv, face, cues["board"], end, lambda c, name, col: _board_face(cv, c, col))
-    for i, (at, ticket) in enumerate(tickets):
+    for i, (at, ticket) in enumerate(tickets if lettering else ()):
         shown = cv.group(face, cv.uid("g"))
         cv.text(shown, cv.uid("counter-ticket"), ticket, fx(400), fy(376), int(fh(170)), int(fh(72)), 96,
                 color=TICKET_INK)  # fmt: skip
@@ -552,7 +559,7 @@ ROOMS: dict[str, Room] = {
         "board",
         {"tubes": ((0, "on"),), "board": ((0, "on", "red"),)},
         {"tubes": (36, 128, 556, 176), "board": (380, 330, 590, 468), "sign": (24, 324, 230, 446)},
-        frozenset({"serving"}),
+        frozenset({"serving", "lettering"}),
     ),
 }
 
@@ -561,7 +568,7 @@ def stage(
     cv: Canvas, back, light, room: str, lights: Mapping[str, Any] | None = None, end: float = 0.0, **options
 ) -> dict[str, list[Cue]]:
     """Draw the room named ``room`` into ``back`` and its light layer into ``light``, keyed by ``lights`` from 0 to
-    ``end``; ``options`` are the room's own (the counter's ``serving``). Returns the cues of every light."""
+    ``end``; ``options`` are the room's own (the counter's ``serving`` and ``lettering``). Returns the cues of every light."""
     r = _room(room)
     extra = sorted(set(options) - r.options)
     if extra:
