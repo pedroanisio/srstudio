@@ -41,6 +41,8 @@ BOWL = (800.0, 1740.0, 300.0)  # on Deb's knees
 PHONE = (330.0, 1400.0, 130.0, 230.0)
 ENVELOPE = (540.0, 1560.0, 620.0)
 LAMP, PLANT = (150.0, 1660.0, 330.0), (930.0, 1660.0, 300.0)
+SPOON_HAND = (862.0, 1556.0)  # Deb's hand in the hold pose, on the bowl
+SPOON_STIR = 14.0
 
 LINES = (
     Line("brent", "Priya! I have an exciting opportunity.", phone=True),
@@ -120,23 +122,24 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
 
 
 def _spoon(cv, front, beats: Sequence[Beat]) -> None:
-    """Deb's spoon, up and down from the first frame, and stopped dead in the air on the word passport."""
+    """Deb's spoon, stirring in the bowl from her own hand from the first frame, and stopped dead on the word passport.
+    Drawn before the bowl, so its head is in the cereal."""
     stop = _said(beats, 8)
-    hand = cv.group(front, cv.uid("g"))
-    keys, t, up = [], 0.0, False
+    x, y = SPOON_HAND
+    hand = cv.group(front, cv.uid("g"), x=x, y=y)
+    keys, t, across = [], 0.0, False
     while t < stop:
-        keys.append((round(t, 6), -175.0 if up else 0.0))
-        t, up = t + 0.8, not up
-    keys.append((round(stop, 6), -120.0))
-    cv.keys(hand, "y", keys, hold=False, local=False)
-    collage_everyday.arm(cv, hand, "deb", (1120.0, 2300.0), (830.0, 1720.0), width=58.0)
-    collage_home.spoon(cv, hand, 826, 1710, 250, -14.0)
+        keys.append((round(t, 6), SPOON_STIR if across else -SPOON_STIR))
+        t, across = t + 0.8, not across
+    keys.append((round(stop, 6), 0.0))
+    cv.keys(hand, "rotation", keys, kind="sine-in-out", local=False)
+    collage_home.spoon(cv, hand, 45, -53, 200, -139.0)
 
 
 def _sofa(cv, front, beats: Sequence[Beat]) -> None:
     collage_photo.sofa(cv, front)
-    collage_home.cereal_bowl(cv, front, *BOWL)
     _spoon(cv, front, beats)
+    collage_home.cereal_bowl(cv, front, *BOWL)
     x, y, w, h = PHONE
     screen = collage_everyday.phone(cv, front, x, y, w, h, screen="#17151f", tilt=-7.0)
     cv.rect(screen, 16, 150, w - 56, 36, "#2a9d8f", radius=10)  # the call, running, nothing to read
