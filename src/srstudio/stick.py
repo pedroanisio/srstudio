@@ -924,7 +924,8 @@ class Look:
     """Who the figure is: a hairstyle from :data:`HAIR`, glasses or not, a tie colour (``None``: no tie), an
     apron colour (``None``: no apron; a shop's uniform) and a cap colour (``None``: bareheaded; a pilot's cap). The
     poses stop the torso at the neck, some 15 pixels short of the head: ``neck`` draws that span, so that a head does
-    not float above its body. A figure already published keeps its gap and stays off."""
+    not float above its body. A figure already published keeps its gap and stays off. ``brows`` off draws none: a cap's
+    band sits where they go, so a figure with its cap down reads without them."""
 
     hair: str = "cowlick"
     glasses: bool = False
@@ -932,6 +933,7 @@ class Look:
     apron: str | None = None
     cap: str | None = None
     neck: bool = False
+    brows: bool = True
 
 
 PLAIN = Look()  # Dev's look: the cowlick, no glasses, no tie
@@ -945,6 +947,8 @@ def check_look(look: Look) -> None:
         raise StickDataError(f"glasses must be true or false, got {look.glasses!r}")
     if not isinstance(look.neck, bool):
         raise StickDataError(f"neck must be true or false, got {look.neck!r}")
+    if not isinstance(look.brows, bool):
+        raise StickDataError(f"brows must be true or false, got {look.brows!r}")
     if look.tie is not None and not COLOUR.match(look.tie):
         raise StickDataError(f"tie must be a #rrggbb colour or None, got {look.tie!r}")
     if look.apron is not None and not COLOUR.match(look.apron):
@@ -1140,7 +1144,8 @@ def _glasses(cv: Canvas, parent) -> None:
 
 def _features(cv: Canvas, parent, face: Face, look: Look):
     """Brows, eyes and glasses, turned with the look; returns the eyes' group, which blinks."""
-    _brows(cv, parent, face)
+    if look.brows:
+        _brows(cv, parent, face)
     eyes = _group(cv, parent)
     _eyes(cv, eyes, face)
     if look.glasses:

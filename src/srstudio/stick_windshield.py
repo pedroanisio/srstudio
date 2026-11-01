@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from typing import NamedTuple
 
 from . import checks, signature
 from .canvas import Canvas
@@ -264,14 +265,36 @@ def _wheel(cv: Canvas, parent) -> None:
           f"{cy - ry * 0.7:.1f}", sw=5, stroke="#7b8290")  # fmt: skip
 
 
+class Marks(NamedTuple):
+    """Where :func:`dashboard` puts the signature: the cactus's scale, the code's top-left corner, height and colour."""
+
+    cactus: float
+    code_at: tuple[float, float]
+    code_height: float
+    code_colour: str
+
+
+MARKS = Marks(0.3, (70.0, 1840.0), 9.0, BODY_SHADE)  # on the dash and on the hood, where delivered reels have them
+
+
 @register("prop", "stick-windshield-dash", tags=("car", "front", "dashboard", "steering-wheel", "phone", "buzz"))
-def dashboard(cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), down: float | None = None) -> None:
+def dashboard(
+    cv: Canvas,
+    parent,
+    end: float,
+    *,
+    buzz: Sequence[float] = (),
+    down: float | None = None,
+    marks: Marks = MARKS,
+) -> None:
     """What is between the camera and the couple of :func:`windshield`: the wheel in front of the driver, the
     dashboard across the cabin (its top at :data:`DASH_TOP`), the phone in its mount between the seats, buzzing at
     each time in ``buzz`` and put face down on the dashboard at ``down`` (seconds on the shot clock), the glare on
     the glass, the wipers, the pillars, the roof's edge and the hood."""
     _check_end(end, "dashboard")
     _check_phone(end, buzz, down)
+    if not all(checks.number(size) and size > 0 for size in (marks.cactus, marks.code_height)):
+        raise StickDataError(f"marks need a size over 0, got {marks!r}")
     s = cv
     _wheel(s, parent)
     dash = _group(s, parent, effects=_lift(s))
@@ -283,7 +306,7 @@ def dashboard(cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), dow
         for vy in (1352, 1366):
             shape(s, dash, f"M {vx - 38} {vy} L {vx + 38} {vy}", sw=4, stroke="#575c67")
     box(s, dash, 120, 1360, 220, 70, DASH_TOP_PAINT, 4, r=14)  # the glovebox
-    signature.cactus(s, parent, 196, DASH_TOP + 8, scale=0.3)  # on the dashboard, the passenger's side (ADR 0001)
+    signature.cactus(s, parent, 196, DASH_TOP + 8, scale=marks.cactus)  # the passenger's side (ADR 0001)
     _phone(s, parent, buzz, down)
     glare = _group(s, parent, blend="screen", opacity=0.16)
     glare.add_mask(type="path", path=GLASS)
@@ -302,4 +325,4 @@ def dashboard(cv: Canvas, parent, end: float, *, buzz: Sequence[float] = (), dow
           "L 74 584 Z", BODY, 5)  # fmt: skip
     shape(s, parent, "M 120 500 Q 540 486 960 500", sw=4, stroke=BODY_LIGHT)
     shape(s, parent, GLASS, s.clear, 7, stroke=s.ink)
-    signature.code(s, parent, 70, 1840, 9, color=BODY_SHADE)  # on the hood
+    signature.code(s, parent, *marks.code_at, marks.code_height, color=marks.code_colour)
