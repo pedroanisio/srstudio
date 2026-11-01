@@ -17,6 +17,7 @@ from sr_core.scene import Animate, Scene
 
 from . import checks, drawing_events
 from ._counter import Counter
+from ._transaction import scene_transaction
 from .errors import SrstudioError
 from .native import NativeError
 
@@ -336,12 +337,14 @@ class Canvas:
 
         A symbol without size or duration takes the document's, so static scenery needs neither. The engine
         draws each instance into an offscreen at the symbol's frame size and transforms that texture: an
-        instance magnified by a camera move is sampled, not redrawn, and its edges soften."""
+        instance magnified by a camera move is sampled, not redrawn, and its edges soften. A failed drawing
+        restores the scene and canvas caches so the same symbol can be retried."""
         if id not in self._symbols:
-            if self._symbol_root is None:
-                self._symbol_root = self.scene.add_symbols()
-            self._symbols[id] = element = self._symbol_root.add_symbol(id=id)
-            draw(element)
+            with scene_transaction(self.scene, self):
+                if self._symbol_root is None:
+                    self._symbol_root = self.scene.add_symbols()
+                self._symbols[id] = element = self._symbol_root.add_symbol(id=id)
+                draw(element)
         return id
 
     def instance(self, parent, id: str, symbol: str, **kw):
