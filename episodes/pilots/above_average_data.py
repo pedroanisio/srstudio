@@ -59,7 +59,7 @@ HOOK = "Most drivers say they're better than most drivers."
 SAID = "Ninety-three percent of American students put themselves in the top half."
 STAMP = ("93% of US students", "above the median.")
 CITE = "Svenson, 1981"
-CRASH = "So researchers asked drivers in the hospital, after a crash."
+CRASH = "So researchers asked drivers hospitalized by a crash."
 CAUSED = "Most of them had caused it."
 STAMP_CRASH = ("34 of 50 caused it.",)
 CITE_CRASH = "Preston & Harris, 1965, in Svenson, 1981"
@@ -86,7 +86,9 @@ FIGURES = {"bear": (1.3, -20.0), "rabbit": (1.2, 225.0)}
 SEAT_X = {"bear": 145.0, "rabbit": 400.0}
 WHEEL_AT = (145.0, 860.0)
 RABBIT_PAW = "#d9c9c0"
-BOARD_AT, BOARD_SCALE = (420.0, 800.0), 0.9
+BOARD_AT, BOARD_SCALE = (420.0, 800.0), 0.76
+MOUTH_FOOT = 985.0  # frame px of the foot of her open mouth, read off the full-size frames: the clip stops under it
+ANSWER = "Top 10%"
 SWERVE = (0.0, -46.0, 38.0, -24.0, 14.0, 0.0)  # frame px of the shot sliding across the road
 SWERVE_STEP = 0.09
 SWERVE_SCALE = 1.12  # the slide never shows the edge of the shot
@@ -171,13 +173,19 @@ def _traffic(app, at: dict[str, float]) -> tuple[Passing, ...]:
     return tuple(p for p in plan if app.start <= p.at < app.end)
 
 
-def _board(shot, at: dict[str, float], answer: str, when: float) -> None:
-    """The rabbit's clipboard, the answer written in on cue."""
+def answer(start: float, at: dict[str, float]) -> str:
+    """What the form reads on a shot from ``start``: blank while she asks, his answer once he has given it, and blank
+    again on the new form she brings to the ward."""
+    return ANSWER if at["swerve"] <= start < at["ward"] else ""
+
+
+def _board(shot, at: dict[str, float]) -> None:
+    """The rabbit's clipboard, held under her mouth."""
     toon_everyday.clipboard(
         shot.cv,
         shot.front,
         "Driver survey",
-        (toon_everyday.Field("Driving", answer, when),),
+        (toon_everyday.Field("Driving", answer(shot.app.start, at), shot.app.start),),
         measure=shot.measure,
         at=BOARD_AT,
         scale=BOARD_SCALE,
@@ -200,7 +208,7 @@ def _car(shot, at: dict[str, float]) -> None:
     toon_house.ledge(cv, shot.front, "dash")
     toon_cars.dash_vents(cv, shot.front)
     if who == "rabbit":
-        _board(shot, at, "Top 10%", app.start)
+        _board(shot, at)
 
 
 def _ward(shot, at: dict[str, float]) -> None:
@@ -217,7 +225,7 @@ def _ward(shot, at: dict[str, float]) -> None:
     )
     toon_ward.ward_bed(cv, shot.front, 46.0)
     if app.who == "rabbit":
-        _board(shot, at, "Top half", app.start)
+        _board(shot, at)
 
 
 def dress(shot) -> None:

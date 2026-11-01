@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import mind_kit, sketch
+from srstudio import mind_kit, sketch, toon, toon_everyday
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOTS = ROOT / "episodes" / "pilots"
@@ -99,7 +99,8 @@ def test_above_average_never_says_all_of_them():
 
 def test_the_lines_are_american():
     assert above.LAST == "The tree didn't signal."
-    assert "in the hospital" in said(above)
+    assert "hospitalized by a crash" in said(above)
+    assert "in the hospital" not in said(above)  # the sources give the injury, not where they were asked
     assert "indicating" not in said(above)
 
 
@@ -137,6 +138,18 @@ def test_each_foley_lands_and_no_clip_is_missing(pilot, tmp_path):
     rows = pilot.foley(pilot.BEATS, pilot.END, [], tmp_path, pilot.SEED)
     assert rows
     assert all((tmp_path / "audio" / f"{row['id']}.wav").exists() for row in rows)
+
+
+def test_the_clipboard_stops_below_the_rabbits_open_mouth():
+    top = above.BOARD_AT[1] - toon_everyday.CLIP_TOP * above.BOARD_SCALE
+    assert toon.fy(top) >= above.MOUTH_FOOT
+
+
+def test_the_clipboard_stays_blank_until_he_has_answered_and_blank_when_she_asks_again():
+    at = {"swerve": 5.7, "ward": 12.9}
+    assert above.answer(3.0, at) == ""
+    assert above.answer(6.5, at) == "Top 10%"
+    assert above.answer(18.0, at) == ""
 
 
 @each
