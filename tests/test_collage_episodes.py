@@ -6,13 +6,15 @@ shot, countdown and flash follow its events, scripted or voiced (ADR 0036)."""
 import ast
 import importlib
 import sys
+import wave
+from array import array
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, collage, collage_sets, flat_counter, releases, sketch
+from srstudio import Canvas, collage, collage_sets, flat_counter, foley, releases, sketch
 from srstudio.canvas import Signature
 from srstudio.collage_group import Lineup
 from srstudio.errors import ConsentError
@@ -188,6 +190,48 @@ def test_sound_effects_follow_the_events(mods, tmp_path):
     assert all((tmp_path / e["audio"]).is_file() for e in effects)
     zoom = sketch.events(sk.beats, "zoom")[0][0]
     assert builder.zooms(sk.beats, next(a for a in sketch.appearances(sk.beats, sk.end) if a.start <= zoom < a.end))
+
+
+def _samples(path: Path) -> tuple[int, list[int]]:
+    with wave.open(str(path)) as w:
+        return w.getframerate(), list(array("h", w.readframes(w.getnframes())))
+
+
+def test_a_buzz_beat_plays_the_phone_on_its_beat(mods, tmp_path):
+    builder, _ = mods
+    beats = [
+        sketch.Beat(0.0, "gary", "", "open", "flat", "down", event="buzz"),
+        sketch.Beat(1.0, "rosa", "", "open", "flat", "down"),
+        sketch.Beat(2.5, "gary", "", "open", "flat", "down", event="buzz"),
+    ]
+    effects = builder.sound_effects(beats, 4.0, tmp_path, 7)
+    assert [e["id"] for e in effects] == ["buzz"]
+    assert effects[0]["gain_db"] == builder.BUZZ_GAIN_DB
+    rate, samples = _samples(tmp_path / effects[0]["audio"])
+    second = [abs(v) for v in samples]
+    assert max(second[: int(0.36 * rate)]) > 0  # the first buzz, on its beat
+    assert max(second[int(0.5 * rate) : int(2.5 * rate)]) == 0  # nothing between the two
+    assert max(second[int(2.5 * rate) : int(2.86 * rate)]) > 0  # the second
+
+
+def test_a_sketch_may_buzz_and_an_unknown_event_is_still_refused(mods):
+    builder, data = mods
+    staging = data["first_date"].STAGING
+    sk = staging.sketch
+    first = sk.beats[0]
+    buzzing = replace(staging, sketch=replace(sk, beats=(replace(first, event="buzz"), *sk.beats[1:])))
+    builder.check_staging(buzzing)
+    humming = replace(staging, sketch=replace(sk, beats=(replace(first, event="hum"), *sk.beats[1:])))
+    with pytest.raises(builder.StagingError, match="unknown events"):
+        builder.check_staging(humming)
+
+
+def test_a_sip_is_short_and_lands_where_it_is_put(tmp_path):
+    path = foley.write_bursts(tmp_path / "sip.wav", [0.5], 2.0, foley.SIP, seed=3)
+    rate, samples = _samples(path)
+    heard = [i / rate for i, v in enumerate(samples) if v]
+    assert heard[0] == pytest.approx(0.5, abs=0.002)
+    assert heard[-1] <= 0.5 + foley.SIP.seconds + 0.002
 
 
 def test_recording_needs_consent(mods, tmp_path):
