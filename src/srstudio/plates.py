@@ -100,6 +100,7 @@ class _RenderScope:
     timeout: float
     memory_bytes: int
     stats: RenderStats
+    file_bytes: int | None = None
     spent: int = 0
 
 
@@ -108,7 +109,11 @@ _RENDER_SCOPES: ContextVar[tuple[_RenderScope, ...]] = ContextVar('srstudio_plat
 
 @contextmanager
 def render_session(
-    *, max_invocations: int = 100, timeout: float = 60, max_memory_bytes: int = 8 * 1024**3
+    *,
+    max_invocations: int = 100,
+    timeout: float = 60,
+    max_memory_bytes: int = 8 * 1024**3,
+    max_file_bytes: int | None = None,
 ) -> Iterator[RenderStats]:
     """Measure and bound plate/print renderer work in this context, including nested calls.
 
@@ -116,6 +121,8 @@ def render_session(
     active timeout and smallest memory limit apply. Memory is a POSIX hard
     per-process virtual-address-space limit, not aggregate RSS or GPU memory.
     Each output stream is capped at 64 KiB; failures stop the owned process group.
+    max_file_bytes optionally caps each file written by a renderer process using
+    RLIMIT_FSIZE. Nested scopes use the smallest supplied cap; None adds no cap.
     A zero invocation budget permits only cache hits. These limits do not bound
     mesh preparation, image decoding or other renderer entry points.
     """
@@ -125,7 +132,9 @@ def render_session(
         raise PlateError('timeout must be finite seconds in (0, 600]', code='plate.render.limit')
     if type(max_memory_bytes) is not int or not 1 <= max_memory_bytes <= 1024**4:
         raise PlateError('max_memory_bytes must be an integer in 1..1099511627776', code='plate.render.limit')
-    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats())
+    if max_file_bytes is not None and (type(max_file_bytes) is not int or not 1 <= max_file_bytes <= 1024**4):
+        raise PlateError('max_file_bytes must be None or an integer in 1..1099511627776', code='plate.render.limit')
+    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats(), max_file_bytes)
     token = _RENDER_SCOPES.set((*_RENDER_SCOPES.get(), scope))
     try:
         yield scope.stats
@@ -458,6 +467,7 @@ def _engine_render(engine: Path, source: Path, out: Path) -> None:
                 memory_bytes=min(s.memory_bytes for s in scopes),
                 stdout_bytes=65536,
                 stderr_bytes=65536,
+                file_bytes=min((s.file_bytes for s in scopes if s.file_bytes is not None), default=None),
             )
             if scopes
             else None

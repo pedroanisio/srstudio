@@ -7,7 +7,9 @@ Vector preparation checks actual payloads; emission compiles supported features
 into a self-contained scene and atomically publishes it without rendering.
 plate_view resolves perspective plate coordinates and shared lights. prepare_plate
 verifies static untextured geometry and produces a closed document/resource bundle
-in a bounded worker. Compiled plate/proxy emission is not yet available.
+in a bounded worker. compile_bundle and emit_bundle combine verified vectors and
+static plates with bounded rendering, verified caching and atomic publication.
+Textured/animated plate and proxy adapters remain unsupported.
 """
 
 from __future__ import annotations
@@ -435,3 +437,62 @@ def emit_scene(
     from ._composition_emit import emit_scene as emit
 
     return emit(plan, assets, output, overwrite=overwrite)
+
+
+@dataclass(frozen=True)
+class BundleResource:
+    name: str
+    data: bytes
+
+
+@dataclass(frozen=True)
+class BundleWork:
+    new_plates: int
+    cache_hits: int
+    engine_invocations: int
+
+
+@dataclass(frozen=True)
+class CompiledBundle:
+    """A complete portable scene and its immutable PNG resources; work counts unique render jobs."""
+
+    xml: bytes
+    resources: tuple[BundleResource, ...]
+    digest: str
+    plan_digest: str
+    nodes: int
+    work: BundleWork
+
+
+def compile_bundle(
+    plan: ValidatedScenePlan,
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate, ...],
+    *,
+    engine: Path,
+    cache: Path,
+) -> CompiledBundle:
+    """Reverify all inputs, render bounded static plates and compile a portable mixed scene.
+
+    Valid completed cache entries may survive a later runtime failure. Invalid
+    input is refused before cache mutation. No retries are implicit.
+    """
+    from ._composition_bundle import compile_bundle as compile_
+
+    return compile_(plan, assets, engine=engine, cache=cache)
+
+
+def emit_bundle(
+    plan: ValidatedScenePlan,
+    assets: tuple[PreparedVector | VectorSource | PreparedPlate, ...],
+    output: Path,
+    *,
+    engine: Path,
+    cache: Path,
+) -> CompiledBundle:
+    """Publish scene.xml and all PNGs as one new private directory; existing paths are refused.
+
+    Atomic non-replacing directory publication requires Linux renameat2 support.
+    """
+    from ._composition_bundle import emit_bundle as emit
+
+    return emit(plan, assets, output, engine=engine, cache=cache)

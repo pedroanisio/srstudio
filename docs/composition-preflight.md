@@ -18,8 +18,10 @@ that scene atomically. Public preparation and compilation run in workers with
 hard address-space limits and preemptive deadlines. Plate renderer sessions also
 enforce process limits and count retries; see [render sessions](authoring-benchmark.md#bound-a-plate-authoring-operation).
 `prepare_plate` also verifies static untextured mesh payloads and prepares their
-closed scene/resources in a bounded worker. Proxy/textured payloads, compiled
-plate/proxy emission and renderer budget integration remain open under SDK-P2-07.
+closed scene/resources in a bounded worker. `compile_bundle` and `emit_bundle`
+combine verified vectors and static plates with bounded rendering and portable
+image resources. Textured/animated plate and proxy adapters remain open under
+SDK-P2-07.
 A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
@@ -122,6 +124,59 @@ hard process cap; they do not measure or guarantee renderer/GPU peak memory.
 [Payload tests](../tests/test_composition_plates.py) exercise typed refusals,
 mutable-input snapshots, malformed worker messages, kernel memory limits,
 timeouts, placement accounting and a real render using only the prepared files.
+
+## Render and publish a mixed bundle
+
+```python
+from pathlib import Path
+
+bundle = composition.emit_bundle(
+    plan,
+    (prepared, composition.VectorSource("overlay", overlay_xml)),
+    Path("output/shot"),
+    engine=Path("/path/to/scene-render"),
+    cache=Path("cache/plates"),
+)
+# output/shot/scene.xml and image-<sha256>.png travel together.
+print(bundle.work.new_plates, bundle.work.cache_hits, bundle.work.engine_invocations)
+```
+
+Supply one `PreparedPlate` per plate layer and one `VectorSource` or
+`PreparedVector` per vector binding. All sources and their evidence are reverified
+before cache mutation or renderer invocation. `compile_bundle` returns the same
+immutable XML/resources without publishing an output directory; it can populate
+the render cache.
+
+Each unique render job binds the prepared XML, mesh resources and actual renderer
+bytes. Identical jobs share one render, including repeated static placements in
+different time windows. Warm entries must pass record, content, dimension, CRC and
+bounded PNG decompression checks; corruption is refused without repair or retry.
+Changing renderer bytes creates a different cache identity. Valid completed cache
+entries can remain after a later job or final publication fails.
+
+Rendering inherits every enclosing `plates.render_session` limit and also enforces
+the plan's invocation, address-space and per-invocation timeout limits. Each file
+written by the renderer has a 256 MiB kernel limit, allowing graphics-backend
+scratch/mapped files larger than the final PNG. This is a per-file limit,
+not an aggregate disk quota. PNG verification and final scene assembly execute
+in bounded workers. Complete bundle files are limited to eight MiB; the bounded
+wire protocol can refuse large repeated inputs before assembly.
+
+Plate images already contain the parent/camera transform and are placed at the
+registered screen offset exactly once. Vector layers retain their authored
+geometry, clocks and stacking order. Static plate visibility follows the layer's
+start/end interval; this adapter does not supply animated geometry or textures.
+
+`emit_bundle` publishes all files as one new directory using Linux
+`renameat2(RENAME_NOREPLACE)`. Existing destinations, including empty directories,
+are refused. Output and cache directories must not overlap. New directories use
+mode `700`, files use `600`. Publication requires filesystem support for this
+operation; no partial-output fallback is used. Atomic visibility does not promise
+recovery after power loss.
+
+The [bundle tests](../tests/test_composition_bundles.py) exercise cold/warm work,
+renderer failures, cache integrity, placement and real mixed-scene rendering.
+These numeric fixtures do not establish drawing approval or animated style quality.
 
 ## Start with a real drawing
 

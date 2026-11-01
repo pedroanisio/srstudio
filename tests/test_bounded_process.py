@@ -186,3 +186,20 @@ def test_launch_failure_is_typed(monkeypatch):
         run('pass')
     assert caught.value.to_dict()['code'] == 'process.launch'
     assert isinstance(caught.value.__cause__, OSError)
+
+
+def test_kernel_file_limit_stops_a_writer_without_changing_parent(tmp_path):
+    import resource
+
+    before = resource.getrlimit(resource.RLIMIT_FSIZE)
+    target = tmp_path / 'output'
+    with pytest.raises(api().BoundedProcessError):
+        run(f'from pathlib import Path; Path({str(target)!r}).write_bytes(b"x" * 65536)', file_bytes=4096)
+    assert target.stat().st_size <= 4096
+    assert resource.getrlimit(resource.RLIMIT_FSIZE) == before
+
+
+@pytest.mark.parametrize('value', [0, -1, True, 1.5, 1024**4 + 1])
+def test_file_limits_are_positive_bounded_integers(value):
+    with pytest.raises(api().BoundedProcessError):
+        api().ProcessLimits(file_bytes=value)

@@ -8,6 +8,7 @@ import os
 import secrets
 import time
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from pathlib import Path
 
 from sr_core.scene import Scene, read
@@ -98,8 +99,18 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
             )
         roots[binding.id] = ET.fromstring(asset.xml)
         checkpoint()
+    return assemble(plan, roots, {}, checkpoint)
+
+
+def assemble(
+    plan: c.ValidatedScenePlan, roots: dict[str, ET.Element], rasters: dict[str, dict], checkpoint: Callable[[], None]
+) -> c.CompiledScene:
+    """Shared layer assembly after worker-owned source verification."""
     spec = plan.spec
-    version = max((root.attrib['version'] for root in roots.values()), key=lambda s: tuple(map(int, s.split('.'))))
+    budget = spec.budget
+    version = max(
+        (root.attrib['version'] for root in roots.values()), default='1.1', key=lambda s: tuple(map(int, s.split('.')))
+    )
     root = ET.Element('scene', {'version': version})
     ET.SubElement(
         root,
@@ -112,6 +123,22 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
             'seed': str(spec.seed),
         },
     )
+    if rasters:
+        shelf = ET.SubElement(root, 'assets')
+        seen = set()
+        for raster in rasters.values():
+            if raster['id'] not in seen:
+                ET.SubElement(
+                    shelf,
+                    'image',
+                    {
+                        'id': raster['id'],
+                        'src': raster['name'],
+                        'width': str(raster['width']),
+                        'height': str(raster['height']),
+                    },
+                )
+                seen.add(raster['id'])
     paints = ET.SubElement(root, 'paints')
     content = ET.SubElement(root, 'composition')
     layers = {layer.id: layer for layer in spec.layers}
@@ -119,9 +146,25 @@ def compile_scene(plan: c.ValidatedScenePlan, assets: tuple[c.PreparedVector, ..
     for layer in spec.layers:
         _pose(layer, layers, poses, set())
     for index, layer in enumerate(spec.layers):
+        if layer.id in rasters:
+            raster = rasters[layer.id]
+            group = ET.SubElement(
+                content,
+                'group',
+                {
+                    'id': f'l{index}',
+                    'x': _number(raster['offset'][0]),
+                    'y': _number(raster['offset'][1]),
+                    'start': _number(layer.temporal.start),
+                    'end': _number(layer.temporal.end),
+                },
+            )
+            ET.SubElement(group, 'layer', {'id': f'l{index}__image', 'asset': raster['id'], 'x': '0', 'y': '0'})
+            checkpoint()
+            continue
         # Source IDs and references are scoped per placement, including repeated
         # uses of an asset. Parent transforms are already flattened into poses.
-        source = ET.fromstring(actual[layer.asset].xml)
+        source = ET.fromstring(ET.tostring(roots[layer.asset]))
         mapping = {n.attrib['id']: f'l{index}__{n.attrib["id"]}' for n in source.iter() if 'id' in n.attrib}
         for node in source.iter():
             if 'id' in node.attrib:

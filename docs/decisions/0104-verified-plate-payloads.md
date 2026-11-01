@@ -30,6 +30,8 @@ lighting, renderer and rendering inputs.
 The first adapter supports static, untextured PBR plate geometry. Unsupported
 UV/texture inputs, animated bindings and proxy recipes fail explicitly. This
 does not authorize dropping maps or changing an approved drawing's materials.
-Compiled backend emission and renderer-session integration remain open under
-SDK-P2-07. [Tests](../../tests/test_composition_plates.py) verify actual input and
-failure behavior and render a prepared scene with only its declared resources.
+Static mixed emission and renderer-session integration are now provided by
+[atomic composition bundles](0105-atomic-composition-bundles.md). Textured/animated
+and proxy adapters remain open under SDK-P2-07.
+[Tests](../../tests/test_composition_plates.py) verify actual input and failure
+behavior and render a prepared scene with only its declared resources.

@@ -58,7 +58,11 @@ and image decoding remain outside the session's process limits. Reusing the
 runner keeps descendant cleanup and kernel-limit behavior shared with composition
 workers instead of maintaining a second subprocess supervisor.
 
-Plate/proxy source adapters and composition-budget integration remain open under SDK-P2-07.
+Static plate sources and mixed vector/plate bundles now use these limits. Renderer
+sessions also accept a nested per-file kernel limit; composition bundles require
+256 MiB for scratch/mapped files, with a separate eight MiB image/bundle cap.
+PNG verification and final mixed assembly run in bounded workers.
+Textured/animated plate and proxy adapters remain open under SDK-P2-07.
 The [composition guide](../composition-preflight.md) documents supported features;
 the [runtime tests](../../tests/test_composition_runtime.py) and
 [process tests](../../tests/test_bounded_process.py) exercise real kernel limits,

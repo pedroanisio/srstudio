@@ -97,3 +97,18 @@ def test_invalid_session_limits_fail_before_work(options):
     with pytest.raises(plates.PlateError):
         with plates.render_session(**options):
             pytest.fail('invalid render limits must not enter')
+
+
+def test_nested_sessions_apply_the_smallest_file_limit(renderer, tmp_path):
+    engine, seen = renderer
+    with plates.render_session(max_file_bytes=8192):
+        with plates.render_session(max_file_bytes=16384):
+            plates.render(plate(), engine=engine, cache=tmp_path / 'cache', fonts=tmp_path)
+    assert seen[0]['limits'].file_bytes == 8192
+
+
+@pytest.mark.parametrize('limit', [True, 0, -1, 1.5, 1024**4 + 1])
+def test_invalid_file_limits_are_typed_refusals(limit):
+    with pytest.raises(plates.PlateError):
+        with plates.render_session(max_file_bytes=limit):
+            pass
