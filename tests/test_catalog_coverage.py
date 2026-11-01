@@ -40,6 +40,7 @@ NO_EPISODE = [
     "news-phone@2",
     "news-vera@4",
     "news-vera@5",
+    "pedro",
     "rafa",
     "rafa-bills",
     "rafa-breakroom",
