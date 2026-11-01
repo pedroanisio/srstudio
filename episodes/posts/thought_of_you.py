@@ -17,7 +17,7 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=("#mom", "#family", "#momlife", "#animatedshorts", "#okayville"),
-        thumbnail=ShowCover("Mom sent another link", 3.9, number=199),
+        thumbnail=ShowCover("Mom sent another link", 8.2, focus=(540.0, 1100.0), zoom=1.15, number=199),
     ),
     tags=Tags(
         "everyday-tech",
