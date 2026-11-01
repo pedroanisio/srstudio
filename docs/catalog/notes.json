@@ -1251,6 +1251,9 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
+    "toon-night-cabin": {"title": "Carro à noite, visto do painel"},
+    "toon-night-dash": {"title": "Painel escuro do carro"},
+    "toon-call-chip": {"title": "Chamada no painel"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
     "stick-nav-insert": {"title": "Celular com o mapa"},
     "stick-rough-road": {"title": "Estrada que acaba no pasto"},
@@ -8364,6 +8367,31 @@
         "at": 15.0
       },
       "text": "O celular no suporte, em tela cheia: um mapa inventado e uma instrução grande o bastante para ler."
+    },
+    {
+      "section": "locations",
+      "name": "Carro à noite",
+      "parts": [
+        "toon-night-cabin",
+        "toon-night-dash"
+      ],
+      "shot": {
+        "episode": "who-names",
+        "at": 19.5
+      },
+      "text": "A cabine vista do painel, com os dois bancos da frente e a janela de trás."
+    },
+    {
+      "section": "props",
+      "name": "Chamada que ninguém desligou",
+      "parts": [
+        "toon-call-chip"
+      ],
+      "shot": {
+        "episode": "who-names",
+        "at": 19.5
+      },
+      "text": "O cronômetro corre apagado no painel e só acende quando alguém olha."
     }
   ]
 }
