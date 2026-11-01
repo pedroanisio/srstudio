@@ -139,12 +139,14 @@ def phone_post(
     liked_at: float | None = None,
     message: tuple[str, str] | None = None,
     message_at: float | None = None,
+    message_shift: float = 0,
     scale: float = 1.0,
     id: str = "phone-post",
 ):
     """The phone's centre is (``x``, ``y``), 780 by 1560. The heart is empty until ``liked_at``, when it fills with a
     tiny pop and the line under it counts one like. ``message`` (sender, text with its own line breaks) slides in from
-    the top at ``message_at``. Text is the post's own: a date or a sender is any name the reel needs."""
+    the top at ``message_at``, and rests ``message_shift`` lower, negative for higher. Text is the post's own: a date or
+    a sender is any name the reel needs."""
     cv.require_font("a post's name and date are set in it", CutoutHandedError)
     _check_scale(scale)
     if not isinstance(name, str) or not 0 < len(name.strip()) <= 16:
@@ -188,7 +190,7 @@ def phone_post(
                 f"{MESSAGE_CHARS} characters, got {message!r}"
             )
         toast = cv.group(g, f"{id}-message", y=-1300)
-        cv.keys(toast, "y", [(0, -1300), (message_at, -1300), (message_at + 0.30, 0)], kind="cubic-out")
+        cv.keys(toast, "y", [(0, -1300), (message_at, -1300), (message_at + 0.30, message_shift)], kind="cubic-out")
         cv.rect(toast, -342, -652, 684, 110 + 62 * len(rows), "#26323A", ink, 4, radius=30)
         cv.ellipse(toast, -314, -628, 60, 60, "#D8A7B1", ink, 3)
         cv.text(toast, f"{id}-sender", sender, -238, -632, 420, 62, 44, "#FFFFFF", align="start")

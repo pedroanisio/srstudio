@@ -67,6 +67,19 @@ def test_a_message_comes_with_its_time():
     assert "Sunday?" in bytes_of(cv)
 
 
+def test_a_message_can_rest_higher_and_stays_put_by_default():
+    def rest(**kwargs) -> float:
+        cv = canvas()
+        cutout_handed.phone_post(cv, cv.comp, message=("Diane", "Sunday?"), message_at=3.0, **kwargs)
+        root = ET.fromstring(cv.scene.to_bytes())
+        node = next(e for e in root.iter() if e.get("id") == "phone-post-message")
+        track = next(e for e in node.iter() if e.get("property") == "y")
+        return float(list(track)[-1].get("value"))
+
+    assert rest() == 0.0
+    assert rest(message_shift=-54.0) == -54.0
+
+
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [

@@ -38,6 +38,7 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("milo", "What do I bring?", "...What do I bring?", 1.00),
 ]  # fmt: skip
 START = 0.30  # the first word: the frame is already moving
+MESSAGE_SHIFT = -54.0  # the message rests over the whole header of the post, not over half of its name
 WATCH = 1.75  # the watch comes off, the cup goes
 TICKS = 1.10  # on the phone before she speaks
 AFTER = 0.75  # after "Don't breathe on it.", before the cup

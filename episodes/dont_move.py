@@ -17,7 +17,7 @@ declares no engine safe area, so captions are placed inside x 80–920 by hand.
 import os
 
 from _common import project_root
-from dont_move_audio import INTERVIEW
+from dont_move_audio import INTERVIEW, MESSAGE_SHIFT
 from instagram_posts import POSTS
 from srstudio import CAFE, Episode, EpisodeSpec, cast, cutout_handed, cutout_office, foley, locations, props
 from srstudio import interview as iv_audio
@@ -228,6 +228,7 @@ cutout_handed.phone_post(
     liked_at=CRASH + 0.12,
     message=("Diane", "Thank you, dear. Nobody ever\nlikes my photos. Are you\ncoming Sunday?"),
     message_at=TOAST + 0.15,
+    message_shift=MESSAGE_SHIFT,
 )
 thumb = cv.group(insert, "thumb-move")
 shake = [(PHONE_1[0] + k * 0.09, 4.0 if k % 2 else -4.0) for k in range(int((CRASH - PHONE_1[0]) / 0.09))]

@@ -517,3 +517,12 @@ def test_the_references_right_arm_stays_behind_the_desk_until_the_hand_is_over_i
         assert [ast.unparse(c.args[1]) for c in right] == [parent]
         gates = _calls(tree, function, "gate")
         assert (parent, f"[{span}]") in [(ast.unparse(c.args[0]), ast.unparse(c.args[1])) for c in gates]
+
+
+def test_dianes_message_hides_the_name_of_the_post_under_it() -> None:
+    sys.path.insert(0, str(EPISODES))
+    try:
+        audio = importlib.import_module("dont_move_audio")
+    finally:
+        sys.path.remove(str(EPISODES))
+    assert -652.0 + audio.MESSAGE_SHIFT <= -690.0  # the top of the post's avatar and name
