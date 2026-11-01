@@ -6,7 +6,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import PEACH, Canvas, flat_counter, registry, toon_bed
-from srstudio.toon import ToonDataError
+from srstudio.toon import ToonDataError, fy
 
 
 def canvas() -> Canvas:
@@ -126,3 +126,12 @@ def test_an_arm_needs_a_colour_and_a_length() -> None:
         toon_bed.swung_arm(cv, cv.comp, (300.0, 700.0), "brown", [(1.0, 0.0)], 0.0, 2.0)
     with pytest.raises(ToonDataError, match="length"):
         toon_bed.swung_arm(cv, cv.comp, (300.0, 700.0), "#aa7755", [(1.0, 0.0)], 0.0, 2.0, length=0.0)
+
+
+def test_the_close_nightstand_keeps_its_code_clear_of_the_drawer(monkeypatch: pytest.MonkeyPatch) -> None:
+    cv = canvas()
+    seen: list[float] = []
+    monkeypatch.setattr(toon_bed.signature, "code", lambda cv, parent, x, y, *a, **k: seen.append(y))
+    toon_bed.bedside_drawer(cv, cv.comp)
+    _, top, _, tall = toon_bed.DRAWER
+    assert seen and all(y > fy(top + tall) for y in seen)

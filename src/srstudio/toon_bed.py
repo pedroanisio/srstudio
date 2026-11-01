@@ -220,8 +220,8 @@ def bedside_drawer(
     cv.rect(g, fx(x), fy(y - 22), fh(w), fh(26), NIGHTSTAND, cv.ink, INK_W * 0.8, radius=fh(5))
     cv.rect(g, fx(x + 10), fy(y), fh(w), fh(h), NIGHTSTAND_FRONT, cv.ink, INK_W * 0.8)
     signature.cactus(cv, g, fx(x + 150), fy(y - 22), 1.1)
-    signature.code(cv, g, fx(x + 240), fy(y + 170), 18, color="#b9a48f", opacity=0.9, align="end")
     dx, dy, dw, dh = DRAWER
+    signature.code(cv, g, fx(x + 240), fy(dy + dh + 44), 18, color="#b9a48f", opacity=0.9, align="end")
     cv.rect(g, fx(dx), fy(dy), fh(dw), fh(dh), GAP)
     if out is not None and lit > 0:
         glow = cv.rect(g, fx(dx), fy(dy), fh(dw), fh(26), GLOW, opacity=lit)
