@@ -29,7 +29,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -413,7 +413,9 @@ RECIPES: dict[str, Recipe] = {
     "map-far-side": Recipe(_far_side, at=SECONDS),
     "map-clock": Recipe(part(540.0, 960.0, 300.0, 10.0, 0.0, SECONDS)),
     "map-daylight": Recipe(
-        lambda cv, g, e, ctx: e(cv, g, _on_flat(cv, g, ctx), (_ROME,), datetime(2026, 6, 18, tzinfo=UTC), 0.0, SECONDS)
+        lambda cv, g, e, ctx: e(
+            cv, g, _on_flat(cv, g, ctx), (_ROME,), datetime(2026, 6, 18, tzinfo=timezone.utc), 0.0, SECONDS
+        )
     ),
     "map-stamp": Recipe(lettered("A line of evidence. Source, 2026.", 0.0, SECONDS)),
     "map-captions": Recipe(
