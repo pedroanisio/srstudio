@@ -18,6 +18,7 @@ from .saga import SagaError
 from .saga_sets import FLOOR, INK_W, H, W, _check_end, _check_spans, _far, _marks, _pool, _stars, _text
 
 __all__ = [
+    "TABLE_BOTTOM",
     "TABLE_TOP",
     "DESK_TOP",
     "DESK_EDGE",
@@ -43,6 +44,7 @@ __all__ = [
 
 TABLE_TOP = 1075  # the far edge of the hut's table
 TABLE_FRONT = 1135  # where its top meets its front
+TABLE_BOTTOM = FLOOR + 120  # where its front stops, far enough under the hem of whoever stands behind it
 DESK_TOP = 1000  # the returns counter's top
 DESK_EDGE = 640  # its left end, where a coupon runs out of counter
 SHELF_Y = 540  # the hut's shelf, the height of the hologram's puck
@@ -106,9 +108,9 @@ def hut_table(cv: Canvas, parent, *, end: float) -> None:
     g = cv.group(parent, cv.uid("g"))
     cv.rect(g, -20, TABLE_TOP, W + 40, TABLE_FRONT - TABLE_TOP, "#b5804c", cv.ink, INK_W)
     cv.rect(g, -20, TABLE_TOP + 6, W + 40, 8, "#ffffff", opacity=0.1)
-    cv.rect(g, -20, TABLE_FRONT, W + 40, FLOOR + 90 - TABLE_FRONT, "#4e2d1a", cv.ink, INK_W)
+    cv.rect(g, -20, TABLE_FRONT, W + 40, TABLE_BOTTOM - TABLE_FRONT, "#4e2d1a", cv.ink, INK_W)
     for x in range(100, W, 220):
-        cv.line(g, x, TABLE_FRONT + 6, x, FLOOR + 84, "#3a2012", 5)
+        cv.line(g, x, TABLE_FRONT + 6, x, TABLE_BOTTOM - 6, "#3a2012", 5)
 
 
 @register("prop", "saga-plate", summary="A plain plate, seen from the table's edge")

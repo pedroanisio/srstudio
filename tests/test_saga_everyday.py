@@ -7,6 +7,7 @@ import pytest
 from sr_core.scene import Scene
 
 from srstudio import SAGA, Canvas, registry, saga, saga_everyday, saga_reel, saga_sets
+from srstudio.figure_gates import COVER_DEPTH
 from srstudio.saga import Arm, SagaError
 from srstudio.saga_reel import Entry, Place, Prop, Stage
 
@@ -167,6 +168,10 @@ def test_a_hologram_is_a_dark_puck_until_it_comes_on():
     assert texts(since=0.0) >= 1
     with pytest.raises(SagaError, match="comes on inside the shot"):
         texts(since=2.0)
+
+
+def test_the_hut_table_goes_on_deep_enough_under_the_cast_behind_it():
+    assert saga_everyday.TABLE_BOTTOM - saga_sets.BEHIND["hut"] >= COVER_DEPTH
 
 
 def test_a_dim_falls_and_lifts_inside_its_span_and_refuses_nothing_to_darken():
