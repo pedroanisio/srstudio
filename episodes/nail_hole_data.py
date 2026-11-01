@@ -204,7 +204,7 @@ def dress(shot) -> None:
         times = (bill, *(more + d for d in MORE))
         for (text, x, y), t in zip(BILLS, times, strict=True):
             if t < app.end:
-                slip = collage_everyday.bill(cv, shot.front, text, x, y, w=280.0, h=190.0, size=50)
+                slip = collage_everyday.bill(cv, shot.front, text, x, y, w=280.0, h=190.0, size=50, legs=False)
                 cv.keys(slip, "y", [(t - 0.01, -300.0), (t + 0.3, y)], kind="cubic-out", hold=False, local=False)
         if app.end > leave:
             _keys(cv, shot.front, leave + 0.3)
