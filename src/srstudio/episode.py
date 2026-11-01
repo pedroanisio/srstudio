@@ -381,6 +381,8 @@ class EpisodeSpec:
     # -- the signature marks (docs/decisions/0001-signature.md) ----------------------------------
     signature: bool = True  # False only for packages older than the convention
     signature_code: str = "SR-1028"  # project-wide; changing it is a decision, not a per-episode choice
+    # -- the frame's edge ---------------------------------------------------------------------------
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
 
     def __post_init__(self) -> None:
         st = self.style
@@ -476,6 +478,7 @@ class Episode:
             namer=spec.namer.fresh() if isinstance(spec.namer, _StyleNamer) else spec.namer,
             local_time=spec.local_time,
             signature=Signature(spec.signature_code) if spec.signature else None,
+            bleed=spec.bleed,
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
