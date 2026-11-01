@@ -1252,6 +1252,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-folder": {"title": "Pasta com fotografia"},
+    "toon-smoke-detector": {"title": "Detector de fumaça"},
     "collage-wall-clock": {"title": "Relógio de parede de papel"},
     "collage-tissue-box": {"title": "Caixa de lenços"},
     "toon-call-chip": {"title": "Chamada no painel"},
@@ -8396,6 +8398,18 @@
         "at": 19.5
       },
       "text": "O cronômetro corre apagado no painel e só acende quando alguém olha."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Pasta e fotografia",
+      "parts": [
+        "toon-folder"
+      ],
+      "shot": {
+        "episode": "new-challenges",
+        "at": 21.5
+      },
+      "text": "Uma pasta vista de cima que abre sobre a foto de um prédio sem nome."
     }
   ]
 }

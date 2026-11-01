@@ -11012,6 +11012,40 @@
           "rig": null
         }
       ]
+    },
+    "toon-smoke-detector": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A smoke detector on the ceiling, in frame from the first second, its small light turning red on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "bafcab087be5fd9f4b127afb4c56ab1d18cc66670daac73634d610fb12a1980a",
+          "rig": null
+        }
+      ]
+    },
+    "toon-folder": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A manila folder from above that opens on a photograph of an unmarked office block, ringed in red pen. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f55d65142891d6e8351b305b958958dfa818f877c88943ea71573abd9ec72b67",
+          "rig": null
+        }
+      ]
     }
   }
 }
