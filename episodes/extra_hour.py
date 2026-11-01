@@ -124,14 +124,9 @@ def table_things(parent, take, end: float) -> None:
     """What is on the table by ``take``, in the order it came."""
     if take.id >= ON_TABLE["plate"]:
         g = cv.group(parent, cv.uid("plate-down"))
-        plate(g, PLATE_X, TOP)
+        plate(g, PLATE_X, TOP - 4.0)  # its foot clear of the table, drawn over it
         if take.id == ON_TABLE["plate"]:
             cv.gate(g, [(PLATE_DOWN, end)])
-    if take.id >= ON_TABLE["key"]:
-        g = cv.group(parent, cv.uid("keys-down"))
-        keys(g, KEY_X, TOP - 16 * KEY_SCALE)
-        if take.id == ON_TABLE["key"]:
-            cv.gate(g, [(KEY_DOWN, end)])
     if take.id >= ON_TABLE["phone"]:
         y = TOP - 37 * PHONE_SCALE
         if take.id == ON_TABLE["phone"]:
@@ -139,6 +134,15 @@ def table_things(parent, take, end: float) -> None:
             cv.keys(g, "x", [(PHONE_AT, PHONE_FROM), (PHONE_AT + PHONE_RUN, PHONE_X)], kind="cubic-out")
         else:
             phone(parent, PHONE_X, y)
+
+
+def keys_down(parent, take, end: float) -> None:
+    """The keys, once she has put them down: in front of her legs, which stand behind that end of the table."""
+    if take.id >= ON_TABLE["key"]:
+        g = cv.group(parent, cv.uid("keys-down"))
+        keys(g, KEY_X, TOP - 16 * KEY_SCALE)
+        if take.id == ON_TABLE["key"]:
+            cv.gate(g, [(KEY_DOWN, end)])
 
 
 def in_hand(parent, keys_: list, end: float, draw, until: float) -> None:
@@ -150,16 +154,11 @@ def in_hand(parent, keys_: list, end: float, draw, until: float) -> None:
 
 
 def scene(parent, end: float, dev_keys, noor_keys, *, take) -> None:
-    """The kitchen out of focus, him, her, the table over their knees, what is on it, and his mug on top."""
+    """The kitchen out of focus, what is on the table and what is in a hand, then the two of them, so every hand shows
+    on what it holds, the table over their knees, the keys, and the marks on top of everything."""
     far = look.depth(cv, parent, "extra-far", 5.0, overscan=True)
     stick_home.kitchen(cv, far, marks=False, safe=False)
     st.seats(cv, parent)
-    stick.rig(cv, parent, noor_keys, end, poses=POSES, look=NOOR_LOOK, at=RIGHT, flip=True, mouth=SPEECH_MOUTH,
-              **speaks(take, "noor"))  # fmt: skip
-    stick.rig(cv, parent, dev_keys, end, poses=POSES, look=DEV_LOOK, at=LEFT, mouth=SPEECH_MOUTH, **speaks(take, "dev"))
-    st.table(cv, parent)
-    signature.cactus(cv, parent, *MARKS["cactus"], scale=0.42)
-    signature.code(cv, parent, *MARKS["code"], 9, color="#4a3520")
     table_things(parent, take, end)
     mug = stick.held(cv, parent, dev_keys, end, poses=POSES, at=LEFT)
     stick_office.mug(cv, mug, 0.0, 0.0)
@@ -167,6 +166,13 @@ def scene(parent, end: float, dev_keys, noor_keys, *, take) -> None:
         in_hand(parent, noor_keys, end, lambda g: plate(g, 0.0, 30.0), PLATE_DOWN)
     elif take.id == "03":
         in_hand(parent, noor_keys, end, lambda g: keys(g, 0.0, 14.0), KEY_DOWN)
+    stick.rig(cv, parent, noor_keys, end, poses=POSES, look=NOOR_LOOK, at=RIGHT, flip=True, mouth=SPEECH_MOUTH,
+              **speaks(take, "noor"))  # fmt: skip
+    stick.rig(cv, parent, dev_keys, end, poses=POSES, look=DEV_LOOK, at=LEFT, mouth=SPEECH_MOUTH, **speaks(take, "dev"))
+    st.table(cv, parent)
+    keys_down(parent, take, end)
+    signature.cactus(cv, parent, *MARKS["cactus"], scale=0.42)
+    signature.code(cv, parent, *MARKS["code"], 9, color="#4a3520")
 
 
 def stage(take) -> None:
