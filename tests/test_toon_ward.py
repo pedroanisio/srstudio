@@ -75,3 +75,10 @@ def test_a_bandage_needs_a_span(start, end):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_ward.bandage(cv, cv.comp, start, end, LOOK)
+
+
+def test_the_blanket_runs_past_the_foot_of_the_frame_with_its_outline():
+    cv = canvas()
+    toon_ward.ward_bed(cv, cv.comp)
+    blanket = next(n for n in tags(cv) if n.get("fill") == toon_ward.BLANKET)
+    assert float(blanket.get("y")) + float(blanket.get("height")) > cv.height + float(blanket.get("strokeWidth", 0))

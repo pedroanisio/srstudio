@@ -39,7 +39,8 @@ def ward_bed(cv: Canvas, parent, marks_in: float = 0.0) -> None:
     from . import signature
 
     g = cv.group(parent, cv.uid("g"))
-    cv.rect(g, fx(-20), fy(BED_TOP + 56), fh(640), fh(320), BLANKET, cv.ink, INK_W, radius=0)
+    blanket = fy(BED_TOP + 56)  # its foot and outline run off the frame, so a shot with no punch-in never shows them
+    cv.rect(g, fx(-20), blanket, fh(640), cv.height - blanket + 2 * INK_W, BLANKET, cv.ink, INK_W, radius=0)
     cv.rect(g, fx(-20), fy(BED_TOP), fh(640), fh(64), SHEET, cv.ink, INK_W, radius=18)
     for x in (60, 196, 340, 470):
         cv.rect(g, fx(x), fy(BED_TOP + 10), fh(5), fh(46), SHEET_FOLD, cv.clear, 0, radius=2)
