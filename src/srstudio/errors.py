@@ -52,8 +52,15 @@ def _json_value(value: object, depth: int = 0) -> Any:
     if isinstance(value, (tuple, list)):
         return [_json_value(item, depth + 1) for item in value[:100]]
     if isinstance(value, dict):
-        return {str(key)[:128]: _json_value(item, depth + 1) for key, item in islice(value.items(), 100)}
+        return {_json_key(key): _json_value(item, depth + 1) for key, item in islice(value.items(), 100)}
     return f'<{type(value).__name__}>'
+
+
+def _json_key(value: object) -> str:
+    """Bound keys before conversion; opaque keys must not execute user stringification."""
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return str(_json_value(value))[:128]
+    return f'<{type(value).__name__}>'[:128]
 
 
 def diagnostic(error: BaseException, *, command: str | None = None) -> Diagnostic:

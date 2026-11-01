@@ -64,6 +64,37 @@ def test_extreme_integers_do_not_break_json_encoding_or_payload_bounds():
     assert json.loads(encoded)['actual']['value'] == '<integer exceeds 4096 bits>'
 
 
+def test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error():
+    error = SrstudioError('invalid mapping', actual={10**5000: 'value'})
+    data = error.to_dict()
+    assert data['message'] == 'invalid mapping'
+    assert data['actual'] == {'<integer exceeds 4096 bits>': 'value'}
+    assert len(json.dumps(data, allow_nan=False)) < 1000
+
+
+def test_diagnostic_keys_do_not_invoke_opaque_object_stringification():
+    class Unprintable:
+        def __str__(self):
+            raise RuntimeError('diagnostics must not execute this')
+
+    data = SrstudioError('invalid mapping', expected={Unprintable(): 'value'}).to_dict()
+    assert json.loads(json.dumps(data, allow_nan=False))['expected'] == {'<Unprintable>': 'value'}
+
+
+def test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys(monkeypatch, capsys):
+    error = cli.registry.RegistryError('invalid mapping', actual={10**5000: 'value'})
+
+    def refuse(*args):
+        raise error
+
+    monkeypatch.setattr(cli.registry, 'describe', refuse)
+    assert cli.main(['inspect', 'character', 'rafa', '--json']) == 2
+    out, err = capsys.readouterr()
+    assert out == ''
+    data = json.loads(err)
+    assert data == {**error.to_dict(), 'context': {'command': 'inspect'}}
+
+
 def test_inspect_json_failure_is_structured_on_stderr(capsys):
     assert cli.main(['inspect', 'character', 'missing-part', '--json']) == 2
     out, err = capsys.readouterr()
