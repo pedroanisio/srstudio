@@ -138,10 +138,20 @@ def _text(where: str, value: object) -> str:
     return value
 
 
+def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """An object whose keys are all different; JSON alone keeps the last of a repeated key and drops the rest."""
+    doc: dict[str, object] = {}
+    for key, value in pairs:
+        if key in doc:
+            raise ValueError(f"{key!r} twice in one object")
+        doc[key] = value
+    return doc
+
+
 def load_notes(path: Path) -> Notes:
-    """Curated text for the page. Unknown fields and wrong types are refused, not ignored."""
+    """Curated text for the page. Unknown fields, wrong types and repeated keys are refused, not ignored."""
     try:
-        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        doc = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_unique)
     except (OSError, ValueError) as exc:
         raise CatalogError(f"{path}: {exc}") from None
     top = _fields(str(path), doc, {"schema", "episodes", "styles"}, {"gallery", "parts"})
