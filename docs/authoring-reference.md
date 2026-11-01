@@ -2161,6 +2161,16 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   so `pilots/../ready-to-publish` is refused. No systemd unit watches the staging folder and none runs this tool.
   `FOLDER` is the whole set: staging replaces the last stage.
 
+### The Okayville show signature
+
+A reel in the show's look carries one cover and one corner bug ([ADR 0074](decisions/0074-okayville-show-signature.md)).
+The cover is a `srstudio.thumbnail.ShowCover`: a solid band with OKAYVILLE, `#N` and the premise in at most 5 words,
+over the reel's own art. The bug is the part `show-bug`, which `srstudio build` draws above the camera for a release on
+that cover and for no other. Numbers come from `srstudio number`: `base` sets the publishing side's count once, `claim`
+takes the next one before the final build, `list` prints the ledger at `generated/okayville/numbers.json`. A series has
+its own count with `--series`, and `outbox` writes the number in `episode.json` beside the video. `srstudio.show_gate`
+refuses a first delivery out of the look.
+
 ## Verification
 
 - `tests/test_build.py` builds an office and a café episode from a synthetic project and asserts the SDK, the XSD and
