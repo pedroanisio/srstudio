@@ -152,11 +152,12 @@ def main(argv=None):
     number.add_argument("--series", default="", help="the series, as Saga")
     number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
     number.add_argument("--post-by", default="", help="claim: the day a timely reel is due, as 2026-11-02")
+    number.add_argument("--not-before", default="", help="claim: the first day a timely reel may post, as 2026-11-20")
     number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
-    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy rules (ADR 0105)")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy rules (ADR 0144)")
     bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
@@ -191,6 +192,7 @@ def main(argv=None):
     beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the bar line needs at least eight bars")
     beat.add_argument("--seconds", type=float, help="measure only the first seconds")
     beat.add_argument("--beats-per-bar", type=int, default=4)
+    beat.add_argument("--near", type=float, default=120.0, help="the tempo to lean toward: settles double or half time")
     beat.add_argument("--json", action="store_true")
     split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
     split.add_argument("test", choices=releases.TESTS)
@@ -591,7 +593,7 @@ def _arms(args: argparse.Namespace) -> int:
 
 def _beat(args: argparse.Namespace) -> int:
     try:
-        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar, near=args.near)
     except music.MusicError as exc:
         _error("beat", exc, args.json)
         return 1
@@ -742,7 +744,9 @@ def _ledger_default() -> Path:
 
 def _claimed(slug: str, claim: show_numbers.Claim) -> str:
     series = f" {claim.series} #{claim.series_number}" if claim.series else ""
-    return f"{slug} #{claim.number}{series}" + "".join(f" {tag}" for tag in (claim.brief, claim.post_by) if tag)
+    return f"{slug} #{claim.number}{series}" + "".join(
+        f" {tag}" for tag in (claim.brief, claim.post_by, claim.not_before) if tag
+    )
 
 
 def _number(args: argparse.Namespace) -> int:
@@ -754,9 +758,8 @@ def _number(args: argparse.Namespace) -> int:
         elif args.action == "claim":
             if not args.value:
                 raise show_numbers.NumberError("claim takes the reel's slug")
-            print(
-                _claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by))
-            )
+            held = show_numbers.claim(args.ledger, args.value, args.series, args.brief, args.post_by, args.not_before)
+            print(_claimed(args.value, held))
             return 0
         elif args.action == "release":
             if not args.value:
@@ -807,7 +810,7 @@ def _strict(args: argparse.Namespace) -> int:
 
 def _anatomy_frames(project: Path) -> int:
     """Rule 2 of the anatomy rules on what was just built: 1 for a fault. Measuring takes the engine's frames, so a
-    build with no engine says it did not measure, and the first delivery still does (ADR 0106)."""
+    build with no engine says it did not measure, and the first delivery still does (ADR 0145)."""
     scenes = sorted(project.glob("*.scene.xml"))
     if not scenes:
         return 0

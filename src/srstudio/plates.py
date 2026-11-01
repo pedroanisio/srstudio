@@ -21,8 +21,11 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import time
 import zlib
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import cached_property
 from pathlib import Path
@@ -30,7 +33,7 @@ from pathlib import Path
 import numpy as np
 from sr_core.scene import Scene
 
-from . import checks
+from . import _bounded_process, checks
 from .canvas import Canvas
 from .clay import Mesh
 from .errors import SrstudioError
@@ -46,6 +49,7 @@ __all__ = [
     "Plate",
     "PlateError",
     "Print",
+    "RenderStats",
     "Texture",
     "digest",
     "document",
@@ -56,6 +60,7 @@ __all__ = [
     "print_name",
     "print_png",
     "render",
+    "render_session",
     "soften",
     "stage_lights",
     "verify",
@@ -73,6 +78,59 @@ FOLDER_MODE, FILE_MODE = 0o700, 0o600
 
 class PlateError(SrstudioError, ValueError):
     """A plate that cannot be described or rendered, or a cached file that is not what its name says."""
+
+
+@dataclass
+class RenderStats:
+    """Observed launch attempts, successful/failed renders and wall seconds inside a render session.
+
+    Cache hits do not launch an engine. Launch errors and timeouts count as failed attempts.
+    Changing these reporting fields does not restore the session's invocation budget.
+    """
+
+    invocations: int = 0
+    completed: int = 0
+    failed: int = 0
+    engine_seconds: float = 0.0
+
+
+@dataclass
+class _RenderScope:
+    maximum: int
+    timeout: float
+    memory_bytes: int
+    stats: RenderStats
+    spent: int = 0
+
+
+_RENDER_SCOPES: ContextVar[tuple[_RenderScope, ...]] = ContextVar('srstudio_plate_render_scopes', default=())
+
+
+@contextmanager
+def render_session(
+    *, max_invocations: int = 100, timeout: float = 60, max_memory_bytes: int = 8 * 1024**3
+) -> Iterator[RenderStats]:
+    """Measure and bound plate/print renderer work in this context, including nested calls.
+
+    Each enclosing session consumes one attempt per engine launch and the shortest
+    active timeout and smallest memory limit apply. Memory is a POSIX hard
+    per-process virtual-address-space limit, not aggregate RSS or GPU memory.
+    Each output stream is capped at 64 KiB; failures stop the owned process group.
+    A zero invocation budget permits only cache hits. These limits do not bound
+    mesh preparation, image decoding or other renderer entry points.
+    """
+    if type(max_invocations) is not int or not 0 <= max_invocations <= 10000:
+        raise PlateError('max_invocations must be an integer in 0..10000', code='plate.render.limit')
+    if not checks.number(timeout) or not 0 < timeout <= 600:
+        raise PlateError('timeout must be finite seconds in (0, 600]', code='plate.render.limit')
+    if type(max_memory_bytes) is not int or not 1 <= max_memory_bytes <= 1024**4:
+        raise PlateError('max_memory_bytes must be an integer in 1..1099511627776', code='plate.render.limit')
+    scope = _RenderScope(max_invocations, timeout, max_memory_bytes, RenderStats())
+    token = _RENDER_SCOPES.set((*_RENDER_SCOPES.get(), scope))
+    try:
+        yield scope.stats
+    finally:
+        _RENDER_SCOPES.reset(token)
 
 
 @dataclass(frozen=True)
@@ -377,22 +435,72 @@ def _keep(tmp: Path, target: Path) -> Path:
 
 def _engine_render(engine: Path, source: Path, out: Path) -> None:
     """Render frame 0 of ``source``, from its own folder because a document's files are relative to it."""
+    scopes = _RENDER_SCOPES.get()
+    for scope in scopes:
+        if scope.spent >= scope.maximum:
+            raise PlateError(
+                'plate renderer invocation budget exhausted',
+                code='plate.render.budget',
+                path='max_invocations',
+                actual=scope.spent,
+                expected=f'fewer than {scope.maximum} attempts',
+                remedy='Reuse cached inputs or explicitly increase the render-session budget.',
+            )
+    for scope in scopes:
+        scope.spent += 1
+        scope.stats.invocations += 1
+    start = time.perf_counter()
+    completed = False
     try:
-        done = subprocess.run(
-            [
-                str(Path(engine).resolve()),
-                "render",
-                source.name,
-                "--time",
-                "0",
-                "--output",
-                str(out.resolve()),
-                "--strict",
-            ],
-            cwd=source.parent,
-            capture_output=True,
-            text=True,
+        limits = (
+            _bounded_process.ProcessLimits(
+                timeout=min(s.timeout for s in scopes),
+                memory_bytes=min(s.memory_bytes for s in scopes),
+                stdout_bytes=65536,
+                stderr_bytes=65536,
+            )
+            if scopes
+            else None
         )
+        _invoke_renderer(engine, source, out, limits)
+        completed = True
+    finally:
+        elapsed = time.perf_counter() - start
+        for scope in scopes:
+            scope.stats.engine_seconds += elapsed
+            scope.stats.completed += int(completed)
+            scope.stats.failed += int(not completed)
+
+
+def _invoke_renderer(engine: Path, source: Path, out: Path, limits: _bounded_process.ProcessLimits | None) -> None:
+    command = (
+        str(Path(engine).resolve()),
+        'render',
+        source.name,
+        '--time',
+        '0',
+        '--output',
+        str(out.resolve()),
+        '--strict',
+    )
+    if limits is not None:
+        try:
+            _bounded_process.run(command, input=b'', limits=limits, cwd=source.parent)
+        except _bounded_process.BoundedProcessError as error:
+            diagnostic = error.to_dict()
+            kind = {'process.timeout': 'timeout', 'process.output': 'output'}.get(diagnostic['code'], 'engine')
+            stderr = error.stderr.decode('utf-8', errors='replace')[-600:]
+            raise PlateError(
+                f'plate renderer {kind} failure: {error}; {stderr}',
+                code=f'plate.render.{kind}',
+                path=diagnostic['path'],
+                actual={'process': diagnostic, 'stderr': stderr},
+                expected='a successful render within the declared process limits',
+                remedy='Repair renderer inputs or explicitly adjust the finite render-session limits before retrying.',
+            ) from error
+        return
+    try:
+        done = subprocess.run(command, cwd=source.parent, capture_output=True, text=True, timeout=None)
     except OSError as error:
         raise PlateError(
             f'cannot execute renderer {engine}: {error}',

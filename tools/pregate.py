@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The quick gate before the full one (ADR 0102): format, lint, types, and the tests a change can plainly break.
+"""The quick gate before the full one (ADR 0141): format, lint, types, and the tests a change can plainly break.
 
     python3 tools/pregate.py [--base develop]
 

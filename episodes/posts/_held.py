@@ -1,4 +1,4 @@
-"""The reels stopped before their first delivery, each with the ruling behind it (ADR 0101). A held reel owes no
+"""The reels stopped before their first delivery, each with the ruling behind it (ADR 0140). A held reel owes no
 delivery, so the publish gate reads on, and it cannot be delivered until its line leaves this map. It stays listed as
 held back on every Drive push. A ruling that releases a reel removes its line in the commit that delivers it.
 """

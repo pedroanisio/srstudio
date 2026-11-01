@@ -1,13 +1,10 @@
 """Acting compiles once; cuts observe the same performance rather than restarting it."""
 
 import json
-import subprocess
 from dataclasses import replace
 
 import pytest
-from sr_core.scene import Scene
 
-from srstudio import Canvas
 from srstudio.acting import (
     BENTO,
     ActingBeat,
@@ -23,6 +20,7 @@ from srstudio.acting import (
 from srstudio.character_clips import Placement
 from srstudio.head_motion import Channel, HeadPlan
 from srstudio.voice import Alignment
+from support.acting import canvas, contact_track, evaluate
 
 
 def score():
@@ -34,19 +32,6 @@ def score():
             ActingBeat(3, emotion='confident', transition=0.25),
         ),
     )
-
-
-def canvas():
-    scene = Scene(version='auto')
-    scene.add_project(width=1080, height=1920, fps='30', duration=12)
-    return Canvas(scene, font_asset=None)
-
-
-def evaluate(engine, path, time):
-    result = subprocess.run(
-        [str(engine), 'eval', str(path), '--time', str(time), '--json'], capture_output=True, text=True, check=True
-    )
-    return json.loads(result.stdout)['result']['nodes']
 
 
 @pytest.mark.parametrize('rig', [BENTO, gloss_actor('nadia')])
@@ -201,21 +186,6 @@ def test_window_drawings_match_uncut_engine_states_at_nonzero_offsets(scene_rend
         )
         assert not any(n['id'] == 'performance' for n in evaluate(scene_render, path, lead + at + end - start))
     assert frames[0] == frames[1]
-
-
-def contact_track():
-    from srstudio.limbs import HUMAN, ArmProfile, Camera, Frame, Vec3
-    from srstudio.limbs.compile import BakeOptions
-    from srstudio.limbs.integration import LimbTrack
-    from srstudio.limbs.motion import Action, Contact, Motion, TransformKey, TransformTrack
-
-    target = TransformTrack((TransformKey(0, Frame(origin=Vec3(0.4, 0.2, 0))),))
-    motion = Motion(
-        ArmProfile(), HUMAN, (Action('press', duration=4),), contacts=(Contact('button', 0.5, 3.5, target),)
-    )
-    return LimbTrack(
-        motion, style='gloss', camera=Camera(origin=(-92, -345), scale=200), options=BakeOptions(fps=4), backend='baked'
-    )
 
 
 def test_contact_state_and_world_anchor_survive_a_cut_without_reacquisition():

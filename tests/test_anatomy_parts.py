@@ -1,4 +1,4 @@
-"""Every hand in the library is declared: rule 1's table, read against the registry and the drawings (ADR 0105)."""
+"""Every hand in the library is declared: rule 1's table, read against the registry and the drawings (ADR 0144)."""
 
 from __future__ import annotations
 

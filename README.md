@@ -6,6 +6,11 @@ The library builds and validates scene XML. Rendering that XML into video requir
 
 For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
 link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
+rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
+The [composition guide](docs/composition-preflight.md) covers strict scene manifests,
+declared contacts, work budgets, vector verification in bounded worker processes and
+atomic scene emission.
 
 ## Install
 
@@ -233,9 +238,9 @@ Auto-enhance is on by default: each video lands one real change to the process o
 
 New Okayville reels and News and Host pilots have a comedy floor: the lower of the author's and an independent reviewer's score must reach 14/20 at first delivery. Mind and Maps pilots and anything already delivered owe no score. See [ADR 0064](docs/decisions/0064-comedy-floor.md).
 
-A hand is drawn through the shared `srstudio.anatomy` contract: the right is the mirror of the left, the arm decides the thumb's side, and a build refuses a hand on the wrong arm, a hand with no side, or a version with one drawing on both arms. `srstudio anatomy` lists the published reels exempted by name. See [ADR 0105](docs/decisions/0105-hand-chirality-is-a-build-error.md).
+A hand is drawn through the shared `srstudio.anatomy` contract: the right is the mirror of the left, the arm decides the thumb's side, and a build refuses a hand on the wrong arm, a hand with no side, or a version with one drawing on both arms. `srstudio anatomy` lists the published reels exempted by name. See [ADR 0144](docs/decisions/0144-hand-chirality-is-a-build-error.md).
 
-A body is declared too: `anatomy_parts.BODIES` says whether a character has legs, stops at the waist, or is a thing that is whole as drawn. A hand exists only on an arm, so a prop that draws one runs in `anatomy_ledger.on_arm`. `srstudio build` then reads the frames for a bust ending in the open and two hands on one arm, and first delivery reads them either way. See [ADR 0106](docs/decisions/0106-anatomy-is-a-build-error.md).
+A body is declared too: `anatomy_parts.BODIES` says whether a character has legs, stops at the waist, or is a thing that is whole as drawn. A hand exists only on an arm, so a prop that draws one runs in `anatomy_ledger.on_arm`. `srstudio build` then reads the frames for a bust ending in the open and two hands on one arm, and first delivery reads them either way. See [ADR 0145](docs/decisions/0145-anatomy-is-a-build-error.md).
 
 Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 

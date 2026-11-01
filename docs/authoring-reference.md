@@ -21,6 +21,8 @@ a similar character or pass contract JSON directly to a builder.
 | Choose a continuity guarantee | [Continuity discovery](catalog/limbs.md#inspect-continuity-before-choosing-a-transition) | Inspect source key derivatives, estimated joins, endpoint holds and rendered sampling separately. |
 | Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
+| Measure authoring cost | [Authoring benchmark](authoring-benchmark.md) | Separate cold/warm phases, compare output hashes, and bound plate renderer invocations. |
+| Compile a bounded composition | [Composition preflight and emission](composition-preflight.md) | Validate the manifest, verify actual vector payloads, preserve source clocks, and atomically publish supported scenes. |
 
 ## Repairing authoring input
 
@@ -2465,7 +2467,7 @@ builder holds mood tilts; use `toon_head.figure` for a moving head plan. Bento's
 nonempty `limbs` replacement tracks are unsupported.
 
 `toon-bento@2`, the version new reels draw, gives him a pair of hands
-([docs/decisions/0104-bento-hands-are-a-pair.md](decisions/0104-bento-hands-are-a-pair.md)). A `Gesture` holds
+([docs/decisions/0143-bento-hands-are-a-pair.md](decisions/0143-bento-hands-are-a-pair.md)). A `Gesture` holds
 `toon_bento.Paw` records, each naming its `Arm` and `Facing`; a paw on the other arm's sleeve, or two on one arm, is
 refused when the gesture is built.
 

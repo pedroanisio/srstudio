@@ -2,13 +2,12 @@
 
 import hashlib
 import os
-from dataclasses import replace
 
 import numpy as np
 import pytest
 
 from srstudio import plates
-from test_plates import plate
+from support.plates import plate, printed_plate
 
 
 @pytest.fixture
@@ -29,12 +28,6 @@ def rendering(tmp_path, monkeypatch):
 
     monkeypatch.setattr(plates, '_engine_render', render)
     return engine, fonts, tmp_path / 'cache', calls
-
-
-def printed_plate():
-    text = plates.Print('#FFFFFF', 64, 64, (plates.Line('OK', 32, 32, 12, '#000000'),))
-    original = plate()
-    return replace(original, materials=(replace(original.materials[0], print=text),))
 
 
 def test_engine_content_changes_invalidate_without_losing_previous_build(rendering):
@@ -160,7 +153,6 @@ def test_catalog_materializes_the_selected_artifact_at_the_drawing_reference(ren
     cache = folder / 'work' / catalog_specimens.style_of(entry).slug / 'plates'
     monkeypatch.setattr(catalog_specimens.rafa_host, 'part_plates', lambda name: (made,))
     monkeypatch.setattr(catalog_specimens.pedro_host, 'part_plates', lambda name: ())
-    monkeypatch.setenv('SRSTUDIO_FONTS', str(fonts))
 
     class Inspected(Exception):
         pass
@@ -177,7 +169,7 @@ def test_catalog_materializes_the_selected_artifact_at_the_drawing_reference(ren
         engine.write_bytes(contents)
         selected = plates.render(made, engine=engine, cache=cache, fonts=fonts)
         with pytest.raises(Inspected):
-            catalog_specimens.render_one(plan, engine, folder)
+            catalog_specimens.render_one(plan, engine, folder, fonts)
     assert len(calls) == 2
 
 
@@ -232,15 +224,17 @@ def test_catalog_refuses_font_changes_between_cache_binding_and_emission(renderi
     made = printed_plate()
     document = b'<scene><project width="64" height="64"/><composition/></scene>'
     plan = cs.Plan(registry.get('prop', 'coffee-cup'), document, 0, 'key', True)
-    monkeypatch.setenv('SRSTUDIO_FONTS', str(fonts))
+    held = cache / 'project' / 'assets'
+    held.mkdir(parents=True)
+    (held / plates.PRINT_FONT[2]).write_bytes((fonts / plates.PRINT_FONT[2]).read_bytes())
     monkeypatch.setattr(cs, 'plan', lambda *args: ([plan], {}))
     monkeypatch.setattr(cs.rafa_host, 'part_plates', lambda name: (made,))
     monkeypatch.setattr(cs.pedro_host, 'part_plates', lambda name: ())
     original = cs.render_one
 
-    def changed(plan, engine, folder):
+    def changed(plan, engine, folder, fonts):
         (fonts / plates.PRINT_FONT[2]).write_bytes(b'font-b')
-        original(plan, engine, folder)
+        original(plan, engine, folder, fonts)
 
     def forbidden(*args):
         raise RuntimeError('catalog rendered after its inputs changed')

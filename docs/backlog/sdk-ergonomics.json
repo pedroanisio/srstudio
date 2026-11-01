@@ -50,6 +50,104 @@
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "composition_runtime_limits": {
+      "baseline_source_commit": "40e67f49",
+      "process_boundary_red": {"failed": 16},
+      "public_worker_boundary_red": {"failed": 12},
+      "node_budget_and_prepared_metadata_red": {"failed": 2},
+      "remote_typed_cause_red": {"failed": 1},
+      "worker_startup_diagnostic_red": {"failed": 1},
+      "engine_enabled_regressions": {"passed": 409, "skipped": 0, "subtests_passed": 28},
+      "branch_inclusive_coverage_percent": {
+        "bounded_process": 91,
+        "process_bootstrap": 100,
+        "composition_runtime": 88,
+        "composition_wire": 85,
+        "composition_worker": 100,
+        "composition": 100,
+        "composition_emit": 87,
+        "composition_parse": 90,
+        "composition_preflight": 95,
+        "composition_vector": 95,
+        "total": 93
+      },
+      "coverage_scope": "Ten composition/runtime modules, unchanged 80% gate. Subprocess and exec instrumentation measures real worker execution. The full repository suite was not run.",
+      "kernel_address_space_test_limit_bytes": 134217728,
+      "refused_allocation_bytes": 268435456,
+      "parent_limits_and_environment_unchanged": true,
+      "timed_out_descendants_verified_inactive": true,
+      "worker_output_caps_verified": true,
+      "example_xml_equal_to_previous_compiler": true,
+      "example_xml_sha256": "08028df34cadb149c9f1ee211f4006ed5a3745faf40ef1bf2c0d380e3943ee16",
+      "ruff_formatted_files": 794,
+      "mypy_source_files": 271,
+      "retained_artifacts": "../generated/sdk-composition-runtime/v1/",
+      "qualification": "Kernel limits apply to each worker's virtual address space, including runtime and mappings, not aggregate RSS or GPU memory. Deadlines bound worker invocations and binary IPC; host drawing generation, bounded manifest intake and atomic filesystem publication remain host operations. Vector verification/compilation uses these limits; plate/proxy and renderer integration remain open. No performance improvement is claimed; VectorSource batches work to avoid separate preparation invocations."
+    },
+    "composition_vector_emission": {
+      "baseline_source_commit": "f8ccb9c2",
+      "manifest_commit": "f8ccb9c2",
+      "initial_emission_red": {"failed": 19, "skipped": 1},
+      "expansion_before_copy_red": {"failed": 1},
+      "gradient_clock_and_nonfinite_red": {"failed": 2},
+      "misplaced_xml_root_red": {"failed": 1},
+      "engine_enabled_regressions": {"passed": 353, "skipped": 0, "subtests_passed": 28},
+      "branch_inclusive_coverage_percent": {
+        "composition": 100,
+        "composition_parse": 90,
+        "composition_preflight": 95,
+        "composition_vector": 95,
+        "composition_emit": 91,
+        "total": 95
+      },
+      "coverage_scope": "Five composition modules, unchanged 80% gate; focused composition, drawing-document, canvas/registry, parts/catalog, recovery and layout tests. The full repository suite was not run.",
+      "ruff_formatted_files": 787,
+      "mypy_source_files": 266,
+      "strict_rendered_source_clock_comparisons": 2,
+      "rendered_pixel_equality": true,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "sr_core_installed_content_sha256": "7e2374e6d150f026d5925fdf6ae500481accfb55baf7430b700a9f2ed84368cf",
+      "retained_artifacts": "../generated/sdk-composition-emission/v1/",
+      "qualification": "Strict rendering matches two source-time samples of the real pinned paper fixture, with engine-evaluated parent/camera and screen-space checks. Payload geometry does not establish authorship or biomechanical semantics. Source preparation is host-owned, timeouts are cooperative and memory is a planning allowance; plate/proxy emission and hard runtime enforcement remain open. The installed sr-core package has no recorded Git revision; its installed Python/schema/JSON contents are hashed instead."
+    },
+    "authoring_benchmark": {
+      "baseline_source_commit": "a4a5331a",
+      "initial_render_session_red": {
+        "failed": 12
+      },
+      "initial_benchmark_red": {
+        "failed": 15
+      },
+      "renderer_output_collision_and_duplicate_json_red": {
+        "failed": 2
+      },
+      "engine_enabled_regressions": {
+        "passed": 111,
+        "skipped": 0
+      },
+      "final_fast_checks": {
+        "passed": 46,
+        "deselected": 4
+      },
+      "branch_inclusive_coverage_percent": {
+        "benchmark_fixtures": 93,
+        "benchmark": 95,
+        "plates": 95
+      },
+      "coverage_scope": "The focused pytest-cov invocation exited 1 because its whole-SDK coverage denominator measured 23.02%, below the unchanged 80% gate. The scoped report for all three changed modules passed at 95%; the full repository test suite was not run.",
+      "real_benchmark_repeats_verified": 2,
+      "phases_per_repeat": 16,
+      "cold_plate_engine_invocations": 2,
+      "warm_plate_engine_invocations": 0,
+      "verification_plate_engine_invocations": 2,
+      "drawing_frames_per_fixture": 8,
+      "planning_state_samples_per_fixture": 9,
+      "contact_compiler_audited_samples": 8,
+      "ruff_formatted_files": 1596,
+      "mypy_source_files": 261,
+      "engine_sha256": "90bf26f00439e3615206fa8c7ea4accea8cf5be009e188b60d7c5938ec4e0b4a",
+      "qualification": "Real renderer tests verify repeatable phase outputs and decoded plate pixels. Timing is observational, not a correctness threshold. Cold application processes and caches do not flush OS or GPU caches. Hardware/driver identity requires external pinning. The compiler audits the eight emitted frames separately from the nine-point planning grid. A 30-second render limit was too small on this host; correctness integration uses explicit 120-second render and 600-second worker limits. No speedup is claimed."
+    },
     "limb_motion_boundaries": {
       "baseline_source_commit": "83917174",
       "ownership_red": {
@@ -476,6 +574,23 @@
       "status": "open",
       "title": "Implement bounded scene-wide composition preflight",
       "problem": "DRAWING.md proposes shared scene contracts, but subsystem compilation does not yet provide one validated plan with cross-layer bindings, versions and render budgets.",
+      "progress": {
+        "implemented": [
+          "Strict frozen manifest records and bounded parsing; approved references, camera/view envelopes, source clocks, declared contacts and reproducible work estimates",
+          "Actual closed vector payload verification, content hashes, node counts and conservative complete animation bounds",
+          "Revalidated compilation with scoped IDs/paints, one parent/camera projection and preserved source clocks",
+          "Atomic self-contained scene publication with expansion allowances, cooperative timeout checks and failure preservation",
+          "Public vector verification/compilation workers with hard kernel address-space limits, parent deadlines, bounded IPC and preserved typed causes; VectorSource batches preparation and compilation",
+          "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images",
+          "Perspective plate-view bridge resolves canonical units, handedness, parent transforms, shared world lights and bounded principal-point overscan without applying projection twice"
+        ],
+        "remaining": [
+          "Prepared plate/proxy payload bindings and supported backend emission under shared camera/light contracts",
+          "Integrate composition budgets with plate/proxy preparation and bounded renderer sessions",
+          "Cross-backend rendering evidence for the complete DRAWING.md contract"
+        ],
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
+      },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"
       ],
@@ -771,16 +886,18 @@
     {
       "id": "SDK-P4-03",
       "priority": "P4",
-      "status": "open",
+      "status": "complete",
       "title": "Benchmark the agent authoring loop before optimizing it",
       "problem": "The package eagerly imports registered builders, and existing measurement helpers cover source/build comparisons. There is no single benchmark separating discovery, planning, compilation, rendering and cold/warm cache work.",
       "evidence": ["src/srstudio/__init__.py", "src/srstudio/limbs/evaluation.py:measure", "src/srstudio/plates.py"],
       "change": "Create representative bounded benchmarks for those phases; optimize only measured bottlenecks while preserving discovery completeness and deterministic output.",
       "acceptance": ["Separate cold/warm measurements and pinned fixture inputs", "Report sample, frame, plate and engine invocation counts", "Output-equivalence checks accompany any optimization", "No wall-clock performance threshold in ordinary correctness tests"],
+      "resolution": "Added an opt-in, bounded authoring-loop benchmark with fresh-process import/discovery, acting and moving-contact planning, repeated compilation, frame rendering, cold/warm plates and fresh pixel verification. Reports pin fixture parameters, Python sources, package versions and renderer bytes, define per-phase work counts and refuse changed outputs before publication. Scoped plate render sessions expose actual launch attempts, nested budgets and timeouts. No performance optimization or motion-quality improvement is claimed.",
+      "verification": ["tests/test_authoring_benchmark.py", "tests/test_plate_render_sessions.py", "tests/test_plate_cache_identity.py", "tests/test_plates.py", "tests/test_proxy.py", "docs/authoring-benchmark.md", "docs/decisions/0100-authoring-loop-measurements.md"],
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

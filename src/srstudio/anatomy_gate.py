@@ -1,4 +1,4 @@
-"""The gate of the anatomy rules: named ``anatomy`` (ADR 0105, ADR 0106).
+"""The gate of the anatomy rules: named ``anatomy`` (ADR 0144, ADR 0145).
 
 A build refuses what the rules refuse, so a reel built under them cannot hold a fault. This gate is for what was built
 before them, or under an exemption: a reel on its first delivery is read from its build's record and any note stands

@@ -278,3 +278,29 @@ def test_registered_function_defaults_remain_inspectable(kind):
     assert inspect.signature(wrapped) == inspect.signature(original)
     assert wrapped.__defaults__ == original.__defaults__
     assert wrapped.__kwdefaults__ == original.__kwdefaults__
+
+
+def test_reregistering_the_current_builder_does_not_wrap_it_again():
+    class Drawn:
+        @staticmethod
+        def draw():
+            return 'drawn'
+
+    def draw():
+        return 'drawn'
+
+    for kind, name, source in (('prop', 'rewrapped-function', draw), ('character', 'rewrapped-class', Drawn)):
+        registered = registry.register(kind, name)(source)
+        method = vars(Drawn)['draw'].__func__
+        assert registry.register(kind, name, replace=True)(registered) is registered
+        assert registry.get(kind, name).builder is registered
+        assert vars(Drawn)['draw'].__func__ is method
+
+
+def test_a_function_registered_under_two_names_keeps_one_scope_for_each():
+    def draw():
+        return 'drawn'
+
+    first = registry.register('prop', 'first-name')(draw)
+    second = registry.register('prop', 'second-name')(draw)
+    assert first is not second

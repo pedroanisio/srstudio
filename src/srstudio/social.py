@@ -606,7 +606,7 @@ def check_delivery(
     delivered. A delivered folder whose video is no longer in ``items`` drifts too. ``frozen`` maps a published
     video to the fingerprint its post draws now that the operator accepted (ADR 0040): its delivery is current at
     that drawing and no other, and every other check still holds. A ``held`` video was stopped before its first
-    delivery (ADR 0101): it owes no delivery, and one that was delivered all the same drifts. Raises
+    delivery (ADR 0140): it owes no delivery, and one that was delivered all the same drifts. Raises
     :class:`DeliveryError` when ``frozen`` or ``held`` names a video not in ``items``. Runs no engine, ffmpeg or
     ffprobe."""
     out = Path(out)

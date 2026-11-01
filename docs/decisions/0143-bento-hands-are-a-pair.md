@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0104: Bento's hands are a pair
+# ADR 0143: Bento's hands are a pair
 
 - Status: accepted (2026-11-01), by the operator on the proof at
   `generated/character-proofs/bento-hands/index.html`: "approved"

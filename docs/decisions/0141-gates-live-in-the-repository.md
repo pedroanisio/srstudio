@@ -2,7 +2,7 @@
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 ---
 
-# ADR 0102: The gates live in the repository, and a reel leaves build on a review
+# ADR 0141: The gates live in the repository, and a reel leaves build on a review
 
 - Status: accepted (2026-11-01)
 

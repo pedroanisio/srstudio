@@ -307,7 +307,8 @@ def register(
 
         resolved = style_of_module(obj.__module__) if style is None else style
         previous = _REGISTRY[kind].get(name)
-        obj = drawing_events.instrument(obj)
+        if previous is None or obj is not previous.builder:  # the current builder is already instrumented
+            obj = drawing_events.instrument(obj)
         entry = Entry(
             kind,
             name,

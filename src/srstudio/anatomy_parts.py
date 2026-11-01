@@ -1,4 +1,4 @@
-"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0105).
+"""What every character and every hand part of the library is, against :mod:`srstudio.anatomy` (ADR 0144).
 
 A row says what a part's hands are: a pair the contract draws, one drawing for one arm, hands with no thumb to place,
 or no hands. A row with a thumb carries the side and the facing its drawing was made for, and a row with none says why.
@@ -78,12 +78,12 @@ def _none(why: str) -> Hands:
 
 
 _ANCHOR = _paired(
-    "news_arms.Hand on a Side: the arm chooses the mirror (ADR 0103); version 1 drew balls",
+    "news_arms.Hand on a Side: the arm chooses the mirror (ADR 0142); version 1 drew balls",
     "open",
     Side.RIGHT,
     Facing.PALM,
 )
-_BENTO = _paired("toon_bento.Paw on an Arm: the arm chooses the mirror (ADR 0104)", "open", Side.LEFT, Facing.PALM)
+_BENTO = _paired("toon_bento.Paw on an Arm: the arm chooses the mirror (ADR 0143)", "open", Side.LEFT, Facing.PALM)
 _RAFA = _paired("the arm picks the thumb's side in rafa.pair and rafa._hand", "rafa-hand", Side.LEFT, Facing.BACK)
 _COLLAGE = _paired("collage._hand takes a contract hand and draws its thumb there", "pose", Side.LEFT, Facing.BACK)
 _STROKE = _thumbless("arms end in a stroke's round cap")
@@ -227,7 +227,7 @@ BODIES: Final = MappingProxyType(
 )
 
 # A pair whose thumb follows its arm but whose other fingers do not mirror. Each is an approved look, so it stays as
-# drawn until the operator says otherwise; ADR 0105 names it.
+# drawn until the operator says otherwise; ADR 0144 names it.
 NOT_MIRRORED: Final = MappingProxyType(
     {"rafa": "rafa._hand keeps one row of four fingers on both hands; only the thumb moves to the arm's side"}
 )

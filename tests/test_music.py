@@ -254,3 +254,20 @@ def test_a_bar_of_no_beats_is_refused_before_anything_is_read(tmp_path):
 def test_a_missing_decoder_is_a_music_error(tmp_path):
     with pytest.raises(MusicError, match="no-such-ffmpeg"):
         music.reading(clicks(tmp_path / "c.wav", 120), ffmpeg="no-such-ffmpeg")
+
+
+@pytest.mark.parametrize("played", [60, 180])
+def test_a_hint_near_the_tempo_settles_which_octave_a_reading_takes(tmp_path, played):
+    read = music.reading(clicks(tmp_path / "far.wav", played), near=played)
+    assert read.groove.bpm == pytest.approx(played, abs=1)
+
+
+def test_the_hint_reaches_the_beat_command(tmp_path, capsys):
+    assert main(["beat", str(clicks(tmp_path / "far.wav", 180)), "--near", "180", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["bpm"] == pytest.approx(180, abs=1)
+
+
+@pytest.mark.parametrize("near", [0.0, -120.0, math.nan, math.inf])
+def test_a_hint_that_is_no_tempo_is_refused_before_anything_is_read(tmp_path, near):
+    with pytest.raises(MusicError, match="near"):
+        music.reading(tmp_path / "unread.wav", near=near)
