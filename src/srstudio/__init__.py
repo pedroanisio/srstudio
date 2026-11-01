@@ -63,6 +63,7 @@ from . import (  # noqa: F401  (registers builders)
     saga_sets,
     signature,
     soft_bedtime,
+    soft_closet,
     soft_front,
     soft_odds,
     soft_props,

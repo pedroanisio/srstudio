@@ -1276,6 +1276,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-closet": {"title": "Armário no escuro"},
+    "soft-mop": {"title": "Esfregão"},
+    "soft-door": {"title": "Portas na parede"},
     "desk-phone": {"title": "Celular na mesa"},
     "video-tile": {"title": "Janela de chamada"},
     "toon-remote": {"title": "Controle remoto"},
@@ -9103,6 +9106,31 @@
         "at": 8.6
       },
       "text": "Visto de cima: vibra, recebe mensagens e vira sozinho."
+    },
+    {
+      "section": "props",
+      "name": "Duas portas e um armário",
+      "parts": [
+        "soft-door",
+        "soft-mop"
+      ],
+      "shot": {
+        "episode": "wrong-door",
+        "at": 15.3
+      },
+      "text": "A porta errada, aberta: o esfregão com a gravata, a prateleira com as migalhas."
+    },
+    {
+      "section": "locations",
+      "name": "Dentro do armário",
+      "parts": [
+        "soft-closet"
+      ],
+      "shot": {
+        "episode": "wrong-door",
+        "at": 7.2
+      },
+      "text": "Escuro total e uma linha de luz sobre um olho."
     }
   ]
 }

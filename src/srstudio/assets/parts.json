@@ -13509,6 +13509,57 @@
           "rig": null
         }
       ]
+    },
+    "soft-door": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Doors let into the back wall of a Soft room, shut or standing open on the dark, with a slot for what stands in the doorway. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "14146d235b23bca4c900470bc898a2d5b072447b92539001cec537691c9f4155",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mop": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A string mop standing on its head, that can tip over, slowly. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "22e16ea456379efdf716c60e607e06d1324e7be9237b81efa0135ef857724ad3",
+          "rig": null
+        }
+      ]
+    },
+    "soft-closet": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The whole frame dark, with one line of light: what stands inside shows plainly only where it crosses the line. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "de8b908afcca7ecbee98f80ce63031f430a9c0c52bb1ea7d116fbb13d2dfaf18",
+          "rig": null
+        }
+      ]
     }
   }
 }
