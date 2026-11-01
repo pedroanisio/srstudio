@@ -64,7 +64,7 @@ HEADS = ("goat", "frog")
 FIGURES = {"goat": (1.06, -6.0)}
 PIVOT = (980.0, 1420.0)
 GOAT_COAT, GOAT_HOOF = toon_critters.GOAT.coat, toon_critters.GOAT_HOOF
-ARM_ROOT, FIST = (262.0, 784.0), (428.0, 560.0)
+ARM_ROOT, FIST = (244.0, 784.0), (428.0, 560.0)
 WORN_KNOT, WORN_SCALE = (178.0, 690.0), 0.9
 CARD_AT, LANYARD_NECK = (176.0, 728.0), ((128.0, 674.0), (224.0, 674.0))
 PAT_ROOT, PAT_HOOF = (212.0, 790.0), (296.0, 692.0)
@@ -97,21 +97,21 @@ BEATS = (
     part(6.0, "goat", 2, 2, "Look him in the eye.", "wide", "flat", "desk"),
     first(7.4, "frog", 3, "There's a portal.", "half", "flat", "type"),
     part(8.5, "frog", 3, 3, "There is no him.", "narrow", "flat", "desk"),
-    hold(9.7, "goat", "", "side", "none", "desk"),  # looks at the laptop
-    hold(10.3, "goat", "", "down", "none", "desk"),  # looks at the tie
+    hold(9.7, "goat", "", "side", "flat", "desk"),  # looks at the laptop
+    hold(10.3, "goat", "", "down", "flat", "desk"),  # looks at the tie
     hold(10.9, "goat", "", "narrow", "flat", "desk", "wear"),  # puts it on
     say(11.5, "goat", 4, "narrow", "smirk", "desk"),
     hold(12.9, "hamster", "", "half", "none", "desk", "out"),  # the door shuts
-    hold(13.9, "frog", "", "down", "none", "type"),
-    hold(14.9, "frog", "", "down", "none", "type", "ping"),  # she does not look up
+    hold(13.9, "frog", "", "down", "flat", "type"),
+    hold(14.9, "frog", "", "down", "flat", "type", "ping"),  # she does not look up
     hold(16.4, "hamster", "", "half", "none", "desk", "back"),  # the door opens
     hold(17.1, "goat", "", "half", "grin", "desk"),
     say(17.7, "frog", 5, "wide", "flat", "desk"),
     say(18.8, "goat", 6, "half", "smirk", "desk"),
     say(20.2, "frog", 7, "shock", "open", "desk"),
     say(21.6, "goat", 8, "narrow", "smirk", "desk"),
-    hold(22.8, "frog", "", "half", "none", "desk"),  # a second and a half
-    hold(23.9, "frog", "", "down", "none", "desk", "shut"),
+    hold(22.8, "frog", "", "half", "flat", "desk"),  # a second and a half
+    hold(23.9, "frog", "", "down", "flat", "desk", "shut"),
     say(24.7, "frog", 9, "down", "frown", "desk"),
     hold(26.3, "hamster", "", "half", "none", "desk", "pat"),  # the two-shot: his hoof on her shoulder
     say(27.1, "hamster", 10, "half", "none", "desk"),
