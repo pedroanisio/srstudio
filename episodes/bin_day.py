@@ -34,7 +34,7 @@ from bin_day_audio import (
     WATCHING,
 )
 from instagram_posts import POSTS
-from srstudio import SPEECH_MOUTH, Episode, stick, stick_odds, stick_office, stick_reel, stick_street
+from srstudio import SPEECH_MOUTH, Episode, signature, stick, stick_odds, stick_office, stick_reel, stick_street
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -116,6 +116,7 @@ def window_shot(parent, take, end: float, *, sipping: bool) -> None:
     if sipping and take.actor == "walt":
         margaret = [K(0, "hold-mug", WATCHING), K(0.1, "sip", SIPPING)]
     neighbors(frame, take, end, scale=0.42, walt_keys=[K(0, "hold-mug", walt)], margaret_keys=margaret)
+    signature.code(cv, parent, 40, 1880, 9, color="#2f3d22")  # the zoom crops the street's own
 
 
 def stage(take) -> None:
@@ -131,7 +132,7 @@ def stage(take) -> None:
             cv.keys(here, "x", [(0.0, -300.0), (end, -420.0)], kind="linear")
             cv.keys(here, "y", [(0.0, 300.0), (end, 330.0)], kind="linear")
         else:
-            cv.keys(here, "x", [(0.0, 0.0), (end, -300.0)], kind="linear")
+            cv.keys(here, "x", [(0.0, -170.0), (end, -300.0)], kind="linear")  # clear of the cactus at once
             cv.keys(here, "y", [(0.0, 150.0), (end, 300.0)], kind="linear")
         stick_odds.wheelie_bin(cv, here, 390.0, 1190.0, lean=24, scale=0.75)
         robed(here, strides(end, PANIC), end, 560.0, scale=0.72, floor=1190.0)
@@ -177,11 +178,13 @@ def stage(take) -> None:
         robed(g, [K(0, "arms-up", JOY)], end, 540.0, scale=1.3, floor=1960.0)
     elif take.shot == "driver":
         stick_street.street(cv, g)
+        stick_street.window_frame(cv, g)  # the pane shows past the cab's round corner
         stick_odds.trash_truck(cv, g, -930.0, 1560.0, scale=1.9)
         cab = cv.group(g, cv.uid("cab"))
-        cab.add_mask(type="path", path="M 560 700 L 900 700 L 900 1055 L 560 1055 Z")
-        figure(cab, [K(0, "lean-out", DRIVER_FACE)], end, DRIVER, 760.0, take, who="driver", flip=True, scale=0.95,
-               floor=1720.0)  # fmt: skip
+        cab.add_mask(type="path", path="M 654 806 L 888 806 L 888 1044 L 654 1044 Z")
+        figure(cab, [K(0, "lean-out", DRIVER_FACE)], end, DRIVER, 735.0, take, who="driver", flip=True, scale=0.6,
+               floor=1462.0)  # fmt: skip
+        signature.cactus(cv, g, 1024, 1418, scale=0.42)  # the truck parks on the street's
         stick_odds.wheelie_bin(cv, g, 620.0, ROAD + 60, wheels=1, scale=0.9)
         if take.is_effect:
             dev_keys = [K(0, "arms-up", AT_DRIVER)]
@@ -204,7 +207,7 @@ for take in t.takes:
     stage(take)
 
 hook = stick.card(cv, cv.comp, HOOK, size=78)
-cv.gate(hook, [(0, t.takes[3].start)])
+cv.gate(hook, [(0, t.takes[2].start)])  # it stops where the same words start as spoken words
 spoken = stick_reel.words(ep, t.takes, sentences=True, hold=True)
 ep.audio(take=stick_reel.placing({}), loudness="-14")
 stick_reel.close(ep, POSTS["bin-day"], hook, spoken)
