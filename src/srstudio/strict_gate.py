@@ -7,7 +7,9 @@ the frame gates (ADR 0073). A reel in the manifest is published and frozen, and 
 The rule is the publishing side's: "A reel whose findings are all proven false ships. A finding counts as proven false
 only when it's measured on the rendered frames, not argued", "signed off by a reviewer who isn't the author", and "Real
 findings still get fixed." So a finding is cleared by a :class:`Record` in ``episodes/strict/<slug>.json`` and by
-nothing else, and only ``LEG-SHORT`` and ``LEG-CONTRAST`` can be cleared: the two the rule says how to measure.
+nothing else, and only ``LEG-SHORT``, ``LEG-CONTRAST`` and ``TXT-FIT`` can be cleared. The rule says how to measure the
+first two. The third is the proof the publishing side accepted on ``ill-get-this``: the card "touches the edge only
+while it's thrown in", and at rest the text is "fully inside it".
 
 A record is written by agents, so it is model output, and this is the verification CLAUDE.md requires of it: a typed
 parse that refuses unknown fields (:func:`parse_record`), semantic checks that the numbers agree with each other and
@@ -40,6 +42,7 @@ from .social import DeliveryError, Drift
 __all__ = [
     "CONTRAST",
     "ENGINE_REPORT",
+    "FIT",
     "FORMAT",
     "RECORD_VERSION",
     "SHORT",
@@ -47,6 +50,7 @@ __all__ = [
     "Contrast",
     "Evidence",
     "Finding",
+    "Fit",
     "OnScreen",
     "Record",
     "Report",
@@ -64,6 +68,7 @@ RECORD_VERSION = "1.0.0"
 ENGINE_REPORT = "qa/render-report.json"  # in a project, as the reel styles declare it on their output
 SHORT = "LEG-SHORT"
 CONTRAST = "LEG-CONTRAST"
+FIT = "TXT-FIT"
 NOT_COUNTED = "info"  # what --strict leaves out; any other severity counts, a new one included
 _HASH = re.compile(r"[0-9a-f]{64}")
 _COLOUR = re.compile(r"#[0-9a-f]{6}")
@@ -150,6 +155,39 @@ class Contrast:
 
 
 @dataclass(frozen=True)
+class Fit:
+    """A text cut only while it comes in: at rest, its box of glyphs inside the box that holds it and inside the frame.
+
+    Boxes are left, top, right and bottom, in pixels of the frame, and each edge is a pixel of the box."""
+
+    first_frame: int  # the first frame the box is on screen
+    rest_frame: int  # the first frame it stays still
+    last_frame: int
+    text: tuple[int, int, int, int]
+    box: tuple[int, int, int, int]
+    limit: float
+
+    @property
+    def cites(self) -> tuple[int, ...]:
+        return self.first_frame, self.rest_frame, self.last_frame
+
+    @property
+    def minimum(self) -> float:
+        return self.limit
+
+    @property
+    def past(self) -> int:
+        """How far the text reaches past its box at rest, in pixels."""
+        left, top, right, bottom = self.text
+        edge_left, edge_top, edge_right, edge_bottom = self.box
+        return max(0, edge_left - left, edge_top - top, right - edge_right, bottom - edge_bottom)
+
+    def __str__(self) -> str:
+        rest = f"inside its box from frame {self.rest_frame} to frame {self.last_frame}"
+        return f"{rest}, {self.past} px past it, limit {self.limit:g} px, thrown in from frame {self.first_frame}"
+
+
+@dataclass(frozen=True)
 class Evidence:
     """A frame of the master as a picture, at ``path`` inside the reel's project."""
 
@@ -164,7 +202,7 @@ class Cleared:
     code: str
     node: str
     at: float
-    measurement: OnScreen | Contrast
+    measurement: OnScreen | Contrast | Fit
     frames: tuple[Evidence, ...]
 
     @property
@@ -272,7 +310,35 @@ def _contrast(raw: object, where: str, fps: float) -> Contrast:
     return Contrast(first, last, lowest, fill, back, ratio, minimum)
 
 
-_MEASURES: dict[str, Callable[[object, str, float], OnScreen | Contrast]] = {SHORT: _on_screen, CONTRAST: _contrast}
+def _box(raw: object, name: str) -> tuple[int, int, int, int]:
+    if not isinstance(raw, list) or len(raw) != 4:
+        raise StrictError(f"{name} {raw!r} is not a left, top, right and bottom")
+    left, top, right, bottom = (_frame(edge, name) for edge in raw)
+    if left >= right or top >= bottom:
+        raise StrictError(f"{name} {raw!r} has no area")
+    return left, top, right, bottom
+
+
+def _fit(raw: object, where: str, _fps: float) -> Fit:
+    found = _fields(raw, where, ("first_frame", "rest_frame", "last_frame", "text", "box", "limit"))
+    first, last = _frame(found["first_frame"], "first_frame"), _frame(found["last_frame"], "last_frame")
+    rest = _frame(found["rest_frame"], "rest_frame")
+    limit = _number(found["limit"], "limit")
+    if limit < 0:
+        raise StrictError(f"{where}: limit {limit:g} is below zero")
+    if not first <= rest <= last:
+        raise StrictError(f"{where}: rest frame {rest} is outside {first} to {last}")
+    fit = Fit(first, rest, last, _box(found["text"], "text"), _box(found["box"], "box"), limit)
+    if fit.past > limit:
+        raise StrictError(f"{where}: the text is {fit.past} px past its box at rest, limit {limit:g} px")
+    return fit
+
+
+_MEASURES: dict[str, Callable[[object, str, float], OnScreen | Contrast | Fit]] = {
+    SHORT: _on_screen,
+    CONTRAST: _contrast,
+    FIT: _fit,
+}
 
 
 def _evidence(raw: object, where: str) -> Evidence:
@@ -429,24 +495,44 @@ def _picture(path: Path) -> bytes:
 
 
 # -- the gate ------------------------------------------------------------------------------------------------------
+def _when(finding: Finding) -> tuple[float, float]:
+    start = 0.0 if finding.start is None else finding.start
+    return start, start if finding.end is None else finding.end
+
+
 def _window_defect(entry: Cleared, finding: Finding, fps: float) -> str:
     """Why the frames measured are not the frames the report means, or nothing: a true number about the wrong text."""
     first, last = entry.measurement.first_frame / fps, (entry.measurement.last_frame + 1) / fps
-    start = 0.0 if finding.start is None else finding.start
-    end = start if finding.end is None else finding.end
+    start, end = _when(finding)
     if first <= end + 1 / fps and start <= last:
         return ""
     measured = f"frames {entry.measurement.first_frame} to {entry.measurement.last_frame}"
     return f"{entry}: {measured} are not when the report says it was drawn, {start:.3f} to {end:.3f} s"
 
 
-def _entry_defects(entry: Cleared, finding: Finding, fps: float) -> list[str]:
+def _fit_defects(entry: Cleared, fit: Fit, finding: Finding, fps: float, size: tuple[int, int]) -> list[str]:
+    """Why a text that fits at rest does not answer the report: the cut must be over by then, and inside the frame."""
+    reasons = []
+    end, rest = _when(finding)[1], fit.rest_frame / fps
+    if end > rest + _SAME:
+        reasons.append(
+            f"{entry}: the report has it cut until {end:.3f} s, and frame {fit.rest_frame} at {rest:.3f} s is its rest"
+        )
+    width, height = size
+    if fit.text[2] >= width or fit.text[3] >= height:
+        reasons.append(f"{entry}: the text at {list(fit.text)} leaves the {width}x{height} frame")
+    return reasons
+
+
+def _entry_defects(entry: Cleared, finding: Finding, fps: float, size: tuple[int, int]) -> list[str]:
     reasons = []
     if finding.limit is None or abs(finding.limit - entry.measurement.minimum) > _SAME:
         minimum = entry.measurement.minimum
         reasons.append(f"{entry}: the record's minimum {minimum:g} is not the report's {finding.limit}")
     if window := _window_defect(entry, finding, fps):
         reasons.append(window)
+    if isinstance(entry.measurement, Fit):
+        reasons.extend(_fit_defects(entry, entry.measurement, finding, fps, size))
     return reasons
 
 
@@ -463,7 +549,7 @@ def _proof_defects(
     width, height, fps = _stream(video)
     if abs(record.fps - fps) > _SAME:
         return [f"the record says {record.fps:g} fps, the master {fps:g}"]
-    reasons = [reason for entry, finding in matched for reason in _entry_defects(entry, finding, fps)]
+    reasons = [reason for entry, finding in matched for reason in _entry_defects(entry, finding, fps, (width, height))]
     cited = [(entry, evidence) for entry, _ in matched for evidence in entry.frames]
     frames = _master_frames(video, (evidence.frame for _, evidence in cited), width * height * 3)
     for entry, evidence in cited:

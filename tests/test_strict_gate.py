@@ -16,7 +16,7 @@ from srstudio import strict_gate
 from srstudio.cli import main
 from srstudio.releases import Release
 from srstudio.social import _ENTRY_KEYS, MANIFEST, MANIFEST_VERSION, InstagramPost
-from srstudio.strict_gate import Cleared, Contrast, OnScreen, Record, StrictError, parse_record, strict_defects
+from srstudio.strict_gate import Cleared, Contrast, Fit, OnScreen, Record, StrictError, parse_record, strict_defects
 from support.native import FONT
 
 SLUG = "the-card"
@@ -36,6 +36,16 @@ SHORT = {
     "message": 'text "card-layer": drawn for 0.375 s (minimum 0.8333 s)',
 }
 DIM = {**SHORT, "code": "LEG-CONTRAST", "node": "sign-layer", "time": [1.0, 1.0], "measured": 3.9, "limit": 4.5}
+CUT = {
+    **SHORT,
+    "code": "TXT-FIT",
+    "node": "name-layer",
+    "time": [0.0, 0.5],
+    "measured": 60.0,
+    "limit": 0.0,
+    "unit": "px",
+    "message": 'text "name-layer" is cut: it reaches 60 px past its box (clipped) or out of the frame',
+}
 POST = InstagramPost("A card", "A card that stays up.", ("#comedy",))
 NOTE = {"code": "INERT-I13", "severity": "info", "path": "/scene/effects/effect[1]", "message": "an unread attribute"}
 
@@ -147,6 +157,20 @@ def measured_contrast(**fields) -> dict:
     }
 
 
+def fitted(**fields) -> dict:
+    """A whole, true clearing of :data:`CUT`: cut while it comes in, inside its card from frame 24 to frame 47."""
+    measurement = {"first_frame": 0, "rest_frame": 24, "last_frame": 47, "text": [20, 90, 80, 110],
+                   "box": [10, 80, 100, 120], "limit": 0}  # fmt: skip
+    return {
+        "code": "TXT-FIT",
+        "node": "name-layer",
+        "at": 0.0,
+        "measurement": {**measurement, **fields.pop("measurement", {})},
+        "frames": [frame(0), frame(24), frame(47)],
+        **fields,
+    }
+
+
 def record(*cleared: dict, **fields) -> dict:
     return {
         "schema_version": "1.0.0",
@@ -174,6 +198,7 @@ def test_a_whole_record_parses_into_its_types():
     assert isinstance(short, Cleared) and isinstance(short.measurement, OnScreen)
     assert short.measurement.seconds == 2.0 and short.frames[1].frame == 47
     assert isinstance(dim.measurement, Contrast) and dim.measurement.ratio == 21.0
+    assert isinstance(parse_record(record(fitted())).cleared[0].measurement, Fit)
 
 
 def edited(path: tuple, value) -> dict:
@@ -222,7 +247,7 @@ MEASURED = (*FIRST, "measurement")
         (edited(("author",), "  "), "author"),
         (edited(("reviewer",), "worskpace-b1"), "the reviewer is the author"),
         (edited(("reviewer",), " WORSKPACE-B1 "), "the reviewer is the author"),
-        (edited((*FIRST, "code"), "TXT-FIT"), "TXT-FIT is not a finding frames can prove false"),
+        (edited((*FIRST, "code"), "TXT-OVERFLOW"), "TXT-OVERFLOW is not a finding frames can prove false"),
         (edited((*FIRST, "code"), "LEG-SPEED"), "LEG-SPEED is not a finding frames can prove false"),
         (edited((*FIRST, "node"), ""), "node"),
         (edited((*FIRST, "at"), "soon"), "at"),
@@ -262,6 +287,46 @@ def test_a_contrast_that_does_not_beat_its_minimum_or_its_colours_is_refused(cha
         parse_record(record(measured_contrast(measurement=change)))
 
 
+@pytest.mark.parametrize(
+    ("change", "said"),
+    [
+        ({"rest_frame": 48}, "rest frame 48 is outside 0 to 47"),
+        ({"first_frame": 25}, "rest frame 24 is outside 25 to 47"),
+        ({"rest_frame": True}, "rest_frame"),
+        ({"text": [20, 90, 80]}, "text .* is not a left, top, right and bottom"),
+        ({"box": "the card"}, "box .* is not a left, top, right and bottom"),
+        ({"text": [20, 90, 80, 90.5]}, "text"),
+        ({"text": [-1, 90, 80, 110]}, "text"),
+        ({"text": [80, 90, 20, 110]}, r"text \[80, 90, 20, 110\] has no area"),
+        ({"box": [10, 120, 100, 80]}, r"box \[10, 120, 100, 80\] has no area"),
+        ({"text": [5, 90, 80, 110]}, "the text is 5 px past its box at rest, limit 0 px"),
+        ({"text": [20, 70, 80, 110]}, "the text is 10 px past its box at rest, limit 0 px"),
+        ({"text": [20, 90, 103, 110]}, "the text is 3 px past its box at rest, limit 0 px"),
+        ({"text": [20, 90, 80, 121]}, "the text is 1 px past its box at rest, limit 0 px"),
+        ({"limit": -1}, "limit -1 is below zero"),
+        ({"limit": True}, "limit"),
+        ({"seconds": 2.0}, "unknown field seconds"),
+    ],
+)
+def test_a_text_that_does_not_fit_at_rest_is_refused(change, said):
+    with pytest.raises(StrictError, match=said):
+        parse_record(record(fitted(measurement=change)))
+
+
+def test_a_fit_needs_every_measured_field():
+    document = fitted()
+    del document["measurement"]["rest_frame"]
+    with pytest.raises(StrictError, match="missing field rest_frame"):
+        parse_record(record(document))
+
+
+@pytest.mark.parametrize("missing", [0, 24, 47])
+def test_a_fit_must_cite_its_entrance_and_both_ends_of_its_rest(missing):
+    frames = [frame(n) for n in (0, 24, 47) if n != missing]
+    with pytest.raises(StrictError, match=f"does not cite frame {missing}"):
+        parse_record(record(fitted(frames=frames)))
+
+
 def test_a_contrast_must_cite_its_worst_frame():
     with pytest.raises(StrictError, match="does not cite frame 24"):
         parse_record(record(measured_contrast(frames=[frame(0)])))
@@ -294,6 +359,62 @@ def test_a_real_finding_of_another_kind_is_refused_even_when_the_rest_are_cleare
     reel.report([SHORT, fit])
     reel.record(on_screen())
     assert reel.defects() == [f"{VIDEO}: --strict warning: TXT-FIT sign"]
+
+
+def test_a_text_cut_only_while_it_comes_in_ships_on_its_measured_rest(reel):
+    reel.report([CUT, NOTE])
+    reel.record(fitted())
+    assert reel.defects() == []
+
+
+def test_a_text_that_rests_exactly_as_the_cut_ends_ships(reel):
+    reel.report([{**CUT, "time": [0.0, 1.0]}])
+    reel.record(fitted())
+    assert reel.defects() == []
+
+
+@pytest.mark.parametrize("window", [[0.0, 1.5], [1.5, 1.75]])
+def test_a_cut_after_the_text_came_to_rest_is_a_real_finding(reel, window):
+    """The publishing side's words are "only while it's thrown in": a text cut at rest, or leaving, is cut."""
+    reel.report([{**CUT, "time": window}])
+    reel.record(fitted(at=window[0]))
+    assert reel.defects() == [
+        f"{VIDEO}: TXT-FIT name-layer: the report has it cut until {window[1]:.3f} s, "
+        "and frame 24 at 1.000 s is its rest"
+    ]
+
+
+def test_a_cut_at_no_time_cannot_be_put_before_a_rest(reel):
+    reel.report([{**CUT, "time": None}])
+    reel.record(fitted())
+    assert f"{VIDEO}: --strict warning: TXT-FIT name-layer measured 60 of 0 px" in reel.defects()
+
+
+@pytest.mark.parametrize(
+    ("box", "text"), [([10, 80, 108, 120], [20, 90, 108, 110]), ([10, 80, 100, 200], [20, 90, 80, 192])]
+)
+def test_a_text_inside_a_box_that_leaves_the_frame_is_refused(reel, box, text):
+    reel.report([CUT])
+    reel.record(fitted(measurement={"box": box, "text": text}))
+    assert reel.defects() == [f"{VIDEO}: TXT-FIT name-layer: the text at {text} leaves the 108x192 frame"]
+
+
+def test_a_fit_s_limit_is_the_report_s_and_not_the_author_s(reel):
+    reel.report([CUT])
+    reel.record(fitted(measurement={"limit": 5, "text": [5, 90, 80, 110]}))
+    assert reel.defects() == [f"{VIDEO}: TXT-FIT name-layer: the record's minimum 5 is not the report's 0.0"]
+
+
+def test_a_fit_s_frames_are_held_to_the_master(reel):
+    reel.report([CUT])
+    reel.record(fitted(frames=[frame(0), {"frame": 24, "path": "qa/strict/47.png"}, frame(47)]))
+    assert reel.defects() == [f"{VIDEO}: TXT-FIT name-layer: qa/strict/47.png is not frame 24 of the master"]
+
+
+def test_the_listing_gives_a_fit_its_rest_and_its_margin():
+    assert str(parse_record(record(fitted())).cleared[0].measurement) == (
+        "inside its box from frame 24 to frame 47, 0 px past it, limit 0 px, thrown in from frame 0"
+    )
 
 
 def test_a_reel_whose_findings_are_all_proven_false_ships(reel):
