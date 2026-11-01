@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from srstudio import plates
-from test_plates import plate
+from support.plates import plate
 
 
 @pytest.fixture
