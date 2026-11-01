@@ -13,14 +13,15 @@ three settings, :func:`lens` the camera, :func:`count` the overlay that keeps th
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import partial
 
-from srstudio import foley, scripting, sketch, toon, toon_bed, toon_everyday, toon_house, toon_pair
+from srstudio import foley, scripting, signature, sketch, toon, toon_bed, toon_everyday, toon_house, toon_pair
 from srstudio.scripting import at, times
 from srstudio.sketch import Line, Sketch, Speaker
 from srstudio.toon import fh, fx, fy
 from srstudio.toon_everyday import Screen
 from srstudio.toon_pair import Act
-from srstudio.toon_sketch import Sound
+from srstudio.toon_sketch import Sound, fit_captions
 from srstudio.voice import Voice, VoiceSettings
 
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
@@ -60,6 +61,8 @@ MAE_AT, BRUNO_AT = (118.0, 876.0), (336.0, 876.0)  # low enough that the quilt c
 FLOOR_AT, FLOOR_SCALE = (160.0, 1010.0), 1.16
 BAGS = "#a23b5b"
 DIM_PAW = "#afa9b0"  # her coat under the night's shade: the lit phone is above the shade, the hand must not glow
+LEDGE = (292.0, 522.0, 92.0, 14.0)  # x, y, w, h: over his head, in frame in every cut in and clear of the captions
+BAND = toon.CAPTION_TOP + 12.0  # the pills clear the bug
 
 LINES = (
     Line("phone", "Six o'clock. Wake up.", phone=True),
@@ -215,9 +218,18 @@ def _bruno_track(cv, g, beats) -> None:
     cv.keys(g, "y", [(0.0, y), (climb + 0.2, y), (climb + 0.5, y + 28), (climb + 1.2, y)], hold=False, local=False)
 
 
+def _ledge(cv, parent) -> None:
+    """The ledge on the headboard that signs the bed: the nightstand leaves the frame in both cut ins, this does not."""
+    x, y, w, h = LEDGE
+    cv.rect(parent, fx(x), fy(y), fh(w), fh(h), toon_house.NIGHTSTAND, cv.ink, toon.FINE_W, radius=fh(3))
+    signature.cactus(cv, parent, fx(x + 24), fy(y), 0.7)
+    signature.code(cv, parent, fx(x + w - 4), fy(y - 11), 14, color="#b9a48f", opacity=0.9, align="end")
+
+
 def _night(shot) -> None:
     cv, app, beats = shot.cv, shot.app, shot.beats
     toon_bed.double_bed(cv, shot.back)
+    _ledge(cv, shot.back)
     bear = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=SCALE, moving=False)
     _bruno_track(cv, bear, beats)
     rabbit = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=SCALE)
@@ -226,7 +238,7 @@ def _night(shot) -> None:
     a1, a2, a3 = alarm(beats, 1), alarm(beats, 2), alarm(beats, 3)
     toon_bed.swung_arm(cv, shot.back, (268.0, 778.0), BEAR_COAT, [(flop, 250.0), (flop + 0.22, 203.0)], flop, grab,
                        length=150.0)  # fmt: skip
-    toon_bed.double_quilt(cv, shot.front)
+    toon_bed.double_quilt(cv, shot.front, signed=False)
     px, py = toon_bed.PHONE_SPOT
     cv.rect(
         shot.front,
@@ -251,7 +263,8 @@ def _night(shot) -> None:
     buzz = [(a3 + k * 0.05, (-1) ** k * 7.0) for k in range(7)]
     cv.keys(held, "x", [(grab, 0.0), (a3 - 0.05, 0.0), *buzz, (a3 + 0.4, 0.0)], hold=False, local=False)
     toon_everyday.phone(
-        cv, held, (Screen(0.0, "notify", title="Alarm", text="Saturday", note="6:10"),), measure=shot.measure,
+        cv, held, tuple(Screen(t, "notify", title="Alarm", text="Saturday", note=n)
+                        for t, n in ((0.0, "6:10"), (a3, "6:20"))), measure=shot.measure,
         at=(306.0, 830.0), scale=0.9, hand=DIM_PAW, id="in-her-hand",
     )  # fmt: skip
     pillow = cv.group(shot.front, cv.uid("g"), start=bury + 0.3, end=app.end)
@@ -286,6 +299,7 @@ def _bags(cv, parent) -> None:
 def _morning(shot) -> None:
     cv, beats = shot.cv, shot.beats
     toon_bed.double_bed(cv, shot.back, day=True)
+    _ledge(cv, shot.back)
     day, turn = at(beats, "day"), at(beats, "turn")
     for shoulder, up in (((322.0, 768.0), -118.0), ((378.0, 768.0), -62.0)):
         keys = [(day, 90.0), (day + 0.8, up), (turn - 0.45, up), (turn, 90.0)]
@@ -294,7 +308,7 @@ def _morning(shot) -> None:
     cv.keys(bear, "rotation", [(turn, 0.0), (turn + 0.4, -7.0)], hold=False, kind="sine-in-out", local=False)
     rabbit = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=SCALE, moving=False)
     _bags(cv, rabbit)
-    toon_bed.double_quilt(cv, shot.front, day=True)
+    toon_bed.double_quilt(cv, shot.front, day=True, signed=False)
     lap = "M {} {} L {} {} L {} {} L {} {} Z"
     corners = (fx(96.0), fy(846.0), fx(214.0), fy(838.0), fx(236.0), fy(884.0), fx(104.0), fy(894.0))
     cv.path(shot.front, lap.format(*corners), toon_everyday.PHONE_BODY, cv.ink, toon.FINE_W)
@@ -305,9 +319,17 @@ def dress(shot) -> None:
     {NIGHT: _night, CORNER: _corner, MORNING: _morning}[shot.app.who](shot)
 
 
+def captions(cv, parent, lines, measure, tints) -> None:
+    """The style's pills, in the lower band that clears the bug."""
+    pills = partial(measure, size=toon.CAPTION_SIZE)
+    fit_captions(lines, pills, cv.width)
+    toon.captions(cv, parent, lines, pills, tints=tints, band=BAND)
+
+
 def lens(shot, setup) -> None:
     """A slow push across the opening, a cut in on Mae for the phone, back out; a slow push on her on the floor; a cut
-    to her face on the last line. The captions stay where they are."""
+    in on the bed for the last line, her face and his both whole. Each cut in keeps :data:`LEDGE` in frame. The
+    captions stay where they are."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     if app.who == NIGHT:
         grab, a3 = at(beats, "grab"), alarm(beats, 3)
@@ -332,8 +354,8 @@ def lens(shot, setup) -> None:
         cv.keys(setup, "y", ys, hold=False, kind="sine-in-out", local=False)
     else:
         face = at(beats, "face")
-        s = 1.8
+        s = 1.35
         cv.keys(setup, "scaleX", [(app.start, 1.0), (face, s)], local=False)
         cv.keys(setup, "scaleY", [(app.start, 1.0), (face, s)], local=False)
-        cv.keys(setup, "x", [(app.start, 0.0), (face, 0.0)], local=False)
-        cv.keys(setup, "y", [(app.start, 0.0), (face, -1000.0)], local=False)
+        cv.keys(setup, "x", [(app.start, 0.0), (face, -85.0)], local=False)
+        cv.keys(setup, "y", [(app.start, 0.0), (face, -500.0)], local=False)
