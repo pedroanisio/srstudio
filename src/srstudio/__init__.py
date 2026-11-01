@@ -60,6 +60,7 @@ from . import (  # noqa: F401  (registers builders)
     stick_gym,
     stick_home,
     stick_office,
+    stick_porch,
     stick_reel,
     stick_school,
     stick_shop,
