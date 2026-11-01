@@ -200,7 +200,7 @@ room = cv.group(video, "room", scaleX=ROOM, scaleY=ROOM)
 
 
 def cactus(g):
-    signature.cactus(cv, g, 628, 960, 0.62)
+    signature.cactus(cv, g, 603, 960, 0.62)  # far enough in that the slow push keeps it inside the recording
 
 
 cutout_home.home_study(cv, room, behind_desk=milo, on_desk=on_desk, cactus=cactus)
@@ -212,7 +212,9 @@ cutout_recording.face_box(cv, screen, CANDIDATE[0], CANDIDATE[1] - 8, 318, spans
 milo_box = cv.group(screen, "face-milo-follows")
 cv.gate(milo_box, [(L[7].start, DURATION)])
 cutout_recording.face_box(cv, milo_box, 809, 665, 226, id="face-milo")
-cv.rect(screen, 40, 1404, 1000, 236, "#14171C", opacity=0.8)  # a white shirt under white captions
+# A white shirt under white captions: the scrim stops short of the desk's right end, where the marks are.
+shirt_scrim = cv.grad("shirt-scrim", [(0, "#14171C"), (0.75, "#14171C"), (1, "#14171C00")], (0, 0, 1, 0))
+cv.rect(screen, 40, 1404, 720, 236, shirt_scrim, opacity=0.8)
 cutout_recording.recording_window(cv, screen, seconds=30, end=DURATION, stop=TICK)
 cutout_recording.meter_panel(
     cv,
