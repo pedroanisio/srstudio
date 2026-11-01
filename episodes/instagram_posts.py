@@ -219,6 +219,7 @@ def write_all(
         [
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
             *text_rules.caption_defects(chosen, _beside(renders), first),
+            *text_rules.timing_defects(chosen, _beside(renders), first, engine),
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
             *anatomy_gate.hand_defects(chosen, _beside(renders), first),

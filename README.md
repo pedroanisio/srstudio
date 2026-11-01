@@ -244,6 +244,8 @@ A body is declared too: `anatomy_parts.BODIES` says whether a character has legs
 
 A burned caption does not run across a sentence end: a window that drops the stop, or keeps it and breaks off inside the next sentence, is a build error (`srstudio.text_rules`, the check `caption-grammar`). A window of whole sentences with their stops passes, and what is published stays as named rows of `assets/text_published.json` (ADR 0146).
 
+A text is timed as a viewer sees it: `text_rules` reads the frames the engine evaluates and times the words from the first frame they are legible to the last, across layers and cuts, against the 0.8333 s reading minimum, along with each page of a burned caption track. The check is `text-timing`, run by `srstudio build` when it has an engine and at first delivery (ADR 0147).
+
 Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes

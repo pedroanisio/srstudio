@@ -1341,6 +1341,7 @@ def _reported_reel(posts, monkeypatch, tmp_path, findings):
     monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts.anatomy_gate, "hand_defects", lambda *a, **kw: [])
     monkeypatch.setattr(posts.anatomy_gate, "body_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.text_rules, "timing_defects", lambda *a, **kw: [])
     return renders
 
 

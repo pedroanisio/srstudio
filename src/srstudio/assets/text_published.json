@@ -264,6 +264,240 @@
       "rule": "caption-run",
       "part": "I meant lasagna. He",
       "why": "published with this window; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-feedback",
+      "rule": "text-short",
+      "part": "Zero.",
+      "why": "published with this text on screen for 0.717 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-joy-points",
+      "rule": "text-short",
+      "part": "Okay.",
+      "why": "published with this text on screen for 0.686 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-joy-points",
+      "rule": "text-short",
+      "part": "Heavily.",
+      "why": "published with this text on screen for 0.614 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-terms",
+      "rule": "text-short",
+      "part": "+5",
+      "why": "published with this text on screen for 0.708 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-terms",
+      "rule": "text-short",
+      "part": "Accepted without reading",
+      "why": "published with this text on screen for 0.708 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-terms",
+      "rule": "text-short",
+      "part": "JOY POINTS",
+      "why": "published with this text on screen for 0.708 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-trust-fall",
+      "rule": "text-short",
+      "part": "Trust.",
+      "why": "published with this text on screen for 0.743 s; a published reel is frozen"
+    },
+    {
+      "reel": "gloss-wellness",
+      "rule": "text-short",
+      "part": "still.",
+      "why": "published with this text on screen for 0.482 s; a published reel is frozen"
+    },
+    {
+      "reel": "good-you",
+      "rule": "text-short",
+      "part": "How was your",
+      "why": "published with this text on screen for 0.542 s; a published reel is frozen"
+    },
+    {
+      "reel": "good-you",
+      "rule": "text-short",
+      "part": "weekend",
+      "why": "published with this text on screen for 0.625 s; a published reel is frozen"
+    },
+    {
+      "reel": "home-sick",
+      "rule": "text-short",
+      "part": "NOT SICK",
+      "why": "published with this text on screen for 0.417 s; a published reel is frozen"
+    },
+    {
+      "reel": "home-sick",
+      "rule": "text-short",
+      "part": "EMPLOYEE",
+      "why": "published with this text on screen for 0.667 s; a published reel is frozen"
+    },
+    {
+      "reel": "missed-you",
+      "rule": "text-short",
+      "part": "8:00 AM",
+      "why": "published with this text on screen for 0.375 s; a published reel is frozen"
+    },
+    {
+      "reel": "not-a-robot",
+      "rule": "text-short",
+      "part": "[ERROR BUZZ]",
+      "why": "published with this text on screen for 0.792 s; a published reel is frozen"
+    },
+    {
+      "reel": "not-a-robot",
+      "rule": "text-short",
+      "part": "I'M NOT A...",
+      "why": "published with this text on screen for 0.542 s; a published reel is frozen"
+    },
+    {
+      "reel": "premium-suction",
+      "rule": "text-short",
+      "part": "BEDROOM 2",
+      "why": "published with this text on screen for 0.792 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "Repeat",
+      "why": "published with this text on screen for 0.417 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "I will",
+      "why": "published with this text on screen for 0.375 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "not check",
+      "why": "published with this text on screen for 0.458 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "my email",
+      "why": "published with this text on screen for 0.542 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "on the drive",
+      "why": "published with this text on screen for 0.542 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "home",
+      "why": "published with this text on screen for 0.625 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "leave work",
+      "why": "published with this text on screen for 0.458 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "I answered",
+      "why": "published with this text on screen for 0.583 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "forty",
+      "why": "published with this text on screen for 0.375 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "emails",
+      "why": "published with this text on screen for 0.458 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "at red",
+      "why": "published with this text on screen for 0.333 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "lights",
+      "why": "published with this text on screen for 0.792 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "Now repeat",
+      "why": "published with this text on screen for 0.625 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "after",
+      "why": "published with this text on screen for 0.333 s; a published reel is frozen"
+    },
+    {
+      "reel": "repeat-after-me",
+      "rule": "text-short",
+      "part": "me",
+      "why": "published with this text on screen for 0.625 s; a published reel is frozen"
+    },
+    {
+      "reel": "saga-exit-interview",
+      "rule": "text-short",
+      "part": "No.",
+      "why": "published with this text on screen for 0.671 s; a published reel is frozen"
+    },
+    {
+      "reel": "the-family-photo",
+      "rule": "text-short",
+      "part": "5",
+      "why": "published with this text on screen for 0.083 s; a published reel is frozen"
+    },
+    {
+      "reel": "the-family-photo",
+      "rule": "text-short",
+      "part": "4",
+      "why": "published with this text on screen for 0.500 s; a published reel is frozen"
+    },
+    {
+      "reel": "the-stove",
+      "rule": "text-short",
+      "part": "Did you",
+      "why": "published with this text on screen for 0.792 s; a published reel is frozen"
+    },
+    {
+      "reel": "the-stove",
+      "rule": "text-short",
+      "part": "The iron",
+      "why": "published with this text on screen for 0.792 s; a published reel is frozen"
+    },
+    {
+      "reel": "unexpected-item",
+      "rule": "text-short",
+      "part": "Please",
+      "why": "published with this text on screen for 0.333 s; a published reel is frozen"
+    },
+    {
+      "reel": "unexpected-item",
+      "rule": "text-short",
+      "part": "Please wait",
+      "why": "published with this text on screen for 0.583 s; a published reel is frozen"
+    },
+    {
+      "reel": "unexpected-item",
+      "rule": "text-short",
+      "part": "You're employee",
+      "why": "published with this text on screen for 0.625 s; a published reel is frozen"
     }
   ]
 }

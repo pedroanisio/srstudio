@@ -73,6 +73,7 @@ class Node(NamedTuple):
     world: Matrix
     opacity: float
     draw: bool
+    text: str = ""  # the words a text layer shows
 
 
 def _curve(points: Sequence[Point]) -> Iterator[Point]:
@@ -357,7 +358,9 @@ def read_frame(printed: str) -> Frame:
         result = document["result"]
         width, height = result["size"]
         nodes = tuple(
-            Node(n["id"], n.get("parent"), n["kind"], tuple(n["world"]), n["world_opacity"], n["draw"])
+            Node(
+                n["id"], n.get("parent"), n["kind"], tuple(n["world"]), n["world_opacity"], n["draw"], n.get("text", "")
+            )
             for n in result["nodes"]
         )
         return Frame(float(result["time"]), float(width), float(height), nodes)

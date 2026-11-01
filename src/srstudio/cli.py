@@ -810,17 +810,27 @@ def _strict(args: argparse.Namespace) -> int:
 
 
 def _anatomy_frames(project: Path) -> int:
-    """Rule 2 of the anatomy rules on what was just built: 1 for a fault. Measuring takes the engine's frames, so a
-    build with no engine says it did not measure, and the first delivery still does (ADR 0145)."""
+    """The rules that read the frames, on what was just built: rule 2 of the anatomy rules and the timing of a text.
+    Measuring takes the engine, so a build with no engine says it did not measure, and the first delivery still does
+    (ADR 0145, ADR 0147). 1 for a fault."""
     scenes = sorted(project.glob("*.scene.xml"))
     if not scenes:
         return 0
+    slug = scenes[0].name.removesuffix(".scene.xml")
     try:
-        slug = scenes[0].name.removesuffix(".scene.xml")
-        faults = anatomy_gate.after_build(project, slug, scenes[0], find_engine())
-    except (LayoutError, FrameGraphError, FrameGateError) as exc:
-        print(f"srstudio build: the anatomy frames were not measured: {exc}", file=sys.stderr)
+        engine = find_engine()
+    except LayoutError as exc:
+        print(f"srstudio build: the frames were not measured: {exc}", file=sys.stderr)
         return 0
+    faults: list[object] = []
+    for rule, read in (
+        ("anatomy", lambda: anatomy_gate.after_build(project, slug, scenes[0], engine)),
+        ("text", lambda: text_rules.after_build(slug, scenes[0], engine)),
+    ):
+        try:
+            faults += read()
+        except (FrameGraphError, FrameGateError) as exc:
+            print(f"srstudio build: the {rule} frames were not measured: {exc}", file=sys.stderr)
     for fault in faults:
         print(f"{slug}: {fault}", file=sys.stderr)
     return 1 if faults else 0
