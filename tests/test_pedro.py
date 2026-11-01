@@ -72,7 +72,7 @@ def extent(y: float) -> tuple[float, float]:
     """Where his head starts and ends along the z axis at height ``y``."""
     zs = np.linspace(-30.0, 35.0, 13001)
     inside = zs[pedro_sculpt.field(np.zeros_like(zs), np.full_like(zs, y), zs) <= 0.0]
-    return float(inside.min()), float(inside.max())
+    return float(np.min(inside)), float(np.max(inside))
 
 
 def test_his_head_is_nearly_as_deep_as_it_is_tall():
