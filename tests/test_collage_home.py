@@ -143,3 +143,13 @@ def test_a_hook_card_refuses_no_seconds() -> None:
     cv = canvas()
     with pytest.raises(HomeError, match="positive"):
         collage_home.hook_card(cv, cv.comp, "NO PAD", "cafe", measure, start=0.0, seconds=0.0)
+
+
+def test_the_booth_is_a_set_with_its_signature_and_no_window() -> None:
+    cv = canvas()
+    collage_sets.SETS["booth"](cv, cv.comp)
+    drawn = xml(cv)
+    assert "window" not in drawn and "sky" not in drawn
+    x0, y0, x1, y1 = collage_sets.signature_box("booth")
+    assert 0 <= x0 < x1 <= cv.width and y1 <= collage.CAPTION_BOTTOM + 300
+    assert "collage-booth" in {e.name for e in registry.entries("location")}
