@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the srstudio gates on one commit in its own worktree (ADR 0102); exit non-zero when any gate fails.
+# Run the srstudio gates on one commit in its own worktree (ADR 0141); exit non-zero when any gate fails.
 #   tools/gate.sh SHA [NAME]   # the log stays at generated/gates/NAME/pytest.log; a failed run keeps its tree
 set -u
 umask 077
