@@ -16,7 +16,7 @@ from .errors import SrstudioError
 
 __all__ = ["CUT", "CutoutWalkError", "bob", "footfalls", "track", "walk"]
 
-CUT = 1 / 240  # how long before its frame a cut's old place ends: under any frame, so the slide is never drawn
+CUT = 1e-5  # how long before its time a cut's old place ends: too short for a frame to land in, so no slide is drawn
 STRIDE = 0.28  # seconds a stride takes
 LIFT = 12.0  # how far a stride rises, in the parent's units
 SWAY = 1.5  # degrees either way, a stride each

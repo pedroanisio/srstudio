@@ -82,3 +82,11 @@ def test_a_walk_that_cannot_be_walked_is_refused(rows, why):
 def test_a_stride_takes_a_positive_time(stride):
     with pytest.raises(CutoutWalkError, match="stride"):
         cutout_walk.footfalls([(0.0, 900.0), (1.0, 500.0)], stride=stride)
+
+
+def test_no_frame_lands_in_the_slide_of_a_cut_near_a_frame():
+    """A cut 0.3 ms after a frame: the camera holds until the cut, so that frame must still have the old place."""
+    cut = 9.5003
+    keys = cutout_walk.track([(0.0, 800.0), (cut, 800.0), (cut, 620.0), (12.0, 620.0)])
+    begin, end = [t for t, _ in keys][1:3]
+    assert not any(begin <= n / 30 < end for n in range(360))
