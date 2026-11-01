@@ -12988,6 +12988,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-article": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8597f6fd75e211330b1a32b4e096680f8811e09b796fac2b40323e6067002b2b",
+          "rig": null
+        }
+      ]
     }
   }
 }

@@ -1252,6 +1252,7 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "collage-article": {"title": "Matéria no celular"},
     "soft-star-card": {"title": "Cartão de cinco estrelas"},
     "soft-mug": {"title": "Caneca de café"},
     "soft-front-room": {"title": "Sala da frente"},
@@ -8917,6 +8918,7 @@
         "at": 21.8
       },
       "text": "Cinco estrelas vazias num cartão sem nome; a primeira se acende quando o dedo bate."
-    }
+    },
+    {"section": "props", "name": "Matéria encaminhada", "parts": ["collage-article"], "shot": {"episode": "thought-of-you", "at": 14.0}, "text": "A matéria que a mãe manda sem comentário: a manchete é medida antes de desenhar, e a página não copia nenhum jornal."}
   ]
 }

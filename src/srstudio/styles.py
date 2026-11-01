@@ -454,7 +454,15 @@ COLLAGE = Style(
         google=GoogleFont("Luckiest Guy", 400),
     ),
     mouths={},
-    parts=("collage", "collage_everyday", "collage_odds", "collage_photo", "collage_sets", "collage_things"),
+    parts=(
+        "collage",
+        "collage_article",
+        "collage_everyday",
+        "collage_odds",
+        "collage_photo",
+        "collage_sets",
+        "collage_things",
+    ),
     namer=partial(flat_counter, "c"),
     accessibility=dict(flashCheck="error", contrastCheck="warn", legibilityCheck="warn"),
     silent=True,  # like the Toon: the expression is pose data, the voices are narration over the captions

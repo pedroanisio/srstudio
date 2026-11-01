@@ -287,6 +287,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-chart": Recipe(part(300, 700, 480, 360, (0.2, 0.5, 1.0))),
     "collage-food": Recipe(part("taco", 540, 960, 400)),
     "collage-phone": Recipe(part(380, 680, 320, 560)),
+    "collage-article": Recipe(part(190, 480, 700, 960, "LOCAL MAN HAS NOT CALLED HIS MOTHER")),
     "collage-bubble": Recipe(part("Dear Son.", 240, 860, 600, 200, size=64)),
     "collage-alarm-clock": Recipe(part(300, 840, 480, "11:40")),
     "collage-cereal-box": Recipe(part(370, 720, 340, 480)),
