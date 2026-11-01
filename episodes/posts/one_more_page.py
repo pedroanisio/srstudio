@@ -11,11 +11,11 @@ RELEASE = Release(
         title="One story, then lights out?",
         description=(
             "Pip is four and has never lost a negotiation.\nBo is on page two.\nA Soft sketch on Okayville, voiced "
-            "with ElevenLabs premade voices Alice (Pip) and Eric (Bo); every character is original, drawn in "
+            "with ElevenLabs premade voices Will (Pip) and Eric (Bo); every character is original, drawn in "
             "code."
         ),
         credit=(
-            "Voices: ElevenLabs premade voices Alice and Eric. Original characters, drawn in code. Sound effects "
+            "Voices: ElevenLabs premade voices Will and Eric. Original characters, drawn in code. Sound effects "
             "synthesized in code."
         ),
         hashtags=('#parenting', '#bedtime', '#parentsbelike', '#animatedshorts', '#okayville'),
