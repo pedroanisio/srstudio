@@ -7,8 +7,8 @@ from dataclasses import asdict, dataclass, replace
 from .errors import Diagnostic, LimbError
 from .geometry import ProjectedPose
 from .math3d import Vec3, number
-from .model import ArmProfile, label
-from .motion import Sample
+from .model import HUMAN, ArmProfile, HandProfile, label
+from .motion import Motion, Sample
 from .props import Sphere, capsule_distance
 
 _LIMITS = (
@@ -44,6 +44,61 @@ class CollisionSphere(Sphere):
 
 
 @dataclass(frozen=True)
+class QualityScope:
+    """Compiler-enforced calibration domain; shoulder translation and mirrored sides are allowed."""
+
+    style: str
+    fps: int
+    arm: ArmProfile = ArmProfile()
+    hand: HandProfile = HUMAN
+
+    def __post_init__(self) -> None:
+        label(self.style, 'quality scope style')
+        if type(self.fps) is not int or not 1 <= self.fps <= 120:
+            raise LimbError('quality scope fps must be an integer in 1..120')
+        if not isinstance(self.arm, ArmProfile) or not isinstance(self.hand, HandProfile):
+            raise LimbError('quality scope needs typed arm and hand anatomy')
+
+    def check(self, motion: Motion, style: str, fps: int) -> None:
+        if not isinstance(motion, Motion):
+            raise LimbError(
+                'quality scope needs a Motion',
+                code='quality.scope',
+                path='motion',
+                expected='a typed Motion',
+                remedy='Compile a typed motion within the preset scope.',
+            )
+        for field, expected_type in (('arm', ArmProfile), ('hand', HandProfile)):
+            actual = getattr(motion, field)
+            if not isinstance(actual, expected_type):
+                raise LimbError(
+                    'quality scope needs typed anatomy',
+                    code='quality.scope',
+                    path=field,
+                    actual=actual,
+                    expected=expected_type.__name__,
+                    remedy='Use the declared typed arm and hand profiles.',
+                )
+        actual_arm = replace(motion.arm, shoulder=Vec3(), side='right')
+        expected_arm = replace(self.arm, shoulder=Vec3(), side='right')
+        for field, actual, expected in (
+            ('style', style, self.style),
+            ('fps', fps, self.fps),
+            ('arm', asdict(actual_arm), asdict(expected_arm)),
+            ('hand', asdict(motion.hand), asdict(self.hand)),
+        ):
+            if actual != expected or (field == 'fps' and type(fps) is not int):
+                raise LimbError(
+                    f'{field} is outside the calibrated scope',
+                    code='quality.scope',
+                    path=field,
+                    actual=actual,
+                    expected=expected,
+                    remedy='Use the declared preset scope or measure a separate QualityProfile.',
+                )
+
+
+@dataclass(frozen=True)
 class QualityProfile:
     """Opt-in character/style limits in canonical world units and seconds; no universal anatomical score.
 
@@ -64,9 +119,12 @@ class QualityProfile:
     policy: str = 'error'
     obstacles: tuple[CollisionSphere, ...] = ()
     max_collision_checks: int = 1000000
+    scope: QualityScope | None = None
 
     def __post_init__(self) -> None:
         label(self.name, 'quality profile name')
+        if self.scope is not None and not isinstance(self.scope, QualityScope):
+            raise LimbError('quality scope must be a QualityScope')
         for metric in _LIMITS:
             limit = getattr(self, metric)
             if limit is not None and number(limit, metric) < 0:
@@ -85,6 +143,10 @@ class QualityProfile:
             raise LimbError('a penetration limit needs explicit obstacles')
         if type(self.max_collision_checks) is not int or not 1 <= self.max_collision_checks <= 1000000:
             raise LimbError('max_collision_checks must be an integer within 1..1000000')
+
+    def check_scope(self, motion: Motion, style: str, fps: int) -> None:
+        if self.scope is not None:
+            self.scope.check(motion, style, fps)
 
 
 @dataclass(frozen=True)

@@ -187,6 +187,8 @@ def bake_interaction(
     times = tuple(i / options.fps for i in range(count)) + ((duration,) if released_hold_end is not None else ())
     frames: list[list[_Surface]] = [[] for _ in range(frame_total)]
     for participant in participants:
+        if options.quality is not None:
+            options.quality.check_scope(participant.motion, participant.style, options.fps)
         adapter = adapter_for(participant.style)
         if (
             camera.projection == "perspective"

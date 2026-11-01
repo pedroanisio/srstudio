@@ -158,6 +158,11 @@ Gloss Nadia with a reproducible scene and JSON continuity report. The
 [listening and carrying study](examples/acting_continuity.py) adds sustained reactions and a moving hand/prop
 interaction across a cut, with executable [authoring recipes](docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures).
 
+[Versioned motion envelopes](docs/catalog/limbs.md#versioned-reference-envelopes) provide measured numeric
+limits for explicitly scoped canonical human arms. The [quality study](examples/limbs_quality.py) builds
+reference and rejected motions, strict render evidence and a separate blinded review packet. Numeric limits
+and human ratings remain separate; these presets do not certify whole-body or perceptual quality.
+
 Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
 
 | Show | Value | Main use |
