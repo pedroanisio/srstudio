@@ -91,17 +91,15 @@ BEATS, END = timed(
         (2.7, "omar", 0, "side", "flat", "free-right"),  # the arrow slides from frame one, his hand on the map
         (0.9, "deb", 1, "open", "smile", "free-right"),  # at the TV, nothing to fear
         (1.95, "omar", 2, "side", "flat", "free-right", "reveal:clock"),  # held to the end of his caption
-        (1.0, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands at 9:00 with the first bubble
-        (0.35, "deb", "", "side", "smile", "free-right", "reveal:cover"),  # the smile stays; back to her
-        (1.0, "deb", 3, "side", "smile", "free-right"),
+        (0.866667, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands at 9:00 with the first bubble
+        (1.0, "deb", 3, "side", "smile", "free-right", "reveal:cover"),  # back to her on Priya's first word
         (0.95, "deb", 4, "side", "smile", "free-right"),  # eyes on the phone
         (3.3, "omar", 5, "side", "flat", "free-right"),  # held to the end of his caption
-        (1.0, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands with the bubble he just read out
+        (0.875, "deb", "", "side", "smile", "free-right", "buzz"),  # the cut lands with the bubble he just read out
         (0.85, "deb", 6, "sad", "smile", "free-right"),  # softly
-        (0.8, "omar", 7, "open", "flat", "down"),  # his eyes come off the map, to the lens
-        (0.5, "deb", "", "up", "smile", "free-right", "reveal:tv"),  # she looks up at the TV
-        (0.35, "deb", "", "side", "smile", "free-right"),  # and down, and the smile has not moved
-        (0.87, "deb", "", "side", "smile", "free-right", "reveal:answer"),  # her thumb comes down: the green bubble
+        (0.85, "omar", 7, "open", "flat", "down"),  # his eyes come off the map, to the lens
+        (0.42, "deb", "", "side", "smile", "free-right", "reveal:phone"),  # straight to the phone, and nothing yet
+        (0.85, "deb", "", "side", "smile", "free-right", "reveal:answer"),  # her thumb comes down: the green bubble
         (1.2, "omar", (9, 0, "He doesn't miss you."), "open", "flat", "down"),
         (0.6, "deb", (9, 4, "He's cold."), "open", "smile", "free-right", "reveal:duvet"),
     ),
@@ -116,12 +114,12 @@ def _at(beats: Sequence[Beat], name: str) -> float:
 
 def inserts(beats: Sequence[Beat]) -> list[tuple[float, float]]:
     """When the phone fills the frame: from the first bubble to the cover, from the second to the next line, and from
-    the green bubble to Omar. Refuses an order the recording broke."""
+    the cut back to it, just before the green bubble, to Omar. Refuses an order the recording broke."""
     first, second = [t for t, _ in events(beats, "buzz")][:2]
     next_line = next(b.start for b in beats if b.start > second and b.line is not None and b.word == 0)
     out = [(first, _at(beats, "cover")), (second, next_line)]
     answer = _at(beats, "answer")
-    out.append((answer, next(b.start for b in beats if b.start > answer)))
+    out.append((_at(beats, "phone"), next(b.start for b in beats if b.start > answer)))
     if any(b <= a for a, b in out) or any(c[0] < p[1] for p, c in zip(out, out[1:], strict=False)):
         raise StagingError(f"{SLUG}: the inserts fell out of order on this recording: {out}")
     return out
@@ -214,12 +212,12 @@ def _covered(beats: Sequence[Beat]) -> float:
     return _thumb(beats) + OVER_HEY * HAND_MOVE
 
 
-def _hide_first(cv, phone, words: str, until: float) -> None:
-    """The bubble ``words`` on a drawn ``phone`` stops at ``until``, its paper left under her fist. The thread is an
-    approved part with no such option, so the layer it drew is gated from here."""
+def _hide(cv, phone, words: str, until: float, last: bool = False) -> None:
+    """The bubble ``words`` on a drawn ``phone`` stops at ``until``, its paper left: the first such bubble, or the
+    ``last``. The thread is an approved part with no such option, so the layer it drew is gated from here."""
     texts = {a.id for a in cv.assets.iter() if a.xml_name == "text" and a.text == words}
-    layer = next(n for n in phone.iter() if n.xml_name == "layer" and n.asset in texts)
-    cv.gate(layer, [(0.0, until)])
+    layers = [n for n in phone.iter() if n.xml_name == "layer" and n.asset in texts]
+    cv.gate(layers[-1 if last else 0], [(0.0, until)])
 
 
 def _hand(beats: Sequence[Beat]):
@@ -265,16 +263,15 @@ def _sofa(shot) -> None:
         last = b
     if last < app.end:
         gaps.append((last, app.end))
-    if not gaps:
-        raise StagingError(f"{SLUG}: the shot at {app.start} s is all insert")
-    phone = _thread(cv, _gated(cv, shot.front, gaps), PHONE, shot.beats)
-    covered = _covered(shot.beats)
-    if app.start <= covered < app.end:
-        _hide_first(cv, phone, "HEY", covered)
-    where, times = _hand(shot.beats)
-    collage_everyday.reach(
-        cv, _gated(cv, shot.front, gaps), "deb", ELBOW, where, [t for t in times if t <= shot.end] + [shot.end], side=1
-    )
+    if gaps:  # the last of the three shots of the phone is the phone from cut to cut
+        phone = _thread(cv, _gated(cv, shot.front, gaps), PHONE, shot.beats)
+        covered = _covered(shot.beats)
+        if app.start <= covered < app.end:
+            _hide(cv, phone, "HEY", covered)
+        _hide(cv, phone, "HEY", _at(shot.beats, "answer"), last=True)  # her reply lands under the duvet, unseen here
+        where, times = _hand(shot.beats)
+        keys = [t for t in times if t <= shot.end] + [shot.end]
+        collage_everyday.reach(cv, _gated(cv, shot.front, gaps), "deb", ELBOW, where, keys, side=1)
     pull = cv.group(shot.front, cv.uid("g"))
     pulled = _at(shot.beats, "duvet")
     cv.keys(pull, "y", [(pulled, 0.0), (pulled + DUVET_PULL, -DUVET_UP)], kind="cubic-out", local=False)
