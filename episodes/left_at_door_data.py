@@ -207,8 +207,8 @@ def street(shot, start: float, stop: float) -> None:
     toon_world.night_street(cv, back, end=stop)
     toon_cars.side_car(cv, front, at=(200.0, 980.0), scale=2.0, colour="#30445c")
     screen = toon_everyday.Screen(0.0, "notify", "Delivered", "Green door", "9:06")
-    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 820), scale=0.9, id=cv.uid("phone"))
     toon_inserts.rain(cv, front, start=start, end=stop)
+    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 820), scale=0.9, id=cv.uid("phone"))
     night(cv, front)
 
 
