@@ -221,8 +221,9 @@ How to get there:
 - **The hybrid method is the default for new work (ADR 0088).** Anything rigid seen from more than one angle starts as
   a `clay.Model` drawn by `proxy.layers`: cel plates cut into back, front and under, with the people drawn between
   back and front. `vehicle.tyre` and `vehicle.turning_rim` give it wheels, and `on_beat.ride`, `on_beat.sway` and
-  `on_beat.alternate` move a drawing on a `music.Groove`. `srstudio beat <audio>` measures that groove from a track;
-  give it the whole track, because a short excerpt can place the bars a beat off. `DRAWING.md` says which layers each
+  `on_beat.alternate` move a drawing on a `music.Groove`. `srstudio beat <audio>` measures that groove from a track
+  and warns under eight bars, where the bar line can land a beat off; a tempo outside about 90 to 160 can read double or half, with no warning, so check it by ear.
+  `examples/car_vibe` is the worked example, and it never ships. `DRAWING.md` says which layers each
   style takes, and a flat style stays flat. Its `forms` and `paint` modules are not built, so no reel waits on them, and
   a new look needs an approved animated clip and a new part version (ADR 0047).
 - **Test the look like any other contract.** A finish, a depth blur or a lit figure is a library default with a

@@ -14,8 +14,8 @@ than one angle is modelled and drawn from a 3D proxy, people stay on their rigs,
 information stays vector.
 
 Default means the method new work starts from, not a switch in the code. No style's builder changed, and a style whose
-look is flat keeps it, as the table in DRAWING.md says. Published reels stay frozen (ADR 0040), an approved drawing stays
-pinned (ADR 0047), and a new look still goes to the operator as a rendered, animated clip.
+look is flat keeps it, as the table in DRAWING.md says. Published reels stay frozen (ADR 0040), an approved drawing
+stays pinned (ADR 0047), and a new look still goes to the operator as a rendered, animated clip.
 
 The rigid-object layer moved out of a study into the library:
 
@@ -26,10 +26,13 @@ The rigid-object layer moved out of a study into the library:
 - `srstudio.vehicle` adds a tyre to a model and a drawn rim that turns on the disc `View.disc` gives. A rim stays a
   vector drawing, so a turning wheel costs no plates.
 - `srstudio.on_beat` puts `ride`, `sway` and `alternate` on a `music.Groove`.
-- `music.measure` and `srstudio beat` read that groove from a recorded track.
+- `music.measure`, `music.reading` and `srstudio beat` read that groove from a recorded track.
 - `clay.Model` gained `loft`, `strut` and `revolve`.
 
 `forms`, `paint` and the typed scene records of DRAWING.md are still unbuilt.
+
+`examples/car_vibe` is the worked example, built by its test on every run. It redraws another creator's cartoon, so it
+stays in `examples/`, declares no post and is never a release.
 
 `scipy` is now a declared dependency. It replaces the Euclidean distance transform, binary morphology, hole filling,
 Gaussian filter and zoom that `proxy` would otherwise have to write and maintain.
@@ -44,14 +47,29 @@ Each of these ran against engine 0.8.0:
 - A warm rebuild of `layers` runs the engine zero times and returns the same bytes.
 - A study written before the library had this code was moved onto it. Its nine plates came out byte-identical, its
   scene differed only by key times moved at most 0.5 ms and a default attribute no longer written, and three sampled
-  frames differed by at most one 8-bit level.
+  frames differed by at most one 8-bit level. That proof holds up to a later fix: `View.stretch` used to leave normals
+  as they were, so the light landed on the unstretched model. With normals corrected, up to 0.27 % of a plate's pixels
+  move by more than 8 levels, and the three sampled frames still read the same by eye.
+- Rendering the study's frames twice, out of order and in separate processes, gave byte-identical frames.
 
-`music.measure` read the study's reference track at 129.0 BPM with a bar opening at 1.539 s, matching the 129 BPM and
-1.535 s measured by hand. On its first ten seconds alone it read 128.8 BPM with the bar one beat early, at 1.066 s, so
-the bars need more of the track than the tempo does. Measure the whole track when the bars matter.
+`read_parts` reads a part under 3 px wide in the part pass, 1.5 px on the final frame at 2× oversample, as what surrounds
+it. A pixel blended half and half between two parts lands exactly on a third part's colour for 224 of the 2,016 pairs of
+the palette, so width is what tells the two apart. A thinner part needs a higher `oversample`.
 
-The acceptance gates in DRAWING.md for a moving camera, palette, temporal stability, continuity and render budget have
-not been measured. The operator made this the default ahead of them; they remain the gates for each proof.
+`music.reading` was checked on two sets of tracks of known grid. The study's reference track was hand-measured at
+129 BPM with a bar opening at 1.535 s. It read 129.0 BPM and 1.539 s whole, and within 5 ms of that bar line on its
+first 8, 10, 14, 20 and 30 seconds. Of eleven tracks from `music.render`, 84 to 164 BPM in steps of 8, nine read the
+right tempo and bar line, whole and on eight bars. The 84 BPM track read at double, 168, with its bar line right; the
+164 BPM track read at half, 82, with its bar line 0.17 s off. The lean toward 120 BPM cannot separate those two pairs.
+A reading of six seconds, 3.2 bars, placed the reference's bar a beat off. Under eight bars a reading says it is unsure.
+
+Click tracks from 60 to 195 BPM in steps of 5, three start times and two lengths, gave 168 readings. Every one from 75
+to 165 BPM read the right tempo and bar line, 114 in all. The other 54 read at the octave: 60 to 70 BPM at double and
+170 to 195 BPM at half. An even pulse holds nothing that tells them apart, so `reading` does not flag it.
+
+The acceptance gates in DRAWING.md for a moving camera, palette, continuity and render budget, and the part of temporal
+stability that needs a moving light or texture, have not been measured. The operator made this the default ahead of
+them; they remain the gates for each proof.
 
 ## Alternatives
 
@@ -62,3 +80,6 @@ not been measured. The operator made this the default ahead of them; they remain
 - **Rims as plates:** a rim's turn would need a new plate per angle. A vector rim over a tyre plate costs none.
 - **Tempo from the beat's fold alone:** read a 3-3-2 rhythm at two thirds of its tempo, 86 BPM on a 129 BPM track.
   `measure` now asks the beat, its double and the bar to repeat together.
+- **The bar line from the low end alone:** a kick on one and three makes those beats a tie, and it put a 110 BPM song's
+  bar two beats off. The low end now picks the strong marks and the turn between whole bars picks among them. A sum of
+  the two, or their product, read fewer tracks right.
