@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 from collections.abc import Sequence
 
-from . import checks, locations, look, signature
+from . import _cutout_contracts, checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -76,6 +76,7 @@ def _timed(cv: Canvas, g, name: str, values: Sequence[tuple[float, str]], index:
     "drip-machine",
     style="cutout",
     summary="An office drip coffee machine with a glass carafe and a thin stream that runs on cue",
+    contract=_cutout_contracts.contract('drip-machine'),
 )
 def drip_machine(
     cv: Canvas,
@@ -117,6 +118,7 @@ def drip_machine(
     style="cutout",
     summary="A plain office mug in any colour, with up to eight characters of lettering",
     examples=('from srstudio import get\nmug = get("prop", "office-mug")(ep.cv, ep.comp, label="TEA")',),
+    contract=_cutout_contracts.contract('office-mug'),
 )
 def office_mug(
     cv: Canvas,
@@ -151,6 +153,7 @@ def office_mug(
     "days-board",
     style="cutout",
     summary="A wall board in the manner of a workplace safety sign: a heading, and a day count that changes on cue",
+    contract=_cutout_contracts.contract('days-board'),
 )
 def days_board(
     cv: Canvas,
@@ -189,6 +192,7 @@ def days_board(
     "wall-planner",
     style="cutout",
     summary="A month of a wall planner with its every Friday circled in red pen, its pages flipping on cue",
+    contract=_cutout_contracts.contract('wall-planner'),
 )
 def wall_planner(
     cv: Canvas,
@@ -232,7 +236,13 @@ def wall_planner(
     return g
 
 
-@register("prop", "gold-watch", style="cutout", summary="A gold presentation watch on a gold strap, with a gleam")
+@register(
+    "prop",
+    "gold-watch",
+    style="cutout",
+    summary="A gold presentation watch on a gold strap, with a gleam",
+    contract=_cutout_contracts.contract('gold-watch'),
+)
 def gold_watch(
     cv: Canvas, parent, x=540, y=900, *, gleam: float | None = None, scale: float = 1.0, id: str = "gold-watch"
 ):
@@ -256,7 +266,13 @@ def gold_watch(
     return g
 
 
-@register("prop", "stage-mic", style="cutout", summary="A microphone on a straight stand, seen from the front")
+@register(
+    "prop",
+    "stage-mic",
+    style="cutout",
+    summary="A microphone on a straight stand, seen from the front",
+    contract=_cutout_contracts.contract('stage-mic'),
+)
 def stage_mic(cv: Canvas, parent, x=540, y=1100, *, height: float = 420, scale: float = 1.0, id: str = "stage-mic"):
     """The capsule's top is ``height`` above (``x``, ``y``), the foot of the stand."""
     _check_scale(scale)
@@ -276,6 +292,7 @@ def stage_mic(cv: Canvas, parent, x=540, y=1100, *, height: float = 420, scale: 
     "party-crowd",
     style="cutout",
     summary="The backs of an audience's heads, out of focus across the foot of the frame, hands up clapping on cue",
+    contract=_cutout_contracts.contract('party-crowd'),
 )
 def party_crowd(
     cv: Canvas, parent, y=1500, *, claps: Sequence[tuple[float, float]] = (), seed: int = 3, id: str = "party-crowd"
@@ -313,6 +330,8 @@ def party_crowd(
     style="cutout",
     summary="An office break room: mustard wall, cupboards and a fridge out of focus, a counter across the foot of "
     "the frame",
+    contract=_cutout_contracts.contract('break-room'),
+    slots=('on_wall', 'behind_counter', 'on_counter'),
 )
 def break_room(
     cv: Canvas,
@@ -360,6 +379,8 @@ def break_room(
     style="cutout",
     summary="A function room dressed for a leaving do: a dark teal wall, paper streamers and fairy lights out of "
     "focus, and a banner hung in focus",
+    contract=_cutout_contracts.contract('office-party'),
+    slots=('stage', 'front'),
 )
 def office_party(
     cv: Canvas,

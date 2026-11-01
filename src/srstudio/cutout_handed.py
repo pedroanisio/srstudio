@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks, look
+from . import _cutout_contracts, checks, look
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -36,7 +36,13 @@ def _check_spans(spans, name: str) -> None:
     )
 
 
-@register("prop", "cv-folder", style="cutout", summary="A manila CV folder on a desk: shut, or open on a page, on cue")
+@register(
+    "prop",
+    "cv-folder",
+    style="cutout",
+    summary="A manila CV folder on a desk: shut, or open on a page, on cue",
+    contract=_cutout_contracts.contract('cv-folder'),
+)
 def cv_folder(
     cv: Canvas,
     parent,
@@ -128,7 +134,13 @@ def _photo(cv: Canvas, g, id: str, mitts_in: float = 0) -> None:
         cv.path(g, f"M{a} -170 Q{b} -160 {c} -70 Q{d} -46 {e} -74 L{f} -160Z", "#C8564B", ink, 5)
 
 
-@register("prop", "phone-post", style="cutout", summary="A phone, full frame, on an old post: a dish, an empty heart")
+@register(
+    "prop",
+    "phone-post",
+    style="cutout",
+    summary="A phone, full frame, on an old post: a dish, an empty heart",
+    contract=_cutout_contracts.contract('phone-post'),
+)
 def phone_post(
     cv: Canvas,
     parent,
@@ -202,7 +214,11 @@ def phone_post(
 
 
 @register(
-    "prop", "big-thumb", style="cutout", summary="A thumb, close to the lens, its tip on the point it is drawn at"
+    "prop",
+    "big-thumb",
+    style="cutout",
+    summary="A thumb, close to the lens, its tip on the point it is drawn at",
+    contract=_cutout_contracts.contract('big-thumb'),
 )
 def big_thumb(
     cv: Canvas,
@@ -230,7 +246,11 @@ COAT_DARK = "#8C6F49"
 
 
 @register(
-    "prop", "coat-over", style="cutout", summary="A long coat that goes on over an actor, one side, then the other"
+    "prop",
+    "coat-over",
+    style="cutout",
+    summary="A long coat that goes on over an actor, one side, then the other",
+    contract=_cutout_contracts.contract('coat-over'),
 )
 def coat_over(
     cv: Canvas,
@@ -262,7 +282,13 @@ def coat_over(
     return g
 
 
-@register("prop", "cafe-door", style="cutout", summary="A glass café door with a bar handle, its sign read from inside")
+@register(
+    "prop",
+    "cafe-door",
+    style="cutout",
+    summary="A glass café door with a bar handle, its sign read from inside",
+    contract=_cutout_contracts.contract('cafe-door'),
+)
 def cafe_door(
     cv: Canvas,
     parent,

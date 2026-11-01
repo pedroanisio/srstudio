@@ -772,9 +772,9 @@ capabilities do not establish emotional readability, biomechanics, or rendered q
 
 ### Non-character discovery and drawing anchors
 
-Core Cutout and counter/store families publish 59 prop, 10 location and 11 graphic contracts, including
-`reaching-hand`'s held-prop callback. Coverage remains partial across the full catalog. Inspect it separately
-from ordinary listings:
+Core Cutout and its extended families publish 113 prop, 16 location and 11 graphic contracts, including
+`reaching-hand`'s held-prop callback and the hiring, home, office, shop, handed, leak, lobby, locate, odds and
+reference modules. Coverage remains partial across the full catalog. Inspect it separately from ordinary listings:
 
 ```bash
 srstudio catalog --contract-coverage --json
@@ -823,6 +823,36 @@ cart = cart_part(
 )
 ```
 <!-- store-slot-contract:end -->
+
+Cutout timing contracts distinguish `(start, end)` spans from `(start, duration)` events. `hair-fall.falls` and
+`desk-printer.sheets` use durations; `table-phone.rings`, `wall-plaque.read` and location `shots` use end times.
+The clock is the canvas clock, including `Canvas.local_time`. A phone post's `date` is display text, while
+`glasses-glint.lenses` contains local drawing coordinates. Neither is a sequence of animation times.
+
+This font-free example inspects a fall's clock and makes a half-second fall starting at two seconds:
+
+<!-- cutout-clock-contract:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, get
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=3)
+cv = Canvas(scene, font_asset=None)
+fall = get("prop", "hair-fall")
+event = fall.describe()["contract"]["arguments"]["properties"]["falls"]["items"]["prefixItems"]
+assert event[0]["x-timebase"] == "canvas"
+assert event[1]["x-role"] == "duration"
+hair = fall(cv, cv.comp, falls=((2.0, 0.5),))
+```
+<!-- cutout-clock-contract:end -->
+
+`id-lanyard.photo` receives a child group at local y=178 inside the scaled lanyard, with an 88×84 window around
+(-44, -44); its artwork is not clipped. `barbershop.in_mirror` receives room coordinates inside the glass group,
+with neither automatic clipping nor reflection. Author reflected figures within `BARBER_MIRROR` yourself.
+`coat-over` and `robe-and-blazer` belong in a Cutout actor's group and use its fixed torso coordinates; they do
+not retarget clothing to arbitrary rigs. `location-chip.scale` sets each stop subgroup's resting scale, while
+its returned root only carries placement. These constraints are available through `inspect` before drawing.
 
 Location slots are runtime callbacks receiving an existing group. The slot description identifies its drawing
 depth, and the callback's return value is ignored. This complete recipe validates a malformed callback before

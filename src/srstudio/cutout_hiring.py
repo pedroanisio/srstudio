@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from . import checks, locations, look, signature
+from . import _cutout_contracts, checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -52,6 +52,7 @@ def _check_scale(scale) -> None:
     "job-ad",
     style="cutout",
     summary="A printed job advert standing on a desk, a small heading over two lines of large type",
+    contract=_cutout_contracts.contract('job-ad'),
 )
 def job_ad(
     cv: Canvas,
@@ -87,6 +88,7 @@ def job_ad(
     "crayon-cv",
     style="cutout",
     summary="A CV in crayon with a clip-on tie, held up by two very small hands, small shoes swinging under it",
+    contract=_cutout_contracts.contract('crayon-cv'),
 )
 def crayon_cv(
     cv: Canvas,
@@ -141,6 +143,7 @@ def crayon_cv(
     style="cutout",
     summary="A slatted crib with a mobile over it, whoever is inside hidden, a CV hooked over the rail and a rattle "
     "that shakes on cue",
+    contract=_cutout_contracts.contract('crib'),
 )
 def crib(
     cv: Canvas,
@@ -206,6 +209,7 @@ def crib(
     "paper-hat",
     style="cutout",
     summary="A hat folded from one sheet of paper, as worn on a first day, lettered on its band",
+    contract=_cutout_contracts.contract('paper-hat'),
 )
 def paper_hat(cv: Canvas, parent, x=540, y=600, *, label: str = "TRAINEE", scale: float = 1.0, id: str = "paper-hat"):
     """The brim's middle sits on (``x``, ``y``), 220 wide and 130 tall at scale 1."""
@@ -227,6 +231,7 @@ def paper_hat(cv: Canvas, parent, x=540, y=600, *, label: str = "TRAINEE", scale
     "roller-blind",
     style="cutout",
     summary="A roller blind over an inside window, snapping up on cue, with a pull cord that dips first",
+    contract=_cutout_contracts.contract('roller-blind'),
 )
 def roller_blind(
     cv: Canvas,
@@ -268,6 +273,8 @@ def roller_blind(
     style="cutout",
     summary="A hiring manager's office: a slate wall and a poster out of focus, a glass wall onto the next room with "
     "a roller blind, and a desk across the foot of the frame",
+    contract=_cutout_contracts.contract('hiring-office'),
+    slots=('next_room', 'behind_desk', 'on_desk'),
 )
 def hiring_office(
     cv: Canvas,

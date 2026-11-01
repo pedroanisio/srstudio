@@ -10,7 +10,7 @@ from __future__ import annotations
 import random
 from collections.abc import Sequence
 
-from . import checks, locations, look, signature
+from . import _cutout_contracts, checks, locations, look, signature
 from .canvas import Canvas
 from .errors import SrstudioError
 from .registry import register
@@ -38,6 +38,7 @@ def _check_scale(scale) -> None:
     "barber-cape",
     style="cutout",
     summary="A pinstriped barber's cape, tied at the neck and falling wide over whoever sits under it",
+    contract=_cutout_contracts.contract('barber-cape'),
 )
 def barber_cape(
     cv: Canvas,
@@ -71,7 +72,11 @@ def barber_cape(
 
 
 @register(
-    "prop", "hedge-trimmer", style="cutout", summary="A petrol hedge trimmer: a long toothed bar and a red motor body"
+    "prop",
+    "hedge-trimmer",
+    style="cutout",
+    summary="A petrol hedge trimmer: a long toothed bar and a red motor body",
+    contract=_cutout_contracts.contract('hedge-trimmer'),
 )
 def hedge_trimmer(
     cv: Canvas, parent, x=540, y=900, *, rotation: float = 0, scale: float = 1.0, id: str = "hedge-trimmer"
@@ -88,7 +93,13 @@ def hedge_trimmer(
     return g
 
 
-@register("prop", "lawnmower", style="cutout", summary="A push lawnmower from the side, green, with its handle up")
+@register(
+    "prop",
+    "lawnmower",
+    style="cutout",
+    summary="A push lawnmower from the side, green, with its handle up",
+    contract=_cutout_contracts.contract('lawnmower'),
+)
 def lawnmower(cv: Canvas, parent, x=240, y=1200, *, scale: float = 1.0, facing: float = 1, id: str = "lawnmower"):
     """The wheels stand on (``x``, ``y``); its handle rises to the right, or to the left at ``facing`` -1."""
     if facing not in (1, -1):
@@ -110,6 +121,7 @@ def lawnmower(cv: Canvas, parent, x=240, y=1200, *, scale: float = 1.0, facing: 
     "hair-fall",
     style="cutout",
     summary="Sheets of cut hair falling past the lens, out of focus, one sheet after another",
+    contract=_cutout_contracts.contract('hair-fall'),
 )
 def hair_fall(
     cv: Canvas,
@@ -147,6 +159,8 @@ def hair_fall(
     style="cutout",
     summary="A barber's seen through its mirror: a wide framed glass, the room reflected in it, and a counter of "
     "tools at the foot of the frame",
+    contract=_cutout_contracts.contract('barbershop'),
+    slots=('in_mirror', 'on_counter'),
 )
 def barbershop(
     cv: Canvas,
@@ -160,8 +174,8 @@ def barbershop(
     depth: float = 7.0,
 ):
     """``in_mirror`` draws the reflected people inside :data:`BARBER_MIRROR`, over the room reflected behind them, and
-    stays inside it; ``on_counter`` draws on the shelf below the glass. ``price`` is the card stuck to the glass, drawn
-    only when there is one."""
+    must stay inside it: the callback is not clipped or mirrored automatically. ``on_counter`` draws on the shelf
+    below the glass. ``price`` is the card stuck to the glass, drawn only when there is one."""
     if price:
         cv.require_font("the price card is set in it")
     ink = cv.ink

@@ -4,31 +4,14 @@ Selections are explicit, not derived from parameter names. Return annotations on
 ChainRun retain their real type without importing the builder module during registration.
 """
 
-from collections.abc import Callable
 from dataclasses import replace
 
-from sr_core.scene import Group
-
-from ._drawing_contracts import SPAN, SPANS, START, TIME, _drawing, _location
+from ._drawing_contracts import DURATION, SPAN, SPANS, START, TIME, _drawing, _location, _placed, _slot
 from .contracts import ParameterContract as P
 from .contracts import PartContract
 
-
-def _slot(description: str) -> P:
-    return P(
-        type=Callable[[Group], object] | None,
-        role='drawing-slot',
-        description='Receives the existing local Group once during building; return is ignored. ' + description,
-    )
-
-
-def _placed(origin: str, **options) -> PartContract:
-    constraints = options.pop('constraints', ())
-    return _drawing(coordinates=('x', 'y'), constraints=(f'x/y places {origin}.', *constraints), **options)
-
-
 _DRIFT = P(items=P(prefix_items=(TIME, P(unit='parent units'))))
-_DURATION = P(unit='seconds', role='duration')
+_DURATION = DURATION
 
 _CONTRACTS = {
     'hand-basket': _placed('the middle of the foot', ratios=('scale',)),

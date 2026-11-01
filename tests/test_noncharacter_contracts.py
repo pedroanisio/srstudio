@@ -150,10 +150,11 @@ def test_partial_coverage_is_explicit_and_style_filtered(capsys):
     info = registry.contract_coverage(style='cutout', kind='prop')
     rows = registry.entries('prop', 'cutout')
     assert info['kinds']['prop']['registered'] == len(rows)
-    assert info['kinds']['prop']['explicit_contracts'] == 59
+    explicit = sum(entry.contract is not None for entry in rows)
+    assert info['kinds']['prop']['explicit_contracts'] == explicit
     assert info['kinds']['prop']['undeclared_parts']
     assert cli.main(['catalog', '--kind', 'prop', '--style', 'cutout', '--contract-coverage']) == 0
-    assert '59' in capsys.readouterr().out
+    assert str(explicit) in capsys.readouterr().out
     with pytest.raises(registry.RegistryError):
         registry.contract_coverage(kind='unknown')
 

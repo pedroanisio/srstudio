@@ -22,22 +22,72 @@
   },
   "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Explicit drawing events now cover synchronous and deferred execution without profiler inference. Rendered caches bind actual renderer and print-font inputs while retaining stable drawing identities. Scoped continuity discovery distinguishes source derivatives, estimated joins and held compiler output. Remaining priorities include broader contracts, bounded scene composition, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
-    "parts": 701,
+    "parts": 703,
     "characters": 70,
-    "entries_with_explicit_part_contract": 150,
+    "entries_with_explicit_part_contract": 210,
     "all_default_characters_have_explicit_contracts": true,
-    "noncharacter_parts": 631,
-    "noncharacter_parts_with_explicit_contracts": 80,
-    "source": "Fresh-process registry observation on 2026-11-01 after the counter/store contract expansion based on 6af7ed0b; see review_verification.counter_store_contracts.",
+    "noncharacter_parts": 633,
+    "noncharacter_parts_with_explicit_contracts": 140,
+    "source": "Fresh-process registry observation on 2026-11-01 after the Cutout family contract expansion; drawings captured at d9a3ef01, verification also includes develop through fb36cff7. Two new wire props landed concurrently. See review_verification.cutout_family_contracts.",
     "by_kind": {
-      "character": {"registered": 70, "explicit_contracts": 70},
-      "prop": {"registered": 436, "explicit_contracts": 59},
-      "location": {"registered": 112, "explicit_contracts": 10},
-      "graphic": {"registered": 83, "explicit_contracts": 11}
+      "character": {
+        "registered": 70,
+        "explicit_contracts": 70
+      },
+      "prop": {
+        "registered": 438,
+        "explicit_contracts": 113
+      },
+      "location": {
+        "registered": 112,
+        "explicit_contracts": 16
+      },
+      "graphic": {
+        "registered": 83,
+        "explicit_contracts": 11
+      }
     },
     "qualification": "Fresh-process registry.entries() observation after the latest implemented contract batch. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "cutout_family_contracts": {
+      "baseline_source_commit": "d9a3ef01",
+      "verified_develop_commit": "fb36cff7",
+      "initial_red": {
+        "failed": 88
+      },
+      "clock_red_after_correcting_xml_test_selector": {
+        "failed": 4
+      },
+      "focused_green": {
+        "passed": 212
+      },
+      "final_engine_enabled_selection": {
+        "passed": 721,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "cutout_contracts": 100,
+        "drawing_contracts": 100,
+        "counter_store_contracts": 100,
+        "cutout_hiring": 100,
+        "cutout_home": 100,
+        "cutout_office": 99,
+        "cutout_shop": 100,
+        "cutout_handed": 99,
+        "cutout_leak": 100,
+        "cutout_lobby": 100,
+        "cutout_locate": 98,
+        "cutout_odds": 100,
+        "cutout_reference": 100
+      },
+      "unchanged_drawing_scene_hashes": 60,
+      "unchanged_function_asts_excluding_registration_decorators_and_docstrings": 88,
+      "unchanged_previous_counter_store_contracts": 27,
+      "ruff_formatted_files": 1586,
+      "mypy_source_files": 254,
+      "qualification": "Adds 60 authored contracts across ten complete Cutout modules. Default drawings preserve pre-change hashes. Runtime tests verify nested durations, both canvas clocks, local photo slots, actor clothing coordinates and reflection. Existing counter/store declarations remain equal after helper extraction. Coverage and engine-enabled regressions are scoped evidence, not a full-catalog or perceptual quality claim. The initial duration test used the wrong XML selector; the corrected selector failed for missing metadata before implementation."
+    },
     "counter_store_contracts": {
       "baseline_source_commit": "6af7ed0b",
       "contract_red": {"failed": 36, "passed": 1},
@@ -344,12 +394,32 @@
       "title": "Expand explicit non-character contracts beyond core workflows",
       "problem": "Only 53 of 631 non-character parts declare semantic contracts; agents must inspect implementation for most coordinate, clock and return conventions.",
       "progress": {
-        "completed_additional_families": ["srstudio.cutout_counter", "srstudio.cutout_store"],
-        "new_contracts": 27,
-        "current_explicit_noncharacter_contracts": 80,
-        "current_registered_noncharacters": 631,
-        "remaining_undeclared": 551,
-        "evidence": ["tests/test_counter_store_contracts.py", "tests/data/counter-store-contract-baseline.json", "src/srstudio/_counter_store_contracts.py"],
+        "completed_additional_families": [
+          "srstudio.cutout_counter",
+          "srstudio.cutout_store",
+          "srstudio.cutout_hiring",
+          "srstudio.cutout_home",
+          "srstudio.cutout_office",
+          "srstudio.cutout_shop",
+          "srstudio.cutout_handed",
+          "srstudio.cutout_leak",
+          "srstudio.cutout_lobby",
+          "srstudio.cutout_locate",
+          "srstudio.cutout_odds",
+          "srstudio.cutout_reference"
+        ],
+        "new_contracts": 87,
+        "current_explicit_noncharacter_contracts": 140,
+        "current_registered_noncharacters": 633,
+        "remaining_undeclared": 493,
+        "evidence": [
+          "tests/test_counter_store_contracts.py",
+          "tests/data/counter-store-contract-baseline.json",
+          "src/srstudio/_counter_store_contracts.py",
+          "tests/test_cutout_family_contracts.py",
+          "tests/data/cutout-family-contract-baseline.json",
+          "src/srstudio/_cutout_contracts.py"
+        ],
         "qualification": "The full catalog expansion remains open. These families declare actual units, canvas clocks, local slots, return records and capability limits without altering their drawings. Other families still require source review and executable semantic evidence."
       },
       "evidence": [
