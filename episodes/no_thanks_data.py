@@ -41,7 +41,7 @@ PRIYA, BRENT = Place(290.0, 1920.0, 0.8), Place(800.0, 1920.0, 0.8)
 LEAP = (760.0, 120.0, 0.32)  # the opening: how far right and down he starts, and the seconds he lands in
 CARD_FIRST = "NO THANKS, I HATE SAVING MONEY"
 CARD_SECOND = "YES, MY FAMILY DESERVES LESS"
-CARD = dict(x=540.0, y=1560.0, w=760.0, h=420.0, size=78.0)
+CARD = dict(x=540.0, y=1630.0, w=760.0, h=360.0, size=76.0)  # under both chins
 SHORT = dict(y=1470.0, w=430.0, h=250.0, size=84.0)
 SHORT_X = 540.0
 SLIDE = 600.0  # how far Brent slides in at the till, or out at the door
@@ -156,9 +156,9 @@ def casting(beats: Sequence[Beat], end: float) -> CastDrawer:
 
 
 def _bulb(cv, parent) -> None:
-    """The one light bulb she came for, in her hands."""
-    cv.ellipse(parent, 225.0, 1400.0, 130.0, 130.0, "#ffe066", collage.INK, 6.0)
-    cv.rect(parent, 262.0, 1520.0, 56.0, 50.0, "#9a9aa6", collage.INK, 6.0, radius=6.0)
+    """The one light bulb she came for, on the counter in its carton."""
+    cv.ellipse(parent, 225.0, 1450.0, 130.0, 130.0, "#ffe066", collage.INK, 6.0)
+    cv.rect(parent, 218.0, 1548.0, 144.0, 74.0, "#f4ecd8", collage.INK, 6.0, radius=4.0)
 
 
 def _shoe(cv, parent, t: float) -> None:
