@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.22.0
-changelog: "1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.23.0
+changelog: "1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -515,7 +515,8 @@ it in `srstudio catalog` without this file changing.
    - `srstudio craft` on the project with `--renders`, to confirm the planned moves are there and the pauses read
      quiet.
 
-   Write down every defect as a concrete correction (the time, what is wrong, the fix), fix it, and re-check.
+   On an Okayville reel, look at full-size frames on this first render, before you start the next reel (see
+   *Full-size frame review*). Write down every defect as a concrete correction (the time, what is wrong, the fix), fix it, and re-check.
    Report what you measured; the operator watches the master with sound before it is published. A number from a
    scratch file is not evidence; quote real command output. Then update the catalog: re-run the usage report
    from *Live inventory*, then `srstudio page --site ../generated/catalog/site --usage ../generated/catalog/usage.json` with the other arguments
@@ -527,7 +528,8 @@ it in `srstudio catalog` without this file changing.
    every part it draws with `parts={...}`, or `{}` if it draws none: `deliver` refuses a release without
    pins and `check` reports it, and each prints the pin to add for a Toon build. Rebuild after changing a pin.
    While auto-enhance is on, the first delivery of a video also needs its enhancement (see *Auto-enhance*), and a new
-   reel always needs its two scores at the floor (see *Comedy floor*).
+   reel always needs its two scores at the floor (see *Comedy floor*). An Okayville reel also needs its independent
+   full-size review with no blocker open, and every new reel passes the frame gates (see *Full-size frame review*).
    Deliver only once your branch is merged into develop, from the workspace root with the main checkout's code,
    never from a branch or worktree: any write to `generated/renders/ig` fires the `srstudio-drive` unit, which
    checks and uploads with the main checkout's code and releases:
@@ -557,7 +559,8 @@ it in `srstudio catalog` without this file changing.
    (and packs `generated/vpkg`) before showing what rclone would upload.
 10. **Report.** The enhancement each video landed, the observation sentence and the tags of each episode, the batch variety table (below) when there
    is more than one episode, both comedy scores and the look rubric estimate, the cast (and who is new), parts reused versus
-   added, gates run with their output, anything skipped and why.
+   added, gates run with their output, the full-size review with who did it and each blocker's outcome, anything skipped
+   and why.
 
 ## Five hashtags
 
@@ -580,6 +583,52 @@ tags in `episodes/posts/_interview.py` already number six, so a new Interview re
 The reviewer is a different session, and it scores before it sees the author's number. The gate cannot check that: it
 reads two numbers and cannot see who wrote them, so keeping the reviewer independent is on you. A pass proves two
 scores were recorded, never that the reel is funny, and the operator keeps the last word.
+
+## Full-size frame review
+
+A required gate on every Okayville reel, from the first render to delivery, in two steps (ADR 0073). The rule, as
+arc4d3 set it: "Make the full-size frame review a standing gate for every Okayville batch from now on" and "Full-size
+frame review on each reel's first render, not after the batch. Look at a few full-size frames per reel as soon as it
+first renders: captions, faces, marks inside heads, props. A defect then costs one re-render instead of holding a whole
+batch."
+
+Why it exists: reduced-size passes by the authors missed every defect the first review found, floating figures, missing
+limbs, a detached head, run-together captions and missing marks. Contact sheets show that a shot exists, not that a body
+ends. And four frames are a sample, so neither step certifies the frames it did not view.
+
+1. **At first render, the building agent.** As soon as a reel first renders, before going on to the next reel, view a
+   few full-size frames of it at 1080x1920, one image at a time: captions, faces, marks inside heads, props. Fix what
+   you find here, where it costs one re-render.
+2. **On the finished batch, someone who is not the author.** A reviewer who did not build the reel views four frames
+   at 1080x1920, one image at a time, never a sheet or a reduced copy: the first frame, 2 s, 75 % of the running time
+   and the last frame. The reviewer gets the defect list below and the frames, not the author's opinion of them, and
+   reports each defect as a blocker with the time and what is wrong. The orchestrator opens each reported frame and
+   checks each blocker before acting on it, since a report is input, not evidence. A confirmed blocker holds that reel
+   until a re-render clears it, and the fixed frames are viewed again.
+
+The defect list: a figure ending in a straight cut or floating above what it should stand on; missing legs, arms or
+hands, an arm with no hand, a hand with no arm; a head off its neck; a set or a wall that runs out in the frame, scenery
+hanging in the air; captions that run two sentences together or cover a face; a mark inside a head or missing from the
+shot.
+
+"deliver batch by batch, a batch never waits for another": a blocker holds its reel, never the other reels of its batch
+and never another batch. Each `delivered:` post carries the count, as `delivered: the-refund, split-shift (2 of 24)`
+in `docs/slack-channel.md`.
+
+The first delivery runs what code can hold, on any new reel, with no mode to turn off. A delivered reel owes none of it:
+`deliver` measures only videos not yet in the manifest, and `check` does not run them.
+
+- `frame_gates.captions_run_together`: a burned caption window that runs across a sentence end with no mark. Split the
+  window, or mark the end.
+- `frame_gates.signature_hidden`: both signature marks seen for at least `MIN_SHOWN` of the running time, measured on the
+  engine's frames, so a mark the camera crops or a body covers does not count. Place them where the framing sees them.
+- `figure_gates.figure_defects`: a character ending in a straight cut that nothing hides or holds, a Stick head off its
+  neck, a set that runs out at one edge. It reads the `figures.json` that `srstudio build` writes, so a project built any
+  other way is refused until built by the command. Fix the drawing. Never add a thing to quiet the check: a cover drawn
+  only to pass still leaves the bust in the picture.
+
+A clean gate proves none of the review. The gates do not see an arm with no hand, scenery on a wall or a face under a
+caption, and they do not read effects: those are the review's.
 
 ## Auto-enhance
 

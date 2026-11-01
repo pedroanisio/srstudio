@@ -89,6 +89,9 @@ the hand frame's rotation in radians per second. These are finite differences be
 on unsampled motion. `bounds` describes projected geometry in the drawing parent's coordinate system.
 `report.to_dict()` includes `metric_definitions` with each described metric's subject, space and units. These
 numbers do not certify whole-body biomechanics or emotional readability.
+Velocity samples belong to interval midpoints when computing acceleration, so a partial final frame does not
+artificially inflate the acceleration report. Native IK, baked hand contours and interaction visibility share
+the same six-decimal scene-time quantization, including frame-aligned offsets such as `1 / 24` seconds.
 
 ## Artist contours
 
@@ -314,6 +317,13 @@ digit, action, contact, attachment and take identifiers are bounded to 128 chara
 can contain spaces or Unicode; they do not become SVG paint IDs. Wrongly typed constructor input, such as a
 number where a name, color, tuple or (digit, value) override belongs, raises `LimbError` (still a `ValueError`)
 rather than a bare `TypeError` or `KeyError`.
+
+Sampling failures retain `LimbError.code` and `residual` and add a JSON-compatible `context` dictionary.
+It includes `time` in motion seconds, anatomical `side`, and, during an action, `action` and zero-based
+`action_index`. Compilation adds `track` (the compiled limb ID or interaction participant name); numeric
+limit failures identify `field`. The same context appears in the error text. Add `BakeOptions.offset` to
+`context["time"]` when locating the failure on the project clock. Context that is not available is omitted.
+Use these fields to repair the specific action and resample it before retrying compilation.
 
 Resolved bake durations are checked against frame budgets before arithmetic can overflow. The six-decimal
 scene clock must be able to represent every emitted interval. Invalid or under-resolved intervals, large

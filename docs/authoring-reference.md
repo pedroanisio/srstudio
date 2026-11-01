@@ -1672,6 +1672,13 @@ accents of the line, a dip before a phrase, a two-octave idle, a breath tied to 
 deterministic and bounded by `limit(style, name)`. Head plans keep the spring history and Catmull-Rom neighbors needed
 to preserve motion across shot cuts. Long carried-spring channels are sampled into linear keys at at least 240 Hz
 to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
+Explicit `facing=[(on, off, side)]` intervals take precedence over incidental glances: an idle glance is omitted
+when its eye hold or head return overlaps a directed turn, including that turn's return to rest. This prevents
+their head turns and face slides from adding beyond the style's intended bounds. Nonoverlapping glances retain
+their original timing and seeded choices.
+`toon_head.rest_springs()` is a lossy compatibility helper: it removes carried momentum and can visibly change
+trajectories and velocity. New callers should use the automatic spring sampling in `toon_head.figure()` and
+`Channel.during()`; preview scenes that intentionally retain spring resets.
 [src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
 `HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
 neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](../src/srstudio/toon_rigs.py)

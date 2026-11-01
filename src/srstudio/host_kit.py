@@ -1,4 +1,6 @@
-"""The host kit: Lint, the moth in your wardrobe, and his talking-head show, The Unwritten Rules (ADR 0066).
+"""The host kit: the talking-head show The Unwritten Rules (ADR 0066). Who hosts it is a parameter (ADR 0068): Rafa, a
+clay man shot as plates in :mod:`srstudio.rafa_host`, hosts it from his pilot on. Lint, the moth in your wardrobe, is
+drawn here, keeps his delivered reel and takes no new work.
 
 One character talks straight to camera, so the mouth and the eyes carry the reel. A show is not a style of its own here,
 as with :mod:`srstudio.mind_kit`: :data:`HOST` is Toon's frame and recording road on its own clock, master and letters.
@@ -36,7 +38,7 @@ from .errors import SrstudioError
 from .fonts import GoogleFont
 from .head_motion import Channel, HeadPlan, HeadStyle, Spring
 from .registry import register
-from .sketch import TOON_CAST, Speaker
+from .sketch import TOON_CAST, Cast, Speaker
 from .styles import TOON, Font, Mix
 from .toon_head import _animate
 from .voice import Voice, VoiceSettings
@@ -954,9 +956,9 @@ def lint(cv: Canvas, parent, pose: Pose | None = None, start: float = 0.0, end: 
     return perform(cv, parent, parent, ((start, pose or Pose()),), start, end, mouths)
 
 
-def spoken(root: Path) -> list[Word]:
+def spoken(root: Path, cast: Cast = HOST_CAST) -> list[Word]:
     """Every word of the kept takes in ``root``, in order, on the project's clock, from ``voiced/speech.json``."""
-    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", HOST_CAST)
+    takes, _ = sketch.load_speech(Path(root) / "voiced" / "speech.json", cast)
     return [
         (w.start, w.end, w.text)
         for take in sorted(takes, key=lambda t: t.at)
@@ -964,11 +966,12 @@ def spoken(root: Path) -> list[Word]:
     ]
 
 
-def head_plan(root: Path, end: float, voiced: bool) -> HeadPlan:
-    """His head over the whole reel: in a voiced build from the kept takes, in a silent one idle."""
-    takes = sketch.load_speech(Path(root) / "voiced" / "speech.json", HOST_CAST)[0] if voiced else []
+def head_plan(root: Path, end: float, voiced: bool, *, cast: Cast = HOST_CAST, style: HeadStyle = MOTION) -> HeadPlan:
+    """The host's head over the whole reel: in a voiced build from the kept takes, in a silent one idle. ``cast`` and
+    ``style`` say who the host is."""
+    takes = sketch.load_speech(Path(root) / "voiced" / "speech.json", cast)[0] if voiced else []
     said = [head_motion.speech_of(t.alignment, t.at, Path(root) / "audio" / f"vo-{t.id}.wav") for t in takes]
-    return head_motion.plan(MOTION, said, end)
+    return head_motion.plan(style, said, end)
 
 
 def light_spans(beats: Sequence[sketch.Beat], end: float) -> Spans:
@@ -1135,15 +1138,32 @@ def _timed(lines: Sequence[toon.Line], words: Sequence[Word]) -> list[list[tuple
 
 def caption_cues(lines: Sequence[toon.Line], words: Sequence[Word] = (), skip: Sequence[str] = ()) -> list[native.Cue]:
     """The engine cues of ``lines``, each word on its own sound, a cue held to the next (:func:`_timed` stops a build
-    whose words run ahead of the voice). ``skip`` names cues another graphic shows."""
+    whose words run ahead of the voice). A line too long for the band breaks at its sentences, each its own cue, and
+    the track refuses one still too long. ``skip`` names cues another graphic shows."""
     cues = []
     for line, timed in zip(lines, _timed(lines, words), strict=True):
         if line.text in skip:
             continue
         ends = [at for at, _ in timed[1:]] + [line.end]
-        said = tuple(native.Word(token, at, end) for (at, token), end in zip(timed, ends, strict=True))
-        cues.append(native.Cue(line.start, line.end, line.text, said))
+        said = [native.Word(token, at, end) for (at, token), end in zip(timed, ends, strict=True)]
+        for k, part in enumerate(parts := _sentences(said)):
+            start = part[0].start if k else line.start
+            end = parts[k + 1][0].start if k + 1 < len(parts) else line.end
+            cues.append(native.Cue(start, end, " ".join(w.text for w in part), tuple(part)))
     return cues
+
+
+def _sentences(said: Sequence[native.Word]) -> list[list[native.Word]]:
+    """``said`` whole when it fits the band's rows, or else cut after each word that ends a sentence."""
+    text = " ".join(w.text for w in said)
+    if len(native.wrap(text, CAPTION_LOOK.max_chars, CAPTION_LOOK.max_words)) <= CAPTION_LOOK.max_lines:
+        return [list(said)]
+    parts: list[list[native.Word]] = [[]]
+    for k, word in enumerate(said):
+        parts[-1].append(word)
+        if word.text.endswith((".", "!", "?")) and k + 1 < len(said):
+            parts.append([])
+    return parts
 
 
 @register("graphic", "host-captions", summary="Word-level engine captions on an ink band, the sung words in amber")

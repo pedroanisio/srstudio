@@ -1,4 +1,4 @@
-"""The five fictional reels on the polished look: visibly parody from the first frame to the last, each with its own
+"""The fictional reels on the polished look: visibly parody from the first frame to the last, each with its own
 ending and something on screen doing the work, and all of them outside the Okayville publishing path."""
 
 from __future__ import annotations
@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+import wave
 import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
@@ -14,7 +15,7 @@ from types import ModuleType
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, craft, news_kit, sketch
+from srstudio import Canvas, craft, news_head, news_kit, sketch
 from srstudio.news_inked import BANNER_Y
 from srstudio.news_kit import TEXT_LEFT, NewsKitError
 from srstudio.sketch import Line, SketchError
@@ -32,6 +33,7 @@ REELS = {
     "security_question": ("wrong", "waffles"),
     "where_to_eat": ("board", "cereal"),
     "missing_lid": ("plea", "sock"),
+    "came_in_for": ("reason", "away"),
 }
 BANNER = (
     "ARCHITECTURAL REQUIREMENT: LLMs will always produce some form of error.",
@@ -70,6 +72,14 @@ def overlay(reel: ModuleType) -> dict[str, ET.Element]:
 def frontmatter(reel: ModuleType) -> dict[str, str]:
     head = (ROOT / "pilots" / "news" / reel.SLUG / "notes.md").read_text(encoding="utf-8").split("---")[1]
     return {k.strip(): v.strip() for k, v in (row.split(":", 1) for row in head.strip().splitlines())}
+
+
+def wave_of(path: Path) -> list[int]:
+    """The samples of a mono 16-bit file, thinned to 8 kHz."""
+    with wave.open(str(path), "rb") as w:
+        rate, frames = w.getframerate(), w.readframes(w.getnframes())
+    samples = [int.from_bytes(frames[i : i + 2], "little", signed=True) for i in range(0, len(frames), 2)]
+    return samples[:: rate // 8000]
 
 
 def words(reel: ModuleType) -> int:
@@ -275,3 +285,66 @@ def test_the_flyer_is_only_beside_vera_before_the_plea():
         beat = next(b for b in reel.BEATS if b.start == float(card.get("start", "-1")))
         assert beat.who == "vera" and beat.start < plea
     assert all(float(card.get("end", "0")) <= plea for card in cards)
+
+
+def test_the_answer_snaps_in_on_the_line_that_gives_it_after_a_held_turn():
+    reel = load("came_in_for")
+    turn = sketch.events(reel.BEATS, "turn")[0][0]
+    reason = next(b for b in reel.BEATS if b.event == "reason")
+    assert reason.start - turn >= 1.2 and reel.LINES[reason.line].text == "To get away from you."
+    row = reel.LOWERS[-1]
+    assert reel.BEATS[row[0]] is reason and row[1:] == ("CASE CLOSED", "THE REASON: GUS", False)
+    assert not any("GUS" in r[2] for r in reel.LOWERS[:-1])
+
+
+def test_the_reason_is_on_the_desk_where_a_head_can_turn_and_the_last_line_is_to_camera():
+    reel = load("came_in_for")
+    who = {b.event: b.who for b in reel.BEATS if b.event}
+    assert who["turn"] == who["reason"] == "desk"
+    assert who["close"] == "vera" and reel.ACTS[-1].vera.eyes == "level"
+
+
+def test_gus_says_the_same_word_small_and_only_that_line_is_small():
+    reel = load("came_in_for")
+    small = [line for line in reel.LINES if line.level < 1]
+    assert [line.text for line in small] == ["Ma'am?"] and small[0].speaker == "gus"
+    assert small[0].level <= 0.5
+
+
+def test_the_live_door_is_beside_vera_and_shuts_only_after_gus_says_it_small():
+    reel = load("came_in_for")
+    nodes = overlay(reel)
+    windows = [v for k, v in nodes.items() if k.startswith("news-live-door-") and k[-1].isdigit()]
+    assert windows
+    for window in windows:
+        beat = next(b for b in reel.BEATS if b.start == float(window.get("start", "-1")))
+        assert beat.who == "vera"
+    slam = sketch.events(reel.BEATS, "slam")[0][0]
+    small = sketch.events(reel.BEATS, "small")[0][0]
+    shut = nodes["news-live-door-last-shut"]
+    assert slam > small and float(shut.get("start", "0")) == pytest.approx(slam + reel.SLAM)
+    assert float(shut.get("end", "0")) == reel.SKETCH.end and reel.BEATS[-1].start > slam + reel.SLAM
+    assert "news-live-door-last-shut" in nodes and not [k for k in nodes if k.endswith("-shut") and "last" not in k]
+
+
+def test_the_door_slam_is_in_the_mix_at_the_instant_the_picture_shuts(tmp_path):
+    reel = load("came_in_for")
+    effects = reel.foley(reel.BEATS, reel.END, None, tmp_path, reel.SEED)
+    assert [e["id"] for e in effects] == ["sting", "whoosh", "tick", "door"]
+    door = wave_of(tmp_path / "audio" / "door.wav")
+    at = sketch.events(reel.BEATS, "slam")[0][0] + reel.SLAM
+    assert max(abs(v) for v in door[: int(at * 8000) - 80]) == 0
+    assert max(abs(v) for v in door[int(at * 8000) : int((at + 0.1) * 8000)]) > 0
+
+
+def test_nothing_about_gus_family_goes_past_what_the_show_has_said():
+    reel = load("came_in_for")
+    assert not {"wife", "mother", "mom", "kids"} & set(" ".join(q.text.lower() for q in reel.LINES).split())
+
+
+def test_vera_stays_on_gus_from_the_turn_to_the_close():
+    pilot = load("came_in_for")
+    starts = {beat.event: beat.start for beat in pilot.BEATS if beat.event}
+    assert news_head.holds_of(pilot.ACTS, pilot.BEATS) == (
+        news_head.Held("vera", "gus", starts["turn"], starts["close"]),
+    )

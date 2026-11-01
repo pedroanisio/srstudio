@@ -821,8 +821,17 @@ def record(
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
 
 
-def effect(id: str, start: float, gain_db: float, root: Path, path: Path, taps: Sequence[float] | None = None) -> dict:
-    """One ``effects`` entry of the manifest for a clip under ``root``."""
+def effect(
+    id: str,
+    start: float,
+    gain_db: float,
+    root: Path,
+    path: Path,
+    taps: Sequence[float] | None = None,
+    role: str = "effects",
+) -> dict:
+    """One ``effects`` entry of the manifest for a clip under ``root``; ``role="music"`` makes it a bed the lines
+    duck (see :func:`srstudio.toon_sketch.build`)."""
     out: dict[str, Any] = {
         "id": id,
         "start": round(start, 6),
@@ -832,6 +841,8 @@ def effect(id: str, start: float, gain_db: float, root: Path, path: Path, taps: 
     }
     if taps is not None:
         out["taps"] = [round(t, 6) for t in taps]
+    if role != "effects":
+        out["role"] = role
     return out
 
 

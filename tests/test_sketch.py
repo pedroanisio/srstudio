@@ -487,3 +487,23 @@ def test_a_short_tail_never_cuts_a_take_short(tmp_path):
 def test_a_tail_that_is_no_length_stops_the_sketch(bad):
     with pytest.raises(sketch.SketchError, match="tail"):
         sketch.check(replace(SK, tail=bad))
+
+
+def test_a_line_said_small_is_levelled_below_the_others_and_the_rest_keep_their_level(tmp_path):
+    gains = {}
+
+    def clip(src, dst, a, b, kept, gain, ffmpeg):
+        gains[Path(dst).name] = gain
+        return copy_clip(src, dst, a, b, kept, gain, ffmpeg)
+
+    lines = (LINES[0], replace(LINES[1], level=0.25), LINES[2])
+    sketch.record(replace(SK, lines=lines), tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=clip)
+    assert gains["vo-01.wav"] == pytest.approx(gains["vo-03.wav"])  # the takes are alike but for their words
+    assert gains["vo-01.wav"] - gains["vo-02.wav"] == pytest.approx(12.04, abs=0.01)  # a quarter of the peak
+
+
+@pytest.mark.parametrize("level", [0.0, -0.5, 1.5, float("nan")])
+def test_a_line_level_is_a_part_of_the_full_voice(level):
+    lines = (LINES[0], replace(LINES[1], level=level), LINES[2])
+    with pytest.raises(sketch.SketchError, match="level"):
+        sketch.check(replace(SK, lines=lines))

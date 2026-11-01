@@ -956,6 +956,9 @@
     "news-missing-card": {
       "title": "Cartaz de desaparecido"
     },
+    "news-live-door": {
+      "title": "Porta ao vivo"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
     },
@@ -1000,6 +1003,30 @@
     },
     "news-route": {
       "title": "Mapa no celular do Gus"
+    },
+    "rafa": {
+      "title": "Rafa, 34, mais ou menos funcional"
+    },
+    "rafa-kitchen": {
+      "title": "A cozinha do Rafa"
+    },
+    "rafa-breakroom": {
+      "title": "A copa do escritório"
+    },
+    "rafa-mug": {
+      "title": "A caneca da negação"
+    },
+    "rafa-phone": {
+      "title": "O celular com 99+"
+    },
+    "rafa-bills": {
+      "title": "A pasta das contas"
+    },
+    "rafa-lunchbox": {
+      "title": "A marmita pessoal"
+    },
+    "rafa-tote": {
+      "title": "A sacola do \"só vim pelo pão\""
     },
     "host-wardrobe": {
       "title": "Dentro do guarda-roupa"
@@ -7989,6 +8016,24 @@
         "at": 1.0
       },
       "text": "Um cartaz de desaparecido para um objeto: o desenho dele e o nome, ao lado de quem apresenta."
+    },
+    {
+      "section": "graphics",
+      "name": "Porta ao vivo",
+      "parts": [
+        "news-live-door"
+      ],
+      "shot": {
+        "episode": "came-in-for",
+        "at": 1.0,
+        "box": [
+          780,
+          470,
+          260,
+          320
+        ]
+      },
+      "text": "Uma entrada ao vivo de uma porta onde nada acontece, ao lado de quem apresenta, até a porta bater."
     },
     {
       "section": "locations",

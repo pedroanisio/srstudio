@@ -789,7 +789,11 @@ def plan(
 ) -> HeadPlan:
     """The head's motion over a shot of ``duration`` seconds with these takes, the same every build; ``heard`` is what
     the others say meanwhile (:func:`listening`), and ``facing`` the ``(on, off, side)`` the head stays turned to a side
-    of the frame, the most its style turns, for staging that knows who is talking to whom."""
+    of the frame, the most its style turns, for staging that knows who is talking to whom.
+
+    Directed facing suppresses incidental glances whose eye hold or head return overlaps its turn and return.
+    Other glances keep their original deterministic timing and direction.
+    """
     _check(style, speeches, duration)
     _check(style, heard, duration)
     _check_facing(facing)
@@ -815,7 +819,13 @@ def plan(
         up = min(0.7, (end - start) * 0.8)
         leans.append((start, up, end, 0.9, value))
         trails.append((start + 0.1, 0.25, start + 0.35, 0.65, -style.follow * value))
-    looks = _gaze(style, speeches, busy, duration)
+    # Directed facing owns the head and eyes throughout its return. Suppress a whole incidental glance if
+    # either its eye hold or its delayed head return would overlap, preserving the glance's original shape.
+    looks = [
+        (on, off, name)
+        for on, off, name in _gaze(style, speeches, busy, duration)
+        if all(off + FACE_DOWN <= start or on >= end + FACE_DOWN for start, end, _ in facing)
+    ]
     lag = 0.08  # the eyes go first
     turned, slid = [], []
     for on, off, name in looks:

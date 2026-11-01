@@ -16,13 +16,18 @@ from .correctives import ContourCorrection
 from .errors import Diagnostic, LimbError
 from .geometry import Part, ProjectedPose, project_pose, ribbon
 from .math3d import number
-from .motion import Motion, Sample
+from .motion import Motion, Sample, sample_motion
 from .projection import Affine, Camera
 from .validation import MotionReport, audit, motion_diagnostics
 
 _CAMERA = Camera()
 _APPEARANCE = Appearance()
 _PARENT = Affine()
+
+
+def _scene_time(time: float) -> float:
+    """Quantize an absolute scene time before emission so exact frame samples see the new pose."""
+    return math.floor(time * 1e6 + 1e-9) / 1e6
 
 
 def _check_id(cv: Canvas, id: str) -> None:
@@ -169,9 +174,9 @@ class _Preparation:
             self.poses.clear()
             self.plans.clear()
 
-    def sample(self, motion: Motion, time: float) -> Sample:
+    def sample(self, motion: Motion, time: float, *, track: str) -> Sample:
         if time not in self.samples:
-            self.samples[time] = motion.sample(time)
+            self.samples[time] = sample_motion(motion, time, track=track)
         return self.samples[time]
 
     def project(
@@ -240,7 +245,7 @@ def bake(
     plan = prepared.plans.get(plan_key)
     if plan is None:
         times = tuple(i / options.fps for i in range(count)) + ((duration,) if trailing else ())
-        samples = tuple(prepared.sample(motion, t) for t in times)
+        samples = tuple(prepared.sample(motion, t, track=id) for t in times)
         poses = tuple(prepared.project(motion, s, camera, parent_transform, correctives) for s in samples)
         names = {p.name for pose in poses for p in pose.parts}
         for rule in occlusion:
@@ -283,7 +288,7 @@ def bake(
                 start = 0
         # Canvas keys store six decimals. Flooring shared boundaries prevents a rounded-up start from showing
         # the previous drawing when the engine samples an exact rational frame time such as 2/12 seconds.
-        start, end = math.floor(start * 1e6 + 1e-9) / 1e6, math.floor(end * 1e6 + 1e-9) / 1e6
+        start, end = _scene_time(start), _scene_time(end)
         for layer, names_in_layer in slots.items():
             if not names_in_layer:
                 continue
@@ -356,7 +361,7 @@ def compile_motion(
     adapter = adapter_for(style)
     if deformation == "skin" and "skin" not in adapter.capabilities.deformation:
         raise LimbError(f"adapter {style} does not support skin deformation", code="capability")
-    samples = tuple(prepared.sample(motion, min(duration, i / options.fps)) for i in range(count + 1))
+    samples = tuple(prepared.sample(motion, min(duration, i / options.fps), track=id) for i in range(count + 1))
     planar = camera.projection == "orthographic" and parent_transform == _PARENT and layers is None
     for s in samples:
         a, b, c = (camera.project(p).xy for p in (s.arm.shoulder, s.arm.elbow, s.arm.wrist))
@@ -412,19 +417,22 @@ def compile_motion(
     )
     before = sum(1 for _ in cv.scene.iter())
     root = cv.group(parent, id)
-    cv.gate(root, [(0 if hold_until is not None else options.offset, hold_until or options.offset + duration)])
+    cv.gate(
+        root,
+        [
+            (
+                _scene_time(0 if hold_until is not None else options.offset),
+                _scene_time(hold_until or options.offset + duration),
+            )
+        ],
+    )
     target = cv.group(root, f"{id}-target")
     pole = cv.group(root, f"{id}-pole")
-    times = tuple(math.floor(min(duration, i / options.fps) * 1e6 + 1e-9) / 1e6 for i in range(count + 1))
+    times = tuple(_scene_time(options.offset + min(duration, i / options.fps)) for i in range(count + 1))
     for node, attribute in ((target, "wrist"), (pole, "elbow")):
         points = [camera.project(getattr(s.arm, attribute)).xy for s in samples]
         for axis, index in (("x", 0), ("y", 1)):
-            cv.keys(
-                node,
-                axis,
-                [(time + options.offset, p[index]) for time, p in zip(times, points, strict=True)],
-                hold=True,
-            )
+            cv.keys(node, axis, [(time, p[index]) for time, p in zip(times, points, strict=True)], hold=True)
     skeleton = root.add_skeleton(id=f"{id}-skeleton")
     upper = skeleton.add_bone(id=f"{id}-upper", length=motion.arm.upper * camera.scale)
     skeleton.add_bone(
@@ -433,12 +441,7 @@ def compile_motion(
     skeleton.add_transformConstraint(type="ik", target=target.id, pole=pole.id, softness=0)
     shoulders = [camera.project(s.arm.shoulder).xy for s in samples]
     for axis, index in (("x", 0), ("y", 1)):
-        cv.keys(
-            upper,
-            axis,
-            [(time + options.offset, p[index]) for time, p in zip(times, shoulders, strict=True)],
-            hold=True,
-        )
+        cv.keys(upper, axis, [(time, p[index]) for time, p in zip(times, shoulders, strict=True)], hold=True)
     segments = (
         ()
         if deformation == "skin"

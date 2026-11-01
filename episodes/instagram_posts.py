@@ -35,7 +35,7 @@ import os
 import shutil
 from pathlib import Path
 
-from srstudio import auto_enhance, caption_gate, comedy_floor, fonts, outbox, releases
+from srstudio import auto_enhance, caption_gate, comedy_floor, figure_gates, fonts, frame_gates, outbox, releases
 from srstudio.social import (
     MANIFEST,
     MANIFEST_VERSION,
@@ -105,8 +105,9 @@ def write_all(
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
-    (ADR 0064) or over the hashtag limit (ADR 0065), is a :class:`DeliveryError` before anything is written. A video in
-    the manifest is past all three: what was published stays as it went out."""
+    (ADR 0064), over the hashtag limit (ADR 0065) or refused by a frame gate (ADR 0073), is a :class:`DeliveryError`
+    before anything is written. A video in the manifest is past all of these: what was published stays as it went
+    out."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -123,6 +124,13 @@ def write_all(
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
     refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
+    frame_gates.refuse(
+        [
+            *frame_gates.captions_run_together(chosen, _beside(renders), first),
+            *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
+            *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
+        ]
+    )
     refused = auto_enhance.refused(first, REPO)
     if refused:
         raise DeliveryError("; ".join(map(str, refused)))

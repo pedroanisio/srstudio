@@ -90,7 +90,9 @@ def _decode(kind: Any, value: object, where: str, budget: list[int], depth: int 
         try:
             return kind(**decoded)
         except LimbError as error:
-            raise LimbError(f'{where}: {error}', code=error.code, residual=error.residual) from error
+            raise LimbError(
+                f'{where}: {error.message}', code=error.code, residual=error.residual, context=error.context
+            ) from error
     raise LimbError(f"{where}: unsupported persisted type {kind}")
 
 

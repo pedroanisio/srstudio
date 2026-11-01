@@ -69,6 +69,8 @@ CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 STATEMENT_BY = 3.0  # seconds: the first statement is finished by here, so the trouble is clear by second 3
 PAUSE = 0.8  # seconds between lines that count as a pause
+HUSH = -12.0  # dB more a music bed drops through a pause, so the beat before a punchline is quiet, not muzak
+HUSH_RAMP = 0.15  # seconds the hush takes to fall after a line and to rise again for the next
 MIN_DISPLAY = 0.8333  # seconds: the engine's default minDisplayTime (5/6 s) for a text layer
 BREATH = 0.15  # seconds: a line that starts sooner than this after the last one runs into it
 OPENING = 5.0  # seconds of a reel that have to hold a stranger
@@ -439,6 +441,30 @@ def pauses(spoken: Sequence[tuple[float, float]], threshold: float = PAUSE) -> l
             gaps.append((heard_until, start))
         heard_until = end if heard_until is None else max(heard_until, end)
     return gaps
+
+
+def hush(
+    cv: Any,
+    track: Any,
+    spoken: Sequence[tuple[float, float]],
+    gain: float,
+    *,
+    drop: float = HUSH,
+    ramp: float = HUSH_RAMP,
+    threshold: float = PAUSE,
+) -> None:
+    """Lower the music ``track`` (at ``gain`` dB) by ``drop`` through every pause of ``spoken`` of at least
+    ``threshold`` seconds: ``Episode.audio(duck=)`` ducks a bed under a line, and in the silence it would come back
+    up and fill the pause. It falls and rises inside the pause, over ``ramp`` or a third of a short pause."""
+    if not (checks.number(drop) and drop < 0):
+        raise CraftError(f"drop {drop} must be a negative number of dB")
+    if not (checks.number(ramp) and ramp > 0):
+        raise CraftError(f"ramp {ramp} must be > 0")
+    keys = [(0.0, gain)]
+    for start, end in pauses(spoken, threshold):
+        fall = min(ramp, (end - start) / 3.0)
+        keys += [(start, gain), (start + fall, gain + drop), (end - fall, gain + drop), (end, gain)]
+    cv.keys(track, "gain", [(round(t, 6), round(v, 6)) for t, v in keys], hold=False, local=False)
 
 
 def crowded(spoken: Sequence[tuple[float, float]], least: float = BREATH) -> list[tuple[float, float]]:
