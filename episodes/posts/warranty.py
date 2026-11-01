@@ -44,6 +44,7 @@ RELEASE = Release(
         "soft-shovel": 1,
         "soft-smoke": 1,
         "soft-sofa": 1,
+        "soft-stool": 1,
         "soft-time-card": 1,
         "soft-tv": 1,
         "soft-washer": 1,

@@ -58,7 +58,9 @@ FLOOR = 1730.0
 WASHER_AT = (285.0, FLOOR - 20)
 WASHER = 1.25
 PIP_AT, JUNO_AT, PIP_BACK = (695.0, FLOOR), (935.0, FLOOR - 70), (905.0, FLOOR)
-PIP_DOWN, JUNO_DOWN = (640.0, 1775.0), (880.0, 1775.0)
+PIP_DOWN, JUNO_DOWN = (640.0, 1680.0), (895.0, 1680.0)  # on the stools, soles in frame through the push
+WALL_FOOT = 1180.0  # where the floor meets the back wall: the fridge stands on this line
+PUSH_ABOUT = 1720.0  # the push grows from the floor, so it never takes their feet out of the bottom
 FIRST_IN = 0.3
 SECOND_IN = SECOND + 0.3
 BALL_IN = BALL + 0.5
@@ -160,10 +162,12 @@ def carried(name: str, cues, draw, spans_shown) -> None:
 
 graded = soft_sets.finish(cv, ep.comp)
 world = cv.group(graded, "world")
-pivot = cv.group(world, "push", x=540, y=1300)
+pivot = cv.group(world, "push", x=540, y=PUSH_ABOUT)
 cv.keys(pivot, "scaleX", [(0.0, 1.0), (MIDNIGHT, 1.0), (LAMP, PUSH_TO)], False)
 cv.keys(pivot, "scaleY", [(0.0, 1.0), (MIDNIGHT, 1.0), (LAMP, PUSH_TO)], False)
-room = cv.group(pivot, "room", x=-540, y=-1300)
+room = cv.group(pivot, "room", x=-540, y=-PUSH_ABOUT)
+cv.rect(room, -300, WALL_FOOT, 1700, 1100, "#C4A484")
+cv.rect(room, -300, WALL_FOOT - 24, 1700, 24, "#EFE7DC", "#9C8268", 3)
 soft_odds.home_fridge(cv, room, 900, 1180, end=DURATION, off=FRIDGE_OFF, scale=0.8)
 soft_odds.tv(cv, room, 190, 1090, end=DURATION, off=TV_OFF, scale=0.8)
 blob.home(cv, room, lamp_talk=[(0.0, LAMP)])
@@ -189,6 +193,11 @@ soft_odds.smoke(
     scale=0.45,
     id="thread",
 )
+for name, (hip_x, hip_y) in (("pip", PIP_DOWN), ("juno", JUNO_DOWN)):
+    seat_x, seat_y = hip_x + 12 - blob.STOOL_TOP[0] * SCALE, hip_y - 6 - blob.STOOL_TOP[1] * SCALE
+    under = cv.group(room, f"{name}-seat", x=seat_x, y=seat_y, scaleX=SCALE, scaleY=SCALE)
+    cv.gate(under, [(ON_FLOOR, DURATION)])
+    blob.stool(cv, under, id=f"{name}-stool")
 blob.juno(cv, room, juno, end=DURATION, scale=SCALE, mouth_states=ep.mouth("juno"), fps=FPS, id="juno")
 blob.pip(cv, room, pip, end=DURATION, scale=SCALE, mouth_states=ep.mouth("pip"), fps=FPS, id="pip")
 carried(
