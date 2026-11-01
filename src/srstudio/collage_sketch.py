@@ -211,6 +211,9 @@ class Staging:
     # who is drawn in each shot, made from the beats the build draws (scripted or voiced), whose times differ;
     # a srstudio.collage_group.Lineup made from them puts several on one set
     cast: Casting = alone
+    # the backdrop's blur reaches the frame's edge (srstudio.look.sheet): every new reel sets it; False keeps the pale
+    # rim every reel built so far was drawn with, which is frozen with them
+    bleed: bool = False
     # the seconds the first shot holds still (the sp-hook_motion test's arm a, ADR 0036): that shot draws no grain,
     # and ``opening`` draws its cast keying nothing; 0 opens like any other shot
     still: float = 0.0
@@ -223,7 +226,8 @@ class Staging:
     setting: Callable[[Sequence[Beat], Appearance], str] | None = None
     # the master's average video bits per second, encoded in two passes: 0, the rate factor alone, for every published
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
-    # the first pass lets the encoder spend little on a still opening without blurring it
+    # the first pass lets the encoder spend little on a still opening without blurring it; only ``scene-render encode
+    # --hw software`` runs the passes, and the hardware encoder it picks otherwise ghosts the captions (ADR 0076)
     bitrate: int = 0
     # a zoom pivots where collage_sets.zoom_pivot keeps the shelf, cactus and code, in frame and above the caption
     # pill, not on the face itself; off for every published reel, whose zooms are frozen where they landed
@@ -347,6 +351,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             root=root,
             seed=staging.seed,
             style=COLLAGE,
+            bleed=staging.bleed,
             dialogue="voiced/script.json" if voiced else "script.json",
             language="en-US",
             output_options=dict(

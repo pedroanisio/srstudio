@@ -77,6 +77,12 @@ def built(root: Path, st: Staging, fonts: Path):
     return ep
 
 
+def test_a_staging_asks_for_bleed_and_is_built_without_it_by_default(pinned_fonts, tmp_path):
+    assert built(tmp_path / "off", staging(), pinned_fonts).cv.bleed is False
+    ep = built(tmp_path / "on", replace(staging(), bleed=True), pinned_fonts)
+    assert ep.cv.bleed is True and b'threeD="true"' in ep.scene.to_bytes()
+
+
 def test_every_group_shot_draws_the_whole_lineup_in_fixed_places_and_zooms_on_the_speaker(pinned_fonts, tmp_path):
     ep = built(tmp_path, staging(), pinned_fonts)
     root = ET.fromstring(ep.scene.to_bytes(layout="pretty"))

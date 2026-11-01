@@ -514,7 +514,7 @@ def test_measure_lists_the_flashes_of_a_render_and_the_command_says_so(tmp_path,
     folder = project(tmp_path)
     monkeypatch.setattr(craft, "luminance", lambda path: (strobe(5.0), 30.0))
     report = craft.measure(folder, video=tmp_path / "v.mp4", levels=lambda path, spans: [-40.0] * len(spans))
-    assert report.to_dict()["schema"] == craft.SCHEMA == "1.6.0"
+    assert report.to_dict()["schema"] == craft.SCHEMA
     assert report.to_dict()["flashes"][0]["share"] == 1.0
     monkeypatch.setattr(craft, "measure", lambda *a, **k: report)
     assert main(["craft", str(folder)]) == 0
@@ -708,3 +708,77 @@ def test_a_short_hold_keeps_its_ramps_inside_it():
 def test_a_hush_refuses_a_rise_or_no_ramp(kw, match):
     with pytest.raises(craft.CraftError, match=match):
         hushed([(0.0, 1.0)], **kw)
+
+
+# -- two passes need an encoder that takes them ----------------------------------------------------------------
+TWO_PASS = b'<scene><output id="main" codec="h264" bitrate="5800000" twoPass="true"/></scene>'
+ONE_PASS = b'<scene><output id="main" codec="h264" crf="18"/></scene>'
+
+
+def tagged(encoder: str, code: int = 0):
+    """An ffprobe that reads ``encoder`` off the video stream, and the calls made of it."""
+    calls = []
+
+    def run(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, code, stdout=encoder + "\n", stderr="")
+
+    return run, calls
+
+
+def test_a_two_pass_scene_encoded_in_hardware_is_named(tmp_path):
+    run, calls = tagged("Lavc61.19.101 h264_nvenc")
+    assert craft.hardware_passes(TWO_PASS, tmp_path / "v.mp4", run=run) == "h264_nvenc"
+    assert "stream_tags=encoder" in calls[0] and str(tmp_path / "v.mp4") in calls[0]
+
+
+def test_a_two_pass_scene_encoded_in_software_has_nothing_to_say(tmp_path):
+    run, _ = tagged("Lavc61.19.101 libx264")
+    assert craft.hardware_passes(TWO_PASS, tmp_path / "v.mp4", run=run) == ""
+
+
+def test_a_scene_that_asks_for_one_pass_is_not_probed(tmp_path):
+    run, calls = tagged("Lavc61.19.101 h264_nvenc")
+    assert craft.hardware_passes(ONE_PASS, tmp_path / "v.mp4", run=run) == ""
+    assert calls == []
+
+
+@pytest.mark.parametrize(("tag", "code"), [("", 0), ("Lavc61.19.101 libx264", 1)])
+def test_a_master_that_does_not_name_its_encoder_is_refused(tmp_path, tag, code):
+    run, _ = tagged(tag, code)
+    with pytest.raises(craft.CraftError, match="its encoder"):
+        craft.hardware_passes(TWO_PASS, tmp_path / "v.mp4", run=run)
+
+
+def test_hardware_passes_refuses_a_missing_ffprobe(tmp_path):
+    def run(cmd, **kwargs):
+        raise FileNotFoundError(cmd[0])
+
+    with pytest.raises(craft.CraftError, match="ffprobe was not found"):
+        craft.hardware_passes(TWO_PASS, tmp_path / "v.mp4", run=run)
+
+
+def test_measure_reports_the_hardware_that_took_two_passes_and_the_cli_says_how_to_fix_it(
+    tmp_path, monkeypatch, capsys
+):
+    root = project(tmp_path)
+    scene = root / "show.scene.xml"
+    scene.write_bytes(scene.read_bytes().replace(b"<project ", b'<output id="main" twoPass="true"/><project ', 1))
+    monkeypatch.setattr(craft, "luminance", lambda path: (np.zeros((3, 4, 4)), 30.0))
+    monkeypatch.setattr(craft, "levels", lambda video, spans: [-80.0 for _ in spans])
+    run, _ = tagged("Lavc61.19.101 h264_nvenc")
+    monkeypatch.setattr(craft, "_run", run)
+    report = craft.measure(root, levels=lambda video, spans: [-80.0 for _ in spans], video=tmp_path / "v.mp4")
+    assert report.hardware == "h264_nvenc"
+    assert report.to_dict()["hardware"] == "h264_nvenc"
+    assert report.to_dict()["schema"] == craft.SCHEMA == "1.7.0"
+    renders = tmp_path / "renders"
+    renders.mkdir()
+    (renders / "show.mp4").write_bytes(b"")
+    monkeypatch.setattr(craft, "measure", lambda project, **kwargs: report)
+    assert main(["craft", str(root), "--renders", str(renders)]) == 0
+    assert "h264_nvenc" in capsys.readouterr().out
+
+
+def test_a_report_with_no_video_names_no_hardware(tmp_path):
+    assert craft.measure(project(tmp_path)).hardware == ""

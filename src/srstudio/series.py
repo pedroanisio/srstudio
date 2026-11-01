@@ -92,6 +92,7 @@ class Reel:
     captions: native.CaptionLook | None = None  # None: the series' caption look
     still: float = 0.0  # seconds the opening holds still before the first take (sp-hook_motion arm A)
     crf: str | None = None  # None: the series' crf; a longer reel can ask for a higher one to stay under a size cap
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
     series: ClassVar[Series | None] = None
 
     def __post_init__(self) -> None:
@@ -183,6 +184,7 @@ def build(reel: Reel, file: str, posts: Mapping[str, Any] | None = None, argv: S
             output_options={**s.output, **({"crf": reel.crf} if reel.crf is not None else {})},
             safe_area=s.safe_area,
             accessibility=dict(description=reel.accessible),
+            bleed=reel.bleed,
         )
     )
     if ep.spec.font is None:

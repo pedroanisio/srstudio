@@ -2,8 +2,8 @@
 name: funny-reels
 description: Compose a new funny, adult-audience Instagram reel with srstudio, from premise to a delivered, published-gate-clean video, reusing the catalog first and growing the library (new characters, locations, props) with tests when it lacks something. Use when asked for a new episode, sketch, reel or video script; to make a video funnier; to add characters or diversity to the cast; or to extend the catalog for a video.
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-schema_version: 1.23.0
-changelog: "1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
+schema_version: 1.26.0
+changelog: "1.26.0: a Collage reel with a bitrate encodes with --hw software, and craft names a two-pass master made in hardware (ADR 0076). 1.25.0: every new reel sets bleed=True, so a blurred far plane reaches the frame's edge; a reel already built keeps its rim, frozen. 1.24.0: the Okayville show signature: one cover band, a fixed corner bug, numbers claimed with srstudio number before the final build, a first-delivery gate on reels in that look (ADR 0074). 1.23.0: the full-size frame review is a required two-step gate on every Okayville reel, first delivery refuses run-together captions, hidden signature marks, cut figures, a detached Stick head and a set that runs out, and batches deliver independently (ADR 0073). 1.21.0: a caption carries at most 5 hashtags, deliver and publish_pilots refuse a new video over that, published posts keep theirs (ADR 0065). 1.20.0: the account is Okayville, @okayville.tv, and the brand is everyday life, animated, not office cartoons. 1.19.0: 14/20 is a floor, not an aim: a reviewer in a different session scores independently, the lower counts, deliver and publish_pilots refuse a new @tuxmeme reel or News pilot under it, Mind and Maps owe none (ADR 0064). 1.17.0: auto-enhance, on by default: every video lands one real enhancement on develop before its first delivery, deliver and publish_pilots refuse without it, srstudio enhance shows the mode, ledger and kinds (ADR 0056). 1.16.0: every part of every kind has numbered versions, a release pins them all with parts=, srstudio build records what it drew and deliver needs that record, a head rig is a record on its version. 1.15.0: heads in Staging move a rigged Toon character's head; what a new rig supplies (ADR 0050). 1.14.0: character versions, a release pins what it draws or delivery refuses it, approval is the operator's alone (ADR 0047). 1.13.0: releases declare style=; caption looks approved per style, counter ratio gate in deliver and check (ADR 0048). 1.12.1: the catalog is a site, served by srstudio serve (ADR 0046). 1.12.0: check must be clean, frozen releases listed and the operator's alone (ADR 0040); spell letters for the recogniser; interview lines time beats with interview.said and carry approved hearings; off-frame lettering left out by a typed location option, never safeAreaForce; rotated brows; ADR 0039 performing mark. 1.11.0: encode with --out-dir; deliver from develop after merge, read check past known drift, never migrate; operator-only hearings; picture timed from takes; ADR 0036 card fields; zoom and lettering checks; check_overlays scope."
 ---
 
 # Funny reels with srstudio
@@ -461,6 +461,11 @@ it in `srstudio catalog` without this file changing.
    its picture with `srstudio.look` and stages with `srstudio.staging` (ADR 0031). Never copy another style's
    `*_sets`, `*_reel` or `episodes/_<style>.py`. A new series opts into readable captions,
    `native.CaptionLook(min_last=2, min_seconds=0.84)`: no lone last word, and every cue held long enough to read.
+   **Every new reel sets `bleed=True`**, on `collage_sketch.Staging`, `series.Reel`, `stick_reel.spec` or
+   `EpisodeSpec`. Without it the engine's blur fades a far plane out at the frame's edge and the page shows through
+   as a pale rim about 6 px wide. A far plane painted exactly to the frame also needs `look.depth(..., overscan=True)`,
+   and a hand-made blurred group takes `**look.sheet(cv)`. Never set it on a reel that is delivered or already built:
+   it changes the drawing, which is frozen.
    **Caption looks are approved per style** (ADR 0048): a release declares `style=` (its style's name), and its scene
    must wear a look `caption_gate.LOOKS` records with an approval, or `deliver` refuses it. A new look goes to the
    operator as a rendered proof first; never fake a record's approval, and never answer the engine's contrast check
@@ -506,14 +511,16 @@ it in `srstudio catalog` without this file changing.
    with `generated/bin/scene-render encode <project>/<slug>.scene.xml --out-dir generated --strict`, which writes
    `generated/renders/<slug>.mp4` (without `--out-dir`, the path resolves inside the project). `--strict` exits 1
    on any accessibility finding (flashes, contrast) or anything not rendered as authored, and a reel that fails it
-   does not ship. Then review that file, the mix as delivered, not the scene or a still from the build. You cannot
+   does not ship. A reel whose `Staging.bitrate` is set adds `--hw software`: only libx264 takes the two passes
+   its scene asks for, and the hardware encoder the engine otherwise picks leaves a caption's colour on the wall after
+   the caption has gone (ADR 0076). Then review that file, the mix as delivered, not the scene or a still from the build. You cannot
    judge comic timing by ear, so measure everything that can be measured:
    - a contact sheet with one frame per shot, the hook, the frame just before and just after the reveal, and the
      last frame;
    - captions that fit, and that appear no earlier than the words they show;
    - safe area and continuity, checked against the shot plan;
-   - `srstudio craft` on the project with `--renders`, to confirm the planned moves are there and the pauses read
-     quiet.
+   - `srstudio craft` on the project with `--renders`, to confirm the planned moves are there, the pauses read
+     quiet, and no line says two passes went to a hardware encoder.
 
    On an Okayville reel, look at full-size frames on this first render, before you start the next reel (see
    *Full-size frame review*). Write down every defect as a concrete correction (the time, what is wrong, the fix), fix it, and re-check.
@@ -569,6 +576,29 @@ caption counts, and a tag in the description is one of the five. `deliver` and `
 first delivery over it by slug before anything is written (ADR 0065). The fix is the caption alone, with no re-render.
 Published posts keep the 6 to 8 they went out with, so never copy a tag list from a published release. The `SERIES`
 tags in `episodes/posts/_interview.py` already number six, so a new Interview reel picks its own five.
+
+## The show's signature
+
+A new Okayville reel in this look (ADR 0074) carries the show's cover and its corner bug. The look's part is approved,
+and a new reel opts in like this:
+
+1. **Claim the number before the final build.** `srstudio number claim <slug>`, with `--series Saga` for a series reel,
+   prints what it gets. The number is burned in, so it cannot wait for delivery. `srstudio number list` shows the
+   ledger. Claims are refused until the count is set once with `srstudio number base`; the counts are in ADR 0074, so
+   never guess one. Only reels count, and a pulled reel leaves a gap.
+2. **Declare it on the cover.** The release's thumbnail is a `srstudio.thumbnail.ShowCover`: the premise in at most 5
+   words and two lines, `number=`, and for a series `series=` and `series_number=`, with `cover=True`. The art stays
+   the reel's own, so pick a `at` where no face falls under the band (y 1270 down).
+3. **Build by slug.** `srstudio build` reads the number from the release and draws the bug above the camera. Nothing
+   else draws it, and it adds no seconds, so the reel's length stands.
+4. **A series reel says so.** The caption's first line is the question and then the tag: `Who approved this? Saga #19`.
+   The episode still stands alone.
+
+`srstudio.show_gate.show_defects` runs at first delivery and refuses by slug: a number out of the ledger or held by
+another release, a missing series tag, a bug that is gone, moved, faded or on another number, a bug over a face, a
+signature mark or text, a band over a face, or a video whose corner is not its scene's. The bug stays where it is: move
+the pose, the mark or the cover's frame. Published reels never meet this gate, and a reel on any other cover is not
+touched. A clean gate proves the corner and the numbers. The look of the frame stays with the full-size review.
 
 ## Comedy floor
 

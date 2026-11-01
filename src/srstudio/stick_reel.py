@@ -25,10 +25,14 @@ WORD_SIZE, WORD_LINGER, WORD_MIN = 88, 0.9, 0.85  # a word up for less than 0.83
 SCRIM = 0.9
 
 
-def spec(root: str | Path, slug: str, number: str, title: str, description: str, seed: int) -> EpisodeSpec:
-    """A Stick reel on its take timeline, word captions burned in and no music bed."""
+def spec(
+    root: str | Path, slug: str, number: str, title: str, description: str, seed: int, *, bleed: bool = False
+) -> EpisodeSpec:
+    """A Stick reel on its take timeline, word captions burned in and no music bed. ``bleed``: see
+    :attr:`srstudio.episode.EpisodeSpec.bleed`; every new reel sets it."""
     return EpisodeSpec(
         slug=slug,
+        bleed=bleed,
         number=number,
         title=title,
         description=description,

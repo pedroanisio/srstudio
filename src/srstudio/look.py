@@ -8,7 +8,8 @@ these for the drawing, so a finish learned in one style is a call away in the ne
   panel's lettering never spills; :func:`label` sets a line in its box, and :func:`text` sets one in an asset
   of its own with the weight, wrapping and overflow a style chooses;
 * :func:`grade` applies a style's effects (bloom, vignette, grain...) to any node, a shot or a world group inside
-  it; :func:`depth` is a group thrown out of focus for a set's far plane;
+  it; :func:`depth` is a group thrown out of focus for a set's far plane, and :func:`sheet` keeps a blur's frame
+  edge covered on a reel that asks for :attr:`~srstudio.canvas.Canvas.bleed`;
 * :func:`pool` is a soft radial light, :func:`fade` a band of colour thinning to nothing (haze, a shade at the
   frame's foot).
 """
@@ -22,7 +23,9 @@ from . import checks, fonts
 from .canvas import Canvas
 from .errors import SrstudioError
 
-__all__ = ["FitError", "LookError", "wrap", "label", "text", "grade", "depth", "pool", "fade"]
+__all__ = ["FitError", "LookError", "REACH", "wrap", "label", "text", "grade", "sheet", "depth", "pool", "fade"]
+
+REACH = 4.0  # blur radii past a drawing's edge that its blur still reads: the reach scene-render gives a blur
 
 
 class LookError(SrstudioError, ValueError):
@@ -114,11 +117,30 @@ def grade(cv: Canvas, node, prefix: str, effects: Mapping[str, Mapping[str, Any]
     return cv.apply(node, *(cv.effect(f"{prefix}-{kind}", kind, **attrs) for kind, attrs in effects.items()))
 
 
-def depth(cv: Canvas, parent, name: str, radius: float):
-    """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane."""
+def sheet(cv: Canvas) -> dict[str, bool]:
+    """The attribute that keeps a blurred group's edge on a reel with ``bleed``, none without it. The engine blurs a
+    group in an offscreen the size of the frame, so what the group draws past the frame is gone before the blur reads
+    it, and transparency comes in at the frame's edge. A ``threeD`` group is drawn on a sheet the size of what it
+    draws; with no camera it lands where it was."""
+    return {"threeD": True} if cv.bleed else {}
+
+
+def _overscan(cv: Canvas, radius: float) -> dict[str, float]:
+    """A far plane scaled about the frame's centre, so a drawing that stops at the frame reaches past it by its blur."""
+    if not cv.bleed:
+        return {}
+    scale = 1 + 2 * REACH * radius / min(cv.width, cv.height)
+    cx, cy = cv.width / 2, cv.height / 2
+    return {"x": cx, "y": cy, "anchorX": cx, "anchorY": cy, "scaleX": scale, "scaleY": scale}
+
+
+def depth(cv: Canvas, parent, name: str, radius: float, *, overscan: bool = False):
+    """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane. On
+    a reel with ``bleed`` it is drawn on a :func:`sheet`, and ``overscan`` also grows it past the frame: for a far plane
+    painted exactly to the frame, whose bottom edge is hidden if it stops above the frame's centre."""
     if not (checks.number(radius) and radius > 0):
         raise LookError(f"a far plane's blur radius must be positive, got {radius}")
-    far = cv.group(parent, cv.uid("g"))
+    far = cv.group(parent, cv.uid("g"), **sheet(cv), **(_overscan(cv, radius) if overscan else {}))
     cv.apply(far, cv.effect(name, "blur", radius=radius))
     return far
 
