@@ -47,6 +47,7 @@ from . import (  # noqa: F401  (registers builders)
     news_inked,
     news_kit,
     props,
+    rafa,
     registry,
     saga,
     saga_reel,
