@@ -53,9 +53,9 @@ FIGURES = {"fox": (1.1, 30.0), "goat": (1.1, 20.0)}
 CAR_FRONT = {"at": (210.0, 975.0), "scale": 1.9}  # the car close, between the viewer and whoever is talking
 CAR_WIDE = {"at": (300.0, 905.0), "scale": 1.3}
 BEHIND = {
-    "fox": ((200.0, 842.0), 0.62),
-    "goat": ((394.0, 842.0), 0.62),
-}  # low enough that the dropped car hides the fox
+    "fox": ((200.0, 832.0), 0.62),
+    "goat": ((394.0, 832.0), 0.62),
+}  # the dropped car hides the fox, and the sill stays 40 px below the hem
 DRIVE = "#b8b2a6"  # the concrete in front of the yard
 BOARD = {"at": (424, 824), "scale": 1.1}  # stood on the boot, against the rear window
 PRICES = (("Clunk", "$2,000", "clunk-price"), ("Rattle", "$800", "rattle-price"), ("Squeak", "$40", "squeak-price"))
