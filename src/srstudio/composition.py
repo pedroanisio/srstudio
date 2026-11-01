@@ -6,10 +6,10 @@ Its costs are conservative declared bounds, not measured renderer RSS or timing.
 Vector preparation checks actual payloads; emission compiles supported features
 into a self-contained scene and atomically publishes it without rendering.
 plate_view resolves perspective plate coordinates and shared lights. prepare_plate
-verifies static untextured geometry and produces a closed document/resource bundle
+verifies static geometry and texture pixels and produces a closed document/resource bundle
 in a bounded worker. compile_bundle and emit_bundle combine verified vectors and
 static plates with bounded rendering, verified caching and atomic publication.
-Textured/animated plate and proxy adapters remain unsupported.
+Printed-label, animated plate and proxy adapters remain unsupported.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ._composition_plate_view import PlateView
     from .clay import Mesh
+    from .plates import Material, Texture
 
 from .errors import SrstudioError
 
@@ -331,12 +332,17 @@ class PlateMaterial(_Record):
     roughness: float = field(default=0.68, metadata={'minimum': 0, 'maximum': 1})
     metallic: float = field(default=0, metadata={'minimum': 0, 'maximum': 1})
     emissive: str = ''
+    color_map: str = ''
+    normal_map: str = ''
+    normal_scale: float = field(default=1.0, metadata={'minimum': 0, 'maximum': 16})
+    sheen: str = ''
+    subsurface: float = field(default=0.0, metadata={'minimum': 0, 'maximum': 1})
 
 
 @dataclass(frozen=True)
 class PlateMesh:
     """Owned little-endian float64 vertex/normal triples and int64 triangle triples.
-
+    Optional UVs are little-endian float64 pairs, preserved without resampling.
     basis declares the input's Z direction: canonical is toward the viewer,
     clay is away. Binding bounds and anchors always use canonical source axes.
     """
@@ -346,6 +352,17 @@ class PlateMesh:
     normals: bytes
     triangles: bytes
     basis: Literal['canonical', 'clay']
+    uvs: bytes | None = None
+
+
+@dataclass(frozen=True)
+class PlateTexture:
+    """Owned row-major RGBA8 pixels; dimensions and contents participate in identity."""
+
+    id: str
+    width: int
+    height: int
+    pixels: bytes
 
 
 @dataclass(frozen=True)
@@ -354,6 +371,7 @@ class PlateSource:
     meshes: tuple[PlateMesh, ...]
     materials: tuple[PlateMaterial, ...]
     meters_per_unit: float | None = None
+    textures: tuple[PlateTexture, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -364,7 +382,7 @@ class PlateResource:
 
 @dataclass(frozen=True)
 class PreparedPlate:
-    """Verified static plate document and closed mesh resources, bound to one scene placement."""
+    """Verified static plate document and closed mesh/texture resources, bound to one scene placement."""
 
     binding: AssetBinding
     source: PlateSource
@@ -386,6 +404,31 @@ def plate_mesh(mesh: Mesh, *, basis: Literal['canonical', 'clay']) -> PlateMesh:
     from ._composition_plate import snapshot
 
     return snapshot(mesh, basis=basis)
+
+
+def plate_texture(id: str, texture: Texture) -> PlateTexture:
+    """Snapshot bounded uint8 RGBA pixels without rendering or reading a file."""
+    from ._composition_texture import snapshot
+
+    return snapshot(id, texture)
+
+
+def plate_source(
+    id: str,
+    meshes: tuple[Mesh, ...],
+    materials: tuple[Material, ...],
+    *,
+    basis: Literal['canonical', 'clay'],
+    meters_per_unit: float | None = None,
+) -> PlateSource:
+    """Snapshot existing geometry and materials, deduplicating pixel maps without losing authored fields.
+
+    Printed-label recipes require a separate rendering adapter and are refused.
+    prepare_plate verifies geometry and emits PNG/OBJ resources in a bounded worker.
+    """
+    from ._composition_texture import snapshot_source
+
+    return snapshot_source(id, meshes, materials, basis=basis, meters_per_unit=meters_per_unit)
 
 
 def plate_source_digest(source: PlateSource) -> str:

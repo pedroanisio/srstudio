@@ -82,7 +82,7 @@ def _inputs(
                 or asset.binding.backend != 'plates'
                 or type(asset.xml) is not bytes
                 or type(asset.resources) is not tuple
-                or len(asset.resources) > 128
+                or len(asset.resources) > plate_wire.MAX_RESOURCES
             ):
                 raise _failure('assets', 'one prepared plate for each supported plate placement')
             total += plate_wire.validate_source(asset.source)

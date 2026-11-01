@@ -737,8 +737,8 @@ def pixels(png: Path) -> np.ndarray:
     return np.frombuffer(raw, np.uint8).reshape(height, width, 4)
 
 
-def write_png(path: Path, rgba: np.ndarray) -> Path:
-    """``rgba`` as an 8-bit PNG, the same bytes for the same pixels, mode 600."""
+def _png_bytes(rgba: np.ndarray) -> bytes:
+    """The canonical RGBA8 encoding shared by plate files and bounded composition workers."""
     height, width = rgba.shape[:2]
 
     def chunk(tag: bytes, data: bytes) -> bytes:
@@ -746,7 +746,12 @@ def write_png(path: Path, rgba: np.ndarray) -> Path:
 
     rows = b"".join(b"\0" + row.tobytes() for row in rgba.astype(np.uint8))
     body = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", body) + chunk(b"IDAT", zlib.compress(rows, 6)) + chunk(b"IEND", b"")
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", body) + chunk(b"IDAT", zlib.compress(rows, 6)) + chunk(b"IEND", b"")
+
+
+def write_png(path: Path, rgba: np.ndarray) -> Path:
+    """``rgba`` as an 8-bit PNG, the same bytes for the same pixels, mode 600."""
+    data = _png_bytes(rgba)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
     tmp.write_bytes(data)
     return _keep(tmp, path)

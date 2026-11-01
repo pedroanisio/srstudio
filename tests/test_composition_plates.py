@@ -215,15 +215,15 @@ def test_malformed_worker_payloads_are_refused(verified_payload, monkeypatch, ba
         c.prepare_plate(plan, 'host', item)
 
 
-@pytest.mark.parametrize('bad', ['mesh-type', 'basis', 'uv', 'shape', 'dtype', 'empty', 'unsigned', 'material'])
+@pytest.mark.parametrize('bad', ['mesh-type', 'basis', 'uv-shape', 'shape', 'dtype', 'empty', 'unsigned', 'material'])
 def test_snapshot_refuses_unsupported_or_lossy_input(bad):
     model = clay.Model()
     model.box('skin', (0, 0, 0), (1, 1, 1))
     mesh = model.meshes()[0]
     if bad == 'mesh-type':
         mesh = None
-    elif bad == 'uv':
-        mesh = replace(mesh, uvs=np.zeros((len(mesh.vertices), 2)))
+    elif bad == 'uv-shape':
+        mesh = replace(mesh, uvs=np.zeros((len(mesh.vertices), 3)))
     elif bad == 'shape':
         mesh = replace(mesh, vertices=np.zeros((5, 2)))
     elif bad == 'dtype':

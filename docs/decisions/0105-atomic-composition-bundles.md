@@ -39,8 +39,9 @@ unlimited host, replacing an existing directory, and publishing XML before its
 images. These respectively allow forged evidence, stale pixels, unbounded decode
 work, destructive output replacement and incomplete scenes.
 
-This adapter supports static untextured plates and existing vector features.
-Textured/animated geometry, proxy recipes, orthographic plate views and animated
+This adapter supports static plates and existing vector features;
+[texture snapshots](0106-verified-plate-textures.md) add UV-bound color/normal maps.
+Printed-label recipes, animated geometry, proxy recipes, orthographic plate views and animated
 drawing approval remain outside its supported contract. See the
 [guide](../composition-preflight.md#render-and-publish-a-mixed-bundle) and
 [tests](../../tests/test_composition_bundles.py).

@@ -584,13 +584,14 @@
           "Plate/print renderer sessions enforce nested address-space limits, process-group deadlines and bounded diagnostics; failures and explicit retries consume every enclosing attempt budget without publishing partial images",
           "Perspective plate-view bridge resolves canonical units, handedness, parent transforms, shared world lights and bounded principal-point overscan without applying projection twice",
           "Bounded static untextured plate preparation verifies immutable mesh buffers, materials, bounds, source identities and declared work; emits a closed XML/resource bundle with retained source evidence; preflight counts distinct resolved placements as distinct cold jobs",
-          "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories"
+          "Static mixed vector/plate bundles reverify all inputs, render unique jobs under nested limits, verify PNGs and warm caches, and atomically publish portable scene/image directories",
+          "Immutable UV and RGBA8 snapshots preserve color/normal maps, normal strength, sheen and subsurface settings; source snapshots deduplicate dimensions plus pixels, bounded workers generate content-addressed PNG/OBJ resources, and legacy untextured identities remain unchanged"
         ],
         "remaining": [
-          "Textured/animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
+          "Printed-label, animated plate and proxy payload adapters and supported backend emission under shared camera/light contracts",
           "Cross-backend rendering evidence for the complete DRAWING.md contract"
         ],
-        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
+        "verification": ["tests/test_composition_preflight.py", "tests/test_composition_emission.py", "tests/test_composition_runtime.py", "tests/test_bounded_process.py", "tests/test_composition_example.py", "tests/test_composition_plate_view.py", "tests/test_composition_plates.py", "tests/test_composition_bundles.py", "tests/test_composition_textures.py", "tests/test_bundle_primitives.py", "tests/test_plate_runtime_limits.py", "tests/test_plate_render_sessions.py", "docs/composition-preflight.md", "docs/authoring-benchmark.md"]
       },
       "evidence": [
         "DRAWING.md#agent-facing-composition-contract"
