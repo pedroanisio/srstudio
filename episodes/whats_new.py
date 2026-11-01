@@ -60,9 +60,9 @@ THUMP = 0.33
 TAP = JAB + 0.62  # the finger lands
 SAT = PEEK - 1.3  # the second thump
 JUNO_HIGH, JUNO_DOWN, JUNO_CLEAR = (770.0, 1500.0), (770.0, 1650.0), (970.0, 1650.0)
-BO_AT, BO_FRIDGE, BO_NOD, BO_CARD = (440.0, FLOOR), (250.0, FLOOR), (640.0, FLOOR), (900.0, FLOOR)
+BO_AT, BO_FRIDGE, BO_NOD, BO_CARD = (440.0, FLOOR), (250.0, FLOOR), (598.0, FLOOR + 20.0), (900.0, FLOOR)
 BO_CLEAR = (300.0, FLOOR)
-PIP_AT, PIP_WALL, PIP_PRESS, PIP_OFF = (165.0, 1560.0), (470.0, 1560.0), (430.0, 1560.0), (150.0, 1560.0)
+PIP_AT, PIP_WALL, PIP_PRESS, PIP_OFF = (165.0, 1560.0), (470.0, 1560.0), (430.0, 1547.0), (150.0, 1560.0)
 SWITCH_AT = (665.0, 1010.0)
 FRIDGE_AT, LAMP_AT, SHELF_Y = (170.0, 1300.0), (640.0, 850.0), 850.0
 DOOR_SEAT = (930.0, 1570.0)
@@ -153,7 +153,7 @@ bo = quiet(
         cue(P[10].start, "stand", BO_FRIDGE, eyes="open", mouth="smile"),
         cue(P[11].start, "wave-b", BO_FRIDGE, flip=True, eyes="happy", mouth="grin"),
         cue(PRESS, "clasp", BO_NOD, eyes="happy", mouth="smile"),
-        cue(LAMP + 0.18, "clasp", BO_NOD, ease=0.1, turn=7, eyes="happy", mouth="grin"),
+        cue(LAMP + 0.18, "clasp", (BO_NOD[0], BO_NOD[1] + 18.0), ease=0.1, eyes="happy", mouth="grin"),
         cue(LAMP + 0.4, "clasp", BO_NOD, ease=0.1, eyes="happy", mouth="grin"),
         cue(P[13].start - 0.04, "clasp", BO_CLEAR, ease=0.0, eyes="happy", mouth="smile"),  # out of Juno's close-up
         cue(P[14].start - 0.04, "wave-b", BO_CARD, ease=0.0, flip=True, eyes="happy", mouth="grin"),
@@ -269,6 +269,7 @@ soft_odds.dimmer(cv, graded, ((0.0, 0.0), (DARK, 0.3), (LAMP, 0.0)))
 insert = cv.group(graded, "insert")
 cv.gate(insert, [(JAB, NEXT)])
 cv.rect(insert, 0, 0, 1080, 1920, "#E8D4B4")
+soft_front.shelf(cv, insert, id="insert-shelf")  # the marks stay put through the cut
 soft_front.star_card(cv, insert, 540, 1000, tap=TAP, scale=2.1, id="soft-star-card")
 arm = cv.group(insert, "juno-arm", x=210, y=1010)
 cv.keys(
