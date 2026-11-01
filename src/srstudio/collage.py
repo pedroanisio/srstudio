@@ -524,13 +524,14 @@ def _eyes(look: Look, kind: str) -> list[Shape]:
     return out
 
 
-def lid_shapes(look: Look) -> list[Shape]:
+def lid_shapes(look: Look, under_band: bool = False) -> list[Shape]:
     """Both eyes shut: paper lids over the whites and a lash line, for a blink. The lids are drawn after the hair, so
-    under a hat's band they start at its lower edge and the lash line falls below it."""
+    a hat's band ends up under them; ``under_band`` starts them at its lower edge and drops the lash line below it,
+    for new reels, and delivered ones keep the lid they were drawn with."""
     out: list[Shape] = []
     cy = face(look)[1]
     for side, (ex, ey) in zip((-1, 1), _eye_centres(look), strict=True):
-        if look.hair == "beanie":
+        if under_band and look.hair == "beanie":
             top, bottom = cy + BEANIE_BAND_BOTTOM, ey + 75
             lid = [(ex - 57, top), (ex + 57, top), (ex + 57, bottom - 24), (ex + 30, bottom), (ex - 30, bottom)]
             out.append((_poly([*lid, (ex - 57, bottom - 24)]), look.skin, None, 0.0, 1.0))
@@ -1180,13 +1181,14 @@ def figure(
     stickers: Sequence[Any] = (),
     mouths: Mouths = (),
     still: bool = False,
+    lids_under_band: bool = False,
 ) -> list:
     """One group per pose run, on from project second ``enter`` until ``duration``. ``mouths`` is the lip-sync
     track (``(project second, viseme)``): the mouth becomes one layer per viseme with hold keys inside each run, the
     pose's own mouth showing while closed. The eyes shut for :data:`srstudio.toon_cast.BLINK_HOLD` at the look's
     pace. A ``still`` figure keys nothing: no breath, no blink and the pose's own mouth, for an opening whose
-    picture must not change (ADR 0036). ``taps`` and ``stickers`` are part of the drawer contract; the Collage cast
-    types on no keyboard."""
+    picture must not change (ADR 0036). ``lids_under_band`` is :func:`lid_shapes`' ``under_band``. ``taps`` and
+    ``stickers`` are part of the drawer contract; the Collage cast types on no keyboard."""
     if not (checks.number(enter) and 0 <= enter < duration):
         raise CollageError(f"{look.name}: enter must be a project second before the end, got {enter!r}")
     groups = []
@@ -1210,7 +1212,7 @@ def figure(
         blinks = blink_times(start, end, look.blink) if pose.eyes != "closed" and not still else []
         if blinks:
             shut = cv.group(g, cv.uid("g"))
-            draw_shapes(cv, shut, lid_shapes(look))
+            draw_shapes(cv, shut, lid_shapes(look, lids_under_band))
             states = [(start, 0)]
             for t in blinks:
                 states += [(t, 1), (round(t + BLINK_HOLD, 6), 0)]
@@ -1234,8 +1236,9 @@ def _drawer(look: Look) -> Drawer:
         stickers: Sequence[Any] = (),
         mouths: Mouths = (),
         still: bool = False,
+        lids_under_band: bool = False,
     ) -> list:
-        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still)
+        return figure(cv, parent, look, poses, duration, taps, enter, stickers, mouths, still, lids_under_band)
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary

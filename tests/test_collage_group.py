@@ -1,6 +1,8 @@
 """The Collage group shot: several of the cast on one set in fixed places, held across every change of speaker, the
 speaker on its beats and the others on their reactions; a zoom lands on the speaker's face in its place."""
 
+import xml.etree.ElementTree as ET
+
 import pytest
 from sr_core.scene import Scene
 
@@ -134,3 +136,20 @@ def test_a_pair_listens_on_one_pose_and_a_place_maps_a_point_of_the_full_shot():
     assert all(lineup.reactions[who][0]["eyes"] == "half" for who in places)
     x, y = collage_group.place_of(places["gary"], (540.0, 1920.0))
     assert (x, y) == (300.0, 1920.0)
+
+
+def test_a_pair_asked_to_draws_its_hat_s_blink_under_the_band():
+    places = {"jun": Place(740.0, 1920.0, 0.76), "omar": Place(270.0, 1920.0, 0.76)}
+    wanted = {shape[0] for shape in collage.lid_shapes(collage.LOOKS["jun"], under_band=True)}
+    lines = (sketch.Line("jun", "Hello? I'm right here."),)
+    bs, end = timed(lines, ((1.0, "jun", 0, "open", "flat", "down"),), tail=6.0)
+    (app,) = sketch.appearances(bs, end)
+
+    def paths(**options) -> set[str]:
+        cv = canvas(end)
+        collage_group.pair(places, (0.0, end), **options)(cv, cv.comp, app, {})
+        root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+        return {s.get("path") for s in root.iter("shape")}
+
+    assert wanted <= paths(lids_under_band=True)
+    assert not wanted & paths()

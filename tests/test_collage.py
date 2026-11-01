@@ -358,12 +358,34 @@ def test_a_cue_can_take_its_pill_somewhere_else():
     assert second - 815.0 == first - collage.CAPTION_TOP
 
 
-def test_a_blink_under_a_hat_stays_below_its_band():
+def _lid_heights(look: collage.Look, **options) -> list[float]:
+    return [float(y) for shape in collage.lid_shapes(look, **options) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+
+
+def test_a_new_reel_s_blink_under_a_hat_stays_below_its_band():
     jun = collage.LOOKS["jun"]
     assert jun.hair == "beanie"
     band = collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
-    heights = [float(y) for shape in collage.lid_shapes(jun) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
-    assert min(heights) >= band
+    assert min(_lid_heights(jun, under_band=True)) >= band
+
+
+def test_a_delivered_reel_keeps_the_lid_it_was_drawn_with():
+    jun = collage.LOOKS["jun"]
+    assert min(_lid_heights(jun)) < collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    assert collage.lid_shapes(jun) != collage.lid_shapes(jun, under_band=True)
+
+
+def _shape_paths(cv: Canvas) -> set[str]:
+    return {s.get("path") for s in tree(cv).iter("shape")}
+
+
+def test_a_figure_draws_the_lid_under_the_band_only_when_asked():
+    wanted = {shape[0] for shape in collage.lid_shapes(collage.LOOKS["jun"], under_band=True)}
+    asked, plain = canvas(), canvas()
+    collage.DRAWERS["jun"](asked, asked.comp, [pose()], D, (), lids_under_band=True)
+    collage.DRAWERS["jun"](plain, plain.comp, [pose()], D, ())
+    assert wanted <= _shape_paths(asked)
+    assert not wanted & _shape_paths(plain)
 
 
 def test_a_blink_with_no_hat_covers_the_whole_eye():

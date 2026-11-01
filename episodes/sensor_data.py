@@ -76,7 +76,8 @@ def moments(beats, name: str) -> list[float]:
 
 def casting(beats, end: float) -> CastDrawer:
     """The two sinks; Omar's slow wave is his listening pose, so it never stops; Kai alone for his walk through."""
-    lineup = collage_group.pair(PLACES, (STILL, moments(beats, "kai")[0]), (moments(beats, "shut")[0], end))
+    spans = (STILL, moments(beats, "kai")[0]), (moments(beats, "shut")[0], end)
+    lineup = collage_group.pair(PLACES, *spans, lids_under_band=True)
     lineup.reactions["omar"][0].update(arms="fist")
 
     def draw(cv, parent, app: Appearance, mouths: Mouths) -> collage.Point:

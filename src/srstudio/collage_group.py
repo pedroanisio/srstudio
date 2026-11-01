@@ -54,11 +54,13 @@ class Place:
 class Lineup:
     """Who stands where (``places``, drawn in this order, the first farthest back), what each does while someone
     else speaks (``reactions``: poses from 0 s on the project clock, as :func:`srstudio.collage.parse_poses` reads
-    them), and the project ``spans`` that are group shots."""
+    them), and the project ``spans`` that are group shots. ``lids_under_band`` is
+    :func:`srstudio.collage.figure`'s, for everyone in a group shot."""
 
     places: Mapping[str, Place]
     reactions: Mapping[str, Sequence[Mapping[str, Any]]]
     spans: Sequence[tuple[float, float]] = field(default=())
+    lids_under_band: bool = False
 
     def __post_init__(self) -> None:
         if not self.places:
@@ -122,19 +124,33 @@ class Lineup:
             x, y = place.transform()
             g = cv.group(parent, cv.uid(f"lineup-{name}"), x=x, y=y, scaleX=place.scale, scaleY=place.scale)
             poses = collage.parse_poses(self.poses(name, app), f"poses of {name} from {app.start} s")
-            collage.DRAWERS[name](cv, g, poses, app.end, (), enter=app.start, mouths=mouths.get(name, ()))
+            collage.DRAWERS[name](
+                cv,
+                g,
+                poses,
+                app.end,
+                (),
+                enter=app.start,
+                mouths=mouths.get(name, ()),
+                lids_under_band=self.lids_under_band,
+            )
         fx, fy = collage.face(collage.LOOKS[app.who])
         p = self.places[app.who]
         x, y = p.transform()
         return x + fx * p.scale, y + fy * p.scale
 
 
-def pair(places: Mapping[str, Place], *spans: tuple[float, float], listening=("open", "flat", "down")) -> Lineup:
+def pair(
+    places: Mapping[str, Place],
+    *spans: tuple[float, float],
+    listening=("open", "flat", "down"),
+    lids_under_band: bool = False,
+) -> Lineup:
     """A :class:`Lineup` of a two-hander: everyone in ``places`` holds ``listening`` (eyes, mouth, arms) while someone
-    else speaks, through ``spans``."""
+    else speaks, through ``spans``; ``lids_under_band`` is the lineup's."""
     eyes, mouth, arms = listening
     pose = {"start": 0.0, "eyes": eyes, "mouth": mouth, "arms": arms}
-    return Lineup(places, {name: [dict(pose)] for name in places}, spans)
+    return Lineup(places, {name: [dict(pose)] for name in places}, spans, lids_under_band)
 
 
 def place_of(place: Place, point: tuple[float, float]) -> tuple[float, float]:
