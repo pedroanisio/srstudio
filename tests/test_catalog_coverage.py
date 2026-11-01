@@ -10,6 +10,8 @@ listed below. A declared part can start to be used later; the build then still s
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from collections.abc import Collection
 from pathlib import Path
 
@@ -93,3 +95,15 @@ def test_a_part_with_no_item_and_no_declaration_is_a_gap_and_so_is_a_declaration
     assert missing == ["b"]  # registered, not shown, not declared
     assert stale == ["a", "gone"]  # declared though shown, declared though unregistered
     assert coverage_gaps({"a"}, {"a", "c"}, {"c"}) == ([], [])  # shown or declared: no gap
+
+
+def test_importing_the_library_registers_every_recorded_part():
+    """Run apart from the suite, whose collection imports every module and so hides a part nothing else imports."""
+    code = (
+        "import srstudio\n"
+        "from srstudio import parts, registry\n"
+        "known = {e.name for e in registry.entries()}\n"
+        "print(sorted(set(parts.load()) - known))\n"
+    )
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert done.stdout.strip() == "[]"

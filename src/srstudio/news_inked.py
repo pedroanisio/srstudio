@@ -1684,7 +1684,12 @@ def gus_5(
     return perform(cv, parent, "gus", x, ((start, pose or Pose()),), start, end, mouths, number=5)
 
 
-@register("character", "news-vera@6", summary="Vera with a pair of hands, the right the mirror of the left")
+@register(
+    "character",
+    "news-vera@6",
+    summary="Vera with a pair of hands, the right the mirror of the left",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def vera_6(
     cv: Canvas,
     parent,
@@ -1698,7 +1703,12 @@ def vera_6(
     return perform(cv, parent, "vera", x, ((start, pose or Pose()),), start, end, mouths, number=6)
 
 
-@register("character", "news-gus@6", summary="Gus with a pair of hands, the right the mirror of the left")
+@register(
+    "character",
+    "news-gus@6",
+    summary="Gus with a pair of hands, the right the mirror of the left",
+    contract=cc.anchor(Pose, news_kit.EYES, news_kit.EXPRESSIONS, news_kit.ARMS, news_kit.VISEMES),
+)
 def gus_6(
     cv: Canvas,
     parent,

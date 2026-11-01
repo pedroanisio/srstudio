@@ -53,6 +53,7 @@ from . import (  # noqa: F401  (registers builders)
     native,
     news_inked,
     news_kit,
+    pedro,
     props,
     rafa,
     registry,
@@ -109,6 +110,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_surgery,
     toon_torso,
     toon_voices,
+    toon_ward,
     toon_world,
 )
 from .canvas import (
