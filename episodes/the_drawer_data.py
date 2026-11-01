@@ -50,7 +50,7 @@ HOOK_END = 3.0
 PIVOT = (980.0, 1420.0)
 OUT_STEP = 0.28  # seconds between one streetlight going out and the next
 OUT_FROM = 0.3  # after the cut to the window
-FINGER = dict(colour="#f4eef2", sleeve="#d9cfe0")
+FINGER_COLOUR, FINGER_SLEEVE = "#f4eef2", "#d9cfe0"
 OVER_BIN = (96.0, 720.0)
 TIP_ANGLE = 112.0  # degrees: her hand comes in from the left
 DRAWER = (300.0, 1056.0)
@@ -178,7 +178,8 @@ def _cable(shot) -> None:
         if app.start <= a < app.end:
             toon_cables.gray_cable(cv, shot.front, moves, a, min(b, app.end))
             toon_house.finger(cv, shot.front, tip=(246.0, 756.0), angle=TIP_ANGLE, moves=reach, start=c,
-                              end=min(d, app.end), id=cv.uid("finger"), **FINGER)  # fmt: skip
+                              end=min(d, app.end), id=cv.uid("finger"), colour=FINGER_COLOUR,
+                              sleeve=FINGER_SLEEVE)  # fmt: skip
 
 
 def dress(shot) -> None:
@@ -202,7 +203,8 @@ def dress(shot) -> None:
         close = when(beats, "close")
         if app.start == close:
             toon_house.finger(cv, shot.front, tip=(300.0, 1125.0), moves=((close + 0.02, 300.0, 1062.0),), start=close,
-                              end=close + 1.2, id=cv.uid("finger"), **FINGER)  # fmt: skip
+                              end=close + 1.2, id=cv.uid("finger"), colour=FINGER_COLOUR,
+                              sleeve=FINGER_SLEEVE)  # fmt: skip
     if app.start == 0.0:
         toon_house.key_line(cv, shot.front, HOOK, 0.0, HOOK_END, measure=shot.measure)
 
