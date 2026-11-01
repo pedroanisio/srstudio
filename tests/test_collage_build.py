@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import COLLAGE, collage, collage_sketch, sketch
+from srstudio import COLLAGE, collage, collage_sets, collage_sketch, sketch
 from srstudio.collage_group import Lineup, Place
 from srstudio.collage_sketch import Staging, check_staging, make_sketch, solo, sound_effects, timed
 
@@ -107,6 +107,32 @@ def test_every_group_shot_draws_the_whole_lineup_in_fixed_places_and_zooms_on_th
     assert float(zoomed[0].get("anchorY")) == pytest.approx(y + fy * p.scale)
 
 
+def anchors_of_the_zoom(ep) -> tuple[float, float]:
+    root = ET.fromstring(ep.scene.to_bytes(layout="pretty"))
+    zoomed = [
+        g
+        for g in root.iter("group")
+        if g.get("anchorX") is not None and g.find("animate[@property='scaleX']") is not None
+    ]
+    assert len(zoomed) == 1
+    return float(zoomed[0].get("anchorX")), float(zoomed[0].get("anchorY"))
+
+
+def test_a_staging_that_keeps_the_signature_pivots_its_zoom_inside_it(pinned_fonts, tmp_path):
+    p = PLACES["gary"]
+    x, y = p.transform()
+    fx, fy = collage.face(collage.LOOKS["gary"])
+    speaker = (x + fx * p.scale, y + fy * p.scale)
+    scale = collage_sketch.ZOOM_SCALE
+    expected = collage_sets.zoom_pivot("living-room", speaker, scale, height=collage.CAPTION_TOP)
+    assert expected != speaker  # the speaker's own face would crop the shelf: the test has to tell them apart
+    front = collage_sets.marks_box("living-room")[3]
+    assert expected[1] + (front - expected[1]) * scale <= collage.CAPTION_TOP  # the shelf lands above the pill
+    left = replace(staging(), keep_signature=True)
+    assert anchors_of_the_zoom(built(tmp_path / "kept", left, pinned_fonts)) == pytest.approx(expected)
+    assert anchors_of_the_zoom(built(tmp_path / "face", staging(), pinned_fonts)) == pytest.approx(speaker)
+
+
 def test_the_casting_is_made_from_the_beats_the_build_draws(pinned_fonts, tmp_path):
     seen = []
 
@@ -197,3 +223,11 @@ def test_a_staging_may_set_a_two_pass_bitrate_and_the_published_ones_do_not(pinn
     for bad in (-1, 2.5, "5M", True):
         with pytest.raises(collage_sketch.StagingError, match="bitrate"):
             check_staging(still_staging(bitrate=bad))
+
+
+def test_a_thud_beat_plays_a_thud(tmp_path):
+    beats = [
+        sketch.Beat(0.0, "gary", "", "open", "flat", "down"),
+        sketch.Beat(1.0, "gary", "", "open", "flat", "down", event="thud"),
+    ]
+    assert [e["id"] for e in sound_effects(beats, 3.0, tmp_path, 7)] == ["thud"]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -56,6 +57,18 @@ def pins_for(tmp_path: Path, iv: I.Interview, speech: list[float]) -> dict[str, 
         (dict(effects=[I.Sound("fx", "x", 0.4, 0.3, 0.5)]), r"seconds 0\.4 must lie in \(0\.5, 22\.0\)"),
         (dict(effects=[I.Sound("fx", "x", 22.5, 0.5, 0.5)]), r"seconds 22\.5 must lie in \(0\.5, 22\.0\)"),
         (dict(effects=[I.Sound("fx", "x", float("nan"), 0.5, 0.5)]), "seconds nan must lie in"),
+        (
+            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=1.0), I.Spoken("candidate", "Hi.", "Hi.")]),
+            "level_db",
+        ),
+        (
+            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]),
+            "level_db",
+        ),
+        (
+            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=float("nan")), I.Spoken("candidate", "Hi.", "Hi.")]),
+            "level_db",
+        ),
         (dict(reaction_hold=-1.0), "reaction_hold"),
         (dict(end_card=float("nan")), "end_card"),
     ],
@@ -163,6 +176,17 @@ def test_a_take_never_heard_is_refused_without_a_request(tmp_path):
     (tmp_path / "assets" / "generated" / "line-1.wav").write_bytes(b"never heard")
     with pytest.raises(MissingKeyError):
         I.said(tmp_path, SAID, "this")
+
+
+def test_a_lines_level_sits_it_under_the_others_in_the_mix(tmp_path):
+    iv = make()
+    plain = I.place(iv, pins_for(tmp_path, iv, [1.0, 0.8]), back_to_back).clips
+    quiet = replace(iv.lines[1], level_db=-6.0)
+    lowered = replace(iv, lines=[iv.lines[0], quiet, *iv.lines[2:]])
+    mixed = I.place(lowered, pins_for(tmp_path, lowered, [1.0, 0.8]), back_to_back).clips
+    assert mixed[0].placement.gain_db == plain[0].placement.gain_db
+    assert mixed[1].placement.gain_db == pytest.approx(plain[1].placement.gain_db - 6.0)
+    assert I.declarations(lowered)[0] == I.declarations(iv)[0]  # the take stays the same
 
 
 def test_lines_and_effects_land_where_the_schedule_puts_them(tmp_path):

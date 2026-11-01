@@ -238,3 +238,8 @@ def test_the_digest_of_a_part_is_what_its_record_holds():
 def test_a_refused_part_has_no_digest_to_ask_for():
     with pytest.raises(cs.SpecimenRenderError, match=r"captions is refused \(overlay\)"):
         cs.digest("captions", 1, EPISODES)
+
+
+def test_the_splash_is_shown_while_its_beads_are_in_the_air():
+    # a bead flies for 0.32 s at the least: the recipe's default second shows an empty frame, which a render refuses
+    assert cs.RECIPES["water-splash"].at < 0.32

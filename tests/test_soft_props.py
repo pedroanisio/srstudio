@@ -150,3 +150,80 @@ def test_cake_lettering_spans_must_be_in_order():
         soft_props.cake(cv, cv.comp, "HI", lettering=[(2.0, 1.0)])
     with pytest.raises(SoftPropError, match="lettering spans"):
         soft_props.cake(cv, cv.comp, "HI", lettering=[(0.0, 2.0), (1.0, 3.0)])
+
+
+# -- the glare lamp and the review screen ----------------------------------------------------------------------------
+def test_the_glare_lamp_is_registered_for_the_soft_style():
+    entry = {e.name: e for e in registry.entries()}["soft-glare-lamp"]
+    assert entry.kind == "prop" and entry.style == "soft"
+
+
+def test_the_glare_is_far_larger_than_the_lamp_and_the_lamp_stands_in_it():
+    cv = canvas()
+    soft_props.glare_lamp(cv, cv.comp, 540, 1400, reach=700)
+    lamp = next(g for g in tree(cv).iter("group") if g.get("id") == "soft-glare-lamp")
+    light, body = list(lamp)
+    assert light.tag == "shape" and float(light.get("width")) == 1400  # about ten times the 150 px lamp
+    assert light.get("fill") == "url(#soft-glare-lamp-light)"
+    assert body.get("id") == "soft-glare-lamp-body"  # the lamp itself stays visible in its own light
+
+
+@pytest.mark.parametrize("kw", [{"reach": 0}, {"reach": float("nan")}, {"scale": 0}, {"scale": float("inf")}])
+def test_a_glare_lamp_refuses_a_size_it_cannot_draw(kw):
+    cv = canvas()
+    with pytest.raises(SoftPropError):
+        soft_props.glare_lamp(cv, cv.comp, 540, 1400, **kw)
+
+
+def test_a_review_screen_fills_only_the_stars_it_was_given():
+    cv = canvas()
+    soft_props.review_view(cv, cv.comp, "Dale", 4)
+    stars = [g for g in tree(cv).iter("group") if "star" in g.get("id", "")]
+    fills = [g.find("shape").get("fill") for g in stars]
+    assert len(fills) == soft_props.STARS and fills.count(soft_props.STAR_ON) == 4
+
+
+@pytest.mark.parametrize(
+    ("name", "stars"), [("Dale", 6), ("Dale", -1), ("Dale", 2.5), ("Dale", True), ("", 3), ("X" * 13, 3)]
+)
+def test_a_review_screen_refuses_what_it_cannot_show(name, stars):
+    cv = canvas()
+    with pytest.raises(SoftPropError):
+        soft_props.review_view(cv, cv.comp, name, stars)
+
+
+# -- parcels and the whisk -------------------------------------------------------------------------------------------
+@pytest.mark.parametrize(("name", "kind"), [("soft-parcels", "prop"), ("soft-whisk", "prop")])
+def test_the_parcel_parts_are_registered_for_the_soft_style(name, kind):
+    entry = {e.name: e for e in registry.entries()}[name]
+    assert entry.kind == kind and entry.style == "soft"
+
+
+def test_a_stack_of_parcels_has_a_box_for_every_place_and_reaches_the_ceiling_it_is_given():
+    cv = canvas()
+    soft_props.parcels(cv, cv.comp, 60, 1700, columns=5, rows=8, size=180)
+    boxes = [g for g in tree(cv).iter("group") if g.get("id", "").startswith("soft-parcels-")]
+    assert len(boxes) == 40
+    tops = [float(g.get("y")) for g in boxes]
+    assert min(tops) <= 1700 - 8 * 180 + 40  # a hand-stacked pile is not a ruled line, but it gets there
+
+
+def test_a_stack_of_parcels_is_the_same_every_build():
+    one, two = canvas(), canvas()
+    soft_props.parcels(one, one.comp, 60, 1700)
+    soft_props.parcels(two, two.comp, 60, 1700)
+    assert [g.attrib for g in tree(one).iter("group")] == [g.attrib for g in tree(two).iter("group")]
+
+
+@pytest.mark.parametrize("kw", [{"columns": 0}, {"rows": -1}, {"rows": 2.5}, {"size": 0}, {"size": float("nan")}])
+def test_a_stack_of_parcels_refuses_a_shape_it_cannot_draw(kw):
+    cv = canvas()
+    with pytest.raises(SoftPropError):
+        soft_props.parcels(cv, cv.comp, 60, 1700, **kw)
+
+
+def test_a_whisk_refuses_a_size_it_cannot_draw():
+    cv = canvas()
+    soft_props.whisk(cv, cv.comp, 540, 960, scale=0.5)
+    with pytest.raises(SoftPropError):
+        soft_props.whisk(cv, cv.comp, 540, 960, scale=0)

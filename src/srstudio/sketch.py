@@ -91,6 +91,7 @@ LIP_SYNCED = (
     "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
+LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it
@@ -135,12 +136,14 @@ class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
     ``level`` is the part of the full voice it is said at: every take is levelled to one peak, so a line meant to come
-    out small is only small in the mix with a ``level`` under 1."""
+    out small is only small in the mix with a ``level`` under 1.
+    ``level_db`` plays it quieter than the others, within :data:`LINE_LEVELS`."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
     level: float = 1.0
+    level_db: float = 0.0  # this line against the others in the mix; the take stays the same
 
 
 @dataclass(frozen=True)
@@ -201,6 +204,7 @@ class Sketch:
     tail: float = (
         TAIL_AFTER_LAST  # seconds the recording holds its last beat: less to cut on it (a loop, a hard button)
     )
+    bare: tuple[str, ...] = ()  # the characters whose name only labels a shot the dress draws whole: never shown
 
 
 @dataclass(frozen=True)
@@ -232,6 +236,8 @@ def check(sketch: Sketch) -> None:
     for i, line in enumerate(sketch.lines):
         if not (checks.number(line.level) and 0 < line.level <= 1):
             raise SketchError(f"line {i}: a level is a part of the full voice, in 0..1, got {line.level!r}")
+        if not (checks.number(line.level_db) and LINE_LEVELS[0] <= line.level_db <= LINE_LEVELS[1]):
+            raise SketchError(f"line {i}: level_db {line.level_db!r} is outside {LINE_LEVELS}")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -766,7 +772,7 @@ def record(
             trim.clip_in,
             trim.clip_in + kept,
             kept,
-            gain_to_peak(trim.peak, VOICE_PEAK * line.level),
+            gain_to_peak(trim.peak, VOICE_PEAK * line.level) + line.level_db,
             ffmpeg,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])
