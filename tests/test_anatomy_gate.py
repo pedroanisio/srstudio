@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import anatomy_gate, anatomy_ledger, cli
+from srstudio import anatomy_gate, anatomy_ledger, cli, text_rules
 from srstudio.anatomy_gate import hand_defects
 from srstudio.anatomy_ledger import HAND_NO_SIDE, HAND_UNPAIRED, Exemption, ExemptionError, Note
 from srstudio.releases import Release
@@ -98,10 +98,11 @@ def test_a_manifest_that_cannot_be_read_is_refused(tmp_path):
 
 
 def test_the_command_lists_the_closed_list(tmp_path, capsys):
-    manifest = _manifest(tmp_path / "m.json", *{row.reel for row in anatomy_ledger.exemptions()})
+    rows = (*anatomy_ledger.exemptions(), *text_rules.exemptions())
+    manifest = _manifest(tmp_path / "m.json", *{row.reel for row in rows})
     assert cli.main(["anatomy", "--manifest", str(manifest)]) == 0
     out = capsys.readouterr().out.splitlines()
-    assert out[-1] == f"{len(anatomy_ledger.exemptions())} exemptions"
+    assert out[-1] == f"{len(rows)} exemptions"
     assert not any("NOT PUBLISHED" in line for line in out)
 
 

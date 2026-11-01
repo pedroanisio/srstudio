@@ -47,6 +47,7 @@ from . import (
     show,
     show_numbers,
     strict_gate,
+    text_rules,
     usage,
 )
 from .episode import SceneCheckError
@@ -157,7 +158,7 @@ def main(argv=None):
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
-    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy rules (ADR 0144)")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy and text rules (ADR 0144)")
     bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
@@ -829,7 +830,8 @@ def _anatomy(args: argparse.Namespace) -> int:
     renders = _delivery_default().parent
     manifests = args.manifest or [renders / "ig" / MANIFEST, renders.parent / "pilots" / "news" / "manifest.json"]
     try:
-        lines = anatomy_gate.listing(anatomy_ledger.exemptions(), anatomy_gate.published(manifests))
+        rows = (*anatomy_ledger.exemptions(), *text_rules.exemptions())
+        lines = anatomy_gate.listing(rows, anatomy_gate.published(manifests))
     except anatomy.AnatomyError as exc:
         print(f"srstudio anatomy: {exc}", file=sys.stderr)
         return 2

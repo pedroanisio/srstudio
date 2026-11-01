@@ -57,6 +57,7 @@ from srstudio import (
     show_gate,
     show_numbers,
     strict_gate,
+    text_rules,
 )
 from srstudio.social import (
     MANIFEST,
@@ -217,6 +218,7 @@ def write_all(
     frame_gates.refuse(
         [
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
+            *text_rules.caption_defects(chosen, _beside(renders), first),
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
             *anatomy_gate.hand_defects(chosen, _beside(renders), first),

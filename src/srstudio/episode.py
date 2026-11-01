@@ -1052,6 +1052,9 @@ class Episode:
                 raise check_error from exc
             raise check_error
         document = _document_at(self.scene, self.root, out.parent)
+        from . import text_rules  # it reads the frame gates, which read the releases this module's callers load
+
+        text_rules.refuse_captions(self.spec.slug, document, self.root)
         if self.cv.signature is not None and (absent := signature.missing(document)):
             error = signature.SignatureError(
                 f"{self.spec.slug} is signed but its document has no {', '.join(absent)}: every location must draw "

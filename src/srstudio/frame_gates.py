@@ -33,6 +33,7 @@ __all__ = [
     "FrameGateError",
     "RunTogether",
     "Shown",
+    "broken_off",
     "captions_run_together",
     "refuse",
     "run_together",
@@ -127,6 +128,22 @@ def run_together(document: bytes, sentences: Sequence[str]) -> list[RunTogether]
         for a, b in zip(words, words[1:], strict=False):
             if (_plain(a), _plain(b)) in boundaries and not _MARKED.search(a):
                 found.append(RunTogether(window, a, b))
+    return found
+
+
+def broken_off(document: bytes, sentences: Sequence[str]) -> list[RunTogether]:
+    """Every burned window of the scene ``document`` that keeps a sentence's stop, goes on into the next sentence and
+    stops inside it: ``Meetings have been reduced to one. It is``. The stop does not save it, since the reader is left
+    in the middle of a sentence the window has already begun. A last word with a mark of its own, or one that ends a
+    sentence of the lines, is a window that holds whole sentences, and passes (ADR 0146)."""
+    boundaries = _boundaries(sentences)
+    ends = {_plain(word) for word in " ".join(sentences).split() if _ends_sentence(word)}
+    found: list[RunTogether] = []
+    for window in dict.fromkeys(_windows(_root(document))):
+        words = window.split()
+        crossed = [(a, b) for a, b in zip(words, words[1:], strict=False) if (_plain(a), _plain(b)) in boundaries]
+        if crossed and not _MARKED.search(words[-1]) and _plain(words[-1]) not in ends:
+            found.append(RunTogether(window, *crossed[-1]))
     return found
 
 

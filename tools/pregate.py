@@ -25,6 +25,7 @@ ALWAYS = (
     "tests/test_catalog_coverage.py",
     "tests/test_character_contracts.py",
     "tests/test_skill.py",
+    "tests/test_text_rules.py",
 )
 PUBLISHING = "tests/test_social.py"  # what a change under episodes/ reaches first
 

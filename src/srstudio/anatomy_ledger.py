@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import functools
 import json
-from collections.abc import Iterable, Iterator
+from collections.abc import Collection, Iterable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from importlib import resources
@@ -108,18 +108,19 @@ class Exemption(NamedTuple):
     why: str
 
 
-def _exemption(row: Any) -> Exemption:
+def _exemption(row: Any, rules: Collection[str]) -> Exemption:
     if not isinstance(row, dict) or set(row) != _ROW:
         raise ExemptionError(f"an exemption has exactly {sorted(_ROW)}, got {row!r}")
     if not all(isinstance(value, str) and value.strip() for value in row.values()):
         raise ExemptionError(f"every field of an exemption is words, got {row!r}")
-    if row["rule"] not in RULES:
-        raise ExemptionError(f"an exemption names one of {sorted(RULES)}, got {row['rule']!r}")
+    if row["rule"] not in rules:
+        raise ExemptionError(f"an exemption names one of {sorted(rules)}, got {row['rule']!r}")
     return Exemption(row["reel"], row["rule"], row["part"], row["why"])
 
 
-def parse_exemptions(text: str) -> tuple[Exemption, ...]:
-    """The exemption list in ``text``; anything else in it, or a row twice, is an :class:`ExemptionError`."""
+def parse_exemptions(text: str, rules: Collection[str] = RULES) -> tuple[Exemption, ...]:
+    """The exemption list in ``text``, its rows naming ``rules``; anything else in it, or a row twice, is an
+    :class:`ExemptionError`."""
     try:
         document = json.loads(text)
     except ValueError as e:
@@ -130,7 +131,7 @@ def parse_exemptions(text: str) -> tuple[Exemption, ...]:
         raise ExemptionError(f"the exemption list is schema {document['schema']!r}, this srstudio reads {SCHEMA}")
     if not isinstance(document["exemptions"], list):
         raise ExemptionError("exemptions is a list of rows")
-    rows = tuple(_exemption(row) for row in document["exemptions"])
+    rows = tuple(_exemption(row, rules) for row in document["exemptions"])
     keys = [row[:3] for row in rows]
     if len(set(keys)) != len(keys):
         raise ExemptionError("an exemption is listed twice")
