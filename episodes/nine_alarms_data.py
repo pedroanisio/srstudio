@@ -56,9 +56,10 @@ OF = 9  # alarms in all: the reel sees six of them
 RABBIT_COAT, BEAR_COAT = "#efe8ee", "#a8764f"
 DARK = ("#0d1430", 0.5)
 SCALE = 0.72
-MAE_AT, BRUNO_AT = (118.0, 840.0), (336.0, 840.0)
+MAE_AT, BRUNO_AT = (118.0, 876.0), (336.0, 876.0)  # low enough that the quilt covers both of their paws
 FLOOR_AT, FLOOR_SCALE = (160.0, 1010.0), 1.16
 BAGS = "#a23b5b"
+DIM_PAW = "#afa9b0"  # her coat under the night's shade: the lit phone is above the shade, the hand must not glow
 
 LINES = (
     Line("phone", "Six o'clock. Wake up.", phone=True),
@@ -223,8 +224,8 @@ def _night(shot) -> None:
     _mae_track(cv, rabbit, beats)
     flop, grab, hit, bury = at(beats, "flop"), at(beats, "grab"), at(beats, "hit"), at(beats, "bury")
     a1, a2, a3 = alarm(beats, 1), alarm(beats, 2), alarm(beats, 3)
-    toon_bed.swung_arm(cv, shot.back, (384.0, 690.0), BEAR_COAT, [(flop, 232.0), (flop + 0.22, 186.0)], flop, grab,
-                       length=236.0)  # fmt: skip
+    toon_bed.swung_arm(cv, shot.back, (268.0, 778.0), BEAR_COAT, [(flop, 250.0), (flop + 0.22, 203.0)], flop, grab,
+                       length=150.0)  # fmt: skip
     toon_bed.double_quilt(cv, shot.front)
     px, py = toon_bed.PHONE_SPOT
     cv.rect(
@@ -241,8 +242,8 @@ def _night(shot) -> None:
     toon_bed.swung_arm(cv, shot.front, (372.0, 760.0), RABBIT_COAT, [(hit - 0.2, -14.0), (hit, 24.0)], hit - 0.2,
                        hit + 0.3, length=150.0, width=54.0)  # fmt: skip
     held_from, held_to = grab, bury + 0.25
-    toon_bed.swung_arm(cv, shot.front, (196.0, 748.0), RABBIT_COAT, [(grab, -8.0)], held_from, held_to, length=92.0,
-                       width=54.0)  # fmt: skip
+    toon_bed.swung_arm(cv, shot.front, (204.0, 776.0), RABBIT_COAT, [(grab, -12.0)], held_from, held_to, length=72.0,
+                       width=44.0)  # fmt: skip
     shade = cv.group(shot.front, cv.uid("g"))
     cv.rect(shade, 0, 0, cv.width, cv.height, DARK[0], opacity=DARK[1])
     _lit_phone(cv, shot.front, toon_bed.PHONE_SPOT, ((max(0.05, a1 - 0.3), hit), (a2 - 0.3, grab)))
@@ -251,7 +252,7 @@ def _night(shot) -> None:
     cv.keys(held, "x", [(grab, 0.0), (a3 - 0.05, 0.0), *buzz, (a3 + 0.4, 0.0)], hold=False, local=False)
     toon_everyday.phone(
         cv, held, (Screen(0.0, "notify", title="Alarm", text="Saturday", note="6:10"),), measure=shot.measure,
-        at=(306.0, 830.0), scale=0.9, hand=RABBIT_COAT, id="in-her-hand",
+        at=(306.0, 830.0), scale=0.9, hand=DIM_PAW, id="in-her-hand",
     )  # fmt: skip
     pillow = cv.group(shot.front, cv.uid("g"), start=bury + 0.3, end=app.end)
     halo = cv.rgrad("nine-alarms-halo", [(0.0, "#bcd6ffaa"), (1.0, "#bcd6ff00")])
@@ -286,9 +287,9 @@ def _morning(shot) -> None:
     cv, beats = shot.cv, shot.beats
     toon_bed.double_bed(cv, shot.back, day=True)
     day, turn = at(beats, "day"), at(beats, "turn")
-    for shoulder, up in (((314.0, 730.0), -118.0), ((438.0, 730.0), -62.0)):
+    for shoulder, up in (((322.0, 768.0), -118.0), ((378.0, 768.0), -62.0)):
         keys = [(day, 90.0), (day + 0.8, up), (turn - 0.45, up), (turn, 90.0)]
-        toon_bed.swung_arm(cv, shot.back, shoulder, BEAR_COAT, keys, day, turn + 0.05, length=250.0)
+        toon_bed.swung_arm(cv, shot.back, shoulder, BEAR_COAT, keys, day, turn + 0.05, length=290.0)
     bear = toon_pair.figure(shot, shot.back, "bear", BRUNO_AT, ACTS["bear"], scale=SCALE)
     cv.keys(bear, "rotation", [(turn, 0.0), (turn + 0.4, -7.0)], hold=False, kind="sine-in-out", local=False)
     rabbit = toon_pair.figure(shot, shot.back, "rabbit", MAE_AT, ACTS["rabbit"], scale=SCALE, moving=False)

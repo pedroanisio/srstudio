@@ -32,7 +32,16 @@ RELEASE = Release(
         send_line="Babe. My alarm didn't go off.",
     ),
     style="Toon",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-bear": 2,
+        "toon-captions": 1,
+        "toon-key-line": 1,
+        "toon-phone": 1,
+        "toon-rabbit": 2,
+    },
     comedy=Scores(author=18, reviewer=18),
     cover=True,
 )
