@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "5eef6d94",
-  "reviewed_working_tree": "The review at 5eef6d94 included pending discovery work. Implementation observations and resolutions below record subsequent verified changes.",
+  "reviewed_source_commit": "909025e7",
+  "reviewed_working_tree": "develop at 909025e7, with an untracked tests/test_acting_transitions.py from in-progress TDD. That file imports unimplemented policy records and does not collect; it is not evidence of a delivered transition API. Historical implementation observations below retain their original verification scope.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -28,7 +28,7 @@
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 631,
     "noncharacter_parts_with_explicit_contracts": 53,
-    "source": "Implementation worktree following 5d58caf7; counts re-observed with contract_coverage().",
+    "source": "Fresh-process contract_coverage() observation at 909025e7 on 2026-11-01.",
     "by_kind": {
       "character": {"registered": 70, "explicit_contracts": 70},
       "prop": {"registered": 436, "explicit_contracts": 34},
@@ -51,6 +51,19 @@
       "qualification": "This selected regression run is not the full repository suite. Additional recovery tests exposed stale metadata after direct builder swaps; tests first reproduced both a mismatched signature crash and stale claims with an unchanged signature, then passed after the fix. Both documentation recipes were strictly encoded and independently counted with ffprobe. Four full-size frames were inspected; no human-rating study or whole-body quality certification is claimed."
     },
     "latest_focused_run": {
+      "command": "../.venv/bin/python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_noncharacter_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_sdk_review_followup.py --tb=short",
+      "passed": 237,
+      "skipped": 9,
+      "subtests_passed": 21,
+      "engine_followup": {
+        "command": "SRSTUDIO_ENGINE=/home/pals/src/worskpace/generated/bin/scene-render ../.venv/bin/python -m pytest -q tests/test_acting.py tests/test_sdk_review_followup.py -k 'window_drawings_match_uncut or contact_samples_are_preserved or open_and_closed_eyes' --tb=short",
+        "passed": 9,
+        "skipped": 0,
+        "deselected": 63
+      },
+      "qualification": "The nine skipped tests were subsequently exercised successfully with SRSTUDIO_ENGINE configured. Together these runs exercise 246 distinct selected tests and 21 subtests. This is not a full-suite pass; the separate pending transition test still fails collection. Engine evaluation checks do not constitute a new encoded-video or perceptual review."
+    },
+    "previous_review_focused_run": {
       "command": "python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_catalog_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_motion_quality_profiles.py --tb=short",
       "passed": 175,
       "skipped": 5,
@@ -79,6 +92,37 @@
   ],
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
+  "working_tree_blockers": [
+    {
+      "priority": "P1",
+      "scope": "Uncommitted development checkout only; not a shipped SDK defect",
+      "path": "tests/test_acting_transitions.py",
+      "observation": "pytest --collect-only exits 2 because ChannelTiming cannot be imported from srstudio.acting. TransitionPolicy is also not implemented, and the legacy-output assertion still contains BASELINE_DIGEST.",
+      "remedy": "Complete the existing red-to-green transition work, capture the actual pre-change fingerprint, and pass the policy regressions and existing output-parity checks before committing it. Do not skip or delete the tests to report a green suite.",
+      "related_finding": "SDK-P2-05"
+    }
+  ],
+  "current_review_observations": [
+    {
+      "topic": "Agent discovery",
+      "observation": "All 70 default characters have explicit semantic declarations. Of 631 non-character parts, 53 have declarations and 578 do not. A declaration is not a complete data-only constructor schema: runtime Canvas/Group bindings and unresolved shapes remain explicit.",
+      "improvement": "Extend metadata to additional families according to actual authoring usage, retaining explicit unknowns. Validate each new declaration against real builder calls and refusal paths.",
+      "evidence": ["src/srstudio/registry.py:contract_coverage", "src/srstudio/contracts.py:describe_part", "tests/test_noncharacter_contracts.py"]
+    },
+    {
+      "topic": "Agent repair loop",
+      "observation": "replace(BENTO.head_rig.style, breath_period=0) raises HeadMotionError, but diagnostic() returns null path, actual, expected and remedy. The message alone identifies breath_period.",
+      "improvement": "Supply repair fields at the validation source, preserve exception compatibility, and test the same envelope through SDK and CLI.",
+      "related_finding": "SDK-P3-05",
+      "evidence": ["src/srstudio/head_motion.py:HeadStyle.__post_init__", "src/srstudio/errors.py:diagnostic"]
+    },
+    {
+      "topic": "Documentation ergonomics",
+      "observation": "The README links public discovery, acting and clip APIs, and the authoring reference contains executable composition recipes. The reference also contains extensive episode histories, so agent tasks still need a deliberate route to the relevant contract and recipe.",
+      "improvement": "Provide a concise task-to-API entry point linking existing executable recipes, accepted data-only schemas, runtime bindings, clocks, capability checks and repair examples. Generate vocabulary and capability material from the existing declarations to avoid a second drifting reference.",
+      "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
+    }
+  ],
   "resolved_findings": [
     {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
