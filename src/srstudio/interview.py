@@ -486,7 +486,7 @@ def build(
 
 
 REHEARSAL_DIR = "rehearsal"  # under the project's assets, never the takes' own cache
-REHEARSAL_RATE = 24000
+REHEARSAL_RATE = RATE  # a mix reads every clip at its own rate
 REHEARSAL_SYLLABLE = 5.0  # Hz: how fast a rehearsal tone opens and shuts, so an amplitude mouth moves on it
 
 

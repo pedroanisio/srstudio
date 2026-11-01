@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import wave
 from pathlib import Path
 
 import pytest
@@ -94,3 +95,10 @@ def test_the_cli_refuses_a_voiced_build_of_a_rehearsal(tmp_path, capsys):
     script.write_text("raise SystemExit('the build ran')\n")
     assert cli.main(["build", str(script), str(tmp_path), "--voice"]) == 1
     assert "rehearsal" in capsys.readouterr().err
+
+
+def test_a_rehearsals_tones_run_at_the_mix_rate_so_a_mix_can_read_them(tmp_path):
+    data = scene(tmp_path)
+    for clip in data["clips"]:
+        with wave.open(str(tmp_path / clip["generated"]["cache"]), "rb") as w:
+            assert w.getframerate() == I.RATE
