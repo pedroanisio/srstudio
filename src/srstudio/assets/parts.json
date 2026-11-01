@@ -10940,7 +10940,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "7fb1e2cde501de8ee7418baf3ac977a1e2d81c06f4029f4ba0c79a6185576d1a",
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
           "rig": null
         }
       ]
@@ -10957,7 +10957,7 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "e3a330176ad26fc953e56ac3b2797db19bda96c066834fcd0e1a0f9c34ef1210",
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
           "rig": null
         }
       ]
@@ -10974,7 +10974,41 @@
           "status": "proposed",
           "proof": "",
           "approval": null,
-          "drawing": "65c9176a8d13fb3b4e3d53dba54fc4957ecdd864bec53332d6bee42d80392bfd",
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "collage-tissue-box": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A box of tissues, one standing up. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "3d9f6ec16ff858ff16d2e74f47e43e8282431b346fc8343a2f46fe187946af7a",
+          "rig": null
+        }
+      ]
+    },
+    "collage-wall-clock": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A round wall clock whose hands point at the given time. First drawn for tell-us. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5645eb41859d6e7062ca80b26d509453c3d0682964d995931c300fe38fa80019",
           "rig": null
         }
       ]

@@ -17,11 +17,13 @@ from .canvas import Canvas
 from .collage import CAPTION_BOTTOM, INK, Point, _cut, _paper, _smooth, draw_shapes
 from .errors import SrstudioError
 from .registry import register
+from .toon_props import clock_angles
 
 __all__ = [
     "DISHES",
     "HomeError",
     "Screen",
+    "WallClock",
     "cereal_bowl",
     "chair_back",
     "dead_plant",
@@ -41,7 +43,9 @@ __all__ = [
     "snowy_window",
     "spoon",
     "staircase",
+    "tissue_box",
     "toothbrush_mug",
+    "wall_clock",
     "wall_hole",
     "wall_tv",
 ]
@@ -73,6 +77,14 @@ class Screen(NamedTuple):
     image: object
     w: float
     h: float
+
+
+class WallClock(NamedTuple):
+    """A clock: its ``group`` and where its hands point, degrees clockwise from twelve."""
+
+    group: object
+    hour: float
+    minute: float
 
 
 def _size(value: float, what: str) -> float:
@@ -418,6 +430,38 @@ def snowy_window(cv: Canvas, parent, x: float, y: float, w: float, h: float, *, 
     for fx, fy in flakes or ((0.2, 0.2), (0.7, 0.14), (0.42, 0.42), (0.84, 0.5), (0.14, 0.6), (0.6, 0.64)):
         cv.ellipse(g, x + fx * w - 8, y + fy * h - 8, 16, 16, "#ffffff")
     return g
+
+
+@register("prop", "collage-tissue-box", summary="A box of tissues with one standing up out of its slot")
+def tissue_box(cv: Canvas, parent, x: float, y: float, w: float = 280.0) -> object:
+    """A box ``w`` wide, its foot centred on ``x, y``."""
+    k = round(_size(w, "a box's width") / 280.0, 4)
+    g = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=k, scaleY=k)
+    tissue = [(-46, -128), (-30, -214), (8, -186), (38, -232), (52, -128)]
+    draw_shapes(cv, g, _paper(_cut("tissue", tissue, 2), "#ffffff"))
+    draw_shapes(cv, g, _paper(_cut("tissue-box", [(-140, -130), (140, -130), (140, 0), (-140, 0)], 2), "#a2d2ff"))
+    cv.ellipse(g, -80, -128, 160, 26, "#3a5a78", INK, 3)
+    return g
+
+
+@register("prop", "collage-wall-clock", summary="A round wall clock whose hands point at the time it is given")
+def wall_clock(cv: Canvas, parent, x: float, y: float, r: float = 90.0, time: str = "9:00") -> WallClock:
+    """A clock of radius ``r`` centred on ``x, y``, showing ``time`` as ``"9:50"``."""
+    _size(r, "a clock's radius")
+    try:
+        hour, minute = clock_angles(time)
+    except ValueError as refused:
+        raise HomeError(f"a wall clock tells a time like 9:50, got {time!r}") from refused
+    g = cv.group(parent, cv.uid("g"), x=x, y=y)
+    cv.ellipse(g, -r, -r, 2 * r, 2 * r, "#fffaf0", INK, 7)
+    for i in range(12):
+        tick = cv.group(g, cv.uid("g"), rotation=float(i * 30))
+        cv.rect(tick, -3, -r * 0.9, 6, r * 0.14, INK)
+    for angle, length, width in ((hour, 0.52, 13), (minute, 0.78, 8)):
+        hand = cv.group(g, cv.uid("g"), rotation=angle)
+        cv.rect(hand, -width / 2, -r * length, width, r * length, INK)
+    cv.ellipse(g, -9, -9, 18, 18, "#c1121f", INK, 2)
+    return WallClock(g, hour, minute)
 
 
 @register("prop", "collage-toothbrush-mug", summary="A mug with one toothbrush standing in it")

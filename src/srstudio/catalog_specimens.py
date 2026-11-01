@@ -326,6 +326,8 @@ RECIPES: dict[str, Recipe] = {
     "collage-snowy-window": Recipe(part(240, 620, 600, 700)),
     "collage-toothbrush-mug": Recipe(part(540, 1300, 400)),
     "collage-napkin": Recipe(part(540, 760, 560)),
+    "collage-tissue-box": Recipe(part(540, 1300, 560)),
+    "collage-wall-clock": Recipe(part(540, 960, 300, "9:50")),
     "gloss-board": Recipe(typeset((gloss_sets.Card(0.0, "Joy Points", "Keep smiling."),))),
     "gloss-ticket": Recipe(part(at=(540, 1000), end=SECONDS, number="47")),
     "ink-hand": Recipe(part(540, 960, action="reach", at=0.5)),
