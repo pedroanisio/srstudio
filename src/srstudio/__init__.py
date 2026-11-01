@@ -70,6 +70,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_bento,
     toon_cars,
     toon_cast,
+    toon_chat,
     toon_critters,
     toon_dinner,
     toon_everyday,
