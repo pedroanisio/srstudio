@@ -482,8 +482,10 @@ def reception(
     at_desk: Slot = None,
     id="location-reception",
     shots=None,
+    cactus: Slot = None,
 ):
-    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`."""
+    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`; ``cactus`` takes over the
+    counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -542,7 +544,7 @@ def reception(
         cv.ellipse(desk, fx - 5, fy - 5, 10, 10, "#E8A94B", ink, 1.5)
     cv.path(desk, "M300 1060 L298 1004 Q324 990 350 1004 L348 1060Z", vase, ink, 3)
     cv.ellipse(desk, 304, 996, 42, 14, "#D7EEEA", ink, 2.5)
-    signature.cactus(cv, desk, 450, COUNTER_Y + 6, 0.5)
+    signature.home_cactus(cv, desk, 450, COUNTER_Y + 6, 0.5, slot=cactus)
     signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
     _call(on_desk, desk)
     _call(at_desk, g)
