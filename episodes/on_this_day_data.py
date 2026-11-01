@@ -153,7 +153,7 @@ def _on_the_water(cv, g, tv: Screen, app: Appearance) -> None:
     cv.rect(g, 0, 0, tv.w, tv.h * 0.5, cv.grad("film-lake", [(0, "#a2d2ff"), (1, "#e0f2ff")], (0, 0, 0, 1)))
     cv.path(g, f"M0 {tv.h * 0.5:g} L220 150 L420 {tv.h * 0.5:g} L640 110 L956 {tv.h * 0.5:g} Z", "#588157")
     cv.rect(g, 0, tv.h * 0.5, tv.w, tv.h * 0.5, "#2a7f9e")
-    _bust(cv, g, "omar", 470.0, tv.h * 0.92, 0.4, "closed", "grin", "down", app)
+    _bust(cv, g, "omar", 470.0, tv.h * 0.8, 0.4, "closed", "grin", "down", app)
     collage_home.kayak(cv, g, 470, tv.h * 0.8, 820, -3)
 
 
@@ -173,8 +173,8 @@ def _stairs(cv, g, tv: Screen, app: Appearance) -> None:
     cv.rect(g, 0, 0, tv.w, tv.h, cv.grad("film-stairs", [(0, "#ffd6a5"), (1, "#ffadad")], (0, 0, 0, 1)))
     collage_home.staircase(cv, g, 150, tv.h, 800, 400)
     k = 0.46
-    _bust(cv, g, "omar", 470.0, tv.h - 20.0, k, "closed", "grin", "down", app)
-    held = cv.group(g, cv.uid("g"), x=400.0, y=tv.h - 226.0, rotation=-78.0)
+    _bust(cv, g, "omar", 470.0, tv.h + 10.0, k, "closed", "grin", "down", app)
+    held = cv.group(g, cv.uid("g"), x=400.0, y=tv.h - 196.0, rotation=-78.0)
     look = collage.LOOKS["rosa"]
     for dx in (-52, 28):  # her legs over his arm, so the bust's cut edge is the hem of her skirt
         cv.rect(held, dx, 300, 26, 130, look.skin, collage.INK, 3)
@@ -217,15 +217,15 @@ def _phone(cv, front, app: Appearance, beats: Sequence[Beat]) -> None:
     jabs = [(0.0, 0.0), (0.2, -44.0), (0.4, 0.0), (0.6, -44.0), (0.8, 0.0)]
     jabs += [(stab + d, y) for d, y in ((0.0, 0.0), (0.12, -44.0), (0.24, 0.0), (0.36, -44.0), (0.48, 0.0))]
     cv.keys(hand, "y", jabs, hold=False, local=False)
-    collage_everyday.phone(cv, hand, 330, 1440, 120, 214, tilt=10.0)
+    collage_everyday.phone(cv, hand, 330, 1392, 120, 214, tilt=10.0)
 
 
 def _remote(cv, front, app: Appearance, beats: Sequence[Beat]) -> None:
     """Priya's arm from the sofa, off the frame's foot, pointing her phone at the TV the whole film long."""
     hand = cv.group(front, cv.uid("g"))
     cv.keys(hand, "y", [(app.start, 26.0), (app.start + 0.3, 0.0)], kind="cubic-out", local=False)
-    collage_everyday.arm(cv, hand, "priya", (120.0, 1990.0), (420.0, 1690.0))
     collage_everyday.phone(cv, hand, 360, 1500, 130, 230, tilt=8.0)
+    collage_everyday.arm(cv, hand, "priya", (120.0, 1990.0), (398.0, 1716.0))
 
 
 def dress(shot) -> None:
