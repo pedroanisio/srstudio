@@ -60,7 +60,7 @@ def test_a_test_s_own_fake_still_wins(tmp_path, monkeypatch):
 
     monkeypatch.setattr(outbox, "_run", fake)
     outbox.push(tmp_path, "gdrive:x")
-    assert [cmd[1] for cmd in calls] == ["copy", "check"]
+    assert [cmd[1] for cmd in calls] == ["cat", "copy", "check", "cat"]
 
 
 def test_a_child_process_finds_the_stand_in_and_not_rclone():
