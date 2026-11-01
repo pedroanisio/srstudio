@@ -51,6 +51,7 @@ __all__ = [
     "materials_of",
     "patch",
     "pixels",
+    "place",
     "print_name",
     "print_png",
     "render",
@@ -318,6 +319,16 @@ def document(plate: Plate) -> bytes:
 def digest(plate: Plate) -> str:
     """The digest of what ``plate`` draws."""
     return hashlib.sha256(document(plate)).hexdigest()
+
+
+def place(cv: Canvas, parent, plate: Plate, *, y: float = 0.0):
+    """``plate`` as a picture in ``parent``, by name: a drawing's digest needs no render, and its file comes later.
+    Two faces can be the same picture, so a plate already on the canvas is shown again from its one asset."""
+    name = digest(plate)
+    asset = f"plate-{name[:20]}"
+    if not any(getattr(node, "id", None) == asset for node in cv.assets.nodes):
+        cv.assets.add_image(id=asset, src=f"plates/{name}.png", width=plate.width, height=plate.height)
+    return parent.add_layer(id=cv.uid("plate"), asset=asset, x=0, y=y)
 
 
 def _gauss(rows: np.ndarray, sigma: float, axis: int) -> np.ndarray:

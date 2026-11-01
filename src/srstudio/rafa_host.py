@@ -26,7 +26,7 @@ from . import clay, host_kit, look, plates, rafa
 from .canvas import Canvas
 from .errors import SrstudioError
 from .head_motion import Channel, HeadPlan, HeadStyle, Spring
-from .plates import Camera, Patch, Placed, Plate
+from .plates import Camera, Patch, Placed, Plate, place
 from .rafa import Face
 from .toon_head import _animate
 
@@ -463,10 +463,3 @@ def part_plates(name: str) -> tuple[Plate, ...]:
     if name in rafa.PROPS:
         return (_prop_alone(name),)
     return ()
-
-
-def place(cv: Canvas, parent, plate: Plate, *, y: float = 0.0):
-    """``plate`` as a picture in ``parent``, by name: a drawing's digest needs no render, and its file comes later."""
-    name = plates.digest(plate)
-    cv.assets.add_image(id=f"plate-{name[:20]}", src=f"plates/{name}.png", width=plate.width, height=plate.height)
-    return parent.add_layer(id=cv.uid("plate"), asset=f"plate-{name[:20]}", x=0, y=y)

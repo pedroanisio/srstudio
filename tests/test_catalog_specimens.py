@@ -257,6 +257,15 @@ def test_a_refused_part_has_no_digest_to_ask_for():
         cs.digest("captions", 1, EPISODES)
 
 
+@pytest.mark.parametrize("name", ["rafa", "pedro"])
+def test_a_character_on_plates_repeats_no_id_and_still_draws_what_was_approved(name):
+    """Rafa's social-battery face is the same plate at mouth rest and closed: one picture, one asset, two layers."""
+    document = specimens.SPECIMENS[name](registry.get("character", name)).scene.to_bytes()
+    ids = [node.get("id") for node in ET.fromstring(document).iter() if node.get("id")]
+    assert len(ids) == len(set(ids))
+    assert specimens.fingerprint(document) == parts.get(name).version(1).drawing
+
+
 def test_the_splash_is_shown_while_its_beads_are_in_the_air():
     # a bead flies for 0.32 s at the least: the recipe's default second shows an empty frame, which a render refuses
     assert cs.RECIPES["water-splash"].at < 0.32

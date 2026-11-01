@@ -8,8 +8,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from sr_core.scene import Scene
 
 from srstudio import clay, plates
+from srstudio.canvas import Canvas
 from srstudio.plates import Camera, Line, Material, Placed, Plate, PlateError, Print
 
 
@@ -100,6 +102,24 @@ def test_a_patch_of_nothing_is_none(tmp_path):
 def test_a_patch_keeps_inside_its_box(tmp_path):
     base, over = two(tmp_path)
     assert plates.patch(base, over, tmp_path / "cache", within=(40, 40, 60, 60)) is None
+
+
+def test_one_plate_placed_twice_is_one_asset_and_two_layers():
+    """Two faces can be the same picture. The engine refuses a repeated id, so the second place reuses the first."""
+    scene = Scene(version="auto")
+    scene.add_project(width=64, height=64, fps="1", duration=1)
+    cv = Canvas(scene, width=64, height=64)
+    same = plate()
+    plates.place(cv, cv.comp, same)
+    plates.place(cv, cv.comp, same, y=5.0)
+    plates.place(cv, cv.comp, plate(size=(20.0, 10.0, 10.0)))
+    images = [node for node in cv.assets.nodes if getattr(node, "src", "").startswith("plates/")]
+    assert [node.src for node in images] == [
+        f"plates/{plates.digest(same)}.png",
+        f"plates/{plates.digest(plate(size=(20.0, 10.0, 10.0)))}.png",
+    ]
+    layers = [node for node in cv.comp.nodes if getattr(node, "asset", "")]
+    assert [(node.asset, node.y) for node in layers] == [(images[0].id, 0.0), (images[0].id, 5.0), (images[1].id, 0.0)]
 
 
 def test_a_broken_engine_is_a_typed_error(tmp_path):
