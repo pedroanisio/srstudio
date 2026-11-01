@@ -2467,6 +2467,57 @@
         }
       ]
     },
+    "map-clock": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A round clock with no numbers: one place's time, or a day going by. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "def79face6eb199a5ed0a4f62c426204ad86609c21b99650800f1992e5520512",
+          "rig": null
+        }
+      ]
+    },
+    "map-daylight": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Towns on a map that light and go dark as one real day runs past. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6a377fdea5d150418a0a400d44eeeff6c61c52efc238c553f83688541176cce0",
+          "rig": null
+        }
+      ]
+    },
+    "map-far-side": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The far side of the Earth laid over a flat map, flipped over. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c319222603421a0c4fb83b6646d40c8ff6cb7f4716a2faf0ffa7aa8a51d81aae",
+          "rig": null
+        }
+      ]
+    },
     "menu-board": {
       "kind": "prop",
       "style": "cutout",
@@ -2584,6 +2635,23 @@
         }
       ]
     },
+    "mind-named": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The effect's name, small, over the last hold: a signature after the laugh. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "66021cf757828b95b192e9b02a564c399b9b520176ea3187f585f778da2ebaa6",
+          "rig": null
+        }
+      ]
+    },
     "mind-spotlight": {
       "kind": "prop",
       "style": "toon",
@@ -2624,6 +2692,23 @@
         }
       ]
     },
+    "mind-stamp": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One line of evidence stamped over the picture, with its source under it. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ecf5bd4fba8673c0c0a48740760b930e9160c63811190bea92078ad2784c212d",
+          "rig": null
+        }
+      ]
+    },
     "mind-two-lines": {
       "kind": "prop",
       "style": "toon",
@@ -2640,6 +2725,23 @@
             "words": "mind kit approved."
           },
           "drawing": "7772d93f911e152fedc74af91df538769229bc9bffeb003010a8647bf9a0b9c8",
+          "rig": null
+        }
+      ]
+    },
+    "mind-zipper": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A closed zipper over the whole frame, pulled open to show the shot behind. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fc3ee24358489bf9e41ffc1400f1dd4c5130fcc34e301a5f401124be76bc3cb6",
           "rig": null
         }
       ]
@@ -5675,6 +5777,23 @@
         }
       ]
     },
+    "toon-bandage": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A bandage round a character's head, and a plaster on the cheek. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "77b336abdf786e9600a4ac61adab27fd735a368f08381fa7f3e7db9a8fc3bd0c",
+          "rig": null
+        }
+      ]
+    },
     "toon-bathroom": {
       "kind": "location",
       "style": "toon",
@@ -7632,6 +7751,40 @@
             "words": "eu nao vou revisar os videos, esse fluxo tem que ser automatico e passar pelos gates do processo."
           },
           "drawing": "825646d11470d5f810966fefd978b0e5edf8a5f130c5d472bbc5300572dfdcd2",
+          "rig": null
+        }
+      ]
+    },
+    "toon-ward": {
+      "kind": "location",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A hospital ward: a pale wall, a drawn curtain on its rail and a drip stand. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a862abe9af446b01765ab2c0be2d2deea6055ecc598015578912055d3547e1fb",
+          "rig": null
+        }
+      ]
+    },
+    "toon-ward-bed": {
+      "kind": "prop",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The foot of a hospital bed: a turned-down sheet over a blue blanket. First drawn for the channel stock pilots. Proposed: awaiting a decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "6d15264d6ddb2c1266f5ff7bbec17f8e4e64866bb6836501eca8d097f3e59d27",
           "rig": null
         }
       ]

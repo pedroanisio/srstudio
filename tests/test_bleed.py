@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Episode, EpisodeSpec, camera, get, look, stick_door, stick_reel
+from srstudio import Episode, EpisodeSpec, camera, get, look, mind_kit, stick_door, stick_reel, toon_sketch
 from srstudio.canvas import MONO, Canvas, flat_counter
 from srstudio.look import LookError
 
@@ -156,3 +158,51 @@ def test_an_episode_hands_its_bleed_to_the_canvas(project):
 
     assert made(bleed=True).bleed is True
     assert made().bleed is False
+
+
+def _far(cv: Canvas) -> ET.Element:
+    mind_kit.far(cv, cv.comp)
+    return next(n for n in ET.fromstring(cv.scene.to_bytes(layout="pretty")).iter() if n.get("threeD"))
+
+
+def test_a_mind_far_plane_is_on_a_sheet_past_the_frame_on_a_reel_with_bleed():
+    assert float(_far(_canvas(bleed=True)).get("scaleX")) > 1.0
+
+
+def test_a_mind_far_plane_is_unchanged_on_a_reel_without_bleed():
+    cv = _canvas()
+    mind_kit.far(cv, cv.comp)
+    assert b"threeD" not in cv.scene.to_bytes(layout="pretty")
+
+
+def test_a_sketch_asks_for_bleed_through_its_staging(monkeypatch, tmp_path):
+    class Stop(Exception):
+        pass
+
+    def stop(spec):
+        assert spec.bleed is True
+        raise Stop
+
+    monkeypatch.setattr(toon_sketch, "Episode", stop)
+    monkeypatch.setattr(toon_sketch, "check_heads", lambda *a: None)
+    monkeypatch.setattr(toon_sketch, "head_plans", lambda *a: {})
+    monkeypatch.setattr(toon_sketch.sketch, "check", lambda sk: None)
+    data = SimpleNamespace(slug="s", title="t", beats=(), end=1.0)
+    staging = SimpleNamespace(
+        sketch=data, heads=(), versions={}, bleed=True, description="d", narration="n", accessibility="a", seed=1,
+        style=mind_kit.MIND, output="o.mp4", safe_area=None, crf="21",
+    )  # fmt: skip
+    with pytest.raises(Stop):
+        toon_sketch.build(tmp_path, staging, ())
+
+
+def test_a_far_plane_that_moves_stays_off_the_sheet():
+    cv = _canvas(bleed=True)
+    mind_kit.far(cv, cv.comp, moving=True)
+    assert b"threeD" not in cv.scene.to_bytes(layout="pretty")
+
+
+def test_a_far_plane_that_moves_is_still_out_of_focus():
+    cv = _canvas(bleed=True)
+    mind_kit.far(cv, cv.comp, moving=True)
+    assert b"mind-depth" in cv.scene.to_bytes(layout="pretty")

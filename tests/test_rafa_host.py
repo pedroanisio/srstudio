@@ -216,3 +216,12 @@ def test_the_camera_and_light_never_change_between_his_plates():
     a, b = rafa_host.pose_plate(Face()), rafa_host.pose_plate(Face(turn=2.0, nod=1.5))
     assert a.camera == b.camera and a.lights == b.lights
     assert plates.digest(a) != plates.digest(b)
+
+
+def test_he_is_on_the_last_frame_of_a_reel_that_ends_between_frames() -> None:
+    """The engine writes a frame for a part of one, so a reel of 25.044 s has 752 frames at 30 fps, not 751."""
+    assert len(faces(25.044)) == 752
+
+
+def test_a_reel_that_ends_on_a_frame_gets_no_extra_one() -> None:
+    assert len(faces(25.6)) == 768  # 25.6 * 30 is 768.0000000000001 in a float

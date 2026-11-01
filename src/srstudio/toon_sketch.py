@@ -145,7 +145,7 @@ class Staging:
     moves: Mapping[str, Callable[[Canvas, Any, Any, Sequence[Any]], None]] = field(default_factory=dict)
     """Per character: ``(cv, body, appearance, beats)`` keys that shot's body group on the project clock, about the
     character's seat, so a figure can bend, sink or sway while its set stays put."""
-    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet); False redraws published reels
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
 
 
 def figure_group(cv: Canvas, parent, framing: tuple[float, float] | None):

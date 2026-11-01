@@ -417,3 +417,31 @@ def test_write_plop_writes_a_wave(tmp_path):
     path = foley.write_plop(tmp_path / "plop.wav", [0.1], 2.0, rate=8000, seed=1)
     with wave.open(str(path)) as w:
         assert w.getnframes() == 16000 and w.getframerate() == 8000
+
+
+def test_a_room_is_there_all_the_way_through_and_fades_at_both_ends_so_the_loop_does_not_click():
+    samples = foley.room(1.0, seed=3)
+    assert len(samples) == foley.RATE
+    assert samples[0] == 0.0 and abs(samples[-1]) < 1e-9
+    window = foley.RATE // 10
+    quiet = [max(abs(v) for v in samples[k : k + window]) for k in range(window, foley.RATE - window, window)]
+    assert min(quiet) > 0.2 * max(quiet), "a room has no gap in it"
+
+
+def test_a_room_is_repeatable_from_its_seed():
+    assert foley.room(0.5, seed=4) == foley.room(0.5, seed=4)
+    assert foley.room(0.5, seed=4) != foley.room(0.5, seed=5)
+
+
+@pytest.mark.parametrize(("duration", "peak", "match"), [(0.01, 0.5, "duration"), (1.0, 2.0, "peak")])
+def test_a_room_refuses_what_it_cannot_write(duration, peak, match):
+    with pytest.raises(foley.FoleyError, match=match):
+        foley.room(duration, peak=peak)
+
+
+def test_a_jingle_starts_on_its_moment_and_slows():
+    times = foley.jingle(2.0, seed=1)
+    gaps = [b - a for a, b in zip(times, times[1:], strict=False)]
+    assert times[0] == 2.0 and times == sorted(times) and gaps[-1] > gaps[0]
+    with pytest.raises(foley.FoleyError, match="jingle"):
+        foley.jingle(-1.0)

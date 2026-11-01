@@ -134,13 +134,18 @@ def _overscan(cv: Canvas, radius: float) -> dict[str, float]:
     return {"x": cx, "y": cy, "anchorX": cx, "anchorY": cy, "scaleX": scale, "scaleY": scale}
 
 
-def depth(cv: Canvas, parent, name: str, radius: float, *, overscan: bool = False):
+def depth(cv: Canvas, parent, name: str, radius: float, *, overscan: bool = False, moving: bool = False):
     """A group in ``parent`` thrown out of focus by a ``radius`` px blur (the effect ``name``): a set's far plane. On
     a reel with ``bleed`` it is drawn on a :func:`sheet`, and ``overscan`` also grows it past the frame: for a far plane
-    painted exactly to the frame, whose bottom edge is hidden if it stops above the frame's centre."""
+    painted exactly to the frame, whose bottom edge is hidden if it stops above the frame's centre. A far plane that
+    is ``moving`` stays off the sheet: its bounds change every frame, and the sheets they ask for run the GPU out of
+    memory over an encode. Lay a sharp plate of its own colour under it instead, so its edge shows no page."""
     if not (checks.number(radius) and radius > 0):
         raise LookError(f"a far plane's blur radius must be positive, got {radius}")
-    far = cv.group(parent, cv.uid("g"), **sheet(cv), **(_overscan(cv, radius) if overscan else {}))
+    if moving:
+        far = cv.group(parent, cv.uid("g"))
+    else:
+        far = cv.group(parent, cv.uid("g"), **sheet(cv), **(_overscan(cv, radius) if overscan else {}))
     cv.apply(far, cv.effect(name, "blur", radius=radius))
     return far
 

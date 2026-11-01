@@ -49,6 +49,9 @@ def study() -> mind_kit.Evidence:
         ("prop", "mind-memory-shelf", mind_kit.memory_shelf),
         ("prop", "mind-two-lines", mind_kit.two_lines),
         ("prop", "mind-lens", mind_kit.lens),
+        ("graphic", "mind-stamp", mind_kit.stamp),
+        ("graphic", "mind-zipper", mind_kit.zipper),
+        ("graphic", "mind-named", mind_kit.named),
     ],
 )
 def test_the_parts_are_registered(kind, name, builder):
@@ -438,3 +441,74 @@ def test_every_pilot_speaks_in_the_channels_voice_and_credits_it(module):
 def test_no_character_shares_the_narrators_voice(module):
     cast = _pilot(module).SKETCH.speakers[1:]
     assert cast and mind_kit.NARRATOR.voice.id not in {s.voice.id for s in cast}
+
+
+def rects(cv: Canvas) -> list[dict[str, float]]:
+    wanted = ("x", "y", "width", "height")
+    return [{key: float(node.get(key, 0)) for key in wanted} for node in tree(cv).iter() if node.get("shape") == "rect"]
+
+
+def test_a_stamp_carries_its_rows_and_its_source():
+    cv = canvas()
+    mind_kit.stamp(cv, cv.comp, ("93% of US students", "above the median."), "Svenson, 1981", 1.0, 3.0, measure)
+    assert texts(cv) == ["93% of US students", "above the median.", "Svenson, 1981"]
+
+
+def test_a_stamp_shrinks_to_the_safe_width_and_refuses_what_never_fits():
+    long = "A" * 26
+    cv = canvas()
+    mind_kit.stamp(cv, cv.comp, (long,), "Lee, 2001", 1.0, 3.0, measure)
+    assert len(texts(cv)) == 2
+    with pytest.raises(mind_kit.MindKitError, match="does not fit"):
+        mind_kit.stamp(canvas(), canvas().comp, ("A" * 200,), "Lee, 2001", 1.0, 3.0, measure)
+
+
+def test_a_stamp_needs_evidence_a_span_and_clean_copy():
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match="a line of evidence"):
+        mind_kit.stamp(cv, cv.comp, (), "Lee, 2001", 1.0, 3.0, measure)
+    with pytest.raises(mind_kit.MindKitError):
+        mind_kit.stamp(cv, cv.comp, ("Fine.",), "Lee, 2001", 3.0, 1.0, measure)
+    with pytest.raises(mind_kit.MindKitError):
+        mind_kit.stamp(cv, cv.comp, ("Science proves it.",), "Lee, 2001", 1.0, 3.0, measure)
+
+
+def test_a_zipper_covers_the_whole_frame_and_every_row_has_both_sides():
+    cv = canvas()
+    mind_kit.zipper(cv, cv.comp, 0.4, 1.5)
+    cloth = [r for r in rects(cv) if r["width"] == cv.width / 2]
+    assert len(cloth) == 2 * mind_kit.ZIP_ROWS
+    assert {r["x"] for r in cloth} == {0.0, cv.width / 2}
+    assert min(r["y"] for r in cloth) == 0.0
+    assert max(r["y"] + r["height"] for r in cloth) >= cv.height
+
+
+def test_a_zipper_is_gone_soon_after_the_pull_ends():
+    cv = canvas()
+    node = mind_kit.zipper(cv, cv.comp, 0.4, 1.5)
+    assert float(node.end) == pytest.approx(1.5 + mind_kit.ZIP_BEAT)
+
+
+def test_a_zipper_runs_forward():
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError):
+        mind_kit.zipper(cv, cv.comp, 1.5, 0.4)
+
+
+@pytest.mark.parametrize(("scale", "pivot"), [(1.0, (540.0, 960.0)), (1.12, (700.0, 800.0)), (1.2, (560.0, 800.0))])
+def test_a_name_lands_centred_on_the_captions_line_once_the_punch_has_happened(scale, pivot):
+    cv = canvas()
+    mind_kit.named(cv, cv.comp, "Lee effect", 1.0, 3.0, measure, scale, pivot)
+    strip = rects(cv)[0]
+    middle = pivot[0] + (strip["x"] + strip["width"] / 2 - pivot[0]) * scale
+    top = pivot[1] + (strip["y"] - pivot[1]) * scale
+    assert middle == pytest.approx(cv.width / 2, abs=0.05)
+    assert top == pytest.approx(mind_kit.CAPTION_TOP, abs=0.05)
+
+
+def test_a_name_cannot_be_drawn_under_a_pull_out_or_with_a_banned_word():
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError, match="punch-in"):
+        mind_kit.named(cv, cv.comp, "Lee effect", 1.0, 3.0, measure, 0.9)
+    with pytest.raises(mind_kit.MindKitError):
+        mind_kit.named(cv, cv.comp, "Science proves it", 1.0, 3.0, measure)

@@ -709,6 +709,7 @@ class Field:
 
 
 BOARD, CLIP, PEN = "#b07b4f", "#c9cdd3", "#1e40af"
+CLIP_TOP = 242.0  # how far the clip stands above the foot of the board, reference units at scale 1
 FORM_X, FORM_W = -64.0, 128.0  # the lettering's width on the paper, reference units
 TITLE_SLOT = Slot(FORM_X, -214, FORM_W, 28, 30)
 FIRST_ROW, ROW_PITCH, ROW_H = -178.0, 30.0, 28.0
@@ -809,7 +810,7 @@ def clipboard(
             v = cv.group(g, f"{id}-value-{k}")
             _shown(cv, v, float(f.at), None)
             value.draw(cv, v, f.value, "form-text")
-    _rect(cv, g, -30, -242, 60, 24, CLIP, INK_W * 0.6, radius=6)
+    _rect(cv, g, -30, -CLIP_TOP, 60, 24, CLIP, INK_W * 0.6, radius=6)
     _rect(cv, g, -16, -236, 32, 6, PRINTER, 0, radius=3)
     if landing is not None:
         t, text, tone = landing

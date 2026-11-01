@@ -5,7 +5,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 # ADR 0075: A blurred far plane reaches the frame's edge, on the reels that ask
 
 - Status: proposed (2026-10-31). Implemented: `Canvas.bleed`, `EpisodeSpec.bleed`, `collage_sketch.Staging.bleed`,
-  `series.Reel.bleed`, `stick_reel.spec(bleed=)`, `look.sheet`, `look.depth(overscan=)`; `tests/test_bleed.py`.
+  `series.Reel.bleed`, `stick_reel.spec(bleed=)`, `look.sheet`, `look.depth(overscan=, moving=)`; `tests/test_bleed.py`.
 - Deciders: the operator (pedroanisio), implementation drafted by Claude Opus 5.5 in Claude Code
 - Back to the [library README](../../README.md)
 
@@ -98,3 +98,12 @@ and 0.1 with `overscan`. Built Toon scenes have no blurred group, and Ink and Ce
 - A `threeD` group is a plane at `zDepth` 0. A reel that adds a `<camera>` for 2.5D parallax moves it with the camera.
 - A reel can forget the flag. The first-delivery gates do not check it, because they would refuse the three batches
   as well.
+
+## A far plane that moves
+
+The sheet holds for a still set. Above Average's car scrolls a road through its far plane, so the plane's bounds change
+every frame. Each frame rendered alone, and the encode ran the GPU out of memory at 6.0 s, the same frame on both runs,
+on an 8 GB card, with a sampled peak of 6039 MiB. Such a plane stays off the sheet (`look.depth(moving=True)`), and a
+sharp plate of its own colour goes under it, so the frame's edge shows paint and not the page. The encode then passed
+with a sampled peak of 1731 MiB. That the changing bounds are the cause is inferred from these runs; the engine's
+allocator was not read.
