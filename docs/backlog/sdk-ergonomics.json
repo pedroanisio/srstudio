@@ -20,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Remaining priorities include cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Head mechanics, records, seeded noise, speech analysis and behavioral planning now have separate implementation owners behind the existing public API. Remaining priorities include explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -38,6 +38,37 @@
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "head_module_refactor": {
+      "baseline_source_commit": "fdae9a22",
+      "repository_collection": {"collected": 20020, "errors": 0},
+      "pre_extraction_compatibility_tests": {
+        "passed": 58,
+        "failed": 6,
+        "qualification": "Six module-boundary checks failed before their implementation modules existed; numeric, signature, emission and serialization baseline checks passed."
+      },
+      "broader_engine_enabled_run": {
+        "passed": 1305,
+        "failed": 1,
+        "skipped": 0,
+        "qualification": "A missing private _CURVES alias caused the only failure. The alias was restored and the failed renderer comparison passed in the final selection below."
+      },
+      "final_engine_enabled_selection": {
+        "passed": 691,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "head_channels": 97,
+        "head_noise": 100,
+        "head_planner": 94,
+        "head_speech": 96,
+        "head_types": 99,
+        "head_motion_facade": 100,
+        "canvas": 93
+      },
+      "ruff_files": 1553,
+      "mypy_source_files": 244,
+      "qualification": "All 47 extracted class/function definitions had identical ASTs to the baseline, with no duplicate definitions. The committed fixture verifies 47 channel cases and nine record types. Expanded animation-safety checks also found a schema-error catch regression; commit 0de21daf preserves both SDK and schema catches, with serialized diagnostic round trips. Selected regressions and renderer evaluation do not establish new animation quality or a full-suite execution."
+    },
     "authoring_diagnostics_implementation": {
       "selected_regressions": {
         "passed": 1322,
@@ -158,6 +189,7 @@
     }
   ],
   "resolved_findings": [
+    {"priority": "P1", "title": "Invalid key times retain existing schema-error catches", "commit": "0de21daf", "evidence": ["tests/test_animation_safety.py", "tests/test_authoring_diagnostics.py:test_invalid_key_time_retains_schema_catch_and_round_trip_repair_fields"], "qualification": "Expanded regression checks reproduced five broken SchemaValueError catches after SDK preflight began raising CanvasError. KeyTimeError now inherits both exception contracts and preserves SDK repair metadata when serialized."},
     {"priority": "P1", "title": "Malformed authoring input and oversized diagnostic graphs must fail predictably", "evidence": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py"], "qualification": "Red tests reproduced raw unpacking/type/string-conversion failures, a silently accepted nonfinite facing interval, excessive tiny-period blink iteration, plugin SDK failures escaping the CLI envelope, and a shared nested diagnostic payload expanding beyond three million characters. Source validation, preflight work limits and shared diagnostic traversal budgets now exercise typed bounded failure paths. This is scoped to the tested authoring boundaries, not an exhaustive malformed-input audit."},
     {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
@@ -293,12 +325,14 @@
     {
       "id": "SDK-P3-03",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Separate head-channel mechanics from speech planning",
       "problem": "head_motion.py combines channel interpolation, spring baking, bounds, speech analysis, deterministic noise and behavioral planning. Changes to one concern require reviewing a large shared module.",
       "evidence": ["src/srstudio/head_motion.py:Channel", "src/srstudio/head_motion.py:speech_of", "src/srstudio/head_motion.py:plan", "src/srstudio/_curves.py"],
       "change": "Extract cohesive channel and speech-planning internals while preserving public imports. Keep shared interpolation semantics in one implementation; use the same boundary approach for further motion/contact decomposition when it reduces coupling.",
       "acceptance": ["Existing imports remain valid", "Numeric and serialized output parity at keys, cuts and spring boundaries", "No new duplicate sampler or planner behavior"],
+      "resolution": "Extracted five implementation modules behind the existing head_motion facade. All 47 original class/function definitions moved with identical ASTs and no duplicates. Public aliases, signatures, type hints, established internal helper imports and serialized Python record identities are retained. A pre-extraction fixture covers 47 channel cases, composed speaking/listening/facing/noise, cut boundaries, emitted XML and nine protocol-4 record types. Shared curve math and existing bounded caches remain single implementations.",
+      "verification": ["tests/test_head_module_compatibility.py", "tests/data/head-motion-compatibility.json", "tests/test_channel_contracts.py", "tests/test_head_motion.py", "tests/test_acting_contracts.py", "docs/decisions/0093-head-motion-module-boundaries.md"],
       "complexity": "M"
     },
     {
@@ -370,7 +404,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

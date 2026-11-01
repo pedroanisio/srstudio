@@ -261,6 +261,7 @@ The configured coverage gate is 80%. Some integration tests require additional l
 - [episodes/](episodes/) — episode builders, recording scripts and releases.
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
+- [Head motion internals](docs/decisions/0093-head-motion-module-boundaries.md) — module ownership and public API compatibility.
 - [DRAWING.md](DRAWING.md) — the default drawing method for new work.
 - [Authoring and episode reference](docs/authoring-reference.md) — detailed style, episode, signature and delivery notes.
 
