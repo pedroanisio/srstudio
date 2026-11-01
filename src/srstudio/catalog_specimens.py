@@ -458,6 +458,12 @@ RECIPES: dict[str, Recipe] = {
     "news-lower-third": Recipe(lettered("THE KICKER", "ONE LINE OF THE STORY", 0.0, SECONDS)),
     "news-missing-card": Recipe(lettered("ONE LID", 0.0, SECONDS)),
     "news-live-door": Recipe(lettered("KITCHEN", 0.0, SECONDS, shut=SECONDS / 2)),
+    "news-money-app": Recipe(
+        lettered("MY MONEY", "$11.00", "WITHDRAW", "SUSPENDED", 0.0, SECONDS, refused_at=SECONDS / 2)
+    ),
+    "news-oven-clock": Recipe(
+        lettered("MY OVEN", "7:42", "1 HOUR OFF", "CORRECT", 0.0, SECONDS, right_at=SECONDS / 2)
+    ),
     "news-banner": Recipe(lettered(0.0, SECONDS)),
     "news-ticker": Recipe(lettered(("ONE ITEM", "ANOTHER ITEM"), 0.0, SECONDS)),
     "news-phone": Recipe(lettered("The Chat", (news_kit.Bubble("7:15", "five minutes away"),), 0.0, SECONDS)),
