@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "64efa1c7",
+  "reviewed_source_commit": "b7ed0f36",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -19,13 +19,22 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, opt-in coordinated acting and executable cross-system recipes. Rig capabilities remain intentionally distinct; calibrated quality profiles and the remaining integration/refactor findings are the next gaps. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, opt-in coordinated acting and executable cross-system recipes. The main gaps are calibrated performance evidence, semantic discovery for non-character parts and selectable acting transition policies. Rig capabilities remain intentionally distinct. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
-    "parts": 699,
+    "parts": 701,
     "characters": 70,
-    "entries_with_explicit_part_contract": 1,
-    "explicit_contract_names": ["toon-bento"],
-    "qualification": "Actor-derived entries additionally infer known base-class lifecycle capabilities; explicit metadata count is not a count of all typed APIs. Counts describe the inspected checkout, not a permanent gate."
+    "entries_with_explicit_part_contract": 70,
+    "all_default_characters_have_explicit_contracts": true,
+    "noncharacter_parts": 631,
+    "noncharacter_parts_with_explicit_contracts": 0,
+    "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
+  },
+  "review_verification": {
+    "engine": "scene-render 0.8.0",
+    "motion_acting_continuity_and_documentation": {"passed": 212, "subtests_passed": 21, "skipped": 0},
+    "diagnostics_errors_checks_and_cli": {"passed": 309, "skipped": 0, "errors_module_branch_inclusive_coverage_percent": 97},
+    "working_tree_calibration_and_related_contracts": {"passed": 221, "skipped": 29},
+    "qualification": "The 29 initial skips required the engine; the engine-enabled continuity run above subsequently exercised those tests. Counts describe separate overlapping selections, not a full-suite total. Ruff lint and formatting passed across 1527 files; mypy passed across 234 source files. No new perceptual rating or full-video visual acceptance is claimed by these checks."
   },
   "accelerators": [
     {"name": "Episode assembly and validated output", "evidence": ["src/srstudio/episode.py:Episode", "examples/new_episode.py"]},
@@ -42,6 +51,7 @@
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
   "resolved_findings": [
+    {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
     {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
     {"priority": "P1", "title": "Extreme numeric input must return bounded validation failures", "commit": "5d6c0c7b", "evidence": ["src/srstudio/checks.py:number", "src/srstudio/errors.py:_json_value", "tests/test_checks.py", "tests/test_diagnostics.py:test_extreme_integers_do_not_break_json_encoding_or_payload_bounds"]},
     {"priority": "P1", "title": "Clipped spline channels must retain tangent neighbors", "evidence": ["src/srstudio/head_motion.py:Channel.during", "tests/test_motion_review_regressions.py"]},
@@ -87,6 +97,29 @@
       "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/evaluation.py:plan_trials", "src/srstudio/limbs/evaluation.py:summarize", "docs/catalog/limbs.md"],
       "change": "Provide versioned, explicitly scoped character/style profiles with rendered exemplars and measured failure cases. Use the existing comparison/rating facilities to keep subjective judgments separate from numeric guarantees.",
       "acceptance": ["Profiles identify scale, clock, sampling rate and applicable rigs", "Regression cases trip each configured gate", "Rendered clips demonstrate accepted and rejected behavior", "No universal biomechanical or emotional score is claimed"],
+      "implementation_note": "Uncommitted calibration.py, a frozen measurement asset, compiler scope checks and regression tests are present and passing in the reviewed working tree. Rendered accepted/rejected exemplars, snapshot drift verification and the documented evaluation workflow remain incomplete; this finding stays open.",
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P2-04",
+      "priority": "P2",
+      "status": "open",
+      "title": "Extend semantic discovery to props, locations and graphics",
+      "problem": "All 70 default characters have explicit contracts, but none of the 631 other registered parts does. Signatures and selected examples are useful; they do not consistently declare coordinate units, anchors, slot expectations, clock roles or interaction capabilities. An agent composing a hand with a prop or an actor with a location still has to read implementation details.",
+      "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_callable", "src/srstudio/locations.py:office_wide", "src/srstudio/props.py"],
+      "change": "Reuse PartContract for non-character families, starting with the common placement, location-slot and held-prop workflows. Declare verified units, coordinate origins, time roles and callback contracts; expose coverage by kind and retain explicit unknowns where semantics are not established.",
+      "acceptance": ["Catalog reports semantic coverage separately from inferred argument shapes", "Executable location-slot and held-prop recipes agree with published units and anchors", "Invalid options and unsupported combinations produce repairable failures", "No inferred capability is presented as verified merely because a parameter name matches"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P2-05",
+      "priority": "P2",
+      "status": "open",
+      "title": "Expose explicit transition policies at the coordinated acting boundary",
+      "problem": "Low-level channels support many curves and springs, and MotionStyle supplies arcs, overshoot and settling. ActingBeat exposes only a transition duration: numeric targets use fixed sampled sine-in-out, while expressions and gestures switch at arrival. Agents cannot select coordinated anticipation, settling or staggered channel timing through the high-level score. Existing action joins match estimated velocities but do not promise acceleration continuity.",
+      "evidence": ["src/srstudio/acting.py:ActingBeat", "src/srstudio/acting.py:ActingRig.describe", "src/srstudio/_acting_compile.py:_numeric", "src/srstudio/head_motion.py:Channel", "src/srstudio/limbs/motion.py:MotionStyle", "src/srstudio/limbs/transitions.py:ActionJoin"],
+      "change": "Add versioned, opt-in transition policies that compile through existing curve and spring mechanics, with explicit channel timing and rig capability checks. Keep held or replacement faces explicit; require authored support for any facial morph. Describe position, velocity and acceleration guarantees separately instead of treating all easing as smoothness.",
+      "acceptance": ["Strict score parsing and discovery describe supported policies", "Existing scores retain their current output", "Random-access and cut-window parity holds through anticipations and settling", "Contact ownership and motion limits survive transitions", "Rendered comparisons distinguish intended emotional timing from numeric continuity claims"],
       "complexity": "L"
     },
     {
@@ -193,9 +226,9 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P2-03", "SDK-P2-04", "SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "limits": [
-    "No confirmed P0/P1 remains open in this review. The sequence-clock and extreme-number defects found during implementation are recorded as resolved; this is not a claim that the repository has no other defects.",
+    "No confirmed P0/P1 remains open in this review. The diagnostic mapping-key, sequence-clock and extreme-number defects are recorded as resolved; this is not a claim that the repository has no other defects.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]
