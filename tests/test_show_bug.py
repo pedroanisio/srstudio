@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import textwrap
 import xml.etree.ElementTree as ET
@@ -90,12 +91,43 @@ def test_the_bug_needs_no_font_and_adds_no_text_layer(spec):
     assert not ET.fromstring(build(spec, 212)).findall(".//layer")
 
 
-def test_the_bug_is_a_shared_part_waiting_for_its_approval():
+def test_the_bug_is_a_shared_part_and_approved():
     assert registry.get("graphic", "show-bug").style == ""
     version = parts.get("show-bug").versions[-1]
-    assert version.status == "proposed" and version.approval is None
-    with pytest.raises(parts.NotApprovedError):
-        parts.pin("show-bug", 1)
+    assert version.status == "approved" and version.approval is not None
+    assert version.approval.date == "2026-10-31"
+    assert "Slack 1793501087.434969" in version.approval.words
+    assert parts.pin("show-bug", 1).number == 1
+
+
+def test_the_chip_starts_below_the_top_meta_keeps_clear():
+    """Meta asks for the top 14 % of a 1920 px reel, which arc4d3 put at y 270."""
+    assert show.BUG_BOX[1] >= 270
+
+
+def test_the_chip_ends_above_a_caption_at_its_highest():
+    """The sketch captions' pills start at y 334, and the widest of them reaches under the chip."""
+    assert show.BUG_BOX[3] <= 334
+
+
+def mark_shapes(spec) -> list[ET.Element]:
+    bug = next(g for g in ET.fromstring(build(spec, 212)).iter("group") if g.get("id") == show.bug_id(212))
+    return list(next(g for g in bug if g.get("id") == f"{show.bug_id(212)}-mark"))
+
+
+def test_the_mark_is_the_approved_ok_eye_filled_like_the_avatar(spec):
+    shapes = mark_shapes(spec)
+    assert [s.get("fill", "").lower() for s in shapes] == ["#ffd23f", "#ffffff", "#111111", "#ffffff", "#ffd23f"]
+    assert [s.get("shape") for s in shapes] == ["ellipse", "path", "path", "ellipse", "path"]  # back to front
+    assert all(float(s.get("strokeWidth", s.get("sw", "0"))) == 0 for s in shapes)
+
+
+def test_the_o_is_tall_and_the_lid_is_flat_as_the_avatar_draws_them(spec):
+    ring, eye, pupil, shine, _ = mark_shapes(spec)
+    assert (float(ring.get("width")), float(ring.get("height"))) == (300.0, 472.0)
+    assert float(shine.get("width")) == 28.0
+    for lidded in (eye, pupil):  # both start and end on one line, the lid's
+        assert re.fullmatch(r"M [\d.]+ 420 A [\d ]+ [\d.]+ 420 Z", lidded.get("path"))
 
 
 @pytest.mark.parametrize("number", [1, 212, 1000, 99999])

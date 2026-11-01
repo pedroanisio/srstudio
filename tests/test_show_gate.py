@@ -5,7 +5,7 @@ import dataclasses
 import numpy as np
 import pytest
 
-from srstudio import show_numbers
+from srstudio import show, show_numbers
 from srstudio.figure_record import Figure
 from srstudio.frame_gates import FrameGateError
 from srstudio.framegraph import Drawing, Frame, Node
@@ -31,7 +31,7 @@ def frame(*shapes, time=1.0, world=PLACE, parent=None, opacity=1.0, draw=True):
     extra = [Node("camera", None, "group", PLACE, 1.0, True)] if parent is not None else []
     nodes = [*extra, Node(BUG, parent, "group", world, opacity, draw)]
     nodes.append(Node("chip", len(extra), "shape", PLACE, 1.0, True))
-    drawn = {"chip": Drawing((rect(926, 232, 1044, 298),), True)}
+    drawn = {"chip": Drawing((rect(*show.BUG_BOX),), True)}
     for name, outline, kind in shapes:
         nodes.append(Node(name, None, kind, PLACE, 1.0, True))
         if kind == "group":
@@ -230,7 +230,7 @@ def test_a_stale_render_is_refused():
 
 
 def test_one_wrong_digit_is_refused_though_the_rest_of_the_corner_matches():
-    """The closest two last digits, 5 and 6, part by 50 pixels of the chip's 7,788: too few to move a mean."""
+    """The closest two last digits, 5 and 6, part by 50 pixels of the chip's 7,316: too few to move a mean."""
     scene = np.full((66, 118, 3), 12.0)
     video = scene.copy()
     video[40:45, 60:70] = 255.0
