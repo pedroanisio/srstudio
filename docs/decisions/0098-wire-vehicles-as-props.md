@@ -51,6 +51,15 @@ scene can have cars and jets, and then for a 30 s piece of Pedro driving the car
   reach)` of each prop measures the top of the paint under an anchor in the surfaces themselves, returning the `rows`
   and `tilt` that follow a door's top or a coaming as the camera sees it. A piece no longer guesses a belt line.
 - Both parts are `proposed` in `parts.json` until the operator approves them from the rendered pictures.
+- Meshes: `wire_mesh.car_model(seed)` and `jet_model(seed, model=)` give the same surfaces as real meshes for the
+  engine's 3D pass: quads welded, normals smoothed across edges flatter than `CREASE` (38 degrees) and kept hard
+  beyond it, faces wound outward whichever way the generator wound them, one mesh per jet part (the glass is left
+  out), a tyre and a rim for each car wheel made about its hub so a wheel turns on its own pivot, and the same anchors
+  (`driver-head`, `steering-wheel`, `pilot-head`). Units are scene units (100 = 1 m, y down, z away from the lens). A
+  bad crease, a missing material, no quads, a corner that is not a number or a quad with no area is a typed
+  `WireMeshError`. This is the road to a real scene: the pilot builds a street and a cloud sea around these meshes,
+  shoots them with perspective cameras and paints the picture over with one shader (`episodes/pilots/pedro_drive_3d.py`
+  and `paint.glsl`: Kuwahara filter, bands that keep each hue, cool and warm tints, Sobel ink).
 
 ## Rejected
 
@@ -66,6 +75,11 @@ scene can have cars and jets, and then for a 30 s piece of Pedro driving the car
 - Fitting every close-up to the model: the person's head would change size from shot to shot.
 - Turning the wheel by rotating a picture of it: the spokes would turn but the tread, the hub and the shading would
   not, and the wheel would not sit in the arch. The wheel's geometry is turned and projected again.
+- Projecting these models into 2D plates to stand in for a 3D scene (the first pilot, `pedro_drive_toon`): the
+  perspective is faked per layer, the wheels and the head are swapped pictures, the occlusion between a person and a
+  car is a cut at a guessed row, and the camera cannot move. Real meshes under a real camera give the perspective, the
+  occlusion and the shadows for nothing, and the paint-over is one shader on the finished picture, not a recipe per
+  layer. The plate path stays for pieces that want drawn lines.
 - A level belt line in perspective: a flat cut at a guessed height missed the door's top by 95 px in the close-up. The
   edge is measured.
 
@@ -83,4 +97,8 @@ scene can have cars and jets, and then for a 30 s piece of Pedro driving the car
 - A wheel's tread notches repeat every 2π/48, not at the spoke pitch, so a wheel drawn at a few angles shimmers where
   its layers change. Facets are not blended across quads: smoothing the normals within a material and a crease angle
   is the next step for a curved wing or a bonnet.
+- The engine's motion blur did not change a 3D object in a still, so the 3D pilot has none; it keeps the car's cruise
+  at 9 m/s so a wheel turns 14 degrees a frame, under half a spoke gap, by calculation, not seen in motion.
+- The paint shader's radius turns small features (his eyes in a close-up) to dots, and the light bands darken a dark
+  jacket; both are tuned by eye on the pilot and are not a property of the meshes.
 - Coverage of the plate path is by the wire tests; the layered piece (`pedro_drive_toon`) is a pilot, not a part.
