@@ -130,7 +130,7 @@ BEATS = (
     say(8.9, "hamster", 6, "wide", "grin", "type"),
     say(9.9, "bear", 7, "half", "flat", "desk"),
     say(11.3, "raccoon", 8, "half", "flat", "desk"),
-    hold(12.8, "rabbit", "", "half", "none", "type", "six"),
+    hold(12.8, "rabbit", "", "half", "flat", "type", "six"),
     first(13.6, "rabbit", 9, "'Just.'", "half", "flat", "type"),
     part(14.5, "rabbit", 9, 1, "'Just following up.'", "half", "flat", "type"),
     part(16.0, "rabbit", 9, 4, "Send?", "half", "flat", "type"),

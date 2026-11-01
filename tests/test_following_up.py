@@ -40,3 +40,11 @@ def test_an_event_twice_is_refused(data) -> None:
     once = next(b for b in data.SKETCH.beats if b.event == "board")
     with pytest.raises(sketch.SketchError):
         data.validate(replace(data.SKETCH, beats=(*data.SKETCH.beats, replace(once, start=data.SKETCH.end - 0.2))))
+
+
+def test_the_master_asks_for_the_channels_loudness() -> None:
+    assert 'loudness="-14",' in (EPISODES / "following_up.py").read_text()
+
+
+def test_a_face_on_screen_always_has_a_mouth(data) -> None:
+    assert all(b.mouth != "none" for b in data.SKETCH.beats if b.who in data.HEADS)

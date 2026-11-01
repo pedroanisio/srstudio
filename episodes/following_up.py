@@ -38,6 +38,7 @@ STAGING = Staging(
     tints=TINTS,
     dress=dress,
     versions=PINS[SKETCH.slug],
+    loudness="-14",
     desk=toon_world.no_desk,
     on_face={"rabbit": tired},
     figures=FIGURES,
