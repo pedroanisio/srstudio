@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.1.1",
+ "version": "1.2.0",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "relationships": [
   {
@@ -1640,11 +1640,11 @@
   {
    "a": "milo",
    "b": "rosa",
-   "relation": "Fellow applicants in one line-up.",
-   "how_they_know": "Only one shared reel: Entry Level, where Milo answers the ad and Rosa is the one who got the job.",
-   "dynamic": "open: the reel does not put them in a scene together.",
-   "tension": "open: no tension is shown between them.",
-   "meet": "The hiring office.",
+   "relation": "Mother and son (Cutout Rosa; only-your-aunt); fellow applicants in one line-up (entry-level).",
+   "how_they_know": "Family: in only-your-aunt Milo calls her Mom on the phone and she tells the town about his interview; in Entry Level both stand in the same hiring line-up.",
+   "dynamic": "Rosa wins by not seeing the problem: Milo begs her to tell nobody, and she has told everyone but his aunt.",
+   "tension": "Milo needs a job and some privacy; Rosa has news and a phone.",
+   "meet": "By phone, Milo out in town and Rosa at home; the hiring office.",
    "history": [
     {
      "fact": "Milo is among the applicants.",
@@ -1659,11 +1659,26 @@
      "reel": "entry-level",
      "kind": "line",
      "quote": "This software came out in 2024."
+    },
+    {
+     "fact": "Milo calls her Mom.",
+     "field": "relationship",
+     "reel": "only-your-aunt",
+     "kind": "line",
+     "quote": "Mom, it's one interview. Don't tell anyone."
+    },
+    {
+     "fact": "She tells his aunt.",
+     "field": "relationship",
+     "reel": "only-your-aunt",
+     "kind": "line",
+     "quote": "Nobody! Your aunt doesn't count."
     }
    ],
-   "status": "proposal",
+   "status": "canon",
    "reels": [
-    "entry-level"
+    "entry-level",
+    "only-your-aunt"
    ]
   },
   {

@@ -8,6 +8,12 @@ generated-by: Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code
 a fact corrected after a published reel disproved it, or a clash resolved by the operator, is a patch; a change to
 the files' schema is a major version.
 
+## 1.2.0
+
+- Pair `milo` and `rosa` gains its family role: Cutout Rosa is Milo's mother. Published in `only-your-aunt` (#193), where he
+  calls her Mom on the phone; the pair moves from `proposal` to `canon` and both characters list the reel. Collage Rosa
+  remains Gary's mother; the two drawings stay the clash `rosa-two-drawings`.
+
 ## 1.1.1
 
 - Roles `husband`, `wife`, `goat`, `fox` and `friend-fast` are added, and `neighbour` is treated as the role `neighbor`

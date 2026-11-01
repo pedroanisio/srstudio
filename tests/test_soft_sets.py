@@ -368,3 +368,28 @@ def test_a_playroom_refuses_a_shot_it_cannot_frame(shots):
 def test_a_necktie_or_briefcase_refuses_what_it_cannot_draw(call):
     with pytest.raises(SoftPropError):
         call(canvas())
+
+
+def test_a_park_with_shots_cuts_in_on_its_cast_and_leaves_the_planter_where_it_stands():
+    cv = signed()
+    seen = []
+    soft_sets.park(cv, cv.comp, shots=(soft_sets.Shot(0.0), soft_sets.Shot(1.0, 1.4, 300.0, 1000.0)), cast=seen.append)
+    found = groups(cv)
+    room, front = found["soft-park-room"], found["soft-park-front"]
+    assert room.find(".//key") is not None or room.find(".//keyframe") is not None
+    assert front not in list(room.iter("group")) and front.find(".//key") is None
+    assert seen and seen[0].id == "soft-park-room"
+
+
+def test_a_park_of_one_shot_is_drawn_as_it_always_was():
+    plain, one = signed(), signed()
+    soft_sets.park(plain, plain.comp)
+    soft_sets.park(one, one.comp, shots=(soft_sets.Shot(0.0),))
+    assert "soft-park-room" not in groups(plain)
+    assert plain.scene.to_bytes() == one.scene.to_bytes()
+
+
+def test_a_park_refuses_shots_out_of_order():
+    cv = signed()
+    with pytest.raises(SoftSetError, match="shots"):
+        soft_sets.park(cv, cv.comp, shots=(soft_sets.Shot(2.0), soft_sets.Shot(1.0)))

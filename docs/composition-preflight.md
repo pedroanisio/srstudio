@@ -17,8 +17,10 @@ combines verified payloads into a self-contained scene, and `emit_scene` publish
 that scene atomically. Public preparation and compilation run in workers with
 hard address-space limits and preemptive deadlines. Plate renderer sessions also
 enforce process limits and count retries; see [render sessions](authoring-benchmark.md#bound-a-plate-authoring-operation).
-Plate/proxy source adapters, emission and composition-budget integration remain
-open under SDK-P2-07. A valid manifest alone is not a rendered scene,
+`prepare_plate` also verifies static untextured mesh payloads and prepares their
+closed scene/resources in a bounded worker. Proxy/textured payloads, compiled
+plate/proxy emission and renderer budget integration remain open under SDK-P2-07.
+A valid manifest alone is not a rendered scene,
 approval of a new style, or proof of a host's declared geometry.
 
 ## Register a plate view
@@ -42,8 +44,8 @@ The image is already projected. Composite it at `view.offset` in screen space;
 do not apply the layer or camera transform again. An off-center principal point
 uses an enlarged render frame so shifting the image does not clip geometry at
 the final frame's edges. The adapter checks that frame against dimension, pixel
-and memory limits. Actual render-job dimensions and work must still be bound
-and checked by the pending source adapter.
+and memory limits. `prepare_plate` checks the actual render-job dimensions and
+work against the binding's declaration.
 
 `point` consumes canonical source coordinates and applies all parents, uniform
 scale, world-unit conversion and the Z reflection. `direction` rotates and
@@ -64,6 +66,62 @@ adapter does not verify mesh payloads, render, certify work declarations or emit
 plate assets into a compiled scene. [Registration tests](../tests/test_composition_plate_view.py)
 cover the mapping and a real-render landmark check; broader style and animated
 adoption evidence remains separate.
+
+## Prepare actual plate geometry
+
+Snapshot host-owned `clay.Mesh` arrays with `plate_mesh(mesh, basis="clay")`, or
+use `basis="canonical"` when the arrays already use +Z toward the viewer. The
+basis declares orientation, not size: for centimeter-sized source coordinates
+in a meter scene, use a layer scale of `0.01`. The snapshot owns immutable
+little-endian float64 vertex/normal triples and int64 triangle triples. Subsequent
+edits to the original arrays cannot change it.
+
+```python
+source = composition.PlateSource(
+    "host",
+    tuple(composition.plate_mesh(mesh, basis="clay") for mesh in meshes),
+    (composition.PlateMaterial("skin", "#C88762"),),
+)
+source_key = composition.plate_source_digest(source)
+# The host binding uses source_key as its PlateWork.key, declares canonical
+# source bounds and budgets, and is validated with the complete ScenePlan.
+prepared = composition.prepare_plate(plan, "host-layer", source)
+```
+
+Preparation checks finite vertices, matching unit normals, triangle indices,
+material references, actual canonical bounds, the exact source-content key,
+node count, overscan dimensions and the backend's sample/bounce settings. It
+applies the shared view, transforms normals and reverses triangle winding as
+required. The resulting schema-checked XML uses the scene seed and names only
+the returned content-addressed mesh resources. It performs no filesystem/cache
+writes and invokes no renderer. The worker has the plan's hard address-space
+cap and parent-owned timeout.
+
+`PreparedPlate` retains its immutable source, binding, layer/plan identities,
+measured bounds, dimensions, offset, XML, resource bytes and a complete result
+digest. Keeping the source allows later consumers to reverify its evidence.
+This result is a preparation artifact; `compile_scene`/`emit_scene` still accept
+vector assets only. Geometry provenance and approval remain host responsibilities:
+checking numerical mesh constraints does not prove it is an approved drawing.
+
+`PlateWork.key` identifies source content, including materials, coordinate basis
+and physical scale. It is not a rendered-cache key. Preflight scopes jobs by
+resolved placement, backend and passes: two placements of the same source need
+two cold renders; identical placements can share one. A rendered artifact must
+also bind the actual camera, lighting, renderer and other rendering inputs.
+
+The current preparation adapter accepts one static, untextured plate job per
+source, up to 128 meshes/materials and eight MiB of total input buffers. Prepared
+XML/resources have a separate eight MiB cap. Materials support `#RRGGBB` base and
+optional emissive colors, roughness and metallic values. UVs, textures, proxy
+recipes and animated source bindings are refused. Source memory declarations
+must cover eight times the input buffer bytes; the job must cover prepared
+resource storage and its frame buffer. These storage checks complement the
+hard process cap; they do not measure or guarantee renderer/GPU peak memory.
+
+[Payload tests](../tests/test_composition_plates.py) exercise typed refusals,
+mutable-input snapshots, malformed worker messages, kernel memory limits,
+timeouts, placement accounting and a real render using only the prepared files.
 
 ## Start with a real drawing
 

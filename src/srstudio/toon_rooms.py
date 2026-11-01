@@ -51,6 +51,8 @@ __all__ = [
     "colour_spans",
     "stage",
     "dress",
+    "front_screen",
+    "front_tint",
     "lounge",
     "counter",
 ]
@@ -89,6 +91,9 @@ LAMP_LIGHT = "#ffb85c"
 LAMP_GLOW = 0.55
 TV_BODY, TV_FACE = "#15161c", "#0c0f1a"
 TV_GLOW = 0.5
+FRONT_NIGHT = "#2c3454"  # the dark of a room lit only by a screen
+FRONT_GLOW = 0.42  # how much of a screen's colour reaches the people facing it
+FRONT_LOW, FRONT_FALL = 0.12, 0.5  # the night's opacity with the screen full on, and what it gains as the screen dies
 CONSOLE, CONSOLE_LIGHT = "#6b4a3a", "#86604c"
 SOFA, SOFA_LIGHT, SOFA_SEAM = "#7a4a7e", "#946098", "#5e3762"
 PILLOW = "#e6b450"
@@ -576,6 +581,35 @@ def stage(
         takes = ", ".join(sorted(r.options)) or "none"
         raise ToonDataError(f"the {r.name} takes no {', '.join(extra)}; its options: {takes}")
     return r.draw(cv, back, lights, end, light=light, **options)
+
+
+def front_tint(colour: str, strength: float = FRONT_GLOW) -> str:
+    """``colour`` ``strength`` of the way from white, the sheet that multiplies a shot into that light."""
+    r, g, b = (int(colour[k : k + 2], 16) for k in (1, 3, 5))
+    return "#{:02x}{:02x}{:02x}".format(*(round(255 + (c - 255) * strength) for c in (r, g, b)))
+
+
+def front_screen(
+    cv: Canvas, parent, cues: Any, end: float, *, strength: float = FRONT_GLOW, night: str = FRONT_NIGHT
+) -> list[Cue]:
+    """The light of a screen on the viewer's side of the frame, for people who face us to watch it: two sheets over
+    the whole shot, both multiplied so the ink stays ink. One holds ``strength`` of the screen's colour, the other
+    takes the shot down to ``night`` as the screen's level falls. ``cues`` read as a lounge TV's (:func:`parse_lights`):
+    ``(second, state[, colour])`` from 0, the first naming its colour, so a sting is one cue and a pause another. Draw
+    it last into ``parent``, over the people and the set. Returns the cues."""
+    if not (checks.number(strength) and 0 < strength <= 1):
+        raise ToonDataError(f"a screen's strength is over 0 and at most 1, got {strength!r}")
+    end = _check_end(end)
+    parsed = _cues("screen", cues, True, end)
+
+    def sheet(g, colour: str) -> None:
+        cv.rect(g, 0, 0, cv.width, cv.height, colour, cv.clear, 0, radius=0)
+
+    g = cv.group(parent, cv.uid("g"))
+    tint = cv.group(g, cv.uid("g"), blend="multiply")
+    _coloured(cv, tint, parsed, end, lambda c, name, colour: sheet(c, front_tint(colour, strength)))
+    sheet(_level(cv, g, level_keys(parsed, end), -FRONT_FALL, FRONT_LOW + FRONT_FALL, blend="multiply"), night)
+    return parsed
 
 
 def dress(shot, room: str, lights: Mapping[str, Any] | None = None, **options) -> dict[str, list[Cue]]:

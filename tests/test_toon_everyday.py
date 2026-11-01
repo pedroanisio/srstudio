@@ -570,3 +570,46 @@ def test_a_rating_refuses_what_it_cannot_show(filled, kwargs):
     cv = canvas()
     with pytest.raises(ToonDataError):
         toon_everyday.stars(cv, cv.comp, filled, **kwargs)
+
+
+def test_a_tv_menu_fills_the_frame_with_its_one_row_and_a_bar_as_far_as_seen():
+    cv = canvas()
+    toon_everyday.tv_menu(cv, cv.comp, "EPISODE 8", 0.9, measure=measure, id="menu")
+    assert layer_texts(cv, "menu") == ["CONTINUE WATCHING", "EPISODE 8"]
+    assert float(group(cv, "menu-seen").get("scaleX")) == pytest.approx(0.9)
+
+
+@pytest.mark.parametrize("seen", [0, -0.2, 1.2, "most"])
+def test_a_tv_menu_refuses_a_bar_past_either_end(seen):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="seen"):
+        toon_everyday.tv_menu(cv, cv.comp, "EPISODE 8", seen, measure=measure)
+
+
+@pytest.mark.parametrize("label", ["", "  ", "EPISODE 8 OF A VERY LONG SERIES NOBODY CAN FIT ON THIS"])
+def test_a_tv_menu_refuses_a_label_its_row_cannot_hold(label):
+    cv = canvas()
+    with pytest.raises(ToonDataError, match="label"):
+        toon_everyday.tv_menu(cv, cv.comp, label, 0.9, measure=measure)
+
+
+def test_a_tv_menu_clears_the_caption_band():
+    cv = canvas()
+    toon_everyday.tv_menu(cv, cv.comp, "EPISODE 8", 0.9, measure=measure, id="menu")
+    top, bottom = toon.CAPTION_TOP, toon.CAPTION_TOP + toon.CAPTION_H
+    for slot in (toon_everyday.TV_MENU_HEAD, toon_everyday.TV_MENU_LABEL):
+        assert slot.y >= bottom or slot.y + slot.h <= top
+
+
+def test_a_remote_lies_in_a_hand_and_refuses_a_scale_it_cannot_draw():
+    cv = canvas()
+    toon_everyday.remote(cv, cv.comp, (200, 800), scale=0.6, tilt=-20.0, id="r")
+    assert group(cv, "r") is not None
+    for scale in (0, -1, "big"):
+        with pytest.raises(ToonDataError, match="scale"):
+            toon_everyday.remote(cv, cv.comp, (200, 800), scale=scale)
+
+
+def test_the_menu_and_the_remote_are_parts():
+    assert registry.get("prop", "toon-tv-menu").builder is toon_everyday.tv_menu
+    assert registry.get("prop", "toon-remote").builder is toon_everyday.remote

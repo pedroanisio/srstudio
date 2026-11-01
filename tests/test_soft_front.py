@@ -163,3 +163,12 @@ def test_the_rooms_own_shelf_is_the_same_shelf():
         return [{k: v for k, v in shape.attrib.items() if k != "id"} for shape in front.iter("shape")]
 
     assert shapes(room) == shapes(alone)
+
+
+def test_an_empty_mug_shows_its_inside_where_a_full_one_shows_coffee():
+    full, empty = canvas(), canvas()
+    soft_front.mug(full, full.comp)
+    soft_front.mug(empty, empty.comp, empty=True)
+    fills = {cv: {el.get("fill") for el in tree(cv).iter()} for cv in (full, empty)}
+    assert "#5B3A26" in fills[full] and "#5B3A26" not in fills[empty]
+    assert soft_front.MUG_INSIDE in fills[empty] and soft_front.MUG_INSIDE not in fills[full]

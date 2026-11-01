@@ -115,3 +115,40 @@ def test_the_command_reports_a_broken_script(tmp_path, capsys):
     (tmp_path / "old" / "script.json").write_text("{", encoding="utf-8")
     assert main(["overlap", str(tmp_path / "new"), "--episodes", str(tmp_path)]) == 2
     assert "srstudio overlap" in capsys.readouterr().err
+
+
+def transcript(root, slug, *lines):
+    folder = root / slug
+    folder.mkdir(parents=True)
+    rows = [{"role": "pip", "expected": line, "heard": line.lower()} for line in lines]
+    (folder / "voice-transcript.json").write_text(json.dumps({"recognizer": "x", "lines": rows}))
+
+
+def test_a_reel_with_only_a_transcript_is_read_by_what_it_was_asked_to_say(tmp_path):
+    transcript(tmp_path, "takes", "Other door, thank you.", "Yes.")
+    assert read_lines(project_script(tmp_path / "takes")) == ["Other door, thank you.", "Yes."]
+
+
+def test_a_script_outranks_a_transcript_beside_it(tmp_path):
+    transcript(tmp_path, "both", "from the transcript")
+    (tmp_path / "both" / "script.json").write_text(json.dumps([{"role": "a", "text": "from the script"}]))
+    assert read_lines(project_script(tmp_path / "both")) == ["from the script"]
+    assert scripts(tmp_path) == {"both": ["from the script"]}
+
+
+def test_a_reel_with_only_a_transcript_is_compared_with_the_others(tmp_path):
+    transcript(tmp_path, "takes", "first in, last out, you got the job")
+    transcript(tmp_path, "skipped", "this one is checked and is not in the pile")
+    assert scripts(tmp_path, skip="skipped") == {"takes": ["first in, last out, you got the job"]}
+
+
+def test_a_transcript_line_with_nothing_asked_of_it_is_refused(tmp_path):
+    (tmp_path / "voice-transcript.json").write_text(json.dumps({"lines": [{"heard": "hi"}]}))
+    with pytest.raises(OverlapError, match="line 0"):
+        read_lines(tmp_path / "voice-transcript.json")
+
+
+def test_a_transcript_with_no_list_of_lines_is_refused(tmp_path):
+    (tmp_path / "voice-transcript.json").write_text(json.dumps({"lines": "hi"}))
+    with pytest.raises(OverlapError, match="list of lines"):
+        read_lines(tmp_path / "voice-transcript.json")

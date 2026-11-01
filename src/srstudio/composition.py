@@ -5,8 +5,9 @@ declared manifest without executing builders, inspecting a cache or rendering.
 Its costs are conservative declared bounds, not measured renderer RSS or timing.
 Vector preparation checks actual payloads; emission compiles supported features
 into a self-contained scene and atomically publishes it without rendering.
-plate_view resolves perspective plate coordinates and shared lights; it does not
-yet supply a verified plate payload or compiled plate/proxy emission.
+plate_view resolves perspective plate coordinates and shared lights. prepare_plate
+verifies static untextured geometry and produces a closed document/resource bundle
+in a bounded worker. Compiled plate/proxy emission is not yet available.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from ._composition_plate_view import PlateView
+    from .clay import Mesh
 
 from .errors import SrstudioError
 
@@ -208,7 +210,11 @@ class Anchor(_Record):
 
 @dataclass(frozen=True)
 class PlateWork(_Record):
-    """One content-addressed cold render job; shared keys must have identical work declarations."""
+    """One source-content job bound. Preflight also scopes it by resolved view/pose.
+
+    Shared source keys must have identical work declarations. Different world
+    placements require distinct cold renders even when their source is shared.
+    """
 
     key: str
     width: int = field(metadata={'minimum': 1, 'maximum': 8192})
@@ -314,6 +320,84 @@ class VectorSource:
 
     id: str
     xml: bytes
+
+
+@dataclass(frozen=True)
+class PlateMaterial(_Record):
+    id: str
+    color: str
+    roughness: float = field(default=0.68, metadata={'minimum': 0, 'maximum': 1})
+    metallic: float = field(default=0, metadata={'minimum': 0, 'maximum': 1})
+    emissive: str = ''
+
+
+@dataclass(frozen=True)
+class PlateMesh:
+    """Owned little-endian float64 vertex/normal triples and int64 triangle triples.
+
+    basis declares the input's Z direction: canonical is toward the viewer,
+    clay is away. Binding bounds and anchors always use canonical source axes.
+    """
+
+    material: str
+    vertices: bytes
+    normals: bytes
+    triangles: bytes
+    basis: Literal['canonical', 'clay']
+
+
+@dataclass(frozen=True)
+class PlateSource:
+    id: str
+    meshes: tuple[PlateMesh, ...]
+    materials: tuple[PlateMaterial, ...]
+    meters_per_unit: float | None = None
+
+
+@dataclass(frozen=True)
+class PlateResource:
+    name: str
+    data: bytes
+
+
+@dataclass(frozen=True)
+class PreparedPlate:
+    """Verified static plate document and closed mesh resources, bound to one scene placement."""
+
+    binding: AssetBinding
+    source: PlateSource
+    layer: str
+    plan_digest: str
+    source_digest: str
+    xml: bytes
+    resources: tuple[PlateResource, ...]
+    bounds: Bounds
+    nodes: int
+    width: int
+    height: int
+    offset: tuple[float, float]
+    digest: str
+
+
+def plate_mesh(mesh: Mesh, *, basis: Literal['canonical', 'clay']) -> PlateMesh:
+    """Snapshot bounded mesh arrays into immutable buffers; preparation verifies their semantics."""
+    from ._composition_plate import snapshot
+
+    return snapshot(mesh, basis=basis)
+
+
+def plate_source_digest(source: PlateSource) -> str:
+    """Identity for PlateWork.key, including mesh bytes, materials, basis and physical scale."""
+    from ._composition_plate_wire import source_digest
+
+    return source_digest(source)
+
+
+def prepare_plate(plan: ValidatedScenePlan, layer: str, source: PlateSource) -> PreparedPlate:
+    """Verify static plate geometry, work and resources in a bounded worker, without rendering."""
+    from ._composition_plate_runtime import prepare_plate as prepare
+
+    return prepare(plan, layer, source)
 
 
 @dataclass(frozen=True)

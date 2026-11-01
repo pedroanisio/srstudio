@@ -39,7 +39,7 @@ from .errors import SrstudioError
 from .fonts import GoogleFont
 from .generated import gain_to_peak, trim_speech
 from .hearing import blind_lines
-from .narration import Slot, confirm_voice, conform, plan_relaxed, sha256_of
+from .narration import Placement, Slot, confirm_voice, conform, plan_relaxed, sha256_of
 from .phrasing import words_of
 from .voice import Alignment, Transcript, TranscriptMismatch, Voice, VoiceSettings, check_transcript, normalize_words
 
@@ -146,13 +146,17 @@ class Line:
     dB under the others, within :data:`LINE_LEVELS`; the take stays the same.
 
     ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
-    as it was said, and only the audio in the reel is band-limited."""
+    as it was said, and only the audio in the reel is band-limited.
+
+    ``together``: another speaker says this line on the first word of the line before it, two voices on one beat. It
+    is its own take, heard back alone, and no beat starts it: the caption is the line it joins."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
     gain: float = 0.0  # dB against the others in the mix
     phone: bool = False
+    together: bool = False
 
 
 @dataclass(frozen=True)
@@ -248,6 +252,12 @@ def check(sketch: Sketch) -> None:
     for i, line in enumerate(sketch.lines):
         if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
             raise SketchError(f"line {i}: gain {line.gain!r} is outside {LINE_LEVELS}")
+        if line.together:
+            before = sketch.lines[i - 1] if i else None
+            if before is None or before.together:
+                raise SketchError(f"line {i}: together joins the line before it, and there is none to join")
+            if before.speaker == line.speaker:
+                raise SketchError(f"line {i}: together is another speaker on one beat, not {line.speaker} again")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -270,12 +280,16 @@ def check(sketch: Sketch) -> None:
                 raise SketchError(f"beat {i}: no line {b.line}")
             if not 0 <= b.word < len(sketch.lines[b.line].text.split()):
                 raise SketchError(f"beat {i}: line {b.line} has no word {b.word}")
+            if sketch.lines[b.line].together:
+                raise SketchError(
+                    f"beat {i}: line {b.line} is said together with the line before it, no beat starts it"
+                )
             if (b.line, b.word) <= last_spoken:
                 raise SketchError(f"beat {i}: line {b.line} word {b.word} is out of order")
             last_spoken = (b.line, b.word)
             if b.line not in started:
                 started.append(b.line)
-    if started != list(range(len(sketch.lines))):
+    if started != [i for i, line in enumerate(sketch.lines) if not line.together]:
         raise SketchError("every line needs a beat that starts it, in order")
     if not (checks.number(sketch.end) and beats[-1].start < sketch.end - MIN_STEP + 1e-9):
         raise SketchError(f"the last beat at {beats[-1].start} s needs {MIN_STEP} s before the end {sketch.end}")
@@ -331,8 +345,12 @@ def line_spans(sketch: Sketch) -> list[tuple[float, float]]:
     for b in sketch.beats:
         if b.line is not None and b.line not in starts:
             starts[b.line] = b.start
-    ordered = [starts[i] for i in range(len(sketch.lines))]
-    return [(a, b) for a, b in zip(ordered, ordered[1:] + [sketch.end], strict=True)]
+    ordered = [starts[i] for i in sorted(starts)]
+    spans = dict(zip(sorted(starts), zip(ordered, ordered[1:] + [sketch.end], strict=True), strict=True))
+    out: list[tuple[float, float]] = []
+    for i in range(len(sketch.lines)):
+        out.append(spans[i] if i in spans else out[-1])
+    return out
 
 
 def typing_bursts(
@@ -728,6 +746,27 @@ class Recorded:
     heard: list[dict]
 
 
+def _placed(lines: Sequence[Line], plan: Sequence[Slot], speeches: Sequence[float]) -> tuple[list[Placement], float]:
+    """:func:`srstudio.narration.plan_relaxed` over the lines that follow one another. A line said ``together`` starts
+    with the line it joins, and that line's slot lasts as long as the longer voice, so the next line waits for both."""
+    groups: list[list[int]] = []
+    for i, line in enumerate(lines):
+        if line.together:
+            groups[-1].append(i)
+        else:
+            groups.append([i])
+    placed, needed = plan_relaxed(
+        [plan[group[0]] for group in groups], [max(speeches[i] for i in group) for group in groups]
+    )
+    out: list[Placement] = []
+    for group, at in zip(groups, placed, strict=True):
+        if len(group) == 1:
+            out.append(at)
+            continue
+        out += [replace(at, kept=min(at.kept, speeches[i]), cut=at.kept < speeches[i]) for i in group]
+    return out, needed
+
+
 def record(
     sketch: Sketch,
     root: Path,
@@ -763,7 +802,7 @@ def record(
         speaker = speakers[line.speaker]
         spoken = client.synthesize(line.text, speaker.voice, speaker.settings)
         takes.append((spoken, trim_speech(spoken.wav, lead=SPEECH_LEAD, tail=SPEECH_TAIL)))
-    placed, needed = plan_relaxed(plan, [trim.clip_out - trim.clip_in for _, trim in takes])
+    placed, needed = _placed(sketch.lines, plan, [trim.clip_out - trim.clip_in for _, trim in takes])
     items, heard, failures, word_starts, kept_takes = [], [], [], [], []
     lip_synced = sketch.cast.lip_synced
     mouths: Mouths = {s.character: [] for s in sketch.speakers if s.character is not None and s.character in lip_synced}

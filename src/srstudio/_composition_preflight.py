@@ -354,6 +354,24 @@ def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.Vali
                     'bindings.plates', job.key, 'one work declaration per content key', 'composition.reference'
                 )
             jobs[job.key] = job
+    # A source job reused at another world pose is another render. The temporal
+    # window alone does not change static geometry; identical resolved poses can
+    # still share a cold job even when their parent graphs differ.
+    render_jobs = {}
+    for layer in spec.layers:
+        frame, scale = poses[layer.id]
+        for job in assets[layer.asset].plates:
+            key = _digest(
+                {
+                    'job': job.key,
+                    'frame': asdict(frame),
+                    'scale': scale,
+                    'space': layer.space,
+                    'backend': assets[layer.asset].backend,
+                    'passes': layer.passes,
+                }
+            )
+            render_jobs[key] = job
     frames = math.ceil(Fraction(str(spec.duration)) * Fraction(spec.fps.numerator, spec.fps.denominator))
     pixels = spec.width * spec.height
     nodes = 16 + sum(assets[layer.asset].nodes + 1 for layer in spec.layers)
@@ -362,9 +380,9 @@ def preflight(spec: c.ScenePlan, bindings: tuple[c.AssetBinding, ...]) -> c.Vali
         pixels,
         frames * pixels,
         nodes,
-        len(jobs),
-        sum(j.engine_invocations for j in jobs.values()),
-        sum(j.width * j.height * j.samples for j in jobs.values()),
+        len(render_jobs),
+        sum(j.engine_invocations for j in render_jobs.values()),
+        sum(j.width * j.height * j.samples for j in render_jobs.values()),
         max((j.bounces for j in jobs.values()), default=0),
         8 * pixels
         + 256 * nodes

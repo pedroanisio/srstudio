@@ -2066,8 +2066,12 @@ def meeting_room(
     shots: Sequence[tuple[float, float]] | None = None,
     id: str = "soft-meeting-room",
     on_screen: Callable[[object], object] | None = None,
+    chair: bool = True,
 ):
-    """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`."""
+    """``on_screen`` (opt-in) draws a call over the screen's slide, in the flat frame of :func:`meeting_screen`.
+    ``chair=False`` clears the swivel chair, for a scene that walks across the room's right side."""
+    if not isinstance(chair, bool):
+        raise BlobError(f"a meeting room has a chair or it does not, got {chair!r}")
     g = cv.group(parent, id)
     if shots is not None:
         cv.gate(g, shots)
@@ -2102,7 +2106,8 @@ def meeting_room(
         _quad(cv, light, patch, LIGHT_GLAZE, opacity=0.32)
     furniture = cv.group(g, f"{id}-furniture")
     _shadow(cv, furniture, *room_point(-400, 310), 360, 70, 0.1)
-    swivel_chair(cv, furniture, _part(id, "soft-meeting-room", "swivel-chair", "soft-swivel-chair"))
+    if chair:
+        swivel_chair(cv, furniture, _part(id, "soft-meeting-room", "swivel-chair", "soft-swivel-chair"))
     _meeting_table(cv, furniture)
     laptop(cv, furniture, id=f"{id}-laptop")
     top = room_point(-330, 200, TABLE_TOP)
