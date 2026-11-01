@@ -183,6 +183,14 @@ def test_the_posting_jobs_hook_motion_test_is_a_known_test():
     assert (tags.test, tags.arm) == ("sp-hook_motion", "b")
 
 
+def test_tags_take_the_speakers_test_on_either_arm():
+    for arm in releases.ARMS:
+        tags = releases.Tags("job-hunting", "institution", "recognition", test="sp-speakers", arm=arm)
+        assert (tags.test, tags.arm) == ("sp-speakers", arm)
+    with pytest.raises(releases.ReleaseError, match="arm"):
+        releases.Tags("job-hunting", "institution", "recognition", test="sp-speakers", arm="c")
+
+
 @pytest.mark.parametrize(
     ("kw", "match"),
     [

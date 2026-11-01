@@ -61,7 +61,7 @@ TERRITORIES = (
 )
 CAUSES = ("institution", "other-person", "protagonist")
 EMOTIONS = ("recognition", "embarrassment", "tension", "relief", "affection", "triumph")
-TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion")  # sp-: the posting job's own test ids
+TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion", "sp-speakers")  # sp-: the posting job's own test ids
 ARMS = ("a", "b")
 RECIPIENTS = ("partner", "family", "best friend", "roommate", "work friend")  # who arm b of the recipient test is for
 
