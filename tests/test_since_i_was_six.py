@@ -40,3 +40,16 @@ def test_an_event_twice_is_refused(data) -> None:
     once = next(b for b in data.SKETCH.beats if b.event == "slide")
     with pytest.raises(sketch.SketchError):
         data.validate(replace(data.SKETCH, beats=(*data.SKETCH.beats, replace(once, start=data.SKETCH.end - 0.2))))
+
+
+def test_the_master_asks_for_the_channels_loudness() -> None:
+    assert 'loudness="-14",' in (EPISODES / "since_i_was_six.py").read_text()
+
+
+def test_a_face_on_screen_always_has_a_mouth(data) -> None:
+    assert all(b.mouth != "none" for b in data.SKETCH.beats if b.who in data.HEADS)
+
+
+def test_the_opening_shot_holds_the_sign_long_enough_to_read(data) -> None:
+    next_shot = next(b for b in data.SKETCH.beats if b.who != data.SKETCH.beats[0].who)
+    assert next_shot.start >= 0.84

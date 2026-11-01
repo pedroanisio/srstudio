@@ -18,11 +18,21 @@ RELEASE = Release(
             "effects synthesized in code."
         ),
         hashtags=('#jobinterview', '#jobsearch', '#relatable', '#animatedshorts', '#okayville'),
-        thumbnail=ShowCover("A lifelong passion for grout", 24.8, number=201),
+        thumbnail=ShowCover("A passion for grout", 24.8, number=201),
     ),
     tags=Tags("job-hunting", "protagonist", "affection", test="sp-speakers", arm="a"),
     style="Toon",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "toon-captions": 1,
+        "toon-dog": 2,
+        "toon-finger": 1,
+        "toon-frog": 2,
+        "toon-ledge": 1,
+        "toon-room": 1,
+    },
     comedy=Scores(author=17, reviewer=17),
     cover=True,
 )

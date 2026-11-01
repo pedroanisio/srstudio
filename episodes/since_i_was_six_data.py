@@ -57,7 +57,7 @@ FERN = Speaker(
     "frog",
 )
 TINTS = {"rex": "#f6dcb8", "fern": "#d6f0c8"}
-BARE = ("hamster", "sloth")  # the two-shot; the opening frames of it, stone still
+BARE = ("hamster", "sloth")  # the two-shot; its opening, heads stone still, long enough to read the sign
 HEADS = ("dog", "frog")
 FIGURES = {"dog": (1.1, 16.0), "frog": (1.0, 0.0)}
 PIVOT = (980.0, 1420.0)
@@ -93,22 +93,22 @@ say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 
 BEATS = (
     hold(0.0, "sloth", "", "half", "none", "desk"),
-    first(STILL, "hamster", 0, "Why do you want to work", "half", "flat", "desk"),
+    first(STILL, "sloth", 0, "Why do you want to work", "half", "flat", "desk"),
     part(1.6, "hamster", 0, 6, "at Dunmore Grout?", "half", "flat", "desk"),
     first(3.0, "hamster", 1, "Honestly? Passion.", "wide", "grin", "desk"),
     part(4.2, "hamster", 1, 2, "Since I was six.", "wide", "grin", "desk"),
     say(5.5, "hamster", 2, "half", "flat", "desk"),
     say(6.4, "hamster", 3, "wide", "grin", "desk"),
-    hold(7.4, "dog", "", "half", "none", "desk"),  # a second and a half: he looks at her
+    hold(7.4, "dog", "", "half", "flat", "desk"),  # a second and a half: he looks at her
     hold(8.9, "frog", "", "side", "grin", "desk", "up"),  # he has got up: the door, behind her eyes
     hold(9.8, "frog", "", "side", "flat", "desk", "blind"),  # the blind comes down
     hold(10.9, "frog", "", "left", "flat", "desk"),
-    hold(11.4, "dog", "", "wide", "none", "desk"),  # he sits
+    hold(11.4, "dog", "", "wide", "flat", "desk"),  # he sits
     first(11.9, "dog", 4, "Thirty years I've been here.", "half", "flat", "desk"),
     part(13.4, "dog", 4, 5, "Tell me why.", "wide", "frown", "desk"),
     say(14.6, "frog", 5, "wide", "flat", "desk"),
     say(15.3, "dog", 6, "wide", "frown", "desk"),
-    hold(16.8, "frog", "", "down", "none", "desk", "pick"),  # she looks at the tray
+    hold(16.8, "frog", "", "down", "flat", "desk", "pick"),  # she looks at the tray
     say(17.7, "frog", 7, "half", "flat", "desk"),
     say(19.2, "dog", 8, "wide", "flat", "desk"),
     say(20.0, "frog", 9, "half", "flat", "desk"),
