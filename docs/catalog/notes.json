@@ -534,12 +534,6 @@
   },
   "styles": {
     "soft": {
-    "held-phone": {"title": "Celular na mão"},
-    "table-fork": {"title": "Garfo"},
-    "dinner-plate": {"title": "Prato de jantar"},
-    "notice-phone": {"title": "Celular com aviso"},
-    "location-chip": {"title": "Mapa com ponto"},
-    "table-phone": {"title": "Celular na mesa"},
       "title": "Blob pose a pose",
       "text": "Personagem branco de um só contorno num palco quente; poses no beat com in-betweens, legendas escuras no topo. 9:16 a 30 fps; paleta <i>warm</i>."
     },
@@ -1257,12 +1251,12 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
-    "toon-climb-chair": {"title": "Cadeira de subir"},
-    "toon-table-legs": {"title": "Pernas da mesa"},
-    "toon-raised-phone": {"title": "O braço do sinal"},
-    "toon-upload-chip": {"title": "Envio em andamento"},
-    "toon-sandwich-broom": {"title": "Sanduíche na vassoura"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-sandwich-broom": {"title": "Sanduíche na vassoura"},
+    "toon-upload-chip": {"title": "Envio em andamento"},
+    "toon-raised-phone": {"title": "O braço do sinal"},
+    "toon-table-legs": {"title": "Pernas da mesa"},
+    "toon-climb-chair": {"title": "Cadeira de subir"},
     "saga-dim": {"title": "Escurecer a sala"},
     "saga-coupon": {"title": "Cupom"},
     "saga-basket": {"title": "Cesto com estação quebrada"},
@@ -1277,6 +1271,12 @@
     "saga-returns": {"title": "Guichê de devoluções"},
     "saga-hut-table": {"title": "Mesa da cabana"},
     "saga-hut": {"title": "Cabana no deserto"},
+    "held-phone": {"title": "Celular na mão"},
+    "table-fork": {"title": "Garfo"},
+    "dinner-plate": {"title": "Prato de jantar"},
+    "notice-phone": {"title": "Celular com aviso"},
+    "location-chip": {"title": "Mapa com ponto"},
+    "table-phone": {"title": "Celular na mesa"},
     "stick-resume-insert": {"title": "Currículo em tela cheia"},
     "stick-desk-page": {"title": "Folha sobre a mesa"},
     "stick-interview-desk": {"title": "Mesa com gaveta"},
@@ -8593,18 +8593,6 @@
       "text": "A porta abre atrás do candidato e entra alguém com uma tigela de cereal, que nunca é posta de lado."
     },
     {
-      "section": "locations",
-      "name": "Sala da entrevista de emprego",
-      "parts": [
-        "stick-interview-room"
-      ],
-      "shot": {
-        "episode": "consulting",
-        "at": 14.5
-      },
-      "text": "Uma sala pequena: a porta entre as duas cadeiras, a janela com a cidade fora de foco e a mesa no meio."
-    },
-    {
       "section": "props",
       "name": "Gaveta de baixo",
       "parts": [
@@ -8641,6 +8629,18 @@
       "text": "O currículo enche o quadro: linhas genéricas, um título, e uma palavra circulada à mão em vermelho."
     },
     {
+      "section": "locations",
+      "name": "Sala da entrevista de emprego",
+      "parts": [
+        "stick-interview-room"
+      ],
+      "shot": {
+        "episode": "consulting",
+        "at": 14.5
+      },
+      "text": "Uma sala pequena: a porta entre as duas cadeiras, a janela com a cidade fora de foco e a mesa no meio."
+    },
+    {
       "section": "props",
       "name": "Detector de fumaça no teto",
       "parts": [
@@ -8652,24 +8652,44 @@
       },
       "text": "O detector no teto, com a luz que fica vermelha no último instante."
     },
-    {"section": "props", "name": "Mapa que entrega", "parts": ["location-chip", "table-phone"], "shot": {"episode": "the-dot", "at": 13.8}, "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."},
-    {"section": "props", "name": "Aviso no celular", "parts": ["notice-phone"], "shot": {"episode": "the-dot", "at": 23.0}, "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."},
-    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."},
     {
       "section": "props",
-      "name": "Um sinal, uma cadeira, uma mesa",
+      "name": "Mapa que entrega",
       "parts": [
-        "toon-climb-chair",
-        "toon-table-legs",
-        "toon-raised-phone",
-        "toon-upload-chip",
-        "toon-sandwich-broom"
+        "location-chip",
+        "table-phone"
       ],
       "shot": {
-        "episode": "one-bar",
-        "at": 7.1
+        "episode": "the-dot",
+        "at": 13.8
       },
-      "text": "O único ponto da casa com sinal: um braço que não desce, a cadeira sobre a mesa, o envio que anda devagar e o almoço entregue de vassoura."
+      "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."
+    },
+    {
+      "section": "props",
+      "name": "Aviso no celular",
+      "parts": [
+        "notice-phone"
+      ],
+      "shot": {
+        "episode": "the-dot",
+        "at": 23.0
+      },
+      "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."
+    },
+    {
+      "section": "props",
+      "name": "Jantar interrompido",
+      "parts": [
+        "dinner-plate",
+        "table-fork",
+        "held-phone"
+      ],
+      "shot": {
+        "episode": "the-dot",
+        "at": 17.5
+      },
+      "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."
     },
     {
       "section": "locations",
@@ -8728,6 +8748,22 @@
         "at": 24.1
       },
       "text": "Um cupom minúsculo que atravessa o buraco, e uma sala que escurece sobre tudo o que já foi desenhado e depois volta."
+    },
+    {
+      "section": "props",
+      "name": "Um sinal, uma cadeira, uma mesa",
+      "parts": [
+        "toon-climb-chair",
+        "toon-table-legs",
+        "toon-raised-phone",
+        "toon-upload-chip",
+        "toon-sandwich-broom"
+      ],
+      "shot": {
+        "episode": "one-bar",
+        "at": 7.1
+      },
+      "text": "O único ponto da casa com sinal: um braço que não desce, a cadeira sobre a mesa, o envio que anda devagar e o almoço entregue de vassoura."
     }
   ]
 }
