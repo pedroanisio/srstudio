@@ -20,13 +20,18 @@ from .stick import RigPose, StickDataError, _group, _seat, box, oval, shape
 
 __all__ = [
     "BOARD_LETTERS",
+    "BRACKET_DROP",
+    "EDGE_SPAN",
+    "HAND_CLEAR",
     "LEFT_AT",
+    "PEN_SPAN",
     "POSES",
     "RIGHT_AT",
     "TABLE_X",
     "TOP",
     "clipboard",
     "folded_bedding",
+    "pen",
     "seats",
     "table",
     "wall_brackets",
@@ -36,6 +41,10 @@ BOARD, BOARD_EDGE, PAGE, RULE, CLIP, TAIL = "#a9794a", "#7c5532", "#fbf8f0", "#b
 PILLOW, PILLOW_SHADE, DUVET, DUVET_DARK = "#f1eee6", "#cfcabb", "#6f8fb3", "#4f6d90"
 BRACKET, PENCIL, SHADOW = "#7c8590", "#8f7f66", "#3a2a1c"
 BOARD_LETTERS = 16  # the longest heading the turned clipboard takes
+EDGE_SPAN = (-8.0, 46.0)  # where the edge-on clipboard runs across, about the hand that holds it
+PEN_SPAN = (-14.0, 64.0)  # where the pen runs across, about the hand that holds it
+HAND_CLEAR = 10.0  # the least gap from the board to the pen hand, which the rig draws under the board
+BRACKET_DROP = 96  # how far a wall bracket hangs below its top
 TOP = 1090.0  # the table's top, in frame pixels
 TABLE_X = (281.0, 799.0)  # where it runs, left to right
 FLOOR = 1560.0  # where the feet and the chairs stand
@@ -55,7 +64,8 @@ _BOARD = ((440, 1140), (450, 1170), (494, 1120), (525, 1200))  # the pen near th
 
 # Hands on the table; half out of the chair; a hand at the collar; up straight; looking back over the shoulder; leaning
 # in; sunk; a hand out on the table. With a clipboard: read, the pen on the page in two frames, clicked, thrown out to
-# point, the board pulled in to the chest; and stood up, the board under the near arm.
+# point, the board pulled in to the chest with the pen laid along it from the hand; and stood up, the board under the
+# near arm.
 POSES: dict[str, RigPose] = {
     "rest": _sit((372, 905), (352, 1012), *_REST),
     "landing": _seat((346, 846), (330, 954), (292, 1262), ((500, 1300), (526, 1290)), _FEET,
@@ -73,7 +83,7 @@ POSES: dict[str, RigPose] = {
     "write-b": _sit((390, 924), (360, 1024), (438, 1110), (450, 1170), (510, 1078), (525, 1200)),
     "click": _sit((372, 905), (352, 1012), (440, 1110), (450, 1170), (486, 1040), (525, 1200)),
     "point": _sit((384, 900), (358, 1008), (480, 958), (450, 1170), (566, 900), (525, 1200)),
-    "guard": _sit((360, 906), (346, 1012), (420, 1130), (404, 1176), (452, 1120), (428, 1168)),
+    "guard": _sit((360, 906), (346, 1012), (356, 1130), (404, 1176), (398, 1044), (428, 1168)),
     "up": _seat((404, 640), (404, 747), (404, 1075), ((386, 1330), (424, 1330)), ((372, 1690), (430, 1700)),
                 ((340, 900), (470, 900)), ((352, 1060), (470, 1030))),
 }  # fmt: skip
@@ -117,6 +127,11 @@ def clipboard(cv: Canvas, parent, *, turned: bool = False, quarter: bool = False
     return g
 
 
+def pen(cv: Canvas, parent):
+    """A red pen about its origin, the hand that holds it, running out by :data:`PEN_SPAN`."""
+    return shape(cv, parent, f"M {PEN_SPAN[0]:g} 6 L {PEN_SPAN[1]:g} -14", sw=10, stroke=TAIL)
+
+
 def table(cv: Canvas, parent) -> None:
     """The kitchen table (``stick-table``) over :data:`TABLE_X`, its top at :data:`TOP`, on the floor the chairs use."""
     stick_home.table(cv, parent, span=TABLE_X, top=TOP, legs=FLOOR - 20.0 - TOP - 30.0)
@@ -141,8 +156,11 @@ def wall_brackets(cv: Canvas, parent, x: float, y: float, *, span: float = 190.0
     g = _group(cv, parent, x=x, y=y, scaleX=scale, scaleY=scale)
     shape(cv, g, f"M -46 -2 L {span + 74} -2", sw=3, stroke=PENCIL)
     for dx in (0.0, span):
-        shape(cv, g, f"M {dx} 0 L {dx + 74} 0 L {dx + 74} 16 L {dx + 20} 16 Q {dx + 14} 62 {dx + 14} 96 L {dx} 96 Z",
-              BRACKET, 4, stroke=cv.ink)  # fmt: skip
+        path = (
+            f"M {dx} 0 L {dx + 74} 0 L {dx + 74} 16 L {dx + 20} 16 Q {dx + 14} 62 {dx + 14} {BRACKET_DROP} "
+            f"L {dx} {BRACKET_DROP} Z"
+        )
+        shape(cv, g, path, BRACKET, 4, stroke=cv.ink)
     return g
 
 

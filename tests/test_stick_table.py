@@ -1,5 +1,6 @@
 """The Stick table: two people sat at it, the clipboard, the brackets on the wall and the bedding, and each refusal."""
 
+import re
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -58,6 +59,46 @@ def test_a_seated_hand_stays_over_the_table_or_clear_of_it(pose):
     for far in (False, True):
         _, y = stick.hand_at(stick_table.POSES[pose], far=far, at=stick_table.LEFT_AT)
         assert y <= stick_table.TOP + 6
+
+
+def across(cv: Canvas) -> tuple[float, float]:
+    """The leftmost and rightmost x of the absolute paths drawn on ``cv``."""
+    pairs = [re.findall(r"[ML] (-?[\d.]+) -?[\d.]+", s.get("path")) for s in xml(cv).iter("shape") if s.get("path")]
+    xs = [float(x) for found in pairs for x in found]
+    return min(xs), max(xs)
+
+
+def board_and_hands(pose):
+    """Where the edge-on board runs, left to right, with the near hand holding it, and where the far hand is."""
+    near, _ = stick.hand_at(stick_table.POSES[pose])
+    far, _ = stick.hand_at(stick_table.POSES[pose], far=True)
+    return (near + stick_table.EDGE_SPAN[0], near + stick_table.EDGE_SPAN[1]), far
+
+
+def test_the_edge_on_board_is_as_wide_as_the_span_a_pose_is_checked_by():
+    cv = canvas()
+    stick_table.clipboard(cv, cv.comp)
+    assert across(cv) == stick_table.EDGE_SPAN
+
+
+@pytest.mark.parametrize("pose", ["guard", "up"])
+def test_the_rig_draws_under_the_board_so_the_pen_hand_stays_clear_of_it(pose):
+    """A far hand behind the edge-on board leaves the pen with no hand on it, out in the air."""
+    (left, right), far = board_and_hands(pose)
+    assert far < left - stick_table.HAND_CLEAR or far > right + stick_table.HAND_CLEAR
+
+
+def test_guarding_the_board_the_pen_runs_from_the_hand_onto_it_with_none_in_the_air():
+    (left, right), far = board_and_hands("guard")
+    tip = far + stick_table.PEN_SPAN[1]
+    assert left <= tip <= right
+
+
+def test_the_pen_is_drawn_about_the_hand_that_holds_it():
+    cv = canvas()
+    stick_table.pen(cv, cv.comp)
+    assert across(cv) == stick_table.PEN_SPAN
+    assert stick_table.PEN_SPAN[0] < 0 < stick_table.PEN_SPAN[1]
 
 
 def test_the_table_stands_between_the_chairs_and_is_narrower_than_the_kitchen_s():
