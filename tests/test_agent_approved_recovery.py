@@ -1,5 +1,6 @@
 """Approval metadata, atomic markers and typed character records."""
 
+import functools
 import json
 
 import pytest
@@ -100,7 +101,7 @@ def test_direct_version_refuses_non_approval_object():
 
 def test_mutated_character_builder_is_unverified(monkeypatch):
     entry = registry.get('character', 'toon-fox@2')
-    monkeypatch.setattr(entry, 'builder', lambda: None)
+    monkeypatch.setattr(entry, 'builder', functools.wraps(entry.builder)(lambda *a, **kw: None))  # its contract holds
     info = registry.describe('character', 'toon-fox@2')['character_version']
     assert info['status'] == 'unverified' and info['record_status'] == 'approved'
     assert registry.describe('character', 'toon-fox')['character_version']['default_status'] == 'unverified'
