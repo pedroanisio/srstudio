@@ -400,6 +400,24 @@ def grandfathered(folder: Path) -> frozenset[str]:
         raise ReleaseError(f"{folder} holds no _grandfathered list of SLUGS: {exc}") from exc
 
 
+def held(folder: Path, known: Mapping[str, Release]) -> dict[str, str]:
+    """The ``HELD`` map of ``folder``'s ``_held`` module: each reel stopped before its first delivery, with the
+    reason and the ruling behind it (ADR 0094). A slug that is no release in ``known`` or a blank reason raises
+    :class:`ReleaseError`."""
+    folder = Path(folder).resolve()
+    try:
+        stopped = dict(importlib.import_module(f"{_package(folder)}._held").HELD)
+    except (ImportError, AttributeError) as exc:
+        raise ReleaseError(f"{folder} holds no _held map of HELD: {exc}") from exc
+    unknown = sorted(set(stopped) - set(known))
+    if unknown:
+        raise ReleaseError(f"{folder} holds a reel that is no release: {', '.join(unknown)}")
+    for slug, reason in stopped.items():
+        if not reason.strip():
+            raise ReleaseError(f"{slug} is held for no reason")
+    return stopped
+
+
 def _has_cover_variant(scene: Path) -> bool:
     try:
         for _, element in ET.iterparse(scene, events=("start",)):

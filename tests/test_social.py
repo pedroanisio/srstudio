@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, frame_gates, parts, show_numbers, sketch, social, thumbnail
+from srstudio import Episode, EpisodeSpec, frame_gates, parts, releases, show_numbers, sketch, social, thumbnail
 from srstudio.comedy_floor import ComedyError, Scores
 from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import (
@@ -483,6 +483,110 @@ def test_a_full_delivery_leaves_a_frozen_video_and_its_manifest_entry_as_publish
     assert publish(items, out, font=FONT, engine="unused", frozen={"a": accepted}) == []
     assert read_manifest(out)["a"] == entry and (out / "a" / COVER_NAME).read_bytes() == cover
     assert check_delivery(items, out, font=FONT, frozen={"a": accepted}) == []
+
+
+def undelivered_b(delivered):
+    """The ``delivered`` pair with ``b`` taken back out of the manifest: published, never delivered."""
+    items, out, renders = delivered
+    publish(items, out, font=FONT, engine=engine(), only=["a"])
+    manifest = out / "delivery.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    del record["videos"]["b"]
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    return items, out, renders
+
+
+def test_a_held_video_owes_no_delivery_and_its_missing_render_is_no_drift(delivered):
+    items, out, _ = undelivered_b(delivered)
+    assert [str(d) for d in check_delivery(items, out, font=FONT)] == ["b: never delivered"]
+    assert check_delivery(items, out, font=FONT, held={"b"}) == []
+    items["b"].video.unlink()
+    assert check_delivery(items, out, font=FONT, held={"b"}) == []
+
+
+def test_a_held_video_that_was_delivered_all_the_same_is_drift(delivered):
+    items, out, _ = delivered
+    assert [str(d) for d in check_delivery(items, out, font=FONT, held={"a"})] == [
+        "a: held, but delivered: release the hold or take the delivery back"
+    ]
+
+
+def test_a_full_delivery_passes_over_a_held_video(delivered):
+    items, out, _ = undelivered_b(delivered)
+    assert publish(items, out, font=FONT, engine=engine(), held={"b"}) == []
+    assert "b" not in read_manifest(out)
+
+
+def test_a_held_video_cannot_be_delivered_by_name(delivered):
+    items, out, _ = undelivered_b(delivered)
+    with pytest.raises(DeliveryError, match="held, not delivered: b"):
+        publish(items, out, font=FONT, engine=engine(), only=["b"], held={"b"})
+    assert "b" not in read_manifest(out)
+
+
+def test_held_must_name_published_videos(delivered):
+    items, out, _ = delivered
+    with pytest.raises(DeliveryError, match="held names a video that is not published: gone"):
+        check_delivery(items, out, font=FONT, held={"gone"})
+    with pytest.raises(DeliveryError, match="held names a video that is not published: gone"):
+        publish(items, out, font=FONT, engine="unused", held={"gone"})
+
+
+def test_every_held_reel_is_published_and_names_the_ruling_that_stopped_it():
+    posts = shipped_posts()
+    assert set(posts.HELD) <= set(posts.RELEASES)
+    assert posts.held_videos() == {posts.RELEASES[slug].video_name for slug in posts.HELD}
+    for slug, reason in posts.HELD.items():
+        assert re.search(r"Slack \d{10}\.\d{6}", reason), f"{slug} is held on no ruling: {reason!r}"
+
+
+def test_the_shipped_gate_skips_a_held_reel_and_deliver_refuses_it(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    release = next(iter(posts.RELEASES.values()))
+    seen = {}
+
+    def check(items, out, *, font, frozen=None, held=()):
+        seen["held"] = set(held)
+        return []
+
+    monkeypatch.setattr(posts, "HELD", {release.slug: "stopped, Slack 1793546229.202829"})
+    monkeypatch.setattr(posts, "check_delivery", check)
+    monkeypatch.setattr(posts, "items", lambda *a, **kw: {})
+    monkeypatch.setattr(posts, "font_file", lambda folder: tmp_path / "font.ttf")
+    monkeypatch.setattr(posts, "caption_drift", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "send_drift", lambda *a, **kw: [])
+    monkeypatch.setattr(releases, "unpinned", lambda *a, **kw: [])
+    assert posts.check_all(tmp_path, tmp_path, fonts_dir=tmp_path) == []
+    assert seen["held"] == {release.video_name}
+    with pytest.raises(DeliveryError, match=f"held, not delivered: {release.video_name}.*Slack 1793546229"):
+        posts.write_all(tmp_path, tmp_path, fonts_dir=tmp_path, engine="engine", only=[release.video_name])
+
+
+def test_a_release_folder_without_the_hold_list_cannot_be_trusted(tmp_path):
+    (tmp_path / "__init__.py").write_text("")
+    with pytest.raises(ReleaseError, match="_held"):
+        releases.held(tmp_path, {})
+
+
+def _hold_folder(tmp_path, text):
+    folder = tmp_path / "hold_posts"
+    folder.mkdir()
+    (folder / "__init__.py").write_text("")
+    (folder / "_held.py").write_text(text)
+    return folder
+
+
+def test_the_hold_list_refuses_a_slug_that_is_no_release_and_a_blank_reason(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(tmp_path))
+    unknown = _hold_folder(tmp_path, 'HELD = {"gone": "stopped"}\n')
+    with pytest.raises(ReleaseError, match="holds a reel that is no release: gone"):
+        releases.held(unknown, {})
+    blank = tmp_path / "blank_posts"
+    blank.mkdir()
+    (blank / "__init__.py").write_text("")
+    (blank / "_held.py").write_text('HELD = {"gone": " "}\n')
+    with pytest.raises(ReleaseError, match="gone is held for no reason"):
+        releases.held(blank, {"gone": None})
 
 
 def test_every_frozen_release_names_the_drawing_its_post_makes_now():
