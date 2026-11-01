@@ -7,7 +7,7 @@ import pytest
 from srstudio import bible, bible_check
 from srstudio.releases import Release, Tags
 from srstudio.social import DeliveryError, InstagramPost
-from support.bible_docs import cast_document, character, placeholder, write
+from support.bible_docs import cast_document, character, pairs_document, placeholder, write
 
 
 def release(slug: str, *, recurring: tuple[str, ...] = (), parts=None) -> Release:
@@ -158,3 +158,67 @@ def test_refusing_names_every_finding_and_is_a_delivery_error(tmp_path, loaded):
         bible_check.refuse(findings)
     assert isinstance(raised.value, DeliveryError) and len(raised.value.findings) == 3
     bible_check.refuse({"a": []})  # nothing found, nothing raised
+
+
+@pytest.fixture
+def two_garys(tmp_path):
+    """Two characters of one world named Gary: a bear voiced by Chris, and a flatmate voiced by Callum."""
+    document = cast_document()
+    document["characters"], document["places"] = [], []
+    for slug, voice, part in (("gary", "Chris", "toon-bear"), ("stick-gary", "Callum", "toon-frog")):
+        person = character(slug)
+        person["name"] = "Gary"
+        person["voice"]["voice"] = voice
+        person["look"]["drawing"] = [{"part": part, "version": 1}]
+        document["characters"].append(person)
+    pairs = pairs_document()
+    pairs["relationships"] = []
+    return bible.load(write(tmp_path / "bible", document, pairs))
+
+
+def _heard(tmp_path, voice):
+    project(tmp_path, "new-reel", narration={"voice": {"gary": {"name": voice}}})
+
+
+def test_two_characters_of_one_world_with_a_name_are_told_apart_by_the_voice_the_reel_has(tmp_path, two_garys):
+    _heard(tmp_path, "Callum")
+    r = release("new-reel", parts={"toon-frog": 1})
+    assert bible_check.check_release(two_garys, r, tmp_path, characters=CHARACTERS) == []
+    _heard(tmp_path / "again", "Chris")
+    again = release("new-reel", parts={"toon-bear": 1})
+    assert bible_check.check_release(two_garys, again, tmp_path / "again", characters=CHARACTERS) == []
+
+
+def test_a_voice_neither_of_the_two_has_is_still_flagged_against_the_first(tmp_path, two_garys):
+    _heard(tmp_path, "Liam")
+    r = release("new-reel", parts={"toon-bear": 1})
+    (finding,) = bible_check.check_release(two_garys, r, tmp_path, characters=CHARACTERS)
+    assert finding.kind == "voice" and "Chris" in finding.message and "Liam" in finding.message
+
+
+def test_with_no_voice_the_drawing_the_reel_pins_says_which_of_the_two_is_meant(tmp_path, two_garys):
+    r = release("new-reel", recurring=("gary",), parts={"toon-frog": 1})
+    assert bible_check.check_release(two_garys, r, tmp_path, characters=CHARACTERS) == []
+    wrong = release("new-reel", recurring=("gary",), parts={"toon-dog": 1})
+    (finding,) = bible_check.check_release(two_garys, wrong, tmp_path / "none", characters=CHARACTERS)
+    assert finding.kind == "drawing" and "toon-bear" in finding.message  # neither is drawn: the first is meant
+
+
+def test_a_character_drawn_by_a_prop_has_no_character_part_to_get_wrong(tmp_path, loaded):
+    horse = character("keith")
+    horse["look"]["drawing"] = [{"part": "toon-horse", "version": 1}]
+    document = cast_document()
+    document["characters"] = [horse, character("rex")]
+    document["places"] = []
+    pairs = pairs_document()
+    pairs["relationships"] = []
+    held = bible.load(write(tmp_path / "bible", document, pairs))
+    r = release("new-reel", recurring=("keith",), parts={"toon-dog": 1, "toon-horse": 1})
+    assert bible_check.check_release(held, r, tmp_path, characters=CHARACTERS) == []  # toon-horse is not in CHARACTERS
+
+
+def test_a_rig_names_no_absent_owner_when_the_reel_has_an_unknown_name(tmp_path, loaded):
+    project(tmp_path, "new-reel", script=[{"speaker": "bruno", "text": "Hi."}])
+    r = release("new-reel", parts={"toon-dog": 1})
+    (finding,) = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS, rigs={"toon-dog"})
+    assert finding.kind == "unknown-name" and "'bruno'" in finding.message  # no "is bruno a new name for rex?" hint

@@ -3,8 +3,10 @@
 A gap is not a fault of the bible; it is a reel published since the last version. Plain code, no model.
 
 - ``missing``: a name on 2 or more published reels of its world with no sheet.
-- ``stale``: a sheet whose reels lack a published reel that names the character. A reel a recorded clash cites, or
-  names in its subject (the Toon Pip, the Stick Gary), is a decision waiting for the operator, not work for an author.
+- ``stale``: a sheet whose reels lack a published reel that names the character. Characters of one world that share
+  a name, as the two Garys do, share the reels it is on: the first sheet is listed once if none of them has the reel.
+  A reel a recorded clash cites, or names in its subject (the Toon Pip), is a decision waiting for the operator, not
+  work for an author.
 
 A fix to either is a new minor version of the bible and a ``CHANGELOG.md`` section, locked with
 ``srstudio bible lock``.
@@ -76,7 +78,8 @@ def _compare(
             missing.append((cand.name, world, here))
         return
     covered.update(here)
-    for sheet in sheets:
-        absent = tuple(s for s in here if s not in sheet.reels and s not in recorded)
-        if absent:
-            stale[sheet.slug] = tuple(sorted(set(stale.get(sheet.slug, ())) | set(absent)))
+    listed = {s for sheet in sheets for s in sheet.reels}  # characters that share a name share the reels it is on
+    absent = tuple(s for s in here if s not in listed and s not in recorded)
+    if absent:
+        slug = sheets[0].slug
+        stale[slug] = tuple(sorted(set(stale.get(slug, ())) | set(absent)))

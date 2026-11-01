@@ -8,7 +8,8 @@ A release is checked against what its project recorded, by the name it uses for 
   reel draws a character part that no name present accounts for. A character who is only heard (a voice on the phone,
   a voice behind a door) has no drawing to get wrong: when every character part the reel draws belongs to another name
   present, she is checked for her name and her voice alone. A rig that draws any figure (the Stick style's) belongs to
-  no one in particular, so it never explains a name's absence;
+  no one in particular, so it never explains a name's absence. When several characters of the reel's world share a
+  name, the one whose voice the reel has (else the one whose drawing it pins) is the one meant;
 - ``voice``: a known character heard in a voice that is not the bible's;
 - ``world``: a name that only exists in another world's bible (a sealed world shares no canon).
 
@@ -61,6 +62,20 @@ def _voice_matches(heard: str, character: Character) -> bool:
     return given.startswith(("open:", "proposal:")) or heard.lower() in given.lower()
 
 
+def _which(here: list[Character], voice: str, pinned: Collection[str]) -> Character:
+    """The character a name means when several of one world share it: the one whose voice the reel has, else the one
+    whose drawing it pins, else the first. Two Garys of one world (a Collage dad, a Stick one) are told apart so."""
+    if len(here) > 1:
+        for test in (
+            lambda c: bool(voice) and _voice_matches(voice, c) and not c.voice.voice.startswith(("open:", "proposal:")),
+            lambda c: bool({d.part for d in c.look.drawing} & set(pinned)),
+        ):
+            for c in here:
+                if test(c):
+                    return c
+    return here[0]
+
+
 def rig_parts() -> frozenset[str]:
     """The registered parts that draw any number of figures: one rig per style, as the Stick style has."""
     return frozenset(e.name for e in registry.entries("character") if e.style == "stick")
@@ -101,8 +116,8 @@ def check_release(
             where = ", ".join(sorted({c.world for c in everywhere}))
             found.append(Finding(slug, "world", f"{name!r} is a character of {where} only; {world} shares no canon"))
             continue
-        character = here[0]
-        owned = {d.part for d in character.look.drawing}
+        character = _which(here, heard.get(name, ""), pinned)
+        owned = {d.part for d in character.look.drawing} & set(characters)  # a prop is no character part to compare
         if unexplained and owned and not owned & pinned:
             found.append(
                 Finding(
@@ -118,7 +133,9 @@ def check_release(
                 Finding(slug, "voice", f"{name!r} is {character.voice.voice} in the bible; the reel has {voice}")
             )
     if unnamed:
-        belong = {d.part: c.slug for c in bible.characters if c.world == world for d in c.look.drawing}
+        belong = {
+            d.part: c.slug for c in bible.characters if c.world == world for d in c.look.drawing if d.part not in many
+        }  # a rig belongs to no one, so it names no absent owner
         absent = sorted({who for part, who in belong.items() if part in pinned and who not in names})
         if absent:
             found.append(

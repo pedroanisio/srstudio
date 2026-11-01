@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from srstudio import bible, bible_gaps
 from srstudio.bible_inventory import Reel
-from support.bible_docs import cast_document, pair, pairs_document, placeholder, write
+from support.bible_docs import cast_document, character, pair, pairs_document, placeholder, write
 
 
 def reel(slug: str, *names: str) -> Reel:
@@ -84,3 +84,13 @@ def test_placeholders_wait_and_reels_with_no_character_are_counted(tmp_path):
 def test_a_gap_free_bible_is_falsy_and_carries_no_missing_or_stale():
     assert not bible_gaps.Gaps((), (), ("vera",), ())
     assert replace(bible_gaps.Gaps((), (), (), ()), stale=(("a", ("b",)),))
+
+
+def test_characters_of_one_world_that_share_a_name_share_the_reels_it_is_on(tmp_path):
+    twin = character("twin")
+    twin["name"] = "Rex"
+    twin["reels"] = ["gary-reel"]
+    held = library(tmp_path, twin)
+    rex = held.character("rex")
+    reels = [reel(s, "rex") for s in rex.reels] + [reel("gary-reel", "rex"), reel("new-reel", "rex")]
+    assert bible_gaps.find(held, reels).stale == (("rex", ("new-reel",)),)  # gary-reel is the twin's; listed once
