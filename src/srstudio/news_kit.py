@@ -14,10 +14,10 @@ script, two voices and one graphic, so the kit holds what repeats:
   :func:`banner`, :func:`ticker`, :func:`source_card`, :func:`parody_tag`, :func:`captions`;
 * the sound: :func:`write_sting`.
 
-An episode is one of two kinds with a visible code, and they never mix: a real story carries a :class:`Source` and its
-card, a fictional one the BREAKING banner and the PARODY tag. :func:`check_copy` refuses bait in anything the show puts
-on screen. Text keeps to the Reels safe zone, :data:`TEXT_LEFT` to :data:`TEXT_RIGHT`, and the faces keep to the middle
-of the frame, between the captions at the top and the lower-third at the bottom.
+An episode is one of two kinds with a visible code: a real story carries a :class:`Source` and its card, a fictional
+one the BREAKING banner, and the PARODY tag can stand on both (ADR 0082). :func:`check_copy` refuses bait in anything
+the show puts on screen. Text keeps to the Reels safe zone, :data:`TEXT_LEFT` to :data:`TEXT_RIGHT`, and the faces keep
+to the middle of the frame, between the captions at the top and the lower-third at the bottom.
 """
 
 from __future__ import annotations

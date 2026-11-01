@@ -3,6 +3,7 @@
 A :class:`Story` carries the words over the picture: the outlet's card, the ticker, the lower-thirds and the post. It
 checks them against the show's rules, and it lays them over the reel on version 2 of the kit. The card is up from the
 first frame and goes small on ``small``, a beat index, and stays to the last frame, so the source is never off screen.
+A story with ``parody`` wears the PARODY tag from the first frame to the last, with the source's credit beside it.
 A lower-third is a text, so it stops while a phone is up (``inserts``) rather than sit half-hidden behind one.
 """
 
@@ -52,6 +53,7 @@ class Story:
     events: tuple[str, ...]
     post: InstagramPost
     small: int = 2
+    parody: bool = False
 
     def validate(self, sk: Sketch, shown: Sequence[str] = ()) -> None:
         """The sketch is consistent, its events happen once and in order, the first picture speaks, the acts match the
@@ -104,4 +106,8 @@ class Story:
         if phone is not None:
             phone()
         news_inked.bug(cv, parent, 0.0, end, measure)
-        news_inked.source_card(cv, parent, self.source, card, beats[self.small].start, end, measure)
+        if self.parody:
+            news_inked.parody_tag(cv, parent, 0.0, end, measure)
+        news_inked.source_card(
+            cv, parent, self.source, card, beats[self.small].start, end, measure, beside_tag=self.parody
+        )
