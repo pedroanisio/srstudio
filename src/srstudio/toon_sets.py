@@ -688,7 +688,12 @@ def calendar(cv: Canvas, parent, pages: Sequence[tuple[float, str]], at: tuple[f
     summary="A call-centre cubicle: a fabric partition, a YOUR CALL MATTERS poster and a CALLS WAITING board",
 )
 def call_centre(
-    cv: Canvas, parent, waiting: Sequence[tuple[float, int]] = ((0.0, 12),), end: float = 0.0, legible: bool = False
+    cv: Canvas,
+    parent,
+    waiting: Sequence[tuple[float, int]] = ((0.0, 12),),
+    end: float = 0.0,
+    legible: bool = False,
+    bright_count: bool = False,
 ) -> None:
     """The character's cubicle on a pale office wall: a flecked blue fabric partition with an aluminium cap behind
     the character, a cheerful poster above it that reads YOUR CALL MATTERS, and, where the other sets have their
@@ -696,8 +701,8 @@ def call_centre(
     0, in time order, each count 0 to :data:`WAITING_MAX`; the board shows one count at a time. The lamp blinks
     from 0 to ``end`` (still when ``end`` is 0). ``legible`` letters the label in :data:`LED_LABEL`: the engine
     measures text contrast on the glyphs as drawn, edges included, and the label's thin lettering in :data:`LED`
-    falls below 4.5:1, which fails a strict encode. Off by default, so the sets of published episodes stay as they
-    were."""
+    falls below 4.5:1, which fails a strict encode. ``bright_count`` letters the count in it too: :data:`LED` on the
+    board's face is 4.48:1 on the frame. Both off by default, so the sets of published episodes stay as they were."""
     counts = _check_waiting(waiting)
     end = _check_end(end)
     g = cv.group(parent, cv.uid("g"))
@@ -723,7 +728,7 @@ def call_centre(
     for i, (at, count) in enumerate(counts):
         digits = cv.group(g, cv.uid("g"))
         cv.text(digits, cv.uid("centre-count"), str(count), fx(380), fy(410), int(fh(204)), int(fh(86)), 110,
-                color=LED, align="start")  # fmt: skip
+                color=LED_LABEL if bright_count else LED, align="start")  # fmt: skip
         keys = [(0.0, 1.0 if at == 0 else 0.0)] + ([(at, 1.0)] if at > 0 else [])
         if i + 1 < len(counts):
             keys.append((counts[i + 1][0], 0.0))

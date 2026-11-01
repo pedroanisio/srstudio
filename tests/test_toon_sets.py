@@ -374,6 +374,18 @@ def test_the_call_centre_refuses_counts_it_cannot_show(waiting, message):
         toon_sets.call_centre(cv, cv.comp, waiting)
 
 
+def test_a_bright_count_is_lettered_lighter_and_leaves_the_label_alone():
+    plain, bright = canvas(), canvas()
+    toon_sets.call_centre(plain, plain.comp, ((0.0, 99),))
+    toon_sets.call_centre(bright, bright.comp, ((0.0, 99),), bright_count=True)
+
+    def colours(cv):
+        return {t.get("text"): t.get("color") for t in tree(cv).iter("text")}
+
+    assert colours(plain)["99"] == toon_sets.LED and colours(bright)["99"] == toon_sets.LED_LABEL
+    assert colours(plain)["CALLS WAITING"] == colours(bright)["CALLS WAITING"]
+
+
 def test_a_legible_call_centre_letters_its_label_lighter_and_leaves_the_rest_as_it_was():
     plain, legible = canvas(), canvas()
     toon_sets.call_centre(plain, plain.comp, [(0.0, 12)])

@@ -205,7 +205,7 @@ def floor(shot) -> None:
     up."""
     cv, app = shot.cv, shot.app
     speaks = next(b.start for b in shot.beats if b.line == len(LINES) - 1)
-    toon_sets.call_centre(cv, shot.back, ((0.0, 99),), end=shot.end, legible=True)
+    toon_sets.call_centre(cv, shot.back, ((0.0, 99),), end=shot.end, legible=True, bright_count=True)
     room = cv.group(shot.front, cv.uid("g"))
     camera.anchor(room, toon.fx(296.0), toon.fy(800.0), place=True)
     cv.keys(room, "scaleX", [(app.start, PULL[0]), (speaks, PULL[1])], kind="sine-in-out", local=False)
@@ -232,7 +232,7 @@ def dress(shot) -> None:
     elif app.who == "rabbit":
         home(shot)
     else:
-        toon_sets.call_centre(cv, shot.back, ((0.0, 37),), end=shot.end, legible=True)
+        toon_sets.call_centre(cv, shot.back, ((0.0, 37),), end=shot.end, legible=True, bright_count=True)
         toon_house.ledge(cv, shot.front)
         ticks = sketch.events(shot.beats, "tick")
         fields = [toon_everyday.Field("Kept", "YES", ticks[0][0])]
