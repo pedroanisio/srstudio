@@ -1,6 +1,6 @@
-"""What a human eye caught in full-size frames, held by code where code can hold it.
+"""What a human eye caught in full-size frames, held by code where code can hold it (ADR 0073).
 
-Reduced-size passes by the authors missed every defect these gates take, and four frames are a sample, so the
+Reduced-size passes by the authors missed every defect listed in the ADR, and four frames are a sample, so the
 funny-reels skill keeps a full-size review by someone who is not the author. These gates take the classes that can be
 measured off that review's desk. Each runs on a reel's first delivery only: a video in the manifest is published and
 frozen, and no gate here may ask it to change.
@@ -51,7 +51,7 @@ _MARK = re.compile(r"sig-(cactus|code)(?:-\d+)?\Z")
 
 SAMPLE_EVERY = 0.5  # seconds between measured frames: a shot lasts longer than this
 MARK_SEEN = 0.75  # of a mark's box, on the frame and not behind anything, for that frame to count as showing it
-MIN_SHOWN = 0.5  # of the running time with both marks seen: "most"
+MIN_SHOWN = 0.5  # of the running time with both marks seen: "most". Why this number is in ADR 0073
 MARK_SCALE = 2.0  # frame pixels to a mask pixel: a mark is small
 _LAST = 0.05  # seconds before the end: inside a reel's last frame at any rate it renders at
 

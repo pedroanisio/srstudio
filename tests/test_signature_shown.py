@@ -1,4 +1,4 @@
-"""Both signature marks are seen for most of a new reel's running time, measured on the engine's frames."""
+"""Both signature marks are seen for most of a new reel's running time, measured on the engine's frames (ADR 0073)."""
 
 import json
 import stat

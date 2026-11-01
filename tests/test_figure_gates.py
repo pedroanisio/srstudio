@@ -1,4 +1,4 @@
-"""What a figure and a set look like on the frame, measured on the engine's frames.
+"""What a figure and a set look like on the frame, measured on the engine's frames (ADR 0073).
 
 The minimal frames carry the geometry measured on the reels the full-size review caught: the hamster of one-more-taste,
 the barista of headphones, Priya of book-a-table on her stool, the head of seat-belt-sign and the lawn of the-tongs.

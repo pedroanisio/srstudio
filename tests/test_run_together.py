@@ -1,4 +1,4 @@
-"""Burned captions that run across a sentence end, read from the scene against the reel's sentences."""
+"""Burned captions that run across a sentence end, read from the scene against the reel's sentences (ADR 0073)."""
 
 import json
 from pathlib import Path

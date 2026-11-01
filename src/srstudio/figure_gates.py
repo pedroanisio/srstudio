@@ -1,4 +1,4 @@
-"""What a figure and a set look like on the frame: the part of the full-size review that code can hold.
+"""What a figure and a set look like on the frame: the part of the full-size review that code can hold (ADR 0073).
 
 The build's record (:mod:`srstudio.figure_record`) says which nodes are a character, and the engine's frames say where
 they land (:mod:`srstudio.framegraph`). Three measures come out of that, each proved on the reels the review caught:
