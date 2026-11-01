@@ -83,6 +83,7 @@ from . import (  # noqa: F401  (registers builders)
     toon_chat,
     toon_critters,
     toon_dinner,
+    toon_drafts,
     toon_everyday,
     toon_flat,
     toon_head,
