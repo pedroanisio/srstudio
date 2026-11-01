@@ -139,13 +139,22 @@ does not confirm them.
 
 ## Consequences
 
-- Checked against the 131 published reels as a calibration (they are never refused), the check flags 12: six
+- Checked against the 131 published reels as a calibration (they are never refused), the 1.0.0 check flagged 12: six
   reels of the Toon Pip, who is drawn and voiced as another character than the Soft Pip, the Stick Gary of
   `the-viewing`, the Gloss Gus in `representative`, and one-off names (`brooke`, `theo`, `sam`, `remy`, `feld`) that
   have no sheet. Each is a clash or a name the bible does not yet hold, so a new reel that does the same is stopped.
+  Version 1.1.0, against the 163 published reels after batch C, flags 17: the six Pip reels, `representative`, two
+  reels whose manager or candidate is voiced differently from the bible (`low-balance`, `my-manager`), and eight with
+  a name or a role noun the bible lacks (`cancel-anytime`, `group-nine`, `off-and-on`, `still-bright`, `the-chirp`,
+  `the-noise`, `voice-note`, `text-me`). The Stick Gary and Feld stopped being findings when 1.1.0 gave them records.
+- Two characters of one world can share a name (the Collage Gary voiced by Chris, the Stick Gary voiced by Callum):
+  the check takes the one whose voice the reel has, else the one whose drawing it pins, else the first, and `gaps`
+  counts the reels of a shared name once for all of them. A character drawn by a prop (Keith, by `toon-horse`) has no
+  character part to compare, so the drawing check leaves it alone.
 - A character who is only heard is not drawn, so the drawing check does not apply to her: it flags a known character
   whose parts are not drawn only when the reel draws a character part that no name present owns. A rig that draws any
-  figure (the Stick style's) never explains a name's absence, so the Stick Gary stays flagged. The first run of the
+  figure (the Stick style's) never explains a name's absence, so a drawn speaker is still flagged when the rig could be
+  drawing anyone. The first run of the
   check flagged 13 and counted `market-rate`, whose manager is heard while the reel draws only the candidate; that
   is the same shape as the manager of `the-reference` and is no longer a finding. The voice check still applies to
   every voice heard. What code cannot see is a heard character drawn by a part the bible gives to someone else.

@@ -8,6 +8,29 @@ generated-by: Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code
 a fact corrected after a published reel disproved it, or a clash resolved by the operator, is a patch; a change to
 the files' schema is a major version.
 
+## 1.1.0
+
+Written from the published record after batch C (163 published reels). Every new record rests on a delivered reel.
+
+- Lewis (`lewis`): the Toon raccoon of `loaded-right`, voiced by Will. His name is credited ("Will (Lewis)") and the
+  speaker key of the project data, and no line says it aloud. Pair `fern` and `lewis` is a proposal: the reel's post
+  says Dad has a file on every boyfriend, and no line says in so many words that Lewis is Fern's.
+- Gary of the Stick reels (`stick-gary`): Callum's voice in `the-viewing` and `third-snore`, the extra occupant who
+  comes with the flat. He is a separate record from the Collage Gary (`gary`, Chris), as the Saga Gary is; the
+  bible's check tells the two apart by voice and drawing. The clashes about the name stay recorded and unresolved.
+- Keith (`keith`): the horse of `sorry-what`, named in a line and never heard. Drawn by `toon-horse`, which the
+  registry lists as a prop.
+- Across the road (`across`): the hedgehog of `sorry-what`, voiced by Jessica; the credit label and the speaker key
+  are the only name.
+- Feld (`feld`): Alice's voice on `nail-hole`, `therapy-session` and `book-a-table`; the Collage therapist
+  (`collage-feld`) in the first two, a restaurant on the phone in the third.
+- The role `mother` (Laura, `baby-monitor`).
+- Two proposed rules from arc4d3's standing instructions: a recurring figure's base rig stays as published and only
+  clothes and props change per reel (`base-rig-stays`); an unnamed figure with no line, recombined from existing
+  options of an approved style, is background (`unnamed-figure-is-background`). Neither is enforced by code yet.
+- `srstudio bible check` picks, among characters of one world that share a name, the one whose voice or drawing the
+  reel has, so two Garys in one world do not flag each other's reels.
+
 ## 1.0.1
 
 - The unnamed role is spelled `neighbor`, as the reels and the repository's EN-US default spell it, so a speaker keyed

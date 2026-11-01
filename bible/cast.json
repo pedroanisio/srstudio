@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.0.1",
+ "version": "1.1.0",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "characters": [
   {
@@ -12573,6 +12573,687 @@
      "proposal": "Fill this sheet from the first published reel that shows them."
     }
    ]
+  },
+  {
+   "slug": "lewis",
+   "name": "Lewis",
+   "world": "okayville",
+   "status": "canon",
+   "kind": "animal",
+   "reels": [
+    "loaded-right"
+   ],
+   "look": {
+    "palette": "A stout grey raccoon with a bandit's mask, white-rimmed ears and dark gloves: the Toon raccoon, version 2.",
+    "outfits": "open: loaded-right shows no outfit of Lewis's, and it is his only published reel.",
+    "never_changes": "open: one published reel, so nothing yet recurs.",
+    "drawing": [
+     {
+      "part": "toon-raccoon",
+      "version": 2
+     }
+    ]
+   },
+   "voice": {
+    "provider": "ElevenLabs",
+    "voice": "Will, an ElevenLabs premade voice, in loaded-right.",
+    "settings": "open: the reel records voice settings; this record has not cited them yet.",
+    "pace": "open: one published reel; no pace is established.",
+    "tics": "proposal: short, respectful answers to Dad: 'Yes, sir.'",
+    "uses": "Yes, sir. So they drain. My father.",
+    "never_uses": "proposal: Lewis never talks back to Dad."
+   },
+   "who": {
+    "age_range": "open: how old is Lewis? No reel states one.",
+    "job": "open: what does Lewis do? No reel names his work.",
+    "home": "open: where does Lewis live? loaded-right is set in a kitchen with a dishwasher and does not say whose.",
+    "normal_day": "open: nothing in loaded-right shows a day of Lewis's.",
+    "wants": "open: what does Lewis want? He answers Dad's questions; no line says what he wants.",
+    "flaw": "open: what is Lewis's flaw? No reel shows one.",
+    "habit": "open: no habit is shown in one reel.",
+    "pov": "proposal: if Dad asks, answer politely and say 'Yes, sir.'"
+   },
+   "comic": {
+    "role": "victim",
+    "under_pressure": "Answers Dad's questions politely: 'Yes, sir.'",
+    "always_gets_them": "Dad and his file: 'It has never once mattered what was in it.'"
+   },
+   "canon": [
+    {
+     "fact": "registered summary: the Toon raccoon (version 2) is a stout grey raccoon with a bandit's mask, white-rimmed ears and dark gloves, and loaded-right draws it",
+     "field": "look.palette",
+     "reel": "loaded-right",
+     "kind": "drawn",
+     "quote": "toon-raccoon"
+    },
+    {
+     "fact": "The reel records an ElevenLabs voice for Lewis.",
+     "field": "voice.provider",
+     "reel": "loaded-right",
+     "kind": "voice",
+     "quote": "Will"
+    },
+    {
+     "fact": "Lewis is voiced by Will.",
+     "field": "voice.voice",
+     "reel": "loaded-right",
+     "kind": "voice",
+     "quote": "Will"
+    },
+    {
+     "fact": "Lewis answers Dad's question with 'Yes, sir.'",
+     "field": "voice.uses",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Yes, sir."
+    },
+    {
+     "fact": "Lewis says why the mugs go on a slant.",
+     "field": "voice.uses",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "So they drain."
+    },
+    {
+     "fact": "Lewis answers 'Who taught you?' with 'My father.'",
+     "field": "voice.uses",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "My father."
+    },
+    {
+     "fact": "The post's credit gives Lewis as Will's character: his name is credited, and no line says it aloud.",
+     "field": "identity",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Will (Lewis)"
+    },
+    {
+     "fact": "Dad has a file on every boyfriend, and Lewis is questioned by Dad.",
+     "field": "comic.role",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Dad has a file on every boyfriend."
+    },
+    {
+     "fact": "Lewis says 'Yes, sir.' to Dad.",
+     "field": "comic.under_pressure",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Yes, sir."
+    },
+    {
+     "fact": "The file never mattered, said of Dad's file on every boyfriend.",
+     "field": "comic.always_gets_them",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "It has never once mattered what was in it."
+    }
+   ],
+   "never": [
+    "proposal: Lewis would never raise his voice to Dad: he answers 'Yes, sir.'",
+    "proposal: Lewis would never say who taught him anything but 'My father.'",
+    "proposal: Lewis would never touch Dad's dishwasher rack."
+   ],
+   "open": [
+    {
+     "question": "Lewis's name is only in the post's credit, 'Will (Lewis)'; no line of loaded-right says it.",
+     "proposal": "Keep it credited: the name is Lewis, as the speaker key of the project data and the credit give it; a later reel may say it aloud."
+    },
+    {
+     "question": "What is Lewis's job, age and home? One reel gives him none of them.",
+     "proposal": "Leave them open until a brief asks; new reels may add them."
+    }
+   ],
+   "since": "1.1.0"
+  },
+  {
+   "slug": "stick-gary",
+   "name": "Gary",
+   "world": "okayville",
+   "status": "canon",
+   "kind": "person",
+   "reels": [
+    "the-viewing",
+    "third-snore"
+   ],
+   "look": {
+    "palette": "open: neither reel's data says how Gary is drawn; the release pins the Stick style's rig and no part of his own.",
+    "outfits": "open: no outfit of Gary's is recorded in either reel.",
+    "never_changes": "Both reels pin stick-rig version 1 and no part of Gary's own.",
+    "drawing": [
+     {
+      "part": "stick-rig",
+      "version": 1
+     }
+    ]
+   },
+   "voice": {
+    "provider": "ElevenLabs",
+    "voice": "Callum, an ElevenLabs premade voice, in both reels.",
+    "settings": "open: the reel records voice settings; this record has not cited them yet.",
+    "pace": "open: two reels, a line each; no pace is established.",
+    "tics": "proposal: he speaks last, one dry line after the others have finished.",
+    "uses": "Forty-six. You both snore.",
+    "never_uses": "proposal: Gary never says more than one line."
+   },
+   "who": {
+    "age_range": "open: how old is Gary? No reel states one.",
+    "job": "He comes with the lease: 'That's Gary. He comes with the lease.'",
+    "home": "He came with the flat: 'He came with the flat.'",
+    "normal_day": "open: nothing in the reels shows a day of Gary's beyond the bed and the snoring.",
+    "wants": "open: what does Gary want? No reel says.",
+    "flaw": "open: what is Gary's flaw? No reel shows one.",
+    "habit": "He snores: on Noor's recording the third snore is Gary's, 'That's Gary.'",
+    "pov": "open: Gary has one dry line in each reel; no reel gives his point of view."
+   },
+   "comic": {
+    "role": "proposal: chaos: the extra occupant who comes with the flat ('He comes with the lease.').",
+    "under_pressure": "open: Gary is not shown under pressure in either reel.",
+    "always_gets_them": "open: what always gets Gary? Neither reel shows it."
+   },
+   "canon": [
+    {
+     "fact": "the-viewing pins stick-rig version 1 and no part of Gary's own",
+     "field": "look.never_changes",
+     "reel": "the-viewing",
+     "kind": "drawn",
+     "quote": "stick-rig"
+    },
+    {
+     "fact": "third-snore pins stick-rig version 1 and no part of Gary's own",
+     "field": "look.never_changes",
+     "reel": "third-snore",
+     "kind": "drawn",
+     "quote": "stick-rig"
+    },
+    {
+     "fact": "The reel records an ElevenLabs voice for Gary.",
+     "field": "voice.provider",
+     "reel": "the-viewing",
+     "kind": "voice",
+     "quote": "Callum"
+    },
+    {
+     "fact": "Gary is voiced by Callum.",
+     "field": "voice.voice",
+     "reel": "the-viewing",
+     "kind": "voice",
+     "quote": "Callum"
+    },
+    {
+     "fact": "Gary is voiced by Callum in third-snore too.",
+     "field": "voice.voice",
+     "reel": "third-snore",
+     "kind": "voice",
+     "quote": "Callum"
+    },
+    {
+     "fact": "Gary answers 'You're applicant forty-seven.' with 'Forty-six.'",
+     "field": "voice.uses",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "Forty-six."
+    },
+    {
+     "fact": "Gary tells Noor and Dev 'You both snore.'",
+     "field": "voice.uses",
+     "reel": "third-snore",
+     "kind": "line",
+     "quote": "You both snore."
+    },
+    {
+     "fact": "The agent says Gary comes with the lease.",
+     "field": "who.job",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "That's Gary. He comes with the lease."
+    },
+    {
+     "fact": "Dev says Gary came with the flat.",
+     "field": "who.home",
+     "reel": "third-snore",
+     "kind": "line",
+     "quote": "He came with the flat."
+    },
+    {
+     "fact": "The third snore on the recording is Gary's.",
+     "field": "who.habit",
+     "reel": "third-snore",
+     "kind": "line",
+     "quote": "That's Gary."
+    },
+    {
+     "fact": "The agent names Gary after the folding bed's thud: he comes with the lease.",
+     "field": "identity",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "That's Gary. He comes with the lease."
+    },
+    {
+     "fact": "Noor asks who Gary is and Dev says he came with the flat.",
+     "field": "identity",
+     "reel": "third-snore",
+     "kind": "line",
+     "quote": "Who's Gary?"
+    }
+   ],
+   "never": [
+    "proposal: Gary would never leave the flat: he comes with it.",
+    "proposal: Gary would never answer at length; he gets one dry line.",
+    "proposal: Gary would never be the one who pays the rent."
+   ],
+   "open": [
+    {
+     "question": "Gary of the Stick reels is not the Collage dad Gary (voiced by Chris) or the Saga enforcer; he has a record of his own.",
+     "proposal": "See clashes gary-viewing, dev-gary-viewing and gary-name: Gary of the Stick reels is Callum's flatmate-who-comes-with-the-flat."
+    },
+    {
+     "question": "Is Gary drawn? Neither reel pins a part of his own, and the release data records a thud and a voice.",
+     "proposal": "A person looks at the frames; this record claims no look until then."
+    }
+   ],
+   "since": "1.1.0"
+  },
+  {
+   "slug": "keith",
+   "name": "Keith",
+   "world": "okayville",
+   "status": "canon",
+   "kind": "animal",
+   "reels": [
+    "sorry-what"
+   ],
+   "look": {
+    "palette": "open: no reel line describes Keith's colour; the registered toon-horse is a horse's long face in a halter.",
+    "outfits": "open: sorry-what shows a halter at most; no outfit is established.",
+    "never_changes": "open: one published reel, so nothing yet recurs.",
+    "drawing": [
+     {
+      "part": "toon-horse",
+      "version": 1
+     }
+    ]
+   },
+   "voice": {
+    "provider": "open: Keith does not speak in sorry-what.",
+    "voice": "open: Keith does not speak in sorry-what.",
+    "settings": "open: Keith does not speak in sorry-what.",
+    "pace": "open: Keith does not speak in sorry-what.",
+    "tics": "open: Keith does not speak in sorry-what.",
+    "uses": "open: Keith does not speak in sorry-what.",
+    "never_uses": "open: Keith does not speak in sorry-what."
+   },
+   "who": {
+    "age_range": "open: how old is Keith? No reel states one.",
+    "job": "open: what does Keith do? He is lent for a season; no reel says more.",
+    "home": "He is lent for a season: 'He's yours till spring.'",
+    "normal_day": "open: nothing in sorry-what shows a day of Keith's.",
+    "wants": "open: what does Keith want? He does not speak.",
+    "flaw": "open: what is Keith's flaw? No reel shows one.",
+    "habit": "He stands on a car: 'I said your horse is on my car.'",
+    "pov": "open: Keith has no line and no point of view in sorry-what."
+   },
+   "comic": {
+    "role": "proposal: chaos: the horse a person is left with after two sorrys ('After that you are a person who has a horse.').",
+    "under_pressure": "open: Keith is not shown under pressure.",
+    "always_gets_them": "open: the horse is what gets Gil, not Keith; nothing is shown to get Keith."
+   },
+   "canon": [
+    {
+     "fact": "The neighbor gives the horse's name: Keith.",
+     "field": "identity",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "His name is Keith."
+    },
+    {
+     "fact": "The neighbor lends Keith to Gil until spring.",
+     "field": "who.home",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "He's yours till spring."
+    },
+    {
+     "fact": "Across the road says Keith is on a car.",
+     "field": "who.habit",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "I said your horse is on my car."
+    },
+    {
+     "fact": "The post says that after two sorrys you are a person who has a horse.",
+     "field": "identity",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "After that you are a person who has a horse."
+    }
+   ],
+   "never": [
+    "proposal: Keith would never speak.",
+    "proposal: Keith would never leave a car he has chosen.",
+    "proposal: Keith would never be anyone's horse for longer than the season."
+   ],
+   "open": [
+    {
+     "question": "Keith is drawn by toon-horse, which the registry lists as a prop, not as a character.",
+     "proposal": "Keep the prop as his approved drawing until the registry holds a Toon horse character."
+    }
+   ],
+   "since": "1.1.0"
+  },
+  {
+   "slug": "across",
+   "name": "Across the road",
+   "world": "okayville",
+   "status": "canon",
+   "kind": "animal",
+   "reels": [
+    "sorry-what"
+   ],
+   "look": {
+    "palette": "A small hedgehog with a crown of dark spines, beady eyes and a button nose: the Toon hedgehog, version 2.",
+    "outfits": "open: sorry-what shows no outfit of Across the road's.",
+    "never_changes": "open: one published reel, so nothing yet recurs.",
+    "drawing": [
+     {
+      "part": "toon-hedgehog",
+      "version": 2
+     }
+    ]
+   },
+   "voice": {
+    "provider": "ElevenLabs",
+    "voice": "Jessica, an ElevenLabs premade voice, in sorry-what.",
+    "settings": "open: the reel records voice settings; this record has not cited them yet.",
+    "pace": "open: one published reel; no pace is established.",
+    "tics": "open: one line; no tic is established.",
+    "uses": "I said your horse is on my car.",
+    "never_uses": "open: one line; nothing is established about words they never use."
+   },
+   "who": {
+    "age_range": "open: no reel states an age.",
+    "job": "open: no reel names a job.",
+    "home": "They live across the road, and their car is on the road: 'I said your horse is on my car.'",
+    "normal_day": "open: nothing in sorry-what shows a day.",
+    "wants": "open: the one line asks for the horse to be moved; no reel says more.",
+    "flaw": "open: no reel shows one.",
+    "habit": "open: one line; no habit is established.",
+    "pov": "open: one line in one reel; no point of view is established."
+   },
+   "comic": {
+    "role": "proposal: instigator: delivers the last complaint ('I said your horse is on my car.').",
+    "under_pressure": "open: not shown under pressure.",
+    "always_gets_them": "The horse on their car."
+   },
+   "canon": [
+    {
+     "fact": "registered summary: the Toon hedgehog (version 2) is a small hedgehog with a crown of dark spines, beady eyes and a button nose, and sorry-what draws it",
+     "field": "look.palette",
+     "reel": "sorry-what",
+     "kind": "drawn",
+     "quote": "toon-hedgehog"
+    },
+    {
+     "fact": "The reel records an ElevenLabs voice for Across the road.",
+     "field": "voice.provider",
+     "reel": "sorry-what",
+     "kind": "voice",
+     "quote": "Jessica"
+    },
+    {
+     "fact": "Across the road is voiced by Jessica.",
+     "field": "voice.voice",
+     "reel": "sorry-what",
+     "kind": "voice",
+     "quote": "Jessica"
+    },
+    {
+     "fact": "Across the road says the horse is on their car.",
+     "field": "voice.uses",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "I said your horse is on my car."
+    },
+    {
+     "fact": "The post credits Jessica as 'across the road'; the project data keys the speaker `across`.",
+     "field": "identity",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "Jessica (across the road)"
+    },
+    {
+     "fact": "Their car is where the horse now stands.",
+     "field": "who.home",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "I said your horse is on my car."
+    },
+    {
+     "fact": "Across the road delivers the last complaint.",
+     "field": "identity",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "I said your horse is on my car."
+    },
+    {
+     "fact": "The horse on their car.",
+     "field": "comic.always_gets_them",
+     "reel": "sorry-what",
+     "kind": "line",
+     "quote": "I said your horse is on my car."
+    }
+   ],
+   "never": [
+    "proposal: Across the road would never say the horse's name.",
+    "proposal: Across the road would never come to the door before the horse is on the car.",
+    "proposal: Across the road would never agree to look after the horse."
+   ],
+   "open": [
+    {
+     "question": "Across the road is a credit label and a speaker key, not a name any line gives.",
+     "proposal": "Keep it as the name until a reel gives a personal one."
+    }
+   ],
+   "since": "1.1.0"
+  },
+  {
+   "slug": "feld",
+   "name": "Feld",
+   "world": "okayville",
+   "status": "canon",
+   "kind": "person",
+   "reels": [
+    "nail-hole",
+    "therapy-session",
+    "book-a-table"
+   ],
+   "look": {
+    "palette": "A sixties therapist with a bun and glasses: the Collage Feld, version 1.",
+    "outfits": "open: no reel states an outfit.",
+    "never_changes": "nail-hole and therapy-session both pin collage-feld version 1; book-a-table pins no part of Feld's.",
+    "drawing": [
+     {
+      "part": "collage-feld",
+      "version": 1
+     }
+    ]
+   },
+   "voice": {
+    "provider": "ElevenLabs",
+    "voice": "Alice, an ElevenLabs premade voice, in all three reels.",
+    "settings": "open: the reel records voice settings; this record has not cited them yet.",
+    "pace": "open: no pace is established beyond the premade voice.",
+    "tics": "Aha.",
+    "uses": "Two hundred dollars. That's two hundred dollars.",
+    "never_uses": "proposal: Feld never says a price below two hundred dollars."
+   },
+   "who": {
+    "age_range": "open: the registered Feld is drawn as a sixties therapist, but no reel line states an age.",
+    "job": "The one who bills: a therapist ('And how does that make you feel?'), a landlord reading a listing ('New listing. Charming. Original features.') and a restaurant answering a phone ('Hello, Nonna's.').",
+    "home": "open: where does Feld live? No reel says.",
+    "normal_day": "open: nothing shows a day of Feld's.",
+    "wants": "Two hundred dollars: 'Two hundred dollars.' in nail-hole and 'That's two hundred dollars.' in therapy-session.",
+    "flaw": "open: what is Feld's flaw? Billing is the running joke, but no reel names a flaw.",
+    "habit": "Adds to the bill: 'Plus paint. Plus filler. Plus my time.'",
+    "pov": "open: Feld is never given a point of view; the reels show the bill."
+   },
+   "comic": {
+    "role": "proposal: straight: the one who bills ('That's two hundred dollars.').",
+    "under_pressure": "Feld stays on the price: 'How much exposure?'",
+    "always_gets_them": "open: what always gets Feld? Nothing in three reels does."
+   },
+   "canon": [
+    {
+     "fact": "registered summary: Dr. Feld is a sixties therapist with a bun and glasses, and therapy-session draws collage-feld",
+     "field": "look.palette",
+     "reel": "therapy-session",
+     "kind": "drawn",
+     "quote": "collage-feld"
+    },
+    {
+     "fact": "nail-hole draws collage-feld version 1 too",
+     "field": "look.never_changes",
+     "reel": "nail-hole",
+     "kind": "drawn",
+     "quote": "collage-feld"
+    },
+    {
+     "fact": "The reel records an ElevenLabs voice for Feld.",
+     "field": "voice.provider",
+     "reel": "nail-hole",
+     "kind": "voice",
+     "quote": "Alice"
+    },
+    {
+     "fact": "Feld is voiced by Alice in nail-hole.",
+     "field": "voice.voice",
+     "reel": "nail-hole",
+     "kind": "voice",
+     "quote": "Alice"
+    },
+    {
+     "fact": "Feld is voiced by Alice in therapy-session.",
+     "field": "voice.voice",
+     "reel": "therapy-session",
+     "kind": "voice",
+     "quote": "Alice"
+    },
+    {
+     "fact": "Alice also voices Feld in book-a-table.",
+     "field": "voice.voice",
+     "reel": "book-a-table",
+     "kind": "voice",
+     "quote": "Alice"
+    },
+    {
+     "fact": "Feld opens nail-hole with 'Aha.'",
+     "field": "voice.tics",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "Aha."
+    },
+    {
+     "fact": "Feld names the price in nail-hole.",
+     "field": "voice.uses",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "Two hundred dollars."
+    },
+    {
+     "fact": "Feld names the same price in therapy-session.",
+     "field": "voice.uses",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "That's two hundred dollars."
+    },
+    {
+     "fact": "Feld is the therapist of therapy-session.",
+     "field": "who.job",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "And how does that make you feel?"
+    },
+    {
+     "fact": "Feld reads a rental listing in nail-hole.",
+     "field": "who.job",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "New listing. Charming. Original features."
+    },
+    {
+     "fact": "Feld answers the restaurant's phone in book-a-table.",
+     "field": "who.job",
+     "reel": "book-a-table",
+     "kind": "line",
+     "quote": "Hello, Nonna's."
+    },
+    {
+     "fact": "Feld asks for two hundred dollars in nail-hole.",
+     "field": "who.wants",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "Two hundred dollars."
+    },
+    {
+     "fact": "Feld asks for two hundred dollars in therapy-session.",
+     "field": "who.wants",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "That's two hundred dollars."
+    },
+    {
+     "fact": "Feld adds to the bill.",
+     "field": "who.habit",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "Plus paint. Plus filler. Plus my time."
+    },
+    {
+     "fact": "Feld names the price of the session.",
+     "field": "identity",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "That's two hundred dollars."
+    },
+    {
+     "fact": "Feld answers an offer of exposure with a price question.",
+     "field": "comic.under_pressure",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "How much exposure?"
+    },
+    {
+     "fact": "The post names Feld and the session's price.",
+     "field": "identity",
+     "reel": "therapy-session",
+     "kind": "line",
+     "quote": "Feld's session is two hundred dollars."
+    },
+    {
+     "fact": "The post's credit gives Feld as Alice's character in nail-hole.",
+     "field": "identity",
+     "reel": "nail-hole",
+     "kind": "line",
+     "quote": "Alice (Feld)"
+    }
+   ],
+   "never": [
+    "proposal: Feld would never give a price that is not two hundred dollars.",
+    "proposal: Feld would never say how a client should feel; Feld asks.",
+    "proposal: Feld would never leave a session without the next one booked: 'Same time next week.'"
+   ],
+   "open": [
+    {
+     "question": "Feld bills as a therapist, a landlord and a restaurant on three reels; book-a-table draws no Feld part.",
+     "proposal": "Treat Feld as the one who bills, whose job changes per reel; in book-a-table Feld is a voice on the phone."
+    },
+    {
+     "question": "Feld is credited 'the restaurant' in book-a-table and 'Feld' in nail-hole and therapy-session.",
+     "proposal": "Keep the name Feld: it is the speaker key of all three projects."
+    }
+   ],
+   "since": "1.1.0"
   }
  ],
  "roles": [
@@ -12605,6 +13286,7 @@
   "menu",
   "meter",
   "mom",
+  "mother",
   "narrator",
   "neighbor",
   "phone",
@@ -14643,6 +15325,18 @@
      "quote": "Hope is now a premium feature."
     }
    ]
+  },
+  {
+   "id": "base-rig-stays",
+   "status": "proposal",
+   "rule": "proposal: a recurring figure's base rig stays as published, and only clothes and props change per reel. This is arc4d3's standing rule; code checks the drawn part a reel pins, not the clothes.",
+   "cites": []
+  },
+  {
+   "id": "unnamed-figure-is-background",
+   "status": "proposal",
+   "rule": "proposal: an unnamed figure with no line, recombined from existing options of an approved style, is background: it needs no sheet and no cast line. This is arc4d3's standing rule.",
+   "cites": []
   }
  ],
  "clashes": [

@@ -1,6 +1,6 @@
 {
  "schema": "1.0.0",
- "version": "1.0.1",
+ "version": "1.1.0",
  "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
  "relationships": [
   {
@@ -3219,6 +3219,42 @@
     "gloss-terms",
     "gloss-fewer-meetings",
     "gloss-notifications"
+   ]
+  },
+  {
+   "a": "fern",
+   "b": "lewis",
+   "relation": "proposal: Lewis is Fern's boyfriend; her Dad questions him.",
+   "how_they_know": "proposal: through Dad's questioning in a kitchen: Dad has a file on every boyfriend and Lewis answers it.",
+   "dynamic": "proposal: Lewis answers Dad; Fern steps in to say 'Dad.' and what Dad said about the last visit.",
+   "tension": "proposal: Dad's file and the dishwasher: how it is loaded and who taught him.",
+   "meet": "proposal: Dad's kitchen and its dishwasher (loaded-right).",
+   "history": [
+    {
+     "fact": "Dad has a file on every boyfriend: the post sets the reel up.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Dad has a file on every boyfriend."
+    },
+    {
+     "fact": "Fern says 'Dad.' when Dad has said the last one is gone too.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Dad."
+    },
+    {
+     "fact": "Fern reminds Dad what he said about the father Lewis named.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "You said he had dead eyes."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "loaded-right"
    ]
   }
  ]
