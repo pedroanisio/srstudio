@@ -7,7 +7,7 @@ of ``sp-hook_motion``). :func:`dress` draws the table, the glass and the jug.
 
 from __future__ import annotations
 
-from srstudio import collage, collage_everyday, collage_group, collage_odds, foley
+from srstudio import collage, collage_everyday, collage_group, collage_odds, foley, signature
 from srstudio.collage_group import Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, solo, timed, voices_note
 from srstudio.sketch import Appearance, Line, Mouths, events
@@ -85,17 +85,18 @@ def casting(beats, end: float) -> CastDrawer:
 
 
 def dress(shot) -> None:
-    """Their table and glass; the white cloth on Omar's arm and, from its cue, the jug."""
+    """Their table and glass; from its cue, the jug in Omar's hands."""
     cv, front, app, beats = shot.cv, shot.front, shot.app, shot.beats
     if app.who == "omar":
-        cv.rect(front, 760.0, 1320.0, 170.0, 340.0, "#fffaf0", collage.INK, 4.0, radius=10.0)
         jug = moments(beats, "jug")[0]
-        if app.end > jug:
-            collage_odds.water_jug(cv, cv.group(front, cv.uid("g"), start=jug), 220.0, 1640.0, scale=1.1)
+        if app.end > jug:  # in front of his chest, his two hands on it
+            collage_odds.water_jug(cv, cv.group(front, cv.uid("g"), start=jug), 530.0, 1630.0, scale=0.9)
         return
     collage_everyday.tablecloth(cv, front, TABLE)
     collage_odds.wine_glass(cv, front, 440.0, 1790.0, full=0.45, colour=WATER, scale=0.72)
     collage_odds.wine_glass(cv, front, 640.0, 1790.0, full=0.45, colour=WATER, scale=0.72)
+    if any(app.start <= at < app.end for at, _ in events(beats, "zoom")):  # the zoom loses the shelf's code
+        signature.code(cv, front, 130.0, 1670.0, 10.0, color="#5a4a3a")
 
 
 def sounds(beats, end: float) -> list[Sound]:

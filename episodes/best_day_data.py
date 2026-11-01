@@ -8,6 +8,8 @@ shot lip-syncs. It opens on a held frame (arm a of ``sp-hook_motion``). :func:`d
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import collage, collage_group, collage_odds, collage_sets, foley
 from srstudio.collage_group import Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Sound, Staging, make_sketch, solo, timed, voices_note
@@ -53,7 +55,7 @@ BEATS, END = timed(
         (2.0, "deb", 0, "open", "flat", "down", "reveal:stop"),
         (2.4, "deb", 1, "open", "flat", "down"),
         (2.4, "brent", 2, "wide", "grin", "down", "reveal:room"),
-        (2.3, "brent", 3, "wide", "grin", "point", "reveal:note"),
+        (2.3, "brent", 3, "wide", "grin", "hold", "reveal:note"),
         (2.2, "deb", 4, "open", "flat", "down", "reveal:bath"),
         (2.4, "deb", "", "wide", "grin", "down", "zoom"),
         (1.6, "deb", 5, "wide", "grin", "down", "sting"),
@@ -84,7 +86,7 @@ def setting(beats, app: Appearance) -> str:
 
 def casting(beats, end: float) -> CastDrawer:
     """Her voice is over the picture, so nobody's lips move until the mirror; she is alone only in the mirror."""
-    room, bath, morning = (moments(beats, n)[0] for n in ("room", "bath", "morning"))
+    room, note, bath, morning = (moments(beats, n)[0] for n in ("room", "note", "bath", "morning"))
     gary = collage_group.pair(PAIR, (STILL, room), listening=("open", "smile", "down"))
     brent = collage_group.pair(TABLE, (room, bath), (morning, end), listening=("half", "smile", "down"))
 
@@ -92,6 +94,10 @@ def casting(beats, end: float) -> CastDrawer:
         silent: Mouths = {}
         if app.start >= bath and app.start < morning:
             return solo(cv, parent, app, silent)
+        if app.who == "brent" and app.start <= note < app.end:  # voiced beats keep the recording's arms: he holds it
+            app = replace(
+                app, poses=[{**p, "arms": "hold"} if app.start + p["start"] >= note else p for p in app.poses]
+            )
         return (gary if app.start < room else brent)(cv, parent, app, silent)
 
     return draw
@@ -103,12 +109,12 @@ def _leaf(cv, parent, place: Place) -> None:
 
 
 def dress(shot) -> None:
-    """The note on the table, and the leaf: hers from the mirror, his next morning; the bus goes by behind."""
+    """The note in his two hands, and the leaf: hers from the mirror, his next morning; the bus goes by behind."""
     cv, front, app, beats = shot.cv, shot.front, shot.app, shot.beats
     note, bath, morning = (moments(beats, n)[0] for n in ("note", "bath", "morning"))
     leaf = leafed(beats)
     if app.start <= note < app.end:
-        collage_sets.sign(cv, cv.group(front, cv.uid("g"), start=note), "555-0147", 350, 1480, 380, 110, size=52)
+        collage_sets.sign(cv, cv.group(front, cv.uid("g"), start=note), "555-0147", 640, 1536, 320, 104, size=48)
     if app.start >= bath and app.start < morning:
         collage_odds.spinach(cv, cv.group(front, cv.uid("g"), start=leaf), 540.0, MOUTH_Y, 104.0)
     if app.start >= morning:
