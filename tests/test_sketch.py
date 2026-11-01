@@ -505,3 +505,44 @@ def test_a_line_gain_is_in_db_at_zero_or_under_within_the_mix(gain):
     lines = (LINES[0], replace(LINES[1], gain=gain), LINES[2])
     with pytest.raises(sketch.SketchError, match="gain"):
         sketch.check(replace(SK, lines=lines))
+
+
+def test_placing_again_reads_the_recording_and_asks_no_voice(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    voiced = tmp_path / "voiced"
+    mouths, speech = (voiced / "mouths.json").read_bytes(), (voiced / "speech.json").read_bytes()
+    beats = (voiced / "beats.json").read_bytes()
+    placed = sketch.place_again(SK, tmp_path)
+    again = json.loads((voiced / "beats.json").read_text())["beats"]
+    assert [b["start"] for b in again] == pytest.approx([b["start"] for b in json.loads(beats)["beats"]], abs=2e-6)
+    assert [b.start for b in placed] == [b["start"] for b in again]
+    assert (voiced / "mouths.json").read_bytes() == mouths and (voiced / "speech.json").read_bytes() == speech
+
+
+def test_placing_again_carries_a_changed_cue_to_the_voiced_build(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    before = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    held = replace(SK, caption_min=2.5, tail=0.0)
+    assert held.caption_min == 2.5
+    sketch.place_again(held, tmp_path)
+    after = sketch.load_beats(tmp_path / "voiced" / "beats.json")[0]
+    assert any(b.start > a.start for a, b in zip(before, after, strict=True))
+
+
+def test_placing_again_refuses_a_recording_of_other_lines(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    fewer = replace(SK, lines=SK.lines[:2], beats=tuple(b for b in SK.beats if b.line in (None, 0, 1)))
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(fewer, tmp_path)
+
+
+def test_placing_again_refuses_a_recording_that_ends_before_the_beats(tmp_path):
+    sketch.record(SK, tmp_path, FakeClient(tmp_path), confirm=confirm_stub, conform_clip=copy_clip)
+    with pytest.raises(sketch.SketchError, match="record again"):
+        sketch.place_again(replace(SK, tail=9.0), tmp_path)
+
+
+@pytest.mark.parametrize("bad", [0, -0.5, "long", float("nan")])
+def test_a_caption_minimum_is_a_positive_number(bad):
+    with pytest.raises(sketch.SketchError, match="caption_min"):
+        sketch.check(replace(SK, caption_min=bad))
