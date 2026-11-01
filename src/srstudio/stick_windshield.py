@@ -56,6 +56,8 @@ __all__ = [
 
 BODY, BODY_LIGHT, BODY_SHADE = "#c46a4a", "#d98a68", "#9e5238"  # the car's paint
 FIELD_FAR = "#a9c48f"  # the far fields along the horizon
+TRACK = "#7a9a60"  # wheel tracks through a field
+GROUNDS = ("road", "field")  # what the rear window can show
 DASH_TOP = 1290  # the dashboard's top edge across the cabin: what is below it is hidden
 GLASS = "M 74 584 L 1006 584 L 1080 1462 L 0 1462 Z"  # the windshield, its frame drawn over its edge
 REAR_WINDOW = "M 150 712 Q 158 668 214 664 L 866 664 Q 922 668 930 712 L 958 902 L 122 902 Z"
@@ -133,9 +135,9 @@ def _recede(cv: Canvas, node, end: float, speed: float) -> None:
     cv.keys(node, "scaleY", keys, hold=False)
 
 
-def _road(cv: Canvas, parent, end: float, speed: float) -> None:
-    """What the rear window shows: the sky, the fields, the road narrowing to the horizon, and its centre line and
-    poles receding."""
+def _road(cv: Canvas, parent, end: float, speed: float, ground: str = "road") -> None:
+    """What the rear window shows: the sky, the fields, and on ``"road"`` the road narrowing to the horizon with its
+    centre line and poles receding; on ``"field"`` two wheel tracks through the grass and nothing else."""
     g = _group(cv, parent)
     g.add_mask(type="path", path=REAR_WINDOW)
     sky = paint(cv, Gradient("ws-rear-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 660, 0, HORIZON))
@@ -143,6 +145,10 @@ def _road(cv: Canvas, parent, end: float, speed: float) -> None:
     box(cv, g, 100, HORIZON, 880, 920 - HORIZON, FIELD)
     shape(cv, g, f"M 100 {HORIZON} L 980 {HORIZON} L 980 {HORIZON + 14} L 100 {HORIZON + 14} Z", FIELD_FAR)
     x, y = VANISH
+    if ground == "field":
+        for side in (-1, 1):
+            shape(cv, g, f"M {x} {y + 8} L {x + side * 60} 920", sw=14, stroke=TRACK)
+        return
     shape(cv, g, f"M {x - 3} {y} L {x + 3} {y} L {x + 300} 920 L {x - 300} 920 Z", ROAD, 3, stroke=cv.ink)
     lines = _group(cv, g, anchorX=x, anchorY=y, x=x, y=y)
     for k in DASHES:
@@ -166,14 +172,18 @@ def _seat_back(cv: Canvas, parent, cx: float) -> None:
 
 
 @register("location", "stick-windshield", tags=("car", "interior", "front", "two-shot", "rear-window", "road"))
-def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
+def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5, ground: str = "road") -> None:
     """The car from its hood, the back layer: the sky above the roof, the headliner with its mirror, the rear window
-    with the road receding behind the car (``speed`` dashes of its centre line a second; 0 for a parked car), the
-    rear seat and the two front seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw
-    :func:`dashboard` over them."""
+    with the road receding behind the car (``speed`` dashes of its centre line a second; 0 for a parked car), or, for
+    a ``ground`` of ``"field"``, a car stopped in the grass with its tracks behind it; the rear seat and the two front
+    seats at :data:`SEATS`. Pose a figure from :data:`FRONT` in each, then draw :func:`dashboard` over them."""
     _check_end(end, "windshield")
     if not (checks.number(speed) and speed >= 0):
         raise StickDataError(f"the road's speed must be a non-negative number of dashes a second, got {speed!r}")
+    if ground not in GROUNDS:
+        raise StickDataError(f"unknown ground {ground!r}; known: {', '.join(GROUNDS)}")
+    if ground == "field" and speed:
+        raise StickDataError(f"a car in a field is stopped, got speed {speed!r}")
     s = cv
     sky = paint(s, Gradient("ws-sky", ((0, SKY_TOP), (1, SKY_LOW)), 0, 0, 0, 600))
     box(s, parent, 0, 0, s.width, 600, sky)
@@ -184,7 +194,7 @@ def windshield(cv: Canvas, parent, end: float, *, speed: float = 2.5) -> None:
     roof = paint(s, Gradient("ws-headliner", ((0, ROOF_LIGHT), (1, ROOF_SHADE)), 0, 584, 0, 720))
     box(s, parent, 0, 584, s.width, 136, roof)
     shape(s, parent, REAR_WINDOW, s.clear, 7, stroke=s.ink)
-    _road(s, parent, end, speed)
+    _road(s, parent, end, speed, ground)
     shape(s, parent, REAR_WINDOW, sw=7, stroke=s.ink)
     rear = paint(s, Gradient("ws-rear-seat", ((0, SEAT_LIGHT), (1, SEAT_SHADE)), 0, 896, 0, 1000))
     shape(s, parent, "M 104 1000 L 112 914 Q 120 896 160 896 L 920 896 Q 960 896 968 914 L 976 1000 Z", rear, 4)

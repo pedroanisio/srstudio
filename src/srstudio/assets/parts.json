@@ -10893,6 +10893,40 @@
           "rig": null
         }
       ]
+    },
+    "stick-rough-road": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick view from the driver's seat, street, gravel or grass running at the camera, up to a wooden fence. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "88cc74082ec5a0132061e2cbebc3adc891c0cfb18aa5fa830b09487668d426d7",
+          "rig": null
+        }
+      ]
+    },
+    "stick-nav-insert": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick phone in its mount filling the frame: an invented map and one instruction, no real app copied. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f2bcfd89f42b1eebc5d7c6d290b98f3fb556064c01d4ebc1b64b86ef16214f25",
+          "rig": null
+        }
+      ]
     }
   }
 }
