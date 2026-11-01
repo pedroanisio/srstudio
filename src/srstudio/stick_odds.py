@@ -77,6 +77,7 @@ SKIN, HAIRS, COATS = (
     ("#23252b", "#6b4a2f", "#a9a39a", "#c98f3f"),
     ("#7f9fc4", "#c0453b", "#6b5a48", "#55704f"),
 )
+TROUSERS = "#34343e"
 HORIZON = 620  # the aisle's vanishing point on the frame's height
 AISLE_ROWS = 12
 RECEDE = 0.24  # how fast the rows shrink: each is 1 / (1 + RECEDE * depth) the near one
@@ -341,9 +342,26 @@ def aisle(cv: Canvas, parent):
     return g
 
 
-def _passenger(cv: Canvas, parent, x: float, y: float, depth: float, hair: str, coat: str, turn: float, end: float):
+def _passenger(
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    depth: float,
+    hair: str,
+    coat: str,
+    turn: float,
+    end: float,
+    *,
+    legs: bool = False,
+):
     r = 120 * depth
     wide, base, top = 190 * depth, y + 420 * depth, y + 100 * depth
+    if legs:
+        for side in (-1, 1):
+            leg = x + side * wide * 0.5
+            box(cv, parent, leg - 44 * depth, base - 20 * depth, 88 * depth, 210 * depth, TROUSERS, 4)
+            box(cv, parent, leg - 54 * depth, base + 170 * depth, 108 * depth, 40 * depth, cv.ink, r=14 * depth)
     shape(cv, parent, f"M {x - wide} {base} Q {x - wide + 10 * depth} {top} {x} {top} "
                       f"Q {x + wide - 10 * depth} {top} {x + wide} {base} Z", coat, 4, stroke=cv.ink)  # fmt: skip
     oval(cv, parent, x - r, y - r, 2 * r, 2 * r, SKIN, sw=4)
@@ -359,9 +377,10 @@ def _passenger(cv: Canvas, parent, x: float, y: float, depth: float, hair: str, 
 
 
 @register("prop", "stick-queue", tags=("airport", "plane", "cabin", "crowd", "people"))
-def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS):
+def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS, legs: bool = False):
     """A line of ``rows`` pairs of people down :func:`aisle`, backs to the viewer, who all turn to face them at
-    ``turn`` seconds. Fixed hair and coats, so a shot redraws the same."""
+    ``turn`` seconds, with ``legs`` under their coats for a shot that shows the floor. Fixed hair and coats, so a shot
+    redraws the same."""
     if rows not in range(1, AISLE_ROWS + 1):
         raise StickDataError(f"the aisle holds 1 to {AISLE_ROWS} rows, got {rows!r}")
     if not 0 <= turn <= end:
@@ -373,7 +392,8 @@ def queue(cv: Canvas, parent, end: float, *, turn: float, rows: int = AISLE_ROWS
             n = 2 * row + (side > 0)
             x = 540 + side * (112 - 14 * (row % 3)) * depth
             y = HORIZON + (760 + 50 * (n % 3)) * depth
-            _passenger(cv, g, x, y, depth, HAIRS[n % len(HAIRS)], COATS[(n // 2) % len(COATS)], turn, end)
+            hair, coat = HAIRS[n % len(HAIRS)], COATS[(n // 2) % len(COATS)]
+            _passenger(cv, g, x, y, depth, hair, coat, turn, end, legs=legs)
     return g
 
 
