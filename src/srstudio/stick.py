@@ -36,7 +36,7 @@ import math
 import random
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -678,6 +678,7 @@ def word_cues(
     tail: bool = False,
     balance: bool = False,
     sentences: bool = False,
+    hold: bool = False,
 ) -> list[Line]:
     """One cue per spoken word of ``takes`` (each with ``start``, ``end`` and ``words`` relative to the take), on
     the episode clock: a cue shows from its start until the next one starts; a take's last cue lingers up to
@@ -694,7 +695,12 @@ def word_cues(
     ``balance``, each take's words are split where the shortest cue lasts longest instead of greedily from the
     left, every cue within ``max_width`` (a single wider word still gets its own), the fewest cues on a tie. With
     ``sentences`` as well, no cue runs across a sentence end: the punctuation that would mark it is dropped from the
-    cue, so with the sound off "Bro. Four hours" would read "Bro Four hours"."""
+    cue, so with the sound off "Bro. Four hours" would read "Bro Four hours". A sentence end can leave a cue too short
+    to read: with ``hold``, a cue still shorter than ``min_seconds`` runs on, past its take into the silence after it
+    and pushing back the cue that follows when there is none, so the words after it show a little after they are
+    spoken."""
+    if hold and not min_seconds:
+        raise StickDataError("hold keeps cues up for min_seconds: give min_seconds")
     if sentences and not balance:
         raise StickDataError("sentences is a limit on balance's split: give balance")
     if borrow and not min_seconds:
@@ -765,7 +771,19 @@ def word_cues(
                     after[0] += shift
         for (start, end), group in zip(spans, groups, strict=True):
             cues.append(Line(round(start, 3), round(end, 3), _spoken(group), size))
-    return cues
+    return _held(cues, min_seconds) if hold else cues
+
+
+def _held(cues: Sequence[Line], least: float) -> list[Line]:
+    """``cues``, each up for at least ``least`` seconds, the later ones moved back by whatever that takes. One pass, in
+    order: each cue only moves the one after it."""
+    held: list[Line] = []
+    start = -math.inf  # the earliest the next cue may start
+    for cue in cues:
+        at = max(cue.start, start)
+        start = max(round(at + least, 3), cue.end)
+        held.append(replace(cue, start=at, end=start))
+    return held
 
 
 def _balanced(
