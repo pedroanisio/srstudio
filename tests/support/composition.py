@@ -45,3 +45,28 @@ def paper(*, animated=False):
 
 def window(spec):
     return replace(spec, layers=(replace(spec.layers[0], temporal=c.TemporalPolicy(0.5, 1.5, 0.25, 1.5)),))
+
+
+def plate_plan(**changes):
+    binding = c.AssetBinding(
+        'host',
+        'rafa',
+        1,
+        'plates',
+        c.Bounds((-1, -1, -1), (1, 1, 1)),
+        plates=(c.PlateWork('a' * 64, 64, 64, 48, 4, 1, 1024**2),),
+    )
+    spec = c.ScenePlan(
+        c.StylePin('toon', c.style_revision('toon')),
+        64,
+        64,
+        c.FrameRate(),
+        1,
+        7,
+        'meter',
+        c.CameraSpec('perspective', (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
+        c.LightRig('lit', (c.LightSpec('ambient', 'ambient', '#FFFFFF', 1),)),
+        (c.LayerSpec('host', 'host', 1, c.TemporalPolicy(0, 1)),),
+        c.RenderBudget(),
+    )
+    return c.preflight(replace(spec, **changes), (binding,))

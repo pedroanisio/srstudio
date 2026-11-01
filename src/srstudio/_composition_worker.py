@@ -17,13 +17,21 @@ def dispatch(raw: bytes) -> dict:
 
     request = wire.loads(raw)
     operation = request.get('operation')
+    if operation == 'prepare-plate':
+        from srstudio import _composition_plate_wire as plate_wire
+        from srstudio._composition_plate import prepare_plate
+
+        wire.fields(request, {'schema', 'operation', 'plan', 'layer', 'source'})
+        plan = wire.record(c.ValidatedScenePlan, request['plan'])
+        plate_asset = prepare_plate(plan, request['layer'], plate_wire.source_decode(request['source']))
+        return {'schema': SCHEMA, 'status': 'ok', 'prepared': plate_wire.prepared_encode(plate_asset)}
     if operation == 'prepare':
         wire.fields(request, {'schema', 'operation', 'binding', 'xml'})
         binding = wire.record(c.AssetBinding, request['binding'])
         asset = prepare_vector(binding, wire.xml_decode(request['xml']))
         return {'schema': SCHEMA, 'status': 'ok', 'prepared': wire.prepared_metadata(asset)}
     if operation != 'compile':
-        raise wire.fail(operation, 'prepare or compile')
+        raise wire.fail(operation, 'prepare, prepare-plate or compile')
     wire.fields(request, {'schema', 'operation', 'plan', 'assets'})
     plan = wire.record(c.ValidatedScenePlan, request['plan'])
     if type(request['assets']) is not list or not 1 <= len(request['assets']) <= c.MAX_LAYERS:

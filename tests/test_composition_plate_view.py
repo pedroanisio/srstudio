@@ -7,31 +7,7 @@ import pytest
 
 from srstudio import composition as c
 from srstudio import plates, proxy
-
-
-def manifest(**changes):
-    binding = c.AssetBinding(
-        'host',
-        'rafa',
-        1,
-        'plates',
-        c.Bounds((-1, -1, -1), (1, 1, 1)),
-        plates=(c.PlateWork('a' * 64, 64, 64, 48, 4, 1, 1024**2),),
-    )
-    spec = c.ScenePlan(
-        c.StylePin('toon', c.style_revision('toon')),
-        64,
-        64,
-        c.FrameRate(),
-        1,
-        7,
-        'meter',
-        c.CameraSpec('perspective', (0, 0, 10), (0, 0, 0), (32, 32), 100, 10),
-        c.LightRig('lit', (c.LightSpec('ambient', 'ambient', '#FFFFFF', 1),)),
-        (c.LayerSpec('host', 'host', 1, c.TemporalPolicy(0, 1)),),
-        c.RenderBudget(),
-    )
-    return c.preflight(replace(spec, **changes), (binding,))
+from support.composition import plate_plan as manifest
 
 
 def engine_project(view, point):
