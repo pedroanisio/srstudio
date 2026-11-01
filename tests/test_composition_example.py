@@ -29,3 +29,8 @@ def test_real_prepared_papers_fit_the_declared_source_bounds_and_rebuild_identic
         for x, y in zip(numbers[::2], numbers[1::2], strict=True):
             assert binding.bounds.minimum[0] <= x - stroke <= x + stroke <= binding.bounds.maximum[0]
             assert binding.bounds.minimum[1] <= y - stroke <= y + stroke <= binding.bounds.maximum[1]
+    compiled = module.build_scene()
+    assert compiled == module.build_scene()
+    assert compiled.plan_digest == plan.digest
+    assert compiled.nodes <= plan.cost.nodes
+    assert ET.fromstring(compiled.xml).find('.//shape') is not None

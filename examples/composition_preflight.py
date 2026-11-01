@@ -1,9 +1,10 @@
-"""Inspect a real approved drawing's declared composition manifest without rendering."""
+"""Inspect, verify and optionally emit a real approved drawing without rendering."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from pathlib import Path
 
 from sr_core.scene import Scene
 
@@ -13,6 +14,7 @@ from srstudio.composition import (
     AssetBinding,
     Bounds,
     CameraSpec,
+    CompiledScene,
     FrameRate,
     LayerSpec,
     LightRig,
@@ -22,7 +24,10 @@ from srstudio.composition import (
     TemporalPolicy,
     Transform,
     ValidatedScenePlan,
+    compile_scene,
+    emit_scene,
     preflight,
+    prepare_vector,
     style_revision,
 )
 
@@ -73,6 +78,31 @@ def build_manifest() -> tuple[ValidatedScenePlan, bytes]:
     return preflight(spec, (asset,)), xml
 
 
+def build_scene() -> CompiledScene:
+    plan, xml = build_manifest()
+    return compile_scene(plan, (prepare_vector(plan.bindings[0], xml),))
+
+
 if __name__ == '__main__':
-    plan, _ = build_manifest()
-    print(json.dumps({'digest': plan.digest, 'cost': asdict(plan.cost)}, indent=2))
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, help='Atomically write a self-contained scene XML file.')
+    parser.add_argument('--overwrite', action='store_true', help='Replace an existing output atomically.')
+    args = parser.parse_args()
+    plan, xml = build_manifest()
+    assets = (prepare_vector(plan.bindings[0], xml),)
+    compiled = (
+        emit_scene(plan, assets, args.output, overwrite=args.overwrite) if args.output else compile_scene(plan, assets)
+    )
+    print(
+        json.dumps(
+            {
+                'manifest_digest': plan.digest,
+                'scene_digest': compiled.digest,
+                'actual_nodes': compiled.nodes,
+                'declared_cost': asdict(plan.cost),
+            },
+            indent=2,
+        )
+    )

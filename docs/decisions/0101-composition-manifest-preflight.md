@@ -48,3 +48,21 @@ The implementation and its current boundary are described in the
 [composition guide](../composition-preflight.md). This decision implements
 manifest validation and preserves the complete emission and animated-proof
 requirements in [DRAWING.md](../../DRAWING.md).
+
+## Verified vector emission extension
+
+Host-prepared UTF-8 XML now has a separate verification boundary. Supported
+closed vector documents carry content hashes, measured node counts and analytic
+animation envelopes, including interior rotation extrema. Compilation rechecks
+those payloads against the immutable manifest, namespaces IDs and paint references,
+projects parent transforms once, and maps source clocks through the engine's
+group clock. One self-contained output file permits atomic replacement.
+
+This avoids publishing a document before its referenced resources exist.
+External resources, unbounded expressions, unsupported geometry and renderer
+backends are refused instead of being copied without verified behavior. Source
+provenance remains the host's responsibility; XML geometry is not proof of an
+approved drawing's authorship. Expanded copies consume an explicit memory
+allowance, and cooperative timeout checks prevent late publication. Neither is
+a claim of preemptive process-memory enforcement. Plate/proxy emission and hard
+runtime enforcement remain open under SDK-P2-07.

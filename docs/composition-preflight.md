@@ -2,7 +2,7 @@
 generated-by: OpenAI Codex (GPT-6)
 ---
 
-# Inspect a composition manifest
+# Validate and emit a composition
 
 [Library README](../README.md) · [Drawing architecture](../DRAWING.md)
 
@@ -12,10 +12,11 @@ contacts, supported passes and conservative work bounds. It returns immutable
 records and a reproducible digest without invoking drawing builders, reading a
 render cache or creating files.
 
-This is the manifest-validation stage of SDK-P2-07. Asset preparation, payload
-verification, runtime budget enforcement and atomic scene emission remain part
-of that finding. A valid manifest is not a rendered scene, approval of a new
-style, or proof that a host's declared asset bounds match its prepared drawing.
+`prepare_vector` verifies actual vector XML against a binding. `compile_scene`
+combines verified payloads into a self-contained scene, and `emit_scene` publishes
+that scene atomically. Plate/proxy emission and hard process-memory enforcement
+remain open under SDK-P2-07. A valid manifest alone is not a rendered scene,
+approval of a new style, or proof of a host's declared geometry.
 
 ## Start with a real drawing
 
@@ -23,6 +24,7 @@ Run the [pinned paper example](../examples/composition_preflight.py):
 
 ```sh
 python examples/composition_preflight.py
+python examples/composition_preflight.py --output generated/papers.scene.xml
 ```
 
 The example prepares approved `papers` version 1 using the existing SDK, checks
@@ -31,6 +33,10 @@ memory allowance. Its test checks the real drawing's control points and strokes
 against those bounds. The drawing origin is a coordinate anchor; it does not
 claim a hand grip or collision surface. One source drawing unit becomes 0.001
 meters through the layer's explicit scale.
+
+The optional output command verifies the payload and emits a scene. An existing
+destination requires `--overwrite`; replacement publishes the complete file in
+one operation. Rendering remains a separate engine operation.
 
 ## Parse and inspect
 
@@ -44,6 +50,58 @@ request = parse_scene(json.dumps(asdict(spec)))
 checked = preflight(request, bindings)
 print(checked.digest, checked.cost.frames, checked.cost.engine_invocations)
 ```
+
+## Verify and emit actual vectors
+
+The host supplies UTF-8 scene bytes for each used binding. Preparation verifies
+schema validity, closed resources, actual node count, declared memory allowance,
+and a conservative envelope for every supported animation pose. The payload hash
+binds those checks to the exact bytes. Compilation reruns preflight and payload
+validation, so editing a frozen record through `dataclasses.replace` cannot reuse
+stale costs, approvals or geometry evidence.
+
+```python
+from pathlib import Path
+from srstudio.composition import compile_scene, emit_scene, prepare_vector
+
+# checked is the preflight result; source_bytes is the host's id-to-bytes map.
+prepared = tuple(prepare_vector(b, source_bytes[b.id]) for b in checked.bindings)
+compiled = compile_scene(checked, prepared)  # immutable XML, digest, actual nodes
+emit_scene(checked, prepared, Path("generated/scene.xml"))
+```
+
+The vector adapter supports nested groups, paths, rectangles, rounded rectangles,
+ellipses, local linear/radial gradients, and numeric transform/opacity or boolean
+visibility keys. Scalar lengths are explicit source units. Keys use local or
+composition seconds, held endpoint extrapolation, and non-overshooting linear,
+hold, sine, quadratic, cubic, quartic, quintic, exponential or circular easing.
+Animated rotations use a conservative full-circle envelope; correlated tracks
+can therefore need more generous declared bounds than a sampled screenshot.
+
+External assets, text/fonts, includes, instances, expressions, deformation,
+effects, overshooting curves and unsupported shape kinds fail explicitly. The
+adapter does not execute a builder or render while discovering those features.
+The host remains responsible for payload provenance and authored anchor meaning:
+validating XML cannot prove that it was made by a particular approved builder.
+The worked example obtains its drawing directly from `parts.drawing('papers', 1)`.
+
+Each placement scopes its IDs and paint references. A parent transform and the
+camera are applied once; the emitted layer clock maps to source seconds without
+moving source keys. Screen-space information retains its pixel coordinates.
+The output is one self-contained file, so atomic installation cannot expose an
+XML file whose companion resources are still being written. New files and
+directories are private. An existing destination is preserved unless explicit
+`overwrite=True` requests atomic replacement; validation and write failures
+preserve the old destination.
+
+Payloads and expanded output have an eight MiB cap, finite node limits and a
+64-element nesting limit. Repeated placements include their copy/serialization
+allowance before expanded trees are allocated. Compilation checks elapsed time
+between bounded operations and refuses publication after its deadline. This is
+cooperative cancellation, not a preemptive process deadline. Memory accounting
+is a conservative planning allowance, not a hard RSS limit. The compiler makes
+no engine calls; rendering its output independently does not inherit these
+budgets. Plate/proxy adapters and hard runtime enforcement remain required work.
 
 Scene JSON uses schema `srstudio.scene-plan/1.0.0`. Unknown fields, duplicate JSON
 keys, booleans in numeric fields, nonfinite numbers and excessive input graphs

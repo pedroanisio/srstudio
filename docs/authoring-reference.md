@@ -22,6 +22,7 @@ a similar character or pass contract JSON directly to a builder.
 | Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
 | Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
 | Measure authoring cost | [Authoring benchmark](authoring-benchmark.md) | Separate cold/warm phases, compare output hashes, and bound plate renderer invocations. |
+| Compile a bounded composition | [Composition preflight and emission](composition-preflight.md) | Validate the manifest, verify actual vector payloads, preserve source clocks, and atomically publish supported scenes. |
 
 ## Repairing authoring input
 

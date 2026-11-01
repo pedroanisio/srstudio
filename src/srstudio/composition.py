@@ -1,13 +1,16 @@
-"""Strict scene-wide composition contracts and immutable preflight results.
+"""Strict composition contracts, immutable preflight and verified vector emission.
 
 Scene input is separate from host-owned asset bindings. Preflight validates the
 declared manifest without executing builders, inspecting a cache or rendering.
 Its costs are conservative declared bounds, not measured renderer RSS or timing.
+Vector preparation checks actual payloads; emission compiles supported features
+into a self-contained scene and atomically publishes it without rendering.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 from .errors import SrstudioError
@@ -262,3 +265,47 @@ def preflight(spec: ScenePlan, bindings: tuple[AssetBinding, ...]) -> ValidatedS
     from ._composition_preflight import preflight as validate
 
     return validate(spec, bindings)
+
+
+@dataclass(frozen=True)
+class PreparedVector:
+    """Verified immutable XML and measured envelope; the host owns drawing provenance."""
+
+    binding: AssetBinding
+    xml: bytes
+    digest: str
+    bounds: Bounds
+    nodes: int
+
+
+@dataclass(frozen=True)
+class CompiledScene:
+    """A self-contained scene, its content identity and the manifest it implements."""
+
+    xml: bytes
+    digest: str
+    plan_digest: str
+    nodes: int
+
+
+def prepare_vector(binding: AssetBinding, xml: bytes) -> PreparedVector:
+    """Check a host-prepared vector document's actual geometry, resources and declared work bounds."""
+    from ._composition_vector import prepare_vector as prepare
+
+    return prepare(binding, xml)
+
+
+def compile_scene(plan: ValidatedScenePlan, assets: tuple[PreparedVector, ...]) -> CompiledScene:
+    """Revalidate manifest and payloads, then compile supported layers without filesystem mutations."""
+    from ._composition_emit import compile_scene as compile_
+
+    return compile_(plan, assets)
+
+
+def emit_scene(
+    plan: ValidatedScenePlan, assets: tuple[PreparedVector, ...], output: Path, *, overwrite: bool = False
+) -> CompiledScene:
+    """Compile in memory and publish one complete private scene file with an atomic installation."""
+    from ._composition_emit import emit_scene as emit
+
+    return emit(plan, assets, output, overwrite=overwrite)

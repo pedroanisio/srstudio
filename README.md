@@ -8,8 +8,8 @@ For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md
 link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
 The [authoring benchmark](docs/authoring-benchmark.md) measures discovery, planning, compilation,
 rendering and cold/warm cache work with pinned fixtures and output-equivalence checks.
-The [composition preflight guide](docs/composition-preflight.md) covers strict scene
-manifests, declared contacts and work budgets; scene emission is not yet implemented.
+The [composition guide](docs/composition-preflight.md) covers strict scene manifests,
+declared contacts, work budgets, verified vector payloads and atomic scene emission.
 
 ## Install
 
