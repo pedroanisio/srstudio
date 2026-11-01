@@ -58,7 +58,7 @@ LIGHTS = (  # the sculpt's rig, taken down to meet this renderer's exposure
     Light("fill", "sphere-area", "#D9E5F1", 1.75, (115.0, -169.0, -95.0), 70.0),
     Light("rim", "sphere-area", "#DEE9F0", 3.8, (80.0, -215.0, 60.0), 48.0),
 )
-HEAD_BOX = (150, 190, 930, 1350)  # frame pixels a face patch stays inside, at every pose
+HEAD_BOX = (150, 190, 930, 1650)  # frame pixels a face patch stays inside, with the shadow of his jaw on his chest
 VIEWS = (
     *(float(a) for a in range(-90, 91, 3)),
     35.0,
