@@ -36,6 +36,7 @@ BEATS = (
 KEPT = (1.935, 2.188, 4.037, 2.668, 2.321, 1.632, 0.676, 1.046, 0.916, 0.766, 1.325)  # seconds, measured from the takes
 SHOW = Show(
     slug=SLUG,
+    bleed=True,
     number=4,
     title="Make yourself at home has rules — The Unwritten Rules #4",
     description=(

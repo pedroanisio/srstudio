@@ -34,6 +34,7 @@ from srstudio.thumbnail import Thumbnail
 from srstudio.toon_cars import Passing
 from srstudio.voice import Voice, VoiceSettings
 
+BLEED = True
 SEED = 3703
 SLUG = "above-average"
 OUTPUT = f"renders/pilots/{SLUG}.mp4"

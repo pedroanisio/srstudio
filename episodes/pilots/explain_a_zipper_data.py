@@ -21,6 +21,7 @@ from srstudio.social import InstagramPost
 from srstudio.thumbnail import Thumbnail
 from srstudio.voice import Voice, VoiceSettings
 
+BLEED = True
 SEED = 3704
 SLUG = "explain-a-zipper"
 OUTPUT = f"renders/pilots/{SLUG}.mp4"

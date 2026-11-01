@@ -112,6 +112,7 @@ class Show:
     stop: str  # the beat the third rule's label goes on: he turns on you there
     push: tuple[float, float] = (2.4, 1.05)  # (seconds, scale) of the opening move; a scale of 1.0 is a still opening
     room: str = "rafa-kitchen"
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
 
     @property
     def output(self) -> str:
@@ -292,6 +293,7 @@ def run(show: Show, argv: Sequence[str], env=os.environ) -> None:
         safe_area=VERTICAL,
         output=show.output,
         crf="25",
+        bleed=show.bleed,
     )
     ep = build(root, staging, set(argv[2:]))
     if ep is not None:  # None: --init wrote the project files

@@ -39,6 +39,7 @@ BEATS = (
 KEPT = (1.934, 2.305, 3.577, 2.705, 3.178, 0.645, 1.152, 0.734, 0.845, 0.948, 0.781, 1.32)
 SHOW = Show(
     slug=SLUG,
+    bleed=True,
     number=3,
     title="Holding a door has rules — The Unwritten Rules #3",
     description=(

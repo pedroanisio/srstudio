@@ -13,6 +13,7 @@ from pathlib import Path
 
 from above_average_data import (
     ACCESSIBILITY,
+    BLEED,
     DESCRIPTION,
     FIGURES,
     HEADS,
@@ -53,6 +54,7 @@ STAGING = Staging(
     captions=mind_kit.captions,
     finish=mind_kit.finish,
     output=OUTPUT,
+    bleed=BLEED,
     crf="21",
 )
 ep = build(Path(sys.argv[1]).resolve(), STAGING, set(sys.argv[2:]))

@@ -133,6 +133,7 @@ class Staging:
     output: str | None = None
     crf: str = "17"
     on_face: Mapping[str, Callable[..., None]] = field(default_factory=dict)
+    bleed: bool = False  # far planes blurred past the frame's edge (srstudio.look.sheet): every new reel sets it
     """Per character in ``heads``: ``(cv, appearance, beats, face)`` draws into that shot's face group, so it moves with
     the head."""
     overlay: Callable[[Canvas, object, Sequence[Any], float, Callable[..., float]], None] | None = None
@@ -249,6 +250,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
             language="en-US",
             output=staging.output,
             safe_area=staging.safe_area,
+            bleed=staging.bleed,
             output_options=dict(
                 codec="h264",
                 container="mp4",

@@ -32,6 +32,7 @@ BEATS = (
 KEPT = (1.948, 1.999, 2.665, 2.668, 2.094, 1.017, 1.572, 1.483, 1.219, 1.359, 1.32)  # seconds, measured from the takes
 SHOW = Show(
     slug=SLUG,
+    bleed=True,
     number=2,
     title="A present has rules — The Unwritten Rules #2",
     description="Rafa, 34, mostly functional, explains the unwritten rules of a present, and breaks the first one.",

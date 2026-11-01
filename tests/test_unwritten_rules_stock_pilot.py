@@ -97,3 +97,16 @@ def test_the_caption_on_file_is_the_post(show):
     assert (folder / "ig.txt").read_text(encoding="utf-8") == show.post.text()
     assert (folder / "cover.jpg").is_file()
     assert show.post.title.endswith("?")
+
+
+@each
+def test_the_blurred_room_reaches_the_frame_edge(show):
+    assert show.bleed is True
+
+
+def test_the_show_hands_its_bleed_to_the_staging(monkeypatch, tmp_path):
+    seen = []
+    monkeypatch.setattr(rafa_show, "build", lambda root, staging, flags: seen.append(staging))
+    env = {"SRSTUDIO_ENGINE": "e", "SRSTUDIO_RENDERS": str(tmp_path), "SRSTUDIO_FONTS": str(tmp_path)}
+    rafa_show.run(SHOWS[0], ["show", str(tmp_path), "--init"], env)
+    assert seen[0].bleed is True

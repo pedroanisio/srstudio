@@ -137,3 +137,9 @@ def test_each_foley_lands_and_no_clip_is_missing(pilot, tmp_path):
     rows = pilot.foley(pilot.BEATS, pilot.END, [], tmp_path, pilot.SEED)
     assert rows
     assert all((tmp_path / "audio" / f"{row['id']}.wav").exists() for row in rows)
+
+
+@each
+def test_the_blurred_far_plane_reaches_the_frame_edge(pilot):
+    assert pilot.BLEED is True
+

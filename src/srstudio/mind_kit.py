@@ -315,7 +315,7 @@ def finish(cv: Canvas, node) -> None:
 
 def far(cv: Canvas, parent):
     """A group out of focus for a set's far plane: a set behind a character goes in here, its marks stay out of it."""
-    return look.depth(cv, parent, "mind-depth", FAR_BLUR)
+    return look.depth(cv, parent, "mind-depth", FAR_BLUR, overscan=True)
 
 
 def key(cv: Canvas, parent) -> None:
