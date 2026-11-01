@@ -39,7 +39,6 @@ RELEASE = Release(
         "toon-folded-sheet": 1,
         "toon-hallway": 1,
         "toon-hedgehog": 2,
-        "toon-key-line": 1,
         "toon-ledge": 1,
         "toon-padlock": 1,
         "toon-paw": 1,
