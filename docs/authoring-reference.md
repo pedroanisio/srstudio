@@ -369,9 +369,60 @@ def marker(cv: Canvas, parent: Composition | Group, opacity: float = 1) -> Group
 ```
 <!-- contract-plugin:end -->
 
-Discovery is additive: many older builders still have unknown units, clocks, or capabilities. Do not fill those
+Every built-in registered character declares its core capabilities, with shared metadata for verified family
+contracts. Other parts and plugins may still have unknown units, clocks, or capabilities. Do not fill those
 gaps by guessing from parameter names. Start with `srstudio catalog --json`, inspect the selected part, supply its
 runtime bindings, construct its typed records, and handle the builder's structured diagnostics on failure.
+
+Capabilities describe the **registered callable**. `limbs` means typed `LimbTrack` replacement; `head_motion`
+means accepting an authored `HeadPlan`; `expressions` means named facial controls. A held tilt or built-in idle
+movement does not imply `head_motion`. Rafa's registered `body(Model)` builds static geometry below the head,
+so its facial capabilities are false; its separate `operations.face` describes the validated `rafa.Face` record.
+Rafa's animated plate composition is supplied by `rafa_host`. Toon head-rig performance is supplied separately
+by `toon_head.figure`; the ordinary registered pose drawers do not accept a `HeadPlan`.
+
+Clocks are explicit:
+
+| `x-timebase` | Meaning |
+| --- | --- |
+| `project` | Absolute project seconds. In Toon and Collage, `duration` is the exit time, not an interval length. |
+| `relative:enter` | Pose start relative to the character's `enter`; the drawer adds the entrance once. |
+| `canvas` | The canvas animation clock. With `Canvas(local_time=True)` under a shot sequence, zero is the shot start. |
+| `relative:take` | Time since the supplied take starts. Ink builders expect a corresponding local canvas; they do not add `Take.start`. |
+
+`x-role="duration"` identifies a length such as Soft's arrival easing interval. Units distinguish parent placement,
+rig coordinates, degrees, ratios and sampling rates. Family constraints describe reference geometry and placement
+anchors. Nested records, nullable tracks and pose unions retain their field and element metadata.
+
+This complete example discovers a supported expression, constructs its public record, and draws it from project
+second 3 to 4. The pose begins at zero relative to the entrance:
+
+<!-- character-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, registry, toon
+
+entry = registry.get("character", "toon-dog")
+contract = entry.describe()["contract"]
+names = contract["vocabularies"]
+pose = toon.Pose(0, names["eyes"][0], names["mouths"][0], names["arms"][0])
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="24", duration=4)
+cv = Canvas(scene, font_asset=None)
+groups = entry.builder(cv, cv.comp, [pose], enter=3, duration=4)
+assert groups[0].attributes()["start"] == "3"
+```
+<!-- character-discovery:end -->
+
+Inspect `pip` for Soft's existing `pose_tweening` and `foot_pinning` controls and its cue helper. Its expression
+changes on arrival; its `pin` cannot be combined with cue translation or lift. For Stick, `default_poses` lists
+the built-in seated sheet, while callers can supply a custom `poses` mapping; it is intentionally not a closed
+enum. The traced cat's vocabulary excludes brush-only expressions. Collage declares its ignored compatibility
+arguments and its `still` behavior. These distinctions let agents reject unsupported plans before drawing.
+
+Discovery remains a description, not a JSON executor or a new validation layer. Opaque runtime bindings,
+legacy extras and some nested plugin data still require the actual Python API and its checks. Units and
+capabilities do not establish emotional readability, biomechanics, or rendered quality.
 
 ### Extending drawing calls
 

@@ -25,6 +25,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
 
+from . import _character_contracts as cc
 from . import camera, lipsync, rig
 from .canvas import VOID, Canvas
 from .errors import SrstudioError
@@ -221,6 +222,7 @@ def _arms(cv: Canvas, g, sleeve: str, hand: str, *, reach: float = 0) -> None:
     summary="Lord Gloom: black horned armour, a cape and a red visor slit that lights while he speaks; middle "
     "management with a planet budget",
     tags=("masked", "villain", "middle-aged"),
+    contract=cc.lit(VISEMES),
 )
 def gloom(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
@@ -257,6 +259,7 @@ def gloom(
     summary="A Directorate enforcer in white armour with a black visor band whose mic light blinks as he speaks; "
     "the shoulder stripe names him (Seven teal, Gary orange)",
     tags=("masked", "worker"),
+    contract=cc.lit(VISEMES),
 )
 def enforcer(
     cv: Canvas,
@@ -301,6 +304,7 @@ def enforcer(
     summary="The service droid: copper barrel body on one wheel, a screen for a face whose smile bar lights as it "
     "speaks; relentlessly helpful",
     tags=("masked", "robot", "service"),
+    contract=cc.lit(VISEMES),
 )
 def droid(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
@@ -378,6 +382,7 @@ def _person(
     summary="Juno, the young hero from the desert: deep brown skin, a big coily hair puff, cream tunic and belt; "
     "the chosen one of every group chat",
     tags=("young-adult", "hero", "lip-synced"),
+    contract=cc.lit(VISEMES),
 )
 def juno(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
@@ -411,6 +416,7 @@ def juno(
     summary="Captain Rook, the smuggler: middle-aged, short grey hair and stubble, leather vest over a white shirt "
     "and a holster; flies a ship that is mostly dents",
     tags=("middle-aged", "pilot", "lip-synced"),
+    contract=cc.lit(VISEMES),
 )
 def rook(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float
@@ -470,6 +476,7 @@ def rook(
     summary="Elder Mabel, the hermit mystic: older, white hair in a bun, round glasses, a hooded brown robe and a "
     "wooden cane she leans on; sells the Flow by subscription",
     tags=("older", "mystic", "mobility-aid", "lip-synced"),
+    contract=cc.lit(VISEMES),
 )
 def mabel(
     cv: Canvas, parent, *, at: tuple[float, float], scale: float = 1.0, flip: bool = False, talk: Talk = (), end: float

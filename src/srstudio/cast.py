@@ -7,6 +7,7 @@ subclass or on a plain ``fn(cv, parent, ...)``.
 
 from __future__ import annotations
 
+from . import _character_contracts as cc
 from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -183,6 +184,7 @@ class OfficeActor(Actor):
         'actor = get("character", "manager")(ep.cv)\n'
         'node = ep.perform(actor, ep.comp, 540, 800, 1.0, mouth=[(0, "rest")])',
     ),
+    contract=cc.character(limbs=True, expressions=True),
 )
 class Manager(OfficeActor):
     """extras: ``brows`` = (left_keys, right_keys) rotation; ``pupils`` = y keys;
@@ -249,7 +251,12 @@ class Manager(OfficeActor):
         self.facepalm = palm
 
 
-@register("character", "candidate", summary="The applicant: quiff, dot eyes, a forearm that raises one finger")
+@register(
+    "character",
+    "candidate",
+    summary="The applicant: quiff, dot eyes, a forearm that raises one finger",
+    contract=cc.character(limbs=True, expressions=True),
+)
 class Candidate(OfficeActor):
     """extras: ``forearm`` = rotation keys at the elbow; ``pointing`` = spans the raised finger shows."""
 
@@ -295,6 +302,7 @@ class Candidate(OfficeActor):
     "character",
     "rosa",
     summary="Rosa the neighbour: grey bob, round glasses, a cardigan with her name stitched on its pocket",
+    contract=cc.character(limbs=True, expressions=True),
 )
 class Rosa(OfficeActor):
     """An office-family actor (white face, ink line, ``legs`` and ``arms`` as :class:`OfficeActor`) in a blouse and
@@ -391,7 +399,12 @@ class CafeActor(Actor):
         }
 
 
-@register("character", "barista", summary="Ava the barista: bun, apron, name tag, hoop earrings")
+@register(
+    "character",
+    "barista",
+    summary="Ava the barista: bun, apron, name tag, hoop earrings",
+    contract=cc.character(limbs=True, expressions=True),
+)
 class Barista(CafeActor):
     """extras: ``name`` on the badge (default AVA); ``legs`` = ``True`` draws her down to the soles, 489 under her
     origin as the customer stands, for a shot with no counter in front of her (default: the counter hides them)."""
@@ -461,7 +474,12 @@ class Barista(CafeActor):
             cv.path(eyes, f"M{xx - 8} -20 l-6 -5 M{xx + 7} -20 l5 -5", stroke=ink, sw=2)
 
 
-@register("character", "customer", summary="Milo the customer: beanie, stubble, phone in hand, standing or seated")
+@register(
+    "character",
+    "customer",
+    summary="Milo the customer: beanie, stubble, phone in hand, standing or seated",
+    contract=cc.character(limbs=True, expressions=True),
+)
 class Customer(CafeActor):
     """extras: ``held_cup`` = spans the takeaway cup is in hand (standing only; seated always holds it)."""
 
@@ -534,7 +552,27 @@ class Customer(CafeActor):
             self.cv.line(head, xx, yy, xx + 2, yy + 7, "#8F6B4D", 1.7, opacity=0.6)
 
 
-@register("character", "pigeon", summary="A park pigeon; mirrored with a negative scaleX, nods by rotation keys")
+@register(
+    "character",
+    "pigeon",
+    summary="A park pigeon; mirrored with a negative scaleX, nods by rotation keys",
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(
+            *cc.POSITION,
+            (
+                'nods',
+                cc.P(
+                    type=tuple[tuple[float, float], ...],
+                    items=cc.P(prefix_items=(cc.seconds('canvas'), cc.P(unit='degrees'))),
+                ),
+            ),
+            ('flip', cc.P(type=bool)),
+            ('id', cc.P(type=str)),
+        ),
+    ),
+)
 def pigeon(cv: Canvas, parent, x=1000, y=1556, scale=0.83, flip=True, nods=(), id="pigeon"):
     ink = cv.ink
     bird = cv.group(parent, id, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)

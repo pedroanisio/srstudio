@@ -107,17 +107,24 @@ class ParameterContract:
                 result[key] = value
         if self.enum:
             result['enum'] = list(self.enum)
+        nested = [
+            key
+            for key, active in (
+                ('properties', bool(self.fields)),
+                ('items', self.items is not None),
+                ('prefixItems', bool(self.prefix_items)),
+            )
+            if active
+        ]
+        if nested and 'anyOf' in result:
+            # Common metadata applies to every non-null alternative; never silently leave a branch undescribed.
+            branches = result['anyOf']
+            candidates = [b for b in branches if b.get('type') != 'null']
+            if not candidates or any(not all(key in b for key in nested) for b in candidates):
+                _fail(f'{nested}: requires compatible non-null branches')
+            result['anyOf'] = [self.apply(b) if b.get('type') != 'null' else b for b in branches]
+            return result
         if self.fields:
-            if 'anyOf' in result:
-                # A nullable record has one record branch; do not put object constraints on its null branch.
-                branches = result['anyOf']
-                candidates = [i for i, branch in enumerate(branches) if 'properties' in branch]
-                if len(candidates) != 1:
-                    _fail('fields: requires exactly one record branch')
-                i = candidates[0]
-                decorated = ParameterContract(fields=self.fields).apply(branches[i])
-                result['anyOf'] = [decorated if index == i else branch for index, branch in enumerate(branches)]
-                return result
             properties = dict(result.get('properties', {}))
             for name, contract in self.fields:
                 if name not in properties:

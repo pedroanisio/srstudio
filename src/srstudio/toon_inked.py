@@ -46,7 +46,21 @@ from .canvas import Canvas
 from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import LIPS, Pose, ToonDataError
-from .toon_cast import CENTRE, FINE, FOX, HEART, INK, TEAR, TONGUE, VISEMES, Layer, Look, Mouths, figure
+from .toon_cast import (
+    _CHARACTER_CONTRACT,
+    CENTRE,
+    FINE,
+    FOX,
+    HEART,
+    INK,
+    TEAR,
+    TONGUE,
+    VISEMES,
+    Layer,
+    Look,
+    Mouths,
+    figure,
+)
 from .toon_head import HeadRig
 from .toon_torso import arm_lines, depth_in
 
@@ -737,6 +751,7 @@ FOX_RIG = HeadRig(
     "toon-fox@2",
     summary="The fox drawn like the traced cat: pressed uneven ink, open fur lines, a shade tone, a tilted head, "
     "its own almond eyes and muzzle mouths; the whole brush contract",
+    contract=_CHARACTER_CONTRACT,
 )
 def fox_inked(
     cv: Canvas,

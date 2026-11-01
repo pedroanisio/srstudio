@@ -26,6 +26,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from . import _character_contracts as cc
 from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -1242,7 +1243,23 @@ def _drawer(look: Look) -> Drawer:
 
     draw.__name__ = draw.__qualname__ = look.name
     draw.__doc__ = look.summary
-    return register("character", f"collage-{look.name}", summary=look.summary)(draw)
+    return register(
+        "character",
+        f"collage-{look.name}",
+        summary=look.summary,
+        contract=cc.toon(
+            Pose,
+            EYES,
+            MOUTHS,
+            ARMS,
+            visemes=VISEMES,
+            geometry='Geometry is authored in Collage frame pixels; placement is through the drawing parent.',
+            constraints=(
+                'taps, stickers and pose.wear are not rendered by this drawer. '
+                'still disables breathing, blinks and lip-sync.',
+            ),
+        ),
+    )(draw)
 
 
 DRAWERS: dict[str, Drawer] = {name: _drawer(look) for name, look in LOOKS.items()}

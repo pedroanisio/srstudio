@@ -24,6 +24,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
+from . import _character_contracts as cc
 from . import checks, signature
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -1303,6 +1304,7 @@ def blob(
     summary="Pip, the sprout-headed white blob: one interpolating rig (stand, step, walk, sit, type, nod, clasp, "
     "lean, groove, cheer, wave), eased in-betweens on a beat, six eyes, five mouths and a sung mouth that follows "
     "the soundtrack",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def pip(
     cv: Canvas,
@@ -1343,6 +1345,7 @@ def pip(
     "bo",
     summary="Bo, the boss: Pip's rig and pose sheet in a pale blue body with side-parted hair and square glasses, "
     "no blush; any cue Pip can perform, Bo can",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def bo(
     cv: Canvas,
@@ -1383,6 +1386,7 @@ def bo(
     summary="Juno, the colleague who already did the reading: Pip's rig and pose sheet in an apricot body with "
     "an auburn bun, scalloped bangs, a coral scrunchie and freckles; shaded, with catch-lights and lashes on every "
     "eye",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def juno(
     cv: Canvas,
@@ -1422,6 +1426,7 @@ def juno(
     "remy",
     summary="Remy from IT support: Pip's rig and pose sheet in a lavender body with a spiky tuft and a headset "
     "(padded band, ear cups with a status light, mic boom); shaded, with a gloss on the head and catch-lights",
+    contract=cc.soft(Cue, tuple(POSES), tuple(EYES), MOUTHS, tuple(FEET), tuple(MOUTH_STATES)),
 )
 def remy(
     cv: Canvas,

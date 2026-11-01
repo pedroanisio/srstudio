@@ -20,6 +20,7 @@ from functools import lru_cache
 
 import numpy as np
 
+from . import _character_contracts as cc
 from . import pedro_sculpt, pedro_wardrobe
 from .clay import Mesh, Model
 from .errors import SrstudioError
@@ -365,7 +366,37 @@ def cap() -> tuple[Mesh, ...]:
 
 
 @register(
-    "character", "pedro", summary="Pedro: the operator's own likeness in 3D, navy blazer and salt-and-pepper goatee"
+    "character",
+    "pedro",
+    summary="Pedro: the operator's own likeness in 3D, navy blazer and salt-and-pepper goatee",
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(('m', cc.P(unit='Pedro model units')),),
+        constraints=(
+            'This builder emits static body geometry below the head into a clay.Model. '
+            'The separate face record drives the plate performance, not this body builder.',
+        ),
+        operations=(
+            cc.Operation(
+                'face',
+                Face,
+                cc.PartContract(
+                    parameters=(
+                        ('mood', cc.P(enum=tuple(MOODS))),
+                        ('gaze', cc.P(enum=GAZES)),
+                        ('lid', cc.P(enum=LIDS)),
+                        ('mouth', cc.P(enum=MOUTHS)),
+                        ('turn', cc.P(unit='degrees', enum=TURNS)),
+                        ('nod', cc.P(unit='degrees', enum=NODS)),
+                        ('toward', cc.P(enum=('', *MOODS))),
+                        ('share', cc.P(unit='ratio', enum=SHARES)),
+                    ),
+                    constraints=('A nonzero share needs a target mood in toward.',),
+                ),
+            ),
+        ),
+    ),
 )
 def body(m: Model) -> None:
     """Everything of him below the head: see :mod:`srstudio.pedro_wardrobe`."""

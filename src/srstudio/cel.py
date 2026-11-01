@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import _character_contracts as cc
 from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -551,6 +552,30 @@ def _press_keys(run: Run, pressed: Pressed) -> list[tuple[float, float]]:
     "character",
     "cel-traced",
     summary="A traced character: a sheet of filled drawings, one held per run of the pose timeline",
+    contract=cc.character(
+        limbs=False,
+        expressions=False,
+        parameters=(
+            (
+                'runs',
+                cc.P(
+                    items=cc.P(fields=(('start', cc.seconds('canvas', 'start')), ('end', cc.seconds('canvas', 'end'))))
+                ),
+            ),
+            (
+                'pressed',
+                cc.P(
+                    fields=(
+                        ('box', cc.P(unit='drawing pixels')),
+                        ('taps', cc.P(items=cc.seconds('project'))),
+                        ('press', cc.P(unit='drawing pixels')),
+                        ('press_seconds', cc.seconds('project', 'duration')),
+                    )
+                ),
+            ),
+        ),
+        constraints=('Run names reference the supplied drawing sheet; drawings are held, not interpolated.',),
+    ),
 )
 def traced(
     cv: Canvas, parent, runs: Sequence[Run], drawings: Mapping[str, Sequence[Fill]], pressed: Pressed | None = None

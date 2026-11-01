@@ -3,6 +3,13 @@
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
   "reviewed_source_commit": "64efa1c7",
+  "implementation_updated_on": "2026-11-01",
+  "character_contract_coverage": {
+    "default_registered_characters": 70,
+    "default_characters_with_explicit_contracts": 70,
+    "optional_registered_characters_verified": ["pedro"],
+    "evidence": ["tests/test_character_contracts.py", "tests/test_model_character_contracts.py", "tests/test_character_discovery_recipe.py"]
+  },
   "audience": ["AI coding agents", "SDK users", "animation authors"],
   "scope": "SDK/API ergonomics, discovery, animation composition, documentation and refactor candidates",
   "priorities": {
@@ -25,6 +32,7 @@
     {"name": "Catalog inspection, typed shape metadata and approved part versions", "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_part", "src/srstudio/parts.py"]},
     {"name": "Word-timed gestures, style controls, continuous transforms and action joins", "evidence": ["src/srstudio/limbs/motion.py:Action.on_word", "src/srstudio/limbs/motion.py:MotionStyle", "src/srstudio/limbs/motion.py:TransformTrack", "src/srstudio/limbs/motion.py:Motion.chain"]},
     {"name": "Speech-driven head motion, listening, deterministic idle and breathing", "evidence": ["src/srstudio/head_motion.py:plan", "src/srstudio/head_motion.py:HeadPlan"]},
+    {"name": "Soft pose tweening, local foot pinning and path-based walking cues", "evidence": ["src/srstudio/blob.py:Cue", "src/srstudio/blob.py:drawings", "src/srstudio/blob.py:walking"]},
     {"name": "Arm/hand IK, contacts, attachments, retargeting and style adapters", "evidence": ["src/srstudio/limbs/motion.py:Motion", "src/srstudio/limbs/interaction.py", "src/srstudio/limbs/compile.py:compile_motion"]},
     {"name": "Numeric motion reports and configurable quality gates", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport"]},
     {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]}
@@ -43,12 +51,14 @@
     {
       "id": "SDK-P2-01",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Finish semantic contracts for character discovery",
       "problem": "Agents can inspect signatures but most non-Actor rigs still leave capabilities, units, clocks and expression vocabularies unknown. Shape completeness alone cannot tell an agent how to use a rig.",
       "evidence": ["src/srstudio/contracts.py:describe_part", "src/srstudio/registry.py:Entry.describe", "src/srstudio/toon_bento.py:contract"],
       "change": "Declare supported capabilities, units, timebases, vocabularies and helper operations for the registered character families. Preserve explicit unknown values where behavior is not verified.",
       "acceptance": ["Inspect every character without drawing or rendering", "Test metadata against valid and invalid builder calls", "Separate constructor, placement and performance operations"],
+      "resolution": "All 70 default character registrations and the optional Pedro registration now carry explicit family contracts. Metadata declares callable capabilities, units, clocks, vocabularies and constructor helpers; tests exercise actual drawings and refusals. Static model bodies remain distinct from face and plate performance. Runtime bindings, legacy extras and unresolved plugin shapes remain explicitly incomplete, as permitted by the discovery contract.",
+      "verification": ["tests/test_character_contracts.py", "tests/test_model_character_contracts.py", "tests/test_catalog_contracts.py", "tests/test_character_discovery_recipe.py", "docs/decisions/0086-character-discovery-semantics.md"],
       "complexity": "L"
     },
     {
@@ -144,8 +154,8 @@
       "priority": "P4",
       "status": "open",
       "title": "Extend constraints to whole-body performance",
-      "problem": "The reusable spatial solver is centered on arms and hands. Drawn leg poses exist, but there is no shared foot-planting, support/balance or locomotion contract coordinating them with torso and root motion.",
-      "evidence": ["src/srstudio/limbs/model.py:ArmProfile", "src/srstudio/limbs/motion.py:Motion", "src/srstudio/stick.py:RigPose"],
+      "problem": "The reusable spatial solver is centered on arms and hands. Drawn leg poses and Soft's local foot pins and walking cues exist, but there is no shared spatial support/balance or locomotion contract coordinating these across rigs with torso and root motion.",
+      "evidence": ["src/srstudio/limbs/model.py:ArmProfile", "src/srstudio/limbs/motion.py:Motion", "src/srstudio/stick.py:RigPose", "src/srstudio/blob.py:drawings", "src/srstudio/blob.py:walking"],
       "change": "Add opt-in torso/root coordination and leg/foot contact primitives with explicit supported anatomy and movement envelopes before expanding to locomotion.",
       "acceptance": ["Foot contacts retain their world anchors", "Support and joint constraints are validated", "Random-access deterministic sampling", "Rendered weight-shift and step examples"],
       "complexity": "XL"
@@ -173,7 +183,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-01", "SDK-P3-01", "SDK-P2-02", "SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-01", "SDK-P2-02", "SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
   "limits": [
     "No new P0/P1 defect is confirmed by this review; this is not a claim that the repository has none.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",

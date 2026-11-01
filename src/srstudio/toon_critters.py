@@ -43,7 +43,21 @@ from .canvas import Canvas
 from .head_motion import HeadStyle, Spring
 from .registry import register
 from .toon import Pose
-from .toon_cast import CENTRE, FINE, INK, TONGUE, Layer, Look, Mouths, _brow, _eye, _mouth, _viseme, figure
+from .toon_cast import (
+    _CHARACTER_CONTRACT,
+    CENTRE,
+    FINE,
+    INK,
+    TONGUE,
+    Layer,
+    Look,
+    Mouths,
+    _brow,
+    _eye,
+    _mouth,
+    _viseme,
+    figure,
+)
 from .toon_head import HeadRig
 from .toon_torso import Torso
 
@@ -1238,6 +1252,7 @@ CRITTERS = {"sloth": SLOTH, "goat": GOAT, "hamster": HAMSTER}
         'poses = [Pose(0, "sleepy", "flat", "desk"), Pose(1, "wide", "yawn", "sigh")]\n'
         'groups = get("character", "toon-sloth")(ep.cv, ep.comp, poses, duration=2)',
     ),
+    contract=_CHARACTER_CONTRACT,
 )
 def sloth(
     cv: Canvas,
@@ -1269,6 +1284,7 @@ def sloth(
         'poses = [Pose(0, "half", "flat", "desk"), Pose(1, "shock", "scream", "sigh")]\n'
         'groups = get("character", "toon-goat")(ep.cv, ep.comp, poses, duration=2)',
     ),
+    contract=_CHARACTER_CONTRACT,
 )
 def goat(
     cv: Canvas,
@@ -1300,6 +1316,7 @@ def goat(
         'poses = [Pose(0, "wide", "flat", "desk"), Pose(1, "narrow", "puff", "crossed")]\n'
         'groups = get("character", "toon-hamster")(ep.cv, ep.comp, poses, duration=2)',
     ),
+    contract=_CHARACTER_CONTRACT,
 )
 def hamster(
     cv: Canvas,

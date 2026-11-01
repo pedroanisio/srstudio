@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
+from . import _character_contracts as cc
 from . import camera, checks, lipsync, rig
 from .canvas import PLASTIC, Canvas
 from .errors import SrstudioError
@@ -535,6 +536,22 @@ def letters(cv: Canvas, parent, text: str, x: float, y: float, h: float, colour:
     summary="Nadia, the newest guest: tan vinyl, a black bob, round glasses and a yellow NEW sticker on her teal "
     "body that peels up and snaps back; she keeps asking where the exit is",
     tags=("young-adult", "guest", "glasses", "lip-synced"),
+    contract=cc.lit(
+        VISEMES,
+        faces=FACES,
+        poses=POSES,
+        limbs=True,
+        parameters=(
+            (
+                'walk',
+                cc.P(
+                    prefix_items=(cc.seconds('canvas', 'start'), cc.seconds('canvas', 'end'), cc.P(unit='parent units'))
+                ),
+            ),
+            ('fall', cc.seconds('canvas')),
+            ('peel', cc.P(items=cc.seconds('canvas'))),
+        ),
+    ),
 )
 def nadia(
     cv: Canvas,
@@ -601,6 +618,22 @@ def nadia(
     summary="Gus, the longest-staying guest: older, umber vinyl with chipped mustard paint, a white moustache and "
     "side tufts, and a wind-up key in his side that turns slower and stops when he gives up",
     tags=("older", "guest", "lip-synced"),
+    contract=cc.lit(
+        VISEMES,
+        faces=FACES,
+        poses=POSES,
+        limbs=True,
+        parameters=(
+            (
+                'walk',
+                cc.P(
+                    prefix_items=(cc.seconds('canvas', 'start'), cc.seconds('canvas', 'end'), cc.P(unit='parent units'))
+                ),
+            ),
+            ('fall', cc.seconds('canvas')),
+            ('unwound', cc.seconds('canvas')),
+        ),
+    ),
 )
 def gus(
     cv: Canvas,
@@ -678,6 +711,22 @@ def gus(
     summary="Tamsin, the relentlessly positive guest: peach vinyl, a ginger ponytail with a pink scrunchie, a pink "
     "body on a coiled spring instead of a peg, which bounces whenever she is excited",
     tags=("young-adult", "guest", "lip-synced"),
+    contract=cc.lit(
+        VISEMES,
+        faces=FACES,
+        poses=POSES,
+        limbs=True,
+        parameters=(
+            (
+                'walk',
+                cc.P(
+                    prefix_items=(cc.seconds('canvas', 'start'), cc.seconds('canvas', 'end'), cc.P(unit='parent units'))
+                ),
+            ),
+            ('fall', cc.seconds('canvas')),
+            ('bounce', cc.P(items=cc.P(prefix_items=(cc.seconds('canvas', 'start'), cc.seconds('canvas', 'end'))))),
+        ),
+    ),
 )
 def tamsin(
     cv: Canvas,
@@ -763,6 +812,13 @@ def _host_mouth(cv: Canvas, g, state: str) -> None:
     "whose eyes smile, go flat or alarm, and whose mouth bar speaks; scans guests with a beam, wears a tie when it "
     "is being the manager",
     tags=("host", "narrator", "robot", "lip-synced"),
+    contract=cc.lit(
+        VISEMES,
+        faces=HOST_FACES,
+        parameters=(
+            ('scan', cc.P(items=cc.P(prefix_items=(cc.seconds('canvas', 'start'), cc.seconds('canvas', 'end'))))),
+        ),
+    ),
 )
 def sunny(
     cv: Canvas,
