@@ -61,9 +61,9 @@ SCRIPT = takes.Script(
         takes.Take("07", "map", "Recalculating.", 0.2, shot="map", mood="calm"),
         takes.Take("08", "dev", "Thank you.", 0.25, shot="stopped", mood="calm"),
         takes.Take("09", "map", "In two hundred feet, apologize.", 0.25, shot="map", mood="calm"),
-        takes.Take("10", "dev", "What?", 0.25, shot="stopped", mood="firm"),
+        takes.Take("10", "dev", "What?", 0.5, shot="stopped", mood="firm"),
         takes.Take("11", "map", "At the fence, tell her she was right.", TURN_HOLD, shot="back", mood="calm"),
-        takes.Take("12", "dev", "Whose side are you on?", 0.25, shot="stopped", mood="firm"),
+        takes.Take("12", "dev", "Whose side are you on?", 0.5, shot="stopped", mood="firm"),
         takes.Take("13", "map", "Your destination is the couch.", 1.2, shot="back", mood="calm"),
     ),
     voice_note="ElevenLabs premade voices Will, Jessica and Alice; no reference-voice cloning. Sound effects "
