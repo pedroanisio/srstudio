@@ -2,7 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "b7ed0f36",
+  "reviewed_source_commit": "5eef6d94",
+  "reviewed_working_tree": "develop with pending changes to contract discovery and its tests; pending code is not treated as a completed capability",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -19,7 +20,7 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives, explicit character discovery, coordinated acting, executable cross-system recipes and scoped numeric regression envelopes with rendered reference/failure evidence. The next gaps are semantic discovery for non-character parts and selectable acting transition policies. Rig capabilities remain intentionally distinct. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, coordinated acting, executable cross-system recipes and scoped numeric regression envelopes. Newly reproduced legacy callback and prop-option defects need correction first. The largest agent-authoring gaps are semantic discovery for non-character parts and selectable acting transition policies. Rig capabilities remain intentionally distinct. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
     "parts": 701,
     "characters": 70,
@@ -27,9 +28,23 @@
     "all_default_characters_have_explicit_contracts": true,
     "noncharacter_parts": 631,
     "noncharacter_parts_with_explicit_contracts": 0,
+    "by_kind": {
+      "character": {"registered": 70, "explicit_contracts": 70},
+      "prop": {"registered": 436, "explicit_contracts": 0},
+      "location": {"registered": 112, "explicit_contracts": 0},
+      "graphic": {"registered": 83, "explicit_contracts": 0}
+    },
     "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
   },
   "review_verification": {
+    "latest_focused_run": {
+      "command": "python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_catalog_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_motion_quality_profiles.py --tb=short",
+      "passed": 175,
+      "skipped": 5,
+      "subtests_passed": 21,
+      "pending_noncharacter_test_selection": {"passed": 9, "failed": 54},
+      "qualification": "These are working-tree selections, not a full-suite result. The pending non-character tests include both planned metadata requirements and runtime failure-path regressions; 54 failures are not 54 independent production defects. Separate direct builder calls confirmed the callback and silently accepted prop-option findings below. No new render or perceptual rating was performed in this review. The remaining entries retain earlier verification evidence."
+    },
     "engine": "scene-render 0.8.0",
     "motion_acting_continuity_and_documentation": {"passed": 212, "subtests_passed": 21, "skipped": 0},
     "diagnostics_errors_checks_and_cli": {"passed": 309, "skipped": 0, "errors_module_branch_inclusive_coverage_percent": 97},
@@ -46,10 +61,11 @@
     {"name": "Strict acting scores, explicit emotion mappings and persistent performance windows", "evidence": ["src/srstudio/acting.py:compile_performance", "src/srstudio/acting.py:parse_score", "examples/acting_gallery.py", "docs/authoring-reference.md#coordinated-acting-and-continuity"]},
     {"name": "Arm/hand IK, contacts, attachments, retargeting and style adapters", "evidence": ["src/srstudio/limbs/motion.py:Motion", "src/srstudio/limbs/interaction.py", "src/srstudio/limbs/compile.py:compile_motion"]},
     {"name": "Numeric motion reports, configurable gates and versioned canonical-arm envelopes", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport", "src/srstudio/limbs/calibration.py:get_preset", "examples/limbs_quality.py"]},
-    {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]}
+    {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]},
+    {"name": "Blinded comparison packets and separate human-rating summaries", "evidence": ["src/srstudio/limbs/evaluation.py:plan_trials", "src/srstudio/limbs/evaluation.py:summarize", "examples/limbs_quality.py"]}
   ],
   "confirmed_open_P0": [],
-  "confirmed_open_P1": [],
+  "confirmed_open_P1": ["SDK-P1-01", "SDK-P1-02"],
   "resolved_findings": [
     {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
     {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
@@ -62,6 +78,30 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-01",
+      "priority": "P1",
+      "status": "open",
+      "title": "Preflight location callbacks before drawing any part of the set",
+      "problem": "office_wide(at_desk=False) silently omits the requested slot; office_wide(at_desk=123) raises raw TypeError after changing the scene. An agent repairing the failed request can retain partial geometry or duplicate a set. _call uses truthiness, and callbacks are reached only after drawing starts.",
+      "evidence": ["src/srstudio/locations.py:_call", "src/srstudio/locations.py:office_wide", "src/srstudio/signature.py:home_cactus"],
+      "reproduction": "Create a fresh Scene and Canvas(font_asset=None), snapshot scene.to_bytes(), then call locations.office_wide(cv, cv.comp, at_desk=False) or at_desk=123. The former returns successfully; the latter raises TypeError; both change scene.to_bytes().",
+      "change": "Preflight every core location slot as None or callable before drawing, allocating IDs or registering reusable resources. Report an explicit LocationError code, field path and remedy. Keep callback execution separate from preflight and preserve valid callback ordering.",
+      "acceptance": ["Malformed callbacks fail before scene and canvas state changes", "None remains the explicit omitted-slot value", "Valid callbacks execute once at their documented drawing depth", "A repaired retry has the same output as a fresh successful build"],
+      "complexity": "M"
+    },
+    {
+      "id": "SDK-P1-02",
+      "priority": "P1",
+      "status": "open",
+      "title": "Reject malformed prop options instead of silently changing the drawing",
+      "problem": "chair(style='greay') draws the gray chair, and coffee_cup(shadow='false') draws a contact shadow because the string is truthy. Both return successfully. Generated arguments can therefore produce unintended artwork without a repair signal.",
+      "evidence": ["src/srstudio/props.py:chair", "src/srstudio/props.py:coffee_cup"],
+      "reproduction": "On separate fresh canvases, call props.chair(cv, cv.comp, style='greay') and props.coffee_cup(cv, cv.comp, 0, 0, shadow='false'). Both succeed and mutate the scene; neither returns a typed validation failure.",
+      "change": "Validate the chair style vocabulary and require a boolean shadow option before drawing. Return PropError with path, actual, expected and remedy. Preserve supported placement values and valid output; do not silently coerce strings to booleans.",
+      "acceptance": ["Typos and string booleans fail atomically with actionable fields", "Both supported chair styles and both boolean shadow values retain their output", "SDK and CLI diagnostic encoding preserve the same repair information"],
+      "complexity": "S"
+    },
     {
       "id": "SDK-P2-01",
       "priority": "P2",
@@ -109,6 +149,7 @@
       "problem": "All 70 default characters have explicit contracts, but none of the 631 other registered parts does. Signatures and selected examples are useful; they do not consistently declare coordinate units, anchors, slot expectations, clock roles or interaction capabilities. An agent composing a hand with a prop or an actor with a location still has to read implementation details.",
       "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_callable", "src/srstudio/locations.py:office_wide", "src/srstudio/props.py"],
       "change": "Reuse PartContract for non-character families, starting with the common placement, location-slot and held-prop workflows. Declare verified units, coordinate origins, time roles and callback contracts; expose coverage by kind and retain explicit unknowns where semantics are not established.",
+      "implementation_observation": "Pending discovery work adds return anchors and coverage reporting, but no core non-character registration yet consumes the drafted metadata. The draft cafe constraint says 18 characters while locations.MENU_CHARS is 14. Metadata must be tested against actual accepted boundaries before publication. Neither drafted metadata nor inferred parameter shapes establish a working semantic contract.",
       "acceptance": ["Catalog reports semantic coverage separately from inferred argument shapes", "Executable location-slot and held-prop recipes agree with published units and anchors", "Invalid options and unsupported combinations produce repairable failures", "No inferred capability is presented as verified merely because a parameter name matches"],
       "complexity": "L"
     },
@@ -227,9 +268,17 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-04", "SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P1-01", "SDK-P1-02", "SDK-P2-04", "SDK-P2-05", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "agent_authoring_guidance": [
+    "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
+    "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
+    "Use existing MotionStyle, speech-timed actions and head channels for arcs, anticipation, settling and listening. More noise or more easing does not by itself establish purposeful acting.",
+    "Test position, velocity, acceleration, contact and clock continuity as separate properties. Current action joins estimate boundary velocities; they do not promise acceleration continuity.",
+    "Validate bounded typed input before emission; repair explicit error paths and avoid retrying into a scene already changed by a failed legacy builder.",
+    "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."
+  ],
   "limits": [
-    "No confirmed P0/P1 remains open in this review. The diagnostic mapping-key, sequence-clock and extreme-number defects are recorded as resolved; this is not a claim that the repository has no other defects.",
+    "No P0 was confirmed. Two newly reproduced P1 findings remain open; previously repaired diagnostic, sequence-clock and extreme-number defects remain resolved.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]
