@@ -424,6 +424,69 @@ Discovery remains a description, not a JSON executor or a new validation layer. 
 legacy extras and some nested plugin data still require the actual Python API and its checks. Units and
 capabilities do not establish emotional readability, biomechanics, or rendered quality.
 
+### Character clips: one placement and timing boundary
+
+`srstudio.character_clips.place_character` accepts typed `ActorClip`, `ToonClip`, `GlossClip` and `PlateClip`
+records. Their performance times start at zero. `Interval(start, end)` supplies an inclusive start and exclusive
+end on the **parent's timeline**: project seconds below the composition, shot seconds inside a sequence shot.
+The adapter shifts the child clock once. Do not add the entrance to mouth, pose, head or limb keys.
+Procedural idle and breathing start on that same local clock, independent of `Canvas.local_time`.
+
+`Placement(x, y, scale=1, anchor=(0, 0), rotation=0)` maps a source anchor to parent coordinates. Scale is a positive
+ratio; rotation is clockwise degrees. Source units remain explicit:
+
+| Clip | Source origin / supported controls |
+| --- | --- |
+| `ActorClip(ActorClass, Performance(...))` | Head origin, head radius 100; mouth, blink, nod and supported `LimbTrack`s. Untyped `extras` and overridden build lifecycles are refused. |
+| `ToonClip(HeadRig, poses, head=HeadPlan(...))` | Toon frame pixels; poses, visemes, taps and bounded head/gaze/breath channels. Shared Toon vocabulary plus Bento's moods, eye states and gestures. Arm gestures belong to poses; replacement limb tracks are not supported by this split-head drawer. |
+| `GlossClip("nadia", ...)` | Feet at zero for Nadia/Gus/Tamsin; center at zero for Sunny. Speech and facial tracks; guests also accept pose and limb tracks. |
+| `PlateClip(frames)` | Plate-frame pixels; held, layered image frames referencing already-declared assets. |
+
+This example places two different rig families over the same project interval. The mouth change at local second
+0.5 appears at project second 3.5; the listener's pose changes at project second 4:
+
+<!-- character-clips:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, cast
+from srstudio.character_clips import ActorClip, GlossClip, Interval, Placement, place_character
+from srstudio.rig import Performance
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=6)
+cv = Canvas(scene, font_asset=None)
+interval = Interval(3, 5)
+speaker = place_character(
+    cv, cv.comp,
+    ActorClip(cast.Manager, Performance(mouth=((0, "rest"), (0.5, "open"), (1.2, "rest")))),
+    interval=interval, placement=Placement(300, 700, scale=0.9), id="speaker",
+)
+listener = place_character(
+    cv, cv.comp, GlossClip("gus", face=((0, "open"), (1, "wide")), pose=((0, "down"), (1, "shrug"))),
+    interval=interval, placement=Placement(760, 1400, scale=0.8), id="listener",
+)
+assert scene.check(schema=True) == []
+```
+<!-- character-clips:end -->
+
+For Rafa, prepare the image sheet separately with `rafa_host.sheet`, declare its images on the canvas with their
+full-frame or patch dimensions, then call `PlateClip.from_rafa(rows, sheet, path_to_asset_id)`. The mapping uses
+each sheet `Path` as a key. Adjacent identical frames coalesce. The returned clip records `len(rows) / 30` as its
+duration, and placement refuses a different length. Turn, nod and expression are already baked into those plates;
+the adapter does not synthesize new plate poses or start a renderer. Asset paths resolve against the scene file.
+
+Each clip is bounded to 600 seconds and 20,000 entries per track; plate frames allow at most 64 layers. Intervals
+must retain microsecond precision. Input data is preflighted, and failed drawing restores scene nodes, built-in
+canvas caches and IDs. Custom callback external side effects are outside that transaction. Frozen canvases are
+refused. `Actor.build(..., end=...)` now accepts an explicit canvas-clock limb lifetime; omission keeps the project
+duration default. Other builders keep their existing clocks and defaults.
+
+These adapters do not equate expression names across rigs or carry emotional/contact state across separate clips.
+For a continuous performance through camera cuts, retain its containing group and change cameras around it.
+Soft, Ink, Stick, Saga and other specialized builders still use their documented APIs. Python dataclasses and
+`contracts.describe_callable(place_character)` expose argument shapes; runtime objects remain runtime bindings,
+and this API does not parse untrusted JSON. See [ADR 0087](decisions/0087-character-clip-clocks.md).
+
 ### Extending drawing calls
 
 `Canvas.keys()` builds and validates the complete animation before attaching it to the scene. A failed key
