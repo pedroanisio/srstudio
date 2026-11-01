@@ -24,7 +24,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from srstudio import outbox, package
+from srstudio import outbox, package, show_numbers
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import instagram_posts as posts  # noqa: E402
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
             packages=found,
             frozen=posts.FROZEN,
             ab=posts.AB,
-            numbers=posts.NUMBERS,
+            numbers=posts.numbers(args.renders),
         )
         for d in drift:
             print(f"held back: {d}")
@@ -119,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{'previewed' if args.dry_run else 'copied and checked'}: {args.remote}")
             if release:
                 print(f"{'would release' if args.dry_run else 'released'}: {', '.join(release)}")
-    except outbox.OutboxError as e:
+    except (outbox.OutboxError, show_numbers.NumberError) as e:
         print(f"publish_drive: {e}", file=sys.stderr)
         return 2
     return 1 if drift else 0

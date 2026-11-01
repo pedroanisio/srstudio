@@ -6,7 +6,7 @@ import stat
 
 import pytest
 
-from srstudio import show_numbers
+from srstudio import show_numbers, social
 from srstudio.cli import main
 from srstudio.show_numbers import (
     Claim,
@@ -16,6 +16,7 @@ from srstudio.show_numbers import (
     episode_document,
     ledger_path,
     read,
+    release_claim,
     set_base,
 )
 
@@ -205,13 +206,204 @@ def test_a_series_is_named_as_its_cover_names_it(path, series):
 def test_the_episode_document_is_exactly_what_the_posting_job_reads(claimed, document):
     assert episode_document(claimed) == document
     assert list(episode_document(claimed)) == ["number", "series", "series_number"]
-    assert set(EpisodeDocument.__annotations__) == set(document)
+    assert EpisodeDocument.__required_keys__ == set(document)
+    assert json.dumps(episode_document(Claim(193))) == '{"number": 193, "series": "", "series_number": 0}'
 
 
 @pytest.mark.parametrize(
     "broken",
-    [Claim(0), Claim(True), Claim(193, "Saga"), Claim(193, "", 4), Claim(193, "saga", 4), Claim(193, "Saga", -1)],
+    [
+        Claim(0),
+        Claim(True),
+        Claim(193, "Saga"),
+        Claim(193, "", 4),
+        Claim(193, "saga", 4),
+        Claim(193, "Saga", -1),
+        Claim(193, brief="Send-V1"),
+    ],
 )
 def test_a_claim_outside_the_contract_writes_no_document(broken):
     with pytest.raises(NumberError):
         episode_document(broken)
+
+
+# -- the brief a reel was made to (ADR 0080) ---------------------------------------------------------------------------
+def test_a_brief_is_recorded_in_the_ledger_and_reaches_the_episode_document(path):
+    set_base(path, 200)
+    held = claim(path, "send-reel", brief="send-v1")
+    assert held == Claim(201, brief="send-v1")
+    assert json.loads(path.read_text())["reels"]["send-reel"] == {"number": 201, "brief": "send-v1"}
+    assert read(path).reels["send-reel"] == held
+    assert episode_document(held) == {"number": 201, "series": "", "series_number": 0, "brief": "send-v1"}
+
+
+def test_a_series_reel_keeps_its_brief_after_its_place(path):
+    set_base(path, 200)
+    set_base(path, 18, series="Saga")
+    assert json.dumps(episode_document(claim(path, "saga-one", series="Saga", brief="send-v1"))) == (
+        '{"number": 201, "series": "saga", "series_number": 19, "brief": "send-v1"}'
+    )
+
+
+def test_a_reel_with_no_brief_keeps_todays_row_and_document(path):
+    set_base(path, 200)
+    held = claim(path, "plain-reel")
+    assert json.loads(path.read_text())["reels"]["plain-reel"] == {"number": 201}
+    assert list(episode_document(held)) == ["number", "series", "series_number"]
+
+
+@pytest.mark.parametrize("brief", ["Send-v1", "send v1", "-send", "send-", "send--v1", "send_v1", "send/v1", " "])
+def test_a_brief_that_is_no_slug_is_refused_and_claims_nothing(path, brief):
+    set_base(path, 200)
+    with pytest.raises(NumberError, match="brief"):
+        claim(path, "send-reel", brief=brief)
+    assert read(path).reels == {}
+
+
+def test_a_ledger_written_before_briefs_still_reads_and_moves_up_on_the_next_write(path):
+    write(path, schema="1.0.0", base=200, reels={"old-reel": {"number": 201}})
+    assert read(path).reels == {"old-reel": Claim(201)}
+    claim(path, "new-reel", brief="send-v1")
+    document = json.loads(path.read_text())
+    assert document["schema"] == show_numbers.SCHEMA == "1.1.0"
+    assert document["reels"]["old-reel"] == {"number": 201}
+
+
+def test_a_brief_the_ledger_cannot_vouch_for_is_refused(path):
+    write(path, schema="1.1.0", base=200, reels={"reel": {"number": 201, "brief": "Not A Slug"}})
+    with pytest.raises(NumberError, match="brief"):
+        read(path)
+
+
+def test_a_claim_answers_again_without_its_brief_but_cannot_change_it(path):
+    set_base(path, 200)
+    held = claim(path, "send-reel", brief="send-v1")
+    assert claim(path, "send-reel") == held
+    assert claim(path, "send-reel", brief="send-v1") == held
+    with pytest.raises(NumberError, match="send-v1"):
+        claim(path, "send-reel", brief="send-v2")
+
+
+def test_a_brief_cannot_be_added_to_a_claim_made_without_one(path):
+    set_base(path, 200)
+    claim(path, "plain-reel")
+    with pytest.raises(NumberError, match="holds #201"):
+        claim(path, "plain-reel", brief="send-v1")
+
+
+def test_the_command_line_claims_with_a_brief_and_lists_it(path, capsys):
+    ledger = ["--ledger", str(path)]
+    assert main(["number", "base", "200", *ledger]) == 0
+    capsys.readouterr()
+    assert main(["number", "claim", "send-reel", "--brief", "send-v1", *ledger]) == 0
+    assert capsys.readouterr().out == "send-reel #201 send-v1\n"
+    assert main(["number", "claim", "bad-reel", "--brief", "Send V1", *ledger]) == 2
+    assert "brief" in capsys.readouterr().err
+
+
+# -- giving a claim back (ADR 0080) ------------------------------------------------------------------------------------
+def test_a_released_claim_is_gone_and_returns_what_it_held(path):
+    set_base(path, 200)
+    claim(path, "kept-reel")
+    held = claim(path, "dropped-reel")
+    assert release_claim(path, "dropped-reel", delivered=()) == held
+    assert list(read(path).reels) == ["kept-reel"]
+
+
+def test_the_last_number_given_back_is_taken_by_the_next_claim(path):
+    set_base(path, 200)
+    claim(path, "first-reel")
+    claim(path, "second-reel")
+    release_claim(path, "second-reel", delivered=())
+    assert claim(path, "third-reel").number == 202
+
+
+def test_a_number_given_back_below_a_later_claim_stays_a_gap(path):
+    set_base(path, 200)
+    claim(path, "first-reel")
+    claim(path, "second-reel")
+    release_claim(path, "first-reel", delivered=())
+    assert claim(path, "third-reel").number == 203
+
+
+def test_a_series_place_comes_back_with_its_number(path):
+    set_base(path, 200)
+    set_base(path, 18, series="Saga")
+    claim(path, "saga-one", series="Saga")
+    release_claim(path, "saga-one", delivered=())
+    assert claim(path, "saga-two", series="Saga") == Claim(201, "Saga", 19)
+
+
+def test_a_delivered_reel_keeps_its_claim(path):
+    set_base(path, 200)
+    held = claim(path, "out-reel")
+    with pytest.raises(NumberError, match="out-reel.*delivered"):
+        release_claim(path, "out-reel", delivered={"out-reel"})
+    assert read(path).reels == {"out-reel": held}
+
+
+def test_a_reel_with_no_claim_has_nothing_to_give_back(path):
+    set_base(path, 200)
+    with pytest.raises(NumberError, match="no claim"):
+        release_claim(path, "never-reel", delivered=())
+
+
+@pytest.fixture
+def folders(path):
+    """The delivery folder and the outbox where the command looks, beside the ledger."""
+    root = path.parent.parent
+    (root / "renders" / "ig").mkdir(parents=True)
+    (root / "outbox").mkdir()
+    return root / "renders" / "ig", root / "outbox"
+
+
+def test_the_command_line_releases_a_claim_on_a_reel_never_delivered(path, folders, capsys):
+    ledger = ["--ledger", str(path)]
+    main(["number", "base", "200", *ledger])
+    main(["number", "claim", "unposted-reel", *ledger])
+    capsys.readouterr()
+    assert main(["number", "release", "unposted-reel", *ledger]) == 0
+    assert capsys.readouterr().out == "released unposted-reel #201\n"
+    assert read(path).reels == {}
+
+
+@pytest.mark.parametrize("seen", ["ig-folder", "ig-manifest", "outbox-folder"])
+def test_the_command_line_refuses_a_reel_the_delivery_or_the_outbox_shows(path, folders, capsys, seen):
+    deliveries, box = folders
+    if seen == "ig-folder":
+        (deliveries / "out-reel").mkdir()
+    elif seen == "ig-manifest":
+        (deliveries / "delivery.json").write_text(
+            json.dumps(
+                {
+                    "version": social.MANIFEST_VERSION,
+                    "videos": {"out-reel": dict.fromkeys(("render", "post", "ig", "cover"), "0" * 64)},
+                }
+            )
+        )
+    else:
+        (box / "out-reel").mkdir()
+    ledger = ["--ledger", str(path)]
+    main(["number", "base", "200", *ledger])
+    held = main(["number", "claim", "out-reel", *ledger])
+    assert held == 0
+    capsys.readouterr()
+    assert main(["number", "release", "out-reel", *ledger]) == 2
+    assert "delivered" in capsys.readouterr().err
+    assert list(read(path).reels) == ["out-reel"]
+
+
+def test_the_command_line_refuses_when_it_cannot_see_the_deliveries(path, capsys):
+    """Folders it cannot find say nothing about what went out, so they clear no one."""
+    ledger = ["--ledger", str(path)]
+    main(["number", "base", "200", *ledger])
+    main(["number", "claim", "some-reel", *ledger])
+    capsys.readouterr()
+    assert main(["number", "release", "some-reel", *ledger]) == 2
+    assert "not a folder" in capsys.readouterr().err
+    assert list(read(path).reels) == ["some-reel"]
+
+
+def test_the_command_line_needs_a_slug_to_release(path, capsys):
+    assert main(["number", "release", "--ledger", str(path)]) == 2
+    assert "slug" in capsys.readouterr().err

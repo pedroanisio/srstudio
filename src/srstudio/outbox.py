@@ -31,7 +31,7 @@ from . import digest
 from .errors import SrstudioError
 from .releases import ARMS
 from .show_numbers import Claim, episode_document
-from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
+from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery, read_manifest
 
 __all__ = [
     "AB_NAME",
@@ -43,6 +43,7 @@ __all__ = [
     "NO_PACKAGE",
     "Bundle",
     "OutboxError",
+    "delivered_names",
     "latest_package",
     "push",
     "ready",
@@ -95,6 +96,17 @@ class Bundle:
     @property
     def staged_names(self) -> tuple[str, ...]:
         return self.names or tuple(f.name for f in self.files)
+
+
+def delivered_names(deliveries: Path, folder: Path) -> set[str]:
+    """Every video the delivery folder ``deliveries`` or the outbox ``folder`` shows, by a folder or a manifest entry.
+    A folder that is not there is an :class:`OutboxError`: it says nothing about what went out."""
+    names = set(read_manifest(deliveries))
+    for place in (Path(deliveries), Path(folder)):
+        if not place.is_dir():
+            raise OutboxError(f"{place} is not a folder, so what was delivered cannot be read from it")
+        names |= {p.name for p in place.iterdir() if p.is_dir()}
+    return names
 
 
 def latest_package(folder: Path, slug: str) -> Path | None:

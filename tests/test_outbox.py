@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from srstudio import show_numbers
 from srstudio.outbox import (
     AB_NAME,
     EPISODE_NAME,
@@ -16,6 +17,7 @@ from srstudio.outbox import (
     Arm,
     Bundle,
     OutboxError,
+    delivered_names,
     latest_package,
     push,
     ready,
@@ -614,6 +616,66 @@ def test_a_numbered_video_is_staged_with_its_place_and_a_plain_one_as_it_always_
     assert manifest["videos"]["a"][EPISODE_NAME] == sha(folder / "a" / EPISODE_NAME)
     assert manifest["videos"]["b"] == before["videos"]["b"]
     assert not (tmp_path / "plain" / "a" / EPISODE_NAME).exists()
+
+
+def test_a_brief_goes_in_episode_json_only_when_set(delivered, tmp_path):
+    items, out, pk = delivered
+    numbers = {"a": Claim(212, brief="send-v1"), "b": Claim(213)}
+    folder = tmp_path / "outbox"
+    stage(ready(items, out, font=FONT, packages=pk, numbers=numbers)[0], folder)
+    assert json.loads((folder / "a" / EPISODE_NAME).read_text())["brief"] == "send-v1"
+    assert (folder / "b" / EPISODE_NAME).read_text() == '{"number": 213, "series": "", "series_number": 0}\n'
+
+
+def test_numbers_take_each_reels_brief_from_the_ledger(tmp_path, monkeypatch):
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import instagram_posts as posts
+    finally:
+        sys.path.remove(str(EPISODES))
+    renders = tmp_path / "generated" / "renders"
+    ledger = show_numbers.ledger_path(renders)
+    show_numbers.set_base(ledger, 192)
+    show_numbers.claim(ledger, "send-reel", brief="send-v1")
+    show_numbers.claim(ledger, "plain-reel")
+    monkeypatch.setattr(posts, "VIDEOS", {"send-reel": "Send_Reel", "plain-reel": "plain-reel", "gone-reel": "gone"})
+    monkeypatch.setattr(posts, "NUMBERS", {"Send_Reel": Claim(193), "plain-reel": Claim(194), "gone": Claim(195)})
+    assert posts.numbers(renders) == {
+        "Send_Reel": Claim(193, brief="send-v1"),
+        "plain-reel": Claim(194),
+        "gone": Claim(195),
+    }
+
+
+def test_no_numbered_reel_means_the_ledger_is_never_read(tmp_path, monkeypatch):
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import instagram_posts as posts
+    finally:
+        sys.path.remove(str(EPISODES))
+    ledger = show_numbers.ledger_path(tmp_path / "renders")
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("not json")
+    monkeypatch.setattr(posts, "NUMBERS", {})
+    assert posts.numbers(tmp_path / "renders") == {}
+
+
+def test_every_folder_and_manifest_entry_counts_as_delivered(tmp_path):
+    deliveries, box = tmp_path / "ig", tmp_path / "outbox"
+    (deliveries / "in-ig").mkdir(parents=True)
+    (box / "in-outbox").mkdir(parents=True)
+    (box / ".ignore").write_text("held\n")
+    (box / MANIFEST).write_text("{}")
+    assert delivered_names(deliveries, box) == {"in-ig", "in-outbox"}
+
+
+@pytest.mark.parametrize("gone", ["ig", "outbox"])
+def test_a_missing_folder_clears_nobody(tmp_path, gone):
+    (tmp_path / "ig").mkdir()
+    (tmp_path / "outbox").mkdir()
+    (tmp_path / gone).rmdir()
+    with pytest.raises(OutboxError, match="not a folder"):
+        delivered_names(tmp_path / "ig", tmp_path / "outbox")
 
 
 def test_a_number_for_a_video_that_is_not_published_is_refused(delivered):

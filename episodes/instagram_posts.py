@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 from srstudio import (
@@ -89,6 +90,16 @@ PINS = {slug: r.parts or {} for slug, r in RELEASES.items()}  # project slug -> 
 
 def _beside(renders: Path) -> Path:
     return Path(renders).resolve().parent / "episodes"
+
+
+def numbers(renders: Path) -> dict[str, show_numbers.Claim]:
+    """:data:`NUMBERS` with each reel's brief, which only the ledger beside ``renders`` holds (ADR 0080). With no
+    numbered reel the ledger is not read."""
+    if not NUMBERS:
+        return {}
+    held = show_numbers.read(show_numbers.ledger_path(renders)).reels
+    briefs = {VIDEOS[slug]: c.brief for slug, c in held.items() if slug in VIDEOS and c.brief}
+    return {name: replace(claim, brief=briefs.get(name, "")) for name, claim in NUMBERS.items()}
 
 
 def items(renders: Path, episodes: Path | None = None) -> dict[str, Item]:

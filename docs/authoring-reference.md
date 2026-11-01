@@ -2170,7 +2170,9 @@ that cover and for no other. Numbers come from `srstudio number`: `base` sets th
 takes the next one before the final build, `list` prints the ledger at `generated/okayville/numbers.json`. A series has
 its own count with `--series`, and `outbox` writes `episode.json` beside the video, exactly `{"number": N, "series":
 "saga" or "", "series_number": n}`, with 0 outside a series (`show_numbers.EpisodeDocument`). `srstudio.show_gate`
-refuses a first delivery out of the look.
+refuses a first delivery out of the look. `srstudio number claim <slug> --brief send-v1` records the brief a reel was
+made to, and `episode.json` then carries `"brief"` too; a reel without one keeps the three fields. `srstudio number
+release <slug>` gives back a claim on a reel never delivered ([ADR 0080](decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
 
 ## Verification
 
