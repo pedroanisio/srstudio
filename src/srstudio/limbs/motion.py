@@ -41,21 +41,73 @@ def smooth(value: float) -> float:
 class TransformKey:
     time: float
     frame: Frame
+    velocity: Vec3 | None = None
+    angular_velocity: Vec3 | None = None
 
     def __post_init__(self) -> None:
         if number(self.time, "transform key time") < 0:
             raise LimbError("transform key time must be non-negative")
+        for value in (self.velocity, self.angular_velocity):
+            if value is not None and not isinstance(value, Vec3):
+                raise LimbError('transform key velocities must be Vec3 values')
 
 
 @dataclass(frozen=True)
 class TransformTrack:
+    """A transform in motion seconds. Smooth mode stops at each key; continuous mode passes interior keys.
+
+    Continuous translation uses quintic segments with shared velocity and zero acceleration at keys. Rotations
+    use spherical cubic Bezier segments with shared local angular velocity. Velocity units are parent units/s and
+    local radians/s. Missing interior velocities use neighboring poses; endpoint velocities default to zero.
+    Explicit endpoint velocities describe the animated interval; outside it the nearest frame is still held.
+    """
+
     keys: tuple[TransformKey, ...]
+    interpolation: str = 'smooth'
 
     def __post_init__(self) -> None:
         if not self.keys or len(self.keys) > 10000:
             raise LimbError("a transform track needs one to 10000 keys")
         if any(a.time >= b.time for a, b in zip(self.keys, self.keys[1:], strict=False)):
             raise LimbError("transform key times must be strictly increasing")
+        if self.interpolation not in ('smooth', 'continuous'):
+            raise LimbError('transform interpolation must be smooth or continuous')
+        if self.interpolation == 'smooth' and any(
+            k.velocity is not None or k.angular_velocity is not None for k in self.keys
+        ):
+            raise LimbError('explicit key velocities require continuous interpolation')
+        if self.interpolation == 'continuous':
+            for i, (a, b) in enumerate(zip(self.keys, self.keys[1:], strict=False)):
+                if (
+                    max(self._velocities[i][1].length, self._velocities[i + 1][1].length) * (b.time - a.time) / 3
+                    >= math.pi / 2
+                ):
+                    raise LimbError('angular velocity exceeds a spherical control arc; add keys or reduce velocity')
+
+    @cached_property
+    def _times(self) -> tuple[float, ...]:
+        return tuple(key.time for key in self.keys)
+
+    @cached_property
+    def _velocities(self) -> tuple[tuple[Vec3, Vec3], ...]:
+        result = []
+        for i, key in enumerate(self.keys):
+            linear, angular = Vec3(), Vec3()
+            if 0 < i < len(self.keys) - 1:
+                before, after = self.keys[i - 1], self.keys[i + 1]
+                span = after.time - before.time
+                linear = (after.frame.origin - before.frame.origin) / span
+                q = key.frame.rotation.inverse()
+                angular = (
+                    (q * after.frame.rotation).rotation_vector - (q * before.frame.rotation).rotation_vector
+                ) / span
+            result.append(
+                (
+                    key.velocity if key.velocity is not None else linear,
+                    key.angular_velocity if key.angular_velocity is not None else angular,
+                )
+            )
+        return tuple(result)
 
     @classmethod
     def constant(cls, frame: Frame) -> TransformTrack:
@@ -65,11 +117,28 @@ class TransformTrack:
         number(time, "sample time")
         if time <= self.keys[0].time:
             return self.keys[0].frame
-        for a, b in zip(self.keys, self.keys[1:], strict=False):
-            if time <= b.time:
-                u = smooth((time - a.time) / (b.time - a.time))
-                return Frame(a.frame.origin.lerp(b.frame.origin, u), a.frame.rotation.slerp(b.frame.rotation, u))
-        return self.keys[-1].frame
+        if time >= self.keys[-1].time:
+            return self.keys[-1].frame
+        i = bisect_right(self._times, time) - 1
+        a, b = self.keys[i], self.keys[i + 1]
+        span = b.time - a.time
+        u = (time - a.time) / span
+        if self.interpolation == 'smooth':
+            u = smooth(u)
+            return Frame(a.frame.origin.lerp(b.frame.origin, u), a.frame.rotation.slerp(b.frame.rotation, u))
+        va, wa = self._velocities[i]
+        vb, wb = self._velocities[i + 1]
+        origin = (
+            a.frame.origin.lerp(b.frame.origin, smooth(u))
+            + va * (span * (u - 6 * u**3 + 8 * u**4 - 3 * u**5))
+            + vb * (span * (-4 * u**3 + 7 * u**4 - 3 * u**5))
+        )
+        q0, q3 = a.frame.rotation, b.frame.rotation
+        q1 = q0 * Quaternion.from_rotation_vector(wa * (span / 3))
+        q2 = q3 * Quaternion.from_rotation_vector(wb * (-span / 3))
+        q01, q12, q23 = q0.slerp(q1, u), q1.slerp(q2, u), q2.slerp(q3, u)
+        rotation = q01.slerp(q12, u).slerp(q12.slerp(q23, u), u)
+        return Frame(origin, rotation)
 
 
 @dataclass(frozen=True)
