@@ -223,6 +223,10 @@ class Staging:
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
     # the first pass lets the encoder spend little on a still opening without blurring it
     bitrate: int = 0
+    # seconds between keyframes, 0 for the engine's 2. Two passes at a set bitrate leave a pill's colour behind where a
+    # caption leaves with no cut and its blank end matches the wall's brightness, until the next keyframe clears it: a
+    # reel whose captions do that sets the interval that lands a keyframe on them
+    keyframes: float = 0
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     # a caption of several sentences breaks at a sentence end; False keeps a published reel's rows
     sentence_rows: bool = False
@@ -299,6 +303,8 @@ def check_staging(staging: Staging) -> None:
     check_push(staging.push, sk.beats, sk.slug)
     if not (type(staging.bitrate) is int and staging.bitrate >= 0):
         raise StagingError(f"{sk.slug}: bitrate {staging.bitrate!r} is not a whole number of bits a second")
+    if not (checks.number(staging.keyframes) and staging.keyframes >= 0):
+        raise StagingError(f"{sk.slug}: keyframes {staging.keyframes!r} is not a number of seconds")
 
 
 def zooms(beats: Sequence[sketch.Beat], app: sketch.Appearance) -> list[float]:
@@ -349,6 +355,7 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
                 report="qa/render-report.json",
                 **(dict(audioCodec="aac", audioBitrate="192000") if voiced else {}),
                 **(dict(bitrate=str(staging.bitrate), twoPass=True) if staging.bitrate else {}),
+                **(dict(keyframeInterval=f"{staging.keyframes:.4f}") if staging.keyframes else {}),
             ),
             accessibility=dict(
                 description=staging.accessibility

@@ -46,6 +46,10 @@ def _data(name: str) -> ModuleType:
     return importlib.import_module(f"{name}_data")
 
 
+def sketch_event(mod: ModuleType, kind: str) -> float:
+    return next(b.start for b in mod.BEATS if b.event == kind)
+
+
 def _appearance(mod: ModuleType, start: float) -> Appearance:
     return Appearance("gary", start, mod.END, [])
 
@@ -659,6 +663,45 @@ def test_one_more_pages_pip_keeps_the_voice_of_his_published_reels() -> None:
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7
+
+
+@pytest.mark.usefixtures("reels")
+def test_keiths_rope_ends_in_the_frogs_paw_in_every_pose_it_is_held_in() -> None:
+    mod = _data("sorry_what")
+    desk, crossed = (238.0, 794.0), (290.0, 732.0)  # the paw of toon_cast's _arms for each pose
+    assert math.dist(mod.ROPES["crossed"][0], crossed) < 4.0
+    assert math.dist(mod.ROPES["desk"][0], desk) < 4.0
+    assert math.dist(mod.ROPE_DOOR[0], desk) < 4.0
+    held = {b.arms for b in mod.BEATS if b.who == "frog" and b.start >= sketch_event(mod, "keith") + 2}
+    assert held <= set(mod.ROPES)
+
+
+@pytest.mark.usefixtures("reels")
+def test_the_toss_in_book_a_table_stays_under_both_chins_and_leaves_the_frame() -> None:
+    mod = _data("book_a_table")
+    w, h = mod.PHONE["w"], mod.PHONE["h"]
+    chin = 1245.0  # the lower of the two faces, in the group shot
+    for step in range(101):
+        x, y, turn, scale = mod.toss(step / 100)
+        radians = math.radians(turn)
+        reach = (abs(math.cos(radians)) * h + abs(math.sin(radians)) * w) * scale / 2
+        assert y - reach >= chin
+    x, y, turn, scale = mod.toss(1.0)
+    assert y - max(w, h) * scale / 2 > 1920.0
+    assert turn >= 360.0
+
+
+def test_dont_moves_marks_sit_on_the_table_below_the_pushed_phone_and_left_of_the_thumb() -> None:
+    values = {
+        target.id: ast.literal_eval(node.value)
+        for node in ast.parse((EPISODES / "dont_move.py").read_text()).body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id in ("MARK_CACTUS", "MARK_CODE")
+    }
+    assert values["MARK_CODE"][1] >= 1832.0  # where the phone's bottom edge stops at the end of the push
+    assert values["MARK_CACTUS"][1] <= 1920.0 and values["MARK_CODE"][1] + 30.0 <= 1920.0
+    assert values["MARK_CACTUS"][0] < values["MARK_CODE"][0] < 500.0  # the thumb stays right of x 780
 
 
 def test_sorry_whats_pushes_turn_about_the_pivot_the_marks_stand_at() -> None:

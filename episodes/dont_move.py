@@ -19,7 +19,7 @@ import os
 from _common import project_root
 from dont_move_audio import INTERVIEW, MESSAGE_SHIFT
 from instagram_posts import POSTS
-from srstudio import CAFE, Episode, EpisodeSpec, cast, cutout_handed, cutout_office, foley, locations, props
+from srstudio import CAFE, Episode, EpisodeSpec, cast, cutout_handed, cutout_office, foley, locations, props, signature
 from srstudio import interview as iv_audio
 from srstudio.cutout_reach import hand_at, reach
 
@@ -57,6 +57,8 @@ ON_TABLE = (432, 1262)
 CUP = (330, 1252)
 CUP_AWAY = (150, 1252)
 RESTS = (350, 1216)
+MARK_CACTUS = (76, 1908)  # the table under the phone, left of the thumb
+MARK_CODE = (128, 1872)
 
 cuts = list(t.cuts)
 spans: dict[str, list[tuple[float, float]]] = {}
@@ -239,6 +241,9 @@ cv.keys(
 )
 cv.gate(thumb, [(0, CRASH + 0.85)])
 cutout_handed.big_thumb(cv, thumb, HEART_X + 34, HEART_Y - 20, rotation=-24)
+marks = cv.group(insert, "phone-marks")  # outside the push: on the table by the phone, whose bottom edge stops at 1832
+signature.cactus(cv, marks, *MARK_CACTUS, 0.6)
+signature.code(cv, marks, *MARK_CODE, 30, color="#D7AE7E")
 
 SIZE = 1.12
 OUT, IN = L[1].start + 0.4, L[9].start - 0.3
