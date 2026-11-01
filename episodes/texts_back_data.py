@@ -67,7 +67,8 @@ SEAT_Y = 794.0  # the cushion's top, where a phone lies
 MUG_SPOT = (394.0, 692.0)  # the mug's base on the arm of the sofa
 MUG_REACH = 100.0  # the arm that sets the mug down
 HOLD_DEG = 170.0  # the arm that holds the phone up to read
-LYING = 118.0  # where the phone lies on the cushion in Dana's close
+LOW_DEG = 158.0  # the same arm at the cushion, the paw still above it
+LYING = 131.0  # where the phone lies on the cushion in Dana's close, under that paw
 FLAT_W, FLAT_D = 92.0, 20.0  # a phone lying down, foreshortened
 FLAT_BODY, FLAT_BACK, FLAT_LIT = toon_everyday.PHONE_BODY, "#5a5e6b", "#dcebff"
 FAR_BLUR = 5.0
@@ -158,12 +159,14 @@ def key(cv, parent, beats, end, measure) -> None:
 
 
 def sounds(beats, end) -> tuple[Sound, ...]:
-    """The phone along the cushion, the mug on the arm, the phone put down, the sting after "candidates"."""
+    """The phone along the cushion, the mug on the arm, the phone put down, the sting after "candidates", the cushion
+    in the last silence."""
     return (
         Sound("slide", foley.SCRAPE, (at(beats, "slide") + 0.05,), -10.0),
         Sound("mug", foley.KNOCK, (round(at(beats, "mug") + MUG_DOWN, 3),), -10.0),
         Sound("phone-down", foley.THUD, (round(at(beats, "down") + DOWN_LANDS, 3),), -12.0),
         Sound("sting", STING, (at(beats, "sting"),), -13.0),
+        Sound("cushion", foley.SWISH, (round(at(beats, "shake") + 0.1, 3),), -24.0),
     )
 
 
@@ -248,7 +251,7 @@ def _two(shot) -> None:
     """Both of them on the sofa, each two-shot showing what is true by then."""
     cv, app, beats, measure = shot.cv, shot.app, shot.beats, shot.measure
     slide, take, away, down, shake = (at(beats, k) for k in ("slide", "take", "away", "down", "shake"))
-    mia_arm, dana_right, dana_left = (124.0, 758.0), (298.0, 756.0), (219.0, 772.0)
+    mia_arm, dana_right, dana_left = (108.0, 760.0), (298.0, 756.0), (219.0, 772.0)
     high = (312.0, 780.0)
     if take <= app.start < down and away < app.end:  # behind her head: the phone held up, out of reach
         swing = _sampled(-58.0, -84.0, away, away + 0.28)
@@ -262,8 +265,8 @@ def _two(shot) -> None:
         cv.keys(dog, "rotation", [(shake + 0.1, 0.0), *rock, (shake + 1.1, 0.0)], hold=False, kind="sine-in-out",
                 local=False)  # fmt: skip
     if app.start < take:  # the shove, the phone on the cushion, the mug in her hand
-        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(slide, 66.0), (slide + 0.32, 20.0), (slide + 0.9, 20.0),
-             (slide + 1.25, 96.0)], app.start, app.end, 90.0, 40.0)  # fmt: skip
+        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(slide, 66.0), (slide + 0.32, 16.0), (slide + 0.9, 16.0),
+             (slide + 1.25, 96.0)], app.start, slide + 1.25, 106.0, 40.0)  # fmt: skip
         tip = _tip(dana_right, -30.0, 24.0)
         _mug(cv, shot.back, (tip[0] + 12.0, tip[1] + 10.0), 0.5, app.start, app.end)
         _arm(shot, shot.back, dana_right, DOG_COAT, [(app.start, -30.0)], app.start, app.end, 24.0, 30.0)
@@ -273,9 +276,9 @@ def _two(shot) -> None:
         _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 172.0)], app.start, app.end, 46.0, 32.0)
     elif app.start < down:  # Mia reaches for it
         _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(away + 0.25, 72.0), (away + 0.6, -30.0)], app.start, app.end,
-             80.0, 40.0)  # fmt: skip
+             96.0, 40.0)  # fmt: skip
     else:  # her hand on Mia's, over the phone
-        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(app.start, 20.0)], app.start, app.end, 50.0, 34.0)
+        _arm(shot, shot.back, mia_arm, RABBIT_COAT, [(app.start, 15.0)], app.start, app.end, 66.0, 34.0)
         _arm(shot, shot.back, dana_left, DOG_COAT, [(app.start, 176.0)], app.start, app.end, 50.0, 34.0)
     toon_world.sofa(cv, shot.front, "rug")
     if app.start < take:
@@ -293,7 +296,7 @@ def _mia(shot) -> None:
     toon_pair.figure(shot, shot.back, "rabbit", MIA_CLOSE, ACTS["rabbit"], scale=1.0, mirror=True)
     toon_world.sofa(cv, shot.front, "rug")
     if app.start >= at(beats, "down"):
-        _flat_phone(cv, shot.front, 306.0, SEAT_Y + 2, app.start, app.end, lit=False)
+        _flat_phone(cv, shot.front, 290.0, SEAT_Y + 2, app.start, app.end, lit=False)
 
 
 def _dana(shot) -> None:
@@ -301,11 +304,11 @@ def _dana(shot) -> None:
     cv, app, beats, measure = shot.cv, shot.app, shot.beats, shot.measure
     mug, take, down = at(beats, "mug"), at(beats, "take"), at(beats, "down")
     toon_pair.figure(shot, shot.back, "dog", DANA_CLOSE, ACTS["dog"], scale=1.0)
-    right, left = (296.0, 738.0), (176.0, 762.0)
-    held, reach = 70.0, 120.0
+    right, left = (296.0, 738.0), (196.0, 762.0)
+    held, reach = 70.0, 140.0
     tip = _tip(left, HOLD_DEG, held)
     hold_at = (tip[0], tip[1] + 16.0)
-    lifted = [(take + TAKE_REACH, 145.0), (take + TAKE_REACH + 0.3, HOLD_DEG)]
+    lifted = [(take + TAKE_REACH, LOW_DEG), (take + TAKE_REACH + 0.3, HOLD_DEG)]
     set_down = mug + MUG_DOWN
     land = down + DOWN_LANDS
     if app.start < take:  # the hand is drawn over what it holds, so the hand shows in every frame
@@ -315,18 +318,18 @@ def _dana(shot) -> None:
         _arm(shot, shot.back, right, DOG_COAT, [*lowers, (set_down + 0.35, 74.0)], app.start, app.end, MUG_REACH, 46.0)
         up = _held_phone(cv, shot.back, hold_at, 0.42, take + TAKE_REACH, app.end, measure, tag="take")
         _carried(cv, up, left, held, lifted, (0.0, 16.0))
-        _arm(shot, shot.back, left, DOG_COAT, [(take, 96.0), *lifted], app.start, app.end, held, 44.0)
+        _arm(shot, shot.back, left, DOG_COAT, [(take, 96.0), *lifted], take, app.end, held, 44.0)
     elif app.start < down:
         _held_phone(cv, shot.back, hold_at, 0.42, app.start, app.end, measure, tag="read")
         _arm(shot, shot.back, left, DOG_COAT, [(app.start, HOLD_DEG)], app.start, app.end, held, 44.0)
     else:
         if app.start <= down:
             carried = _held_phone(cv, shot.back, hold_at, 0.42, app.start, land, measure, tag="down")
-            _carried(cv, carried, left, held, [(down, HOLD_DEG), (land, 145.0)], (0.0, 16.0))
-            _arm(shot, shot.back, left, DOG_COAT, [(down, HOLD_DEG), (land, 145.0)], app.start, land, held, 44.0)
+            _carried(cv, carried, left, held, [(down, HOLD_DEG), (land, LOW_DEG)], (0.0, 16.0))
+            _arm(shot, shot.back, left, DOG_COAT, [(down, HOLD_DEG), (land, LOW_DEG)], app.start, land, held, 44.0)
         _arm(shot, shot.back, (-60.0, 790.0), RABBIT_COAT, [(down + 0.45, -30.0), (down + HAND_TAKEN - 0.2, -6.0)],
              max(app.start, down + 0.45), app.end, 110.0, 44.0)  # fmt: skip
-        _arm(shot, shot.back, left, DOG_COAT, [(land, 150.0), (down + HAND_TAKEN, 172.0)], max(app.start, land),
+        _arm(shot, shot.back, left, DOG_COAT, [(land, 130.0), (down + HAND_TAKEN, 172.0)], max(app.start, land),
              app.end, reach, 44.0)  # fmt: skip
     toon_world.sofa(cv, shot.front, "rug")
     if app.start < take:
