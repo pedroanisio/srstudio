@@ -182,6 +182,7 @@ def main(argv=None):
     beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the bar line needs at least eight bars")
     beat.add_argument("--seconds", type=float, help="measure only the first seconds")
     beat.add_argument("--beats-per-bar", type=int, default=4)
+    beat.add_argument("--near", type=float, default=120.0, help="the tempo to lean toward: settles double or half time")
     beat.add_argument("--json", action="store_true")
     split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
     split.add_argument("test", choices=releases.TESTS)
@@ -578,7 +579,7 @@ def _arms(args: argparse.Namespace) -> int:
 
 def _beat(args: argparse.Namespace) -> int:
     try:
-        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar, near=args.near)
     except music.MusicError as exc:
         _error("beat", exc, args.json)
         return 1

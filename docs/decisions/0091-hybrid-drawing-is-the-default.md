@@ -65,7 +65,9 @@ A reading of six seconds, 3.2 bars, placed the reference's bar a beat off. Under
 
 Click tracks from 60 to 195 BPM in steps of 5, three start times and two lengths, gave 168 readings. Every one from 75
 to 165 BPM read the right tempo and bar line, 114 in all. The other 54 read at the octave: 60 to 70 BPM at double and
-170 to 195 BPM at half. An even pulse holds nothing that tells them apart, so `reading` does not flag it.
+170 to 195 BPM at half. An even pulse holds nothing that tells them apart, so `reading` does not flag it. It takes
+`near`, `srstudio beat --near`, the tempo to lean toward: given its own tempo, each of those 54 read the right tempo
+and bar line.
 
 The acceptance gates in DRAWING.md for a moving camera, palette, continuity and render budget, and the part of temporal
 stability that needs a moving light or texture, have not been measured. The operator made this the default ahead of
