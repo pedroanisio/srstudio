@@ -250,11 +250,13 @@ def table(g):
 def next_table(g):
     """The pigeon's table: a paper menu, read, and the soup arriving."""
     x, wide = NEXT_TABLE
+    cutout_counter.cafe_table(cv, g, x, TABLE_Y, width=wide, id="pigeon-table")
+    signature.cactus(cv, g, x + 225, 1226, 0.6)  # the two-shot's marks are out of this frame
+    signature.code(cv, g, x + 268, 1340, 11, color="#7a5a3e", opacity=0.9, align="end")
     cast.pigeon(
-        cv, g, x + 30, 1090, 1.15, flip=True, id="reader",
+        cv, g, x + 30, 1140, 1.15, flip=True, id="reader",  # on the table, its feet on the cloth
         nods=[(PIGEON, 0), (PIGEON + 0.3, 7), (PIGEON + 0.55, 0), (BOWL + 0.5, 0), (BOWL + 0.75, 9), (BOWL + 1.0, 0)],
     )  # fmt: skip
-    cutout_counter.cafe_table(cv, g, x, TABLE_Y, width=wide, id="pigeon-table")
     cutout_counter.paper_menu(cv, g, x - 140, 1168, scale=0.62, rotation=-6, id="pigeon-menu")
     carried(
         g,
