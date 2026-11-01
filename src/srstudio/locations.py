@@ -488,7 +488,8 @@ def reception(
 ):
     """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`; ``cactus`` takes over the
     counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it, and
-    ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it out."""
+    ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it
+    out."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
