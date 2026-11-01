@@ -81,11 +81,7 @@ def _thinned(rows: list[tuple[float, str]], end: float, least: float) -> list[tu
 
 
 def held(
-    cues: Sequence[tuple[float, str]],
-    end: float,
-    *,
-    within: tuple[float, float] | None = None,
-    least: float = LEAST,
+    cues: Sequence[tuple[float, str]], end: float, *, within: tuple[float, float] | None = None, least: float = LEAST
 ) -> tuple[Reading, ...]:
     """The readings of ``cues`` (``(second, text)``, in order) up to ``end``, or only those of a shot's ``within``
     window: each runs to the next, none shorter than ``least``, and the same text twice stands as one."""
