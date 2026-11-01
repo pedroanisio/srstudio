@@ -32,6 +32,7 @@ from . import bible_inventory, registry
 from .bible import Bible, Character
 from .releases import Release
 from .social import DeliveryError
+from .thumbnail import ShowCover
 
 __all__ = ["BibleCheckError", "Finding", "check_brief", "check_release", "refuse"]
 
@@ -76,6 +77,13 @@ def _which(here: list[Character], voice: str, pinned: Collection[str]) -> Charac
     return here[0]
 
 
+def world_of_release(release: Release) -> str:
+    """The sealed series its show cover names, else what its slug says: a series reel need not spell its world."""
+    cover = release.post.thumbnail
+    series = cover.series.lower() if isinstance(cover, ShowCover) else ""
+    return series if series in bible_inventory.SEALED else bible_inventory.world_of(release.slug)
+
+
 def rig_parts() -> frozenset[str]:
     """The registered parts that draw any number of figures: one rig per style, as the Stick style has."""
     return frozenset(e.name for e in registry.entries("character") if e.style == "stick")
@@ -91,7 +99,7 @@ def check_release(
 ) -> list[Finding]:
     """What disagrees with the bible in ``release``, by the names its tags and its project's speakers use."""
     slug = release.slug
-    world = bible_inventory.world_of(slug)
+    world = world_of_release(release)
     project = episodes / slug
     heard = bible_inventory.speakers(project) if project.is_dir() else {}
     names = sorted({*(release.tags.recurring if release.tags else ()), *heard})

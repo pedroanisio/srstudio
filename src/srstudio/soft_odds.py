@@ -589,19 +589,22 @@ def notice(
     *,
     scale: float = 1,
     shown: Sequence[tuple[float, float]] | None = None,
+    size: float = 62,
     id: str = "soft-notice",
 ):
-    """A notice 440 x 180 px at ``scale`` 1, centred on (``x``, ``y``), reading ``text``. ``shown`` gates it to spans:
-    its words are a text layer, and a text layer stays in the safe area for as long as it shows."""
+    """A notice 440 x 180 px at ``scale`` 1, centred on (``x``, ``y``), reading ``text`` at ``size``. ``shown`` gates it
+    to spans: its words are a text layer, and a text layer stays in the safe area for as long as it shows."""
     _place("a notice", x, y, scale)
     if not text.strip() or len(text) > MAX_NOTICE:
         raise SoftOddError(f"a notice reads 1 to {MAX_NOTICE} characters, got {text!r}")
+    if not (checks.number(size) and size > 0):
+        raise SoftOddError(f"a notice's size must be a positive number, got {size!r}")
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
     if shown is not None:
         cv.gate(g, list(shown))
     cv.rect(g, -220, -90, 440, 180, "#7A5A36", cv.ink, 5, radius=10)
     cv.rect(g, -204, -74, 408, 148, "#FBF6EA", cv.ink, 3, radius=6)
-    cv.text(g, f"{id}-words", text, -200, -74, 400, 148, 62, color=cv.ink)
+    cv.text(g, f"{id}-words", text, -200, -74, 400, 148, size, color=cv.ink)
     return g
 
 

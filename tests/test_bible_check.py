@@ -7,6 +7,7 @@ import pytest
 from srstudio import bible, bible_check
 from srstudio.releases import Release, Tags
 from srstudio.social import DeliveryError, InstagramPost
+from srstudio.thumbnail import ShowCover
 from support.bible_docs import cast_document, character, pairs_document, placeholder, write
 
 
@@ -240,3 +241,21 @@ def test_a_rig_names_no_absent_owner_when_the_reel_has_an_unknown_name(tmp_path,
     r = release("new-reel", parts={"toon-dog": 1})
     (finding,) = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS, rigs={"toon-dog"})
     assert finding.kind == "unknown-name" and "'bruno'" in finding.message  # no "is bruno a new name for rex?" hint
+
+
+def test_a_series_reel_belongs_to_its_series_world_whatever_its_slug_says(tmp_path, loaded):
+    project(tmp_path, "plain-slug", narration={"voice": {"juno": {"name": "Rachel"}}})
+    cover = ShowCover("Plain", 1.0, number=208, series="Saga", series_number=19)
+    post = InstagramPost(title="t", description="d", hashtags=("#a",), thumbnail=cover)
+    r = Release("plain-slug", post, tags=Tags("epic-world", "other-person", "recognition", recurring=("juno",)))
+    found = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS)
+    assert [f.kind for f in found if f.kind == "world"] == []
+    assert all("okayville" not in f.message for f in found)
+
+
+def test_a_cover_with_no_sealed_series_leaves_the_world_to_the_slug(tmp_path, loaded):
+    cover = ShowCover("Plain", 1.0, number=208)
+    post = InstagramPost(title="t", description="d", hashtags=("#a",), thumbnail=cover)
+    r = Release("plain-slug", post, tags=Tags("epic-world", "other-person", "recognition", recurring=("saga-juno",)))
+    found = bible_check.check_release(loaded, r, tmp_path, characters=CHARACTERS)
+    assert [f.kind for f in found] == ["world"]

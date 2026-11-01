@@ -1285,6 +1285,13 @@
     "toon-tv-menu": {"title": "Menu de TV"},
     "stick-receipt": {"title": "Nota comprida"},
     "stick-box": {"title": "Caixa de entrega"},
+    "trial-tag": {"title": "Crachá de teste"},
+    "apron-spare": {"title": "Avental reserva"},
+    "soft-call-screen": {"title": "Tela de chamada"},
+    "soft-mail-list": {"title": "Lista de e-mails"},
+    "soft-mail-screen": {"title": "Tela de e-mail com contador"},
+    "collage-thread": {"title": "Conversa no celular"},
+    "collage-weather-map": {"title": "Mapa do tempo de papel"},
     "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
     "collage-article": {"title": "Matéria no celular"},
     "soft-star-card": {"title": "Cartão de cinco estrelas"},
@@ -9131,6 +9138,79 @@
         "at": 7.2
       },
       "text": "Escuro total e uma linha de luz sobre um olho."
+    },
+    {
+      "section": "props",
+      "name": "Mapa do tempo de papel",
+      "parts": [
+        "collage-weather-map"
+      ],
+      "shot": {
+        "episode": "cold-front",
+        "at": 2.0
+      },
+      "text": "O mapa do tempo de papel com a seta EXES, atrás do âncora."
+    },
+    {
+      "section": "props",
+      "name": "Conversa no celular",
+      "parts": [
+        "collage-thread"
+      ],
+      "shot": {
+        "episode": "cold-front",
+        "at": 15.2
+      },
+      "text": "A conversa inventada: balões cinza que chegam nos seus segundos, o verde dela no fim."
+    },
+    {
+      "section": "props",
+      "name": "Tela de e-mail com contador",
+      "parts": [
+        "soft-mail-screen"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 1.2
+      },
+      "text": "O envelope e o contador vermelho que sobe de um em um."
+    },
+    {
+      "section": "props",
+      "name": "Lista de e-mails",
+      "parts": [
+        "soft-mail-list"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 8.2
+      },
+      "text": "Assuntos inventados, com a linha que faz o polegar parar."
+    },
+    {
+      "section": "props",
+      "name": "Tela de chamada",
+      "parts": [
+        "soft-call-screen"
+      ],
+      "shot": {
+        "episode": "unread",
+        "at": 13.5
+      },
+      "text": "Número desconhecido sobre dois botões redondos, e o vermelho que escurece ao ser apertado."
+    },
+    {
+      "section": "props",
+      "name": "O turno de teste",
+      "parts": [
+        "apron-spare",
+        "trial-tag"
+      ],
+      "shot": {
+        "episode": "trial-shift",
+        "at": 16.2
+      },
+      "text": "Um avental reserva no gancho e um crachá que diz TRIAL: ninguém ali foi contratado."
     }
   ]
 }

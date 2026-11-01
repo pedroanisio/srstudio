@@ -40,6 +40,7 @@ from sr_core.scene import Scene
 
 from . import (
     cel,
+    collage_forecast,
     collage_group,
     gloss_sets,
     host_kit,
@@ -613,11 +614,26 @@ RECIPES: dict[str, Recipe] = {
     "collage-full-glass": Recipe(part(540.0, 1100.0)),
     "collage-water-jug": Recipe(part(540.0, 1100.0)),
     "collage-doctor-scale": Recipe(part(540.0, 1500.0, 1.0, 900.0, SECONDS)),
+    "collage-weather-map": Recipe(part(300.0, 500.0, 480.0, 680.0, arrow="EXES")),
+    "collage-thread": Recipe(
+        part(
+            310.0,
+            420.0,
+            460.0,
+            800.0,
+            contact="DON'T",
+            clock=((0.0, "8:59"), (0.5, "9:00")),
+            messages=(collage_forecast.Message("HEY", 0.5),),
+        )
+    ),
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
     "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
     "soft-star-card": Recipe(part(540.0, 960.0, tap=0.5, scale=1.6)),
     "soft-mug": Recipe(part(540.0, 960.0, scale=2.0)),
+    "soft-mail-screen": Recipe(part(540.0, 960.0, scale=3.0)),
+    "soft-mail-list": Recipe(part(540.0, 960.0, marked=2, scale=3.0)),
+    "soft-call-screen": Recipe(part(540.0, 960.0, scale=3.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {
