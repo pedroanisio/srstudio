@@ -149,7 +149,7 @@ A `Style` supplies defaults for frame size, timing, input files, palette, captio
 | `COLLAGE` | Mixed-media characters and sets. |
 | `GLOSS` | Glossy characters and shot sequences. |
 
-The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
+The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. [Character clips](docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary) give Actor, split-head Toon, Gloss and prepared plates one explicit placement and timing boundary. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
 
 Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
 

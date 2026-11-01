@@ -316,11 +316,11 @@ class Rosa(OfficeActor):
     STITCH = 6
     CARDIGAN = "#B4574A"
 
-    def build(self, parent, x: float, y: float, scale: float = 1.0, perf: Performance | None = None):
-        stitch = (perf or Performance()).extras.get("stitch", "ROSA")
+    def validate_performance(self, perf: Performance) -> None:
+        stitch = perf.extras.get("stitch", "ROSA")
         if stitch is not None and not (isinstance(stitch, str) and stitch.strip() and len(stitch) <= self.STITCH):
             raise CastError(f"the stitch is 1 to {self.STITCH} characters or None, got {stitch!r}")
-        return super().build(parent, x, y, scale, perf)
+        super().validate_performance(perf)
 
     def draw_body(self, g, perf):
         super().draw_body(g, perf)

@@ -379,6 +379,7 @@ def describe_part(builder: Callable[..., Any], contract: PartContract | None = N
                 ('x', ParameterContract(unit='parent units')),
                 ('y', ParameterContract(unit='parent units')),
                 ('scale', ParameterContract(unit='ratio')),
+                ('end', ParameterContract(unit='seconds', timebase='canvas', role='end', minimum=0)),
                 (
                     'perf',
                     ParameterContract(

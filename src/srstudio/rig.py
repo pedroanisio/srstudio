@@ -84,7 +84,16 @@ class Actor(ABC):
         y: float,
         scale: float = 1.0,
         perf: Performance | None = None,
+        *,
+        end: float | None = None,
     ) -> Group:
+        """Draw the actor; ``end`` bounds limb lifetime on the canvas clock.
+
+        Omitting it retains the project-duration default. A local character clip supplies
+        its own end so a longer root track is sampled only through that clip.
+        """
+        if end is not None:
+            end = checks.positive(end, RigError, 'actor end must be a positive finite canvas second')
         perf = perf or Performance()
         if perf.limbs and not self.supports_limbs:
             from .limbs.errors import LimbError
@@ -115,7 +124,7 @@ class Actor(ABC):
             staging.remove(nod_animation)
         if perf.limbs:
             project = next(cv.scene.iter("project"), None)
-            duration = project.attributes().get("duration") if project is not None else None
+            duration = end if end is not None else project.attributes().get("duration") if project is not None else None
             if duration is not None:
                 from .limbs.integration import prepare_tracks
 
