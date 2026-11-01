@@ -8,7 +8,20 @@ from pathlib import Path
 
 import pytest
 
-from srstudio.outbox import AB_NAME, MANIFEST, NO_PACKAGE, Arm, Bundle, OutboxError, latest_package, push, ready, stage
+from srstudio.outbox import (
+    AB_NAME,
+    EPISODE_NAME,
+    MANIFEST,
+    NO_PACKAGE,
+    Arm,
+    Bundle,
+    OutboxError,
+    latest_package,
+    push,
+    ready,
+    stage,
+)
+from srstudio.show_numbers import Claim
 from srstudio.social import MANIFEST as DELIVERY
 from srstudio.social import Item, fingerprint, publish
 from support.package import project
@@ -331,6 +344,56 @@ def test_the_command_stages_each_released_arm_beside_its_video(delivered, tmp_pa
     folder = tmp_path / "outbox"
     assert json.loads((folder / "b" / AB_NAME).read_text()) == {"test": "sp-hook_motion", "arm": "a"}
     assert not (folder / "a" / AB_NAME).exists()
+
+
+def test_a_numbered_video_is_staged_with_its_place_and_a_plain_one_as_it_always_was(delivered, tmp_path):
+    """The posting job orders numbered reels by ``episode.json``; a video with no number stages the same bytes."""
+    items, out, pk = delivered
+    plain, _ = ready(items, out, font=FONT, packages=pk)
+    before = json.loads(stage(plain, tmp_path / "plain").read_text())
+    bundles, _ = ready(items, out, font=FONT, packages=pk, numbers={"a": Claim(212, "Saga", 19)})
+    folder = tmp_path / "outbox"
+    manifest = json.loads(stage(bundles, folder).read_text())
+    assert json.loads((folder / "a" / EPISODE_NAME).read_text()) == {
+        "number": 212,
+        "series": "saga",
+        "series_number": 19,
+    }
+    assert (folder / "a" / EPISODE_NAME).stat().st_mode & 0o777 == 0o600
+    assert manifest["videos"]["a"][EPISODE_NAME] == sha(folder / "a" / EPISODE_NAME)
+    assert manifest["videos"]["b"] == before["videos"]["b"]
+    assert not (tmp_path / "plain" / "a" / EPISODE_NAME).exists()
+
+
+def test_a_number_for_a_video_that_is_not_published_is_refused(delivered):
+    items, out, pk = delivered
+    with pytest.raises(OutboxError, match="not published: ghost"):
+        ready(items, out, font=FONT, packages=pk, numbers={"ghost": Claim(1)})
+
+
+def test_stage_refuses_a_bundle_whose_own_file_is_named_episode_json(tmp_path):
+    source = tmp_path / EPISODE_NAME
+    source.write_text("{}")
+    with pytest.raises(OutboxError, match=EPISODE_NAME):
+        stage([Bundle("a", (source,), episode=Claim(1))], tmp_path / "outbox")
+
+
+def test_a_reel_in_no_series_writes_all_three_fields_with_an_empty_series_and_zero(delivered, tmp_path):
+    """The posting job's contract is three fields on every numbered reel: none is left out."""
+    items, out, pk = delivered
+    bundles, _ = ready(items, out, font=FONT, packages=pk, numbers={"a": Claim(193)})
+    folder = tmp_path / "outbox"
+    stage(bundles, folder)
+    assert (folder / "a" / EPISODE_NAME).read_text() == '{"number": 193, "series": "", "series_number": 0}\n'
+
+
+def test_no_published_release_has_a_number_so_the_outbox_stays_the_same():
+    sys.path.insert(0, str(EPISODES))
+    try:
+        import instagram_posts as posts
+    finally:
+        sys.path.remove(str(EPISODES))
+    assert posts.NUMBERS == {}
 
 
 def test_ab_mirrors_the_test_and_arm_of_every_release_in_a_test():

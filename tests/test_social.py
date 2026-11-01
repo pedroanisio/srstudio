@@ -43,7 +43,7 @@ from srstudio.social import (
     take_frame,
     video_size,
 )
-from srstudio.thumbnail import Thumbnail
+from srstudio.thumbnail import ShowCover, Thumbnail
 from support.social import FONT, engine, post, tall, video
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
@@ -1135,6 +1135,36 @@ def test_a_first_delivery_with_a_run_together_caption_is_refused_before_it_write
     argv = ["deliver", str(renders / "ig"), str(renders), "--fonts", str(tmp_path), "--engine", "engine"]
     with pytest.raises(SystemExit, match="deliver: the frame gates refuse: New_Reel"):
         posts.main([*argv, "--only", "New_Reel"])
+
+
+def _numbered_reel(posts, monkeypatch, tmp_path):
+    """A new reel on the show's cover, past every other gate."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path, ON_THE_FLOOR)
+    posts.auto_enhance.set_mode(tmp_path, on=False)
+    cover = ShowCover("GOOD", 1.0, number=212)
+    release = replace(posts.RELEASES["new-reel"], post=replace(posts.RELEASES["new-reel"].post, thumbnail=cover))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": release})
+    monkeypatch.setattr(posts.frame_gates, "signature_hidden", lambda *a, **kw: [])
+    monkeypatch.setattr(posts.figure_gates, "figure_defects", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
+    return renders
+
+
+def test_a_first_delivery_out_of_the_show_s_look_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _numbered_reel(posts, monkeypatch, tmp_path)
+    with pytest.raises(frame_gates.FrameGateError, match="New_Reel: #212 is not in the ledger"):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_a_published_reel_on_the_show_s_cover_never_meets_the_gate_again(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _numbered_reel(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: ["written"])
+    monkeypatch.setattr(posts, "read_manifest", lambda out: {"New_Reel": {}})
+    assert posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"]) == [
+        "written"
+    ]
 
 
 def test_a_published_reel_with_a_run_together_caption_stays_as_it_went_out(monkeypatch, tmp_path):

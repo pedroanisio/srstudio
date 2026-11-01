@@ -10057,6 +10057,26 @@
           "rig": null
         }
       ]
+    },
+    "show-bug": {
+      "kind": "graphic",
+      "style": "",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "The approved OK-eye mark, drawn from the avatar's vector source, and the reel's number on a chip in the right gutter, drawn above the camera.",
+          "status": "approved",
+          "proof": "generated/character-proofs/show-signature",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793501087.434969: \"Show signature: approved, with one change to the mark.\""
+          },
+          "drawing": "334c9d068536cdfb1c8ce44e6db7227d11e33a202edfbc90585528524a91dd1e",
+          "rig": null
+        }
+      ]
     }
   }
 }

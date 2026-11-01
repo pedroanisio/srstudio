@@ -19,7 +19,7 @@ from sr_core.scene import AudioMix, AudioTrack, CaptionTrack, Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 from sr_core.scene._runtime import _attr_specs
 
-from . import checks, digest, native, signature
+from . import checks, digest, native, show, signature
 from ._outputs import pinned_directories, write_outputs
 from ._transaction import scene_transaction
 from .canvas import Canvas, Keys, Palette, Signature
@@ -482,6 +482,7 @@ class Episode:
         )
         self._mix: AudioMix | None = None
         self._cover_hidden: list[tuple[str, str, str]] = []  # (id, property, value) overridden in the cover variant
+        self._show_stamped = False  # the show bug (ADR 0074) is drawn once, however many times this finishes
         self._cover_written = 0
         self._cover_variant: Any = None
         # Shot-sequence layouts add the font first and their audio per take; the interview family mixes one file.
@@ -1005,6 +1006,10 @@ class Episode:
         for sequence in sequences:
             if matched_output := sequence.match_any((target_out, target_report)):
                 raise EpisodeArgumentError(f"{matched_output}: output must not replace a project input sequence frame")
+        number = show.active()
+        if number is not None and not self._show_stamped:
+            self._show_stamped = True
+            self.hide_on_cover(show.bug(self.cv, self.comp, number))  # last, so above the camera and all else
         if len(self._cover_hidden) > self._cover_written:
             from .social import COVER_VARIANT
 

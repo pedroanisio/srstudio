@@ -35,12 +35,15 @@ from . import (
     parts,
     registry,
     releases,
+    show,
+    show_numbers,
     usage,
 )
 from .episode import SceneCheckError
 from .errors import SrstudioError
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .thumbnail import ShowCover
 from .timeline import Timeline
 
 
@@ -82,6 +85,11 @@ def main(argv=None):
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
+    number = sub.add_parser("number", help="the show's numbers: set the count, claim a reel's number, list (ADR 0074)")
+    number.add_argument("action", choices=("list", "base", "claim"))
+    number.add_argument("value", nargs="?", help="base: the count; claim: the reel's slug")
+    number.add_argument("--series", default="", help="the series, as Saga")
+    number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
     )
@@ -206,6 +214,8 @@ def main(argv=None):
         for example in info['examples']:
             print(f"\nExample (ep is an existing Episode):\n{example}")
         return 0
+    if args.cmd == "number":
+        return _number(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
@@ -420,14 +430,16 @@ def main(argv=None):
         except releases.ReleaseError as exc:
             print(f"srstudio build: {exc}", file=sys.stderr)
             return 2
+        number = None
         if episode is None and "-" in script and not script.endswith(".py"):
             print(f"srstudio build: no episode {script!r} in {args.scripts}", file=sys.stderr)
             return 2
         if episode is not None:
+            number = _show_number(args.scripts, script)
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
-            with usage.recorded(Path(args.root)) if args.root else nullcontext():
+            with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
                         0, str(Path(script).resolve().parent)
@@ -560,6 +572,46 @@ def _episode_script(scripts: Path, slug: str, suffix: str) -> Path | None:
     if known or (suffix and (scripts / f"{stem}.py").is_file()):
         raise releases.ReleaseError(f"episode {slug!r} has no {script.name} in {scripts}")
     return None
+
+
+def _ledger_default() -> Path:
+    return show_numbers.ledger_path(Path(os.environ.get("SRSTUDIO_RENDERS") or "generated/renders"))
+
+
+def _claimed(slug: str, claim: show_numbers.Claim) -> str:
+    return f"{slug} #{claim.number}" + (f" {claim.series} #{claim.series_number}" if claim.series else "")
+
+
+def _number(args: argparse.Namespace) -> int:
+    try:
+        if args.action == "base":
+            if not (args.value or "").isdecimal():
+                raise show_numbers.NumberError(f"base takes a count, got {args.value!r}")
+            show_numbers.set_base(args.ledger, int(args.value), args.series)
+        elif args.action == "claim":
+            if not args.value:
+                raise show_numbers.NumberError("claim takes the reel's slug")
+            print(_claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series)))
+            return 0
+        ledger = show_numbers.read(args.ledger)
+    except show_numbers.NumberError as exc:
+        print(f"srstudio number: {exc}", file=sys.stderr)
+        return 2
+    print(f"base {'not set' if ledger.base is None else ledger.base}")
+    for series, base in sorted(ledger.series.items()):
+        print(f"{series} base {base}")
+    for slug, claim in sorted(ledger.reels.items(), key=lambda kv: kv[1].number):
+        print(_claimed(slug, claim))
+    return 0
+
+
+def _show_number(scripts: Path, slug: str) -> int | None:
+    """The number the release of the episode ``slug`` carries on the show's cover, or None for any other cover."""
+    stem = slug.replace("-", "_")
+    if not (scripts / "posts" / "__init__.py").is_file() or not (scripts / "posts" / f"{stem}.py").is_file():
+        return None
+    cover = releases.load(scripts / "posts")[slug].post.thumbnail
+    return cover.number if isinstance(cover, ShowCover) else None
 
 
 def _run_script(script: Path, argv: list[str]) -> int:

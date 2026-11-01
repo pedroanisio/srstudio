@@ -26,10 +26,12 @@ from pathlib import Path
 from . import digest
 from .errors import SrstudioError
 from .releases import ARMS
+from .show_numbers import Claim, episode_document
 from .social import COVER_NAME, FILE_NAME, Drift, Items, check_delivery
 
 __all__ = [
     "AB_NAME",
+    "EPISODE_NAME",
     "Arm",
     "MANIFEST",
     "MANIFEST_VERSION",
@@ -44,6 +46,7 @@ __all__ = [
 
 MANIFEST = "outbox.json"
 AB_NAME = "ab.json"  # beside a video in an A/B test: an :class:`Arm`'s document, read by the posting job
+EPISODE_NAME = "episode.json"  # beside a numbered video: its place on the show (ADR 0074), for the posting job's order
 MANIFEST_VERSION = "1.0.0"
 NO_PACKAGE = "no .vpkg.zip package: every published video ships with its package"
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -75,12 +78,13 @@ class Arm:
 class Bundle:
     """One video ready to publish: its folder name in the outbox, the files that go in it, video first, and the
     :class:`Arm` of the A/B tests it is in, if any. ``names`` gives what each of ``files`` is staged as, in order; left
-    empty, each keeps its own name."""
+    empty, each keeps its own name. ``episode`` is its number on the show, if it has one."""
 
     name: str
     files: tuple[Path, ...]
     ab: Arm | None = None
     names: tuple[str, ...] = ()
+    episode: Claim | None = None
 
     @property
     def staged_names(self) -> tuple[str, ...]:
@@ -106,6 +110,7 @@ def ready(
     packages: Mapping[str, Path] | None = None,
     frozen: Mapping[str, str] | None = None,
     ab: Mapping[str, Arm] | None = None,
+    numbers: Mapping[str, Claim] | None = None,
 ) -> tuple[list[Bundle], list[Drift]]:
     """The bundles of every video whose delivery in ``deliveries`` is current, and the drift that held others back.
 
@@ -113,8 +118,13 @@ def ready(
     (:data:`NO_PACKAGE`). A package for a video that is not published, or one that does not exist, raises
     :class:`OutboxError`. An untrustworthy delivery manifest makes nothing ready. ``frozen`` is passed to the gate
     (:func:`~srstudio.social.check_delivery`). ``ab`` maps a video name to the ``(test, arm)`` it is staged with; a
-    name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`."""
+    name that is not published, an empty test or an arm other than ``a`` or ``b`` raises :class:`OutboxError`.
+    ``numbers`` maps a video name to its number on the show; a video with none is staged as it always was."""
     ab = _arms(items, ab)
+    numbers = dict(numbers or {})
+    strays = sorted(set(numbers) - set(items))
+    if strays:
+        raise OutboxError(f"a number is named for a video that is not published: {', '.join(strays)}")
     packages = dict(packages or {})
     unknown = sorted(set(packages) - set(items))
     if unknown:
@@ -135,7 +145,7 @@ def ready(
             continue
         folder = Path(deliveries) / name
         files = (Path(item.video), folder / FILE_NAME, folder / COVER_NAME, Path(packages[name]))
-        bundles.append(Bundle(name, files, ab.get(name)))
+        bundles.append(Bundle(name, files, ab.get(name), episode=numbers.get(name)))
     return bundles, drift
 
 
@@ -177,6 +187,8 @@ def _check(bundles: Sequence[Bundle]) -> None:
             raise OutboxError(f"{b.name}: two files share one name, so one would be staged twice")
         if b.ab is not None and AB_NAME in files:
             raise OutboxError(f"{b.name}: a staged file is named {AB_NAME}, which its A/B arm is written to")
+        if b.episode is not None and EPISODE_NAME in files:
+            raise OutboxError(f"{b.name}: a staged file is named {EPISODE_NAME}, which its number is written to")
 
 
 def _dot_files(folder: Path) -> list[Path]:
@@ -217,6 +229,11 @@ def stage(bundles: Sequence[Bundle], folder: Path, *, manifest: str = MANIFEST) 
                 arm.write_text(json.dumps(b.ab.document()) + "\n")
                 arm.chmod(0o600)
                 hashes[AB_NAME] = digest.sha256(arm)
+            if b.episode is not None:
+                place = target / EPISODE_NAME
+                place.write_text(json.dumps(episode_document(b.episode)) + "\n")
+                place.chmod(0o600)
+                hashes[EPISODE_NAME] = digest.sha256(place)
             videos[b.name] = hashes
         document = build / manifest
         document.write_text(json.dumps({"version": MANIFEST_VERSION, "videos": videos}, indent=2) + "\n")
