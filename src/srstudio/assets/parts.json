@@ -11114,6 +11114,91 @@
           "rig": null
         }
       ]
+    },
+    "toon-cable-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A drawer in a counter's front, yanked open on a knot of cables. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "toon-gray-cable": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "One gray cable with a plug, held at its top, that goes where it is moved. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "toon-kitchen-bin": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A plain gray kitchen bin in the foreground, open at the top. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "toon-fridge-light": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A fridge door's lit display, that goes dark with the power. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
+    },
+    "toon-hill-window": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A window at night on a hill, whose street lights go out in a row. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0000000000000000000000000000000000000000000000000000000000000000",
+          "rig": null
+        }
+      ]
     }
   }
 }

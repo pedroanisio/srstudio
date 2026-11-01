@@ -1251,6 +1251,11 @@
     "toon-toothpaste-cone": {"title": "Casquinha de pasta de dente"},
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
+    "toon-cable-drawer": {"title": "Gaveta de cabos"},
+    "toon-gray-cable": {"title": "O cabo cinza"},
+    "toon-kitchen-bin": {"title": "Lixeira da cozinha"},
+    "toon-fridge-light": {"title": "Luz da geladeira"},
+    "toon-hill-window": {"title": "Janela sobre o morro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
     "paper-streamers": {"title": "Serpentinas de papel"},
     "id-lanyard": {"title": "Crachá com cordão"},
@@ -8451,6 +8456,33 @@
         "at": 9.5
       },
       "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."
+    },
+    {
+      "section": "props",
+      "name": "A gaveta dos quarenta cabos",
+      "parts": [
+        "toon-cable-drawer",
+        "toon-gray-cable",
+        "toon-kitchen-bin",
+        "toon-fridge-light"
+      ],
+      "shot": {
+        "episode": "the-drawer",
+        "at": 10.3
+      },
+      "text": "A gaveta aberta num puxão, o cabo que ninguém sabe para que serve, a lixeira e a luz da geladeira."
+    },
+    {
+      "section": "locations",
+      "name": "O morro apagando",
+      "parts": [
+        "toon-hill-window"
+      ],
+      "shot": {
+        "episode": "the-drawer",
+        "at": 17.4
+      },
+      "text": "A janela da cozinha à noite, com os postes apagando em fila morro abaixo."
     }
   ]
 }
