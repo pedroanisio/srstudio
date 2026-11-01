@@ -145,23 +145,44 @@ def test_a_ledger_that_cannot_be_trusted_is_refused_and_not_read_as_a_fresh_star
 
 
 def _claims(path, names, out):
-    out.extend([claim(path, name).number for name in names])
+    try:
+        out.send([claim(path, name).number for name in names])
+    finally:
+        out.close()
 
 
 def test_two_sessions_at_once_never_take_one_number(path):
     set_base(path, 0)
     context = multiprocessing.get_context("fork")
-    with context.Manager() as manager:
-        numbers = manager.list()
-        workers = [
-            context.Process(target=_claims, args=(path, [f"{who}-{i}" for i in range(20)], numbers))
-            for who in ("left", "right", "other")
-        ]
-        for worker in workers:
+    # One-way pipes use no listening socket or manager process. The ledger is still
+    # claimed by three independent processes exercising its real file lock.
+    pipes = [context.Pipe(duplex=False) for _ in range(3)]
+    workers = [
+        context.Process(target=_claims, args=(path, [f"{who}-{i}" for i in range(20)], sender))
+        for who, (_, sender) in zip(("left", "right", "other"), pipes, strict=True)
+    ]
+    try:
+        for worker, (_, sender) in zip(workers, pipes, strict=True):
             worker.start()
+            sender.close()
+        numbers = []
+        for receiver, _ in pipes:
+            assert receiver.poll(10), 'claim worker did not return its numbers'
+            numbers.extend(receiver.recv())
         for worker in workers:
-            worker.join()
+            worker.join(timeout=10)
+            assert worker.exitcode == 0
         assert sorted(numbers) == list(range(1, 61))
+        assert sorted(entry.number for entry in read(path).reels.values()) == sorted(numbers)
+    finally:
+        for worker in workers:
+            if worker.is_alive():
+                worker.terminate()
+            if worker.pid is not None:
+                worker.join(timeout=10)
+        for receiver, sender in pipes:
+            receiver.close()
+            sender.close()
 
 
 def test_the_command_line_sets_claims_and_lists(path, capsys):

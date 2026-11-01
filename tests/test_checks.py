@@ -14,7 +14,7 @@ class StyleError(ValueError):
     pass
 
 
-NOT_NUMBERS = [True, False, math.nan, math.inf, -math.inf, "1", None]
+NOT_NUMBERS = [True, False, math.nan, math.inf, -math.inf, "1", None, 10**1000]
 
 
 # -- numbers and ends -------------------------------------------------------------------------------------------------

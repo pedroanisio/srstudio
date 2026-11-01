@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from collections.abc import Collection, Iterable
 from itertools import islice
-from typing import Any, TypedDict
+from typing import Any, TypedDict, TypeVar
 
 __all__ = [
     "ConsentError",
@@ -37,21 +37,80 @@ class Diagnostic(TypedDict):
     residual: Any
 
 
-def _json_value(value: object, depth: int = 0) -> Any:
-    """Bound diagnostic payloads and make nonfinite or opaque input safe for strict JSON."""
-    if value is None or isinstance(value, (bool, int)):
+def _json_value(value: object, depth: int = 0, _budget: list[int] | None = None) -> Any:
+    """Bound traversal and text globally per value, including shared/cyclic object graphs."""
+    budget = [1000, 16384] if _budget is None else _budget
+    if budget[0] <= 0 or budget[1] <= 0:
+        return '<payload limit>'
+    budget[0] -= 1
+    if value is None or isinstance(value, bool):
+        budget[1] -= 5
         return value
+    if isinstance(value, int):
+        if value.bit_length() > 4096:
+            return _json_value('<integer exceeds 4096 bits>', depth, budget)
+        digits = value.bit_length() * 30103 // 100000 + 2
+        budget[1] -= digits
+        return value if budget[1] >= 0 else '<payload limit>'
     if isinstance(value, str):
-        return value[:4096]
+        text = value[: min(4096, budget[1])]
+        budget[1] -= len(text)
+        return text
     if isinstance(value, float):
-        return value if math.isfinite(value) else str(value)
+        if not math.isfinite(value):
+            return _json_value(str(value), depth, budget)
+        budget[1] -= 24
+        return value if budget[1] >= 0 else '<payload limit>'
     if depth >= 8:
         return '<depth limit>'
     if isinstance(value, (tuple, list)):
-        return [_json_value(item, depth + 1) for item in value[:100]]
+        result = []
+        for item in value[:100]:
+            if budget[0] <= 0 or budget[1] <= 0:
+                result.append('<payload limit>')
+                break
+            result.append(_json_value(item, depth + 1, budget))
+        return result
     if isinstance(value, dict):
-        return {str(key)[:128]: _json_value(item, depth + 1) for key, item in islice(value.items(), 100)}
-    return f'<{type(value).__name__}>'
+        mapping = {}
+        for key, item in islice(value.items(), 100):
+            if budget[0] <= 0 or budget[1] <= 0:
+                mapping['<payload limit>'] = '<payload limit>'
+                break
+            key = _json_key(key)
+            budget[1] -= len(key)
+            mapping[key] = _json_value(item, depth + 1, budget)
+        return mapping
+    return _json_value(f'<{type(value).__name__}>', depth, budget)
+
+
+def _json_key(value: object) -> str:
+    """Bound keys before conversion; opaque keys must not execute user stringification."""
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return str(_json_value(value))[:128]
+    return f'<{type(value).__name__}>'[:128]
+
+
+def _brief(value: object) -> str:
+    """Safe bounded human preview; opaque input never runs its own repr/str method."""
+    clean = _json_value(value, _budget=[24, 512])
+    return (clean if isinstance(clean, str) and not isinstance(value, str) else repr(clean))[:512]
+
+
+def _text(value: object) -> str | None:
+    if value is None:
+        return None
+    return value[:4096] if isinstance(value, str) else _brief(value)
+
+
+_E = TypeVar('_E', bound=Exception)
+
+
+def _repair(error: _E, *, code: str, path: str, actual: object, expected: object, remedy: str) -> _E:
+    """Attach authored repair facts while retaining custom exception constructors and args."""
+    if isinstance(error, SrstudioError):
+        error._diagnostic_details.update(code=code, path=path, actual=actual, expected=expected, remedy=remedy)
+    return error
 
 
 def diagnostic(error: BaseException, *, command: str | None = None) -> Diagnostic:
@@ -66,14 +125,15 @@ def diagnostic(error: BaseException, *, command: str | None = None) -> Diagnosti
         context['command'] = command
     return {
         'schema': 'srstudio.diagnostic/1.0.0',
-        'code': str(
+        'code': _text(
             details.get('code') or getattr(error, 'code', None) or f'{type(error).__module__}.{type(error).__name__}'
-        ),
-        'path': details.get('path') or context.get('field'),
+        )
+        or 'error',
+        'path': _text(details.get('path') or context.get('field')),
         'message': str(getattr(error, 'message', str(error)))[:4096],
         'actual': _json_value(details.get('actual')),
         'expected': _json_value(details.get('expected')),
-        'remedy': details.get('remedy'),
+        'remedy': _text(details.get('remedy')),
         'context': _json_value(context),
         'residual': _json_value(getattr(error, 'residual', None)),
     }

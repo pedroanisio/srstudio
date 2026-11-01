@@ -222,6 +222,9 @@ def bake(
     ``hold_until`` extends the first and last poses across the character lifetime, in scene seconds.
     """
     options = _resolve_options(cv, options)
+    if options.quality is not None:
+        assert options.fps is not None
+        options.quality.check_scope(motion, style, options.fps)
     prepared = _prepared if _prepared is not None else _Preparation()
     prepared.configure(motion, camera, parent_transform, correctives, options, hold_until)
     assert options.fps is not None
@@ -342,6 +345,9 @@ def compile_motion(
     _check_id(cv, id)
     prepared = _prepared if _prepared is not None else _Preparation()
     options = _resolve_options(cv, options)
+    if options.quality is not None:
+        assert options.fps is not None
+        options.quality.check_scope(motion, style, options.fps)
     prepared.configure(motion, camera, parent_transform, correctives, options, hold_until)
     assert options.fps is not None
     if backend == "baked":

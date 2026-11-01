@@ -5,7 +5,7 @@ description = "Reusable cast, locations, props, graphics and episode builder for
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-dependencies = ["sr-core @ git+https://github.com/pedroanisio/sr-core@c4ff576544986d7acdbe4ab3fa929adefea7bb12", "shapely>=2.1,<3"]
+dependencies = ["sr-core @ git+https://github.com/pedroanisio/sr-core@c4ff576544986d7acdbe4ab3fa929adefea7bb12", "scipy>=1.11,<2", "shapely>=2.1,<3"]
 
 [project.optional-dependencies]
 validate = ["sr-core[validate]"]   # level-2 checks (XSD + Schematron through lxml)
@@ -44,7 +44,7 @@ mypy_path = "src"
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["lxml", "lxml.*", "numpy", "numpy.*"]
+module = ["lxml", "lxml.*", "numpy", "numpy.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

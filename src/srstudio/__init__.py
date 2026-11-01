@@ -133,7 +133,7 @@ from .episode import Episode, EpisodeSpec
 from .errors import SrstudioError
 from .layout import VERTICAL, SafeArea
 from .lipsync import SPEECH_MOUTH
-from .registry import catalog, describe, get, register
+from .registry import catalog, contract_coverage, describe, get, register
 from .rig import Actor, Performance
 from .social import InstagramPost, InstagramPostError
 from .soundtrack import (
@@ -219,6 +219,7 @@ __all__ = [
     "mouth_states",
     "phoneme_states",
     "catalog",
+    "contract_coverage",
     "describe",
     "get",
     "register",

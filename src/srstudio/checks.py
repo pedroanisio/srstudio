@@ -24,8 +24,13 @@ EPSILON = 1e-6  # a span may end this far past its bound: an end summed from rou
 
 
 def number(value: object) -> TypeGuard[float]:
-    """``value`` is a finite ``int`` or ``float``, not a ``bool``."""
-    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+    """``value`` is a finite, float-representable ``int`` or ``float``, not a ``bool``."""
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def positive(value: Any, error: type[Exception], message: str) -> float:

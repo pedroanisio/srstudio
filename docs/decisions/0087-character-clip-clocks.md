@@ -12,8 +12,10 @@ generated-by: OpenAI Codex (GPT-6)
 The opt-in `character_clips` boundary accepts typed Actor, split-head Toon, Gloss and prepared plate performances.
 An explicit start/end interval belongs to the parent timeline. All performance tracks use seconds from the clip
 start. A timed group with `timeOffset=start` maps that local clock exactly once, including native limb tracks and
-procedural idle. Drawing uses composition-based keys within that inherited clock, restoring the caller's canvas
-setting afterward. Placement maps a declared source anchor to parent coordinates without guessing anatomical
+procedural idle. Builders emit on the inherited clock; the adapter then expresses composition keys relative to
+their owning node's source start. This preserves their phase when sequence placement shifts node lifetimes
+without shifting composition keys. Existing local/normalized keys retain their semantics. The caller's canvas
+setting is restored afterward. Placement maps a declared source anchor to parent coordinates without guessing anatomical
 correspondence between styles.
 
 Adapters validate supported controls, vocabularies, references, time ranges and work bounds before emission.
@@ -30,7 +32,8 @@ the base lifecycle. Unknown overridden Actor lifecycles are refused by the clip 
 
 Engine evaluations compare zero-offset and nonzero-offset performances for all four adapters, both canvas clock
 settings, procedural movement, layered plates and limb tracks with their own local offsets. Nested sequence shots
-verify parent-clock composition and source-anchor placement. Tests also cover unsupported controls before
+verify keyed state and animation phase as well as parent-clock composition and source-anchor placement.
+Tests also cover unsupported controls before
 geometry, malformed inputs, rollback of failed drawings, explicit root-bake lifetime, legacy behavior and an
 executable two-family documentation recipe.
 

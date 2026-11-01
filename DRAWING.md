@@ -1,12 +1,12 @@
 ---
 generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
-updated-by: Codex (OpenAI)
-status: proposed-integration
+updated-by: Codex (OpenAI); Claude Opus 5.5 (claude-opus-5-5) in Claude Code
+status: accepted
 ---
 
 # Drawing architecture: a hybrid, layered kit
 
-srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. The integration described here is proposed; existing APIs and approved drawings remain the production baseline. `forms`, `paint`, and the shared scene contracts below are proposed additions, not importable APIs or evidence of a completed renderer.
+srstudio's drawing direction is a hybrid kit: each kind of element uses the method suited to it, with a shared lighting model and a finish owned by the style or show. Each style takes the layers its look needs, so a Collage reel stays paper and a Maps reel stays a map. This is the default for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)). Published reels stay frozen and approved drawings stay pinned. The rigid-object layer is built: `srstudio.proxy`, `srstudio.vehicle` and `srstudio.on_beat`, with [examples/car_vibe](examples/car_vibe/car_vibe_study.py) as the worked example. `forms`, `paint`, and the shared scene contracts below are still proposed, not importable APIs or evidence of a completed renderer.
 
 The kit addresses different needs without requiring every video to use every technique. A single 2D path does not encode a rigid object's unseen surfaces; independently drawn views can drift. Drawn characters already have shading primitives, but need a shared way to attach shading to moving forms and light. Environments need controlled depth and surface texture. Information has the opposite need: captions, cards and map lines must stay exact. A fixed view can remain entirely 2D; multi-view geometry becomes useful when its consistency justifies the rendering cost.
 
@@ -15,16 +15,16 @@ The kit addresses different needs without requiring every video to use every tec
 | Capability | Implementation evidence | Remaining work |
 |---|---|---|
 | Drawn form shading | [brush.py](src/srstudio/brush.py) supplies `crescent`, `Hand`, and `inked`; [Toon Inked](src/srstudio/toon_inked.py) uses a cheek crescent; [brush tests](tests/test_brush.py) check its geometry | Shared light, pose, and receiver bindings; reuse these primitives in `forms` |
-| Modeled, lit plates | [plates.py](src/srstudio/plates.py), [clay.py](src/srstudio/clay.py), and [ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md) describe cached path-traced plates, normal maps, measured rendering, and Rafa's approved look | Animated multi-view proxies with the new style conversion and cross-layer registration |
+| Modeled, lit plates | [plates.py](src/srstudio/plates.py), [clay.py](src/srstudio/clay.py), and [ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md) describe cached path-traced plates, normal maps, measured rendering, and Rafa's approved look | [proxy.py](src/srstudio/proxy.py) converts a proxy to cel plates and layers for fixed views; moving cameras and turning objects are unproven |
 | Finish and depth cues | [look.py](src/srstudio/look.py) supplies `grade`, `depth`, `pool`, and `fade` | `depth` is a blur group, not a shared depth buffer or camera; define ordering and receivers separately |
 | Paint and effects | [Canvas](src/srstudio/canvas.py) wraps linear/radial gradients and generic effect application; the [schema](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/schema/scene-render-1.1.xsd) also declares mesh/conic gradients and texture effects | Convenient paint wrappers and a measured animated style recipe |
-| Effect rendering | [renderer tests](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/tests/raster_effects/effects.rs) contain pixel checks for posterize, gradient-map, lighting, and outline | Existing tests do not establish the proposed combined aesthetic; run the spike against the exact srstudio and engine builds selected for adoption |
+| Effect rendering | [renderer tests](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/tests/raster_effects/effects.rs) contain pixel checks for posterize, gradient-map, lighting, and outline | Existing tests do not establish the proposed combined aesthetic; run the proof against the exact srstudio and engine builds selected for adoption |
 
 The schema establishes syntax, source code establishes implementation, and a passing render establishes behavior on a particular build. These are separate evidence levels. Videos render with engine 0.8.0, while the linked engine files come from a checkout at v0.9.0. The effect shader is identical at both tags; the schema and the effect tests differ, so a claim drawn from them holds for production only once it is checked at v0.8.0. The effects, the mesh and conic gradients, and the posterize, gradient-map, lighting and outline tests named above are all present at v0.8.0. No claim that all these features are untested, or unused by every video, is needed for this decision.
 
 ## The five layers
 
-Rigid objects seen from more than one angle can use 3D proxies: vehicles, buildings, furniture, machines, products and props. An object seen from one angle can stay a drawing. A proxy is modeled in `srstudio.clay` and rendered through `srstudio.plates`, within its declared camera/view envelope. Its style conversion preserves the approved palette and marks: flat, inked bands in Toon, paper in Collage, vinyl in Gloss. Each changed camera or object pose can require a new plate; caching does not turn a continuous camera move into one render. The car spike establishes the conversion and its cost.
+Rigid objects seen from more than one angle can use 3D proxies: vehicles, buildings, furniture, machines, products and props. An object seen from one angle can stay a drawing. A proxy is modeled in `srstudio.clay` and rendered through `srstudio.plates`, within its declared camera/view envelope. Its style conversion preserves the approved palette and marks: flat, inked bands in Toon, paper in Collage, vinyl in Gloss. Each changed camera or object pose can require a new plate; caching does not turn a continuous camera move into one render. `srstudio.proxy` holds the conversion, and a `Recipe` holds a style's numbers. `srstudio.vehicle` adds tyres and rims: a rim stays a vector drawing on the disc `View.disc` gives, so a turning wheel needs no new plate.
 
 Characters stay on their style's rig: people, animals and creatures. The proposed `forms` module composes existing brush shading with rig anchors, shared lighting, and explicit shadow receivers. A rig declares supported views and poses; reusing its parametric parts does not synthesize an unseen back or profile. Form shading is opt-in per look, because a stick figure, a Soft blob and a traced Cel drawing are flat on purpose. Rafa stays on plates. Cross-surface shadows require the receiver representation described below before they can be promised.
 
@@ -42,7 +42,7 @@ The proposed scene contract owns a single world unit and clock. Its canonical ax
 
 One camera owns projection. A 2D point travels from local geometry through its world transform and view/projection, then through the inverse of its drawing parent's 2D transform. [limbs.projection.Camera](src/srstudio/limbs/projection.py) already implements that last contract. A plate adapter must derive the engine camera's handedness, field of view, principal point, and pixel scale from the same camera and pass landmark registration tests. The separate [plates.Camera](src/srstudio/plates.py) and [2D group camera moves](src/srstudio/camera.py) are existing mechanisms, not interchangeable camera objects. A composited plate and its attached marks must not receive the camera transform twice.
 
-Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-to-front order. A hand wrapping a mug, or a figure walking behind a car and then in front of it, requires depth/part masks or explicitly split passes sampled at the same time. Alpha alone cannot resolve internal occlusion. A required depth/normal/part-id pass must be proven available on the chosen backend; this document does not claim that the current plates API exports those passes.
+Depth ordering is explicit. Fixed, nonintersecting planes may use declared back-to-front order. A hand wrapping a mug, or a figure walking behind a car and then in front of it, requires depth/part masks or explicitly split passes sampled at the same time. Alpha alone cannot resolve internal occlusion. `srstudio.proxy` gets a part-id pass from the plates API by rendering flat emissive part colours, and `layers` cuts it into back, front and under plates so people draw between them. A depth or normal pass must still be proven available on the chosen backend.
 
 A contact names the actor anchor, prop/surface anchor, their world transforms, and the time interval in which they agree. A shadow names both caster and receiver. A receiver must provide a plane/mesh proxy or an authored shadow mask bound to its pose; a flat RGBA plate supplies neither world normals nor a receiver by itself. Self-shadows use the same rule. Unknown receivers, intersecting layers without an occlusion strategy, and camera views outside a rig's envelope fail preflight before scene mutation or rendering. A deliberately flat style may declare shadows off; a requested unsupported shadow is never silently omitted.
 
@@ -50,7 +50,7 @@ A contact names the actor anchor, prop/surface anchor, their world transforms, a
 
 The [effect shader](https://github.com/pedroanisio/scene-render/blob/af179e456d29f5bbc82c86187cccd620cf0e3124/crates/sr-gpu/src/effects.wgsl) posterizes encoded RGB channels, maps luminance through a gradient, and constructs outlines from alpha morphology. This can stylize a silhouette, but does not separate illumination from material color or find interior creases. A multicolored car must retain distinct paint, glass, tires, and markings under light changes.
 
-The spike compares the image-effect recipe with a material-aware light ramp and authored or depth/normal-based interior edges. The latter requires demonstrated pass support. Palette, band thresholds, line width units (screen pixels or world units), color space, premultiplied alpha handling, and effect order are versioned style settings. A silhouette-only result is acceptable only for a style that explicitly wants it. No recipe is adopted solely because its XML validates.
+The default is the material-aware ramp in `srstudio.proxy`: a light pass cut into tone bands per part, with interior ink where part families meet on the part-id pass. Palette, band thresholds, line width units (screen pixels or world units), color space, premultiplied alpha handling, and effect order are versioned style settings. A silhouette-only result is acceptable only for a style that explicitly wants it. No recipe is adopted solely because its XML validates.
 
 Animation obeys these contracts:
 
@@ -106,11 +106,11 @@ cv.rect(information, 80, 1700, 920, 120, "#ffffff")
 assert scene.check() == []
 ```
 
-The [document tests](tests/test_drawing_document.py) execute this example, check projection and layer placement, exercise typed camera failures, compare deterministic rebuilds, resolve local evidence links, and check that renderer source links pin a commit. Run `python -m unittest discover -s tests -p 'test_drawing_document.py' -v` from the repository with its Python dependencies installed. These checks establish API/structure correctness; visual acceptance belongs to the spike below.
+The [document tests](tests/test_drawing_document.py) execute this example, check projection and layer placement, exercise typed camera failures, compare deterministic rebuilds, resolve local evidence links, and check that renderer source links pin a commit. Run `python -m unittest discover -s tests -p 'test_drawing_document.py' -v` from the repository with its Python dependencies installed. These checks establish API/structure correctness; visual acceptance belongs to the proof below.
 
 ## Video types
 
-The table names adoption candidates, not implemented combinations or new defaults. Each type adopts a layer only with the proof described below.
+The table gives each type its default. Only the rigid-object layer is built, and each type's first use of a layer goes through the proof described below.
 
 | Type | Draws today | Takes first | Keeps |
 |---|---|---|---|
@@ -130,16 +130,16 @@ The table names adoption candidates, not implemented combinations or new default
 
 ## Rules
 
-- **New videos only.** Published reels are frozen ([ADR 0040](docs/decisions/0040-frozen-releases-at-an-accepted-drawing.md)). Every addition is opt-in, and its default changes nothing. A rebuild with unchanged inputs and the pinned toolchain keeps its approved scene and specimen fingerprints. No accepted style or asset is silently upgraded.
-- **Proof before adoption.** A type adopts a layer through a rendered, animated clip that the operator approves, and a changed drawing is a new part version ([ADR 0047](docs/decisions/0047-character-versions.md)). Style recipe, srstudio and sr-core revisions, schema, renderer build, quality settings, and approval evidence are recorded together.
+- **New videos only.** Published reels are frozen ([ADR 0040](docs/decisions/0040-frozen-releases-at-an-accepted-drawing.md)). The method is where new work starts, not a switch on existing builders, so a published reel or an approved part changes nothing. A rebuild with unchanged inputs and the pinned toolchain keeps its approved scene and specimen fingerprints. No accepted style or asset is silently upgraded.
+- **Proof for each look.** A type takes a layer for the first time through a rendered, animated clip that the operator approves, and a changed drawing is a new part version ([ADR 0047](docs/decisions/0047-character-versions.md)). Style recipe, srstudio and sr-core revisions, schema, renderer build, quality settings, and approval evidence are recorded together.
 - **Same gates.** Every render passes the engine's `--strict` encode, and every first delivery passes the frame gates and the full-size review ([ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md)). That ADR is still proposed and was written for Okayville batches, and `publish_pilots.py` does not run the frame gates, so this rule extends them to every video type. Existing caption/map geometry and approved colors remain intact.
 - **Cache per render input.** Plates are cached under `generated/` by their content digest. The new integration additionally namespaces caches by renderer build and quality configuration; the existing plate digest alone is not a renderer-version key. Changed poses, camera, lights, materials, maps, or recipe invalidate the relevant outputs. An unchanged rebuild renders zero new plates. Neither camera motion nor path tracing is described as free.
 
-## Adoption spike and acceptance gates
+## Proof and acceptance gates
 
-The first proof is a short Toon clip containing a multicolored car turning under a moving camera, a rigged hand holding a prop, a figure crossing behind/in front of the car, a textured background, and protected information. It includes a held pose, a continuous pose/expression transition, a cut, changed key/fill/rim lighting, and a warm-cache rebuild. Test frontal, three-quarter, and profile views only for assets that explicitly support them; an unsupported view must demonstrate the refusal path.
+The first full proof is a short Toon clip containing a multicolored car turning under a moving camera, a rigged hand holding a prop, a figure crossing behind/in front of the car, a textured background, and protected information. It includes a held pose, a continuous pose/expression transition, a cut, changed key/fill/rim lighting, and a warm-cache rebuild. Test frontal, three-quarter, and profile views only for assets that explicitly support them; an unsupported view must demonstrate the refusal path.
 
-The thresholds below are proposed acceptance targets, not reported measurements. The spike records its results and any approved style-specific replacement thresholds before adoption.
+The thresholds below are acceptance targets, not reported measurements, except where ADR 0091 records one. That proof records its results and any approved style-specific replacement thresholds.
 
 | Gate | Required evidence |
 |---|---|
@@ -153,11 +153,11 @@ The thresholds below are proposed acceptance targets, not reported measurements.
 | Cost and determinism | Record hardware, engine, srstudio and sr-core hashes, frame count, unique plates, cold/warm render work, peak memory, and quality settings. Work stays within the declared budget, unchanged rebuilds invoke no plate renders, and changed render inputs invalidate their cache entries |
 | Failure behavior | Invalid views, missing passes/receivers, conflicting transforms, unknown fields, and excessive budgets produce typed actionable errors before scene/cache mutation |
 
-If a candidate recipe fails, it stays unavailable for that style; the existing drawing path remains its explicit default. A schema-valid or visually promising still cannot satisfy the animated gates.
+If a recipe fails, it stays unavailable for that style, and the style keeps drawing as it does today. A schema-valid or visually promising still cannot satisfy the animated gates.
 
 ## Alternatives and trade-offs
 
 - **All 2D:** preserves direct artistic control and remains appropriate for fixed views and intentionally flat styles. It requires authored views or deformation rules when unseen surfaces become visible.
 - **All 3D:** provides shared geometry and lighting, but does not by itself preserve approved linework, expressive rigs, typography, or render cost. It is not a requirement for every video type.
-- **RGB postprocessing alone:** is inexpensive to compose, but lacks material/light separation and interior geometric edges. It remains a spike candidate only where those limitations meet the style contract.
-- **Direct rendering of every frame versus cached plates:** direct rendering supports continuously changing inputs; plates reuse genuinely repeated inputs. The spike chooses using measured work and continuity, with the same bounded budget for either path.
+- **RGB postprocessing alone:** is inexpensive to compose, but lacks material/light separation and interior geometric edges. It is available only where those limitations meet the style contract.
+- **Direct rendering of every frame versus cached plates:** direct rendering supports continuously changing inputs; plates reuse genuinely repeated inputs. The first full proof chooses using measured work and continuity, with the same bounded budget for either path.

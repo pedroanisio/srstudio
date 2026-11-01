@@ -4,6 +4,73 @@ Detailed style, episode, delivery and verification notes for srstudio. Start wit
 [library README](../README.md) for installation and a first working episode.
 Run the commands below from the srstudio repository root.
 
+## Agent authoring entry points
+
+Start from the task, inspect the selected rig's capabilities, then use its typed API. JSON contracts describe
+arguments; objects such as `Canvas` and scene parents remain runtime bindings. Do not infer a capability from
+a similar character or pass contract JSON directly to a builder.
+
+| Task | Entry point | Clock and capability checks |
+| --- | --- | --- |
+| Discover a character, prop or location | `srstudio inspect KIND NAME --json`; [agent contracts](#agent-contracts) | Read declared units, vocabularies, versions and runtime bindings; unknown fields remain unknown. |
+| Place different character families | [Character clips](#character-clips-one-placement-and-timing-boundary) | One local performance clock and an explicit project interval; adapters enforce family capabilities. |
+| Coordinate emotion, speech and listening | `parse_score`, `compile_performance`; [acting](#coordinated-acting-and-continuity) | Strict score schema, supported emotion maps and explicit channel ownership. |
+| Add anticipation and staggered arrivals | [Transition policies](#opt-in-acting-transition-policies) | Opt-in score 1.1.0; declared phases must fit and respect contacts. Faces remain held drawings. |
+| Carry state through a cut | [Listening](#sustained-listening-and-repairable-capability-failures) and [carrying](#carrying-a-prop-across-a-cut) recipes | Window one source performance; preserve contact, expression and texture clocks. |
+| Author constrained arm motion | [Limbs guide](catalog/limbs.md) | Declare anatomy, reference units, projection and contacts; canonical-arm limits do not certify whole-body motion. |
+| Repair invalid authoring input | [Diagnostic recipe](#repairing-authoring-input) | Match `code` and `path`, validate corrected input, and bound retries in ordinary code. |
+| Evaluate motion quality | [Quality study](../examples/limbs_quality.py) | Keep numeric limits, strict rendering and human temporal ratings separate. |
+
+## Repairing authoring input
+
+SDK failures expose `to_dict()` using `srstudio.diagnostic/1.0.0`. CLI commands with `--json` emit the same
+fields on stderr and add `context.command`, including SDK failures while importing plugins. Catch the
+documented exception type; use `code`, `path`, `actual`, `expected` and `remedy` to identify the repair rather
+than parsing the human message. Older validation sites that have not declared these facts retain null fields.
+
+Common explicit paths include `style.breath_period`, `spring.damping`, `channel.keys[1][0]`,
+`speech[0].words`, `heard[0].words`, `facing[0]`, `gaze[0][1]`, `performance.mouth[0][1]`,
+`blink.period`, `visibility[0]` and `keys.rotation[1][1]`. Their code families are `head.style.*`,
+`head.spring.*`, `head.channel.*`, `head.speech.*`, `head.facing.*`, `gaze.*`, `rig.*` and `canvas.*`.
+The path identifies the supplied input, not a general-purpose object mutation expression.
+
+This example repairs one known invalid setting and compiles a new plan. An agent should validate its proposed
+correction through the same typed constructor. Unsupported capabilities require changing the request or rig;
+retrying unchanged input cannot add a capability.
+
+<!-- diagnostic-repair:start -->
+```python
+from dataclasses import replace
+
+from srstudio.acting import BENTO
+from srstudio.head_motion import HeadMotionError, plan
+
+style = BENTO.head_rig.style
+try:
+    replace(style, breath_period=0)
+except HeadMotionError as error:
+    failure = error.to_dict()
+    assert failure["code"] == "head.style.range"
+    assert failure["path"] == "style.breath_period"
+    assert failure["expected"] and failure["remedy"]
+    repaired = replace(style, breath_period=3)
+
+motion = plan(repaired, [], 4)
+motion.check_bounds(repaired)
+```
+<!-- diagnostic-repair:end -->
+
+Diagnostics are bounded previews, not a lossless copy of invalid input. Each payload field has a shared
+1,000-node traversal budget and 16,384-character content budget, with at most 100 items per collection,
+eight nesting levels and 4,096 characters per string. Metadata strings are capped at 4,096 characters.
+Markers report exhausted traversal or depth; nonfinite numbers become strings, and opaque objects become
+type labels. JSON escaping and punctuation add encoded bytes beyond these content budgets.
+
+Generated blink schedules refuse more than 10,000 blinks before drawing. Carried springs also enforce their
+sampled-key budget and scene clock precision. Reduce the requested work or use a suitable local clock when
+those diagnostics fire. The tested mouth, visibility and keyframe preflights leave their scene unchanged;
+this is not a blanket transaction guarantee for every legacy builder.
+
 ## Timeline input formats
 
 `Timeline.load(path)` reads JSON and selects a format by its top-level shape. The same data can be passed to
@@ -60,6 +127,254 @@ not overlap. Its duration is the final caption's end. An optional `caption` over
 
 See [`Timeline.from_dict`, `from_takes`, and `from_captions`](../src/srstudio/timeline.py) for the supported fields
 and [`srstudio.takes`](../src/srstudio/takes.py) for producing recorded take timelines.
+
+## Coordinated acting and continuity
+
+`srstudio.acting` compiles a bounded score once, then places windows of that same
+performance into shots. `BENTO` and `gloss_actor("nadia")` expose explicit artistic
+emotion mappings through `describe()`; inspect capabilities before generating intent.
+These names describe the author's intent, not a measured emotion or a universal
+biomechanical model. Gloss supports its existing face, mouth, gesture and guest limb
+controls; directed head motion, gaze and listening require a capable Toon head rig.
+
+<!-- acting:start -->
+```python
+from srstudio.acting import BENTO, compile_performance, parse_score
+
+score = parse_score({
+    "schema": "srstudio.acting/1.0.0",
+    "duration": 6,
+    "seed": 17,
+    "beats": [
+        {"at": 0, "emotion": "neutral", "gaze": "left", "transition": 0},
+        {"at": 1.2, "emotion": "happy", "gaze": "right", "transition": 0.4},
+        {"at": 3.8, "emotion": "concerned", "transition": 0.4}
+    ]
+})
+plan = compile_performance(BENTO, score)
+after_cut = plan.window(3, 6)
+assert after_cut.sample(0) == plan.sample(3)
+assert after_cut.sample(0).gaze == "right"
+# In a shot whose parent clock begins at zero:
+# after_cut.place(cv, shot, at=0, placement=Placement(...), id="speaker")
+```
+<!-- acting:end -->
+
+The decoded JSON parser rejects unknown fields and type coercions. Compilation then
+checks vocabulary, timing, bounds, capabilities and conflicting ownership, raising
+`ActingError` with `to_dict()` repair fields. Python authors can construct `ActingScore`
+and `ActingBeat` directly. Scores are limited to 600 seconds, 1,000 beats and 20,000
+sampled keys per numeric channel; the default sampling rate is 30 Hz.
+
+Discrete expression, gaze and gesture changes occur at `at + transition`. Numeric
+`HeadTarget` fields and `breath` ease during that interval using sampled sine easing.
+`breath` is a held expansion in 0..1, not an oscillation gain. A reset returns authored
+channels to the rig's neutral/procedural state. Emotion defaults persist until replaced;
+an explicit beat field wins over its emotion default. Directed eyes lead inferred head
+turn by 80 ms; explicit head targets win over that inferred turn. Omitted fields preserve
+their prior owner. These transitions do not morph between drawings or promise continuous
+velocity at arbitrary changes in authored intent.
+
+`SpokenLine(at, alignment, levels)` uses line-relative character alignment and measured
+dB samples at 100 Hz; `at` is on the performance clock. `speech` drives the mouth and
+head; `heard` supplies another speaker's prosody for listening without opening this
+character's mouth. Audio assets are placed separately. Full `Overrides` tracks take
+precedence over beat channels; `None` inherits, while an empty track requests defaults.
+A `HeadPlan` override owns numeric head channels and gaze together. Typed limb tracks
+own gestures; conflicting explicit gestures are rejected. Runtime overrides are Python
+bindings passed to `parse_score(..., overrides=...)`, never opaque generated JSON.
+
+`window(start, end)` uses absolute performance endpoints; `place(..., at=...)` uses the
+parent clock. The returned group runs on the original performance clock, so attached
+drawings must use that clock too. Random-access sampling preserves expression, gaze,
+breathing phase, contacts and attachment state across cuts. A reset during an active
+limb contact or prop attachment fails until its explicit release. Spatial limb samples
+describe the source motion; baked rendering still uses the selected limb frame rate.
+
+Run the two-family silent study with licensed font assets and a JSON state report:
+
+```sh
+python examples/acting_gallery.py ../generated/sdk-acting
+scene-render validate ../generated/sdk-acting/acting-gallery.scene.xml --deny-warnings
+scene-render encode ../generated/sdk-acting/acting-gallery.scene.xml --strict
+```
+
+### Opt-in acting transition policies
+
+Score schema `srstudio.acting/1.1.0` adds a versioned `policy` to each beat. Existing
+1.0.0 scores retain their output and reject this new field. Python uses
+`TransitionPolicy` and `ChannelTiming` from `srstudio.acting`; inspect
+`BENTO.describe()["transitions"]["policy"]` for supported channels, curves and bounds.
+
+<!-- acting-policy:start -->
+```python
+from srstudio.acting import BENTO, compile_performance, parse_score
+
+score = parse_score({
+    "schema": "srstudio.acting/1.1.0", "duration": 4, "idle": False,
+    "beats": [
+        {"at": 0, "head": {"turn": 0}, "transition": 0},
+        {"at": 1, "emotion": "happy", "head": {"turn": 2}, "transition": 0.7,
+         "policy": {
+             "version": "1.0.0", "curve": "spring",
+             "spring": {"frequency": 3, "damping": 0.85},
+             "anticipation": 0.2, "anticipation_amount": 0.1,
+             "settle": 0.3, "overshoot": 0.1,
+             "timing": [{"channel": "expression", "duration": 0.1},
+                        {"channel": "turn", "delay": 0.08}]
+         }}
+    ]
+})
+plan = compile_performance(BENTO, score)
+assert plan.sample(1.1).emotion == "happy"
+assert plan.window(0.9, 3).sample(0.2) == plan.sample(1.1)
+```
+<!-- acting-policy:end -->
+
+Each channel launches at `beat.at + delay` and arrives after its timing `duration`
+(default: `beat.transition`). Numeric anticipation starts **before** launch, moving
+opposite the target delta by `anticipation_amount`. Arrival can exceed the target by
+`overshoot`; positive `settle` then returns to it. These amounts are fractions of the
+delta, not absolute angles or pixels. Springs default to 3 Hz and damping 0.75; an
+explicit spring uses 0.1–20 Hz and damping 0.1–2. Its own `anticipation` must be zero:
+the policy owns that phase. Other curves use the shared `Channel` sampler.
+
+Expression, gesture and gaze remain held drawings that switch at their individual
+arrival times. The emotion label follows expression timing. Speech owns mouth timing.
+Gloss can stagger supported drawing channels; numeric easing/anticipation on a beat
+without numeric targets is rejected. A timing entry must name a unique, supported
+channel assigned by that beat. Reset also assigns procedural numeric channels on Toon;
+ordinary `HeadTarget` assignments retain their existing five fields.
+
+All phases must fit inside the performance and cannot overlap another transition on
+the same channel. Reset phases cannot cross active contacts or prop attachments.
+Whole-channel overrides keep precedence, but cannot hide an invalid policy excursion.
+Rendered head channels stay inside rig limits, and policy-driven breath stays in 0..1.
+Numeric anticipation/settling requires a positive transition at six-decimal scene
+precision. A zero-duration numeric arrival changes within one scene quantum
+(one microsecond), preserving the preceding hold; discrete drawings switch directly.
+
+Policies bake linear keys at at least 240 Hz inside their intervals (at least 32 samples
+per spring cycle), retaining phase boundaries and the score's ordinary sample grid.
+The compiler limits candidate keys to 20,000 per channel before adding a dense interval.
+These are bounded sampled motions, not a continuous physical simulation. Position,
+velocity and acceleration are separate properties: policy baking does **not** guarantee
+velocity or acceleration continuity, and it never implies facial morph support.
+
+The executable [transition study](../examples/acting_transitions.py) compares legacy,
+anticipated and spring timing, with cuts during anticipation and settling. It exports
+the exact score JSON, source hashes and state report; human ratings remain explicitly
+absent. Build into a new directory, then render:
+
+```sh
+python examples/acting_transitions.py ../generated/sdk-acting-transitions
+scene-render encode ../generated/sdk-acting-transitions/acting-transitions.scene.xml --strict
+```
+
+### Sustained listening and repairable capability failures
+
+Use `heard` for the other speaker's lines. Keep one plan across their phrases and cuts;
+recompiling at each phrase restarts the procedural performance. This executable fixture
+is deliberately synthetic and silent. Its constant levels are not measurements.
+
+<!-- listening:start -->
+```python
+from srstudio.acting import (
+    BENTO, ActingBeat, ActingError, ActingScore, SpokenLine,
+    compile_performance, gloss_actor,
+)
+from srstudio.voice import Alignment
+
+synthetic_alignment = Alignment(
+    tuple("Hello."), (0, .1, .2, .3, .4, .5), (.1, .2, .3, .4, .5, .6)
+)
+heard = tuple(
+    SpokenLine(at, synthetic_alignment, (-24.0,) * 60)
+    for at in (.5, 2.2, 4.0)
+)
+score = ActingScore(
+    6, (ActingBeat(0, gaze="right", transition=0),), heard=heard, seed=1
+)
+listener = compile_performance(BENTO, score)
+assert listener.sample(3) == listener.window(3, 6).sample(0)
+assert listener.sample(1.1).mouth == "closed"
+
+try:
+    compile_performance(gloss_actor("nadia"), score)
+except ActingError as error:
+    diagnostic = error.to_dict()
+assert diagnostic["code"] == "acting.unsupported"
+assert diagnostic["path"] and diagnostic["expected"] and diagnostic["remedy"]
+```
+<!-- listening:end -->
+
+For a real recording, parse its alignment with `Alignment.parse`, then obtain measured
+levels with `head_motion.speech_of(alignment, at, audio_path).levels` and pass those to
+`SpokenLine`. Place the recording as a separate scene audio asset at the same performance
+offset. Do not substitute the synthetic levels above for measured prosody. The planner
+selects reactions deterministically from the rig style and seed; it need not nod at every
+phrase. This fixture's seed produces three reactions, with the middle reaction continuing
+through the cut.
+
+### Carrying a prop across a cut
+
+An attachment belongs to the source motion. Bind it once, then observe the same plan
+through both shot windows. This compact recipe demonstrates state ownership; the complete
+rendered interaction below adds moving contact, prop geometry and depth compositing.
+
+<!-- carrying:start -->
+```python
+from dataclasses import replace
+from srstudio.acting import ActingScore, Overrides, compile_performance, gloss_actor
+from srstudio.limbs import HUMAN, ArmProfile, Camera, Frame, Vec3
+from srstudio.limbs.compile import BakeOptions
+from srstudio.limbs.integration import LimbTrack
+from srstudio.limbs.motion import Action, Attachment, Motion
+
+motion = Motion(ArmProfile(), HUMAN, (Action("grasp", duration=6),))
+offset = Frame(Vec3(0, .37, .19))
+initial = motion.sample(1.2).hand.frame.compose(offset)
+motion = replace(motion, attachments=(Attachment("cup", 1.2, 5, initial, offset),))
+track = LimbTrack(
+    motion, style="gloss", camera=Camera(origin=(-92, -345), scale=200),
+    options=BakeOptions(fps=24), backend="baked",
+)
+source = compile_performance(
+    gloss_actor("nadia"), ActingScore(6, overrides=Overrides(limbs=(track,)))
+)
+after_cut = source.window(3, 6)
+assert after_cut.sample(0) == source.sample(3)
+cup_at_cut = dict(after_cut.sample(0).limbs[0].props)["cup"]
+assert cup_at_cut == motion.sample(3).hand.frame.compose(offset)
+```
+<!-- carrying:end -->
+
+`Attachment` verifies that acquisition does not jump and holds the release frame after
+release. It does not draw the prop. `bake_interaction` combines a `Participant` hand and
+`PropDrawing(mesh, AttachedProp(motion, "cup"))` in the same canonical coordinates,
+sorting their surfaces together. Do not draw a second copy of that hand with `LimbTrack`
+in the same view. For an isolated interaction, place the compositor under the performance
+window's returned group with `Canvas(local_time=True)` and an explicit full-source
+`BakeOptions(duration=6)`. The group supplies the source clock; baking just the shot length
+would discard later motion. The limb and prop must use the same projection, placement,
+facing and parent transform. Adding a prop beside a bobbing character's root does not
+automatically inherit its body bob or anatomical reflection.
+
+The complete study combines a sustained Bento listener and an isolated hand that lifts,
+carries and replaces a cup. A camera cut occurs while both are moving. It includes a
+serialized motion, exact listening-score JSON, licensed font, explicit synthetic-input provenance,
+SDK schema validation and numeric report:
+
+```sh
+python examples/acting_continuity.py ../generated/sdk-continuity
+scene-render validate ../generated/sdk-continuity/continuity.scene.xml --deny-warnings
+scene-render encode ../generated/sdk-continuity/continuity.scene.xml --strict
+```
+
+For changing emotion and the same intent on two rig families, run
+[`acting_gallery.py`](../examples/acting_gallery.py) from the preceding section. These
+studies demonstrate supported clocks and composition; they do not certify emotional
+readability, collision-free gripping or whole-body balance.
 
 ## Styles
 
@@ -336,6 +651,12 @@ not dimensionless or project time. `canvas` time follows `Canvas.local_time`; `r
 the builder's entrance. Bento's pose starts use that relative clock, while `duration` is an absolute project
 exit. The Actor build operation describes coordinates in drawing-parent units and scale as a ratio.
 
+`ParameterContract.space` and `anchors` publish `x-space` and `x-anchors`; `PartContract.returns` can attach them
+to a returned drawing group. Anchors are named finite 2D points, with explicit units and coordinate space.
+They describe local geometry before the returned group's transform. They do not imply a mesh, collision
+surface, finger contact solver, or supported camera view. These are optional additions to the existing
+`srstudio.part-contract/1.0.0` envelope; argument-shape completeness still says nothing about return semantics.
+
 `x-status="runtime"` marks Python objects such as a Canvas or callback. `x-status="unknown"` marks missing or
 unresolved annotations and bounded recursive expansion. Neither is permission to accept arbitrary generated
 JSON as valid input. Dataclass-shaped JSON still needs construction of the actual Python record; inspection
@@ -423,6 +744,99 @@ arguments and its `still` behavior. These distinctions let agents reject unsuppo
 Discovery remains a description, not a JSON executor or a new validation layer. Opaque runtime bindings,
 legacy extras and some nested plugin data still require the actual Python API and its checks. Units and
 capabilities do not establish emotional readability, biomechanics, or rendered quality.
+
+### Non-character discovery and drawing anchors
+
+The core Cutout families publish 33 prop, 8 location and 11 graphic contracts; `reaching-hand` adds a held-prop
+callback contract. Coverage remains partial across the full catalog. Inspect it separately from ordinary listings:
+
+```bash
+srstudio catalog --contract-coverage --json
+srstudio catalog --style cutout --kind prop --contract-coverage
+srstudio inspect prop coffee-cup --json
+```
+
+`srstudio.contract_coverage(style=None, kind=None)` returns the same versioned coverage report. Per-kind counts
+separate explicit declarations, complete argument shapes, units, clocks and anchors; `undeclared_parts` names
+the gaps. A count of declarations does not certify complete semantics. Discovery never invokes a builder.
+The regular `catalog` list retains its existing shape. Coverage and usage-ranking reports are separate modes.
+Directly replacing `Entry.builder` invalidates its previous declaration even if the new signature matches.
+Inspection marks that contract `declaration_status="builder-changed"`; coverage lists it under
+`stale_contract_parts` and `undeclared_parts`. Re-register the replacement with its own checked metadata, or
+restore the original version with `parts.restore`. Drawing approval and semantic declarations remain separate.
+
+Location slots are runtime callbacks receiving an existing group. The slot description identifies its drawing
+depth, and the callback's return value is ignored. This complete recipe validates a malformed callback before
+drawing, then places an actual actor behind the office desk. `shots` gates visibility on the canvas clock;
+it does not call the callback again for each frame or shift the actor's performance clock.
+
+<!-- location-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, cast, describe, get
+from srstudio.locations import LocationError
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=3)
+cv = Canvas(scene, font_asset=None)
+info = describe("location", "office-desk")["contract"]
+assert info["arguments"]["properties"]["behind_desk"]["x-role"] == "drawing-slot"
+location = get("location", "office-desk")
+before = scene.to_bytes()
+try:
+    location(cv, cv.comp, behind_desk=False)
+except LocationError as error:
+    repair = error.to_dict()
+    assert scene.to_bytes() == before
+
+seated = []
+def seat(parent):
+    seated.append(cast.Manager(cv).build(parent, 560, 724, 1.45))
+
+room = location(cv, cv.comp, shots=[(0, 3)], behind_desk=seat)
+assert scene.check(schema=True) == []
+```
+<!-- location-discovery:end -->
+
+For a held cup, align its published `body-center` anchor with the hand's `grip`. The existing hand builder draws
+the carried object between palm and fingers. Animate the shared parent so the contact survives translation,
+rotation and scaling without independently sampled prop keys. A floating cup uses `shadow=False`; its contact
+shadow belongs on a support surface. `base` is a separate local anchor for placing the cup on a table.
+
+<!-- held-prop-discovery:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas, describe, get
+
+scene = Scene(version="auto")
+scene.add_project(width=1080, height=1920, fps="30", duration=3, background="#ECE2D2")
+cv = Canvas(scene, font_asset=None)
+cup_info = describe("prop", "coffee-cup")["contract"]
+hand_info = describe("prop", "reaching-hand")["contract"]
+assert cup_info["returns"]["x-space"] == "returned-group"
+assert hand_info["returns"]["x-anchors"]["grip"] == [0, 0]
+assert cup_info["capabilities"]["spatial_attachment"] is False
+cups = []
+def carry(parent):
+    cup = get("prop", "coffee-cup")(cv, parent, 0, 0, scale=2, shadow=False)
+    cup.anchorX, cup.anchorY = cup_info["returns"]["x-anchors"]["body-center"]
+    cups.append(cup)
+
+hand = get("prop", "reaching-hand")(
+    cv, cv.comp, 540, 1050, scale=1.3, grip=52, holds=carry,
+)
+cv.keys(hand, "y", [(0, 1050), (1, 900), (2, 900), (3, 1050)], kind="sine-in-out")
+cv.keys(hand, "rotation", [(0, 0), (1, -8), (2, -8), (3, 0)], kind="sine-in-out")
+assert scene.check(schema=True) == []
+```
+<!-- held-prop-discovery:end -->
+
+This is an authored flat grip and a sleeve entering from outside the frame, with no articulated shoulder,
+physical collision, or automatic view conversion. Use the [spatial contact compositor](catalog/limbs.md#prop-contact-and-compositing)
+when the prop needs a mesh and depth ordering across articulated limbs. Some builders return only part of their
+drawing: `cafe-window` returns its clipped view, and `tree` its animated canopy. Their contracts identify that
+limitation. `captions` returns layers placed directly in the composition; its start/end values use the composition
+clock, independently of `Canvas.local_time`. Other core graphic animation keys use the canvas clock.
 
 ### Character clips: one placement and timing boundary
 

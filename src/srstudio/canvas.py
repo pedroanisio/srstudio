@@ -18,7 +18,7 @@ from sr_core.scene import Animate, Scene
 from . import checks, drawing_events
 from ._counter import Counter
 from ._transaction import scene_transaction
-from .errors import SrstudioError
+from .errors import SrstudioError, _brief
 from .native import NativeError
 
 CLEAR = "#00000000"
@@ -84,9 +84,35 @@ Spans = Iterable[tuple[float, float]]
 def _visibility_keys(spans: Spans) -> list[tuple[float, int]]:
     """One union of spans, shared by visibility gates and complementary rig layers."""
     intervals = []
-    for start, end in spans:
+    if not isinstance(spans, Iterable) or isinstance(spans, (str, bytes)):
+        raise CanvasError(
+            'visibility spans must be iterable pairs',
+            code='canvas.visibility.shape',
+            path='visibility',
+            actual=spans,
+            expected='an iterable of (start, end) pairs',
+            remedy='Provide finite time spans, or an empty iterable to keep the layer hidden.',
+        )
+    for index, span in enumerate(spans):
+        if not isinstance(span, (tuple, list)) or len(span) != 2:
+            raise CanvasError(
+                'a visibility span needs a start and end',
+                code='canvas.visibility.shape',
+                path=f'visibility[{index}]',
+                actual=span,
+                expected='a (start, end) pair',
+                remedy='Supply exactly two finite seconds for each visibility span.',
+            )
+        start, end = span
         if not (checks.number(start) and checks.number(end) and 0 <= start <= end):
-            raise CanvasError(f"visibility span {start}..{end} must be finite with 0 <= start <= end")
+            raise CanvasError(
+                f"visibility span {_brief(start)}..{_brief(end)} must be finite with 0 <= start <= end",
+                code='canvas.visibility.time',
+                path=f'visibility[{index}]',
+                actual=span,
+                expected='finite seconds with 0 <= start <= end',
+                remedy='Order the endpoints and use nonnegative seconds on the owning canvas clock.',
+            )
         if end > start:
             intervals.append((float(start), float(end)))
     merged: list[tuple[float, float]] = []
@@ -408,16 +434,60 @@ class Canvas:
         ``kind`` names any schema interpolation (``sine-in-out``, ``cubic-out``...) and overrides ``hold``;
         ``local`` puts the keys on the shot's clock (``timeBase="local"``), default from the canvas.
         The complete animation is built off-scene; invalid input leaves the scene unchanged."""
+        if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
+            raise CanvasError(
+                f'keys on {_brief(prop)}: expected a sequence of key pairs',
+                code='canvas.keys.shape',
+                path=f'keys.{prop}',
+                actual=values,
+                expected='a sequence of (second, value) pairs',
+                remedy='Provide a finite sequence of timed values.',
+            )
+        for i, row in enumerate(values):
+            path = f'keys.{prop}[{i}]'
+            if not isinstance(row, (tuple, list)) or len(row) != 2:
+                raise CanvasError(
+                    f'keys on {_brief(prop)}: expected a (second, value) pair',
+                    code='canvas.keys.shape',
+                    path=path,
+                    actual=row,
+                    expected='a (second, value) pair',
+                    remedy='Give every key exactly one numeric time and one value.',
+                )
+            time, value = row
+            if not checks.number(time):
+                raise CanvasError(
+                    f'keys on {_brief(prop)}: time must be finite',
+                    code='canvas.keys.time',
+                    path=path + '[0]',
+                    actual=time,
+                    expected='a finite numeric second, excluding booleans',
+                    remedy='Replace the key time with a finite second on the selected canvas clock.',
+                )
+            if isinstance(value, (float, int)) and not isinstance(value, bool) and not checks.number(value):
+                raise CanvasError(
+                    f'keys on {_brief(prop)} at {time}: numeric values must be finite',
+                    code='canvas.keys.value',
+                    path=path + '[1]',
+                    actual=value,
+                    expected='a finite numeric value',
+                    remedy='Replace the nonfinite or unrepresentable key value before emitting the animation.',
+                )
         ordered = sorted(values, key=lambda kv: kv[0])
         if not ordered:
-            raise CanvasError(f'keys on {prop!r}: no keys to animate')
+            raise CanvasError(
+                f'keys on {_brief(prop)}: no keys to animate',
+                code='canvas.keys.empty',
+                path=f'keys.{prop}',
+                actual=values,
+                expected='at least one (second, value) pair',
+                remedy='Provide a held key or omit this animation.',
+            )
         kw: dict[str, Any] = {"property": prop, "defaultInterpolation": kind or ("hold" if hold else "linear")}
         if self.local_time if local is None else local:
             kw["timeBase"] = "local"
         a = Animate(**kw)
         for t, value in ordered:
-            if isinstance(value, float) and not checks.number(value):
-                raise CanvasError(f'keys on {prop!r} at {t!r}: numeric values must be finite')
             a.add_key(time=round(float(t), 6), value=str(value))
         if self._frozen:
             value = _at_zero(ordered, hold and kind is None, prop)

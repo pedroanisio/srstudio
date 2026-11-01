@@ -3,22 +3,26 @@
 :class:`Groove` turns bars and beats into seconds; pose changes and lyric lines are placed with
 :meth:`Groove.at` and :meth:`Groove.beats`. :func:`render` plays :class:`Section` s of the grid with
 five parts (kick, snare, hat, bass, keys) over a chord loop, deterministically from ``seed``, and
-levels the result to ``peak``; :func:`write_wav` stores it as 16-bit mono PCM for the mix.
+levels the result to ``peak``; :func:`write_wav` stores it as 16-bit mono PCM for the mix. :func:`measure` reads the
+grid of a track that already exists, so a picture can move to it.
 """
 
 from __future__ import annotations
 
 import math
 import random
+import subprocess
 import wave
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from . import checks
 from .errors import SrstudioError
 
-__all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "render", "write_wav", "LOOP"]
+__all__ = ["CHOKE", "PARTS", "MusicError", "Groove", "Section", "measure", "render", "write_wav", "LOOP"]
 
 PARTS = ("kick", "snare", "hat", "bass", "keys")
 # A bouncy I–vi–IV–V loop in C major: (bass root, chord tones) as MIDI notes, one chord per bar.
@@ -28,6 +32,13 @@ LOOP: tuple[tuple[int, tuple[int, ...]], ...] = (
     (29, (53, 57, 60)),
     (31, (55, 59, 62)),
 )
+
+
+_RATE, _HOP, _WINDOW = 22050, 220, 1024  # the measure's sound: 22 kHz mono, about a hundred onset frames a second
+_LEAD = 3 / 4 * _WINDOW / _RATE  # an onset frame leads its sound: measured on click tracks
+_EDGES = (20, 160, 400, 1200, 4000, 10000)  # its bands in Hz; the first holds the kick
+SURE_BARS = 8  # fewer than this and one odd bar can move the bar line
+STRONG = 0.75  # of the strongest mark's low end: 0.7 and 0.8 read every track of known grid alike
 
 
 class MusicError(SrstudioError, ValueError):
@@ -75,6 +86,24 @@ class Groove:
             n += every
         return out
 
+    def between(self, start: float, end: float, every: float = 1) -> list[float]:
+        """The grid's marks in ``[start, end)`` seconds, every ``every`` beats; the grid runs on before ``offset``."""
+        if every <= 0:
+            raise MusicError(f"every {every} must be positive")
+        if not (checks.number(start) and checks.number(end)):
+            raise MusicError(f"the span {start}..{end} is not a span of seconds")
+        if end < start:
+            raise MusicError(f"the span {start}..{end} ends before it starts")
+        step = self.beat * every
+        k = range(math.floor((start - self.offset) / step), math.ceil((end - self.offset) / step) + 1)
+        marks = (round(self.offset + n * step, 6) for n in k)  # rounded first: a mark given back opens its own span
+        return [t for t in marks if start <= t < end]
+
+    def opens_bar(self, t: float) -> bool:
+        """Whether the second ``t`` is a beat that opens a bar."""
+        turns = (t - self.offset) / self.bar
+        return abs(turns - round(turns)) * self.bar < 1e-3
+
 
 @dataclass(frozen=True)
 class Section:
@@ -83,6 +112,122 @@ class Section:
     start_bar: int
     end_bar: int
     parts: frozenset[str] = field(default_factory=lambda: frozenset(PARTS))
+
+
+def _decoded(path: Path, seconds: float | None, ffmpeg: str) -> np.ndarray:
+    take = ["-t", str(seconds)] if seconds is not None else []
+    try:
+        done = subprocess.run(
+            [ffmpeg, "-v", "error", "-i", str(path), *take, "-ac", "1", "-ar", str(_RATE), "-f", "f32le", "-"],
+            capture_output=True,
+        )
+    except FileNotFoundError as exc:
+        raise MusicError(f"cannot read the sound of {path}: no {ffmpeg} to decode it") from exc
+    if done.returncode != 0:
+        raise MusicError(f"cannot read the sound of {path}: {done.stderr.decode(errors='replace').strip()}")
+    return np.frombuffer(done.stdout, np.float32)
+
+
+def _spectrum(samples: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The log spectrum, frame by frame, and the frequency of its bins."""
+    count = (len(samples) - _WINDOW) // _HOP + 1
+    frames = samples[np.arange(_WINDOW) + _HOP * np.arange(count)[:, None]] * np.hanning(_WINDOW)
+    return np.log1p(1000 * np.abs(np.fft.rfft(frames, axis=1))), np.fft.rfftfreq(_WINDOW, 1 / _RATE)
+
+
+def _onsets(power: np.ndarray, hz: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Where sound starts, frame by frame: the rise of every band together and of the low band alone."""
+    bands = np.array([power[:, (hz >= a) & (hz < b)].mean(1) for a, b in zip(_EDGES, _EDGES[1:], strict=False)])
+    rise = np.clip(np.diff(bands, axis=1), 0, None)
+    return rise.sum(0), rise[0]
+
+
+def _bar_line(power: np.ndarray, low: np.ndarray, starts: np.ndarray, per_bar: int) -> int:
+    """Which of the first ``per_bar`` marks at ``starts`` opens a bar. The low end picks the strong marks, within
+    ``STRONG`` of the strongest, because a kick on one and three makes those two a tie. Among them it is the mark where
+    bars cut there turn most: a bar's mean spectrum, which no rhythm inside the bar can change, moves with its chord."""
+    peaks = np.array([low[max(f - 3, 0) : f + 10].sum() for f in starts])  # a tenth of a second, a kick's length
+    weight = [float(peaks[k::per_bar].mean()) for k in range(per_bar)]
+    marks = np.array([power[a:b].mean(0) for a, b in zip(starts, starts[1:], strict=False)])
+
+    def turn(k: int) -> float:
+        bars = [marks[j : j + per_bar].mean(0) for j in range(k, len(marks) - per_bar + 1, per_bar)]
+        steps = [np.linalg.norm(a - b) for a, b in zip(bars, bars[1:], strict=False)]
+        return float(np.mean(steps)) if steps else 0.0
+
+    return max((k for k in range(per_bar) if weight[k] >= STRONG * max(weight)), key=turn)
+
+
+def _folded(onsets: np.ndarray, period: float, bins: int) -> np.ndarray:
+    phase = (np.arange(len(onsets)) / period % 1 * bins).astype(int)
+    return np.bincount(phase, onsets, bins) / np.maximum(np.bincount(phase, minlength=bins), 1)
+
+
+@dataclass(frozen=True)
+class Reading:
+    """A track's grid, the bars heard to get it, and whether that was enough to trust where the bars open."""
+
+    groove: Groove
+    bars: float
+    sure: bool
+
+
+def measure(
+    path: Path | str, *, seconds: float | None = None, beats_per_bar: int = 4, ffmpeg: str = "ffmpeg"
+) -> Groove:
+    """The grid of a recorded track: see :func:`reading`."""
+    return reading(path, seconds=seconds, beats_per_bar=beats_per_bar, ffmpeg=ffmpeg).groove
+
+
+def reading(
+    path: Path | str, *, seconds: float | None = None, beats_per_bar: int = 4, ffmpeg: str = "ffmpeg"
+) -> Reading:
+    """The grid of a recorded track, over its first ``seconds`` when given: the tempo whose beat, double and bar all
+    repeat in its onsets, leaning toward 120 BPM, and the beat that opens a bar. Going by the beat alone reads a 3-3-2
+    rhythm at two thirds of its tempo. A tempo holds on a few bars; the bar line needs ``SURE_BARS`` of them, and short
+    of that the reading says so. An even pulse holds nothing that tells a tempo from its double or half, and the lean
+    decides: clicks read true from 75 to 165 BPM, and outside that at the octave inside it. A track that changes tempo
+    has no single grid: measure each part of it."""
+    if beats_per_bar < 1:
+        raise MusicError(f"beats_per_bar {beats_per_bar} must be at least 1")
+    samples = _decoded(Path(path), seconds, ffmpeg)
+    if len(samples) < 2 * _RATE:
+        raise MusicError(f"{path} is too short to hold a tempo: {len(samples) / _RATE:.2f} s")
+    if float(np.abs(samples).max()) < 1e-3:
+        raise MusicError(f"{path} is silent: nothing to measure")
+    power, hz = _spectrum(samples)
+    onsets, low = _onsets(power, hz)
+    fps = _RATE / _HOP
+    pulse = onsets - onsets.mean()
+    spectrum = np.fft.rfft(pulse, 2 * len(pulse))
+    echo = np.fft.irfft(spectrum * np.conj(spectrum))[: len(pulse)]
+    best, best_bpm = -math.inf, 0.0
+    for bpm in np.arange(60.0, 200.0, 0.25):
+        period = fps * 60.0 / bpm
+        marks = [m for m in (period, 2 * period, beats_per_bar * period) if m < len(echo) - 1]
+        if not marks:
+            continue
+        score = float(np.interp(marks, np.arange(len(echo)), echo).mean())  # a clip can be shorter than a slow bar
+        score *= math.exp(-0.5 * (math.log2(bpm / 120.0) / 0.8) ** 2)
+        if score > best:
+            best, best_bpm = score, float(bpm)
+    if best <= 0:
+        raise MusicError(f"{path} has no steady pulse to measure")
+    fine = np.arange(best_bpm - 0.5, best_bpm + 0.51, 0.05)
+    folds = [_folded(onsets, fps * 60.0 / bpm, max(4, round(fps * 60.0 / bpm))) for bpm in fine]
+    index = int(np.argmax([f.max() - f.mean() for f in folds]))
+    best_bpm = round(float(fine[index]), 2)
+    best_phase = int(np.argmax(folds[index]))
+    beat = 60.0 / best_bpm
+    first = best_phase / max(4, round(fps * beat)) * beat + _LEAD
+    step = beat / 2  # a song's kick can fall off the beat the onsets folded on
+    starts = np.arange(first % step * fps, len(power), step * fps).astype(int)
+    if len(starts) < 4 * beats_per_bar + 1:
+        raise MusicError(f"{path} is too short for bars of {beats_per_bar}: {len(starts) // 2} beats")
+    opening = first % step + step * _bar_line(power, low, starts, 2 * beats_per_bar)
+    groove = Groove(best_bpm, beats_per_bar, round(opening, 3) % (beat * beats_per_bar))
+    bars = len(samples) / _RATE / (beat * beats_per_bar)
+    return Reading(groove, bars, bars >= SURE_BARS)
 
 
 def _check(sections: Sequence[Section]) -> None:

@@ -99,6 +99,33 @@ def test_parent_clock_and_source_anchor_are_explicit(scene_render, tmp_path):
     assert not any(n['id'] == 'character' for n in evaluate(scene_render, path, 6))
 
 
+@pytest.mark.parametrize('index', range(5))
+def test_sequence_shot_keeps_animation_phase_and_state(scene_render, tmp_path, index):
+    write_png(tmp_path / 'plate.png', np.full((80, 100, 4), 255, np.uint8))
+    samples = []
+    for lead in (0, 3):
+        cv = canvas()
+        cv.assets.add_image(id='plate', src='plate.png', width=100, height=80)
+        sequence = cv.comp.add_sequence(id='shots')
+        if lead:
+            sequence.add_group(id='lead', end=lead)
+        parent = sequence.add_group(id='shot', end=4)
+        place_character(cv, parent, clips()[index], interval=Interval(1, 3), id='character')
+        path = tmp_path / f'{lead}.xml'
+        path.write_bytes(cv.scene.to_bytes())
+        samples.append(
+            [
+                [
+                    (n['id'], n['world'], n['world_opacity'], n['draw'])
+                    for n in evaluate(scene_render, path, lead + 1 + time)
+                    if n['id'] not in ('shots', 'shot')
+                ]
+                for time in (0, 0.25, 0.75, 1.5)
+            ]
+        )
+    assert samples[0] == samples[1]
+
+
 @pytest.mark.parametrize('start,end', [(True, 2), (-1, 2), (1, 1), (2, 1), (0, float('inf')), (0, 601)])
 def test_invalid_intervals_have_repair_fields(start, end):
     with pytest.raises(CharacterClipError) as caught:
@@ -221,7 +248,8 @@ def limb_track(style='cutout', offset=0, backend='baked'):
 
 @pytest.mark.parametrize('family', ['actor', 'gloss'])
 @pytest.mark.parametrize('backend', ['baked', 'native'])
-def test_limb_offset_is_local_and_holds_only_through_clip_end(scene_render, tmp_path, family, backend):
+@pytest.mark.parametrize('sequence_shot', [False, True])
+def test_limb_offset_is_local_and_holds_only_through_clip_end(scene_render, tmp_path, family, backend, sequence_shot):
     snapshots = []
     for offset in (0, 3):
         cv = canvas()
@@ -231,7 +259,15 @@ def test_limb_offset_is_local_and_holds_only_through_clip_end(scene_render, tmp_
             if family == 'actor'
             else GlossClip('gus', limbs=(track,))
         )
-        place_character(cv, cv.comp, clip, interval=Interval(offset, offset + 2), id='character')
+        parent = cv.comp
+        start = offset
+        if sequence_shot:
+            sequence = cv.comp.add_sequence(id='shots')
+            if offset:
+                sequence.add_group(id='lead', end=offset)
+            parent = sequence.add_group(id='shot', end=2)
+            start = 0
+        place_character(cv, parent, clip, interval=Interval(start, start + 2), id='character')
         path = tmp_path / f'{offset}.xml'
         path.write_bytes(cv.scene.to_bytes())
         snapshots.append(

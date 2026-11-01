@@ -2,7 +2,8 @@
   "schema_version": "1.0.0",
   "generated_by": {"model": "GPT-6", "tool": "OpenAI Codex"},
   "reviewed_on": "2026-11-01",
-  "reviewed_source_commit": "64efa1c7",
+  "reviewed_source_commit": "865ac902",
+  "reviewed_working_tree": "Reviewed develop at 865ac902 with the authoring-diagnostics implementation and documentation changes described below. Catalog counts were rechecked unchanged. Earlier observations retain their original verification scope; the prior transition collection blocker is resolved.",
   "implementation_updated_on": "2026-11-01",
   "character_contract_coverage": {
     "default_registered_characters": 70,
@@ -19,13 +20,94 @@
     "P3": "Integration, documentation, evidence or maintainability improvement",
     "P4": "Broader capability or measurement-led optimization"
   },
-  "assessment": "Strong reusable primitives and validation; composing a coherent performance still requires rig-specific knowledge. Numeric validity does not establish perceptual quality.",
+  "assessment": "Strong reusable primitives, explicit character discovery, common non-character drawing contracts, coordinated acting with opt-in transition policies, executable cross-system recipes and scoped numeric regression envelopes. Core callback and prop-option defects have atomic preflight and repairable failures. Common authoring failures now expose explicit repair fields with bounded SDK/CLI payloads. Remaining priorities include cohesive head mechanics, explicit usage events, drawing adoption evidence and broader body/gaze capabilities. Discovery deliberately retains unknown semantics for other non-character families. Numeric validity does not establish perceptual quality.",
   "catalog_observation": {
-    "parts": 699,
+    "parts": 701,
     "characters": 70,
-    "entries_with_explicit_part_contract": 1,
-    "explicit_contract_names": ["toon-bento"],
-    "qualification": "Actor-derived entries additionally infer known base-class lifecycle capabilities; explicit metadata count is not a count of all typed APIs. Counts describe the inspected checkout, not a permanent gate."
+    "entries_with_explicit_part_contract": 123,
+    "all_default_characters_have_explicit_contracts": true,
+    "noncharacter_parts": 631,
+    "noncharacter_parts_with_explicit_contracts": 53,
+    "source": "Fresh-process contract_coverage() observation at 909025e7 on 2026-11-01.",
+    "by_kind": {
+      "character": {"registered": 70, "explicit_contracts": 70},
+      "prop": {"registered": 436, "explicit_contracts": 34},
+      "location": {"registered": 112, "explicit_contracts": 8},
+      "graphic": {"registered": 83, "explicit_contracts": 11}
+    },
+    "qualification": "Fresh-process registry.entries() observation at the reviewed checkout. Inferred signatures, runtime validation and documented examples remain available for non-character parts; absent explicit metadata does not mean absent validation. Counts are observations, not permanent gates."
+  },
+  "review_verification": {
+    "authoring_diagnostics_implementation": {
+      "selected_regressions": {
+        "passed": 1322,
+        "skipped": 0
+      },
+      "branch_inclusive_coverage_percent": {
+        "errors": 99,
+        "head_motion": 93,
+        "rig": 92,
+        "canvas": 94,
+        "cli": 79
+      },
+      "ruff_files": 1547,
+      "mypy_source_files": 239,
+      "red_to_green_evidence": [
+        "tests/test_authoring_diagnostics.py",
+        "tests/test_diagnostics.py"
+      ],
+      "qualification": "One combined engine-enabled selection passed after red-to-green validation of malformed authoring input, bounded diagnostics and the executable repair recipe. The first expanded run found a sandbox socket refusal in the number-ledger concurrency test; commit 865ac902 replaces only the manager transport with one-way pipes, preserving three real claimant processes and verifying persisted ledger numbers. The final selection includes that test without skips. This is not a full-suite execution, a new video render or a perceptual quality review."
+    },
+    "transition_policy_implementation": {
+      "final_combined_regression_selection": {"passed": 413, "subtests_passed": 24, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"acting": 91, "acting_compiler": 89, "acting_parser": 95, "transition_policies": 97, "character_clips": 97, "head_motion": 92},
+      "ruff_files": 1546,
+      "mypy_source_files": 239,
+      "repository_collection": {"collected": 19876, "errors": 0},
+      "strict_encoded_frames": 96,
+      "frame_size": [1920, 1080],
+      "fps": 24,
+      "full_size_frames_inspected": 4,
+      "qualification": "Selected regressions cover acting, strict parsing, policies, executable examples, clip clocks, head mechanics, character contracts and DRAWING.md. This is not a full-suite execution; full collection verifies the former import blocker is gone. Tests first reproduced early zero-duration motion, override-hidden overshoot, negative breath expansion and a legacy example's leaking policy field, then passed after fixes. The final three-panel study strictly encoded all 96 frames, independently counted with ffprobe; source hashes match. Four full-size frames were inspected. Human ratings remain absent, and no facial morph, derivative continuity or universal biomechanical guarantee is claimed."
+    },
+    "noncharacter_implementation": {
+      "final_combined_regression_selection": {"passed": 633, "skipped": 0},
+      "branch_inclusive_coverage_percent": {"contracts": 88, "registry": 96, "drawing_metadata": 100, "locations": 96, "props": 99, "graphics": 85, "cutout_counter": 97, "cli": 64},
+      "ruff_files": 1533,
+      "mypy_source_files": 235,
+      "strict_encoded_recipes": 2,
+      "encoded_frames": 180,
+      "frame_size": [1080, 1920],
+      "fps": 30,
+      "full_size_frames_inspected": 4,
+      "qualification": "This selected regression run is not the full repository suite. Additional recovery tests exposed stale metadata after direct builder swaps; tests first reproduced both a mismatched signature crash and stale claims with an unchanged signature, then passed after the fix. Both documentation recipes were strictly encoded and independently counted with ffprobe. Four full-size frames were inspected; no human-rating study or whole-body quality certification is claimed."
+    },
+    "pre_transition_review_focused_run": {
+      "command": "../.venv/bin/python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_noncharacter_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_sdk_review_followup.py --tb=short",
+      "passed": 237,
+      "skipped": 9,
+      "subtests_passed": 21,
+      "engine_followup": {
+        "command": "SRSTUDIO_ENGINE=/home/pals/src/worskpace/generated/bin/scene-render ../.venv/bin/python -m pytest -q tests/test_acting.py tests/test_sdk_review_followup.py -k 'window_drawings_match_uncut or contact_samples_are_preserved or open_and_closed_eyes' --tb=short",
+        "passed": 9,
+        "skipped": 0,
+        "deselected": 63
+      },
+      "qualification": "The nine skipped tests were subsequently exercised successfully with SRSTUDIO_ENGINE configured. Together these runs exercise 246 distinct selected tests and 21 subtests. This is not a full-suite pass; the separate pending transition test still fails collection. Engine evaluation checks do not constitute a new encoded-video or perceptual review."
+    },
+    "previous_review_focused_run": {
+      "command": "python -m pytest -q tests/test_acting.py tests/test_acting_parse.py tests/test_character_contracts.py tests/test_catalog_contracts.py tests/test_drawing_document.py tests/test_calibrated_quality.py tests/test_motion_quality_profiles.py --tb=short",
+      "passed": 175,
+      "skipped": 5,
+      "subtests_passed": 21,
+      "pending_noncharacter_test_selection": {"passed": 9, "failed": 54},
+      "qualification": "These are working-tree selections, not a full-suite result. The pending non-character tests include both planned metadata requirements and runtime failure-path regressions; 54 failures are not 54 independent production defects. Separate direct builder calls confirmed the callback and silently accepted prop-option findings below. No new render or perceptual rating was performed in this review. The remaining entries retain earlier verification evidence."
+    },
+    "engine": "scene-render 0.8.0",
+    "motion_acting_continuity_and_documentation": {"passed": 212, "subtests_passed": 21, "skipped": 0},
+    "diagnostics_errors_checks_and_cli": {"passed": 309, "skipped": 0, "errors_module_branch_inclusive_coverage_percent": 97},
+    "working_tree_calibration_and_related_contracts": {"passed": 221, "skipped": 29},
+    "qualification": "The 29 initial skips required the engine; the engine-enabled continuity run above subsequently exercised those tests. Counts describe separate overlapping selections, not a full-suite total. Ruff lint and formatting passed across 1527 files; mypy passed across 234 source files. No new perceptual rating or full-video visual acceptance is claimed by these checks."
   },
   "accelerators": [
     {"name": "Episode assembly and validated output", "evidence": ["src/srstudio/episode.py:Episode", "examples/new_episode.py"]},
@@ -34,13 +116,53 @@
     {"name": "Speech-driven head motion, listening, deterministic idle and breathing", "evidence": ["src/srstudio/head_motion.py:plan", "src/srstudio/head_motion.py:HeadPlan"]},
     {"name": "Soft pose tweening, local foot pinning and path-based walking cues", "evidence": ["src/srstudio/blob.py:Cue", "src/srstudio/blob.py:drawings", "src/srstudio/blob.py:walking"]},
     {"name": "Typed character clips with a shared placement and local performance clock", "evidence": ["src/srstudio/character_clips.py:place_character", "tests/test_character_clips.py", "docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary"]},
+    {"name": "Strict acting scores, explicit emotion mappings and persistent performance windows", "evidence": ["src/srstudio/acting.py:compile_performance", "src/srstudio/acting.py:parse_score", "examples/acting_gallery.py", "docs/authoring-reference.md#coordinated-acting-and-continuity"]},
     {"name": "Arm/hand IK, contacts, attachments, retargeting and style adapters", "evidence": ["src/srstudio/limbs/motion.py:Motion", "src/srstudio/limbs/interaction.py", "src/srstudio/limbs/compile.py:compile_motion"]},
-    {"name": "Numeric motion reports and configurable quality gates", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport"]},
-    {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]}
+    {"name": "Numeric motion reports, configurable gates and versioned canonical-arm envelopes", "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/validation.py:MotionReport", "src/srstudio/limbs/calibration.py:get_preset", "examples/limbs_quality.py"]},
+    {"name": "Structured error envelope and strict motion JSON", "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/limbs/serialization.py:parse_motion"]},
+    {"name": "Blinded comparison packets and separate human-rating summaries", "evidence": ["src/srstudio/limbs/evaluation.py:plan_trials", "src/srstudio/limbs/evaluation.py:summarize", "examples/limbs_quality.py"]}
   ],
   "confirmed_open_P0": [],
   "confirmed_open_P1": [],
+  "working_tree_blockers": [],
+  "resolved_working_tree_blockers": [
+    {
+      "priority": "P1",
+      "scope": "Uncommitted development checkout only; not a shipped SDK defect",
+      "path": "tests/test_acting_transitions.py",
+      "observation": "pytest --collect-only exits 2 because ChannelTiming cannot be imported from srstudio.acting. TransitionPolicy is also not implemented, and the legacy-output assertion still contains BASELINE_DIGEST.",
+      "remedy": "Complete the existing red-to-green transition work, capture the actual pre-change fingerprint, and pass the policy regressions and existing output-parity checks before committing it. Do not skip or delete the tests to report a green suite.",
+      "related_finding": "SDK-P2-05",
+      "resolution": "Implemented ChannelTiming and TransitionPolicy, captured the actual legacy fingerprint, passed the policy and integration regressions, and collected all 19,876 repository tests without errors."
+    }
+  ],
+  "current_review_observations": [
+    {
+      "topic": "Agent discovery",
+      "observation": "All 70 default characters have explicit semantic declarations. Of 631 non-character parts, 53 have declarations and 578 do not. A declaration is not a complete data-only constructor schema: runtime Canvas/Group bindings and unresolved shapes remain explicit.",
+      "improvement": "Extend metadata to additional families according to actual authoring usage, retaining explicit unknowns. Validate each new declaration against real builder calls and refusal paths.",
+      "evidence": ["src/srstudio/registry.py:contract_coverage", "src/srstudio/contracts.py:describe_part", "tests/test_noncharacter_contracts.py"]
+    },
+    {
+      "topic": "Agent repair loop",
+      "observation": "The previously reproduced breath_period failure now reports head.style.range, style.breath_period, actual/expected values and a remedy. Common head, channel, speech, facing, gaze, rig and canvas input failures also declare repair fields. Unmigrated validation sites still retain explicit nulls.",
+      "improvement": "Extend explicit repair metadata when changing other authoring boundaries; preserve exception compatibility and exercise the same envelope through SDK and CLI.",
+      "related_finding": "SDK-P3-05",
+      "evidence": ["src/srstudio/head_motion.py:HeadStyle.__post_init__", "src/srstudio/errors.py:diagnostic"]
+    },
+    {
+      "topic": "Documentation ergonomics",
+      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; detailed episode histories remain below the task guide.",
+      "improvement": "Keep the task guide linked to executable recipes and generated contract vocabularies; avoid duplicating capability declarations in prose.",
+      "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
+    }
+  ],
   "resolved_findings": [
+    {"priority": "P1", "title": "Malformed authoring input and oversized diagnostic graphs must fail predictably", "evidence": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py"], "qualification": "Red tests reproduced raw unpacking/type/string-conversion failures, a silently accepted nonfinite facing interval, excessive tiny-period blink iteration, plugin SDK failures escaping the CLI envelope, and a shared nested diagnostic payload expanding beyond three million characters. Source validation, preflight work limits and shared diagnostic traversal budgets now exercise typed bounded failure paths. This is scoped to the tested authoring boundaries, not an exhaustive malformed-input audit."},
+    {"priority": "P1", "title": "Direct builder swaps must not retain stale semantic declarations", "evidence": ["src/srstudio/registry.py:Entry._current_contract", "tests/test_noncharacter_contracts.py:test_direct_builder_swap_cannot_keep_the_previous_drawing_contract", "tests/test_agent_approved_recovery.py:test_mutated_character_builder_is_unverified"], "qualification": "Authored contracts are now bound to the registered callable identity. Inspection marks stale declarations as builder-changed without applying them, and coverage lists the part as undeclared/stale. Re-registration or restoration supplies the matching contract. Drawing approval remains independent."},
+    {"priority": "P1", "title": "Diagnostic mapping keys must not crash the repair envelope", "commit": "b7ed0f36", "evidence": ["src/srstudio/errors.py:_json_key", "tests/test_diagnostics.py:test_extreme_dictionary_keys_do_not_replace_the_original_diagnostic_with_an_error", "tests/test_diagnostics.py:test_diagnostic_keys_do_not_invoke_opaque_object_stringification", "tests/test_diagnostics.py:test_json_cli_preserves_failure_status_and_original_error_with_extreme_keys"], "qualification": "Confirmed with failing tests before the fix. Huge integer keys previously raised ValueError during string conversion; opaque keys could execute a failing __str__. Keys now use bounded scalar conversion or an opaque type label, preserving the original SDK/CLI diagnostic and failure status."},
+    {"priority": "P1", "title": "Sequence shots must preserve character keyframe clocks", "commit": "e879b414", "evidence": ["src/srstudio/character_clips.py:_local_keys", "tests/test_character_clips.py:test_sequence_shot_keeps_animation_phase_and_state", "tests/test_acting.py:test_window_drawings_match_uncut_engine_states_at_nonzero_offsets"], "qualification": "Confirmed during rendered review: composition keys ran ahead in later shots. Opt-in adapters now express them relative to their owning node's source start; legacy direct builders retain their APIs."},
+    {"priority": "P1", "title": "Extreme numeric input must return bounded validation failures", "commit": "5d6c0c7b", "evidence": ["src/srstudio/checks.py:number", "src/srstudio/errors.py:_json_value", "tests/test_checks.py", "tests/test_diagnostics.py:test_extreme_integers_do_not_break_json_encoding_or_payload_bounds"]},
     {"priority": "P1", "title": "Clipped spline channels must retain tangent neighbors", "evidence": ["src/srstudio/head_motion.py:Channel.during", "tests/test_motion_review_regressions.py"]},
     {"priority": "P1", "title": "Unknown gaze must fail before drawing", "evidence": ["src/srstudio/head_motion.py:HeadPlan.check_gaze", "src/srstudio/toon_head.py"]},
     {"priority": "P1", "title": "Rafa must honor shared channel sampling semantics", "evidence": ["src/srstudio/rafa.py", "src/srstudio/head_motion.py:Channel.sample"]},
@@ -49,6 +171,34 @@
     {"priority": "P2", "title": "Continuous transforms and explicit action chaining", "commit": "64efa1c7", "evidence": ["src/srstudio/limbs/transitions.py", "tests/test_action_chaining.py", "tests/test_continuous_tracks.py", "docs/catalog/limbs.md"], "qualification": "Joins match numerically estimated boundary velocities, preserve constraints and support random access. They do not promise acceleration continuity or perceptual preference."}
   ],
   "findings": [
+    {
+      "id": "SDK-P1-01",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Preflight location callbacks before drawing any part of the set",
+      "problem": "office_wide(at_desk=False) silently omits the requested slot; office_wide(at_desk=123) raises raw TypeError after changing the scene. An agent repairing the failed request can retain partial geometry or duplicate a set. _call uses truthiness, and callbacks are reached only after drawing starts.",
+      "evidence": ["src/srstudio/locations.py:_call", "src/srstudio/locations.py:office_wide", "src/srstudio/signature.py:home_cactus"],
+      "reproduction": "Create a fresh Scene and Canvas(font_asset=None), snapshot scene.to_bytes(), then call locations.office_wide(cv, cv.comp, at_desk=False) or at_desk=123. The former returns successfully; the latter raises TypeError; both change scene.to_bytes().",
+      "change": "Preflight every core location slot as None or callable before drawing, allocating IDs or registering reusable resources. Report an explicit LocationError code, field path and remedy. Keep callback execution separate from preflight and preserve valid callback ordering.",
+      "acceptance": ["Malformed callbacks fail before scene and canvas state changes", "None remains the explicit omitted-slot value", "Valid callbacks execute once at their documented drawing depth", "A repaired retry has the same output as a fresh successful build"],
+      "resolution": "All 23 core location callback slots are checked as None or callable before drawing resources are created. Falsey callable objects execute rather than disappearing. LocationError exposes location.slot, path, actual, expected and remedy; depth errors now expose the same repair fields and bound extreme numbers. Invalid-slot tests compare scene bytes and canvas state, then prove repaired retries match fresh builds. Existing room/cactus tests retain drawing-depth coverage. This preflight validates callback presence/type; it does not sandbox arbitrary callback bodies or promise rollback of their external effects.",
+      "verification": ["tests/test_core_drawing_preflight.py", "tests/test_cutout_rooms.py", "tests/test_the_cactus.py", "tests/test_elevator.py"],
+      "complexity": "M"
+    },
+    {
+      "id": "SDK-P1-02",
+      "priority": "P1",
+      "status": "complete",
+      "title": "Reject malformed prop options instead of silently changing the drawing",
+      "problem": "chair(style='greay') draws the gray chair, and coffee_cup(shadow='false') draws a contact shadow because the string is truthy. Both return successfully. Generated arguments can therefore produce unintended artwork without a repair signal.",
+      "evidence": ["src/srstudio/props.py:chair", "src/srstudio/props.py:coffee_cup"],
+      "reproduction": "On separate fresh canvases, call props.chair(cv, cv.comp, style='greay') and props.coffee_cup(cv, cv.comp, 0, 0, shadow='false'). Both succeed and mutate the scene; neither returns a typed validation failure.",
+      "change": "Validate the chair style vocabulary and require a boolean shadow option before drawing. Return PropError with path, actual, expected and remedy. Preserve supported placement values and valid output; do not silently coerce strings to booleans.",
+      "acceptance": ["Typos and string booleans fail atomically with actionable fields", "Both supported chair styles and both boolean shadow values retain their output", "SDK and CLI diagnostic encoding preserve the same repair information"],
+      "resolution": "Chair styles and cup shadow flags are explicitly validated before drawing. Cup placement is validated through detached sr-core group descriptors before allocating IDs, preserving supported relative coordinates and numeric lexical forms. Typed PropError diagnostics include repair fields and remain bounded for extreme integers. Five serialized drawing fingerprints captured before the change still match, including both chair styles and both shadow values. Tests verify custom ID allocators remain untouched by rejected placement and CLI formatting preserves the actual SDK diagnostic fields.",
+      "verification": ["tests/test_core_drawing_preflight.py", "tests/test_diagnostics.py"],
+      "complexity": "S"
+    },
     {
       "id": "SDK-P2-01",
       "priority": "P2",
@@ -65,23 +215,53 @@
     {
       "id": "SDK-P2-02",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Coordinate acting intent and persistent performance state",
       "problem": "Performance exposes mouth, blink, nod, limb tracks and untyped extras; HeadPlan and rig-specific moods are separate. Authors must manually resolve conflicting channels, emotional transitions and state across shots.",
       "evidence": ["src/srstudio/rig.py:Performance", "src/srstudio/episode.py:Episode.perform", "src/srstudio/head_motion.py:HeadPlan", "src/srstudio/toon_bento.py:MOODS", "src/srstudio/rafa.py:MOODS"],
       "change": "Add typed acting beats that compile supported expression, gaze, speech, head, breath and gesture intents into existing tracks. Define channel ownership, explicit override precedence, transitions and continuous-shot state; reject unsupported capabilities before mutation.",
       "acceptance": ["Deterministic compilation and random-access state sampling", "A camera cut preserves expression, gaze and held contact state unless explicitly reset", "Test conflicts, unsupported rigs, malformed input and atomic failures", "Execute and render examples on at least two supported rig families"],
+      "resolution": "Added typed acting scores, strict decoded-JSON parsing, explicit rig emotion maps, channel ownership and bounded compilation into existing Toon/Gloss/head/limb primitives. Explicit tracks override beat channels; unsupported controls and ownership conflicts raise typed repairable errors. Numeric head/breath targets ease while discrete faces/gestures switch at arrival. Windows retain one source clock, including contacts and attachment state. The two-family Bento/Nadia gallery rendered and strictly encoded all 144 frames at 1920x1080/24 fps with no diagnostics. Rendered sequence review also found and fixed the underlying adapter clock defect. Emotion labels remain authored intent, not perceptual certification.",
+      "verification": ["tests/test_acting.py", "tests/test_acting_parse.py", "tests/test_acting_gallery.py", "tests/test_character_clips.py", "examples/acting_gallery.py", "docs/decisions/0088-coordinated-acting.md"],
       "complexity": "XL"
     },
     {
       "id": "SDK-P2-03",
       "priority": "P2",
-      "status": "open",
+      "status": "complete",
       "title": "Calibrate motion quality profiles against actual performances",
       "problem": "Speed, acceleration, jerk and collision evidence exists, but callers must invent thresholds. A passing numeric report does not establish weight, emotional readability or a pleasing transition.",
       "evidence": ["src/srstudio/limbs/validation.py:QualityProfile", "src/srstudio/limbs/evaluation.py:plan_trials", "src/srstudio/limbs/evaluation.py:summarize", "docs/catalog/limbs.md"],
       "change": "Provide versioned, explicitly scoped character/style profiles with rendered exemplars and measured failure cases. Use the existing comparison/rating facilities to keep subjective judgments separate from numeric guarantees.",
       "acceptance": ["Profiles identify scale, clock, sampling rate and applicable rigs", "Regression cases trip each configured gate", "Rendered clips demonstrate accepted and rejected behavior", "No universal biomechanical or emotional score is claimed"],
+      "resolution": "Added two versioned numeric envelopes for unchanged canonical human arms/hands, scoped to Toon or Gloss and 24 Hz motion sampling. Frozen assets record six reference motions per profile, source hashes, measurements and authored 25% derivative headroom; tests detect drift without recalibrating automatically. Compiler and interaction boundaries reject changed anatomy/style/rate before drawing, including reused options and malformed Python anatomy. All six derivative gates have time-compression failures; reach has an unreachable-target failure. The executable study strictly encoded all twelve reference clips and two deliberate failures at 1280x720/24 fps: 1080 frames independently verified with ffprobe. Eighteen full-size encoded frames were inspected. The blinded comparison remains awaiting actual human ratings; no perceptual, whole-body or continuous collision guarantee is claimed.",
+      "verification": ["tests/test_calibrated_quality.py", "tests/test_limbs_quality_example.py", "tests/test_motion_quality_profiles.py", "tests/test_limbs_typed_errors.py", "src/srstudio/assets/limbs/quality-calibration-1.0.0.json", "examples/limbs_quality.py", "docs/catalog/limbs.md#versioned-reference-envelopes", "docs/decisions/0089-calibrated-motion-envelopes.md"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P2-04",
+      "priority": "P2",
+      "status": "complete",
+      "title": "Extend semantic discovery to props, locations and graphics",
+      "problem": "All 70 default characters have explicit contracts, but none of the 631 other registered parts does. Signatures and selected examples are useful; they do not consistently declare coordinate units, anchors, slot expectations, clock roles or interaction capabilities. An agent composing a hand with a prop or an actor with a location still has to read implementation details.",
+      "evidence": ["src/srstudio/registry.py:Entry.describe", "src/srstudio/contracts.py:describe_callable", "src/srstudio/locations.py:office_wide", "src/srstudio/props.py"],
+      "change": "Reuse PartContract for non-character families, starting with the common placement, location-slot and held-prop workflows. Declare verified units, coordinate origins, time roles and callback contracts; expose coverage by kind and retain explicit unknowns where semantics are not established.",
+      "resolution": "Added explicit contracts to the 52 core Cutout builders and reaching-hand, with optional return-space/anchor annotations and separate SDK/CLI coverage reporting. Executable location and held-cup recipes bind actual builders, preserve shared contact transforms, and expose repairable failures. Tests execute all 53 builders to verify return shapes, check the cafe's actual 14-character boundary, distinguish local dimensions from parent placement, and verify callback parent groups and unsupported combinations. Both recipes strictly encoded 90 frames each at 1080x1920/30 fps; four full-size frames show the actor behind the desk and the cup between palm and fingers. The remaining 578 non-character entries retain explicit unknowns, as required by this item's common-workflow scope; no universal metadata or spatial attachment capability is claimed.",
+      "verification": ["tests/test_noncharacter_contracts.py", "tests/test_noncharacter_discovery_recipes.py", "tests/test_core_drawing_preflight.py", "tests/test_catalog_contracts.py", "docs/authoring-reference.md#non-character-discovery-and-drawing-anchors", "docs/decisions/0090-noncharacter-drawing-contracts.md"],
+      "acceptance": ["Catalog reports semantic coverage separately from inferred argument shapes", "Executable location-slot and held-prop recipes agree with published units and anchors", "Invalid options and unsupported combinations produce repairable failures", "No inferred capability is presented as verified merely because a parameter name matches"],
+      "complexity": "L"
+    },
+    {
+      "id": "SDK-P2-05",
+      "priority": "P2",
+      "status": "complete",
+      "title": "Expose explicit transition policies at the coordinated acting boundary",
+      "problem": "Low-level channels support many curves and springs, and MotionStyle supplies arcs, overshoot and settling. ActingBeat exposes only a transition duration: numeric targets use fixed sampled sine-in-out, while expressions and gestures switch at arrival. Agents cannot select coordinated anticipation, settling or staggered channel timing through the high-level score. Existing action joins match estimated velocities but do not promise acceleration continuity.",
+      "evidence": ["src/srstudio/acting.py:ActingBeat", "src/srstudio/acting.py:ActingRig.describe", "src/srstudio/_acting_compile.py:_numeric", "src/srstudio/head_motion.py:Channel", "src/srstudio/limbs/motion.py:MotionStyle", "src/srstudio/limbs/transitions.py:ActionJoin"],
+      "change": "Add versioned, opt-in transition policies that compile through existing curve and spring mechanics, with explicit channel timing and rig capability checks. Keep held or replacement faces explicit; require authored support for any facial morph. Describe position, velocity and acceleration guarantees separately instead of treating all easing as smoothness.",
+      "acceptance": ["Strict score parsing and discovery describe supported policies", "Existing scores retain their current output", "Random-access and cut-window parity holds through anticipations and settling", "Contact ownership and motion limits survive transitions", "Rendered comparisons distinguish intended emotional timing from numeric continuity claims"],
+      "resolution": "Added opt-in versioned TransitionPolicy and ChannelTiming, strict score schema 1.1.0 and capability-dependent discovery. Numeric phases reuse Channel curves and springs with bounded dense baking; held faces, gestures and gaze have separate arrival times. Legacy scores retain their captured serialized drawing, and schema 1.0.0 still rejects new fields. Tests preserve random-access/cut state, contact and prop ownership, reject overlapping phases and reset/contact crossings, enforce head/breath limits even under overrides, and bound adversarial input and work. Engine comparisons cover cuts inside anticipation and settling. The executable three-variant study exports exact scores and source hashes and strictly encodes 96 frames at 1920x1080/24 fps. Four full-size frames demonstrate earlier expression timing and retained state after cuts. Its report explicitly separates authored intent and sampled continuity from perceptual preference, facial morphing and derivative guarantees.",
+      "verification": ["tests/test_acting_transitions.py", "tests/test_acting_transition_example.py", "tests/test_acting.py", "tests/test_acting_parse.py", "tests/test_acting_continuity_example.py", "examples/acting_transitions.py", "docs/authoring-reference.md#opt-in-acting-transition-policies", "docs/decisions/0092-acting-transition-policies.md"],
       "complexity": "L"
     },
     {
@@ -93,19 +273,21 @@
       "evidence": ["src/srstudio/rig.py:Actor.build", "src/srstudio/toon_bento.py:bento", "src/srstudio/gloss.py:draw", "src/srstudio/limbs/integration.py:LimbTrack"],
       "change": "Introduce a typed adapter boundary with explicit start/end, coordinate units, time conversion and capability checks, preserving existing builders and their defaults.",
       "acceptance": ["Equivalent performances on nonzero project offsets", "No double offset or accidental duration-as-length conversion", "Unsupported channels fail before drawing", "Existing scenes retain their output without opting in"],
-      "resolution": "Added opt-in typed ActorClip, split-head ToonClip, GlossClip and prepared PlateClip adapters. Interval uses parent start/end seconds; an engine container clock maps local performances once, including idle and limb animation. Placement explicitly maps a source anchor to parent units. Unsupported controls and invalid data are preflighted; failed drawing restores scene/canvas state. Actor's optional end bounds root baking to the clip, preserving the project-duration default. Rafa sheet conversion preserves image patches and source duration. Specialized builders outside these families retain their APIs; shared acting intent and cross-clip state remain SDK-P2-02.",
+      "resolution": "Added opt-in typed ActorClip, split-head ToonClip, GlossClip and prepared PlateClip adapters. Interval uses parent start/end seconds; an engine container clock maps local performances once, including idle and limb animation. Placement explicitly maps a source anchor to parent units. Unsupported controls and invalid data are preflighted; failed drawing restores scene/canvas state. Actor's optional end bounds root baking to the clip, preserving the project-duration default. Rafa sheet conversion preserves image patches and source duration. Specialized builders outside these families retain their APIs; shared acting intent and cross-clip state are covered by SDK-P2-02.",
       "verification": ["tests/test_character_clips.py", "tests/test_character_clip_recipe.py", "tests/test_actor_nod_preflight.py", "tests/test_catalog_contracts.py", "tests/test_rosa.py", "docs/decisions/0087-character-clip-clocks.md"],
       "complexity": "L"
     },
     {
       "id": "SDK-P3-02",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Add executable cross-system authoring recipes",
       "problem": "There are useful runnable examples for individual systems, but agents still need to assemble emotional transitions, state across cuts and multi-rig performances from separate references.",
       "evidence": ["docs/authoring-reference.md", "docs/catalog/limbs.md", "examples/limbs_gallery.py"],
       "change": "Add short executable recipes for sustained listening, a changing emotion, carrying a prop across a cut and the same intent on two rig families. Show valid imports, clocks, capabilities and repairable failures.",
       "acceptance": ["Documentation examples execute in tests", "Examples use public APIs and explicit assets", "Output includes machine-readable validation and reproducible render commands"],
+      "resolution": "Added executable sustained-listening and carried-prop state recipes, including capability repair diagnostics and explicit source/shot clocks. The complete acting_continuity study uses public APIs to combine a Bento listener and a depth-composited isolated hand/cup interaction that moves through a camera cut and returns to its support. It ships exact listening-score JSON, serialized motion, a licensed font, source provenance, SDK validation and numeric contact evidence. Synthetic listening inputs are labeled explicitly; the documentation explains measured recording inputs. Together with acting_gallery, the examples cover changing emotion and shared intent on two rig families. The new study strictly encoded all 144 frames at 1920x1080/24 fps without diagnostics. Whole-body carrying and perceptual quality certification remain outside this recipe's claims.",
+      "verification": ["tests/test_acting_continuity_example.py", "tests/test_acting_gallery.py", "examples/acting_continuity.py", "examples/acting_gallery.py", "docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures", "docs/authoring-reference.md#carrying-a-prop-across-a-cut"],
       "complexity": "M"
     },
     {
@@ -133,12 +315,14 @@
     {
       "id": "SDK-P3-05",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Enrich legacy errors with actionable repair fields",
       "problem": "The shared diagnostic envelope is available, but many older validation paths only supply a message and class-qualified code. Agents still have to interpret prose when path, expected value or remedy is null.",
       "evidence": ["src/srstudio/errors.py:diagnostic", "src/srstudio/rig.py:Actor.build", "src/srstudio/head_motion.py:HeadStyle"],
       "change": "Add explicit stable codes, paths, actual/expected values and remedies to common authoring failures, preserving existing exception types and avoiding inference from message text.",
       "acceptance": ["SDK and CLI expose the same repair fields", "Malformed inputs exercise the failure path", "Payloads remain bounded and strict JSON"],
+      "resolution": "Common head style, spring, channel, speech, listening, facing, gaze, placement, actor mouth, blink, visibility and canvas key failures declare codes, input paths, actual/expected values and remedies at their validation source. SDK plugin failures preserve these fields through JSON CLI output. Diagnostic traversal has shared node/text budgets; opaque values and extreme integers do not replace these failures with formatting errors. Blink generation refuses oversized schedules before iteration. A tested repair recipe and task-to-API guide document the agent workflow. Other legacy errors retain null metadata rather than inferred facts.",
+      "verification": ["tests/test_authoring_diagnostics.py", "tests/test_diagnostics.py", "tests/test_actor_nod_preflight.py", "tests/test_head_motion.py", "tests/test_canvas_and_registry.py", "tests/test_cli.py"],
       "complexity": "M"
     },
     {
@@ -146,8 +330,8 @@
       "priority": "P3",
       "status": "open",
       "title": "Prove the DRAWING.md composition proposal with animated evidence",
-      "problem": "The document has explicit spatial, temporal, lighting and cost contracts, but its runnable example verifies API structure rather than the proposed combined aesthetic or moving contact/shadow behavior.",
-      "evidence": ["DRAWING.md", "tests/test_drawing_document.py"],
+      "problem": "The default hybrid drawing method now has a rigid-object implementation in proxy/vehicle and a car_vibe example. DRAWING.md still labels moving-camera and turning-object registration as unproven; forms and paint remain proposed. Its document example verifies structure, not the complete animated contact, receiver, lighting and cost acceptance matrix.",
+      "evidence": ["DRAWING.md", "tests/test_drawing_document.py", "src/srstudio/proxy.py", "examples/car_vibe", "docs/decisions/0091-hybrid-drawing-is-the-default.md"],
       "change": "Build the documented opt-in adoption spike with moving camera and prop contacts, occlusion, shadow receivers, stable textures, emotional continuity, a cut and warm-cache evidence. Keep unsupported backend capabilities explicit.",
       "acceptance": ["Pinned SDK/engine/style versions and strict render checks", "Temporal stability and registration checks plus full-size visual review", "Measured cold/warm plate counts and render cost", "Operator approval before style adoption, as required by DRAWING.md"],
       "complexity": "XL"
@@ -186,9 +370,17 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-02", "SDK-P3-02", "SDK-P2-03", "SDK-P3-05", "SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "recommended_order": ["SDK-P3-03", "SDK-P3-04", "SDK-P3-06", "SDK-P4-03", "SDK-P4-01", "SDK-P4-02"],
+  "agent_authoring_guidance": [
+    "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
+    "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",
+    "Use opt-in acting policies for coordinated phase and channel timing, and existing MotionStyle, speech-timed actions and head channels for arcs and listening. More noise or more easing does not by itself establish purposeful acting.",
+    "Test position, velocity, acceleration, contact and clock continuity as separate properties. Current action joins estimate boundary velocities; they do not promise acceleration continuity.",
+    "Validate bounded typed input before emission; repair explicit error paths and avoid retrying into a scene already changed by a failed legacy builder.",
+    "Pair scoped numeric checks and strict renders with full-size temporal review and actual blinded ratings for weight, intent and emotional readability. Do not infer perceptual approval from a passing schema or speed limit."
+  ],
   "limits": [
-    "No new P0/P1 defect is confirmed by this review; this is not a claim that the repository has none.",
+    "No P0 was confirmed. The callback/option P1 findings and additional malformed-input, blink-budget and diagnostic-amplification defects reproduced during implementation are now fixed; previously repaired sequence-clock defects remain resolved. This is not an exhaustive claim of defect absence.",
     "Numeric regression tests establish constrained sampled behavior, not continuous collision safety or perceptual preference.",
     "The complete P0-P4 implementation goal remains active; open findings are not represented as completed work."
   ]

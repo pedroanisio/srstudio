@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import _drawing_contracts as dc
 from .canvas import Canvas
 from .registry import register
 
@@ -24,6 +25,7 @@ def _part_id(instance: str, default: str, name: str, *, own: bool = False) -> st
 @register(
     "graphic",
     "episode-slate",
+    contract=dc.graphic('episode-slate'),
     summary="Episode number badge and title, fading in and out in the first second",
     examples=('from srstudio import get\nslate = get("graphic", "episode-slate")(ep.cv, ep.comp, "01", "HELLO")',),
 )
@@ -61,7 +63,12 @@ def episode_slate(
     return g
 
 
-@register("graphic", "quiz-card", summary="Question card with a gold spine; a NOPE. line appears on the wrong answer")
+@register(
+    "graphic",
+    "quiz-card",
+    contract=dc.graphic('quiz-card'),
+    summary="Question card with a gold spine; a NOPE. line appears on the wrong answer",
+)
 def quiz_card(
     cv: Canvas,
     parent,
@@ -89,7 +96,12 @@ def quiz_card(
     return g
 
 
-@register("graphic", "answer-bubble", summary="Fast number reveal with motion streaks and a 9° tilt")
+@register(
+    "graphic",
+    "answer-bubble",
+    contract=dc.graphic('answer-bubble'),
+    summary="Fast number reveal with motion streaks and a 9° tilt",
+)
 def answer_bubble(
     cv: Canvas, parent, value: str, show: tuple[float, float], *, x=876, y=660, rotation=9, id="instant-answer"
 ):
@@ -107,7 +119,12 @@ def _slide_up(cv, g, at, y):
     cv.keys(g, "y", [(0, y + 50), (at, y + 50), (at + 0.19, y - 8), (at + 0.32, y)], hold=False)
 
 
-@register("graphic", "scorecard", summary="Dark end card with a heading and label/value rows that slides up")
+@register(
+    "graphic",
+    "scorecard",
+    contract=dc.graphic('scorecard'),
+    summary="Dark end card with a heading and label/value rows that slides up",
+)
 def scorecard(
     cv: Canvas,
     parent,
@@ -180,7 +197,12 @@ def scorecard(
     return g
 
 
-@register("graphic", "dashboard", summary="MULTITASKING: ACTIVE style status board with three label/value rows")
+@register(
+    "graphic",
+    "dashboard",
+    contract=dc.graphic('dashboard'),
+    summary="MULTITASKING: ACTIVE style status board with three label/value rows",
+)
 def dashboard(
     cv: Canvas,
     parent,
@@ -242,7 +264,12 @@ def dashboard(
     return g
 
 
-@register("graphic", "notification", summary="Phone-style notification card with a red spine")
+@register(
+    "graphic",
+    "notification",
+    contract=dc.graphic('notification'),
+    summary="Phone-style notification card with a red spine",
+)
 def notification(
     cv: Canvas, parent, index: int, who: str, status: str, show: tuple[float, float], *, x, y, id_prefix="notification"
 ):
@@ -260,7 +287,10 @@ def notification(
 
 
 @register(
-    "graphic", "password-card", summary="Cream card: heading, big password, small footnote; pops on a spoken word"
+    "graphic",
+    "password-card",
+    contract=dc.graphic('password-card'),
+    summary="Cream card: heading, big password, small footnote; pops on a spoken word",
 )
 def password_card(
     cv: Canvas,
@@ -309,7 +339,12 @@ def password_card(
     return g
 
 
-@register("graphic", "location-slate", summary="Small green banner such as LATER, AT THE PARK")
+@register(
+    "graphic",
+    "location-slate",
+    contract=dc.graphic('location-slate'),
+    summary="Small green banner such as LATER, AT THE PARK",
+)
 def location_slate(
     cv: Canvas,
     parent,
@@ -329,7 +364,12 @@ def location_slate(
     return g
 
 
-@register("graphic", "connected-card", summary="Status card with a green dot, heading and value")
+@register(
+    "graphic",
+    "connected-card",
+    contract=dc.graphic('connected-card'),
+    summary="Status card with a green dot, heading and value",
+)
 def connected_card(
     cv: Canvas,
     parent,
@@ -357,7 +397,12 @@ def connected_card(
     return g
 
 
-@register("graphic", "squeak-mark", summary="Comic SQUEAK! lettering with vibration arcs; pops in and wobbles")
+@register(
+    "graphic",
+    "squeak-mark",
+    contract=dc.graphic('squeak-mark'),
+    summary="Comic SQUEAK! lettering with vibration arcs; pops in and wobbles",
+)
 def squeak_mark(
     cv: Canvas,
     parent,
@@ -415,7 +460,12 @@ def squeak_mark(
     return g
 
 
-@register("graphic", "captions", summary="Outlined, shadowed subtitles; a highlight colours part of a line")
+@register(
+    "graphic",
+    "captions",
+    contract=dc.graphic('captions'),
+    summary="Outlined, shadowed subtitles; a highlight colours part of a line",
+)
 def captions(
     cv: Canvas,
     specs: Sequence[tuple[float, float, str, str]],

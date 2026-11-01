@@ -34,6 +34,7 @@ from . import (
     interview,
     lip_proof,
     lipsync,
+    music,
     outbox,
     overlap,
     parts,
@@ -79,6 +80,9 @@ def _load_plugins(modules, command: str, json_output: bool = False) -> bool:
                 json_output,
             )
             return False
+        except SrstudioError as exc:
+            _error(command, exc, json_output)
+            return False
     return True
 
 
@@ -122,7 +126,13 @@ def main(argv=None):
     cat.add_argument("--style", choices=sorted(STYLES), help="only the parts of one style (shared parts included)")
     cat.add_argument("--json", action="store_true")
     cat.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before listing")
-    cat.add_argument("--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in")
+    catalog_mode = cat.add_mutually_exclusive_group()
+    catalog_mode.add_argument(
+        "--usage", type=Path, help="a report from srstudio usage: show the episodes each part is used in"
+    )
+    catalog_mode.add_argument(
+        '--contract-coverage', action='store_true', help='report declared semantics and argument shapes by kind'
+    )
     detail = sub.add_parser("inspect", help="show a part's signature, callback slots, documentation and usage")
     detail.add_argument("kind", choices=registry.KINDS)
     detail.add_argument("name")
@@ -169,6 +179,11 @@ def main(argv=None):
     measured.add_argument("--sheet", type=Path, help="write the frames, in one row, to this image")
     measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
     measured.add_argument("--json", action="store_true")
+    beat = sub.add_parser("beat", help="measure a recorded track's tempo and where its bars open")
+    beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the bar line needs at least eight bars")
+    beat.add_argument("--seconds", type=float, help="measure only the first seconds")
+    beat.add_argument("--beats-per-bar", type=int, default=4)
+    beat.add_argument("--json", action="store_true")
     split = sub.add_parser("arms", help="how an A/B test's releases split, and what keeps the split from being fair")
     split.add_argument("test", choices=releases.TESTS)
     split.add_argument("--order", type=Path, help="the delivery order: a file of slugs, one a line")
@@ -284,6 +299,8 @@ def main(argv=None):
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
         return _lip_proof(args)
+    if args.cmd == "beat":
+        return _beat(args)
     if args.cmd == "proof":
         return _proof(args)
     if args.cmd == "arms":
@@ -293,6 +310,20 @@ def main(argv=None):
     if args.cmd == "catalog":
         if not _load_plugins(args.plugins, "catalog", getattr(args, "json", False)):
             return 2
+        if args.contract_coverage:
+            coverage = registry.contract_coverage(args.style, kind=args.kind)
+            if args.json:
+                print(json.dumps(coverage, indent=2, ensure_ascii=False))
+            else:
+                for kind, counts in coverage['kinds'].items():
+                    print(
+                        f"{kind}: {counts['explicit_contracts']}/{counts['registered']} explicit contracts; "
+                        f"{counts['shape_complete']} complete argument shapes; "
+                        f"{counts['with_units']} with units, {counts['with_clocks']} with clocks, "
+                        f"{counts['with_anchors']} with anchors"
+                    )
+                print(coverage['qualification'])
+            return 0
         try:
             measured = usage.Report.read(args.usage) if args.usage else None
         except usage.UsageError as exc:
@@ -544,6 +575,22 @@ def _arms(args: argparse.Namespace) -> int:
     for problem in problems:
         print(f"srstudio arms: {problem}", file=sys.stderr)
     return 1 if problems else 0
+
+
+def _beat(args: argparse.Namespace) -> int:
+    try:
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
+    except music.MusicError as exc:
+        _error("beat", exc, args.json)
+        return 1
+    groove = read.groove
+    if args.json:
+        print(json.dumps({**asdict(groove), "bars": round(read.bars, 2), "sure": read.sure}))
+    else:
+        print(f"{groove.bpm:g} BPM, {groove.beats_per_bar} beats to the bar, a bar opens at {groove.offset:g} s")
+    if not read.sure:
+        print(f"srstudio beat: only {read.bars:.1f} bars heard, the bars may open on another beat", file=sys.stderr)
+    return 0
 
 
 def _proof(args: argparse.Namespace) -> int:

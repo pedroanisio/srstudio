@@ -11,6 +11,7 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _drawing_contracts as dc
 from . import checks, locations, signature
 from .canvas import Canvas, Spans
 from .errors import SrstudioError
@@ -461,7 +462,13 @@ def phone_screen(
     return g
 
 
-@register("prop", "reaching-hand", style="cutout", summary="An arm in from off frame, gripping what it carries")
+@register(
+    "prop",
+    "reaching-hand",
+    style="cutout",
+    summary="An arm in from off frame, gripping what it carries",
+    contract=dc.prop('reaching-hand'),
+)
 def reaching_hand(
     cv: Canvas,
     parent,
@@ -478,6 +485,15 @@ def reaching_hand(
 ):
     """The grip is at (``x``, ``y``) and the arm runs down from it, ``rotation`` degrees round. ``holds`` draws the
     carried thing between palm and fingers; ``grip`` is its half width, where the fingers close."""
+    if holds is not None and not callable(holds):
+        raise CutoutCounterError(
+            'holds must be a drawing callback or None',
+            code='prop.reaching-hand.holds',
+            path='holds',
+            actual=holds,
+            expected='a callable accepting the supplied Group, or None',
+            remedy='Pass a callback drawing the prop into its supplied group; use None for an empty hand.',
+        )
     if not (checks.number(scale) and scale > 0):
         raise CutoutCounterError(f"scale must be a positive number, got {scale!r}")
     if not (checks.number(rotation) and -180 <= rotation <= 180):

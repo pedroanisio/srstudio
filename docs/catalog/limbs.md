@@ -214,6 +214,72 @@ Derivatives require evidence: speed needs two samples, acceleration three, jerk 
 too few samples produces `quality.evidence`, rather than passing on a default zero. Reports without a quality
 profile retain zero defaults for unavailable measurements; those zeros are not proof of stillness.
 
+### Versioned reference envelopes
+
+`srstudio.limbs.calibration.list_presets()` describes two frozen numeric regression envelopes:
+`toon-human-conversation/1.0.0` and `gloss-human-deliberate/1.0.0`. Both apply to the unchanged
+`ArmProfile()` and `HUMAN` hand at exactly 24 Hz, with the named style adapter. Mirrored sides and shoulder
+translation are allowed. Arm lengths, width, joint limits and hand anatomy must match; these are canonical
+human-arm studies, not calibrated profiles for every Toon or Gloss character. Camera scale affects the drawing,
+while limits use world units and seconds, with radians for angular quantities.
+
+Each envelope comes from six measured motions: pointing, presenting and a joined point/present performance
+on both anatomical sides. Gesture spans are two seconds for Toon and three for Gloss. The six derivative
+limits are the measured corpus maxima plus 25% authored headroom, rounded upward to two decimals. Reach
+residual has a separate `1e-6` tolerance. The headroom is a regression policy, not a physiological threshold.
+
+<!-- calibrated-quality:start -->
+```python
+from sr_core.scene import Scene
+from srstudio import Canvas
+from srstudio.limbs import HUMAN, ArmProfile, Camera
+from srstudio.limbs.calibration import get_preset
+from srstudio.limbs.compile import compile_motion
+from srstudio.limbs.motion import Action, Motion
+
+scene = Scene(version="auto")
+scene.add_project(width=1280, height=720, fps="24", duration=2)
+cv = Canvas(scene, width=1280, height=720, font_asset=None)
+motion = Motion(ArmProfile(), HUMAN, (Action("point", duration=2),))
+preset = get_preset("toon-human-conversation/1.0.0")
+compiled = compile_motion(
+    cv, cv.comp, motion, id="calibrated-point", style="toon", backend="baked",
+    camera=Camera(origin=(500, 180), scale=160),
+    options=preset.options_for(motion, style="toon", fps=24),
+)
+assert not compiled.report.quality_findings
+```
+<!-- calibrated-quality:end -->
+
+`options_for` defaults to the production error policy. A scope mismatch raises `quality.scope` with a field
+path, actual/expected values and repair guidance. Native/baked compilation and interaction baking recheck the
+scope if options are reused. Scope is the motion sampling rate, not a promise that a different output frame
+rate has been calibrated. Apply presets through these compiler options; low-level `audit` measures supplied
+samples and does not know the drawing style or full hand anatomy.
+
+`measure_reference(id)` recomputes the bounded corpus without changing its frozen limits. The shipped
+calibration asset records source hashes, sample counts, measurements and limits; tests detect drift. Changes
+to the reference motions or limits require an explicitly reviewed new version, not automatic recalibration.
+
+The [quality study](../../examples/limbs_quality.py) builds all twelve references and two sixfold time-compressed
+failures. It first proves each failure is refused without drawing, then deliberately uses `policy="warn"` to
+render that rejected motion for inspection. Both members of an A/B pair have the same camera, appearance and
+video duration. Failed motions finish early and hold their resting pose. Use a fresh output directory:
+
+```bash
+python examples/limbs_quality.py ../generated/sdk-quality-study \
+  --seed "$SRSTUDIO_LIMBS_REVIEW_SEED" --engine /path/to/scene-render
+```
+
+Set the seed to a nonempty private review key before running. The optional engine argument strictly encodes
+all fourteen clips and records actual engine responses and video hashes. Without it the report explicitly
+says rendering was not requested. `review/` contains only blind clip names, tasks, instructions and an empty
+ratings template. Keep `private-key.json`, source scenes and the engineering report outside that packet.
+Actual reviews can be supplied with `--ratings FILE`, the same seed and a new output directory. The existing
+rating parser and summarizer report absent or insufficient observations explicitly; numeric pass/fail is
+never converted into human scores. These envelopes do not establish emotional readability, preference,
+whole-body balance or collision safety. See [ADR 0089](../decisions/0089-calibrated-motion-envelopes.md).
+
 For obstacles, pass `CollisionSphere(name, center, radius, parts=("upper", "forearm"))` in `profile.obstacles`
 and set `max_penetration`. Centers and radii use world canonical units. The check measures sphere penetration
 against arm-segment capsules of radius `arm.width / 2`; it does not check the hand mesh, infer the torso, detect

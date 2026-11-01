@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from sr_core.scene import Composition, Group
+from sr_core.scene import Animate, Composition, Group, Key
 
 from . import checks, gloss
 from ._transaction import scene_transaction
@@ -388,6 +388,29 @@ def _draw(cv: Canvas, parent: Group, clip: CharacterClip, end: float) -> None:
                 group.add_layer(id=cv.uid('plate-layer'), asset=layer.asset, x=layer.at[0], y=layer.at[1])
 
 
+def _local_keys(group: Group) -> None:
+    """Keep source keys aligned when the engine shifts a sequence shot's node starts.
+
+    Group clocks retime both clocks, but sequence placement shifts node lifetimes without
+    shifting composition key times. Express source keys relative to their owning node's
+    original start; the engine then carries both together. Existing local/normalized
+    channels retain their semantics, interpolation and spring context.
+    """
+    for animation in group.iter('animate'):
+        assert isinstance(animation, Animate)
+        if animation.timeBase not in (None, 'composition'):
+            continue
+        owner = animation.owner
+        while owner is not None and not hasattr(type(owner), 'start'):
+            owner = owner.owner
+        start = float(owner.attributes().get('start', 0)) if owner is not None else 0
+        for key in animation.find_all('key'):
+            assert isinstance(key, Key)
+            assert key.time is not None
+            key.time = round(float(key.time) - start, 6)
+        animation.timeBase = 'local'
+
+
 def place_character(
     cv: Canvas,
     parent: Composition | Group,
@@ -436,6 +459,7 @@ def place_character(
                 rotation=placement.rotation,
             )
             _draw(cv, group, clip, interval.duration)
+            _local_keys(group)
             ids = [node.attributes()['id'] for node in cv.scene.iter() if 'id' in node.attributes()]
             if len(ids) != len(set(ids)):
                 raise _fail('id', group.id, 'unique IDs throughout the completed drawing')

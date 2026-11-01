@@ -57,6 +57,24 @@ CASES = {
 }
 
 
+def test_limb_repair_fields_survive_sampling_context():
+    error = LimbError(
+        'wrong rate',
+        code='quality.scope',
+        path='fps',
+        actual=30,
+        expected=24,
+        remedy='Use the calibrated rate.',
+        context={'profile': 'host'},
+    )
+    enriched = error.with_context(time=1.25)
+    data = enriched.to_dict()
+    assert data['path'] == 'fps' and data['actual'] == 30 and data['expected'] == 24
+    assert data['remedy'] == 'Use the calibrated rate.'
+    assert data['context'] == {'profile': 'host', 'time': 1.25}
+    assert enriched.code == 'quality.scope'
+
+
 @pytest.mark.parametrize("case", CASES)
 def test_wrongly_typed_input_raises_a_limb_error(case):
     with pytest.raises(LimbError) as caught:

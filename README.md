@@ -4,6 +4,9 @@ srstudio is a Python toolkit for building animated episodes as [scene-render](ht
 
 The library builds and validates scene XML. Rendering that XML into video requires the separate scene-render engine.
 
+For AI coding agents, the [task-to-API entry points](docs/authoring-reference.md#agent-authoring-entry-points)
+link discovery, typed inputs, clocks, capabilities, executable recipes and repairable failures.
+
 ## Install
 
 From the `srstudio` directory, using Python 3.10 or later:
@@ -107,7 +110,8 @@ srstudio inspect character manager --json
 srstudio errors retain their exception types and expose `error.to_dict()` with the versioned
 `srstudio.diagnostic/1.0.0` envelope: `code`, `path`, `message`, `actual`, `expected`, `remedy`, `context`, and
 `residual`. Semantic details that a legacy error does not supply are `null`; they are never guessed from its
-message. Gaze and missing-part errors provide explicit repair fields. Limb errors retain their existing codes,
+message. Common head, spring, speech, gaze, placement, mouth, blink and keyframe failures provide explicit
+[repair fields and a retry recipe](docs/authoring-reference.md#repairing-authoring-input). Limb errors retain their existing codes,
 geometric residuals and context. Payloads bound strings, collection sizes and nesting; nonfinite numbers become
 strings so diagnostics remain valid JSON. Commands accepting `--json` write this envelope to stderr on failure,
 including argument and plugin-import errors, and preserve their existing nonzero exit codes.
@@ -131,6 +135,13 @@ explicitly unknown, and runtime objects such as a canvas are marked as runtime b
 API; they do not deserialize records or replace builder validation. See the
 [agent contract reference](docs/authoring-reference.md#agent-contracts).
 
+Core Cutout props, locations and graphics also declare placement units, clocks, return shapes and callback
+semantics. Selected props publish local drawing anchors. Run `srstudio catalog --contract-coverage --json` to
+see explicit declarations separately from inferred argument shapes and the remaining gaps. The
+[location and held-prop recipes](docs/authoring-reference.md#non-character-discovery-and-drawing-anchors) use
+those contracts to place an actor and carry a cup between palm and fingers. Flat drawing anchors do not imply
+spatial attachment or collision capabilities.
+
 `srstudio usage` can measure which registered parts episode builds use; its JSON report can be supplied to `srstudio catalog --usage REPORT` and `srstudio page`. See the [catalog guide](docs/catalog/README.md).
 
 ## Styles
@@ -151,6 +162,24 @@ A `Style` supplies defaults for frame size, timing, input files, palette, captio
 
 The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. [Character clips](docs/authoring-reference.md#character-clips-one-placement-and-timing-boundary) give Actor, split-head Toon, Gloss and prepared plates one explicit placement and timing boundary. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
 
+[Coordinated acting](docs/authoring-reference.md#coordinated-acting-and-continuity) compiles typed emotion, speech,
+gaze and head intent with explicit channel ownership. Reuse windows of one performance across cuts; inspect
+rig capabilities before generating a score. The [two-family study](examples/acting_gallery.py) builds Bento and
+Gloss Nadia with a reproducible scene and JSON continuity report. The
+[listening and carrying study](examples/acting_continuity.py) adds sustained reactions and a moving hand/prop
+interaction across a cut, with executable [authoring recipes](docs/authoring-reference.md#sustained-listening-and-repairable-capability-failures).
+
+Opt-in [acting transition policies](docs/authoring-reference.md#opt-in-acting-transition-policies) add curves,
+springs, anticipation, settling and separate channel arrival times through strict score schema 1.1.0.
+Existing scores retain their output. The [transition comparison](examples/acting_transitions.py) demonstrates
+faces arriving before heads, with cuts through anticipation and settling; faces remain held drawings, and
+velocity/acceleration continuity and perceptual quality are not implied by easing.
+
+[Versioned motion envelopes](docs/catalog/limbs.md#versioned-reference-envelopes) provide measured numeric
+limits for explicitly scoped canonical human arms. The [quality study](examples/limbs_quality.py) builds
+reference and rejected motions, strict render evidence and a separate blinded review packet. Numeric limits
+and human ratings remain separate; these presets do not certify whole-body or perceptual quality.
+
 Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
 
 | Show | Value | Main use |
@@ -164,9 +193,9 @@ Four shows are channels on Toon's road rather than styles of their own. Each is 
 
 `srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-reference.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
 
-The library draws in 2D, and a clay character is the one thing modelled in 3D. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
+The library draws in 2D, and what it models in 3D is a clay character or a rigid proxy. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
 
-[DRAWING.md](DRAWING.md) proposes a layered drawing kit for every style and show. It is a proposal: its `forms` and `paint` modules are not built, and nothing adopts a layer without an approved proof.
+[DRAWING.md](DRAWING.md) is the default drawing method for new work ([ADR 0091](docs/decisions/0091-hybrid-drawing-is-the-default.md)); published reels and approved drawings stay as they are. Its rigid-object layer is built: `srstudio.proxy` turns a clay model into cel plates, cut into back, front and under so people draw between them; `srstudio.vehicle` adds tyres and turning rims; `srstudio.on_beat` moves a drawing on a `music.Groove`, and `srstudio beat <audio>` measures that groove from a recorded track. [examples/car_vibe](examples/car_vibe) is the worked example. Its `forms` and `paint` modules are not built, and a type's first use of a layer needs an approved proof.
 
 ## Extending
 
@@ -232,7 +261,7 @@ The configured coverage gate is 80%. Some integration tests require additional l
 - [episodes/](episodes/) — episode builders, recording scripts and releases.
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
-- [DRAWING.md](DRAWING.md) — proposed drawing architecture.
+- [DRAWING.md](DRAWING.md) — the default drawing method for new work.
 - [Authoring and episode reference](docs/authoring-reference.md) — detailed style, episode, signature and delivery notes.
 
 The project is licensed under MIT.
