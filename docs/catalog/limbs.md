@@ -37,6 +37,37 @@ Character tracks clip root motion to the character's lifetime; actions and attac
 Prepared character tracks reuse their numeric samples, projections and reports during drawing. Changed motion,
 camera, timing or corrective inputs invalidate that preparation; IDs, budgets and adapter capabilities are still checked.
 
+## Continue through a moving pose
+
+Use `TransformTrack(interpolation="continuous")` for a root or contact target that should pass through its
+interior keys. The default `"smooth"` mode still stops at each key. This standalone recipe moves through the
+middle position without pausing:
+
+<!-- continuous-track:start -->
+```python
+from srstudio.limbs import HUMAN, ArmProfile
+from srstudio.limbs.math3d import Frame, Vec3
+from srstudio.limbs.motion import Motion, TransformKey, TransformTrack
+
+track = TransformTrack(
+    tuple(TransformKey(t, Frame(Vec3(0.2 * t, 0, 0))) for t in (0, 1, 2)),
+    interpolation="continuous",
+)
+motion = Motion(ArmProfile(), HUMAN, root=track)
+assert track.sample(1).origin == Vec3(0.2, 0, 0)
+```
+<!-- continuous-track:end -->
+
+Each key can supply `velocity=Vec3(...)` in parent units/second and `angular_velocity=Vec3(...)` in local
+radians/second. Missing interior velocities come from neighboring poses; endpoints default to zero. Translation
+uses quintic segments with matching velocity and zero acceleration at keys. Rotation uses spherical cubic
+segments with matching angular velocity; angular acceleration is not constrained. Excessive angular control
+arcs are rejected before sampling: insert keys or reduce angular velocity. Velocities require continuous mode.
+
+Sampling is independent of playback order. Outside the key interval, the nearest frame is held, even when an
+explicit endpoint velocity is nonzero. Compiler output still follows its bake frame rate; continuous authoring
+does not override an intentionally held-frame look. Motion JSON `1.2.0` preserves the mode and velocities.
+
 ## Time an expressive gesture to speech
 
 The stroke can land on a specific word without manually calculating its project time. This example is standalone;
@@ -309,9 +340,11 @@ in the wrist frame, including axial roll. FK and IK share one hand-frame convent
 lateral direction, as `reach` does with its default pole, so an FK pose solved back through `reach` with its
 elbow as the pole returns the same hand frame on both sides.
 
-The current writer emits `srstudio.limbs/1.1.0` motion documents. The reader also accepts `1.0.0` documents
-without explicit axes and supplies their original +X default. Explicit axes require `1.1.0`; unknown versions
-and fields are rejected. Both versions pass through the current numeric and resource validation.
+The current writer emits `srstudio.limbs/1.2.0` motion documents. The reader also accepts `1.0.0` and `1.1.0`
+documents and supplies the original smooth interpolation for tracks without the new fields. Documents without
+explicit axes retain their original +X default. Explicit axes require at least `1.1.0`; transform interpolation
+and velocity fields require `1.2.0`. Unknown versions and fields are rejected. All accepted versions pass through
+the current numeric and resource validation.
 Decoding errors retain the nested field path, including optional objects: an invalid target coordinate reports
 `motion.actions[0].target.position.x` and the expected finite number, so an authoring agent can repair that field.
 `load_motion` reads at most 5 MiB of UTF-8 and bounds array/object nesting to 64 levels before parsing, so

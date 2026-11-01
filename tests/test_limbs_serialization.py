@@ -112,7 +112,7 @@ def test_an_unterminated_string_of_escaped_quotes_is_scanned_once_and_rejected(t
     "original,duplicated",
     [
         ('"reach_policy": "strict"', '"reach_policy": "clamp", "reach_policy": "strict"'),
-        ('"schema": "srstudio.limbs/1.1.0"', '"schema": "srstudio.limbs/1.1.0", "schema": "srstudio.limbs/1.1.0"'),
+        ('"schema": "srstudio.limbs/1.2.0"', '"schema": "srstudio.limbs/1.2.0", "schema": "srstudio.limbs/1.2.0"'),
         ('"upper": 1.0', '"upper": 1.0, "upper": 1.0'),
     ],
 )
