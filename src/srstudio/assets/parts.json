@@ -13526,6 +13526,40 @@
           "rig": null
         }
       ]
+    },
+    "apron-spare": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A spare green cafe apron held by its neck loop, ties hanging. Generic, no name, no logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "b091dd5d5c1bb36ae85e5af0cca615b9ee66a7a5e061d9d46c1df2373d161b94",
+          "rig": null
+        }
+      ]
+    },
+    "trial-tag": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A small pinned tag with one short word, TRIAL. Generic, no logo, no name. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "913a06400dab7c54aa8fcc28eaf492c2aca5304a0d3876025f4b332919ae677f",
+          "rig": null
+        }
+      ]
     }
   }
 }

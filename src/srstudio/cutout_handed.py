@@ -298,13 +298,15 @@ def cafe_door(
     width: float = 240,
     height: float = 920,
     sign: str = "CLOSED",
+    sign_size: float = 30,
     id: str = "cafe-door",
 ):
     """The door's top left is (``x``, ``y``). ``sign`` hangs on the glass: a door that reads OPEN to the street reads
-    the other thing from the inside."""
+    the other thing from the inside. A narrow door takes a smaller ``sign_size``, or the word breaks in two."""
     cv.require_font("a door's sign is set in it", CutoutHandedError)
     checks.positive(width, CutoutHandedError, f"width must be positive, got {width!r}")
     checks.positive(height, CutoutHandedError, f"height must be positive, got {height!r}")
+    checks.positive(sign_size, CutoutHandedError, f"sign_size must be positive, got {sign_size!r}")
     if not isinstance(sign, str) or not 0 < len(sign.strip()) <= 8:
         raise CutoutHandedError(f"a door's sign has 1 to 8 characters, got {sign!r}")
     ink = cv.ink
@@ -316,5 +318,5 @@ def cafe_door(
             opacity=0.55)  # fmt: skip
     cv.line(g, width - 30, height * 0.48, width - 30, height * 0.78, "#D9C49A", 12)
     cv.rect(g, 56, 56, width - 112, 62, PAGE, ink, 3, radius=6)
-    cv.text(g, f"{id}-sign", sign, 56, 56, width - 112, 62, 30, ink)
+    cv.text(g, f"{id}-sign", sign, 56, 56, width - 112, 62, sign_size, ink)
     return g

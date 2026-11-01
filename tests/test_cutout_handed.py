@@ -134,11 +134,19 @@ def test_a_door_letters_its_sign():
     assert "CLOSED" in bytes_of(cv)
 
 
+def test_a_narrow_door_can_set_its_sign_smaller_and_the_default_stays():
+    plain, small = canvas(), canvas()
+    cutout_handed.cafe_door(plain, plain.comp)
+    cutout_handed.cafe_door(small, small.comp, sign_size=22)
+    assert bytes_of(plain) != bytes_of(small)
+
+
 @pytest.mark.parametrize(
     ("kwargs", "match"),
     [
         ({"width": 0}, "width"),
         ({"height": -1}, "height"),
+        ({"sign_size": 0}, "sign_size"),
         ({"sign": ""}, "sign has 1 to 8"),
         ({"sign": "x" * 9}, "sign"),
     ],
