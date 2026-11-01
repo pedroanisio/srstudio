@@ -50,6 +50,7 @@ def study() -> mind_kit.Evidence:
         ("prop", "mind-two-lines", mind_kit.two_lines),
         ("prop", "mind-lens", mind_kit.lens),
         ("graphic", "mind-stamp", mind_kit.stamp),
+        ("graphic", "mind-zipper", mind_kit.zipper),
         ("graphic", "mind-named", mind_kit.named),
     ],
 )
@@ -470,6 +471,28 @@ def test_a_stamp_needs_evidence_a_span_and_clean_copy():
         mind_kit.stamp(cv, cv.comp, ("Fine.",), "Lee, 2001", 3.0, 1.0, measure)
     with pytest.raises(mind_kit.MindKitError):
         mind_kit.stamp(cv, cv.comp, ("Science proves it.",), "Lee, 2001", 1.0, 3.0, measure)
+
+
+def test_a_zipper_covers_the_whole_frame_and_every_row_has_both_sides():
+    cv = canvas()
+    mind_kit.zipper(cv, cv.comp, 0.4, 1.5)
+    cloth = [r for r in rects(cv) if r["width"] == cv.width / 2]
+    assert len(cloth) == 2 * mind_kit.ZIP_ROWS
+    assert {r["x"] for r in cloth} == {0.0, cv.width / 2}
+    assert min(r["y"] for r in cloth) == 0.0
+    assert max(r["y"] + r["height"] for r in cloth) >= cv.height
+
+
+def test_a_zipper_is_gone_soon_after_the_pull_ends():
+    cv = canvas()
+    node = mind_kit.zipper(cv, cv.comp, 0.4, 1.5)
+    assert float(node.end) == pytest.approx(1.5 + mind_kit.ZIP_BEAT)
+
+
+def test_a_zipper_runs_forward():
+    cv = canvas()
+    with pytest.raises(mind_kit.MindKitError):
+        mind_kit.zipper(cv, cv.comp, 1.5, 0.4)
 
 
 @pytest.mark.parametrize(("scale", "pivot"), [(1.0, (540.0, 960.0)), (1.12, (700.0, 800.0)), (1.2, (560.0, 800.0))])

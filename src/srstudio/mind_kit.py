@@ -60,6 +60,7 @@ __all__ = [
     "stage",
     "stamp",
     "two_lines",
+    "zipper",
     "write_sting",
 ]
 
@@ -89,6 +90,8 @@ NAME_HOLD = 1.0  # the least the name stays up
 NAME_POP = 0.18  # seconds the spot takes to open
 CARD_LINE_SIZE = 62.0  # the catchphrase
 STAMP_Y, STAMP_MOST, STAMP_LEAST, STAMP_CITE, STAMP_INK = 270.0, 58.0, 40.0, 36.0, "#8f2a16"  # coral dark on paper
+ZIP_ROWS, ZIP_CLOTH, ZIP_TOOTH, ZIP_PULL = 30, "#3d4a7a", "#e8c35a", "#f2d27a"  # a closed zipper
+ZIP_TOOTH_W, ZIP_TOOTH_H, ZIP_BEAT = 26.0, 20.0, 0.45  # a tooth in frame px, and the seconds a row takes to part
 STAMP_PAD, STAMP_ROW = 34.0, 1.08  # the strip's margin at the sides, and a row's height over its letters
 EVIDENCE_HOLD = 2.0  # the least a card of about two seconds' reading stays up
 WHAT_WORDS, RESULT_WORDS = 12, 10
@@ -241,6 +244,40 @@ def stamp(
     cv.text(
         g, cv.uid("mind-stamp"), cite, x, foot, box, round(STAMP_CITE * 1.25), STAMP_CITE, color=STAMP_INK, wrap="none"
     )
+    return g
+
+
+@register("graphic", "mind-zipper", summary="A closed zipper over the whole frame, pulled open to show the shot behind")
+def zipper(cv: Canvas, parent, start: float, end: float) -> Any:
+    """The frame is cloth with a zipper down its middle. The pull runs down from the top from ``start`` to ``end``, and
+    each row of the cloth parts as it passes, so the shot underneath opens in a V. Returns its group."""
+    _span(start, end, "a zipper")
+    g = cv.group(parent, cv.uid("g"), end=end + ZIP_BEAT)
+    high = cv.height / ZIP_ROWS
+    half = cv.width / 2
+    for row in range(ZIP_ROWS):
+        y = row * high
+        at = start + (end - start) * row / ZIP_ROWS
+        for side, x, off in ((0, 0.0, -1.0), (1, half, 1.0)):
+            strip = cv.group(g, cv.uid("g"), x=0.0)
+            cv.keys(strip, "x", [(at, 0.0), (at + ZIP_BEAT, off * (half + ZIP_TOOTH_W))], hold=False, kind="cubic-in")
+            cv.rect(strip, x, y, half, high + 1.0, ZIP_CLOTH)
+            edge = half - ZIP_TOOTH_W if side == 0 else half
+            cv.rect(
+                strip,
+                edge,
+                y + (0.0 if side == 0 else high / 2),
+                ZIP_TOOTH_W,
+                ZIP_TOOTH_H,
+                ZIP_TOOTH,
+                cv.ink,
+                3.0,
+                radius=4.0,
+            )
+    pull = cv.group(g, cv.uid("g"), y=0.0)
+    cv.keys(pull, "y", [(start, 0.0), (end, float(cv.height))], hold=False)
+    cv.rect(pull, half - 54.0, -40.0, 108.0, 80.0, ZIP_PULL, cv.ink, 6.0, radius=16.0)
+    cv.rect(pull, half - 26.0, 30.0, 52.0, 150.0, ZIP_PULL, cv.ink, 6.0, radius=20.0)
     return g
 
 
