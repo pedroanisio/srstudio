@@ -22,6 +22,7 @@ from srstudio.acting import (
     parse_score,
 )
 from srstudio.head_motion import Spring
+from support.acting import canvas, contact_track, evaluate
 
 
 def numeric(policy, **kwargs):
@@ -293,7 +294,6 @@ def test_breath_anticipation_cannot_escape_normalized_expansion():
 
 def test_policy_face_timing_keeps_contact_ownership_across_a_cut():
     from srstudio.limbs.motion import Attachment
-    from test_acting import contact_track
 
     track = contact_track()
     motion = replace(track.motion, attachments=(Attachment('cup', 0.5, 3.5, track.motion.sample(0.5).hand.frame),))
@@ -310,7 +310,6 @@ def test_policy_face_timing_keeps_contact_ownership_across_a_cut():
 
 
 def test_delayed_reset_cannot_cross_a_contact_that_starts_after_the_beat():
-    from test_acting import contact_track
 
     score = ActingScore(
         4,
@@ -331,7 +330,6 @@ def test_delayed_reset_cannot_cross_a_contact_that_starts_after_the_beat():
 
 def test_delayed_reset_cannot_cross_a_later_attachment_without_a_contact():
     from srstudio.limbs.motion import Attachment
-    from test_acting import contact_track
 
     track = contact_track()
     motion = replace(track.motion, contacts=())
@@ -356,8 +354,6 @@ def test_delayed_reset_cannot_cross_a_later_attachment_without_a_contact():
 @pytest.mark.parametrize('curve', ['sine-in-out', 'spring'])
 @pytest.mark.parametrize('cut_start', [0.85, 2.1])
 def test_rendered_policy_keeps_anticipation_and_settling_in_later_shots(curve, cut_start, scene_render, tmp_path):
-    from test_acting import canvas, evaluate
-
     policy = TransitionPolicy(curve=curve, anticipation=0.2, anticipation_amount=0.1, settle=0.3, overshoot=0.1)
     plan = compile_performance(BENTO, numeric(policy))
     frames = []
