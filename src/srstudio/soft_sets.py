@@ -183,6 +183,15 @@ def _skyline(cv: Canvas, far, rows: list[tuple[float, float, int]], id: str, gro
             cv.rect(g, x, ground - h, w, h, "#B8C6D2" if k % 2 else "#A9B9C8", radius=8)
 
 
+def planter(cv: Canvas, parent) -> None:
+    """The planter in the frame's bottom right corner, with the cactus in it and the code on it (ADR 0001), for a
+    foreground the camera does not move."""
+    cv.rect(parent, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)
+    cv.rect(parent, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
+    signature.cactus(cv, parent, 968, 1744, 0.72)
+    signature.code(cv, parent, 880, 1800, 15, color="#F3DFCF")
+
+
 @register(
     "location",
     "soft-park",
@@ -223,10 +232,7 @@ def park(
         cast(g)
     front = cv.group(g, f"{id}-front")
     cv.ellipse(front, -120, 1740, 330, 300, "#6F9D62")  # a bush the camera looks past
-    cv.rect(front, 846, 1752, 260, 190, "#B67B4E", cv.ink, INK_LINE, radius=14)  # the planter
-    cv.rect(front, 830, 1736, 290, 36, "#C98C5C", cv.ink, INK_LINE, radius=12)
-    signature.cactus(cv, front, 968, 1744, 0.72)
-    signature.code(cv, front, 880, 1800, 15, color="#F3DFCF")
+    planter(cv, front)
     return g
 
 

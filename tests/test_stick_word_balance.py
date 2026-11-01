@@ -169,3 +169,38 @@ def test_without_join_the_cues_stay_as_they_were():
 def test_join_needs_a_shortest_time():
     with pytest.raises(StickDataError, match="join"):
         stick.word_cues([TWO_QUICK], width=chars, balance=True, join=True)
+
+
+CALLED = take(0.0, 1.9, [("Hey.", 0.0, 0.3), ("Over", 0.6, 0.8), ("here.", 0.8, 1.2), ("Hey!", 1.4, 1.7)])
+NEXT_LINE = take(4.0, 5.0, [("Stretching.", 0.0, 0.8)])
+
+
+def called(**extra):
+    return stick.word_cues([CALLED, NEXT_LINE], min_seconds=0.85, linger=0.2, width=chars, max_width=880, balance=True,
+                           sentences=True, **extra)  # fmt: skip
+
+
+def test_a_sentence_end_can_leave_a_cue_too_short_to_read():
+    assert min(c.end - c.start for c in called()) < 0.85
+
+
+def test_hold_keeps_every_cue_up_long_enough_by_running_into_the_silence():
+    cues = called(hold=True)
+    assert [c.text for c in cues] == ["Hey", "Over here", "Hey", "Stretching"]
+    assert min(c.end - c.start for c in cues) >= 0.85 - 1e-9
+    assert all(a.end <= b.start for a, b in zip(cues, cues[1:], strict=False))
+
+
+def test_hold_leaves_the_cue_after_a_long_enough_silence_where_it_was_spoken():
+    assert called(hold=True)[-1].start == 4.0
+
+
+def test_hold_moves_nothing_when_every_cue_is_long_enough():
+    plain = take(0.0, 3.0, [("One.", 0.0, 1.0), ("Two.", 1.0, 2.0)])
+    args = dict(min_seconds=0.5, linger=0.3, width=chars, max_width=880, balance=True, sentences=True)
+    assert stick.word_cues([plain], hold=True, **args) == stick.word_cues([plain], **args)
+
+
+def test_hold_needs_the_length_it_holds_to():
+    with pytest.raises(StickDataError, match="min_seconds"):
+        stick.word_cues([PLANE], hold=True)

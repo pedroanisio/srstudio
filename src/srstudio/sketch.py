@@ -94,7 +94,7 @@ LIP_SYNCED = (
     "bento",
 )  # the brush-drawn characters, whose mouths follow a viseme track
 MIN_STEP = 0.15  # the least a beat may be held, seconds
-LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix
+LINE_LEVELS = (-12.0, 0.0)  # (dB) how far a line may sit under the others in the mix: interview.LEVELS, for a sketch
 BLANK_GAP = 0.25  # a silent beat starts this long after the line before it ends
 BLANK_MARGIN = 0.30  # and this long before the next spoken beat at the latest
 CAPTION_MIN = 0.85  # a caption is held at least this long when the next change can wait for it

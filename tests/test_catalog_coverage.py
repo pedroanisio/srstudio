@@ -51,6 +51,7 @@ NO_EPISODE = [
     "show-bug",
     "toon-bento",
     "toon-counter",
+    "toon-pipe",
     "toon-receipt",
     "toon-take-a-number",
 ]

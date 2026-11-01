@@ -39,6 +39,7 @@ def test_the_style_is_registered_with_its_parts_and_font():
     assert COLLAGE.parts == (
         "collage",
         "collage_everyday",
+        "collage_odds",
         "collage_photo",
         "collage_sets",
         "collage_things",
@@ -344,6 +345,53 @@ def test_captions_draw_a_tinted_pill_per_cue_above_the_figure():
     groups = [g for g in root.iter("group") if g.get("start") is not None]
     assert [(float(g.get("start")), float(g.get("end"))) for g in groups] == [(0.0, 1.5), (1.5, 3.0)]
     assert all(g.get("effects") == "collage-caption-shadow" for g in groups)  # each pill lifts off the set
+
+
+def test_a_cue_can_take_its_pill_somewhere_else():
+    cv = canvas()
+    lines = [toon.Line("01", "Better?", 0.0, 1.5, "brent"), toon.Line("02", "Worse.", 1.5, 3.0, "rosa")]
+    collage.captions(cv, cv.comp, lines, measure, tops={"Worse.": 815.0})
+    root = tree(cv)
+    rects = [s for s in root.iter("shape") if s.get("shape") == "rect"]
+    assert [float(r.get("y")) for r in rects] == [collage.CAPTION_TOP, 815.0]
+    first, second = (float(layer.get("y")) for layer in root.iter("layer"))
+    assert second - 815.0 == first - collage.CAPTION_TOP
+
+
+def _lid_heights(look: collage.Look, **options) -> list[float]:
+    return [float(y) for shape in collage.lid_shapes(look, **options) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+
+
+def test_a_new_reel_s_blink_under_a_hat_stays_below_its_band():
+    jun = collage.LOOKS["jun"]
+    assert jun.hair == "beanie"
+    band = collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    assert min(_lid_heights(jun, under_band=True)) >= band
+
+
+def test_a_delivered_reel_keeps_the_lid_it_was_drawn_with():
+    jun = collage.LOOKS["jun"]
+    assert min(_lid_heights(jun)) < collage.face(jun)[1] + collage.BEANIE_BAND_BOTTOM
+    assert collage.lid_shapes(jun) != collage.lid_shapes(jun, under_band=True)
+
+
+def _shape_paths(cv: Canvas) -> set[str]:
+    return {s.get("path") for s in tree(cv).iter("shape")}
+
+
+def test_a_figure_draws_the_lid_under_the_band_only_when_asked():
+    wanted = {shape[0] for shape in collage.lid_shapes(collage.LOOKS["jun"], under_band=True)}
+    asked, plain = canvas(), canvas()
+    collage.DRAWERS["jun"](asked, asked.comp, [pose()], D, (), lids_under_band=True)
+    collage.DRAWERS["jun"](plain, plain.comp, [pose()], D, ())
+    assert wanted <= _shape_paths(asked)
+    assert not wanted & _shape_paths(plain)
+
+
+def test_a_blink_with_no_hat_covers_the_whole_eye():
+    deb = collage.LOOKS["deb"]
+    heights = [float(y) for shape in collage.lid_shapes(deb) for y in re.findall(r"-?[\d.]+", shape[0])[1::2]]
+    assert min(heights) < collage._eye_centres(deb)[0][1] - 60  # up past the top of the eye
 
 
 def test_captions_need_the_style_font():

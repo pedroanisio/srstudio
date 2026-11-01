@@ -68,12 +68,13 @@ def words(
     sentences: bool = False,
     least: float = WORD_MIN,
     join: bool = False,
+    hold: bool = False,
 ):
     """The spoken ``takes`` as word captions on the episode clock; returns their group. ``alone=False`` keeps a word
-    from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end
-    (:func:`srstudio.stick.word_cues`): new reels ask for it, delivered ones keep theirs. ``least`` is the shortest a
-    cue is meant to show; with ``join``, a cue still under it joins a neighbour, keeping the sentence mark between
-    them."""
+    from a cue of its own wherever a neighbour fits it. With ``sentences``, no cue runs across a sentence end, and
+    ``hold`` keeps the short cues that can leave up long enough to read (:func:`srstudio.stick.word_cues`): new reels
+    ask for them, delivered ones keep theirs. ``least`` is the shortest a cue is meant to show; with ``join``, a cue
+    still under it joins a neighbour, keeping the sentence mark between them."""
     group = ep.cv.group(ep.cv.comp, "spoken-words")
     font = (ep.root / str(ep.spec.font)).read_bytes()
     cues = stick.word_cues(
@@ -87,6 +88,7 @@ def words(
         alone=alone,
         sentences=sentences,
         join=join,
+        hold=hold,
     )
     stick.words(ep.cv, group, cues, y=y, scrim=SCRIM)
     return group
@@ -114,10 +116,20 @@ def turns(end: float, rate: float) -> tuple[list[tuple[float, float]], list[tupl
     return spans[0::2], spans[1::2]
 
 
-def close(ep: Episode, post: InstagramPost, *hidden: Any) -> Path:
-    """The burned ``hidden`` nodes off the cover, the subtitles, the post and the scene."""
+def spoken_cues(takes: Sequence[Any], *, first_word: bool = False) -> list[tuple[float, float, str]]:
+    """One subtitle per spoken take, from the take's start. ``first_word`` starts it at the take's first word, because
+    a still opening is inside its take and says nothing: new reels ask for it, delivered ones keep their cues."""
+
+    def start(x: Any) -> float:
+        return x.start + x.words[0]["start"] if first_word and x.words else x.start
+
+    return [(start(x), x.end, x.text) for x in takes if not x.is_effect]
+
+
+def close(ep: Episode, post: InstagramPost, *hidden: Any, first_word: bool = False) -> Path:
+    """The burned ``hidden`` nodes off the cover, the subtitles (``first_word`` is :func:`spoken_cues`'), the post and
+    the scene."""
     ep.hide_on_cover(*hidden)
-    srt = [(x.start, x.end, x.text) for x in ep.t.takes if not x.is_effect]
-    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", srt)
+    subtitles.write_srt(ep.root / f"{ep.spec.slug}.srt", spoken_cues(ep.t.takes, first_word=first_word))
     ep.instagram(post)
     return ep.finish(ep.root / f"{ep.spec.slug}.scene.xml", ep.root / "qa" / "sdk-validation.json")
