@@ -1,7 +1,7 @@
 """Clay: small procedural geometry for path-traced plates, baked to meshes (ADR 0068).
 
 A clay character is modelled here so that it can be path-traced once and composited, and a rigid object seen from
-more than one angle is modelled here for :mod:`srstudio.proxy` (ADR 0088). :class:`Model` is a sketchbook of the
+more than one angle is modelled here for :mod:`srstudio.proxy` (ADR 0090). :class:`Model` is a sketchbook of the
 shapes such a character is made of, ellipsoids, rounded
 boxes, rods, tubes and sweeps, built in centimetre-like scene units with y down and z away from the lens. Every shape
 is baked to triangles at once, in the frame :meth:`Model.at` holds, and :meth:`Model.meshes` merges them by material.

@@ -1,4 +1,4 @@
-"""A rigid object drawn from a 3D proxy, the default for anything rigid seen from more than one angle (ADR 0088).
+"""A rigid object drawn from a 3D proxy, the default for anything rigid seen from more than one angle (ADR 0090).
 
 A model from :mod:`srstudio.clay` goes through :mod:`srstudio.plates` twice for one :class:`View`: a light pass and a
 pass of flat part colours. The light is cut into soft tone bands per part by a :class:`Recipe`, and ink runs where parts

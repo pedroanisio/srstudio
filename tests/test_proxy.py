@@ -1,4 +1,4 @@
-"""A rigid proxy drawn as cel plates (ADR 0088): typed views and recipes, bands and ink, layers split for the people
+"""A rigid proxy drawn as cel plates (ADR 0090): typed views and recipes, bands and ink, layers split for the people
 and the wheels, refusals before any render, and a camera that lands where the engine draws."""
 
 import numpy as np

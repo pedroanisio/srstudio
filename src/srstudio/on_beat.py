@@ -1,4 +1,4 @@
-"""Moving a drawing to the music: keys and spans placed on a :class:`~srstudio.music.Groove` (ADR 0088).
+"""Moving a drawing to the music: keys and spans placed on a :class:`~srstudio.music.Groove` (ADR 0090).
 
 A grid is the one source of timing, so a car, the people in it and their mouths keep to the same beat: :func:`ride`
 lifts a node on each beat and settles it between, :func:`sway` leans it from beat to beat, and :func:`alternate` swaps
