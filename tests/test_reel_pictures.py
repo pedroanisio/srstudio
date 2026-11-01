@@ -208,3 +208,15 @@ def test_deb_answers_the_phone_with_an_arm_she_stops_hanging(monkeypatch: pytest
     assert lineup.reactions["deb"][-1]["arms"] == "free"
     assert lineup.reactions["deb"][-1]["start"] > lift  # she keeps the arm until the one with the handset comes in
     assert collage_everyday.shoulder("deb") == mod.SHOULDER_CLOSE
+
+
+def test_nobody_in_the_headphones_aisle_is_there_twice() -> None:
+    """The stopped row is a crowd of strangers: the same face twice, or a lead's, reads as a copy, not as a crowd."""
+    tree = ast.parse((EPISODES / "headphones.py").read_text())
+    shoppers = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "shoppers")
+    row = next(n.value for n in ast.walk(shoppers) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == "row")
+    assert isinstance(row, ast.List)
+    cast = [ast.unparse(person.elts[0]) for person in row.elts if isinstance(person, ast.Tuple)]
+    assert len(cast) == len(row.elts) >= 3
+    assert len(set(cast)) == len(cast), cast
+    assert not {"cast.Customer", "cast.Rosa"} & set(cast)  # Milo and Rosa stand in the same aisle
