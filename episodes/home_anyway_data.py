@@ -65,7 +65,7 @@ HALL_AT = (210.0, 850.0)
 FAR_QUAD = Quad((214.0, 664.0), (340.0, 646.0), (346.0, 776.0), (214.0, 768.0))
 NEAR_QUAD = toon_laptop.THREE_QUARTER
 FULL_QUAD = Quad((42.0, 344.0), (548.0, 330.0), (552.0, 742.0), (42.0, 732.0))
-SPOTS = ((0.23, 0.29, -3.0), (0.63, 0.27, 2.0), (0.22, 0.75, 2.0), (0.56, 0.74, -2.0), (0.83, 0.75, 3.0))
+SPOTS = ((0.27, 0.29, -3.0), (0.7, 0.27, 2.0), (0.24, 0.75, 2.0), (0.6, 0.74, -2.0), (0.83, 0.75, 3.0))
 HIS_CHEEK = (214.0, 712.0)
 HER_ARM_AT = (
     HER_AT[0] + 36.0,
@@ -119,26 +119,26 @@ ROWS = (
     (hold(0.0, MEDIUM, "", *TOP), OFF_SHOT, TYPING),
     (first(0.3, MEDIUM, 0, "You're home anyway,", *TOP, "note:1"), OFF_SHOT, UP),
     (part(1.6, MEDIUM, 0, 3, "so the plumber's coming.", *TOP), OFF_SHOT, UP),
-    (say(2.8, MEDIUM, 1, *TOP), OFF_SHOT, UP),
-    (say(4.2, TWO, 2, *TOP, "note:2"), AT_LAPTOP, UP),
-    (say(6.2, TWO, 3, *TOP, "note:3"), FOR_BAG, UP),
-    (hold(8.33, TWO, "", *TOP, "out"), FOR_BAG, TIRED),
-    (say(8.7, MEDIUM, 4, *TOP), OFF_SHOT, POINTS),
-    (say(10.4, DOOR, 5, *TOP), KIND, TIRED),
-    (say(11.8, TWO, 6, *TOP, "note:4"), OH, TIRED),
-    (say(14.2, MEDIUM, 7, *TOP), OFF_SHOT, TIRED),
-    (say(15.8, HERS, 8, *TOP), PATIENT, TIRED),
-    (hold(17.62, SCREEN, "", *TOP, "hum"), PATIENT, TIRED),  # the held silence: the page is gone
-    (say(19.05, CLOSE, 9, *TOP, "card"), PATIENT, CARD),
-    (say(21.0, TWO, 10, *TOP, "cheek"), THRILLED, ALMOST),
-    (hold(22.74, TWO, "", *TOP, "peel"), READING, ALMOST),  # the held silence: he almost smiles, she reads
-    (first(23.95, MEDIUM, 11, "Can you move it?", *TOP, "note:5"), READING, GONE),
-    (part(25.1, CLOSE, 11, 4, "You're home anyway.", *TOP, "face"), READING, BLANK),
+    (say(2.9, MEDIUM, 1, *TOP), OFF_SHOT, UP),
+    (say(4.45, TWO, 2, *TOP, "note:2"), AT_LAPTOP, UP),
+    (say(6.6, TWO, 3, *TOP, "note:3"), FOR_BAG, UP),
+    (hold(8.73, TWO, "", *TOP, "out"), FOR_BAG, TIRED),
+    (say(9.05, MEDIUM, 4, *TOP), OFF_SHOT, POINTS),
+    (say(10.9, DOOR, 5, *TOP), KIND, TIRED),
+    (say(12.4, TWO, 6, *TOP, "note:4"), OH, TIRED),
+    (say(14.9, MEDIUM, 7, *TOP), OFF_SHOT, TIRED),
+    (say(16.6, HERS, 8, *TOP), PATIENT, TIRED),
+    (hold(18.42, SCREEN, "", *TOP, "hum"), PATIENT, TIRED),  # the held silence: the page is gone
+    (say(19.85, CLOSE, 9, *TOP, "card"), PATIENT, CARD),
+    (say(21.95, TWO, 10, *TOP, "cheek"), THRILLED, ALMOST),
+    (hold(23.69, TWO, "", *TOP, "peel"), READING, ALMOST),  # the held silence: he almost smiles, she reads
+    (first(24.85, MEDIUM, 11, "Can you move it?", *TOP, "note:5"), READING, GONE),
+    (part(25.95, CLOSE, 11, 4, "You're home anyway.", *TOP, "face"), READING, BLANK),
 )
 BEATS = tuple(row[0] for row in ROWS)
 ACTS = {"rabbit": tuple(row[1] for row in ROWS), "bear": tuple(row[2] for row in ROWS)}
 ONCE = ("out", "hum", "card", "cheek", "peel", "face")
-END = 26.5
+END = 27.4
 SKETCH = Sketch(SLUG, TITLE, (MAE, BRUNO), LINES, BEATS, END, tail=0.3, bare=BARE)
 SLAP = foley.Burst(0.09, 2600.0, attack=0.001, decay=0.3, tone_hz=240.0, tone_end_hz=120.0, tone=0.4)
 PAT = foley.Burst(0.08, 1300.0, attack=0.002, decay=0.3, tone_hz=180.0, tone_end_hz=110.0, tone=0.4)

@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#jobhunting", "#couplehumor", "#unemployedlife", "#animatedshorts", "#okayville"),
-        thumbnail=ShowCover("Day 41, one bare corner", 18.3, number=198),
+        thumbnail=ShowCover("Day 41, one bare corner", 19.1, number=198),
     ),
     tags=Tags(
         "job-hunting",
