@@ -13441,6 +13441,40 @@
           "rig": null
         }
       ]
+    },
+    "toon-tv-menu": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A full-frame TV menu with one row: a plain door, a bar and a label. An invented interface with no app name or logo. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "eee46f3acb3a8aadfceae1aa387d881bc2d0033339a7209a430be94a143c55f3",
+          "rig": null
+        }
+      ]
+    },
+    "toon-remote": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain TV remote, small enough for a paw. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3cfa6e114f0a889f913cad7267487230c27e60eea5c48d521a45602fde3cf41",
+          "rig": null
+        }
+      ]
     }
   }
 }

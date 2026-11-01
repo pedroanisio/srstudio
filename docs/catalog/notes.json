@@ -1276,6 +1276,8 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-remote": {"title": "Controle remoto"},
+    "toon-tv-menu": {"title": "Menu de TV"},
     "stick-receipt": {"title": "Nota comprida"},
     "stick-box": {"title": "Caixa de entrega"},
     "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
@@ -9051,6 +9053,30 @@
         "at": 11.0
       },
       "text": "A compra que não para: caixas sem marca empilhadas e uma nota que desenrola até o chão, com linhas que ninguém lê."
+    },
+    {
+      "section": "props",
+      "name": "Menu de TV inventado",
+      "parts": [
+        "toon-tv-menu"
+      ],
+      "shot": {
+        "episode": "it-autoplayed",
+        "at": 21.2
+      },
+      "text": "A prova contra ele: uma linha só, uma porta, a barra quase cheia, e nenhum aplicativo de verdade."
+    },
+    {
+      "section": "props",
+      "name": "Controle remoto na pata",
+      "parts": [
+        "toon-remote"
+      ],
+      "shot": {
+        "episode": "it-autoplayed",
+        "at": 15.0
+      },
+      "text": "Um controle sem marca, pequeno o bastante para uma pata, e o clique que pausa a mentira."
     }
   ]
 }
