@@ -18,6 +18,7 @@ from cant_afford_to_save_audio import (
     BOX_LANDS,
     BOX_W,
     CAMERAS,
+    CUE_TAIL,
     DEV_DOWN,
     DEV_GLAD,
     DEV_LOOK,
@@ -79,8 +80,8 @@ cv, t = ep.cv, ep.t
 shots = ep.sequence("shots")
 said = {x.id: x for x in t.takes}
 K = stick.RigKey
-HOLD_AT = said["04"].speech_duration
-PHONE_AT = said["06"].speech_duration
+HOLD_AT = said["04"].speech_duration + CUE_TAIL  # the cut to the hold, when the line's last word has gone
+PHONE_AT = said["06"].speech_duration + CUE_TAIL
 
 
 def camera(parent, name: str):
@@ -92,8 +93,8 @@ def speaks(take, who: str) -> dict:
     return dict(phones=take.phones, mood=take.mood) if take is not None and take.actor == who else {}
 
 
-def box(parent, x: float, foot: float) -> None:
-    stick_odds.carton(cv, parent, x, foot, w=BOX_W, h=BOX_H)
+def box(parent, x: float, foot: float, *, shadow: bool = True) -> None:
+    stick_odds.carton(cv, parent, x, foot, w=BOX_W, h=BOX_H, shadow=shadow)
 
 
 def first_box(parent, take) -> None:
@@ -123,7 +124,7 @@ def stack(parent, take) -> None:
             kind="cubic-in",
         )
     box(low, STACK_X, STACK_FOOT)
-    box(high, STACK_X, STACK_FOOT if take.id == "04" else STACK_FOOT - BOX_H)
+    box(high, STACK_X, STACK_FOOT if take.id == "04" else STACK_FOOT - BOX_H, shadow=False)
 
 
 def heel_box(parent, take) -> None:
@@ -200,14 +201,18 @@ def stage(take) -> None:
     elif take.id == "04":
         him = [K(0, "hands-hips", DEV_PITY)]
         her = [K(0, "stand", NOOR_PLAIN), K(HOLD_AT + 0.1, "stand", NOOR_WATCHES), K(HOLD_AT + 0.5, "stand", NOOR_UP)]
-        split(g, take, line, "dev", "two", him, her, him, her)
+        split(g, take, HOLD_AT, "dev", "two", him, her, him, her)
     elif take.id == "05":
         him = [K(0, "hands-hips", DEV_SAYS), K(0.1, "offers", DEV_GLAD)]
         scene(camera(g, "two"), end, him, [K(0, "stand", NOOR_UP), K(line, "hands-hips", NOOR_PLAIN)], take=take)
     elif take.id == "06":
-        him = [K(0, "offers", DEV_GLAD), K(line + PHONE_UP, "phone", DEV_READS), K(line + SINKS, "sunk", DEV_DOWN)]
+        him = [
+            K(0, "offers", DEV_GLAD),
+            K(PHONE_AT + PHONE_UP, "phone", DEV_READS),
+            K(PHONE_AT + SINKS, "sunk", DEV_DOWN),
+        ]
         her = [K(0, "hands-hips", NOOR_ASKS)]
-        split(g, take, line, "noor", "hold", him, her, him, her)
+        split(g, take, PHONE_AT, "noor", "hold", him, her, him, her)
     else:
         him = [K(0, "looks-up", DEV_QUIET)]
         scene(camera(g, "dev"), end, him, [K(0, "hands-hips", NOOR_PLAIN)], take=take)

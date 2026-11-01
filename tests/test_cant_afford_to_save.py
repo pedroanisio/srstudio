@@ -52,11 +52,17 @@ def test_the_overlay_never_repeats_a_line(data):
 
 def test_the_holds_are_the_script_s_and_everything_lands_inside_them(data):
     takes = data.SCRIPT.takes
-    assert takes[3].hold == data.BOXES_HOLD == pytest.approx(0.9)
-    assert takes[5].hold == data.PHONE_HOLD == pytest.approx(1.4)
+    assert takes[3].hold == data.CUE_TAIL + data.BOXES_HOLD
+    assert takes[5].hold == data.CUE_TAIL + data.PHONE_HOLD
+    assert (data.BOXES_HOLD, data.PHONE_HOLD) == pytest.approx((0.9, 1.4))
     assert max(t.hold for t in takes if t not in (takes[3], takes[5])) < 0.5
     assert data.SECOND_SLIDES < data.SECOND_LANDS < data.THIRD_DROPS < data.THIRD_LANDS < data.BOXES_HOLD
     assert data.PHONE_UP < data.SINKS < data.HEEL_SLIDES < data.HEEL_TAPS < data.PHONE_HOLD
+
+
+def test_the_cut_to_the_hold_waits_for_the_cue_of_the_line(data):
+    """A word stays up to WORD_LINGER after it is spoken: the hold starts when it has gone, on the speaker until then."""
+    assert data.CUE_TAIL >= stick_reel.WORD_LINGER
 
 
 def test_the_reel_cuts_on_his_last_word(data):

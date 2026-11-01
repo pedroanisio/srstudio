@@ -33,6 +33,7 @@ PLAIN = VoiceSettings(stability=0.45, similarity_boost=0.75, style=0.35, speed=1
 OPENING = 0.42  # the box lands inside this, and her first word starts on its thump
 BOX_LANDS = 0.36  # seconds into the reel the first box stops at her feet
 GAP = 0.22  # between the quick lines
+CUE_TAIL = 0.9  # the line's last word stays up this long, on the speaker: stick_reel.WORD_LINGER; the holds start after
 BOXES_HOLD = 0.9  # after "Not at sixty percent off.": two more land behind him
 PHONE_HOLD = 1.4  # after "Did you check the account?": he looks, and a box taps his heel
 SECOND_SLIDES, SECOND_LANDS, THIRD_DROPS, THIRD_LANDS = 0.04, 0.3, 0.36, 0.58  # into the hold
@@ -50,9 +51,9 @@ SCRIPT = takes.Script(
         takes.Take("01", "noor", "Is that a second air fryer?", GAP, shot="two", mood="calm"),
         takes.Take("02", "dev", "Sixty percent off.", GAP, shot="two", mood="calm"),
         takes.Take("03", "noor", "We have an air fryer.", GAP, shot="noor", mood="calm"),
-        takes.Take("04", "dev", "Not at sixty percent off.", BOXES_HOLD, shot="dev", mood="calm"),
+        takes.Take("04", "dev", "Not at sixty percent off.", CUE_TAIL + BOXES_HOLD, shot="dev", mood="calm"),
         takes.Take("05", "dev", "We saved $4,000.", GAP, shot="two", mood="calm"),
-        takes.Take("06", "noor", "Did you check the account?", PHONE_HOLD, shot="noor", mood="calm"),
+        takes.Take("06", "noor", "Did you check the account?", CUE_TAIL + PHONE_HOLD, shot="noor", mood="calm"),
         takes.Take("07", "dev", "We can't afford to save any more.", CUT_HOLD, shot="dev", mood="calm"),
     ),
     voice_note="ElevenLabs premade voices Will and Jessica; no reference-voice cloning. Sound effects synthesized in "

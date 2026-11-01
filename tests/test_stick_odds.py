@@ -261,6 +261,13 @@ def test_a_carton_stands_on_its_foot_and_refuses_a_size_it_cannot_draw():
         stick_odds.carton(cv, cv.comp, 0, 0, scale=0)
 
 
+def test_a_carton_stacked_on_another_casts_no_shadow_on_the_air():
+    cv = canvas()
+    plain = stick_odds.carton(cv, cv.comp, 300, 1500)
+    high = stick_odds.carton(cv, cv.comp, 300, 1300, shadow=False)
+    assert len(high.nodes) == len(plain.nodes) - 1
+
+
 def test_a_carton_carries_no_lettering():
     cv = canvas()
     stick_odds.carton(cv, cv.comp, 300, 1500)

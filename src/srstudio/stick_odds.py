@@ -127,17 +127,28 @@ FLOOR_SHADOW = "#3a2a1c"
 
 @register("prop", "stick-box", tags=("box", "parcel", "delivery", "home"))
 def carton(
-    cv: Canvas, parent, x: float, y: float, *, w: float = 190, h: float = 150, flip: bool = False, scale: float = 1.0
+    cv: Canvas,
+    parent,
+    x: float,
+    y: float,
+    *,
+    w: float = 190,
+    h: float = 150,
+    flip: bool = False,
+    scale: float = 1.0,
+    shadow: bool = True,
 ):
     """A plain delivery carton standing on the floor at ``x, y``, the middle of its foot: a taped front, a top and a
-    shaded side, with a contact shadow. It carries no lettering and no logo. ``flip`` puts the side on the left."""
+    shaded side, with a contact shadow. It carries no lettering and no logo. ``flip`` puts the side on the left.
+    ``shadow=False`` drops the contact shadow, for a carton standing on another."""
     if not (w > 0 and h > 0):
         raise StickDataError(f"a carton's size is positive, got {w!r} by {h!r}")
     if scale <= 0:
         raise StickDataError(f"a carton's scale is positive, got {scale!r}")
     g = _group(cv, parent, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
     deep = 0.16 * w
-    oval(cv, g, -w * 0.6, -12, w * 1.3, 26, FLOOR_SHADOW, opacity=0.28)
+    if shadow:
+        oval(cv, g, -w * 0.6, -12, w * 1.3, 26, FLOOR_SHADOW, opacity=0.28)
     shape(cv, g, f"M {w / 2} {-h} L {w / 2 + deep} {-h - deep * 0.6} L {w / 2 + deep} {-deep * 0.6} L {w / 2} 0 Z",
           CARTON_SIDE, 5, stroke=cv.ink)  # fmt: skip
     top = -h - deep * 0.6
