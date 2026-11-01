@@ -31,6 +31,7 @@ from srstudio import (
     foley,
     locations,
     props,
+    signature,
 )
 from srstudio import interview as iv_audio
 from srstudio.rig import Performance
@@ -233,6 +234,15 @@ def at_counter(g):
     ava_arm(cv.group(g, "ava-arm-in-front"))
 
 
+def wall_shelf(g):
+    """The cup and then the cake take the counter, so the cactus sits on a bracket shelf on the plain wall, clear of
+    Ava, of the bug and of everyone's hands until the zoom."""
+    cv.path(g, "M968 482 L968 512 L994 482Z", "#D8CCBB", cv.ink, 2.5)
+    cv.path(g, "M1040 482 L1040 512 L1014 482Z", "#D8CCBB", cv.ink, 2.5)
+    cv.rect(g, 948, 470, 112, 12, "#F4F0E9", cv.ink, 2.5, radius=2)
+    signature.cactus(cv, g, 1004, 472, 0.6)
+
+
 def the_room(g):
     """What hangs on the wall: the plaque always, the streamers from the party on."""
     cutout_lobby.wall_plaque(
@@ -269,7 +279,7 @@ def in_chair(g):
 
 
 finish = locations.finish(cv, ep.comp)
-lobby = locations.reception(cv, finish, behind_counter, on_counter, at_counter, shots=LOBBY)
+lobby = locations.reception(cv, finish, behind_counter, on_counter, at_counter, shots=LOBBY, cactus=wall_shelf)
 wall = cv.group(lobby, "wall-of-the-lobby")
 # The wall's props sit over the set's own slat wall, and under nobody: the cast keeps clear of them.
 the_room(wall)

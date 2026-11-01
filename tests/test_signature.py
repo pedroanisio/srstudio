@@ -242,6 +242,7 @@ HANDED = {  # each location that takes cactus=, with its palette
     "office_reverse": (OFFICE, locations.office_reverse),
     "cafe": (CAFE, locations.cafe),
     "park": (CAFE, locations.park),
+    "reception": (OFFICE, locations.reception),
 }
 
 
