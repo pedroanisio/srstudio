@@ -4,7 +4,8 @@ Hand-written declarations of the episodes that use a part drift as episodes are 
 :func:`trace` records instead every registered builder that runs: it matches the code objects of each builder (a
 function, or the methods a class part defines itself) under a profiler hook, so a call counts however it is
 reached (a module attribute, an imported name, the registry, or another part drawing it). A character moving its
-head is drawn by :func:`srstudio.toon_head.figure` from its rig, so that call counts for the part the rig belongs to.
+head emits an explicit :mod:`srstudio.drawing_events` scope identifying its rig, so private emitter refactors
+do not change which part the drawing belongs to. Canvas ID allocation also emits explicit events.
 A part that only returns a call to a drawing of its own module (a one-pose convenience over the performer a shot calls
 instead) counts when that drawing runs with the arguments the part passes it (:func:`_delegates`).
 :func:`measure` runs each
@@ -32,8 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import CodeType
 
-from . import figure_record, parts, registry, releases, toon_head, toon_rigs
-from .canvas import Canvas
+from . import drawing_events, figure_record, parts, registry, releases, toon_rigs
 from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
@@ -147,7 +147,7 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
     delegates = _delegates(registry.entries(), set(codes))
     rigged = {id(rig): name for name, rig in toon_rigs.RIGS.items()}
     characters = {entry.name for entry in registry.entries() if entry.kind == "character"} | set(rigged.values())
-    uid = Canvas.uid.__code__
+    names = {entry.name for entry in registry.entries()}
     drawing: tuple[object, str, list[str]] | None = None  # the character's frame, its name and the ids so far
     previous = sys.getprofile()
 
@@ -156,9 +156,6 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
         if event == "call":
             parts = codes.get(frame.f_code)
             name = _called(frame, parts) if parts else None
-            # Both validated performances and fixed specimen probes enter this emitter.
-            if frame.f_code is toon_head._draw_figure.__code__:
-                name = rigged.get(id(frame.f_locals["rig"]))
             if name is None and frame.f_code in delegates:
                 name = _performed(frame, delegates[frame.f_code])
             if name is not None:
@@ -166,16 +163,37 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
                 if figures is not None and drawing is None and name in characters:
                     drawing = (frame, name, [])
         elif event == "return" and drawing is not None:
-            if frame.f_code is uid:
-                drawing[2].append(arg)
-            elif frame is drawing[0]:
-                if drawing[2]:
+            if frame is drawing[0]:
+                if drawing[2] and figures is not None:
+                    figures.append(figure_record.Figure(drawing[1], tuple(drawing[2])))
+                drawing = None
+
+    def event(event: drawing_events.DrawEvent) -> None:
+        nonlocal drawing
+        name: str | None
+        if event.kind == 'begin':
+            if isinstance(event.subject, str):
+                if event.subject not in names:
+                    raise UsageError(f'no registered drawing named {event.subject!r}')
+                name = event.subject
+            else:
+                name = rigged.get(id(event.subject))
+            if name is not None:
+                used.add(name)
+                if figures is not None and drawing is None and name in characters:
+                    drawing = (event.token, name, [])
+        elif drawing is not None:
+            if event.kind == 'id' and event.identifier is not None:
+                drawing[2].append(event.identifier)
+            elif event.kind == 'end' and drawing[0] is event.token:
+                if drawing[2] and figures is not None:
                     figures.append(figure_record.Figure(drawing[1], tuple(drawing[2])))
                 drawing = None
 
     sys.setprofile(hook)
     try:
-        yield used
+        with drawing_events.observe(event):
+            yield used
     finally:
         sys.setprofile(previous)
 

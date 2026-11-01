@@ -15,6 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypedDict, TypeVar
 
+from .contracts import PartContract, describe_callable, describe_part
 from .errors import SrstudioError
 
 KINDS = ("character", "location", "prop", "graphic")
@@ -72,6 +73,7 @@ class PartDetails(TypedDict):
     examples: list[str]
     part_version: PartVersionDetails | None
     character_version: CharacterVersionDetails | None
+    contract: dict[str, Any]
 
 
 def _signature(builder: Callable[..., Any]) -> inspect.Signature:
@@ -90,6 +92,7 @@ class _OriginalEntry:
     style: str
     slots: tuple[str, ...]
     examples: tuple[str, ...]
+    contract: PartContract | None
 
 
 @dataclass
@@ -104,6 +107,7 @@ class Entry:
     slots: tuple[str, ...] = ()  # extra callback names for builders without Slot annotations
     examples: tuple[str, ...] = ()  # Python snippets; ep is an existing Episode
     replacement: bool = False
+    contract: PartContract | None = None
     _registered_builder: Callable[..., Any] = field(init=False, repr=False, compare=False)
     _original: _OriginalEntry | None = field(init=False, repr=False, compare=False)
     _verified_builder: Callable[..., Any] | None = field(default=None, init=False, repr=False, compare=False)
@@ -115,7 +119,7 @@ class Entry:
             None
             if self.replacement
             else _OriginalEntry(
-                self.builder, self.summary, self.tags, self.module, self.style, self.slots, self.examples
+                self.builder, self.summary, self.tags, self.module, self.style, self.slots, self.examples, self.contract
             )
         )
 
@@ -163,6 +167,7 @@ class Entry:
             "examples": list(self.examples),
             "part_version": _part_version(self),
             "character_version": _character_version(self),
+            "contract": describe_part(self.builder, self.contract),
         }
 
 
@@ -253,19 +258,23 @@ def register(
     replace: bool = False,
     slots: tuple[str, ...] = (),
     examples: tuple[str, ...] = (),
+    contract: PartContract | None = None,
 ) -> Callable[[_Builder], _Builder]:
     """Decorator: ``@register("prop", "coffee-cup", summary="...")``.
 
     ``style`` names the style the part belongs to; by default it is the style whose ``parts`` list the
     module, and ``""`` for a part shared by every style. Duplicate names are refused unless
     ``replace=True`` explicitly replaces the existing builder. ``slots`` declares location callbacks when
-    they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode."""
+    they have no ``Slot`` annotation; ``examples`` supplies Python snippets using an existing ``ep`` Episode.
+    ``contract`` adds structured discovery semantics without replacing the builder's runtime validation."""
     if kind not in KINDS:
         raise RegistryError(f"unknown kind {kind!r}; one of {KINDS}")
 
     def wrap(obj: _Builder) -> _Builder:
         if name in _REGISTRY[kind] and not replace:
             raise RegistryError(f"{kind} {name!r} is already registered; use replace=True to replace it")
+        if contract is not None:
+            describe_callable(obj, contract)  # Refuse invalid metadata before mutating the registry.
         if slots:
             if kind != "location":
                 raise RegistryError("only locations declare callback slots")
@@ -284,7 +293,17 @@ def register(
         resolved = style_of_module(obj.__module__) if style is None else style
         previous = _REGISTRY[kind].get(name)
         entry = Entry(
-            kind, name, obj, doc, tuple(tags), obj.__module__, resolved, tuple(slots), tuple(examples), replace
+            kind,
+            name,
+            obj,
+            doc,
+            tuple(tags),
+            obj.__module__,
+            resolved,
+            tuple(slots),
+            tuple(examples),
+            replace,
+            contract,
         )
         if previous is not None:
             entry._original = previous._original

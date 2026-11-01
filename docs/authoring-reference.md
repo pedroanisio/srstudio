@@ -188,6 +188,15 @@ rebuilds every episode project on a copy and records each registered part its bu
 ([ADR 0017](../docs/decisions/0017-measured-part-usage.md)). It prints the used and unused parts per kind and writes the
 report that `srstudio page --usage` reads:
 
+Rig drawing and Canvas ID allocation emit explicit `drawing_events` notifications. Custom performers can use
+`with drawing_events.drawing(registered_part_name):` around their drawing calls; `usage.trace()` then records
+the part and the IDs allocated by `cv.uid()`, including IDs from custom namers. Nested scopes count every used
+part and associate IDs with the outermost character. An unknown explicit name raises `UsageError` while tracing.
+`drawing_events.observe(callback)` receives paired begin/end events and ID events in the current execution
+context; end events include `successful`. Observation and profiler state are restored on exceptional exit.
+Existing registered functions and class methods retain automatic tracing, including the legacy delegate fallback.
+The head emitter's private name, signature and code object no longer identify the character.
+
 ```bash
 srstudio usage --episodes ../generated/episodes --packages ../generated/packages --scripts episodes \
     --work _tmp/usage-work --out ../generated/catalog/usage.json
@@ -300,6 +309,71 @@ shot group). The office, café, Manager, Toon sloth/goat/hamster and episode sla
 using an existing `ep` Episode. Python tools can use `srstudio.describe(kind, name)` or
 `registry.get(kind, name).describe()`;
 both return the same JSON-compatible details as `--json`. Inspection does not call the builder.
+
+### Agent contracts
+
+`describe(kind, name)["contract"]` uses `schema="srstudio.part-contract/1.0.0"`. Its `arguments` and `returns`
+describe JSON representations using JSON Schema 2020-12; records expose named properties, sequences expose item
+schemas, and fixed tuples expose `prefixItems` with their exact length. See the standard's
+[array](https://json-schema.org/understanding-json-schema/reference/array) and
+[object](https://json-schema.org/understanding-json-schema/reference/object) references. The existing signature,
+parameter list, call template, examples, and version fields remain available.
+
+| Field | How an agent uses it |
+| --- | --- |
+| `invocation` | `construct` creates an instance; `call` invokes a function. An Actor then exposes `operations.build`. |
+| `arguments` | Check required names and structural types. `x-python-kind` identifies positional-only and variadic binding rules. `additionalProperties` is closed unless the callable accepts `**kwargs`. |
+| `returns` | Inspect the result representation or its runtime Python type. |
+| `shape_complete` | True only when argument shapes contain no unknown or runtime-only nodes; it does not certify semantic validity or the return type. |
+| `validation` | Always `runtime-required`: use the actual typed constructors and builder checks before accepting a generated plan. |
+| `capabilities` | `true` is supported, `false` is unsupported, and `null` is unknown. A parameter's presence does not imply support. |
+| `vocabularies` | Explicit supported names, such as an Actor's mouths and extras. Unknown option shapes still require runtime validation. |
+| `operations` | Independently described helpers/methods; Bento includes `pose_of` with its mood, gesture, and eye-state enums. |
+| `constraints` | Additional authored relationships, such as an exit occurring after an entrance; these are explanatory, not an executable constraint language. |
+
+Shape annotations `x-unit`, `x-timebase`, and `x-role` come from explicit metadata. Their absence means unknown,
+not dimensionless or project time. `canvas` time follows `Canvas.local_time`; `relative:enter` is an offset from
+the builder's entrance. Bento's pose starts use that relative clock, while `duration` is an absolute project
+exit. The Actor build operation describes coordinates in drawing-parent units and scale as a ratio.
+
+`x-status="runtime"` marks Python objects such as a Canvas or callback. `x-status="unknown"` marks missing or
+unresolved annotations and bounded recursive expansion. Neither is permission to accept arbitrary generated
+JSON as valid input. Dataclass-shaped JSON still needs construction of the actual Python record; inspection
+does not provide a decoder. Inspection never calls builders or dataclass default factories. Annotation
+resolution evaluates imported Python annotations, so plugin modules remain trusted executable code.
+
+Plugins declare semantics with frozen `ParameterContract` and `PartContract` records. Metadata is checked against
+the signature before registration, and restoring a replaced part also restores its original metadata. Use
+`fields` for record fields, `items` for homogeneous sequences, and `prefix_items` for fixed tuples. An
+`Annotated[T, ParameterContract(...)]` annotation can carry the same metadata. Missing annotations can be supplied
+with `ParameterContract(type=T)` on a callable parameter; default values never imply parameter types.
+
+This complete plugin declares a bound and implements its runtime failure path:
+
+<!-- contract-plugin:start -->
+```python
+from sr_core.scene import Composition, Group
+from srstudio import Canvas, checks, register
+from srstudio.canvas import CanvasError
+from srstudio.contracts import ParameterContract, PartContract
+
+@register("prop", "agent-marker", contract=PartContract(parameters=(
+    ("opacity", ParameterContract(minimum=0, maximum=1, unit="ratio")),
+)))
+def marker(cv: Canvas, parent: Composition | Group, opacity: float = 1) -> Group:
+    if not checks.number(opacity) or not 0 <= opacity <= 1:
+        raise CanvasError("opacity must be finite and within 0..1", code="marker.opacity")
+    group = cv.group(parent, cv.uid("marker"), opacity=opacity)
+    cv.rect(group, 0, 0, 12, 12, "#5BB98C")
+    return group
+```
+<!-- contract-plugin:end -->
+
+Discovery is additive: many older builders still have unknown units, clocks, or capabilities. Do not fill those
+gaps by guessing from parameter names. Start with `srstudio catalog --json`, inspect the selected part, supply its
+runtime bindings, construct its typed records, and handle the builder's structured diagnostics on failure.
+
+### Extending drawing calls
 
 `Canvas.keys()` builds and validates the complete animation before attaching it to the scene. A failed key
 conversion or SDK validation leaves existing nodes and scene bytes unchanged, so a corrected call can be retried

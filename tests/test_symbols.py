@@ -52,6 +52,49 @@ def test_an_instance_needs_a_defined_symbol():
         cv.instance(cv.comp, "a", "missing")
 
 
+@pytest.mark.parametrize('existing', [False, True])
+def test_failed_symbol_callback_restores_scene_cache_and_retry(existing):
+    scene, cv = canvas()
+    kept = cv.group(cv.comp, 'kept')
+    if existing:
+        cv.symbol('existing', lambda symbol: cv.rect(symbol, 0, 0, 1, 1, '#FFFFFF'))
+    before = scene.to_bytes()
+
+    def broken(symbol):
+        cv.rect(symbol, 0, 0, 10, 10, '#000000')
+        cv.symbol('nested', lambda child: cv.rect(child, 0, 0, 1, 1, '#FFFFFF'))
+        kept.x = 99
+        cv.text(symbol, 'temporary-text', 'failed', 0, 0, 100, 50, 12)
+        raise ValueError('drawing failed')
+
+    with pytest.raises(ValueError, match='drawing failed'):
+        cv.symbol('tile', broken)
+    assert scene.to_bytes() == before
+    assert kept.owner is cv.comp and kept.x is None
+    with pytest.raises(ValueError, match='no symbol'):
+        cv.instance(cv.comp, 'bad-instance', 'tile')
+    with pytest.raises(ValueError, match='no symbol'):
+        cv.instance(cv.comp, 'bad-nested', 'nested')
+
+    calls = []
+
+    def repaired(symbol):
+        calls.append(symbol)
+        cv.rect(symbol, 0, 0, 10, 10, '#000000')
+
+    cv.symbol('tile', repaired)
+    cv.symbol('tile', repaired)
+    assert len(calls) == 1
+    cv.instance(cv.comp, 'tile-instance', 'tile')
+    reference_scene, reference = canvas()
+    reference.group(reference.comp, 'kept')
+    if existing:
+        reference.symbol('existing', lambda symbol: reference.rect(symbol, 0, 0, 1, 1, '#FFFFFF'))
+    reference.symbol('tile', lambda symbol: reference.rect(symbol, 0, 0, 10, 10, '#000000'))
+    reference.instance(reference.comp, 'tile-instance', 'tile')
+    assert scene.to_bytes() == reference_scene.to_bytes()
+
+
 def office(instanced: bool) -> tuple[Scene, Canvas]:
     scene, cv = canvas()
     locations.office_wide(cv, cv.comp, instanced=instanced)

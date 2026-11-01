@@ -409,6 +409,7 @@ def restore(name: str, number: int = 1) -> registry.Entry:
     entry.style = original.style
     entry.slots = original.slots
     entry.examples = original.examples
+    entry.contract = original.contract
     entry._verified_builder = None
     entry._verified_drawing = None
     entry.replacement = False

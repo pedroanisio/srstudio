@@ -115,7 +115,7 @@ POST = InstagramPost(
     hashtags=("#alberta", "#daylightsaving", "#parodynews", "#canada"),
     thumbnail=Thumbnail("My oven was right.", 22.5, "News Compiler", focus=(540.0, 860.0), zoom=1.0, place="bottom"),
 )
-STORY = Story(SOURCE, TICKER, LOWERS, ACTS, EVENTS, POST)
+STORY = Story(SOURCE, TICKER, LOWERS, ACTS, EVENTS, POST, parody=True)
 
 
 def validate(sk: Sketch = SKETCH) -> None:

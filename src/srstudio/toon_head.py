@@ -25,7 +25,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Protocol, runtime_checkable
 
-from . import brush
+from . import brush, drawing_events
 from .canvas import Canvas, _at_zero
 from .head_motion import (
     CHANNELS,
@@ -327,78 +327,79 @@ def _draw_figure(
     on_face: Callable[[Any], None] | None = None,
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
-    from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
+    with drawing_events.drawing(rig):
+        from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
 
-    look = rig.look
-    style = rig.style
-    if not cv._frozen:
-        plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})  # type: ignore[arg-type]
-    spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
-    pose_tilt = Channel(_held_tilts(spans, rig.pose_tilt), style.settle) if rig.pose_tilt else None
-    if cv._frozen:
-        for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
-            if channel is not None and channel.keys:
-                _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
-    seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
-    neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
-    seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
-    neck = {"x": neck_x, "y": neck_y, "anchorX": neck_x, "anchorY": neck_y}
+        look = rig.look
+        style = rig.style
+        if not cv._frozen:
+            plan = replace(plan, **{name: _bake_spring(getattr(plan, name)) for name in CHANNELS})  # type: ignore[arg-type]
+        spans = [(p, round(s + enter, 6), round(e + enter, 6)) for p, s, e in runs(poses, duration - enter)]
+        pose_tilt = Channel(_held_tilts(spans, rig.pose_tilt), style.settle) if rig.pose_tilt else None
+        if cv._frozen:
+            for name, channel in [(name, getattr(plan, name)) for name in CHANNELS] + [("pose_tilt", pose_tilt)]:
+                if channel is not None and channel.keys:
+                    _at_zero(channel.keys, channel.spring is None and channel.curve == "hold", name)
+        seat_x, seat_y = fx(PIVOT[0]), fy(PIVOT[1])
+        neck_x, neck_y = fx(rig.neck[0]), fy(rig.neck[1])
+        seat = {"x": seat_x, "y": seat_y, "anchorX": seat_x, "anchorY": seat_y}
+        neck = {"x": neck_x, "y": neck_y, "anchorX": neck_x, "anchorY": neck_y}
 
-    lean = cv.group(parent, cv.uid("lean"), **seat)
-    _animate(cv, lean, "rotation", plan.lean)
-    breath = cv.group(lean, cv.uid("breath"), **seat)
-    _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
-    trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
-    turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
-    _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
-    held = turn
-    if pose_tilt is not None:
-        held = cv.group(turn, cv.uid("tilt"), **neck)
-        _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
-    nod = cv.group(held, cv.uid("nod"), **neck)
-    _animate(cv, nod, "rotation", plan.roll)
-    _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
-    idle = cv.group(nod, cv.uid("idle"), **neck)
-    _animate(cv, idle, "rotation", plan.idle_roll)
-    _animate(cv, idle, "y", plan.idle_y, fh(1.0), neck_y)
-    lift = cv.group(idle, cv.uid("lift"))
-    _animate(cv, lift, "y", plan.breath, -fh(style.breath_px))
-    skull = cv.group(lift, cv.uid("skull"))
-    face = cv.group(lift, cv.uid("face"))
-    _animate(cv, face, "x", plan.face_x, fh(1.0))
-    _animate(cv, face, "y", plan.nod, fh(rig.face_slide))
-    trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
-    front = cv.group(breath, cv.uid("front"))
+        lean = cv.group(parent, cv.uid("lean"), **seat)
+        _animate(cv, lean, "rotation", plan.lean)
+        breath = cv.group(lean, cv.uid("breath"), **seat)
+        _animate(cv, breath, "scaleY", plan.breath, style.breath_scale, 1.0)
+        trunk = cv.group(breath, cv.uid("trunk")) if rig.head_over else None
+        turn = cv.group(breath, cv.uid("turn"), rotation=rig.tilt, **neck)
+        _animate(cv, turn, "rotation", plan.turn, base=rig.tilt)
+        held = turn
+        if pose_tilt is not None:
+            held = cv.group(turn, cv.uid("tilt"), **neck)
+            _animate(cv, held, "rotation", pose_tilt, carried=True)  # approved rigs hold these keys, see check_rig
+        nod = cv.group(held, cv.uid("nod"), **neck)
+        _animate(cv, nod, "rotation", plan.roll)
+        _animate(cv, nod, "y", plan.nod, fh(1.0), neck_y)
+        idle = cv.group(nod, cv.uid("idle"), **neck)
+        _animate(cv, idle, "rotation", plan.idle_roll)
+        _animate(cv, idle, "y", plan.idle_y, fh(1.0), neck_y)
+        lift = cv.group(idle, cv.uid("lift"))
+        _animate(cv, lift, "y", plan.breath, -fh(style.breath_px))
+        skull = cv.group(lift, cv.uid("skull"))
+        face = cv.group(lift, cv.uid("face"))
+        _animate(cv, face, "x", plan.face_x, fh(1.0))
+        _animate(cv, face, "y", plan.nod, fh(rig.face_slide))
+        trunk = trunk if trunk is not None else cv.group(breath, cv.uid("trunk"))
+        front = cv.group(breath, cv.uid("front"))
 
-    for pose, start, end in spans:
-        arms = pose.arms
-        _draw(cv, cv.group(skull, cv.uid("g"), start=start, end=end), _place(list(rig.skull()), arms))
+        for pose, start, end in spans:
+            arms = pose.arms
+            _draw(cv, cv.group(skull, cv.uid("g"), start=start, end=end), _place(list(rig.skull()), arms))
 
-        g = cv.group(face, cv.uid("g"), start=start, end=end)
-        _draw(cv, g, _place(list(rig.face()), arms))
-        _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
-        cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
-        nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
-        _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
-        _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
-        _draw_blinks(cv, g, look, pose, start, end)
-        bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")
-        _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
+            g = cv.group(face, cv.uid("g"), start=start, end=end)
+            _draw(cv, g, _place(list(rig.face()), arms))
+            _eyes(cv, g, look, pose.eyes, arms, plan.gaze, start, end)
+            cheeks, worn = wear_layers(face_of(look), pose.wear) if pose.wear else ([], [])
+            nose = [(shape, "ink" if i == 0 else "white") for i, shape in enumerate(look.nose)]
+            _draw(cv, g, _place(cheeks + nose + (_whiskers(look) if look.whiskers else []), arms))
+            _draw_mouth(cv, g, look, pose, _place(_mouth(look, pose.mouth), arms), mouths, start, end)
+            _draw_blinks(cv, g, look, pose, start, end)
+            bare = look.teeth and pose.mouth not in ("none", "grimace", "kiss", "scream")
+            _draw(cv, g, _place((_teeth(look) if bare else []) + worn + list(stickers), arms))
 
-        body = cv.group(trunk, cv.uid("g"), start=start, end=end)
-        _draw(cv, body, _place(list(rig.trunk()), arms))
-        if arms == "type":
+            body = cv.group(trunk, cv.uid("g"), start=start, end=end)
+            _draw(cv, body, _place(list(rig.trunk()), arms))
+            if arms == "type":
 
-            def frame_of(into, frame: int) -> None:
-                _draw(cv, into, _place(_arms(look, "type", frame)[0], "type"))
+                def frame_of(into, frame: int) -> None:
+                    _draw(cv, into, _place(_arms(look, "type", frame)[0], "type"))
 
-            swap_frames(cv, body, start, end, taps, frame_of)
-            over: list[Layer] = []
-        else:
-            under, over = _arms(look, arms, 0)
-            _draw(cv, body, _place(under, arms))
-        if over:
-            _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
-    if on_face is not None:
-        on_face(face)
-    return lean
+                swap_frames(cv, body, start, end, taps, frame_of)
+                over: list[Layer] = []
+            else:
+                under, over = _arms(look, arms, 0)
+                _draw(cv, body, _place(under, arms))
+            if over:
+                _draw(cv, cv.group(front, cv.uid("g"), start=start, end=end), _place(over, arms))
+        if on_face is not None:
+            on_face(face)
+        return lean

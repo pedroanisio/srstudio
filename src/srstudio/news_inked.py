@@ -142,6 +142,7 @@ BANNER_Y, BANNER_H = 1146.0, 76.0  # under the desk's top, so the hands on it st
 LOWER_Y, LOWER_H = 1222.0, 130.0
 TICKER_Y, TICKER_H = 1352.0, 64.0
 CHIP = 10.0  # one corner for everything over the picture
+CREDIT_GAP = 14.0  # between chips on the top row
 SHADOW = "#160a3066"
 PHONE_X, PHONE_Y, PHONE_W, PHONE_H = 190.0, 508.0, 700.0, 786.0  # the handset over the dimmed room
 MAP_TOP = 108.0  # the screen under the phone's header
@@ -1747,12 +1748,16 @@ def bug(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str 
     _text(cv, g, SHOW, TEXT_LEFT, BUG_Y, wide, BUG_H, 40, PLUM_DEEP, "center")
 
 
+def _tag_wide(measure: Measure) -> float:
+    return measure("PARODY", 40.0) + 44.0
+
+
 @register("graphic", "news-parody-tag@2", summary="The PARODY tag on the top row's chip, on a whole fictional reel")
 def parody_tag(cv: Canvas, parent, start: float, end: float, measure: Measure, id: str = "news-parody-tag") -> None:
     """PARODY in butter on plum, top right, opposite the show's name."""
     _span(start, end, "the PARODY tag")
     g = cv.group(parent, id, start=start, end=end)
-    wide = measure("PARODY", 40.0) + 44.0
+    wide = _tag_wide(measure)
     x = TEXT_RIGHT - wide
     _chip(cv, g, x, wide, PLUM_DEEP, BUTTER)
     _text(cv, g, "PARODY", x, BUG_Y, wide, BUG_H, 40, BUTTER, "center")
@@ -1862,9 +1867,11 @@ def source_card(
     end: float,
     measure: Measure,
     id: str = "news-source-card",
+    beside_tag: bool = False,
 ) -> None:
     """The card rises over the desk at ``start``, large enough to read the headline; at ``small`` it goes and the
-    outlet and date stand on the top row until ``end``. The headline is the outlet's, word for word."""
+    outlet and date stand on the top row until ``end``, at its right, or with ``beside_tag`` just left of the PARODY
+    tag, which keeps the corner. The headline is the outlet's, word for word."""
     _span(start, small, "a source card")
     _span(small, end, "a source card's corner")
     x, wide, pad = TEXT_LEFT - 30.0, TEXT_WIDE + 60.0, 34.0
@@ -1892,8 +1899,11 @@ def source_card(
     corner = cv.group(parent, f"{id}-small", start=small, end=end)
     label = f"{source.outlet}, {source.date}"
     w = measure(label, 34.0) + 32.0
-    _chip(cv, corner, TEXT_RIGHT - w, w, CREAM)
-    _text(cv, corner, label, TEXT_RIGHT - w, BUG_Y, w, BUG_H, 34, PLUM_DEEP, "center")
+    right = TEXT_RIGHT - _tag_wide(measure) - CREDIT_GAP if beside_tag else TEXT_RIGHT
+    if beside_tag and right - w < TEXT_LEFT + measure(SHOW, 40.0) + 36.0 + CREDIT_GAP:
+        raise NewsKitError(f"{label!r} does not fit on the top row between the show's name and the PARODY tag")
+    _chip(cv, corner, right - w, w, CREAM)
+    _text(cv, corner, label, right - w, BUG_Y, w, BUG_H, 34, PLUM_DEEP, "center")
 
 
 @register("graphic", "news-lower-third@2", summary="The lower-third: a mint kicker over one line, flush on the ticker")
