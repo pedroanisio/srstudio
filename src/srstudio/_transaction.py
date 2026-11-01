@@ -30,6 +30,7 @@ def scene_transaction(scene: Any, canvas: Any = None) -> Iterator[None]:
         '_symbol_root',
         '_effects',
         '_effect_root',
+        'anatomy',
     )
     canvas_state = {name: getattr(canvas, name) for name in fields} if canvas is not None else {}
     namer = canvas.namer if canvas is not None else None

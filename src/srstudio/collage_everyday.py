@@ -9,11 +9,12 @@ a phone, and an invented product carries no brand.
 
 from __future__ import annotations
 
+import enum
 import math
 import random
 from collections.abc import Callable, Sequence
 
-from . import checks, collage
+from . import anatomy, anatomy_ledger, checks, collage
 from .canvas import Canvas
 from .collage import (
     CX,
@@ -23,6 +24,7 @@ from .collage import (
     SHOULDER_Y,
     Look,
     Point,
+    Shape,
     _cut,
     _hand,
     _paper,
@@ -97,6 +99,7 @@ DEAD_SCREEN = "#0b0a10"  # a phone that has died
 LIGHTS = {"off": "#3a3a44", "green": "#3ddc6e", "amber": "#ffb703", "red": "#ef3340"}  # a router's status light
 REACH_DRAWN = 300.0  # px an arm that reaches is drawn at, before it stretches to its hand
 REACH_CUFF = 30.0  # px the sleeve stops short of the hand's centre, so that its round end stays behind the hand
+REACHING_HAND = anatomy.Drawing("reach", anatomy.Side.LEFT, anatomy.Facing.BACK)  # the other arm's is its mirror
 EASES: dict[str, Callable[[float], float]] = {
     "sine-in-out": lambda u: (1.0 - math.cos(math.pi * u)) / 2.0,
     "cubic-in": lambda u: u**3,
@@ -673,16 +676,43 @@ def shoulder(who: str | Look, side: int = -1) -> Point:
     return (CX + side * (HALF_WIDTH[look.build] - 46), SHOULDER_Y[look.build] + 50)
 
 
-def _check_side(side: int) -> None:
+class _Unsaid(enum.Enum):
+    """An arm whose caller did not say its side: not a side, and not ``None``, which is refused as any bad value is."""
+
+    SIDE = "unsaid"
+
+
+def _side_of(cv: Canvas, side: int | _Unsaid, who: str | Look, hand: bool = True) -> int:
+    """The side an arm is on. A hand that does not say is the fault of rule 1, noted for the build to refuse: it is
+    drawn as the screen-left hand it always was, so a published reel that left it out keeps its picture. An upper arm
+    is the same on both sides and need not say."""
+    if side is _Unsaid.SIDE:
+        if hand:
+            name = who if isinstance(who, str) else who.name
+            cv.note_anatomy(
+                anatomy_ledger.HAND_NO_SIDE, "collage-arm", f"{name}'s hand does not say which arm it is on"
+            )
+        return -1
     if side not in (-1, 1):
         raise EverydayError(f"an arm's side is -1 (screen left) or 1 (screen right), got {side!r}")
+    return side
+
+
+def _reaching(look: Look, x: float, y: float) -> list[Shape]:
+    """The one drawing of a reaching hand, at ``x, y``, as :data:`REACHING_HAND` says it is."""
+    return _hand(look, "reach-hand", x, y, 38, anatomy.Arm(REACHING_HAND.side).hand(REACHING_HAND.facing))
+
+
+def _hand_of(side: int) -> anatomy.Hand:
+    """The hand of the arm on ``side``: on a figure facing the camera a reaching hand shows its back."""
+    return anatomy.Arm(anatomy.Side.of(side)).hand(REACHING_HAND.facing)
 
 
 def _mirrored_hand(cv: Canvas, parent, look: Look, x: float, y: float) -> None:
     """The hand of the screen-right arm at ``x, y``: the screen-left hand turned over at its own centre, cut edge and
     shading with it, so that a thumb follows its side."""
     turned = cv.group(parent, cv.uid("g"), x=x, y=y, scaleX=-1.0)
-    draw_shapes(cv, turned, _hand(look, "reach-hand", 0.0, 0.0, r=38))
+    draw_shapes(cv, turned, _reaching(look, 0.0, 0.0))
 
 
 @register("prop", "collage-arm", summary="A character's arm on its own, sleeve and hand, for reaching past the pose")
@@ -695,18 +725,19 @@ def arm(
     *,
     width: float = 72.0,
     hand: bool = True,
-    side: int = -1,
+    side: int | _Unsaid = _Unsaid.SIDE,
 ) -> object:
     """``who``'s arm from ``frm`` (off the frame, usually) to its hand at ``to``; returns the group, which a caller
     keys to bring it in. ``hand=False`` is an upper arm, which ends in the elbow the forearm starts from. ``side`` is
     the side of the body the arm is on, as in :func:`shoulder`: the hand of one is the mirror of the other's, and on a
     figure facing the camera the back of either shows, its thumb on the outside. An upper arm is the same on both."""
-    _check_side(side)
+    chosen = _side_of(cv, side, who, hand)
     look = LOOKS[who] if isinstance(who, str) else who
     g = cv.group(parent, cv.uid("g"))
-    left = hand and side == -1
-    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_hand(look, "reach-hand", *to, r=38) if left else []))
-    if hand and side == 1:
+    mirrored = REACHING_HAND.mirrored(_hand_of(chosen))
+    drawn = hand and not mirrored
+    draw_shapes(cv, g, _sleeve(look, "reach", frm, to, width) + (_reaching(look, *to) if drawn else []))
+    if hand and mirrored:
         _mirrored_hand(cv, g, look, *to)
     return g
 
@@ -746,13 +777,13 @@ def reach(
     times: Sequence[float],
     *,
     width: float = 72.0,
-    side: int = -1,
+    side: int | _Unsaid = _Unsaid.SIDE,
 ) -> object:
     """``who``'s arm fixed at its shoulder ``frm`` while its hand goes where ``hand`` says at each of ``times``: the
     arm turns and stretches, which :func:`arm` cannot, since its two ends are drawn into one group. ``side`` picks the
     hand as in :func:`arm`. Returns the hand's group, at the hand's origin, for what it holds, which is never mirrored
     with the hand."""
-    _check_side(side)
+    chosen = _side_of(cv, side, who)
     if not times:
         raise EverydayError("an arm that reaches needs times to reach at")
     look = LOOKS[who] if isinstance(who, str) else who
@@ -769,10 +800,10 @@ def reach(
     held = cv.group(parent, cv.uid("g"))
     cv.keys(held, "x", [(t, x) for t, (x, _) in spots], hold=False, local=False)
     cv.keys(held, "y", [(t, y) for t, (_, y) in spots], hold=False, local=False)
-    if side == -1:
-        draw_shapes(cv, held, _hand(look, "reach-hand", 0.0, 0.0, r=38))
-    else:
+    if REACHING_HAND.mirrored(_hand_of(chosen)):
         _mirrored_hand(cv, held, look, 0.0, 0.0)
+    else:
+        draw_shapes(cv, held, _reaching(look, 0.0, 0.0))
     return held
 
 

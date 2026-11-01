@@ -19,6 +19,7 @@ from pathlib import Path, PurePosixPath
 REPO = Path(__file__).resolve().parents[1]
 ALWAYS = (
     "tests/test_agent_approved_recovery.py",
+    "tests/test_anatomy_parts.py",
     "tests/test_catalog_app.py",
     "tests/test_catalog_coverage.py",
     "tests/test_character_contracts.py",

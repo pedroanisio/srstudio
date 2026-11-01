@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import parts, registry, specimens, toon_bento, toon_rigs
+from srstudio import anatomy, parts, registry, specimens, toon, toon_bento, toon_rigs
 from srstudio.canvas import PEACH, Canvas
 from srstudio.toon import ToonDataError
 from srstudio.toon_bento import GESTURES, Arm, Bento, Facing, Gesture, Paw
@@ -354,3 +354,22 @@ def test_module_exports():
     for name in ("Arm", "Facing", "Paw", "BENTO_2", "BENTO_RIG_2"):
         assert name in toon_bento.__all__
     assert isinstance(GESTURES["panic"], Gesture)
+
+
+@pytest.mark.parametrize("name", ["ready", "folded", "tablet"])
+def test_a_hand_drawn_whole_says_why_it_has_no_thumb_side(name):
+    gesture = toon_bento.GESTURES[name]
+    hands = gesture.whole()
+    assert len(hands) == 2 and [hand.arm.side for hand in hands] == [anatomy.Side.LEFT, anatomy.Side.RIGHT]
+    assert all(hand.thumb is None and hand.why == gesture.no_thumb for hand in hands)
+
+
+def test_a_gesture_with_whole_paws_and_no_reason_is_refused():
+    ready = toon_bento.GESTURES["ready"]
+    with pytest.raises(toon.ToonDataError, match="no_thumb|thumb"):
+        toon_bento.Gesture("x", "X", ready.sleeves, paws=ready.paws)
+
+
+def test_a_gesture_with_no_whole_paws_has_nothing_to_say():
+    plain = next(g for g in toon_bento.GESTURES.values() if not g.paws)
+    assert plain.whole() == ()

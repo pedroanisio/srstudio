@@ -1,0 +1,59 @@
+{
+  "schema": "1.0.0",
+  "exemptions": [
+    {
+      "reel": "any-news",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "fluent",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "ill-get-this",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "its-gone",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0103)"
+    },
+    {
+      "reel": "missing-lid",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0103)"
+    },
+    {
+      "reel": "regards-dad",
+      "rule": "hand-no-side",
+      "part": "collage-arm",
+      "why": "published before a hand had to say its side; its picture is frozen"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-gus",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0103)"
+    },
+    {
+      "reel": "seabird-jet-lag",
+      "rule": "hand-unpaired",
+      "part": "news-vera",
+      "why": "published on a version with one hand on both arms; its picture is frozen (ADR 0103)"
+    }
+  ]
+}

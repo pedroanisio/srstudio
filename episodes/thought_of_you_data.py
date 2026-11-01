@@ -186,7 +186,7 @@ def _insert(shot, at: float, stop: float, headline: str, last: bool) -> None:
     k = INSERT_HAND_SCALE
     near = cv.group(pushed, cv.uid("g"), scaleX=k, scaleY=k)
     frm, to = (INSERT_ELBOW[0] / k, INSERT_ELBOW[1] / k), (INSERT_HAND[0] / k, INSERT_HAND[1] / k)
-    collage_everyday.arm(cv, near, "gary", frm, to)
+    collage_everyday.arm(cv, near, "gary", frm, to, side=1)
 
 
 def _bed(shot) -> None:
@@ -201,7 +201,7 @@ def _bed(shot) -> None:
     collage_everyday.phone(cv, held, **phone_at, screen="#23202b")
     x, y = collage_everyday.shoulder("gary")
     collage_everyday.arm(cv, held, "gary", (x + GARY_AT[0], y + GARY_AT[1]), ELBOW_GARY, hand=False)
-    collage_everyday.arm(cv, held, "gary", ELBOW_GARY, HAND_GARY)
+    collage_everyday.arm(cv, held, "gary", ELBOW_GARY, HAND_GARY, side=-1)
     collage_everyday.duvet(cv, shot.front)
     hem = cv.grad("collage-thought-hem", [(0, NIGHT + "00"), (1, NIGHT + "bb")], (0, 0, 0, 1))
     cv.rect(shot.front, 0, 1600, cv.width, 320, hem)

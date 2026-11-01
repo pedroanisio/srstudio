@@ -233,6 +233,8 @@ Auto-enhance is on by default: each video lands one real change to the process o
 
 New Okayville reels and News and Host pilots have a comedy floor: the lower of the author's and an independent reviewer's score must reach 14/20 at first delivery. Mind and Maps pilots and anything already delivered owe no score. See [ADR 0064](docs/decisions/0064-comedy-floor.md).
 
+A hand is drawn through the shared `srstudio.anatomy` contract: the right is the mirror of the left, the arm decides the thumb's side, and a build refuses a hand on the wrong arm, a hand with no side, or a version with one drawing on both arms. `srstudio anatomy` lists the published reels exempted by name. See [ADR 0105](docs/decisions/0105-hand-chirality-is-a-build-error.md).
+
 Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes

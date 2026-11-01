@@ -26,7 +26,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import drawing_events, figure_record, parts, registry, releases, toon_rigs
+from . import anatomy_ledger, drawing_events, figure_record, parts, registry, releases, toon_rigs
 from .errors import SrstudioError
 
 SCHEMA = "1.0.0"
@@ -84,17 +84,19 @@ def trace(figures: list[figure_record.Figure] | None = None) -> Iterator[set[str
 @contextmanager
 def recorded(project: Path) -> Iterator[None]:
     """Trace the build in the block and leave what it drew in ``project``, for the delivery gates
-    (:func:`srstudio.parts.write_record`, :func:`srstudio.figure_record.write`). A build that fails leaves no record:
-    an older one would no longer say what the project holds."""
+    (:func:`srstudio.parts.write_record`, :func:`srstudio.figure_record.write`, :func:`srstudio.anatomy_ledger.write`).
+    A build that fails leaves no record: an older one would no longer say what the project holds."""
     (Path(project) / parts.RECORD).unlink(missing_ok=True)
     (Path(project) / figure_record.RECORD).unlink(missing_ok=True)
+    (Path(project) / anatomy_ledger.RECORD).unlink(missing_ok=True)
     figures: list[figure_record.Figure] = []
 
     def write(used: set[str]) -> None:
         parts.write_record(project, parts.drawn(used))
         figure_record.write(project, figures)
+        anatomy_ledger.write(project, noted)
 
-    with trace(figures) as used:
+    with trace(figures) as used, anatomy_ledger.recording() as noted:
         try:
             yield
         except SystemExit as stop:

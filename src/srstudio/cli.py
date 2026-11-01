@@ -22,6 +22,9 @@ from typing import NoReturn
 from sr_core.scene import SchemaValueError
 
 from . import (
+    anatomy,
+    anatomy_gate,
+    anatomy_ledger,
     auto_enhance,
     bible_cli,
     catalog_page,
@@ -150,6 +153,8 @@ def main(argv=None):
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
     strict.add_argument("--delivery", type=Path, default=_delivery_default(), help="the delivery folder")
+    bodies = sub.add_parser("anatomy", help="list what is published against the anatomy rules (ADR 0105)")
+    bodies.add_argument("--manifest", type=Path, nargs="*", default=None, help="the delivery manifests to read")
     enhance = sub.add_parser(
         "enhance", help="the auto-enhance mode, its ledger and the kinds of enhancement (ADR 0056)"
     )
@@ -295,6 +300,8 @@ def main(argv=None):
         return _number(args)
     if args.cmd == "strict":
         return _strict(args)
+    if args.cmd == "anatomy":
+        return _anatomy(args)
     if args.cmd == "enhance":
         return _enhance(args.action, args.scripts.resolve().parent)
     if args.cmd == "lip-proof":
@@ -788,6 +795,18 @@ def _strict(args: argparse.Namespace) -> int:
         )
     except (DeliveryError, releases.ReleaseError) as exc:
         print(f"srstudio strict: {exc}", file=sys.stderr)
+        return 2
+    print("\n".join(lines))
+    return 0
+
+
+def _anatomy(args: argparse.Namespace) -> int:
+    renders = _delivery_default().parent
+    manifests = args.manifest or [renders / "ig" / MANIFEST, renders.parent / "pilots" / "news" / "manifest.json"]
+    try:
+        lines = anatomy_gate.listing(anatomy_ledger.exemptions(), anatomy_gate.published(manifests))
+    except anatomy.AnatomyError as exc:
+        print(f"srstudio anatomy: {exc}", file=sys.stderr)
         return 2
     print("\n".join(lines))
     return 0

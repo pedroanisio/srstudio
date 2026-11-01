@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from srstudio import clay, host_kit, rafa, rafa_skin
+from srstudio import anatomy, anatomy_parts, clay, host_kit, rafa, rafa_skin
 from srstudio.rafa import GAZES, LIDS, MOODS, MOUTHS, Face, RafaError
 
 
@@ -228,3 +228,25 @@ def test_a_lid_that_comes_down_takes_the_glint_with_it():
 
     assert whites("half") < whites("open")
     assert whites("shut") == whites("half")
+
+
+def _reach_of_hand(side: anatomy.Side) -> tuple[float, float]:
+    """How far the hand hanging from the arm on ``side`` goes to the frame's left and right of its own centre."""
+    model = clay.Model()
+    rafa._hand(model, 0.0, 0.0, 0.0, anatomy.Arm(side).hand(anatomy.Facing.BACK, anatomy.Fingers.DOWN))
+    xs = np.concatenate([mesh.vertices[:, 0] for mesh in model.meshes()])
+    return -float(xs.min()), float(xs.max())
+
+
+def test_a_hanging_thumb_lies_toward_his_leg_on_both_arms():
+    left, right = _reach_of_hand(anatomy.Side.LEFT), _reach_of_hand(anatomy.Side.RIGHT)
+    assert left[1] > left[0]  # the frame's left arm: its thumb goes right, to his leg
+    assert right[0] > right[1]
+
+
+def test_his_fingers_are_the_named_gap_not_a_true_mirror():
+    """The contract places his thumb; his four fingers are one row on both hands. Mirroring them redraws an approved
+    character, which is the operator's, so this pins the gap: it fails when the row is mirrored, and the entry goes."""
+    assert "rafa" in anatomy_parts.NOT_MIRRORED
+    left, right = _reach_of_hand(anatomy.Side.LEFT), _reach_of_hand(anatomy.Side.RIGHT)
+    assert left != pytest.approx(right[::-1], abs=1e-6)

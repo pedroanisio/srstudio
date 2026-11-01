@@ -25,7 +25,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Protocol, runtime_checkable
 
-from . import brush, drawing_events
+from . import anatomy_ledger, brush, drawing_events
 from .canvas import Canvas, _at_zero
 from .head_motion import (
     CHANNELS,
@@ -117,7 +117,8 @@ class HeadRig:
     is how far a kind of eyes tilts the head beyond ``tilt``, held from that pose to the next and eased in on the
     style's ``settle``, for a drawing whose expressions carry a tilt; ``tilt_reach`` is the least and the most it
     gives, which count toward the rig's bounds. ``face_slide`` is how much further than the skull the face drops on a
-    nod, for a face that has less room on its head than most."""
+    nod, for a face that has less room on its head than most. ``drawn_as`` is the part and version the rig draws, for a
+    rig whose version the anatomy rules read."""
 
     look: Look
     neck: Point
@@ -133,6 +134,7 @@ class HeadRig:
     pose_tilt: Callable[[str], float] | None = None
     tilt_reach: tuple[float, float] = (0.0, 0.0)
     face_slide: float = FACE_SLIDE
+    drawn_as: tuple[str, int] | None = None
 
 
 def _bounds(rig: Seam) -> list[tuple[float, float]]:
@@ -327,6 +329,8 @@ def _draw_figure(
     on_face: Callable[[Any], None] | None = None,
 ):
     """Emit a preflighted performance or the fixed, rig-derived specimen probe."""
+    if rig.drawn_as is not None:
+        anatomy_ledger.note_part(cv, *rig.drawn_as)
     with drawing_events.drawing(rig):
         from .toon_wear import face_of, wear_layers  # here, not at import: toon_wear draws with toon_cast
 

@@ -23,7 +23,8 @@ from functools import cache, lru_cache
 import numpy as np
 
 from . import _character_contracts as cc
-from . import clay, rafa_skin
+from . import anatomy, clay, rafa_skin
+from .anatomy import Facing, Fingers
 from .clay import Mesh, Model
 from .errors import SrstudioError
 from .plates import Line, Material, Print, Texture
@@ -483,8 +484,9 @@ def mouth(m: Model, name: str, shape: str = "rest") -> None:
 
 
 # -- the body ---------------------------------------------------------------------------------------------------------
-def _hand(m: Model, x: float, y: float, z: float, side: int = 1) -> None:
-    """A hand at the end of a hanging arm."""
+def _hand(m: Model, x: float, y: float, z: float, hand: anatomy.Hand) -> None:
+    """A hand at the end of a hanging arm: its back to the lens and its fingers down, so its thumb lies in."""
+    side = -hand.thumb_x
     m.ell("flesh", (x, y, z), (13, 18, 8))
     for i in range(4):
         xx = x - 8 + i * 5.5
@@ -575,7 +577,7 @@ def _cardigan(m: Model) -> None:
         arm = (neck, top, (side * 78, -262, 4), (side * 73, -226, -1), (side * 67, -177, -12))
         m.sweep("teal", arm, (14, 21, 24, 22, 19, 16, 14), n=90, sides=48)
         m.box("teallight", (side * 67, -178, -12), (28, 15, 26), 5, rotation=side * 2)
-        _hand(m, side * 67, -156, -14, side)
+        _hand(m, side * 67, -156, -14, anatomy.Arm(anatomy.Side.of(side)).hand(Facing.BACK, Fingers.DOWN))
         m.box("tealdark", (side * 50, -190, -28), (19, 22, 2), 1)
         m.box("teallight", (side * 50, -199, -29), (22, 4, 3), 1)
         for start, middle, stop in (((46, -274), (58, -262), (66, -240)), ((48, -232), (56, -216), (54, -196))):

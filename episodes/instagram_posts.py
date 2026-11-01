@@ -38,6 +38,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from srstudio import (
+    anatomy_gate,
     auto_enhance,
     bible,
     bible_check,
@@ -218,6 +219,7 @@ def write_all(
             *frame_gates.captions_run_together(chosen, _beside(renders), first),
             *frame_gates.signature_hidden(chosen, _beside(renders), first, engine),
             *figure_gates.figure_defects(chosen, _beside(renders), first, engine),
+            *anatomy_gate.hand_defects(chosen, _beside(renders), first),
             *show_gate.show_defects(
                 RELEASES,
                 _beside(renders),
