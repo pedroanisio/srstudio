@@ -43,6 +43,7 @@ RELEASE = Release(
         "toon-key-line": 1,
         "toon-kitchen": 1,
         "toon-ledge": 1,
+        "toon-open-laptop": 1,
         "toon-rabbit": 2,
         "toon-swung-arm": 1,
     },

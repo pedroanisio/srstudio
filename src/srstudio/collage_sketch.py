@@ -268,7 +268,7 @@ class Staging:
     keyframes: float = 0
     # B frames between references, None for the encoder's 3. 0 hands x264's scene-cut check its cuts back on a reel
     # whose grain makes neighbouring frames look nearly unrelated: with B frames its flash guard drops those cuts.
-    # Set it with a long ``keyframes``, so the check's bias stays below what the grain alone reaches (ADR 0081)
+    # Set it with a long ``keyframes``, so the check's bias stays below what the grain alone reaches (ADR 0083)
     bframes: int | None = None
     loudness: str | None = None  # the master's integrated LUFS, when a reel departs from its style's
     # a caption of several sentences breaks at a sentence end; False keeps a published reel's rows
