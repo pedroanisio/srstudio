@@ -205,8 +205,8 @@ def meeting_room(cv: Canvas, parent) -> object:
         cv.rect(back, x, 1620 - h, w, h, "#3d405b", opacity=0.85)
         for row in range(int(h // 70)):
             cv.rect(back, x + 18, 1620 - h + 24 + row * 70, w - 36, 16, "#f2cc8f", opacity=0.5)
-    for x in (60, 380, GLASS_END):
-        cv.rect(back, x - 6, 460, 12, 1170, "#1b263b")
+    for post in (60, 380, GLASS_END):
+        cv.rect(back, post - 6, 460, 12, 1170, "#1b263b")
     _frame(cv, back, "meeting-room", 770, 840, 230, 300, "#e9c46a")
     cv.rect(
         back,
