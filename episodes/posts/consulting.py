@@ -22,7 +22,14 @@ RELEASE = Release(
     ),
     tags=Tags("job-hunting", "protagonist", "relief", recurring=('dev', 'noor'), test="sp-speakers", arm="a"),
     style="Stick",
-    parts={},
+    parts={
+        "show-bug": 1,
+        "signature-cactus": 1,
+        "signature-code": 1,
+        "stick-card": 1,
+        "stick-rig": 1,
+        "stick-words": 1,
+    },
     comedy=Scores(author=15, reviewer=16),
     cover=True,
 )
