@@ -370,6 +370,17 @@ def _lounging() -> Pose:
     return Pose("lounge", sit.head, {**sit.limbs, **arms}, sit.front, sit.face)
 
 
+def _on_the_floor() -> Pose:
+    """Sat on the floor facing left, with nothing under her: the sit pose with the hip on the ground and both legs out
+    along it, the far knee a little up."""
+    sit = _sitting((-170, -112), (-150, -108))
+    legs = {
+        "leg_l": Stroke((-10, -40), (-76, -48), (-140, -36), (-196, -14), *LEG),
+        "leg_r": Stroke((22, -32), (-40, -84), (-96, -78), (-136, -36), *LEG),
+    }
+    return Pose("floor", sit.head, {**sit.limbs, **legs}, sit.front, sit.face)
+
+
 def _named(pose: Pose, name: str) -> Pose:
     return Pose(name, pose.head, pose.limbs, pose.front, pose.face)
 
@@ -413,6 +424,7 @@ POSES: dict[str, Pose] = {
         _named(_sitting((-166, -106), (-158, -118), head=(-36, -326)), "type-b"),
         _named(_sitting((-170, -112), (-150, -108), head=(-46, -308), face=(-28, 10)), "nod"),
         _lounging(),
+        _on_the_floor(),
         _pose(
             "clasp",
             (0, -432),

@@ -12937,6 +12937,57 @@
           "rig": null
         }
       ]
+    },
+    "soft-front-room": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A front room for the Soft cast: wall, window, floor, rug, a door to the hall with a sofa jammed across it behind a gate, and a pale print on the rug where the sofa stood; slots for what stands against the wall and in the hall, no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5fd8196a7944c46c5d1e0a6d7327f0b03338b712a4ccf9f6645ef415a3713384",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mug": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain white mug of coffee for a hand, no lettering and no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4cbf83efd6b25ed7f1434fa95f0b1d26c583e894e24364f6d67ab75b5ae3d3ac",
+          "rig": null
+        }
+      ]
+    },
+    "soft-star-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A faceless card of five empty stars, no text, no brand, copying no real app; stars fill in at a tap. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0abecd6ba731c4dae8067d229e0fa8f8a4516d6a0b20990560a131b6baacfc61",
+          "rig": null
+        }
+      ]
     }
   }
 }

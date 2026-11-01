@@ -555,6 +555,8 @@ RECIPES: dict[str, Recipe] = {
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
     "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
+    "soft-star-card": Recipe(part(540.0, 960.0, tap=0.5, scale=1.6)),
+    "soft-mug": Recipe(part(540.0, 960.0, scale=2.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {

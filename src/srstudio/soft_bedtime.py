@@ -121,11 +121,22 @@ def picture_book(
 
 @register("prop", "soft-bedside-lamp", summary="A small bedside lamp, lit until it clicks off")
 def bedside_lamp(
-    cv: Canvas, parent, x=980, y=1662, *, off: float = LATER, scale: float = 1.0, id: str = "soft-bedside-lamp"
+    cv: Canvas,
+    parent,
+    x=980,
+    y=1662,
+    *,
+    on: float = 0.0,
+    off: float = LATER,
+    scale: float = 1.0,
+    id: str = "soft-bedside-lamp",
 ):
-    """A lamp 300 px tall at ``scale`` 1, its base on (``x``, ``y``), lit until ``off``."""
+    """A lamp 300 px tall at ``scale`` 1, its base on (``x``, ``y``), lit from ``on`` until ``off``."""
     _check_place(x, y, scale, "a bedside lamp")
+    _check_time(on, "a lamp's click")
     _check_time(off, "a lamp's click")
+    if on >= off:
+        raise SoftPropError(f"a lamp has to come on before it clicks off, got {on!r} and {off!r}")
     ink = cv.ink
     g = cv.group(parent, id, x=x, y=y, scaleX=scale, scaleY=scale)
     cv.rect(g, -56, -16, 112, 16, "#6B4A30", ink, 5, radius=6)
@@ -133,7 +144,7 @@ def bedside_lamp(
     unlit = cv.group(g, f"{id}-unlit")
     cv.path(unlit, "M -62 -300 L 62 -300 L 104 -136 L -104 -136 Z", SHADE_OFF, ink, 6)
     lit = cv.group(g, f"{id}-lit")
-    cv.gate(lit, [(0.0, off)])
+    cv.gate(lit, [(on, off)])
     cv.ellipse(lit, -44, -210, 88, 88, BULB)
     cv.path(lit, "M -62 -300 L 62 -300 L 104 -136 L -104 -136 Z", SHADE, ink, 6)
     return g

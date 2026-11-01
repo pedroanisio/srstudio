@@ -1252,6 +1252,9 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "soft-star-card": {"title": "Cartão de cinco estrelas"},
+    "soft-mug": {"title": "Caneca de café"},
+    "soft-front-room": {"title": "Sala da frente"},
     "toon-swung-arm": {"title": "Braço que balança"},
     "toon-quilt-heap": {"title": "Edredom amontoado"},
     "toon-bedside-drawer": {"title": "Gaveta do criado-mudo"},
@@ -8878,6 +8881,42 @@
         "at": 5.0
       },
       "text": "O braço de um personagem na própria roupa, balançando a partir do ombro."
+    },
+    {
+      "section": "locations",
+      "name": "Sala da frente com o sofá no corredor",
+      "parts": [
+        "soft-front-room"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 7.0
+      },
+      "text": "A sala de sempre, com a marca do sofá no tapete e o sofá entalado na porta do corredor."
+    },
+    {
+      "section": "props",
+      "name": "Caneca de café",
+      "parts": [
+        "soft-mug"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 5.0
+      },
+      "text": "Uma caneca branca, sem marca, que acompanha a mão."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão de cinco estrelas",
+      "parts": [
+        "soft-star-card"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 21.8
+      },
+      "text": "Cinco estrelas vazias num cartão sem nome; a primeira se acende quando o dedo bate."
     }
   ]
 }
