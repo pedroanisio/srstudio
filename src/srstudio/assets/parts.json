@@ -8668,6 +8668,23 @@
         }
       ]
     },
+    "news-oven-clock": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An unbranded stove on the show: a seven-segment clock that never changes and a tag that does. First drawn for they-voted-no.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "662f89a0fe43754230dff013aa79f2cca8f90e3e8f17e4b12fd72076954dc2a9",
+          "rig": null
+        }
+      ]
+    },
     "news-parody-tag": {
       "kind": "graphic",
       "style": "toon",

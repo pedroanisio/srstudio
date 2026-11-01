@@ -15,6 +15,7 @@ type, number and check they share. A new reel of the show calls this module. Eac
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from types import MappingProxyType
@@ -107,6 +108,7 @@ __all__ = [
     "live_door",
     "lower_third",
     "money_app",
+    "oven_clock",
     "parody_tag",
     "perform",
     "phone_insert",
@@ -2267,3 +2269,110 @@ def money_app(
         top = y + APP_NOTE_Y + i * (APP_NOTE_H + 12.0)
         cv.rect(row, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, BUTTER, PLUM_DEEP, 4.0, radius=CHIP)
         _text(cv, row, note, x + 30.0, top, PHONE_W - 60.0, APP_NOTE_H, APP_NOTE_SIZE, PLUM_DEEP, "center")
+
+
+OVEN_STRIP, OVEN_DOOR_Y, OVEN_FOOT = 270.0, 296.0, 786.0  # the stove's control strip and door, under the phone's window
+OVEN_DIGIT_W, OVEN_DIGIT_H, OVEN_STROKE, OVEN_GAP = 80.0, 150.0, 16.0, 14.0
+OVEN_LIT, OVEN_DARK = "#ffb347", "#2a1830"  # the display: a segment on, and one off that still shows faintly
+OVEN_TAG_SIZE, OVEN_LABEL_SIZE = 76.0, 46.0
+OVEN_SEGMENTS = {  # the seven segments, clockwise from the top bar with g across the middle
+    "0": "abcdef",
+    "1": "bc",
+    "2": "abdeg",
+    "3": "abcdg",
+    "4": "bcfg",
+    "5": "acdfg",
+    "6": "acdefg",
+    "7": "abc",
+    "8": "abcdefg",
+    "9": "abcdfg",
+}
+_OVEN_TIME = re.compile(r"(?:[1-9]|1[0-2]):[0-5]\d")
+
+
+def _oven_digit(cv: Canvas, g, x: float, y: float, digit: str) -> None:
+    """One seven-segment digit at ``x``, ``y``: every bar drawn, the ones the digit does not use left dark."""
+    w, h, t = OVEN_DIGIT_W, OVEN_DIGIT_H, OVEN_STROKE
+    mid = y + (h - t) / 2
+    half = (h - t) / 2
+    bars = {
+        "a": (x + t, y, w - 2 * t, t),
+        "b": (x + w - t, y + t / 2, t, half),
+        "c": (x + w - t, mid + t / 2, t, half),
+        "d": (x + t, y + h - t, w - 2 * t, t),
+        "e": (x, mid + t / 2, t, half),
+        "f": (x, y + t / 2, t, half),
+        "g": (x + t, mid, w - 2 * t, t),
+    }
+    for name, box in bars.items():
+        cv.rect(g, *box, OVEN_LIT if name in OVEN_SEGMENTS[digit] else OVEN_DARK, radius=4.0)
+
+
+def _oven_tag(cv: Canvas, g, word: str, fill: str) -> None:
+    """The tag hung in the door's window."""
+    x, y = PHONE_X + 90.0, PHONE_Y + OVEN_DOOR_Y + 216.0
+    cv.rect(g, x, y, PHONE_W - 180.0, 160.0, fill, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, word, x, y, PHONE_W - 180.0, 160.0, OVEN_TAG_SIZE, PLUM_DEEP, "center")
+
+
+@register("graphic", "news-oven-clock", summary="An unbranded stove whose clock never changes while the tag on it does")
+def oven_clock(
+    cv: Canvas,
+    parent,
+    label: str,
+    time: str,
+    wrong: str,
+    right: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    right_at: float | None = None,
+    id: str = "news-oven-clock",
+) -> None:
+    """A stove over the dimmed room from ``start`` to ``end``: ``time`` on its seven-segment clock, ``label`` in its
+    door and a tag reading ``wrong`` until ``right_at`` and ``right`` from then on. The digits stay as they are through
+    the turn, and that is the joke: the clock was never touched. It refuses a time that is no clock's, copy the show
+    keeps off the screen, words too wide for the door, and an instant off its span. It copies no real stove."""
+    _span(start, end, "the oven")
+    if not _OVEN_TIME.fullmatch(time):
+        raise NewsKitError(f"the oven's clock reads h:mm, not {time!r}")
+    for word, size, room in (
+        (label, OVEN_LABEL_SIZE, PHONE_W - 160.0),
+        (wrong, OVEN_TAG_SIZE, PHONE_W - 220.0),
+        (right, OVEN_TAG_SIZE, PHONE_W - 220.0),
+    ):
+        check_copy(word)
+        if not word.strip() or measure(word, size) > room:
+            raise NewsKitError(f"the oven's {word!r} must be some words that fit")
+    if right_at is not None and not start < right_at < end:
+        raise NewsKitError(f"the oven's tag turns inside {start}..{end}, not at {right_at}")
+    g = cv.group(parent, id, start=start, end=end)
+    x, y, wide = PHONE_X, PHONE_Y, PHONE_W
+    cv.rect(g, 0, 0, cv.width, TICKER_Y, "#160a3088")
+    steel = cv.grad("news2-stove", [(0, "#efe9f6"), (1, "#b7afc4")], (0, 0, 0, 1))
+    cv.rect(g, x - 12, y - 8, wide + 48, OVEN_FOOT + 48, SHADOW, radius=2 * CHIP)
+    cv.rect(g, x - 20, y - 20, wide + 40, OVEN_FOOT + 40, steel, PLUM_DEEP, 5.0, radius=2 * CHIP)
+    cv.rect(g, x, y, wide, OVEN_STRIP, PLUM_DEEP, radius=CHIP)
+    for knob in (x + 70.0, x + wide - 70.0):
+        _inked_oval(cv, g, knob, y + OVEN_STRIP / 2, 40.0, 40.0, CREAM)
+        cv.rect(g, knob - 4.0, y + OVEN_STRIP / 2 - 36.0, 8.0, 30.0, PLUM_DEEP, radius=4.0)
+    cv.rect(g, x + wide / 2 - 220.0, y + 30.0, 440.0, OVEN_STRIP - 60.0, "#0e0620", radius=CHIP)
+    numerals = time.replace(":", "")
+    colon = time.index(":")
+    room = 2 * OVEN_GAP + OVEN_STROKE  # what the colon takes between the hours and the minutes
+    left = x + wide / 2 - (len(numerals) * (OVEN_DIGIT_W + OVEN_GAP) - OVEN_GAP + room) / 2
+    top = y + (OVEN_STRIP - OVEN_DIGIT_H) / 2
+    digits = cv.group(g, f"{id}-digits")
+    for i, digit in enumerate(numerals):
+        _oven_digit(cv, digits, left + i * (OVEN_DIGIT_W + OVEN_GAP) + (room if i >= colon else 0.0), top, digit)
+    dots = left + colon * (OVEN_DIGIT_W + OVEN_GAP)
+    for dot in (0.3, 0.6):
+        cv.rect(digits, dots, top + dot * OVEN_DIGIT_H, OVEN_STROKE, OVEN_STROKE, OVEN_LIT, radius=4.0)
+    cv.rect(g, x, y + OVEN_DOOR_Y, wide, OVEN_FOOT - OVEN_DOOR_Y, "#cfc7db", PLUM_DEEP, 5.0, radius=CHIP)
+    cv.rect(g, x + 60.0, y + OVEN_DOOR_Y + 24.0, wide - 120.0, 30.0, CREAM, PLUM_DEEP, 4.0, radius=15.0)
+    cv.rect(g, x + 60.0, y + OVEN_DOOR_Y + 78.0, wide - 120.0, 392.0, PLUM, PLUM_DEEP, 5.0, radius=CHIP)
+    _text(cv, g, label, x, y + OVEN_DOOR_Y + 124.0, wide, 60.0, OVEN_LABEL_SIZE, CREAM, "center")
+    turned = end if right_at is None else right_at
+    _oven_tag(cv, cv.group(g, f"{id}-wrong", start=start, end=turned), wrong, TANGERINE)
+    if right_at is not None:
+        _oven_tag(cv, cv.group(g, f"{id}-right", start=right_at, end=end), right, MINT)

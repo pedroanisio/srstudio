@@ -957,6 +957,9 @@
     "news-money-app": {
       "title": "App de dinheiro"
     },
+    "news-oven-clock": {
+      "title": "Relógio do forno"
+    },
     "news-parody-tag": {
       "title": "Selo de paródia"
     },
@@ -7894,6 +7897,24 @@
         ]
       },
       "text": "Um app sem marca no telefone do Gus: um saldo e um botão que para de funcionar na hora certa."
+    },
+    {
+      "section": "graphics",
+      "name": "Relógio do forno",
+      "parts": [
+        "news-oven-clock"
+      ],
+      "shot": {
+        "episode": "they-voted-no",
+        "at": 22.6,
+        "box": [
+          170,
+          490,
+          740,
+          830
+        ]
+      },
+      "text": "Um fogão sem marca: os dígitos nunca mudam, só a etiqueta que diz se o relógio está certo."
     },
     {
       "section": "locations",
