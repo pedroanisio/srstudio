@@ -56,7 +56,9 @@ __all__ = [
     "name_lines",
     "sign",
     "spotlight",
+    "named",
     "stage",
+    "stamp",
     "two_lines",
     "write_sting",
 ]
@@ -86,6 +88,8 @@ NAME_LINES = 3
 NAME_HOLD = 1.0  # the least the name stays up
 NAME_POP = 0.18  # seconds the spot takes to open
 CARD_LINE_SIZE = 62.0  # the catchphrase
+STAMP_Y, STAMP_MOST, STAMP_LEAST, STAMP_CITE, STAMP_INK = 270.0, 58.0, 40.0, 36.0, "#8f2a16"  # coral dark on paper
+STAMP_PAD, STAMP_ROW = 34.0, 1.08  # the strip's margin at the sides, and a row's height over its letters
 EVIDENCE_HOLD = 2.0  # the least a card of about two seconds' reading stays up
 WHAT_WORDS, RESULT_WORDS = 12, 10
 CAPTION_TOP, CAPTION_SIZE, CAPTION_PAD, CAPTION_RADIUS = 300.0, 50.0, 26.0, 18.0
@@ -199,6 +203,72 @@ def stage(cv: Canvas, parent) -> None:
     cv.rect(g, 0, 0, cv.width, cv.height, INK)
     paint = cv.rgrad("mind-stage-glow", ((0, INK_LIGHT), (0.75, INK), (1, INK)), (0.5, 0.42, 0.62))
     cv.rect(g, 0, 0, cv.width, cv.height, paint)
+
+
+@register("graphic", "mind-stamp", summary="One line of evidence stamped over the picture, with its source under it")
+def stamp(
+    cv: Canvas, parent, rows: Sequence[str], cite: str, start: float, end: float, measure: Measure, y: float = STAMP_Y
+) -> Any:
+    """The evidence over the picture and never a slide of its own (L10): ``rows`` of the finding at the largest size
+    that fits the safe width, ``cite`` smaller under them. It lands from ``start``, tilted, and goes at ``end``. Lay it
+    over a line whose caption is off, so the frame does not say it twice. Returns its group."""
+    _span(start, end, "a stamp")
+    if not rows:
+        raise MindKitError("a stamp needs a line of evidence")
+    for text in (*rows, cite):
+        check_copy(text)
+    wide = SAFE_WIDTH - 2 * STAMP_PAD
+    size = STAMP_MOST
+    while size >= STAMP_LEAST and max(measure(row, size) for row in rows) > wide:
+        size -= 2.0
+    if size < STAMP_LEAST or measure(cite, STAMP_CITE) > wide:
+        raise MindKitError(f"a stamp does not fit {wide:.0f} px: {(*rows, cite)!r}")
+    shown = max(*(measure(row, size) for row in rows), measure(cite, STAMP_CITE)) + 2 * STAMP_PAD
+    row = size * STAMP_ROW + 8.0
+    high = len(rows) * row + STAMP_CITE * 1.3 + 30.0
+    x = round((cv.width - shown) / 2, 2)
+    mid = y + high / 2
+    g = cv.group(parent, cv.uid("g"), start=start, end=end, rotation=-2.5, x=cv.width / 2, y=mid,
+                 anchorX=cv.width / 2, anchorY=mid)  # fmt: skip
+    pop = [(start, 1.25), (start + 0.12, 1.0)]
+    cv.keys(g, "scaleX", pop, hold=False)
+    cv.keys(g, "scaleY", pop, hold=False)
+    cv.rect(g, x, y, shown, high, PAPER, CORAL, 8.0, radius=14.0)
+    box = round(shown)
+    for k, words in enumerate(rows):
+        cv.text(g, cv.uid("mind-stamp"), words, x, y + 12 + k * row, box, round(row), size, color=INK, wrap="none")
+    foot = y + 16 + len(rows) * row
+    cv.text(
+        g, cv.uid("mind-stamp"), cite, x, foot, box, round(STAMP_CITE * 1.25), STAMP_CITE, color=STAMP_INK, wrap="none"
+    )
+    return g
+
+
+@register("graphic", "mind-named", summary="The effect's name, small, over the last hold: a signature after the laugh")
+def named(
+    cv: Canvas,
+    parent,
+    name: str,
+    start: float,
+    end: float,
+    measure: Measure,
+    scale: float = 1.0,
+    pivot: tuple[float, float] = (540.0, 960.0),
+) -> Any:
+    """``name`` on an ink strip where a caption sits. Under a punch-in of ``scale`` about ``pivot`` it is drawn at the
+    place and size that land centred on the caption's line once the punch has happened. Returns its group."""
+    _span(start, end, "a name")
+    if not (checks.number(scale) and scale >= 1.0):
+        raise MindKitError(f"a punch-in scales by 1 or more, got {scale!r}")
+    g = cv.group(parent, cv.uid("g"), start=start, end=end)
+    size, pad = CAPTION_SIZE / scale, CAPTION_PAD / scale
+    wide = measure(check_copy(name), size) + 2 * pad + 12
+    high = size * CAPTION_LEADING + pad
+    x = round(pivot[0] + (cv.width / 2 - pivot[0]) / scale - wide / 2, 2)
+    y = round(pivot[1] + (CAPTION_TOP - pivot[1]) / scale, 2)
+    cv.rect(g, x, y, wide, high, INK, radius=CAPTION_RADIUS / scale)
+    cv.text(g, cv.uid("mind-name"), name, x, y, round(wide), round(high), size, color=PAPER, wrap="none")
+    return g
 
 
 def finish(cv: Canvas, node) -> None:
