@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import stick_door, stick_porch
+from srstudio import stick_door, stick_porch, stick_windshield
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -74,3 +74,13 @@ def test_the_hook_comes_down_in_the_repo_shot_clear_of_the_bug_box(data):
     x, y, scale = stick_porch.truck_place(stick_porch.PARKED)
     hook_x, hook_y = framed(data.CAMERAS["repo"], (x, y + (stick_porch.BOOM_TOP + stick_porch.HOOK_LOW) * scale))
     assert 0 < hook_x < 900 and 332 < hook_y < 1100
+
+
+def test_the_repo_man_has_no_brows_to_collide_with_his_cap(data):
+    assert data.REPO_LOOK.cap is not None
+    assert data.REPO_LOOK.brows is False
+
+
+def test_the_cast_keep_their_published_rig(data):
+    assert data.NOOR_LOOK == stick_windshield.NOOR
+    assert data.REPO_LOOK.neck is False

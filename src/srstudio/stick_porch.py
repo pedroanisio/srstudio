@@ -192,7 +192,7 @@ def hall(cv: Canvas, parent, end: float) -> None:
     sx, sy, sw = SHELF_AT
     signature.cactus(s, parent, sx + sw * 0.55, sy, scale=0.42)
     box(s, parent, sx, sy, sw, 16, SHELF, 3, r=4)
-    signature.code(s, parent, sx + 4, sy - 12, 9, color="#6d6a58")
+    signature.code(s, parent, sx + 4, sy - 16, 13, color="#4f4c3f")
 
 
 def _leaf(cv: Canvas, parent, edge: float) -> None:

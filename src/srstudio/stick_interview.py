@@ -202,8 +202,8 @@ def desk(cv: Canvas, parent, end: float, *, opens: float | None = None, is_open:
     box(
         s, parent, DESK_LEFT + 6, TOP_FRONT + 28, DESK_RIGHT - DESK_LEFT - 12, DESK_FOOT - TOP_FRONT - 28, FRONT_DARK, 4
     )
-    signature.cactus(s, parent, 476, TOP_BACK + 24, scale=0.3)
-    signature.code(s, parent, 516, TOP_FRONT + 8, 9, color="#e4cfa8")
+    signature.cactus(s, parent, 476, TOP_BACK + 24, scale=0.42)
+    signature.code(s, parent, 516, TOP_FRONT + 6, 11, color="#e4cfa8")
     x, _, w, _ = BOTTOM_DRAWER
     for y, h in ((1176, 112), (1304, 112)):
         box(s, parent, x, y, w, h, FRONT, 4, r=6)
@@ -262,5 +262,5 @@ def resume_insert(cv: Canvas, parent, end: float, *, line: str = "CONSULTING") -
     shape(s, parent, d, sw=11, stroke=RING)
     for k, half in enumerate((260, 280, 220, 250, 200)):
         box(s, parent, 540 - half, 1020 + k * 72, half * 2, 18, INK_GREY, r=8)
-    signature.cactus(s, parent, 120, 1500, scale=0.3)
-    signature.code(s, parent, 60, 1880, 9, color="#6e5230")
+    signature.cactus(s, parent, 120, 1500, scale=0.5)
+    signature.code(s, parent, 700, 1440, 13, color="#6e5230")  # on the page's foot, above the captions

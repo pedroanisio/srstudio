@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import stick_interview, stick_reel
+from srstudio import stick, stick_interview, stick_reel, stick_windshield
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -77,3 +77,8 @@ def test_the_drawer_close_up_has_the_turn_in_it(data):
     for x, y in ((left, top), (left + width, top + height + stick_interview.DRAWER_OUT)):
         assert 0 < at[0] + (x - focus[0]) * zoom < 1080
         assert 0 < at[1] + (y - focus[1]) * zoom < 1920
+
+
+def test_the_cast_keep_their_published_rig(data):
+    assert data.DEV_LOOK == stick.PLAIN
+    assert data.NOOR_LOOK == stick_windshield.NOOR

@@ -22,6 +22,7 @@ from __future__ import annotations
 import sys
 
 from srstudio import stick, takes
+from srstudio import stick_windshield as ws
 from srstudio.voice import Voice, VoiceSettings
 
 SHOTS = ("door", "noor", "repo", "truck", "two", "hook", "guac", "small", "board")
@@ -69,8 +70,8 @@ NOOR_CROSS = F("wide", "angry", "frown", (0.9, 0.0))
 NOOR_PAST = F("wide", "raised", "flat", (0.9, -0.25))  # past him, at the yard
 NOOR_HOOK = F("wide", "worried", "frown", (0.8, -0.1))  # at the hook
 NOOR_SMALL = F("half", "worried", "flat", (0.7, 0.3))
-NOOR_LOOK = stick.Look(hair="bun", glasses=True, neck=True)
-REPO_LOOK = stick.Look(hair="bald", tie="#2f3a46", cap="#2f3a46", neck=True)
+NOOR_LOOK = ws.NOOR
+REPO_LOOK = stick.Look(hair="bald", tie="#2f3a46", cap="#2f3a46", brows=False)
 # shot: (focus, zoom, where the focus lands), in frame pixels of the set
 CAMERAS = {
     "two": ((540.0, 880.0), 1.0, (540.0, 880.0)),

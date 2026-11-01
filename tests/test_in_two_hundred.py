@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import stick_satnav
+from srstudio import stick, stick_satnav, stick_windshield
 
 EPISODES = Path(__file__).resolve().parent.parent / "episodes"
 
@@ -53,3 +53,15 @@ def test_each_screen_it_names_exists(data):
 def test_the_map_keeps_one_voice_and_the_last_line(data):
     assert data.SCRIPT.takes[-1].actor == "map"
     assert {t.actor for t in data.SCRIPT.takes} == {"dev", "noor", "map"}
+
+
+def test_the_couple_keep_their_published_rig_and_his_tie_is_clothes(data):
+    assert data.NOOR_LOOK == stick_windshield.NOOR
+    assert data.DEV_LOOK == stick.Look(tie="#c0453b")
+
+
+def test_the_code_sits_on_the_dash_clear_of_the_captions(data):
+    x, y = data.CAR_MARKS.code_at
+    assert y + data.CAR_MARKS.code_height < 1424  # above the wipers
+    assert data.CAR_MARKS.cactus > stick_windshield.MARKS.cactus
+    assert 0 < x < 926

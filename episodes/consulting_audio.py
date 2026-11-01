@@ -22,6 +22,7 @@ from __future__ import annotations
 import sys
 
 from srstudio import stick, takes
+from srstudio import stick_windshield as ws
 from srstudio.voice import Voice, VoiceSettings
 
 SHOTS = ("two", "dev", "noor", "stare", "page", "open", "shake")
@@ -64,8 +65,8 @@ SCRIPT = takes.Script(
 F = stick.Face
 AT_HER = (0.9, 0.0)
 AT_HIM = (0.9, 0.0)  # mirrored, she looks left at him the same way
-NOOR_LOOK = stick.Look(hair="bun", glasses=True, neck=True)
-DEV_LOOK = stick.Look(neck=True)
+NOOR_LOOK = ws.NOOR
+DEV_LOOK = stick.PLAIN
 NOOR_BLANK = F("open", "flat", "flat", AT_HIM)
 NOOR_PAGE = F("half", "flat", "flat", (0.8, 0.5))  # down at his resume
 NOOR_RAISED = F("open", "raised", "flat", AT_HIM)

@@ -16,6 +16,7 @@ from in_two_hundred_audio import (
     BUZZ_LEAD,
     DEV_ANGRY,
     DEV_DOWN,
+    CAR_MARKS,
     DEV_LOOK,
     DEV_LOST,
     DEV_ROAD,
@@ -71,7 +72,7 @@ def two_shot(
     keys = noor if isinstance(noor, list) else [stick.RigKey(0, noor_pose, noor)]
     stick.rig(cv, parent, keys, end, poses=nav.POSES, look=NOOR_LOOK, at=ws.PASSENGER_AT, mouth=SPEECH_MOUTH,
               **speaks(take, "noor"))  # fmt: skip
-    ws.dashboard(cv, parent, end, buzz=buzz)
+    ws.dashboard(cv, parent, end, buzz=buzz, marks=CAR_MARKS)
 
 
 def drive_on(take, g, end: float) -> None:

@@ -161,8 +161,8 @@ def _cabin(cv: Canvas, parent) -> None:
     top = paint(cv, Gradient("nav-dash", ((0, DASH_TOP), (1, DASH_LOW)), 0, 1480, 0, 1920))
     shape(cv, parent, "M 0 1540 Q 540 1440 1080 1540 L 1080 1920 L 0 1920 Z", top, 5)
     shape(cv, parent, "M 30 1552 Q 540 1456 1050 1552", sw=3, stroke=TRIM)
-    signature.cactus(cv, parent, 170, 1500, scale=0.3)
-    signature.code(cv, parent, 62, 1880, 9, color=TRIM)
+    signature.cactus(cv, parent, 170, 1500, scale=0.5)
+    signature.code(cv, parent, 760, 1520, 13, color="#d7dae0")  # on the dash, above the captions
 
 
 @register("location", "stick-rough-road", tags=("car", "road", "gravel", "grass", "field", "fence", "driver", "view"))
