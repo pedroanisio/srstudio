@@ -2085,7 +2085,8 @@ still passes up to `social.PUBLISHED_HASHTAG_LIMIT`, and `check` does not ask.
   the scene's `cover` variant, and the gate refuses a release that disagrees with the built scene. A new release
   also sets `tags=srstudio.releases.Tags(territory, cause, emotion, recurring=, test=, arm=)`, from closed sets the
   account's analytics count ([ADR 0033](../docs/decisions/0033-episode-tags-for-analytics.md)); releases published
-  before tags existed leave it `None`.
+  before tags existed leave it `None`. A reel on the send test adds `send_to=` and `send_line=`
+  ([ADR 0080](../docs/decisions/0080-a-brief-in-episode-json-and-giving-a-claim-back.md)).
   [episodes/instagram_posts.py](../episodes/instagram_posts.py) derives its `POSTS` map from the releases; each episode
   script calls `ep.instagram(POSTS[slug])` before `ep.finish()`, so a build leaves `ig.txt` next to the scene.
   Recreations credit the original author in the caption itself.

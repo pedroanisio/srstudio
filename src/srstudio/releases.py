@@ -76,8 +76,10 @@ class Tags:
     ``cause`` of the problem (an institution, another person or the protagonist), the ``emotion`` it leaves, the
     ``recurring`` characters it brings back (their registered short names), and, for an episode in a running A/B
     test, the ``test`` and its ``arm``. The recipient test runs beside the first-second test in the same ``ab.json``:
-    ``recipient`` is its arm, and arm ``b`` names who the viewer sends it ``to``. Every value comes from a closed set,
-    so the tags can be counted."""
+    ``recipient`` is its arm, and arm ``b`` names who the viewer sends it ``to``. Every value so far comes from a closed
+    set, so the tags can be counted. ``send_to`` and ``send_line`` are the send test's, set together or not at all: the
+    one person the script names as who gets the reel, in the script's own words, and the last line, the reason to send
+    it (:mod:`srstudio.send_gate`)."""
 
     territory: str
     cause: str
@@ -87,6 +89,8 @@ class Tags:
     arm: str = ""
     recipient: str = ""
     to: str = ""
+    send_to: str = ""
+    send_line: str = ""
 
     def __post_init__(self) -> None:
         for field, value, allowed in (
@@ -109,7 +113,10 @@ class Tags:
         if self.arm and self.arm not in ARMS:
             raise ReleaseError(f"arm {self.arm!r} is not one of {', '.join(ARMS)}")
         if self.recipient and self.recipient not in ARMS:
-            raise ReleaseError(f"recipient {self.recipient!r} is not one of {', '.join(ARMS)}")
+            raise ReleaseError(
+                f"recipient {self.recipient!r} is not one of {', '.join(ARMS)}: it is an A/B arm, and the person a "
+                "reel is sent to goes in send_to"
+            )
         if self.recipient and not self.test:
             raise ReleaseError(
                 "the recipient test rides on the first-second test: a reel without test and arm drops both"
@@ -118,6 +125,8 @@ class Tags:
             raise ReleaseError(f"recipient {self.recipient!r} and to {self.to!r}: arm b, and only arm b, names who")
         if self.to and self.to not in RECIPIENTS:
             raise ReleaseError(f"to {self.to!r} is not one of {', '.join(RECIPIENTS)}")
+        if bool(self.send_to.strip()) != bool(self.send_line.strip()):
+            raise ReleaseError(f"send_to {self.send_to!r} and send_line {self.send_line!r} go together")
 
 
 @dataclass(frozen=True)

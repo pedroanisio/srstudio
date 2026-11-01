@@ -36,6 +36,12 @@ and it stands in the way of the reels that go ahead of it.
    that slug. If it cannot find either folder it refuses too, because a folder it cannot read clears nobody. ADR 0074's
    rule now reads: a number that was delivered is never reused.
 
+6. **The send test has two tags and a gate.** `releases.Tags` takes `send_to`, the one person the script names, and
+   `send_line`, its last line, set together or not at all. `srstudio.send_gate` refuses bait ("tag a friend", "tag
+   someone", "send this to", "share this with", "send it to", any case) in the caption, the cover, the scene's text and
+   the spoken captions of a reel with those tags or with the brief `send-v1`, at first delivery and in
+   `instagram_posts.py check`. The brief is what catches a holdout, which has no tags to read.
+
 ## Consequences
 
 - The next claim is still `max(base, highest held) + 1`. A number released from the top of the ledger is taken by the
@@ -45,6 +51,9 @@ and it stands in the way of the reels that go ahead of it.
 - A release that declares the given-back number on its cover stays out of step with the ledger until it is rebuilt.
   `srstudio.show_gate` refuses it at first delivery, by the rule ADR 0074 already has.
 - A checkout without this change refuses a ledger at 1.1.0, loudly, by the strict read ADR 0074 asked for.
+- The bait gate matches words, so a character's own line with one of these phrases is refused as well. On screen it
+  reads as the ask, whoever says it, and the line is rewritten.
+- Pilots deliver through `publish_pilots.py`, which does not run the gate. No pilot is on the send test.
 
 ## Alternatives rejected
 
@@ -53,3 +62,6 @@ and it stands in the way of the reels that go ahead of it.
 - **A `brief` written on every reel, empty by default.** It changes the bytes of every staged `episode.json`.
 - **Filling gaps on the next claim.** It puts a later reel under an earlier number, and autopost posts lowest first.
 - **Editing the ledger by hand.** The ledger is written whole under a lock, and a hand edit skips the delivered check.
+- **Naming the tag `recipient`.** `Tags.recipient` is already the arm of the recipient A/B test, a or b, in 48 releases
+  and in `ab.json`, and a reel can be in that test and on the send test at once. The same name for a person would change
+  what those files mean.

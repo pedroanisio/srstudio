@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 
@@ -46,6 +47,7 @@ from srstudio import (
     outbox,
     overlay_gate,
     releases,
+    send_gate,
     show_gate,
     show_numbers,
 )
@@ -128,15 +130,24 @@ def _delivering(out: Path, renders: Path, font: Path, only: list[str] | None) ->
     return {r.video_name for r in RELEASES.values()} if "*" in stale else stale
 
 
+def send_drift(renders: Path, chosen: Mapping[str, releases.Release]) -> list[Drift]:
+    """The bait in ``chosen``, for the reels on the send test by their tags or by the brief in the ledger."""
+    try:
+        held = show_numbers.read(show_numbers.ledger_path(renders)).reels
+    except show_numbers.NumberError as exc:
+        raise DeliveryError(str(exc)) from None
+    return send_gate.bait_drift(chosen, _beside(renders), {slug: claim.brief for slug, claim in held.items()})
+
+
 def write_all(
     out: Path, renders: Path, *, fonts_dir: Path, engine: str | Path, only: list[str] | None = None
 ) -> list[Path]:
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
-    (ADR 0064), over the hashtag limit (ADR 0065), refused by a frame gate (ADR 0073) or out of the show's look
-    (ADR 0074), is a :class:`DeliveryError` before anything is written. A video in the manifest is past all of these:
-    what was published stays as it went out."""
+    (ADR 0064), over the hashtag limit (ADR 0065), with bait on the send test (ADR 0080), refused by a frame gate
+    (ADR 0073) or out of the show's look (ADR 0074), is a :class:`DeliveryError` before anything is written. A video in
+    the manifest is past all of these: what was published stays as it went out."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -153,6 +164,9 @@ def write_all(
     first = {r.slug: r.video_name for r in chosen.values() if r.video_name in delivering and r.video_name not in done}
     refuse_hashtags({slug: hashtag_excess(chosen[slug].post.text()) for slug in first})
     comedy_floor.refuse({slug: comedy_floor.shortfall(chosen[slug].comedy) for slug in first})
+    refused = send_drift(renders, {slug: chosen[slug] for slug in first})
+    if refused:
+        raise DeliveryError("; ".join(map(str, refused)))
     frame_gates.refuse(overlay_gate.repeated_lines(chosen, _beside(renders), first.values()))
     frame_gates.refuse(
         [
@@ -179,7 +193,12 @@ def write_all(
 def check_all(out: Path, renders: Path, *, fonts_dir: Path) -> list[Drift]:
     """Every drift between ``out`` and delivering every post from ``renders`` now, with every missing pin."""
     drift = check_delivery(items(renders), out, font=font_file(fonts_dir), frozen=FROZEN)
-    return [*releases.unpinned(RELEASES, _beside(renders)), *drift, *caption_drift(renders)]
+    return [
+        *releases.unpinned(RELEASES, _beside(renders)),
+        *drift,
+        *caption_drift(renders),
+        *send_drift(renders, RELEASES),
+    ]
 
 
 def migrate_all(out: Path, renders: Path, *, fonts_dir: Path, dry_run: bool = False) -> Migration:
@@ -211,7 +230,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{counts} (dry run: nothing written)" if args.dry_run else f"{counts}; {done}")
         return 0
     if args.command == "check":
-        drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
+        try:
+            drift = check_all(args.out, args.renders, fonts_dir=args.fonts)
+        except DeliveryError as exc:
+            raise SystemExit(f"check: {exc}") from None
         for d in drift:
             print(d)
         if FROZEN:
