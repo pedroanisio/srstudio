@@ -300,6 +300,14 @@ def _shoulder_top(x: np.ndarray, z: np.ndarray) -> np.ndarray:
     return (above + inside) / 2.0
 
 
+def _collar_stand(ts: np.ndarray) -> np.ndarray:
+    """How high the collar stands by the neck at ``ts`` round it: most at the nape, and nothing at either end, where
+    it lies down into the lapels."""
+    share = (1.0 - np.cos(ts)) / 2.0  # 0 in front, 1 at his nape
+    t = np.clip((math.pi - np.abs(ts - math.pi) - 1.0) / 0.9, 0.0, 1.0)
+    return (1.2 + 3.0 * share) * t * t * (3.0 - 2.0 * t)
+
+
 def _nape_collar(m: Model) -> None:
     """The collar round the back of his neck: it stands by the neck and falls on to the shoulders, and it takes its
     height from them, so it covers the edge of the neck's opening at every turn."""
@@ -307,9 +315,7 @@ def _nape_collar(m: Model) -> None:
     rs = np.linspace(0.0, 1.0, 12)[None, :]
     radius = 8.5 + 5.2 * rs
     x, z = radius * 1.03 * np.sin(ts), _NECK_Z - _NECK_DEEP * radius * np.cos(ts)
-    share = (1.0 - np.cos(ts)) / 2.0  # 0 in front, 1 at his nape
-    stand = 1.2 + 3.0 * share
-    rows = np.stack((x, _shoulder_top(x, z) - 0.45 - stand * (1.0 - rs) ** 1.6, z), axis=2)
+    rows = np.stack((x, _shoulder_top(x, z) - 0.45 - _collar_stand(ts) * (1.0 - rs) ** 1.6, z), axis=2)
     _cloth(m, "blazer", rows, up=True)
     m.tube("blazer-edge", list(rows[:, 0]), 0.3, 120, 6)
     m.tube("blazer-edge", list(rows[:, -1]), 0.18, 120, 6)

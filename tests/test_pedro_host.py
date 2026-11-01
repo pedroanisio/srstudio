@@ -206,3 +206,8 @@ def test_his_nods_on_speech_cross_more_than_one_plate_step():
 def test_he_can_be_turned_right_round_to_either_profile(degrees):
     assert degrees in pedro_host.VIEWS
     pedro_host.view(Face(), degrees)
+
+
+def test_the_back_light_stays_under_the_key_so_a_shaved_head_does_not_burn_white():
+    lights = {light.id: light for light in pedro_host.LIGHTS}
+    assert lights["rim"].intensity <= lights["key"].intensity * 0.55
