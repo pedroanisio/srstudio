@@ -20,9 +20,21 @@ from .show import BUG_BOX
 from .social import InstagramPost
 from .styles import STICK
 
-__all__ = ["WORD_MIN", "WORD_SIZE", "WORDS_Y", "check_framing", "close", "placing", "spec", "turns", "words"]
+__all__ = [
+    "CARD_CLEAR",
+    "WORD_MIN",
+    "WORD_SIZE",
+    "WORDS_Y",
+    "check_framing",
+    "close",
+    "placing",
+    "spec",
+    "turns",
+    "words",
+]
 
 WORDS_Y = 1600  # the band: below every face, in the look's zone
+CARD_CLEAR = int(2 * (BUG_BOX[0] - 540))  # the widest centred stick.card that stays out of the bug box
 WORD_SIZE, WORD_LINGER, WORD_MIN = 88, 0.9, 0.85  # a word up for less than 0.833 s fails the legibility check
 SCRIM = 0.9
 FRAME_W, FRAME_H = 1080, 1920

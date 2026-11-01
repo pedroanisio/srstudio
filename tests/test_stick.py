@@ -461,6 +461,20 @@ def test_every_seated_pose_and_face_draws():
                 assert len(list(xml(cv).iter("shape"))) > 10
 
 
+def test_a_card_can_be_narrowed_to_stay_clear_of_the_bug_and_the_default_keeps_its_width():
+    def card(**kwargs):
+        cv = canvas()
+        cv.require_font = lambda *_: None
+        stick.card(cv, cv.comp, "HOOK", **kwargs)
+        return next(xml(cv).iter("shape"))
+
+    assert (card().get("x"), card().get("width")) == ("90", "900")
+    narrow = card(width=772)
+    assert (narrow.get("x"), narrow.get("width")) == ("154", "772")
+    with pytest.raises(stick.StickDataError, match="width"):
+        card(width=0)
+
+
 def test_the_camera_takes_no_end_it_would_never_read():
     assert "end" not in inspect.signature(stick.camera).parameters
 

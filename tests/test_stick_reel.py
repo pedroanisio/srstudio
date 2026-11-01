@@ -114,3 +114,7 @@ def test_a_mark_off_the_frame_or_under_the_captions_is_refused():
 def test_a_camera_that_cannot_land_a_point_is_refused(camera):
     with pytest.raises(stick.StickDataError, match="camera"):
         stick_reel.check_framing(camera, faces=[(0.0, 0.0)])
+
+
+def test_the_clear_card_ends_at_the_bug_box():
+    assert (1080 + stick_reel.CARD_CLEAR) / 2 <= stick_reel.BUG_BOX[0]
