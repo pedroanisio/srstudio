@@ -28,9 +28,9 @@ RELEASE = Release(
     parts={
         "signature-cactus": 1,
         "signature-code": 1,
+        "toon-bear": 2,
         "toon-captions": 1,
         "toon-device-list": 1,
-        "toon-dog": 2,
         "toon-hamster": 1,
         "toon-ledge": 1,
         "toon-phone": 1,

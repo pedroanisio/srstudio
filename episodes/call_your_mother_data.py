@@ -9,11 +9,14 @@ shot, :func:`lens` its camera and :func:`foley` its sound.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from srstudio import camera, scripting, sketch, toon, toon_everyday, toon_homeware, toon_house, toon_props
 from srstudio import foley as synth
 from srstudio.sketch import Line, Sketch
 from srstudio.toon_voices import speaker, tinted
 
+MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 SEED = 3111
 SLUG = "call-your-mother"
 TITLE = "Call Your Mother — Dana and Mom (Toon)"

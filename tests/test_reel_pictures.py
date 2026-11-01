@@ -635,6 +635,20 @@ def test_the_profiles_phone_stands_left_of_every_face() -> None:
 
 
 @pytest.mark.usefixtures("reels")
+def test_the_profiles_draws_brock_as_the_bear_the_cast_knows() -> None:
+    mod = _data("the_profiles")
+    assert mod.BROCK.character == "bear"
+    assert "dog" not in {beat.who for beat in mod.BEATS}
+
+
+@pytest.mark.usefixtures("reels")
+def test_loaded_right_leaves_theo_to_the_published_reel_that_has_him() -> None:
+    mod = _data("loaded_right")
+    assert {s.name for s in mod.SKETCH.speakers} == {"dad", "fern", "lewis"}
+    assert not any("Lewis" in line.text for line in mod.LINES), "his name is never spoken"
+
+
+@pytest.mark.usefixtures("reels")
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7
@@ -671,3 +685,17 @@ def test_book_a_tables_bubble_breaks_at_its_sentence_end() -> None:
     said = "Hi, it's Bella Roma. Love you too. Inside or outside?"
     rows = collage.caption_lines(lambda s: 24.0 * len(s), said, 1080, sentences=True)
     assert rows[0] == "Hi, it's Bella Roma."
+
+
+@pytest.mark.parametrize("script", sorted(EPISODES.glob("*_audio.py")), ids=lambda p: p.stem)
+def test_a_recording_script_imports_only_what_its_data_defines(script: Path) -> None:
+    tree = ast.parse(script.read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.endswith("_data"):
+            source = EPISODES / f"{node.module}.py"
+            data = ast.parse(source.read_text())
+            names = {t.id for n in data.body if isinstance(n, ast.Assign) for t in n.targets if isinstance(t, ast.Name)}
+            names |= {n.target.id for n in data.body if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name)}
+            names |= {n.name for n in data.body if isinstance(n, ast.FunctionDef | ast.ClassDef)}
+            names |= {a.asname or a.name for n in data.body if isinstance(n, ast.ImportFrom) for a in n.names}
+            assert {a.name for a in node.names} <= names, f"{script.name} imports what {source.name} lacks"
