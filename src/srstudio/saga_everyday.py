@@ -47,6 +47,7 @@ DESK_TOP = 1000  # the returns counter's top
 DESK_EDGE = 640  # its left end, where a coupon runs out of counter
 SHELF_Y = 540  # the hut's shelf, the height of the hologram's puck
 HOLE = (45, 100)  # a basket's panel's hole from the basket's rim centre
+RETURNS_LIT = ((633.5, 369.5, 237.0, 95.0), (670.0, 472.0, 164.0, 70.0))  # the sign and its number board, lit
 Track = Sequence[tuple[float, ...]]
 
 
@@ -314,7 +315,7 @@ def returns(cv: Canvas, parent, *, end: float) -> None:
     cv.rect(g, 636, 372, 232, 90, "#0f1a20", "#f2b84b", 5, radius=12)
     _text(cv, g, "RETURNS", 642, 392, 220, 54, 46, "#f2b84b", "center")
     cv.rect(g, 672, 474, 160, 66, "#0f1a20", cv.ink, 4, radius=10)
-    _text(cv, g, "No. 1", 680, 484, 144, 46, 38, "#ff5a4f", "center")
+    _text(cv, g, "No. 1", 680, 484, 144, 46, 38, "#ff9d8f", "center")
     _marks(cv, g, (120, 536), (212, 566), 0.5, "#5fd4ff")
 
 
@@ -384,6 +385,20 @@ def coupon(cv: Canvas, parent, *, at: tuple[float, float], end: float, track: Tr
     cv.line(g, -24, 5, 4, 5, "#2b3142", 3)
 
 
+def _hole(box: tuple[float, ...], radius: float = 12.0) -> str:
+    """The rounded outline of a box a dim leaves lit."""
+    if len(box) != 4 or not all(checks.number(v) for v in box):
+        raise SagaError(f"a lit box is x, y, w, h, got {box}")
+    x, y, w, h = box
+    if w <= 0 or h <= 0 or x < 0 or y < 0 or x + w > W or y + h > H:
+        raise SagaError(f"a lit box stays on the frame and has an area, got {box}")
+    r = min(radius, w / 2, h / 2)
+    return (
+        f"M{x + r} {y} H{x + w - r} Q{x + w} {y} {x + w} {y + r} V{y + h - r} Q{x + w} {y + h} {x + w - r} {y + h} "
+        f"H{x + r} Q{x} {y + h} {x} {y + h - r} V{y + r} Q{x} {y} {x + r} {y} Z"
+    )
+
+
 @register("prop", "saga-dim", summary="The room darkening over whatever is drawn before it, and coming back")
 def dim(
     cv: Canvas,
@@ -394,8 +409,10 @@ def dim(
     spans: Sequence[tuple[float, float]],
     depth: float = 0.5,
     fade: float = 0.3,
+    spared: Sequence[tuple[float, ...]] = (),
 ) -> None:
-    """Dark over the frame in ``spans``, ``fade`` seconds in and out, to ``depth``; ``at`` is its unused centre."""
+    """Dark over the frame in ``spans``, ``fade`` seconds in and out, to ``depth``, except the (x, y, w, h) boxes of
+    ``spared``, the lit things a dark room leaves readable; ``at`` is its unused centre."""
     _check_end(end)
     held = _check_spans(spans, end, "a dim")
     if not held or not 0 < depth <= 1:
@@ -403,7 +420,10 @@ def dim(
     keys: list[tuple[float, float]] = [(0.0, 0.0)]
     for a, b in held:
         keys += [(a, 0.0), (round(a + fade, 4), depth), (round(max(b - fade, a + fade), 4), depth), (b, 0.0)]
-    node = cv.rect(parent, -200, -200, W + 400, H + 400, "#05060c")
+    d = f"M-200 -200 H{W + 200} V{H + 200} H-200 Z"
+    for box in spared:
+        d += " " + _hole(box)
+    node = cv.path(parent, d, "#05060c", cv.clear, 0, fillRule="evenodd")
     cv.keys(node, "opacity", sorted(set(keys)), hold=False)
 
 

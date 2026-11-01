@@ -21,7 +21,7 @@ from functools import partial
 
 import _saga
 from _saga import line, record
-from srstudio import foley
+from srstudio import foley, saga_everyday
 from srstudio.saga import Arm
 from srstudio.saga_everyday import DESK_EDGE, DESK_TOP, hole_of
 from srstudio.saga_reel import Entry, Move, Place, Prop, Stage
@@ -114,7 +114,7 @@ def stages(takes) -> dict[str, Stage]:
         "08": bay(**desk(), move=Move("crash", 0.05, 1.12, 600, LENS)),
         "09": bay(**desk()),
         "10": bay(**desk(), move=Move("crash", 0.05, 1.12, 600, LENS)),
-        "11": bay(**desk(Prop("dim", 540, 960, {"spans": dark}), arm=raised)),
+        "11": bay(**desk(Prop("dim", 540, 960, {"spans": dark, "spared": saga_everyday.RETURNS_LIT}), arm=raised)),
         "12": bay(**desk()),
         "13": bay(**desk(coupon, gloom_lean=looks, seven_lean=nods), move=Move("crash", edge, 1.15, 600, LENS)),
         "14": Stage(entry=Entry(TITLE, "", fade=True)),

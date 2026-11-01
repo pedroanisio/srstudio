@@ -178,6 +178,23 @@ def test_a_dim_falls_and_lifts_inside_its_span_and_refuses_nothing_to_darken():
         saga_everyday.dim(cv, cv.comp, at=(0, 0), end=4.0, spans=())
 
 
+def test_a_dim_leaves_a_lit_sign_out_of_the_dark():
+    cv = canvas()
+    saga_everyday.dim(cv, cv.comp, at=(0, 0), end=4.0, spans=((1.0, 3.0),), spared=saga_everyday.RETURNS_LIT)
+    t = tree(cv)
+    scrim = next(e for e in t.iter() if e.get("fillRule") == "evenodd")
+    assert scrim.get("path").count("M") == 1 + len(saga_everyday.RETURNS_LIT)
+    assert scrim.get("stroke") == cv.clear
+    assert keyed(t, "opacity")
+
+
+@pytest.mark.parametrize("spared", [((0, 0, 0, 10),), ((-10, 0, 100, 100),), ((1000, 1800, 200, 200),), ((0, 0, 10),)])
+def test_a_dim_refuses_a_lit_box_off_the_frame_or_with_no_area(spared):
+    cv = canvas()
+    with pytest.raises(SagaError, match="lit box"):
+        saga_everyday.dim(cv, cv.comp, at=(0, 0), end=4.0, spans=((1.0, 3.0),), spared=spared)
+
+
 def test_a_wince_needs_a_span_to_hurt_in():
     cv = canvas()
     with pytest.raises(SagaError, match="span"):
