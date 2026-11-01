@@ -150,11 +150,12 @@ def _blanket(cv: Canvas, parent) -> None:
         box(cv, parent, 6, -108 + k * 27, 92, 27, BLANKET if k % 2 else BLANKET_DARK, 3, r=8)
 
 
-def _menus(cv: Canvas, parent) -> None:
+def _menus(cv: Canvas, parent, *, named: bool) -> None:
     for k, (name, fill) in enumerate((("WOK", MENU_C), ("THAI", MENU_B), ("PIZZA", MENU_A))):
         y = -130 + k * 34
         box(cv, parent, 40 + k * 6, y, 110, 66, fill, 3, r=4)
-        cv.text(parent, cv.uid("menu"), name, 40 + k * 6, y + 2, 110, 34, 25, "#ffffff", weight=700)
+        if named:
+            cv.text(parent, cv.uid("menu"), name, 40 + k * 6, y + 2, 110, 34, 25, cv.ink, weight=700)
 
 
 def _drawer(cv: Canvas, parent, amount: float) -> None:
@@ -172,7 +173,7 @@ def _drawer(cv: Canvas, parent, amount: float) -> None:
         held = _group(cv, parent, x=cx, y=top + 4, scaleX=grow, scaleY=amount)
         _pillow(cv, held)
         _blanket(cv, held)
-        _menus(cv, held)
+        _menus(cv, held, named=amount == 1)  # the frames of the slide go by too fast to set words on
     left, width, height = cx - w * grow / 2, w * grow, h * grow
     box(cv, parent, left, top, width, height, FRONT, 5, r=6)
     box(cv, parent, cx - 44 * grow, top + height / 2 - 8, 88 * grow, 16, PULL, 3, r=8)

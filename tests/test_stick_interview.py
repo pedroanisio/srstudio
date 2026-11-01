@@ -63,6 +63,18 @@ def test_the_drawer_slides_through_its_steps_after_a_shut_frame():
     assert len(gated(cv)) == stick_interview.DRAWER_STEPS + 1
 
 
+def test_the_menus_carry_words_only_once_the_drawer_is_out():
+    cv = canvas()
+    stick_interview.desk(cv, cv.comp, 4.0, opens=1.0)
+    assert [t.get("text") for t in xml(cv).iter("text")] == ["WOK", "THAI", "PIZZA"]
+
+
+def test_the_menus_are_set_in_ink():
+    cv = canvas()
+    stick_interview.desk(cv, cv.comp, 2.0, is_open=True)
+    assert {t.get("color") for t in xml(cv).iter("text")} == {cv.ink}
+
+
 def test_a_drawer_that_starts_open_needs_a_font_for_its_menus():
     silent = canvas(font=False)
     with pytest.raises(CanvasError, match="menus"):
