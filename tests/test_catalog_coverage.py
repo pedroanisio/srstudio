@@ -104,6 +104,7 @@ NO_EPISODE = [
     "toon-take-a-number",
 ]
 NO_EPISODE = ["toon-bento", "toon-counter", "toon-receipt", "toon-take-a-number"]
+NO_EPISODE = ["news-phone@2", "toon-bento", "toon-counter", "toon-pipe", "toon-receipt", "toon-take-a-number"]
 NOT_SHOWN: dict[str, str] = {
     **dict.fromkeys(PACKAGE_ONLY, "only a packaged reel uses it; the packages' cards stay under #/pacotes"),
     **dict.fromkeys(SUPERSEDED, "the first drawing, replaced by its @2 version, which the gallery shows"),

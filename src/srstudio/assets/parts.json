@@ -10270,11 +10270,14 @@
         {
           "number": 1,
           "date": "2026-10-31",
-          "note": "A wine glass, as full as you like. First drawn for first-sip; proposed until the operator has seen it.",
-          "status": "proposed",
+          "note": "A wine glass.",
+          "status": "approved",
           "proof": "",
-          "approval": null,
-          "drawing": "d9ef7a6ff3097396bda3c7dbd0921618858b8c95519352f50bfe63d07cd8710d",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
+          },
+          "drawing": "7c03701b9c304b4fd2df0db4ddf0a0b17bfc937d13ac8f2992269f0972efd092",
           "rig": null
         }
       ]
@@ -11822,26 +11825,6 @@
         }
       ]
     },
-    "collage-wine-glass": {
-      "kind": "prop",
-      "style": "collage",
-      "refused": null,
-      "versions": [
-        {
-          "number": 1,
-          "date": "2026-10-31",
-          "note": "A wine glass.",
-          "status": "approved",
-          "proof": "",
-          "approval": {
-            "date": "2026-10-31",
-            "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
-          },
-          "drawing": "7c03701b9c304b4fd2df0db4ddf0a0b17bfc937d13ac8f2992269f0972efd092",
-          "rig": null
-        }
-      ]
-    },
     "collage-bank-card": {
       "kind": "prop",
       "style": "collage",
@@ -12338,6 +12321,46 @@
             "words": "arc4d3, by the operator's delegation of 2026-10-31, Slack 1793481766.343039: \"Approved: all version-1 props in batches A, B and C, including the 52 listed.\""
           },
           "drawing": "2c572dd4414155d31e4aaaacaa61da2cfb30d42cb8095989bc4cf7b65b5e9b81",
+          "rig": null
+        }
+      ]
+    },
+    "collage-full-glass": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A wine glass, as full as you like. First drawn for first-sip.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Approved: all version-1 props in batches A, B and C, including the 52 listed. (Slack 1793481766.343039)"
+          },
+          "drawing": "d9ef7a6ff3097396bda3c7dbd0921618858b8c95519352f50bfe63d07cd8710d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-faucet": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A kitchen tap on the counter whose bad joint drips on cue and bursts once. First drawn for the-last-guy.",
+          "status": "approved",
+          "proof": "",
+          "approval": {
+            "date": "2026-10-31",
+            "words": "Standing rule, arc4d3 by the operator's delegation (Slack 1793481766.343039): a version-1 prop that is a generic object in an approved style, with no real brand or likeness and no readable personal data, needs no question."
+          },
+          "drawing": "235dcc91cb087234c90a4725d3509b46a585fd0c759e1e9e591f2f62b9d1508d",
           "rig": null
         }
       ]

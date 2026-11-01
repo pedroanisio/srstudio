@@ -92,13 +92,13 @@ def validate(sk: Sketch = SKETCH) -> None:
 
 
 def dress(shot) -> None:
-    """The kitchen with its pipe behind whoever is on; the two inserts over their shots."""
+    """The kitchen with its tap on the counter behind whoever is on; the two inserts over their shots."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     toon_sets.kitchen(cv, shot.back)
     spray = event(beats, "spray")
     drips = [t * DRIP_EVERY + 0.2 for t in range(int(spray / DRIP_EVERY))]
     here = [t - 0.0 for t in drips if app.start <= t < app.end - 0.4]
-    toon_odds.pipe(cv, shot.back, (470.0, 610.0), here, spray if app.start <= spray < app.end else None, shot.end)
+    toon_odds.faucet(cv, shot.back, drips=here, burst=spray if app.start <= spray < app.end else None, end=shot.end)
     toon_house.ledge(cv, shot.front, "oak")
     if app.start == 0:
         toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 2.6, measure=shot.measure)
