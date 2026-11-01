@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from srstudio import STICK, stick, stick_reel
+from srstudio.timeline import Take
 
 
 def test_the_spec_is_the_style_s_with_a_private_report():
@@ -99,3 +100,10 @@ def test_a_mark_off_the_frame_or_under_the_captions_is_refused():
 def test_a_camera_that_cannot_land_a_point_is_refused(camera):
     with pytest.raises(stick.StickDataError, match="camera"):
         stick_reel.check_framing(camera, faces=[(0.0, 0.0)])
+
+
+def test_a_subtitle_starts_with_the_take_s_first_word_and_not_with_its_still():
+    held = Take("01", "noor", "open", "Step one.", 0.0, 3.0, words=({"text": "Step", "start": 1.05, "end": 1.4},))
+    plain = Take("02", "dev", "open", "Easy.", 3.0, 1.0)
+    effect = Take("03", "sfx", "open", "", 4.0, 1.0)
+    assert stick_reel.spoken_cues((held, plain, effect)) == [(1.05, 3.0, "Step one."), (3.0, 4.0, "Easy.")]
