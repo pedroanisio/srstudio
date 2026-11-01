@@ -104,7 +104,7 @@ srstudio inspect prop coffee-cup --json
 srstudio inspect character manager --json
 ```
 
-SDK errors retain their exception types and expose `error.to_dict()` with the versioned
+srstudio errors retain their exception types and expose `error.to_dict()` with the versioned
 `srstudio.diagnostic/1.0.0` envelope: `code`, `path`, `message`, `actual`, `expected`, `remedy`, `context`, and
 `residual`. Semantic details that a legacy error does not supply are `null`; they are never guessed from its
 message. Gaze and missing-part errors provide explicit repair fields. Limb errors retain their existing codes,
