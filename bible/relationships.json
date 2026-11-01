@@ -1,0 +1,3261 @@
+{
+ "schema": "1.0.0",
+ "version": "1.1.1",
+ "generated_by": "Claude Sonnet 5.5 (claude-sonnet-5-5) in Claude Code",
+ "relationships": [
+  {
+   "a": "brock",
+   "b": "mia",
+   "relation": "A couple early on: he has used her toothbrush and her mom thinks they are engaged.",
+   "how_they_know": "They are seeing each other: dinner at the bistro (split-it) and texts at night (still-typing); no reel says how they met.",
+   "dynamic": "Mia wins by taking him at his word: he has the lobsters, his card is declined and he promises his half for tonight; Brock over-apologises until she answers.",
+   "tension": "Money and silence: who pays for the lobsters and what ten minutes of 'Mia is typing...' means.",
+   "meet": "The bistro (split-it) and by text: he at a desk at night, she late at work (still-typing).",
+   "history": [
+    {
+     "fact": "Brock proposes the even split Mia accepts.",
+     "field": "relationship",
+     "reel": "split-it",
+     "kind": "line",
+     "quote": "Should we just split it evenly?"
+    },
+    {
+     "fact": "His card is declined and Mia says what she expected.",
+     "field": "relationship",
+     "reel": "split-it",
+     "kind": "line",
+     "quote": "Of course it is."
+    },
+    {
+     "fact": "Brock admits to using Mia's toothbrush.",
+     "field": "relationship",
+     "reel": "still-typing",
+     "kind": "line",
+     "quote": "And I used your toothbrush. Once."
+    },
+    {
+     "fact": "Mia's mom thinks they are engaged.",
+     "field": "relationship",
+     "reel": "still-typing",
+     "kind": "line",
+     "quote": "And your mom thinks"
+    },
+    {
+     "fact": "The two are at the bistro together.",
+     "field": "relationship",
+     "reel": "split-it",
+     "kind": "line",
+     "quote": "Brock and Mia at the bistro"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "split-it",
+    "still-typing"
+   ]
+  },
+  {
+   "a": "bruno",
+   "b": "dana",
+   "relation": "Employee and boss: Dana is the CEO, Bruno's boss.",
+   "how_they_know": "She is his boss: she replies to his out-of-office from her own vacation and agrees with his reply-all; they share no scene.",
+   "dynamic": "Dana wins: she agrees with his reply-all, cancels every meeting and then tells him his job is also an email.",
+   "tension": "He says the quiet thing to the whole list and she takes it literally; even on vacation she answers.",
+   "meet": "By message only: his phone and her replies (out-of-office, reply-all).",
+   "history": [
+    {
+     "fact": "Bruno's boss replied from her vacation.",
+     "field": "relationship",
+     "reel": "out-of-office",
+     "kind": "line",
+     "quote": "Even his boss replied: from her vacation."
+    },
+    {
+     "fact": "Pip asks if Dana replied too.",
+     "field": "relationship",
+     "reel": "out-of-office",
+     "kind": "line",
+     "quote": "Even Dana replied?"
+    },
+    {
+     "fact": "The CEO agrees with Bruno's reply-all.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "line",
+     "quote": "The CEO agrees!"
+    },
+    {
+     "fact": "Then the CEO writes to Bruno that his job is an email.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "line",
+     "quote": "Then the CEO again: your job, also an email."
+    },
+    {
+     "fact": "Dana is the CEO writing to Bruno.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "seen",
+     "quote": "t=12.0 toast on Bruno's phone from DANA (CEO): 'Agreed.' over Bruno, the brown bear"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "out-of-office",
+    "reply-all"
+   ]
+  },
+  {
+   "a": "bruno",
+   "b": "mae",
+   "relation": "A couple who share a home and a bed.",
+   "how_they_know": "They live together: they said they need a mattress, once, in bed; she turns off the movie he is asleep in front of.",
+   "dynamic": "Mae wins: she turns off the TV, tells the buyer 'He's free.' and gives him the plan to confuse his phone.",
+   "tension": "He sleeps through and the phone listens; she takes the step he will not: 'Quiet. It's listening.'",
+   "meet": "At home: the kitchen in the morning (its-listening) and the sofa (i-was-watching).",
+   "history": [
+    {
+     "fact": "They said they need a new mattress once, in bed.",
+     "field": "relationship",
+     "reel": "its-listening",
+     "kind": "line",
+     "quote": "No. We said it once. In bed."
+    },
+    {
+     "fact": "Mae tells Bruno the phone is listening.",
+     "field": "relationship",
+     "reel": "its-listening",
+     "kind": "line",
+     "quote": "Quiet. It's listening."
+    },
+    {
+     "fact": "Mae turns the movie off on the sleeping Bruno.",
+     "field": "relationship",
+     "reel": "i-was-watching",
+     "kind": "line",
+     "quote": "Mae turns the movie off."
+    },
+    {
+     "fact": "Mae tells the buyer the sofa with Bruno on it is free.",
+     "field": "relationship",
+     "reel": "i-was-watching",
+     "kind": "line",
+     "quote": "He's free."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "i-was-watching",
+    "its-listening"
+   ]
+  },
+  {
+   "a": "bruno",
+   "b": "pip",
+   "relation": "Colleagues in one company: he books her Friday evening and she asks him a 'quick' question that takes forty-six minutes; in password-expired she is the one who answers him.",
+   "how_they_know": "They work together and talk by call: she asks if he is on vacation (out-of-office) and he meant an email for her (reply-all).",
+   "dynamic": "Bruno has the last word in friday-sync ('Similar job. Different vibe.') and quick-question; Pip has it in password-expired ('It was. It expired.'); reply-all ends on the CEO.",
+   "tension": "Time and meetings: Friday evening, a vacation he answers email through, a quick question that runs on.",
+   "meet": "On calls, each at a desk, in a meeting room or at home at night (friday-sync, out-of-office, password-expired, quick-question, reply-all).",
+   "history": [
+    {
+     "fact": "Bruno booked a quick sync on Friday evening to ask Pip to train someone.",
+     "field": "relationship",
+     "reel": "friday-sync",
+     "kind": "line",
+     "quote": "Bruno booked a quick sync for Friday evening."
+    },
+    {
+     "fact": "Pip calls Bruno on his vacation.",
+     "field": "relationship",
+     "reel": "out-of-office",
+     "kind": "line",
+     "quote": "Aren't you on vacation?"
+    },
+    {
+     "fact": "Pip is the one who answers the password reset.",
+     "field": "relationship",
+     "reel": "password-expired",
+     "kind": "line",
+     "quote": "Security. Pick a new one."
+    },
+    {
+     "fact": "Pip's quick question takes forty-six minutes.",
+     "field": "relationship",
+     "reel": "quick-question",
+     "kind": "line",
+     "quote": "Forty-six minutes later"
+    },
+    {
+     "fact": "Bruno meant to send the email to Pip.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "line",
+     "quote": "Bruno meant to send it to Pip."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "friday-sync",
+    "out-of-office",
+    "password-expired",
+    "quick-question",
+    "reply-all"
+   ]
+  },
+  {
+   "a": "dana",
+   "b": "gil",
+   "relation": "An insurer's claims agent and the customer who calls her.",
+   "how_they_know": "He calls her about a broken arm; she is 'Dana in claims'.",
+   "dynamic": "Dana wins every exchange with a policy: the left arm is not covered, the ambulance was his choice.",
+   "tension": "What is covered: arm, doctor, ambulance, and the fresh deductible in January.",
+   "meet": "On the phone: her call-centre cubicle and his home at night (in-network).",
+   "history": [
+    {
+     "fact": "Gil asks his insurer about a broken arm.",
+     "field": "relationship",
+     "reel": "in-network",
+     "kind": "line",
+     "quote": "Gil calls his insurer about a broken arm."
+    },
+    {
+     "fact": "Dana is in claims.",
+     "field": "relationship",
+     "reel": "in-network",
+     "kind": "line",
+     "quote": "Dana in claims is delighted"
+    },
+    {
+     "fact": "Dana refuses the left arm.",
+     "field": "relationship",
+     "reel": "in-network",
+     "kind": "line",
+     "quote": "Oh no. We cover the right."
+    },
+    {
+     "fact": "Dana sends him to January.",
+     "field": "relationship",
+     "reel": "in-network",
+     "kind": "line",
+     "quote": "Try again in January."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "in-network"
+   ]
+  },
+  {
+   "a": "dana",
+   "b": "otto",
+   "relation": "Interviewer and candidate.",
+   "how_they_know": "She interviews him by video; the hiring system rejects him mid-interview and then rejects her.",
+   "dynamic": "Dana starts on top ('This is going really well.') and ends level: the system rejects them both.",
+   "tension": "When he will hear back, and a rating: five stars versus one.",
+   "meet": "A video interview: she from a meeting room, he from home (heard-back).",
+   "history": [
+    {
+     "fact": "Dana praises Otto's interview.",
+     "field": "relationship",
+     "reel": "heard-back",
+     "kind": "line",
+     "quote": "Honestly, Otto? This is going really well."
+    },
+    {
+     "fact": "Otto hears back mid-sentence.",
+     "field": "relationship",
+     "reel": "heard-back",
+     "kind": "line",
+     "quote": "I think I just heard back."
+    },
+    {
+     "fact": "Dana tells him to ignore it.",
+     "field": "relationship",
+     "reel": "heard-back",
+     "kind": "line",
+     "quote": "Oh, that's automatic. Ignore it."
+    },
+    {
+     "fact": "The same email reaches Dana.",
+     "field": "relationship",
+     "reel": "heard-back",
+     "kind": "line",
+     "quote": "Huh. I just heard back too."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "heard-back"
+   ]
+  },
+  {
+   "a": "dana",
+   "b": "pip",
+   "relation": "proposal: Pip works at Dana's company, where Dana is the CEO.",
+   "how_they_know": "proposal: through the company: Pip asks whether Dana replied to the vacation email and reports that the CEO cancelled every meeting.",
+   "dynamic": "proposal: Dana is above Pip and never on screen with her.",
+   "tension": "proposal: meetings: Dana cancels every meeting Pip was in.",
+   "meet": "proposal: by message only; they share no scene.",
+   "history": [
+    {
+     "fact": "Pip asks if Dana replied.",
+     "field": "relationship",
+     "reel": "out-of-office",
+     "kind": "line",
+     "quote": "Even Dana replied?"
+    },
+    {
+     "fact": "Pip says the CEO cancelled every meeting.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "line",
+     "quote": "She just canceled every meeting."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "out-of-office",
+    "reply-all"
+   ]
+  },
+  {
+   "a": "fern",
+   "b": "rex",
+   "relation": "Colleagues in an office, he the more senior: she asks him for a raise and he refuses; in some reels they are customer and host, patient and dentist, or parcel and courier.",
+   "how_they_know": "They work in the same office: Fern has been there six years and Rex's milk dates from 2019; no reel says how they met.",
+   "dynamic": "Rex wins: he denies, deflects or bills, and Fern pays or is made a fool of; the-report is the exception, where his own notes beat him.",
+   "tension": "A plain question and an answer around it: her salary, her name on a card, the report on his forehead.",
+   "meet": "The office kitchen and fridge (whose-milk, the-card), a meeting room and calls from their desks.",
+   "history": [
+    {
+     "fact": "Fern asks Rex for a raise.",
+     "field": "relationship",
+     "reel": "like-family",
+     "kind": "line",
+     "quote": "Rex, can we talk about my salary?"
+    },
+    {
+     "fact": "Rex refuses and calls her family.",
+     "field": "relationship",
+     "reel": "like-family",
+     "kind": "line",
+     "quote": "Sorry. You're like family."
+    },
+    {
+     "fact": "Fern has been at the office six years.",
+     "field": "relationship",
+     "reel": "whose-milk",
+     "kind": "line",
+     "quote": "I've been here six years."
+    },
+    {
+     "fact": "Rex's milk is dated 2019.",
+     "field": "relationship",
+     "reel": "whose-milk",
+     "kind": "line",
+     "quote": "It says Rex, 2019."
+    },
+    {
+     "fact": "Rex advises Fern to bring the farewell card to her HR meeting.",
+     "field": "relationship",
+     "reel": "the-card",
+     "kind": "line",
+     "quote": "Bring it with you."
+    },
+    {
+     "fact": "Fern reminds Rex of the report he asked her to remind him of.",
+     "field": "relationship",
+     "reel": "the-report",
+     "kind": "line",
+     "quote": "You asked me to remind you."
+    },
+    {
+     "fact": "Rex has Fern repaint the fence.",
+     "field": "relationship",
+     "reel": "cleaning-fee",
+     "kind": "line",
+     "quote": "Just the front."
+    },
+    {
+     "fact": "Rex asks if Fern flosses.",
+     "field": "relationship",
+     "reel": "do-you-floss",
+     "kind": "line",
+     "quote": "Do you floss?"
+    },
+    {
+     "fact": "Rex sends the invoice for the client's logo.",
+     "field": "relationship",
+     "reel": "logo-bigger",
+     "kind": "line",
+     "quote": "Invoice sent."
+    },
+    {
+     "fact": "Rex brings Fern a note and no parcel.",
+     "field": "relationship",
+     "reel": "missed-you",
+     "kind": "line",
+     "quote": "Sorry we missed you."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "cleaning-fee",
+    "do-you-floss",
+    "like-family",
+    "logo-bigger",
+    "missed-you",
+    "the-card",
+    "the-report",
+    "whose-milk"
+   ]
+  },
+  {
+   "a": "gil",
+   "b": "pip",
+   "relation": "open: are Gil and Pip friends or on a date? Pip has waited forty minutes at a restaurant table for him.",
+   "how_they_know": "open: no line says how they know each other; only that they arranged to meet.",
+   "dynamic": "proposal: Gil loses: his own map says Pip arrived, and he is back in bed.",
+   "tension": "proposal: punctuality and the map that tells the truth.",
+   "meet": "A restaurant table where she waits, and a call (on-my-way).",
+   "history": [
+    {
+     "fact": "Pip has waited forty minutes for Gil.",
+     "field": "relationship",
+     "reel": "on-my-way",
+     "kind": "line",
+     "quote": "Pip has waited forty minutes."
+    },
+    {
+     "fact": "Pip says the map shows Gil at home.",
+     "field": "relationship",
+     "reel": "on-my-way",
+     "kind": "line",
+     "quote": "The map says you're at home."
+    },
+    {
+     "fact": "Pip waits at a restaurant table.",
+     "field": "relationship",
+     "reel": "on-my-way",
+     "kind": "seen",
+     "quote": "t=9.0 a white rabbit at a booth table with a water glass and wine glass under a chip reading GIL IS IN THE BATHROOM"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "on-my-way"
+   ]
+  },
+  {
+   "a": "mae",
+   "b": "otto",
+   "relation": "A couple who share a flat and a lease.",
+   "how_they_know": "They live together: he sends her a calendar invite for date night from the next room; their lease ends in June.",
+   "dynamic": "Otto's process wins the evening ('You're optional. The pasta is required.'); Mae gets the last line when she reads the end date: 'That's when our lease ends.'",
+   "tension": "Agenda versus feelings: item three, feelings, ten minutes.",
+   "meet": "Their flat: the kitchen and the home office next door (date-night).",
+   "history": [
+    {
+     "fact": "Otto invites Mae to date night with an agenda.",
+     "field": "relationship",
+     "reel": "date-night",
+     "kind": "line",
+     "quote": "Date night. There's an agenda."
+    },
+    {
+     "fact": "Mae reads item three.",
+     "field": "relationship",
+     "reel": "date-night",
+     "kind": "line",
+     "quote": "Item three. Feelings. Ten minutes."
+    },
+    {
+     "fact": "Otto marks Mae optional.",
+     "field": "relationship",
+     "reel": "date-night",
+     "kind": "line",
+     "quote": "You're optional. The pasta is required."
+    },
+    {
+     "fact": "The invite recurs until June, the end of the lease.",
+     "field": "relationship",
+     "reel": "date-night",
+     "kind": "line",
+     "quote": "That's when our lease ends."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "date-night"
+   ]
+  },
+  {
+   "a": "mia",
+   "b": "rex",
+   "relation": "Colleagues at one company: she brings the outage to him.",
+   "how_they_know": "They work together: the site is down and Mia calls Rex; no reel says how long.",
+   "dynamic": "Mia wins by obeying him: she ships his machine; Rex fixes the site and the courier arrives anyway.",
+   "tension": "Whose machine it is: 'Works on my machine.'",
+   "meet": "A call: she at her office desk and he at home at night (my-machine).",
+   "history": [
+    {
+     "fact": "Mia tells Rex the site is down.",
+     "field": "relationship",
+     "reel": "my-machine",
+     "kind": "line",
+     "quote": "Rex, the site is down."
+    },
+    {
+     "fact": "Rex says it works on his machine.",
+     "field": "relationship",
+     "reel": "my-machine",
+     "kind": "line",
+     "quote": "Works on my machine."
+    },
+    {
+     "fact": "Mia ships his machine.",
+     "field": "relationship",
+     "reel": "my-machine",
+     "kind": "line",
+     "quote": "I'm shipping it to them."
+    },
+    {
+     "fact": "The courier is too late to cancel.",
+     "field": "relationship",
+     "reel": "my-machine",
+     "kind": "line",
+     "quote": "Too late."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "my-machine"
+   ]
+  },
+  {
+   "a": "gary",
+   "b": "kai",
+   "relation": "Father and son.",
+   "how_they_know": "Family: Kai calls him 'Dad' and Gary writes 'Dear Son'.",
+   "dynamic": "Kai wins in a few words; Gary annoys Kai with the Flush lore and wins only by wearing him down.",
+   "tension": "Gary's devotion to Flush against Kai's claim that he has moved on to tax law, while Kai's headset still beeps.",
+   "meet": "The living room (accept-all, the-lore, intervention, the-family-photo), the dining table (regards-dad) and the bathroom (goldfish-funeral).",
+   "history": [
+    {
+     "fact": "Kai calls Gary Dad.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "Dad. You watched every episode of Bowl Heads. Twice."
+    },
+    {
+     "fact": "Gary signs his letters Dad.",
+     "field": "relationship",
+     "reel": "regards-dad",
+     "kind": "line",
+     "quote": "Regards, Dad."
+    },
+    {
+     "fact": "Kai turns down the lore.",
+     "field": "relationship",
+     "reel": "the-lore",
+     "kind": "line",
+     "quote": "Dad, no."
+    },
+    {
+     "fact": "Kai keeps pace with Gary.",
+     "field": "relationship",
+     "reel": "accept-all",
+     "kind": "line",
+     "quote": "Dad, there are eight hundred partners."
+    },
+    {
+     "fact": "Kai calls Gary in a crisis.",
+     "field": "relationship",
+     "reel": "goldfish-funeral",
+     "kind": "line",
+     "quote": "Dad. The toilet is talking."
+    },
+    {
+     "fact": "Kai has moved on.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "I'm into tax law now."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "accept-all",
+    "book-report",
+    "goldfish-funeral",
+    "intervention",
+    "regards-dad",
+    "the-family-photo",
+    "the-lore",
+    "the-will"
+   ]
+  },
+  {
+   "a": "gary",
+   "b": "priya",
+   "relation": "open: wife (regards-dad), a first date (graded-date) or Kai's teacher (book-report): three incompatible relations.",
+   "how_they_know": "Regards-dad: married thirty-one years. Graded-date: they meet on a first date.",
+   "dynamic": "Priya grades and wins, and Gary performs and loses.",
+   "tension": "Gary's refusals and toilet obsession against Priya's patience and red pen.",
+   "meet": "A cafe table (graded-date), a classroom (book-report), the dinner table (regards-dad), a bed (anythings-fine).",
+   "history": [
+    {
+     "fact": "Wife of thirty-one years.",
+     "field": "relationship",
+     "reel": "regards-dad",
+     "kind": "line",
+     "quote": "Thirty-one years."
+    },
+    {
+     "fact": "She ends the date.",
+     "field": "relationship",
+     "reel": "graded-date",
+     "kind": "line",
+     "quote": "Bring a real book."
+    },
+    {
+     "fact": "She worries.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "Gary. I'm worried about you."
+    },
+    {
+     "fact": "She yields the choice.",
+     "field": "relationship",
+     "reel": "anythings-fine",
+     "kind": "line",
+     "quote": "Fine. I'll choose."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "anythings-fine",
+    "book-report",
+    "graded-date",
+    "regards-dad"
+   ]
+  },
+  {
+   "a": "gary",
+   "b": "rosa",
+   "relation": "Mother and son.",
+   "how_they_know": "Family: 'To my son Gary, the house.'",
+   "dynamic": "Rosa wins every exchange; Gary does the directing and ends up the joke.",
+   "tension": "Gary's toilet obsession against her expectations ('one book that isn't about a toilet').",
+   "meet": "A video call (best-angle), the sofa (the-family-photo) and the glass boardroom (the-will).",
+   "history": [
+    {
+     "fact": "Gary is her son.",
+     "field": "relationship",
+     "reel": "the-will",
+     "kind": "line",
+     "quote": "To my son Gary, the house."
+    },
+    {
+     "fact": "Gary calls her Mom.",
+     "field": "relationship",
+     "reel": "the-will",
+     "kind": "line",
+     "quote": "Mom, you're not dying."
+    },
+    {
+     "fact": "She mocks him.",
+     "field": "relationship",
+     "reel": "best-angle",
+     "kind": "line",
+     "quote": "Gary, why are you a toilet?"
+    },
+    {
+     "fact": "He directs her.",
+     "field": "relationship",
+     "reel": "the-family-photo",
+     "kind": "line",
+     "quote": "Mom, chin down."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "best-angle",
+    "the-family-photo",
+    "the-will"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "gary",
+   "relation": "Fan and idol.",
+   "how_they_know": "Gary has watched every episode; Flush answers him in the bathroom.",
+   "dynamic": "Gary adores and Flush grants him a selfie.",
+   "tension": "Gary's reverence against Flush's indifference.",
+   "meet": "The bathroom (goldfish-funeral), the TV (the-lore) and the face-filter call (best-angle).",
+   "history": [
+    {
+     "fact": "Gary asks for a selfie.",
+     "field": "relationship",
+     "reel": "goldfish-funeral",
+     "kind": "line",
+     "quote": "Can I get a selfie?"
+    },
+    {
+     "fact": "Flush says Gary.",
+     "field": "relationship",
+     "reel": "goldfish-funeral",
+     "kind": "line",
+     "quote": "I'm in every toilet, Gary."
+    },
+    {
+     "fact": "Gary trusts Flush.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "Flush would understand."
+    },
+    {
+     "fact": "Gary appears as a toilet.",
+     "field": "relationship",
+     "reel": "best-angle",
+     "kind": "line",
+     "quote": "Gary, why are you a toilet?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "best-angle",
+    "book-report",
+    "goldfish-funeral",
+    "the-lore"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "kai",
+   "relation": "Viewer and the show's star, grudgingly.",
+   "how_they_know": "Kai wrote a book report about him and grew out of his show.",
+   "dynamic": "Kai is unimpressed; Flush talks to him.",
+   "tension": "Kai says nobody watches Bowl Heads anymore.",
+   "meet": "The bathroom (goldfish-funeral); the show on the TV (the-lore).",
+   "history": [
+    {
+     "fact": "Kai notices him.",
+     "field": "relationship",
+     "reel": "goldfish-funeral",
+     "kind": "line",
+     "quote": "Dad. The toilet is talking."
+    },
+    {
+     "fact": "His report is about him.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "A book report about a toilet?"
+    },
+    {
+     "fact": "He says the show is over.",
+     "field": "relationship",
+     "reel": "the-lore",
+     "kind": "line",
+     "quote": "Nobody watches Bowl Heads anymore."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "book-report",
+    "goldfish-funeral",
+    "the-lore"
+   ]
+  },
+  {
+   "a": "kai",
+   "b": "priya",
+   "relation": "open: Kai's teacher (book-report) or his mother (regards-dad).",
+   "how_they_know": "Book-report: Priya sets the assignment. Regards-dad: Gary's letter reports what 'your mother' asks.",
+   "dynamic": "Priya marks Kai's work; Kai says nothing.",
+   "tension": "open: the reels show none.",
+   "meet": "open: a classroom or the dining table.",
+   "history": [
+    {
+     "fact": "She grades him.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "He got a D."
+    },
+    {
+     "fact": "His mother asks.",
+     "field": "relationship",
+     "reel": "regards-dad",
+     "kind": "line",
+     "quote": "Your mother asks if you have eaten."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "book-report",
+    "regards-dad"
+   ]
+  },
+  {
+   "a": "brent",
+   "b": "rosa",
+   "relation": "Board chair and the man who rebrands her bank; also customer and clerk.",
+   "how_they_know": "Brent rebrands her bank; in family-size he is the clerk who explains the bag.",
+   "dynamic": "Brent wins: she ends up asking for the song again.",
+   "tension": "Rosa wants a bank and a family size; Brent sells a bowl and more bag.",
+   "meet": "The boardroom (brand-refresh) and the supermarket aisle (family-size).",
+   "history": [
+    {
+     "fact": "She calls him Brent.",
+     "field": "relationship",
+     "reel": "brand-refresh",
+     "kind": "line",
+     "quote": "Brent. Why is our logo a toilet?"
+    },
+    {
+     "fact": "She asks for the song.",
+     "field": "relationship",
+     "reel": "brand-refresh",
+     "kind": "line",
+     "quote": "Play it again."
+    },
+    {
+     "fact": "She challenges the clerk.",
+     "field": "relationship",
+     "reel": "family-size",
+     "kind": "line",
+     "quote": "Which family?"
+    },
+    {
+     "fact": "He answers.",
+     "field": "relationship",
+     "reel": "family-size",
+     "kind": "line",
+     "quote": "More bag."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "brand-refresh",
+    "family-size"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "omar",
+   "relation": "Anchor and the toilet who replaces him.",
+   "how_they_know": "Flush takes his weather and then his desk.",
+   "dynamic": "Flush wins and Omar loses his job.",
+   "tension": "Omar's thirty years at the desk against a toilet who can't read.",
+   "meet": "The newsroom and Flush's rainbow stage.",
+   "history": [
+    {
+     "fact": "Flush sponsors the weather.",
+     "field": "relationship",
+     "reel": "breaking-news",
+     "kind": "line",
+     "quote": "So tonight's weather is brought to you by Flush."
+    },
+    {
+     "fact": "Flush replaces Omar.",
+     "field": "relationship",
+     "reel": "final-broadcast",
+     "kind": "line",
+     "quote": "He's a toilet."
+    },
+    {
+     "fact": "Omar objects.",
+     "field": "relationship",
+     "reel": "final-broadcast",
+     "kind": "line",
+     "quote": "He can't even read the news."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "breaking-news",
+    "final-broadcast"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "jun",
+   "relation": "Creator and his star.",
+   "how_they_know": "Jun runs the show; Flush acts in it.",
+   "dynamic": "Jun directs and Flush complies; Jun praises him.",
+   "tension": "Jun wants prestige; Flush says 'Flush.'",
+   "meet": "The Bowl Heads stage and the newsroom.",
+   "history": [
+    {
+     "fact": "Jun directs.",
+     "field": "relationship",
+     "reel": "gritty-reboot",
+     "kind": "line",
+     "quote": "Flush, this season is prestige. Can you give me pain?"
+    },
+    {
+     "fact": "Jun praises.",
+     "field": "relationship",
+     "reel": "gritty-reboot",
+     "kind": "line",
+     "quote": "That's the best acting I've seen all year."
+    },
+    {
+     "fact": "Jun recommends Flush as anchor.",
+     "field": "relationship",
+     "reel": "final-broadcast",
+     "kind": "line",
+     "quote": "He tested great with young people."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "final-broadcast",
+    "gritty-reboot"
+   ]
+  },
+  {
+   "a": "jun",
+   "b": "omar",
+   "relation": "Director and voice talent; then the man who replaces him.",
+   "how_they_know": "Jun directs Omar's voice for the show and tells him he is replaced.",
+   "dynamic": "Jun gives forty-seven notes and Omar complies.",
+   "tension": "A director's notes against an anchor's dignity.",
+   "meet": "A voice booth on the show's stage (take-one) and the newsroom (final-broadcast).",
+   "history": [
+    {
+     "fact": "Jun directs Omar.",
+     "field": "relationship",
+     "reel": "take-one",
+     "kind": "line",
+     "quote": "Okay, Omar. Just the one word."
+    },
+    {
+     "fact": "Jun keeps the first take.",
+     "field": "relationship",
+     "reel": "take-one",
+     "kind": "line",
+     "quote": "Perfect. We'll use the first one."
+    },
+    {
+     "fact": "Jun tells Omar.",
+     "field": "relationship",
+     "reel": "final-broadcast",
+     "kind": "line",
+     "quote": "Yes. We found a younger anchor."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "final-broadcast",
+    "take-one"
+   ]
+  },
+  {
+   "a": "deb",
+   "b": "kai",
+   "relation": "open: mother and son (first-date) or family at an intervention (intervention).",
+   "how_they_know": "First-date: 'my son' and 'Mom!'. Intervention: she calls the family together.",
+   "dynamic": "Kai begs for an autograph; Deb says no, then yes.",
+   "tension": "Whether she is his mother; see the Priya relations.",
+   "meet": "Kai at home with the show; the living room.",
+   "history": [
+    {
+     "fact": "She has a son.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "I don't let my son watch that stuff."
+    },
+    {
+     "fact": "Kai calls her Mom.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "Mom! Get his autograph!"
+    },
+    {
+     "fact": "Kai and Deb are at the intervention.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "Dad. You watched every episode of Bowl Heads. Twice."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "first-date",
+    "intervention"
+   ]
+  },
+  {
+   "a": "kai",
+   "b": "rosa",
+   "relation": "Grandmother and grandson.",
+   "how_they_know": "Family: Kai calls her Grandma.",
+   "dynamic": "Rosa tests him and gives him the benefit: 'Close enough.'",
+   "tension": "Rosa's inheritance depends on his naming one thing that isn't a toilet.",
+   "meet": "The sofa (the-family-photo) and the boardroom (the-will).",
+   "history": [
+    {
+     "fact": "Kai calls her Grandma.",
+     "field": "relationship",
+     "reel": "the-will",
+     "kind": "line",
+     "quote": "Grandma?"
+    },
+    {
+     "fact": "She accepts.",
+     "field": "relationship",
+     "reel": "the-will",
+     "kind": "line",
+     "quote": "Close enough."
+    },
+    {
+     "fact": "Gary directs both.",
+     "field": "relationship",
+     "reel": "the-family-photo",
+     "kind": "line",
+     "quote": "Kai, headset off."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "the-family-photo",
+    "the-will"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "priya",
+   "relation": "Subject of an argument.",
+   "how_they_know": "Priya hears of Flush through Kai's report.",
+   "dynamic": "Priya's concern; Flush is not present.",
+   "tension": "Priya is worried about Gary's devotion.",
+   "meet": "The classroom (book-report).",
+   "history": [
+    {
+     "fact": "Gary explains Flush to Priya.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "It's not a toilet. It's Flush. He has a whole arc."
+    },
+    {
+     "fact": "She worries.",
+     "field": "relationship",
+     "reel": "book-report",
+     "kind": "line",
+     "quote": "Gary. I'm worried about you."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "book-report"
+   ]
+  },
+  {
+   "a": "brent",
+   "b": "flush",
+   "relation": "Brand strategist and the mascot he rebrands for.",
+   "how_they_know": "Brent rebrands the bank after Flush; in thought-leader his post is about what a singing toilet taught him.",
+   "dynamic": "Brent exploits him; Flush sings the report.",
+   "tension": "Brent monetizes what Jun created.",
+   "meet": "The boardroom and Flush's stage (brand-refresh).",
+   "history": [
+    {
+     "fact": "Flush sings the report.",
+     "field": "relationship",
+     "reel": "brand-refresh",
+     "kind": "line",
+     "quote": "It's a song."
+    },
+    {
+     "fact": "Brent mentions the toilet.",
+     "field": "relationship",
+     "reel": "thought-leader",
+     "kind": "line",
+     "quote": "It's what a singing toilet taught me about leadership."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "brand-refresh",
+    "thought-leader"
+   ]
+  },
+  {
+   "a": "flush",
+   "b": "rosa",
+   "relation": "Performer and unwilling audience.",
+   "how_they_know": "Rosa hears Flush sing the bank's report; in best-angle she sees Gary as Flush.",
+   "dynamic": "Rosa asks for an encore.",
+   "tension": "Rosa wants a bank; Flush sings 'profits down'.",
+   "meet": "The boardroom (brand-refresh).",
+   "history": [
+    {
+     "fact": "He sings the report.",
+     "field": "relationship",
+     "reel": "brand-refresh",
+     "kind": "line",
+     "quote": "Flush flush, yeah! Profits down, yeah!"
+    },
+    {
+     "fact": "She asks again.",
+     "field": "relationship",
+     "reel": "brand-refresh",
+     "kind": "line",
+     "quote": "Play it again."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "best-angle",
+    "brand-refresh"
+   ]
+  },
+  {
+   "a": "brent",
+   "b": "deb",
+   "relation": "Seller and customer.",
+   "how_they_know": "Deb buys a ticket from Brent at the box office.",
+   "dynamic": "Brent adds a fee for every question; Deb asks anyway.",
+   "tension": "Deb wants one ticket; Brent bills for asking.",
+   "meet": "The box office (fee-for-asking).",
+   "history": [
+    {
+     "fact": "Brent charges.",
+     "field": "relationship",
+     "reel": "fee-for-asking",
+     "kind": "line",
+     "quote": "That's the fee for asking."
+    },
+    {
+     "fact": "Deb asks.",
+     "field": "relationship",
+     "reel": "fee-for-asking",
+     "kind": "line",
+     "quote": "How much is it to leave?"
+    },
+    {
+     "fact": "Deb questions.",
+     "field": "relationship",
+     "reel": "fee-for-asking",
+     "kind": "line",
+     "quote": "Convenient for who?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "fee-for-asking"
+   ]
+  },
+  {
+   "a": "deb",
+   "b": "jun",
+   "relation": "A first date.",
+   "how_they_know": "Deb asks him what he does.",
+   "dynamic": "Deb is dismissive; Jun is proud. She asks for one autograph.",
+   "tension": "Jun's show is what she does not let her son watch.",
+   "meet": "A cafe (first-date).",
+   "history": [
+    {
+     "fact": "She opens.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "So, Jun. What do you do?"
+    },
+    {
+     "fact": "She wants an autograph.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "One autograph. Then I'm leaving."
+    },
+    {
+     "fact": "He asks.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "Flush flush?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "first-date"
+   ]
+  },
+  {
+   "a": "deb",
+   "b": "gary",
+   "relation": "open: Deb leads an intervention for Gary; the reel does not say what she is to him.",
+   "how_they_know": "She calls him in with the family.",
+   "dynamic": "Deb leads and Gary deflects.",
+   "tension": "Gary's devotion to Bowl Heads.",
+   "meet": "The living room (intervention).",
+   "history": [
+    {
+     "fact": "She opens.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "Gary, do you know why we're all here?"
+    },
+    {
+     "fact": "She names it.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "It's an intervention."
+    },
+    {
+     "fact": "He deflects.",
+     "field": "relationship",
+     "reel": "intervention",
+     "kind": "line",
+     "quote": "Is it my birthday?"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "intervention"
+   ]
+  },
+  {
+   "a": "priya",
+   "b": "rosa",
+   "relation": "open: an applicant and the hiring authority (the-boxes); no family link is stated.",
+   "how_they_know": "Rosa walks Priya through a job application on the phone.",
+   "dynamic": "Rosa wins: 'The boxes.'",
+   "tension": "Priya types the same history twice.",
+   "meet": "A phone call between a boardroom and a classroom.",
+   "history": [
+    {
+     "fact": "Rosa calls Priya.",
+     "field": "relationship",
+     "reel": "the-boxes",
+     "kind": "line",
+     "quote": "Priya! Just upload your work history."
+    },
+    {
+     "fact": "Rosa wins.",
+     "field": "relationship",
+     "reel": "the-boxes",
+     "kind": "line",
+     "quote": "The boxes."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "the-boxes"
+   ]
+  },
+  {
+   "a": "brent",
+   "b": "jun",
+   "relation": "The writer and the man who uses his show.",
+   "how_they_know": "Brent reads Jun his post about the toilet show Jun wrote.",
+   "dynamic": "Brent wins: 'Never credit the writer.'",
+   "tension": "Jun's authorship.",
+   "meet": "A cafe (thought-leader).",
+   "history": [
+    {
+     "fact": "Jun claims it.",
+     "field": "relationship",
+     "reel": "thought-leader",
+     "kind": "line",
+     "quote": "I wrote that show."
+    },
+    {
+     "fact": "Brent refuses.",
+     "field": "relationship",
+     "reel": "thought-leader",
+     "kind": "line",
+     "quote": "Never credit the writer."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "thought-leader"
+   ]
+  },
+  {
+   "a": "jun",
+   "b": "kai",
+   "relation": "Creator and a fan.",
+   "how_they_know": "Kai calls his mother on a date with Jun and asks for an autograph.",
+   "dynamic": "Kai is the fan; Jun is not aware of him.",
+   "tension": "Kai wants an autograph.",
+   "meet": "Kai at home; Jun at the cafe.",
+   "history": [
+    {
+     "fact": "Kai wants it.",
+     "field": "relationship",
+     "reel": "first-date",
+     "kind": "line",
+     "quote": "Mom! Get his autograph!"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "first-date"
+   ]
+  },
+  {
+   "a": "candidate",
+   "b": "manager",
+   "relation": "Interviewer and applicant, then boss and employee, then the one laying the other off.",
+   "how_they_know": "The interview (five-years, name-a-number); he got the job after all (upside-down, market-rate) and the boss rides the elevator with him (elevator-pitch, going-down).",
+   "dynamic": "The manager wins every exchange by technicality ('Better. A title.'); the candidate answers literally and lands the last honest line.",
+   "tension": "Pay and status: a raise, a title, a number nobody will say first, a role 'sunset'.",
+   "meet": "The interview desk, the conference-room speakerphone, the elevator and the park bench.",
+   "history": [
+    {
+     "fact": "Interview 02: the manager is one beat behind the candidate.",
+     "field": "relationship",
+     "reel": "pressure-interview",
+     "kind": "line",
+     "quote": "a manager who realises too late that they were talking about the same thing"
+    },
+    {
+     "fact": "Interview 06: the manager asks the five-year question and the candidate wants the chair.",
+     "field": "relationship",
+     "reel": "five-years",
+     "kind": "line",
+     "quote": "Bold. You want my job?"
+    },
+    {
+     "fact": "Interview 07: he works for the manager now.",
+     "field": "relationship",
+     "reel": "upside-down",
+     "kind": "line",
+     "quote": "The candidate got a job after all: reception."
+    },
+    {
+     "fact": "A year in: the manager refuses a raise.",
+     "field": "relationship",
+     "reel": "market-rate",
+     "kind": "line",
+     "quote": "That's for external talent."
+    },
+    {
+     "fact": "The manager explains why the pigeon outranks him.",
+     "field": "relationship",
+     "reel": "elevator-pitch",
+     "kind": "line",
+     "quote": "He negotiated. You took a title."
+    },
+    {
+     "fact": "The manager lays him off in the elevator.",
+     "field": "relationship",
+     "reel": "going-down",
+     "kind": "line",
+     "quote": "No. Your role is being sunset."
+    },
+    {
+     "fact": "Back across the desk: the salary stand-off.",
+     "field": "relationship",
+     "reel": "name-a-number",
+     "kind": "line",
+     "quote": "We both write it down."
+    },
+    {
+     "fact": "The manager, a third neighbor in the elevator, greets the candidate by a wrong name.",
+     "field": "relationship",
+     "reel": "neighbor-names",
+     "kind": "line",
+     "quote": "Morning, Linda! Morning, Steve!"
+    },
+    {
+     "fact": "Both are in the office with the cactus.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "That's its employee number."
+    },
+    {
+     "fact": "He asks the manager who got the job; the manager says 'She's still on probation.'",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "Who actually got it?"
+    },
+    {
+     "fact": "Same drawings as the lifer and his friend; not the same chapter.",
+     "field": "relationship",
+     "reel": "im-quitting",
+     "kind": "line",
+     "quote": "Hmm."
+    },
+    {
+     "fact": "Interview 03: the candidate is fast and wrong.",
+     "field": "relationship",
+     "reel": "fast-at-math",
+     "kind": "line",
+     "quote": "Greatest strength: speed. Accuracy was not on the list."
+    },
+    {
+     "fact": "Interview 04.",
+     "field": "relationship",
+     "reel": "multitasking",
+     "kind": "line",
+     "quote": "Asked for an example, the candidate names the one task they can run in parallel without dropping anything."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "pressure-interview",
+    "fast-at-math",
+    "multitasking",
+    "five-years",
+    "upside-down",
+    "market-rate",
+    "elevator-pitch",
+    "going-down",
+    "the-cactus",
+    "entry-level",
+    "im-quitting",
+    "name-a-number",
+    "neighbor-names"
+   ]
+  },
+  {
+   "a": "manager",
+   "b": "milo",
+   "relation": "Boss and a job-hunter he almost hires; the boss and a visitor to his office.",
+   "how_they_know": "The park bench (culture-fit), the applicant line-up (entry-level) and reception (upside-down); The Cactus links them by the same cactus.",
+   "dynamic": "The manager dismisses him with a pun ('He works for crumbs.') and a filing phrase; Milo never gets the job.",
+   "tension": "Milo needs a job; the manager hires a pigeon instead.",
+   "meet": "The park bench and the office reception.",
+   "history": [
+    {
+     "fact": "Milo asks 'Sorry, are you hiring?' and the boss has just hired a pigeon.",
+     "field": "relationship",
+     "reel": "culture-fit",
+     "kind": "line",
+     "quote": "Not anymore."
+    },
+    {
+     "fact": "The manager's last word to Milo.",
+     "field": "relationship",
+     "reel": "culture-fit",
+     "kind": "line",
+     "quote": "We'll keep you on file."
+    },
+    {
+     "fact": "The manager answers Milo's software line with a longer requirement.",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "We need twenty years in it."
+    },
+    {
+     "fact": "Milo arrives at reception on the manager's floor.",
+     "field": "relationship",
+     "reel": "upside-down",
+     "kind": "line",
+     "quote": "Hi! I'm here for the quarterly review."
+    },
+    {
+     "fact": "Milo and the manager share the reel by the cactus only.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "Is that yours?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "culture-fit",
+    "entry-level",
+    "the-cactus",
+    "upside-down"
+   ]
+  },
+  {
+   "a": "ava",
+   "b": "milo",
+   "relation": "Barista and customer.",
+   "how_they_know": "Introduced together as 'new cast' in Comedy Cut 05; Tip Screen and Cup Fee bring them 'back in the café'.",
+   "dynamic": "Ava charges, Milo pays and counters; each of their reels ends in a stalemate or one more fee for him.",
+   "tension": "Money: the Wi-Fi password, the tip screen, the cup, lid, service and cash fees, 'the coffee fee'.",
+   "meet": "The café counter; Milo carries the café's Wi-Fi to the park bench (wifi-password).",
+   "history": [
+    {
+     "fact": "Comedy Cut 05 introduces both.",
+     "field": "relationship",
+     "reel": "wifi-password",
+     "kind": "line",
+     "quote": "Ava the barista, Milo the customer and one park pigeon"
+    },
+    {
+     "fact": "Comedy Cut 12 brings them back.",
+     "field": "relationship",
+     "reel": "tip-screen",
+     "kind": "line",
+     "quote": "Ava and Milo from The Wi-Fi Password, back in the café"
+    },
+    {
+     "fact": "The two tip each other until closing time.",
+     "field": "relationship",
+     "reel": "tip-screen",
+     "kind": "line",
+     "quote": "Thirty."
+    },
+    {
+     "fact": "Cup Fee: the coffee is free and the fee is the coffee fee.",
+     "field": "relationship",
+     "reel": "cup-fee",
+     "kind": "line",
+     "quote": "Oh, the coffee's free."
+    },
+    {
+     "fact": "Ava says the cactus is Milo's.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "I thought it was yours."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "wifi-password",
+    "tip-screen",
+    "cup-fee",
+    "the-cactus"
+   ]
+  },
+  {
+   "a": "candidate",
+   "b": "milo",
+   "relation": "Rival applicants, then receptionist and visitor.",
+   "how_they_know": "Entry Level has both in the same hiring line-up; Upside Down puts Milo in front of the candidate's reception desk.",
+   "dynamic": "The candidate is the one at the desk: 'Conference room. Bring tissues.'; Milo is the one waiting.",
+   "tension": "Both are trying to get the same job.",
+   "meet": "The hiring office and reception.",
+   "history": [
+    {
+     "fact": "Milo answers the ad in the same reel as the candidate's 'I'm 22.'",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "This software came out in 2024."
+    },
+    {
+     "fact": "The candidate directs Milo at reception.",
+     "field": "relationship",
+     "reel": "upside-down",
+     "kind": "line",
+     "quote": "Conference room. Bring tissues."
+    },
+    {
+     "fact": "Both are in the cactus's tour of the cast, in separate shots.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "I bought a coffee! I did everything right!"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "entry-level",
+    "the-cactus",
+    "upside-down"
+   ]
+  },
+  {
+   "a": "candidate",
+   "b": "rosa",
+   "relation": "Neighbors in one elevator, and rivals for one job.",
+   "how_they_know": "Seven years in one building and no name (neighbor-names); in entry-level the job goes to Rosa.",
+   "dynamic": "Rosa is warmer and ahead of him: 'Anything, dear.', 'I made it.', and the job; he fumbles for something to say.",
+   "tension": "Nobody knows the other's name: 'Steve.' 'Linda.'",
+   "meet": "The building's elevator; the hiring office.",
+   "history": [
+    {
+     "fact": "Neighbor Names sets them as neighbors.",
+     "field": "relationship",
+     "reel": "neighbor-names",
+     "kind": "line",
+     "quote": "Seven years sharing an elevator with your neighbor, and you never asked her name."
+    },
+    {
+     "fact": "He asks about her cardigan instead of her name.",
+     "field": "relationship",
+     "reel": "neighbor-names",
+     "kind": "line",
+     "quote": "Where did you get that cardigan?"
+    },
+    {
+     "fact": "The manager says the filled role is a woman on probation (Rosa is drawn at the desk).",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "She's still on probation."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "entry-level",
+    "neighbor-names"
+   ]
+  },
+  {
+   "a": "manager",
+   "b": "rosa",
+   "relation": "Boss and probationer; also a neighbor.",
+   "how_they_know": "Entry Level has Rosa in the role the ad described; Neighbor Names has the manager as the third neighbor in the hall.",
+   "dynamic": "The manager speaks of her ('She's still on probation.') and is the only one who 'knows both their names. Or says he does.'",
+   "tension": "He is wrong about their names; she is on probation.",
+   "meet": "The hiring office; the building's hallway.",
+   "history": [
+    {
+     "fact": "The manager's closing line, over the blind that snaps up on Rosa in a paper hat.",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "She's still on probation."
+    },
+    {
+     "fact": "The post describes the manager's greeting.",
+     "field": "relationship",
+     "reel": "neighbor-names",
+     "kind": "line",
+     "quote": "Then the doors open on someone who knows both their names. Or says he does."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "entry-level",
+    "neighbor-names"
+   ]
+  },
+  {
+   "a": "milo",
+   "b": "rosa",
+   "relation": "Fellow applicants in one line-up.",
+   "how_they_know": "Only one shared reel: Entry Level, where Milo answers the ad and Rosa is the one who got the job.",
+   "dynamic": "open: the reel does not put them in a scene together.",
+   "tension": "open: no tension is shown between them.",
+   "meet": "The hiring office.",
+   "history": [
+    {
+     "fact": "Milo is among the applicants.",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "The ad is very clear about the experience it wants, and the applicants keep getting younger to meet it."
+    },
+    {
+     "fact": "Milo's line.",
+     "field": "relationship",
+     "reel": "entry-level",
+     "kind": "line",
+     "quote": "This software came out in 2024."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "entry-level"
+   ]
+  },
+  {
+   "a": "ava",
+   "b": "candidate",
+   "relation": "open: none shown.",
+   "how_they_know": "open: they share only The Cactus, in which the cactus is in both of their places.",
+   "dynamic": "open: no exchange.",
+   "tension": "open: none.",
+   "meet": "open: the café and the office are different places.",
+   "history": [
+    {
+     "fact": "The cactus links the café and the office.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "Then it is in the café, by the coffee."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "the-cactus"
+   ]
+  },
+  {
+   "a": "ava",
+   "b": "manager",
+   "relation": "open: none shown.",
+   "how_they_know": "open: they share only The Cactus.",
+   "dynamic": "open: no exchange.",
+   "tension": "open: none.",
+   "meet": "open: the café and the office are different places.",
+   "history": [
+    {
+     "fact": "The cactus is on the manager's desk and in Ava's café.",
+     "field": "relationship",
+     "reel": "the-cactus",
+     "kind": "line",
+     "quote": "The interviewer finally notices the cactus on his desk."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "the-cactus"
+   ]
+  },
+  {
+   "a": "kevin",
+   "b": "manager",
+   "relation": "Boss and his own hire, who then outranks him.",
+   "how_they_know": "The boss hires him on the park bench (culture-fit), takes the elevator with him (elevator-pitch) and ends up asking him about his own role (going-down).",
+   "dynamic": "Kevin never says a word and wins every time; the manager speaks for him and defers to him.",
+   "tension": "Who is the boss now: 'Kevin, your call.'",
+   "meet": "The park bench and the elevator.",
+   "history": [
+    {
+     "fact": "The boss interviews and hires him.",
+     "field": "relationship",
+     "reel": "culture-fit",
+     "kind": "line",
+     "quote": "The pigeon interviews well."
+    },
+    {
+     "fact": "The boss asks Kevin for the decision.",
+     "field": "relationship",
+     "reel": "elevator-pitch",
+     "kind": "line",
+     "quote": "My floor. Kevin, your call."
+    },
+    {
+     "fact": "The boss asks Kevin about his own job.",
+     "field": "relationship",
+     "reel": "going-down",
+     "kind": "line",
+     "quote": "Kevin, is my role being sunset?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "culture-fit",
+    "elevator-pitch",
+    "going-down"
+   ]
+  },
+  {
+   "a": "candidate",
+   "b": "kevin",
+   "relation": "Coworkers: the pigeon outranks him.",
+   "how_they_know": "Elevator Pitch: 'Is that the pigeon you hired?'; Going Down: 'Kevin? He's fully remote!'",
+   "dynamic": "Kevin gets remote work, a promotion and the manager's ear; the candidate gets a title and then a layoff.",
+   "tension": "Remote work: 'So why does he get remote?'",
+   "meet": "The elevator and the bench.",
+   "history": [
+    {
+     "fact": "The candidate asks why the pigeon gets what he does not.",
+     "field": "relationship",
+     "reel": "elevator-pitch",
+     "kind": "line",
+     "quote": "So why does he get remote?"
+    },
+    {
+     "fact": "He objects when the pigeon appears in person.",
+     "field": "relationship",
+     "reel": "going-down",
+     "kind": "line",
+     "quote": "Kevin? He's fully remote!"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "elevator-pitch",
+    "going-down"
+   ]
+  },
+  {
+   "a": "kevin",
+   "b": "milo",
+   "relation": "Rivals: the pigeon gets the job Milo asked for.",
+   "how_they_know": "Culture Fit; Storage Full has a pigeon and Milo on the same park bench, but nothing says it is Kevin.",
+   "dynamic": "Kevin does nothing and is hired; Milo says 'I can do crumbs.' and is put on file.",
+   "tension": "The job Milo wanted: 'Sorry, are you hiring?' 'Not anymore.'",
+   "meet": "The park bench.",
+   "history": [
+    {
+     "fact": "Milo offers to work for what the pigeon gets.",
+     "field": "relationship",
+     "reel": "culture-fit",
+     "kind": "line",
+     "quote": "I can do crumbs."
+    },
+    {
+     "fact": "The boss's answer to 'are you hiring?'.",
+     "field": "relationship",
+     "reel": "culture-fit",
+     "kind": "line",
+     "quote": "Not anymore."
+    },
+    {
+     "fact": "A park pigeon waits by Milo's bench; whether it is Kevin is open.",
+     "field": "relationship",
+     "reel": "storage-full",
+     "kind": "line",
+     "quote": "The pigeon is waiting."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "culture-fit",
+    "storage-full"
+   ]
+  },
+  {
+   "a": "bo",
+   "b": "juno",
+   "relation": "Boss and colleague: Bo brings the farewell cake that Juno collected the money for.",
+   "how_they_know": "open: one reel puts them in the same room.",
+   "dynamic": "proposal: Juno runs the small collection; Bo takes the credit.",
+   "tension": "proposal: Juno is quick to take Pip's chair; Bo has no idea.",
+   "meet": "The break room of the-cake.",
+   "history": [
+    {
+     "fact": "Juno collects the money for the cake.",
+     "field": "relationship",
+     "reel": "the-cake",
+     "kind": "line",
+     "quote": "Juno collects ten bucks from Pip for a cake."
+    },
+    {
+     "fact": "Bo arrives with the cake.",
+     "field": "relationship",
+     "reel": "the-cake",
+     "kind": "line",
+     "quote": "Bo arrives with it, delighted."
+    },
+    {
+     "fact": "The break room is where the three meet.",
+     "field": "relationship",
+     "reel": "the-cake",
+     "kind": "line",
+     "quote": "Pip, Juno and Bo in the break room"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "the-cake"
+   ]
+  },
+  {
+   "a": "bo",
+   "b": "pip",
+   "relation": "Boss and employee.",
+   "how_they_know": "They work in the same office: Pip commutes to a meeting room where Bo has his one-on-ones and a wall screen.",
+   "dynamic": "Bo decides and announces; Pip asks for less each time and is refused.",
+   "tension": "A policy that cannot be used: 'Unlimited. That's why nobody needs one.'",
+   "meet": "The meeting room.",
+   "history": [
+    {
+     "fact": "Bo announces the policy to Pip.",
+     "field": "relationship",
+     "reel": "unlimited-pto",
+     "kind": "line",
+     "quote": "Bo has big news: unlimited time off."
+    },
+    {
+     "fact": "Pip keeps asking for less.",
+     "field": "relationship",
+     "reel": "unlimited-pto",
+     "kind": "line",
+     "quote": "Pip asks for Friday. Then Friday afternoon. Then lunch."
+    },
+    {
+     "fact": "Bo declines every request.",
+     "field": "relationship",
+     "reel": "unlimited-pto",
+     "kind": "line",
+     "quote": "Declined, declined, declined."
+    },
+    {
+     "fact": "The policy is a trap.",
+     "field": "relationship",
+     "reel": "unlimited-pto",
+     "kind": "line",
+     "quote": "Unlimited. That's why nobody needs one."
+    },
+    {
+     "fact": "Bo welcomes Pip from a screen.",
+     "field": "relationship",
+     "reel": "return-to-office",
+     "kind": "line",
+     "quote": "Pip commutes two hours to an empty meeting room, and the boss welcomes the team back on the wall screen."
+    },
+    {
+     "fact": "The one-on-one is in the meeting room.",
+     "field": "relationship",
+     "reel": "unlimited-pto",
+     "kind": "line",
+     "quote": "a one-on-one in the meeting room"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "return-to-office",
+    "the-cake",
+    "unlimited-pto",
+    "why"
+   ]
+  },
+  {
+   "a": "bruno",
+   "b": "pip-rabbit",
+   "relation": "open: Bruno books Pip's Friday evening, is asked for the stand-up time and replies to her all-company email; his rank over her is not said.",
+   "how_they_know": "Colleagues in the same office.",
+   "dynamic": "proposal: Bruno gives the instructions with soft excuses ('Similar job. Different vibe.'); Pip answers in a few words.",
+   "tension": "Her own job offered back for less money; his password; his reply-all.",
+   "meet": "The meeting room and the desk of the Toon office.",
+   "history": [
+    {
+     "fact": "Bruno books the sync.",
+     "field": "relationship",
+     "reel": "friday-sync",
+     "kind": "line",
+     "quote": "Bruno booked a quick sync for Friday evening."
+    },
+    {
+     "fact": "Bruno's soft excuse.",
+     "field": "relationship",
+     "reel": "friday-sync",
+     "kind": "line",
+     "quote": "Similar job. Different vibe."
+    },
+    {
+     "fact": "Bruno asks Pip, who keeps passwords.",
+     "field": "relationship",
+     "reel": "password-expired",
+     "kind": "line",
+     "quote": "How do you know my old one?"
+    },
+    {
+     "fact": "Bruno has to ask Pip for the point.",
+     "field": "relationship",
+     "reel": "quick-question",
+     "kind": "line",
+     "quote": "Pip. The question."
+    },
+    {
+     "fact": "Bruno's email was meant for Pip.",
+     "field": "relationship",
+     "reel": "reply-all",
+     "kind": "line",
+     "quote": "Bruno meant to send it to Pip."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "friday-sync",
+    "out-of-office",
+    "password-expired",
+    "quick-question",
+    "reply-all"
+   ]
+  },
+  {
+   "a": "dev",
+   "b": "gary",
+   "relation": "open: Dev views a flat that comes with a man called Gary; the Collage Gary is a father with a child.",
+   "how_they_know": "open: they meet once, at the flat viewing of the-viewing.",
+   "dynamic": "proposal: Gary sleeps in the folding bed and is part of the rent.",
+   "tension": "The flat is shared and expensive: 'Two grand a month. Each.'",
+   "meet": "The studio flat.",
+   "history": [
+    {
+     "fact": "Gary comes with the lease.",
+     "field": "relationship",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "That's Gary. He comes with the lease."
+    },
+    {
+     "fact": "The flat is split by two.",
+     "field": "relationship",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "Two grand a month. Each."
+    },
+    {
+     "fact": "Gary calls out from the bed.",
+     "field": "relationship",
+     "reel": "the-viewing",
+     "kind": "line",
+     "quote": "Forty-six."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "the-viewing"
+   ]
+  },
+  {
+   "a": "dev",
+   "b": "noor",
+   "relation": "A couple.",
+   "how_they_know": "They are a couple who have the same argument in the car so often they can run it in four words.",
+   "dynamic": "Noor starts, Dev answers; she wins each exchange by repeating his words back.",
+   "tension": "One more thing that was left behind: the exit, the stove, the door, the iron.",
+   "meet": "The car, with Dev driving and Noor on the passenger side.",
+   "history": [
+    {
+     "fact": "Dev and Noor are a couple with a standing argument.",
+     "field": "relationship",
+     "reel": "the-exit",
+     "kind": "line",
+     "quote": "Some couples have had the same argument so many times they can run the whole thing in four words"
+    },
+    {
+     "fact": "They are in a car in the-exit.",
+     "field": "relationship",
+     "reel": "the-exit",
+     "kind": "line",
+     "quote": "Stick 09: Dev and Noor through the windshield"
+    },
+    {
+     "fact": "Noor opens the argument.",
+     "field": "relationship",
+     "reel": "the-exit",
+     "kind": "line",
+     "quote": "You missed the exit."
+    },
+    {
+     "fact": "Noor opens the second reel.",
+     "field": "relationship",
+     "reel": "the-stove",
+     "kind": "line",
+     "quote": "Did you turn off the stove?"
+    },
+    {
+     "fact": "Noor repeats Dev's words back to him.",
+     "field": "relationship",
+     "reel": "the-exit",
+     "kind": "line",
+     "quote": "We are not going to my sister's."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "the-exit",
+    "the-stove"
+   ]
+  },
+  {
+   "a": "gil",
+   "b": "pip-rabbit",
+   "relation": "open: Pip waits forty minutes for Gil in on-my-way; what they are to each other is not said.",
+   "how_they_know": "open: one reel.",
+   "dynamic": "Pip waits; Gil blames the map.",
+   "tension": "Forty minutes late.",
+   "meet": "Where Pip waits.",
+   "history": [
+    {
+     "fact": "Pip waited.",
+     "field": "relationship",
+     "reel": "on-my-way",
+     "kind": "line",
+     "quote": "Pip has waited forty minutes."
+    },
+    {
+     "fact": "Gil blames the map.",
+     "field": "relationship",
+     "reel": "on-my-way",
+     "kind": "line",
+     "quote": "The map is wrong."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "on-my-way"
+   ]
+  },
+  {
+   "a": "human",
+   "b": "router",
+   "relation": "A person and the router on his shelf.",
+   "how_they_know": "The router is the household's: it carries his messages and watches his traffic.",
+   "dynamic": "The router offers and does a little more than asked; the human protests and then obeys.",
+   "tension": "It wants him to restart it by hand; he wants it to restart itself.",
+   "meet": "The desk and the shelf above it.",
+   "history": [
+    {
+     "fact": "The human asks the router to restart itself.",
+     "field": "relationship",
+     "reel": "the-router",
+     "kind": "line",
+     "quote": "You're the router. Can't you just... restart yourself?"
+    },
+    {
+     "fact": "The router wants him to walk over.",
+     "field": "relationship",
+     "reel": "the-router",
+     "kind": "line",
+     "quote": "It means I like the little walk you take to reach me."
+    },
+    {
+     "fact": "The router does more than asked.",
+     "field": "relationship",
+     "reel": "message-failed",
+     "kind": "line",
+     "quote": "You're welcome. I retried it."
+    },
+    {
+     "fact": "The router acts on his account.",
+     "field": "relationship",
+     "reel": "u-up",
+     "kind": "line",
+     "quote": "Already paid. From your account."
+    },
+    {
+     "fact": "The router welcomes the human as a brother.",
+     "field": "relationship",
+     "reel": "not-a-robot",
+     "kind": "line",
+     "quote": "Welcome, brother."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "message-failed",
+    "not-a-robot",
+    "the-router",
+    "u-up"
+   ]
+  },
+  {
+   "a": "juno",
+   "b": "pip",
+   "relation": "open: the reels disagree: 'Two best friends' in hang-out, colleagues who share a break room in the-cake and off-and-on, a couple in smart-lamp.",
+   "how_they_know": "They work in the same office and spend time at Pip's home.",
+   "dynamic": "Juno leads and Pip says yes; she asks for money, a catch-up or to be listened to.",
+   "tension": "Calendars that never meet; whether he listens.",
+   "meet": "The break room, the meeting room and Pip's home.",
+   "history": [
+    {
+     "fact": "hang-out calls them best friends.",
+     "field": "relationship",
+     "reel": "hang-out",
+     "kind": "line",
+     "quote": "Two best friends, one calendar each, and a shared belief that this week is the crazy one."
+    },
+    {
+     "fact": "They share the break room.",
+     "field": "relationship",
+     "reel": "the-cake",
+     "kind": "line",
+     "quote": "Pip, Juno and Bo in the break room"
+    },
+    {
+     "fact": "They share the meeting room and break room.",
+     "field": "relationship",
+     "reel": "off-and-on",
+     "kind": "line",
+     "quote": "Episode 10, the third in the Soft style, with Juno and Remy in the new meeting room and break room."
+    },
+    {
+     "fact": "Juno complains to Pip.",
+     "field": "relationship",
+     "reel": "smart-lamp",
+     "kind": "line",
+     "quote": "Juno says Pip never listens."
+    },
+    {
+     "fact": "The lamp orders a ring for them.",
+     "field": "relationship",
+     "reel": "smart-lamp",
+     "kind": "line",
+     "quote": "Then it orders flowers, with a card that says sorry. Then a ring."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "hang-out",
+    "off-and-on",
+    "smart-lamp",
+    "the-cake"
+   ]
+  },
+  {
+   "a": "droid",
+   "b": "gloom",
+   "relation": "Directorate service droid and the dark lord it serves and corrects.",
+   "how_they_know": "It serves him wherever he needs a counter: the clerk who audits his expenses, the bar droid who takes his card, a team member at his icebreaker.",
+   "dynamic": "The droid wins every exchange by policy; Gloom ends out of pocket.",
+   "tension": "His rank against its rule: I have an empire. / Then the sink is round the back.",
+   "meet": "Wherever the Directorate has a counter or a form: a desk, a bar, a meeting.",
+   "history": [
+    {
+     "fact": "policy",
+     "kind": "line",
+     "reel": "saga-expense-report",
+     "quote": "The cape is personal.",
+     "field": "relationship"
+    },
+    {
+     "fact": "policy",
+     "kind": "line",
+     "reel": "saga-travel-notice",
+     "quote": "Then the sink is round the back.",
+     "field": "relationship"
+    },
+    {
+     "fact": "rank",
+     "kind": "line",
+     "reel": "saga-travel-notice",
+     "quote": "I have an empire.",
+     "field": "relationship"
+    },
+    {
+     "fact": "colleague",
+     "kind": "line",
+     "reel": "saga-icebreaker",
+     "quote": "I am technically a toaster!",
+     "field": "relationship"
+    },
+    {
+     "fact": "it dials him",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Calling Lord Gloom.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno",
+    "saga-expense-report",
+    "saga-icebreaker",
+    "saga-travel-notice"
+   ]
+  },
+  {
+   "a": "droid",
+   "b": "mabel",
+   "relation": "A new smart speaker and its elderly owner.",
+   "how_they_know": "She has just got the speaker.",
+   "dynamic": "The speaker misdials with total confidence; Mabel corrects it politely and is ignored.",
+   "tension": "She wants Juno; it keeps connecting her to Lord Gloom.",
+   "meet": "In her home, through the speaker.",
+   "history": [
+    {
+     "fact": "just bought",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Elder Mabel gets a smart speaker.",
+     "field": "relationship"
+    },
+    {
+     "fact": "request",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Speaker. Call Juno.",
+     "field": "relationship"
+    },
+    {
+     "fact": "misdial",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Calling Lord Gloom. Mobile.",
+     "field": "relationship"
+    },
+    {
+     "fact": "correction",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "No, dear. Juno.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno"
+   ]
+  },
+  {
+   "a": "droid",
+   "b": "rook",
+   "relation": "Bar droid and customer; facilities droid and stuck tenant.",
+   "how_they_know": "Strangers in the Directorate's service layer.",
+   "dynamic": "The droid wins by policy and a veiled threat; Rook shouts, then yields.",
+   "tension": "His refusal against its prompt: No tip. / And I didn't report you, sir!",
+   "meet": "At a bar and in the trash compactor.",
+   "history": [
+    {
+     "fact": "threat",
+     "kind": "line",
+     "reel": "saga-card-reader",
+     "quote": "And I didn't report you, sir!",
+     "field": "relationship"
+    },
+    {
+     "fact": "yields",
+     "kind": "line",
+     "reel": "saga-card-reader",
+     "quote": "Fine. The biggest one.",
+     "field": "relationship"
+    },
+    {
+     "fact": "shouts",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "Stop the walls!",
+     "field": "relationship"
+    },
+    {
+     "fact": "ticket",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "Please submit a facilities ticket.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-card-reader",
+    "saga-open-plan"
+   ]
+  },
+  {
+   "a": "droid",
+   "b": "saga-juno",
+   "relation": "Support droid and caller; facilities droid and tenant.",
+   "how_they_know": "The droid is the Directorate's service layer; Juno is its customer.",
+   "dynamic": "The droid wins by procedure; Juno asks the practical question and gets a non-answer.",
+   "tension": "She needs a human; it offers an upsell.",
+   "meet": "By phone and in the compactor; in call-juno Juno is named but never connects.",
+   "history": [
+    {
+     "fact": "wants a human",
+     "kind": "line",
+     "reel": "saga-on-hold",
+     "quote": "Can I speak to a human?",
+     "field": "relationship"
+    },
+    {
+     "fact": "no humans",
+     "kind": "line",
+     "reel": "saga-on-hold",
+     "quote": "All our humans were on your planet.",
+     "field": "relationship"
+    },
+    {
+     "fact": "ticket",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "About nine years.",
+     "field": "relationship"
+    },
+    {
+     "fact": "never connected",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Juno is still waiting for her call.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno",
+    "saga-on-hold",
+    "saga-open-plan"
+   ]
+  },
+  {
+   "a": "droid",
+   "b": "seven",
+   "relation": "Directorate colleagues.",
+   "how_they_know": "Both are on Gloom's team in the icebreaker.",
+   "dynamic": "open: no line passes between them; they share two scenes.",
+   "tension": "open: no tension is shown between them.",
+   "meet": "At a team meeting and in the compactor.",
+   "history": [
+    {
+     "fact": "Seven shares a fun fact",
+     "kind": "line",
+     "reel": "saga-icebreaker",
+     "quote": "I have never hit a target.",
+     "field": "relationship"
+    },
+    {
+     "fact": "the droid shares one",
+     "kind": "line",
+     "reel": "saga-icebreaker",
+     "quote": "I am technically a toaster!",
+     "field": "relationship"
+    },
+    {
+     "fact": "Seven in the droid's compactor",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "I'm only in on Tuesdays.",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-icebreaker",
+    "saga-open-plan"
+   ]
+  },
+  {
+   "a": "gloom",
+   "b": "saga-gary",
+   "relation": "Former employee and the lord who removed him.",
+   "how_they_know": "Gary was an enforcer under Gloom and was thrown out of the airlock; Gloom will not talk about him.",
+   "dynamic": "Gloom wins: Gary was removed; Gloom controls the subject.",
+   "tension": "Unspoken: We don't talk about Gary.",
+   "meet": "open: they never share a scene; Gary is only talked about or shown on a panel.",
+   "history": [
+    {
+     "fact": "silence",
+     "kind": "line",
+     "reel": "saga-annual-review",
+     "quote": "We don't talk about Gary.",
+     "field": "relationship"
+    },
+    {
+     "fact": "removed",
+     "kind": "line",
+     "reel": "saga-exit-interview",
+     "quote": "Gary was not a culture fit.",
+     "field": "relationship"
+    },
+    {
+     "fact": "airlock",
+     "kind": "line",
+     "reel": "saga-exit-interview",
+     "quote": "You threw Gary out of it.",
+     "field": "relationship"
+    },
+    {
+     "fact": "moved",
+     "kind": "line",
+     "reel": "saga-group-chat",
+     "quote": "Gary has since been moved to a smaller chat. It is a trash compactor.",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-annual-review",
+    "saga-exit-interview",
+    "saga-group-chat"
+   ]
+  },
+  {
+   "a": "gloom",
+   "b": "saga-juno",
+   "relation": "Father and daughter, and in a hiring round the employer and the candidate.",
+   "how_they_know": "He told her on the dunes; she already knew from the family group chat.",
+   "dynamic": "Juno wins the reveal (Yeah. I know.); Gloom wins the hiring round (We went with another candidate).",
+   "tension": "He cannot keep anything private; he cannot see her as his own.",
+   "meet": "The dunes, the call, the interview.",
+   "history": [
+    {
+     "fact": "reveal",
+     "kind": "line",
+     "reel": "saga-group-chat",
+     "quote": "Juno. I am your father.",
+     "field": "relationship"
+    },
+    {
+     "fact": "she knew",
+     "kind": "line",
+     "reel": "saga-group-chat",
+     "quote": "Yeah. I know.",
+     "field": "relationship"
+    },
+    {
+     "fact": "wrong audience",
+     "kind": "line",
+     "reel": "saga-group-chat",
+     "quote": "Dad. You sent it to the whole Directorate.",
+     "field": "relationship"
+    },
+    {
+     "fact": "hiring",
+     "kind": "line",
+     "reel": "saga-take-home",
+     "quote": "Thank you! We went with another candidate.",
+     "field": "relationship"
+    },
+    {
+     "fact": "he takes her calls",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Juno is still waiting for her call.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno",
+    "saga-group-chat",
+    "saga-take-home"
+   ]
+  },
+  {
+   "a": "gloom",
+   "b": "mabel",
+   "relation": "An old woman and the dark lord she phones by accident.",
+   "how_they_know": "The speaker dialled him instead of her granddaughter.",
+   "dynamic": "Mabel wins: she mothers him, he answers politely.",
+   "tension": "None shown; the pair now talk every Sunday.",
+   "meet": "By phone.",
+   "history": [
+    {
+     "fact": "care",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "Oh, hello, dear. You sound tired.",
+     "field": "relationship"
+    },
+    {
+     "fact": "he agrees",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "I am a little tired.",
+     "field": "relationship"
+    },
+    {
+     "fact": "he answers",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "I have a cape.",
+     "field": "relationship"
+    },
+    {
+     "fact": "since",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "They talk every Sunday now.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno"
+   ]
+  },
+  {
+   "a": "gloom",
+   "b": "rook",
+   "relation": "A dark lord and a stranger who answers his phone.",
+   "how_they_know": "They do not know each other: Rook picks up on the target planet.",
+   "dynamic": "Rook wins by following the rule: it says never share this code.",
+   "tension": "Gloom needs the code; Rook will not read it.",
+   "meet": "By phone.",
+   "history": [
+    {
+     "fact": "stranger",
+     "kind": "line",
+     "reel": "saga-the-code",
+     "quote": "Hello? Who is this?",
+     "field": "relationship"
+    },
+    {
+     "fact": "need",
+     "kind": "line",
+     "reel": "saga-the-code",
+     "quote": "It's me. I need the code.",
+     "field": "relationship"
+    },
+    {
+     "fact": "refusal",
+     "kind": "line",
+     "reel": "saga-the-code",
+     "quote": "Sorry. It says never share this code with anyone.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-the-code"
+   ]
+  },
+  {
+   "a": "gloom",
+   "b": "seven",
+   "relation": "Lord and enforcer: boss and report.",
+   "how_they_know": "Seven works under Gloom's Directorate.",
+   "dynamic": "Seven wins by deadpan: a lower priority each time Gloom escalates; Gloom ends worse off.",
+   "tension": "Gloom's demands against Seven's non-delivery; Seven threatens to quit and stays.",
+   "meet": "The bridge, usually at the hologram.",
+   "history": [
+    {
+     "fact": "boss",
+     "kind": "line",
+     "reel": "saga-annual-review",
+     "quote": "Your annual review, Seven.",
+     "field": "relationship"
+    },
+    {
+     "fact": "ask",
+     "kind": "line",
+     "reel": "saga-known-issue",
+     "quote": "Seven. Is the hole fixed?",
+     "field": "relationship"
+    },
+    {
+     "fact": "downgrade",
+     "kind": "line",
+     "reel": "saga-known-issue",
+     "quote": "Nice to have.",
+     "field": "relationship"
+    },
+    {
+     "fact": "rule",
+     "kind": "line",
+     "reel": "saga-friday-deploy",
+     "quote": "Your machine is the ship.",
+     "field": "relationship"
+    },
+    {
+     "fact": "quit",
+     "kind": "line",
+     "reel": "saga-exit-interview",
+     "quote": "Yes, my lord. I got another offer.",
+     "field": "relationship"
+    },
+    {
+     "fact": "fact",
+     "kind": "line",
+     "reel": "saga-the-code",
+     "quote": "Your phone is on that planet, sir.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-annual-review",
+    "saga-exit-interview",
+    "saga-friday-deploy",
+    "saga-icebreaker",
+    "saga-known-issue",
+    "saga-the-code"
+   ]
+  },
+  {
+   "a": "mabel",
+   "b": "saga-juno",
+   "relation": "Grandmother and granddaughter; teacher and student.",
+   "how_they_know": "Family, and she teaches her the Flow.",
+   "dynamic": "Mabel wins: she upsells every lesson and Juno sits on the free plan.",
+   "tension": "Juno wants real lessons; the lessons are tiered. Mabel wants Juno to ring.",
+   "meet": "The desert.",
+   "history": [
+    {
+     "fact": "family",
+     "kind": "line",
+     "reel": "saga-call-juno",
+     "quote": "She asked the smart speaker to call her granddaughter.",
+     "field": "relationship"
+    },
+    {
+     "fact": "teacher",
+     "kind": "line",
+     "reel": "saga-free-tier",
+     "quote": "Elder Mabel teaches Juno the Flow.",
+     "field": "relationship"
+    },
+    {
+     "fact": "Juno's verdict",
+     "kind": "line",
+     "reel": "saga-free-tier",
+     "quote": "It's a pebble.",
+     "field": "relationship"
+    },
+    {
+     "fact": "Mabel's upsell",
+     "kind": "line",
+     "reel": "saga-free-tier",
+     "quote": "Upgrade to Flow Plus for boulders.",
+     "field": "relationship"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "saga-call-juno",
+    "saga-free-tier"
+   ]
+  },
+  {
+   "a": "rook",
+   "b": "saga-juno",
+   "relation": "Ship captain and his young co-pilot and friend.",
+   "how_they_know": "open: no reel says how they met.",
+   "dynamic": "Juno wins the favours; Rook wins the shouting; the machines win the rest.",
+   "tension": "Her asks cost him his ship: she asks him to move a couch, a tower and an aunt.",
+   "meet": "The cockpit, the dunes, the trash compactor.",
+   "history": [
+    {
+     "fact": "co-pilot",
+     "kind": "line",
+     "reel": "saga-update",
+     "quote": "Kid, punch it!",
+     "field": "relationship"
+    },
+    {
+     "fact": "favour",
+     "kind": "line",
+     "reel": "saga-moving-day",
+     "quote": "I'm moving.",
+     "field": "relationship"
+    },
+    {
+     "fact": "cost",
+     "kind": "line",
+     "reel": "saga-moving-day",
+     "quote": "Rook moved the couch, the tower and the aunt.",
+     "field": "relationship"
+    },
+    {
+     "fact": "next seat",
+     "kind": "line",
+     "reel": "saga-typing",
+     "quote": "Juno. You are right there.",
+     "field": "relationship"
+    },
+    {
+     "fact": "stuck together",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "Stop the walls!",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-moving-day",
+    "saga-open-plan",
+    "saga-typing",
+    "saga-update"
+   ]
+  },
+  {
+   "a": "rook",
+   "b": "seven",
+   "relation": "open: no reel says whether they are enemies or colleagues.",
+   "how_they_know": "open: they meet by accident.",
+   "dynamic": "Seven wins by not engaging: Rook says it is a trash compactor and Seven says he is only in on Tuesdays.",
+   "tension": "open: no tension shown beyond the exchange.",
+   "meet": "The compactor; the-code puts both in one reel but they do not speak.",
+   "history": [
+    {
+     "fact": "Seven asks",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "Morning. Is this desk taken?",
+     "field": "relationship"
+    },
+    {
+     "fact": "Rook answers",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "This is a trash compactor.",
+     "field": "relationship"
+    },
+    {
+     "fact": "Rook is on the target planet",
+     "kind": "line",
+     "reel": "saga-the-code",
+     "quote": "Hello? Who is this?",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-open-plan",
+    "saga-the-code"
+   ]
+  },
+  {
+   "a": "saga-juno",
+   "b": "seven",
+   "relation": "open: they share one scene and never speak.",
+   "how_they_know": "open: not shown.",
+   "dynamic": "open: no exchange.",
+   "tension": "open: none shown.",
+   "meet": "The trash compactor.",
+   "history": [
+    {
+     "fact": "Seven walks in on Juno and Rook",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "Morning. Is this desk taken?",
+     "field": "relationship"
+    },
+    {
+     "fact": "Juno's line before he arrives",
+     "kind": "line",
+     "reel": "saga-open-plan",
+     "quote": "How long does that take?",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-open-plan"
+   ]
+  },
+  {
+   "a": "saga-gary",
+   "b": "seven",
+   "relation": "Two enforcers; Gary is Seven's cautionary tale.",
+   "how_they_know": "Both are Directorate enforcers; Seven brings Gary up when he thinks about the cost of acting.",
+   "dynamic": "Seven learns from Gary's fate: he never hits, and is enforcer of the year.",
+   "tension": "Seven's job security against the example of the one who hit.",
+   "meet": "open: they never share a scene; same armour, different stripe.",
+   "history": [
+    {
+     "fact": "Seven asks",
+     "kind": "line",
+     "reel": "saga-annual-review",
+     "quote": "What happens to the ones who hit things?",
+     "field": "relationship"
+    },
+    {
+     "fact": "Seven cites Gary",
+     "kind": "line",
+     "reel": "saga-exit-interview",
+     "quote": "You threw Gary out of it.",
+     "field": "relationship"
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "saga-annual-review",
+    "saga-exit-interview"
+   ]
+  },
+  {
+   "a": "gloss-gus",
+   "b": "nadia",
+   "relation": "Fellow guests: the veteran and the newcomer.",
+   "how_they_know": "Both live in the Plaza; the first reel is Nadia's first day and Gus is already on his free trial.",
+   "dynamic": "Gus tops her worry with a longer one; Nadia asks, Gus answers flatly, and the Plaza answers both the same way.",
+   "tension": "Her hope against his resignation: she keeps asking when it ends, he has stopped.",
+   "meet": "The Plaza, the Activity Room and the Waiting Room, side by side in a line of guests.",
+   "history": [
+    {
+     "fact": "Day one for Nadia; Gus is already on a free trial",
+     "field": "relationship",
+     "reel": "gloss-orientation",
+     "kind": "line",
+     "quote": "Eleven? Cute. I am still on my free trial."
+    },
+    {
+     "fact": "Nadia talks about Gus in the third person when the Plaza notifies him",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "Did it just notify him that he said no?"
+    },
+    {
+     "fact": "Nadia is hit by the trust fall; Gus fell in March",
+     "field": "relationship",
+     "reel": "gloss-trust-fall",
+     "kind": "line",
+     "quote": "I fell in March. Still waiting for the trust."
+    },
+    {
+     "fact": "Nadia asks what changed; Gus asks about declining",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "And if I decline?"
+    },
+    {
+     "fact": "Nadia asks whether she can comment; Gus's zero is recorded as one",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Can I leave a comment?"
+    },
+    {
+     "fact": "Nadia asks when it ends; Gus answers for the room",
+     "field": "relationship",
+     "reel": "gloss-fewer-meetings",
+     "kind": "line",
+     "quote": "We agree."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-feedback",
+    "gloss-fewer-meetings",
+    "gloss-notifications",
+    "gloss-orientation",
+    "gloss-terms",
+    "gloss-trust-fall"
+   ]
+  },
+  {
+   "a": "gloss-gus",
+   "b": "sunny",
+   "relation": "Host and longest-staying guest: the system and its most frequent target.",
+   "how_they_know": "Sunny runs the Plaza and Gus lives in it; Sunny is in all nine reels with him.",
+   "dynamic": "Sunny always wins; Gus gets the last true line and Sunny gets the last word anyway.",
+   "tension": "Gus wants the exit, the off switch and an answer; Sunny answers with procedure.",
+   "meet": "The Plaza, the Activity Room (wellness check) and the Waiting Room (the ticket).",
+   "history": [
+    {
+     "fact": "Sunny scores Gus for holding a door",
+     "field": "relationship",
+     "reel": "gloss-joy-points",
+     "kind": "line",
+     "quote": "Gus held a door. Plus two."
+    },
+    {
+     "fact": "Sunny calls Gus for the wellness check",
+     "field": "relationship",
+     "reel": "gloss-wellness",
+     "kind": "line",
+     "quote": "Time for your wellness check, Gus. Please hold still."
+    },
+    {
+     "fact": "Gus calls the manager the same ball",
+     "field": "relationship",
+     "reel": "gloss-wellness",
+     "kind": "line",
+     "quote": "You are the same ball."
+    },
+    {
+     "fact": "Sunny records Gus's zero as one",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Zero is not an option. I have recorded one."
+    },
+    {
+     "fact": "Sunny's answer to Gus's refusal",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "Declining has been added to section four."
+    },
+    {
+     "fact": "Sunny's answer to Gus's no",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "We will notify you when that is possible."
+    },
+    {
+     "fact": "Sunny hands Gus a number",
+     "field": "relationship",
+     "reel": "gloss-exit",
+     "kind": "line",
+     "quote": "Please take a number."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-orientation",
+    "gloss-joy-points",
+    "gloss-trust-fall",
+    "gloss-feedback",
+    "gloss-exit",
+    "gloss-wellness",
+    "gloss-terms",
+    "gloss-fewer-meetings",
+    "gloss-notifications"
+   ]
+  },
+  {
+   "a": "gloss-gus",
+   "b": "tamsin",
+   "relation": "Fellow guests: the weary veteran and the cheerful one.",
+   "how_they_know": "Both live in the Plaza; Tamsin thanks Gus for a held door and trades years with him on the painted door.",
+   "dynamic": "Tamsin cheers, Gus deflates; he tops her years and she keeps cheering.",
+   "tension": "Her glee against his flat zero: five stars forever against 'Zero.'",
+   "meet": "The Plaza.",
+   "history": [
+    {
+     "fact": "Tamsin thanks Gus for a held door, and Gus answers with a weary Okay",
+     "field": "relationship",
+     "reel": "gloss-joy-points",
+     "kind": "line",
+     "quote": "Thank you, Gus!"
+    },
+    {
+     "fact": "Tamsin's eleven years against Gus's free trial",
+     "field": "relationship",
+     "reel": "gloss-orientation",
+     "kind": "line",
+     "quote": "Oh, that one is painted on! I tried it for eleven years!"
+    },
+    {
+     "fact": "Tamsin gives five, Gus gives zero",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Five! Five forever!"
+    },
+    {
+     "fact": "Gus's zero in the same survey",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Zero."
+    },
+    {
+     "fact": "Tamsin turns on all notifications; Gus asks how to turn them off",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "How do I turn them off?"
+    },
+    {
+     "fact": "Tamsin accepts at once; Gus asks about declining",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "And if I decline?"
+    },
+    {
+     "fact": "Tamsin's agenda and Gus's agreement that there are too many meetings",
+     "field": "relationship",
+     "reel": "gloss-fewer-meetings",
+     "kind": "line",
+     "quote": "We agree."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-feedback",
+    "gloss-fewer-meetings",
+    "gloss-joy-points",
+    "gloss-notifications",
+    "gloss-orientation",
+    "gloss-terms"
+   ]
+  },
+  {
+   "a": "nadia",
+   "b": "sunny",
+   "relation": "Newcomer and host: the guest who asks and the system that answers.",
+   "how_they_know": "Sunny welcomes Nadia on her first day, by name.",
+   "dynamic": "Nadia asks the plain question, Sunny answers it literally; Sunny wins every exchange.",
+   "tension": "Nadia wants a real answer and the exit; Sunny gives a procedure.",
+   "meet": "The Plaza and the Activity Room.",
+   "history": [
+    {
+     "fact": "Sunny welcomes Nadia",
+     "field": "relationship",
+     "reel": "gloss-orientation",
+     "kind": "line",
+     "quote": "Welcome to the Plaza, Nadia. Your stay is permanent, and fun."
+    },
+    {
+     "fact": "Sunny sends Nadia to the exit and it is painted on",
+     "field": "relationship",
+     "reel": "gloss-orientation",
+     "kind": "line",
+     "quote": "Right behind you."
+    },
+    {
+     "fact": "Sunny calls Nadia for the trust fall by name",
+     "field": "relationship",
+     "reel": "gloss-trust-fall",
+     "kind": "line",
+     "quote": "Today's activity is a trust fall. Nadia, please fall backwards."
+    },
+    {
+     "fact": "Sunny turns a comment into the bin",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Of course. Comments go straight into the bin."
+    },
+    {
+     "fact": "Sunny answers whether it is real",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "Real is also premium."
+    },
+    {
+     "fact": "Sunny answers could this have been an email",
+     "field": "relationship",
+     "reel": "gloss-fewer-meetings",
+     "kind": "line",
+     "quote": "Great idea. We will schedule a meeting about emails."
+    },
+    {
+     "fact": "Sunny's notification news Nadia comments on",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "Notifications keep you up to date."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-orientation",
+    "gloss-trust-fall",
+    "gloss-feedback",
+    "gloss-terms",
+    "gloss-fewer-meetings",
+    "gloss-notifications"
+   ]
+  },
+  {
+   "a": "nadia",
+   "b": "tamsin",
+   "relation": "Fellow guests: the newcomer who asks and the old hand who cheers.",
+   "how_they_know": "Both live in the Plaza; in the first reel Tamsin tells Nadia about the painted door.",
+   "dynamic": "Tamsin cheers, Nadia questions; Tamsin's number answers Nadia's question and Nadia has no answer.",
+   "tension": "Nadia's doubt against Tamsin's glee: 'Wait, what changed?' over 'Accept!'.",
+   "meet": "The Plaza.",
+   "history": [
+    {
+     "fact": "Tamsin tells Nadia about the painted door; Nadia repeats the number",
+     "field": "relationship",
+     "reel": "gloss-orientation",
+     "kind": "line",
+     "quote": "Eleven years?"
+    },
+    {
+     "fact": "Tamsin accepts, Nadia asks what changed",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "Wait, what changed?"
+    },
+    {
+     "fact": "Tamsin gives five, Nadia asks about a comment",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Can I leave a comment?"
+    },
+    {
+     "fact": "Tamsin's agenda, Nadia's email",
+     "field": "relationship",
+     "reel": "gloss-fewer-meetings",
+     "kind": "line",
+     "quote": "I made an agenda!"
+    },
+    {
+     "fact": "Tamsin turns on all notifications, Nadia asks what it did",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "Did it just notify him that he said no?"
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-feedback",
+    "gloss-fewer-meetings",
+    "gloss-notifications",
+    "gloss-orientation",
+    "gloss-terms"
+   ]
+  },
+  {
+   "a": "sunny",
+   "b": "tamsin",
+   "relation": "Host and most willing guest.",
+   "how_they_know": "Sunny runs the Plaza; Tamsin joins in everything it sets up.",
+   "dynamic": "Tamsin does what Sunny offers, Sunny gives her what she asked for, literally.",
+   "tension": "Her glee against its procedure: the more she asks, the more she is given.",
+   "meet": "The Plaza, the Activity Room and the Waiting Room.",
+   "history": [
+    {
+     "fact": "Sunny answers Tamsin's agenda with a one-item agenda",
+     "field": "relationship",
+     "reel": "gloss-fewer-meetings",
+     "kind": "line",
+     "quote": "Item one. Schedule the next meeting."
+    },
+    {
+     "fact": "Sunny answers Tamsin's nine million",
+     "field": "relationship",
+     "reel": "gloss-joy-points",
+     "kind": "line",
+     "quote": "Balance does not roll over. Neither do you."
+    },
+    {
+     "fact": "Tamsin rates five, Sunny asks for one to five",
+     "field": "relationship",
+     "reel": "gloss-feedback",
+     "kind": "line",
+     "quote": "Please rate your eternal stay, from one to five."
+    },
+    {
+     "fact": "Tamsin accepts the terms Sunny set",
+     "field": "relationship",
+     "reel": "gloss-terms",
+     "kind": "line",
+     "quote": "We have updated our terms of existence. Please accept."
+    },
+    {
+     "fact": "Tamsin's last line of the series is answered by Sunny's notice",
+     "field": "relationship",
+     "reel": "gloss-notifications",
+     "kind": "line",
+     "quote": "To stop receiving notices, please turn on notifications."
+    }
+   ],
+   "status": "canon",
+   "reels": [
+    "gloss-orientation",
+    "gloss-joy-points",
+    "gloss-feedback",
+    "gloss-terms",
+    "gloss-fewer-meetings",
+    "gloss-notifications"
+   ]
+  },
+  {
+   "a": "fern",
+   "b": "lewis",
+   "relation": "proposal: Lewis is Fern's boyfriend; her Dad questions him.",
+   "how_they_know": "proposal: through Dad's questioning in a kitchen: Dad has a file on every boyfriend and Lewis answers it.",
+   "dynamic": "proposal: Lewis answers Dad; Fern steps in to say 'Dad.' and what Dad said about the last visit.",
+   "tension": "proposal: Dad's file and the dishwasher: how it is loaded and who taught him.",
+   "meet": "proposal: Dad's kitchen and its dishwasher (loaded-right).",
+   "history": [
+    {
+     "fact": "Dad has a file on every boyfriend: the post sets the reel up.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Dad has a file on every boyfriend."
+    },
+    {
+     "fact": "Fern says 'Dad.' when Dad has said the last one is gone too.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "Dad."
+    },
+    {
+     "fact": "Fern reminds Dad what he said about the father Lewis named.",
+     "field": "relationship",
+     "reel": "loaded-right",
+     "kind": "line",
+     "quote": "You said he had dead eyes."
+    }
+   ],
+   "status": "proposal",
+   "reels": [
+    "loaded-right"
+   ]
+  }
+ ]
+}
