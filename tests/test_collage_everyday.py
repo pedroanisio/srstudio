@@ -184,6 +184,15 @@ def test_the_new_rooms_have_a_shelf_for_the_signature(name):
     assert name in collage_sets.SETS and name in collage_sets.SHELVES
 
 
+def test_the_meeting_room_hangs_its_shelf_on_a_wall_and_not_on_its_glass():
+    assert registry.get("location", "collage-meeting-room").builder is collage_sets.meeting_room
+    x, _, _, _ = collage_sets.signature_box("meeting-room")
+    assert collage_sets.GLASS_END <= x
+    cv = canvas()
+    collage_sets.SETS["meeting-room"](cv, cv.comp)
+    assert b"collage-meeting-room-sky" in body(cv)
+
+
 def test_a_night_set_paints_no_warm_light():
     cv = canvas()
     collage_sets.SETS["bedroom"](cv, cv.comp)

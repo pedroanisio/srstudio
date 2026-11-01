@@ -971,6 +971,23 @@
         }
       ]
     },
+    "collage-meeting-room": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A meeting room with a solid wall for the shelf. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "66891ec954350c52e00e15fc3b5d8c1cd467effbf1289c13c004751bcdd0114e",
+          "rig": null
+        }
+      ]
+    },
     "collage-newsroom": {
       "kind": "location",
       "style": "collage",
