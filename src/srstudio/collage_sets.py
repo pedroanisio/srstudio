@@ -601,7 +601,7 @@ def booth(cv: Canvas, parent) -> object:
         back, 0, 1620, cv.width, 300, cv.grad("collage-booth-ledge", [(0, "#6b5b4d"), (1, "#40362e")], (0, 0, 0, 1))
     )
     _finish(cv, back, lit=False)
-    _shelf(cv, g, "booth", "#2e2a38")
+    _shelf(cv, g, "booth", "#7f5539")
     return g
 
 
