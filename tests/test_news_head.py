@@ -645,7 +645,7 @@ def test_version_4_is_approved_and_its_specimen_shows_every_mouth(who):
     assert version.rig.status == "approved"
     assert version.approval.words == version.rig.approval.words
     assert 'Slack 1793489634.822829: "*v4 mouths: approved* for both anchors."' in version.approval.words
-    assert parts.latest(name).number == 4
+    assert parts.latest(name).number >= 4
     assert specimens.digest(name, 4) == parts.get(name).version(4).drawing
     assert specimens.digest(name, 4) != specimens.digest(name, 3)
     assert specimens.rig_digest(name, 4) == parts.get(name).version(4).rig.drawing
@@ -679,7 +679,7 @@ def test_a_new_version_redraws_nothing_but_the_limits(who):
     assert specimens.rig_digest(name, 3) != specimens.rig_digest(name, 2)
 
 
-@pytest.mark.parametrize(("version", "number"), [(None, 4), (4, 4), (3, 3), (2, 2)])
+@pytest.mark.parametrize(("version", "number"), [(None, 5), (5, 5), (4, 4), (3, 3), (2, 2)])
 def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(version, number):
     used = []
     real = news_head.plan_of
@@ -696,7 +696,7 @@ def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(ve
     assert used == [news_inked.RIGS[f"news-gus@{number}"]]
 
 
-@pytest.mark.parametrize("number", [3, 4])
+@pytest.mark.parametrize("number", [3, 4, 5])
 def test_a_rig_not_approved_stops_the_stage_on_its_version(monkeypatch, number):
     monkeypatch.setattr(news_head, "approved", lambda who, asked=2: asked != number)
     cv = canvas(10.0)
