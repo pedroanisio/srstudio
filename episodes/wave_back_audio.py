@@ -91,10 +91,10 @@ MAN = stick.Look(hair="spiky")
 FRIEND = stick.Look(hair="side-part", tie="#3d5a80")
 PASSER = stick.Look(hair="cowlick", glasses=True)
 CLASS = (
-    stick.Look(hair="spiky", glasses=True),
+    stick.Look(hair="cowlick", tie="#e9b44c"),
     stick.Look(hair="bald"),
     stick.Look(hair="side-part"),
-    stick.Look(hair="bun", glasses=True),
+    stick.Look(hair="spiky", tie="#6d597a"),
     stick.Look(hair="bald", tie="#c0453b"),
     stick.Look(hair="spiky", tie="#2a9d8f"),
 )
