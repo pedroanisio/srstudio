@@ -10876,6 +10876,23 @@
           "rig": null
         }
       ]
+    },
+    "collage-booth": {
+      "kind": "location",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A windowless call booth, foam on close walls. First drawn for exciting-opportunity. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1e2fbab0d5f299b4bf0a4b612340bd02f8c4986525132829e29204814463c557",
+          "rig": null
+        }
+      ]
     }
   }
 }

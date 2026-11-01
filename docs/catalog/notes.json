@@ -1252,6 +1252,7 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "collage-booth": {"title": "Cabine sem janela"},
     "tiny-hat": {"title": "Chapéu minúsculo"},
     "hat-stack": {"title": "Pilha de chapéus"},
     "soft-hook-card": {"title": "Cartão de gancho"},
@@ -8325,6 +8326,18 @@
         "at": 13.0
       },
       "text": "Cada chapéu pousa sobre o anterior com um pequeno achatamento, e a pilha balança e cai inteira. Quando sai do quadro, sobra o menor de todos."
+    },
+    {
+      "section": "locations",
+      "name": "Cabine de telemarketing",
+      "parts": [
+        "collage-booth"
+      ],
+      "shot": {
+        "episode": "exciting-opportunity",
+        "at": 20.0
+      },
+      "text": "Espuma nas paredes, nenhuma janela: de onde o recrutador liga."
     }
   ]
 }
