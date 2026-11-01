@@ -115,6 +115,9 @@ SKETCH = Sketch(SLUG, TITLE, (NARRATOR, FROG), LINES, BEATS, END, bare=(WIDE,))
 ORDER = ("photo", "street", "door-green", "door-red", "door-blue", "gnome", "open", "shut", "again", "ping")
 
 
+CODE = "#f2e3c4"  # the code on the brown porch floor: the ledge's own brown disappears on it
+
+
 def validate(sk: Sketch = SKETCH) -> None:
     """The sketch is consistent, speaks within 0.3 s, and the search comes once and in order."""
     sketch.check(sk)
@@ -151,7 +154,7 @@ def floor(cv, parent) -> None:
 def night(cv, parent) -> None:
     """The grade over a street shot, and the marks over the grade."""
     cv.rect(parent, 0, 0, cv.width, cv.height, NIGHT, cv.clear, 0, radius=0, opacity=0.5)
-    toon_world.marks(cv, parent)
+    toon_world.marks(cv, parent, code=CODE)
 
 
 def photo(cv, parent, banner: str) -> None:
@@ -160,7 +163,7 @@ def photo(cv, parent, banner: str) -> None:
     floor(cv, parent)
     toon_inserts.gnome(cv, parent, at=(225.0, 860.0), scale=1.1)
     toon_inserts.noodle_box(cv, parent, at=(420.0, 870.0), scale=1.0)
-    toon_world.marks(cv, parent)
+    toon_world.marks(cv, parent, code=CODE)
     cv.rect(
         parent, toon.fx(60), toon.fy(120), toon.fh(472), toon.fh(96), "#ffffff", cv.ink, toon.FINE_W, radius=toon.fh(20)
     )
@@ -202,9 +205,9 @@ def street(shot, start: float, stop: float) -> None:
         cv.group(shot.front, cv.uid("g"), start=start, end=stop),
     )
     toon_world.night_street(cv, back, end=stop)
-    toon_cars.side_car(cv, front, at=(200.0, 1040.0), scale=2.0, colour="#30445c")
+    toon_cars.side_car(cv, front, at=(200.0, 980.0), scale=2.0, colour="#30445c")
     screen = toon_everyday.Screen(0.0, "notify", "Delivered", "Green door", "9:06")
-    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 880), scale=0.9, id=cv.uid("phone"))
+    toon_everyday.phone(cv, front, [screen], measure=shot.measure, at=(440, 820), scale=0.9, id=cv.uid("phone"))
     toon_inserts.rain(cv, front, start=start, end=stop)
     night(cv, front)
 
