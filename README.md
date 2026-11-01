@@ -144,6 +144,23 @@ A `Style` supplies defaults for frame size, timing, input files, palette, captio
 
 The [authoring reference](docs/authoring-reference.md#styles) compares their inputs, clocks, palettes and captions. The [limbs guide](docs/catalog/limbs.md) covers reusable arm and hand motion across styles; runnable examples are in [examples/](examples/).
 
+Four shows are channels on Toon's road rather than styles of their own. Each is a `Style` value in its kit, passed as `style=` like any other, but `srstudio styles` and `STYLES` list only the nine above.
+
+| Show | Value | Main use |
+| --- | --- | --- |
+| Mind | `mind_kit.MIND` | How people think: Toon's cast and sets under its own cards ([ADR 0055](docs/decisions/0055-mind-kit.md)). |
+| News | `news_kit.NEWS` | A parody desk with its own set, anchors and graphics ([ADR 0060](docs/decisions/0060-news-kit.md)). |
+| Host | `host_kit.HOST` | One talking character on his own set ([ADR 0066](docs/decisions/0066-talking-head-host-kit.md)). |
+| Maps | `map_kit.MAPS` | The world on the engine's native maps ([ADR 0057](docs/decisions/0057-map-kit.md)). |
+
+## Finish and plates
+
+`srstudio.look` holds the primitives every style shares, while each style keeps its own numbers: `grade` for bloom, vignette and grain, `depth` for a far plane out of focus, `pool` for a soft light and `fade` for haze or a shade. See [finishing a style](docs/authoring-reference.md#finishing-a-style-srstudiolook) and [ADR 0031](docs/decisions/0031-shared-look-and-caption-primitives.md).
+
+The library draws in 2D, and a clay character is the one thing modelled in 3D. `srstudio.clay` bakes a model to meshes, and `srstudio.plates` path-traces a `Plate`, one camera, one set of lights and some placed meshes, into a still cached by its digest. Rafa, who hosts the Host show, is built this way ([ADR 0068](docs/decisions/0068-rafa-clay-host-on-plates.md)).
+
+[DRAWING.md](DRAWING.md) proposes a layered drawing kit for every style and show. It is a proposal: its `forms` and `paint` modules are not built, and nothing adopts a layer without an approved proof.
+
 ## Extending
 
 Register a builder to make it available through the catalog and `get()`:
@@ -174,6 +191,8 @@ Recording and generated audio use separate workflows and may require provider cr
 Auto-enhance is on by default: each video lands one real change to the process on `develop` before its first delivery, and both delivery commands refuse a new video without it. `srstudio enhance` shows the mode and the ledger, `srstudio enhance kinds` the possibilities, and `srstudio enhance off` is the operator's switch back to just delivering. See [ADR 0056](docs/decisions/0056-auto-enhance.md).
 
 New Okayville reels and News and Host pilots have a comedy floor: the lower of the author's and an independent reviewer's score must reach 14/20 at first delivery. Mind and Maps pilots and anything already delivered owe no score. See [ADR 0064](docs/decisions/0064-comedy-floor.md).
+
+Render with `scene-render encode --strict`. A reel's first delivery through `episodes/instagram_posts.py` also passes the frame gates, which refuse measured defects such as captions that run sentences together or signature marks the camera hides, and someone who is not the author reviews frames at full size. `publish_pilots.py` does not run these gates. See [ADR 0073](docs/decisions/0073-frame-gates-and-standing-review.md).
 
 ## Lanes
 
@@ -206,6 +225,7 @@ The configured coverage gate is 80%. Some integration tests require additional l
 - [episodes/](episodes/) — episode builders, recording scripts and releases.
 - [tests/](tests/) — unit, integration and fidelity tests.
 - [docs/decisions/](docs/decisions/) — architecture decisions.
+- [DRAWING.md](DRAWING.md) — proposed drawing architecture.
 - [Authoring and episode reference](docs/authoring-reference.md) — detailed style, episode, signature and delivery notes.
 
 The project is licensed under MIT.
