@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from srstudio import SOFT, Canvas, blob, registry, soft_bedtime, soft_front
+from srstudio import SOFT, Canvas, blob, registry, soft_bedtime, soft_front, specimens
 from srstudio.soft_front import SoftFrontError
 from srstudio.soft_props import SoftPropError
 from srstudio.soft_sets import Shot
@@ -132,3 +132,8 @@ def test_sitting_on_the_floor_keeps_the_seated_top_and_lays_the_legs_along_the_g
     assert floor.limbs["arm_l"] == sit.limbs["arm_l"]
     assert sit.limbs["leg_l"].p3[1] > 40  # a shin goes down to a floor below the seat
     assert floor.limbs["leg_l"].p3[1] < 0 and floor.limbs["leg_l"].p3[0] < sit.limbs["leg_l"].p3[0]
+
+
+def test_a_pose_added_since_approval_moves_no_approved_drawing():
+    specimens.check("juno", 1)
+    assert "floor" in blob.POSES_SINCE_APPROVAL <= set(blob.POSES)

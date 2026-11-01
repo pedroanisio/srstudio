@@ -40,6 +40,7 @@ __all__ = [
     "speaking",
     "MOUTHS",
     "POSES",
+    "POSES_SINCE_APPROVAL",
     "SEAT",
     "FLOOR",
     "SCALE",
@@ -544,6 +545,8 @@ POSES: dict[str, Pose] = {
         ),
     )
 }
+# Poses added after the cast was approved. An approved drawing walks only the others, so a new pose moves no digest.
+POSES_SINCE_APPROVAL = frozenset({"floor"})
 
 
 # -- faces ------------------------------------------------------------------------------------------------

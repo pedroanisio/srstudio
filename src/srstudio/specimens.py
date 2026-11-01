@@ -213,7 +213,8 @@ def _space(entry: registry.Entry) -> Canvas:
 
 
 def _blob(entry: registry.Entry) -> Canvas:
-    poses, eyes, mouths = tuple(blob.POSES), tuple(blob.EYES), tuple(blob.MOUTHS)
+    poses = tuple(pose for pose in blob.POSES if pose not in blob.POSES_SINCE_APPROVAL)
+    eyes, mouths = tuple(blob.EYES), tuple(blob.MOUTHS)
     count = max(len(poses), len(eyes), len(mouths))
     cues = [
         blob.Cue(i * STEP, poses[i % len(poses)], eyes[i % len(eyes)], mouths[i % len(mouths)]) for i in range(count)
