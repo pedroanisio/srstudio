@@ -8152,6 +8152,43 @@
         "at": 25.5
       },
       "text": "A janela de conversa inventada, com o selo que chega por cima."
+    },
+    {
+      "section": "locations",
+      "name": "Hall de entrada",
+      "parts": [
+        "stick-hall",
+        "stick-front-door"
+      ],
+      "shot": {
+        "episode": "pay-in-four",
+        "at": 5.0
+      },
+      "text": "O hall visto de dentro, a porta aberta para o quintal, a cerca e as casas do outro lado."
+    },
+    {
+      "section": "props",
+      "name": "Guincho de ré",
+      "parts": [
+        "stick-tow-truck"
+      ],
+      "shot": {
+        "episode": "pay-in-four",
+        "at": 16.5
+      },
+      "text": "Um guincho sem marca, de costas, que entra de ré pelo caminho e baixa o gancho ao lado de quem está na porta."
+    },
+    {
+      "section": "props",
+      "name": "Prancheta do cobrador",
+      "parts": [
+        "stick-clipboard"
+      ],
+      "shot": {
+        "episode": "pay-in-four",
+        "at": 26.5
+      },
+      "text": "A prancheta de quem vem cobrar: de lado enquanto ele lê, de frente quando ele vira para você assinar."
     }
   ]
 }

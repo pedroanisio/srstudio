@@ -10451,6 +10451,74 @@
           "rig": null
         }
       ]
+    },
+    "stick-hall": {
+      "kind": "location",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick front hall from inside, the doorway open on a yard, picket fence and blurred houses; both marks on the shelf. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4b8561a6d56e811156328c3a71f3f57feccde81db3bb2453828084b63f78b710",
+          "rig": null
+        }
+      ]
+    },
+    "stick-front-door": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick panelled front door hinged on the left jamb, swinging in through drawn frames. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "529fafe1931becc5a3f9d290933142280294a624a044affd302cb216226c4228",
+          "rig": null
+        }
+      ]
+    },
+    "stick-tow-truck": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick generic unbranded tow truck from behind, reversing up the path, beacon turning, hook lowered on a cable. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fe46482438c1d1f0ef8927703ec4f92a361d30353654583b568fe63bc8806b1c",
+          "rig": null
+        }
+      ]
+    },
+    "stick-clipboard": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Stick clipboard, edge on or turned flat to the viewer with a heading, four boxes and a line to sign; no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "298b562933b985957b62480aaf47525ec9965d9bdaa40a44e943e940dc5cdd0e",
+          "rig": null
+        }
+      ]
     }
   }
 }
