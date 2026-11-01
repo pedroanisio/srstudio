@@ -122,13 +122,7 @@ def _scaled(d: str, k: float, dy: float) -> str:
 
 @register("prop", "toon-gray-cable", summary="One gray cable with a plug, held at its top, that goes where it is moved")
 def gray_cable(
-    cv: Canvas,
-    parent,
-    moves: Sequence[tuple[float, float, float]],
-    start: float,
-    end: float,
-    *,
-    id: str | None = None,
+    cv: Canvas, parent, moves: Sequence[tuple[float, float, float]], start: float, end: float, *, id: str | None = None
 ):
     """The cable's top on reference ``(x, y)`` at each ``(second, x, y)`` of ``moves``, going straight from one to the
     next, on screen from ``start`` to ``end``. Returns its group."""
@@ -168,12 +162,7 @@ def kitchen_bin(cv: Canvas, parent, at: tuple[float, float] = BIN_AT):
 
 @register("prop", "toon-fridge-light", summary="A fridge door's lit display, that goes dark with the power")
 def fridge_light(
-    cv: Canvas,
-    parent,
-    off: float | None = None,
-    on: float | None = None,
-    *,
-    at: tuple[float, float] = FRIDGE_LIGHT_AT,
+    cv: Canvas, parent, off: float | None = None, on: float | None = None, *, at: tuple[float, float] = FRIDGE_LIGHT_AT
 ):
     """The display centred on reference ``at``, lit until ``off`` and from ``on``. Its case stays when it goes out."""
     x, y = _point(at, "fridge light")
@@ -191,12 +180,7 @@ def fridge_light(
 
 
 @register("location", "toon-hill-window", summary="A window at night on a hill, its street lights go out in a row")
-def hill_window(
-    cv: Canvas,
-    parent,
-    out: Sequence[float] = (),
-    on: float | None = None,
-):
+def hill_window(cv: Canvas, parent, out: Sequence[float] = (), on: float | None = None):
     """The window, wall around it, on the hill at night. Each street light of :data:`STREET`, from the top of the hill
     down, goes out at its second of ``out`` (none listed: it stays on), and all of them and the houses' windows, which
     go when the last light goes, come back at ``on``."""
