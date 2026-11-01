@@ -1,0 +1,28 @@
+"""The release of no-pad."""
+
+from srstudio.comedy_floor import Scores
+from srstudio.releases import Release, Tags
+from srstudio.social import InstagramPost
+from srstudio.thumbnail import ShowCover
+
+RELEASE = Release(
+    "no-pad",
+    InstagramPost(
+        title="Why won't the waiter write it down?",
+        description=(
+            "He remembers everything. As always.\nA Collage sketch on Okayville, voiced with ElevenLabs premade "
+            "voices Chris (Gary), Sarah (Priya) and Will (Jun); every character is original, drawn in code."
+        ),
+        credit=(
+            "Voices: ElevenLabs premade voices Chris, Sarah and Will. Original characters, drawn in code. Sound "
+            "effects synthesized in code."
+        ),
+        hashtags=('#restaurant', '#waiter', '#relatable', '#animatedshorts', '#okayville'),
+        thumbnail=ShowCover("He remembers everything", 9.4, number=208),
+    ),
+    tags=Tags("money-services", "other-person", "tension", test="sp-speakers", arm="b"),
+    style="Collage",
+    parts={},
+    comedy=Scores(author=17, reviewer=18),
+    cover=True,
+)
