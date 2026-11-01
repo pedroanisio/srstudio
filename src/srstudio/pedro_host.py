@@ -58,8 +58,14 @@ LIGHTS = (  # the sculpt's rig, taken down to meet this renderer's exposure
     Light("fill", "sphere-area", "#D9E5F1", 1.75, (115.0, -169.0, -95.0), 70.0),
     Light("rim", "sphere-area", "#DEE9F0", 8.5, (80.0, -215.0, 60.0), 48.0),
 )
-HEAD_BOX = (150, 190, 930, 1260)  # frame pixels a face patch stays inside, at every pose
-VIEWS = (0.0, 35.0, -35.0, 90.0, 145.0)  # degrees from the lens he can be shown at, whole
+HEAD_BOX = (150, 190, 930, 1350)  # frame pixels a face patch stays inside, at every pose
+VIEWS = (
+    *(float(a) for a in range(-90, 91, 3)),
+    35.0,
+    -35.0,
+    145.0,
+    180.0,
+)  # degrees from the lens he can be shown at, whole
 DRESSES = ("blazer", "tee", "puffer")
 TWOS = 2  # his head holds each pose for this many frames
 BLEND_STEP = 2  # frames a mood holds each share of a change

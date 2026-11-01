@@ -142,7 +142,7 @@ def test_every_view_turns_body_and_head_as_one(degrees):
 
 def test_a_view_from_nowhere_is_refused():
     with pytest.raises(PedroHostError, match="view"):
-        pedro_host.view(Face(), 12.0)
+        pedro_host.view(Face(), 13.0)
 
 
 def test_a_dress_he_has_no_clothes_for_is_refused():
@@ -200,3 +200,9 @@ def test_his_nods_on_speech_cross_more_than_one_plate_step():
     plan = head_motion.plan(pedro_host.MOTION, [speech], t + 1)
     rows = faces(t + 1, plan=plan)
     assert len({face.nod for face in rows}) >= 3
+
+
+@pytest.mark.parametrize("degrees", (3.0, 45.0, -45.0, 90.0, -90.0))
+def test_he_can_be_turned_right_round_to_either_profile(degrees):
+    assert degrees in pedro_host.VIEWS
+    pedro_host.view(Face(), degrees)
