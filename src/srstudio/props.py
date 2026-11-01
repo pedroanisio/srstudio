@@ -6,6 +6,8 @@ import math
 import random
 from collections.abc import Sequence
 
+from sr_core.scene import Group
+
 from . import checks
 from .canvas import Canvas
 from .errors import SrstudioError
@@ -169,6 +171,15 @@ def plant(cv: Canvas, parent, id="office-plant"):
 
 @register("prop", "chair", summary="Office chair: the manager's black one or the candidate's gray one")
 def chair(cv: Canvas, parent, style="black"):
+    if not isinstance(style, str) or style not in ('black', 'gray'):
+        raise PropError(
+            'chair style must be black or gray',
+            code='prop.chair.style',
+            path='style',
+            actual=style,
+            expected=['black', 'gray'],
+            remedy='Choose black for the manager chair or gray for the candidate chair.',
+        )
     p = office_paints(cv)
     ink = cv.ink
     if style == "black":
@@ -335,6 +346,35 @@ def cafe_paints(cv: Canvas) -> dict[str, str]:
 )
 def coffee_cup(cv: Canvas, parent, x, y, scale=1, rotation=0, *, shadow: bool = True):
     """``shadow`` is its contact shadow on what it stands on: off for a cup held in the air."""
+    if type(shadow) is not bool:
+        raise PropError(
+            'coffee-cup shadow must be a boolean',
+            code='prop.coffee-cup.shadow',
+            path='shadow',
+            actual=shadow,
+            expected='boolean',
+            remedy='Use shadow=False for a held cup or shadow=True for its contact shadow.',
+        )
+    # Delegate lexical forms (including relative coordinates) to the same schema descriptors used by emission.
+    # The detached group cannot allocate an ID or change the caller's canvas on a rejected value.
+    placement = Group()
+    for name, attribute, value in (
+        ('x', 'x', x),
+        ('y', 'y', y),
+        ('scale', 'scaleX', scale),
+        ('rotation', 'rotation', rotation),
+    ):
+        try:
+            setattr(placement, attribute, value)
+        except (ValueError, TypeError, OverflowError) as exc:
+            raise PropError(
+                f'coffee-cup {name} is not a valid placement value',
+                code='prop.coffee-cup.placement',
+                path=name,
+                actual=value,
+                expected='a finite value accepted by the sr-core group attribute',
+                remedy='Use a finite number; x/y also accept sr-core relative coordinates such as "50%".',
+            ) from exc
     ink, clear, white = cv.ink, cv.clear, cv.white
     g = cv.group(parent, cv.uid("coffee-cup"), x=x, y=y, scaleX=scale, scaleY=scale, rotation=rotation)
     if shadow:

@@ -27,13 +27,34 @@ class LocationError(SrstudioError, ValueError):
 
 
 def _call(slot: Slot, g):
-    if slot:
+    if slot is not None:
         slot(g)
 
 
+def _check_slots(**slots: object) -> None:
+    """Validate presence without executing callbacks or allocating drawing resources."""
+    for name, slot in slots.items():
+        if slot is not None and not callable(slot):
+            raise LocationError(
+                f'{name} must be a drawing callback or None',
+                code='location.slot',
+                path=name,
+                actual=slot,
+                expected='a callable accepting the supplied Group, or None',
+                remedy='Pass a callback receiving the drawing group; use None to omit this slot.',
+            )
+
+
 def _check_depth(depth) -> None:
-    if depth is not None:
-        checks.positive(depth, LocationError, f"depth is a far-plane blur radius in px above 0, got {depth!r}")
+    if depth is not None and not (checks.number(depth) and depth > 0):
+        raise LocationError(
+            'depth is a far-plane blur radius in px above 0',
+            code='location.depth',
+            path='depth',
+            actual=depth,
+            expected='a finite positive blur radius in pixels, or None',
+            remedy='Pass a positive pixel radius; use None to disable depth blur.',
+        )
 
 
 def _far(cv: Canvas, g, depth: float | None, overscan: bool = False):
@@ -110,6 +131,7 @@ def office_wide(
     a camera push-in on an instanced angle softens its edges: keep the inline drawing for angles that zoom.
     ``cactus`` draws the desk's cactus instead of the set (ADR 0039); it needs the inline drawing. ``depth`` blurs
     the room behind the desk (wall, art, plant) by that many px; the desk, the cast and the marks stay sharp."""
+    _check_slots(at_desk=at_desk, cactus=cactus)
     _refuse_instanced_hand_off(instanced, cactus)
     _check_depth(depth)
     if instanced and depth is not None:
@@ -152,6 +174,7 @@ def office_desk(
 
     As for :func:`office_wide`, keep the inline drawing for an angle the camera zooms into. ``cactus`` draws the
     desk's cactus instead of the set, after ``behind_desk`` and before the desk's front (ADR 0039)."""
+    _check_slots(behind_desk=behind_desk, cactus=cactus)
     _refuse_instanced_hand_off(instanced, cactus)
     p = props.office_paints(cv)
     g = cv.group(parent, id)
@@ -189,6 +212,7 @@ def office_reverse(
 ):
     """``depth`` blurs the wall behind the chair by that many px; the chair, the cast, the desk and the marks stay
     sharp. ``chair=False`` leaves the chair to the slot (to sink it)."""
+    _check_slots(in_chair=in_chair, cactus=cactus)
     _check_depth(depth)
     p = props.office_paints(cv)
     ink = cv.ink
@@ -260,6 +284,7 @@ def cafe(
     :data:`MENU_CHARS` characters) with an episode's own; ``None`` draws the shipped board, byte for byte.
     ``code_on_shelf`` moves the signature code from the board's corner to the shelf's edge, for a reel with someone
     standing in front of the board."""
+    _check_slots(behind_counter=behind_counter, at_counter=at_counter, on_counter=on_counter, cactus=cactus)
     if menu is not None and not (
         isinstance(menu, tuple)
         and len(menu) == 3
@@ -341,6 +366,7 @@ def park(
     """``sign_lettering=False`` keeps the sign's post, board and signature code but leaves its lettering out: the
     safe-area audit (SA01) measures a text layer even off frame, so a framing that crops the sign away must not draw
     it. The default draws the set as before, byte for byte."""
+    _check_slots(on_bench=on_bench, beside_bench=beside_bench, cactus=cactus)
     if not isinstance(sign_lettering, bool):
         raise LocationError(f"sign_lettering is True or False, got {sign_lettering!r}")
     p = props.cafe_paints(cv)
@@ -404,6 +430,7 @@ def conference_room(
     """``behind_table`` seats an office actor at :data:`CONFERENCE_SEAT`; ``rising`` turns the board's trend, and
     ``None`` leaves the wall bare for ``on_wall``, which draws over the wall and behind the light and the chair.
     ``speaker_talk`` lights the speakerphone in the spans a caller speaks (:func:`props.speakerphone`)."""
+    _check_slots(behind_table=behind_table, on_table=on_table, on_wall=on_wall)
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -490,6 +517,7 @@ def reception(
     counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it, and
     ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it
     out."""
+    _check_slots(behind_desk=behind_desk, on_desk=on_desk, at_desk=at_desk, cactus=cactus)
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -634,6 +662,7 @@ def elevator(
     points the display's arrow ``"up"`` (the default) or ``"down"``; ``depth`` blurs the hallway seen through the
     doorway by that many px (its cactus, the cab and the riders stay sharp); ``hallway`` draws in the hallway, in
     focus, behind the doors (someone waiting there, seen while they are open)."""
+    _check_slots(riders=riders, on_floor=on_floor, hallway=hallway)
     _check_depth(depth)
     _check_floors(floors)
     _check_doors(doors)
