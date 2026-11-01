@@ -26,6 +26,7 @@ RELEASE = Release(
     ),
     style="Cutout",
     parts={
+        "apron-spare": 1,
         "barista": 1,
         "bean-jar": 1,
         "cafe": 1,
@@ -44,6 +45,7 @@ RELEASE = Release(
         "show-bug": 1,
         "signature-cactus": 1,
         "signature-code": 1,
+        "trial-tag": 1,
     },
     comedy=Scores(author=17, reviewer=16),
     cover=True,
