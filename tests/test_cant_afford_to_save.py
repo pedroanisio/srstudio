@@ -61,7 +61,7 @@ def test_the_holds_are_the_script_s_and_everything_lands_inside_them(data):
 
 
 def test_the_cut_to_the_hold_waits_for_the_cue_of_the_line(data):
-    """A word stays up to WORD_LINGER after it is spoken: the hold starts when it has gone, on the speaker until then."""
+    """A word stays up to WORD_LINGER after it is spoken: the hold starts when it has gone, on the speaker till then."""
     assert data.CUE_TAIL >= stick_reel.WORD_LINGER
 
 
