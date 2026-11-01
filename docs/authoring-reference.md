@@ -2172,6 +2172,14 @@ its own count with `--series`, and `outbox` writes `episode.json` beside the vid
 "saga" or "", "series_number": n}`, with 0 outside a series (`show_numbers.EpisodeDocument`). `srstudio.show_gate`
 refuses a first delivery out of the look.
 
+### Strict findings at first delivery
+
+`srstudio.strict_gate` reads a new reel's `qa/render-report.json` at first delivery
+([ADR 0078](decisions/0078-strict-findings-at-first-delivery.md)). A `--strict` finding refuses the reel unless
+`episodes/strict/<slug>.json` proves it false on the master's own frames, signed off by a reviewer who is not the
+author. `srstudio strict` lists the reels shipped that way, with their numbers and frames, and how many of the delivered
+reels that is.
+
 ## Verification
 
 - `tests/test_build.py` builds an office and a café episode from a synthetic project and asserts the SDK, the XSD and

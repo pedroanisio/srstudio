@@ -47,6 +47,7 @@ from srstudio import (
     releases,
     show_gate,
     show_numbers,
+    strict_gate,
 )
 from srstudio.social import (
     MANIFEST,
@@ -69,6 +70,7 @@ THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two
 
 REPO = Path(__file__).resolve().parent.parent  # its history holds the enhancements, its settings the mode (ADR 0056)
 RELEASES = releases.load(Path(__file__).resolve().parent / "posts")  # one file per episode: posts/<slug>.py
+STRICT = Path(__file__).resolve().parent / "strict"  # strict/<slug>.json: a reel's findings proven false (ADR 0078)
 GRANDFATHERED = releases.grandfathered(Path(__file__).resolve().parent / "posts")  # published before the caption gate
 POSTS: dict[str, InstagramPost] = {slug: r.post for slug, r in RELEASES.items()}
 VIDEOS = {slug: r.video_name for slug, r in RELEASES.items()}  # project slug -> its rendered video's file name
@@ -123,9 +125,9 @@ def write_all(
     """Deliver every post whose video drifted (or only the ``only`` ones) and record the delivery; returns the
     folders written. A video the caption gate refuses, a release that does not pin what it draws, or captions that
     print over each other, or a first delivery with no enhancement behind it (ADR 0056), under the comedy floor
-    (ADR 0064), over the hashtag limit (ADR 0065), refused by a frame gate (ADR 0073) or out of the show's look
-    (ADR 0074), is a :class:`DeliveryError` before anything is written. A video in the manifest is past all of these:
-    what was published stays as it went out."""
+    (ADR 0064), over the hashtag limit (ADR 0065), refused by a frame gate (ADR 0073), out of the show's look
+    (ADR 0074) or with a --strict finding not proven false (ADR 0078), is a :class:`DeliveryError` before anything is
+    written. A video in the manifest is past all of these: what was published stays as it went out."""
     refused = caption_drift(renders, only=only)
     if refused:
         raise DeliveryError("the caption gate refuses: " + "; ".join(str(d) for d in refused))
@@ -157,6 +159,7 @@ def write_all(
                 show_numbers.ledger_path(renders),
                 font_file(fonts_dir),
             ),
+            *strict_gate.strict_defects(chosen, _beside(renders), renders, first, STRICT),
         ]
     )
     refused = auto_enhance.refused(first, REPO)
