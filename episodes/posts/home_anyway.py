@@ -19,7 +19,7 @@ RELEASE = Release(
             "synthesized in code."
         ),
         hashtags=("#jobhunting", "#couplehumor", "#unemployedlife", "#animatedshorts", "#okayville"),
-        thumbnail=ShowCover("Day 41, one bare corner", 18.3, number=198),
+        thumbnail=ShowCover("Day 41, one bare corner", 19.1, number=198),
     ),
     tags=Tags(
         "job-hunting",
@@ -44,7 +44,8 @@ RELEASE = Release(
         "toon-kitchen": 1,
         "toon-ledge": 1,
         "toon-rabbit": 2,
+        "toon-swung-arm": 1,
     },
-    comedy=Scores(author=18, reviewer=18),
+    comedy=Scores(author=18, reviewer=17),
     cover=True,
 )
