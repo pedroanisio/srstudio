@@ -88,7 +88,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         found = packages_for(items, [*received, args.vpkg])
         bundles, drift = outbox.ready(
-            items, args.deliveries, font=posts.font_file(args.fonts), packages=found, frozen=posts.FROZEN, ab=posts.AB
+            items,
+            args.deliveries,
+            font=posts.font_file(args.fonts),
+            packages=found,
+            frozen=posts.FROZEN,
+            ab=posts.AB,
+            numbers=posts.NUMBERS,
         )
         for d in drift:
             print(f"held back: {d}")

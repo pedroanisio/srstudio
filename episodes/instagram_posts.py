@@ -62,6 +62,7 @@ from srstudio.social import (
     read_manifest,
     refuse_hashtags,
 )
+from srstudio.thumbnail import ShowCover
 
 THUMBNAIL_FONT = fonts.GoogleFont("Anton", 400)  # a condensed display face: two big lines fit a portrait cover
 
@@ -77,6 +78,11 @@ AB = {
     for r in RELEASES.values()
     if r.tags and r.tags.test
 }  # A/B arms
+NUMBERS = {
+    r.video_name: show_numbers.Claim(r.post.thumbnail.number, r.post.thumbnail.series, r.post.thumbnail.series_number)
+    for r in RELEASES.values()
+    if isinstance(r.post.thumbnail, ShowCover)
+}  # the reels on the show's cover: what the posting job orders them by (ADR 0074)
 PINS = {slug: r.parts or {} for slug, r in RELEASES.items()}  # project slug -> the character versions it draws
 
 
