@@ -1252,6 +1252,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "cake-slice": {"title": "Fatia de bolo"},
+    "cake-knife": {"title": "Faca de bolo"},
+    "crayon-page": {"title": "Folha de giz de cera"},
+    "lettered-cup": {"title": "Copo com recado"},
     "stick-folded-bedding": {"title": "Travesseiro e edredom dobrados"},
     "stick-wall-brackets": {"title": "Suportes de prateleira vazios"},
     "stick-clipboard": {"title": "Prancheta do Stick"},
@@ -8759,6 +8763,43 @@
         "at": 29.0
       },
       "text": "Travesseiro e edredom dobrados, que chegam deslizando pela mesa quando a conversa acaba."
+    },
+    {
+      "section": "props",
+      "name": "Copo com recado",
+      "parts": [
+        "lettered-cup"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 5.4
+      },
+      "text": "Copo para viagem com um recado escrito à mão, que Milo vira para a câmera."
+    },
+    {
+      "section": "props",
+      "name": "Folha de giz de cera",
+      "parts": [
+        "crayon-page"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 10.5
+      },
+      "text": "Um desenho de criança sem texto legível, deixado no joelho de alguém."
+    },
+    {
+      "section": "props",
+      "name": "Faca e fatia de bolo",
+      "parts": [
+        "cake-knife",
+        "cake-slice"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 25.0
+      },
+      "text": "A faca do bolo de boas-vindas e a fatia oferecida no prato."
     }
   ]
 }

@@ -22,6 +22,7 @@ from . import (  # noqa: F401  (registers builders)
     cutout_handed,
     cutout_hiring,
     cutout_home,
+    cutout_leak,
     cutout_odds,
     cutout_key,
     cutout_lobby,

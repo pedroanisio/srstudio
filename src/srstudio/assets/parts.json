@@ -12767,6 +12767,74 @@
           "rig": null
         }
       ]
+    },
+    "lettered-cup": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A takeaway cup with a few words lettered on it, big enough to fill an insert Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3f981cd07ffa31f5f5143a13a4c5b0e871be6790f090e8d4727d98865765bb5",
+          "rig": null
+        }
+      ]
+    },
+    "crayon-page": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A child's crayon page: a drawn head and scribbled lines of no readable text Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b8c8eacfbc877277c8a16e920f2a78aa074f69bf985ef241ee788ac0be19b7d",
+          "rig": null
+        }
+      ]
+    },
+    "cake-knife": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A cake knife held at the grip, blade down Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fbf9f1daa389df0d385f555876204a12b313c180cd889cc68259c361a009d9d8",
+          "rig": null
+        }
+      ]
+    },
+    "cake-slice": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One slice of sheet cake on a plate Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ffddb90351e9d02508421c28f00b58540d9419def8cb3ed4a97cc055c6ce5646",
+          "rig": null
+        }
+      ]
     }
   }
 }
