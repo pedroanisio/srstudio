@@ -236,7 +236,7 @@ def test_documented_plugin_contract_matches_its_success_and_failure_paths(monkey
     from srstudio.canvas import CanvasError
 
     monkeypatch.setitem(registry._REGISTRY, 'prop', {})
-    document = Path('docs/authoring-reference.md').read_text()
+    document = Path('docs/authoring-discovery.md').read_text()
     example = document.split('<!-- contract-plugin:start -->', 1)[1].split('<!-- contract-plugin:end -->', 1)[0]
     source = example.split('```python\n', 1)[1].split('```', 1)[0]
     exec(compile(source, '<contract-plugin>', 'exec'), {'__name__': __name__})

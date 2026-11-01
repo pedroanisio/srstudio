@@ -195,7 +195,7 @@ def test_every_authored_slot_is_listed_and_location_shots_have_a_clock():
 
 
 def test_cutout_contract_recipe_executes():
-    text = (Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md').read_text()
+    text = (Path(__file__).resolve().parents[1] / 'docs/authoring-discovery.md').read_text()
     section = text.split('<!-- cutout-clock-contract:start -->')[1].split('<!-- cutout-clock-contract:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}

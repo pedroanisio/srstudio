@@ -467,7 +467,7 @@
     },
     {
       "topic": "Documentation ergonomics",
-      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; detailed episode histories remain below the task guide.",
+      "observation": "The authoring reference now opens with a task-to-API table linking discovery, typed acting, clip clocks, transitions, contacts, repair and quality evaluation. The README links directly to it. Its diagnostic repair example executes in tests; focused task guides now own reusable workflows and a separate episode-history document retains production records. All original section bookmarks still resolve through the task index.",
       "improvement": "Keep the task guide linked to executable recipes and generated contract vocabularies; avoid duplicating capability declarations in prose.",
       "evidence": ["README.md", "docs/authoring-reference.md", "src/srstudio/_acting_parse.py", "src/srstudio/character_clips.py"]
     }
@@ -641,8 +641,10 @@
     {
       "id": "SDK-P3-07",
       "priority": "P3",
-      "status": "open",
+      "status": "complete",
       "title": "Separate task documentation from episode history",
+      "resolution": "Replaced the 3043-line mixed reference with a task index, eleven focused authoring guides and a separate episode history. Kept all 87 legacy section bookmarks resolvable and all 74 existing code fences unchanged in their new owners. README and limbs links go directly to task guides; recipe tests execute from those guides, and the author-facing brand check still scans every moved document. Audio now has a reusable workflow guide rather than an episode case-study entry point.",
+      "verification": ["tests/test_authoring_navigation.py", "tests/data/authoring-reference-layout.json", "tests/test_character_discovery_recipe.py", "tests/test_character_clip_recipe.py", "tests/test_noncharacter_discovery_recipes.py", "tests/test_acting_gallery.py", "tests/test_acting_continuity_example.py", "tests/test_acting_transition_example.py", "tests/test_authoring_diagnostics.py", "tests/test_catalog_contracts.py", "tests/test_counter_store_contracts.py", "tests/test_cutout_family_contracts.py", "tests/test_agent_p3_input_and_ids.py", "tests/test_agent_docs_p2.py", "tests/test_okayville.py", "tests/test_recording.py"],
       "problem": "The authoring reference has 2917 lines mixing reusable workflows with detailed episode history.",
       "evidence": [
         "docs/authoring-reference.md"
@@ -898,7 +900,7 @@
       "complexity": "M"
     }
   ],
-  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P3-07", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
+  "recommended_order": ["SDK-P2-06", "SDK-P2-07", "SDK-P3-06", "SDK-P4-01", "SDK-P4-02", "SDK-P4-04"],
   "agent_authoring_guidance": [
     "Discover registered versions, explicit capabilities, coordinate spaces and clocks before choosing a builder; keep unknown metadata unknown.",
     "Use parse_score and compile_performance for supported coordinated intent, character clips for placement, and windows of one performance for cuts. Inspect family capabilities before requesting a channel.",

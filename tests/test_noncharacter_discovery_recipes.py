@@ -9,7 +9,7 @@ from srstudio.head_motion import Channel
 
 
 def recipe(name):
-    document = Path(__file__).resolve().parents[1] / 'docs/authoring-reference.md'
+    document = Path(__file__).resolve().parents[1] / 'docs/authoring-discovery.md'
     section = document.read_text().split(f'<!-- {name}:start -->')[1].split(f'<!-- {name}:end -->')[0]
     code = section.split('```python\n')[1].split('```')[0]
     namespace = {}
