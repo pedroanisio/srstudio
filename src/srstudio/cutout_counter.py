@@ -11,6 +11,7 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from . import _counter_store_contracts as family_contracts
 from . import _drawing_contracts as dc
 from . import checks, locations, signature
 from .canvas import Canvas, Spans
@@ -165,6 +166,7 @@ def _shake(t: float, run: ChainRun) -> float:
     "pen-on-chain",
     style="cutout",
     summary="A counter pen on its ball chain: it follows a hand, stops dead at the end of the chain, and snaps home",
+    contract=family_contracts.contract('pen-on-chain'),
 )
 def pen_on_chain(
     cv: Canvas,
@@ -219,7 +221,13 @@ def pen_on_chain(
     return run
 
 
-@register("prop", "paper-poster", style="cutout", summary="A cheerful paper poster taped up, a little crooked")
+@register(
+    "prop",
+    "paper-poster",
+    style="cutout",
+    summary="A cheerful paper poster taped up, a little crooked",
+    contract=family_contracts.contract('paper-poster'),
+)
 def paper_poster(
     cv: Canvas,
     parent,
@@ -252,7 +260,11 @@ def paper_poster(
 
 
 @register(
-    "prop", "jump-clock", style="cutout", summary="A wall clock whose hands race on between one shot and the next"
+    "prop",
+    "jump-clock",
+    style="cutout",
+    summary="A wall clock whose hands race on between one shot and the next",
+    contract=family_contracts.contract('jump-clock'),
 )
 def jump_clock(
     cv: Canvas,
@@ -311,7 +323,13 @@ def jump_clock(
     return g
 
 
-@register("prop", "sandwich", style="cutout", summary="A sandwich with a bite gone, on white bread")
+@register(
+    "prop",
+    "sandwich",
+    style="cutout",
+    summary="A sandwich with a bite gone, on white bread",
+    contract=family_contracts.contract('sandwich'),
+)
 def sandwich(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "sandwich"):
     """Centred on (``x``, ``y``), its bitten corner up."""
     if not (checks.number(scale) and scale > 0):
@@ -327,7 +345,13 @@ def sandwich(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = 
     return g
 
 
-@register("prop", "qr-code", style="cutout", summary="A square QR code drawn from its seed, finder squares and all")
+@register(
+    "prop",
+    "qr-code",
+    style="cutout",
+    summary="A square QR code drawn from its seed, finder squares and all",
+    contract=family_contracts.contract('qr-code'),
+)
 def qr_code(cv: Canvas, parent, x=540, y=900, *, size: float = 200, seed: int = 0, id: str = "qr-code"):
     """Centred on (``x``, ``y``) and ``size`` across, white margin included. One shape, however many modules."""
     if not (checks.number(size) and size > 0):
@@ -360,7 +384,13 @@ def qr_code(cv: Canvas, parent, x=540, y=900, *, size: float = 200, seed: int = 
     return g
 
 
-@register("prop", "table-tent", style="cutout", summary="A folded table tent: a QR code over the table's number")
+@register(
+    "prop",
+    "table-tent",
+    style="cutout",
+    summary="A folded table tent: a QR code over the table's number",
+    contract=family_contracts.contract('table-tent'),
+)
 def table_tent(cv: Canvas, parent, x=540, y=1240, *, label: str = "TABLE 4", seed: int = 0, id: str = "table-tent"):
     """Standing on (``x``, ``y``), ``label`` lettered under the code."""
     if not (isinstance(label, str) and 0 < len(label.strip()) <= 10):
@@ -373,7 +403,11 @@ def table_tent(cv: Canvas, parent, x=540, y=1240, *, label: str = "TABLE 4", see
 
 
 @register(
-    "prop", "cafe-table", style="cutout", summary="A café table seen from its chair, a checked cloth to the floor"
+    "prop",
+    "cafe-table",
+    style="cutout",
+    summary="A café table seen from its chair, a checked cloth to the floor",
+    contract=family_contracts.contract('cafe-table'),
 )
 def cafe_table(cv: Canvas, parent, x=540, y=1180, *, width: float = 900, id: str = "cafe-table"):
     """Its far edge runs through (``x``, ``y``); the cloth hides whatever sits behind it, down to the floor."""
@@ -392,7 +426,13 @@ def cafe_table(cv: Canvas, parent, x=540, y=1180, *, width: float = 900, id: str
     return g
 
 
-@register("prop", "paper-menu", style="cutout", summary="A one-page paper menu, standing or lying flat")
+@register(
+    "prop",
+    "paper-menu",
+    style="cutout",
+    summary="A one-page paper menu, standing or lying flat",
+    contract=family_contracts.contract('paper-menu'),
+)
 def paper_menu(
     cv: Canvas,
     parent,
@@ -420,7 +460,13 @@ def paper_menu(
     return g
 
 
-@register("prop", "soup-bowl", style="cutout", summary="A wide bowl of tomato soup, a spoon standing in it")
+@register(
+    "prop",
+    "soup-bowl",
+    style="cutout",
+    summary="A wide bowl of tomato soup, a spoon standing in it",
+    contract=family_contracts.contract('soup-bowl'),
+)
 def soup_bowl(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str = "soup-bowl"):
     """Standing on (``x``, ``y``)."""
     if not (checks.number(scale) and scale > 0):
@@ -434,7 +480,13 @@ def soup_bowl(cv: Canvas, parent, x=540, y=900, *, scale: float = 1.0, id: str =
     return g
 
 
-@register("prop", "phone-screen", style="cutout", summary="A phone held up to the lens, its screen big enough to read")
+@register(
+    "prop",
+    "phone-screen",
+    style="cutout",
+    summary="A phone held up to the lens, its screen big enough to read",
+    contract=family_contracts.contract('phone-screen'),
+)
 def phone_screen(
     cv: Canvas,
     parent,
@@ -468,6 +520,7 @@ def phone_screen(
     style="cutout",
     summary="An arm in from off frame, gripping what it carries",
     contract=dc.prop('reaching-hand'),
+    slots=('holds',),
 )
 def reaching_hand(
     cv: Canvas,
@@ -512,7 +565,13 @@ def reaching_hand(
     return g
 
 
-@register("prop", "rising-bubbles", style="cutout", summary="Seeded bubbles climbing up through a glass of water")
+@register(
+    "prop",
+    "rising-bubbles",
+    style="cutout",
+    summary="Seeded bubbles climbing up through a glass of water",
+    contract=family_contracts.contract('rising-bubbles'),
+)
 def rising_bubbles(
     cv: Canvas,
     parent,
@@ -548,7 +607,13 @@ def rising_bubbles(
     return g
 
 
-@register("prop", "water-splash", style="cutout", summary="Beads of water thrown up at a moment and falling back")
+@register(
+    "prop",
+    "water-splash",
+    style="cutout",
+    summary="Beads of water thrown up at a moment and falling back",
+    contract=family_contracts.contract('water-splash'),
+)
 def water_splash(
     cv: Canvas, parent, x=540, y=900, *, start: float = 0.0, reach: float = 120, seed: int = 0, id: str = "water-splash"
 ):
@@ -593,6 +658,8 @@ def _folding_chair(cv: Canvas, g, x: float, floor: float, name: str) -> None:
     "back-room",
     style="cutout",
     summary="A hall door with a nameplate, and behind it a cupboard: shelves, a bare bulb, two folding chairs",
+    contract=family_contracts.contract('back-room'),
+    slots=('in_room',),
 )
 def back_room(
     cv: Canvas,

@@ -150,10 +150,10 @@ def test_partial_coverage_is_explicit_and_style_filtered(capsys):
     info = registry.contract_coverage(style='cutout', kind='prop')
     rows = registry.entries('prop', 'cutout')
     assert info['kinds']['prop']['registered'] == len(rows)
-    assert info['kinds']['prop']['explicit_contracts'] == 34
+    assert info['kinds']['prop']['explicit_contracts'] == 59
     assert info['kinds']['prop']['undeclared_parts']
     assert cli.main(['catalog', '--kind', 'prop', '--style', 'cutout', '--contract-coverage']) == 0
-    assert '34' in capsys.readouterr().out
+    assert '59' in capsys.readouterr().out
     with pytest.raises(registry.RegistryError):
         registry.contract_coverage(kind='unknown')
 
@@ -280,6 +280,7 @@ def test_reception_desk_slot_receives_the_separate_props_group():
 @pytest.mark.parametrize('same_signature', [True, False])
 def test_direct_builder_swap_cannot_keep_the_previous_drawing_contract(monkeypatch, same_signature):
     entry = registry.get('prop', 'coffee-cup')
+    declared = registry.contract_coverage(kind='prop')['kinds']['prop']['explicit_contracts']
 
     def replacement(cv, parent, x, y, scale=1, rotation=0, *, shadow=True):
         raise AssertionError('must not execute while inspecting')
@@ -292,4 +293,4 @@ def test_direct_builder_swap_cannot_keep_the_previous_drawing_contract(monkeypat
     coverage = registry.contract_coverage(kind='prop')['kinds']['prop']
     assert 'coffee-cup' in coverage['undeclared_parts']
     assert 'coffee-cup' in coverage['stale_contract_parts']
-    assert coverage['explicit_contracts'] == 33
+    assert coverage['explicit_contracts'] == declared - 1
