@@ -35,12 +35,15 @@ BEATS = (
     Beat("nearly", "Nearly there!", SMILE, ID_MUG, hold=0.7),
     Beat("off", rafa_show.SIGN_OFF, SMILE, ID_MUG),
 )
-KEPT = (1.934, 2.305, 3.577, 2.705, 3.178, 0.645, 1.152, 0.734, 0.845, 0.948, 0.781, 1.32)  # seconds, measured from the takes
+# Seconds, measured from the takes.
+KEPT = (1.934, 2.305, 3.577, 2.705, 3.178, 0.645, 1.152, 0.734, 0.845, 0.948, 0.781, 1.32)
 SHOW = Show(
     slug=SLUG,
     number=3,
     title="Holding a door has rules — The Unwritten Rules #3",
-    description="Rafa, 34, mostly functional, explains the unwritten rules of holding a door, and breaks the first one.",
+    description=(
+        "Rafa, 34, mostly functional, explains the unwritten rules of holding a door, and breaks the first one."
+    ),
     accessibility=(
         "A clay man in a teal cardigan over mustard stands at a kitchen worktop and talks to camera with a tired "
         "smile, a mug that says I'm great, I think, under his hand. He gives three rules of holding a door. The mug "
@@ -53,10 +56,11 @@ SHOW = Show(
     post=InstagramPost(
         title="How far away is too far to hold a door?",
         description="The Unwritten Rules #3. Rafa, 34, mostly functional, has rules.",
-    credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
+        credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
         hashtags=("#manners", "#unwrittenrules", "#animation", "#adulting"),
-        thumbnail=Thumbnail("A door\nhas rules", 4.0, "The Unwritten Rules #3", focus=(540.0, 700.0), zoom=1.0,
-                            place="bottom"),  # fmt: skip
+        thumbnail=Thumbnail(
+            "A door\nhas rules", 4.0, "The Unwritten Rules #3", focus=(540.0, 700.0), zoom=1.0, place="bottom"
+        ),  # fmt: skip
     ),
     stop="break",
 )

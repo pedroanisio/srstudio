@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The recording of unwritten_rules_door: every line said by Will, heard back, placed at his own pace, with the foley synthesised;
-see toon_sketch.record_episode.
+"""The recording of unwritten_rules_door: every line said by Will, heard back, placed at his own
+pace, with the foley synthesised; see toon_sketch.record_episode.
 
     SRSTUDIO_ALLOW_CLOUD=1 python3 unwritten_rules_door_audio.py PROJECT [--ffmpeg PATH]
 

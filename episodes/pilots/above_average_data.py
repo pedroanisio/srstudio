@@ -47,7 +47,8 @@ ACCESSIBILITY = (
     "A cartoon bear drives a car with a rabbit beside him holding a clipboard. Asked to rate his driving he says top "
     "ten percent, and the car swerves with a blast of horn. A stamp reads 93% of US students above the median, "
     "Svenson, 1981. The rabbit says that is not how half works. A bang, and the bear is in a hospital bed in a "
-    "bandage. A stamp reads 34 of 50 caused it, Preston & Harris, 1965, in Svenson, 1981. Asked again he says above average, "
+    "bandage. A stamp reads 34 of 50 caused it, Preston & Harris, 1965, in Svenson, 1981. Asked again he says "
+    "above average, "
     "and that the tree didn't signal."
 )
 NARRATION = "Voiced with ElevenLabs premade voices Bella (narrator), Bill and Sarah; synthesised effects."

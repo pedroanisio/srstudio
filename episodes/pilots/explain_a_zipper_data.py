@@ -211,7 +211,8 @@ POST = InstagramPost(
     title="Could you actually explain a zipper?",
     description=(
         f"{SERIES}. The illusion of explanatory depth: in Rozenblit & Keil's first study, nearly all of 16 Yale "
-        "graduate students rated their understanding of everyday devices lower after trying to explain them. Small university "
+        "graduate students rated their understanding of everyday devices lower after trying to explain them. "
+        "Small university "
         "samples, about how things work; the drop was absent or small for procedures, stories and facts. The scores on "
         "the board are ours.\n"
         "Source: Rozenblit & Keil (2002), Cognitive Science"

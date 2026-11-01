@@ -47,10 +47,11 @@ SHOW = Show(
     post=InstagramPost(
         title="What do you do with a present you hate?",
         description="The Unwritten Rules #2. Rafa, 34, mostly functional, has rules.",
-    credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
+        credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
         hashtags=("#presents", "#unwrittenrules", "#animation", "#adulting"),
-        thumbnail=Thumbnail("A present\nhas rules", 4.0, "The Unwritten Rules #2", focus=(540.0, 700.0), zoom=1.0,
-                            place="bottom"),  # fmt: skip
+        thumbnail=Thumbnail(
+            "A present\nhas rules", 4.0, "The Unwritten Rules #2", focus=(540.0, 700.0), zoom=1.0, place="bottom"
+        ),  # fmt: skip
     ),
     stop="break",
 )

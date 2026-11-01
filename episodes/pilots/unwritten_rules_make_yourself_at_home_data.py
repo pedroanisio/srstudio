@@ -19,8 +19,9 @@ SLUG = "unwritten-rules-make-yourself-at-home"
 ID_MUG, ID_PHONE, ID_FOLDER, ID_TOTE = "rafa-mug", "rafa-phone", "rafa-bills", "rafa-tote"
 SMILE, BATTERY, MELTDOWN = "public-smile", "social-battery", "internal-meltdown"
 BEATS = (
-    Beat("hook", "Nobody tells you a visit has rules.", SMILE, ID_MUG,
-         label="MAKE YOURSELF AT HOME HAS RULES"),  # fmt: skip
+    Beat(
+        "hook", "Nobody tells you a visit has rules.", SMILE, ID_MUG, label="MAKE YOURSELF AT HOME HAS RULES"
+    ),  # fmt: skip
     Beat("one", "Rule one. Do not make yourself at home.", SMILE, ID_MUG, label="RULE 1", hold=0.4),
     Beat("two", "Rule two. Say no twice. The third time, water.", SMILE, ID_PHONE, label="RULE 2", hold=0.3),
     Beat("three", "Rule three. The one nobody admits.", BATTERY, ID_FOLDER, label="RULE 3"),
@@ -52,10 +53,11 @@ SHOW = Show(
     post=InstagramPost(
         title="Does make yourself at home ever mean it?",
         description="The Unwritten Rules #4. Rafa, 34, mostly functional, has rules.",
-    credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
+        credit="An animated character; synthetic voice.\nVoice: ElevenLabs premade Will.",
         hashtags=("#guests", "#unwrittenrules", "#animation", "#adulting"),
-        thumbnail=Thumbnail("A visit\nhas rules", 4.0, "The Unwritten Rules #4", focus=(540.0, 700.0),
-                            zoom=1.0, place="bottom"),  # fmt: skip
+        thumbnail=Thumbnail(
+            "A visit\nhas rules", 4.0, "The Unwritten Rules #4", focus=(540.0, 700.0), zoom=1.0, place="bottom"
+        ),  # fmt: skip
     ),
     stop="break",
     push=(2.4, 1.0),
