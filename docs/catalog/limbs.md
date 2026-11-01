@@ -7,6 +7,10 @@ generated-by: OpenAI Codex
 See the [library overview](../../README.md), [architecture decision](../decisions/0038-reusable-limb-performance.md),
 and [requirements-to-verification map](limbs-verification.json).
 
+For implementation changes, see [the motion ownership map](../decisions/0099-limb-motion-module-boundaries.md).
+Public records stay in `srstudio.limbs.motion`; transform interpolation, gesture requests, contact sampling and
+skeletal solving have separate internal owners. Existing JSON and Python imports remain unchanged.
+
 Build a motion once, then choose its camera and style when compiling it:
 
 ```python
