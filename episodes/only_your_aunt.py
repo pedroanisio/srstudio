@@ -63,6 +63,7 @@ L = [ep.P(i) for i in range(len(t.phrases))]
 FLICK, CAUGHT = float(t.meta["flick"]), float(t.meta["caught"])
 SITS, PATS, LEAVES = float(t.meta["sits"]), float(t.meta["pats"]), float(t.meta["leaves"])
 STOPS, CUTS = float(t.meta["stops"]), float(t.meta["cuts"])
+STANDS = LEAVES + 0.1  # his seated legs and long reaching arm swap for the rig's standing ones, halfway up
 TELL = iv_audio.said(ROOT, L[8], "tell")
 COUNT = iv_audio.said(ROOT, L[9], "count")
 
@@ -248,10 +249,22 @@ def milo_bench(g):
     with_coffee(who, "milo-bench", MILO_SEATED[2], [(0.0, *HOLDS)], [PARK], reach=46)
 
 
+class ManOnBench(cast.Candidate):
+    """Seated legs until he stands, the rig's standing legs from then on."""
+
+    def draw_seated_legs(self, legs):
+        seated = cv.group(legs, "man-seated-legs")
+        cv.gate(seated, [(0.0, STANDS)])
+        super().draw_seated_legs(seated)
+        standing = cv.group(legs, "man-standing-legs")
+        cv.gate(standing, [(STANDS, DURATION)])
+        self.draw_standing_legs(standing)
+
+
 def stranger(g):
-    """The man sits, lays a page on the knee, pats it twice and goes, without a word."""
+    """The man sits, lays a page on the knee, pats it twice, stands and walks off, without a word."""
     x, y, _ = STRANGER
-    who = cast.Candidate(cv, tag="man-on-bench")
+    who = ManOnBench(cv, tag="man-on-bench")
     node = ep.perform(
         who,
         g,
@@ -264,14 +277,23 @@ def stranger(g):
     )
     cv.keys(who.eyes, "x", [(0, 12)], hold=False)
     cv.keys(who.eyes, "y", [(0, 6)], hold=False)
+    own_arm = cv.group(who.group, "man-own-arm")
+    cv.gate(own_arm, [(STANDS, DURATION)])
+    cv.path(own_arm, f"M67 148 L86 233 L77 {who.bottom}", stroke=cv.ink, sw=5)
     start = PARK[0]
-    cv.keys(node, "y", [(start, y - 90), (start + 0.22, y), (LEAVES, y), (LEAVES + 0.2, y - 90)], hold=False)
+    step = [(LEAVES + 0.2 + 0.1 * k, -90.0 - 10.0 * (k % 2)) for k in range(1, 5)]
+    cv.keys(node, "y", [(at, y + dy) for at, dy in [*man_rises(), *step]], hold=False)
     cv.keys(node, "x", [(start, x), (LEAVES + 0.2, x), (LEAVES + 0.6, -300.0)], hold=False)
-    return node
 
 
-def bench_arm(g, node):
-    """In frame pixels, in front of Milo: his hand carries the page over, then pats it."""
+def man_rises():
+    """How far off the seat he is: he drops in on the cut, and stands to go."""
+    return [(PARK[0], -90.0), (PARK[0] + 0.22, 0.0), (LEAVES, 0.0), (LEAVES + 0.2, -90.0)]
+
+
+def bench_arm(g):
+    """In frame pixels, in front of Milo: his hand carries the page over, then pats it. It rises with him, and when he
+    stands the rig's own arm takes over, so he has both from the cut until he is off frame."""
     shoulder = (STRANGER[0] + 67 * STRANGER[2], STRANGER[1] + 148 * STRANGER[2])
     lap = (KNEE[0], KNEE[1] - 46)
     rest = (shoulder[0] + 30, shoulder[1] + 240)
@@ -279,7 +301,8 @@ def bench_arm(g, node):
     track = [(start, *rest), (start + 0.25, rest[0], rest[1] - 24), (PATS - 0.2, *lap), (PATS, lap[0], lap[1] + 18),
              (PATS + 0.1, *lap), (PATS + 0.2, lap[0], lap[1] + 18), (PATS + 0.3, *lap), (LEAVES, *rest)]  # fmt: skip
     arm = cutout_arm.arm(cv, g, "man-reach", shoulder, track, upper=215, fore=215, bend=1, width=6.5, hand=50)
-    cv.gate(arm.group, [(start, LEAVES + 0.2)])
+    cv.keys(g, "y", man_rises(), hold=False)
+    cv.gate(arm.group, [(start, STANDS)])
     held = cv.group(arm.grip, "page-in-hand")
     cv.gate(held, [(start, PATS - 0.2)])
     cutout_leak.crayon_page(cv, held, 0, 40, scale=0.62, rotation=-8, id="page-carried")
@@ -299,8 +322,13 @@ def beside_bench(g):
     laid = cv.group(g, "page-on-knee")
     cv.gate(laid, [(PATS - 0.2, DURATION)])
     cutout_leak.crayon_page(cv, laid, *KNEE, scale=0.62, rotation=-8)
-    node = stranger(cv.group(g, "man-on-the-bench"))
-    bench_arm(cv.group(g, "man-arm"), node)
+    stranger(cv.group(g, "man-on-the-bench"))
+    bench_arm(cv.group(g, "man-arm"))
+
+
+def park_cactus(g):
+    """On the lawn's edge, its pot on the ground, in the clear past Milo's shin."""
+    signature.cactus(cv, g, 935, 1413, 0.75)
 
 
 def the_boss(g):
@@ -416,7 +444,9 @@ finish = locations.finish(cv, ep.comp)
 cafe = locations.cafe(
     cv, finish, behind_counter=ava, at_counter=at_counter, shots=[CAFE_SHOT, BACK], code_on_shelf=True
 )
-park = locations.park(cv, finish, on_bench=milo_bench, beside_bench=beside_bench, shots=[PARK], sign_lettering=False)
+park = locations.park(
+    cv, finish, on_bench=milo_bench, beside_bench=beside_bench, shots=[PARK], cactus=park_cactus, sign_lettering=False
+)
 lobby = locations.reception(
     cv, finish, the_boss, on_counter, at_desk, shots=ROOM_SHOTS, cactus=counter_cactus, code_at=(560, 1376)
 )

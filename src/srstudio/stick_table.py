@@ -3,7 +3,8 @@
 :func:`seats` draws a wooden chair each side with its shadow, :func:`table` the kitchen table narrowed to stand between
 them, its top at :data:`TOP`, and it goes over the figures, so their knees run under it. Figures posed from
 :data:`POSES` sit at :data:`LEFT_AT` and, mirrored, at :data:`RIGHT_AT`; ``"up"`` stands the same figure beside its
-chair. :func:`clipboard` is held by a hand, edge on as its reader sees it or turned flat to the viewer;
+chair. :func:`clipboard` is held by a hand, edge on as its reader sees it or turned flat to the viewer, and
+:func:`board_in_hand` puts it and the :func:`pen` in a posed figure's hands;
 :func:`wall_brackets` are two brackets on a wall with nothing on them yet, :func:`folded_bedding` a pillow on a folded
 duvet, which can slide along a table. Everything is in frame pixels of the 1080 × 1920 Stick frame and nothing is
 random, so a shot redraws the same.
@@ -11,12 +12,12 @@ random, so a shot redraws the same.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from . import checks, stick_home
 from .canvas import Canvas
 from .registry import register
-from .stick import RigPose, StickDataError, _group, _seat, box, oval, shape
+from .stick import RigKey, RigPose, StickDataError, _group, _seat, box, forearm, held, oval, shape
 
 __all__ = [
     "BOARD_LETTERS",
@@ -24,11 +25,15 @@ __all__ = [
     "EDGE_SPAN",
     "HAND_CLEAR",
     "LEFT_AT",
+    "ON_PAGE",
     "PEN_SPAN",
+    "PEN_WIDTH",
     "POSES",
     "RIGHT_AT",
+    "SHUT",
     "TABLE_X",
     "TOP",
+    "board_in_hand",
     "clipboard",
     "folded_bedding",
     "pen",
@@ -43,7 +48,10 @@ BRACKET, PENCIL, SHADOW = "#7c8590", "#8f7f66", "#3a2a1c"
 BOARD_LETTERS = 16  # the longest heading the turned clipboard takes
 EDGE_SPAN = (-8.0, 46.0)  # where the edge-on clipboard runs across, about the hand that holds it
 PEN_SPAN = (-14.0, 64.0)  # where the pen runs across, about the hand that holds it
+PEN_WIDTH = 10  # the pen's stroke
 HAND_CLEAR = 10.0  # the least gap from the board to the pen hand, which the rig draws under the board
+SHUT = ("guard", "up")  # the poses that hold the clipboard edge on
+ON_PAGE = ("board", "read", "write-a", "write-b", "click")  # the poses with the pen hand over the board's face
 BRACKET_DROP = 96  # how far a wall bracket hangs below its top
 TOP = 1090.0  # the table's top, in frame pixels
 TABLE_X = (281.0, 799.0)  # where it runs, left to right
@@ -65,7 +73,7 @@ _BOARD = ((440, 1140), (450, 1170), (494, 1120), (525, 1200))  # the pen near th
 # Hands on the table; half out of the chair; a hand at the collar; up straight; looking back over the shoulder; leaning
 # in; sunk; a hand out on the table. With a clipboard: read, the pen on the page in two frames, clicked, thrown out to
 # point, the board pulled in to the chest with the pen laid along it from the hand; and stood up, the board under the
-# near arm.
+# near arm. Through ON_PAGE the far hand is on the board's face, where board_in_hand draws its forearm over the board.
 POSES: dict[str, RigPose] = {
     "rest": _sit((372, 905), (352, 1012), *_REST),
     "landing": _seat((346, 846), (330, 954), (292, 1262), ((500, 1300), (526, 1290)), _FEET,
@@ -129,7 +137,43 @@ def clipboard(cv: Canvas, parent, *, turned: bool = False, quarter: bool = False
 
 def pen(cv: Canvas, parent):
     """A red pen about its origin, the hand that holds it, running out by :data:`PEN_SPAN`."""
-    return shape(cv, parent, f"M {PEN_SPAN[0]:g} 6 L {PEN_SPAN[1]:g} -14", sw=10, stroke=TAIL)
+    return shape(cv, parent, f"M {PEN_SPAN[0]:g} 6 L {PEN_SPAN[1]:g} -14", sw=PEN_WIDTH, stroke=TAIL)
+
+
+def board_in_hand(
+    cv: Canvas,
+    parent,
+    keys: Sequence[RigKey],
+    end: float,
+    *,
+    tilt: Mapping[str, float] | None = None,
+    poses: Mapping[str, RigPose] = POSES,
+    at: tuple[float, float] = (0.0, 0.0),
+    scale: float = 1.0,
+    flip: bool = False,
+) -> None:
+    """The clipboard in the near hand and the pen in the far one, drawn over a figure :func:`~srstudio.stick.rig` has
+    already posed with the same ``keys``, ``poses``, ``at``, ``scale`` and ``flip``. The board is at a quarter, or edge
+    on through :data:`SHUT`; ``tilt`` turns the pen by pose, in degrees, and a pose it leaves out holds it level. The
+    rig is under the board, so through :data:`ON_PAGE` the far forearm comes over its face to the pen."""
+    tilt = tilt or {}
+    hand = held(cv, parent, keys, end, poses=poses, at=at, scale=scale, flip=flip)
+    spans = [(k.start, keys[i + 1].start if i + 1 < len(keys) else end) for i, k in enumerate(keys)]
+    shut = [span for span, k in zip(spans, keys, strict=True) if k.pose in SHUT]
+    edge, page = cv.group(hand, cv.uid("board-edge")), cv.group(hand, cv.uid("board-page"))
+    cv.gate(edge, shut or [(0, 0.0)])
+    cv.gate(page, [span for span, k in zip(spans, keys, strict=True) if k.pose not in SHUT] or [(0, 0.0)])
+    clipboard(cv, edge)
+    clipboard(cv, page, quarter=True)
+    forearm(cv, parent, keys, end, over=ON_PAGE, poses=poses, far=True, at=at, scale=scale, flip=flip)
+    held_pen = cv.group(
+        held(cv, parent, keys, end, poses=poses, far=True, at=at, scale=scale, flip=flip), cv.uid("pen")
+    )
+    if len({tilt.get(k.pose, 0.0) for k in keys}) > 1:
+        cv.keys(held_pen, "rotation", [(k.start, tilt.get(k.pose, 0.0)) for k in keys])
+    else:
+        held_pen.rotation = tilt.get(keys[0].pose, 0.0)
+    pen(cv, held_pen)
 
 
 def table(cv: Canvas, parent) -> None:
