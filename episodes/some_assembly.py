@@ -34,7 +34,17 @@ from some_assembly_audio import (
     UNEASY,
     WORK,
 )
-from srstudio import SPEECH_MOUTH, Episode, camera, stick, stick_flat, stick_odds, stick_reel, stick_windshield
+from srstudio import (
+    SPEECH_MOUTH,
+    Episode,
+    camera,
+    signature,
+    stick,
+    stick_flat,
+    stick_odds,
+    stick_reel,
+    stick_windshield,
+)
 
 os.umask(0o077)  # generated outputs are private: folders 700, files 600
 
@@ -62,6 +72,7 @@ NOOR_X, DEV_END_X = 300.0, 490.0  # arm in arm by the finished wardrobe
 WARDROBE_X, WARDROBE_FOOT = 648.0, 1510.0
 MANUAL = "#f4f1ea"
 ZOOM = 1.9
+CODE_ON_PAGE, CODE_ON_FLOOR = "#9a9080", "#4a3520"
 
 
 def figure(parent, keys, end: float, look, x: float, take=None, *, who: str = "", flip: bool = False,
@@ -85,6 +96,8 @@ def page(parent, step: int, drawing: str, *, bubble: str = "", at: tuple[float, 
     """A manual page, for the whole shot or for the window ``at`` of it."""
     g = cv.group(parent, cv.uid("page"))
     stick_odds.manual_page(cv, g, step, drawing, bubble=bubble)
+    signature.cactus(cv, g, 940, 1486, scale=0.42)  # the page fills the frame: it carries the marks the flat cannot
+    signature.code(cv, g, 40, 1880, 9, color=CODE_ON_PAGE)
     if at is not None:
         cv.gate(g, [(at[0], min(at[1], end))])
     return g
@@ -193,6 +206,7 @@ def stage(take) -> None:
         noor_close(g, take, end, AT_PHONE if take.is_effect else READING)
         ring = (0.0, 0.5, 1.0) if take.is_effect else ()
         stick_odds.caller(cv, g, 850.0, 1330.0, "MOM", ring=ring, scale=1.3)
+        signature.code(cv, g, 40, 1880, 9, color=CODE_ON_FLOOR)  # the zoom crops the flat's own
     elif take.shot == "later":
         finished(g, end, take)
         if take.actor == "noor":
@@ -207,6 +221,7 @@ def stage(take) -> None:
         said = take.speech_duration + 0.8
         dev_close(g, take, end, (0, said))
         noor_reading(g, end, CLOSELY, (said, end))
+        signature.code(cv, g, 40, 1880, 9, color=CODE_ON_FLOOR)  # the zoom crops the flat's own
 
 
 for take in t.takes:
