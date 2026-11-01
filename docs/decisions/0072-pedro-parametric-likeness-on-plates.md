@@ -4,7 +4,7 @@ generated-by: Claude Opus 5.5 (claude-opus-5-5) in Claude Code
 
 # ADR 0072: Pedro, a parametric rebuild of the operator's sculpt, shot as replacement plates
 
-- Status: proposed
+- Status: accepted (2026-11-01). the operator, verdict on the side view clip, 2026-11-01: "aprovado"
 - Deciders: the operator (pedroanisio) alone; implementation drafted by Claude Opus 5.5 in Claude Code
 - Builds on [ADR 0068](0068-rafa-clay-host-on-plates.md) (plates), [ADR 0050](0050-organic-head-motion.md) (head motion)
   and [ADR 0020](0020-toon-lip-synced-cast.md) (lip sync)
@@ -152,4 +152,6 @@ ridge that ran from the hairline to the ear. The collar lies down at both ends i
 - **The face patch box grew down to take in the neck.** A patch covers the whole head, neck included.
 - **The first build is slow and a change of geometry rebuilds everything.** Plates are keyed by what they draw.
 - **A second plate host exists until `rafa_host` adopts `plate_host`.**
-- **Approval is his alone.** The part stays `proposed` until he has judged a moving clip, and no one else records it.
+- **Approval is his alone, and it is of the look.** He judged the side view clip and the record quotes him. It covers
+  the drawing he watched and lifts nothing else: no reel, channel, Drive or Slack use of Pedro without his word, and
+  his photographs stay out of the repository, its commits, the catalog and the proof pages.

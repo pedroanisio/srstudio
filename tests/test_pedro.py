@@ -432,13 +432,15 @@ def test_the_library_carries_no_photograph_and_no_pack():
         assert "photo-character" not in text
 
 
-def test_his_part_is_proposed_with_a_proof_and_no_approval():
+def test_his_part_carries_his_own_verdict_on_the_clip_he_watched():
     record = parts.load()["pedro"]
     latest = record.versions[-1]
     assert latest.number == 1
-    assert latest.status == "proposed"
+    assert latest.status == "approved"
     assert latest.proof == "generated/character-proofs/pedro/index.html"
-    assert latest.approval is None
+    assert latest.approval == parts.Approval(
+        "2026-11-01", 'the operator, verdict on the side view clip, 2026-11-01: "aprovado"'
+    )
 
 
 def test_a_lid_coming_down_leaves_no_highlight_above_it():
