@@ -635,6 +635,13 @@ def test_the_profiles_phone_stands_left_of_every_face() -> None:
 
 
 @pytest.mark.usefixtures("reels")
+def test_the_profiles_draws_brock_as_the_bear_the_cast_knows() -> None:
+    mod = _data("the_profiles")
+    assert mod.BROCK.character == "bear"
+    assert "dog" not in {beat.who for beat in mod.BEATS}
+
+
+@pytest.mark.usefixtures("reels")
 def test_the_hose_in_get_your_mother_stops_short_of_the_cactus() -> None:
     mod = _data("get_your_mother")
     assert fx(max(x for x, _ in mod.HOSE)) + 12.0 <= fx(548.0) - CACTUS_HALF * 0.7

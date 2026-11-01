@@ -21,14 +21,14 @@ DESCRIPTION = "A Toon sketch: two exes meet to end a shared streaming account, a
 ACCESSIBILITY = (
     "A streaming screen asks who's on the couch, listing Mia, Brock, Brock's mom, Kyle and Tess. Two "
     "cartoon exes, a "
-    "rabbit and a dog, sit at a restaurant table with a phone between them. She opens the device list: Kyle and Tess, "
+    "rabbit and a bear, sit at a restaurant table with a phone between them. She opens the device list: Kyle and Tess, "
     "their new partners, are both on the Living Room TV. They lean in, on one side of the table. It is episode nine, "
     "the one the two of them were saving. Lines appear in tinted pills."
 )
 NARRATION = "Voiced with ElevenLabs premade voices River (Mia) and Roger (Brock)."
 NOTE = "ElevenLabs premade voices River and Roger at their natural pace; no reference-voice cloning."
 MIA = speaker("mia", "River", "rabbit")
-BROCK = speaker("brock", "Roger", "dog", "deadpan")
+BROCK = speaker("brock", "Roger", "bear", "deadpan")
 TINTS = tinted(MIA, BROCK)
 BARE = ("hamster",)  # the screens
 PIVOT = (980.0, 1420.0)
@@ -59,13 +59,13 @@ say, first, part, hold = SCRIPT.say, SCRIPT.first, SCRIPT.part, SCRIPT.hold
 BEATS = (
     hold(0.0, "hamster", "", "half", "none", "desk"),  # the held frame: Who's on the couch?
     say(STILL, "hamster", 0, "half", "none", "desk"),
-    say(2.7, "dog", 1, "half", "flat", "desk"),
+    say(2.7, "bear", 1, "half", "flat", "desk"),
     say(3.6, "rabbit", 2, "half", "flat", "crossed"),
-    first(5.1, "dog", 3, "My mom's on season five.", "half", "flat", "desk"),
-    part(6.7, "dog", 3, 5, "Give her till Christmas.", "half", "flat", "desk"),
+    first(5.1, "bear", 3, "My mom's on season five.", "half", "flat", "desk"),
+    part(6.7, "bear", 3, 5, "Give her till Christmas.", "half", "flat", "desk"),
     say(8.5, "rabbit", 4, "narrow", "flat", "crossed"),
-    first(9.6, "dog", 5, "My girlfriend.", "half", "flat", "desk"),
-    part(10.6, "dog", 5, 2, "Who's Kyle?", "narrow", "flat", "crossed"),
+    first(9.6, "bear", 5, "My girlfriend.", "half", "flat", "desk"),
+    part(10.6, "bear", 5, 2, "Who's Kyle?", "narrow", "flat", "crossed"),
     say(11.8, "rabbit", 6, "half", "flat", "crossed"),
     hold(13.0, "hamster", "", "half", "none", "desk", "devices"),  # two seconds on the list
     say(15.0, "rabbit", 7, "wide", "flat", "lean", "together"),
@@ -74,9 +74,9 @@ BEATS = (
     hold(18.2, "rabbit", "", "shock", "drop", "lean"),
     first(18.9, "rabbit", 9, "That's episode nine.", "shock", "open", "lean"),
     part(20.3, "rabbit", 9, 3, "We were saving that.", "teary", "frown", "lean"),
-    hold(22.0, "dog", "", "wide", "flat", "lean"),
-    hold(22.6, "dog", "", "teary", "frown", "lean"),  # three years of grief and only this
-    say(23.3, "dog", 10, "narrow", "flat", "lean"),
+    hold(22.0, "bear", "", "wide", "flat", "lean"),
+    hold(22.6, "bear", "", "teary", "frown", "lean"),  # three years of grief and only this
+    say(23.3, "bear", 10, "narrow", "flat", "lean"),
 )
 SKETCH = Sketch(SLUG, TITLE, (MIA, BROCK), LINES, BEATS, END)
 
@@ -106,7 +106,7 @@ def dress(shot) -> None:
         return
     toon_dinner.restaurant(cv, shot.back)
     if app.start >= together:
-        other = "dog" if app.who == "rabbit" else "rabbit"
+        other = "bear" if app.who == "rabbit" else "rabbit"
         look = ((0.0, "wide", "flat", "lean"),)
         toon_extras.figure(shot, shot.back, other, BROCK_AT, 0.9, look, mirror=True)
     toon_dinner.table(cv, shot.front)
@@ -118,6 +118,6 @@ def dress(shot) -> None:
 def lens(shot, setup) -> None:
     """Held; a slow push on the two of them."""
     camera.anchor(setup, *PIVOT, place=True)
-    if shot.app.start >= sketch.events(shot.beats, "together")[0][0] and shot.app.who == "dog":
+    if shot.app.start >= sketch.events(shot.beats, "together")[0][0] and shot.app.who == "bear":
         a = shot.app.start
         camera.push_in(shot.cv, setup, scale=[(a, 1.0), (a + 2.4, 1.08)])
