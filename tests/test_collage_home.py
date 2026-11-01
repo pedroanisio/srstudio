@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
+
 import pytest
 
 from srstudio import collage, collage_home, collage_sets, registry, show
@@ -176,3 +178,34 @@ def test_a_wall_clock_refuses_a_time_that_is_not_one(time) -> None:
     cv = canvas()
     with pytest.raises(HomeError, match="time"):
         collage_home.wall_clock(cv, cv.comp, 200, 900, 90, time)
+
+
+def _keys(cv) -> list[tuple[float, float]]:
+    root = ET.fromstring(cv.scene.to_bytes(layout="pretty"))
+    y = [a for a in root.iter("animate") if a.get("property") == "y"]
+    return [(float(k.get("time")), float(k.get("value"))) for a in y for k in a.iter("key")]
+
+
+def test_a_prop_lands_on_its_second_and_settles_where_it_was_put() -> None:
+    cv = canvas()
+    group = cv.group(cv.comp, "plate")
+    collage_home.land(cv, group, at=4.0, y=1600.0)
+    keys = _keys(cv)
+    assert keys[0] == (0.0, collage_home.LAND_FROM + 1600.0)  # above, until its second
+    assert (4.0 + collage_home.LAND_DROP, 1600.0) in keys  # down on the table
+    assert keys[-1] == (4.0 + collage_home.LAND_SETTLE, 1600.0)
+    assert min(v for _, v in keys) >= 1600.0 + collage_home.LAND_FROM
+    assert any(1600.0 < v < 1600.0 + 20 or 1600.0 - 20 < v < 1600.0 for _, v in keys)  # a small bounce
+
+
+@pytest.mark.parametrize("at", [-1.0, float("nan")])
+def test_a_landing_refuses_a_second_that_is_no_second(at) -> None:
+    cv = canvas()
+    with pytest.raises(HomeError, match="second"):
+        collage_home.land(cv, cv.group(cv.comp, "plate"), at=at, y=1600.0)
+
+
+def test_a_prop_lands_visible_only_from_its_second() -> None:
+    cv = canvas()
+    collage_home.land(cv, cv.group(cv.comp, "plate"), at=4.0, y=1600.0)
+    assert 'property="opacity"' in xml(cv)

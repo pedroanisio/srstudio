@@ -33,6 +33,7 @@ __all__ = [
     "hook_box",
     "hook_card",
     "kayak",
+    "land",
     "menu_card",
     "napkin",
     "order_pad",
@@ -57,6 +58,11 @@ DISHES = ("steak", "salad", "sauce", "empty")
 PLASTER = "#efe6d4"  # what a broken wall shows round its hole
 STUD = "#b08355"
 VOID = "#2a2024"
+LAND_FROM = -240.0  # how far above its rest a prop starts
+LAND_DROP = 0.16  # seconds to the table
+LAND_BOUNCE = 0.24  # the top of its one small bounce
+LAND_RISE = 12.0
+LAND_SETTLE = 0.34  # at rest
 FRAME_W = 1080.0
 HOOK_TOP = CAPTION_BOTTOM + 14.0  # the room under the caption pill
 HOOK_H = 104.0
@@ -100,6 +106,20 @@ def _box(w: float, h: float) -> list[Point]:
 def _dome(w: float, h: float, n: int = 12) -> list[Point]:
     """The top half of an ellipse, left to right, its flat side on y 0."""
     return [(-w / 2 * math.cos(math.pi * i / n), -h * math.sin(math.pi * i / n)) for i in range(n + 1)]
+
+
+def land(cv: Canvas, node, *, at: float, y: float) -> None:
+    """``node`` (a group drawn where it comes to rest, ``y`` its resting ``y``) is unseen until ``at`` on the project
+    clock, then drops in from above, lands and settles with one small bounce: one-at-a-time arrivals, placed by the
+    caller on the beats, so a recording's timing moves them."""
+    if not (checks.number(at) and at >= 0):
+        raise HomeError(f"a prop lands on a second, >= 0, got {at!r}")
+    above = y + LAND_FROM
+    keys = [(at, above), (at + LAND_DROP, y), (at + LAND_BOUNCE, y - LAND_RISE), (at + LAND_SETTLE, y)]
+    if at > 0:
+        keys.insert(0, (0.0, above))
+    cv.keys(node, "y", keys, kind="cubic-in", local=False)
+    cv.keys(node, "opacity", [(0.0, 0.0), (at, 1.0)] if at > 0 else [(0.0, 1.0)], local=False)
 
 
 def _lettered(cv: Canvas, g, text: str, x: float, y: float, w: float, h: float, size: float, color: str) -> None:
