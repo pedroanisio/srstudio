@@ -86,7 +86,7 @@ def shot(cv: Canvas, who: str) -> SimpleNamespace:
 @pytest.mark.parametrize(("kind", "name"), DRAWINGS)
 def test_every_part_has_an_approved_second_version_and_keeps_its_first(kind, name):
     part = parts.get(name)
-    assert [v.number for v in part.versions] == [1, 2]
+    assert [v.number for v in part.versions] == ([1, 2, 3] if name in ("news-vera", "news-gus") else [1, 2])
     newest = part.version(2)
     assert newest.status == "approved"
     assert "1793475342.947029" in newest.approval.words
@@ -393,6 +393,43 @@ def test_a_missing_card_with_no_time_on_screen_is_refused():
     cv = canvas()
     with pytest.raises(news_kit.NewsKitError):
         news_inked.missing_card(cv, cv.comp, "ONE LID", 2.0, 2.0, measure)
+
+
+def test_the_live_door_stands_ajar_with_its_name_for_its_window():
+    cv = canvas()
+    news_inked.live_door(cv, cv.comp, "KITCHEN", 2.0, 5.0, measure)
+    root = tree(cv)
+    door = next(node for node in root.iter() if node.get("id") == "news-live-door")
+    assert (door.get("start"), door.get("end")) == ("2", "5")
+    drawn = ET.tostring(root, encoding="unicode")
+    assert "LIVE" in drawn and "KITCHEN" in drawn
+    ids = {node.get("id") for node in root.iter()}
+    assert "news-live-door-ajar" in ids and "news-live-door-shut" not in ids
+
+
+def test_the_live_door_shuts_at_the_instant_it_is_told_and_stays_shut():
+    cv = canvas()
+    news_inked.live_door(cv, cv.comp, "KITCHEN", 2.0, 5.0, measure, shut=3.5)
+    nodes = {node.get("id"): node for node in tree(cv).iter()}
+    ajar, closed = nodes["news-live-door-ajar"], nodes["news-live-door-shut"]
+    assert (ajar.get("start"), ajar.get("end")) == ("2", "3.5")
+    assert (closed.get("start"), closed.get("end")) == ("3.5", "5")
+
+
+@pytest.mark.parametrize("label", ["", "   ", "THE KITCHEN AT THE VERY END OF THE LONG HALLWAY"])
+def test_a_live_door_that_cannot_be_read_is_refused(label):
+    cv = canvas()
+    with pytest.raises(news_kit.NewsKitError, match="fit"):
+        news_inked.live_door(cv, cv.comp, label, 0.0, 1.0, measure)
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "shut"), [(2.0, 2.0, None), (2.0, 5.0, 2.0), (2.0, 5.0, 5.0), (2.0, 5.0, 9.0)]
+)
+def test_a_live_door_outside_its_window_is_refused(start, end, shut):
+    cv = canvas()
+    with pytest.raises(news_kit.NewsKitError):
+        news_inked.live_door(cv, cv.comp, "KITCHEN", start, end, measure, shut=shut)
 
 
 def test_the_ticker_never_runs_out_of_words():

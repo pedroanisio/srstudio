@@ -290,8 +290,9 @@ srstudio inspect location my-room --plugins my_package.parts
 
 Inspection shows the real callable signature, parameter defaults, callback slots, full docstring and a call
 template. The template names the arguments you supply (`cv` is usually `ep.cv`, `parent` is `ep.comp` or a
-shot group). The office, café, Manager and episode slate also include runnable examples using an existing
-`ep` Episode. Python tools can use `srstudio.describe(kind, name)` or `registry.get(kind, name).describe()`;
+shot group). The office, café, Manager, Toon sloth/goat/hamster and episode slate include runnable examples
+using an existing `ep` Episode. Python tools can use `srstudio.describe(kind, name)` or
+`registry.get(kind, name).describe()`;
 both return the same JSON-compatible details as `--json`. Inspection does not call the builder.
 
 Plugin decorators can add `slots=("at_table",)` for unannotated callback parameters and
@@ -1641,6 +1642,10 @@ A sloth, a goat and a hamster draw like the traced cat, in code
 [src/srstudio/toon_critters.py](../src/srstudio/toon_critters.py)): `toon-sloth` (olive, droopy, a pale face with dark
 stripes down from the eyes, long ivory claws, a slow blink), `toon-goat` (lilac, wiry, swept horns, sideways ears, a
 long muzzle and beard, bar pupils) and `toon-hamster` (pink, round, cheek pouches, a creamy belly, tiny paws held up).
+Run `srstudio inspect character toon-sloth --json` (or either other name) for an executable pose recipe.
+These builders accept `srstudio.toon.Pose` states using `EYES`, `MOUTHS` and `ARMS` names from that module.
+The first pose starts at zero; pose starts are seconds relative to `enter`. `enter`, `duration` (the exit time),
+`taps`, `mouths` and optional `LimbTrack` motion use project seconds. Builders return the pose groups.
 Each is a `Critter`, a `toon_cast.Drawing` the look routes its foundation, face and limbs to: a dense hand-placed
 outline with a pressed line (`pressed`, heavier at the bottom and back, thinning at sharp turns), open tapered fur
 strokes, one shade tone along the edges away from the light (`shade`) and a head tilted about the neck. Each has
@@ -1667,6 +1672,13 @@ accents of the line, a dip before a phrase, a two-octave idle, a breath tied to 
 deterministic and bounded by `limit(style, name)`. Head plans keep the spring history and Catmull-Rom neighbors needed
 to preserve motion across shot cuts. Long carried-spring channels are sampled into linear keys at at least 240 Hz
 to preserve momentum while bounding renderer work; the sampler rejects channels exceeding its 100,000-key budget.
+Explicit `facing=[(on, off, side)]` intervals take precedence over incidental glances: an idle glance is omitted
+when its eye hold or head return overlaps a directed turn, including that turn's return to rest. This prevents
+their head turns and face slides from adding beyond the style's intended bounds. Nonoverlapping glances retain
+their original timing and seeded choices.
+`toon_head.rest_springs()` is a lossy compatibility helper: it removes carried momentum and can visibly change
+trajectories and velocity. New callers should use the automatic spring sampling in `toon_head.figure()` and
+`Channel.during()`; preview scenes that intentionally retain spring resets.
 [src/srstudio/toon_head.py](../src/srstudio/toon_head.py) draws a
 `HeadRig` in nested groups with `toon_head.figure(cv, parent, rig, poses, duration, plan)`: the head turns about the
 neck, and either the body's ruff or the chin hides the seam. [src/srstudio/toon_rigs.py](../src/srstudio/toon_rigs.py)

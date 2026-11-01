@@ -724,6 +724,13 @@ class Episode:
     def add_track(self, id: str, asset: str, **kw):
         return self.mix().add_audioTrack(id=id, asset=asset, **kw)
 
+    def duck(self, amount: float) -> AudioMix:
+        """Every ``music`` track lowered ``amount`` dB (negative) while a ``dialogue`` track plays, for a mix built by
+        hand; :meth:`audio` takes ``duck=`` where it builds the mix itself."""
+        if not (checks.number(amount) and amount < 0):
+            raise EpisodeError(f"duck {amount} must be a negative number of dB")
+        return _duck(self.mix(), amount)
+
     def audio_mix(self, track_id="synthetic-dialogue", loudness="-16", true_peak="-1.5", bit_depth: str | None = "24"):
         """The interview family's mix: one dialogue track over the whole episode."""
         mix = self.mix(loudness, true_peak, bit_depth=bit_depth, master_first=False)

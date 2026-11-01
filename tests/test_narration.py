@@ -378,7 +378,11 @@ def test_the_manifest_lag_is_optional_and_effects_and_duration_are_checked(narra
     data["effects"] = [dict(fx, taps=[0.5, 0.52, 1.0])]
     path.write_text(json.dumps(data))
     assert narration.effect_cues(path, tmp_path)[0].taps == (0.5, 0.52, 1.0)
+    data["effects"] = [dict(fx, role="music")]
+    path.write_text(json.dumps(data))
+    assert narration.effect_cues(path, tmp_path)[0].role == "music"
     for bad, match in (
+        (dict(fx, role="dialogue"), "role"),
         (dict(fx, taps=[0.5, 0.4]), "order"),
         (dict(fx, taps=[0.5, "soon"]), "taps"),
         (dict(fx, taps=[-1]), "taps"),

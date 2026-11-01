@@ -20,7 +20,7 @@ from sr_core.scene import Composition, Group
 from sr_core.scene import Sequence as SceneSequence
 
 from . import checks
-from .canvas import Canvas, Keys
+from .canvas import Canvas, Keys, _visibility_keys
 from .errors import SrstudioError
 from .soundtrack import pose_keys
 
@@ -90,6 +90,7 @@ class Actor(ABC):
             raise LimbError(f"{type(self).__name__} must explicitly support replacement limb tracks")
         self.validate_performance(perf)
         cv = self.cv
+        blink_keys = _visibility_keys(perf.blinks)
         if perf.limbs:
             project = next(cv.scene.iter("project"), None)
             duration = project.attributes().get("duration") if project is not None else None
@@ -111,8 +112,8 @@ class Actor(ABC):
         closed = cv.group(head, self.blink_id)
         self.draw_blink(closed, perf)
         if perf.blinks:
-            cv.gate(closed, perf.blinks)
-            cv.keys(eyes, "opacity", [(0, 1)] + [(a, 0) for a, b in perf.blinks] + [(b, 1) for a, b in perf.blinks])
+            cv.keys(closed, "opacity", blink_keys)
+            cv.keys(eyes, "opacity", [(t, 1 - value) for t, value in blink_keys])
         else:
             cv.gate(closed, [])
         self.mouths = self.draw_mouths(head)

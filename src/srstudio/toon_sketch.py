@@ -37,6 +37,7 @@ from . import (
     Episode,
     EpisodeSpec,
     checks,
+    craft,
     errors,
     foley,
     fonts,
@@ -52,7 +53,7 @@ from . import (
 )
 from .canvas import Canvas
 from .layout import SafeArea
-from .narration import effect_cues, manifest_duration, require_consent
+from .narration import effect_cues, manifest_duration, narration_cues, require_consent
 from .provider import KEY_ENV
 from .staging import StagingError
 from .styles import Style
@@ -62,6 +63,8 @@ TYPING_PEAK = 0.70
 TYPING_GAIN_DB = -2.0  # the keys only play between the lines
 BUZZ_GAIN_DB = -4.0
 STING_GAIN_DB = -5.0
+BED_DUCK = -9.0  # dB a music effect drops under a line
+BED_HOLD = 0.25  # a gap between lines this long holds the bed down: past it, a bed that came back up would fill a hold
 BADGE_SIZE = 28
 CALL_ENDED = "Call ended"
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
@@ -323,9 +326,17 @@ def build(root: Path, staging: Staging, flags: Iterable[str]) -> Episode | None:
         toon.captions(cv, ep.comp, lines, partial(measure, size=toon.CAPTION_SIZE), tints=staging.tints)
     if voiced:
         ep.audio(narration=manifest, loudness=staging.loudness)
+        beds = []
         for fx in effects:
             cv.assets.add_audio(id=f"fx-{fx.id}", src=fx.audio, sha256=fx.sha256)
-            ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role="effects", gain=fx.gain_db)
+            track = ep.add_track(f"fx-track-{fx.id}", f"fx-{fx.id}", start=fx.start, role=fx.role, gain=fx.gain_db)
+            if fx.role == "music":
+                beds.append((track, fx.gain_db))
+        if beds:
+            ep.duck(BED_DUCK)
+            spans = [(q.start, q.start + q.duration) for q in narration_cues(manifest, root)]
+            for track, gain in beds:
+                craft.hush(cv, track, spans, gain, threshold=BED_HOLD)
     subtitles.write_srt(root / f"{sk.slug}.srt", [(p.start, p.end, p.caption) for p in t.phrases])
     return ep
 

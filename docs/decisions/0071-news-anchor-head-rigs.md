@@ -79,6 +79,42 @@ Facts that shaped the design:
 - **A version 3.** No published reel moved these heads, so version 2 may gain its rig once (`parts.py`). Its drawing does
   not change.
 
+## Version 3: the face stays on the skin
+
+On 2026-10-31 Gus's blush was seen over his jaw line on a full turn. The face slides as one piece, and the old check
+compared the eyes and the mouth with the skin's widest x at any height, so it never saw a mark low on the cheek, where
+the head narrows, and never added the nod, which drops the face further toward that narrowing. Measured on the drawn
+skin, Gus's blush has 12.1 px of room at rest and the rig took it 25.2 px past the contour at its limits; Vera's blush
+went 4.8 px past.
+
+Every limit that is not the face's stays the same: the turn, the nods, the seed and the timing. Only the slide and the
+face's drop change: Vera `glance_face` 13 to 9 and `face_slide` 0.8 to 0.6, Gus `glance_face` 24 to 8 and `face_slide`
+0.8 to 0.2. The rig digest draws those limits, so this is a new version, `news-vera@3` and `news-gus@3`, on arc4d3's
+post Slack 1793483857.840949, with the same drawing digest as version 2. The test measures every mark at each of its
+own heights with the slide and the nod at their limits together, and holds a floor on the slide so that the fix cannot
+pass by removing the turn.
+
+`stage` draws each anchor's latest approved version. `stage(acts, version=2)` keeps the old numbers, and a reel whose
+delivered master is on them names it, so a rebuild draws what went out.
+
+Version 3 does not put every mouth on the skin. The gape passes the chin at rest on the drawing itself, 9.9 px on Gus
+and 16.7 px on Vera, and with the limits 28.0 px and 22.3 px; Vera's grin stays on the skin at rest and passes it by
+6.4 px with the turn and the nod at their limits together. Gus's round mouth stays on the skin and covers the bottom of
+his nose by 17.1 px at any turn, because the mouth and the nose slide together. No limit answers any of these, or none
+that the approval covers: the fix is a change to a drawing. The test names the gape and the grin, so they stay visible.
+
+The approval came before these were measured, and its condition was that every face mark stays inside at the limits.
+arc4d3 decided on Slack 1793486162.509569: "Option 1: `news-gus@3` and `news-vera@3` stay approved, with the gape,
+Vera's grin at both limits, and the round mouth over the nose recorded as open drawing defects. I looked at the frames:
+the shout reads as a normal cartoon jaw-drop at phone size, and it's in the original drawings, not new." The open
+defects of version 3 are therefore: the gape past the chin on both anchors, Vera's grin past the skin at both limits
+(6.4 px and 4.8 px), and Gus's round mouth over the bottom of his nose. In the same post arc4d3 agreed to a redraw:
+"Yes to v4: redraw the gape inside the chin and lift the round mouth clear of the nose."
+
+Rejected: clamping the slide inside the reels and leaving the style alone. The digest would hold while the specimen
+still showed the defect, which routes around the gate. Moving the cheeks less than the eyes: a change to how the face
+is built, not to its limits, and more than this fix needs.
+
 ## Consequences
 
 - A rebuild of a delivered News reel now draws moving heads. A reel that must stay as published needs `heads=False`.

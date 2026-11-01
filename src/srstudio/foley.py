@@ -35,6 +35,7 @@ __all__ = [
     "write_bursts",
     "REMOTE_CLICK",
     "KNOCK",
+    "SLAM",
     "SNORE",
     "SCRAPE",
     "SWISH",
@@ -410,6 +411,7 @@ REMOTE_CLICK = Burst(0.03, 6000.0, attack=0.001, decay=0.25, tone_hz=2400.0, ton
 KNOCK = Burst(0.12, 900.0, attack=0.002, decay=0.3, tone_hz=170.0, tone_end_hz=120.0, tone=0.7)
 SNORE = Burst(1.1, 420.0, attack=0.35, decay=1.2, tone_hz=70.0, tone_end_hz=95.0, tone=0.35, flutter_hz=31.0)
 BELL = Burst(0.45, 200.0, attack=0.002, decay=0.45, tone_hz=1760.0, tone_end_hz=1760.0, tone=1.0)
+SLAM = Burst(0.5, 800.0, attack=0.001, decay=0.45, tone_hz=120.0, tone_end_hz=46.0, tone=0.65)  # a door, a room off
 THUD = Burst(0.25, 500.0, attack=0.003, decay=0.35, tone_hz=90.0, tone_end_hz=55.0, tone=0.8)
 RUMBLE = Burst(1.4, 700.0, attack=0.02, decay=0.9, tone_hz=60.0, tone_end_hz=45.0, tone=0.4, flutter_hz=11.0)
 ROAD = Burst(3.0, 380.0, attack=0.12, decay=4.0, tone_hz=64.0, tone_end_hz=72.0, tone=0.3, flutter_hz=7.0)

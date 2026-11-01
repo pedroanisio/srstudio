@@ -93,6 +93,7 @@ DRAWN: dict[str, frozenset[str]] = {  # element -> the attributes that are the d
     "radialGradient": GRADIENT,
     "stop": frozenset({"color", "offset"}),
     "text": LETTERS | {"fontAsset"},
+    "image": frozenset({"src", "width", "height"}),  # a plate: its file is named by the digest of what it draws
     "geo": frozenset({"src", "sha256", "license", "credit"}),
     "map": frozenset({"width", "height", "projection", "centerLon", "centerLat", "zoom", "background"})
     | {"fitPadding", "outline", "outlineWidth"},
@@ -233,7 +234,7 @@ def _actor(entry: registry.Entry) -> Canvas:
 def _anchor(entry: registry.Entry) -> Canvas:
     cv = _stage("toon", HOLD)
     who = entry.name.removeprefix("news-").split("@")[0]
-    draw = news_inked.perform if entry.name.endswith("@2") else news_kit.perform
+    draw = news_inked.perform if "@" in entry.name else news_kit.perform
     acts = tuple(
         (HOLD * n / len(news_kit.ARMS), news_kit.Pose(eyes, "talk", arms))
         for n, (eyes, arms) in enumerate(zip(news_kit.EYES, news_kit.ARMS, strict=False))
@@ -253,6 +254,19 @@ def _moth(entry: registry.Entry) -> Canvas:
         )
     )
     host_kit.perform(cv, cv.comp, cv.comp, acts, 0.0, HOLD)
+    return cv
+
+
+def _clay(entry: registry.Entry) -> Canvas:
+    """Every face of a clay character, one plate at a time (ADR 0068)."""
+    from . import rafa_host
+
+    cv = _stage("toon", HOLD)
+    faces = rafa_host.part_plates(entry.name)
+    for n, plate in enumerate(faces):
+        shown = cv.group(cv.comp, cv.uid("g"), opacity=0.0)
+        cv.gate(shown, [(HOLD * n / len(faces), HOLD * (n + 1) / len(faces))])
+        rafa_host.place(cv, shown, plate)
     return cv
 
 
@@ -317,8 +331,9 @@ SPECIMENS: dict[str, Callable[[registry.Entry], Canvas]] = {
     **dict.fromkeys(("pip", "bo", "juno", "remy"), _blob),
     **dict.fromkeys(("manager", "candidate", "rosa", "barista", "customer"), _actor),
     "pigeon": _pigeon,
-    **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2"), _anchor),
+    **dict.fromkeys(("news-vera", "news-gus", "news-vera@2", "news-gus@2", "news-vera@3", "news-gus@3"), _anchor),
     "host-lint": _moth,
+    "rafa": _clay,
     "doodle": _inked,
     **{f"talking-{name}": _inked for name in ("printer", "router", "doorbell", "meter", "vacuum")},
     "stick-figure": _traced_stick,
@@ -457,7 +472,7 @@ def rig_digest(name: str, number: int = 1) -> str:
     part = parts.part_name(name, number)
     if part in news_inked.RIGS:
         cv = _stage("toon", HOLD)
-        news_inked.rig_specimen(cv, news_inked.RIGS[part].who, HOLD)
+        news_inked.rig_specimen(cv, news_inked.RIGS[part].who, HOLD, number)
         return fingerprint(cv.scene.to_bytes(layout="pretty"))
     if part not in toon_rigs.RIGS:
         raise SpecimenError(f"{name} version {number} has no head rig")

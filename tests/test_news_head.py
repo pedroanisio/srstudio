@@ -9,8 +9,10 @@ from __future__ import annotations
 import hashlib
 import inspect
 import math
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import replace
+from itertools import pairwise
 from types import SimpleNamespace
 
 import pytest
@@ -129,9 +131,19 @@ def test_vera_is_small_and_rare_and_gus_big_and_late():
 
 
 def test_each_style_has_its_own_seed_among_every_rig():
-    seeds = [r.style.seed for r in (*toon_rigs.RIGS.values(), *news_inked.RIGS.values())]
-    held = {id(r.style): r.style.seed for r in (*toon_rigs.RIGS.values(), *news_inked.RIGS.values())}
+    news = [rig for part, rig in news_inked.RIGS.items() if part.endswith("@2")]  # a later version keeps the seed
+    seeds = [r.style.seed for r in (*toon_rigs.RIGS.values(), *news)]
+    held = {id(r.style): r.style.seed for r in (*toon_rigs.RIGS.values(), *news)}
     assert len(set(held.values())) == len(held), seeds
+
+
+@anchors
+def test_a_later_rig_keeps_the_anchor_s_nods_on_the_same_takes(who):
+    old, new = (news_inked.RIGS[f"news-{who}@{n}"] for n in (2, 3))
+    assert new.style.seed == old.style.seed
+    before = news_head.plan_of(who, old, SAID, (), 10.0)
+    after = news_head.plan_of(who, new, SAID, (), 10.0)
+    assert before.nod == after.nod and before.turn == after.turn and before.roll == after.roll
 
 
 def test_a_plan_with_nothing_to_face_is_the_plan_it_always_was():
@@ -278,7 +290,7 @@ def test_the_body_and_the_hands_have_no_motion_of_their_own(who):
     assert set(keyed) <= {"opacity"}
 
 
-def viseme_gates(cv: Canvas) -> list[list[tuple[str, str]]]:
+def viseme_gates(cv: Canvas) -> list[list[tuple[str | None, str | None]]]:
     return [
         [(k.get("time"), k.get("value")) for k in a.iter("key")]
         for a in tree(cv).iter("animate")
@@ -356,6 +368,205 @@ def test_the_face_stays_on_the_skin_at_the_widest_slide(who):
     assert face.mouth_w * 0.58 + slide <= edge - 20.0
 
 
+CUBIC = re.compile(r"[MLQCZ]|-?\d+\.?\d*(?:e-?\d+)?")
+
+
+def traced(d: str, steps: int = 6) -> list[tuple[float, float]]:
+    """The points of a drawn path, its curves walked: what is on the frame, not a control point off it."""
+    tokens, at, points, here, op = CUBIC.findall(d), 0, [], (0.0, 0.0), "M"
+
+    def point() -> tuple[float, float]:
+        nonlocal at
+        at += 2
+        return float(tokens[at - 2]), float(tokens[at - 1])
+
+    while at < len(tokens):
+        if tokens[at] in "MLQCZ":
+            op, at = tokens[at], at + 1
+            continue
+        if op in "ML":
+            here = point()
+            points.append(here)
+        else:
+            controls = [point() for _ in range(2 if op == "Q" else 3)]
+            hull = [here, *controls]
+            for k in range(1, steps + 1):
+                u, row = k / steps, hull
+                while len(row) > 1:
+                    row = [(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u) for a, b in pairwise(row)]
+                points.append(row[0])
+            here = controls[-1]
+    return points
+
+
+def span_at(contour: list[tuple[float, float]], y: float) -> tuple[float, float] | None:
+    """Where the closed ``contour`` is at height ``y``: its left and right edge there, or None above and below it."""
+    edges = [
+        ax + (y - ay) * (bx - ax) / (by - ay)
+        for (ax, ay), (bx, by) in zip(contour, (*contour[1:], contour[0]), strict=True)
+        if (ay > y) != (by > y)
+    ]
+    return (min(edges), max(edges)) if edges else None
+
+
+def on_skin(contour, x: float, y: float) -> bool:
+    span = span_at(contour, y)
+    return span is not None and span[0] <= x <= span[1]
+
+
+def face_of(who: str, number: int):
+    """The head of a version as the rig's specimen draws it, every eye, brow and mouth state: the skin's fill as a
+    contour, and each distinct shape that slides over it with its colour."""
+    rig = news_inked.RIGS[f"news-{who}@{number}"]
+    cv = canvas(4.0)
+    news_inked.rig_specimen(cv, who, 4.0, number)
+    nod = group(tree(cv), "head-nod")[0]
+    colour = (news_inked.VERA_SKIN if who == "vera" else news_inked.GUS_SKIN).lower()
+    skins = [traced(s.attrib["path"]) for s in nod if s.get("path") and s.get("fill", "").lower() == colour]
+    contour = max(skins, key=lambda c: max(x for x, _ in c) - min(x for x, _ in c))
+    shapes = {s.attrib["path"]: s.get("fill") for f in group(nod, "head-face") for s in f.iter() if s.get("path")}
+    return rig, contour, [(fill or "", traced(d)) for d, fill in shapes.items()]
+
+
+def off_skin(who: str, number: int) -> list[str]:
+    """Every shape that leaves the skin with the turn and the nod at their limits together, each of them measured
+    against the contour at its own height. Skull and face turn and roll in the same groups, so what parts them is the
+    slide and the drop alone. What the drawing lays past the skin at rest is the drawing's: a test below names it."""
+    rig, contour, marks = face_of(who, number)
+    slide = head_motion.limit(rig.style, "face_x")
+    drop = head_motion.limit(rig.style, "nod") * rig.face_slide
+    corners = [(side * slide, d) for side in (-1.0, 1.0) for d in (0.0, drop)]
+    return [
+        f"{fill} at {points[0]} by {corner}"
+        for fill, points in marks
+        if all(on_skin(contour, x, y) for x, y in points)
+        for corner in corners
+        if not all(on_skin(contour, x + corner[0], y + corner[1]) for x, y in points)
+    ]
+
+
+MARKS = {  # what each face must show the check, by colour: blush, freckles, the open mouth, the brows
+    "vera": {"blush": "#b3603c50", "mouth": "#4a1420", "brow": "#6f6b92"},
+    "gus": {"blush": "#f0805a40", "freckle": "#c9875a", "mouth": "#4a1420", "brow": "#3a2112"},
+}
+FLOOR_SLIDE = 8.0  # the least a full turn slides the face across the head, frame pixels at the two-shot's scale
+FLOOR_TRAVEL = 12.0  # the least the eyes travel on the frame in a full turn, the rotation and the slide together
+
+
+@anchors
+def test_every_face_mark_stays_on_the_skin_with_the_turn_and_the_nod_at_their_limits(who):
+    assert off_skin(who, 3) == []
+
+
+@anchors
+def test_the_mark_check_sees_every_kind_of_mark(who):
+    _, contour, marks = face_of(who, 3)
+    seen = {fill.lower() for fill, points in marks if all(on_skin(contour, x, y) for x, y in points)}
+    assert set(MARKS[who].values()) <= seen
+
+
+def test_what_the_drawing_lays_past_the_skin_at_rest_is_only_her_spectacle_arms():
+    for who in ANCHORS:
+        _, contour, marks = face_of(who, 3)
+        past = [fill for fill, points in marks if not all(on_skin(contour, x, y) for x, y in points)]
+        assert past == (["#160a30", "#160a30"] if who == "vera" else [])
+
+
+@pytest.mark.parametrize(
+    ("who", "kind"), [("gus", "#f0805a40"), ("gus", "#c9875a"), ("gus", "#4a1420"), ("vera", "#b3603c50")]
+)
+def test_the_mark_check_fails_on_the_rig_that_slid_them_off(who, kind):
+    assert any(row.startswith(kind) for row in off_skin(who, 2))
+
+
+def mouth_of(who: str, state: str) -> list[tuple[float, float]]:
+    """What a mouth state draws, through the code a reel draws it with: paths walked, an ellipse at its extremes."""
+    cv = canvas(1.0)
+    drawn = cv.group(cv.comp, "mouth-check", opacity=0.0)
+    face = news_inked.VERA_INKED if who == "vera" else news_inked.GUS_INKED
+    news_inked._mouths(cv, drawn, face, ((0.0, state),), 0.0, 1.0)
+    points: list[tuple[float, float]] = []
+    for shape in group(tree(cv), "mouth-check")[0].iter("shape"):
+        if path := shape.get("path"):
+            points += traced(path)
+        else:
+            x, y, wide, tall = (float(shape.attrib[k]) for k in ("x", "y", "width", "height"))
+            points += [(x, y + tall / 2), (x + wide, y + tall / 2), (x + wide / 2, y), (x + wide / 2, y + tall)]
+    return points
+
+
+def mouths_past_the_skin(who: str, number: int, *corners: tuple[float, float]) -> list[str]:
+    _, contour, _ = face_of(who, number)
+    return [
+        state
+        for state in news_kit.EXPRESSIONS
+        if not all(on_skin(contour, x + dx, y + dy) for x, y in mouth_of(who, state) for dx, dy in corners)
+    ]
+
+
+# Past the skin at the limits on version 3, what the slide cannot answer: not a pass, the open defects by name. A change
+# that fixes one fails here until it comes off the list, and a mouth that joins it fails here too.
+MOUTHS_PAST_AT_THE_LIMITS = {"vera": ["grin", "gape"], "gus": ["gape"]}
+
+
+@anchors
+def test_only_the_named_mouths_leave_the_skin_with_the_turn_and_the_nod_at_their_limits(who):
+    rig, *_ = face_of(who, 3)
+    slide = head_motion.limit(rig.style, "face_x")
+    drop = head_motion.limit(rig.style, "nod") * rig.face_slide
+    corners = [(side * slide, d) for side in (-1.0, 1.0) for d in (0.0, drop)]
+    assert mouths_past_the_skin(who, 3, *corners) == MOUTHS_PAST_AT_THE_LIMITS[who]
+
+
+@anchors
+@pytest.mark.parametrize("number", [2, 3])
+def test_the_gape_is_the_one_mouth_the_drawing_lays_past_the_chin_at_rest(who, number):
+    assert mouths_past_the_skin(who, number, (0.0, 0.0)) == ["gape"]
+
+
+@anchors
+def test_a_turn_still_reads_as_a_turn_on_the_smaller_limits(who):
+    old, new = (news_inked.RIGS[f"news-{who}@{n}"] for n in (2, 3))
+    assert FLOOR_SLIDE <= new.style.glance_face < old.style.glance_face
+    assert new.style.glance_turn == old.style.glance_turn
+    face = news_inked.VERA_INKED if who == "vera" else news_inked.GUS_INKED
+    above = news_kit.CHIN_Y - face.eye_y
+    assert above * math.sin(math.radians(new.style.glance_turn)) + new.style.glance_face >= FLOOR_TRAVEL
+
+
+@anchors
+def test_a_new_version_redraws_nothing_but_the_limits(who):
+    name = f"news-{who}"
+    assert parts.get(name).version(3).drawing == parts.get(name).version(2).drawing
+    assert specimens.digest(name, 3) == specimens.digest(name, 2)
+    assert specimens.rig_digest(name, 3) != specimens.rig_digest(name, 2)
+
+
+@pytest.mark.parametrize(("version", "number"), [(None, 3), (3, 3), (2, 2)])
+def test_a_reel_takes_the_latest_rig_and_a_delivered_reel_can_stay_on_its_own(version, number):
+    used = []
+    real = news_head.plan_of
+
+    def spy(who, rig, *rest):
+        used.append(rig)
+        return real(who, rig, *rest)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(news_head, "plan_of", spy)
+        cv = canvas(10.0)
+        beats = (SimpleNamespace(start=0.0, event=None),)
+        news_inked.stage((Act(Pose(), Pose()),), heads=True, version=version)(shot(cv, "gus", beats=beats))
+    assert used == [news_inked.RIGS[f"news-gus@{number}"]]
+
+
+def test_a_rig_not_approved_stops_the_stage_on_its_version(monkeypatch):
+    monkeypatch.setattr(news_head, "approved", lambda who, number=2: number != 3)
+    cv = canvas(10.0)
+    beats = (SimpleNamespace(start=0.0, event=None),)
+    with pytest.raises(NewsKitError, match="news-gus@3"):
+        news_inked.stage((Act(Pose(), Pose()),), version=3)(shot(cv, "gus", beats=beats))
+
+
 @anchors
 def test_the_same_takes_draw_the_same_head(who):
     assert tree(rigged(who)).find(".//group") is not None
@@ -396,7 +607,7 @@ def test_a_reel_can_stay_still():
 
 
 def test_a_rig_that_is_not_approved_reaches_no_reel(monkeypatch):
-    monkeypatch.setattr(news_head, "approved", lambda who: False)
+    monkeypatch.setattr(news_head, "approved", lambda who, number=2: False)
     with pytest.raises(NewsKitError, match="not approved"):
         desk()
     assert b"head-nod" not in desk(heads=False)

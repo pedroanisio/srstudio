@@ -140,12 +140,15 @@ class Speaker:
 class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
-    ``phone``: the line is heard through a phone's speaker (:data:`PHONE_SPEAKER`); the speech check hears the take
-    as it was said, and only the audio in the reel is band-limited."""
+    ``level`` is the part of the full voice it is said at: every take is levelled to one peak, so a line meant to come
+    out small is only small in the mix with a ``level`` under 1. ``phone``: the line is heard through a phone's speaker
+    (:data:`PHONE_SPEAKER`); the speech check hears the take as it was said, and only the audio in the reel is
+    band-limited."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
+    level: float = 1.0
     phone: bool = False
 
 
@@ -236,6 +239,8 @@ def check(sketch: Sketch) -> None:
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
     for i, line in enumerate(sketch.lines):
+        if not (checks.number(line.level) and 0 < line.level <= 1):
+            raise SketchError(f"line {i}: a level is a part of the full voice, in 0..1, got {line.level!r}")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -775,7 +780,7 @@ def record(
             trim.clip_in,
             trim.clip_in + kept,
             kept,
-            gain_to_peak(trim.peak, VOICE_PEAK),
+            gain_to_peak(trim.peak, VOICE_PEAK * line.level),
             ffmpeg,
             **colour,
         )
@@ -812,8 +817,17 @@ def record(
     return Recorded(items, beats, end, [(p.start, p.end) for p in placed], voices, heard)
 
 
-def effect(id: str, start: float, gain_db: float, root: Path, path: Path, taps: Sequence[float] | None = None) -> dict:
-    """One ``effects`` entry of the manifest for a clip under ``root``."""
+def effect(
+    id: str,
+    start: float,
+    gain_db: float,
+    root: Path,
+    path: Path,
+    taps: Sequence[float] | None = None,
+    role: str = "effects",
+) -> dict:
+    """One ``effects`` entry of the manifest for a clip under ``root``; ``role="music"`` makes it a bed the lines
+    duck (see :func:`srstudio.toon_sketch.build`)."""
     out: dict[str, Any] = {
         "id": id,
         "start": round(start, 6),
@@ -823,6 +837,8 @@ def effect(id: str, start: float, gain_db: float, root: Path, path: Path, taps: 
     }
     if taps is not None:
         out["taps"] = [round(t, 6) for t in taps]
+    if role != "effects":
+        out["role"] = role
     return out
 
 

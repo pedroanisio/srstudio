@@ -1,5 +1,7 @@
 """Structured failures for anatomical, projection, contact and compilation contracts."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from ..errors import SrstudioError
@@ -13,9 +15,27 @@ class Diagnostic:
 
 
 class LimbError(SrstudioError, ValueError):
-    """An invalid request, with a machine-readable code and geometric residual when applicable."""
+    """An invalid request, with a code, geometric residual and available authoring context.
 
-    def __init__(self, message: str, *, code: str = "invalid", residual: float = 0.0):
-        super().__init__(message)
+    Sampling supplies ``time`` (motion seconds), ``action``, zero-based ``action_index`` and ``side``;
+    compilation adds ``track``. Numeric bounds also identify ``field``. Unavailable context is omitted.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "invalid",
+        residual: float = 0.0,
+        context: dict[str, str | int | float] | None = None,
+    ):
+        self.message = message
+        self.context = dict(context or {})
+        suffix = ', '.join(f'{key}={value!r}' for key, value in self.context.items())
+        super().__init__(f'{message} ({suffix})' if suffix else message)
         self.code = code
         self.residual = residual
+
+    def with_context(self, **context: str | int | float) -> LimbError:
+        """Add provenance without changing the failure code, residual or original message."""
+        return LimbError(self.message, code=self.code, residual=self.residual, context={**self.context, **context})

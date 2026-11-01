@@ -14,7 +14,7 @@ who an anchor faces and which later beat ends it, because a recording moves the 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from . import head_motion, parts
 from .brush import Point
@@ -24,7 +24,9 @@ from .toon_head import FACE_SLIDE
 
 __all__ = [
     "GUS_MOTION",
+    "GUS_MOTION_3",
     "VERA_MOTION",
+    "VERA_MOTION_3",
     "AnchorRig",
     "Held",
     "Hold",
@@ -83,6 +85,10 @@ GUS_MOTION = HeadStyle(  # chaos on a loose neck: big nods that land after the w
     glance_face=24.0,
     avert=0.0,
 )
+# Version 3 keeps the turn, the nods and the seed and slides the face less: the blush sits nearer the jaw than the eyes
+# do, so the slide a turn can afford is what the marks have left at their own height (ADR 0071)
+VERA_MOTION_3 = replace(VERA_MOTION, glance_face=9.0)
+GUS_MOTION_3 = replace(GUS_MOTION, glance_face=8.0)
 
 
 @dataclass(frozen=True)
@@ -120,9 +126,9 @@ class Held:
     off: float
 
 
-def approved(who: str) -> bool:
-    """Whether the record of ``who``'s rig on version 2 says approved, which only an approver's words can make it."""
-    rig = parts.get(f"news-{who}").version(2).rig
+def approved(who: str, number: int = 2) -> bool:
+    """Whether the record of ``who``'s rig on version ``number`` says approved, which only an approver's words can."""
+    rig = parts.get(f"news-{who}").version(number).rig
     return rig is not None and rig.status == "approved"
 
 
