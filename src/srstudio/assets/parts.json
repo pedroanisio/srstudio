@@ -11199,6 +11199,91 @@
           "rig": null
         }
       ]
+    },
+    "toon-laptop-screen": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A laptop's screen under the desk's edge, its draft changing, read on a phone. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "e8aaab4b4a46ddb87d4205a9c520a6d48f9e443e70f6d243c908510689af73c1",
+          "rig": null
+        }
+      ]
+    },
+    "toon-stuck-notes": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Crossed-out sticky notes piling up on a kitchen, one at a time. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "92ddcf47dee23c6d090d6166c6bc4ad6649110e2c72bb7509052112385f98d14",
+          "rig": null
+        }
+      ]
+    },
+    "toon-magnifier": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A magnifying glass with a brass ring and a wooden handle. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "617a719ced720ecdcbc18a5d4ad2eed4e8b09c516894a47742fa5bf55af5bc79",
+          "rig": null
+        }
+      ]
+    },
+    "toon-exclaim": {
+      "kind": "graphic",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An exclamation mark as a shape, at any size, with no font. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5c13bc908d2c764693291bbc6651654205b0d054c8cb33947be69f14ba9d932c",
+          "rig": null
+        }
+      ]
+    },
+    "toon-corkboard": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A corkboard that slides in, a mark pinned at its center and notes around it, no faces. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "309c4a2e1fd41685b78d974f31bcb01ae0e57a61cb8bf40175328c9def0da136",
+          "rig": null
+        }
+      ]
     }
   }
 }

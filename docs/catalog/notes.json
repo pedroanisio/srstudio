@@ -1257,6 +1257,11 @@
     "toon-fridge-light": {"title": "Luz da geladeira"},
     "toon-hill-window": {"title": "Janela sobre o morro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-corkboard": {"title": "Quadro de cortiça"},
+    "toon-exclaim": {"title": "Ponto de exclamação"},
+    "toon-magnifier": {"title": "Lupa"},
+    "toon-stuck-notes": {"title": "Bilhetes riscados"},
+    "toon-laptop-screen": {"title": "Tela do laptop"},
     "paper-streamers": {"title": "Serpentinas de papel"},
     "id-lanyard": {"title": "Crachá com cordão"},
     "sheet-cake": {"title": "Bolo retangular"},
@@ -8483,6 +8488,44 @@
         "at": 17.4
       },
       "text": "A janela da cozinha à noite, com os postes apagando em fila morro abaixo."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Rascunho e bilhetes",
+      "parts": [
+        "toon-laptop-screen",
+        "toon-stuck-notes"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 13.0
+      },
+      "text": "A tela com o rascunho em mudança e os bilhetes riscados que se acumulam."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Lupa e ponto de exclamação",
+      "parts": [
+        "toon-magnifier",
+        "toon-exclaim"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 22.0
+      },
+      "text": "A lupa sobre a tela e o ponto de exclamação desenhado como forma."
+    },
+    {
+      "section": "Toon: adereços",
+      "name": "Quadro de cortiça",
+      "parts": [
+        "toon-corkboard"
+      ],
+      "shot": {
+        "episode": "following-up",
+        "at": 29.3
+      },
+      "text": "O quadro que entra pelo lado, sem rostos, com a marca no centro."
     }
   ]
 }
