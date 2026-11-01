@@ -160,7 +160,7 @@ def frame(scale: float, x: float, y: float) -> tuple[float, float, float]:
 
 
 WIDE = (1.0, 0.0, 0.0)
-PIP_SHOT = frame(1.75, 780.0, 1030.0)
+PIP_SHOT = frame(1.75, 768.0, 1030.0)  # 540 / 1.75 from the x = 1080 edge of the set, no further
 JUNO_SHOT = frame(1.75, 315.0, 1030.0)
 BO_SHOT = frame(1.15, 540.0, 1085.0)
 graded = soft_sets.finish(cv, ep.comp)

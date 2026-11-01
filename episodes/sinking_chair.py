@@ -21,7 +21,7 @@ import os
 from _common import project_root
 from instagram_posts import POSTS
 from sinking_chair_audio import INTERVIEW, SINK
-from srstudio import OFFICE, Episode, EpisodeSpec, cast, cutout_odds, foley, graphics, locations, props
+from srstudio import OFFICE, Episode, EpisodeSpec, cast, cutout_odds, foley, graphics, locations, props, signature
 from srstudio import interview as iv_audio
 from srstudio.cutout_reach import reach
 
@@ -133,7 +133,7 @@ def from_below(g):
         actor,
         low,
         540,
-        1080,
+        860,
         2.4,
         mouth=ep.mouth("manager"),
         blinks=[(P[6].end - 0.2, P[6].end - 0.06)],
@@ -142,6 +142,8 @@ def from_below(g):
     )
     cv.rect(low, -10, 1330, 1100, 620, paints["desk"], cv.ink, 4)
     cv.rect(low, -10, 1600, 1100, 340, paints["desk_front"], cv.ink, 4)
+    signature.cactus(cv, low, 910, 1412, scale=0.5)
+    signature.code(cv, low, 1040, 1760, 11, color="#D9C8AE", align="end")
 
 
 finish = locations.finish(cv, ep.comp)

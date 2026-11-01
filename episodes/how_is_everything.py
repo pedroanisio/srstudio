@@ -48,6 +48,7 @@ LEAVE = [P[i].end + 0.30 for i in (1, 3, 6, 9)]
 ARRIVE = [*(b + 0.14 for b in BITES), NAPKIN + 0.14]
 ROOMS = 1560.0  # off frame, right
 ELBOW = 835.0
+FLOOR = 1165.0  # the far side's, under Ava and her table
 MILO = (300.0, 730.0, 2.1)
 FPS = 30
 
@@ -157,6 +158,8 @@ def spans_far():
 
 def far_side(g):
     """The far table, and Ava standing behind it whenever she is not at his elbow."""
+    cv.rect(g, -600, FLOOR, 2300, 300, "#A68D70")  # the room's floor, which ends behind the counter
+    cv.line(g, -600, FLOOR, 1700, FLOOR, "#7D6750", 5)
     away = cv.group(g, "ava-far")
     cv.gate(away, spans_far())
     sway = [(0.0, 0.0)]
@@ -209,7 +212,8 @@ def milo_in_chair(g):
     cv.keys(actor.eyes, "x", looks, hold=False)
     corner = cv.group(actor.head, "napkin-corner")
     cv.gate(corner, [(NAPKIN, DURATION)])
-    cv.path(corner, "M-18 44 L24 38 L34 66 L-6 72Z", "#FBF8F0", cv.ink, 3)
+    cv.path(corner, "M-5 45 L9 44 L23 70 L5 73Z", "#FBF8F0", cv.ink, 3)  # what is left hangs out of his mouth
+    cv.ellipse(corner, -13, 39, 26, 12, "#3B2A26", cv.ink, 3)  # the lips shut on it, over the napkin's torn edge
     cheek = cv.group(actor.head, "full-cheek")
     cv.gate(cheek, [(a, min(b, a + 2.0)) for a, b in chews if a != FAKE + 0.1])
     cv.path(cheek, "M66 22 Q104 44 72 74", "#F1D0AA", cv.ink, 3.5)

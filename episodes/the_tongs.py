@@ -201,6 +201,15 @@ def behind_the_grill(g):
 def on_the_lawn(g):
     behind_the_grill(g)
     blob.pip(cv, g, pip, end=DURATION, scale=SCALE, mouth_states=ep.mouth("pip"), fps=FPS, shadow=False)
+    tongs_for(  # in his outer hand for the standoff, behind the grill as he is: taken up while the camera is on Bo
+        g,
+        pip,
+        "right",
+        "pip-hip",
+        [(0.0, 150.0), (DROOP, 150.0), (ON_BO, 178.0)],
+        clicks=SNAP2,
+        shown=[(EYES, ON_BO)],  # then his hand is behind Juno, with only the tip of the pair showing
+    )
     soft_odds.smoke(cv, g, GRILL_AT[0], GRILL_AT[1] - 340, ((0.0, 2), (GONE, 3)), end=DURATION, id="grill-smoke")
     soft_odds.grill(
         cv,
@@ -215,13 +224,7 @@ def on_the_lawn(g):
     cv.gate(spare, [(0.0, REACH + 0.25)])
     soft_odds.tongs(cv, spare, GRILL_AT[0] + 140, GRILL_AT[1] - 306, scale=0.62, angle=90, id="spare")
     tongs_for(
-        g,
-        pip,
-        "left",
-        "pip-hand",
-        [(0.0, -40.0), (TURN - 0.05, -140.0), (STANDOFF, -150.0), (DROOP, -175.0)],
-        clicks=SNAP2,
-        shown=[(REACH + 0.25, DURATION)],
+        g, pip, "left", "pip-hand", [(0.0, -40.0), (TURN - 0.05, -140.0), (EYES, -150.0)], shown=[(REACH + 0.25, EYES)]
     )
     blob.bo(cv, g, bo, end=DURATION, scale=SCALE, mouth_states=ep.mouth("bo"), fps=FPS, shadow=False)
     tongs_for(g, bo, "right", "bo-hand", [(0.0, 25.0), (EYES, 150.0), (DROOP, 175.0)], clicks=[*click_at, *SNAP2])
