@@ -1252,6 +1252,10 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "paper-streamers": {"title": "Serpentinas de papel"},
+    "id-lanyard": {"title": "Crachá com cordão"},
+    "sheet-cake": {"title": "Bolo retangular"},
+    "wall-plaque": {"title": "Placa de parede"},
     "soft-quilt-pull": {"title": "Edredom puxado"},
     "soft-handshake": {"title": "Aperto de mão"},
     "soft-open-briefcase": {"title": "Maleta aberta"},
@@ -8704,6 +8708,9 @@
     {"section": "props", "name": "Who runs the grill at your family barbecue?", "parts": ["soft-bottle", "soft-grill", "soft-pizza-box", "soft-smoke", "soft-tongs"], "shot": {"episode": "the-tongs", "at": 12.35}, "text": "Peças desenhadas para este reel: Frasco de molho; Churrasqueira redonda; Caixa de pizza; Fumaça que sobe; Pegador de churrasco."},
     {"section": "props", "name": "Why does it always die the day after?", "parts": ["soft-bowling-ball", "soft-brick", "soft-coin-bag", "soft-dimmer", "soft-dust", "soft-home-fridge", "soft-tv", "soft-washer"], "shot": {"episode": "warranty", "at": 16.0}, "text": "Peças desenhadas para este reel: A bowling ball; A brick; A sack of coins; A room going dark; Falling dust; A fridge that dies; A TV that goes off; A washer that takes anything."},
     {"section": "props", "name": "Why does it only happen in silent rooms?", "parts": ["soft-book", "soft-hush-finger", "soft-notice", "soft-rumble", "soft-yogurt"], "shot": {"episode": "quiet-please", "at": 11.3}, "text": "Peças desenhadas para este reel: A book; A raised finger; A notice on the wall; A rumbling belly; A yogurt."},
-    {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."}
+    {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."},
+    {"section": "props", "name": "Placa de parede", "parts": ["wall-plaque"], "shot": {"episode": "round-seven", "at": 18.9}, "text": "Uma placa de latão que passa o filme inteiro ilegível na parede e só ganha letras no close."},
+    {"section": "props", "name": "Bolo e serpentinas", "parts": ["sheet-cake", "paper-streamers"], "shot": {"episode": "round-seven", "at": 14.6}, "text": "Um bolo branco com duas linhas de glacê e serpentinas de papel presas na parede da recepção."},
+    {"section": "props", "name": "Crachá com cordão", "parts": ["id-lanyard"], "shot": {"episode": "round-seven", "at": 9.5}, "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."}
   ]
 }

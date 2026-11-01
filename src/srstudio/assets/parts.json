@@ -12546,6 +12546,74 @@
           "rig": null
         }
       ]
+    },
+    "wall-plaque": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A brass plaque on a wood back, scrawl until a close-up reads it; generic lettering given by the reel. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9f25f1d36e1fb86950ab724da4a458624f3e82cfde958fa7cc3b888048006373",
+          "rig": null
+        }
+      ]
+    },
+    "sheet-cake": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white sheet cake on a board, piped with two lines of icing. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "19615db78e4157e44fe4fac7582e02353ece98fa5c1a869d65b3a19aa9975599",
+          "rig": null
+        }
+      ]
+    },
+    "id-lanyard": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A staff lanyard with a clip and a card with a small photo of an approved character; no real company. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7bc42476df793e4128319948cedfd8116baadb1c1b884ee1a1b54962bbb0e216",
+          "rig": null
+        }
+      ]
+    },
+    "paper-streamers": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Swags of crepe paper pinned along a wall, for a party. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "606239e0ccbff297c978273ed52cd18b827087d6fc0a81c456ffe0829490fc3b",
+          "rig": null
+        }
+      ]
     }
   }
 }

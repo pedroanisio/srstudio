@@ -23,6 +23,8 @@ from . import (  # noqa: F401  (registers builders)
     cutout_hiring,
     cutout_home,
     cutout_odds,
+    cutout_key,
+    cutout_lobby,
     cutout_office,
     cutout_reference,
     cutout_shop,
