@@ -31,10 +31,10 @@ SCRIPT = [  # role, text, caption, speed
     Spoken("pip", "We don't need a tiny whisk.", "We don't need a tiny whisk.", 1.05),
     Spoken("juno", "It saves us $6.", "It saves us $6.", 1.05),
     Spoken("juno", "Egg poacher. Sock stretcher. Bird feeder.", "Egg poacher.\nSock stretcher. Bird feeder.", 1.0),
-    Spoken("pip", "We don't have a bird.", "We don't have a bird.", 1.0, level_db=-3.0),
+    Spoken("pip", "We don't have a bird.", "We don't have a bird.", 1.0, gain=-3.0),
     Spoken("juno", "$50.02! Free shipping!", "$50.02! Free shipping!", 1.08),
-    Spoken("pip", "Send it all back.", "Send it all back.", 0.92, level_db=-4.0),
-    Spoken("juno", "Return shipping is $6.", "Return shipping is $6.", 0.92, seed=SEED + 22, level_db=-6.0),
+    Spoken("pip", "Send it all back.", "Send it all back.", 0.92, gain=-4.0),
+    Spoken("juno", "Return shipping is $6.", "Return shipping is $6.", 0.92, seed=SEED + 22, gain=-6.0),
     Spoken("pip", "$6? No way.", "$6? No way.", 1.0, heard=("Six? No way",)),  # arc4d3, Slack 1793499862.755999
 ]
 INTERVIEW = Interview(

@@ -306,9 +306,16 @@ def test_the_reason_is_on_the_desk_where_a_head_can_turn_and_the_last_line_is_to
 
 def test_gus_says_the_same_word_small_and_only_that_line_is_small():
     reel = load("came_in_for")
-    small = [line for line in reel.LINES if line.level < 1]
+    small = [line for line in reel.LINES if line.gain < 0]
     assert [line.text for line in small] == ["Ma'am?"] and small[0].speaker == "gus"
-    assert small[0].level <= 0.5
+    assert small[0].gain <= -6.02  # under half of the full voice
+
+
+def test_gus_small_line_keeps_the_gain_its_take_was_recorded_at():
+    """ffmpeg gets the gain to four decimals: -9.1186 would move this take a step, -9.11864 does not."""
+    reel = load("came_in_for")
+    assert reel.SMALL == -9.11864
+    assert 10 ** (reel.SMALL / 20) == pytest.approx(0.35, abs=1e-6)
 
 
 def test_the_live_door_is_beside_vera_and_shuts_only_after_gus_says_it_small():

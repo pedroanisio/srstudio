@@ -135,15 +135,13 @@ class Speaker:
 class Line:
     """A line of dialogue; ``heard`` lists transcripts the operator accepted for it besides its own words (a name
     or homophone speech-to-text cannot tell apart), so the speech check takes those and still refuses the rest.
-    ``level`` is the part of the full voice it is said at: every take is levelled to one peak, so a line meant to come
-    out small is only small in the mix with a ``level`` under 1.
-    ``level_db`` plays it quieter than the others, within :data:`LINE_LEVELS`."""
+    Every take is levelled to one peak, so a line meant to come out small is only small in the mix with a ``gain``:
+    dB under the others, within :data:`LINE_LEVELS`; the take stays the same."""
 
     speaker: str
     text: str
     heard: tuple[str, ...] = ()
-    level: float = 1.0
-    level_db: float = 0.0  # this line against the others in the mix; the take stays the same
+    gain: float = 0.0  # dB against the others in the mix
 
 
 @dataclass(frozen=True)
@@ -234,10 +232,8 @@ def check(sketch: Sketch) -> None:
     if not sketch.lines or any(line.speaker not in names or not line.text.strip() for line in sketch.lines):
         raise SketchError("every line needs a known speaker and some text")
     for i, line in enumerate(sketch.lines):
-        if not (checks.number(line.level) and 0 < line.level <= 1):
-            raise SketchError(f"line {i}: a level is a part of the full voice, in 0..1, got {line.level!r}")
-        if not (checks.number(line.level_db) and LINE_LEVELS[0] <= line.level_db <= LINE_LEVELS[1]):
-            raise SketchError(f"line {i}: level_db {line.level_db!r} is outside {LINE_LEVELS}")
+        if not (checks.number(line.gain) and LINE_LEVELS[0] <= line.gain <= LINE_LEVELS[1]):
+            raise SketchError(f"line {i}: gain {line.gain!r} is outside {LINE_LEVELS}")
         for text in line.heard:
             if not normalize_words(text) or normalize_words(text) == normalize_words(line.text):
                 raise SketchError(f"line {i}: an accepted hearing must be other words than the line, got {text!r}")
@@ -772,7 +768,7 @@ def record(
             trim.clip_in,
             trim.clip_in + kept,
             kept,
-            gain_to_peak(trim.peak, VOICE_PEAK * line.level) + line.level_db,
+            gain_to_peak(trim.peak, VOICE_PEAK) + line.gain,
             ffmpeg,
         )
         word_starts.append([round(at.start + max(0.0, a - trim.clip_in), 6) for _, a, _ in words_of(spoken.alignment)])

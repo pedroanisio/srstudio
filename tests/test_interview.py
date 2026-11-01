@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
 import pytest
 
 from fakes import ffmpeg_required
 from srstudio import interview as I
+from srstudio import sketch
 from srstudio.errors import MissingKeyError
 from srstudio.generated import PLACEHOLDER, Resolved, ResolveError, sha256_of
 from srstudio.provider import parse_voice
@@ -57,17 +58,11 @@ def pins_for(tmp_path: Path, iv: I.Interview, speech: list[float]) -> dict[str, 
         (dict(effects=[I.Sound("fx", "x", 0.4, 0.3, 0.5)]), r"seconds 0\.4 must lie in \(0\.5, 22\.0\)"),
         (dict(effects=[I.Sound("fx", "x", 22.5, 0.5, 0.5)]), r"seconds 22\.5 must lie in \(0\.5, 22\.0\)"),
         (dict(effects=[I.Sound("fx", "x", float("nan"), 0.5, 0.5)]), "seconds nan must lie in"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=1.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
+        (dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]), "gain"),
         (
-            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=1.0), I.Spoken("candidate", "Hi.", "Hi.")]),
-            "level_db",
-        ),
-        (
-            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=-13.0), I.Spoken("candidate", "Hi.", "Hi.")]),
-            "level_db",
-        ),
-        (
-            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", level_db=float("nan")), I.Spoken("candidate", "Hi.", "Hi.")]),
-            "level_db",
+            dict(lines=[I.Spoken("manager", "Hi.", "Hi.", gain=float("nan")), I.Spoken("candidate", "Hi.", "Hi.")]),
+            "gain",
         ),
         (dict(reaction_hold=-1.0), "reaction_hold"),
         (dict(end_card=float("nan")), "end_card"),
@@ -178,10 +173,10 @@ def test_a_take_never_heard_is_refused_without_a_request(tmp_path):
         I.said(tmp_path, SAID, "this")
 
 
-def test_a_lines_level_sits_it_under_the_others_in_the_mix(tmp_path):
+def test_a_lines_gain_sits_it_under_the_others_in_the_mix(tmp_path):
     iv = make()
     plain = I.place(iv, pins_for(tmp_path, iv, [1.0, 0.8]), back_to_back).clips
-    quiet = replace(iv.lines[1], level_db=-6.0)
+    quiet = replace(iv.lines[1], gain=-6.0)
     lowered = replace(iv, lines=[iv.lines[0], quiet, *iv.lines[2:]])
     mixed = I.place(lowered, pins_for(tmp_path, lowered, [1.0, 0.8]), back_to_back).clips
     assert mixed[0].placement.gain_db == plain[0].placement.gain_db
@@ -314,3 +309,11 @@ def test_five_years_times_its_reaction_and_end_card_from_the_published_rounded_l
     assert (fields["reaction_start"], fields["end_card_start"]) == (7.336708, 8.386708)
     cuts = {c["angle"]: c["time"] for c in fields["camera_cuts"]}
     assert (cuts["manager-reaction"], cuts["candidate-ending"]) == (7.336708, 8.386708)
+
+
+def test_a_spoken_line_and_a_sketch_line_share_one_gain_field_in_db():
+    """One name and one unit on both: a second level field beside it is how two scales came to sit side by side."""
+    for kind in (I.Spoken, sketch.Line):
+        names = {f.name for f in fields(kind)}
+        assert "gain" in names and not names & {"level", "level_db"}
+    assert I.LEVELS == sketch.LINE_LEVELS == (-12.0, 0.0)

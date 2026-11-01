@@ -33,7 +33,7 @@ SCRIPT = [  # role, text, caption, speed
         "Bright. Wife says too bright. Four stars.",
         "Bright. Wife says too bright.\nFour stars.",
         0.95,
-        level_db=-3.0,
+        gain=-3.0,
     ),
     Spoken("juno", "Just buy it.", "Just buy it.", 1.05),
     Spoken(
@@ -41,12 +41,12 @@ SCRIPT = [  # role, text, caption, speed
         "Update. Wife has left. Lamp still bright.",
         "Update. Wife has left.\nLamp still bright.",
         0.92,
-        level_db=-3.0,
+        gain=-3.0,
     ),
-    Spoken("juno", "Scroll.", "Scroll.", 0.95, level_db=-4.0),
+    Spoken("juno", "Scroll.", "Scroll.", 0.95, gain=-4.0),
     Spoken("dale", "Update. Met Linda. She likes the lamp.", "Update. Met Linda.\nShe likes the lamp.", 0.95),
     Spoken("pip", "Go on, Dale.", "Go on, Dale.", 0.95),
-    Spoken("dale", "Update. Linda took the lamp.", "Update.\nLinda took the lamp.", 0.90, level_db=-4.0),
+    Spoken("dale", "Update. Linda took the lamp.", "Update.\nLinda took the lamp.", 0.90, gain=-4.0),
     Spoken("juno", "Send him a lamp.", "Send him a lamp.", 0.95),
     Spoken("pip", "12 bucks. Sent.", "12 bucks. Sent.", 1.0),
     Spoken(
@@ -55,7 +55,7 @@ SCRIPT = [  # role, text, caption, speed
         "Update. A stranger\nsent me a lamp.\nIt is too bright.",
         0.92,
     ),
-    Spoken("dale", "She was right.", "She was right.", 0.88, level_db=-6.0),
+    Spoken("dale", "She was right.", "She was right.", 0.88, gain=-6.0),
 ]
 INTERVIEW = Interview(
     slug="still-bright",
