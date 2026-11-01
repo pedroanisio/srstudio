@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from sr_core.scene import Scene
 
-from srstudio import Canvas, craft, facts, news_kit, scripting
+from srstudio import Canvas, craft, facts, news_inked, news_kit, scripting
 from srstudio.news_kit import NewsKitError
 from srstudio.sketch import Line, SketchError
 
@@ -31,6 +31,7 @@ import space_haiku_data  # noqa: E402
 import they_voted_no_data  # noqa: E402
 
 REELS = (seabird_jet_lag_data, space_haiku_data, safe_from_you_data, they_voted_no_data)
+TAGGED = (safe_from_you_data, they_voted_no_data)  # reels older than the rule keep the picture they were approved with
 RUNS_LONG = {they_voted_no_data: 34.0}  # the reviewer kept every line: 79 words, and the master runs 30.4 s
 PHONES = (  # what fills the frame
     "news-phone",
@@ -204,8 +205,40 @@ def test_the_opening_is_the_card_the_line_and_a_reaction_by_five_seconds(pilot):
 
 
 @reel
-def test_no_banner_and_no_parody_tag_because_the_kinds_never_mix(pilot):
-    assert not [name for name in overlay(pilot) if name.startswith(("news-banner", "news-parody"))]
+def test_no_banner_because_the_kinds_never_mix(pilot):
+    assert not [name for name in overlay(pilot) if name.startswith("news-banner")]
+
+
+@reel
+def test_the_parody_tag_runs_from_the_first_frame_to_the_last_on_a_tagged_reel(pilot):
+    assert pilot.STORY.parody is (pilot in TAGGED)
+    tag = overlay(pilot).get("news-parody-tag")
+    if pilot not in TAGGED:
+        assert tag is None
+        return
+    assert float(tag.get("start", "0")) == 0.0
+    assert float(tag.get("end", "0")) == pilot.SKETCH.end
+
+
+@pytest.mark.parametrize("pilot", TAGGED, ids=lambda m: m.SLUG)
+def test_the_credit_stands_on_the_top_row_between_the_show_and_the_tag(pilot):
+    groups = overlay(pilot)
+
+    def span(name: str) -> tuple[float, float]:
+        chip = next(n for n in groups[name] if n.get("shape") == "rect" and n.get("fill") != news_inked.SHADOW)
+        return float(chip.get("x")), float(chip.get("x")) + float(chip.get("width"))
+
+    assert span("news-bug")[1] < span("news-source-card-small")[0]
+    assert span("news-source-card-small")[1] < span("news-parody-tag")[0]
+
+
+def test_a_credit_too_long_for_the_top_row_is_refused():
+    scene = Scene(version="auto")
+    scene.add_project(width=1080, height=1920, fps="30", duration=4.0, background=news_kit.PLUM_DEEP)
+    cv = Canvas(scene, news_kit.NEWS.palette(), font_asset="barlow-condensed")
+    long = news_kit.Source("The Outlet With A Rather Long Name Indeed", "Oct 30, 2026", "A headline")
+    with pytest.raises(NewsKitError, match="top row"):
+        news_inked.source_card(cv, cv.comp, long, 0.0, 1.0, 2.0, lambda t, s: 0.42 * s * len(t), beside_tag=True)
 
 
 @reel

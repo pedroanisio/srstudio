@@ -116,7 +116,7 @@ POST = InstagramPost(
     hashtags=("#binance", "#crypto", "#parodynews", "#technews"),
     thumbnail=Thumbnail("Your money is safe.", 14.6, "News Compiler", focus=(540.0, 860.0), zoom=1.0, place="bottom"),
 )
-STORY = Story(SOURCE, TICKER, LOWERS, ACTS, EVENTS, POST)
+STORY = Story(SOURCE, TICKER, LOWERS, ACTS, EVENTS, POST, parody=True)
 
 
 def validate(sk: Sketch = SKETCH) -> None:
