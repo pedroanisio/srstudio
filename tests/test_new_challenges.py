@@ -40,3 +40,18 @@ def test_an_event_twice_is_refused(data) -> None:
     once = next(b for b in data.SKETCH.beats if b.event == "red")
     with pytest.raises(sketch.SketchError):
         data.validate(replace(data.SKETCH, beats=(*data.SKETCH.beats, replace(once, start=data.SKETCH.end - 0.2))))
+
+
+def test_the_master_asks_for_the_channels_loudness() -> None:
+    assert 'loudness="-14",' in (EPISODES / "new_challenges.py").read_text()
+
+
+def test_a_face_on_screen_always_has_a_mouth(data) -> None:
+    assert all(b.mouth != "none" for b in data.SKETCH.beats if b.who in data.HEADS)
+
+
+def test_the_hook_holds_long_enough_to_read_in_every_shot(data) -> None:
+    beats = data.SKETCH.beats
+    cuts = [b.start for a, b in zip(beats, beats[1:], strict=False) if a.who != b.who]
+    seen = [c for c in cuts if c < data.HOOK_END]
+    assert all(data.HOOK_END - c >= 0.84 for c in seen)
