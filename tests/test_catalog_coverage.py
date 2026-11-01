@@ -14,6 +14,7 @@ from collections.abc import Collection
 from pathlib import Path
 
 from srstudio import (
+    pedro,  # noqa: F401 (importing it registers Pedro, which this file declares)
     rafa_host,  # noqa: F401 (importing it registers Rafa's parts, which this file declares)
     registry,
 )
