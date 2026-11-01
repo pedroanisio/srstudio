@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-import os
 import re
 import shutil
 import subprocess
@@ -659,11 +658,24 @@ REFUSED: dict[str, Refused] = {
 
 def font_of(style: Style, episodes: Path) -> bytes | None:
     """The bytes of a style's font, as the first project that holds it has them; ``None`` for a style with no font."""
-    if style.font is None:
-        return None
-    for found in sorted(Path(episodes).glob(f"*/{style.font.src}")):
+    return None if style.font is None else _held(style.font.src, episodes)
+
+
+def _held(src: str, episodes: Path) -> bytes:
+    """The bytes of the file at ``src`` in the first project that has one."""
+    for found in sorted(Path(episodes).glob(f"*/{src}")):
         return found.read_bytes()
-    raise SpecimenRenderError(f"no project in {episodes} holds {style.font.src}")
+    raise SpecimenRenderError(f"no project in {episodes} holds {src}")
+
+
+def print_fonts(episodes: Path, work: Path) -> Path:
+    """A folder with the font plates print in. A build reads fonts from its projects and nothing else, so what it
+    draws does not depend on who started it or where: the catalog's service sets no fonts variable."""
+    name = plates.PRINT_FONT[2]
+    folder = work / "fonts"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_bytes(_held(f"assets/{name}", episodes))
+    return folder
 
 
 def style_of(entry: registry.Entry) -> Style:
@@ -854,7 +866,7 @@ def _resize(png: Path, out: Path, crop: str, scale: str) -> None:
     )
 
 
-def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
+def render_one(plan_: Plan, engine: Path, folder: Path, fonts: Path) -> None:
     style = style_of(plan_.entry)
     project = ET.fromstring(plan_.document).find("project")
     assert project is not None  # framed() refuses a document without one before anything is rendered
@@ -863,7 +875,7 @@ def render_one(plan_: Plan, engine: Path, folder: Path) -> None:
     work = folder / "work" / style.slug
     work.mkdir(parents=True, exist_ok=True)
     for plate in (*rafa_host.part_plates(name), *pedro_host.part_plates(name)):
-        plates.render(plate, engine=engine, cache=work / "plates", fonts=Path(os.environ.get("SRSTUDIO_FONTS", "")))
+        plates.render(plate, engine=engine, cache=work / "plates", fonts=fonts)
     trial = work / f"{plan_.key}.trial.png"
     final = folder / f"{plan_.key}.png"
     if plan_.set:
@@ -911,6 +923,12 @@ def _size(plan_: Plan) -> tuple[int, int]:
     return SIZE, round(SIZE * style.height / style.width / 2) * 2
 
 
+def _failure(plan_: Plan, exc: BaseException) -> str:
+    """Why ``plan_`` failed, under its part's name: most errors do not know which part they stopped."""
+    name, text = plan_.entry.name, str(exc)
+    return text if text.startswith(f"{name}:") else f"{name}: {text}"
+
+
 def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
     """Every part's specimen and every refusal. Only a drawing with no file yet is rendered."""
     if not shutil.which("ffmpeg"):
@@ -918,9 +936,10 @@ def render_all(engine: Path, cache: Path, episodes: Path) -> Shelf:
     folder = Path(cache).resolve() / "specimens"
     plans, refused = plan(episodes, folder / "work")
     missing = {p.key: p for p in plans if not (folder / f"{p.key}.png").exists()}
+    fonts = print_fonts(episodes, folder / "work")
     with ThreadPoolExecutor(WORKERS) as pool:
-        running = [(p, pool.submit(render_one, p, Path(engine).resolve(), folder)) for p in missing.values()]
-    failed = [str(f.exception()) for _, f in running if f.exception() is not None]
+        running = [(p, pool.submit(render_one, p, Path(engine).resolve(), folder, fonts)) for p in missing.values()]
+    failed = [_failure(p, exc) for p, f in running if (exc := f.exception()) is not None]
     if failed:
         raise SpecimenRenderError(f"{len(failed)} specimens failed:\n" + "\n".join(failed))
     done = {p.entry.name: Specimen(p.entry.name, folder / f"{p.key}.png", *_size(p)) for p in plans}

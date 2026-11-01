@@ -393,7 +393,10 @@ def print_png(printed: Print, *, engine: Path, cache: Path, fonts: Path) -> Path
     if out.exists():
         return out
     family, weight, name, license_ = PRINT_FONT
-    font = (fonts / name).read_bytes()
+    try:
+        font = (fonts / name).read_bytes()
+    except OSError as exc:
+        raise PlateError(f"prints are lettered in {name}, and it is not in {fonts.resolve()}") from exc
     with tempfile.TemporaryDirectory(dir=cache) as work:
         root = Path(work)
         (root / name).write_bytes(font)

@@ -28,6 +28,7 @@ def engine() -> Path:
 
 
 NAMES = {e.name for e in registry.entries()}
+PRINT_FONT = "fredoka-600.ttf"
 
 
 def test_every_registered_part_has_a_recipe_or_a_typed_refusal_and_never_both():
@@ -155,7 +156,70 @@ def test_a_recipe_that_draws_nothing_is_an_error_not_an_empty_card(tmp_path, mon
     work = tmp_path / "work" / "cutout"
     document = cs.document(entry, nothing, cs.font_of(cs.style_of(entry), EPISODES), EPISODES, work)
     with pytest.raises(cs.SpecimenRenderError, match="drew nothing"):
-        cs.render_one(cs.Plan(entry, document, 1.0, "k", False), real, tmp_path)
+        cs.render_one(cs.Plan(entry, document, 1.0, "k", False), real, tmp_path, tmp_path)
+
+
+def plated_plan(name: str = "rafa-mug") -> cs.Plan:
+    return cs.Plan(registry.get("prop", name), b'<scene><project width="4" height="4"/></scene>', 1.0, "k", False)
+
+
+def projects_with(tmp_path: Path, font: bytes) -> Path:
+    assets = tmp_path / "episodes" / "a-project" / "assets"
+    assets.mkdir(parents=True)
+    (assets / PRINT_FONT).write_bytes(font)
+    return tmp_path / "episodes"
+
+
+def only_rafa_mug(monkeypatch) -> None:
+    monkeypatch.setattr(cs, "plan", lambda episodes, work: ([plated_plan()], {}))
+    monkeypatch.setattr(cs.shutil, "which", lambda tool: f"/fake/{tool}")
+
+
+def test_a_build_prints_plates_in_the_font_of_its_projects_with_no_fonts_variable(tmp_path, monkeypatch):
+    """The catalog's service has no SRSTUDIO_FONTS, and runs from a folder that holds no font."""
+    monkeypatch.delenv("SRSTUDIO_FONTS", raising=False)
+    monkeypatch.chdir(tmp_path)
+    episodes = projects_with(tmp_path, b"the font's bytes")
+    only_rafa_mug(monkeypatch)
+    seen: list[bytes] = []
+
+    def render(plate, *, engine, cache, fonts):
+        seen.append((fonts / PRINT_FONT).read_bytes())
+        raise cs.plates.PlateError("the plate stops here")
+
+    monkeypatch.setattr(cs.plates, "render", render)
+    with pytest.raises(cs.SpecimenRenderError, match="the plate stops here"):
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", episodes)
+    assert seen == [b"the font's bytes"]
+
+
+def test_a_build_whose_projects_hold_no_print_font_says_so_before_any_render(tmp_path, monkeypatch):
+    (tmp_path / "episodes").mkdir()
+    only_rafa_mug(monkeypatch)
+    monkeypatch.setattr(cs, "render_one", lambda *a: pytest.fail("rendered without its font"))
+    with pytest.raises(cs.SpecimenRenderError, match=r"no project in .*episodes holds assets/fredoka-600\.ttf"):
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", tmp_path / "episodes")
+
+
+def test_every_failed_specimen_is_named_once_and_all_of_them_fail_the_build(tmp_path, monkeypatch):
+    episodes = projects_with(tmp_path, b"font")
+    named, bare = plated_plan("rafa-mug"), plated_plan("rafa-phone")
+    monkeypatch.setattr(cs, "plan", lambda e, w: ([named, replace(bare, key="other")], {}))
+    monkeypatch.setattr(cs.shutil, "which", lambda tool: f"/fake/{tool}")
+
+    def render_one(plan_, engine, folder, fonts):
+        if plan_ is named:
+            raise cs.SpecimenRenderError("rafa-mug: the recipe drew nothing at 1 s")
+        raise FileNotFoundError(2, "No such file or directory", "some-file")
+
+    monkeypatch.setattr(cs, "render_one", render_one)
+    with pytest.raises(cs.SpecimenRenderError) as failure:
+        cs.render_all(tmp_path / "engine", tmp_path / "cache", episodes)
+    assert str(failure.value).splitlines() == [
+        "2 specimens failed:",
+        "rafa-mug: the recipe drew nothing at 1 s",
+        "rafa-phone: [Errno 2] No such file or directory: 'some-file'",
+    ]
 
 
 # -- package posters --------------------------------------------------------------------------------------

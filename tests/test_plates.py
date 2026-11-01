@@ -122,6 +122,12 @@ def test_one_plate_placed_twice_is_one_asset_and_two_layers():
     assert [(node.asset, node.y) for node in layers] == [(images[0].id, 0.0), (images[0].id, 5.0), (images[1].id, 0.0)]
 
 
+def test_a_print_whose_font_is_not_in_the_folder_is_a_typed_error_that_names_the_folder(tmp_path):
+    printed = Print("#ffffff", 64, 64, (Line("Hi", 32.0, 32.0, 12.0, "#000000"),))
+    with pytest.raises(PlateError, match=r"fredoka-600\.ttf.*" + str(tmp_path / "nowhere")):
+        plates.print_png(printed, engine=tmp_path / "no-engine", cache=tmp_path / "cache", fonts=tmp_path / "nowhere")
+
+
 def test_a_broken_engine_is_a_typed_error(tmp_path):
     engine = tmp_path / "engine"
     engine.write_text("#!/bin/sh\necho nope >&2\nexit 3\n")
