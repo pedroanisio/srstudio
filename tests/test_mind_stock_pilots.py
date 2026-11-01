@@ -145,6 +145,10 @@ def test_the_clipboard_stops_below_the_rabbits_open_mouth():
     assert toon.fy(top) >= above.MOUTH_FOOT
 
 
+def test_the_clipboard_is_a_size_and_place_the_prop_accepts():
+    toon_everyday._place("clipboard", above.BOARD_AT, above.BOARD_SCALE, toon_everyday.CLIPBOARD_BOX)
+
+
 def test_the_clipboard_stays_blank_until_he_has_answered_and_blank_when_she_asks_again():
     at = {"swerve": 5.7, "ward": 12.9}
     assert above.answer(3.0, at) == ""

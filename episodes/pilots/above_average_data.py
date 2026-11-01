@@ -86,7 +86,7 @@ FIGURES = {"bear": (1.3, -20.0), "rabbit": (1.2, 225.0)}
 SEAT_X = {"bear": 145.0, "rabbit": 400.0}
 WHEEL_AT = (145.0, 860.0)
 RABBIT_PAW = "#d9c9c0"
-BOARD_AT, BOARD_SCALE = (420.0, 800.0), 0.76
+BOARD_AT, BOARD_SCALE = (400.0, 830.0), 0.9
 MOUTH_FOOT = 985.0  # frame px of the foot of her open mouth, read off the full-size frames: the clip stops under it
 ANSWER = "Top 10%"
 SWERVE = (0.0, -46.0, 38.0, -24.0, 14.0, 0.0)  # frame px of the shot sliding across the road
@@ -180,7 +180,7 @@ def answer(start: float, at: dict[str, float]) -> str:
 
 
 def _board(shot, at: dict[str, float]) -> None:
-    """The rabbit's clipboard, held under her mouth."""
+    """The rabbit's clipboard, held under her mouth, clear of the signature marks."""
     toon_everyday.clipboard(
         shot.cv,
         shot.front,
