@@ -213,7 +213,8 @@ class Staging:
     setting: Callable[[Sequence[Beat], Appearance], str] | None = None
     # the master's average video bits per second, encoded in two passes: 0, the rate factor alone, for every published
     # reel; a bitrate bounds a master's size by its length (the grain, new every frame, is what costs the bits), and
-    # the first pass lets the encoder spend little on a still opening without blurring it
+    # the first pass lets the encoder spend little on a still opening without blurring it; only ``scene-render encode
+    # --hw software`` runs the passes, and the hardware encoder it picks otherwise ghosts the captions (ADR 0076)
     bitrate: int = 0
 
     def set_of(self, beats: Sequence[Beat], app: Appearance) -> str:

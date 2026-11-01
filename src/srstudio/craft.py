@@ -12,6 +12,7 @@ blind to the wait before the first line. :func:`holding` lists every stretch of 
 :func:`crowded` lists the lines that start with no breath after the one before, which :func:`pauses` cannot see.
 :func:`flashing` lists every stretch of a render that flashes, where the strict encode's check names only the first; it
 says where to look, and the encode stays the verdict.
+:func:`hardware_passes` names the hardware encoder of a master whose scene asks for two passes, which it cannot take.
 :func:`short_text` lists the text a scene shows too briefly to read, from the document alone, before an encode.
 ``srstudio craft`` prints the report (schema :data:`SCHEMA`).
 """
@@ -60,11 +61,12 @@ __all__ = [
     "luminance",
     "flashing",
     "holding",
+    "hardware_passes",
     "measure",
 ]
 
-SCHEMA = "1.6.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still;
-# 1.4.0: the lines a recording cut short
+SCHEMA = "1.7.0"  # 1.1.0: the opening's silences; 1.2.0: where a render flashes; 1.3.0: where it holds still;
+# 1.4.0: the lines a recording cut short; 1.7.0: the hardware encoder that took a two-pass scene
 CUT = 1 / 60  # a step faster than half a frame at 30 fps is a cut, not a move
 MIN_RATIO = 0.15  # a scale change smaller than this is a breath or a squash, not a move
 STATEMENT_BY = 3.0  # seconds: the first statement is finished by here, so the trouble is clear by second 3
@@ -158,6 +160,7 @@ class Craft:
     clipped: list[tuple[str, float]] = field(default_factory=list)
     crowded: list[tuple[float, float]] = field(default_factory=list)
     short: list[Short] = field(default_factory=list)
+    hardware: str = ""  # the hardware encoder that took a two-pass scene; "" when none did, or no render was measured
 
     def to_dict(self) -> dict:
         return {
@@ -179,6 +182,7 @@ class Craft:
             "clipped": [{"line": line, "lost": lost} for line, lost in self.clipped],
             "crowded": [{"start": at, "gap": gap} for at, gap in self.crowded],
             "short": [asdict(s) for s in self.short],
+            "hardware": self.hardware,
         }
 
 
@@ -603,6 +607,27 @@ def holding(frames: np.ndarray, fps: float) -> list[Hold]:
     return out
 
 
+def hardware_passes(
+    document: bytes, video: Path, *, ffprobe: str = "ffprobe", run: Callable[..., Any] | None = None
+) -> str:
+    """The hardware encoder of the master ``video`` when ``document`` asks for two passes, ``""`` when it does not ask
+    or software made it. Only libx264 takes passes: h264_nvenc, which ``scene-render encode`` picks unless told
+    ``--hw software``, encodes at the bitrate in one pass, and at a Collage reel's rate leaves a caption's colour on
+    the wall after the caption has gone (ADR 0076). Raises :class:`CraftError` when the master names no encoder."""
+    if not any(o.get("twoPass") == "true" for o in ET.fromstring(document).iter("output")):
+        return ""
+    probe = [ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream_tags=encoder"]
+    probe += ["-of", "csv=p=0", str(video)]
+    try:
+        tag = (run or _run)(probe, capture_output=True, text=True, check=False)
+    except FileNotFoundError as e:
+        raise CraftError(f"ffprobe was not found: {e}") from e
+    names = tag.stdout.split()
+    if tag.returncode != 0 or not names:
+        raise CraftError(f"{video} does not name its encoder")
+    return "" if names[-1].startswith("lib") else names[-1]
+
+
 def measure(
     project: Path,
     *,
@@ -611,7 +636,8 @@ def measure(
     levels: Callable[[Path, Sequence[tuple[float, float]]], Sequence[float]] = levels,
 ) -> Craft:
     """The craft report of the episode project ``project`` (``<slug>.scene.xml`` inside it); with ``video`` (its
-    render) each pause carries the measured level, and the stretches that flash or stand still are listed."""
+    render) each pause carries the measured level, the stretches that flash or stand still are listed, and a two-pass
+    scene's hardware encoder is named."""
     project = Path(project)
     scene = project / f"{project.name}.scene.xml"
     if not scene.is_file():
@@ -621,12 +647,14 @@ def measure(
     measured: Sequence[float | None] = [None] * len(gaps)
     flashes: list[Flash] = []
     holds: list[Hold] = []
+    hardware = ""
     if video is not None:
         measured = list(levels(Path(video), gaps))
         if len(measured) != len(gaps):
             raise CraftError(f"{len(measured)} levels for {len(gaps)} pauses")
         frames, fps = luminance(Path(video))
         flashes, holds = flashing(frames, fps), holding(frames, fps)
+        hardware = hardware_passes(scene.read_bytes(), Path(video))
     return Craft(
         project.name,
         moves(scene.read_bytes()),
@@ -637,4 +665,5 @@ def measure(
         clipped(project),
         crowded(spoken),
         short_text(scene.read_bytes()),
+        hardware,
     )
