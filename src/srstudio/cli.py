@@ -400,6 +400,8 @@ def main(argv=None):
                 print(f"  flash {f.start:.2f}–{f.end:.2f}  {f.share:.0%} of the picture at worst")
             for h in r.holds:
                 print(f"  hold {h.start:.2f}–{h.end:.2f}  {h.end - h.start:.2f} s")
+            if r.hardware:
+                print(f"  two passes asked, one taken by {r.hardware}: encode again with --hw software")
         return 0
     if args.cmd == "overlap":
         try:
