@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from srstudio import collage, collage_home
 from srstudio.collage_group import Lineup, Place
 from srstudio.collage_sketch import TINTS, CastDrawer, Staging, make_sketch, solo, timed, voices_note
-from srstudio.sketch import Appearance, Beat, Line, Mouths, appearances, events
+from srstudio.sketch import Appearance, Beat, Line, Mouths, appearances
 
 SEED = 3307
 SLUG = "tell-us"
