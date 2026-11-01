@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from srstudio import foley, scripting, sketch, toon_dinner, toon_house, toon_world
+from srstudio import foley, scripting, sketch, toon_critters, toon_dinner, toon_house, toon_world
 from srstudio.sketch import Line, Sketch, Speaker
-from srstudio.toon import fh
-from srstudio.toon_sketch import Sound
+from srstudio.toon import fh, fx, fy
+from srstudio.toon_sketch import SEAT, Sound
 from srstudio.voice import Voice, VoiceSettings
 
 SEED = 3109
@@ -100,18 +100,36 @@ def validate(sk: Sketch = SKETCH) -> None:
         raise sketch.SketchError("he stops halfway before he says ow")
 
 
+def tips(cv, group, beats) -> None:
+    """Over at the bend and stays over: the keys of his body and of the back of him."""
+    at = event(beats, "bend")
+    keys = [(at + 0.35, 0.0), (at + 0.35 + BEND_SECONDS, BEND)]
+    cv.keys(group, "rotation", keys, hold=False, kind="cubic-out", local=False)
+
+
 def bend(cv, body, app, beats) -> None:
     """The waiter goes over at the bend and stays over: every later shot of him holds the angle."""
-    at = event(beats, "bend")
-    if app.end > at:
-        keys = [(at + 0.35, 0.0), (at + 0.35 + BEND_SECONDS, BEND)]
-        cv.keys(body, "rotation", keys, hold=False, kind="cubic-out", local=False)
+    if app.end > event(beats, "bend"):
+        tips(cv, body, beats)
+
+
+def rest_of_him(cv, front, beats) -> None:
+    """The drawing stops behind the table: once he tips, the back of him finishes it, over the line it stops on."""
+    x, y = fx(SEAT[0]), fy(SEAT[1])
+    g = cv.group(front, cv.uid("g"), anchorX=x, anchorY=y, x=x, y=y)
+    tips(cv, g, beats)
+    left, right, base = fx(43.0), fx(326.0), fy(830.0)
+    curve = f"{left} {base} C{left} {base + 190} {right} {base + 190} {right} {base}"
+    cv.path(g, f"M{left} {base - 20} L{curve} L{right} {base - 20}Z", toon_critters.HAMSTER.coat, cv.clear, 0)
+    cv.path(g, f"M{curve}", None, cv.ink, 9)
 
 
 def dress(shot) -> None:
     """The restaurant, a table with the drinks on it, one glass raised."""
     cv, app, beats = shot.cv, shot.app, shot.beats
     toon_dinner.restaurant(cv, shot.back, ("SOUP", "OF THE\nDAY"), lettering=False)
+    if app.who == "hamster" and app.end > event(beats, "bend"):
+        rest_of_him(cv, shot.front, beats)
     toon_dinner.table(cv, shot.front)
     if app.who != "hamster":
         at = event(beats, "glass")
@@ -124,7 +142,7 @@ def dress(shot) -> None:
         else:
             toon_dinner.dishes(cv, table, (("water", 400),), id=f"drink-{int(app.start * 10)}")
     if app.start == 0:
-        toon_house.key_line(cv, shot.front, KEY_LINE, 1.5, 3.6, measure=shot.measure)
+        toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 1.4, measure=shot.measure)  # out before she says it
 
 
 def sounds(beats, end: float) -> list[Sound]:

@@ -38,7 +38,6 @@ BRUNO = Speaker(
 )
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 TINTS = {"mae": "#f9dbe6", "mom": "#e5d9c9", "bruno": "#eccfae"}
-KEY_LINE = "How do you fold a fitted sheet?"
 HEDGEHOG_COAT = "#c9a88a"
 FLAP = foley.Burst(0.22, 1800.0, attack=0.01, decay=0.5)
 AVALANCHE = foley.Burst(2.2, 500.0, attack=0.15, decay=0.5)
@@ -117,8 +116,6 @@ def dress(shot) -> None:
     if app.who == "bear":
         toon_odds.balled_sheets(cv, shot.front, BRUNO_SHEETS, None, app.end)
         toon_odds.folded_sheet(cv, shot.front, (190.0, 830.0), "#a9744f", app.start, app.end)
-    if app.start == 0:
-        toon_house.key_line(cv, shot.front, KEY_LINE, 0.0, 2.3, measure=shot.measure)
 
 
 def sounds(beats, end: float) -> list[Sound]:

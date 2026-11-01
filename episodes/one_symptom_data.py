@@ -39,7 +39,6 @@ DOCTOR = Speaker(
 )
 MOUTH = replace(sketch.MOUTH_STYLE, spelling=True, close_bilabials=True, lead=0.04, min_rest=0.12)
 TINTS = {"patient": "#e5d9c9", "doctor": "#d3e3cf"}
-KEY_LINE = "You have a headache."
 TONGUE = "LATE-STAGE TONGUE ROT"
 SWALLOW = foley.Burst(0.1, 900.0, attack=0.005, decay=0.4, tone_hz=240.0, tone_end_hz=140.0, tone=0.5)
 TWITCHES = 3
@@ -122,8 +121,6 @@ def dress(shot) -> None:
         for k in range(TWITCHES):
             keys += [(thumb + 0.3 + k * 0.42, *THUMB), (thumb + 0.42 + k * 0.42, THUMB[0] + 22, THUMB[1] - 6)]
         toon_house.finger(cv, shot.front, THUMB, 25.0, "#c5a77a", "#c5a77a", keys, thumb, app.end, id="thumb")
-    if app.start == 3.5:
-        toon_house.key_line(cv, shot.front, KEY_LINE, app.start, app.end, measure=shot.measure)
 
 
 def sounds(beats, end: float) -> list[Sound]:
