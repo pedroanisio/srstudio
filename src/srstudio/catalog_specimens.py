@@ -288,6 +288,7 @@ RECIPES: dict[str, Recipe] = {
     "collage-chart": Recipe(part(300, 700, 480, 360, (0.2, 0.5, 1.0))),
     "collage-food": Recipe(part("taco", 540, 960, 400)),
     "collage-phone": Recipe(part(380, 680, 320, 560)),
+    "collage-article": Recipe(part(190, 480, 700, 960, "LOCAL MAN HAS NOT CALLED HIS MOTHER")),
     "collage-bubble": Recipe(part("Dear Son.", 240, 860, 600, 200, size=64)),
     "collage-alarm-clock": Recipe(part(300, 840, 480, "11:40")),
     "collage-cereal-box": Recipe(part(370, 720, 340, 480)),
@@ -381,6 +382,8 @@ RECIPES: dict[str, Recipe] = {
     "stick-drill": Recipe(part(480, 960, scale=3.0)),
     "stick-wardrobe": Recipe(part(335, 1400, "half")),
     "stick-planks": Recipe(part(240, 1300)),
+    "stick-wall-brackets": Recipe(part(330, 900, scale=2.0)),
+    "stick-folded-bedding": Recipe(part(540, 1100, scale=2.0)),
     "stick-sparks": Recipe(part(540, 960, SECONDS, scale=3.0)),
     "stick-slipper": Recipe(part(540, 960, scale=3.0)),
     "stick-trash-truck": Recipe(part(40, 1100)),
@@ -486,6 +489,7 @@ RECIPES: dict[str, Recipe] = {
     "toon-shower-water": Recipe(part(((0.0, SECONDS),))),
     "toon-suds": Recipe(part((540, 700))),
     "toon-towel": Recipe(part((540, 700))),
+    "toon-swung-arm": Recipe(part((300.0, 700.0), "#a8764f", ((0.0, 200.0),), 0.0, SECONDS)),
     "toon-open-book": Recipe(part({0: "#ffe14d", 1: "#ffe14d", 9: "#ff9ec4"})),
     "toon-shut-book": Recipe(part()),
     "toon-highlighter": Recipe(part((540.0, 960.0), "#c49a6c")),
@@ -559,6 +563,8 @@ RECIPES: dict[str, Recipe] = {
     "toon-paper-insert": Recipe(part("Invoice", ("Labor", "Parts", "The last guy"), 0.0, SECONDS)),
     "toon-mosquito": Recipe(part(((0.0, 150.0, 400.0), (SECONDS / 2, 300.0, 500.0), (SECONDS, 300.0, 500.0)), SECONDS)),
     "toon-tasting-spoons": Recipe(part(tuple(0.1 * k for k in range(9)), end=SECONDS)),
+    "soft-star-card": Recipe(part(540.0, 960.0, tap=0.5, scale=1.6)),
+    "soft-mug": Recipe(part(540.0, 960.0, scale=2.0)),
 }  # fmt: skip
 RECIPES.update(  # a kit's second version takes the same arguments, so it takes the same recipe
     {

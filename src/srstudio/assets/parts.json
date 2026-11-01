@@ -12600,6 +12600,482 @@
           "rig": null
         }
       ]
+    },
+    "wall-plaque": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A brass plaque on a wood back, scrawl until a close-up reads it; generic lettering given by the reel. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "9f25f1d36e1fb86950ab724da4a458624f3e82cfde958fa7cc3b888048006373",
+          "rig": null
+        }
+      ]
+    },
+    "sheet-cake": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A white sheet cake on a board, piped with two lines of icing. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "19615db78e4157e44fe4fac7582e02353ece98fa5c1a869d65b3a19aa9975599",
+          "rig": null
+        }
+      ]
+    },
+    "id-lanyard": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A staff lanyard with a clip and a card with a small photo of an approved character; no real company. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "7bc42476df793e4128319948cedfd8116baadb1c1b884ee1a1b54962bbb0e216",
+          "rig": null
+        }
+      ]
+    },
+    "paper-streamers": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "Swags of crepe paper pinned along a wall, for a party. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "606239e0ccbff297c978273ed52cd18b827087d6fc0a81c456ffe0829490fc3b",
+          "rig": null
+        }
+      ]
+    },
+    "table-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone flat on a table that rings, lights and talks on speaker Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "30d0a9c57b3ab79a30326101585114bcc3d2520b93c9351c4b5f940acd129389",
+          "rig": null
+        }
+      ]
+    },
+    "location-chip": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "An invented map chip, unlettered: a blue dot at each place it caught Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "189aa4a6a652323924c040d7a9187a0637356f3b227ed430eb28caf19b173cab",
+          "rig": null
+        }
+      ]
+    },
+    "notice-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone held up with a map on it and a notice chip landing Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "1d8a8e204cb4841923d0756b4e792a5f41a4fc26ab65aac838bd348ba51d4500",
+          "rig": null
+        }
+      ]
+    },
+    "dinner-plate": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A half-eaten dinner plate seen across a table Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "84a474c68740573d39fd2cbeb78a19ab0ac110e5d2ecb7a01b0db581f4013f73",
+          "rig": null
+        }
+      ]
+    },
+    "table-fork": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A fork held at its grip Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ad7b3bfa4373ce2ad4c2fe6676cb3c229e43f717ec9a842bad503a0506a112c0",
+          "rig": null
+        }
+      ]
+    },
+    "held-phone": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-10-31",
+          "note": "A phone held up, its back to the camera Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "c1c47c43e0d8ac7f4a478833edf212aa318b15c15d2515fe6c122e44ea112b0a",
+          "rig": null
+        }
+      ]
+    },
+    "stick-clipboard": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Stick clipboard, edge on, angled with unreadable notes, or turned flat to the viewer with a heading, four boxes and a line to sign; no figures. Taken from stick-clipboard on feat/okay-nov01 efc77d9c, the quarter view added. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "298b562933b985957b62480aaf47525ec9965d9bdaa40a44e943e940dc5cdd0e",
+          "rig": null
+        }
+      ]
+    },
+    "stick-wall-brackets": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "Two steel shelf brackets on a wall with a pencilled line between them and nothing on them; no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "02e29a9099e4e5ecae18fa49cefb947218e8422bb7879171ee13896a4382bf05",
+          "rig": null
+        }
+      ]
+    },
+    "stick-folded-bedding": {
+      "kind": "prop",
+      "style": "stick",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A pillow on a folded duvet, generic and unbranded, that can slide along a table; no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "d96b42205957be1662b853059ae1ec26b649cc0b4c59400757d8631b3973e89e",
+          "rig": null
+        }
+      ]
+    },
+    "lettered-cup": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A takeaway cup with a few words lettered on it, big enough to fill an insert Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "a3f981cd07ffa31f5f5143a13a4c5b0e871be6790f090e8d4727d98865765bb5",
+          "rig": null
+        }
+      ]
+    },
+    "crayon-page": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A child's crayon page: scribbled crayon lines, no drawn figure and no readable text Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0b8c8eacfbc877277c8a16e920f2a78aa074f69bf985ef241ee788ac0be19b7d",
+          "rig": null
+        }
+      ]
+    },
+    "cake-knife": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A cake knife held at the grip, blade down Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fbf9f1daa389df0d385f555876204a12b313c180cd889cc68259c361a009d9d8",
+          "rig": null
+        }
+      ]
+    },
+    "cake-slice": {
+      "kind": "prop",
+      "style": "cutout",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "One slice of sheet cake on a plate Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ffddb90351e9d02508421c28f00b58540d9419def8cb3ed4a97cc055c6ce5646",
+          "rig": null
+        }
+      ]
+    },
+    "toon-double-bed": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A headboard and two pillows for a couple in bed, the wall behind by day or by night. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "2b498ba63623c29eb90cd37ddfd54d92e812ae82639401571a5b76fd077df6c9",
+          "rig": null
+        }
+      ]
+    },
+    "toon-double-quilt": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A quilt across a double bed with the nightstand that signs the shot. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "ed585d3e7ea7083c201b00d633b9bf778ce2ba5cb05d54341a231da24fd76806",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bedroom-corner": {
+      "kind": "location",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "The floor beside the bed: wall, skirting board, floorboards. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "019f4a8cc4bbbe16d44640333906bae73f536aa92fcd80f3abf1961457d2d7c1",
+          "rig": null
+        }
+      ]
+    },
+    "toon-bedside-drawer": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A nightstand close up whose drawer buzzes and slides out by itself on cue. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "f6ddb8725aafd731f1fdd3001b07ed4991d943c568b99a7369356c042be9377d",
+          "rig": null
+        }
+      ]
+    },
+    "toon-quilt-heap": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A quilt dragged down and heaped over the lap of whoever sits on the floor. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "28cae60d28ae4d30bb70df034529b6c4202dfdc97fe566ec7bbe089b188ac09b",
+          "rig": null
+        }
+      ]
+    },
+    "toon-swung-arm": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A character's arm in its own coat, swinging about the shoulder. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "fdcabefdd98c003d4a66fc1451cc4d502886a25e2b3120b5d1c8d9a980c22d73",
+          "rig": null
+        }
+      ]
+    },
+    "soft-front-room": {
+      "kind": "location",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A front room for the Soft cast: wall, window, floor, rug, a door to the hall with a sofa jammed across it behind a gate, and a pale print on the rug where the sofa stood; slots for what stands against the wall and in the hall, no figures. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "5fd8196a7944c46c5d1e0a6d7327f0b03338b712a4ccf9f6645ef415a3713384",
+          "rig": null
+        }
+      ]
+    },
+    "soft-mug": {
+      "kind": "prop",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A plain white mug of coffee for a hand, no lettering and no brand. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "4cbf83efd6b25ed7f1434fa95f0b1d26c583e894e24364f6d67ab75b5ae3d3ac",
+          "rig": null
+        }
+      ]
+    },
+    "soft-star-card": {
+      "kind": "graphic",
+      "style": "soft",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A faceless card of five empty stars, no text, no brand, copying no real app; stars fill in at a tap. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0abecd6ba731c4dae8067d229e0fa8f8a4516d6a0b20990560a131b6baacfc61",
+          "rig": null
+        }
+      ]
+    },
+    "collage-article": {
+      "kind": "prop",
+      "style": "collage",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "A forwarded article on a phone: a headline the caller supplies, a faceless picture box and grey bars. No masthead, byline or date; the headline is measured and refused if it would clip or not read. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "8597f6fd75e211330b1a32b4e096680f8811e09b796fac2b40323e6067002b2b",
+          "rig": null
+        }
+      ]
+    },
+    "toon-open-laptop": {
+      "kind": "prop",
+      "style": "toon",
+      "refused": null,
+      "versions": [
+        {
+          "number": 1,
+          "date": "2026-11-01",
+          "note": "An open laptop seen from its screen side, three quarters, a page of bars on it and square notes that land on it one by one and can lift. Proposed: awaiting the operator's decision.",
+          "status": "proposed",
+          "proof": "",
+          "approval": null,
+          "drawing": "0e7bccdffcb3c3831780d4aa22a3f312e7c81bdb9a90beae36f5ddca3f33ce0f",
+          "rig": null
+        }
+      ]
     }
   }
 }

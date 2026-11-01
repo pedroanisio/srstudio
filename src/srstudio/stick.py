@@ -89,6 +89,10 @@ __all__ = [
     "SEATED",
     "STANDING",
     "check_keys",
+    "ARM",
+    "hand_at",
+    "held",
+    "reaching",
     "rig",
     "between",
     "camera",
@@ -1399,6 +1403,68 @@ def rig(
     return g
 
 
+def hand_at(pose: RigPose, *, far: bool = False, at: Point = (0, 0), scale: float = 1.0, flip: bool = False) -> Point:
+    """Where ``pose``'s near hand (the ``far`` one if asked) lands on the frame, for a figure placed by :func:`rig` with
+    the same ``at``, ``scale`` and ``flip``."""
+    if not (_is_number(scale) and scale > 0):
+        raise StickDataError(f"scale must be a positive number, got {scale!r}")
+    x, y = pose.hands[0 if far else 1]
+    return at[0] + (-scale if flip else scale) * x, at[1] + scale * y
+
+
+ARM = 155.0  # one bone of a standing figure's arm, shoulder to elbow and elbow to hand, as STANDING draws it
+
+
+def reaching(pose: RigPose, hand: Point, *, far: bool = False, bend: int = 1, arm: float = ARM) -> RigPose:
+    """``pose`` with its near hand, or its ``far`` one, on ``hand``, and the elbow solved so both bones stay ``arm``
+    long: a hand sent to a prop arrives without the arm stretching to get there. ``bend`` is +1 or -1, the side of the
+    line from shoulder to hand the elbow goes. A point the arm cannot reach is refused: bring the figure closer."""
+    if not all(_is_number(v) for v in hand):
+        raise StickDataError(f"a hand reaches a finite point, got {hand!r}")
+    if bend not in (1, -1):
+        raise StickDataError(f"an elbow bends +1 or -1, got {bend!r}")
+    if not (_is_number(arm) and arm > 0):
+        raise StickDataError(f"an arm's bone is a positive length, got {arm!r}")
+    sx, sy = pose.neck[0] - 4, pose.neck[1] + 34  # where _body starts an arm
+    dx, dy = hand[0] - sx, hand[1] - sy
+    span = math.hypot(dx, dy)
+    if not 0 < span <= 2 * arm:
+        raise StickDataError(f"a hand at {hand} is out of reach: {span:.0f} from the shoulder, the arm is {2 * arm:g}")
+    side = bend * math.sqrt(arm**2 - (span / 2) ** 2) / span
+    elbow = (sx + dx / 2 - dy * side, sy + dy / 2 + dx * side)
+    i = 0 if far else 1
+    return replace(
+        pose,
+        elbows=(elbow, pose.elbows[1]) if i == 0 else (pose.elbows[0], elbow),
+        hands=(hand, pose.hands[1]) if i == 0 else (pose.hands[0], hand),
+    )
+
+
+def held(
+    cv: Canvas,
+    parent,
+    keys: Sequence[RigKey],
+    end: float,
+    *,
+    poses: Mapping[str, RigPose] = SEATED,
+    far: bool = False,
+    at: Point = (0, 0),
+    scale: float = 1.0,
+    flip: bool = False,
+):
+    """A group at a figure's hand, stepping with the ``keys`` of its :func:`rig` and sized and mirrored with it: draw
+    what the hand carries in it about the origin, and it stays in the hand through every pose. Pass the figure's own
+    ``poses``, ``at``, ``scale`` and ``flip``."""
+    check_keys(keys, end, poses)
+    spots = [(k.start, hand_at(poses[k.pose], far=far, at=at, scale=scale, flip=flip)) for k in keys]
+    x, y = spots[0][1]
+    g = _group(cv, parent, x=x, y=y, scaleX=-scale if flip else scale, scaleY=scale)
+    if len({spot for _, spot in spots}) > 1:
+        cv.keys(g, "x", [(t, spot[0]) for t, spot in spots])
+        cv.keys(g, "y", [(t, spot[1]) for t, spot in spots])
+    return g
+
+
 def camera(cv: Canvas, parent, focus: Point, *, zoom: float = 1.0, push: float = 0.0, to=(540, 760)):
     """A group that frames its contents: at ``zoom`` with ``focus`` moved to ``to``; with ``push`` > 0 it starts
     wide and eases in to that framing over ``push`` seconds. Drawings inside are vectors, so a close-up stays sharp."""
@@ -1457,12 +1523,17 @@ CARD = (90, 300, 900, 230, 46)  # x, y, w, h, radius of the hook card
 
 
 @register("graphic", "stick-card", tags=("hook", "card", "font"))
-def card(cv: Canvas, parent, text: str, *, size: float = 54):
-    """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card."""
+def card(cv: Canvas, parent, text: str, *, size: float = 54, width: int | None = None):
+    """The hook in the caption font: ink text, balanced over up to three lines, on a rounded white card; ``width``
+    narrows it about the frame's centre, so that a reel's card stays clear of the show's bug."""
     cv.require_font("the Stick card sets its hook in it")
     if not text.strip():
         raise StickDataError("a hook card needs text")
     x, y, w, h, r = CARD
+    if width is not None:
+        if not 70 < width <= w:
+            raise StickDataError(f"a card's width runs over 70 up to {w}, got {width!r}")
+        x, w = (cv.width - width) // 2, width
     g = _group(cv, parent)
     box(cv, g, x, y, w, h, "#ffffff", r=r)
     name = cv.uid("text")

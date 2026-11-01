@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from srstudio import Episode, EpisodeSpec, frame_gates, parts, sketch, social, thumbnail
+from srstudio import Episode, EpisodeSpec, frame_gates, parts, show_numbers, sketch, social, thumbnail
 from srstudio.comedy_floor import ComedyError, Scores
 from srstudio.releases import Release, ReleaseError, Tags
 from srstudio.social import (
@@ -1073,6 +1073,50 @@ def test_a_first_delivery_without_an_enhancement_is_refused_before_it_writes(mon
     monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("the gate must refuse before delivering"))
     with pytest.raises(DeliveryError, match="New_Reel: no enhancement"):
         posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def _baited(posts, monkeypatch, tmp_path):
+    """A new reel on the send test by its ledger brief alone, as a holdout is, whose caption asks to be sent."""
+    renders = _new_reel(posts, monkeypatch, tmp_path, tmp_path)
+    reel = posts.RELEASES["new-reel"]
+    baited = replace(reel, post=replace(reel.post, description="Send this to your mum."))
+    monkeypatch.setattr(posts, "RELEASES", {"new-reel": baited})
+    monkeypatch.setattr(posts, "_delivering", lambda *a: {"New_Reel"})
+    ledger = show_numbers.ledger_path(renders)
+    show_numbers.set_base(ledger, 192)
+    show_numbers.claim(ledger, "new-reel", brief="send-v1")
+    project = tmp_path / "episodes" / "new-reel"
+    project.mkdir(parents=True)
+    (project / "new-reel.scene.xml").write_text("<scene/>")
+    return renders
+
+
+def test_a_first_delivery_with_bait_is_refused_before_it_writes(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "publish", lambda *a, **kw: pytest.fail("bait must be refused before delivering"))
+    with pytest.raises(DeliveryError, match='New_Reel: its caption says "send this to"'):
+        posts.write_all(renders / "ig", renders, fonts_dir=tmp_path, engine="engine", only=["New_Reel"])
+
+
+def test_the_check_gate_names_bait_on_a_reel_on_the_send_test(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    monkeypatch.setattr(posts, "check_delivery", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "caption_drift", lambda *a, **kw: [])
+    monkeypatch.setattr(posts, "font_file", lambda folder: tmp_path / "font.ttf")
+    monkeypatch.setattr(posts, "items", lambda renders: {})
+    monkeypatch.setattr(posts.releases, "unpinned", lambda *a, **kw: [])
+    drift = posts.check_all(renders / "ig", renders, fonts_dir=tmp_path)
+    assert [str(d) for d in drift] == ['New_Reel: its caption says "send this to"']
+
+
+def test_a_ledger_that_cannot_be_read_is_a_delivery_error_at_the_bait_check(monkeypatch, tmp_path):
+    posts = shipped_posts()
+    renders = _baited(posts, monkeypatch, tmp_path)
+    show_numbers.ledger_path(renders).write_text("not json")
+    with pytest.raises(DeliveryError, match="cannot be read"):
+        posts.send_drift(renders, posts.RELEASES)
 
 
 def test_auto_enhance_off_just_delivers(monkeypatch, tmp_path):

@@ -124,8 +124,11 @@ class Placement:
     fade_out: float = 0.0
     role: str = "dialogue"
     language: str | None = None
+    phone: bool = False  # heard through a phone: the engine's telephone effect on this track
 
     def __post_init__(self):
+        if not isinstance(self.phone, bool):
+            raise GeneratedError(f"placement: phone is True or False, got {self.phone!r}")
         for name in ("start", "clip_in", "fade_in", "fade_out"):
             value = getattr(self, name)
             if not (checks.number(value) and value >= 0):
@@ -157,7 +160,10 @@ class Placement:
             kw["fadeOut"] = self.fade_out
         if self.language:
             kw["language"] = self.language
-        return mix.add_audioTrack(**kw)
+        track = mix.add_audioTrack(**kw)
+        if self.phone:
+            track.add_audioEffect(type="telephone")
+        return track
 
 
 def _strict(cls, data: object, where: str) -> dict:

@@ -381,6 +381,7 @@ RECEPTION_CLERK = (600, 790, 1.3)  # an office actor behind the counter
 RECEPTION_VISITOR = (250, 1080, 1.5)  # a standing café actor in front of it
 COUNTER_Y = 1060  # the counter's top
 COUNTER_FLOOR = 1440  # where the counter meets the floor
+RECEPTION_CODE = (990, COUNTER_FLOOR - 64)  # the code on the counter's face, by its top right corner
 
 
 @register(
@@ -482,8 +483,13 @@ def reception(
     at_desk: Slot = None,
     id="location-reception",
     shots=None,
+    cactus: Slot = None,
+    code_at: tuple[float, float] | None = None,
 ):
-    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`."""
+    """``behind_desk`` at :data:`RECEPTION_CLERK`, ``at_desk`` at :data:`RECEPTION_VISITOR`; ``cactus`` takes over the
+    counter's cactus (:func:`srstudio.signature.home_cactus`) for a reel that puts something in front of it, and
+    ``code_at`` moves the code (its top right, default :data:`RECEPTION_CODE`) for a reel whose framing leaves it
+    out."""
     ink = cv.ink
     g = cv.group(parent, id)
     if shots is not None:
@@ -542,8 +548,9 @@ def reception(
         cv.ellipse(desk, fx - 5, fy - 5, 10, 10, "#E8A94B", ink, 1.5)
     cv.path(desk, "M300 1060 L298 1004 Q324 990 350 1004 L348 1060Z", vase, ink, 3)
     cv.ellipse(desk, 304, 996, 42, 14, "#D7EEEA", ink, 2.5)
-    signature.cactus(cv, desk, 450, COUNTER_Y + 6, 0.5)
-    signature.code(cv, g, 990, COUNTER_FLOOR - 64, 10, color="#9E9483", align="end")
+    signature.home_cactus(cv, desk, 450, COUNTER_Y + 6, 0.5, slot=cactus)
+    code_x, code_y = code_at or RECEPTION_CODE
+    signature.code(cv, g, code_x, code_y, 10, color="#9E9483", align="end")
     _call(on_desk, desk)
     _call(at_desk, g)
     return g

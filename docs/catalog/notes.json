@@ -1261,6 +1261,34 @@
     "toon-parlour-case": {"title": "Vitrine de sorvetes"},
     "toon-parlour-front": {"title": "Sorveteria, vista de dentro"},
     "toon-parlour-back": {"title": "Sorveteria, vista do cliente"},
+    "toon-open-laptop": {"title": "Notebook aberto, com a tela à vista"},
+    "collage-article": {"title": "Matéria no celular"},
+    "soft-star-card": {"title": "Cartão de cinco estrelas"},
+    "soft-mug": {"title": "Caneca de café"},
+    "soft-front-room": {"title": "Sala da frente"},
+    "toon-swung-arm": {"title": "Braço que balança"},
+    "toon-quilt-heap": {"title": "Edredom amontoado"},
+    "toon-bedside-drawer": {"title": "Gaveta do criado-mudo"},
+    "toon-bedroom-corner": {"title": "Canto do quarto, no chão"},
+    "toon-double-quilt": {"title": "Edredom de casal"},
+    "toon-double-bed": {"title": "Cama de casal"},
+    "cake-slice": {"title": "Fatia de bolo"},
+    "cake-knife": {"title": "Faca de bolo"},
+    "crayon-page": {"title": "Folha de giz de cera"},
+    "lettered-cup": {"title": "Copo com recado"},
+    "stick-folded-bedding": {"title": "Travesseiro e edredom dobrados"},
+    "stick-wall-brackets": {"title": "Suportes de prateleira vazios"},
+    "stick-clipboard": {"title": "Prancheta do Stick"},
+    "held-phone": {"title": "Mão com celular"},
+    "table-fork": {"title": "Garfo de mesa"},
+    "dinner-plate": {"title": "Prato de jantar"},
+    "notice-phone": {"title": "Celular com aviso"},
+    "location-chip": {"title": "Mapa com ponto"},
+    "table-phone": {"title": "Celular na mesa"},
+    "paper-streamers": {"title": "Serpentinas de papel"},
+    "id-lanyard": {"title": "Crachá com cordão"},
+    "sheet-cake": {"title": "Bolo retangular"},
+    "wall-plaque": {"title": "Placa de parede"},
     "soft-quilt-pull": {"title": "Edredom puxado"},
     "soft-handshake": {"title": "Aperto de mão"},
     "soft-open-briefcase": {"title": "Maleta aberta"},
@@ -8749,6 +8777,206 @@
     {"section": "props", "name": "Who runs the grill at your family barbecue?", "parts": ["soft-bottle", "soft-grill", "soft-pizza-box", "soft-smoke", "soft-tongs"], "shot": {"episode": "the-tongs", "at": 12.35}, "text": "Peças desenhadas para este reel: Frasco de molho; Churrasqueira redonda; Caixa de pizza; Fumaça que sobe; Pegador de churrasco."},
     {"section": "props", "name": "Why does it always die the day after?", "parts": ["soft-bowling-ball", "soft-brick", "soft-coin-bag", "soft-dimmer", "soft-dust", "soft-home-fridge", "soft-tv", "soft-washer"], "shot": {"episode": "warranty", "at": 16.0}, "text": "Peças desenhadas para este reel: A bowling ball; A brick; A sack of coins; A room going dark; Falling dust; A fridge that dies; A TV that goes off; A washer that takes anything."},
     {"section": "props", "name": "Why does it only happen in silent rooms?", "parts": ["soft-book", "soft-hush-finger", "soft-notice", "soft-rumble", "soft-yogurt"], "shot": {"episode": "quiet-please", "at": 11.3}, "text": "Peças desenhadas para este reel: A book; A raised finger; A notice on the wall; A rumbling belly; A yogurt."},
-    {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."}
+    {"section": "props", "name": "Torneira que pinga e estoura", "parts": ["toon-faucet"], "shot": {"episode": "the-last-guy", "at": 15.0}, "text": "Peça desenhada para este reel: torneira que pinga e estoura."},
+    {"section": "props", "name": "Placa de parede", "parts": ["wall-plaque"], "shot": {"episode": "round-seven", "at": 18.9}, "text": "Uma placa de latão que passa o filme inteiro ilegível na parede e só ganha letras no close."},
+    {"section": "props", "name": "Bolo e serpentinas", "parts": ["sheet-cake", "paper-streamers"], "shot": {"episode": "round-seven", "at": 14.6}, "text": "Um bolo branco com duas linhas de glacê e serpentinas de papel presas na parede da recepção."},
+    {"section": "props", "name": "Crachá com cordão", "parts": ["id-lanyard"], "shot": {"episode": "round-seven", "at": 9.5}, "text": "Um crachá de funcionário com a foto do personagem, estendido por cima do balcão."},
+    {"section": "props", "name": "Mapa que entrega", "parts": ["location-chip", "table-phone"], "shot": {"episode": "the-dot", "at": 13.8}, "text": "Um mapa inventado, sem nenhuma letra, com um ponto azul em cada lugar, e o celular em cima da mesa falando no viva-voz."},
+    {"section": "props", "name": "Aviso no celular", "parts": ["notice-phone"], "shot": {"episode": "the-dot", "at": 23.0}, "text": "Um celular erguido com o mapa na tela e um aviso que pousa em cima dele."},
+    {"section": "props", "name": "Jantar interrompido", "parts": ["dinner-plate", "table-fork", "held-phone"], "shot": {"episode": "the-dot", "at": 17.5}, "text": "O prato, o garfo que fica nele e o celular que ela tirou da mesa."},
+    {
+      "section": "props",
+      "name": "Prancheta da entrevista",
+      "parts": [
+        "stick-clipboard"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 4.0
+      },
+      "text": "A prancheta em que ela anota tudo, inclinada para mostrar que há notas sem deixar ler uma linha."
+    },
+    {
+      "section": "props",
+      "name": "Suportes sem prateleira",
+      "parts": [
+        "stick-wall-brackets"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 10.3
+      },
+      "text": "Dois suportes na parede, uma linha a lápis e nenhuma prateleira há meses."
+    },
+    {
+      "section": "props",
+      "name": "Roupa de cama dobrada",
+      "parts": [
+        "stick-folded-bedding"
+      ],
+      "shot": {
+        "episode": "practice-round",
+        "at": 28.5
+      },
+      "text": "Travesseiro e edredom dobrados, que chegam deslizando pela mesa quando a conversa acaba."
+    },
+    {
+      "section": "props",
+      "name": "Copo com recado",
+      "parts": [
+        "lettered-cup"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 5.4
+      },
+      "text": "Copo para viagem com um recado escrito à mão, que Milo vira para a câmera."
+    },
+    {
+      "section": "props",
+      "name": "Folha de giz de cera",
+      "parts": [
+        "crayon-page"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 10.5
+      },
+      "text": "Um desenho de criança sem texto legível, deixado no joelho de alguém."
+    },
+    {
+      "section": "props",
+      "name": "Faca e fatia de bolo",
+      "parts": [
+        "cake-knife",
+        "cake-slice"
+      ],
+      "shot": {
+        "episode": "only-your-aunt",
+        "at": 25.0
+      },
+      "text": "A faca do bolo de boas-vindas e a fatia oferecida no prato."
+    },
+    {
+      "section": "locations",
+      "name": "Cama de casal",
+      "parts": [
+        "toon-double-bed"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 5.3
+      },
+      "text": "Cabeceira e dois travesseiros para um casal na cama, com a parede atrás de noite ou de dia."
+    },
+    {
+      "section": "props",
+      "name": "Edredom de casal",
+      "parts": [
+        "toon-double-quilt"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 3.0
+      },
+      "text": "O edredom sobre a cama de casal, com o criado-mudo que assina o plano."
+    },
+    {
+      "section": "locations",
+      "name": "Canto do quarto, no chão",
+      "parts": [
+        "toon-bedroom-corner"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 15.0
+      },
+      "text": "O chão ao lado da cama: parede, rodapé e tábuas, para quem desistiu do colchão."
+    },
+    {
+      "section": "props",
+      "name": "Gaveta do criado-mudo",
+      "parts": [
+        "toon-bedside-drawer"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 19.0
+      },
+      "text": "O criado-mudo de perto, com a gaveta que vibra e abre sozinha na hora marcada."
+    },
+    {
+      "section": "props",
+      "name": "Edredom amontoado",
+      "parts": [
+        "toon-quilt-heap"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 15.0
+      },
+      "text": "O edredom arrastado para o chão, amontoado no colo de quem sentou ali."
+    },
+    {
+      "section": "props",
+      "name": "Braço que balança",
+      "parts": [
+        "toon-swung-arm"
+      ],
+      "shot": {
+        "episode": "nine-alarms",
+        "at": 5.0
+      },
+      "text": "O braço de um personagem na própria roupa, balançando a partir do ombro."
+    },
+    {
+      "section": "locations",
+      "name": "Sala da frente com o sofá no corredor",
+      "parts": [
+        "soft-front-room"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 7.0
+      },
+      "text": "A sala de sempre, com a marca do sofá no tapete e o sofá entalado na porta do corredor."
+    },
+    {
+      "section": "props",
+      "name": "Caneca de café",
+      "parts": [
+        "soft-mug"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 5.0
+      },
+      "text": "Uma caneca branca, sem marca, que acompanha a mão."
+    },
+    {
+      "section": "graphics",
+      "name": "Cartão de cinco estrelas",
+      "parts": [
+        "soft-star-card"
+      ],
+      "shot": {
+        "episode": "whats-new",
+        "at": 21.8
+      },
+      "text": "Cinco estrelas vazias num cartão sem nome; a primeira se acende quando o dedo bate."
+    },
+    {"section": "props", "name": "Matéria encaminhada", "parts": ["collage-article"], "shot": {"episode": "thought-of-you", "at": 14.0}, "text": "A matéria que a mãe manda sem comentário: a manchete é medida antes de desenhar, e a página não copia nenhum jornal."},
+    {
+      "section": "props",
+      "name": "Notebook de frente, com bilhetes",
+      "parts": [
+        "toon-open-laptop"
+      ],
+      "shot": {
+        "episode": "home-anyway",
+        "at": 15.6
+      },
+      "text": "A tela virada para nós: a piada são os bilhetes por cima da página."
+    }
   ]
 }

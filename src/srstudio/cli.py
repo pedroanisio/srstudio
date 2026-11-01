@@ -30,8 +30,10 @@ from . import (
     craft,
     fonts,
     frames,
+    interview,
     lip_proof,
     lipsync,
+    outbox,
     overlap,
     parts,
     proof,
@@ -47,6 +49,7 @@ from .errors import SrstudioError
 from .social import MANIFEST, DeliveryError, read_manifest
 from .soundtrack import INK_MOUTH
 from .styles import STYLES
+from .takes import refuse_rehearsal as refuse_takes_rehearsal
 from .thumbnail import ShowCover
 from .timeline import Timeline
 
@@ -89,10 +92,13 @@ def main(argv=None):
     detail.add_argument("name")
     detail.add_argument("--json", action="store_true")
     detail.add_argument("--plugins", nargs="*", default=(), help="extra modules to import before inspection")
-    number = sub.add_parser("number", help="the show's numbers: set the count, claim a reel's number, list (ADR 0074)")
-    number.add_argument("action", choices=("list", "base", "claim"))
-    number.add_argument("value", nargs="?", help="base: the count; claim: the reel's slug")
+    number = sub.add_parser(
+        "number", help="the show's numbers: set the count, claim or release a reel's number, list (ADR 0074, ADR 0080)"
+    )
+    number.add_argument("action", choices=("list", "base", "claim", "release"))
+    number.add_argument("value", nargs="?", help="base: the count; claim, release: the reel's slug")
     number.add_argument("--series", default="", help="the series, as Saga")
+    number.add_argument("--brief", default="", help="claim: the brief the reel was made to, as send-v1")
     number.add_argument("--ledger", type=Path, default=_ledger_default(), help="the ledger file")
     strict = sub.add_parser("strict", help="list the reels shipped with findings proven false (ADR 0078)")
     strict.add_argument("--scripts", type=Path, default=_scripts_default(), help="the episodes folder")
@@ -468,6 +474,9 @@ def main(argv=None):
             script = str(episode)
         sys.argv = [script, *([args.root] if args.root else []), *args.options]  # never srstudio's own words
         try:
+            if args.root and "--voice" in args.options:
+                interview.refuse_rehearsal(Path(args.root))
+                refuse_takes_rehearsal(Path(args.root))
             with usage.recorded(Path(args.root)) if args.root else nullcontext(), show.stamping(number):
                 if script.endswith(".py"):
                     sys.path.insert(
@@ -636,7 +645,8 @@ def _ledger_default() -> Path:
 
 
 def _claimed(slug: str, claim: show_numbers.Claim) -> str:
-    return f"{slug} #{claim.number}" + (f" {claim.series} #{claim.series_number}" if claim.series else "")
+    series = f" {claim.series} #{claim.series_number}" if claim.series else ""
+    return f"{slug} #{claim.number}{series}" + (f" {claim.brief}" if claim.brief else "")
 
 
 def _number(args: argparse.Namespace) -> int:
@@ -648,10 +658,17 @@ def _number(args: argparse.Namespace) -> int:
         elif args.action == "claim":
             if not args.value:
                 raise show_numbers.NumberError("claim takes the reel's slug")
-            print(_claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series)))
+            print(_claimed(args.value, show_numbers.claim(args.ledger, args.value, args.series, args.brief)))
+            return 0
+        elif args.action == "release":
+            if not args.value:
+                raise show_numbers.NumberError("release takes the reel's slug")
+            root = args.ledger.resolve().parent.parent  # the ledger sits under the folder the renders and outbox are in
+            shown = outbox.delivered_names(root / "renders" / "ig", root / "outbox")
+            print(f"released {_claimed(args.value, show_numbers.release_claim(args.ledger, args.value, shown))}")
             return 0
         ledger = show_numbers.read(args.ledger)
-    except show_numbers.NumberError as exc:
+    except SrstudioError as exc:
         print(f"srstudio number: {exc}", file=sys.stderr)
         return 2
     print(f"base {'not set' if ledger.base is None else ledger.base}")

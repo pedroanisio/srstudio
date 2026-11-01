@@ -55,10 +55,25 @@ from .voice import MODEL, ElevenLabsClient, Voice, VoiceSettings
 BUILD_FLAGS = ("--init", "--voice")  # write the project files; build from the recording
 GRAIN = {"intensity": 0.22, "size": 1.4}
 # reveal and timer: no sound, a prop shows from them (see until); flash: the camera's shutter; swat, ding, crunch and
-# thud (a door shutting, something heavy landing) play on their beat; ring is one ring of a phone; hiss:<seconds> lets
-# the air out of something for that long; whip, on the beat a new shot starts, whips the camera from the shot before it
-# to that one
-EVENTS = ("zoom", "sting", "beep", "reveal", "timer", "flash", "swat", "ding", "crunch", "hiss", "thud", "ring", "whip")
+# thud (a door shutting, something heavy landing) play on their beat; ring is one ring of a phone; buzz is a phone on
+# silent; hiss:<seconds> lets the air out of something for that long; whip, on the beat a new shot starts, whips the
+# camera from the shot before it to that one
+EVENTS = (
+    "zoom",
+    "sting",
+    "beep",
+    "reveal",
+    "timer",
+    "flash",
+    "swat",
+    "ding",
+    "crunch",
+    "hiss",
+    "thud",
+    "ring",
+    "buzz",
+    "whip",
+)
 ZOOM_SCALE = 1.55
 PUSH_AT = (540.0, 960.0)  # the middle of the frame
 ZOOM_SNAP = 0.15  # seconds the crash zoom takes to land
@@ -77,6 +92,7 @@ HISS_GAIN_DB = -9.0
 CRUNCH_GAIN_DB = -6.0
 THUD_GAIN_DB = -4.0
 RING_GAIN_DB = -11.0
+BUZZ_GAIN_DB = -6.0
 CRUNCH = (0.0, 0.016, 0.034, 0.21, 0.226, 0.25, 0.42, 0.436, 0.45)  # three bites, each a few quick clicks
 
 
@@ -489,7 +505,8 @@ def sound_effects(
 ) -> list[dict]:
     """The manifest's effects: a whoosh into every ``zoom`` and ``whip``, the sting on ``sting``, the headset on
     ``beep``, the shutter on ``flash``, a short whoosh landing on every ``swat``, a notification on ``ding``, a
-    phone's ring on ``ring``, chewing on ``crunch``, a thud on ``thud`` and air on ``hiss:<seconds>``."""
+    phone's ring on ``ring``, a phone on silent on ``buzz``, chewing on ``crunch``, a thud on ``thud`` and air on
+    ``hiss:<seconds>``."""
     audio = Path(root) / "audio"
     audio.mkdir(parents=True, exist_ok=True)
     out = []
@@ -526,6 +543,10 @@ def sound_effects(
     if rings:
         ring = foley.write_tones(audio / "ring.wav", rings, end, notes=foley.RING)
         out.append(sketch.effect("ring", 0.0, RING_GAIN_DB, root, ring))
+    buzzes = [at for at, _ in sketch.events(beats, "buzz")]
+    if buzzes:
+        buzz = foley.write_buzz(audio / "buzz.wav", buzzes, end, seed=seed)
+        out.append(sketch.effect("buzz", 0.0, BUZZ_GAIN_DB, root, buzz))
     bites = [at for at, _ in sketch.events(beats, "crunch")]
     if bites:
         clicks = sorted(at + d for at in bites for d in CRUNCH)

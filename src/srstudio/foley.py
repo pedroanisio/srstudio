@@ -60,6 +60,7 @@ __all__ = [
     "CLACK",
     "FLAP",
     "CLINK",
+    "SIP",
     "SIZZLE",
     "PURR",
     "HUM",
@@ -520,6 +521,7 @@ PEN = Burst(0.5, 3800.0, attack=0.03, decay=0.8, flutter_hz=29.0)  # a nib on pa
 CLACK = Burst(0.05, 7000.0, attack=0.001, decay=0.22, tone_hz=2600.0, tone_end_hz=2300.0, tone=0.45)  # kitchen tongs
 FLAP = Burst(0.12, 1800.0, attack=0.004, decay=0.3, tone_hz=240.0, tone_end_hz=140.0, tone=0.3)  # a page, a burger
 CLINK = Burst(0.09, 9000.0, attack=0.001, decay=0.2, tone_hz=4300.0, tone_end_hz=4250.0, tone=0.5)  # a coin, a glass
+SIP = Burst(0.34, 2600.0, attack=0.1, decay=0.6, tone_hz=520.0, tone_end_hz=760.0, tone=0.12, flutter_hz=31.0)  # a cup
 SIZZLE = Burst(4.0, 7000.0, attack=0.3, decay=5.0, flutter_hz=23.0)  # fat on a grill; lay them end to end
 PURR = Burst(4.0, 320.0, attack=0.3, decay=6.0, tone_hz=58.0, tone_end_hz=58.0, tone=0.5, flutter_hz=26.0)  # a motor
 HUM = Burst(4.0, 200.0, attack=0.2, decay=8.0, tone_hz=100.0, tone_end_hz=100.0, tone=0.8)  # a fridge

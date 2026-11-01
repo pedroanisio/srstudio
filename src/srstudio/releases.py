@@ -36,6 +36,7 @@ __all__ = [
     "Tags",
     "arm_problems",
     "arms",
+    "arms_of",
     "caption_on_cover",
     "doubled_captions",
     "grandfathered",
@@ -61,13 +62,19 @@ TERRITORIES = (
 )
 CAUSES = ("institution", "other-person", "protagonist")
 EMOTIONS = ("recognition", "embarrassment", "tension", "relief", "affection", "triumph")
-TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion")  # sp-: the posting job's own test ids
+TESTS = ("opening", "rhythm", "jargon", "sp-hook_motion", "sp-speakers", "sp-length")  # sp-: the posting job's test ids
 ARMS = ("a", "b")
+_OWN_ARMS = {"sp-length": ("short", "natural")}  # a test not named here has ARMS
 RECIPIENTS = ("partner", "family", "best friend", "roommate", "work friend")  # who arm b of the recipient test is for
 
 
 class ReleaseError(SrstudioError, ValueError):
     """A release, or a folder of them, cannot be published as declared."""
+
+
+def arms_of(test: str) -> tuple[str, str]:
+    """The two arms of ``test``, the first being the one a declared share counts."""
+    return _OWN_ARMS.get(test, ARMS)
 
 
 @dataclass(frozen=True)
@@ -76,8 +83,11 @@ class Tags:
     ``cause`` of the problem (an institution, another person or the protagonist), the ``emotion`` it leaves, the
     ``recurring`` characters it brings back (their registered short names), and, for an episode in a running A/B
     test, the ``test`` and its ``arm``. The recipient test runs beside the first-second test in the same ``ab.json``:
-    ``recipient`` is its arm, and arm ``b`` names who the viewer sends it ``to``. Every value comes from a closed set,
-    so the tags can be counted."""
+    ``recipient`` is its arm, and arm ``b`` names who the viewer sends it ``to``. ``also`` names any further tests the
+    reel is in, as ``(test, arm)`` pairs. Every value so far comes from a closed
+    set, so the tags can be counted. ``send_to`` and ``send_line`` are the send test's, set together or not at all: the
+    one person the script names as who gets the reel, in the script's own words, and the last line, the reason to send
+    it (:mod:`srstudio.send_gate`)."""
 
     territory: str
     cause: str
@@ -87,6 +97,29 @@ class Tags:
     arm: str = ""
     recipient: str = ""
     to: str = ""
+    send_to: str = ""
+    send_line: str = ""
+    also: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def tests(self) -> tuple[tuple[str, str], ...]:
+        """Every ``(test, arm)`` the reel is in."""
+        return ((self.test, self.arm), *self.also) if self.test else ()
+
+    def _check_also(self) -> None:
+        pairs = isinstance(self.also, tuple) and all(isinstance(p, tuple) and len(p) == 2 for p in self.also)
+        if not pairs:
+            raise ReleaseError(f"also {self.also!r} is not a tuple of (test, arm) pairs")
+        if self.also and not self.test:
+            raise ReleaseError(f"also {self.also!r} rides on test and arm: a reel without them has no ab.json")
+        for test, arm in self.also:
+            if test not in TESTS:
+                raise ReleaseError(f"test {test!r} is not one of {', '.join(TESTS)}")
+            if arm not in arms_of(test):
+                raise ReleaseError(f"{test}: arm {arm!r} is not one of {', '.join(arms_of(test))}")
+        named = [test for test, _ in self.tests]
+        if len(set(named)) != len(named):
+            raise ReleaseError(f"tests {named!r} name one test twice")
 
     def __post_init__(self) -> None:
         for field, value, allowed in (
@@ -106,10 +139,13 @@ class Tags:
             raise ReleaseError(f"test {self.test!r} is not one of {', '.join(TESTS)}")
         if bool(self.test) != bool(self.arm):
             raise ReleaseError(f"test {self.test!r} and arm {self.arm!r}: an A/B test needs both or neither")
-        if self.arm and self.arm not in ARMS:
-            raise ReleaseError(f"arm {self.arm!r} is not one of {', '.join(ARMS)}")
+        if self.arm and self.arm not in arms_of(self.test):
+            raise ReleaseError(f"{self.test}: arm {self.arm!r} is not one of {', '.join(arms_of(self.test))}")
         if self.recipient and self.recipient not in ARMS:
-            raise ReleaseError(f"recipient {self.recipient!r} is not one of {', '.join(ARMS)}")
+            raise ReleaseError(
+                f"recipient {self.recipient!r} is not one of {', '.join(ARMS)}: it is an A/B arm, and the person a "
+                "reel is sent to goes in send_to"
+            )
         if self.recipient and not self.test:
             raise ReleaseError(
                 "the recipient test rides on the first-second test: a reel without test and arm drops both"
@@ -118,6 +154,9 @@ class Tags:
             raise ReleaseError(f"recipient {self.recipient!r} and to {self.to!r}: arm b, and only arm b, names who")
         if self.to and self.to not in RECIPIENTS:
             raise ReleaseError(f"to {self.to!r} is not one of {', '.join(RECIPIENTS)}")
+        if bool(self.send_to.strip()) != bool(self.send_line.strip()):
+            raise ReleaseError(f"send_to {self.send_to!r} and send_line {self.send_line!r} go together")
+        self._check_also()
 
 
 @dataclass(frozen=True)
@@ -259,11 +298,12 @@ def caption_on_cover(releases: Mapping[str, Release], episodes: Path, delivering
 
 
 def arms(releases: Mapping[str, Release], test: str) -> dict[str, list[str]]:
-    """The slugs on each arm of ``test``, each arm in slug order."""
-    found: dict[str, list[str]] = {arm: [] for arm in ARMS}
+    """The slugs on each arm of ``test``, each arm in slug order, whichever of a reel's tests it is."""
+    found: dict[str, list[str]] = {arm: [] for arm in arms_of(test)}
     for slug, release in sorted(releases.items()):
-        if release.tags is not None and release.tags.test == test:
-            found[release.tags.arm].append(slug)
+        for named, arm in release.tags.tests if release.tags is not None else ():
+            if named == test:
+                found[arm].append(slug)
     return found
 
 
@@ -273,14 +313,16 @@ def arm_problems(
     """What keeps ``test`` from reading as a fair split: arms off the split it declares and, given the delivery
     ``order``, a slug outside the test, one the order leaves out, or two running on one arm.
 
-    ``share`` is the part of the test on arm a. An even split wants both arms equal and neither to run; a declared
-    share, as a decided test keeping one reel in five as its control, wants that count and keeps the smaller arm apart.
+    ``share`` is the part of the test on its first arm. An even split wants both arms equal and neither to run; a
+    declared share, as a decided test keeping one reel in five as its control, wants that count and keeps the smaller
+    arm apart.
     """
     if not 0 < share < 1:
         raise ReleaseError(f"share {share} must lie between 0 and 1: both arms need reels to compare")
     split = arms(releases, test)
-    sizes = [len(split[arm]) for arm in ARMS]
-    told = " and ".join(f"arm {a} has {n}" for a, n in zip(ARMS, sizes, strict=True))
+    names = arms_of(test)
+    sizes = [len(split[arm]) for arm in names]
+    told = " and ".join(f"arm {a} has {n}" for a, n in zip(names, sizes, strict=True))
     wanted = round(sum(sizes) * share)
     even = share == 0.5
     if even:
@@ -293,7 +335,7 @@ def arm_problems(
     problems += [f"{slug} is not in the test" for slug in order if slug not in arm_of]
     problems += [f"{slug} is not in the order" for slug in arm_of if slug not in order]
     run = [slug for slug in order if slug in arm_of]
-    smaller = ARMS[0] if share < 0.5 else ARMS[1]
+    smaller = names[0] if share < 0.5 else names[1]
     problems += [
         f"{b} follows {a} on the same arm {arm_of[a]}"
         for a, b in zip(run, run[1:], strict=False)

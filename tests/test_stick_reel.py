@@ -70,3 +70,51 @@ def test_a_new_reel_s_subtitle_starts_with_the_take_s_first_word_and_not_with_it
 
 def test_a_delivered_reel_keeps_its_subtitles_from_the_take_s_start():
     assert stick_reel.spoken_cues((HELD, PLAIN, EFFECT)) == [(0.0, 3.0, "Step one."), (3.0, 4.0, "Easy.")]
+
+
+CLOSE = ((300.0, 800.0), 1.4, (420.0, 800.0))  # focus, zoom, where the focus lands
+
+
+def test_framing_says_where_faces_and_marks_land_through_the_camera():
+    landed = stick_reel.check_framing(CLOSE, faces=[(300.0, 800.0)], marks=[(440.0, 1100.0)])
+    assert landed == [(420.0, 800.0), pytest.approx((616.0, 1220.0))]
+
+
+def test_a_face_that_the_camera_puts_on_the_bug_is_refused():
+    with pytest.raises(stick.StickDataError, match="bug"):
+        stick_reel.check_framing(((540.0, 960.0), 1.0, (540.0, 960.0)), faces=[(985.0, 300.0)])
+
+
+def test_a_big_head_near_the_bug_is_refused_though_its_centre_is_clear():
+    with pytest.raises(stick.StickDataError, match="bug"):
+        stick_reel.check_framing(((540.0, 960.0), 2.0, (540.0, 960.0)), faces=[(760.0, 690.0)])
+
+
+def test_a_face_in_the_caption_band_is_refused():
+    with pytest.raises(stick.StickDataError, match="caption"):
+        stick_reel.check_framing(CLOSE, faces=[(300.0, 1420.0)])
+
+
+def test_a_face_off_the_frame_is_refused():
+    with pytest.raises(stick.StickDataError, match="off the frame"):
+        stick_reel.check_framing(CLOSE, faces=[(1000.0, 800.0)])
+
+
+def test_a_mark_off_the_frame_or_under_the_captions_is_refused():
+    with pytest.raises(stick.StickDataError, match="off the frame"):
+        stick_reel.check_framing(CLOSE, marks=[(1100.0, 800.0)])
+    with pytest.raises(stick.StickDataError, match="caption"):
+        stick_reel.check_framing(CLOSE, marks=[(300.0, 1420.0)])
+
+
+@pytest.mark.parametrize(
+    "camera",
+    [((0.0, 0.0), 0.0, (0.0, 0.0)), ((0.0, 0.0), float("nan"), (0.0, 0.0)), ((float("inf"), 0.0), 1.0, (0.0, 0.0))],
+)
+def test_a_camera_that_cannot_land_a_point_is_refused(camera):
+    with pytest.raises(stick.StickDataError, match="camera"):
+        stick_reel.check_framing(camera, faces=[(0.0, 0.0)])
+
+
+def test_the_clear_card_ends_at_the_bug_box():
+    assert (1080 + stick_reel.CARD_CLEAR) / 2 <= stick_reel.BUG_BOX[0]

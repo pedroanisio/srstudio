@@ -249,11 +249,12 @@ def _door(cv: Canvas, g, x0: float, y0: float, x1: float, y1: float, colour: str
     "toon-kitchen",
     summary="The office kitchen: tiled backsplash, mint cabinets, a counter for props and a tall fridge with a note",
 )
-def kitchen(cv: Canvas, parent, note: str = "") -> None:
+def kitchen(cv: Canvas, parent, note: str = "", chair: bool = True) -> None:
     """The office kitchen behind the character: a warm wall, mint upper and lower cabinets, a white subway-tile
     backsplash with a glint on every tile, a wooden counter at :data:`COUNTER_Y` that props stand on, and a tall
     fridge at the right with magnets and, when ``note`` is given (1 to :data:`NOTE_MAX` characters), a note stuck
-    to its door. The signature marks are the desk's (:func:`srstudio.toon.desk`)."""
+    to its door. ``chair`` false leaves the chair out, for a shot of someone who is not sitting in it. The signature
+    marks are the desk's (:func:`srstudio.toon.desk`)."""
     if note and (len(note) > NOTE_MAX or not note.strip()):
         raise ToonDataError(f"the fridge note is 1 to {NOTE_MAX} characters")
     g = cv.group(parent, cv.uid("g"))
@@ -271,9 +272,9 @@ def kitchen(cv: Canvas, parent, note: str = "") -> None:
     cv.rect(g, fx(-10), fy(COUNTER_Y + 20), fh(FRIDGE_X + 6), fh(12), COUNTER_EDGE, cv.ink, FINE_W * 0.6, radius=0)
     cv.rect(g, fx(0), fy(COUNTER_Y + 4), fh(FRIDGE_X - 10), fh(4), GLINT, cv.clear, 0, radius=fh(2), opacity=0.35)
     _fridge(cv, g, note)
-    # the chair back: wood, with a lighter rail
-    _path(cv, g, CHAIR_D, KITCHEN_CHAIR)
-    _line(cv, g, [(40, 600), (150, 584), (270, 596)], 10.0, KITCHEN_CHAIR_LIGHT)
+    if chair:  # its back: wood, with a lighter rail
+        _path(cv, g, CHAIR_D, KITCHEN_CHAIR)
+        _line(cv, g, [(40, 600), (150, 584), (270, 596)], 10.0, KITCHEN_CHAIR_LIGHT)
 
 
 def _fridge(cv: Canvas, g, note: str) -> None:

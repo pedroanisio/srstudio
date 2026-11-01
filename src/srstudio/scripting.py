@@ -22,6 +22,7 @@ __all__ = [
     "exactly_once",
     "first",
     "hold",
+    "line_seconds",
     "off_screen",
     "only_events",
     "over_budget",
@@ -57,10 +58,15 @@ def over_budget(lines: Sequence[Line], seconds: float) -> int:
     return max(0, word_count(lines) - word_budget(seconds))
 
 
+def line_seconds(text: str, speed: float = 1.0) -> float:
+    """About how long one line runs at ``speed``, before its take is paid for; the recording decides."""
+    return (SECONDS_A_WORD * len(text.split()) + SECONDS_A_LINE) / speed
+
+
 def spoken_seconds(lines: Sequence[Line]) -> float:
     """About how long ``lines`` run, spoken in order with no held pauses, before any take is paid for. An estimate:
     on the five reels it was fitted to, the speech alone came within 1.7 s of the recording. Held pauses come on top."""
-    speech = sum(SECONDS_A_WORD * len(line.text.split()) + SECONDS_A_LINE for line in lines)
+    speech = sum(line_seconds(line.text) for line in lines)
     return round(speech + LINE_GAP * max(len(lines) - 1, 0), 2)
 
 
