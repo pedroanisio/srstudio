@@ -196,3 +196,61 @@ def test_the_beat_command_fails_plainly_on_a_file_with_no_sound(tmp_path, capsys
     broken.write_text("not audio")
     assert main(["beat", str(broken)]) != 0
     assert "beat" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bpm", [92, 110, 128, 140])
+def test_a_song_with_its_kick_on_one_and_three_is_read_at_the_right_bar_line(tmp_path, bpm):
+    groove = Groove(bpm=bpm, offset=0.25)
+    path = tmp_path / "song.wav"
+    write_wav(path, render(groove, [Section(0, 12)], rate=22050), 22050)
+    found = music.measure(path)
+    bar = 4 * 60 / bpm
+    assert found.bpm == pytest.approx(bpm, abs=0.5)
+    assert (found.offset - 0.25 + bar / 2) % bar - bar / 2 == pytest.approx(0.0, abs=0.04)
+
+
+def test_a_reading_says_how_many_bars_it_heard_and_doubts_a_short_one(tmp_path):
+    short = music.reading(clicks(tmp_path / "short.wav", 120, seconds=8.0))
+    long = music.reading(clicks(tmp_path / "long.wav", 120, seconds=20.0))
+    assert short.bars == pytest.approx(4, abs=0.1) and not short.sure
+    assert long.bars == pytest.approx(10, abs=0.1) and long.sure
+
+
+def test_the_beat_command_warns_when_it_heard_too_few_bars(tmp_path, capsys):
+    assert main(["beat", str(clicks(tmp_path / "short.wav", 120, seconds=8.0))]) == 0
+    assert "bars" in capsys.readouterr().err
+
+
+def test_a_mark_of_a_tempo_with_an_endless_beat_stays_in_its_own_span():
+    grid = Groove(129.0)
+    one, two, three = grid.between(1.0, 2.5)[:3]
+    assert grid.between(one, two) == [one]
+    assert grid.between(two, three) == [two]
+    assert grid.between(one, three, 0.5)[0] == one
+
+
+@pytest.mark.parametrize("span", [(math.nan, 1.0), (0.0, math.inf)])
+def test_a_span_that_is_no_number_is_refused(span):
+    with pytest.raises(MusicError):
+        Groove(120.0).between(*span)
+
+
+def test_a_clip_shorter_than_two_bars_is_refused_and_not_read_at_a_faster_tempo(tmp_path):
+    with pytest.raises(MusicError, match="too short for bars"):
+        music.reading(clicks(tmp_path / "short.wav", 90, seconds=2.6))
+
+
+@pytest.mark.parametrize(("played", "read"), [(60, 120), (180, 90)])
+def test_a_tempo_past_the_measured_range_reads_at_its_octave(tmp_path, played, read):
+    assert music.measure(clicks(tmp_path / "far.wav", played)).bpm == pytest.approx(read, abs=1)
+
+
+def test_a_bar_of_no_beats_is_refused_before_anything_is_read(tmp_path):
+    with pytest.raises(MusicError, match="beats_per_bar"):
+        music.reading(tmp_path / "unread.wav", beats_per_bar=0)
+    assert main(["beat", str(clicks(tmp_path / "c.wav", 120)), "--beats-per-bar", "0"]) == 1
+
+
+def test_a_missing_decoder_is_a_music_error(tmp_path):
+    with pytest.raises(MusicError, match="no-such-ffmpeg"):
+        music.reading(clicks(tmp_path / "c.wav", 120), ffmpeg="no-such-ffmpeg")

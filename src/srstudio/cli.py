@@ -176,7 +176,7 @@ def main(argv=None):
     measured.add_argument("--arm", choices=("a", "b"), help="fail unless the master shows this sp-hook_motion arm")
     measured.add_argument("--json", action="store_true")
     beat = sub.add_parser("beat", help="measure a recorded track's tempo and where its bars open")
-    beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the whole track places the bars best")
+    beat.add_argument("audio", type=Path, help="any file ffmpeg reads; the bar line needs at least eight bars")
     beat.add_argument("--seconds", type=float, help="measure only the first seconds")
     beat.add_argument("--beats-per-bar", type=int, default=4)
     beat.add_argument("--json", action="store_true")
@@ -575,14 +575,17 @@ def _arms(args: argparse.Namespace) -> int:
 
 def _beat(args: argparse.Namespace) -> int:
     try:
-        groove = music.measure(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
+        read = music.reading(args.audio, seconds=args.seconds, beats_per_bar=args.beats_per_bar)
     except music.MusicError as exc:
         _error("beat", exc, args.json)
         return 1
+    groove = read.groove
     if args.json:
-        print(json.dumps(asdict(groove)))
+        print(json.dumps({**asdict(groove), "bars": round(read.bars, 2), "sure": read.sure}))
     else:
         print(f"{groove.bpm:g} BPM, {groove.beats_per_bar} beats to the bar, a bar opens at {groove.offset:g} s")
+    if not read.sure:
+        print(f"srstudio beat: only {read.bars:.1f} bars heard, the bars may open on another beat", file=sys.stderr)
     return 0
 
 
