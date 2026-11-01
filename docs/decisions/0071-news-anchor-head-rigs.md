@@ -170,6 +170,11 @@ arc4d3 ruled on Slack 1793489774.457989, by the operator's delegation of 2026-10
 there's no approval step from me. Apply it as the default in new News Compiler reels once your gates pass, as with the
 head motion." So `stage` draws version 5 by default, and a delivered reel keeps its own `version=3`.
 
+Limits of the pose set in the two-shot, where the anchors sit close: Gus's `point` lands his hand on Vera's lapel, and
+his `up` overlaps the edge of her hair, so a script keeps `point` and `up` for his close-up. The change from `up` to
+`point` also carries his hand past her jaw, and the arm on the far side past the mug. Clearing these needs a different
+spacing of the two-shot, not a shorter arm.
+
 Rejected: keeping a drawing per pose and correcting the numbers, which leaves the cut between poses and nothing to hold
 the lengths to. Morphing between the drawings of version 4, whose lengths differ, which stretches a sleeve in motion. A
 fill and ink per bone with the joint hidden under a cap, which is the defect this version removes. Straightening the
